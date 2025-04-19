@@ -30,12 +30,26 @@ class VfiWorker(QThread):
         self.in_dir   = in_dir
         self.out_file = out_file
         self.fps      = fps
-        self.model_path = pathlib.Path(pkgres.files('goesvfi')) / 'models' / 'ifrnet_s_fp16.onnx'  # type: ignore[arg-type]
+        # Find the RIFE executable within the package data (e.g., in a 'bin' folder)
+        # IMPORTANT: Place your RIFE executable (e.g., 'rife-cli') in goesvfi/bin/
+        #            and ensure it's executable.
+        try:
+            # pkgres.files returns a Traversable, convert to Path
+            # In Python 3.9+, can use pkgres.files('goesvfi').joinpath('bin', 'rife-cli')
+            # For broader compatibility, resolve first.
+            rife_exe_resource = pkgres.files('goesvfi').joinpath('bin', 'rife-cli')
+            # Need to resolve the Traversable to an actual file system path
+            with pkgres.as_file(rife_exe_resource) as exe_path:
+                 self.rife_exe_path = exe_path
+        except FileNotFoundError:
+             # Provide a more informative error if the exe isn't found
+             raise FileNotFoundError("RIFE executable not found in package data (expected goesvfi/bin/rife-cli)")
 
     def run(self):
         try:
             LOGGER.info("Interpolating %s → %s", self.in_dir, self.out_file)
-            mp4_path = run_vfi(self.in_dir, self.model_path, fps=self.fps)
+            # run_vfi now expects the path to the RIFE executable
+            mp4_path = run_vfi(self.in_dir, self.rife_exe_path, fps=self.fps)
             self.finished.emit(mp4_path)
         except Exception as exc:
             LOGGER.exception("Worker failed")
@@ -114,13 +128,13 @@ class MainWindow(QWidget):
         self._show_info(f"Done! MP4 saved to {mp4}")
 
     def _show_error(self, msg: str):
-        from PyQt6.QtWidgets import QMessageBox
+        from PyQt6.QtWidgets import QMessageBox  # type: ignore
         QMessageBox.critical(self, "Error", msg)
         self.start_btn.setEnabled(True)
         self.progress.setRange(0, 1); self.progress.setValue(0)
 
     def _show_info(self, msg: str):
-        from PyQt6.QtWidgets import QMessageBox
+        from PyQt6.QtWidgets import QMessageBox  # type: ignore
         QMessageBox.information(self, "Info", msg)
 
 # ────────────────────────── top‑level launcher ────────────────────────────

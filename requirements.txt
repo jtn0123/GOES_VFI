@@ -1,10 +1,12 @@
 # Runtime dependencies for GOES‑VFI
 PyQt6
-onnxruntime
 numpy
 Pillow
 opencv-python-headless
 ffmpeg-python
 colorlog
 # Optional dependencies:
-# tqdm  # For progress bars (not required for core functionality) 
+tqdm  # For progress bars (not required for core functionality)
+# Type stubs for MyPy
+types-Pillow
+imageio 

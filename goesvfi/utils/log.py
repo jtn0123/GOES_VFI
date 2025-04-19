@@ -5,20 +5,23 @@ from __future__ import annotations
 import logging
 import sys
 from typing import Optional
+from types import ModuleType
 
 try:
-    import colorlog
+    import colorlog  # type: ignore
 except ImportError:  # graceful degradation
-    colorlog = None
+    colorlog_module: Optional[ModuleType] = None
+else:
+    colorlog_module = colorlog
 
 _LEVEL = logging.DEBUG
 
 _handler: Optional[logging.Handler] = None
 
 def _build_handler() -> logging.Handler:
-    if colorlog:
-        handler = colorlog.StreamHandler()
-        handler.setFormatter(colorlog.ColoredFormatter(
+    if colorlog_module:
+        handler = colorlog_module.StreamHandler()
+        handler.setFormatter(colorlog_module.ColoredFormatter(
             fmt="%(log_color)s[%(levelname).1s] %(name)s: %(message)s",
             log_colors={
                 "DEBUG": "cyan",
