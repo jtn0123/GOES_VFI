@@ -5,11 +5,13 @@ import tempfile
 import subprocess
 import pathlib
 import shutil
-import numpy as np  # type: ignore
-from PIL import Image  # type: ignore
+import numpy as np
+from PIL import Image
+from numpy.typing import NDArray
+from typing import Any, List
 
 
-class RifeCliBackend:
+class RifeBackend:
     """Wraps an external RIFE command-line executable."""
 
     def __init__(self, exe_path: pathlib.Path):
@@ -25,50 +27,64 @@ class RifeCliBackend:
 
         self.exe = exe_path
 
-    def interpolate_pair(self, img1: np.ndarray, img2: np.ndarray) -> np.ndarray:
-        # RIFE CLI often works with PNGs in 0-255 range
-        img1_u8 = (np.clip(img1, 0, 1) * 255).astype(np.uint8)
-        img2_u8 = (np.clip(img2, 0, 1) * 255).astype(np.uint8)
+    def interpolate_pair(self,
+                         img1: NDArray[np.float32],
+                         img2: NDArray[np.float32],
+                        ) -> NDArray[np.float32]:
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        f1, f2 = tmp/"1.png", tmp/"2.png"
 
-        # Create a temp dir
-        d = pathlib.Path(tempfile.mkdtemp())
-        f1, f2, out_f = d / "1.png", d / "2.png", d / "out.png"
+        out_f = tmp / "out_frame.png" # Single output file for midpoint
 
         try:
+            img1_u8 = (np.clip(img1, 0, 1) * 255).astype(np.uint8)
+            img2_u8 = (np.clip(img2, 0, 1) * 255).astype(np.uint8)
             Image.fromarray(img1_u8).save(f1)
             Image.fromarray(img2_u8).save(f2)
 
-            # Call the RIFE binary: expecting one interpolated frame (-n 1)
-            # Adapt command based on the specific CLI flags your RIFE exe uses
-            # Example flags shown below might need adjustment.
+            timestep = 0.5 # Always interpolate the midpoint
             cmd = [
                 str(self.exe),
-                "-0", str(f1), # Use -0 for first input file
-                "-1", str(f2), # Use -1 for second input file
-                "-o", str(out_f),
-                "-n", "1",    # Number of intermediate frames (1 = single middle frame)
-                "-m", "goesvfi/models/rife-v4.6" # Explicitly set model path
+                "-0", str(f1),
+                "-1", str(f2),
+                "-o", str(out_f), # Output single file
+                "-s", f"{timestep:.6f}", # Set timestep
+                "-n", "1", # Explicitly ask for 1 frame (may be default)
+                "-m", "goesvfi/models/rife-v4.6"
+                # No -f needed for single file output
             ]
             subprocess.run(cmd, check=True, capture_output=True, text=True)
 
             if not out_f.exists():
-                 raise RuntimeError(f"RIFE executable did not produce expected output file: {out_f}")
+                raise RuntimeError(f"RIFE failed to generate frame at timestep {timestep}")
 
-            arr = np.array(Image.open(out_f)).astype(np.float32) / 255.0
+            # Load the generated frame
+            frame_arr = np.array(Image.open(out_f)).astype(np.float32) / 255.0
+
         except subprocess.CalledProcessError as e:
             print(f"RIFE CLI Error Output:\n{e.stderr}")
-            raise RuntimeError(f"RIFE executable failed with code {e.returncode}") from e
+            raise RuntimeError(f"RIFE executable failed (timestep {timestep}) with code {e.returncode}") from e
         except Exception as e:
-            # Catch other potential errors during image processing or file handling
             raise RuntimeError(f"Error during RIFE CLI processing: {e}") from e
         finally:
-            # Ensure temporary directory is always cleaned up
-            shutil.rmtree(d)
+            shutil.rmtree(tmp)
 
-        return arr
+        return frame_arr
 
+def interpolate_three(img1: NDArray[np.float32], img2: NDArray[np.float32], backend: RifeBackend) -> List[NDArray[np.float32]]:
+    """Recursively interpolates three frames between img1 and img2."""
+    # Calculate the middle frame (t=0.5)
+    img_mid = backend.interpolate_pair(img1, img2)
+
+    # Calculate the frame between img1 and img_mid (t=0.25)
+    img_left = backend.interpolate_pair(img1, img_mid)
+
+    # Calculate the frame between img_mid and img2 (t=0.75)
+    img_right = backend.interpolate_pair(img_mid, img2)
+
+    return [img_left, img_mid, img_right]
+
+# Note about potential model differences can be kept or removed
 # Note: The input/output layer names ("in0", "in1", "out0") and the exact
 # pixel format/normalization expected/produced by the specific RIFE NCNN model
 # might need adjustment based on the model's architecture.
-# The provided `RifeNcnnVulkan` class from the prompt was simplified and likely
-# missed pixel format conversions and normalization steps.

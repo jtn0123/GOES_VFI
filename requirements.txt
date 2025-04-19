@@ -9,4 +9,7 @@ colorlog
 tqdm  # For progress bars (not required for core functionality)
 # Type stubs for MyPy
 types-Pillow
-imageio 
+imageio
+# Development tools
+mypy
+types-tqdm # Add stubs for tqdm 
