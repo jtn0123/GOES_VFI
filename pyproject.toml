@@ -1,0 +1,18 @@
+[project]
+name = "goesvfi"
+version = "0.1.0"
+description = "GOES satellite frame interpolation tool"
+dependencies = [
+    "PyQt6",
+    "onnxruntime",
+    "numpy",
+    "Pillow",
+    "opencv-python-headless",
+    "ffmpeg-python",
+    "colorlog",
+    ]
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.scripts]
+goesvfi = "goesvfi.cli:main"
