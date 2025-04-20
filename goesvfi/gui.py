@@ -21,6 +21,7 @@ from PyQt6.QtGui import QPixmap, QMouseEvent # Added for thumbnails, Add QMouseE
 
 from goesvfi.utils import config, log
 from goesvfi.run_vfi import run_vfi
+from goesvfi.pipeline.encode import encode_with_ffmpeg
 
 LOGGER = log.get_logger(__name__)
 
@@ -75,7 +76,9 @@ class VfiWorker(QThread):
         mid_count: int,
         model_key: str,
         tile_enable: bool,
-        max_workers: int
+        max_workers: int,
+        encoder: str,
+        use_ffmpeg_interp: bool
     ) -> None:
         super().__init__()
         self.in_dir        = in_dir
@@ -85,6 +88,8 @@ class VfiWorker(QThread):
         self.model_key     = model_key
         self.tile_enable   = tile_enable
         self.max_workers   = max_workers
+        self.encoder       = encoder
+        self.use_ffmpeg_interp = use_ffmpeg_interp
         # Find the RIFE executable within the package data (e.g., in a 'bin' folder)
         # IMPORTANT: Place your RIFE executable (e.g., 'rife-cli') in goesvfi/bin/
         #            and ensure it's executable.
@@ -101,39 +106,66 @@ class VfiWorker(QThread):
              raise FileNotFoundError("RIFE executable not found in package data (expected goesvfi/bin/rife-cli)")
 
     def run(self) -> None:
+        raw_mp4_path: Optional[pathlib.Path] = None # To store the intermediate raw path
         try:
-            LOGGER.info("Interpolating %s -> %s", self.in_dir, self.out_file_path)
-            # run_vfi is now an iterator yielding progress or the final path
-            final_path: Optional[pathlib.Path] = None
-            for update in run_vfi(
+            LOGGER.info("Starting VFI worker for %s -> %s", self.in_dir, self.out_file_path)
+            LOGGER.info("Step 1: Generating raw intermediate video...")
+
+            # run_vfi yields progress updates and finally the RAW mp4 path
+            run_vfi_iterator = run_vfi(
                 folder=self.in_dir,
+                # Pass the FINAL path, run_vfi derives raw path from it
                 output_mp4_path=self.out_file_path,
                 rife_exe_path=self.rife_exe_path,
                 fps=self.fps,
                 num_intermediate_frames=self.mid_count,
                 tile_enable=self.tile_enable,
                 max_workers=self.max_workers
-            ):
+            )
+
+            for update in run_vfi_iterator:
                 if isinstance(update, pathlib.Path):
-                    # This is the final path
-                    final_path = update
-                    break # Stop iterating once we have the path
-                elif isinstance(update, tuple):
+                    raw_mp4_path = update # Store the raw path when yielded
+                    LOGGER.info(f"Raw intermediate video created: {raw_mp4_path}")
+                    # Don't break here, let iterator finish (though it should be the last item)
+                elif isinstance(update, tuple) and len(update) == 3:
                     # This is a progress update (idx, total, eta)
                     idx, total, eta = update
+                    # Emit progress relative to raw creation step (consider adjusting total?)
                     self.progress.emit(idx, total, eta)
                 else:
-                    # Should not happen based on run_vfi's type hints
                     LOGGER.warning(f"Received unexpected update type from run_vfi: {type(update)}")
 
-            if final_path:
-                self.finished.emit(final_path)
-            else:
-                # Handle case where run_vfi finished without yielding a path (error?)
-                self.error.emit("Processing finished unexpectedly without generating an output file path.")
+            # Check if we got the raw path
+            if not raw_mp4_path or not raw_mp4_path.exists():
+                raise RuntimeError(f"Raw intermediate video path not received or file not found: {raw_mp4_path}")
+
+            # --- Step 2: Re-encode or move raw to final --- #
+            LOGGER.info(f"Step 2: Encoding/Moving raw video to final destination {self.out_file_path} using encoder '{self.encoder}'")
+
+            encode_with_ffmpeg(
+                raw_input=raw_mp4_path,
+                final_output=self.out_file_path,
+                encoder=self.encoder,
+                fps=self.fps,
+                use_interp=self.use_ffmpeg_interp
+            )
+
+            LOGGER.info(f"Final output created: {self.out_file_path}")
+            self.finished.emit(self.out_file_path) # Emit FINAL path on success
 
         except Exception as exc:
             LOGGER.exception("Worker failed")
+            self.error.emit(str(exc))
+
+        finally:
+            # --- Step 3: Cleanup raw intermediate --- #
+            if raw_mp4_path and raw_mp4_path.exists() and raw_mp4_path != self.out_file_path:
+                try:
+                    LOGGER.info(f"Cleaning up raw intermediate file: {raw_mp4_path}")
+                    raw_mp4_path.unlink()
+                except OSError as e:
+                    LOGGER.error(f"Failed to delete raw intermediate file {raw_mp4_path}: {e}")
 
 # ──────────────────────────────── Main window ─────────────────────────────
 class MainWindow(QWidget):
@@ -141,6 +173,9 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowTitle("GOES‑VFI") # Simplified title
         self.resize(560, 450) # Slightly taller for tabs/previews
+
+        # Store the original base path selected by user or default
+        self._base_output_path: pathlib.Path | None = None
 
         # ─── Tab widget ───────────────────────────────────────────────────
         self.tabs = QTabWidget()
@@ -191,6 +226,32 @@ class MainWindow(QWidget):
         )
         self.start_btn  = QPushButton("Start")
         self.progress   = QProgressBar(); self.progress.setRange(0, 1)
+
+        # ─── Encoder Selection ────────────────────────────────────────────
+        self.encode_combo = QComboBox()
+        self.encode_combo.addItems([
+            "None (copy original)",            # new "no re-encode" option
+            "Software x265",
+            "Hardware HEVC (VideoToolbox)", # Assuming macOS VideoToolbox
+            "Hardware H.264 (VideoToolbox)",
+            # TODO: Add Windows/Linux hardware options if desired
+        ])
+        self.encode_combo.setToolTip(
+            "Pick your output codec, or None to skip re-encoding."
+        )
+        # Set a reasonable default, e.g., H.264 if available
+        if "Hardware H.264 (VideoToolbox)" in [self.encode_combo.itemText(i) for i in range(self.encode_combo.count())]:
+            self.encode_combo.setCurrentText("Hardware H.264 (VideoToolbox)")
+        else:
+            self.encode_combo.setCurrentText("Software x265") # Fallback
+
+        # ─── FFmpeg motion interpolation toggle ───────────────────────────
+        self.ffmpeg_interp_cb = QCheckBox("Use FFmpeg motion interpolation (doubles FPS again)")
+        self.ffmpeg_interp_cb.setChecked(False)
+        self.ffmpeg_interp_cb.setToolTip(
+            "Apply FFmpeg's 'minterpolate' filter before encoding.\n"
+            "Generates additional frames via motion interpolation, effectively doubling the FPS set above."
+        )
 
         # ─── Max parallel workers ─────────────────────────────────────────
         self.workers_spin = QSpinBox()
@@ -247,6 +308,13 @@ class MainWindow(QWidget):
         workers_row.addStretch()
 
         model_row = QHBoxLayout(); model_row.addWidget(QLabel("Model:")); model_row.addWidget(self.model_combo); model_row.addStretch()
+        # Add layout row for encoder
+        encode_row = QHBoxLayout(); encode_row.addWidget(QLabel("Encoder:")); encode_row.addWidget(self.encode_combo); encode_row.addStretch()
+        # Add layout row for FFmpeg interpolation checkbox
+        interp_row = QHBoxLayout()
+        interp_row.addWidget(self.ffmpeg_interp_cb)
+        interp_row.addStretch()
+
         layout.addLayout(in_row); layout.addLayout(out_row);
         # Update layout adding order
         layout.addLayout(fps_row)
@@ -254,6 +322,8 @@ class MainWindow(QWidget):
         layout.addLayout(tile_row)      # Add tile row
         layout.addLayout(workers_row)   # Add workers row
         layout.addLayout(model_row)
+        layout.addLayout(encode_row)    # Add encode row
+        layout.addLayout(interp_row)     # Add FFmpeg interp row
         layout.addLayout(pv_row) # Add preview row
         layout.addWidget(self.start_btn); layout.addWidget(self.progress)
 
@@ -274,7 +344,10 @@ class MainWindow(QWidget):
     # ---------------- helpers ----------------
     def _apply_defaults(self) -> None:
         out_dir = config.get_output_dir(); out_dir.mkdir(parents=True, exist_ok=True)
-        self.out_edit.setText(str(out_dir / "goes_timelapse.mp4"))
+        default_path = out_dir / "goes_timelapse.mp4"
+        self.out_edit.setText(str(default_path))
+        # Store the base path
+        self._base_output_path = default_path
 
     def _pick_in_dir(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Select GOES image folder")
@@ -333,26 +406,50 @@ class MainWindow(QWidget):
             self.preview_last.setText("Last frame\n(Error)")
 
     def _pick_out_file(self) -> None:
-        suggested = str(config.get_output_dir() / "goes_animated.mp4")
-        path, _ = QFileDialog.getSaveFileName(self, "Save MP4", suggested, "MP4 files (*.mp4)")
-        if path: self.out_edit.setText(path)
+        # Suggest based on the base path if available, else current text
+        suggested_dir = self._base_output_path.parent if self._base_output_path else config.get_output_dir()
+        suggested_name = self._base_output_path.name if self._base_output_path else "goes_animated.mp4"
+        suggested = str(suggested_dir / suggested_name)
+
+        path_str, _ = QFileDialog.getSaveFileName(self, "Save MP4", suggested, "MP4 files (*.mp4)")
+        if path_str:
+            path = pathlib.Path(path_str)
+            self.out_edit.setText(str(path))
+            # Store the newly selected base path
+            self._base_output_path = path
 
     def _start(self) -> None:
         in_dir  = pathlib.Path(self.in_edit.text()).expanduser()
-        # Build a timestamped output filename to avoid overwrites
-        raw_out = pathlib.Path(self.out_edit.text()).expanduser()
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        stem, suf = raw_out.stem, raw_out.suffix or ".mp4" # Ensure .mp4 if no suffix
-        out_mp4 = raw_out.with_name(f"{stem}_{ts}{suf}")
-        # Reflect back into the UI so users see the actual path
-        self.out_edit.setText(str(out_mp4))
 
+        # --- Generate timestamped output path based on the BASE path ---
+        if self._base_output_path:
+            base_out_path = self._base_output_path
+        else:
+            # Fallback if base path isn't set (shouldn't happen after init)
+            LOGGER.warning("_base_output_path not set, falling back to current text.")
+            base_out_path = pathlib.Path(self.out_edit.text()).expanduser()
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        stem, suf = base_out_path.stem, base_out_path.suffix or ".mp4" # Ensure .mp4
+        # Ensure suffix starts with a dot if it exists but doesn't have one (pathlib quirk)
+        if suf and not suf.startswith('.'):
+            suf = '.' + suf
+        # Use the parent from the base path
+        final_out_mp4 = base_out_path.with_name(f"{stem}_{ts}{suf}")
+
+        # Reflect the ACTUAL timestamped path back into the UI
+        self.out_edit.setText(str(final_out_mp4))
+        # --- End timestamp logic ---
+
+        # Use the generated final_out_mp4 path from now on
         fps     = self.fps_spin.value()
         mid_count = self.mid_spin.value()
         model_key = self.model_combo.currentText()
         # Get values from new widgets
         tile_enable = self.tile_checkbox.isChecked()
         max_workers = self.workers_spin.value()
+        encoder     = self.encode_combo.currentText()
+        use_ffmpeg_interp = self.ffmpeg_interp_cb.isChecked()
 
         # disable the Open button until we finish
         self.open_btn.setEnabled(False)
@@ -360,7 +457,7 @@ class MainWindow(QWidget):
         if not in_dir.is_dir():
             self._show_error("Input folder does not exist."); return
         # Ensure output directory exists, but use the full path for the worker
-        out_mp4.parent.mkdir(parents=True, exist_ok=True)
+        final_out_mp4.parent.mkdir(parents=True, exist_ok=True)
 
         # Disable UI & launch worker
         self.start_btn.setEnabled(False); self.progress.setRange(0, 0)
@@ -370,9 +467,11 @@ class MainWindow(QWidget):
         # Pass the specific out_mp4 path and new params to the worker
         # Keep existing mid_count and model_key arguments
         self.worker = VfiWorker(
-            in_dir, out_mp4, fps, mid_count, model_key,
+            in_dir, final_out_mp4, fps, mid_count, model_key,
             tile_enable=tile_enable,
-            max_workers=max_workers
+            max_workers=max_workers,
+            encoder=encoder,
+            use_ffmpeg_interp=use_ffmpeg_interp
         )
         self.worker.progress.connect(self._on_progress)
         self.worker.finished.connect(self._on_finished)
@@ -446,7 +545,7 @@ class MainWindow(QWidget):
 
     # ------------- Add VLC opener method -----------
     def _open_in_vlc(self) -> None:
-        """Launch the last output MP4 in VLC (cross‑platform)."""
+        """Launch the last output MP4 in VLC (cross-platform)."""
         import sys, subprocess, pathlib # Keep imports local if preferred
         if not hasattr(self, "_last_out") or not self._last_out.exists():
              self._show_error("No valid output file found to open.")
