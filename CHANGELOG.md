@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed FFmpeg error when creating raw intermediate file by switching from MP4+ffv1 to MKV+ffv1. (`goesvfi/run_vfi.py`, `goesvfi/pipeline/raw_encoder.py`)
 - Fixed FFmpeg stream copy issue when "None" encoder was selected with MKV input. (`goesvfi/pipeline/encode.py`)
 
-## [0.2.0] - YYYY-MM-DD
+## [0.2.0] - 2025-04-19
 
 ### Added
 - Support for generating 3 intermediate frames using recursive 3-step interpolation (`interpolate_three`).
