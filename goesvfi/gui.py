@@ -8,21 +8,62 @@ Run with:  python -m goesvfi.gui
 import sys
 import pathlib
 import importlib.resources as pkgres
-from PyQt6.QtCore import QThread, pyqtSignal
+from typing import Optional, Any
+from datetime import datetime # Add datetime import
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QSize
 from PyQt6.QtWidgets import (
     QApplication, QFileDialog, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QProgressBar, QSpinBox, QVBoxLayout, QWidget,
-    QMessageBox, QComboBox, QCheckBox
+    QMessageBox, QComboBox, QCheckBox, QTabWidget, QTableWidget, QTableWidgetItem, QStatusBar,
+    QDialog # Add QDialog import
 )
+from PyQt6.QtGui import QPixmap, QMouseEvent # Added for thumbnails, Add QMouseEvent
 
 from goesvfi.utils import config, log
 from goesvfi.run_vfi import run_vfi
 
 LOGGER = log.get_logger(__name__)
 
+# ─── Custom clickable label ────────────────────────────────────────────────
+class ClickableLabel(QLabel):
+    clicked = pyqtSignal()
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.file_path: str | None = None # Add file_path attribute
+        # enable mouse tracking / events
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mouseReleaseEvent(self, ev: QMouseEvent | None) -> None:
+        # Check if ev is not None before accessing attributes
+        if ev is not None and ev.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        # Pass ev to super method (it handles None correctly)
+        super().mouseReleaseEvent(ev)
+
+# ─── ZoomDialog closes on any click ──────────────────────────────────────
+class ZoomDialog(QDialog):
+    def __init__(self, pixmap: QPixmap, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.setWindowFlags(
+            Qt.WindowType.Dialog |
+            Qt.WindowType.FramelessWindowHint
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        lbl = QLabel(self)
+        lbl.setPixmap(pixmap)
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout = QVBoxLayout(self)
+        layout.addWidget(lbl)
+        self.resize(pixmap.size())
+
+    # Add type hint for event
+    def mousePressEvent(self, ev: QMouseEvent | None) -> None:
+        self.close()
+
 # ────────────────────────────── Worker thread ──────────────────────────────
 class VfiWorker(QThread):
-    progress = pyqtSignal(int, int)
+    progress = pyqtSignal(int, int, float)
     finished = pyqtSignal(pathlib.Path)
     error    = pyqtSignal(str)
 
@@ -62,7 +103,9 @@ class VfiWorker(QThread):
     def run(self) -> None:
         try:
             LOGGER.info("Interpolating %s -> %s", self.in_dir, self.out_file_path)
-            mp4_path = run_vfi(
+            # run_vfi is now an iterator yielding progress or the final path
+            final_path: Optional[pathlib.Path] = None
+            for update in run_vfi(
                 folder=self.in_dir,
                 output_mp4_path=self.out_file_path,
                 rife_exe_path=self.rife_exe_path,
@@ -70,20 +113,60 @@ class VfiWorker(QThread):
                 num_intermediate_frames=self.mid_count,
                 tile_enable=self.tile_enable,
                 max_workers=self.max_workers
-            )
-            self.finished.emit(mp4_path)
+            ):
+                if isinstance(update, pathlib.Path):
+                    # This is the final path
+                    final_path = update
+                    break # Stop iterating once we have the path
+                elif isinstance(update, tuple):
+                    # This is a progress update (idx, total, eta)
+                    idx, total, eta = update
+                    self.progress.emit(idx, total, eta)
+                else:
+                    # Should not happen based on run_vfi's type hints
+                    LOGGER.warning(f"Received unexpected update type from run_vfi: {type(update)}")
+
+            if final_path:
+                self.finished.emit(final_path)
+            else:
+                # Handle case where run_vfi finished without yielding a path (error?)
+                self.error.emit("Processing finished unexpectedly without generating an output file path.")
+
         except Exception as exc:
             LOGGER.exception("Worker failed")
-            self.error.emit(str(exc))
 
 # ──────────────────────────────── Main window ─────────────────────────────
 class MainWindow(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("GOES‑VFI  v0.1")
-        self.resize(560, 350)
+        self.setWindowTitle("GOES‑VFI") # Simplified title
+        self.resize(560, 450) # Slightly taller for tabs/previews
 
-        # Widgets
+        # ─── Tab widget ───────────────────────────────────────────────────
+        self.tabs = QTabWidget()
+        self.tabs.addTab(self._makeMainTab(), "Interpolate")
+        self.tabs.addTab(self._makeModelLibraryTab(), "Models")
+
+        # ─── Status Bar ───────────────────────────────────────────────────
+        self.status_bar = QStatusBar()
+        self.status_bar.showMessage("Ready")
+
+        # ─── Main Layout ──────────────────────────────────────────────────
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.tabs)
+        main_layout.addWidget(self.status_bar) # Add status bar at the bottom
+        self.setLayout(main_layout)
+
+        self.worker: VfiWorker | None = None
+        self._apply_defaults()
+
+    def _makeMainTab(self) -> QWidget:
+        """Builds the main 'Interpolate' tab UI."""
+        # Create a container widget for this tab's layout
+        main_tab_widget = QWidget()
+        layout = QVBoxLayout(main_tab_widget) # Layout for the main tab
+
+        # Widgets (moved from __init__)
         self.in_edit   = QLineEdit()
         self.in_browse = QPushButton("Browse…")
         self.out_edit   = QLineEdit()
@@ -94,16 +177,16 @@ class MainWindow(QWidget):
         self.mid_spin.setSingleStep(2)
         self.mid_spin.setValue(1)
         self.mid_spin.setToolTip(
-            "Number of in‑between frames per original pair:\n"
+            "Number of in-between frames per original pair:\n"
             "• 1 = single midpoint (fastest)\n"
-            "• 3 = recursive three‑step (smoother)"
+            "• 3 = recursive three-step (smoother)"
         )
         self.model_combo = QComboBox()
         self.model_combo.addItems([
             "RIFE v4.6 (default)",
         ])
         self.model_combo.setToolTip(
-            "Choose your interpolation model.\\n"
+            "Choose your interpolation model.\n"
             "Currently only the built-in RIFE model is used."
         )
         self.start_btn  = QPushButton("Start")
@@ -118,7 +201,7 @@ class MainWindow(QWidget):
         self.workers_spin.setRange(1, max(8, cpu_cores)) # Allow up to cpu_count or 8
         self.workers_spin.setValue(min(default_workers, 8)) # Default, capped at 8
         self.workers_spin.setToolTip(
-            f"Max number of parallel interpolation processes (CPU has {cpu_cores}).\\n"
+            "Max number of parallel interpolation processes (CPU has " + str(cpu_cores) + ").\n"
             "Reduce if you experience memory issues."
         )
 
@@ -126,13 +209,28 @@ class MainWindow(QWidget):
         self.tile_checkbox = QCheckBox("Enable tiling for large frames (>2k)")
         self.tile_checkbox.setChecked(True) # Default to ON
         self.tile_checkbox.setToolTip(
-            "Split large frames into tiles before interpolating.\\n"
-            "Faster & uses less RAM, but may have edge artifacts.\\n"
+            "Split large frames into tiles before interpolating.\n"
+            "Faster & uses less RAM, but may have edge artifacts.\n"
             "Disable if RAM allows or edges look bad."
         )
 
-        # Layout
-        layout  = QVBoxLayout(self)
+        # ─── Preview thumbnails ───────────────────────────────────────────
+        self.preview_first = ClickableLabel("First frame")
+        self.preview_mid   = ClickableLabel("Mid frame")
+        self.preview_last  = ClickableLabel("Last frame")
+        for lbl in (self.preview_first, self.preview_mid, self.preview_last):
+            lbl.setFixedSize(128,128)
+            lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            lbl.setStyleSheet("border: 1px solid gray; background-color: #eee;")
+            # Connect click -> open dialog
+            lbl.clicked.connect(lambda lb=lbl: self._show_zoom(lb))
+
+        pv_row = QHBoxLayout()
+        pv_row.addWidget(self.preview_first)
+        pv_row.addWidget(self.preview_mid)
+        pv_row.addWidget(self.preview_last)
+
+        # Layout (Specific to this tab)
         in_row  = QHBoxLayout();  in_row.addWidget(QLabel("Input folder:"));  in_row.addWidget(self.in_edit);  in_row.addWidget(self.in_browse)
         out_row = QHBoxLayout(); out_row.addWidget(QLabel("Output MP4:"));  out_row.addWidget(self.out_edit); out_row.addWidget(self.out_browse)
         fps_row = QHBoxLayout(); fps_row.addWidget(QLabel("Target FPS:")); fps_row.addWidget(self.fps_spin); fps_row.addStretch()
@@ -156,6 +254,7 @@ class MainWindow(QWidget):
         layout.addLayout(tile_row)      # Add tile row
         layout.addLayout(workers_row)   # Add workers row
         layout.addLayout(model_row)
+        layout.addLayout(pv_row) # Add preview row
         layout.addWidget(self.start_btn); layout.addWidget(self.progress)
 
         # ─── Open in VLC button ───────────────────────────────────────────
@@ -164,14 +263,13 @@ class MainWindow(QWidget):
         self.open_btn.setToolTip("Launch the finished MP4 in VLC")
         layout.addWidget(self.open_btn) # Add button to layout
 
-        # Signals
+        # Signals (Connect signals specific to this tab's widgets here)
         self.in_browse.clicked.connect(self._pick_in_dir)
         self.out_browse.clicked.connect(self._pick_out_file)
         self.start_btn.clicked.connect(self._start)
         self.open_btn.clicked.connect(self._open_in_vlc) # Connect new button
 
-        self.worker: VfiWorker | None = None
-        self._apply_defaults()
+        return main_tab_widget # Return the widget containing the tab's layout
 
     # ---------------- helpers ----------------
     def _apply_defaults(self) -> None:
@@ -179,8 +277,60 @@ class MainWindow(QWidget):
         self.out_edit.setText(str(out_dir / "goes_timelapse.mp4"))
 
     def _pick_in_dir(self) -> None:
-        path = QFileDialog.getExistingDirectory(self, "Select GOES image folder")
-        if path: self.in_edit.setText(path)
+        folder = QFileDialog.getExistingDirectory(self, "Select GOES image folder")
+        # Use early return if no folder selected
+        if not folder:
+            return
+        self.in_edit.setText(folder)
+
+        # Reset previews initially
+        self.preview_first.setText("First frame\nLoading...")
+        self.preview_last.setText("Last frame\nLoading...")
+        self.preview_mid.setText("Mid frame") # Reset mid preview too
+        self.preview_first.setPixmap(QPixmap()) # Clear pixmaps
+        self.preview_last.setPixmap(QPixmap())
+        self.preview_mid.setPixmap(QPixmap())
+
+        # load & show first/last thumbnails
+        try:
+            files = sorted(pathlib.Path(folder).glob("*.png")) # Assuming PNG
+            if files:
+                # First frame
+                first = files[0]
+                pix1 = QPixmap(str(first)).scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                self.preview_first.setPixmap(pix1)
+                self.preview_first.file_path = str(first)
+
+                # Middle frame (floor of count/2)
+                # Ensure index is valid even for list with 1 element
+                mid_idx = min(len(files) // 2, len(files) - 1)
+                middle = files[mid_idx]
+                pixm = QPixmap(str(middle)).scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                self.preview_mid.setPixmap(pixm)
+                self.preview_mid.file_path = str(middle)
+
+                # Last frame
+                last = files[-1]
+                pix2 = QPixmap(str(last)).scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                self.preview_last.setPixmap(pix2)
+                self.preview_last.file_path = str(last)
+
+                # Clear text if pixmap loaded
+                if not pix1.isNull(): self.preview_first.setText("")
+                if not pixm.isNull(): self.preview_mid.setText("") # Check mid pixmap
+                if not pix2.isNull(): self.preview_last.setText("")
+            else:
+                self.preview_first.setText("First frame\n(no PNGs)")
+                self.preview_last.setText("Last frame\n(no PNGs)")
+                self.preview_mid.setText("Mid frame") # Reset text
+                # Clear file paths
+                self.preview_first.file_path = None
+                self.preview_last.file_path = None
+                self.preview_mid.file_path = None
+        except Exception as e:
+            LOGGER.error(f"Error loading thumbnails: {e}")
+            self.preview_first.setText("First frame\n(Error)")
+            self.preview_last.setText("Last frame\n(Error)")
 
     def _pick_out_file(self) -> None:
         suggested = str(config.get_output_dir() / "goes_animated.mp4")
@@ -189,7 +339,14 @@ class MainWindow(QWidget):
 
     def _start(self) -> None:
         in_dir  = pathlib.Path(self.in_edit.text()).expanduser()
-        out_mp4 = pathlib.Path(self.out_edit.text()).expanduser()
+        # Build a timestamped output filename to avoid overwrites
+        raw_out = pathlib.Path(self.out_edit.text()).expanduser()
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        stem, suf = raw_out.stem, raw_out.suffix or ".mp4" # Ensure .mp4 if no suffix
+        out_mp4 = raw_out.with_name(f"{stem}_{ts}{suf}")
+        # Reflect back into the UI so users see the actual path
+        self.out_edit.setText(str(out_mp4))
+
         fps     = self.fps_spin.value()
         mid_count = self.mid_spin.value()
         model_key = self.model_combo.currentText()
@@ -208,6 +365,7 @@ class MainWindow(QWidget):
         # Disable UI & launch worker
         self.start_btn.setEnabled(False); self.progress.setRange(0, 0)
         self.progress.setValue(0) # Explicitly reset progress value
+        self.status_bar.showMessage("Starting interpolation...") # Update status bar
 
         # Pass the specific out_mp4 path and new params to the worker
         # Keep existing mid_count and model_key arguments
@@ -222,25 +380,66 @@ class MainWindow(QWidget):
         self.worker.start()
 
     # ------------- callbacks --------------
-    def _on_progress(self, current: int, total: int) -> None:
-        self.progress.setRange(0, total); self.progress.setValue(current)
+    def _on_progress(self, current: int, total: int, eta: float) -> None:
+        """Update progress bar and status bar with ETA."""
+        if total > 0:
+            self.progress.setRange(0, total)
+            self.progress.setValue(current)
+            # Format ETA nicely
+            if eta > 0:
+                eta_seconds = int(eta)
+                eta_str = f"{eta_seconds // 60}m {eta_seconds % 60}s" if eta_seconds > 60 else f"{eta_seconds}s"
+                self.status_bar.showMessage(f"Processing {current}/{total}... ETA: {eta_str}")
+            else:
+                self.status_bar.showMessage(f"Processing {current}/{total}...")
+        else: # Handle indeterminate case (shouldn't happen with new logic but safe)
+            self.progress.setRange(0, 0)
+            self.status_bar.showMessage("Processing...")
 
     def _on_finished(self, mp4: pathlib.Path) -> None:
         # mark progress done
-        self.progress.setRange(0, 1)
-        self.progress.setValue(1)
+        self.progress.setRange(0, 1); self.progress.setValue(1)
         self.start_btn.setEnabled(True)
-        self._show_info(f"Done! MP4 saved to {mp4}")
-        # store path and enable Open button
+        self.open_btn.setEnabled(True) # Enable Open button on success
+        self.status_bar.showMessage(f"Finished: {mp4.name}") # Update status bar
+
+        # Store the path for the Open button
         self._last_out = mp4
-        self.open_btn.setEnabled(True)
+
+        # --- Load mid-frame preview --- #
+        # NOTE: This assumes self.worker exists and has a populated 'mid_frame_path'
+        #       which needs to be implemented in the worker/run_vfi logic separately.
+        if self.worker and hasattr(self.worker, 'mid_frame_path'):
+            mid_png_path_str = getattr(self.worker, 'mid_frame_path', None)
+            if mid_png_path_str:
+                mid_png = pathlib.Path(mid_png_path_str)
+                if mid_png.exists():
+                    try:
+                        pixm = QPixmap(str(mid_png)).scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                        self.preview_mid.setPixmap(pixm)
+                        self.preview_mid.file_path = str(mid_png)
+                        if not pixm.isNull(): self.preview_mid.setText("") # Clear text
+                    except Exception as e:
+                        LOGGER.error(f"Error loading mid-frame preview '{mid_png}': {e}")
+                        self.preview_mid.setText("Mid frame\n(Error)")
+                else:
+                     LOGGER.warning(f"Mid-frame path provided but file not found: {mid_png}")
+                     self.preview_mid.setText("Mid frame\n(Not found)")
+            else:
+                 LOGGER.info("No mid-frame path available after run.")
+                 self.preview_mid.setText("Mid frame") # Reset text if no path
+        else:
+            LOGGER.warning("Worker or mid_frame_path attribute not available in _on_finished")
+        # --- End mid-frame preview logic ---
+
+        self._show_info(f"Video saved to:\n{mp4}")
 
     def _show_error(self, msg: str) -> None:
+        LOGGER.error(msg)
+        self.start_btn.setEnabled(True) # Re-enable start on error
+        self.progress.setRange(0, 1); self.progress.setValue(0) # Reset progress visually
+        self.status_bar.showMessage("Error occurred") # Update status bar
         QMessageBox.critical(self, "Error", msg)
-        self.start_btn.setEnabled(True)
-        self.progress.setRange(0, 1); self.progress.setValue(0)
-        # Disable open button on error too
-        self.open_btn.setEnabled(False)
 
     def _show_info(self, msg: str) -> None:
         QMessageBox.information(self, "Info", msg)
@@ -268,6 +467,60 @@ class MainWindow(QWidget):
             self._show_error(f"Could not find command to launch VLC. Is it installed and in your PATH?")
         except Exception as e:
              self._show_error(f"Failed to open file in VLC: {e}")
+
+    # --- Zoom Dialog Method ---
+    def _show_zoom(self, label: ClickableLabel) -> None:
+        """Pop up a frameless dialog showing the image from file_path, scaled to fit screen."""
+        if not label.file_path or not pathlib.Path(label.file_path).exists():
+            LOGGER.warning(f"Zoom requested but file_path is invalid: {label.file_path}")
+            return # Do nothing if no valid file path
+
+        try:
+            pix = QPixmap(label.file_path)
+            if pix.isNull():
+                LOGGER.error(f"Failed to load pixmap for zoom: {label.file_path}")
+                self._show_error(f"Could not load image:\n{label.file_path}")
+                return
+
+            # scale to fit screen (80% of available geometry)
+            target_size: QSize
+            screen = self.screen()
+            if screen:
+                screen_geo = screen.availableGeometry()
+                target_size = screen_geo.size() * 0.8 # Scale QSize directly
+            else:
+                LOGGER.warning("Could not get screen geometry, using default size for zoom.")
+                target_size = QSize(1000, 1000) # Default fallback size
+
+            scaled_pix = pix.scaled(
+                target_size,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+
+            dlg = ZoomDialog(scaled_pix, self)
+            dlg.exec()
+
+        except Exception as e:
+            LOGGER.exception(f"Error showing zoom dialog for {label.file_path}")
+            self._show_error(f"Error displaying image:\n{e}")
+
+    # +++ ADD NEW METHOD FOR MODELS TAB +++
+    def _makeModelLibraryTab(self) -> QWidget:
+        """Builds the Models tab with a simple table of available checkpoints."""
+        w = QWidget()
+        tbl = QTableWidget(1, 4, parent=w)
+        tbl.setHorizontalHeaderLabels(["Name", "Size", "Speed (FPS)", "ΔPSNR"])
+        # Row 0: RIFE v4.6
+        tbl.setItem(0, 0, QTableWidgetItem("RIFE v4.6"))
+        tbl.setItem(0, 1, QTableWidgetItem("≈416 MB ZIP"))
+        tbl.setItem(0, 2, QTableWidgetItem("~2 FPS@5 k")) # Assuming 5k resolution context
+        tbl.setItem(0, 3, QTableWidgetItem("–")) # Placeholder for PSNR
+        tbl.resizeColumnsToContents()
+
+        lay = QVBoxLayout(w)
+        lay.addWidget(tbl)
+        return w
 
 # ────────────────────────── top‑level launcher ────────────────────────────
 def main() -> None:

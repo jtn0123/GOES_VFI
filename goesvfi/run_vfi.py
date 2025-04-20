@@ -14,9 +14,12 @@ from goesvfi.utils import log
 from .pipeline.encoder import write_mp4
 # Add imports for typing
 from numpy.typing import NDArray
-from typing import Any, List, Tuple, Iterable, Optional
+from typing import Any, List, Tuple, Iterable, Optional, Iterator, Union, cast
 from PIL import Image # Import PIL directly
 import numpy as np # Re-added missing numpy import
+
+# Define a type alias for float numpy arrays
+FloatNDArray = NDArray[np.float32]
 
 # Make TQDM_AVAILABLE global so worker can access it
 TQDM_AVAILABLE = False
@@ -38,6 +41,9 @@ LOGGER = log.get_logger(__name__)
 
 DEFAULT_TILE_SIZE = 2048 # Define default tile size
 
+# Define a type alias for the yielded progress update
+ProgressUpdate = Tuple[int, int, float] # (current_idx, total_pairs, eta_seconds)
+
 # --- Helper function for parallel processing ---
 def _process_pair(
     p1: pathlib.Path,
@@ -46,7 +52,7 @@ def _process_pair(
     model_id_base: str, # Use a base model ID, add interp_count later
     num_intermediate_frames: int, # Changed from interp_count
     tile_size: Optional[int] = None, # Allow tiling settings to be passed
-) -> Tuple[List[NDArray[np.float32]], str]:
+) -> Tuple[List[FloatNDArray], str]:
     """Processes a single pair of images, returning frames and cache status."""
     try:
         # Generate model_id including num_intermediate_frames for caching
@@ -65,7 +71,7 @@ def _process_pair(
 
         # --- 3. Interpolate ---
         backend = RifeBackend(exe_path=rife_exe_path) # Instantiate backend in worker
-        inter_imgs: List[NDArray[np.float32]] = []
+        inter_imgs: List[FloatNDArray] = []
 
         # Tiling logic
         if tile_size and max(img1.shape[0], img1.shape[1]) > tile_size:
@@ -168,8 +174,8 @@ def run_vfi(
     # Add new parameters, remove old tile_size
     tile_enable: bool = True,      # Default to True as in GUI
     max_workers: int = 0          # 0 means auto-detect based on cores
-) -> pathlib.Path:
-    """High-level helper called by GUI/CLI. Returns MP4 path."""
+) -> Iterator[Union[ProgressUpdate, pathlib.Path]]:
+    """High-level helper. Yields progress (idx, total, eta) and returns MP4 path."""
     LOGGER.info("Input folder: %s", folder)
     LOGGER.info("Output MP4: %s", output_mp4_path)
     LOGGER.info("Using RIFE Executable: %s", rife_exe_path)
@@ -204,11 +210,6 @@ def run_vfi(
         for i in range(len(paths) - 1)
     ]
 
-    output_frames_lists: List[Tuple[List[NDArray[np.float32]], str]] = []
-    processed_count = 0
-    cache_hit_count = 0
-    error_count = 0
-
     # Determine max workers safely handling os.cpu_count() == None and respecting GUI limit
     cpu_cores = os.cpu_count()
     # Calculate available workers (leaving one free if possible)
@@ -221,16 +222,67 @@ def run_vfi(
 
     LOGGER.info("Using up to %d worker processes.", num_workers)
 
+    # Prepare timing list for ETA calculation
+    pair_times: List[float] = []
+    total_pairs = len(tasks)
+
+    # Initialize counters
+    processed_count = 0
+    cache_hit_count = 0
+    error_count = 0
+
     # Run tasks in parallel using calculated num_workers
     with concurrent.futures.ProcessPoolExecutor(max_workers=num_workers) as executor:
-        results_iterator = executor.map(_process_pair, *zip(*tasks))
+        # Use submit for better control and future retrieval
+        futures = {executor.submit(_process_pair, *task): i for i, task in enumerate(tasks)}
 
         # Wrap with tqdm if available (TQDM_AVAILABLE is now global)
-        if TQDM_AVAILABLE:
-            results_iterator = tqdm(results_iterator, total=len(tasks), desc="Processing frame pairs") # type: ignore
+        # Process futures as they complete for more responsive ETA
+        # Explicitly define the type for results_list
+        ResultType = Optional[Tuple[List[FloatNDArray], str]]
+        results_list: List[ResultType] = [None] * total_pairs # Pre-allocate results list
+        processed_indices = 0
 
-        for frames_for_pair, status in results_iterator:
-            output_frames_lists.append((frames_for_pair, status))
+        # Iterate using as_completed for better progress updates
+        # Add type parameter to Future
+        future_iterator: Iterable[concurrent.futures.Future[Tuple[List[FloatNDArray], str]]] = concurrent.futures.as_completed(futures)
+        if TQDM_AVAILABLE:
+             # Remove unused type: ignore
+            future_iterator = tqdm(future_iterator, total=total_pairs, desc="Processing frame pairs")
+
+        start_time = time.time() # Start time for the first future completion
+        for future in future_iterator:
+            task_index = futures[future] # Get original index
+            try:
+                frames_for_pair, status = future.result()
+                results_list[task_index] = (frames_for_pair, status) # Store result in correct order
+            except Exception as exc:
+                LOGGER.error(f"Task {task_index} generated an exception: {exc}", exc_info=True)
+                # Fallback: create a placeholder result to maintain structure
+                img1_fallback = np.array(Image.open(tasks[task_index][0])).astype(np.float32) / 255.0
+                # Use FloatNDArray here
+                fallback_result: Tuple[List[FloatNDArray], str] = ([img1_fallback], f"error: {exc}")
+                results_list[task_index] = fallback_result # Store result in correct order
+                status = "error"
+
+            processed_indices += 1
+            end_time = time.time()
+            duration = end_time - start_time # Duration for this completed task
+            pair_times.append(duration)
+            start_time = end_time # Reset start time for the next duration measurement
+
+            # Calculate ETA
+            if pair_times:
+                avg_time_per_pair = sum(pair_times) / len(pair_times)
+                remaining_pairs = total_pairs - processed_indices
+                eta_seconds = avg_time_per_pair * remaining_pairs
+            else:
+                eta_seconds = 0.0 # Or some other indicator like -1
+
+            # Yield progress update
+            yield (processed_indices, total_pairs, eta_seconds)
+
+            # Update local counts based on status
             if status == "processed":
                 processed_count += 1
             elif status == "cache_hit":
@@ -238,14 +290,18 @@ def run_vfi(
             elif status.startswith("error"):
                 error_count += 1
 
-    # Assemble final frame list in order
-    final_output_frames: List[NDArray[np.float32]] = []
-    for frames_list, _ in output_frames_lists:
-        final_output_frames.extend(frames_list)
+    # Assemble final frame list in order (using pre-allocated list)
+    final_output_frames: List[FloatNDArray] = []
+    for result in results_list:
+        if result:
+             frames_list, _ = result
+             final_output_frames.extend(frames_list)
 
     # Add the very last original frame
     if paths:
-         final_output_frames.append(np.array(Image.open(paths[-1])).astype(np.float32) / 255.0)
+         # Cast the result explicitly to FloatNDArray
+         last_frame: FloatNDArray = np.array(Image.open(paths[-1])).astype(np.float32) / 255.0
+         final_output_frames.append(last_frame)
 
     LOGGER.info(
         "Processing summary: %d pairs processed, %d cache hits, %d errors.",
@@ -262,4 +318,5 @@ def run_vfi(
     write_mp4(final_output_frames, output_mp4_path, fps=fps)
     LOGGER.info("Video saved successfully to %s", output_mp4_path)
 
-    return output_mp4_path 
+    # Yield the final path as the last item
+    yield output_mp4_path 
