@@ -79,7 +79,8 @@ def _process_pair(
                 inter_tiles: List[Tuple[int, int, NDArray[np.float32]]] = []
                 tile_iterable: TilePairIterable = zip(tiles1, tiles2)
                 if TQDM_AVAILABLE:
-                    tile_iterable = tqdm(zip(tiles1, tiles2), total=len(tiles1), desc="Interpolating tiles", leave=False)
+                    # Use specific desc for 1-step
+                    tile_iterable = tqdm(zip(tiles1, tiles2), total=len(tiles1), desc="Interpolating tiles (1-step)", leave=False)
 
                 for (x, y, t1), (_, _, t2) in tile_iterable:
                     interpolated_tile: NDArray[np.float32] = backend.interpolate_pair(t1, t2)
@@ -91,22 +92,47 @@ def _process_pair(
                 inter_imgs = [merged_img]
 
             elif num_intermediate_frames == 3:
-                # For 3 frames, we need to call interpolate_three on each tile pair
-                # This is complex to merge efficiently. Let's handle the non-tiled case first.
-                # TODO: Implement efficient tiled 3-frame interpolation
-                LOGGER.warning("Tiled 3-frame interpolation not yet efficiently implemented. Processing without tiling.")
-                # Fallback to non-tiled for now
-                if num_intermediate_frames == 1:
-                    inter_imgs = [backend.interpolate_pair(img1, img2)]
-                elif num_intermediate_frames == 3:
-                    inter_imgs = interpolate_three(img1, img2, backend)
-                else:
-                     raise ValueError(f"Unsupported num_intermediate_frames: {num_intermediate_frames}")
+                # Implement tiled 3-frame interpolation
+                LOGGER.debug("Performing tiled 3-frame interpolation for: %s, %s", p1.name, p2.name)
+
+                inter_tiles_left: List[Tuple[int, int, NDArray[np.float32]]] = []
+                inter_tiles_mid: List[Tuple[int, int, NDArray[np.float32]]] = []
+                inter_tiles_right: List[Tuple[int, int, NDArray[np.float32]]] = []
+
+                # Use a different variable name here to avoid shadowing
+                tile_iterable_3step: TilePairIterable = zip(tiles1, tiles2)
+                if TQDM_AVAILABLE:
+                    # Note: Total is number of tile PAIRS, but 3 interpolations happen per pair.
+                    # Using total=len(tiles1) for the outer loop progress.
+                    tile_iterable_3step = tqdm(tile_iterable_3step, total=len(tiles1), desc="Interpolating tiles (3-step)", leave=False)
+
+                # Iterate using the new variable name
+                for (x, y, t1), (_, _, t2) in tile_iterable_3step:
+                    # Step 1: Interpolate midpoint tile (t=0.5)
+                    t_mid = backend.interpolate_pair(t1, t2)
+                    inter_tiles_mid.append((x, y, t_mid))
+
+                    # Step 2: Interpolate left tile (t=0.25, between t1 and t_mid)
+                    t_left = backend.interpolate_pair(t1, t_mid)
+                    inter_tiles_left.append((x, y, t_left))
+
+                    # Step 3: Interpolate right tile (t=0.75, between t_mid and t2)
+                    t_right = backend.interpolate_pair(t_mid, t2)
+                    inter_tiles_right.append((x, y, t_right))
+
+                # Merge the three sets of intermediate tiles
+                h_orig, w_orig, _ = img1.shape
+                merged_img_left = merge_tiles(inter_tiles_left, (h_orig, w_orig))
+                merged_img_mid = merge_tiles(inter_tiles_mid, (h_orig, w_orig))
+                merged_img_right = merge_tiles(inter_tiles_right, (h_orig, w_orig))
+
+                inter_imgs = [merged_img_left, merged_img_mid, merged_img_right]
 
             else:
-                raise ValueError(f"Unsupported num_intermediate_frames: {num_intermediate_frames}")
+                # This condition should ideally not be reached if GUI/caller restricts input
+                raise ValueError(f"Unsupported num_intermediate_frames for tiling: {num_intermediate_frames}")
 
-            # Removed old tiled merging logic here as it's handled inside the if/elif blocks
+            # Tiled merging logic is now inside the if/elif blocks above
 
         else:
             # No tiling needed
