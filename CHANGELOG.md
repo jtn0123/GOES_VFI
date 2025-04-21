@@ -58,6 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resolved Mypy type checking errors related to new function arguments and missing return type hints (`gui.py`, `run_vfi.py`).
 - Prevented variable shadowing in `_process_pair` function (`run_vfi.py`).
 
-## [0.1.0] - YYYY-MM-DD
+## [0.1.0] - 2024-04-18
 
 - Initial release. 
