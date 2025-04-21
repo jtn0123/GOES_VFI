@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - YYYY-MM-DD
+## [0.4.0] - 2025-04-20
 
 ### Fixed
 - Corrected handling of crop rectangle coordinates passed to the image processing pipeline (`run_vfi`). The input tuple format `(x, y, width, height)` is now correctly converted to the `(left, upper, right, lower)` format required by the Pillow library, resolving `ValueError: Coordinate 'right' is less than 'left'` errors when cropping was enabled.
