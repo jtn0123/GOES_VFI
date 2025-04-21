@@ -8,20 +8,18 @@ Run with:  python -m goesvfi.gui
 import sys
 import pathlib
 import importlib.resources as pkgres
-from typing import Optional, Any
-from datetime import datetime # Add datetime import
-from PyQt6.QtCore import QThread, pyqtSignal, Qt, QSize
+from typing import Optional, Any, cast, Union, Tuple, Iterator
+from datetime import datetime
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QSize, QPoint, QRect, QSettings
 from PyQt6.QtWidgets import (
     QApplication, QFileDialog, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QProgressBar, QSpinBox, QVBoxLayout, QWidget,
     QMessageBox, QComboBox, QCheckBox, QTabWidget, QTableWidget, QTableWidgetItem, QStatusBar,
-    QDialog # Add QDialog import
+    QDialog, QDialogButtonBox, QRubberBand
 )
-from PyQt6.QtGui import QPixmap, QMouseEvent # Added for thumbnails, Add QMouseEvent
+from PyQt6.QtGui import QPixmap, QMouseEvent
 
 from goesvfi.utils import config, log
-from goesvfi.run_vfi import run_vfi
-from goesvfi.pipeline.encode import encode_with_ffmpeg
 
 LOGGER = log.get_logger(__name__)
 
@@ -62,6 +60,110 @@ class ZoomDialog(QDialog):
     def mousePressEvent(self, ev: QMouseEvent | None) -> None:
         self.close()
 
+# ─── CropDialog class ─────────────────────────────────────────────
+class CropDialog(QDialog):
+    def __init__(self, pixmap: QPixmap, init: tuple[int,int,int,int]|None, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.setWindowTitle("Select Crop Region")
+
+        self.original_pixmap = pixmap
+        self.scale_factor = 1.0
+
+        # --- Scale pixmap for display ---
+        screen = QApplication.primaryScreen()
+        if not screen:
+            LOGGER.warning("Could not get screen geometry, crop dialog might be too large.")
+            max_size = QSize(1024, 768) # Fallback size
+        else:
+            # Use 90% of available screen size
+            max_size = screen.availableGeometry().size() * 0.9
+
+        scaled_pix = pixmap.scaled(
+            max_size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        )
+        self.scale_factor = pixmap.width() / scaled_pix.width()
+        # --- End scaling ---
+
+        self.lbl = QLabel()
+        self.lbl.setPixmap(scaled_pix) # Display scaled pixmap
+        self.lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.rubber = QRubberBand(QRubberBand.Shape.Rectangle, self.lbl)
+        self.origin = QPoint()
+        self.crop_rect_scaled = QRect() # Store the rect drawn on the scaled pixmap
+
+        if init:
+            # Scale the initial rect DOWN for display
+            init_rect_orig = QRect(*init)
+            scaled_x = int(init_rect_orig.x() / self.scale_factor)
+            scaled_y = int(init_rect_orig.y() / self.scale_factor)
+            scaled_w = int(init_rect_orig.width() / self.scale_factor)
+            scaled_h = int(init_rect_orig.height() / self.scale_factor)
+            scaled_init_rect = QRect(scaled_x, scaled_y, scaled_w, scaled_h)
+            self.rubber.setGeometry(scaled_init_rect)
+            self.crop_rect_scaled = scaled_init_rect
+            self.rubber.show()
+        else:
+            # Ensure crop_rect_scaled is initialized if no init rect
+            self.crop_rect_scaled = QRect()
+
+        btns = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok |
+            QDialogButtonBox.StandardButton.Cancel,
+            parent=self
+        )
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+
+        lay = QVBoxLayout(self)
+        lay.addWidget(self.lbl)
+        lay.addWidget(btns)
+
+        # Adjust dialog size hint based on scaled content
+        self.resize(lay.sizeHint())
+
+    def mousePressEvent(self, ev: QMouseEvent | None) -> None:
+        if ev is not None and ev.button() == Qt.MouseButton.LeftButton and self.lbl.geometry().contains(ev.pos()):
+            self.origin = self.lbl.mapFromParent(ev.pos())
+            # Ensure origin is within scaled pixmap boundaries
+            if not self.lbl.pixmap().rect().contains(self.origin):
+                 self.origin = QPoint()
+                 return
+            self.rubber.setGeometry(QRect(self.origin, QSize()))
+            self.rubber.show()
+
+    def mouseMoveEvent(self, ev: QMouseEvent | None) -> None:
+        if ev is not None and not self.origin.isNull():
+            cur = self.lbl.mapFromParent(ev.pos())
+            # Clamp the current position to be within the scaled pixmap bounds
+            scaled_pix_rect = self.lbl.pixmap().rect()
+            cur.setX(max(0, min(cur.x(), scaled_pix_rect.width())))
+            cur.setY(max(0, min(cur.y(), scaled_pix_rect.height())))
+            self.rubber.setGeometry(QRect(self.origin, cur).normalized())
+
+    def mouseReleaseEvent(self, ev: QMouseEvent | None) -> None:
+        if ev is not None and ev.button() == Qt.MouseButton.LeftButton and not self.origin.isNull():
+            # Store the geometry relative to the scaled pixmap
+            self.crop_rect_scaled = self.rubber.geometry()
+            self.origin = QPoint()
+
+    # Return the rectangle coordinates scaled UP to the original pixmap size
+    def getRect(self) -> QRect:
+        orig_x = int(self.crop_rect_scaled.x() * self.scale_factor)
+        orig_y = int(self.crop_rect_scaled.y() * self.scale_factor)
+        orig_w = int(self.crop_rect_scaled.width() * self.scale_factor)
+        orig_h = int(self.crop_rect_scaled.height() * self.scale_factor)
+
+        # Clamp to original image boundaries
+        orig_w = max(0, min(orig_w, self.original_pixmap.width() - orig_x))
+        orig_h = max(0, min(orig_h, self.original_pixmap.height() - orig_y))
+        orig_x = max(0, min(orig_x, self.original_pixmap.width()))
+        orig_y = max(0, min(orig_y, self.original_pixmap.height()))
+
+        return QRect(orig_x, orig_y, orig_w, orig_h)
+
 # ────────────────────────────── Worker thread ──────────────────────────────
 class VfiWorker(QThread):
     progress = pyqtSignal(int, int, float)
@@ -78,18 +180,32 @@ class VfiWorker(QThread):
         tile_enable: bool,
         max_workers: int,
         encoder: str,
-        use_ffmpeg_interp: bool
+        use_ffmpeg_interp: bool,
+        skip_model: bool,
+        crf: int,
+        bitrate_kbps: int,
+        bufsize_kb: int,
+        pix_fmt: str,
+        crop_rect: tuple[int, int, int, int] | None
     ) -> None:
         super().__init__()
         self.in_dir        = in_dir
         self.out_file_path = out_file_path
         self.fps           = fps
         self.mid_count     = mid_count
-        self.model_key     = model_key
+        self.model_key     = model_key # Storing it but not passing directly to run_vfi
         self.tile_enable   = tile_enable
         self.max_workers   = max_workers
         self.encoder       = encoder
         self.use_ffmpeg_interp = use_ffmpeg_interp
+        self.skip_model = skip_model
+        self.crf = crf
+        self.bitrate_kbps = bitrate_kbps
+        self.bufsize_kb = bufsize_kb
+        self.pix_fmt = pix_fmt
+        self.crop_rect     = crop_rect
+        # placeholder for middle-frame preview
+        self.mid_frame_path: str | None = None
         # Find the RIFE executable within the package data (e.g., in a 'bin' folder)
         # IMPORTANT: Place your RIFE executable (e.g., 'rife-cli') in goesvfi/bin/
         #            and ensure it's executable.
@@ -106,21 +222,45 @@ class VfiWorker(QThread):
              raise FileNotFoundError("RIFE executable not found in package data (expected goesvfi/bin/rife-cli)")
 
     def run(self) -> None:
-        raw_mp4_path: Optional[pathlib.Path] = None # To store the intermediate raw path
+        # Import here to avoid potential top-level circular imports
+        from goesvfi.pipeline.run_vfi import run_vfi
+        from goesvfi.pipeline.encode import encode_with_ffmpeg
+
+        raw_mp4_path: Optional[pathlib.Path] = None
         try:
             LOGGER.info("Starting VFI worker for %s -> %s", self.in_dir, self.out_file_path)
+            # record the original middle input PNG for post‑processing preview
+            all_pngs = sorted(self.in_dir.glob("*.png"))
+            if all_pngs:
+                mid_idx = len(all_pngs) // 2 # Use floor division
+                # Ensure index is valid even for list with 1 element
+                mid_idx = min(mid_idx, len(all_pngs) - 1)
+                mid = all_pngs[mid_idx]
+                self.mid_frame_path = str(mid)
+                LOGGER.info(f"Recorded middle frame path for preview: {self.mid_frame_path}")
+            else:
+                LOGGER.warning("No PNGs found in input dir, cannot set mid_frame_path.")
+
             LOGGER.info("Step 1: Generating raw intermediate video...")
 
-            # run_vfi yields progress updates and finally the RAW mp4 path
-            run_vfi_iterator = run_vfi(
+            run_vfi_kwargs = {
+                'crop_rect': self.crop_rect,
+                'encoder': self.encoder,
+                'use_ffmpeg_interp': self.use_ffmpeg_interp,
+                'model_key': self.model_key, # Pass model_key via kwargs now
+                'skip_model': self.skip_model, # Pass skip_model via kwargs
+            }
+
+            # Use the full Union directly in the type hint
+            run_vfi_iterator: Iterator[Union[Tuple[int, int, float], pathlib.Path]] = run_vfi(
                 folder=self.in_dir,
-                # Pass the FINAL path, run_vfi derives raw path from it
                 output_mp4_path=self.out_file_path,
                 rife_exe_path=self.rife_exe_path,
                 fps=self.fps,
                 num_intermediate_frames=self.mid_count,
                 tile_enable=self.tile_enable,
-                max_workers=self.max_workers
+                max_workers=self.max_workers,
+                **run_vfi_kwargs
             )
 
             for update in run_vfi_iterator:
@@ -148,7 +288,11 @@ class VfiWorker(QThread):
                 final_output=self.out_file_path,
                 encoder=self.encoder,
                 fps=self.fps,
-                use_interp=self.use_ffmpeg_interp
+                use_interp=self.use_ffmpeg_interp,
+                crf=self.crf,
+                bitrate_kbps=self.bitrate_kbps,
+                bufsize_kb=self.bufsize_kb,
+                pix_fmt=self.pix_fmt
             )
 
             LOGGER.info(f"Final output created: {self.out_file_path}")
@@ -177,10 +321,18 @@ class MainWindow(QWidget):
         # Store the original base path selected by user or default
         self._base_output_path: pathlib.Path | None = None
 
+        # ─── Persistent crop settings ───────────────────────────────────
+        self.settings = QSettings("YourOrg", "GOESVFI")
+        saved = self.settings.value("crop_rect", None)
+        self.crop_rect = tuple(map(int, saved.split(","))) if saved else None
+
         # ─── Tab widget ───────────────────────────────────────────────────
         self.tabs = QTabWidget()
         self.tabs.addTab(self._makeMainTab(), "Interpolate")
         self.tabs.addTab(self._makeModelLibraryTab(), "Models")
+        self.ffmpeg_tab = QWidget()
+        self.tabs.addTab(self.ffmpeg_tab, "FFmpeg Quality")
+        self._build_ffmpeg_tab()
 
         # ─── Status Bar ───────────────────────────────────────────────────
         self.status_bar = QStatusBar()
@@ -206,7 +358,7 @@ class MainWindow(QWidget):
         self.in_browse = QPushButton("Browse…")
         self.out_edit   = QLineEdit()
         self.out_browse = QPushButton("Save As…")
-        self.fps_spin   = QSpinBox(); self.fps_spin.setRange(1, 240); self.fps_spin.setValue(60)
+        self.fps_spin   = QSpinBox(); self.fps_spin.setRange(1, 240); self.fps_spin.setValue(10)
         self.mid_spin   = QSpinBox()
         self.mid_spin.setRange(1, 3)
         self.mid_spin.setSingleStep(2)
@@ -230,27 +382,36 @@ class MainWindow(QWidget):
         # ─── Encoder Selection ────────────────────────────────────────────
         self.encode_combo = QComboBox()
         self.encode_combo.addItems([
-            "None (copy original)",            # new "no re-encode" option
+            "None (copy original)",
             "Software x265",
-            "Hardware HEVC (VideoToolbox)", # Assuming macOS VideoToolbox
+            "Hardware HEVC (VideoToolbox)",
             "Hardware H.264 (VideoToolbox)",
             # TODO: Add Windows/Linux hardware options if desired
         ])
         self.encode_combo.setToolTip(
             "Pick your output codec, or None to skip re-encoding."
         )
-        # Set a reasonable default, e.g., H.264 if available
-        if "Hardware H.264 (VideoToolbox)" in [self.encode_combo.itemText(i) for i in range(self.encode_combo.count())]:
+        # Update default setting logic: prioritize HEVC
+        available_encoders = [self.encode_combo.itemText(i) for i in range(self.encode_combo.count())]
+        if "Hardware HEVC (VideoToolbox)" in available_encoders:
+            self.encode_combo.setCurrentText("Hardware HEVC (VideoToolbox)")
+        elif "Hardware H.264 (VideoToolbox)" in available_encoders:
             self.encode_combo.setCurrentText("Hardware H.264 (VideoToolbox)")
         else:
             self.encode_combo.setCurrentText("Software x265") # Fallback
 
         # ─── FFmpeg motion interpolation toggle ───────────────────────────
-        self.ffmpeg_interp_cb = QCheckBox("Use FFmpeg motion interpolation (doubles FPS again)")
-        self.ffmpeg_interp_cb.setChecked(False)
+        self.ffmpeg_interp_cb = QCheckBox("Use FFmpeg motion interpolation")
+        self.ffmpeg_interp_cb.setChecked(True)
         self.ffmpeg_interp_cb.setToolTip(
-            "Apply FFmpeg's 'minterpolate' filter before encoding.\n"
-            "Generates additional frames via motion interpolation, effectively doubling the FPS set above."
+            "Apply FFmpeg's 'minterpolate' filter before encoding."
+        )
+        # ─── Skip model interpolation toggle ─────────────────────
+        self.skip_model_cb = QCheckBox("Skip AI interpolation (use originals only)")
+        self.skip_model_cb.setChecked(False)
+        self.skip_model_cb.setToolTip(
+            "If checked, do not run the AI model; video will be assembled from\n"
+            "original frames (optionally with FFmpeg interpolation)."
         )
 
         # ─── Max parallel workers ─────────────────────────────────────────
@@ -310,10 +471,30 @@ class MainWindow(QWidget):
         model_row = QHBoxLayout(); model_row.addWidget(QLabel("Model:")); model_row.addWidget(self.model_combo); model_row.addStretch()
         # Add layout row for encoder
         encode_row = QHBoxLayout(); encode_row.addWidget(QLabel("Encoder:")); encode_row.addWidget(self.encode_combo); encode_row.addStretch()
-        # Add layout row for FFmpeg interpolation checkbox
+        # Add FFmpeg interpolation checkbox row
         interp_row = QHBoxLayout()
         interp_row.addWidget(self.ffmpeg_interp_cb)
         interp_row.addStretch()
+        # Ensure this row is added
+        layout.addLayout(interp_row)
+
+        # Add skip_model checkbox row
+        skip_row = QHBoxLayout()
+        skip_row.addWidget(self.skip_model_cb)
+        skip_row.addStretch()
+        layout.addLayout(skip_row)
+
+        # ─── Crop button ────────────────────────────────────────────────
+        self.crop_btn = QPushButton("Crop…")
+        self.crop_btn.setToolTip("Draw a rectangle on the first frame to crop all images")
+        in_row.addWidget(self.crop_btn)
+        self.crop_btn.clicked.connect(self._on_crop_clicked)
+
+        # Add Clear Crop button (New)
+        self.clear_crop_btn = QPushButton("Clear Crop")
+        self.clear_crop_btn.setToolTip("Remove the current crop selection")
+        in_row.addWidget(self.clear_crop_btn)
+        self.clear_crop_btn.clicked.connect(self._on_clear_crop_clicked) # Connect new signal
 
         layout.addLayout(in_row); layout.addLayout(out_row);
         # Update layout adding order
@@ -323,7 +504,6 @@ class MainWindow(QWidget):
         layout.addLayout(workers_row)   # Add workers row
         layout.addLayout(model_row)
         layout.addLayout(encode_row)    # Add encode row
-        layout.addLayout(interp_row)     # Add FFmpeg interp row
         layout.addLayout(pv_row) # Add preview row
         layout.addWidget(self.start_btn); layout.addWidget(self.progress)
 
@@ -350,60 +530,12 @@ class MainWindow(QWidget):
         self._base_output_path = default_path
 
     def _pick_in_dir(self) -> None:
-        folder = QFileDialog.getExistingDirectory(self, "Select GOES image folder")
-        # Use early return if no folder selected
+        folder = QFileDialog.getExistingDirectory(self, "Select Input Folder")
         if not folder:
             return
         self.in_edit.setText(folder)
-
-        # Reset previews initially
-        self.preview_first.setText("First frame\nLoading...")
-        self.preview_last.setText("Last frame\nLoading...")
-        self.preview_mid.setText("Mid frame") # Reset mid preview too
-        self.preview_first.setPixmap(QPixmap()) # Clear pixmaps
-        self.preview_last.setPixmap(QPixmap())
-        self.preview_mid.setPixmap(QPixmap())
-
-        # load & show first/last thumbnails
-        try:
-            files = sorted(pathlib.Path(folder).glob("*.png")) # Assuming PNG
-            if files:
-                # First frame
-                first = files[0]
-                pix1 = QPixmap(str(first)).scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                self.preview_first.setPixmap(pix1)
-                self.preview_first.file_path = str(first)
-
-                # Middle frame (floor of count/2)
-                # Ensure index is valid even for list with 1 element
-                mid_idx = min(len(files) // 2, len(files) - 1)
-                middle = files[mid_idx]
-                pixm = QPixmap(str(middle)).scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                self.preview_mid.setPixmap(pixm)
-                self.preview_mid.file_path = str(middle)
-
-                # Last frame
-                last = files[-1]
-                pix2 = QPixmap(str(last)).scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                self.preview_last.setPixmap(pix2)
-                self.preview_last.file_path = str(last)
-
-                # Clear text if pixmap loaded
-                if not pix1.isNull(): self.preview_first.setText("")
-                if not pixm.isNull(): self.preview_mid.setText("") # Check mid pixmap
-                if not pix2.isNull(): self.preview_last.setText("")
-            else:
-                self.preview_first.setText("First frame\n(no PNGs)")
-                self.preview_last.setText("Last frame\n(no PNGs)")
-                self.preview_mid.setText("Mid frame") # Reset text
-                # Clear file paths
-                self.preview_first.file_path = None
-                self.preview_last.file_path = None
-                self.preview_mid.file_path = None
-        except Exception as e:
-            LOGGER.error(f"Error loading thumbnails: {e}")
-            self.preview_first.setText("First frame\n(Error)")
-            self.preview_last.setText("Last frame\n(Error)")
+        # refresh previews, applying any crop
+        self._update_previews()
 
     def _pick_out_file(self) -> None:
         # Suggest based on the base path if available, else current text
@@ -450,6 +582,7 @@ class MainWindow(QWidget):
         max_workers = self.workers_spin.value()
         encoder     = self.encode_combo.currentText()
         use_ffmpeg_interp = self.ffmpeg_interp_cb.isChecked()
+        skip_model = self.skip_model_cb.isChecked() # Get value from new checkbox
 
         # disable the Open button until we finish
         self.open_btn.setEnabled(False)
@@ -464,14 +597,39 @@ class MainWindow(QWidget):
         self.progress.setValue(0) # Explicitly reset progress value
         self.status_bar.showMessage("Starting interpolation...") # Update status bar
 
-        # Pass the specific out_mp4 path and new params to the worker
-        # Keep existing mid_count and model_key arguments
+        # Calculate CRF from preset text
+        preset_text = self.preset_combo.currentText()
+        try:
+            # Extract number after "CRF "
+            crf_value = int(preset_text.split("CRF ")[-1].rstrip(")"))
+        except (IndexError, ValueError):
+            LOGGER.warning(f"Could not parse CRF from preset '{preset_text}', defaulting to 20.")
+            crf_value = 20 # Default fallback
+
+        bitrate_kbps = self.bitrate_spin.value()
+        bufsize_kb = self.bufsize_spin.value()
+        pix_fmt = self.pixfmt_combo.currentText()
+
+        # Ensure crop_rect type matches worker's expectation using cast
+        current_crop_rect = cast(Optional[Tuple[int, int, int, int]], self.crop_rect)
+
+        # Start worker
         self.worker = VfiWorker(
-            in_dir, final_out_mp4, fps, mid_count, model_key,
+            in_dir,
+            final_out_mp4,
+            fps,
+            mid_count,
+            model_key,
             tile_enable=tile_enable,
             max_workers=max_workers,
             encoder=encoder,
-            use_ffmpeg_interp=use_ffmpeg_interp
+            use_ffmpeg_interp=use_ffmpeg_interp,
+            skip_model=skip_model,
+            crf=crf_value,
+            bitrate_kbps=bitrate_kbps,
+            bufsize_kb=bufsize_kb,
+            pix_fmt=pix_fmt,
+            crop_rect=current_crop_rect
         )
         self.worker.progress.connect(self._on_progress)
         self.worker.finished.connect(self._on_finished)
@@ -581,6 +739,21 @@ class MainWindow(QWidget):
                 self._show_error(f"Could not load image:\n{label.file_path}")
                 return
 
+            # --- Apply crop if it exists --- #
+            if self.crop_rect:
+                try:
+                    x, y, w, h = cast(Tuple[int, int, int, int], self.crop_rect)
+                    pix = pix.copy(x, y, w, h)
+                    if pix.isNull(): # Check if copy resulted in an empty pixmap
+                        LOGGER.error(f"Cropping resulted in null pixmap. Rect: {self.crop_rect}, Orig Size: {pix.size()}")
+                        self._show_error("Error applying crop to image.")
+                        return
+                except Exception as crop_err:
+                    LOGGER.exception(f"Error applying crop rect {self.crop_rect} during zoom")
+                    self._show_error(f"Error applying crop:\n{crop_err}")
+                    return
+            # --- End Apply crop --- #
+
             # scale to fit screen (80% of available geometry)
             target_size: QSize
             screen = self.screen()
@@ -620,6 +793,144 @@ class MainWindow(QWidget):
         lay = QVBoxLayout(w)
         lay.addWidget(tbl)
         return w
+
+    def _on_crop_clicked(self) -> None:
+        from pathlib import Path
+        folder = Path(self.in_edit.text()).expanduser()
+        imgs = sorted(folder.glob("*.png"))
+        if not imgs:
+            QMessageBox.warning(self, "No Images", "Select a folder with PNGs first")
+            return
+
+        pix = QPixmap(str(imgs[0]))
+        crop_init = cast(Optional[Tuple[int, int, int, int]], self.crop_rect)
+        dlg = CropDialog(pix, crop_init, self)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            rect = dlg.getRect()
+            self.crop_rect = (rect.x(), rect.y(), rect.width(), rect.height())
+            self.settings.setValue("crop_rect", ",".join(map(str, self.crop_rect)))
+            self._update_previews()
+
+    def _update_previews(self) -> None:
+        LOGGER.info("Starting preview update...")
+        start_time = datetime.now()
+        from pathlib import Path
+        folder = Path(self.in_edit.text()).expanduser()
+        try:
+            files = sorted(folder.glob("*.png"))
+        except Exception as e:
+            LOGGER.error(f"Error listing files in {folder}: {e}")
+            files = [] # Ensure files is a list
+
+        if not files:
+            LOGGER.info("No PNG files found, clearing previews.")
+            self.preview_first.clear(); self.preview_first.file_path = None
+            self.preview_mid.clear(); self.preview_mid.file_path = None
+            self.preview_last.clear(); self.preview_last.file_path = None
+            return
+
+        LOGGER.info(f"Found {len(files)} PNG files.")
+
+        def crop_and_scale(path: Path) -> QPixmap:
+            try:
+                pix = QPixmap(str(path))
+                if pix.isNull():
+                    LOGGER.warning(f"Loaded null pixmap for {path.name}")
+                    return QPixmap() # Return empty pixmap
+                orig_size = pix.size()
+                if self.crop_rect:
+                    x,y,w,h = cast(Tuple[int, int, int, int], self.crop_rect)
+                    pix = pix.copy(x,y,w,h)
+                    if pix.isNull():
+                        LOGGER.warning(f"Cropping {path.name} resulted in null pixmap. Rect: {(x,y,w,h)}, Orig: {orig_size}")
+                        return QPixmap() # Return empty pixmap
+                return pix.scaled(128,128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            except Exception as e:
+                LOGGER.exception(f"Error cropping/scaling {path.name}")
+                return QPixmap() # Return empty pixmap on error
+
+        previews = [self.preview_first, self.preview_mid, self.preview_last]
+        preview_names = ["First", "Mid", "Last"] # For logging
+        indices = [0, len(files)//2, -1]
+
+        if len(files) == 1:
+            indices = [0, 0, 0]
+        elif len(files) == 2:
+            indices = [0, 0, 1]
+
+        for i, (idx, lbl) in enumerate(zip(indices, previews)):
+            p = files[idx]
+            preview_name = preview_names[i]
+            LOGGER.info(f"Updating preview '{preview_name}' with image index {idx}: {p.name}")
+            pixmap = crop_and_scale(p)
+            if not pixmap.isNull():
+                lbl.setPixmap(pixmap)
+                lbl.file_path = str(p)
+            else:
+                lbl.clear()
+                lbl.setText(f"{preview_name}\n(Error)") # Indicate error on label
+                lbl.file_path = None
+
+        end_time = datetime.now()
+        LOGGER.info(f"Preview update finished in {(end_time - start_time).total_seconds():.3f} seconds.")
+
+    def _on_clear_crop_clicked(self) -> None:
+        """Clears the stored crop rectangle and updates previews."""
+        if self.crop_rect is None:
+            self.status_bar.showMessage("No crop is currently set.", 3000)
+            return
+
+        LOGGER.info("Clearing crop rectangle.")
+        self.crop_rect = None
+        self.settings.remove("crop_rect") # Remove from persistent settings
+        self._update_previews() # Refresh previews with full images
+        self.status_bar.showMessage("Crop cleared.", 3000)
+
+    # Add the new _build_ffmpeg_tab method
+    def _build_ffmpeg_tab(self) -> None:
+        """Builds the FFmpeg settings tab content."""
+        lay = QVBoxLayout(self.ffmpeg_tab) # Use the tab widget instance
+
+        # Preset selector (influences CRF for software codecs)
+        lay.addWidget(QLabel("Software Encoder Preset:"))
+        self.preset_combo = QComboBox()
+        self.preset_combo.addItems(["Very High (CRF 18)", "High (CRF 20)", "Medium (CRF 23)"])
+        self.preset_combo.setCurrentText("High (CRF 20)") # Default
+        self.preset_combo.setToolTip("Selects the CRF value used for software encoders (libx264, libx265).")
+        lay.addWidget(self.preset_combo)
+
+        # Bitrate control (for hardware codecs)
+        lay.addWidget(QLabel("Hardware Encoder Target Bitrate (kbps):"))
+        self.bitrate_spin = QSpinBox()
+        self.bitrate_spin.setRange(1000, 20000) # 1-20 Mbps
+        self.bitrate_spin.setSuffix(" kbps")
+        self.bitrate_spin.setValue(8000) # Default 8 Mbps
+        self.bitrate_spin.setToolTip("Target average bitrate for hardware encoders (VideoToolbox, NVENC, etc.). Ignored by software encoders.")
+        lay.addWidget(self.bitrate_spin)
+
+        # Buffer size control (for hardware codecs)
+        lay.addWidget(QLabel("Hardware Encoder VBV Buffer Size (kb):"))
+        self.bufsize_spin = QSpinBox()
+        self.bufsize_spin.setRange(1000, 40000) # 1-40 Mbits
+        self.bufsize_spin.setSuffix(" kb")
+        default_buf = int(self.bitrate_spin.value() * 1.5) # Set based on default bitrate
+        self.bufsize_spin.setValue(default_buf)
+        self.bufsize_spin.setToolTip("Video Buffer Verifier size (controls max bitrate). ~1.5x bitrate is a good start. Ignored by software encoders.")
+        # Connect bitrate changes to update default buffer size
+        self.bitrate_spin.valueChanged.connect(
+            lambda val: self.bufsize_spin.setValue(min(self.bufsize_spin.maximum(), max(self.bufsize_spin.minimum(), int(val * 1.5))))
+        )
+        lay.addWidget(self.bufsize_spin)
+
+        # Pixel format selector
+        lay.addWidget(QLabel("Output Pixel Format:"))
+        self.pixfmt_combo = QComboBox()
+        self.pixfmt_combo.addItems(["yuv420p", "yuv444p"]) # Common options
+        self.pixfmt_combo.setCurrentText("yuv420p") # Default (most compatible)
+        self.pixfmt_combo.setToolTip("Video pixel format. yuv420p is standard, yuv444p retains more color (larger file).")
+        lay.addWidget(self.pixfmt_combo)
+
+        lay.addStretch()
 
 # ────────────────────────── top‑level launcher ────────────────────────────
 def main() -> None:
