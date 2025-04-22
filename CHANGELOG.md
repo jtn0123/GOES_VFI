@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-04-21
+
+### Added
+- **GUI & Settings:**
+    - Added "Interpolation Filters" tab with detailed controls for FFmpeg `minterpolate` filter (`mi_mode`, `mc_mode`, `me_mode`, `me_algo`, `search_param`, `scd_mode`, `scd_threshold`, `mb_size`, `vsbmc`) and `unsharp` filter (`lx`, `ly`, `la`, `cx`, `cy`, `ca`).
+    - Added "FFmpeg Quality" tab for controlling software preset (CRF), hardware bitrate/buffer, and pixel format.
+    - Added "Skip AI interpolation" checkbox to only use original frames (optionally with FFmpeg interpolation).
+    - Added interactive image cropping functionality with a dedicated dialog (`CropDialog`) and "Clear Crop" button.
+    - Implemented settings persistence using `QSettings` to save and load UI state, including window geometry and crop selection.
+    - Added `--debug` command-line flag to prevent cleanup of intermediate files.
+    - Added `.gitignore` file to exclude common Python artifacts, cache files, editor files, and FFmpeg/x265 logs.
+    - Added `cleanup.py` script to remove cache directories and log files.
+- **Processing:**
+    - `VfiWorker` now accepts and utilizes all new filter and quality settings from the GUI.
+    - Implemented fallback logic in `VfiWorker`: if the custom "Safe HQ" FFmpeg filter fails, it attempts a simpler `minterpolate` configuration.
+    - Intermediate files generated during FFmpeg filtering are now cleaned up unless debug mode is active.
+
+### Changed
+- Default software encoder preset changed to "Very High (CRF 16)".
+- Default hardware encoder bitrate increased to 15000 kbps.
+- Default output pixel format changed to `yuv444p`.
+- Improved logging during the VFI process, including dumping all settings used.
+- Refined preview update logic, including applying the current crop to thumbnails.
+
+### Fixed
+- Corrected indentation issue in `VfiWorker`'s cleanup logic.
+
 ## [0.4.0] - 2025-04-20
 
 ### Fixed
