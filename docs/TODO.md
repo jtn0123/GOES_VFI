@@ -21,3 +21,22 @@
 - [ ] Improve/Validate caching for multi-frame interpolation (`interp_count > 1`)
 - [ ] Address `mypy` type mismatch for `NDArray[Any]` from cache vs `NDArray[np.float32]` expectation in `run_vfi.py`
 - [ ] Hardware-Accelerated Encoding (FFmpeg `hevc_videotoolbox`)
+
+
+
+# TODO List for GOES-VFI
+
+## UI Improvements
+
+- [ ] Add more tooltips/hover text to explain various settings (e.g., Encoder options, FFmpeg Quality settings, Interpolation parameters).
+- [ ] Dynamically disable/grey out UI elements that are not applicable based on current selections. For example:
+    - Disable CRF preset dropdown in "FFmpeg Quality" tab when a hardware encoder is selected on the main tab.
+    - Disable Bitrate/Buffer Size spinboxes in "FFmpeg Quality" tab when a software CRF encoder or "None" is selected on the main tab.
+
+## Features
+
+- [ ] ... (Placeholder for future feature ideas)
+
+## Bugs / Refactoring
+
+- [ ] ... (Placeholder for bugs or code cleanup tasks) 
