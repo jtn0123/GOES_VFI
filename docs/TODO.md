@@ -39,4 +39,5 @@
 
 ## Bugs / Refactoring
 
+- [ ] Tile Size spinbox in Interpolate tab doesn't visually enable/disable when 'Enable tiling' is toggled, despite internal logic appearing correct. Needs investigation into potential event/update issues or style conflicts.
 - [ ] ... (Placeholder for bugs or code cleanup tasks) 

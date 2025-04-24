@@ -38,12 +38,28 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
     try:
         proc.stdin.write(data)
     except BrokenPipeError:
-        stderr_bytes = b""
-        if proc.stderr:
-            stderr_bytes = proc.stderr.read()
-        # Include byte length in log message
-        LOGGER.error(f"Broken pipe while writing {frame_desc} ({len(data)} bytes) — FFmpeg log:\n{stderr_bytes.decode(errors='ignore')}")
-        raise
+        # Try reading stderr immediately upon pipe error
+        stderr_output = ""
+        stdout_output = "" # Also try stdout since they might be merged
+        try:
+            if proc.stderr:
+                # Non-blocking read might be better, but try blocking first
+                stderr_bytes = proc.stderr.read()
+                if stderr_bytes:
+                    stderr_output = stderr_bytes.decode(errors='ignore')
+            if proc.stdout:
+                 # If stderr was empty, maybe merged output is here
+                 stdout_bytes = proc.stdout.read()
+                 if stdout_bytes:
+                     stdout_output = stdout_bytes.decode(errors='ignore')
+        except Exception as read_err:
+            stderr_output += f"\n(Error reading pipe: {read_err})"
+
+        ffmpeg_log = stderr_output or stdout_output or "(no output captured)"
+
+        # Include byte length and captured log in error message
+        LOGGER.error(f"Broken pipe while writing {frame_desc} ({len(data)} bytes) — FFmpeg log:\n{ffmpeg_log}")
+        raise IOError(f"Broken pipe writing {frame_desc}. FFmpeg log: {ffmpeg_log}") from None # Raise new exception
 # --- End Helper ---
 
 # Function to run RIFE interpolation and write raw video stream via ffmpeg
@@ -53,8 +69,15 @@ def run_vfi(
     rife_exe_path: pathlib.Path,
     fps: int,
     num_intermediate_frames: int, # Currently handles 1
-    tile_enable: bool,
     max_workers: int, # Currently unused, runs sequentially
+    # RIFE v4.6 specific arguments (passed via kwargs from GUI worker)
+    rife_tile_enable: bool = False,
+    rife_tile_size: int = 256,
+    rife_uhd_mode: bool = False,
+    rife_thread_spec: str = "1:2:2",
+    rife_tta_spatial: bool = False,
+    rife_tta_temporal: bool = False,
+    model_key: str = "rife-v4.6",
     **kwargs: Any
 ) -> Iterator[Union[Tuple[int, int, float], pathlib.Path]]:
     """
@@ -73,7 +96,6 @@ def run_vfi(
 
     # --- Parameter Extraction ---
     crop_rect_xywh = kwargs.get("crop_rect")
-    model_key = kwargs.get("model_key", "RIFE v4.6 (default)")
     skip_model = kwargs.get("skip_model", False)
 
     # --- Input Validation ---
@@ -178,7 +200,7 @@ def run_vfi(
     ffmpeg_cmd = [
         'ffmpeg',
         '-hide_banner',
-        '-loglevel', 'info',   # Start with info, maybe debug later
+        '-loglevel', 'verbose', # Increased log level
         '-stats',
         '-y',
         '-f', 'image2pipe',
@@ -239,8 +261,8 @@ def run_vfi(
         else: # Perform RIFE interpolation
             LOGGER.info("Starting AI interpolation.")
             total_pairs = len(paths) - 1
-            start_time = time.time()
-            last_yield_time = start_time
+            start_time = time.time() # Initialize start time
+            last_yield_time = start_time # Initialize last yield time
 
             # Interpolation loop (first frame already written)
             with tempfile.TemporaryDirectory() as tmpdir:
@@ -275,27 +297,66 @@ def run_vfi(
                          raise IOError(f"Preprocessing failed for RIFE pair {idx}") from e
                     # --- End Temp Input Frame Handling ---
 
-
-                    # Prepare RIFE command (model selection, timestep, etc.)
-                    model_map = {
-                        "RIFE v4.6 (default)": "rife-v4.6",
-                        "RIFE v4": "rife-v4",
-                    }
-                    model_key_from_ui = kwargs.get("model_key")
-                    if not isinstance(model_key_from_ui, str):
-                        model_key_from_ui = "RIFE v4.6 (default)"
-                    cli_model = model_map.get(model_key_from_ui, "rife-v4.6")
-
                     # --- RIFE command using TEMP paths ---
+                    # REMOVED model_map and related logic
+                    # cli_model = model_map.get(model_key_from_ui, "rife-v4.6")
+                    # Assume model path is always 'rife-v4.6' relative to some base model dir for now
+                    # We might need a better way to locate model paths later
+                    # For now, rife_exe_path structure implies model dir is relative?
+                    # Let's assume the -m flag takes the model name directly as installed by rife binary
+                    # Or perhaps we need to pass the full model path?
+                    # The user spec implies -m takes a directory: "-m", str(model_dir)
+                    # We need to construct model_dir based on rife_exe_path or a convention.
+                    # Assuming model dir is relative to the *project root* for now:
+                    base_models_dir = pathlib.Path("goesvfi/models")
+                    model_dir = base_models_dir / model_key
+                    if not model_dir.is_dir():
+                        # Fallback: Check relative to rife_exe_path parent?
+                        alt_base_dir = rife_exe_path.parent.parent / "models"
+                        alt_model_dir = alt_base_dir / model_key
+                        if alt_model_dir.is_dir():
+                            model_dir = alt_model_dir
+                            LOGGER.info(f"Found model dir relative to executable: {model_dir}")
+                        else:
+                            LOGGER.error(f"RIFE model directory not found at {base_models_dir / model_key} or {alt_base_dir / model_key}")
+                            raise FileNotFoundError(f"RIFE model dir '{model_key}' not found")
+                    
+                    # --- Sanity Check for common model file --- #
+                    # REMOVED: expected_model_file = model_dir / "flownet.pkl" # Common file
+                    # REMOVED: if not expected_model_file.exists():
+                    # REMOVED:     LOGGER.error(f"RIFE model file missing: {expected_model_file}")
+                    # REMOVED:     raise FileNotFoundError(f"RIFE model file missing: {expected_model_file}")
+                    # --- End Sanity Check --- #
+
                     rife_cmd = [
                         str(rife_exe_path),
-                        "-m", cli_model,
+                        "-m", str(model_dir),
                         '-0', str(temp_p1_path), # Use temp cropped path
                         '-1', str(temp_p2_path), # Use temp cropped path
                         '-o', str(interpolated_frame_path),
                         '-n', str(num_intermediate_frames),
-                        "-s", str(1/(num_intermediate_frames+1))
+                        "-s", str(1/(num_intermediate_frames+1)),
+                        "-g", "-1"  # Use Metal/CPU on macOS
                     ]
+                    # Add optional args based on new parameters
+                    if rife_tile_enable:
+                        rife_cmd += ["-t", str(rife_tile_size)]
+                    # Only add -u if UHD mode is on AND tiling is off
+                    if rife_uhd_mode and not rife_tile_enable:
+                        rife_cmd.append("-u")
+                        LOGGER.info("UHD mode enabled and tiling disabled, adding -u flag.")
+                    elif rife_uhd_mode and rife_tile_enable:
+                        LOGGER.info("UHD mode enabled but tiling is also enabled, skipping -u flag.")
+                    if rife_tta_spatial:
+                        rife_cmd.append("-x")
+                    if rife_tta_temporal:
+                        rife_cmd.append("-z")
+                    # Validate thread_spec format? Basic check for now.
+                    if isinstance(rife_thread_spec, str) and len(rife_thread_spec.split(':')) == 3:
+                        rife_cmd += ["-j", rife_thread_spec]
+                    elif rife_thread_spec != "1:2:2": # Log if not default and invalid
+                        LOGGER.warning(f"Invalid RIFE thread spec '{rife_thread_spec}', using default.")
+
                     LOGGER.debug(f"Running RIFE command: {' '.join(rife_cmd)}")
 
                     # Run RIFE
@@ -322,11 +383,17 @@ def run_vfi(
                         try: temp_p2_path.unlink()
                         except OSError: pass
 
+                    # --- Validate RIFE output ---
+                    if not interpolated_frame_path.exists():
+                        raise RuntimeError(f"RIFE output missing for pair {idx}: {interpolated_frame_path}")
+                    if interpolated_frame_path.stat().st_size == 0:
+                        raise RuntimeError(f"RIFE output is empty for pair {idx}: {interpolated_frame_path}")
+                    # --- End Validation ---
 
                     # --- Load, convert, write INTERPOLATED frame ---
                     # (No cropping needed here anymore, RIFE used cropped inputs)
-                    if not interpolated_frame_path.exists():
-                        raise RuntimeError(f"RIFE output missing for pair {idx}")
+                    # if not interpolated_frame_path.exists():
+                    #     raise RuntimeError(f"RIFE output missing for pair {idx}")
                     try:
                         with Image.open(interpolated_frame_path) as im_interp:
                             im_interp_to_write = im_interp # Assign directly
@@ -367,8 +434,10 @@ def run_vfi(
                     time_per_pair = elapsed / pairs_processed if pairs_processed > 0 else 0
                     pairs_remaining = total_pairs - pairs_processed
                     eta = pairs_remaining * time_per_pair if time_per_pair > 0 else 0.0
+
+                    # Yield less frequently (e.g., > 1 second or final frame)
                     if current_time - last_yield_time > 1.0 or pairs_processed == total_pairs:
-                        yield (pairs_processed, total_pairs, eta)
+                        yield (pairs_processed, total_pairs, eta) # Yield tuple including ETA
                         last_yield_time = current_time
                     LOGGER.debug(f"Pair {idx+1}/{total_pairs} processed in {time.time() - pair_start_time:.2f}s. ETA: {eta:.1f}s")
 

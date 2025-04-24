@@ -9,6 +9,7 @@ import sys
 import pathlib
 import argparse # <-- Import argparse
 import importlib.resources as pkgres
+import re # <-- Import re for regex
 from typing import Optional, Any, cast, Union, Tuple, Iterator, Dict, List # Added Dict, List
 from datetime import datetime
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QSize, QPoint, QRect, QSettings, QByteArray, QTimer, QUrl # Added QTimer, QUrl
@@ -289,8 +290,8 @@ class VfiWorker(QThread):
         out_file_path: pathlib.Path,
         fps: int,
         mid_count: int,
-        model_key: str,
-        tile_enable: bool,
+        # model_key: str, # REMOVED
+        # tile_enable: bool, # REMOVED
         max_workers: int,
         encoder: str,
         # FFmpeg settings passed directly
@@ -322,14 +323,22 @@ class VfiWorker(QThread):
         skip_model: bool,
         crop_rect: tuple[int, int, int, int] | None,
         debug_mode: bool,
+        # RIFE v4.6 specific settings
+        rife_tile_enable: bool,
+        rife_tile_size: int,
+        rife_uhd_mode: bool,
+        rife_thread_spec: str,
+        rife_tta_spatial: bool,
+        rife_tta_temporal: bool,
+        model_key: str, # ADD model_key back
     ) -> None:
         super().__init__()
         self.in_dir        = in_dir
         self.out_file_path = out_file_path
         self.fps           = fps
         self.mid_count     = mid_count
-        self.model_key     = model_key
-        self.tile_enable   = tile_enable
+        # self.model_key     = model_key # REMOVED
+        # self.tile_enable   = tile_enable # REMOVED
         self.max_workers   = max_workers
         self.encoder       = encoder
         self.skip_model = skip_model
@@ -360,6 +369,14 @@ class VfiWorker(QThread):
         self.bufsize_kb = bufsize_kb
         self.pix_fmt = pix_fmt
 
+        # Store RIFE v4.6 specific settings
+        self.model_key = model_key # Store model key
+        self.rife_tile_enable = rife_tile_enable
+        self.rife_tile_size = rife_tile_size
+        self.rife_uhd_mode = rife_uhd_mode
+        self.rife_thread_spec = rife_thread_spec
+        self.rife_tta_spatial = rife_tta_spatial
+        self.rife_tta_temporal = rife_tta_temporal
 
         # placeholder for middle-frame preview
         self.mid_frame_path: str | None = None
@@ -403,26 +420,28 @@ class VfiWorker(QThread):
 
             # --- Step A: Generating raw intermediate video --- #
             LOGGER.info("Step 1: Generating raw intermediate video (no FFmpeg interp here)...")
-            # Ensure use_ffmpeg_interp is FALSE for this step
-            run_vfi_kwargs = {
-                'crop_rect': self.crop_rect,
-                'model_key': self.model_key,
-                'skip_model': self.skip_model,
-                # Force use_ffmpeg_interp to False here, it's handled later
-                'use_ffmpeg_interp': False
-            }
-            # Run the VFI pipeline to get the raw intermediate
+
+            # Run the VFI pipeline to get the raw intermediate - PASS ARGS DIRECTLY
             run_vfi_iterator: Iterator[Union[Tuple[int, int, float], pathlib.Path]] = run_vfi(
                 folder=self.in_dir,
                 output_mp4_path=self.out_file_path, # Base path for intermediates
                 rife_exe_path=self.rife_exe_path,
                 fps=self.fps,
                 num_intermediate_frames=self.mid_count,
-                tile_enable=self.tile_enable,
                 max_workers=self.max_workers,
-                **run_vfi_kwargs
+                # Pass arguments previously in kwargs directly
+                crop_rect=self.crop_rect,
+                model_key=self.model_key, # Pass stored model key
+                skip_model=self.skip_model,
+                rife_tile_enable=self.rife_tile_enable,
+                rife_tile_size=self.rife_tile_size,
+                rife_uhd_mode=self.rife_uhd_mode,
+                rife_thread_spec=self.rife_thread_spec,
+                rife_tta_spatial=self.rife_tta_spatial,
+                rife_tta_temporal=self.rife_tta_temporal
             )
             for update in run_vfi_iterator:
+                # --- This is the correct start of the loop body ---
                 if isinstance(update, pathlib.Path):
                     raw_intermediate_path = update
                     LOGGER.info(f"Raw intermediate video created: {raw_intermediate_path}")
@@ -432,6 +451,7 @@ class VfiWorker(QThread):
                 else:
                     LOGGER.warning(f"Received unexpected update type from run_vfi: {type(update)}")
 
+            # --- Code continues after the loop ---
             if not raw_intermediate_path or not raw_intermediate_path.exists():
                 raise RuntimeError(f"Raw intermediate video path not received or file not found: {raw_intermediate_path}")
 
@@ -568,7 +588,14 @@ class MainWindow(QWidget):
         main_layout.addWidget(self.status_bar)
         self.setLayout(main_layout)
 
+        # Set initial fixed width
+        self.setFixedWidth(600)
+
         self.worker: VfiWorker | None = None
+
+        # --- Populate dynamic UI elements --- #
+        self._populate_models() # Populate model list
+
         self._connect_ffmpeg_settings_tab_signals() # Connect signals for the new tab
 
         self.loadSettings() # <-- Load settings after UI is built
@@ -585,7 +612,67 @@ class MainWindow(QWidget):
                      self.ffmpeg_profile_combo.setCurrentText("Custom")
 
         # Initial resize after everything is loaded
-        self.adjustSize()
+        # self.adjustSize() # REMOVED - Replaced by conditional logic below
+
+        # --- Final Size Adjustment ---
+        if not self._geometry_restored:
+            LOGGER.debug("No saved geometry found, calculating size based on content after delay.")
+            # Call the adjustment method after a short delay
+            QTimer.singleShot(50, self._adjust_window_to_content) # Changed delay to 50ms
+        else:
+            LOGGER.debug("Window size restored from saved geometry.")
+
+    def _adjust_window_to_content(self) -> None:
+        """Adjust window height to fit content of the current tab, clamped to screen height."""
+        LOGGER.debug("Adjusting window height to fit current tab content...")
+
+        current_tab_widget = self.tabs.currentWidget()
+        if not isinstance(current_tab_widget, QScrollArea):
+            LOGGER.warning("Current tab widget is not a QScrollArea, falling back to adjustSize().")
+            self.adjustSize()
+            return
+
+        scroll_content = current_tab_widget.widget() # Get the widget inside the scroll area
+        if not scroll_content:
+            LOGGER.warning("Scroll area has no content widget, falling back to adjustSize().")
+            self.adjustSize()
+            return
+
+        # Calculate ideal size based on the scroll area's content widget
+        # content_hint = scroll_content.sizeHint()
+        content_hint = scroll_content.minimumSizeHint() # TRY THIS INSTEAD
+
+        # Add padding/margins for better spacing and account for window frame/decorations
+        # These values might need tuning
+        v_padding = 80 # Increased vertical padding
+
+        ideal_height = content_hint.height() + v_padding
+
+        # Add status bar height if it exists
+        if hasattr(self, 'status_bar'):
+            ideal_height += self.status_bar.height()
+
+        # Get available screen size
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_size = screen.availableGeometry().size()
+            # Clamp ideal height to screen height
+            final_height = min(ideal_height, screen_size.height())
+            # Use current fixed width
+            final_width = self.width() # Get current width (should be fixed)
+            LOGGER.debug(f"Tab content hint H: {content_hint.height()}, Ideal H: {ideal_height}, Screen H: {screen_size.height()}, Final H: {final_height}")
+
+            current_geom = self.geometry()
+            # Check if resizing height is actually needed
+            if abs(current_geom.height() - final_height) > 5:
+                # Resize height only, keep current width
+                self.resize(final_width, final_height)
+            else:
+                LOGGER.debug("Skipping height resize, current height is close enough.")
+        else:
+            # Fallback if screen size is unavailable
+            LOGGER.warning("Could not get screen geometry, falling back to adjustSize().")
+            self.adjustSize()
 
     def _pick_in_dir(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Select Input Folder")
@@ -602,18 +689,20 @@ class MainWindow(QWidget):
         if path_str:
             path = pathlib.Path(path_str)
             self.out_edit.setText(str(path))
-            self._base_output_path = path
+            self._base_output_path = path # Store the exact selected path
 
     def _makeMainTab(self) -> QWidget:
         """Builds the main 'Interpolate' tab UI."""
-        # Create a container widget for this tab's layout
-        main_tab_widget = QWidget()
-        layout = QVBoxLayout(main_tab_widget) # Layout for the main tab
+        # --- Create Content Widget and Layout ---
+        # This widget will contain all controls and go *inside* the scroll area
+        scroll_content_widget = QWidget()
+        layout = QVBoxLayout(scroll_content_widget) # Layout FOR the content widget
+        # layout.setAlignment(Qt.AlignmentFlag.AlignTop) # Keep content aligned top
 
-        # Set vertical size policy to encourage shrinking
-        main_tab_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        # Set vertical size policy for the content widget if needed (optional)
+        # scroll_content_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
-        # Widgets (moved from __init__)
+        # --- Widgets (Initialize as before) ---
         self.in_edit   = QLineEdit()
         self.in_browse = QPushButton("Browse…")
         self.out_edit   = QLineEdit()
@@ -628,14 +717,66 @@ class MainWindow(QWidget):
             "• 1 = single midpoint (fastest)\\n"
             "• 3 = recursive three-step (smoother)"
         )
+        # --- RIFE v4.6 Settings Group ---
+        self.rife_group = QGroupBox("RIFE v4.6 (ncnn) Settings")
+        self.rife_group.setCheckable(False)
+        rife_layout = QGridLayout(self.rife_group)
+
+        # --- Model Selection (Data-driven) --- #
+        rife_layout.addWidget(QLabel("Model:"), 0, 0)
         self.model_combo = QComboBox()
-        self.model_combo.addItems([
-            "RIFE v4.6 (default)",
-        ])
-        self.model_combo.setToolTip(
-            "Choose your interpolation model.\\n"
-            "Currently only the built-in RIFE model is used."
+        self.model_combo.setToolTip("Select the RIFE model version to use.")
+        # Items will be populated by _populate_models()
+        rife_layout.addWidget(self.model_combo, 0, 1, 1, 2) # Span 2 columns
+
+        # Intermediate frames (moved here)
+        rife_layout.addWidget(QLabel("Intermediate frames:"), 1, 0) # Start at row 1 now
+        rife_layout.addWidget(self.mid_spin, 1, 1, 1, 2) # Span 2 columns
+
+        # Tiling
+        self.tile_checkbox = QCheckBox("Enable tiling")
+        self.tile_checkbox.setChecked(False) # Default OFF per user spec
+        self.tile_checkbox.setToolTip(
+            "Split large frames into tiles before interpolating.\\n"
+            "Uses less RAM, potentially faster, but may show edge artifacts."
         )
+        rife_layout.addWidget(self.tile_checkbox, 2, 0) # Start at row 2
+
+        self.tile_size_spin = QSpinBox()
+        self.tile_size_spin.setRange(128, 512)
+        self.tile_size_spin.setValue(256)
+        self.tile_size_spin.setSingleStep(64)
+        self.tile_size_spin.setToolTip("Tile size in pixels. Requires tiling enabled.")
+        self.tile_size_spin.setEnabled(False) # Disabled by default as checkbox is off
+        rife_layout.addWidget(QLabel("Tile Size:"), 2, 1) # Row 2
+        rife_layout.addWidget(self.tile_size_spin, 2, 2) # Row 2
+
+        # UHD Mode
+        self.uhd_checkbox = QCheckBox("UHD Mode")
+        self.uhd_checkbox.setChecked(False) # Default OFF
+        self.uhd_checkbox.setToolTip("Enable UHD mode for >4K frames. Selects HD model variant.")
+        rife_layout.addWidget(self.uhd_checkbox, 3, 0) # Row 3
+
+        # Thread Spec
+        self.thread_edit = QLineEdit("1:2:2")
+        self.thread_edit.setToolTip("Load:Proc:Save thread counts. E.g., '1:2:2'.")
+        rife_layout.addWidget(QLabel("Thread Spec:"), 3, 1) # Row 3
+        rife_layout.addWidget(self.thread_edit, 3, 2) # Row 3
+
+        # TTA
+        self.tta_spatial_cb = QCheckBox("Spatial TTA")
+        self.tta_spatial_cb.setChecked(False)
+        self.tta_spatial_cb.setToolTip("Enable spatial Test-Time Augmentation. Slower, may reduce artifacts.")
+        rife_layout.addWidget(self.tta_spatial_cb, 4, 0) # Row 4
+
+        self.tta_temporal_cb = QCheckBox("Temporal TTA")
+        self.tta_temporal_cb.setChecked(False)
+        self.tta_temporal_cb.setToolTip("Enable temporal Test-Time Augmentation. Slower, may reduce artifacts.")
+        rife_layout.addWidget(self.tta_temporal_cb, 4, 1, 1, 2) # Row 4, Span 2 cols
+
+        # --- End RIFE v4.6 Settings Group ---
+
+        # --- Other Main Widgets ---
         self.start_btn  = QPushButton("Start")
         self.progress   = QProgressBar(); self.progress.setRange(0, 1)
 
@@ -713,19 +854,19 @@ class MainWindow(QWidget):
         in_row  = QHBoxLayout();  in_row.addWidget(QLabel("Input folder:"));  in_row.addWidget(self.in_edit);  in_row.addWidget(self.in_browse)
         out_row = QHBoxLayout(); out_row.addWidget(QLabel("Output MP4:"));  out_row.addWidget(self.out_edit); out_row.addWidget(self.out_browse)
         fps_row = QHBoxLayout(); fps_row.addWidget(QLabel("Target FPS:")); fps_row.addWidget(self.fps_spin); fps_row.addStretch()
-        mid_row = QHBoxLayout(); mid_row.addWidget(QLabel("Intermediate frames:")); mid_row.addWidget(self.mid_spin); mid_row.addStretch()
+        # mid_row = QHBoxLayout(); mid_row.addWidget(QLabel("Intermediate frames:")); mid_row.addWidget(self.mid_spin); mid_row.addStretch() # MOVED TO RIFE GROUP
 
         # Add new layout rows
-        tile_row = QHBoxLayout()
-        tile_row.addWidget(self.tile_checkbox)
-        tile_row.addStretch()
+        # tile_row = QHBoxLayout() # MOVED TO RIFE GROUP
+        # tile_row.addWidget(self.tile_checkbox)
+        # tile_row.addStretch()
 
         workers_row = QHBoxLayout()
-        workers_row.addWidget(QLabel("Max workers:"))
+        workers_row.addWidget(QLabel("Max workers (CPU):")) # Clarify this is likely CPU-bound GUI tasks
         workers_row.addWidget(self.workers_spin)
         workers_row.addStretch()
 
-        model_row = QHBoxLayout(); model_row.addWidget(QLabel("Model:")); model_row.addWidget(self.model_combo); model_row.addStretch()
+        # model_row = QHBoxLayout(); model_row.addWidget(QLabel("Model:")); model_row.addWidget(self.model_combo); model_row.addStretch() # REMOVED
         # Add layout row for encoder
         encode_row = QHBoxLayout(); encode_row.addWidget(QLabel("Encoder:")); encode_row.addWidget(self.encode_combo); encode_row.addStretch()
 
@@ -735,7 +876,7 @@ class MainWindow(QWidget):
         skip_row = QHBoxLayout()
         skip_row.addWidget(self.skip_model_cb)
         skip_row.addStretch()
-        layout.addLayout(skip_row)
+        # layout.addLayout(skip_row) # Keep skip row separate from RIFE group for clarity
 
         # ─── Crop button ────────────────────────────────────────────────
         self.crop_btn = QPushButton("Crop…")
@@ -749,14 +890,16 @@ class MainWindow(QWidget):
         in_row.addWidget(self.clear_crop_btn)
         self.clear_crop_btn.clicked.connect(self._on_clear_crop_clicked) # Connect new signal
 
+        # --- Add Rows/Widgets to the main LAYOUT (which is on scroll_content_widget) ---
         layout.addLayout(in_row); layout.addLayout(out_row);
         # Update layout adding order
         layout.addLayout(fps_row)
-        layout.addLayout(mid_row)
-        layout.addLayout(tile_row)      # Add tile row
-        layout.addLayout(workers_row)   # Add workers row
-        layout.addLayout(model_row)
-        layout.addLayout(encode_row)    # Add encode row
+        # layout.addLayout(mid_row) # MOVED
+        layout.addLayout(skip_row)      # ADD SKIP ROW HERE (before RIFE settings)
+        layout.addWidget(self.rife_group) # ADD RIFE GROUP BOX HERE
+        layout.addLayout(workers_row)   # Add workers row after RIFE
+        layout.addLayout(encode_row)    # Add encode row after RIFE
+        layout.addWidget(QLabel("Frame Previews:")) # Add label for previews
         layout.addLayout(pv_row) # Add preview row
         layout.addWidget(self.start_btn); layout.addWidget(self.progress)
 
@@ -766,25 +909,64 @@ class MainWindow(QWidget):
         self.open_btn.setToolTip("Launch the finished MP4 in VLC")
         layout.addWidget(self.open_btn) # Add button to layout
 
-        # Add stretch to push content to the top
+        # Add stretch to push content to the top *within the scrollable area*
         layout.addStretch()
 
-        # Signals (Connect signals specific to this tab's widgets here)
+        # --- Create Scroll Area and Set Content --- #
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff) # Usually not needed
+        scroll_area.setWidget(scroll_content_widget) # Put the content widget inside the scroll area
+
+        # --- Signals (Connect signals specific to this tab's widgets here) ---
         self.in_browse.clicked.connect(self._pick_in_dir)
         self.out_browse.clicked.connect(self._pick_out_file)
         self.start_btn.clicked.connect(self._start)
         self.open_btn.clicked.connect(self._open_in_vlc) # Connect new button
+        self.in_edit.textChanged.connect(self._update_previews) # Connect input edit to preview update
+        # Connect tile checkbox to enable/disable tile size spinbox
+        if hasattr(self, 'tile_checkbox') and hasattr(self, 'tile_size_spin'):
+            # Disconnect first to avoid duplicate connections if run multiple times (defensive)
+            try: 
+                self.tile_checkbox.toggled.disconnect()
+            except TypeError: 
+                pass # No connection existed
+            # Reconnect the signal to the new slot
+            self.tile_checkbox.toggled.connect(self._toggle_tile_size_enabled)
+            LOGGER.debug("Connected tile_checkbox.toggled to _toggle_tile_size_enabled")
+            # Ensure initial state is correct
+            self._toggle_tile_size_enabled(self.tile_checkbox.isChecked()) # Call slot directly for initial state
 
-        return main_tab_widget # Return the widget containing the tab's layout
+        # TODO: Unresolved Issue - Tile Size spinbox does not visually enable/disable
+        # when the 'Enable tiling' checkbox is toggled, even though the signal appears
+        # connected initially and the internal slot logic seems correct. The slot
+        # _toggle_tile_size_enabled is not being called on user interaction after load.
+        # Needs further investigation into potential connection overriding or event issues.
+
+        # Connect skip AI checkbox to enable/disable the RIFE group
+        if hasattr(self, 'skip_model_cb') and hasattr(self, 'rife_group'):
+            self.skip_model_cb.toggled.connect(lambda checked: self.rife_group.setEnabled(not checked))
+            # Set initial state
+            self.rife_group.setEnabled(not self.skip_model_cb.isChecked())
+
+        # --- Connect thread spec validation ---
+        if hasattr(self, 'thread_edit'):
+            self.thread_edit.textChanged.connect(self._validate_thread_spec)
+            # Initial validation
+            self._validate_thread_spec(self.thread_edit.text())
+
+        return scroll_area # Return the scroll area itself
 
     def _make_ffmpeg_settings_tab(self) -> QWidget:
         """Builds the consolidated FFmpeg Settings tab UI."""
-        tab_widget = QWidget()
-        layout = QVBoxLayout(tab_widget)
+        # --- Create Content Widget and Layout ---
+        scroll_content_widget = QWidget()
+        layout = QVBoxLayout(scroll_content_widget)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # Set vertical size policy
-        tab_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        # Set vertical size policy (optional, layout alignment handles top alignment)
+        # scroll_content_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         # --- Stylesheet for GroupBoxes ---
         groupbox_style = """
@@ -1068,7 +1250,7 @@ class MainWindow(QWidget):
 
         layout.addWidget(quality_group)
 
-        # layout.addStretch() # Remove stretch at the end of the main layout for this tab
+        # REMOVED layout.addStretch() from here - Add stretch inside scroll area if needed
 
         # --- Set initial content visibility based on groupbox state ---
         if hasattr(self, 'minterpolate_group') and hasattr(self, '_toggle_minterpolate_content'):
@@ -1077,7 +1259,14 @@ class MainWindow(QWidget):
             self._toggle_unsharp_content(self.unsharp_group.isChecked())
         # --- End Initial Visibility ---
 
-        return tab_widget
+        # --- Create Scroll Area and Set Content --- #
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setWidget(scroll_content_widget)
+
+        return scroll_area # Return the scroll area
 
     def _connect_ffmpeg_settings_tab_signals(self) -> None:
         """Connect signals for enabling/disabling controls and profile handling on the FFmpeg Settings tab."""
@@ -1339,32 +1528,54 @@ class MainWindow(QWidget):
     def _start(self) -> None:
         in_dir  = pathlib.Path(self.in_edit.text()).expanduser()
 
-        # --- Generate timestamped output path based on the BASE path ---
-        if self._base_output_path:
-            base_out_path = self._base_output_path
-        else:
-            # Fallback if base path isn't set (shouldn't happen after init)
-            LOGGER.warning("_base_output_path not set, falling back to current text.")
-            base_out_path = pathlib.Path(self.out_edit.text()).expanduser()
+        # --- Ensure Base Output Path ---
+        if not self._base_output_path:
+            # Handle case where base path is somehow still None (e.g., first run, user cleared input)
+            # Suggest a default name in the default output directory
+            default_out_dir = config.get_output_dir()
+            default_out_dir.mkdir(parents=True, exist_ok=True)
+            self._base_output_path = default_out_dir / "goes_timelapse.mp4"
+            LOGGER.warning(f"Base output path was not set, using default: {self._base_output_path}")
+            # Update the UI field to reflect the default being used for this run
+            self.out_edit.setText(str(self._base_output_path))
 
+        base_out_path = self._base_output_path
+        # Ensure stem/suffix are derived correctly, handling potential missing suffix
+        stem = base_out_path.stem
+        suf = base_out_path.suffix if base_out_path.suffix else ".mp4"
+        # --- End stem/suf derivation ---
+
+        # --- Generate timestamp and final path ---
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        stem, suf = base_out_path.stem, base_out_path.suffix or ".mp4" # Ensure .mp4
-        # Ensure suffix starts with a dot if it exists but doesn't have one (pathlib quirk)
-        if suf and not suf.startswith('.'):
-            suf = '.' + suf
-        # Use the parent from the base path
+        # Use the parent from the base path and the derived stem/suf
         final_out_mp4 = base_out_path.with_name(f"{stem}_{ts}{suf}")
 
-        # Reflect the ACTUAL timestamped path back into the UI
+        # Reflect the ACTUAL timestamped path back into the UI for this run
         self.out_edit.setText(str(final_out_mp4))
         # --- End timestamp logic ---
 
         # Use the generated final_out_mp4 path from now on
         fps     = self.fps_spin.value()
-        mid_count = self.mid_spin.value()
-        model_key = self.model_combo.currentText()
-        # Get values from new widgets
-        tile_enable = self.tile_checkbox.isChecked()
+        # Get RIFE v4.6 settings from the group box
+        model_key = self.model_combo.currentText() if hasattr(self, 'model_combo') else "rife-v4.6" # Get selected model
+        mid_count = self.mid_spin.value() if hasattr(self, 'mid_spin') else 1
+        rife_tile_enable = self.tile_checkbox.isChecked() if hasattr(self, 'tile_checkbox') else False
+        rife_tile_size = self.tile_size_spin.value() if hasattr(self, 'tile_size_spin') else 256
+        rife_uhd_mode = self.uhd_checkbox.isChecked() if hasattr(self, 'uhd_checkbox') else False
+        # Get and validate thread spec
+        rife_thread_spec = "1:2:2" # Default
+        if hasattr(self, 'thread_edit'):
+            current_spec = self.thread_edit.text()
+            # Check if the stylesheet indicates validity (empty means valid)
+            if not self.thread_edit.styleSheet(): # Valid if style is empty
+                rife_thread_spec = current_spec
+            else:
+                LOGGER.warning(f"Invalid thread spec '{current_spec}' in UI, using default '{rife_thread_spec}'.")
+        # rife_thread_spec = self.thread_edit.text() if hasattr(self, 'thread_edit') else "1:2:2"
+        rife_tta_spatial = self.tta_spatial_cb.isChecked() if hasattr(self, 'tta_spatial_cb') else False
+        rife_tta_temporal = self.tta_temporal_cb.isChecked() if hasattr(self, 'tta_temporal_cb') else False
+
+        # Get remaining general settings
         max_workers = self.workers_spin.value()
         encoder     = self.encode_combo.currentText()
         skip_model = self.skip_model_cb.isChecked()
@@ -1411,14 +1622,23 @@ class MainWindow(QWidget):
             "Input Directory": str(in_dir),
             "Output File": str(final_out_mp4),
             "FPS": fps,
-            "Intermediate Frames": mid_count,
-            "Model": model_key,
-            "Tiling Enabled": tile_enable,
-            "Max Workers": max_workers,
-            "Encoder": encoder,
+            # "Intermediate Frames": mid_count, # Now under RIFE settings
+            # "Model": model_key, # REMOVED
+            # "Tiling Enabled": tile_enable, # Now under RIFE settings
             "Skip AI Model": skip_model,
             "Crop Rectangle": self.crop_rect,
             "Debug Mode": self.debug_mode,
+            "RIFE v4.6 Settings": { # New section
+                 "Intermediate Frames": mid_count,
+                 "Tiling Enabled": rife_tile_enable,
+                 "Tile Size": rife_tile_size if rife_tile_enable else "N/A",
+                 "UHD Mode": rife_uhd_mode,
+                 "Thread Spec": rife_thread_spec,
+                 "Spatial TTA": rife_tta_spatial,
+                 "Temporal TTA": rife_tta_temporal,
+            },
+            "Encoder": encoder, # Moved encoder log here
+            "Max Workers (CPU)": max_workers, # Moved worker log here
             "FFmpeg Settings": {
                 "Profile": self.ffmpeg_profile_combo.currentText() if hasattr(self, 'ffmpeg_profile_combo') else 'N/A', # Log selected profile
                 "Enabled": use_ffmpeg_interp,
@@ -1474,8 +1694,8 @@ class MainWindow(QWidget):
             out_file_path=final_out_mp4,
             fps=fps,
             mid_count=mid_count,
-            model_key=model_key,
-            tile_enable=tile_enable,
+            # model_key=model_key, # REMOVED - Worker no longer needs this directly
+            # tile_enable=tile_enable, # REMOVED
             max_workers=max_workers,
             encoder=encoder,
             skip_model=skip_model,
@@ -1504,7 +1724,15 @@ class MainWindow(QWidget):
             crf=crf_value,
             bitrate_kbps=bitrate_kbps,
             bufsize_kb=bufsize_kb,
-            pix_fmt=pix_fmt
+            pix_fmt=pix_fmt,
+            # Pass RIFE v4.6 specific settings
+            model_key=model_key, # Pass selected model key
+            rife_tile_enable=rife_tile_enable,
+            rife_tile_size=rife_tile_size,
+            rife_uhd_mode=rife_uhd_mode,
+            rife_thread_spec=rife_thread_spec,
+            rife_tta_spatial=rife_tta_spatial,
+            rife_tta_temporal=rife_tta_temporal
         )
         self.worker.progress.connect(self._on_progress)
         self.worker.finished.connect(self._on_finished)
@@ -1518,12 +1746,17 @@ class MainWindow(QWidget):
             self.progress.setRange(0, total)
             self.progress.setValue(current)
             # Format ETA nicely
+            eta_str = ""
             if eta > 0:
                 eta_seconds = int(eta)
-                eta_str = f"{eta_seconds // 60}m {eta_seconds % 60}s" if eta_seconds > 60 else f"{eta_seconds}s"
-                self.status_bar.showMessage(f"Processing {current}/{total}... ETA: {eta_str}")
+                minutes = eta_seconds // 60
+                seconds = eta_seconds % 60
+                eta_str = f" ETA: {minutes}m {seconds}s" if minutes > 0 else f" ETA: {seconds}s"
             else:
-                self.status_bar.showMessage(f"Processing {current}/{total}...")
+                # Handle zero or negative ETA (e.g., first frame or calculation issue)
+                eta_str = "" # Don't show ETA yet or if invalid
+
+            self.status_bar.showMessage(f"Processing {current}/{total}...{eta_str}")
         else: # Handle indeterminate case (shouldn't happen with new logic but safe)
             self.progress.setRange(0, 0)
             self.status_bar.showMessage("Processing...")
@@ -1655,22 +1888,35 @@ class MainWindow(QWidget):
     # +++ Restore Models Tab Method +++
     def _makeModelLibraryTab(self) -> QWidget:
         """Builds the Models tab with a simple table of available checkpoints."""
-        w = QWidget()
-        # Set vertical size policy
-        w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        # --- Create Content Widget and Layout ---
+        scroll_content_widget = QWidget()
+        layout = QVBoxLayout(scroll_content_widget)
 
-        tbl = QTableWidget(1, 4, parent=w)
+        # Set vertical size policy for the content widget
+        scroll_content_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
+        # --- Create the Table --- 
+        tbl = QTableWidget(1, 4) # Parent removed, will be set by layout
         tbl.setHorizontalHeaderLabels(["Name", "Size", "Speed (FPS)", "ΔPSNR"])
         # Row 0: RIFE v4.6
-        tbl.setItem(0, 0, QTableWidgetItem("RIFE v4.6"))
-        tbl.setItem(0, 1, QTableWidgetItem("≈416 MB ZIP"))
-        tbl.setItem(0, 2, QTableWidgetItem("~2 FPS@5 k")) # Assuming 5k resolution context
+        tbl.setItem(0, 0, QTableWidgetItem("RIFE v4.6 (ncnn)")) # Clarify it's ncnn
+        tbl.setItem(0, 1, QTableWidgetItem("Uses included binary")) # Placeholder
+        tbl.setItem(0, 2, QTableWidgetItem("Fast (GPU/Metal)")) # Placeholder
         tbl.setItem(0, 3, QTableWidgetItem("–")) # Placeholder for PSNR
         tbl.resizeColumnsToContents()
 
-        lay = QVBoxLayout(w)
-        lay.addWidget(tbl)
-        return w
+        # --- Add Table to Layout ---
+        layout.addWidget(tbl)
+        layout.addStretch() # Add stretch within the scrollable area
+
+        # --- Create Scroll Area and Set Content --- #
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll_area.setWidget(scroll_content_widget)
+
+        return scroll_area # Return the scroll area
 
     def _on_crop_clicked(self) -> None:
         from pathlib import Path
@@ -1764,47 +2010,129 @@ class MainWindow(QWidget):
         self._update_previews() # Refresh previews with full images
         self.status_bar.showMessage("Crop cleared.", 3000)
 
+    # --- Slot to toggle tile size spinbox enabled state --- #
+    def _toggle_tile_size_enabled(self, checked: bool) -> None:
+        """Enable/disable the tile size spinbox based on the tile checkbox."""
+        if hasattr(self, 'tile_size_spin'):
+            LOGGER.debug(f"Setting tile_size_spin enabled state to: {checked}")
+            self.tile_size_spin.setEnabled(checked)
+            # --- Force visual change with style --- #
+            if checked:
+                self.tile_size_spin.setStyleSheet("background-color: yellow;")
+            else:
+                self.tile_size_spin.setStyleSheet("") # Reset to default style
+            # --- End style change --- #
+        else:
+            LOGGER.warning("tile_size_spin attribute not found in _toggle_tile_size_enabled")
+    # --- End Slot ---
+
+    # --- Slot to toggle content visibility for group boxes --- #
+    def _toggle_minterpolate_content(self, checked: bool) -> None:
+        """Show/hide the content widget within the minterpolate group box."""
+        if hasattr(self, 'minterpolate_content_widget'):
+            self.minterpolate_content_widget.setVisible(checked)
+            # Trigger a resize recalculation when visibility changes - REMOVED
+            # QTimer.singleShot(0, self._adjust_window_to_content)
+        else:
+            LOGGER.warning("minterpolate_content_widget not found in _toggle_minterpolate_content")
+
+    def _toggle_unsharp_content(self, checked: bool) -> None:
+        """Show/hide the content widget within the unsharp group box."""
+        if hasattr(self, 'unsharp_content_widget'):
+            self.unsharp_content_widget.setVisible(checked)
+            # Trigger a resize recalculation when visibility changes - REMOVED
+        else:
+            LOGGER.warning("unsharp_content_widget not found in _toggle_unsharp_content")
+    # --- End Content Toggle Slots ---
+
+    # --- Slot for tab changes --- #
+    def _on_tab_changed(self, index: int) -> None:
+        """Handle actions when the active tab changes, like resizing."""
+        LOGGER.debug(f"Tab changed to index: {index}")
+        # Trigger window adjustment after a minimal delay to allow layout to settle
+        QTimer.singleShot(10, self._adjust_window_to_content)
+    # --- End Tab Change Slot ---
+
+    # --- Helper to check if UI settings match a profile --- #
+    def _check_settings_match_profile(self, profile_dict: Dict[str, Any]) -> bool:
+        """Helper to check if current UI settings match a given profile dictionary."""
+        # Check existence of controls before comparing
+        try:
+            return (
+                (not hasattr(self, 'ffmpeg_interp_cb') or self.ffmpeg_interp_cb.isChecked() == profile_dict.get("use_ffmpeg_interp", True)) and
+                (not hasattr(self, 'mi_combo') or self.mi_combo.currentText() == profile_dict.get("mi_mode", "mci")) and
+                (not hasattr(self, 'mc_combo') or self.mc_combo.currentText() == profile_dict.get("mc_mode", "obmc")) and
+                (not hasattr(self, 'me_combo') or self.me_combo.currentText() == profile_dict.get("me_mode", "bidir")) and
+                (not hasattr(self, 'me_algo_combo') or self.me_algo_combo.currentText() == profile_dict.get("me_algo", "(default)")) and
+                (not hasattr(self, 'search_param_spin') or self.search_param_spin.value() == profile_dict.get("search_param", 96)) and
+                (not hasattr(self, 'scd_combo') or self.scd_combo.currentText() == profile_dict.get("scd", "fdiff")) and
+                (not hasattr(self, 'scd_thresh_spin') or self.scd_thresh_spin.value() == profile_dict.get("scd_threshold", 10.0)) and
+                (not hasattr(self, 'filter_preset_combo') or self.filter_preset_combo.currentText() == profile_dict.get("filter_preset", "slow")) and
+                (not hasattr(self, 'mbsize_combo') or self.mbsize_combo.currentText() == profile_dict.get("mb_size", "(default)")) and
+                (not hasattr(self, 'vsbmc_cb') or self.vsbmc_cb.isChecked() == profile_dict.get("vsbmc", False)) and
+                (not hasattr(self, 'unsharp_group') or self.unsharp_group.isChecked() == profile_dict.get("apply_unsharp", True)) and
+                (not hasattr(self, 'luma_x_spin') or self.luma_x_spin.value() == profile_dict.get("unsharp_lx", 7)) and
+                (not hasattr(self, 'luma_y_spin') or self.luma_y_spin.value() == profile_dict.get("unsharp_ly", 7)) and
+                (not hasattr(self, 'luma_amount_spin') or self.luma_amount_spin.value() == profile_dict.get("unsharp_la", 1.0)) and
+                (not hasattr(self, 'chroma_x_spin') or self.chroma_x_spin.value() == profile_dict.get("unsharp_cx", 5)) and
+                (not hasattr(self, 'chroma_y_spin') or self.chroma_y_spin.value() == profile_dict.get("unsharp_cy", 5)) and
+                (not hasattr(self, 'chroma_amount_spin') or self.chroma_amount_spin.value() == profile_dict.get("unsharp_ca", 0.0)) and
+                (not hasattr(self, 'preset_combo') or self.preset_combo.currentText() == profile_dict.get("preset_text", "Very High (CRF 16)")) and
+                (not hasattr(self, 'bitrate_spin') or self.bitrate_spin.value() == profile_dict.get("bitrate", 15000)) and
+                # Bufsize check needs to be careful, might be auto-calculated
+                # (not hasattr(self, 'bufsize_spin') or self.bufsize_spin.value() == profile_dict.get("bufsize", int(profile_dict.get("bitrate", 15000)*1.5))) and
+                (not hasattr(self, 'pixfmt_combo') or self.pixfmt_combo.currentText() == profile_dict.get("pix_fmt", "yuv444p"))
+            )
+        except Exception as e:
+            LOGGER.error(f"Error checking settings against profile: {e}")
+            return False # Return False on error
+    # --- End Profile Check Helper ---
+
     # +++ Settings Persistence Methods +++
     def loadSettings(self) -> None:
         """Load settings from QSettings and apply them to the UI."""
         LOGGER.info("Loading settings...")
         self._ffmpeg_setting_change_active = False # Disable profile switching during load
         settings = self.settings # Use the instance member
+        self._geometry_restored = False # Flag to track if geometry was loaded
 
         # --- Window Geometry ---\
         geom = settings.value("window/geometry")
         if isinstance(geom, QByteArray): # QSettings might return QByteArray
-             self.restoreGeometry(geom)
-        else:
-             self.resize(560, 500) # Default size if no geometry saved
+             if self.restoreGeometry(geom): # restoreGeometry returns True on success
+                 self._geometry_restored = True
+                 LOGGER.debug("Restored window geometry.")
+             else:
+                 LOGGER.warning("Failed to restore window geometry from settings.")
+        # REMOVED else block with fixed resize - will handle after loading if needed
 
-        # --- Main Tab ---\
+        # --- Main Tab ---
         self.in_edit.setText(settings.value("main/inputDir", "", type=str))
-        # Handle output path carefully - use default if saved is empty
-        saved_out_path = settings.value("main/outputFile", "", type=str)
-        if saved_out_path:
-             self.out_edit.setText(saved_out_path)
-             # Update internal base path used for suggestions
-             try: # Add try-except for invalid paths
-                self._base_output_path = pathlib.Path(saved_out_path)
-             except Exception as e:
-                 LOGGER.warning(f"Could not create Path from saved output '{saved_out_path}': {e}. Using default.")
-                 out_dir = config.get_output_dir()
-                 out_dir.mkdir(parents=True, exist_ok=True)
-                 default_path = out_dir / "goes_timelapse.mp4"
-                 self.out_edit.setText(str(default_path))
-                 self._base_output_path = default_path
-        else:
-             # Calculate default if nothing saved
-             out_dir = config.get_output_dir()
-             out_dir.mkdir(parents=True, exist_ok=True)
-             default_path = out_dir / "goes_timelapse.mp4"
-             self.out_edit.setText(str(default_path))
-             self._base_output_path = default_path
+
+        # --- Derive Default Output Path (DO NOT LOAD) ---
+        input_dir_str = self.in_edit.text()
+        # Use a fixed default name for simplicity, place in configured output dir
+        out_dir = config.get_output_dir()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        # Default base name (no timestamp)
+        default_base_filename = "goes_timelapse.mp4"
+        # Optionally, derive from input folder name if input_dir_str is valid
+        # try:
+        #     input_path = pathlib.Path(input_dir_str)
+        #     if input_path.is_dir() and input_path.name:
+        #         default_base_filename = f"{input_path.name}_timelapse.mp4"
+        # except Exception:
+        #     pass # Keep the fixed default if path is invalid
+
+        default_path = out_dir / default_base_filename
+        self.out_edit.setText(str(default_path)) # Set UI field to default
+        self._base_output_path = default_path    # Set internal base path
+        LOGGER.info(f"Derived default base output path: {self._base_output_path}")
+        # --- End Derive Default Output Path ---
 
         self.fps_spin.setValue(settings.value("main/fps", 10, type=int))
-        self.mid_spin.setValue(settings.value("main/midFrames", 1, type=int))
-        self.model_combo.setCurrentText(settings.value("main/model", "RIFE v4.6 (default)", type=str))
+        # self.mid_spin.setValue(settings.value("main/midFrames", 1, type=int)) # Moved to RIFE
+        # self.model_combo.setCurrentText(settings.value("main/model", "RIFE v4.6 (default)", type=str)) # REMOVED
         # Ensure default encoder logic matches _makeMainTab if setting is missing/invalid
         default_encoder = "Software x265"
         available_encoders = [self.encode_combo.itemText(i) for i in range(self.encode_combo.count())]
@@ -1820,7 +2148,22 @@ class MainWindow(QWidget):
         cpu_cores = os.cpu_count() or 1
         default_workers = min(max(1, cpu_cores - 1), 8) # Default calc from _makeMainTab
         self.workers_spin.setValue(settings.value("main/maxWorkers", default_workers, type=int))
-        self.tile_checkbox.setChecked(settings.value("main/tilingEnabled", True, type=bool))
+        # self.tile_checkbox.setChecked(settings.value("main/tilingEnabled", True, type=bool)) # Moved to RIFE
+
+        # --- RIFE v4.6 Settings ---
+        if hasattr(self, 'mid_spin'): self.mid_spin.setValue(settings.value("rife/intermediateFrames", 1, type=int))
+        if hasattr(self, 'tile_checkbox'): self.tile_checkbox.setChecked(settings.value("rife/tilingEnabled", False, type=bool))
+        if hasattr(self, 'tile_size_spin'): self.tile_size_spin.setValue(settings.value("rife/tileSize", 256, type=int))
+        if hasattr(self, 'uhd_checkbox'): self.uhd_checkbox.setChecked(settings.value("rife/uhdMode", False, type=bool))
+        if hasattr(self, 'thread_edit'): self.thread_edit.setText(settings.value("rife/threadSpec", "1:2:2", type=str))
+        if hasattr(self, 'tta_spatial_cb'): self.tta_spatial_cb.setChecked(settings.value("rife/ttaSpatial", False, type=bool))
+        if hasattr(self, 'tta_temporal_cb'): self.tta_temporal_cb.setChecked(settings.value("rife/ttaTemporal", False, type=bool))
+        # Ensure tile size spinbox enabled state matches checkbox state after loading
+        if hasattr(self, 'tile_checkbox') and hasattr(self, 'tile_size_spin'):
+            self.tile_size_spin.setEnabled(self.tile_checkbox.isChecked())
+        # Ensure RIFE group enabled state matches skip checkbox state
+        if hasattr(self, 'skip_model_cb') and hasattr(self, 'rife_group'):
+            self.rife_group.setEnabled(not self.skip_model_cb.isChecked())
 
         # --- FFmpeg Settings Tab ---
         # Load profile first, but don't apply it yet
@@ -1913,134 +2256,176 @@ class MainWindow(QWidget):
         if hasattr(self, 'ffmpeg_interp_cb'):
             self._update_ffmpeg_controls_state(self.ffmpeg_interp_cb.isChecked()) # Handles interp/unsharp groups
 
+        # --- Re-establish crucial UI connections AFTER loading all settings --- #
+        LOGGER.debug("Re-establishing connections after loading settings...")
+        # Tile Checkbox -> Tile Size Spinbox
+        if hasattr(self, 'tile_checkbox') and hasattr(self, 'tile_size_spin'):
+            LOGGER.debug("Reconnecting tile checkbox to toggle slot...")
+            try: self.tile_checkbox.toggled.disconnect(self._toggle_tile_size_enabled)
+            except TypeError: pass
+            try: self.tile_checkbox.toggled.disconnect(self.tile_size_spin.setEnabled) # Old connection
+            except TypeError: pass
+            connection_success = self.tile_checkbox.toggled.connect(self._toggle_tile_size_enabled)
+            LOGGER.debug(f"Tile checkbox reconnect success: {connection_success}")
+            # Ensure state is correct *after* reconnecting
+            self._toggle_tile_size_enabled(self.tile_checkbox.isChecked())
+
+        # Skip AI Checkbox -> RIFE Group Enable
+        if hasattr(self, 'skip_model_cb') and hasattr(self, 'rife_group'):
+            LOGGER.debug("Reconnecting skip AI checkbox to RIFE group enable...")
+            try: self.skip_model_cb.toggled.disconnect()
+            except TypeError: pass # Disconnect all slots for this signal
+            connection_success = self.skip_model_cb.toggled.connect(lambda checked: self.rife_group.setEnabled(not checked))
+            LOGGER.debug(f"Skip AI checkbox reconnect success: {connection_success}")
+            # Ensure state is correct *after* reconnecting
+            self.rife_group.setEnabled(not self.skip_model_cb.isChecked())
+
         self._update_previews() # Load previews based on loaded input dir
         self._ffmpeg_setting_change_active = True # Re-enable profile switching
         LOGGER.info("Settings loaded.")
 
-    def _check_settings_match_profile(self, profile_dict: Dict[str, Any]) -> bool:
-         """Helper to check if current UI settings match a given profile dictionary."""
-         # Check existence of controls before comparing
-         try:
-             return (
-                 (not hasattr(self, 'ffmpeg_interp_cb') or self.ffmpeg_interp_cb.isChecked() == profile_dict.get("use_ffmpeg_interp", True)) and
-                 (not hasattr(self, 'mi_combo') or self.mi_combo.currentText() == profile_dict.get("mi_mode", "mci")) and
-                 (not hasattr(self, 'mc_combo') or self.mc_combo.currentText() == profile_dict.get("mc_mode", "obmc")) and
-                 (not hasattr(self, 'me_combo') or self.me_combo.currentText() == profile_dict.get("me_mode", "bidir")) and
-                 (not hasattr(self, 'me_algo_combo') or self.me_algo_combo.currentText() == profile_dict.get("me_algo", "(default)")) and
-                 (not hasattr(self, 'search_param_spin') or self.search_param_spin.value() == profile_dict.get("search_param", 96)) and
-                 (not hasattr(self, 'scd_combo') or self.scd_combo.currentText() == profile_dict.get("scd", "fdiff")) and
-                 (not hasattr(self, 'scd_thresh_spin') or abs(self.scd_thresh_spin.value() - profile_dict.get("scd_threshold", 10.0)) < 0.01) and
-                 (not hasattr(self, 'filter_preset_combo') or self.filter_preset_combo.currentText() == profile_dict.get("filter_preset", "slow")) and
-                 (not hasattr(self, 'mbsize_combo') or self.mbsize_combo.currentText() == profile_dict.get("mb_size", "(default)")) and
-                 (not hasattr(self, 'vsbmc_cb') or self.vsbmc_cb.isChecked() == profile_dict.get("vsbmc", False)) and
-                 (not hasattr(self, 'unsharp_cb') or self.unsharp_cb.isChecked() == profile_dict.get("apply_unsharp", True)) and
-                 (not hasattr(self, 'luma_x_spin') or self.luma_x_spin.value() == profile_dict.get("unsharp_lx", 7)) and
-                 (not hasattr(self, 'luma_y_spin') or self.luma_y_spin.value() == profile_dict.get("unsharp_ly", 7)) and
-                 (not hasattr(self, 'luma_amount_spin') or abs(self.luma_amount_spin.value() - profile_dict.get("unsharp_la", 1.0)) < 0.01) and
-                 (not hasattr(self, 'chroma_x_spin') or self.chroma_x_spin.value() == profile_dict.get("unsharp_cx", 5)) and
-                 (not hasattr(self, 'chroma_y_spin') or self.chroma_y_spin.value() == profile_dict.get("unsharp_cy", 5)) and
-                 (not hasattr(self, 'chroma_amount_spin') or abs(self.chroma_amount_spin.value() - profile_dict.get("unsharp_ca", 0.0)) < 0.01) and
-                 (not hasattr(self, 'preset_combo') or self.preset_combo.currentText() == profile_dict.get("preset_text", "Very High (CRF 16)")) and
-                 (not hasattr(self, 'bitrate_spin') or self.bitrate_spin.value() == profile_dict.get("bitrate", 15000)) and
-                 (not hasattr(self, 'bufsize_spin') or self.bufsize_spin.value() == profile_dict.get("bufsize", int(profile_dict.get("bitrate", 15000) * 1.5))) and
-                 (not hasattr(self, 'pixfmt_combo') or self.pixfmt_combo.currentText() == profile_dict.get("pix_fmt", "yuv444p"))
-             )
-         except Exception as e:
-             LOGGER.error(f"Error comparing settings to profile: {e}")
-             return False
-
-
-    def saveSettings(self) -> None:
-        """Save current UI settings to QSettings."""
-        LOGGER.info("Saving settings...")
-        settings = self.settings # Use the instance member
-
-        # --- Window Geometry ---\
-        settings.setValue("window/geometry", self.saveGeometry())
-
-        # --- Main Tab ---\
-        settings.setValue("main/inputDir", self.in_edit.text())
-        settings.setValue("main/outputFile", self.out_edit.text())
-        settings.setValue("main/fps", self.fps_spin.value())
-        settings.setValue("main/midFrames", self.mid_spin.value())
-        settings.setValue("main/model", self.model_combo.currentText())
-        settings.setValue("main/encoder", self.encode_combo.currentText())
-        # settings.setValue("main/useFFmpegInterp", self.ffmpeg_interp_cb.isChecked()) # Moved
-        settings.setValue("main/skipModel", self.skip_model_cb.isChecked())
-        settings.setValue("main/maxWorkers", self.workers_spin.value())
-        settings.setValue("main/tilingEnabled", self.tile_checkbox.isChecked())
-        # Save crop rect
-        if self.crop_rect:
-             settings.setValue("main/cropRect", ",".join(map(str, self.crop_rect)))
-        else:
-             settings.remove("main/cropRect") # Remove if None
-
+        # --- RIFE v4.6 Settings ---
+        # Ensure RIFE group enabled state matches skip checkbox state
+        if hasattr(self, 'skip_model_cb') and hasattr(self, 'rife_group'):
+            self.rife_group.setEnabled(not self.skip_model_cb.isChecked())
+        # Load Model Selection
+        if hasattr(self, 'model_combo'):
+            saved_model = settings.value("rife/modelName", "rife-v4.6", type=str)
+            self.model_combo.setCurrentText(saved_model)
+            # Ensure combo box is enabled if models were found
+            if self.model_combo.count() > 0 and not self.model_combo.currentText().startswith("Error") and not self.model_combo.currentText().startswith("No models"):
+                self.model_combo.setEnabled(True)
+            else:
+                self.model_combo.setEnabled(False)
 
         # --- FFmpeg Settings Tab ---
-        # Check existence of controls before saving their state
-        if hasattr(self, 'ffmpeg_profile_combo'): settings.setValue("ffmpeg/profile", self.ffmpeg_profile_combo.currentText())
-        if hasattr(self, 'ffmpeg_interp_cb'): settings.setValue("ffmpeg/enabled", self.ffmpeg_interp_cb.isChecked())
-        if hasattr(self, 'mi_combo'): settings.setValue("ffmpeg/miMode", self.mi_combo.currentText())
-        if hasattr(self, 'mc_combo'): settings.setValue("ffmpeg/mcMode", self.mc_combo.currentText())
-        if hasattr(self, 'me_combo'): settings.setValue("ffmpeg/meMode", self.me_combo.currentText())
-        if hasattr(self, 'me_algo_combo'): settings.setValue("ffmpeg/meAlgo", self.me_algo_combo.currentText())
-        if hasattr(self, 'search_param_spin'): settings.setValue("ffmpeg/searchParam", self.search_param_spin.value())
-        if hasattr(self, 'scd_combo'): settings.setValue("ffmpeg/scdMode", self.scd_combo.currentText())
-        if hasattr(self, 'scd_thresh_spin'): settings.setValue("ffmpeg/scdThreshold", self.scd_thresh_spin.value())
-        if hasattr(self, 'filter_preset_combo'): settings.setValue("ffmpeg/filterPreset", self.filter_preset_combo.currentText())
-        if hasattr(self, 'mbsize_combo'): settings.setValue("ffmpeg/mbSize", self.mbsize_combo.currentText())
-        if hasattr(self, 'vsbmc_cb'): settings.setValue("ffmpeg/vsbmc", self.vsbmc_cb.isChecked())
-        if hasattr(self, 'unsharp_cb'): settings.setValue("ffmpeg/unsharpEnabled", self.unsharp_cb.isChecked())
-        if hasattr(self, 'luma_x_spin'): settings.setValue("ffmpeg/unsharpLx", self.luma_x_spin.value())
-        if hasattr(self, 'luma_y_spin'): settings.setValue("ffmpeg/unsharpLy", self.luma_y_spin.value())
-        if hasattr(self, 'luma_amount_spin'): settings.setValue("ffmpeg/unsharpLa", self.luma_amount_spin.value())
-        if hasattr(self, 'chroma_x_spin'): settings.setValue("ffmpeg/unsharpCx", self.chroma_x_spin.value())
-        if hasattr(self, 'chroma_y_spin'): settings.setValue("ffmpeg/unsharpCy", self.chroma_y_spin.value())
-        if hasattr(self, 'chroma_amount_spin'): settings.setValue("ffmpeg/unsharpCa", self.chroma_amount_spin.value())
-        if hasattr(self, 'preset_combo'): settings.setValue("ffmpeg/presetCRF", self.preset_combo.currentText())
-        if hasattr(self, 'bitrate_spin'): settings.setValue("ffmpeg/bitrate", self.bitrate_spin.value())
-        if hasattr(self, 'bufsize_spin'): settings.setValue("ffmpeg/bufsize", self.bufsize_spin.value())
-        if hasattr(self, 'pixfmt_combo'): settings.setValue("ffmpeg/pixFmt", self.pixfmt_combo.currentText())
+        # Load profile first, but don't apply it yet
+        loaded_profile = settings.value("ffmpeg/profile", "Default", type=str)
 
-        # --- Save Collapsed State for Group Boxes ---
+        # Load individual settings (these will override profile defaults if profile is not "Custom")
+        # Check existence of controls before loading into them
+        if hasattr(self, 'ffmpeg_interp_cb'): self.ffmpeg_interp_cb.setChecked(settings.value("ffmpeg/enabled", True, type=bool))
+        if hasattr(self, 'mi_combo'): self.mi_combo.setCurrentText(settings.value("ffmpeg/miMode", "mci", type=str))
+        if hasattr(self, 'mc_combo'): self.mc_combo.setCurrentText(settings.value("ffmpeg/mcMode", "obmc", type=str))
+        if hasattr(self, 'me_combo'): self.me_combo.setCurrentText(settings.value("ffmpeg/meMode", "bidir", type=str))
+        if hasattr(self, 'me_algo_combo'): self.me_algo_combo.setCurrentText(settings.value("ffmpeg/meAlgo", "(default)", type=str))
+        if hasattr(self, 'search_param_spin'): self.search_param_spin.setValue(settings.value("ffmpeg/searchParam", 96, type=int))
+        if hasattr(self, 'scd_combo'): self.scd_combo.setCurrentText(settings.value("ffmpeg/scdMode", "fdiff", type=str))
+        if hasattr(self, 'scd_thresh_spin'): self.scd_thresh_spin.setValue(settings.value("ffmpeg/scdThreshold", 10.0, type=float))
+        if hasattr(self, 'filter_preset_combo'): self.filter_preset_combo.setCurrentText(settings.value("ffmpeg/filterPreset", "slow", type=str))
+        if hasattr(self, 'mbsize_combo'): self.mbsize_combo.setCurrentText(settings.value("ffmpeg/mbSize", "(default)", type=str))
+        if hasattr(self, 'vsbmc_cb'): self.vsbmc_cb.setChecked(settings.value("ffmpeg/vsbmc", False, type=bool))
+        if hasattr(self, 'unsharp_cb'): self.unsharp_cb.setChecked(settings.value("ffmpeg/unsharpEnabled", True, type=bool))
+        if hasattr(self, 'luma_x_spin'): self.luma_x_spin.setValue(settings.value("ffmpeg/unsharpLx", 7, type=int))
+        if hasattr(self, 'luma_y_spin'): self.luma_y_spin.setValue(settings.value("ffmpeg/unsharpLy", 7, type=int))
+        if hasattr(self, 'luma_amount_spin'): self.luma_amount_spin.setValue(settings.value("ffmpeg/unsharpLa", 1.0, type=float))
+        if hasattr(self, 'chroma_x_spin'): self.chroma_x_spin.setValue(settings.value("ffmpeg/unsharpCx", 5, type=int))
+        if hasattr(self, 'chroma_y_spin'): self.chroma_y_spin.setValue(settings.value("ffmpeg/unsharpCy", 5, type=int))
+        if hasattr(self, 'chroma_amount_spin'): self.chroma_amount_spin.setValue(settings.value("ffmpeg/unsharpCa", 0.0, type=float))
+        if hasattr(self, 'preset_combo'): self.preset_combo.setCurrentText(settings.value("ffmpeg/presetCRF", "Very High (CRF 16)", type=str))
+        if hasattr(self, 'bitrate_spin'):
+            default_bitrate = 15000
+            saved_bitrate = settings.value("ffmpeg/bitrate", default_bitrate, type=int)
+            self.bitrate_spin.setValue(saved_bitrate)
+            if hasattr(self, 'bufsize_spin'):
+                default_bufsize = int(saved_bitrate * 1.5)
+                self.bufsize_spin.setValue(settings.value("ffmpeg/bufsize", default_bufsize, type=int))
+        if hasattr(self, 'pixfmt_combo'): self.pixfmt_combo.setCurrentText(settings.value("ffmpeg/pixFmt", "yuv444p", type=str))
+
+        # --- Load Collapsed State for Group Boxes ---
         if hasattr(self, 'minterpolate_group'):
-            settings.setValue("ffmpeg/minterpolateChecked", self.minterpolate_group.isChecked())
+            self.minterpolate_group.setChecked(settings.value("ffmpeg/minterpolateChecked", True, type=bool))
         if hasattr(self, 'unsharp_group'):
-            settings.setValue("ffmpeg/unsharpChecked", self.unsharp_group.isChecked())
+            self.unsharp_group.setChecked(settings.value("ffmpeg/unsharpChecked", True, type=bool))
 
-        LOGGER.info("Settings saved.")
+        # --- Update content visibility based on loaded groupbox check state ---
+        if hasattr(self, 'minterpolate_group') and hasattr(self, '_toggle_minterpolate_content'):
+            self._toggle_minterpolate_content(self.minterpolate_group.isChecked())
+        if hasattr(self, 'unsharp_group') and hasattr(self, '_toggle_unsharp_content'):
+            self._toggle_unsharp_content(self.unsharp_group.isChecked())
+        # --- End Content Visibility Update ---
 
-    # Override closeEvent
-    def closeEvent(self, event: QCloseEvent | None) -> None:
-        """Save settings when the window is closed."""
-        self.saveSettings()
-        # Ensure we call the superclass method correctly, checking if event is None
-        if event:
-            super().closeEvent(event)
+        # --- Set Profile ComboBox *after* loading individual settings ---
+        if hasattr(self, 'ffmpeg_profile_combo'):
+            self.ffmpeg_profile_combo.blockSignals(True)
+            self.ffmpeg_profile_combo.setCurrentText(loaded_profile)
+            self.ffmpeg_profile_combo.blockSignals(False)
+
+            # If the loaded profile was NOT custom, re-apply it to ensure consistency
+            # Otherwise, check if current settings constitute "Custom"
+            if loaded_profile != "Custom" and loaded_profile in FFMPEG_PROFILES:
+                self._apply_ffmpeg_profile(loaded_profile) # Re-apply to make sure UI matches loaded profile
+            else:
+                 # Check if the loaded settings match any known profile
+                 current_settings_match_profile = False
+                 for name, prof_dict in FFMPEG_PROFILES.items():
+                     if self._check_settings_match_profile(prof_dict):
+                         self.ffmpeg_profile_combo.blockSignals(True)
+                         self.ffmpeg_profile_combo.setCurrentText(name)
+                         self.ffmpeg_profile_combo.blockSignals(False)
+                         current_settings_match_profile = True
+                         break
+            self.tile_size_spin.setStyleSheet("") # Reset to default style
+            # --- End style change --- #
         else:
-            # If event is None for some reason, just proceed with closing if possible
-            # Or handle as an error, though typically closeEvent receives a valid event
-            LOGGER.warning("closeEvent received None, proceeding with default close.")
-            pass # Ensure this is correctly indented
-    # --- End Settings Persistence Methods ---
+            LOGGER.warning("tile_size_spin attribute not found in _toggle_tile_size_enabled")
+    # --- End Slot ---
 
-    # --- Add Methods for Manual Collapse ---
-    def _toggle_minterpolate_content(self, checked: bool) -> None:
-        """Shows/hides the content widget based on the groupbox checked state."""
-        if hasattr(self, 'minterpolate_content_widget'):
-            self.minterpolate_content_widget.setVisible(checked)
+    # --- Slot to validate thread spec format ---
+    def _validate_thread_spec(self, text: str) -> None:
+        """Validate thread spec format using regex and update style."""
+        if not hasattr(self, 'thread_edit'): return
 
-    def _toggle_unsharp_content(self, checked: bool) -> None:
-        """Shows/hides the content widget based on the groupbox checked state."""
-        if hasattr(self, 'unsharp_content_widget'):
-            self.unsharp_content_widget.setVisible(checked)
-    # --- End Add Methods ---
+        # Regex: 1+ digits, optionally followed by :digits up to two times
+        valid_format = re.fullmatch(r'^\d+(?::\d+){0,2}$', text) # Added missing closing parenthesis
+        if valid_format:
+            self.thread_edit.setStyleSheet("") # Reset style
+        else:
+            # Indicate error with background color
+            self.thread_edit.setStyleSheet("background-color: #ffdddd;") # Light red
+    # --- End Slot ---
 
-    def _on_tab_changed(self, index: int) -> None:
-        """Slot called when the current tab is changed."""
-        # Try forcing a geometry update before adjusting size
-        self.updateGeometry() # Inform layout system about potential change
-        self.adjustSize()
+    # --- Populate Model Combo Box --- #
+    def _populate_models(self) -> None:
+        """Scan the models directory and populate the model combo box."""
+        if not hasattr(self, 'model_combo'): return
+
+        self.model_combo.clear() # Clear existing items
+        models_dir = pathlib.Path("goesvfi/models")
+        default_model = "rife-v4.6"
+        models_found: List[str] = []
+
+        if not models_dir.is_dir():
+            LOGGER.error(f"Models directory not found: {models_dir}")
+            self.model_combo.addItem(f"Error: Dir not found")
+            self.model_combo.setEnabled(False)
+            return
+
+        try:
+            for item in models_dir.iterdir():
+                if item.is_dir() and item.name.startswith("rife-"):
+                    # Add model name (e.g., "rife-v4.6")
+                    models_found.append(item.name)
+
+            if not models_found:
+                LOGGER.warning(f"No RIFE models found in {models_dir}")
+                self.model_combo.addItem("No models found")
+                self.model_combo.setEnabled(False)
+            else:
+                models_found.sort() # Sort alphabetically
+                self.model_combo.addItems(models_found)
+                # Try to set default
+                if default_model in models_found:
+                    self.model_combo.setCurrentText(default_model)
+                elif models_found: # Set first found as default otherwise
+                    self.model_combo.setCurrentIndex(0)
+                self.model_combo.setEnabled(True)
+
+        except Exception as e:
+            LOGGER.exception(f"Error scanning models directory: {models_dir}")
+            self.model_combo.addItem(f"Error scanning models")
+            self.model_combo.setEnabled(False)
+    # --- End Populate --- #
 
 # ────────────────────────── top‑level launcher ────────────────────────────
 def main() -> None:
