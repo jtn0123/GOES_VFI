@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2025-04-24
+
+### Added
+- **GUI & Settings:**
+    - Consolidated FFmpeg filter and quality settings into a single "FFmpeg Settings" tab (`gui.py`).
+    - Added FFmpeg settings profiles ("Default", "Optimal", "Optimal 2", "Custom") selector (`gui.py`).
+    - Added group boxes for FFmpeg "Motion Interpolation" and "Sharpening" settings, which can be collapsed (`gui.py`).
+    - Added specific RIFE v4.6 ncnn controls: Model selection (auto-populated), UHD Mode, Thread Spec, Spatial TTA, Temporal TTA (`gui.py`).
+    - Implemented dynamic window resizing based on current tab content (`gui.py`).
+    - Added validation for RIFE thread spec input format (`gui.py`).
+    - Added helper methods to check if current UI settings match a profile (`gui.py`).
+- **Processing:**
+    - Added support for passing new RIFE v4.6 arguments (UHD, TTA, thread spec, model dir) to the `rife-cli` executable (`run_vfi.py`).
+    - Added validation of RIFE output file existence and size (`run_vfi.py`).
+    - Redirected ffmpeg `stderr` to `stdout` and captured the combined stream for better error logging (`run_vfi.py`, `encode.py`).
+    - Passed `stdin=subprocess.DEVNULL` to FFmpeg encode command to prevent potential hangs (`encode.py`).
+
+### Changed
+- **GUI & Settings:**
+    - Output file path is no longer saved in settings; a default is derived on load, preventing timestamp accumulation (`gui.py`).
+    - RIFE intermediate frame count and tiling controls moved into the RIFE v4.6 settings group (`gui.py`).
+    - FFmpeg filter tab split/merged into the consolidated "FFmpeg Settings" tab (`gui.py`).
+    - Improved clarity in Models tab description (`gui.py`).
+    - Changed "FFmpeg Quality" tab name to "Encoding Quality (Final Output)" group box (`gui.py`).
+- **Processing:**
+    - Removed old fallback logic for "Safe HQ" FFmpeg filter in `VfiWorker` (`gui.py`).
+    - FFmpeg loglevel increased to `verbose` for raw video creation (`run_vfi.py`).
+    - Refined ETA calculation and yield frequency (`run_vfi.py`).
+    - Improved `_safe_write` helper to capture more context on `BrokenPipeError` (`run_vfi.py`).
+    - Updated RIFE command construction to pass model directory instead of model name (`run_vfi.py`).
+
+### Fixed
+- Resolved Mypy `attr-defined` errors by adding missing/renamed methods (`_toggle_tile_size_enabled`, `_toggle_minterpolate_content`, `_toggle_unsharp_content`, `_on_tab_changed`, `_check_settings_match_profile`, etc.) in `gui.py`.
+- Corrected `FileNotFoundError` in `run_vfi.py` caused by an unnecessary sanity check for `flownet.pkl` when using the RIFE executable.
+- Prevented "File name too long" errors by correcting output path saving/loading logic in `gui.py`.
+- Reduced log spam related to window resizing by removing automatic resize triggers from FFmpeg group box toggle methods in `gui.py`.
+- Fixed incorrect `stderr` handling in `_run_ffmpeg_command` which could miss errors (`encode.py`).
+- Corrected `closeEvent` superclass call (`gui.py`).
+- Fixed various UI update/state issues after loading settings, particularly for tile size checkbox and RIFE group enabled state (`gui.py`).
+- Fixed potential issues with `rife_exe_path` discovery by using `pkgres.files` correctly (`gui.py`).
+- Fixed `BrokenPipeError` handling in `_safe_write` to provide more useful ffmpeg log context (`run_vfi.py`).
+- Corrected escaping of newline characters (`\\n`) in error/info messages (`gui.py`).
+
 ## [0.5.0] - 2025-04-21
 
 ### Added
