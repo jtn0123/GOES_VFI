@@ -195,12 +195,12 @@ def run_vfi(
 
     ffmpeg_proc: subprocess.Popen[bytes] | None = None
     try:
-        # Start ffmpeg process, capture stderr, discard stdout
+        # Start ffmpeg process, redirect stderr to stdout, capture combined stdout/stderr
         ffmpeg_proc = subprocess.Popen(
             ffmpeg_cmd,
             stdin=subprocess.PIPE,
-            stderr=subprocess.PIPE,    # Capture FFmpeg errors
-            stdout=subprocess.DEVNULL, # Discard normal progress from stdout
+            stderr=subprocess.STDOUT,   # Redirect stderr to stdout
+            stdout=subprocess.PIPE,    # Capture combined stdout/stderr
         )
         if ffmpeg_proc.stdin is None:
             raise IOError("Failed to get ffmpeg stdin pipe.")
@@ -379,27 +379,16 @@ def run_vfi(
         if ffmpeg_proc.stdin:
             ffmpeg_proc.stdin.close()
 
-        # Wait and capture stderr, handle potential ValueError
-        stderr_bytes: bytes | None = None
-        try:
-            _, stderr_bytes = ffmpeg_proc.communicate(timeout=60)
-        except ValueError:
-            LOGGER.warning("ValueError during ffmpeg communicate (stdin already closed?), calling wait().")
-            ffmpeg_proc.wait()
-            if ffmpeg_proc.stderr:
-                 try: stderr_bytes = ffmpeg_proc.stderr.read()
-                 except Exception: pass
+        # Read and log combined output/error stream
+        if ffmpeg_proc.stdout:
+            for line_bytes in ffmpeg_proc.stdout:
+                LOGGER.info(f"[ffmpeg-raw] {line_bytes.decode(errors='replace').rstrip()}")
 
-        # Check ffmpeg return code
-        if ffmpeg_proc.returncode != 0:
-            stderr_str = stderr_bytes.decode(errors='ignore') if stderr_bytes else "(no stderr captured)"
-            LOGGER.error(f"ffmpeg process failed with code {ffmpeg_proc.returncode}")
-            LOGGER.error(f"ffmpeg stderr: {stderr_str}")
-            raise RuntimeError("ffmpeg failed to write raw video file.")
-        else:
-            stderr_str = stderr_bytes.decode(errors='ignore') if stderr_bytes else "(no stderr captured)"
-            LOGGER.info("ffmpeg process completed successfully.")
-            LOGGER.debug(f"ffmpeg stderr: {stderr_str}")
+        ret = ffmpeg_proc.wait()
+        if ret != 0:
+            LOGGER.error(f"FFmpeg (raw video creation) failed (exit code {ret}). See logged output above.")
+            raise RuntimeError(f"FFmpeg (raw video creation) failed (exit code {ret})")
+        LOGGER.info("FFmpeg (raw video creation) completed successfully.")
 
         if not raw_path.exists() or raw_path.stat().st_size == 0:
              LOGGER.error(f"Raw output file {raw_path} not created or is empty.")

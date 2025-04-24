@@ -9,21 +9,132 @@ import sys
 import pathlib
 import argparse # <-- Import argparse
 import importlib.resources as pkgres
-from typing import Optional, Any, cast, Union, Tuple, Iterator
+from typing import Optional, Any, cast, Union, Tuple, Iterator, Dict, List # Added Dict, List
 from datetime import datetime
-from PyQt6.QtCore import QThread, pyqtSignal, Qt, QSize, QPoint, QRect, QSettings, QByteArray
+from PyQt6.QtCore import QThread, pyqtSignal, Qt, QSize, QPoint, QRect, QSettings, QByteArray, QTimer, QUrl # Added QTimer, QUrl
 from PyQt6.QtWidgets import (
     QApplication, QFileDialog, QHBoxLayout, QLabel, QLineEdit,
     QPushButton, QProgressBar, QSpinBox, QVBoxLayout, QWidget,
     QMessageBox, QComboBox, QCheckBox, QTabWidget, QTableWidget, QTableWidgetItem, QStatusBar,
-    QDialog, QDialogButtonBox, QRubberBand, QGridLayout, QDoubleSpinBox
+    QDialog, QDialogButtonBox, QRubberBand, QGridLayout, QDoubleSpinBox,
+    QGroupBox, QSizePolicy, QSplitter, QScrollArea # Added GroupBox, SizePolicy, Splitter, ScrollArea
 )
-from PyQt6.QtGui import QPixmap, QMouseEvent, QCloseEvent # <-- Add QCloseEvent
+from PyQt6.QtGui import QPixmap, QMouseEvent, QCloseEvent, QImage, QPainter, QPen, QColor, QIcon, QDesktopServices # Added Image, Painter, Pen, Color, Icon, DesktopServices
 import json # Import needed for pretty printing the dict
 
 from goesvfi.utils import config, log
 
 LOGGER = log.get_logger(__name__)
+
+# Optimal FFmpeg interpolation settings profile
+# (Values for quality settings are based on current defaults, adjust if needed)
+OPTIMAL_FFMPEG_PROFILE = {
+    # Interpolation
+    "use_ffmpeg_interp": True,
+    "mi_mode": "mci",
+    "mc_mode": "aobmc",
+    "me_mode": "bidir",
+    "vsbmc": True, # Boolean representation for checkbox
+    "scd": "none",
+    "me_algo": "(default)", # Assuming default algo for optimal
+    "search_param": 96,      # Assuming default search param
+    "scd_threshold": 10.0,   # Default threshold (though scd is none)
+    "mb_size": "(default)", # Assuming default mb_size
+    # Sharpening
+    "apply_unsharp": False, # <-- Key for groupbox check state
+    "unsharp_lx": 7,
+    "unsharp_ly": 7,
+    "unsharp_la": 1.0,
+    "unsharp_cx": 5,
+    "unsharp_cy": 5,
+    "unsharp_ca": 0.0,
+    # Quality
+    "preset_text": "Very High (CRF 16)",
+    "bitrate": 15000,
+    "bufsize": 22500, # Auto-calculated from bitrate
+    "pix_fmt": "yuv444p",
+    # Filter Preset
+    "filter_preset": "slow",
+}
+
+# Optimal profile 2 - Based on PowerShell script defaults
+OPTIMAL_FFMPEG_PROFILE_2 = {
+    # Interpolation
+    "use_ffmpeg_interp": True,
+    "mi_mode": "mci",
+    "mc_mode": "aobmc",
+    "me_mode": "bidir",
+    "vsbmc": True,
+    "scd": "none",
+    "me_algo": "epzs",          # Explicitly set based on PS default
+    "search_param": 32,         # Set based on likely PS default
+    "scd_threshold": 10.0,      # Value doesn't matter when scd="none"
+    "mb_size": "(default)",     # Keep default
+    # Sharpening (Disabled, mimicking lack of unsharp/presence of tmix in PS)
+    "apply_unsharp": False,
+    "unsharp_lx": 7,            # Values kept for structure, but unused
+    "unsharp_ly": 7,
+    "unsharp_la": 1.0,
+    "unsharp_cx": 5,
+    "unsharp_cy": 5,
+    "unsharp_ca": 0.0,
+    # Quality (Adjusted based on PS comparison)
+    "preset_text": "Medium (CRF 20)", # Changed preset level example
+    "bitrate": 10000,           # Lowered bitrate example
+    "bufsize": 15000,           # Lowered bufsize (1.5*bitrate)
+    "pix_fmt": "yuv444p",       # Keep high quality format
+    # Filter Preset (Intermediate step)
+    "filter_preset": "medium",      # Match final preset level choice
+}
+
+# Default profile based on initial GUI values
+DEFAULT_FFMPEG_PROFILE = {
+    # Interpolation
+    "use_ffmpeg_interp": True,
+    "mi_mode": "mci",
+    "mc_mode": "obmc",
+    "me_mode": "bidir",
+    "vsbmc": False,
+    "scd": "fdiff",
+    "me_algo": "(default)",
+    "search_param": 96,
+    "scd_threshold": 10.0,
+    "mb_size": "(default)",
+    # Sharpening
+    "apply_unsharp": True, # <-- Key for groupbox check state
+    "unsharp_lx": 7,
+    "unsharp_ly": 7,
+    "unsharp_la": 1.0,
+    "unsharp_cx": 5,
+    "unsharp_cy": 5,
+    "unsharp_ca": 0.0,
+    # Quality
+    "preset_text": "Very High (CRF 16)",
+    "bitrate": 15000,
+    "bufsize": 22500,
+    "pix_fmt": "yuv444p",
+    # Filter Preset
+    "filter_preset": "slow",
+}
+
+# Store profiles in a dictionary for easy access
+FFMPEG_PROFILES = {
+    "Default": DEFAULT_FFMPEG_PROFILE,
+    "Optimal": OPTIMAL_FFMPEG_PROFILE,
+    "Optimal 2": OPTIMAL_FFMPEG_PROFILE_2, # <-- Add new profile
+    # "Custom" is handled implicitly when settings change
+}
+
+# Define OPTIMAL_FFMPEG_INTERP_SETTINGS for backward compatibility if needed elsewhere?
+# For now, we rely on the full profiles.
+OPTIMAL_FFMPEG_INTERP_SETTINGS = {
+    "mi_mode": OPTIMAL_FFMPEG_PROFILE["mi_mode"],
+    "mc_mode": OPTIMAL_FFMPEG_PROFILE["mc_mode"],
+    "me_mode": OPTIMAL_FFMPEG_PROFILE["me_mode"],
+    "vsbmc": "1" if OPTIMAL_FFMPEG_PROFILE["vsbmc"] else "0",
+    "scd": OPTIMAL_FFMPEG_PROFILE["scd"]
+}
+
 
 # ─── Custom clickable label ────────────────────────────────────────────────
 class ClickableLabel(QLabel):
@@ -182,15 +293,9 @@ class VfiWorker(QThread):
         tile_enable: bool,
         max_workers: int,
         encoder: str,
+        # FFmpeg settings passed directly
         use_ffmpeg_interp: bool,
-        skip_model: bool,
-        crf: int,
-        bitrate_kbps: int,
-        bufsize_kb: int,
-        pix_fmt: str,
-        crop_rect: tuple[int, int, int, int] | None,
-        debug_mode: bool,
-        filter_preset: str,
+        filter_preset: str, # Intermediate filter preset
         mi_mode: str,
         mc_mode: str,
         me_mode: str,
@@ -198,6 +303,9 @@ class VfiWorker(QThread):
         search_param: int,
         scd_mode: str,
         scd_threshold: Optional[float],
+        minter_mb_size: Optional[int],
+        minter_vsbmc: int, # Pass as 0 or 1
+        # Unsharp settings
         apply_unsharp: bool,
         unsharp_lx: int,
         unsharp_ly: int,
@@ -205,8 +313,15 @@ class VfiWorker(QThread):
         unsharp_cx: int,
         unsharp_cy: int,
         unsharp_ca: float,
-        minter_mb_size: int | None,
-        minter_vsbmc: int
+        # Final encoding quality settings
+        crf: int,
+        bitrate_kbps: int,
+        bufsize_kb: int,
+        pix_fmt: str,
+        # Other args
+        skip_model: bool,
+        crop_rect: tuple[int, int, int, int] | None,
+        debug_mode: bool,
     ) -> None:
         super().__init__()
         self.in_dir        = in_dir
@@ -217,18 +332,13 @@ class VfiWorker(QThread):
         self.tile_enable   = tile_enable
         self.max_workers   = max_workers
         self.encoder       = encoder
-        self.use_ffmpeg_interp = use_ffmpeg_interp
         self.skip_model = skip_model
-        self.crf = crf
-        self.bitrate_kbps = bitrate_kbps
-        self.bufsize_kb = bufsize_kb
-        self.pix_fmt = pix_fmt
         self.crop_rect     = crop_rect
         self.debug_mode = debug_mode
-        self.filter_preset = filter_preset
-        self.apply_unsharp = apply_unsharp
 
-        # Store new filter params
+        # Store FFmpeg filter/quality settings directly
+        self._do_ffmpeg_interp = use_ffmpeg_interp # Renamed internal variable
+        self.filter_preset = filter_preset
         self.mi_mode = mi_mode
         self.mc_mode = mc_mode
         self.me_mode = me_mode
@@ -236,14 +346,20 @@ class VfiWorker(QThread):
         self.search_param = search_param
         self.scd_mode = scd_mode
         self.scd_threshold = scd_threshold
+        self.minter_mb_size = minter_mb_size
+        self.minter_vsbmc = minter_vsbmc
+        self.apply_unsharp = apply_unsharp
         self.unsharp_lx = unsharp_lx
         self.unsharp_ly = unsharp_ly
         self.unsharp_la = unsharp_la
         self.unsharp_cx = unsharp_cx
         self.unsharp_cy = unsharp_cy
         self.unsharp_ca = unsharp_ca
-        self.minter_mb_size = minter_mb_size
-        self.minter_vsbmc = minter_vsbmc
+        self.crf = crf
+        self.bitrate_kbps = bitrate_kbps
+        self.bufsize_kb = bufsize_kb
+        self.pix_fmt = pix_fmt
+
 
         # placeholder for middle-frame preview
         self.mid_frame_path: str | None = None
@@ -262,8 +378,6 @@ class VfiWorker(QThread):
              # Provide a more informative error if the exe isn't found
              raise FileNotFoundError("RIFE executable not found in package data (expected goesvfi/bin/rife-cli)")
 
-        # Store interpolation preference locally for clarity in this method
-        self._do_ffmpeg_interp = use_ffmpeg_interp
 
     def run(self) -> None:
         from goesvfi.pipeline.run_vfi import run_vfi
@@ -321,112 +435,67 @@ class VfiWorker(QThread):
             if not raw_intermediate_path or not raw_intermediate_path.exists():
                 raise RuntimeError(f"Raw intermediate video path not received or file not found: {raw_intermediate_path}")
 
-            # --- Step B: Optional FFmpeg Filtering Pass --- #
+            # --- Step B: Optional FFmpeg Filtering Pass (Simplified) --- #
             if self._do_ffmpeg_interp:
-                LOGGER.info("Step 1.5: Applying FFmpeg motion interpolation filter (Safe HQ Settings)...")
+                LOGGER.info("Step 1.5: Applying FFmpeg motion interpolation filter (based on GUI settings)...")
                 filtered_intermediate_path = raw_intermediate_path.with_name(
                     f"{raw_intermediate_path.stem}.filtered{raw_intermediate_path.suffix}"
                 )
 
-                # --- Build dynamic filter strings --- #
-                # Base minterpolate options from GUI
-                hq_filter_options = {
+                # --- Build filter strings directly from passed-in settings --- #
+                filter_options = {
                     "mi_mode": self.mi_mode,
                     "mc_mode": self.mc_mode,
                     "me_mode": self.me_mode,
                     "search_param": str(self.search_param),
-                    "fps": str(self.fps * 2),
+                    "fps": str(self.fps * 2), # Use the target FPS * 2
+                    "scd": self.scd_mode,
+                    # Add other options conditionally based on their values/defaults
                 }
-                # Add Motion Estimation algorithm if not default
                 if self.me_algo != "(default)":
-                    hq_filter_options["me"] = self.me_algo
-                # Add Scene Change Detection options
-                hq_filter_options["scd"] = self.scd_mode
+                    filter_options["me"] = self.me_algo
                 if self.scd_mode == "fdiff" and self.scd_threshold is not None:
-                    hq_filter_options["scd_threshold"] = f"{self.scd_threshold:.1f}"
-                # Add mb_size if specified
+                    filter_options["scd_threshold"] = f"{self.scd_threshold:.1f}"
                 if self.minter_mb_size is not None:
-                    hq_filter_options["mb_size"] = str(self.minter_mb_size)
-                # Add vsbmc
-                hq_filter_options["vsbmc"] = str(self.minter_vsbmc)
+                    filter_options["mb_size"] = str(self.minter_mb_size)
+                # vsbmc is 0 or 1, convert to string
+                filter_options["vsbmc"] = str(self.minter_vsbmc)
 
-                minterpolate_str = "minterpolate=" + ":".join([f"{k}={v}" for k, v in hq_filter_options.items()])
+                minterpolate_str = "minterpolate=" + ":".join([f"{k}={v}" for k, v in filter_options.items()])
 
-                # Unsharp options from GUI
-                unsharp_str = (
-                    f"unsharp="
-                    f"luma_msize_x={self.unsharp_lx}:luma_msize_y={self.unsharp_ly}:luma_amount={self.unsharp_la:.1f}:"
-                    f"chroma_msize_x={self.unsharp_cx}:chroma_msize_y={self.unsharp_cy}:chroma_amount={self.unsharp_ca:.1f}"
-                )
-
-                # Combine conditionally
-                safe_hq_filter_str = minterpolate_str
+                # Combine with unsharp if enabled
+                filter_vf_str = minterpolate_str
                 if self.apply_unsharp:
-                    safe_hq_filter_str += f",{unsharp_str}"
-                # --- End dynamic filter strings --- #
+                    unsharp_str = (
+                        f"unsharp="
+                        f"luma_msize_x={self.unsharp_lx}:luma_msize_y={self.unsharp_ly}:luma_amount={self.unsharp_la:.1f}:"
+                        f"chroma_msize_x={self.unsharp_cx}:chroma_msize_y={self.unsharp_cy}:chroma_amount={self.unsharp_ca:.1f}"
+                    )
+                    filter_vf_str += f",{unsharp_str}"
+                # --- End build filter strings --- #
 
-                # --- Attempt 1: Try the dynamically built HQ settings --- # (Renamed section)
+                # --- Run the filtering command --- #
+                filter_desc = "Filtering Pass (GUI Settings)"
+                cmd_filter = [
+                    "ffmpeg",
+                    "-report",
+                    "-hide_banner", "-loglevel", "debug", "-stats", "-y",
+                    "-i", str(raw_intermediate_path),
+                    "-vf", filter_vf_str, # Use the combined filter string
+                    "-c:v", "libx264", "-preset", self.filter_preset, # Use the intermediate preset
+                    "-an",
+                    "-pix_fmt", self.pix_fmt, # Use the final target pixel format for intermediate too?
+                    str(filtered_intermediate_path)
+                ]
+
                 try:
-                    filter_desc = "Filtering Pass (Safe HQ - Custom)" # Updated description
-                    # Build the filtering command (using selected preset)
-                    cmd_filter = [
-                        "ffmpeg", # Base command starts here
-                        # Add -report and -loglevel debug for detailed error logging
-                        "-report",
-                        "-hide_banner", "-loglevel", "debug", "-stats", "-y",
-                        "-i", str(raw_intermediate_path),
-                        "-vf", safe_hq_filter_str,
-                        "-c:v", "libx264", "-preset", self.filter_preset, # <-- Use selected preset
-                        "-an",
-                        "-pix_fmt", self.pix_fmt,
-                        str(filtered_intermediate_path)
-                    ]
-                    # Run the filtering command using the helper
                     _run_ffmpeg_command(cmd_filter, filter_desc)
                     input_for_final_encode = filtered_intermediate_path
                     LOGGER.info(f"{filter_desc} created: {input_for_final_encode}")
-
-                # --- Fallback: If HQ fails, revert to Simple settings --- #
                 except RuntimeError as e:
-                    LOGGER.warning(f"{filter_desc} failed ({e})—falling back to basic motion-interp.")
-
-                    # --- Build Simple filter + Optional Unsharp --- #
-                    simple_minterpolate_str = (
-                        "minterpolate="
-                        f"mi_mode=mci:"
-                        f"mc_mode=aobmc:"
-                        f"me_mode=bidir:"
-                        f"search_param=60:"
-                        f"scd=none:"
-                        f"fps={self.fps * 2}"
-                    )
-                    # Combine simple minterpolate and unsharp conditionally
-                    simple_filter_str = simple_minterpolate_str
-                    if self.apply_unsharp:
-                         # Use the same unsharp settings as configured in the GUI for fallback too
-                         unsharp_str = (
-                            f"unsharp="
-                            f"luma_msize_x={self.unsharp_lx}:luma_msize_y={self.unsharp_ly}:luma_amount={self.unsharp_la:.1f}:"
-                            f"chroma_msize_x={self.unsharp_cx}:chroma_msize_y={self.unsharp_cy}:chroma_amount={self.unsharp_ca:.1f}"
-                         )
-                         simple_filter_str += f",{unsharp_str}"
-                    # Rebuild the command with the simple filter + optional unsharp
-                    cmd_filter_fallback = [
-                        "ffmpeg", # Base command starts here
-                        # Keep -report and -loglevel debug for the fallback too
-                        "-report",
-                        "-hide_banner", "-loglevel", "debug", "-stats", "-y",
-                        "-i", str(raw_intermediate_path),
-                        "-vf", simple_filter_str, # Use the simple filter string
-                        "-c:v", "libx264", "-preset", self.filter_preset, # <-- Use selected preset
-                        "-an",
-                        "-pix_fmt", self.pix_fmt,
-                        str(filtered_intermediate_path)
-                    ]
-                    # Re-run the command with the simple filter
-                    _run_ffmpeg_command(cmd_filter_fallback, "Filtering Pass (Fallback Simple)")
-                    input_for_final_encode = filtered_intermediate_path
-                    LOGGER.info(f"Filtered intermediate video created (Fallback Simple): {input_for_final_encode}")
+                    # Handle error if filtering fails (no fallback here anymore)
+                    LOGGER.error(f"{filter_desc} failed: {e}")
+                    raise RuntimeError(f"FFmpeg filtering failed with current settings: {e}") from e
 
             else:
                 # If not filtering, use the raw intermediate directly for the final encode
@@ -444,7 +513,7 @@ class VfiWorker(QThread):
                 intermediate_input=input_for_final_encode,
                 final_output=self.out_file_path,
                 encoder=self.encoder,
-                # fps and use_interp are no longer passed
+                # Pass the final quality settings
                 crf=self.crf,
                 bitrate_kbps=self.bitrate_kbps,
                 bufsize_kb=self.bufsize_kb,
@@ -478,6 +547,7 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowTitle("GOES‑VFI")
         self.debug_mode = debug_mode
+        self._ffmpeg_setting_change_active = True # Flag to prevent profile switching during load/apply
 
         self._base_output_path: pathlib.Path | None = None
         self.settings = QSettings("YourOrg", "GOESVFI")
@@ -486,11 +556,9 @@ class MainWindow(QWidget):
 
         self.tabs = QTabWidget()
         self.tabs.addTab(self._makeMainTab(), "Interpolate")
-        self.tabs.addTab(self._makeFilterTab(), "Interpolation Filters") # <-- Add new tab
+        self.tabs.addTab(self._make_ffmpeg_settings_tab(), "FFmpeg Settings") # New unified tab
         self.tabs.addTab(self._makeModelLibraryTab(), "Models")
-        self.ffmpeg_tab = QWidget()
-        self.tabs.addTab(self.ffmpeg_tab, "FFmpeg Quality")
-        self._build_ffmpeg_tab()
+        # Removed old filter/quality tabs
 
         self.status_bar = QStatusBar()
         self.status_bar.showMessage("Ready")
@@ -501,9 +569,23 @@ class MainWindow(QWidget):
         self.setLayout(main_layout)
 
         self.worker: VfiWorker | None = None
-        self._connect_filter_tab_signals() # Connect signals after controls are created
+        self._connect_ffmpeg_settings_tab_signals() # Connect signals for the new tab
 
         self.loadSettings() # <-- Load settings after UI is built
+
+        # Apply the initially loaded or default profile after UI is built and settings possibly loaded
+        initial_profile = self.settings.value("ffmpeg/profile", "Default", type=str)
+        if initial_profile in FFMPEG_PROFILES:
+            self._apply_ffmpeg_profile(initial_profile)
+        else:
+             self._apply_ffmpeg_profile("Default") # Fallback
+             if initial_profile != "Custom": # Avoid setting Custom if it was loaded
+                 # Check if ffmpeg_profile_combo exists before setting text
+                 if hasattr(self, 'ffmpeg_profile_combo'):
+                     self.ffmpeg_profile_combo.setCurrentText("Custom")
+
+        # Initial resize after everything is loaded
+        self.adjustSize()
 
     def _pick_in_dir(self) -> None:
         folder = QFileDialog.getExistingDirectory(self, "Select Input Folder")
@@ -528,6 +610,9 @@ class MainWindow(QWidget):
         main_tab_widget = QWidget()
         layout = QVBoxLayout(main_tab_widget) # Layout for the main tab
 
+        # Set vertical size policy to encourage shrinking
+        main_tab_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
         # Widgets (moved from __init__)
         self.in_edit   = QLineEdit()
         self.in_browse = QPushButton("Browse…")
@@ -539,8 +624,8 @@ class MainWindow(QWidget):
         self.mid_spin.setSingleStep(2)
         self.mid_spin.setValue(1)
         self.mid_spin.setToolTip(
-            "Number of in-between frames per original pair:\n"
-            "• 1 = single midpoint (fastest)\n"
+            "Number of in-between frames per original pair:\\n"
+            "• 1 = single midpoint (fastest)\\n"
             "• 3 = recursive three-step (smoother)"
         )
         self.model_combo = QComboBox()
@@ -548,7 +633,7 @@ class MainWindow(QWidget):
             "RIFE v4.6 (default)",
         ])
         self.model_combo.setToolTip(
-            "Choose your interpolation model.\n"
+            "Choose your interpolation model.\\n"
             "Currently only the built-in RIFE model is used."
         )
         self.start_btn  = QPushButton("Start")
@@ -576,17 +661,13 @@ class MainWindow(QWidget):
         else:
             self.encode_combo.setCurrentText("Software x265") # Fallback
 
-        # ─── FFmpeg motion interpolation toggle ───────────────────────────
-        self.ffmpeg_interp_cb = QCheckBox("Use FFmpeg motion interpolation")
-        self.ffmpeg_interp_cb.setChecked(True)
-        self.ffmpeg_interp_cb.setToolTip(
-            "Apply FFmpeg's 'minterpolate' filter before encoding."
-        )
+        # FFmpeg interpolation checkbox MOVED to FFmpeg Settings Tab
+
         # ─── Skip model interpolation toggle ─────────────────────
         self.skip_model_cb = QCheckBox("Skip AI interpolation (use originals only)")
         self.skip_model_cb.setChecked(False)
         self.skip_model_cb.setToolTip(
-            "If checked, do not run the AI model; video will be assembled from\n"
+            "If checked, do not run the AI model; video will be assembled from\\n"
             "original frames (optionally with FFmpeg interpolation)."
         )
 
@@ -599,7 +680,7 @@ class MainWindow(QWidget):
         self.workers_spin.setRange(1, max(8, cpu_cores)) # Allow up to cpu_count or 8
         self.workers_spin.setValue(min(default_workers, 8)) # Default, capped at 8
         self.workers_spin.setToolTip(
-            "Max number of parallel interpolation processes (CPU has " + str(cpu_cores) + ").\n"
+            "Max number of parallel interpolation processes (CPU has " + str(cpu_cores) + ").\\n"
             "Reduce if you experience memory issues."
         )
 
@@ -607,8 +688,8 @@ class MainWindow(QWidget):
         self.tile_checkbox = QCheckBox("Enable tiling for large frames (>2k)")
         self.tile_checkbox.setChecked(True) # Default to ON
         self.tile_checkbox.setToolTip(
-            "Split large frames into tiles before interpolating.\n"
-            "Faster & uses less RAM, but may have edge artifacts.\n"
+            "Split large frames into tiles before interpolating.\\n"
+            "Faster & uses less RAM, but may have edge artifacts.\\n"
             "Disable if RAM allows or edges look bad."
         )
 
@@ -648,12 +729,7 @@ class MainWindow(QWidget):
         # Add layout row for encoder
         encode_row = QHBoxLayout(); encode_row.addWidget(QLabel("Encoder:")); encode_row.addWidget(self.encode_combo); encode_row.addStretch()
 
-        # Add FFmpeg interpolation checkbox row
-        interp_row = QHBoxLayout()
-        interp_row.addWidget(self.ffmpeg_interp_cb)
-        interp_row.addStretch()
-        # Ensure this row is added
-        layout.addLayout(interp_row)
+        # FFmpeg interpolation checkbox row REMOVED from here
 
         # Add skip_model checkbox row
         skip_row = QHBoxLayout()
@@ -690,6 +766,9 @@ class MainWindow(QWidget):
         self.open_btn.setToolTip("Launch the finished MP4 in VLC")
         layout.addWidget(self.open_btn) # Add button to layout
 
+        # Add stretch to push content to the top
+        layout.addStretch()
+
         # Signals (Connect signals specific to this tab's widgets here)
         self.in_browse.clicked.connect(self._pick_in_dir)
         self.out_browse.clicked.connect(self._pick_out_file)
@@ -698,284 +777,564 @@ class MainWindow(QWidget):
 
         return main_tab_widget # Return the widget containing the tab's layout
 
-    def _makeFilterTab(self) -> QWidget:
-        """Builds the Interpolation Filters tab UI."""
-        filter_tab_widget = QWidget()
-        layout = QVBoxLayout(filter_tab_widget)
+    def _make_ffmpeg_settings_tab(self) -> QWidget:
+        """Builds the consolidated FFmpeg Settings tab UI."""
+        tab_widget = QWidget()
+        layout = QVBoxLayout(tab_widget)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        # --- motion interpolation settings --- #
-        layout.addWidget(QLabel("<b>Motion Interpolation Filter Settings (minterpolate):</b>"))
-        grid = QGridLayout()
+        # Set vertical size policy
+        tab_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
-        # Interpolation Mode
-        mi_lbl = QLabel("Interpolation Mode (mi_mode):")
+        # --- Stylesheet for GroupBoxes ---
+        groupbox_style = """
+        QGroupBox::title {
+            font-size: 13px; /* Adjust as needed */
+        }
+        QGroupBox::indicator {
+            width: 13px;
+            height: 13px;
+        }
+        """
+
+        # --- Profile Selector ---
+        profile_row = QHBoxLayout()
+        profile_row.addWidget(QLabel("<b>FFmpeg Settings Profile:</b>"))
+        self.ffmpeg_profile_combo = QComboBox()
+        # Add standard profiles + Custom option
+        self.ffmpeg_profile_combo.addItems(list(FFMPEG_PROFILES.keys()) + ["Custom"])
+        self.ffmpeg_profile_combo.setToolTip("Select a predefined settings profile or use 'Custom'.")
+        profile_row.addWidget(self.ffmpeg_profile_combo)
+        profile_row.addStretch()
+        layout.addLayout(profile_row)
+
+        # --- Enable Checkbox ---
+        interp_row = QHBoxLayout()
+        self.ffmpeg_interp_cb = QCheckBox("Use FFmpeg motion interpolation")
+        # Default checked state will be set by profile/loadSettings
+        self.ffmpeg_interp_cb.setToolTip("Apply FFmpeg's 'minterpolate' filter before encoding.")
+        interp_row.addWidget(self.ffmpeg_interp_cb)
+        interp_row.addStretch()
+        layout.addLayout(interp_row)
+
+        layout.addSpacing(10)
+
+        # --- Motion Interpolation Group ---
+        minterpolate_group = QGroupBox("Motion Interpolation (minterpolate)") # <-- Title Updated
+        minterpolate_group.setObjectName("minterpolate_group") # Set object name
+        minterpolate_group.setCheckable(True) # <-- Make it checkable/collapsible
+        minterpolate_group.setChecked(True)  # <-- Start expanded
+        minterpolate_group.setStyleSheet(groupbox_style) # <-- Apply style (Re-apply)
+        self.minterpolate_group = minterpolate_group # Assign group to self
+
+        # --- Create Content Widget and Layout for Interpolation ---
+        self.minterpolate_content_widget = QWidget()
+        grid = QGridLayout(self.minterpolate_content_widget) # <-- Layout targets the content widget
+
+        # --- Add controls to the content layout (grid) --- 
+        # Interpolation Mode (mi_mode)
+        mi_lbl = QLabel("Interpolation Mode:")
         self.mi_combo = QComboBox()
         self.mi_combo.addItems(["dup", "blend", "mci", "mc"])
-        self.mi_combo.setCurrentText("mci") # Default
         self.mi_combo.setToolTip(
-            "Method for creating intermediate frames.\n"
-            "- dup: Duplicate frames (Fastest, no interpolation). Use for testing.\n"
-            "- blend: Simple frame averaging (Fast, blurry).\n"
-            "- mci: Motion Compensated Interpolation (Requires good motion vectors). Uses 'mc_mode', 'me_mode', 'me_algo', 'search_param'.\n"
-            "- mc: Motion Compensation (No interpolation, just uses vectors). Often combined with 'mci'.\n"
-            "Recommended: 'mci' for smooth results, requires tuning other MC params."
+            "Method for creating intermediate frames.\\n"
+            "- dup: Duplicate frames (Fastest, no interpolation).\\n"
+            "- blend: Simple frame averaging (Fast, blurry).\\n"
+            "- mci: Motion Compensated Interpolation (Uses MC settings).\\n"
+            "- mc: Motion Compensation (No interpolation).\\n"
+            "Recommended: 'mci'."
         )
         grid.addWidget(mi_lbl, 0, 0)
         grid.addWidget(self.mi_combo, 0, 1)
 
-        # Motion Compensation Mode
-        mc_lbl = QLabel("Motion Comp. Mode (mc_mode):")
+        # Motion Compensation Mode (mc_mode)
+        mc_lbl = QLabel("Motion Comp. Mode:")
         self.mc_combo = QComboBox()
         self.mc_combo.addItems(["obmc", "aobmc"])
-        self.mc_combo.setCurrentText("obmc") # Default
         self.mc_combo.setToolTip(
-            "Algorithm for applying motion vectors.\n"
-            "- obmc: Overlapped Block Motion Compensation (Standard, good balance).\n"
-            "- aobmc: Adaptive Overlapped Block MC (Potentially higher quality, slightly slower).\n"
-            "Recommended: 'obmc' is usually sufficient."
+            "Algorithm for applying motion vectors.\\n"
+            "- obmc: Overlapped Block Motion Compensation (Standard).\\n"
+            "- aobmc: Adaptive Overlapped Block MC (Higher quality, slower).\\n"
+            "Recommended: 'obmc'."
         )
         grid.addWidget(mc_lbl, 1, 0)
         grid.addWidget(self.mc_combo, 1, 1)
 
-        # Motion Estimation Mode
-        me_lbl = QLabel("Motion Estimation Mode (me_mode):")
+        # Motion Estimation Mode (me_mode)
+        me_lbl = QLabel("Motion Estimation Mode:")
         self.me_combo = QComboBox()
-        self.me_combo.addItems(["bidir", "bilat"]) # Removed 'direct' as it's less common/useful here
-        self.me_combo.setCurrentText("bidir") # Default
+        self.me_combo.addItems(["bidir", "bilat"])
         self.me_combo.setToolTip(
-            "Direction for motion vector search.\n"
-            "- bidir: Bidirectional (Uses past and future frames, generally best quality).\n"
-            "- bilat: Bilateral (Alternative bidirectional, might differ slightly).\n"
-            "Recommended: 'bidir' is the standard choice."
+            "Direction for motion vector search.\\n"
+            "- bidir: Bidirectional (Uses past/future frames, best quality).\\n"
+            "- bilat: Bilateral (Alternative bidirectional).\\n"
+            "Recommended: 'bidir'."
         )
         grid.addWidget(me_lbl, 2, 0)
         grid.addWidget(self.me_combo, 2, 1)
 
-        # Motion Estimation Algorithm
-        me_algo_lbl = QLabel("ME Algorithm (me_algo):")
+        # Motion Estimation Algorithm (me_algo)
+        me_algo_lbl = QLabel("ME Algorithm:")
         self.me_algo_combo = QComboBox()
-        # Common/useful algorithms. Removed very old/esoteric ones.
         self.me_algo_combo.addItems(["(default)", "esa", "epzs", "hexbs", "umh"])
-        self.me_algo_combo.setCurrentText("(default)") # Default
         self.me_algo_combo.setToolTip(
-            "Algorithm for finding motion vectors. Affects speed and quality.\n"
-            "- (default): FFmpeg's internal choice, often a good balance (usually EPZS or HexBS).\n"
-            "- esa: Exhaustive Search (Slowest, highest quality, can be unstable).\n"
-            "- epzs: Enhanced Predictive Zonal Search (Good balance, often recommended if not default).\n"
-            "- hexbs: Hexagon-based Search (Faster than EPZS, good quality).\n"
-            "- umh: Uneven Multi-Hexagon Search (Similar to hexbs, sometimes faster/better).\n"
-            "Recommended: Start with '(default)'. Try 'epzs' or 'hexbs'/'umh' if needed."
+            "Algorithm for finding motion vectors.\\n"
+            "- (default): FFmpeg's choice (often EPZS/HexBS).\\n"
+            "- esa: Exhaustive Search (Slowest, highest quality).\\n"
+            "- epzs: Enhanced Predictive Zonal Search (Good balance).\\n"
+            "- hexbs/umh: Hexagon-based Search (Faster).\\n"
+            "Recommended: Start with '(default)'."
         )
-        grid.addWidget(me_algo_lbl, 3, 0) # Changed label var name
-        grid.addWidget(self.me_algo_combo, 3, 1) # Changed combo var name
+        grid.addWidget(me_algo_lbl, 3, 0)
+        grid.addWidget(self.me_algo_combo, 3, 1)
 
-        # Search parameter
-        search_param_lbl = QLabel("ME Search Parameter (search_param):")
+        # Search parameter (search_param)
+        search_param_lbl = QLabel("ME Search Parameter:")
         self.search_param_spin = QSpinBox()
-        self.search_param_spin.setRange(4, 256) # Practical range
-        self.search_param_spin.setValue(96) # Increased default, often better for complex motion
+        self.search_param_spin.setRange(4, 256)
         self.search_param_spin.setToolTip(
-            "Maximum pixel distance to search for motion vectors.\n"
-            "Larger values = Slower, potentially better for fast motion.\n"
-            "Smaller values = Faster, may miss distant motion.\n"
-            "Recommended: 64-128 is often a good trade-off. High motion might need more."
+            "Max pixel distance to search for motion vectors.\\n"
+            "Larger = Slower, better for fast motion.\\n"
+            "Recommended: 64-128."
         )
         grid.addWidget(search_param_lbl, 4, 0)
         grid.addWidget(self.search_param_spin, 4, 1)
 
-        # Scene change detection algorithm
-        scd_lbl = QLabel("Scene Change Detection (scd):")
+        # Scene change detection algorithm (scd)
+        scd_lbl = QLabel("Scene Change Detection:")
         self.scd_combo = QComboBox()
         self.scd_combo.addItems(["none", "fdiff"])
-        self.scd_combo.setCurrentText("fdiff") # Default to fdiff
         self.scd_combo.setToolTip(
-            "Method to detect scene cuts to prevent interpolating across them.\n"
-            "- fdiff: Frame Difference (Recommended). Prevents unnatural morphing between scenes.\n"
-            "- none: No detection (Faster, but causes artifacts at scene changes)."
+            "Method to detect scene cuts.\\n"
+            "- fdiff: Frame Difference (Recommended).\\n"
+            "- none: No detection (Faster, artifacts at cuts)."
         )
         grid.addWidget(scd_lbl, 5, 0)
         grid.addWidget(self.scd_combo, 5, 1)
 
-        # Scene change threshold
-        scd_thresh_lbl = QLabel("Scene Change Threshold (%):") # Added unit
+        # Scene change threshold (scd_threshold)
+        scd_thresh_lbl = QLabel("Scene Change Threshold (%):")
         self.scd_thresh_spin = QDoubleSpinBox()
         self.scd_thresh_spin.setRange(0.0, 100.0)
         self.scd_thresh_spin.setSingleStep(0.1)
-        self.scd_thresh_spin.setValue(10.0) # Common default
-        self.scd_thresh_spin.setDecimals(1) # Show one decimal
+        self.scd_thresh_spin.setDecimals(1)
         self.scd_thresh_spin.setToolTip(
-            "Sensitivity for 'fdiff' scene change detection (0-100%).\n"
-            "Lower value = More sensitive (detects smaller changes as cuts).\n"
-            "Higher value = Less sensitive (needs bigger changes).\n"
-            "Recommended: Start with 8-12. Increase if it falsely detects cuts during fades/motion."
+            "Sensitivity for 'fdiff' (0-100%).\\n"
+            "Lower = More sensitive.\\n"
+            "Recommended: Start with 8-12."
         )
         grid.addWidget(scd_thresh_lbl, 6, 0)
         grid.addWidget(self.scd_thresh_spin, 6, 1)
 
-        # Filter Encoding Preset (NEW)
+        # Filter Encoding Preset (filter_preset) - Now applies to intermediate step
         filter_preset_lbl = QLabel("Filter Encoding Preset:")
         self.filter_preset_combo = QComboBox()
         self.filter_preset_combo.addItems([
             "ultrafast", "superfast", "veryfast", "faster", "fast",
             "medium", "slow", "slower", "veryslow"
         ])
-        self.filter_preset_combo.setCurrentText("slow") # Changed default to slow for potentially better intermediate quality
         self.filter_preset_combo.setToolTip(
-            "x264 encoding preset for the *intermediate* filtered video.\n"
-            "Affects the encoding speed and compression efficiency of the temporary\n"
-            "video file generated by the minterpolate filter BEFORE RIFE processing.\n"
-            "Slower presets take longer but create a slightly smaller/higher quality\n"
-            "intermediate file, which *might* minimally impact RIFE's input.\n"
-            "This does NOT directly affect the final output encoding settings.\n"
-            "Recommended: 'medium' or 'slow'. 'fast'/'faster' if speed is critical."
+            "x264 preset for the *intermediate* filtered video (if filtering enabled).\\n"
+            "Slower presets might create slightly higher quality input for RIFE.\\n"
+            "Does NOT affect final output encoding.\\n"
+            "Recommended: 'medium' or 'slow'."
         )
-        grid.addWidget(filter_preset_lbl, 7, 0) # Added at row 7
+        grid.addWidget(filter_preset_lbl, 7, 0)
         grid.addWidget(self.filter_preset_combo, 7, 1)
 
-        # Macroblock size
-        mbsize_lbl = QLabel("Macroblock Size (mb_size):")
+        # Macroblock size (mb_size)
+        mbsize_lbl = QLabel("Macroblock Size:")
         self.mbsize_combo = QComboBox()
         self.mbsize_combo.addItems(["(default)", "16", "8", "4"])
-        self.mbsize_combo.setCurrentText("(default)") # Default
         self.mbsize_combo.setToolTip(
-            "Size of blocks (pixels) used for motion estimation.\n"
-            "- (default)/16: Standard size, good balance of speed and detail.\n"
-            "- 8/4: Smaller blocks capture finer motion detail but are *significantly* slower\n"
-            "  and may increase processing time dramatically. Can sometimes cause artifacts.\n"
-            "Compatibility: Sizes < 16 may be incompatible with some hardware decoders if used\n"
-            "  directly in output, but less relevant for intermediate filter step.\n"
-            "Recommended: Stick with '(default)' or '16' unless fine motion is poorly captured."
+            "Size of blocks for motion estimation.\\n"
+            "- (default)/16: Standard, good balance.\\n"
+            "- 8/4: Finer detail, *significantly* slower.\\n"
+            "Recommended: '(default)' or '16'."
         )
-        grid.addWidget(mbsize_lbl, 8, 0) # Moved to row 8
+        grid.addWidget(mbsize_lbl, 8, 0)
         grid.addWidget(self.mbsize_combo, 8, 1)
 
-        # Variable-size block motion comp
-        vsbmc_lbl = QLabel("Variable Size Blocks (vsbmc):")
+        # Variable-size block motion comp (vsbmc)
+        vsbmc_lbl = QLabel("Variable Size Blocks:")
         self.vsbmc_cb = QCheckBox()
-        self.vsbmc_cb.setChecked(False) # Default off
         self.vsbmc_cb.setToolTip(
-            "Allow using smaller block sizes within the main macroblock (mb_size).\n"
-            "Potentially improves detail capture on complex motion, especially with smaller mb_size,\n"
-            "but increases processing time significantly.\n"
-            "Compatibility: May also impact hardware decoder compatibility if used directly.\n"
-            "Recommended: Keep off unless necessary and prepared for longer processing."
+            "Allow smaller block sizes within macroblock.\\n"
+            "Improves detail on complex motion, increases processing time.\\n"
+            "Recommended: Keep off unless necessary."
         )
-        grid.addWidget(vsbmc_lbl, 9, 0) # Moved to row 9
+        grid.addWidget(vsbmc_lbl, 9, 0)
         grid.addWidget(self.vsbmc_cb, 9, 1)
 
-        layout.addLayout(grid)
-        layout.addSpacing(15)
+        # --- Add Content Widget to GroupBox Layout ---
+        group_layout = QVBoxLayout(self.minterpolate_group) # Create layout for the groupbox itself
+        group_layout.addWidget(self.minterpolate_content_widget)
 
-        # --- unsharp settings --- #
-        layout.addWidget(QLabel("<b>Sharpening Filter Settings (unsharp):</b>")) # Clarified filter name
-        unsharp_grid = QGridLayout()
+        layout.addWidget(minterpolate_group)
+        layout.addSpacing(10)
 
-        self.unsharp_cb = QCheckBox("Apply 'unsharp' filter after interpolation") # Clarified text
-        self.unsharp_cb.setChecked(True) # Default on
-        self.unsharp_cb.setToolTip(
-            "Apply the 'unsharp' filter to enhance detail after motion interpolation.\n"
-            "Useful for slightly softening caused by interpolation or source material.\n"
-            "Can significantly increase fine detail/noise. Disable if over-sharpening occurs."
-        )
-        unsharp_grid.addWidget(self.unsharp_cb, 0, 0, 1, 2) # Span 2 columns
+        # --- Sharpening Group ---
+        unsharp_group = QGroupBox("Sharpening (unsharp)") # <-- Title Updated
+        unsharp_group.setObjectName("unsharp_group") # Set object name
+        unsharp_group.setCheckable(True) # <-- Make it checkable/collapsible
+        unsharp_group.setChecked(True)  # <-- Start expanded
+        self.unsharp_group = unsharp_group # <-- Assign to self
+        unsharp_group.setStyleSheet(groupbox_style) # <-- Apply style (Re-apply)
 
+        # --- Create Content Widget and Layout for Sharpening ---
+        self.unsharp_content_widget = QWidget()
+        unsharp_grid = QGridLayout(self.unsharp_content_widget) # <-- Layout targets the content widget
+
+        # --- Add controls to the content layout (unsharp_grid) ---
+        # Need to adjust row indices for subsequent widgets since row 0 was removed
         self.luma_x_label = QLabel("Luma Matrix X Size (lx):")
-        unsharp_grid.addWidget(self.luma_x_label, 1, 0)
-        self.luma_x_spin = QSpinBox(); self.luma_x_spin.setRange(3, 23); self.luma_x_spin.setSingleStep(2); self.luma_x_spin.setValue(7) # Increased default slightly
-        self.luma_x_spin.setToolTip(
-            "Horizontal size of the luma (brightness) sharpening mask (odd number, 3-23).\n"
-            "Larger values consider a wider area for sharpening = smoother but less localized effect.\n"
-            "Smaller values = sharper, more localized effect, can enhance noise.\n"
-            "Recommended: 5 or 7 is common."
-        )
-        unsharp_grid.addWidget(self.luma_x_spin, 1, 1)
+        unsharp_grid.addWidget(self.luma_x_label, 0, 0) # Start at row 0
+        self.luma_x_spin = QSpinBox(); self.luma_x_spin.setRange(3, 23); self.luma_x_spin.setSingleStep(2);
+        self.luma_x_spin.setToolTip("Horizontal size of luma sharpening mask (odd, 3-23). Larger = smoother. Recommended: 5 or 7.")
+        unsharp_grid.addWidget(self.luma_x_spin, 0, 1) # Row 0
 
         self.luma_y_label = QLabel("Luma Matrix Y Size (ly):")
-        unsharp_grid.addWidget(self.luma_y_label, 2, 0)
-        self.luma_y_spin = QSpinBox(); self.luma_y_spin.setRange(3, 23); self.luma_y_spin.setSingleStep(2); self.luma_y_spin.setValue(7) # Increased default slightly
-        self.luma_y_spin.setToolTip(
-            "Vertical size of the luma (brightness) sharpening mask (odd number, 3-23).\n"
-            "Similar effect to X size, but vertically.\n"
-            "Recommended: 5 or 7 is common. Often same as X size."
-        )
-        unsharp_grid.addWidget(self.luma_y_spin, 2, 1)
+        unsharp_grid.addWidget(self.luma_y_label, 1, 0) # Row 1
+        self.luma_y_spin = QSpinBox(); self.luma_y_spin.setRange(3, 23); self.luma_y_spin.setSingleStep(2);
+        self.luma_y_spin.setToolTip("Vertical size of luma sharpening mask (odd, 3-23). Recommended: 5 or 7.")
+        unsharp_grid.addWidget(self.luma_y_spin, 1, 1) # Row 1
 
         self.luma_amount_label = QLabel("Luma Amount (la):")
-        unsharp_grid.addWidget(self.luma_amount_label, 3, 0)
-        self.luma_amount_spin = QDoubleSpinBox(); self.luma_amount_spin.setRange(-1.5, 5.0); self.luma_amount_spin.setDecimals(1); self.luma_amount_spin.setSingleStep(0.1); self.luma_amount_spin.setValue(1.0) # Reduced default slightly
-        self.luma_amount_spin.setToolTip(
-            "Strength of luma (brightness) sharpening (-1.5 to 5.0).\n"
-            "> 0 sharpens (higher = stronger, risk of halos/noise).\n"
-            "< 0 blurs (rarely used here).\n"
-            "0 = no luma sharpening.\n"
-            "Recommended: Start around 0.5-1.0. Adjust carefully."
-        )
-        unsharp_grid.addWidget(self.luma_amount_spin, 3, 1)
+        unsharp_grid.addWidget(self.luma_amount_label, 2, 0) # Row 2
+        self.luma_amount_spin = QDoubleSpinBox(); self.luma_amount_spin.setRange(-1.5, 5.0); self.luma_amount_spin.setDecimals(1); self.luma_amount_spin.setSingleStep(0.1);
+        self.luma_amount_spin.setToolTip("Strength of luma sharpening (-1.5 to 5.0). >0 sharpens. Recommended: 0.5-1.0.")
+        unsharp_grid.addWidget(self.luma_amount_spin, 2, 1) # Row 2
 
         self.chroma_x_label = QLabel("Chroma Matrix X Size (cx):")
-        unsharp_grid.addWidget(self.chroma_x_label, 4, 0)
-        self.chroma_x_spin = QSpinBox(); self.chroma_x_spin.setRange(3, 23); self.chroma_x_spin.setSingleStep(2); self.chroma_x_spin.setValue(5)
-        self.chroma_x_spin.setToolTip(
-            "Horizontal size of the chroma (color) sharpening mask (odd number, 3-23).\n"
-            "Similar to luma, but affects color detail. Sharpening chroma is often less\n"
-            "desirable or noticeable and can introduce color artifacts.\n"
-            "Recommended: Usually same or smaller than luma size (e.g., 3 or 5)."
-        )
-        unsharp_grid.addWidget(self.chroma_x_spin, 4, 1)
+        unsharp_grid.addWidget(self.chroma_x_label, 3, 0) # Row 3
+        self.chroma_x_spin = QSpinBox(); self.chroma_x_spin.setRange(3, 23); self.chroma_x_spin.setSingleStep(2);
+        self.chroma_x_spin.setToolTip("Horizontal size of chroma sharpening mask (odd, 3-23). Recommended: 3 or 5.")
+        unsharp_grid.addWidget(self.chroma_x_spin, 3, 1) # Row 3
 
         self.chroma_y_label = QLabel("Chroma Matrix Y Size (cy):")
-        unsharp_grid.addWidget(self.chroma_y_label, 5, 0)
-        self.chroma_y_spin = QSpinBox(); self.chroma_y_spin.setRange(3, 23); self.chroma_y_spin.setSingleStep(2); self.chroma_y_spin.setValue(5)
-        self.chroma_y_spin.setToolTip(
-            "Vertical size of the chroma (color) sharpening mask (odd number, 3-23).\n"
-            "Similar to chroma X size.\n"
-            "Recommended: Usually same or smaller than luma size (e.g., 3 or 5). Often same as Chroma X."
-        )
-        unsharp_grid.addWidget(self.chroma_y_spin, 5, 1)
+        unsharp_grid.addWidget(self.chroma_y_label, 4, 0) # Row 4
+        self.chroma_y_spin = QSpinBox(); self.chroma_y_spin.setRange(3, 23); self.chroma_y_spin.setSingleStep(2);
+        self.chroma_y_spin.setToolTip("Vertical size of chroma sharpening mask (odd, 3-23). Recommended: 3 or 5.")
+        unsharp_grid.addWidget(self.chroma_y_spin, 4, 1) # Row 4
 
         self.chroma_amount_label = QLabel("Chroma Amount (ca):")
-        unsharp_grid.addWidget(self.chroma_amount_label, 6, 0)
-        self.chroma_amount_spin = QDoubleSpinBox(); self.chroma_amount_spin.setRange(-1.5, 5.0); self.chroma_amount_spin.setDecimals(1); self.chroma_amount_spin.setSingleStep(0.1); self.chroma_amount_spin.setValue(0.0) # Default to 0
-        self.chroma_amount_spin.setToolTip(
-             "Strength of chroma (color) sharpening (-1.5 to 5.0).\n"
-             "> 0 sharpens color (can cause ringing/artifacts easily).\n"
-             "< 0 blurs color.\n"
-             "0 = no chroma sharpening (Often recommended).\n"
-             "Recommended: Start at 0.0. Increase very slightly (e.g., 0.1-0.3) only if needed."
-        )
-        unsharp_grid.addWidget(self.chroma_amount_spin, 6, 1)
+        unsharp_grid.addWidget(self.chroma_amount_label, 5, 0) # Row 5
+        self.chroma_amount_spin = QDoubleSpinBox(); self.chroma_amount_spin.setRange(-1.5, 5.0); self.chroma_amount_spin.setDecimals(1); self.chroma_amount_spin.setSingleStep(0.1);
+        self.chroma_amount_spin.setToolTip("Strength of chroma sharpening (-1.5 to 5.0). 0 = none (recommended).")
+        unsharp_grid.addWidget(self.chroma_amount_spin, 5, 1) # Row 5
 
-        layout.addLayout(unsharp_grid)
+        # --- Add Content Widget to GroupBox Layout ---
+        unsharp_group_layout = QVBoxLayout(self.unsharp_group) # Create layout for the groupbox itself
+        unsharp_group_layout.addWidget(self.unsharp_content_widget)
 
-        return filter_tab_widget
+        layout.addWidget(unsharp_group)
+        layout.addSpacing(10)
 
-    def _connect_filter_tab_signals(self) -> None:
-        """Connect signals for enabling/disabling controls on the filter tab."""
-        # Enable/disable scd_threshold based on scd mode
-        self.scd_combo.currentTextChanged.connect(self._update_scd_thresh_state)
-        # Enable/disable all unsharp controls based on master checkbox
-        self.unsharp_cb.toggled.connect(self._update_unsharp_controls_state)
-        # Initial state update
-        self._update_scd_thresh_state(self.scd_combo.currentText())
-        self._update_unsharp_controls_state(self.unsharp_cb.isChecked())
+        # --- Encoding Quality Group ---
+        quality_group = QGroupBox("Encoding Quality (Final Output)")
+        quality_group.setObjectName("quality_group") # Set object name
+        quality_layout = QVBoxLayout(quality_group) # Use QVBoxLayout for this group
+
+        # Preset selector (influences CRF for software codecs)
+        quality_layout.addWidget(QLabel("Software Encoder Preset:"))
+        self.preset_combo = QComboBox()
+        self.preset_combo.addItems(["Very High (CRF 16)", "High (CRF 18)", "Medium (CRF 20)"])
+        self.preset_combo.setToolTip("Selects the CRF value for software encoders (libx264, libx265). Lower = higher quality.")
+        quality_layout.addWidget(self.preset_combo)
+
+        # Bitrate control (for hardware codecs)
+        quality_layout.addWidget(QLabel("Hardware Encoder Target Bitrate (kbps):"))
+        self.bitrate_spin = QSpinBox()
+        self.bitrate_spin.setRange(1000, 20000) # 1-20 Mbps
+        self.bitrate_spin.setSuffix(" kbps")
+        self.bitrate_spin.setToolTip("Target average bitrate for hardware encoders (VideoToolbox, etc.). Ignored by software.")
+        quality_layout.addWidget(self.bitrate_spin)
+
+        # Buffer size control (for hardware codecs)
+        quality_layout.addWidget(QLabel("Hardware Encoder VBV Buffer Size (kb):"))
+        self.bufsize_spin = QSpinBox()
+        self.bufsize_spin.setRange(1000, 40000) # 1-40 Mbits
+        self.bufsize_spin.setSuffix(" kb")
+        self.bufsize_spin.setToolTip("Video Buffer Verifier size (controls max bitrate). ~1.5x bitrate is a good start. Ignored by software.")
+        # Connection for bitrate -> bufsize moved to _connect_ffmpeg_settings_tab_signals
+        quality_layout.addWidget(self.bufsize_spin)
+
+        # Pixel format selector
+        quality_layout.addWidget(QLabel("Output Pixel Format:"))
+        self.pixfmt_combo = QComboBox()
+        self.pixfmt_combo.addItems(["yuv420p", "yuv444p"])
+        self.pixfmt_combo.setToolTip("Video pixel format. yuv420p is standard, yuv444p retains more color (larger file).")
+        quality_layout.addWidget(self.pixfmt_combo)
+
+        layout.addWidget(quality_group)
+
+        # layout.addStretch() # Remove stretch at the end of the main layout for this tab
+
+        # --- Set initial content visibility based on groupbox state ---
+        if hasattr(self, 'minterpolate_group') and hasattr(self, '_toggle_minterpolate_content'):
+            self._toggle_minterpolate_content(self.minterpolate_group.isChecked())
+        if hasattr(self, 'unsharp_group') and hasattr(self, '_toggle_unsharp_content'):
+            self._toggle_unsharp_content(self.unsharp_group.isChecked())
+        # --- End Initial Visibility ---
+
+        return tab_widget
+
+    def _connect_ffmpeg_settings_tab_signals(self) -> None:
+        """Connect signals for enabling/disabling controls and profile handling on the FFmpeg Settings tab."""
+        # --- Profile Handling ---
+        # Check if ffmpeg_profile_combo exists before connecting
+        if hasattr(self, 'ffmpeg_profile_combo'):
+            self.ffmpeg_profile_combo.currentTextChanged.connect(self._on_profile_selected)
+
+        # --- Connect individual controls to switch profile to "Custom" ---
+        controls_to_monitor = [
+            # Group 1: Interpolation
+            self.ffmpeg_interp_cb, self.mi_combo, self.mc_combo, self.me_combo,
+            self.me_algo_combo, self.search_param_spin, self.scd_combo,
+            self.scd_thresh_spin, self.filter_preset_combo, self.mbsize_combo,
+            self.vsbmc_cb,
+            # Group 2: Sharpening (Controls inside)
+            # self.unsharp_cb, <-- REMOVED
+            self.luma_x_spin, self.luma_y_spin,
+            self.luma_amount_spin, self.chroma_x_spin, self.chroma_y_spin,
+            self.chroma_amount_spin,
+            # Group 3: Quality
+            self.preset_combo, self.bitrate_spin,
+            self.bufsize_spin, self.pixfmt_combo
+        ]
+        for control in controls_to_monitor:
+             # Check if the control attribute exists on self before connecting
+             if hasattr(self, control.objectName()):
+                 actual_control = getattr(self, control.objectName())
+                 if isinstance(actual_control, QComboBox):
+                     actual_control.currentTextChanged.connect(self._on_ffmpeg_setting_changed)
+                 elif isinstance(actual_control, QCheckBox):
+                     actual_control.toggled.connect(self._on_ffmpeg_setting_changed)
+                 elif isinstance(actual_control, (QSpinBox, QDoubleSpinBox)):
+                     actual_control.valueChanged.connect(self._on_ffmpeg_setting_changed)
+
+        # --- Control Enabling/Disabling ---
+        # Check existence before connecting signals for dependent controls
+        if hasattr(self, 'scd_combo'):
+            self.scd_combo.currentTextChanged.connect(self._update_scd_thresh_state)
+        # REMOVE OLD UNSHARP_CB CONNECTION
+        # if hasattr(self, 'unsharp_cb'):
+        #     self.unsharp_cb.toggled.connect(self._update_unsharp_controls_state)
+
+        # Connect toggling the unsharp group itself to mark profile as custom
+        if hasattr(self, 'unsharp_group'):
+            self.unsharp_group.toggled.connect(self._on_ffmpeg_setting_changed)
+            self.unsharp_group.toggled.connect(self._toggle_unsharp_content) # <-- Connect to hide/show content
+
+        # --- Connect interpolation group toggle ---
+        if hasattr(self, 'minterpolate_group'):
+            # Also connect toggled signal to hide/show its content
+            self.minterpolate_group.toggled.connect(self._toggle_minterpolate_content) # <-- Connect to hide/show content
+            # Keep connection for profile change (optional, but good practice if group toggling should mark custom)
+            # self.minterpolate_group.toggled.connect(self._on_ffmpeg_setting_changed) # Uncomment if needed
+
+
+        if hasattr(self, 'ffmpeg_interp_cb'):
+            self.ffmpeg_interp_cb.toggled.connect(self._update_ffmpeg_controls_state)
+        if hasattr(self, 'bitrate_spin') and hasattr(self, 'bufsize_spin'):
+            self.bitrate_spin.valueChanged.connect(
+                 lambda val: self.bufsize_spin.setValue(min(self.bufsize_spin.maximum(), max(self.bufsize_spin.minimum(), int(val * 1.5))))
+            )
+
+        # --- Connect tab switching to resize window ---
+        if hasattr(self, 'tabs'):
+            self.tabs.currentChanged.connect(self._on_tab_changed)
+
+        # Initial state update after potential loading
+        if hasattr(self, 'ffmpeg_interp_cb'):
+             self._update_ffmpeg_controls_state(self.ffmpeg_interp_cb.isChecked())
+
+
+    def _on_profile_selected(self, profile_name: str) -> None:
+        """Applies the selected profile if it's not 'Custom'."""
+        # Prevent recursive calls when applying profile programmatically
+        if not self._ffmpeg_setting_change_active: return
+        if profile_name != "Custom" and profile_name in FFMPEG_PROFILES:
+            LOGGER.info(f"Applying FFmpeg profile: {profile_name}")
+            self._apply_ffmpeg_profile(profile_name)
+
+
+    def _on_ffmpeg_setting_changed(self, *args: Any) -> None:
+        """Switches the profile combo to 'Custom' if a setting is changed manually."""
+        # Prevent switching to Custom when applying a profile or loading settings
+        if not self._ffmpeg_setting_change_active: return
+
+        # Check if ffmpeg_profile_combo exists
+        if not hasattr(self, 'ffmpeg_profile_combo'): return
+
+        # Block signals temporarily to prevent immediate re-application of "Custom"
+        self.ffmpeg_profile_combo.blockSignals(True)
+        self.ffmpeg_profile_combo.setCurrentText("Custom")
+        self.ffmpeg_profile_combo.blockSignals(False)
+        # LOGGER.debug("FFmpeg setting changed, profile set to Custom.")
+
+
+    def _apply_ffmpeg_profile(self, profile_name: str) -> None:
+        """Updates the UI controls based on the selected profile dictionary."""
+        if profile_name not in FFMPEG_PROFILES:
+            LOGGER.warning(f"Profile '{profile_name}' not found.")
+            return
+
+        profile = FFMPEG_PROFILES[profile_name]
+        LOGGER.debug(f"Applying settings from profile: {profile_name}")
+
+        # --- Block signals and disable change flag during update ---
+        self._ffmpeg_setting_change_active = False
+        # Check if ffmpeg_profile_combo exists before blocking/setting
+        if hasattr(self, 'ffmpeg_profile_combo'):
+            self.ffmpeg_profile_combo.blockSignals(True)
+
+        try:
+            # Set profile combo without triggering signal
+            if hasattr(self, 'ffmpeg_profile_combo'):
+                self.ffmpeg_profile_combo.setCurrentText(profile_name)
+
+            # --- Apply settings from profile dict --- (Using cast for type safety)
+            # Check existence of each control before setting its value
+            if hasattr(self, 'ffmpeg_interp_cb'): self.ffmpeg_interp_cb.setChecked(cast(bool, profile.get("use_ffmpeg_interp", True)))
+            if hasattr(self, 'mi_combo'): self.mi_combo.setCurrentText(cast(str, profile.get("mi_mode", "mci")))
+            if hasattr(self, 'mc_combo'): self.mc_combo.setCurrentText(cast(str, profile.get("mc_mode", "obmc")))
+            if hasattr(self, 'me_combo'): self.me_combo.setCurrentText(cast(str, profile.get("me_mode", "bidir")))
+            if hasattr(self, 'me_algo_combo'): self.me_algo_combo.setCurrentText(cast(str, profile.get("me_algo", "(default)")))
+            if hasattr(self, 'search_param_spin'): self.search_param_spin.setValue(cast(int, profile.get("search_param", 96)))
+            if hasattr(self, 'scd_combo'): self.scd_combo.setCurrentText(cast(str, profile.get("scd", "fdiff")))
+            if hasattr(self, 'scd_thresh_spin'): self.scd_thresh_spin.setValue(cast(float, profile.get("scd_threshold", 10.0)))
+            if hasattr(self, 'filter_preset_combo'): self.filter_preset_combo.setCurrentText(cast(str, profile.get("filter_preset", "slow")))
+            if hasattr(self, 'mbsize_combo'): self.mbsize_combo.setCurrentText(cast(str, profile.get("mb_size", "(default)")))
+            if hasattr(self, 'vsbmc_cb'): self.vsbmc_cb.setChecked(cast(bool, profile.get("vsbmc", False)))
+            if hasattr(self, 'unsharp_cb'): self.unsharp_cb.setChecked(cast(bool, profile.get("apply_unsharp", True)))
+            if hasattr(self, 'luma_x_spin'): self.luma_x_spin.setValue(cast(int, profile.get("unsharp_lx", 7)))
+            if hasattr(self, 'luma_y_spin'): self.luma_y_spin.setValue(cast(int, profile.get("unsharp_ly", 7)))
+            if hasattr(self, 'luma_amount_spin'): self.luma_amount_spin.setValue(cast(float, profile.get("unsharp_la", 1.0)))
+            if hasattr(self, 'chroma_x_spin'): self.chroma_x_spin.setValue(cast(int, profile.get("unsharp_cx", 5)))
+            if hasattr(self, 'chroma_y_spin'): self.chroma_y_spin.setValue(cast(int, profile.get("unsharp_cy", 5)))
+            if hasattr(self, 'chroma_amount_spin'): self.chroma_amount_spin.setValue(cast(float, profile.get("unsharp_ca", 0.0)))
+            if hasattr(self, 'preset_combo'): self.preset_combo.setCurrentText(cast(str, profile.get("preset_text", "Very High (CRF 16)")))
+            if hasattr(self, 'bitrate_spin'): self.bitrate_spin.setValue(cast(int, profile.get("bitrate", 15000)))
+            if hasattr(self, 'bufsize_spin') and hasattr(self, 'bitrate_spin'):
+                default_bufsize = int(self.bitrate_spin.value() * 1.5)
+                self.bufsize_spin.setValue(cast(int, profile.get("bufsize", default_bufsize)))
+            if hasattr(self, 'pixfmt_combo'): self.pixfmt_combo.setCurrentText(cast(str, profile.get("pix_fmt", "yuv444p")))
+
+            # --- Ensure group boxes are expanded when applying a profile ---
+            if hasattr(self, 'minterpolate_group'):
+                self.minterpolate_group.setChecked(True)
+            if hasattr(self, 'unsharp_group'):
+                # Set checked state based on profile's apply_unsharp value
+                self.unsharp_group.setChecked(cast(bool, profile.get("apply_unsharp", True)))
+
+            # --- Update content visibility based on new groupbox check state ---
+            if hasattr(self, 'minterpolate_group') and hasattr(self, '_toggle_minterpolate_content'):
+                self._toggle_minterpolate_content(self.minterpolate_group.isChecked())
+            if hasattr(self, 'unsharp_group') and hasattr(self, '_toggle_unsharp_content'):
+                self._toggle_unsharp_content(self.unsharp_group.isChecked())
+            # --- End Content Visibility Update ---
+
+            # --- Update dependent control states ---\
+            if hasattr(self, 'ffmpeg_interp_cb'):
+                self._update_ffmpeg_controls_state(self.ffmpeg_interp_cb.isChecked()) # Handles interp/unsharp groups
+
+        finally:
+            # --- Re-enable signals and flag ---\
+            if hasattr(self, 'ffmpeg_profile_combo'):
+                 self.ffmpeg_profile_combo.blockSignals(False)
+            self._ffmpeg_setting_change_active = True
+            LOGGER.debug(f"Finished applying profile: {profile_name}")
+
+
+    def _update_ffmpeg_controls_state(self, enable: bool) -> None:
+        """Enables/disables all interpolation and sharpening controls based on the main checkbox."""
+        # Find group boxes within the FFmpeg Settings tab
+        # Get the index of the FFmpeg Settings tab
+        ffmpeg_tab_index = -1
+        for i in range(self.tabs.count()):
+            if self.tabs.tabText(i) == "FFmpeg Settings":
+                ffmpeg_tab_index = i
+                break
+
+        if ffmpeg_tab_index == -1:
+            LOGGER.error("Could not find 'FFmpeg Settings' tab to update controls.")
+            return
+
+        ffmpeg_tab_widget = self.tabs.widget(ffmpeg_tab_index)
+        if not ffmpeg_tab_widget:
+            LOGGER.error("Widget for 'FFmpeg Settings' tab is invalid.")
+            return # Safety check
+
+        # Find the specific group boxes within the correct tab widget
+        # Use object names if they are set, otherwise rely on titles (less robust)
+        minterpolate_group = ffmpeg_tab_widget.findChild(QGroupBox, "minterpolate_group")
+        unsharp_group = ffmpeg_tab_widget.findChild(QGroupBox, "unsharp_group")
+        quality_group = ffmpeg_tab_widget.findChild(QGroupBox, "quality_group")
+
+        # Fallback to finding by title if object names aren't found (adjust titles if needed)
+        if not minterpolate_group:
+            minterpolate_group = ffmpeg_tab_widget.findChild(QGroupBox, "Motion Interpolation (minterpolate)")
+        if not unsharp_group:
+            unsharp_group = ffmpeg_tab_widget.findChild(QGroupBox, "Sharpening (unsharp)")
+        if not quality_group:
+            quality_group = ffmpeg_tab_widget.findChild(QGroupBox, "Encoding Quality (Final Output)")
+
+        # --- Set Visibility based on main checkbox ---
+        if minterpolate_group:
+            minterpolate_group.setVisible(enable)
+        else:
+            LOGGER.warning("Could not find minterpolate_group to update visibility.")
+
+        if unsharp_group:
+            unsharp_group.setVisible(enable)
+        else:
+            LOGGER.warning("Could not find unsharp_group to update visibility.")
+        # --- End Visibility Setting ---
+
+        # Quality group itself remains enabled/visible
+        if quality_group:
+            quality_group.setEnabled(True) # Ensure quality group is always enabled
+            quality_group.setVisible(True) # Ensure quality group is always visible
+
+        # SCD threshold state is handled by its own signal connection, no need to call here.
 
     def _update_scd_thresh_state(self, scd_mode: str) -> None:
-        enable = (scd_mode == "fdiff")
-        self.scd_thresh_spin.setEnabled(enable)
+        # Only enable threshold if scd_mode is fdiff
+        # Remove dependency on main ffmpeg checkbox state
+        # main_interp_enabled = hasattr(self, 'ffmpeg_interp_cb') and self.ffmpeg_interp_cb.isChecked()
+        enable = (scd_mode == "fdiff") # Enable ONLY based on scd_mode
+        # Check if scd_thresh_spin exists
+        if hasattr(self, 'scd_thresh_spin'):
+            self.scd_thresh_spin.setEnabled(enable)
 
     def _update_unsharp_controls_state(self, checked: bool) -> None:
-        widgets_to_toggle = [
-            self.luma_x_label, self.luma_x_spin,
-            self.luma_y_label, self.luma_y_spin,
-            self.luma_amount_label, self.luma_amount_spin,
-            self.chroma_x_label, self.chroma_x_spin,
-            self.chroma_y_label, self.chroma_y_spin,
-            self.chroma_amount_label, self.chroma_amount_spin,
-            # Do not disable mb_size or vsbmc based on unsharp
-        ]
-        for widget in widgets_to_toggle:
-            widget.setEnabled(checked)
+        # Only enable the unsharp group if main interp is enabled AND unsharp checkbox is checked
+        main_interp_enabled = hasattr(self, 'ffmpeg_interp_cb') and self.ffmpeg_interp_cb.isChecked()
+        enable_group = main_interp_enabled and checked
+
+        # Find the unsharp group box again
+        ffmpeg_tab_index = -1
+        for i in range(self.tabs.count()):
+            if self.tabs.tabText(i) == "FFmpeg Settings":
+                ffmpeg_tab_index = i
+                break
+        if ffmpeg_tab_index == -1: return # Should not happen
+        ffmpeg_tab_widget = self.tabs.widget(ffmpeg_tab_index)
+        if not ffmpeg_tab_widget: return
+
+        unsharp_group = ffmpeg_tab_widget.findChild(QGroupBox, "unsharp_group")
+        if not unsharp_group:
+            unsharp_group = ffmpeg_tab_widget.findChild(QGroupBox, "Sharpening (unsharp)")
+
+        if unsharp_group:
+            unsharp_group.setEnabled(enable_group)
+            # Ensure internal controls are enabled when the group is visible (they might have been disabled)
+            # We no longer need to toggle individual controls here, just the group visibility.
+            # unsharp_group.setEnabled(True) # Keep internal controls enabled, visibility controls the group <-- REMOVE THIS LINE
+            unsharp_group.setEnabled(enable_group) # <-- USE THIS INSTEAD
+        else:
+            LOGGER.warning("Could not find unsharp_group to update visibility.")
 
     def _start(self) -> None:
         in_dir  = pathlib.Path(self.in_edit.text()).expanduser()
@@ -1008,44 +1367,46 @@ class MainWindow(QWidget):
         tile_enable = self.tile_checkbox.isChecked()
         max_workers = self.workers_spin.value()
         encoder     = self.encode_combo.currentText()
-        use_ffmpeg_interp = self.ffmpeg_interp_cb.isChecked()
         skip_model = self.skip_model_cb.isChecked()
 
-        # --- Get Filter Tab Settings --- #
-        mi_mode = self.mi_combo.currentText()
-        mc_mode = self.mc_combo.currentText()
-        me_mode = self.me_combo.currentText()
-        me_algo = self.me_algo_combo.currentText()
-        search_param = self.search_param_spin.value()
-        scd_mode = self.scd_combo.currentText()
-        scd_threshold = self.scd_thresh_spin.value() if scd_mode == "fdiff" else None # Pass None if not used
-
-        apply_unsharp = self.unsharp_cb.isChecked()
-        unsharp_lx = self.luma_x_spin.value()
-        unsharp_ly = self.luma_y_spin.value()
-        unsharp_la = self.luma_amount_spin.value()
-        unsharp_cx = self.chroma_x_spin.value()
-        unsharp_cy = self.chroma_y_spin.value()
-        unsharp_ca = self.chroma_amount_spin.value()
-
-        # Get mb_size, handle default
-        mb_size_str = self.mbsize_combo.currentText()
+        # --- Get settings from the consolidated FFmpeg Settings Tab ---\
+        # Check existence of controls before accessing them
+        use_ffmpeg_interp = self.ffmpeg_interp_cb.isChecked() if hasattr(self, 'ffmpeg_interp_cb') else False
+        # Interpolation settings (with defaults if controls don't exist)
+        mi_mode = self.mi_combo.currentText() if hasattr(self, 'mi_combo') else "mci"
+        mc_mode = self.mc_combo.currentText() if hasattr(self, 'mc_combo') else "obmc"
+        me_mode = self.me_combo.currentText() if hasattr(self, 'me_combo') else "bidir"
+        me_algo = self.me_algo_combo.currentText() if hasattr(self, 'me_algo_combo') else "(default)"
+        search_param = self.search_param_spin.value() if hasattr(self, 'search_param_spin') else 96
+        scd_mode = self.scd_combo.currentText() if hasattr(self, 'scd_combo') else "fdiff"
+        scd_threshold = self.scd_thresh_spin.value() if hasattr(self, 'scd_thresh_spin') and scd_mode == "fdiff" else None
+        filter_preset = self.filter_preset_combo.currentText() if hasattr(self, 'filter_preset_combo') else "slow"
+        mb_size_str = self.mbsize_combo.currentText() if hasattr(self, 'mbsize_combo') else "(default)"
         minter_mb_size = int(mb_size_str) if mb_size_str != "(default)" else None
+        minter_vsbmc = 1 if hasattr(self, 'vsbmc_cb') and self.vsbmc_cb.isChecked() else 0
+        # Sharpening settings
+        apply_unsharp = self.unsharp_group.isChecked() if hasattr(self, 'unsharp_group') else False # <-- USE GROUP CHECK STATE
+        unsharp_lx = self.luma_x_spin.value() if hasattr(self, 'luma_x_spin') else 7
+        unsharp_ly = self.luma_y_spin.value() if hasattr(self, 'luma_y_spin') else 7
+        unsharp_la = self.luma_amount_spin.value() if hasattr(self, 'luma_amount_spin') else 1.0
+        unsharp_cx = self.chroma_x_spin.value() if hasattr(self, 'chroma_x_spin') else 5
+        unsharp_cy = self.chroma_y_spin.value() if hasattr(self, 'chroma_y_spin') else 5
+        unsharp_ca = self.chroma_amount_spin.value() if hasattr(self, 'chroma_amount_spin') else 0.0
+        # Quality settings
+        preset_text = self.preset_combo.currentText() if hasattr(self, 'preset_combo') else "Very High (CRF 16)"
+        bitrate_kbps = self.bitrate_spin.value() if hasattr(self, 'bitrate_spin') else 15000
+        bufsize_kb = self.bufsize_spin.value() if hasattr(self, 'bufsize_spin') else int(bitrate_kbps * 1.5)
+        pix_fmt = self.pixfmt_combo.currentText() if hasattr(self, 'pixfmt_combo') else "yuv444p"
+        # --- End Get FFmpeg Settings ---\
 
-        # Get vsbmc
-        minter_vsbmc = 1 if self.vsbmc_cb.isChecked() else 0
-        # --- End Filter Tab Settings --- #
-
-        # Calculate CRF from preset text
-        preset_text = self.preset_combo.currentText()
+        # Calculate CRF from preset text (for final software encoding)
         try:
-            # Extract number after "CRF "
             crf_value = int(preset_text.split("CRF ")[-1].rstrip(")"))
         except (IndexError, ValueError):
             LOGGER.warning(f"Could not parse CRF from preset '{preset_text}', defaulting to 20.")
             crf_value = 20 # Default fallback
 
-        # --- Log all settings before starting worker ---
+        # --- Log all settings before starting worker ---\
         settings_to_log = {
             "Input Directory": str(in_dir),
             "Output File": str(final_out_mp4),
@@ -1055,12 +1416,14 @@ class MainWindow(QWidget):
             "Tiling Enabled": tile_enable,
             "Max Workers": max_workers,
             "Encoder": encoder,
-            "Use FFmpeg Interp": use_ffmpeg_interp,
             "Skip AI Model": skip_model,
             "Crop Rectangle": self.crop_rect,
             "Debug Mode": self.debug_mode,
-            "Filters": {
-                "Intermediate Preset": self.filter_preset_combo.currentText(),
+            "FFmpeg Settings": {
+                "Profile": self.ffmpeg_profile_combo.currentText() if hasattr(self, 'ffmpeg_profile_combo') else 'N/A', # Log selected profile
+                "Enabled": use_ffmpeg_interp,
+                # Interpolation
+                "Intermediate Preset": filter_preset,
                 "MI Mode": mi_mode,
                 "MC Mode": mc_mode,
                 "ME Mode": me_mode,
@@ -1070,6 +1433,7 @@ class MainWindow(QWidget):
                 "SCD Threshold": scd_threshold,
                 "MB Size": minter_mb_size,
                 "VSBMC": minter_vsbmc,
+                # Sharpening
                 "Apply Unsharp": apply_unsharp,
                 "Unsharp Luma X": unsharp_lx,
                 "Unsharp Luma Y": unsharp_ly,
@@ -1077,16 +1441,15 @@ class MainWindow(QWidget):
                 "Unsharp Chroma X": unsharp_cx,
                 "Unsharp Chroma Y": unsharp_cy,
                 "Unsharp Chroma Amount": unsharp_ca,
-            },
-            "Quality": {
-                "Software Preset (CRF)": f"{self.preset_combo.currentText()} ({crf_value})", # <-- Use preset_combo and LOCAL crf_value
-                "Hardware Bitrate (kbps)": self.bitrate_spin.value(),
-                "Hardware Buffer (kb)": self.bufsize_spin.value(),
-                "Pixel Format": self.pixfmt_combo.currentText(),
+                # Quality
+                "Software Preset (CRF)": f"{preset_text} ({crf_value})",
+                "Hardware Bitrate (kbps)": bitrate_kbps,
+                "Hardware Buffer (kb)": bufsize_kb,
+                "Pixel Format": pix_fmt,
             },
         }
-        LOGGER.info(f"Starting VFI process with settings:\n{json.dumps(settings_to_log, indent=2)}")
-        # --- End Logging ---
+        LOGGER.info(f"Starting VFI process with settings:\\n{json.dumps(settings_to_log, indent=2)}")
+        # --- End Logging ---\
 
         # disable the Open button until we finish
         self.open_btn.setEnabled(False)
@@ -1101,37 +1464,26 @@ class MainWindow(QWidget):
         self.progress.setValue(0) # Explicitly reset progress value
         self.status_bar.showMessage("Starting interpolation...") # Update status bar
 
-        bitrate_kbps = self.bitrate_spin.value()
-        bufsize_kb = self.bufsize_spin.value()
-        pix_fmt = self.pixfmt_combo.currentText()
-
         # Ensure crop_rect type matches worker's expectation using cast
         current_crop_rect = cast(Optional[Tuple[int, int, int, int]], self.crop_rect)
 
-        # Start worker
+        # Start worker - Pass all relevant FFmpeg settings
         self.worker = VfiWorker(
             # Standard args
-            in_dir,
-            final_out_mp4,
-            fps,
-            mid_count,
-            model_key,
+            in_dir=in_dir,
+            out_file_path=final_out_mp4,
+            fps=fps,
+            mid_count=mid_count,
+            model_key=model_key,
             tile_enable=tile_enable,
             max_workers=max_workers,
             encoder=encoder,
-            use_ffmpeg_interp=use_ffmpeg_interp,
             skip_model=skip_model,
-            # Quality args
-            crf=crf_value,
-            bitrate_kbps=bitrate_kbps,
-            bufsize_kb=bufsize_kb,
-            pix_fmt=pix_fmt,
-            # Crop args
             crop_rect=current_crop_rect,
-            # Debugging args
             debug_mode=self.debug_mode,
-            # Filter args
-            filter_preset=self.filter_preset_combo.currentText(),
+             # FFmpeg settings
+            use_ffmpeg_interp=use_ffmpeg_interp,
+            filter_preset=filter_preset,
             mi_mode=mi_mode,
             mc_mode=mc_mode,
             me_mode=me_mode,
@@ -1139,6 +1491,8 @@ class MainWindow(QWidget):
             search_param=search_param,
             scd_mode=scd_mode,
             scd_threshold=scd_threshold,
+            minter_mb_size=minter_mb_size,
+            minter_vsbmc=minter_vsbmc,
             apply_unsharp=apply_unsharp,
             unsharp_lx=unsharp_lx,
             unsharp_ly=unsharp_ly,
@@ -1146,9 +1500,11 @@ class MainWindow(QWidget):
             unsharp_cx=unsharp_cx,
             unsharp_cy=unsharp_cy,
             unsharp_ca=unsharp_ca,
-            # Add mb_size and vsbmc
-            minter_mb_size=minter_mb_size,
-            minter_vsbmc=minter_vsbmc
+            # Quality args
+            crf=crf_value,
+            bitrate_kbps=bitrate_kbps,
+            bufsize_kb=bufsize_kb,
+            pix_fmt=pix_fmt
         )
         self.worker.progress.connect(self._on_progress)
         self.worker.finished.connect(self._on_finished)
@@ -1197,18 +1553,18 @@ class MainWindow(QWidget):
                         if not pixm.isNull(): self.preview_mid.setText("") # Clear text
                     except Exception as e:
                         LOGGER.error(f"Error loading mid-frame preview '{mid_png}': {e}")
-                        self.preview_mid.setText("Mid frame\n(Error)")
+                        self.preview_mid.setText("Mid frame\\n(Error)")
                 else:
                      LOGGER.warning(f"Mid-frame path provided but file not found: {mid_png}")
-                     self.preview_mid.setText("Mid frame\n(Not found)")
+                     self.preview_mid.setText("Mid frame\\n(Not found)")
             else:
                  LOGGER.info("No mid-frame path available after run.")
                  self.preview_mid.setText("Mid frame") # Reset text if no path
         else:
             LOGGER.warning("Worker or mid_frame_path attribute not available in _on_finished")
-        # --- End mid-frame preview logic ---
+        # --- End mid-frame preview logic ---\
 
-        self._show_info(f"Video saved to:\n{mp4}")
+        self._show_info(f"Video saved to:\\n{mp4}")
 
     def _show_error(self, msg: str) -> None:
         LOGGER.error(msg)
@@ -1220,7 +1576,7 @@ class MainWindow(QWidget):
     def _show_info(self, msg: str) -> None:
         QMessageBox.information(self, "Info", msg)
 
-    # ------------- Add VLC opener method -----------
+    # ------------- Add VLC opener method -----------\
     def _open_in_vlc(self) -> None:
         """Launch the last output MP4 in VLC (cross-platform)."""
         import sys, subprocess, pathlib # Keep imports local if preferred
@@ -1244,7 +1600,7 @@ class MainWindow(QWidget):
         except Exception as e:
              self._show_error(f"Failed to open file in VLC: {e}")
 
-    # --- Zoom Dialog Method ---
+    # --- Zoom Dialog Method ---\
     def _show_zoom(self, label: ClickableLabel) -> None:
         """Pop up a frameless dialog showing the image from file_path, scaled to fit screen."""
         if not label.file_path or not pathlib.Path(label.file_path).exists():
@@ -1255,7 +1611,7 @@ class MainWindow(QWidget):
             pix = QPixmap(label.file_path)
             if pix.isNull():
                 LOGGER.error(f"Failed to load pixmap for zoom: {label.file_path}")
-                self._show_error(f"Could not load image:\n{label.file_path}")
+                self._show_error(f"Could not load image:\\n{label.file_path}")
                 return
 
             # --- Apply crop if it exists --- #
@@ -1269,7 +1625,7 @@ class MainWindow(QWidget):
                         return
                 except Exception as crop_err:
                     LOGGER.exception(f"Error applying crop rect {self.crop_rect} during zoom")
-                    self._show_error(f"Error applying crop:\n{crop_err}")
+                    self._show_error(f"Error applying crop:\\n{crop_err}")
                     return
             # --- End Apply crop --- #
 
@@ -1294,12 +1650,15 @@ class MainWindow(QWidget):
 
         except Exception as e:
             LOGGER.exception(f"Error showing zoom dialog for {label.file_path}")
-            self._show_error(f"Error displaying image:\n{e}")
+            self._show_error(f"Error displaying image:\\n{e}")
 
-    # +++ ADD NEW METHOD FOR MODELS TAB +++
+    # +++ Restore Models Tab Method +++
     def _makeModelLibraryTab(self) -> QWidget:
         """Builds the Models tab with a simple table of available checkpoints."""
         w = QWidget()
+        # Set vertical size policy
+        w.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+
         tbl = QTableWidget(1, 4, parent=w)
         tbl.setHorizontalHeaderLabels(["Name", "Size", "Speed (FPS)", "ΔPSNR"])
         # Row 0: RIFE v4.6
@@ -1387,7 +1746,7 @@ class MainWindow(QWidget):
                 lbl.file_path = str(p)
             else:
                 lbl.clear()
-                lbl.setText(f"{preview_name}\n(Error)") # Indicate error on label
+                lbl.setText(f"{preview_name}\\n(Error)") # Indicate error on label
                 lbl.file_path = None
 
         end_time = datetime.now()
@@ -1405,66 +1764,21 @@ class MainWindow(QWidget):
         self._update_previews() # Refresh previews with full images
         self.status_bar.showMessage("Crop cleared.", 3000)
 
-    # Add the new _build_ffmpeg_tab method
-    def _build_ffmpeg_tab(self) -> None:
-        """Builds the FFmpeg settings tab content."""
-        lay = QVBoxLayout(self.ffmpeg_tab) # Use the tab widget instance
-
-        # Preset selector (influences CRF for software codecs)
-        lay.addWidget(QLabel("Software Encoder Preset:"))
-        self.preset_combo = QComboBox()
-        self.preset_combo.addItems(["Very High (CRF 16)", "High (CRF 18)", "Medium (CRF 20)"])
-        self.preset_combo.setCurrentText("Very High (CRF 16)") # Default changed to Very High (16)
-        self.preset_combo.setToolTip("Selects the CRF value used for software encoders (libx264, libx265). Lower value = higher quality.")
-        lay.addWidget(self.preset_combo)
-
-        # Bitrate control (for hardware codecs)
-        lay.addWidget(QLabel("Hardware Encoder Target Bitrate (kbps):"))
-        self.bitrate_spin = QSpinBox()
-        self.bitrate_spin.setRange(1000, 20000) # 1-20 Mbps
-        self.bitrate_spin.setSuffix(" kbps")
-        self.bitrate_spin.setValue(15000) # Default 15 Mbps (Increased from 8000)
-        self.bitrate_spin.setToolTip("Target average bitrate for hardware encoders (VideoToolbox, NVENC, etc.). Ignored by software encoders.")
-        lay.addWidget(self.bitrate_spin)
-
-        # Buffer size control (for hardware codecs)
-        lay.addWidget(QLabel("Hardware Encoder VBV Buffer Size (kb):"))
-        self.bufsize_spin = QSpinBox()
-        self.bufsize_spin.setRange(1000, 40000) # 1-40 Mbits
-        self.bufsize_spin.setSuffix(" kb")
-        default_buf = int(self.bitrate_spin.value() * 1.5) # Set based on default bitrate
-        self.bufsize_spin.setValue(default_buf)
-        self.bufsize_spin.setToolTip("Video Buffer Verifier size (controls max bitrate). ~1.5x bitrate is a good start. Ignored by software encoders.")
-        # Connect bitrate changes to update default buffer size
-        self.bitrate_spin.valueChanged.connect(
-            lambda val: self.bufsize_spin.setValue(min(self.bufsize_spin.maximum(), max(self.bufsize_spin.minimum(), int(val * 1.5))))
-        )
-        lay.addWidget(self.bufsize_spin)
-
-        # Pixel format selector
-        lay.addWidget(QLabel("Output Pixel Format:"))
-        self.pixfmt_combo = QComboBox()
-        self.pixfmt_combo.addItems(["yuv420p", "yuv444p"])
-        self.pixfmt_combo.setCurrentText("yuv444p") # Default changed to yuv444p
-        self.pixfmt_combo.setToolTip("Video pixel format. yuv420p is standard, yuv444p retains more color (larger file).")
-        lay.addWidget(self.pixfmt_combo)
-
-        lay.addStretch()
-
-    # +++ Add Settings Persistence Methods +++
+    # +++ Settings Persistence Methods +++
     def loadSettings(self) -> None:
         """Load settings from QSettings and apply them to the UI."""
         LOGGER.info("Loading settings...")
+        self._ffmpeg_setting_change_active = False # Disable profile switching during load
         settings = self.settings # Use the instance member
 
-        # --- Window Geometry ---
+        # --- Window Geometry ---\
         geom = settings.value("window/geometry")
         if isinstance(geom, QByteArray): # QSettings might return QByteArray
              self.restoreGeometry(geom)
         else:
              self.resize(560, 500) # Default size if no geometry saved
 
-        # --- Main Tab ---
+        # --- Main Tab ---\
         self.in_edit.setText(settings.value("main/inputDir", "", type=str))
         # Handle output path carefully - use default if saved is empty
         saved_out_path = settings.value("main/outputFile", "", type=str)
@@ -1499,7 +1813,7 @@ class MainWindow(QWidget):
         elif "Hardware H.264 (VideoToolbox)" in available_encoders:
             default_encoder = "Hardware H.264 (VideoToolbox)"
         self.encode_combo.setCurrentText(settings.value("main/encoder", default_encoder, type=str))
-        self.ffmpeg_interp_cb.setChecked(settings.value("main/useFFmpegInterp", True, type=bool))
+        # self.ffmpeg_interp_cb.setChecked(settings.value("main/useFFmpegInterp", True, type=bool)) # Moved to FFmpeg settings
         self.skip_model_cb.setChecked(settings.value("main/skipModel", False, type=bool))
         # Ensure default worker logic matches _makeMainTab if setting is missing
         import os
@@ -1508,62 +1822,150 @@ class MainWindow(QWidget):
         self.workers_spin.setValue(settings.value("main/maxWorkers", default_workers, type=int))
         self.tile_checkbox.setChecked(settings.value("main/tilingEnabled", True, type=bool))
 
-        # --- Filter Tab ---
-        self.mi_combo.setCurrentText(settings.value("filter/miMode", "mci", type=str))
-        self.mc_combo.setCurrentText(settings.value("filter/mcMode", "obmc", type=str))
-        self.me_combo.setCurrentText(settings.value("filter/meMode", "bidir", type=str))
-        self.me_algo_combo.setCurrentText(settings.value("filter/meAlgo", "(default)", type=str))
-        self.search_param_spin.setValue(settings.value("filter/searchParam", 96, type=int))
-        self.scd_combo.setCurrentText(settings.value("filter/scdMode", "fdiff", type=str))
-        self.scd_thresh_spin.setValue(settings.value("filter/scdThreshold", 10.0, type=float))
-        self.filter_preset_combo.setCurrentText(settings.value("filter/preset", "slow", type=str))
-        self.mbsize_combo.setCurrentText(settings.value("filter/mbSize", "(default)", type=str))
-        self.vsbmc_cb.setChecked(settings.value("filter/vsbmc", False, type=bool))
-        # Unsharp
-        self.unsharp_cb.setChecked(settings.value("filter/unsharpEnabled", True, type=bool))
-        self.luma_x_spin.setValue(settings.value("filter/unsharpLx", 7, type=int))
-        self.luma_y_spin.setValue(settings.value("filter/unsharpLy", 7, type=int))
-        self.luma_amount_spin.setValue(settings.value("filter/unsharpLa", 1.0, type=float))
-        self.chroma_x_spin.setValue(settings.value("filter/unsharpCx", 5, type=int))
-        self.chroma_y_spin.setValue(settings.value("filter/unsharpCy", 5, type=int))
-        self.chroma_amount_spin.setValue(settings.value("filter/unsharpCa", 0.0, type=float))
+        # --- FFmpeg Settings Tab ---
+        # Load profile first, but don't apply it yet
+        loaded_profile = settings.value("ffmpeg/profile", "Default", type=str)
 
-        # --- FFmpeg Quality Tab ---
-        self.preset_combo.setCurrentText(settings.value("quality/presetCRF", "Very High (CRF 16)", type=str))
-        # Handle bitrate/bufsize defaults carefully
-        default_bitrate = 15000
-        saved_bitrate = settings.value("quality/bitrate", default_bitrate, type=int)
-        self.bitrate_spin.setValue(saved_bitrate)
-        default_bufsize = int(saved_bitrate * 1.5) # Calculate default based on loaded/default bitrate
-        self.bufsize_spin.setValue(settings.value("quality/bufsize", default_bufsize, type=int))
-        self.pixfmt_combo.setCurrentText(settings.value("quality/pixFmt", "yuv444p", type=str))
+        # Load individual settings (these will override profile defaults if profile is not "Custom")
+        # Check existence of controls before loading into them
+        if hasattr(self, 'ffmpeg_interp_cb'): self.ffmpeg_interp_cb.setChecked(settings.value("ffmpeg/enabled", True, type=bool))
+        if hasattr(self, 'mi_combo'): self.mi_combo.setCurrentText(settings.value("ffmpeg/miMode", "mci", type=str))
+        if hasattr(self, 'mc_combo'): self.mc_combo.setCurrentText(settings.value("ffmpeg/mcMode", "obmc", type=str))
+        if hasattr(self, 'me_combo'): self.me_combo.setCurrentText(settings.value("ffmpeg/meMode", "bidir", type=str))
+        if hasattr(self, 'me_algo_combo'): self.me_algo_combo.setCurrentText(settings.value("ffmpeg/meAlgo", "(default)", type=str))
+        if hasattr(self, 'search_param_spin'): self.search_param_spin.setValue(settings.value("ffmpeg/searchParam", 96, type=int))
+        if hasattr(self, 'scd_combo'): self.scd_combo.setCurrentText(settings.value("ffmpeg/scdMode", "fdiff", type=str))
+        if hasattr(self, 'scd_thresh_spin'): self.scd_thresh_spin.setValue(settings.value("ffmpeg/scdThreshold", 10.0, type=float))
+        if hasattr(self, 'filter_preset_combo'): self.filter_preset_combo.setCurrentText(settings.value("ffmpeg/filterPreset", "slow", type=str))
+        if hasattr(self, 'mbsize_combo'): self.mbsize_combo.setCurrentText(settings.value("ffmpeg/mbSize", "(default)", type=str))
+        if hasattr(self, 'vsbmc_cb'): self.vsbmc_cb.setChecked(settings.value("ffmpeg/vsbmc", False, type=bool))
+        if hasattr(self, 'unsharp_cb'): self.unsharp_cb.setChecked(settings.value("ffmpeg/unsharpEnabled", True, type=bool))
+        if hasattr(self, 'luma_x_spin'): self.luma_x_spin.setValue(settings.value("ffmpeg/unsharpLx", 7, type=int))
+        if hasattr(self, 'luma_y_spin'): self.luma_y_spin.setValue(settings.value("ffmpeg/unsharpLy", 7, type=int))
+        if hasattr(self, 'luma_amount_spin'): self.luma_amount_spin.setValue(settings.value("ffmpeg/unsharpLa", 1.0, type=float))
+        if hasattr(self, 'chroma_x_spin'): self.chroma_x_spin.setValue(settings.value("ffmpeg/unsharpCx", 5, type=int))
+        if hasattr(self, 'chroma_y_spin'): self.chroma_y_spin.setValue(settings.value("ffmpeg/unsharpCy", 5, type=int))
+        if hasattr(self, 'chroma_amount_spin'): self.chroma_amount_spin.setValue(settings.value("ffmpeg/unsharpCa", 0.0, type=float))
+        if hasattr(self, 'preset_combo'): self.preset_combo.setCurrentText(settings.value("ffmpeg/presetCRF", "Very High (CRF 16)", type=str))
+        if hasattr(self, 'bitrate_spin'):
+            default_bitrate = 15000
+            saved_bitrate = settings.value("ffmpeg/bitrate", default_bitrate, type=int)
+            self.bitrate_spin.setValue(saved_bitrate)
+            if hasattr(self, 'bufsize_spin'):
+                default_bufsize = int(saved_bitrate * 1.5)
+                self.bufsize_spin.setValue(settings.value("ffmpeg/bufsize", default_bufsize, type=int))
+        if hasattr(self, 'pixfmt_combo'): self.pixfmt_combo.setCurrentText(settings.value("ffmpeg/pixFmt", "yuv444p", type=str))
 
-        # --- Update UI state after loading ---
-        # Call the signal connectors *after* setting values to ensure dependent controls update
-        self._connect_filter_tab_signals()
-        # Trigger the state update manually for controls dependent on others
-        self._update_scd_thresh_state(self.scd_combo.currentText())
-        self._update_unsharp_controls_state(self.unsharp_cb.isChecked())
+        # --- Load Collapsed State for Group Boxes ---
+        if hasattr(self, 'minterpolate_group'):
+            self.minterpolate_group.setChecked(settings.value("ffmpeg/minterpolateChecked", True, type=bool))
+        if hasattr(self, 'unsharp_group'):
+            self.unsharp_group.setChecked(settings.value("ffmpeg/unsharpChecked", True, type=bool))
+
+        # --- Update content visibility based on loaded groupbox check state ---
+        if hasattr(self, 'minterpolate_group') and hasattr(self, '_toggle_minterpolate_content'):
+            self._toggle_minterpolate_content(self.minterpolate_group.isChecked())
+        if hasattr(self, 'unsharp_group') and hasattr(self, '_toggle_unsharp_content'):
+            self._toggle_unsharp_content(self.unsharp_group.isChecked())
+        # --- End Content Visibility Update ---
+
+        # --- Set Profile ComboBox *after* loading individual settings ---
+        if hasattr(self, 'ffmpeg_profile_combo'):
+            self.ffmpeg_profile_combo.blockSignals(True)
+            self.ffmpeg_profile_combo.setCurrentText(loaded_profile)
+            self.ffmpeg_profile_combo.blockSignals(False)
+
+            # If the loaded profile was NOT custom, re-apply it to ensure consistency
+            # Otherwise, check if current settings constitute "Custom"
+            if loaded_profile != "Custom" and loaded_profile in FFMPEG_PROFILES:
+                self._apply_ffmpeg_profile(loaded_profile) # Re-apply to make sure UI matches loaded profile
+            else:
+                 # Check if the loaded settings match any known profile
+                 current_settings_match_profile = False
+                 for name, prof_dict in FFMPEG_PROFILES.items():
+                     if self._check_settings_match_profile(prof_dict):
+                         self.ffmpeg_profile_combo.blockSignals(True)
+                         self.ffmpeg_profile_combo.setCurrentText(name)
+                         self.ffmpeg_profile_combo.blockSignals(False)
+                         current_settings_match_profile = True
+                         break
+                 if not current_settings_match_profile:
+                     self.ffmpeg_profile_combo.blockSignals(True)
+                     self.ffmpeg_profile_combo.setCurrentText("Custom")
+                     self.ffmpeg_profile_combo.blockSignals(False)
+
+        # --- Load and Apply Collapsed State for Group Boxes (AFTER profile logic) ---
+        if hasattr(self, 'minterpolate_group'):
+            interp_checked = settings.value("ffmpeg/minterpolateChecked", True, type=bool)
+            self.minterpolate_group.setChecked(interp_checked)
+            if hasattr(self, '_toggle_minterpolate_content'):
+                self._toggle_minterpolate_content(interp_checked)
+        if hasattr(self, 'unsharp_group'):
+            unsharp_checked = settings.value("ffmpeg/unsharpChecked", True, type=bool)
+            self.unsharp_group.setChecked(unsharp_checked)
+            if hasattr(self, '_toggle_unsharp_content'):
+                self._toggle_unsharp_content(unsharp_checked)
+        # --- End Group Box State Loading ---
+
+
+        # --- Update UI state after loading ---\
+        # Manually trigger state updates for dependent controls
+        if hasattr(self, 'ffmpeg_interp_cb'):
+            self._update_ffmpeg_controls_state(self.ffmpeg_interp_cb.isChecked()) # Handles interp/unsharp groups
 
         self._update_previews() # Load previews based on loaded input dir
+        self._ffmpeg_setting_change_active = True # Re-enable profile switching
         LOGGER.info("Settings loaded.")
+
+    def _check_settings_match_profile(self, profile_dict: Dict[str, Any]) -> bool:
+         """Helper to check if current UI settings match a given profile dictionary."""
+         # Check existence of controls before comparing
+         try:
+             return (
+                 (not hasattr(self, 'ffmpeg_interp_cb') or self.ffmpeg_interp_cb.isChecked() == profile_dict.get("use_ffmpeg_interp", True)) and
+                 (not hasattr(self, 'mi_combo') or self.mi_combo.currentText() == profile_dict.get("mi_mode", "mci")) and
+                 (not hasattr(self, 'mc_combo') or self.mc_combo.currentText() == profile_dict.get("mc_mode", "obmc")) and
+                 (not hasattr(self, 'me_combo') or self.me_combo.currentText() == profile_dict.get("me_mode", "bidir")) and
+                 (not hasattr(self, 'me_algo_combo') or self.me_algo_combo.currentText() == profile_dict.get("me_algo", "(default)")) and
+                 (not hasattr(self, 'search_param_spin') or self.search_param_spin.value() == profile_dict.get("search_param", 96)) and
+                 (not hasattr(self, 'scd_combo') or self.scd_combo.currentText() == profile_dict.get("scd", "fdiff")) and
+                 (not hasattr(self, 'scd_thresh_spin') or abs(self.scd_thresh_spin.value() - profile_dict.get("scd_threshold", 10.0)) < 0.01) and
+                 (not hasattr(self, 'filter_preset_combo') or self.filter_preset_combo.currentText() == profile_dict.get("filter_preset", "slow")) and
+                 (not hasattr(self, 'mbsize_combo') or self.mbsize_combo.currentText() == profile_dict.get("mb_size", "(default)")) and
+                 (not hasattr(self, 'vsbmc_cb') or self.vsbmc_cb.isChecked() == profile_dict.get("vsbmc", False)) and
+                 (not hasattr(self, 'unsharp_cb') or self.unsharp_cb.isChecked() == profile_dict.get("apply_unsharp", True)) and
+                 (not hasattr(self, 'luma_x_spin') or self.luma_x_spin.value() == profile_dict.get("unsharp_lx", 7)) and
+                 (not hasattr(self, 'luma_y_spin') or self.luma_y_spin.value() == profile_dict.get("unsharp_ly", 7)) and
+                 (not hasattr(self, 'luma_amount_spin') or abs(self.luma_amount_spin.value() - profile_dict.get("unsharp_la", 1.0)) < 0.01) and
+                 (not hasattr(self, 'chroma_x_spin') or self.chroma_x_spin.value() == profile_dict.get("unsharp_cx", 5)) and
+                 (not hasattr(self, 'chroma_y_spin') or self.chroma_y_spin.value() == profile_dict.get("unsharp_cy", 5)) and
+                 (not hasattr(self, 'chroma_amount_spin') or abs(self.chroma_amount_spin.value() - profile_dict.get("unsharp_ca", 0.0)) < 0.01) and
+                 (not hasattr(self, 'preset_combo') or self.preset_combo.currentText() == profile_dict.get("preset_text", "Very High (CRF 16)")) and
+                 (not hasattr(self, 'bitrate_spin') or self.bitrate_spin.value() == profile_dict.get("bitrate", 15000)) and
+                 (not hasattr(self, 'bufsize_spin') or self.bufsize_spin.value() == profile_dict.get("bufsize", int(profile_dict.get("bitrate", 15000) * 1.5))) and
+                 (not hasattr(self, 'pixfmt_combo') or self.pixfmt_combo.currentText() == profile_dict.get("pix_fmt", "yuv444p"))
+             )
+         except Exception as e:
+             LOGGER.error(f"Error comparing settings to profile: {e}")
+             return False
+
 
     def saveSettings(self) -> None:
         """Save current UI settings to QSettings."""
         LOGGER.info("Saving settings...")
         settings = self.settings # Use the instance member
 
-        # --- Window Geometry ---
+        # --- Window Geometry ---\
         settings.setValue("window/geometry", self.saveGeometry())
 
-        # --- Main Tab ---
+        # --- Main Tab ---\
         settings.setValue("main/inputDir", self.in_edit.text())
         settings.setValue("main/outputFile", self.out_edit.text())
         settings.setValue("main/fps", self.fps_spin.value())
         settings.setValue("main/midFrames", self.mid_spin.value())
         settings.setValue("main/model", self.model_combo.currentText())
         settings.setValue("main/encoder", self.encode_combo.currentText())
-        settings.setValue("main/useFFmpegInterp", self.ffmpeg_interp_cb.isChecked())
+        # settings.setValue("main/useFFmpegInterp", self.ffmpeg_interp_cb.isChecked()) # Moved
         settings.setValue("main/skipModel", self.skip_model_cb.isChecked())
         settings.setValue("main/maxWorkers", self.workers_spin.value())
         settings.setValue("main/tilingEnabled", self.tile_checkbox.isChecked())
@@ -1574,31 +1976,37 @@ class MainWindow(QWidget):
              settings.remove("main/cropRect") # Remove if None
 
 
-        # --- Filter Tab ---
-        settings.setValue("filter/miMode", self.mi_combo.currentText())
-        settings.setValue("filter/mcMode", self.mc_combo.currentText())
-        settings.setValue("filter/meMode", self.me_combo.currentText())
-        settings.setValue("filter/meAlgo", self.me_algo_combo.currentText())
-        settings.setValue("filter/searchParam", self.search_param_spin.value())
-        settings.setValue("filter/scdMode", self.scd_combo.currentText())
-        settings.setValue("filter/scdThreshold", self.scd_thresh_spin.value())
-        settings.setValue("filter/preset", self.filter_preset_combo.currentText())
-        settings.setValue("filter/mbSize", self.mbsize_combo.currentText())
-        settings.setValue("filter/vsbmc", self.vsbmc_cb.isChecked())
-        # Unsharp
-        settings.setValue("filter/unsharpEnabled", self.unsharp_cb.isChecked())
-        settings.setValue("filter/unsharpLx", self.luma_x_spin.value())
-        settings.setValue("filter/unsharpLy", self.luma_y_spin.value())
-        settings.setValue("filter/unsharpLa", self.luma_amount_spin.value())
-        settings.setValue("filter/unsharpCx", self.chroma_x_spin.value())
-        settings.setValue("filter/unsharpCy", self.chroma_y_spin.value())
-        settings.setValue("filter/unsharpCa", self.chroma_amount_spin.value())
+        # --- FFmpeg Settings Tab ---
+        # Check existence of controls before saving their state
+        if hasattr(self, 'ffmpeg_profile_combo'): settings.setValue("ffmpeg/profile", self.ffmpeg_profile_combo.currentText())
+        if hasattr(self, 'ffmpeg_interp_cb'): settings.setValue("ffmpeg/enabled", self.ffmpeg_interp_cb.isChecked())
+        if hasattr(self, 'mi_combo'): settings.setValue("ffmpeg/miMode", self.mi_combo.currentText())
+        if hasattr(self, 'mc_combo'): settings.setValue("ffmpeg/mcMode", self.mc_combo.currentText())
+        if hasattr(self, 'me_combo'): settings.setValue("ffmpeg/meMode", self.me_combo.currentText())
+        if hasattr(self, 'me_algo_combo'): settings.setValue("ffmpeg/meAlgo", self.me_algo_combo.currentText())
+        if hasattr(self, 'search_param_spin'): settings.setValue("ffmpeg/searchParam", self.search_param_spin.value())
+        if hasattr(self, 'scd_combo'): settings.setValue("ffmpeg/scdMode", self.scd_combo.currentText())
+        if hasattr(self, 'scd_thresh_spin'): settings.setValue("ffmpeg/scdThreshold", self.scd_thresh_spin.value())
+        if hasattr(self, 'filter_preset_combo'): settings.setValue("ffmpeg/filterPreset", self.filter_preset_combo.currentText())
+        if hasattr(self, 'mbsize_combo'): settings.setValue("ffmpeg/mbSize", self.mbsize_combo.currentText())
+        if hasattr(self, 'vsbmc_cb'): settings.setValue("ffmpeg/vsbmc", self.vsbmc_cb.isChecked())
+        if hasattr(self, 'unsharp_cb'): settings.setValue("ffmpeg/unsharpEnabled", self.unsharp_cb.isChecked())
+        if hasattr(self, 'luma_x_spin'): settings.setValue("ffmpeg/unsharpLx", self.luma_x_spin.value())
+        if hasattr(self, 'luma_y_spin'): settings.setValue("ffmpeg/unsharpLy", self.luma_y_spin.value())
+        if hasattr(self, 'luma_amount_spin'): settings.setValue("ffmpeg/unsharpLa", self.luma_amount_spin.value())
+        if hasattr(self, 'chroma_x_spin'): settings.setValue("ffmpeg/unsharpCx", self.chroma_x_spin.value())
+        if hasattr(self, 'chroma_y_spin'): settings.setValue("ffmpeg/unsharpCy", self.chroma_y_spin.value())
+        if hasattr(self, 'chroma_amount_spin'): settings.setValue("ffmpeg/unsharpCa", self.chroma_amount_spin.value())
+        if hasattr(self, 'preset_combo'): settings.setValue("ffmpeg/presetCRF", self.preset_combo.currentText())
+        if hasattr(self, 'bitrate_spin'): settings.setValue("ffmpeg/bitrate", self.bitrate_spin.value())
+        if hasattr(self, 'bufsize_spin'): settings.setValue("ffmpeg/bufsize", self.bufsize_spin.value())
+        if hasattr(self, 'pixfmt_combo'): settings.setValue("ffmpeg/pixFmt", self.pixfmt_combo.currentText())
 
-        # --- FFmpeg Quality Tab ---
-        settings.setValue("quality/presetCRF", self.preset_combo.currentText())
-        settings.setValue("quality/bitrate", self.bitrate_spin.value())
-        settings.setValue("quality/bufsize", self.bufsize_spin.value())
-        settings.setValue("quality/pixFmt", self.pixfmt_combo.currentText())
+        # --- Save Collapsed State for Group Boxes ---
+        if hasattr(self, 'minterpolate_group'):
+            settings.setValue("ffmpeg/minterpolateChecked", self.minterpolate_group.isChecked())
+        if hasattr(self, 'unsharp_group'):
+            settings.setValue("ffmpeg/unsharpChecked", self.unsharp_group.isChecked())
 
         LOGGER.info("Settings saved.")
 
@@ -1615,6 +2023,24 @@ class MainWindow(QWidget):
             LOGGER.warning("closeEvent received None, proceeding with default close.")
             pass # Ensure this is correctly indented
     # --- End Settings Persistence Methods ---
+
+    # --- Add Methods for Manual Collapse ---
+    def _toggle_minterpolate_content(self, checked: bool) -> None:
+        """Shows/hides the content widget based on the groupbox checked state."""
+        if hasattr(self, 'minterpolate_content_widget'):
+            self.minterpolate_content_widget.setVisible(checked)
+
+    def _toggle_unsharp_content(self, checked: bool) -> None:
+        """Shows/hides the content widget based on the groupbox checked state."""
+        if hasattr(self, 'unsharp_content_widget'):
+            self.unsharp_content_widget.setVisible(checked)
+    # --- End Add Methods ---
+
+    def _on_tab_changed(self, index: int) -> None:
+        """Slot called when the current tab is changed."""
+        # Try forcing a geometry update before adjusting size
+        self.updateGeometry() # Inform layout system about potential change
+        self.adjustSize()
 
 # ────────────────────────── top‑level launcher ────────────────────────────
 def main() -> None:

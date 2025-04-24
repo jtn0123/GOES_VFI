@@ -16,6 +16,7 @@ def _run_ffmpeg_command(cmd: list[str], desc: str) -> None:
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
             text=True,
             errors='replace'
         )
