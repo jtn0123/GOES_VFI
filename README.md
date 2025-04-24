@@ -2,33 +2,45 @@
 
 [![Version](https://img.shields.io/github/v/tag/jtn0123/GOES_VFI?label=version)](https://github.com/jtn0123/GOES_VFI/tags)
 
-A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the RIFE (Real-Time Intermediate Flow Estimation) model to sequences of GOES satellite images, creating smooth timelapse videos.
+A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the RIFE model to sequences of satellite images (like GOES) or any PNG sequence, creating smooth timelapse videos.
 
 ## Features
 
-*   **RIFE Interpolation:** Uses the RIFE v4.6 model (via `rife-cli`) to generate intermediate frames.
-*   **Frame Counts:** Supports generating 1 or 3 intermediate frames per original pair.
-*   **Tiling:** Optional tiling for large frames (>2k pixels) to improve performance and reduce memory usage.
+*   **RIFE Interpolation:** Uses RIFE v4.6 (ncnn build) via the included `rife-cli` executable to generate 1 intermediate frame per original pair.
+*   **RIFE Controls:** Fine-grained control over RIFE v4.6 parameters:
+    *   Model selection (if multiple model folders exist).
+    *   Tiling (enable/disable, tile size).
+    *   UHD Mode (for >4K frames).
+    *   Test-Time Augmentation (Spatial & Temporal).
+    *   Thread specification (Load:Proc:Save).
+*   **FFmpeg Integration:** Extensive options for processing and encoding:
+    *   Motion Interpolation (`minterpolate`) via FFmpeg.
+    *   Sharpening (`unsharp`) via FFmpeg.
+    *   Detailed control over `minterpolate` and `unsharp` parameters.
+    *   Software (libx265) and Hardware (VideoToolbox HEVC/H.264 on macOS) encoding.
+    *   Quality/Bitrate/Preset controls.
+    *   Pixel format selection.
+    *   Option to skip FFmpeg interpolation.
 *   **GUI:** Easy-to-use interface built with PyQt6.
-    *   Input/Output selection.
-    *   Controls for FPS, intermediate frame count, tiling, max workers.
-    *   Encoder selection (including hardware acceleration via VideoToolbox on macOS, and no-reencode option).
-    *   Optional FFmpeg motion interpolation (`minterpolate`) for further frame doubling.
-    *   Preview thumbnails (first, middle, last) with clickable zoom.
-    *   Progress bar and ETA display during processing.
-    *   "Open in VLC" button for quick viewing.
-    *   Timestamped output filenames to prevent overwrites.
-*   **Caching:** Caches generated intermediate frames to speed up subsequent runs.
-*   **Parallel Processing:** Uses multiple processes to speed up frame interpolation.
+    *   Input folder / Output file selection (output path is not saved between sessions).
+    *   Image Cropping tool.
+    *   "Skip AI Interpolation" option to only use original frames (can still use FFmpeg interpolation/encoding).
+    *   Frame previews (first, middle, last) with clickable zoom (shows cropped view if active).
+    *   FFmpeg settings profiles ("Default", "Optimal", "Optimal 2", "Custom").
+    *   Progress bar and ETA display.
+    *   "Open in VLC" button.
+*   **Settings Persistence:** Saves UI state, input directory, crop selection, and FFmpeg settings between sessions (via `QSettings`).
+*   **Debug Mode:** Run with `--debug` to keep intermediate files.
 
 ## Requirements
 
 *   **Python:** 3.9+ recommended.
 *   **Packages:** See `requirements.txt` (mainly `PyQt6`, `numpy`, `Pillow`). Install with `pip install -r requirements.txt`.
-*   **FFmpeg:** Required for video encoding. Must be installed and available in your system's PATH.
-*   **RIFE CLI:** The RIFE command-line executable (`rife-cli`).
-    *   Download or build the RIFE CLI suitable for your OS.
-    *   **Crucially:** Place the executable file named `rife-cli` inside the `goesvfi/bin/` directory within this project before running.
+*   **FFmpeg:** Required for video processing/encoding. Must be installed and available in your system's PATH.
+*   **RIFE v4.6 ncnn:** The `rife-cli` executable and associated model files (`flownet.bin`, `flownet.param`) are expected.
+    *   The application looks for `rife-cli` in `goesvfi/bin/rife-cli` relative to the package installation.
+    *   The model files (`flownet.bin`, `flownet.param`) need to be placed within a model directory (e.g., `goesvfi/models/rife-v4.6/`). The GUI auto-detects folders named `rife-*` in `goesvfi/models/`.
+    *   *Ensure you have obtained the RIFE v4.6 ncnn executable and model files and placed them correctly.* 
 
 ## Installation
 
@@ -46,7 +58,8 @@ A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the R
     ```bash
     pip install -r requirements.txt
     ```
-4.  **Place RIFE CLI:** Download/build `rife-cli` and place it in the `goesvfi/bin/` directory.
+4.  **Place RIFE executable:** Put your downloaded/built `rife-cli` into the `goesvfi/bin/` directory.
+5.  **Place RIFE models:** Create `goesvfi/models/rife-v4.6/` (or similar `rife-*` name) and place `flownet.bin` and `flownet.param` inside it.
 
 ## Usage
 
@@ -55,22 +68,29 @@ Ensure your virtual environment is activated.
 Run the GUI application:
 
 ```bash
-python -m goesvfi.gui
+python -m goesvfi.gui [--debug]
 ```
 
 **GUI Steps:**
 
-1.  **Input folder:** Select the directory containing your sequence of GOES PNG images.
-2.  **Output MP4:** Select the desired output file path (a timestamp will be added automatically).
-3.  **Adjust Settings:** Configure FPS, intermediate frames (1 or 3), tiling, max workers, encoder, and FFmpeg interpolation as needed.
-4.  **Start:** Click the "Start" button.
-5.  **Monitor:** Watch the progress bar and status messages.
-6.  **Open:** Once finished, click "Open in VLC" (if VLC is installed and in your PATH) or open the timestamped MP4 file manually.
+1.  **Input folder:** Select the directory containing your sequence of PNG images.
+2.  **Output MP4:** Select the desired base output file path (the application will suggest a default; a timestamp will be added automatically to the actual output file).
+3.  **Crop (Optional):** Click "Crop..." to define a region on the first frame.
+4.  **Adjust Settings:** 
+    *   Set Target FPS.
+    *   Configure RIFE v4.6 settings (Tiling, UHD, TTA, etc.) or check "Skip AI Interpolation".
+    *   Select Encoder.
+    *   Go to the "FFmpeg Settings" tab to choose a profile or customize FFmpeg interpolation and sharpening parameters.
+5.  **Start:** Click the "Start" button.
+6.  **Monitor:** Watch the progress bar and status messages.
+7.  **Open:** Once finished, click "Open in VLC" (if VLC is installed and in your PATH) or open the timestamped MP4 file manually.
 
 ## Configuration
 
-*   **RIFE Executable:** Must be placed as `goesvfi/bin/rife-cli`.
-*   **Cache/Output Directories:** Default locations are managed by `goesvfi/utils/config.py` (using platform-specific cache/data directories), but the output path can be selected freely in the GUI.
+*   **RIFE Executable:** Expected at `goesvfi/bin/rife-cli`.
+*   **RIFE Models:** Expected in `goesvfi/models/rife-v4.6/` (or similar).
+*   **Output/Cache Directories:** Default locations are managed by `goesvfi/utils/config.py`.
+*   **Persistent Settings:** Stored using `QSettings` (platform-specific location, typically `~/.config/YourOrg/GOESVFI.conf` on Linux/macOS).
 
 ## License
 
