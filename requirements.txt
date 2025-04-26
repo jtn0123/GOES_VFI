@@ -13,3 +13,4 @@ imageio
 # Development tools
 mypy
 types-tqdm # Add stubs for tqdm 
+pytest-qt # Add pytest-qt for GUI testing 

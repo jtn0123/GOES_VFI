@@ -16,3 +16,19 @@ requires-python = ">=3.11"
 
 [project.scripts]
 goesvfi = "goesvfi.cli:main"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-qt",
+    "pytest-mock",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+testpaths = [
+    "tests",
+]
+python_files = "test_*.py"
+addopts = "-ra -q --cov=goesvfi --cov-report=term-missing"

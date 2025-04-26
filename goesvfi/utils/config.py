@@ -7,6 +7,8 @@ import os
 import pathlib
 import tomllib
 from functools import lru_cache
+import sys  # Add for platform check
+import shutil  # Add for searching in PATH
 
 CONFIG_DIR = pathlib.Path.home() / ".config/goesvfi"
 CONFIG_FILE = CONFIG_DIR / "config.toml"
@@ -50,3 +52,42 @@ def get_output_dir() -> pathlib.Path:
 
 def get_cache_dir() -> pathlib.Path:
     return pathlib.Path(_load_config()["cache_dir"]).expanduser()
+
+def find_rife_executable(model_key: str) -> pathlib.Path:
+    """
+    Locate the RIFE CLI executable.
+    Searches in order:
+    1. System PATH for 'rife-ncnn-vulkan' (or .exe)
+    2. Project 'goesvfi/bin/' directory for 'rife-cli'
+    3. Project 'goesvfi/models/<model_key>/' directory for 'rife-ncnn-vulkan' (or .exe)
+    """
+    # 1. Check PATH for standard name
+    exe_name_std = "rife-ncnn-vulkan"
+    if sys.platform == "win32":
+        exe_name_std += ".exe"
+    path_exe = shutil.which(exe_name_std)
+    if path_exe:
+        return pathlib.Path(path_exe)
+
+    # Get project root (assuming this file is in goesvfi/utils/)
+    project_root = pathlib.Path(__file__).parent.parent
+
+    # 2. Check project bin directory for 'rife-cli'
+    bin_dir = project_root / "bin"
+    bin_fallback = bin_dir / "rife-cli"
+    if bin_fallback.exists():
+        return bin_fallback
+
+    # 3. Check model-specific directory for standard name
+    model_dir = project_root / "models" / model_key
+    model_fallback = model_dir / exe_name_std
+    if model_fallback.exists():
+        return model_fallback
+
+    # If none found, raise error
+    raise FileNotFoundError(
+        f"RIFE executable not found. Searched:\n"
+        f"  - PATH for '{exe_name_std}'\n"
+        f"  - '{bin_fallback}'\n"
+        f"  - '{model_fallback}'"
+    )
