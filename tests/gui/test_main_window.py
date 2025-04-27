@@ -6,11 +6,10 @@ import pathlib
 from typing import List
 import warnings
 import goesvfi.gui
-
-# Ensure PyQt6 is imported before the application code that uses it
 from PyQt6.QtWidgets import QApplication, QFileDialog, QMessageBox, QDialog
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QRect
 from PyQt6.QtGui import QPixmap, QImage
+import logging
 
 # Import the class to be tested and related utilities
 from goesvfi.gui import MainWindow, CropDialog, ClickableLabel
@@ -390,16 +389,29 @@ def test_progress_update(qtbot, window, mock_worker, dummy_files):
     with qtbot.waitSignal(worker_instance.progress, timeout=500) as blocker:
         worker_instance.progress.emit(1, 2, 10.5)
     assert blocker.args == [1, 2, 10.5] # Verify signal args
-    qtbot.wait(100) # Allow time for slot processing
+
+    # Process events explicitly and wait for the event queue to clear
+    QApplication.processEvents()
+    qtbot.waitExposed(window, timeout=500) # Wait for window to be exposed/event queue processed
 
     # Assert UI updated
-    progress_percent = int((1 / 2) * 100)
-    eta_str = "0m 10s"
-    qtbot.waitUntil(lambda: window.progress_bar.value() == progress_percent, timeout=500)
-    qtbot.waitUntil(lambda: eta_str in window.status_bar.currentMessage(), timeout=500)
-    assert window.progress_bar.value() == progress_percent
-    assert f"{progress_percent}%" in window.status_bar.currentMessage()
-    assert f"ETA: {eta_str}" in window.status_bar.currentMessage()
+    progress_percent = int((1 / 2) * 100) # 50
+    current_val = 1 # Value actually set in the slot
+    total_val = 2
+    # Calculate expected eta_str based on _on_progress logic
+    _eta = 10.5
+    _eta_seconds = int(_eta)
+    _minutes = _eta_seconds // 60
+    _seconds = _eta_seconds % 60
+    eta_str = f"{_minutes}m {_seconds}s" if _minutes > 0 else f"{_seconds}s"
+
+    # Assert against the actual value set (current), not the percentage
+    assert window.progress_bar.value() == current_val, f"Progress bar expected {current_val}, got {window.progress_bar.value()}"
+    assert window.progress_bar.maximum() == total_val, f"Progress bar max expected {total_val}, got {window.progress_bar.maximum()}"
+
+    # Assert status bar message content based on slot logic
+    expected_status_msg = f"Processing frames: {current_val}/{total_val} ({progress_percent}%) - ETA: {eta_str}"
+    assert window.status_bar.currentMessage() == expected_status_msg, f"Status bar mismatch. Expected:\n'{expected_status_msg}'\nGot:\n'{window.status_bar.currentMessage()}'"
 
 
 def test_successful_completion(qtbot, window, mock_worker, dummy_files):

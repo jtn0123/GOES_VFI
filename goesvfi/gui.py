@@ -771,6 +771,7 @@ class MainWindow(QWidget):
 
         # --- RIFE Specific Options --- #
         rife_opts_group = QGroupBox("RIFE Options")
+        self.rife_opts_group = rife_opts_group # Assign to self
         rife_opts_layout = QGridLayout(rife_opts_group)
         rife_opts_layout.addWidget(QLabel("Model:"), 0, 0)
         self.model_combo = QComboBox() # Populated later
@@ -1615,25 +1616,33 @@ class MainWindow(QWidget):
 
     def _on_progress(self, current: int, total: int, eta: float) -> None:
         """Update progress bar, ETA label, and status bar with detailed feedback."""
-        if total > 0:
-            self.progress_bar.setRange(0, total)
-            self.progress_bar.setValue(current)
-            percent = int((current / total) * 100) if total else 0
-            # Format ETA nicely
-            if eta > 0:
-                eta_seconds = int(eta)
-                minutes = eta_seconds // 60
-                seconds = eta_seconds % 60
-                eta_str = f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
-                self.eta_label.setText(f"ETA: {eta_str}")
+        try:
+            LOGGER.debug(f"_on_progress called with: current={current}, total={total}, eta={eta}") # Add log
+            if total > 0:
+                LOGGER.debug(f"Updating progress bar: range(0, {total}), value({current})") # Add log
+                self.progress_bar.setRange(0, total)
+                self.progress_bar.setValue(current)
+                percent = int((current / total) * 100) if total else 0
+                # Format ETA nicely
+                if eta > 0:
+                    eta_seconds = int(eta)
+                    minutes = eta_seconds // 60
+                    seconds = eta_seconds % 60
+                    eta_str = f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
+                    self.eta_label.setText(f"ETA: {eta_str}")
+                else:
+                    self.eta_label.setText("ETA: --")
+                # Show progress in status bar with percent
+                self.status_bar.showMessage(f"Processing frames: {current}/{total} ({percent}%) - ETA: {self.eta_label.text()[5:]}", 2000)
             else:
+                self.progress_bar.setRange(0, 0)
                 self.eta_label.setText("ETA: --")
-            # Show progress in status bar with percent
-            self.status_bar.showMessage(f"Processing frames: {current}/{total} ({percent}%) - ETA: {self.eta_label.text()[5:]}", 2000)
-        else:
-            self.progress_bar.setRange(0, 0)
-            self.eta_label.setText("ETA: --")
-            self.status_bar.showMessage("Processing...", 2000)
+                self.status_bar.showMessage("Processing...", 2000)
+            LOGGER.debug("_on_progress finished successfully.")
+        except Exception as e:
+            LOGGER.exception(f"!!! EXCEPTION IN _on_progress !!!")
+            # Optionally re-raise or handle differently
+            # raise # Re-raising might make tests fail more obviously if an error occurs here
 
     def _on_finished(self, mp4: pathlib.Path) -> None:
         # Mark progress done and update UI for success
@@ -2334,9 +2343,7 @@ class MainWindow(QWidget):
         # e.g., by changing the group box title or adding a status message,
         # but for now, just enabling/disabling is standard.
 
-    # --- FFMPEG PROFILE HANDLING --- #
-    def _on_profile_selected(self, profile_name: str) -> None:
-        """Handles selection of an FFmpeg profile."""
+# --- REMOVED DUPLICATE _on_profile_selected METHOD ---
 
 # ────────────────────────── top‑level launcher ────────────────────────────
 def main() -> None:

@@ -632,7 +632,7 @@ def test_error_rife_failure(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_
     # assert not mock_popen.called # Or check call_count == 0
 
 # Pass mock_run fixture as well
-@patch("pathlib.Path.exists", return_value=True) # Mock model path existence
+@patch("pathlib.Path.exists", autospec=True) # Mock model path existence WITH AUTOSPEC
 def test_error_ffmpeg_failure_exit_code(mock_exists, temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock, mock_rife_capabilities: MagicMock):
     """Test RuntimeError is raised if FFmpeg process returns non-zero exit code."""
     input_dir = temp_dir / "input"
@@ -649,7 +649,7 @@ def test_error_ffmpeg_failure_exit_code(mock_exists, temp_dir: pathlib.Path, moc
 
     # --- Define side effect for mock_exists --- #
     # Return False only if the path being checked is the expected raw output path
-    def mock_exists_side_effect(self_path_instance, *args): # Add self_path_instance
+    def mock_exists_side_effect(self_path_instance): # Correct signature (only self)
         # Need to resolve path_arg in case it's relative or different instance
         # We compare the string representation of the instance
         if str(self_path_instance) == str(expected_raw_path):
