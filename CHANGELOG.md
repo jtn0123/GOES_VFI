@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2025-04-28
+
+### Added
+- **GUI:** Added logging to the `_on_progress` method for better debugging and tracking of progress updates (`gui.py`).
+- **Testing:** Added comprehensive unit tests for the `FileSorter` class (`tests/unit/test_file_sorter.py`).
+- **Processing:** Added Sanchez (false color) support for Windows and OSX.
+- **Utilities:** Preliminary addition of File Sorter and Date Sorter codebases (`goesvfi/file_sorter/`, `goesvfi/date_sorter/`).
+
+### Changed
+- **GUI:** Assigned the RIFE options group to `self` for improved access within the class (`gui.py`). Improved preview options to work with Sanchez enabled. Updated tests to ensure proper UI updates and status messages during progress tracking (`tests/gui/test_main_window.py`, `tests/integration/test_pipeline.py`).
+- **Dependencies:** Removed obsolete RIFE v4 and v4.6 binary and parameter files from the repository (`goesvfi/bin/rife-v4.6/flownet.bin`, `goesvfi/bin/rife-v4.6/flownet.param`, `goesvfi/bin/rife-v4/flownet.bin`, `goesvfi/bin/rife-v4/flownet.param`).
+- **Documentation:** Updated README.md to reflect enhancements in the VFI application, including clarified support for any PNG sequence, expanded features, updated installation and usage instructions, and notes on settings persistence (`README.md`). Updated TODO list to include investigation of integration test failures (`docs/TODO.md`). Updated improvement plan to include details on FileSorter and DateSorter integration (`docs/improvement_plan.md`).
+
+### Fixed
+- **GUI:** Removed duplicate `_on_profile_selected` method (`gui.py`).
 ## [0.6.0] - 2025-04-24
 
 ### Added
