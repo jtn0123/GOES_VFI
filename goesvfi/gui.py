@@ -183,7 +183,8 @@ class ClickableLabel(QLabel):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.file_path: str | None = None # Add file_path attribute
+        self.file_path: str | None = None # Original file path
+        self.processed_image: QImage | None = None # Store processed version
         # enable mouse tracking / events
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
@@ -1635,31 +1636,23 @@ class MainWindow(QWidget):
             return
 
         try:
-            # Load the original full-resolution image
-            img = QImage(label.file_path)
+            # Check if we have a processed image stored
+            if hasattr(label, 'processed_image') and label.processed_image is not None:
+                # Use the already-processed image (with Sanchez and any other processing already applied)
+                LOGGER.info("Using stored processed image for zoom dialog")
+                img = label.processed_image
+            else:
+                # Fall back to loading from file
+                LOGGER.info("No stored processed image, loading from file")
+                img = QImage(label.file_path)
+                
             if img.isNull():
                 LOGGER.error(f"Zoom: Failed to load image from {label.file_path}")
                 QMessageBox.warning(label, "Zoom Error", f"Could not load image:\n{label.file_path}")
                 return
-
-            # --- Re-apply Sanchez Processing (Placeholder) ---
-            # if self.sanchez_false_colour_checkbox.isChecked():
-            #     # TODO: Implement Sanchez processing call here on the full-res 'img'
-            #     pass
-            # --- End Sanchez Processing ---
-
-            # --- Re-apply Crop ---
-            if self.current_crop_rect:
-                x, y, w, h = self.current_crop_rect
-                img_w, img_h = img.width(), img.height()
-                if x < img_w and y < img_h:
-                    crop_w = min(w, img_w - x)
-                    crop_h = min(h, img_h - y)
-                    if crop_w > 0 and crop_h > 0:
-                        img = img.copy(x, y, crop_w, crop_h)
-                    # No warning here, assume rect was valid when set
-                # No warning here
-            # --- End Crop ---
+                
+            # We're using the already processed image, which has both Sanchez and cropping applied
+            # No need to re-apply any processing here
 
             # Convert processed full-res image to QPixmap
             full_res_processed_pixmap = QPixmap.fromImage(img)
@@ -2396,8 +2389,9 @@ class MainWindow(QWidget):
                      LOGGER.warning(f"Crop start point {x},{y} outside image bounds {img_w}x{img_h}")
             # --- End Crop ---
 
-            # Store original path for zoom function
+            # Store original path for zoom function and the processed image itself
             target_label.file_path = str(image_path) # Store the *original* path
+            target_label.processed_image = img.copy() # Store the processed image for zoom
 
             # Scale for preview display
             target_size = target_label.size()
