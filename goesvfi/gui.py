@@ -11,7 +11,9 @@ import argparse # <-- Import argparse
 import importlib.resources as pkgres
 import re # <-- Import re for regex
 import time # <-- Import time for time.sleep
-from typing import Optional, Any, cast, Union, Tuple, Iterator, Dict, List # Added Dict, List
+import tempfile # Import tempfile for temporary files handling
+import shutil # Import shutil for file operations
+from typing import Optional, Any, cast, Union, Tuple, Iterator, Dict, List, TypedDict # Added Dict, List, cast, TypedDict
 from datetime import datetime
 from PyQt6.QtCore import QThread, pyqtSignal, Qt, QSize, QPoint, QRect, QSettings, QByteArray, QTimer, QUrl # Added QTimer, QUrl
 from PyQt6.QtWidgets import (
@@ -21,18 +23,51 @@ from PyQt6.QtWidgets import (
     QDialog, QDialogButtonBox, QRubberBand, QGridLayout, QDoubleSpinBox,
     QGroupBox, QSizePolicy, QSplitter, QScrollArea # Added GroupBox, SizePolicy, Splitter, ScrollArea
 )
+import pathlib
 from PyQt6.QtGui import QPixmap, QMouseEvent, QCloseEvent, QImage, QPainter, QPen, QColor, QIcon, QDesktopServices # Added Image, Painter, Pen, Color, Icon, DesktopServices
 import json # Import needed for pretty printing the dict
+import logging
+from pathlib import Path # Ensure Path is explicitly imported
+import os # Import os for os.cpu_count()
 
 # Correct import for find_rife_executable
 from goesvfi.utils import config, log
 from goesvfi.utils.gui_helpers import RifeCapabilityManager
+from goesvfi.file_sorter.gui_tab import FileSorterTab
+from goesvfi.date_sorter.gui_tab import DateSorterTab
+from goesvfi.sanchez.runner import colourise # Import Sanchez colourise function
 
 LOGGER = log.get_logger(__name__)
 
+# Define TypedDict for profile structure first
+class FfmpegProfile(TypedDict):
+    use_ffmpeg_interp: bool
+    mi_mode: str
+    mc_mode: str
+    me_mode: str
+    vsbmc: bool
+    scd: str
+    me_algo: str
+    search_param: int
+    scd_threshold: float
+    mb_size: str
+    apply_unsharp: bool
+    unsharp_lx: int
+    unsharp_ly: int
+    unsharp_la: float
+    unsharp_cx: int
+    unsharp_cy: int
+    unsharp_ca: float
+    preset_text: str
+    crf: int # Added crf
+    bitrate: int
+    bufsize: int
+    pix_fmt: str
+    filter_preset: str
+
 # Optimal FFmpeg interpolation settings profile
 # (Values for quality settings are based on current defaults, adjust if needed)
-OPTIMAL_FFMPEG_PROFILE = {
+OPTIMAL_FFMPEG_PROFILE: FfmpegProfile = {
     # Interpolation
     "use_ffmpeg_interp": True,
     "mi_mode": "mci",
@@ -54,6 +89,7 @@ OPTIMAL_FFMPEG_PROFILE = {
     "unsharp_ca": 0.0,
     # Quality
     "preset_text": "Very High (CRF 16)",
+    "crf": 16, # Added CRF value
     "bitrate": 15000,
     "bufsize": 22500, # Auto-calculated from bitrate
     "pix_fmt": "yuv444p",
@@ -62,7 +98,7 @@ OPTIMAL_FFMPEG_PROFILE = {
 }
 
 # Optimal profile 2 - Based on PowerShell script defaults
-OPTIMAL_FFMPEG_PROFILE_2 = {
+OPTIMAL_FFMPEG_PROFILE_2: FfmpegProfile = {
     # Interpolation
     "use_ffmpeg_interp": True,
     "mi_mode": "mci",
@@ -84,6 +120,7 @@ OPTIMAL_FFMPEG_PROFILE_2 = {
     "unsharp_ca": 0.0,
     # Quality (Adjusted based on PS comparison)
     "preset_text": "Medium (CRF 20)", # Changed preset level example
+    "crf": 20, # Added CRF value
     "bitrate": 10000,           # Lowered bitrate example
     "bufsize": 15000,           # Lowered bufsize (1.5*bitrate)
     "pix_fmt": "yuv444p",       # Keep high quality format
@@ -92,7 +129,7 @@ OPTIMAL_FFMPEG_PROFILE_2 = {
 }
 
 # Default profile based on initial GUI values
-DEFAULT_FFMPEG_PROFILE = {
+DEFAULT_FFMPEG_PROFILE: FfmpegProfile = {
     # Interpolation
     "use_ffmpeg_interp": True,
     "mi_mode": "mci",
@@ -114,6 +151,7 @@ DEFAULT_FFMPEG_PROFILE = {
     "unsharp_ca": 0.0,
     # Quality
     "preset_text": "Very High (CRF 16)",
+    "crf": 16, # Added CRF value
     "bitrate": 15000,
     "bufsize": 22500,
     "pix_fmt": "yuv444p",
@@ -121,23 +159,22 @@ DEFAULT_FFMPEG_PROFILE = {
     "filter_preset": "slow",
 }
 
-# Store profiles in a dictionary for easy access
-FFMPEG_PROFILES = {
+# Store profiles in a dictionary for easy access with type hint
+FFMPEG_PROFILES: Dict[str, FfmpegProfile] = {
     "Default": DEFAULT_FFMPEG_PROFILE,
     "Optimal": OPTIMAL_FFMPEG_PROFILE,
-    "Optimal 2": OPTIMAL_FFMPEG_PROFILE_2, # <-- Add new profile
+    "Optimal 2": OPTIMAL_FFMPEG_PROFILE_2,
     # "Custom" is handled implicitly when settings change
 }
 
-# Define OPTIMAL_FFMPEG_INTERP_SETTINGS for backward compatibility if needed elsewhere?
-# For now, we rely on the full profiles.
-OPTIMAL_FFMPEG_INTERP_SETTINGS = {
-    "mi_mode": OPTIMAL_FFMPEG_PROFILE["mi_mode"],
-    "mc_mode": OPTIMAL_FFMPEG_PROFILE["mc_mode"],
-    "me_mode": OPTIMAL_FFMPEG_PROFILE["me_mode"],
-    "vsbmc": "1" if OPTIMAL_FFMPEG_PROFILE["vsbmc"] else "0",
-    "scd": OPTIMAL_FFMPEG_PROFILE["scd"]
-}
+# Commented out as it seems unused and might cause type issues if FfmpegProfile changes
+# OPTIMAL_FFMPEG_INTERP_SETTINGS = {
+#     "mi_mode": OPTIMAL_FFMPEG_PROFILE["mi_mode"],
+#     "mc_mode": OPTIMAL_FFMPEG_PROFILE["mc_mode"],
+#     "me_mode": OPTIMAL_FFMPEG_PROFILE["me_mode"],
+#     "vsbmc": "1" if OPTIMAL_FFMPEG_PROFILE["vsbmc"] else "0",
+#     "scd": OPTIMAL_FFMPEG_PROFILE["scd"]
+# }
 
 
 # ─── Custom clickable label ────────────────────────────────────────────────
@@ -436,7 +473,7 @@ class VfiWorker(QThread):
                     rife_tta_temporal=self.rife_tta_temporal,
                     model_key=self.model_key,
                     # --- Pass Sanchez Args ---
-                    false_colour=self.false_colour,
+                    false_colour=self.false_colour, # Correct attribute name
                     res_km=self.res_km,
                     # ------------------------
                 )
@@ -462,32 +499,21 @@ class VfiWorker(QThread):
                      except OSError as e:
                          raise RuntimeError(f"Failed to rename {raw_video_path} to {self.out_file_path}: {e}") from e
                 elif raw_video_path == self.out_file_path:
-                     self.finished.emit(self.out_file_path)
+                    self.finished.emit(self.out_file_path)
                 else:
-                     raise RuntimeError("Raw video file missing after RIFE pipeline completion.")
+                    raise RuntimeError("Raw video file missing after RIFE pipeline completion.")
 
             elif self.encoder == 'FFmpeg':
-                try:
-                    # Try importing run_ffmpeg_interpolation; handle missing module gracefully
-                    from goesvfi.pipeline.run_ffmpeg import run_ffmpeg_interpolation
-                except (ModuleNotFoundError, ImportError) as e:
-                    LOGGER.error("FFmpeg pipeline (goesvfi.pipeline.run_ffmpeg) not found.")
-                    self.error.emit("FFmpeg encoding module not found.")
-                    return
+                from goesvfi.pipeline.run_ffmpeg import run_ffmpeg_interpolation
                 # --- Run FFmpeg pipeline ---
-                # NOTE: run_ffmpeg_interpolation needs to be adapted
-                # to handle Sanchez/cropping similarly to run_vfi if desired
-                # For now, it assumes it works on original/cropped frames without Sanchez
-                    LOGGER.warning("FFmpeg encoder path does not currently support Sanchez false colour.")
+                try:
                     final_mp4_path = run_ffmpeg_interpolation(
                         input_dir=self.in_dir,
                         output_mp4_path=self.out_file_path,
                         fps=self.fps,
                         num_intermediate_frames=self.mid_count,
-                        use_preset_optimal=False, # Allow manual settings
                         crop_rect=self.crop_rect,
-                        debug_mode=self.debug_mode,
-                        # Pass detailed settings
+                        # Pass FFmpeg settings
                         use_ffmpeg_interp=self.use_ffmpeg_interp,
                         filter_preset=self.filter_preset,
                         mi_mode=self.mi_mode,
@@ -499,6 +525,7 @@ class VfiWorker(QThread):
                         scd_threshold=self.scd_threshold,
                         minter_mb_size=self.minter_mb_size,
                         minter_vsbmc=self.minter_vsbmc,
+                        # Unsharp
                         apply_unsharp=self.apply_unsharp,
                         unsharp_lx=self.unsharp_lx,
                         unsharp_ly=self.unsharp_ly,
@@ -506,1068 +533,1018 @@ class VfiWorker(QThread):
                         unsharp_cx=self.unsharp_cx,
                         unsharp_cy=self.unsharp_cy,
                         unsharp_ca=self.unsharp_ca,
+                        # Quality
                         crf=self.crf,
                         bitrate_kbps=self.bitrate_kbps,
                         bufsize_kb=self.bufsize_kb,
-                        pix_fmt=self.pix_fmt
+                        pix_fmt=self.pix_fmt,
+                        # Missing args from function definition:
+                        use_preset_optimal=False, # Assuming False as default
+                        debug_mode=self.debug_mode
                     )
                     self.finished.emit(final_mp4_path)
-                except ImportError:
-                    LOGGER.error("FFmpeg pipeline (goesvfi.pipeline.run_ffmpeg) not found.")
-                    self.error.emit("FFmpeg encoding module not found.")
+                except Exception as e:
+                    LOGGER.exception(f"FFmpeg interpolation failed: {e}")
+                    self.error.emit(f"FFmpeg interpolation failed: {e}")
                     return
-                except NotImplementedError as nie:
-                    LOGGER.error(f"FFmpeg encoding error: {nie}")
-                    self.error.emit(str(nie))
-                    return
-
-            else:
-                # This case should be caught by the initial check
-                raise ValueError(f"Unsupported encoder reached run logic: {self.encoder}")
 
         except Exception as e:
-            import traceback
-            tb_str = traceback.format_exc()
-            LOGGER.error(f"Worker thread error:\n{tb_str}")
-            self.error.emit(f"{type(e).__name__}: {e}")
+            LOGGER.exception(f"VFI process failed: {e}") # Log full traceback
+            self.error.emit(f"VFI process failed: {e}")
 
-# ──────────────────────────────── Main window ─────────────────────────────
+# ────────────────────────────── Main Window ──────────────────────────────
 class MainWindow(QWidget):
-    # Signals
     request_previews_update = pyqtSignal() # Signal to trigger preview update
 
     def __init__(self, debug_mode: bool = False) -> None:
+        """Initializes the main application window."""
         super().__init__()
         self.debug_mode = debug_mode
-        self.setWindowTitle("GOES Video Frame Interpolator")
+        self.setWindowTitle("GOES-VFI GUI")
+        self.setGeometry(100, 100, 800, 600) # Initial window size
 
-        # Initialize RIFE capability manager
+        self.settings = QSettings("GOES-VFI", "GUI")
+
+        self.worker: Optional[VfiWorker] = None
+        self.is_processing = False
+        self.current_crop_rect: tuple[int, int, int, int] | None = None # Store crop rect as (x, y, w, h)
+
+        # Instantiate capability manager
         self.rife_capability_manager = RifeCapabilityManager()
 
-        # Load app icon
-        try:
-            icon_path = str(pkgres.files('goesvfi').joinpath('resources', 'app_icon.png'))
-            self.setWindowIcon(QIcon(icon_path))
-            LOGGER.info(f"Loaded icon from: {icon_path}")
-        except Exception as e:
-            LOGGER.warning(f"Could not load app icon: {e}")
+        # Instantiate File Sorter Tab
+        self.file_sorter_tab = FileSorterTab()
 
-        # Settings storage
-        self.settings = QSettings("JustKay", "GOES_VFI")
+        # Instantiate Date Sorter Tab
+        self.date_sorter_tab = DateSorterTab()
 
-        # UI State Variables
-        self.worker: VfiWorker | None = None
-        self.last_dir = pathlib.Path(self.settings.value("main/lastDir", str(pathlib.Path.home())))
-        self.last_file = pathlib.Path(self.settings.value("main/lastFile", str(self.last_dir / "output.mp4")))
-        saved_crop_str = self.settings.value("main/cropRect", None)
-        crop_tuple: Optional[Tuple[int, int, int, int]] = None
-        if isinstance(saved_crop_str, str):
-            try:
-                parts = list(map(int, saved_crop_str.split(',')))
-                if len(parts) == 4:
-                    crop_tuple = (parts[0], parts[1], parts[2], parts[3])
-            except (ValueError, TypeError):
-                LOGGER.warning(f"Could not parse cropRect from settings: {saved_crop_str}")
-        self.crop_rect: Optional[Tuple[int, int, int, int]] = crop_tuple
-        self._geometry_restored = False # Flag to track if geometry was loaded
+        # Create the main tab widget
+        self.main_tabs = QTabWidget()
 
-        # --- Create Main Layout ---
-        layout = QVBoxLayout(self)
+        # Create the "VFI Process" tab (existing controls)
+        vfi_process_tab = QWidget()
+        vfi_process_layout = QVBoxLayout(vfi_process_tab)
 
-        # --- Create Tab Widget ---
-        self.tab_widget = QTabWidget() # Use self.tab_widget consistently
-        layout.addWidget(self.tab_widget)
+        # --- UI Elements (Moved from original __init__) ---
+        # Input/Output
+        self.in_dir_label = QLabel("Input Directory:")
+        self.in_dir_edit = QLineEdit()
+        self.in_dir_button = QPushButton("Browse...")
 
-        # --- Add Tabs ---
-        self.main_tab = self._makeMainTab()
-        self.ffmpeg_tab = self._make_ffmpeg_settings_tab()
-        self.model_tab = self._makeModelLibraryTab()
+        self.out_file_label = QLabel("Output File (MP4):")
+        self.out_file_edit = QLineEdit()
+        self.out_file_button = QPushButton("Browse...")
 
-        self.tab_widget.addTab(self.main_tab, "Main")
-        self.tab_widget.addTab(self.ffmpeg_tab, "FFmpeg Settings")
-        self.tab_widget.addTab(self.model_tab, "Model Library")
+        # Interpolation Settings
+        self.fps_label = QLabel("Output FPS:")
+        self.fps_spinbox = QSpinBox()
+        self.fps_spinbox.setRange(1, 120)
+        self.fps_spinbox.setValue(30)
 
-        # Connect tab change signal
-        self.tab_widget.currentChanged.connect(self._on_tab_changed)
+        self.mid_count_label = QLabel("Intermediate Frames:")
+        self.mid_count_spinbox = QSpinBox()
+        self.mid_count_spinbox.setRange(0, 100)
+        self.mid_count_spinbox.setValue(7) # Default for 8x interpolation
 
-        # --- Create Status Bar --- #
-        self.status_bar = QStatusBar()
-        self.status_bar.setSizeGripEnabled(False) # Optional: hide the size grip
-        layout.addWidget(self.status_bar)
-        self.status_bar.showMessage("Ready") # Initial status message
+        # Add Max Workers Spinbox
+        self.max_workers_label = QLabel("Max Workers:")
+        self.max_workers_spinbox = QSpinBox()
+        self.max_workers_spinbox.setRange(1, os.cpu_count() or 4) # Range from 1 to num CPUs
+        self.max_workers_spinbox.setValue(4) # Default value
 
-        # --- Final Setup ---
-        self.setLayout(layout)
-        self._populate_models() # Populate model list before loading settings that might use it
-        self.loadSettings() # Load settings AFTER UI elements are created
-        self._connect_ffmpeg_settings_tab_signals() # Connect signals AFTER UI elements exist
-        # Connect model combo signal
-        if hasattr(self, 'model_combo'):
-            self.model_combo.currentTextChanged.connect(self._on_model_changed)
+        # Encoder Selection
+        self.encoder_label = QLabel("Encoder:")
+        self.encoder_combo = QComboBox()
+        self.encoder_combo.addItems(["RIFE", "FFmpeg"]) # Add FFmpeg option
 
-        # Update UI elements based on RIFE capabilities
-        self._update_rife_ui_elements()
+        # RIFE Model Selection (Only visible if RIFE is selected)
+        self.model_label = QLabel("RIFE Model:")
+        self.model_combo = QComboBox()
+        self.model_combo.setEnabled(False) # Disabled until models are populated
 
-        # Apply initial profile state after loading settings
-        initial_profile = self.settings.value("ffmpeg/profile", "Default", type=str)
-        if hasattr(self, 'ffmpeg_profile_combo'):
-             if initial_profile in FFMPEG_PROFILES:
-                 self.ffmpeg_profile_combo.setCurrentText(initial_profile)
-                 # self._apply_ffmpeg_profile(initial_profile) # Apply might trigger unwanted changes, rely on loadSettings
-             elif initial_profile == "Custom":
-                 self.ffmpeg_profile_combo.setCurrentText("Custom")
-             else:
-                 # If saved profile is invalid, default to Default
-                 self.ffmpeg_profile_combo.setCurrentText("Default")
-                 # self._apply_ffmpeg_profile("Default")
+        # RIFE v4.6 Specific Options GroupBox
+        self.rife_options_groupbox = QGroupBox("RIFE v4.6 Options")
+        self.rife_options_groupbox.setCheckable(False) # Not checkable
+        rife_options_layout = QGridLayout(self.rife_options_groupbox)
 
-        # Initial preview load might depend on loaded paths
-        self._update_previews()
+        self.rife_tile_enable_checkbox = QCheckBox("Enable Tiling")
+        self.rife_tile_enable_checkbox.setChecked(True) # Default to enabled
+        self.rife_tile_size_label = QLabel("Tile Size:")
+        self.rife_tile_size_spinbox = QSpinBox()
+        self.rife_tile_size_spinbox.setRange(32, 2048)
+        self.rife_tile_size_spinbox.setSingleStep(32)
+        self.rife_tile_size_spinbox.setValue(384) # Default tile size
+        self.rife_tile_size_spinbox.setEnabled(True) # Enabled by default
 
-        # Adjust initial size if geometry wasn't restored
-        if not self._geometry_restored:
-            QTimer.singleShot(50, self._adjust_window_to_content)
+        self.rife_uhd_mode_checkbox = QCheckBox("UHD Mode (for > 4K)")
+        self.rife_uhd_mode_checkbox.setChecked(False) # Default to disabled
 
-        # Set initial start button state
-        self._update_start_button_state()
-        # Set initial crop button state
-        self._update_crop_buttons_state()
+        self.rife_thread_spec_label = QLabel("Thread Spec:")
+        self.rife_thread_spec_edit = QLineEdit("0:0:0:0") # Default thread spec
+        self.rife_thread_spec_edit.setPlaceholderText("e.g., 0:0:0:0 or 1:1:1:1")
+        self.rife_thread_spec_edit.setToolTip("Specify threads for [encoder]:[decoder]:[pre]:[post]. 0 means auto.")
 
-    def _adjust_window_to_content(self) -> None:
-        """Adjusts window size based on content size hint after tabs are populated."""
-        # Calculate the required height considering the status bar
-        content_height = self.tab_widget.sizeHint().height()
-        status_bar_height = self.status_bar.sizeHint().height()
-        # Add some padding
-        total_height = content_height + status_bar_height + 20 # Adjust padding as needed
+        self.rife_tta_spatial_checkbox = QCheckBox("TTA Spatial")
+        self.rife_tta_spatial_checkbox.setChecked(False)
 
-        # Get a reasonable width (e.g., from the main tab's hint or a fixed value)
-        content_width = self.main_tab.sizeHint().width()
-        total_width = content_width + 20 # Adjust padding
+        self.rife_tta_temporal_checkbox = QCheckBox("TTA Temporal")
+        self.rife_tta_temporal_checkbox.setChecked(False)
 
-        self.resize(total_width, total_height)
-        LOGGER.debug(f"Adjusted window size to: {total_width}x{total_height}")
+        rife_options_layout.addWidget(self.rife_tile_enable_checkbox, 0, 0)
+        rife_options_layout.addWidget(self.rife_tile_size_label, 0, 1)
+        rife_options_layout.addWidget(self.rife_tile_size_spinbox, 0, 2)
+        rife_options_layout.addWidget(self.rife_uhd_mode_checkbox, 1, 0)
+        rife_options_layout.addWidget(self.rife_thread_spec_label, 2, 0)
+        rife_options_layout.addWidget(self.rife_thread_spec_edit, 2, 1, 1, 2) # Span 2 columns
+        rife_options_layout.addWidget(self.rife_tta_spatial_checkbox, 3, 0)
+        rife_options_layout.addWidget(self.rife_tta_temporal_checkbox, 3, 1)
+        rife_options_layout.setColumnStretch(2, 1) # Give the last column stretch
 
-    # --- UI Element Creation --- #
+        self.model_combo = QComboBox()
+        self.model_combo.setEnabled(False) # Disabled until models are populated
 
-    def _pick_in_dir(self) -> None:
-        d = QFileDialog.getExistingDirectory(self, "Select Input Folder", str(self.last_dir))
-        if d:
-            p = pathlib.Path(d)
-            self.in_edit.setText(str(p))
-            self.last_dir = p
-            self._update_previews()
+        # Sanchez Options GroupBox
+        self.sanchez_options_groupbox = QGroupBox("Sanchez Options")
+        self.sanchez_options_groupbox.setCheckable(False) # Not checkable
+        sanchez_options_layout = QGridLayout(self.sanchez_options_groupbox)
 
-    def _pick_out_file(self) -> None:
-        # Use last_file for default path
-        f, _ = QFileDialog.getSaveFileName(self, "Select Output MP4", str(self.last_file), "MP4 Videos (*.mp4)")
-        if f:
-            p = pathlib.Path(f)
-            self.out_edit.setText(str(p))
-            self.last_file = p # Update last_file
-            self.last_dir = p.parent # Update last_dir based on output selection
+        self.sanchez_false_colour_checkbox = QCheckBox("Apply False Colour")
+        self.sanchez_false_colour_checkbox.setChecked(False) # Default to disabled
 
-    def _on_crop_clicked(self) -> None:
-        # Restore implementation from original file state (~line 1744)
-        from pathlib import Path
-        folder = Path(self.in_edit.text()).expanduser()
-        imgs = sorted(folder.glob("*.png"))
-        if not imgs:
-            QMessageBox.warning(self, "No Images", "Select a folder with PNGs first")
-            return
+        self.sanchez_res_km_label = QLabel("Resolution (km):")
+        self.sanchez_res_km_spinbox = QSpinBox()
+        self.sanchez_res_km_spinbox.setRange(1, 1000) # Example range
+        self.sanchez_res_km_spinbox.setValue(500) # Example default
+        self.sanchez_res_km_spinbox.setEnabled(False) # Disabled by default
 
-        pix = QPixmap(str(imgs[0]))
-        crop_init = self.crop_rect
-        dlg = CropDialog(pix, crop_init, self)
-        if dlg.exec() == QDialog.DialogCode.Accepted:
-            rect = dlg.getRect()
-            self.crop_rect = (rect.x(), rect.y(), rect.width(), rect.height())
-            self.settings.setValue("main/cropRect", ",".join(map(str, self.crop_rect)))
-            self._update_previews() # This method is now defined before _makeMainTab
+        sanchez_options_layout.addWidget(self.sanchez_false_colour_checkbox, 0, 0)
+        sanchez_options_layout.addWidget(self.sanchez_res_km_label, 0, 1)
+        sanchez_options_layout.addWidget(self.sanchez_res_km_spinbox, 0, 2)
+        sanchez_options_layout.setColumnStretch(2, 1)
 
-    def _makeMainTab(self) -> QWidget:
-        tab = QWidget()
-        main_lay = QVBoxLayout(tab)
+        # FFmpeg Settings Tab (Moved from _make_ffmpeg_settings_tab)
+        # Create and assign the FFmpeg tab attribute
+        self.ffmpeg_settings_tab = self._make_ffmpeg_settings_tab()
 
-        # --- Top Row: Input / Output / Start / Progress --- #
-        top_row_lay = QGridLayout()
+        # Previews
+        self.preview_label_1 = ClickableLabel("Preview 1 (First)")
+        self.preview_label_mid = ClickableLabel("Preview 2 (Middle)") # Added middle label
+        self.preview_label_2 = ClickableLabel("Preview 3 (Last)") # Renamed last label
+        
+        # Set consistent alignment for all labels
+        self.preview_label_1.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.preview_label_mid.setAlignment(Qt.AlignmentFlag.AlignCenter) # Align middle
+        self.preview_label_2.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        # Set expanding size policy for all labels
+        policy = QSizePolicy.Policy.Expanding # Use Expanding policy
+        self.preview_label_1.setSizePolicy(policy, policy)
+        self.preview_label_mid.setSizePolicy(policy, policy) # Set policy for middle
+        self.preview_label_2.setSizePolicy(policy, policy)
+        
+        # Set minimum and fixed sizes to ensure consistency
+        min_size = 200
+        # Set minimum sizes to ensure labels don't collapse
+        self.preview_label_1.setMinimumSize(min_size, min_size)
+        self.preview_label_mid.setMinimumSize(min_size, min_size)
+        self.preview_label_2.setMinimumSize(min_size, min_size)
 
-        # Input
-        top_row_lay.addWidget(QLabel("Input PNGs Folder:"), 0, 0)
-        self.in_edit = QLineEdit()
-        self.in_edit.textChanged.connect(self._update_start_button_state) # Connect signal
-        self.in_edit.textChanged.connect(self._update_crop_buttons_state) # Connect signal
-        top_row_lay.addWidget(self.in_edit, 0, 1)
-        self.in_btn = QPushButton("Browse...")
-        self.in_btn.clicked.connect(self._pick_in_dir)
-        top_row_lay.addWidget(self.in_btn, 0, 2)
-        # Crop Buttons (added to input row for better layout)
-        self.crop_btn = QPushButton("Set Crop")
-        self.crop_btn.clicked.connect(self._on_crop_clicked)
-        top_row_lay.addWidget(self.crop_btn, 0, 3)
-        self.clear_crop_btn = QPushButton("Clear Crop")
-        self.clear_crop_btn.clicked.connect(self._on_clear_crop_clicked)
-        top_row_lay.addWidget(self.clear_crop_btn, 0, 4)
-
-        # Output
-        top_row_lay.addWidget(QLabel("Output MP4 File:"), 1, 0)
-        self.out_edit = QLineEdit()
-        self.out_edit.textChanged.connect(self._update_start_button_state) # Connect signal
-        top_row_lay.addWidget(self.out_edit, 1, 1)
-        self.out_btn = QPushButton("Browse...")
-        self.out_btn.clicked.connect(self._pick_out_file)
-        top_row_lay.addWidget(self.out_btn, 1, 2)
-        # +++ Add Open Output Button +++
-        self.open_btn = QPushButton("Open Output")
-        self.open_btn.setToolTip("Open the last generated MP4 file in VLC (if installed).")
-        self.open_btn.clicked.connect(self._open_in_vlc)
-        self.open_btn.setEnabled(False) # Start disabled
-        top_row_lay.addWidget(self.open_btn, 1, 3) # Add to grid layout
-        # --- End Add ---
+        # Crop Button
+        self.crop_button = QPushButton("Select Crop Region")
+        self.clear_crop_button = QPushButton("Clear Crop")
+        self.clear_crop_button.setEnabled(False) # Disabled initially
 
         # Start Button
-        self.start_btn = QPushButton("Start Interpolation")
-        self.start_btn.clicked.connect(self._start)
-        top_row_lay.addWidget(self.start_btn, 2, 0, 1, 5) # Span across 5 columns
+        self.start_button = QPushButton("Start VFI")
+        self.start_button.setEnabled(False) # Disabled initially
 
         # Progress Bar
         self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(True)
-        self.progress_bar.setFormat("%v/%m (%p%)")
-        top_row_lay.addWidget(self.progress_bar, 3, 0, 1, 5) # Span across 5 columns
 
-        # ETA Label
-        self.eta_label = QLabel("ETA: --:--:--")
-        self.eta_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        top_row_lay.addWidget(self.eta_label, 4, 0, 1, 5) # Span across 5 columns
+        # Status Bar (using QLabel for simplicity in QWidget)
+        self.status_label = QLabel("Ready")
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
-        main_lay.addLayout(top_row_lay)
+        # Open in VLC Button
+        self.open_vlc_button = QPushButton("Open Output in VLC")
+        self.open_vlc_button.setEnabled(False) # Disabled initially
 
-        # --- Middle Row: Settings (FPS, Intermediates, Encoder, Skip) --- #
-        settings_row_lay = QHBoxLayout()
-        settings_row_lay.addWidget(QLabel("Output FPS:"))
-        self.fps_spin = QSpinBox(); self.fps_spin.setRange(1, 120); self.fps_spin.setValue(30)
-        settings_row_lay.addWidget(self.fps_spin)
-        settings_row_lay.addWidget(QLabel("Interpolated Frames:"))
-        self.inter_spin = QSpinBox(); self.inter_spin.setRange(1, 1); self.inter_spin.setValue(1)
-        settings_row_lay.addWidget(self.inter_spin)
-        settings_row_lay.addWidget(QLabel("Encoder:"))
-        self.encoder_combo = QComboBox(); self.encoder_combo.addItems(["RIFE", "FFmpeg"])
-        self.encoder_combo.setToolTip(
-            "Select the encoder to use for frame interpolation:\n"
-            "- RIFE: AI-based neural network interpolation (higher quality).\n"
-            "- FFmpeg: Traditional algorithm-based interpolation (more configurable).\n"
-            "Encoder selection affects which quality settings are used."
-        )
-        settings_row_lay.addWidget(self.encoder_combo)
-        self.skip_model_cb = QCheckBox("Skip AI Model")
-        self.skip_model_cb.setToolTip(
-            "Skip the AI interpolation step and only perform direct encoding.\n"
-            "This option is useful for debugging or when only using FFmpeg interpolation."
-        )
-        settings_row_lay.addWidget(self.skip_model_cb)
-        settings_row_lay.addStretch()
-        main_lay.addLayout(settings_row_lay)
+        # --- Layouts (Moved from original __init__) ---
+        # Input/Output Layout
+        io_layout = QGridLayout()
+        io_layout.addWidget(self.in_dir_label, 0, 0)
+        io_layout.addWidget(self.in_dir_edit, 0, 1)
+        io_layout.addWidget(self.in_dir_button, 0, 2)
+        io_layout.addWidget(self.out_file_label, 1, 0)
+        io_layout.addWidget(self.out_file_edit, 1, 1)
+        io_layout.addWidget(self.out_file_button, 1, 2)
+        io_layout.setColumnStretch(1, 1) # Give the line edits stretch
 
-        # --- RIFE Specific Options --- #
-        rife_opts_group = QGroupBox("RIFE Options")
-        self.rife_opts_group = rife_opts_group # Assign to self
-        rife_opts_layout = QGridLayout(rife_opts_group)
-        rife_opts_layout.addWidget(QLabel("Model:"), 0, 0)
-        self.model_combo = QComboBox() # Populated later
-        rife_opts_layout.addWidget(self.model_combo, 0, 1, 1, 3)
+        # Interpolation Settings Layout
+        interp_layout = QHBoxLayout()
+        interp_layout.addWidget(self.fps_label)
+        interp_layout.addWidget(self.fps_spinbox)
+        interp_layout.addStretch(1) # Add stretch to push elements left
+        interp_layout.addWidget(self.mid_count_label)
+        interp_layout.addWidget(self.mid_count_spinbox)
+        interp_layout.addStretch(1)
+        interp_layout.addWidget(self.encoder_label)
+        interp_layout.addWidget(self.encoder_combo)
+        interp_layout.addStretch(1)
+        interp_layout.addWidget(self.model_label)
+        interp_layout.addWidget(self.model_combo)
+        interp_layout.addStretch(1)
+        interp_layout.addWidget(self.max_workers_label) # Add Max Workers
+        interp_layout.addWidget(self.max_workers_spinbox)
+        interp_layout.addStretch(1)
+
+        # Options Layout (RIFE and Sanchez GroupBoxes)
+        options_layout = QHBoxLayout()
+        options_layout.addWidget(self.rife_options_groupbox)
+        options_layout.addWidget(self.sanchez_options_groupbox)
+        options_layout.addStretch(1)
+
+        # Previews Layout (using QSplitter for resizable previews)
+        preview_splitter = QSplitter(Qt.Orientation.Horizontal)
+        preview_splitter.addWidget(self.preview_label_1)
+        preview_splitter.addWidget(self.preview_label_mid) # Add middle label to splitter
+        preview_splitter.addWidget(self.preview_label_2)
         
-        # Add capability summary label
-        self.rife_capability_label = QLabel(self.rife_capability_manager.get_capability_summary())
-        self.rife_capability_label.setStyleSheet("color: #666; font-style: italic;")
-        rife_opts_layout.addWidget(self.rife_capability_label, 0, 4)
+        # Set equal stretch factors for all labels
+        preview_splitter.setStretchFactor(0, 1) # Give all equal stretch
+        preview_splitter.setStretchFactor(1, 1)
+        preview_splitter.setStretchFactor(2, 1) # Stretch for middle label
         
-        self.rife_tile_enable_cb = QCheckBox("Enable Tiling"); self.rife_tile_enable_cb.stateChanged.connect(self._toggle_tile_size_enabled)
-        rife_opts_layout.addWidget(self.rife_tile_enable_cb, 1, 0)
-        rife_opts_layout.addWidget(QLabel("Tile Size:"), 1, 1)
-        self.rife_tile_size_spin = QSpinBox(); self.rife_tile_size_spin.setRange(64, 4096); self.rife_tile_size_spin.setSingleStep(64); self.rife_tile_size_spin.setValue(256); self.rife_tile_size_spin.setEnabled(False)
-        rife_opts_layout.addWidget(self.rife_tile_size_spin, 1, 2)
-        self.rife_uhd_mode_cb = QCheckBox("UHD Mode")
-        rife_opts_layout.addWidget(self.rife_uhd_mode_cb, 2, 0)
-        self.thread_spec_label = QLabel("Thread Spec (enc:dec:gpu):")
-        rife_opts_layout.addWidget(self.thread_spec_label, 2, 1)
-        self.rife_thread_spec_edit = QLineEdit("1:2:2"); self.rife_thread_spec_edit.textChanged.connect(self._validate_thread_spec)
-        rife_opts_layout.addWidget(self.rife_thread_spec_edit, 2, 2)
-        self.rife_tta_spatial_cb = QCheckBox("TTA Spatial")
-        rife_opts_layout.addWidget(self.rife_tta_spatial_cb, 3, 0)
-        self.rife_tta_temporal_cb = QCheckBox("TTA Temporal")
-        rife_opts_layout.addWidget(self.rife_tta_temporal_cb, 3, 1)
-        rife_opts_layout.setColumnStretch(3, 1)
-        main_lay.addWidget(rife_opts_group)
+        # Set uniform sizes to force equal distribution at startup
+        # Calculate available width (estimate based on window size)
+        screen_width = 800  # Reasonable default
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_width = int(screen.availableGeometry().width() * 0.8)  # 80% of screen width
+        
+        # Calculate size per widget (accounting for some margin/padding)
+        widget_width = (screen_width - 100) // 3
+        
+        # Set sizes explicitly to ensure uniformity
+        sizes = [widget_width, widget_width, widget_width]
+        preview_splitter.setSizes(sizes)
+        
+        # Disable handle movement to prevent user from resizing
+        preview_splitter.setHandleWidth(1) # Minimum handle width
 
-        # --- Enhancements Group (Sanchez) --- #
-        enhancements_group = QGroupBox("Enhancements")
-        enhancements_layout = QGridLayout(enhancements_group)
-        self.false_colour_check = QCheckBox("Apply False Colour (Sanchez)")
-        enhancements_layout.addWidget(self.false_colour_check, 0, 0, 1, 2)
-        self.sanchez_res_label = QLabel("Sanchez Resolution (km):")
-        enhancements_layout.addWidget(self.sanchez_res_label, 1, 0)
-        self.sanchez_res_spin = QSpinBox(); self.sanchez_res_spin.setRange(1, 16); self.sanchez_res_spin.setValue(4)
-        enhancements_layout.addWidget(self.sanchez_res_spin, 1, 1)
-        self.sanchez_res_label.setEnabled(False)
-        self.sanchez_res_spin.setEnabled(False)
-        enhancements_layout.setColumnStretch(2, 1)
-        main_lay.addWidget(enhancements_group)
+        # Crop Buttons Layout
+        crop_buttons_layout = QHBoxLayout()
+        crop_buttons_layout.addWidget(self.crop_button)
+        crop_buttons_layout.addWidget(self.clear_crop_button)
+        crop_buttons_layout.addStretch(1)
 
-        # --- Bottom Row: Previews --- #
-        preview_group = QGroupBox("Previews") # Renamed from Previews & Crop
-        preview_layout = QGridLayout(preview_group)
-        self.preview_first = ClickableLabel("First Frame"); self.preview_first.setAlignment(Qt.AlignmentFlag.AlignCenter); self.preview_first.setFixedSize(128, 128); self.preview_first.setToolTip("Click to zoom"); self.preview_first.clicked.connect(lambda: self._show_zoom(self.preview_first))
-        preview_layout.addWidget(self.preview_first, 0, 0)
-        self.preview_mid = ClickableLabel("Middle Frame"); self.preview_mid.setAlignment(Qt.AlignmentFlag.AlignCenter); self.preview_mid.setFixedSize(128, 128); self.preview_mid.setToolTip("Click to zoom"); self.preview_mid.clicked.connect(lambda: self._show_zoom(self.preview_mid))
-        preview_layout.addWidget(self.preview_mid, 0, 1)
-        self.preview_last = ClickableLabel("Last Frame"); self.preview_last.setAlignment(Qt.AlignmentFlag.AlignCenter); self.preview_last.setFixedSize(128, 128); self.preview_last.setToolTip("Click to zoom"); self.preview_last.clicked.connect(lambda: self._show_zoom(self.preview_last))
-        preview_layout.addWidget(self.preview_last, 0, 2)
-        # Crop buttons moved to input row
-        main_lay.addWidget(preview_group)
+        # Start Button Layout
+        start_button_layout = QHBoxLayout()
+        start_button_layout.addWidget(self.start_button)
+        start_button_layout.addStretch(1)
 
-        main_lay.addStretch()
-        tab.setLayout(main_lay)
+        # VLC Button Layout
+        vlc_button_layout = QHBoxLayout()
+        vlc_button_layout.addWidget(self.open_vlc_button)
+        vlc_button_layout.addStretch(1)
+
+        # Add widgets to the VFI Process tab layout
+        vfi_process_layout.addLayout(io_layout)
+        vfi_process_layout.addLayout(interp_layout)
+        vfi_process_layout.addLayout(options_layout)
+        vfi_process_layout.addWidget(preview_splitter, 1) # Give the splitter a stretch factor
+        vfi_process_layout.addLayout(crop_buttons_layout)
+        vfi_process_layout.addLayout(start_button_layout)
+        vfi_process_layout.addWidget(self.progress_bar)
+        vfi_process_layout.addWidget(self.status_label)
+        vfi_process_layout.addLayout(vlc_button_layout)
+
+        # Add the VFI Process tab and FFmpeg Settings tab to the main tab widget
+        self.main_tabs.addTab(vfi_process_tab, "VFI Process")
+        self.main_tabs.addTab(self.ffmpeg_settings_tab, "FFmpeg Settings")
+
+        # Add the "File Sorter" tab
+        # self.file_sorter_tab was instantiated earlier
+        # TEMP: Comment out adding extra tabs for testing
+        # self.main_tabs.addTab(self.file_sorter_tab, "File Sorter")
+        self.main_tabs.addTab(self.file_sorter_tab, "File Sorter")
+
+        # Add the "Date Sorter" tab
+        # self.date_sorter_tab was instantiated earlier
+        self.main_tabs.addTab(self.date_sorter_tab, "Date Sorter")
+
+        # Create and add the Model Library tab
+        self.model_library_tab = self._makeModelLibraryTab() # Create the tab first
+        self.main_tabs.addTab(self.model_library_tab, "Model Library")
+
+
+        # Set the main layout of the MainWindow to the tab widget
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.main_tabs)
+
+        # Populate models *after* all UI elements are created
+        self._populate_models()
+
+        # --- Connections ---
+        self.in_dir_button.clicked.connect(self._pick_in_dir)
+        self.out_file_button.clicked.connect(self._pick_out_file)
+        self.start_button.clicked.connect(self._start)
+        self.open_vlc_button.clicked.connect(self._open_in_vlc)
+        self.crop_button.clicked.connect(self._on_crop_clicked)
+        self.clear_crop_button.clicked.connect(self._on_clear_crop_clicked)
+
+        # Connect signals for preview updates to the new intermediate slot
+        self.in_dir_edit.textChanged.connect(self._trigger_preview_update)
+        self.sanchez_false_colour_checkbox.stateChanged.connect(self._trigger_preview_update)
+        self.sanchez_res_km_spinbox.valueChanged.connect(lambda: self._trigger_preview_update())
+
+        # Connect signals for preview zooming
+        self.preview_label_1.clicked.connect(lambda: self._show_zoom(self.preview_label_1))
+        self.preview_label_mid.clicked.connect(lambda: self._show_zoom(self.preview_label_mid)) # Connect middle label
+        self.preview_label_2.clicked.connect(lambda: self._show_zoom(self.preview_label_2))
+
+        # Connect signals for updating start button state
+        self.in_dir_edit.textChanged.connect(self._update_start_button_state)
+        self.out_file_edit.textChanged.connect(self._update_start_button_state)
+        self.encoder_combo.currentTextChanged.connect(self._update_start_button_state)
+        self.model_combo.currentTextChanged.connect(self._update_start_button_state)
+
+        # Connect signals for updating crop buttons state
+        self.in_dir_edit.textChanged.connect(self._update_crop_buttons_state)
+
+        # Connect signals for updating RIFE options state based on encoder
+        self.encoder_combo.currentTextChanged.connect(self._update_rife_options_state)
+
+        # Connect signals for RIFE v4.6 options
+        self.rife_tile_enable_checkbox.stateChanged.connect(self._toggle_tile_size_enabled)
+        self.rife_thread_spec_edit.textChanged.connect(self._validate_thread_spec)
+
+        # Connect signals for Sanchez options
+        self.sanchez_false_colour_checkbox.stateChanged.connect(self._toggle_sanchez_res_enabled)
+
+        # Connect signals for FFmpeg settings tab (moved to a separate method)
+        self._connect_ffmpeg_settings_tab_signals()
+
+        # Connect signal for tab changes to potentially update UI elements
+        self.main_tabs.currentChanged.connect(self._on_tab_changed)
+
+        # Connect signal for model combo box changes
+        self._connect_model_combo()
+
+        # Load saved settings
+        self.loadSettings()
+
+        # Initial state updates AFTER loading settings
+        self._update_rife_options_state(self.encoder_combo.currentText()) # Update based on initial/loaded encoder
+        # _update_rife_options_state now calls _toggle_sanchez_res_enabled and _update_ffmpeg_controls_state
+        # self._toggle_sanchez_res_enabled(self.sanchez_false_colour_checkbox.checkState()) # Called by _update_rife_options_state
+        # self._update_ffmpeg_controls_state(self.encoder_combo.currentText() == 'FFmpeg') # Called by _update_rife_options_state
+        self._update_unsharp_controls_state(self.unsharp_groupbox.isChecked()) # Update unsharp controls state
+        self._update_scd_thresh_state(self.ffmpeg_scd_combo.currentText()) # Update scd threshold state
+        self._update_quality_controls_state("FFmpeg", self.ffmpeg_quality_preset_combo.currentText()) # Update quality controls state
+        self._update_start_button_state() # Explicitly update start/VLC button state
+        self._update_crop_buttons_state() # Explicitly update crop button state
+
+        # Set up a timer to trigger preview updates periodically or when requested
+        self.preview_timer = QTimer(self)
+        self.preview_timer.setInterval(5000) # Update every 5 seconds (adjust as needed)
+        self.preview_timer.timeout.connect(self._update_previews)
+        # Connect the signal itself to the actual update method
+        self.request_previews_update.connect(self._update_previews)
+        # REMOVED redundant check before connecting the signal
+        # self.preview_timer.start() # Don't start timer initially, rely on signals
+
+        # Trigger initial preview update after UI is shown and sized
+        QTimer.singleShot(100, self.request_previews_update.emit)
+
+    def _trigger_preview_update(self, *args: Any) -> None: # Accept arbitrary args from signals
+        """Slot to emit the request_previews_update signal."""
+        self.request_previews_update.emit()
+
+    def _adjust_window_to_content(self) -> None:
+        """Adjusts the window size to fit its content."""
+        self.adjustSize()
+
+    def _pick_in_dir(self) -> None:
+        """Opens a dialog to select the input directory."""
+        dir_path = QFileDialog.getExistingDirectory(self, "Select Input Directory")
+        if dir_path:
+            self.in_dir_edit.setText(dir_path)
+
+    def _pick_out_file(self) -> None:
+        """Opens a dialog to select the output file path."""
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Output File", "", "MP4 Files (*.mp4);;All Files (*)")
+        if file_path:
+            self.out_file_edit.setText(file_path)
+
+    def _on_crop_clicked(self) -> None:
+        """Opens the crop dialog to select a region."""
+        # Use the first preview label's file path to load the original image
+        if not self.preview_label_1.file_path:
+            QMessageBox.warning(self, "Crop Error", "Load input images first to select a crop region (ensure Preview 1 is loaded).")
+            return
+
+        try:
+            # Load the original, unprocessed image for cropping
+            pixmap_to_crop = QPixmap(self.preview_label_1.file_path)
+            if pixmap_to_crop.isNull():
+                 QMessageBox.warning(self, "Crop Error", f"Failed to load image for cropping:\n{self.preview_label_1.file_path}")
+                 return
+        except Exception as e:
+            LOGGER.error(f"Error loading image for crop dialog: {e}")
+            QMessageBox.critical(self, "Crop Error", f"Could not load image for cropping:\n{e}")
+            return
+
+        dialog = CropDialog(pixmap_to_crop, self.current_crop_rect, self) # Pass QPixmap directly
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            selected_rect = dialog.getRect()
+            if selected_rect.width() > 0 and selected_rect.height() > 0:
+                self.current_crop_rect = (
+                    selected_rect.x(),
+                    selected_rect.y(),
+                    selected_rect.width(),
+                    selected_rect.height()
+                )
+                LOGGER.info(f"Crop region selected: {self.current_crop_rect}")
+                self.clear_crop_button.setEnabled(True) # Enable clear button
+                self.request_previews_update.emit() # Update previews with crop
+            else:
+                # If an invalid (empty) rect was selected, clear the crop
+                self._on_clear_crop_clicked()
+
+    def _makeMainTab(self) -> QWidget:
+        """Creates the main VFI processing tab."""
+        # This method is likely a remnant and not used for the primary layout anymore
+        # The main layout is built directly in __init__ now.
+        # Keeping it for now in case it's referenced elsewhere, but it's not
+        # where the main UI is constructed in the current version.
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        layout.addWidget(QLabel("This is a placeholder tab."))
         return tab
 
-    # --- FFmpeg Settings Tab --- #
     def _make_ffmpeg_settings_tab(self) -> QWidget:
-        """Builds the consolidated FFmpeg Settings tab UI."""
-        # --- Create Content Widget and Layout ---
-        scroll_content_widget = QWidget()
-        layout = QVBoxLayout(scroll_content_widget)
-        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        """Creates the FFmpeg settings tab."""
+        tab = QWidget()
+        main_layout = QVBoxLayout(tab)
 
-        # Set vertical size policy (optional, layout alignment handles top alignment)
-        # scroll_content_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-
-        # --- Stylesheet for GroupBoxes ---
-        groupbox_style = """
-        QGroupBox::title {
-            font-size: 13px; /* Adjust as needed */
-        }
-        QGroupBox::indicator {
-            width: 13px;
-            height: 13px;
-        }
-        """
-
-        # --- Profile Selector ---
-        profile_row = QHBoxLayout()
-        profile_row.addWidget(QLabel("<b>FFmpeg Settings Profile:</b>"))
+        # --- Profile Selection ---
+        profile_layout = QHBoxLayout()
+        profile_layout.addWidget(QLabel("FFmpeg Settings Profile:"))
         self.ffmpeg_profile_combo = QComboBox()
-        # Add standard profiles + Custom option
-        self.ffmpeg_profile_combo.addItems(list(FFMPEG_PROFILES.keys()) + ["Custom"])
-        self.ffmpeg_profile_combo.setToolTip(
-            "Select a predefined settings profile:\n"
-            "- Default: Standard settings for good quality.\n"
-            "- Optimal: Settings tuned for best quality-speed balance.\n"
-            "- Optimal 2: Alternative optimization based on PowerShell script.\n"
-            "- Custom: Your own custom settings configuration.\n"
-            "Changing any individual setting will automatically switch to 'Custom'."
-        )
-        profile_row.addWidget(self.ffmpeg_profile_combo)
-        profile_row.addStretch()
-        layout.addLayout(profile_row)
+        self.ffmpeg_profile_combo.addItems(list(FFMPEG_PROFILES.keys()))
+        self.ffmpeg_profile_combo.addItem("Custom") # Add Custom option
+        profile_layout.addWidget(self.ffmpeg_profile_combo)
+        profile_layout.addStretch(1)
+        main_layout.addLayout(profile_layout)
 
-        # --- Enable Checkbox ---
-        interp_row = QHBoxLayout()
-        self.ffmpeg_interp_cb = QCheckBox("Use FFmpeg motion interpolation")
-        # Default checked state will be set by profile/loadSettings
-        self.ffmpeg_interp_cb.setToolTip(
-            "Apply FFmpeg's 'minterpolate' filter to enhance frame interpolation.\n"
-            "When enabled, this allows fine-tuned control over the motion interpolation algorithm.\n"
-            "When disabled, RIFE will handle all interpolation without FFmpeg processing."
-        )
-        interp_row.addWidget(self.ffmpeg_interp_cb)
-        interp_row.addStretch()
-        layout.addLayout(interp_row)
+        # --- Interpolation Group ---
+        interp_group = QGroupBox("Interpolation (minterpolate)")
+        interp_group.setCheckable(True) # Make it checkable
+        self.ffmpeg_interp_group = interp_group # Store reference
+        interp_layout = QGridLayout(interp_group)
 
-        layout.addSpacing(10)
+        self.ffmpeg_mi_mode_label = QLabel("MI Mode:")
+        self.ffmpeg_mi_mode_combo = QComboBox()
+        self.ffmpeg_mi_mode_combo.addItems(["dup", "blend", "mci"])
+        interp_layout.addWidget(self.ffmpeg_mi_mode_label, 0, 0)
+        interp_layout.addWidget(self.ffmpeg_mi_mode_combo, 0, 1)
 
-        # --- Motion Interpolation Group ---
-        minterpolate_group = QGroupBox("Motion Interpolation (minterpolate)") # <-- Title Updated
-        minterpolate_group.setObjectName("minterpolate_group") # Set object name
-        minterpolate_group.setCheckable(True) # <-- Make it checkable/collapsible
-        minterpolate_group.setChecked(True)  # <-- Start expanded
-        minterpolate_group.setStyleSheet(groupbox_style) # <-- Apply style (Re-apply)
-        self.minterpolate_group = minterpolate_group # Assign group to self
+        self.ffmpeg_mc_mode_label = QLabel("MC Mode:")
+        self.ffmpeg_mc_mode_combo = QComboBox()
+        self.ffmpeg_mc_mode_combo.addItems(["obmc", "aobmc"])
+        interp_layout.addWidget(self.ffmpeg_mc_mode_label, 1, 0)
+        interp_layout.addWidget(self.ffmpeg_mc_mode_combo, 1, 1)
 
-        # --- Create Content Widget and Layout for Interpolation ---
-        self.minterpolate_content_widget = QWidget()
-        grid = QGridLayout(self.minterpolate_content_widget) # <-- Layout targets the content widget
+        self.ffmpeg_me_mode_label = QLabel("ME Mode:")
+        self.ffmpeg_me_mode_combo = QComboBox()
+        self.ffmpeg_me_mode_combo.addItems(["bidir", "bilat"])
+        interp_layout.addWidget(self.ffmpeg_me_mode_label, 2, 0)
+        interp_layout.addWidget(self.ffmpeg_me_mode_combo, 2, 1)
 
-        # --- Add controls to the content layout (grid) --- 
-        # Interpolation Mode (mi_mode)
-        mi_lbl = QLabel("Interpolation Mode:")
-        self.mi_combo = QComboBox()
-        self.mi_combo.addItems(["dup", "blend", "mci", "mc"])
-        self.mi_combo.setToolTip(
-            "Method for creating intermediate frames.\\n"
-            "- dup: Duplicate frames (Fastest, no interpolation).\\n"
-            "- blend: Simple frame averaging (Fast, blurry).\\n"
-            "- mci: Motion Compensated Interpolation (Uses MC settings).\\n"
-            "- mc: Motion Compensation (No interpolation).\\n"
-            "Recommended: 'mci'."
-        )
-        grid.addWidget(mi_lbl, 0, 0)
-        grid.addWidget(self.mi_combo, 0, 1)
+        self.ffmpeg_me_algo_label = QLabel("ME Algorithm:")
+        self.ffmpeg_me_algo_combo = QComboBox()
+        self.ffmpeg_me_algo_combo.addItems(["(default)", "esa", "tss", "tdls", "ntss", "fss", "ds", "hexbs", "epzs", "umh"])
+        interp_layout.addWidget(self.ffmpeg_me_algo_label, 0, 2)
+        interp_layout.addWidget(self.ffmpeg_me_algo_combo, 0, 3)
 
-        # Motion Compensation Mode (mc_mode)
-        mc_lbl = QLabel("Motion Comp. Mode:")
-        self.mc_combo = QComboBox()
-        self.mc_combo.addItems(["obmc", "aobmc"])
-        self.mc_combo.setToolTip(
-            "Algorithm for applying motion vectors.\\n"
-            "- obmc: Overlapped Block Motion Compensation (Standard).\\n"
-            "- aobmc: Adaptive Overlapped Block MC (Higher quality, slower).\\n"
-            "Recommended: 'obmc'."
-        )
-        grid.addWidget(mc_lbl, 1, 0)
-        grid.addWidget(self.mc_combo, 1, 1)
+        self.ffmpeg_search_param_label = QLabel("Search Param:")
+        self.ffmpeg_search_param_spinbox = QSpinBox()
+        self.ffmpeg_search_param_spinbox.setRange(4, 128) # Example range
+        interp_layout.addWidget(self.ffmpeg_search_param_label, 1, 2)
+        interp_layout.addWidget(self.ffmpeg_search_param_spinbox, 1, 3)
 
-        # Motion Estimation Mode (me_mode)
-        me_lbl = QLabel("Motion Estimation Mode:")
-        self.me_combo = QComboBox()
-        self.me_combo.addItems(["bidir", "bilat"])
-        self.me_combo.setToolTip(
-            "Direction for motion vector search.\\n"
-            "- bidir: Bidirectional (Uses past/future frames, best quality).\\n"
-            "- bilat: Bilateral (Alternative bidirectional).\\n"
-            "Recommended: 'bidir'."
-        )
-        grid.addWidget(me_lbl, 2, 0)
-        grid.addWidget(self.me_combo, 2, 1)
+        self.ffmpeg_vsbmc_checkbox = QCheckBox("VSBMC")
+        interp_layout.addWidget(self.ffmpeg_vsbmc_checkbox, 2, 2)
 
-        # Motion Estimation Algorithm (me_algo)
-        me_algo_lbl = QLabel("ME Algorithm:")
-        self.me_algo_combo = QComboBox()
-        self.me_algo_combo.addItems(["(default)", "esa", "epzs", "hexbs", "umh"])
-        self.me_algo_combo.setToolTip(
-            "Algorithm for finding motion vectors.\\n"
-            "- (default): FFmpeg's choice (often EPZS/HexBS).\\n"
-            "- esa: Exhaustive Search (Slowest, highest quality).\\n"
-            "- epzs: Enhanced Predictive Zonal Search (Good balance).\\n"
-            "- hexbs/umh: Hexagon-based Search (Faster).\\n"
-            "Recommended: Start with '(default)'."
-        )
-        grid.addWidget(me_algo_lbl, 3, 0)
-        grid.addWidget(self.me_algo_combo, 3, 1)
+        self.ffmpeg_scd_label = QLabel("Scene Change Detection:")
+        self.ffmpeg_scd_combo = QComboBox()
+        self.ffmpeg_scd_combo.addItems(["none", "fdiff"])
+        interp_layout.addWidget(self.ffmpeg_scd_label, 3, 0)
+        interp_layout.addWidget(self.ffmpeg_scd_combo, 3, 1)
 
-        # Search parameter (search_param)
-        search_param_lbl = QLabel("ME Search Parameter:")
-        self.search_param_spin = QSpinBox()
-        self.search_param_spin.setRange(4, 256)
-        self.search_param_spin.setToolTip(
-            "Max pixel distance to search for motion vectors.\\n"
-            "Larger = Slower, better for fast motion.\\n"
-            "Recommended: 64-128."
-        )
-        grid.addWidget(search_param_lbl, 4, 0)
-        grid.addWidget(self.search_param_spin, 4, 1)
+        self.ffmpeg_scd_thresh_label = QLabel("SCD Threshold (%):")
+        self.ffmpeg_scd_thresh_spinbox = QDoubleSpinBox()
+        self.ffmpeg_scd_thresh_spinbox.setRange(0.0, 100.0)
+        self.ffmpeg_scd_thresh_spinbox.setDecimals(1)
+        self.ffmpeg_scd_thresh_spinbox.setSingleStep(0.5)
+        interp_layout.addWidget(self.ffmpeg_scd_thresh_label, 3, 2)
+        interp_layout.addWidget(self.ffmpeg_scd_thresh_spinbox, 3, 3)
 
-        # Scene change detection algorithm (scd)
-        scd_lbl = QLabel("Scene Change Detection:")
-        self.scd_combo = QComboBox()
-        self.scd_combo.addItems(["none", "fdiff"])
-        self.scd_combo.setToolTip(
-            "Method to detect scene cuts.\\n"
-            "- fdiff: Frame Difference (Recommended).\\n"
-            "- none: No detection (Faster, artifacts at cuts)."
-        )
-        grid.addWidget(scd_lbl, 5, 0)
-        grid.addWidget(self.scd_combo, 5, 1)
+        self.ffmpeg_mb_size_label = QLabel("Macroblock Size:")
+        self.ffmpeg_mb_size_combo = QComboBox()
+        self.ffmpeg_mb_size_combo.addItems(["(default)", "8", "16"]) # Common values
+        interp_layout.addWidget(self.ffmpeg_mb_size_label, 4, 0)
+        interp_layout.addWidget(self.ffmpeg_mb_size_combo, 4, 1)
 
-        # Scene change threshold (scd_threshold)
-        scd_thresh_lbl = QLabel("Scene Change Threshold (%):")
-        self.scd_thresh_spin = QDoubleSpinBox()
-        self.scd_thresh_spin.setRange(0.0, 100.0)
-        self.scd_thresh_spin.setSingleStep(0.1)
-        self.scd_thresh_spin.setDecimals(1)
-        self.scd_thresh_spin.setToolTip(
-            "Sensitivity for 'fdiff' (0-100%).\\n"
-            "Lower = More sensitive.\\n"
-            "Recommended: Start with 8-12."
-        )
-        grid.addWidget(scd_thresh_lbl, 6, 0)
-        grid.addWidget(self.scd_thresh_spin, 6, 1)
+        interp_layout.setColumnStretch(1, 1)
+        interp_layout.setColumnStretch(3, 1)
+        main_layout.addWidget(interp_group)
 
-        # Filter Encoding Preset (filter_preset) - Now applies to intermediate step
-        filter_preset_lbl = QLabel("Filter Encoding Preset:")
-        self.filter_preset_combo = QComboBox()
-        self.filter_preset_combo.addItems([
+        # --- Unsharp Filter Group ---
+        unsharp_group = QGroupBox("Sharpening (unsharp)")
+        unsharp_group.setCheckable(True)
+        self.unsharp_groupbox = unsharp_group # Store reference
+        unsharp_layout = QGridLayout(unsharp_group)
+
+        unsharp_layout.addWidget(QLabel("Luma X:"), 0, 0)
+        self.unsharp_lx_spinbox = QSpinBox()
+        self.unsharp_lx_spinbox.setRange(3, 23)
+        self.unsharp_lx_spinbox.setSingleStep(2)
+        unsharp_layout.addWidget(self.unsharp_lx_spinbox, 0, 1)
+
+        unsharp_layout.addWidget(QLabel("Luma Y:"), 0, 2)
+        self.unsharp_ly_spinbox = QSpinBox()
+        self.unsharp_ly_spinbox.setRange(3, 23)
+        self.unsharp_ly_spinbox.setSingleStep(2)
+        unsharp_layout.addWidget(self.unsharp_ly_spinbox, 0, 3)
+
+        unsharp_layout.addWidget(QLabel("Luma Amount:"), 0, 4)
+        self.unsharp_la_spinbox = QDoubleSpinBox()
+        self.unsharp_la_spinbox.setRange(-1.5, 5.0)
+        self.unsharp_la_spinbox.setDecimals(2)
+        self.unsharp_la_spinbox.setSingleStep(0.1)
+        unsharp_layout.addWidget(self.unsharp_la_spinbox, 0, 5)
+
+        unsharp_layout.addWidget(QLabel("Chroma X:"), 1, 0)
+        self.unsharp_cx_spinbox = QSpinBox()
+        self.unsharp_cx_spinbox.setRange(3, 23)
+        self.unsharp_cx_spinbox.setSingleStep(2)
+        unsharp_layout.addWidget(self.unsharp_cx_spinbox, 1, 1)
+
+        unsharp_layout.addWidget(QLabel("Chroma Y:"), 1, 2)
+        self.unsharp_cy_spinbox = QSpinBox()
+        self.unsharp_cy_spinbox.setRange(3, 23)
+        self.unsharp_cy_spinbox.setSingleStep(2)
+        unsharp_layout.addWidget(self.unsharp_cy_spinbox, 1, 3)
+
+        unsharp_layout.addWidget(QLabel("Chroma Amount:"), 1, 4)
+        self.unsharp_ca_spinbox = QDoubleSpinBox()
+        self.unsharp_ca_spinbox.setRange(-1.5, 5.0)
+        self.unsharp_ca_spinbox.setDecimals(2)
+        self.unsharp_ca_spinbox.setSingleStep(0.1)
+        unsharp_layout.addWidget(self.unsharp_ca_spinbox, 1, 5)
+
+        unsharp_layout.setColumnStretch(1, 1)
+        unsharp_layout.setColumnStretch(3, 1)
+        unsharp_layout.setColumnStretch(5, 1)
+        main_layout.addWidget(unsharp_group)
+
+        # --- Quality Settings Group ---
+        quality_group = QGroupBox("Encoding Quality (libx264)")
+        quality_layout = QGridLayout(quality_group)
+
+        self.ffmpeg_quality_preset_label = QLabel("Preset:")
+        self.ffmpeg_quality_preset_combo = QComboBox()
+        # Example presets - map these to CRF/bitrate values
+        self.ffmpeg_quality_preset_combo.addItems([
+            "Very High (CRF 16)",
+            "High (CRF 18)",
+            "Medium (CRF 20)",
+            "Low (CRF 23)",
+            "Very Low (CRF 26)",
+            "Custom CRF",
+            "Custom Bitrate"
+        ])
+        quality_layout.addWidget(self.ffmpeg_quality_preset_label, 0, 0)
+        quality_layout.addWidget(self.ffmpeg_quality_preset_combo, 0, 1, 1, 3) # Span columns
+
+        self.ffmpeg_crf_label = QLabel("CRF:")
+        self.ffmpeg_crf_spinbox = QSpinBox()
+        self.ffmpeg_crf_spinbox.setRange(0, 51) # x264 CRF range
+        quality_layout.addWidget(self.ffmpeg_crf_label, 1, 0)
+        quality_layout.addWidget(self.ffmpeg_crf_spinbox, 1, 1)
+
+        self.ffmpeg_bitrate_label = QLabel("Bitrate (kbps):")
+        self.ffmpeg_bitrate_spinbox = QSpinBox()
+        self.ffmpeg_bitrate_spinbox.setRange(100, 100000) # Example range
+        self.ffmpeg_bitrate_spinbox.setSingleStep(100)
+        quality_layout.addWidget(self.ffmpeg_bitrate_label, 1, 2)
+        quality_layout.addWidget(self.ffmpeg_bitrate_spinbox, 1, 3)
+
+        self.ffmpeg_bufsize_label = QLabel("Buffer Size (kbps):")
+        self.ffmpeg_bufsize_spinbox = QSpinBox()
+        self.ffmpeg_bufsize_spinbox.setRange(100, 200000) # Example range
+        self.ffmpeg_bufsize_spinbox.setSingleStep(100)
+        self.ffmpeg_bufsize_spinbox.setEnabled(False) # Auto-calculated
+        quality_layout.addWidget(self.ffmpeg_bufsize_label, 2, 2)
+        quality_layout.addWidget(self.ffmpeg_bufsize_spinbox, 2, 3)
+
+        self.ffmpeg_pix_fmt_label = QLabel("Pixel Format:")
+        self.ffmpeg_pix_fmt_combo = QComboBox()
+        self.ffmpeg_pix_fmt_combo.addItems(["yuv444p", "yuv420p", "yuv422p"]) # Common options
+        quality_layout.addWidget(self.ffmpeg_pix_fmt_label, 3, 0)
+        quality_layout.addWidget(self.ffmpeg_pix_fmt_combo, 3, 1)
+
+        self.ffmpeg_filter_preset_label = QLabel("Filter Preset:")
+        self.ffmpeg_filter_preset_combo = QComboBox()
+        self.ffmpeg_filter_preset_combo.addItems([
             "ultrafast", "superfast", "veryfast", "faster", "fast",
             "medium", "slow", "slower", "veryslow"
         ])
-        self.filter_preset_combo.setToolTip(
-            "x264 preset for the *intermediate* filtered video (if filtering enabled).\\n"
-            "Slower presets might create slightly higher quality input for RIFE.\\n"
-            "Does NOT affect final output encoding.\\n"
-            "Recommended: 'medium' or 'slow'."
-        )
-        grid.addWidget(filter_preset_lbl, 7, 0)
-        grid.addWidget(self.filter_preset_combo, 7, 1)
+        quality_layout.addWidget(self.ffmpeg_filter_preset_label, 3, 2)
+        quality_layout.addWidget(self.ffmpeg_filter_preset_combo, 3, 3)
 
-        # Macroblock size (mb_size)
-        mbsize_lbl = QLabel("Macroblock Size:")
-        self.mbsize_combo = QComboBox()
-        self.mbsize_combo.addItems(["(default)", "16", "8", "4"])
-        self.mbsize_combo.setToolTip(
-            "Size of blocks for motion estimation.\\n"
-            "- (default)/16: Standard, good balance.\\n"
-            "- 8/4: Finer detail, *significantly* slower.\\n"
-            "Recommended: '(default)' or '16'."
-        )
-        grid.addWidget(mbsize_lbl, 8, 0)
-        grid.addWidget(self.mbsize_combo, 8, 1)
 
-        # Variable-size block motion comp (vsbmc)
-        vsbmc_lbl = QLabel("Variable Size Blocks:")
-        self.vsbmc_cb = QCheckBox()
-        self.vsbmc_cb.setToolTip(
-            "Allow smaller block sizes within macroblock.\\n"
-            "Improves detail on complex motion, increases processing time.\\n"
-            "Recommended: Keep off unless necessary."
-        )
-        grid.addWidget(vsbmc_lbl, 9, 0)
-        grid.addWidget(self.vsbmc_cb, 9, 1)
+        quality_layout.setColumnStretch(1, 1)
+        quality_layout.setColumnStretch(3, 1)
+        main_layout.addWidget(quality_group)
 
-        # --- Add Content Widget to GroupBox Layout ---
-        group_layout = QVBoxLayout(self.minterpolate_group) # Create layout for the groupbox itself
-        group_layout.addWidget(self.minterpolate_content_widget)
+        main_layout.addStretch(1) # Push everything up
 
-        layout.addWidget(minterpolate_group)
-        layout.addSpacing(10)
-
-        # --- Sharpening Group ---
-        unsharp_group = QGroupBox("Sharpening (unsharp)") # <-- Title Updated
-        unsharp_group.setObjectName("unsharp_group") # Set object name
-        unsharp_group.setCheckable(True) # <-- Make it checkable/collapsible
-        unsharp_group.setChecked(True)  # <-- Start expanded
-        self.unsharp_group = unsharp_group # <-- Assign to self
-        unsharp_group.setStyleSheet(groupbox_style) # <-- Apply style (Re-apply)
-
-        # --- Create Content Widget and Layout for Sharpening ---
-        self.unsharp_content_widget = QWidget()
-        unsharp_grid = QGridLayout(self.unsharp_content_widget) # <-- Layout targets the content widget
-
-        # --- Add controls to the content layout (unsharp_grid) ---
-        # Need to adjust row indices for subsequent widgets since row 0 was removed
-        self.luma_x_label = QLabel("Luma Matrix X Size (lx):")
-        unsharp_grid.addWidget(self.luma_x_label, 0, 0) # Start at row 0
-        self.luma_x_spin = QSpinBox(); self.luma_x_spin.setRange(3, 23); self.luma_x_spin.setSingleStep(2);
-        self.luma_x_spin.setToolTip("Horizontal size of luma sharpening mask (odd, 3-23). Larger = smoother. Recommended: 5 or 7.")
-        unsharp_grid.addWidget(self.luma_x_spin, 0, 1) # Row 0
-
-        self.luma_y_label = QLabel("Luma Matrix Y Size (ly):")
-        unsharp_grid.addWidget(self.luma_y_label, 1, 0) # Row 1
-        self.luma_y_spin = QSpinBox(); self.luma_y_spin.setRange(3, 23); self.luma_y_spin.setSingleStep(2);
-        self.luma_y_spin.setToolTip("Vertical size of luma sharpening mask (odd, 3-23). Recommended: 5 or 7.")
-        unsharp_grid.addWidget(self.luma_y_spin, 1, 1) # Row 1
-
-        self.luma_amount_label = QLabel("Luma Amount (la):")
-        unsharp_grid.addWidget(self.luma_amount_label, 2, 0) # Row 2
-        self.luma_amount_spin = QDoubleSpinBox(); self.luma_amount_spin.setRange(-1.5, 5.0); self.luma_amount_spin.setDecimals(1); self.luma_amount_spin.setSingleStep(0.1);
-        self.luma_amount_spin.setToolTip("Strength of luma sharpening (-1.5 to 5.0). >0 sharpens. Recommended: 0.5-1.0.")
-        unsharp_grid.addWidget(self.luma_amount_spin, 2, 1) # Row 2
-
-        self.chroma_x_label = QLabel("Chroma Matrix X Size (cx):")
-        unsharp_grid.addWidget(self.chroma_x_label, 3, 0) # Row 3
-        self.chroma_x_spin = QSpinBox(); self.chroma_x_spin.setRange(3, 23); self.chroma_x_spin.setSingleStep(2);
-        self.chroma_x_spin.setToolTip("Horizontal size of chroma sharpening mask (odd, 3-23). Recommended: 3 or 5.")
-        unsharp_grid.addWidget(self.chroma_x_spin, 3, 1) # Row 3
-
-        self.chroma_y_label = QLabel("Chroma Matrix Y Size (cy):")
-        unsharp_grid.addWidget(self.chroma_y_label, 4, 0) # Row 4
-        self.chroma_y_spin = QSpinBox(); self.chroma_y_spin.setRange(3, 23); self.chroma_y_spin.setSingleStep(2);
-        self.chroma_y_spin.setToolTip("Vertical size of chroma sharpening mask (odd, 3-23). Recommended: 3 or 5.")
-        unsharp_grid.addWidget(self.chroma_y_spin, 4, 1) # Row 4
-
-        self.chroma_amount_label = QLabel("Chroma Amount (ca):")
-        unsharp_grid.addWidget(self.chroma_amount_label, 5, 0) # Row 5
-        self.chroma_amount_spin = QDoubleSpinBox(); self.chroma_amount_spin.setRange(-1.5, 5.0); self.chroma_amount_spin.setDecimals(1); self.chroma_amount_spin.setSingleStep(0.1);
-        self.chroma_amount_spin.setToolTip("Strength of chroma sharpening (-1.5 to 5.0). 0 = none (recommended).")
-        unsharp_grid.addWidget(self.chroma_amount_spin, 5, 1) # Row 5
-
-        # --- Add Content Widget to GroupBox Layout ---
-        unsharp_group_layout = QVBoxLayout(self.unsharp_group) # Create layout for the groupbox itself
-        unsharp_group_layout.addWidget(self.unsharp_content_widget)
-
-        layout.addWidget(unsharp_group)
-        layout.addSpacing(10)
-
-        # --- Encoding Quality Group ---
-        quality_group = QGroupBox("Encoding Quality (Final Output)")
-        quality_group.setObjectName("quality_group") # Set object name
-        quality_layout = QVBoxLayout(quality_group) # Use QVBoxLayout for this group
-
-        # Preset selector (influences CRF for software codecs)
-        quality_layout.addWidget(QLabel("Software Encoder Preset:"))
-        self.preset_combo = QComboBox()
-        self.preset_combo.addItems(["Very High (CRF 16)", "High (CRF 18)", "Medium (CRF 20)"])
-        self.preset_combo.setToolTip(
-            "Selects the CRF value for software encoders (libx264, libx265).\n"
-            "- Very High (CRF 16): Nearly visually lossless, best quality, larger files.\n"
-            "- High (CRF 18): Excellent quality with good compression.\n"
-            "- Medium (CRF 20): Good quality with better compression.\n"
-            "Lower CRF = higher quality but larger file size.\n"
-            "This setting is disabled when using hardware encoders."
-        )
-        quality_layout.addWidget(self.preset_combo)
-
-        # Bitrate control (for hardware codecs)
-        quality_layout.addWidget(QLabel("Hardware Encoder Target Bitrate (kbps):"))
-        self.bitrate_spin = QSpinBox()
-        self.bitrate_spin.setRange(1000, 20000) # 1-20 Mbps
-        self.bitrate_spin.setSuffix(" kbps")
-        self.bitrate_spin.setToolTip(
-            "Target average bitrate for hardware encoders (VideoToolbox, NVENC, etc.).\n"
-            "- Higher values produce better quality at larger file sizes.\n"
-            "- For 1080p content, 8,000-12,000 kbps is typically good.\n"
-            "- For 4K content, 15,000-20,000 kbps is recommended.\n"
-            "This setting is enabled only when using hardware encoders."
-        )
-        quality_layout.addWidget(self.bitrate_spin)
-
-        # Buffer size control (for hardware codecs)
-        quality_layout.addWidget(QLabel("Hardware Encoder VBV Buffer Size (kb):"))
-        self.bufsize_spin = QSpinBox()
-        self.bufsize_spin.setRange(1000, 40000) # 1-40 Mbits
-        self.bufsize_spin.setSuffix(" kb")
-        self.bufsize_spin.setToolTip(
-            "Video Buffer Verifier (VBV) size for hardware encoders.\n"
-            "- Controls how much the bitrate can vary during encoding.\n"
-            "- Larger values allow more variation for complex scenes.\n"
-            "- Typically set to 1.5-2x the target bitrate.\n"
-            "- Automatically adjusted when changing the target bitrate.\n"
-            "This setting is enabled only when using hardware encoders."
-        )
-        # Connection for bitrate -> bufsize moved to _connect_ffmpeg_settings_tab_signals
-        quality_layout.addWidget(self.bufsize_spin)
-
-        # Pixel format selector
-        quality_layout.addWidget(QLabel("Output Pixel Format:"))
-        self.pixfmt_combo = QComboBox()
-        self.pixfmt_combo.addItems(["yuv420p", "yuv444p"])
-        self.pixfmt_combo.setToolTip(
-            "Video pixel format for color subsampling:\n"
-            "- yuv420p: Standard format with 4:2:0 chroma subsampling.\n"
-            "  ✓ Better compatibility, smaller files\n"
-            "  ✗ Some color detail loss\n"
-            "- yuv444p: High-quality format with 4:4:4 chroma (no subsampling).\n"
-            "  ✓ Preserves maximum color detail for scientific imagery\n"
-            "  ✓ Better for false color processing\n"
-            "  ✗ Larger file sizes\n"
-            "For GOES satellite imagery, yuv444p is recommended."
-        )
-        quality_layout.addWidget(self.pixfmt_combo)
-
-        layout.addWidget(quality_group)
-
-        # REMOVED layout.addStretch() from here - Add stretch inside scroll area if needed
-
-        # --- Set initial content visibility based on groupbox state ---
-        if hasattr(self, 'minterpolate_group') and hasattr(self, '_toggle_minterpolate_content'):
-            self._toggle_minterpolate_content(self.minterpolate_group.isChecked())
-        if hasattr(self, 'unsharp_group') and hasattr(self, '_toggle_unsharp_content'):
-            self._toggle_unsharp_content(self.unsharp_group.isChecked())
-        # --- End Initial Visibility ---
-
-        # --- Create Scroll Area and Set Content --- #
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll_area.setWidget(scroll_content_widget)
-
-        return scroll_area # Return the scroll area
+        return tab
 
     def _connect_ffmpeg_settings_tab_signals(self) -> None:
         """Connect signals for enabling/disabling controls and profile handling on the FFmpeg Settings tab."""
-        # --- Profile Handling ---
-        # Check if ffmpeg_profile_combo exists before connecting
-        if hasattr(self, 'ffmpeg_profile_combo'):
-            self.ffmpeg_profile_combo.currentTextChanged.connect(self._on_profile_selected)
+        # Profile selection
+        self.ffmpeg_profile_combo.currentTextChanged.connect(self._on_profile_selected)
 
-        # --- Connect individual controls to switch profile to "Custom" ---
+        # Monitor changes in individual controls to switch profile to "Custom"
         controls_to_monitor = [
-            # Group 1: Interpolation
-            self.ffmpeg_interp_cb, self.mi_combo, self.mc_combo, self.me_combo,
-            self.me_algo_combo, self.search_param_spin, self.scd_combo,
-            self.scd_thresh_spin, self.filter_preset_combo, self.mbsize_combo,
-            self.vsbmc_cb,
-            # Group 2: Sharpening (Controls inside)
-            # self.unsharp_cb, <-- REMOVED
-            self.luma_x_spin, self.luma_y_spin,
-            self.luma_amount_spin, self.chroma_x_spin, self.chroma_y_spin,
-            self.chroma_amount_spin,
-            # Group 3: Quality
-            self.preset_combo, self.bitrate_spin,
-            self.bufsize_spin, self.pixfmt_combo
+            self.ffmpeg_interp_group, # Checkbox state of the groupbox
+            self.ffmpeg_mi_mode_combo,
+            self.ffmpeg_mc_mode_combo,
+            self.ffmpeg_me_mode_combo,
+            self.ffmpeg_me_algo_combo,
+            self.ffmpeg_search_param_spinbox,
+            self.ffmpeg_vsbmc_checkbox,
+            self.ffmpeg_scd_combo,
+            self.ffmpeg_scd_thresh_spinbox,
+            self.ffmpeg_mb_size_combo,
+            self.unsharp_groupbox, # Checkbox state of the groupbox
+            self.unsharp_lx_spinbox,
+            self.unsharp_ly_spinbox,
+            self.unsharp_la_spinbox,
+            self.unsharp_cx_spinbox,
+            self.unsharp_cy_spinbox,
+            self.unsharp_ca_spinbox,
+            self.ffmpeg_quality_preset_combo, # Changes here trigger updates
+            self.ffmpeg_crf_spinbox,
+            self.ffmpeg_bitrate_spinbox,
+            # self.ffmpeg_bufsize_spinbox, # Bufsize is auto-calculated
+            self.ffmpeg_pix_fmt_combo,
+            self.ffmpeg_filter_preset_combo,
         ]
+
         for control in controls_to_monitor:
-             # Check if the control attribute exists on self before connecting
-             if hasattr(self, control.objectName()):
-                 actual_control = getattr(self, control.objectName())
-                 if isinstance(actual_control, QComboBox):
-                     actual_control.currentTextChanged.connect(self._on_ffmpeg_setting_changed)
-                 elif isinstance(actual_control, QCheckBox):
-                     actual_control.toggled.connect(self._on_ffmpeg_setting_changed)
-                 elif isinstance(actual_control, (QSpinBox, QDoubleSpinBox)):
-                     actual_control.valueChanged.connect(self._on_ffmpeg_setting_changed)
+            if isinstance(control, (QComboBox, QGroupBox)):
+                # QGroupBox uses stateChanged for its checkable state
+                # QComboBox uses currentTextChanged
+                signal = control.toggled if isinstance(control, QGroupBox) else control.currentTextChanged
+                signal.connect(self._on_ffmpeg_setting_changed)
+            elif isinstance(control, (QSpinBox, QDoubleSpinBox)):
+                control.valueChanged.connect(self._on_ffmpeg_setting_changed)
+            elif isinstance(control, QCheckBox):
+                control.stateChanged.connect(self._on_ffmpeg_setting_changed)
 
-        # --- Control Enabling/Disabling ---
-        # Check existence before connecting signals for dependent controls
-        if hasattr(self, 'scd_combo'):
-            self.scd_combo.currentTextChanged.connect(self._update_scd_thresh_state)
-        # REMOVE OLD UNSHARP_CB CONNECTION
-        # if hasattr(self, 'unsharp_cb'):
-        #     self.unsharp_cb.toggled.connect(self._update_unsharp_controls_state)
+        # Enable/disable interpolation group based on encoder
+        # self.encoder_combo.currentTextChanged.connect(lambda enc: self._update_ffmpeg_controls_state(enc == 'FFmpeg')) # Handled in _update_rife_options_state
 
-        # Connect toggling the unsharp group itself to mark profile as custom
-        if hasattr(self, 'unsharp_group'):
-            self.unsharp_group.toggled.connect(self._on_ffmpeg_setting_changed)
-            self.unsharp_group.toggled.connect(self._toggle_unsharp_content) # <-- Connect to hide/show content
+        # Enable/disable unsharp group based on its own checkbox
+        self.unsharp_groupbox.toggled.connect(self._update_unsharp_controls_state)
 
-        # --- Connect interpolation group toggle ---
-        if hasattr(self, 'minterpolate_group'):
-            # Also connect toggled signal to hide/show its content
-            self.minterpolate_group.toggled.connect(self._toggle_minterpolate_content) # <-- Connect to hide/show content
-            # Keep connection for profile change (optional, but good practice if group toggling should mark custom)
-            # self.minterpolate_group.toggled.connect(self._on_ffmpeg_setting_changed) # Uncomment if needed
+        # Enable/disable SCD threshold based on SCD mode
+        self.ffmpeg_scd_combo.currentTextChanged.connect(self._update_scd_thresh_state)
 
-        # --- Connect encoder type to quality control enabling/disabling ---
-        if hasattr(self, 'encoder_combo'):
-            # Connect encoder selection to update quality controls
-            self.encoder_combo.currentTextChanged.connect(self._update_quality_controls_state)
+        # Update quality controls based on preset selection
+        self.ffmpeg_quality_preset_combo.currentTextChanged.connect(
+            lambda preset: self._update_quality_controls_state("FFmpeg", preset)
+        )
+        # Auto-calculate bufsize when bitrate changes
+        self.ffmpeg_bitrate_spinbox.valueChanged.connect(
+            lambda val: self.ffmpeg_bufsize_spinbox.setValue(int(val * 1.5))
+        )
 
-        if hasattr(self, 'ffmpeg_interp_cb'):
-            self.ffmpeg_interp_cb.toggled.connect(self._update_ffmpeg_controls_state)
-        if hasattr(self, 'bitrate_spin') and hasattr(self, 'bufsize_spin'):
-            self.bitrate_spin.valueChanged.connect(
-                 lambda val: self.bufsize_spin.setValue(min(self.bufsize_spin.maximum(), max(self.bufsize_spin.minimum(), int(val * 1.5))))
-            )
-
-        # --- Connect tab switching to resize window ---
-        if hasattr(self, 'tab_widget'):
-            self.tab_widget.currentChanged.connect(self._on_tab_changed)
-
-        # Initial state update after potential loading
-        if hasattr(self, 'ffmpeg_interp_cb'):
-             self._update_ffmpeg_controls_state(self.ffmpeg_interp_cb.isChecked())
-        
-        # Initialize quality control states based on current encoder selection
-        if hasattr(self, 'encoder_combo'):
-            self._update_quality_controls_state(self.encoder_combo.currentText())
-
-    # +++ Inserted Methods (FFmpeg Settings Tab Logic) +++
     def _on_profile_selected(self, profile_name: str) -> None:
-        """Applies the selected profile if it's not 'Custom'."""
-        # Prevent recursive calls when applying profile programmatically
-        if not hasattr(self, '_ffmpeg_setting_change_active') or not self._ffmpeg_setting_change_active: return
-        if profile_name != "Custom" and profile_name in FFMPEG_PROFILES:
-            LOGGER.info(f"Applying FFmpeg profile: {profile_name}")
-            self._apply_ffmpeg_profile(profile_name)
+        """Applies the selected FFmpeg profile settings."""
+        if profile_name == "Custom":
+            # Don't change settings if "Custom" is selected, just update combo
+            return
 
-    def _on_ffmpeg_setting_changed(self, *args: Any) -> None:
-        """Switches the profile combo to 'Custom' if a setting is changed manually."""
-        # Prevent switching to Custom when applying a profile or loading settings
-        if not hasattr(self, '_ffmpeg_setting_change_active') or not self._ffmpeg_setting_change_active: return
-
-        # Check if ffmpeg_profile_combo exists
-        if not hasattr(self, 'ffmpeg_profile_combo'): return
-
-        # Block signals temporarily to prevent immediate re-application of "Custom"
-        self.ffmpeg_profile_combo.blockSignals(True)
-        self.ffmpeg_profile_combo.setCurrentText("Custom")
-        self.ffmpeg_profile_combo.blockSignals(False)
-
-    def _apply_ffmpeg_profile(self, profile_name: str) -> None:
-        """Updates the UI controls based on the selected profile dictionary."""
         if profile_name not in FFMPEG_PROFILES:
-            LOGGER.warning(f"Profile '{profile_name}' not found.")
+            LOGGER.warning(f"Selected profile '{profile_name}' not found in FFMPEG_PROFILES.")
             return
 
         profile = FFMPEG_PROFILES[profile_name]
-        LOGGER.debug(f"Applying settings from profile: {profile_name}")
 
-        # --- Block signals and disable change flag during update ---
-        self._ffmpeg_setting_change_active = False
-        # Check if ffmpeg_profile_combo exists before blocking/setting
-        if hasattr(self, 'ffmpeg_profile_combo'):
-            self.ffmpeg_profile_combo.blockSignals(True)
+        # Block signals temporarily to prevent recursive updates
+        widgets_to_block = [
+            self.ffmpeg_profile_combo, self.ffmpeg_interp_group, self.ffmpeg_mi_mode_combo,
+            self.ffmpeg_mc_mode_combo, self.ffmpeg_me_mode_combo, self.ffmpeg_me_algo_combo,
+            self.ffmpeg_search_param_spinbox, self.ffmpeg_vsbmc_checkbox, self.ffmpeg_scd_combo,
+            self.ffmpeg_scd_thresh_spinbox, self.ffmpeg_mb_size_combo, self.unsharp_groupbox,
+            self.unsharp_lx_spinbox, self.unsharp_ly_spinbox, self.unsharp_la_spinbox,
+            self.unsharp_cx_spinbox, self.unsharp_cy_spinbox, self.unsharp_ca_spinbox,
+            self.ffmpeg_quality_preset_combo, self.ffmpeg_crf_spinbox, self.ffmpeg_bitrate_spinbox,
+            self.ffmpeg_pix_fmt_combo, self.ffmpeg_filter_preset_combo
+        ]
+        blocked_states = {widget: widget.signalsBlocked() for widget in widgets_to_block}
+        for widget in widgets_to_block:
+            widget.blockSignals(True)
 
         try:
-            # Set profile combo without triggering signal
-            if hasattr(self, 'ffmpeg_profile_combo'):
-                self.ffmpeg_profile_combo.setCurrentText(profile_name)
+            # Apply Interpolation settings
+            self.ffmpeg_interp_group.setChecked(profile["use_ffmpeg_interp"])
+            self.ffmpeg_mi_mode_combo.setCurrentText(profile["mi_mode"])
+            self.ffmpeg_mc_mode_combo.setCurrentText(profile["mc_mode"])
+            self.ffmpeg_me_mode_combo.setCurrentText(profile["me_mode"])
+            self.ffmpeg_me_algo_combo.setCurrentText(profile["me_algo"])
+            self.ffmpeg_search_param_spinbox.setValue(profile["search_param"])
+            self.ffmpeg_vsbmc_checkbox.setChecked(profile["vsbmc"])
+            self.ffmpeg_scd_combo.setCurrentText(profile["scd"])
+            self.ffmpeg_scd_thresh_spinbox.setValue(profile["scd_threshold"])
+            self.ffmpeg_mb_size_combo.setCurrentText(profile["mb_size"])
 
-            # --- Apply settings from profile dict --- (Using cast for type safety)
-            if hasattr(self, 'ffmpeg_interp_cb'): self.ffmpeg_interp_cb.setChecked(cast(bool, profile.get("use_ffmpeg_interp", True)))
-            if hasattr(self, 'mi_combo'): self.mi_combo.setCurrentText(cast(str, profile.get("mi_mode", "mci")))
-            if hasattr(self, 'mc_combo'): self.mc_combo.setCurrentText(cast(str, profile.get("mc_mode", "obmc")))
-            if hasattr(self, 'me_combo'): self.me_combo.setCurrentText(cast(str, profile.get("me_mode", "bidir")))
-            if hasattr(self, 'me_algo_combo'): self.me_algo_combo.setCurrentText(cast(str, profile.get("me_algo", "(default)")))
-            if hasattr(self, 'search_param_spin'): self.search_param_spin.setValue(cast(int, profile.get("search_param", 96)))
-            if hasattr(self, 'scd_combo'): self.scd_combo.setCurrentText(cast(str, profile.get("scd", "fdiff")))
-            if hasattr(self, 'scd_thresh_spin'): self.scd_thresh_spin.setValue(cast(float, profile.get("scd_threshold", 10.0)))
-            if hasattr(self, 'filter_preset_combo'): self.filter_preset_combo.setCurrentText(cast(str, profile.get("filter_preset", "slow")))
-            if hasattr(self, 'mbsize_combo'): self.mbsize_combo.setCurrentText(cast(str, profile.get("mb_size", "(default)")))
-            if hasattr(self, 'vsbmc_cb'): self.vsbmc_cb.setChecked(cast(bool, profile.get("vsbmc", False)))
-            # Need to handle unsharp group check state, not old checkbox
-            if hasattr(self, 'unsharp_group'): self.unsharp_group.setChecked(cast(bool, profile.get("apply_unsharp", True)))
-            if hasattr(self, 'luma_x_spin'): self.luma_x_spin.setValue(cast(int, profile.get("unsharp_lx", 7)))
-            if hasattr(self, 'luma_y_spin'): self.luma_y_spin.setValue(cast(int, profile.get("unsharp_ly", 7)))
-            if hasattr(self, 'luma_amount_spin'): self.luma_amount_spin.setValue(cast(float, profile.get("unsharp_la", 1.0)))
-            if hasattr(self, 'chroma_x_spin'): self.chroma_x_spin.setValue(cast(int, profile.get("unsharp_cx", 5)))
-            if hasattr(self, 'chroma_y_spin'): self.chroma_y_spin.setValue(cast(int, profile.get("unsharp_cy", 5)))
-            if hasattr(self, 'chroma_amount_spin'): self.chroma_amount_spin.setValue(cast(float, profile.get("unsharp_ca", 0.0)))
-            if hasattr(self, 'preset_combo'): self.preset_combo.setCurrentText(cast(str, profile.get("preset_text", "Very High (CRF 16)")))
-            if hasattr(self, 'bitrate_spin'): self.bitrate_spin.setValue(cast(int, profile.get("bitrate", 15000)))
-            if hasattr(self, 'bufsize_spin') and hasattr(self, 'bitrate_spin'):
-                default_bufsize = int(self.bitrate_spin.value() * 1.5)
-                self.bufsize_spin.setValue(cast(int, profile.get("bufsize", default_bufsize)))
-            if hasattr(self, 'pixfmt_combo'): self.pixfmt_combo.setCurrentText(cast(str, profile.get("pix_fmt", "yuv444p")))
+            # Apply Unsharp settings
+            self.unsharp_groupbox.setChecked(profile["apply_unsharp"])
+            self.unsharp_lx_spinbox.setValue(profile["unsharp_lx"])
+            self.unsharp_ly_spinbox.setValue(profile["unsharp_ly"])
+            self.unsharp_la_spinbox.setValue(profile["unsharp_la"])
+            self.unsharp_cx_spinbox.setValue(profile["unsharp_cx"])
+            self.unsharp_cy_spinbox.setValue(profile["unsharp_cy"])
+            self.unsharp_ca_spinbox.setValue(profile["unsharp_ca"])
 
-            # --- Ensure group boxes are expanded/checked correctly when applying a profile ---
-            if hasattr(self, 'minterpolate_group'):
-                self.minterpolate_group.setChecked(True) # Always expand interpolation
-            if hasattr(self, 'unsharp_group'):
-                self.unsharp_group.setChecked(cast(bool, profile.get("apply_unsharp", True)))
+            # Apply Quality settings
+            self.ffmpeg_quality_preset_combo.setCurrentText(profile["preset_text"])
+            self.ffmpeg_crf_spinbox.setValue(profile["crf"])
+            self.ffmpeg_bitrate_spinbox.setValue(profile["bitrate"])
+            self.ffmpeg_bufsize_spinbox.setValue(profile["bufsize"]) # Also set bufsize
+            self.ffmpeg_pix_fmt_combo.setCurrentText(profile["pix_fmt"])
+            self.ffmpeg_filter_preset_combo.setCurrentText(profile["filter_preset"])
 
-            # --- Update content visibility based on new groupbox check state ---
-            if hasattr(self, 'minterpolate_group') and hasattr(self, '_toggle_minterpolate_content'):
-                self._toggle_minterpolate_content(self.minterpolate_group.isChecked())
-            if hasattr(self, 'unsharp_group') and hasattr(self, '_toggle_unsharp_content'):
-                self._toggle_unsharp_content(self.unsharp_group.isChecked())
-
-            # --- Update dependent control states ---
-            if hasattr(self, 'ffmpeg_interp_cb'):
-                self._update_ffmpeg_controls_state(self.ffmpeg_interp_cb.isChecked()) # Handles interp/unsharp groups
+            # Update dependent control states AFTER setting values
+            self._update_unsharp_controls_state(profile["apply_unsharp"])
+            self._update_scd_thresh_state(profile["scd"])
+            self._update_quality_controls_state("FFmpeg", profile["preset_text"])
 
         finally:
-            # --- Re-enable signals and flag ---
-            if hasattr(self, 'ffmpeg_profile_combo'):
-                 self.ffmpeg_profile_combo.blockSignals(False)
-            self._ffmpeg_setting_change_active = True
-            LOGGER.debug(f"Finished applying profile: {profile_name}")
+            # Restore signal blocking states
+            for widget, was_blocked in blocked_states.items():
+                widget.blockSignals(was_blocked)
 
-    def _update_ffmpeg_controls_state(self, enable: bool) -> None:
-        """Enables/disables all interpolation and sharpening controls based on the main checkbox."""
-        # Find group boxes within the FFmpeg Settings tab
-        ffmpeg_tab_index = -1
-        for i in range(self.tab_widget.count()):
-            if self.tab_widget.tabText(i) == "FFmpeg Settings":
-                ffmpeg_tab_index = i
-                break
+        LOGGER.info(f"Applied FFmpeg profile: {profile_name}")
 
-        if ffmpeg_tab_index == -1:
-            LOGGER.error("Could not find 'FFmpeg Settings' tab to update controls.")
-            return
+    def _on_ffmpeg_setting_changed(self, *args: Any) -> None:
+        """Switches the profile combo to 'Custom' if settings deviate from the selected profile."""
+        current_profile_name = self.ffmpeg_profile_combo.currentText()
+        if current_profile_name == "Custom":
+            return # Already custom
 
-        ffmpeg_tab_widget = self.tab_widget.widget(ffmpeg_tab_index)
-        if not ffmpeg_tab_widget:
-            LOGGER.error("Widget for 'FFmpeg Settings' tab is invalid.")
-            return
+        if current_profile_name in FFMPEG_PROFILES:
+            profile_dict = FFMPEG_PROFILES[current_profile_name]
+            if not self._check_settings_match_profile(profile_dict):
+                # Block signals on the profile combo ONLY to prevent recursion
+                was_blocked = self.ffmpeg_profile_combo.signalsBlocked()
+                self.ffmpeg_profile_combo.blockSignals(True)
+                self.ffmpeg_profile_combo.setCurrentText("Custom")
+                self.ffmpeg_profile_combo.blockSignals(was_blocked)
+                LOGGER.info("FFmpeg settings changed, switched profile to Custom.")
 
-        minterpolate_group = ffmpeg_tab_widget.findChild(QGroupBox, "minterpolate_group")
-        unsharp_group = ffmpeg_tab_widget.findChild(QGroupBox, "unsharp_group")
-        quality_group = ffmpeg_tab_widget.findChild(QGroupBox, "quality_group")
+    def _update_ffmpeg_controls_state(self, enable: bool, update_group: bool = True) -> None:
+        """Enables or disables all FFmpeg settings controls."""
+        # Only enable/disable the tab content if the attribute exists
+        if hasattr(self, 'ffmpeg_settings_tab'):
+            # Find the main layout of the ffmpeg_settings_tab
+            layout = self.ffmpeg_settings_tab.layout()
+            if layout:
+                 # Iterate through items in the layout (widgets and sub-layouts)
+                 for i in range(layout.count()):
+                     item = layout.itemAt(i)
+                     # Check item before accessing widget
+                     if item is not None:
+                         widget = item.widget()
+                         if widget:
+                             # Don't disable labels
+                             if not isinstance(widget, QLabel):
+                                 widget.setEnabled(enable)
+                         else:
+                             # Handle sub-layouts (like the profile layout)
+                             sub_layout = item.layout()
+                             if sub_layout:
+                                 for j in range(sub_layout.count()):
+                                     sub_item = sub_layout.itemAt(j)
+                                     # Check sub_item before accessing widget
+                                     if sub_item is not None:
+                                         sub_widget = sub_item.widget()
+                                         if sub_widget:
+                                             # Don't disable labels
+                                             if not isinstance(sub_widget, QLabel):
+                                                 sub_widget.setEnabled(enable)
 
-        # Fallback to finding by title if object names aren't found
-        if not minterpolate_group:
-            minterpolate_group = ffmpeg_tab_widget.findChild(QGroupBox, "Motion Interpolation (minterpolate)")
-        if not unsharp_group:
-            unsharp_group = ffmpeg_tab_widget.findChild(QGroupBox, "Sharpening (unsharp)")
-        if not quality_group:
-            quality_group = ffmpeg_tab_widget.findChild(QGroupBox, "Encoding Quality (Final Output)")
+            # Special handling for group boxes if update_group is True
+            if update_group:
+                self.ffmpeg_interp_group.setEnabled(enable and self.ffmpeg_interp_group.isChecked())
+                self.unsharp_groupbox.setEnabled(enable and self.unsharp_groupbox.isChecked())
+                # Update controls within the groups based on their check state
+                self._update_unsharp_controls_state(self.unsharp_groupbox.isChecked() if enable else False)
+                self._update_scd_thresh_state(self.ffmpeg_scd_combo.currentText() if enable else "none")
+                self._update_quality_controls_state("FFmpeg", self.ffmpeg_quality_preset_combo.currentText() if enable else None)
 
-        # --- Set Visibility based on main checkbox ---
-        if minterpolate_group:
-            minterpolate_group.setVisible(enable)
         else:
-            LOGGER.warning("Could not find minterpolate_group to update visibility.")
+             LOGGER.warning("Attempted to update FFmpeg controls state, but ffmpeg_settings_tab not found.")
 
-        if unsharp_group:
-            unsharp_group.setVisible(enable)
-        else:
-            LOGGER.warning("Could not find unsharp_group to update visibility.")
 
-        # Quality group itself remains enabled/visible
-        if quality_group:
-            quality_group.setEnabled(True)
-            quality_group.setVisible(True)
+    def _toggle_tile_size_enabled(self, state: int) -> None:
+        """Enables/disables the tile size spinbox based on the tile enable checkbox."""
+        self.rife_tile_size_spinbox.setEnabled(state == Qt.CheckState.Checked.value)
+        self.rife_tile_size_label.setEnabled(state == Qt.CheckState.Checked.value)
 
     def _update_scd_thresh_state(self, scd_mode: str) -> None:
-        # Only enable threshold if scd_mode is fdiff
+        """Enables/disables the SCD threshold spinbox based on the SCD mode."""
         enable = (scd_mode == "fdiff")
-        if hasattr(self, 'scd_thresh_spin'):
-            self.scd_thresh_spin.setEnabled(enable)
+        self.ffmpeg_scd_thresh_label.setEnabled(enable)
+        self.ffmpeg_scd_thresh_spinbox.setEnabled(enable)
 
     def _update_unsharp_controls_state(self, checked: bool) -> None:
-        # Only enable the unsharp group if main interp is enabled AND unsharp checkbox is checked
-        # NOTE: This logic might be outdated if the unsharp group is directly toggled
-        main_interp_enabled = hasattr(self, 'ffmpeg_interp_cb') and self.ffmpeg_interp_cb.isChecked()
-        enable_group = main_interp_enabled and checked
+        """Enables or disables controls within the Unsharp group based on the group's check state."""
+        # Iterate through children of the unsharp_groupbox layout
+        layout = self.unsharp_groupbox.layout()
+        if layout:
+            for i in range(layout.count()):
+                item = layout.itemAt(i)
+                # Check if item and widget exist before accessing
+                if item is not None:
+                    widget = item.widget()
+                    if widget and widget != self.unsharp_groupbox: # Don't disable the groupbox itself
+                        # Only enable if the groupbox is checked AND the main FFmpeg controls are enabled
+                        is_ffmpeg_enabled = self.encoder_combo.currentText() == 'FFmpeg'
+                        widget.setEnabled(checked and is_ffmpeg_enabled)
 
-        ffmpeg_tab_index = -1
-        for i in range(self.tab_widget.count()):
-            if self.tab_widget.tabText(i) == "FFmpeg Settings":
-                ffmpeg_tab_index = i
-                break
-        if ffmpeg_tab_index == -1: return
-        ffmpeg_tab_widget = self.tab_widget.widget(ffmpeg_tab_index)
-        if not ffmpeg_tab_widget: return
+    def _update_quality_controls_state(self, encoder_type: str, preset_text: Optional[str] = None) -> None:
+        """Updates CRF/Bitrate controls based on the selected quality preset."""
+        is_ffmpeg = (encoder_type == "FFmpeg")
+        enable_crf = False
+        enable_bitrate = False
 
-        unsharp_group = ffmpeg_tab_widget.findChild(QGroupBox, "unsharp_group")
-        if not unsharp_group:
-            unsharp_group = ffmpeg_tab_widget.findChild(QGroupBox, "Sharpening (unsharp)")
+        if is_ffmpeg and preset_text:
+            if "Custom CRF" in preset_text:
+                enable_crf = True
+                enable_bitrate = False
+            elif "Custom Bitrate" in preset_text:
+                enable_crf = False
+                enable_bitrate = True
+            elif "CRF" in preset_text: # Preset with CRF value
+                enable_crf = False # Disabled, value comes from preset
+                enable_bitrate = False
+                # Extract CRF value from preset text, e.g., "Very High (CRF 16)"
+                match = re.search(r"\(CRF (\d+)\)", preset_text)
+                if match:
+                    crf_value = int(match.group(1))
+                    # Block signals temporarily to avoid triggering _on_ffmpeg_setting_changed
+                    was_blocked = self.ffmpeg_crf_spinbox.signalsBlocked()
+                    self.ffmpeg_crf_spinbox.blockSignals(True)
+                    self.ffmpeg_crf_spinbox.setValue(crf_value)
+                    self.ffmpeg_crf_spinbox.blockSignals(was_blocked)
+            else: # Default case or unknown preset
+                enable_crf = False
+                enable_bitrate = False
+        else: # Not FFmpeg encoder or no preset text
+             enable_crf = False
+             enable_bitrate = False
 
-        if unsharp_group:
-            unsharp_group.setEnabled(enable_group)
 
-    def _toggle_minterpolate_content(self, checked: bool) -> None:
-        # Moved from ~line 1843
-        """Show/hide the content widget within the minterpolate group box."""
-        if hasattr(self, 'minterpolate_content_widget'):
-            self.minterpolate_content_widget.setVisible(checked)
-        else:
-            LOGGER.warning("minterpolate_content_widget not found in _toggle_minterpolate_content")
+        # Enable/disable controls based on flags and whether FFmpeg is selected
+        self.ffmpeg_crf_label.setEnabled(enable_crf and is_ffmpeg)
+        self.ffmpeg_crf_spinbox.setEnabled(enable_crf and is_ffmpeg)
+        self.ffmpeg_bitrate_label.setEnabled(enable_bitrate and is_ffmpeg)
+        self.ffmpeg_bitrate_spinbox.setEnabled(enable_bitrate and is_ffmpeg)
+        self.ffmpeg_bufsize_label.setEnabled(enable_bitrate and is_ffmpeg) # Bufsize tied to bitrate
+        self.ffmpeg_bufsize_spinbox.setEnabled(enable_bitrate and is_ffmpeg)
 
-    def _toggle_unsharp_content(self, checked: bool) -> None:
-        # Moved from ~line 1852
-        """Show/hide the content widget within the unsharp group box."""
-        if hasattr(self, 'unsharp_content_widget'):
-            self.unsharp_content_widget.setVisible(checked)
-        else:
-            LOGGER.warning("unsharp_content_widget not found in _toggle_unsharp_content")
-
-    def _update_quality_controls_state(self, encoder_type: str) -> None:
-        # Moved from ~line 2187
-        """Enables/disables quality controls based on the selected encoder type."""
-        if not hasattr(self, 'preset_combo') or not hasattr(self, 'bitrate_spin') or not hasattr(self, 'bufsize_spin'):
-            return
-
-        # Normalize encoder type string for comparison
-        encoder_lower = encoder_type.lower()
-
-        # Define keywords for hardware encoders (adjust if needed)
-        hardware_keywords = ["hardware", "videotoolbox", "nvenc", "qsv", "vaapi", "vdpau"]
-        # RIFE/FFmpeg are considered software for CRF control purposes
-        is_software_crf = encoder_lower in ["rife", "ffmpeg"]
-        is_hardware = any(keyword in encoder_lower for keyword in hardware_keywords)
-
-        # Logic: CRF preset for software, Bitrate/Bufsize for hardware
-        enable_crf_preset = is_software_crf
-        enable_bitrate_bufsize = is_hardware
-
-        # Apply enabling/disabling
-        self.preset_combo.setEnabled(enable_crf_preset)
-        self.bitrate_spin.setEnabled(enable_bitrate_bufsize)
-        self.bufsize_spin.setEnabled(enable_bitrate_bufsize)
-
-        # Update the UI to show visual indication of disabled state (optional styling)
-        disabled_style = "color: #888888;"
-        self.preset_combo.setStyleSheet(disabled_style if not enable_crf_preset else "")
-        self.bitrate_spin.setStyleSheet(disabled_style if not enable_bitrate_bufsize else "")
-        self.bufsize_spin.setStyleSheet(disabled_style if not enable_bitrate_bufsize else "")
-    # --- End Inserted Methods ---
 
     def _start(self) -> None:
-        if self.worker and self.worker.isRunning():
-            QMessageBox.warning(self, "Busy", "Interpolation is already running. Please wait for the current process to finish.")
+        """Starts the VFI process in a worker thread."""
+        if self.is_processing:
+            LOGGER.warning("Processing is already in progress.")
             return
 
-        in_dir = pathlib.Path(self.in_edit.text()).expanduser()
-        out_file = pathlib.Path(self.out_edit.text()).expanduser()
+        in_dir = pathlib.Path(self.in_dir_edit.text())
+        out_file = pathlib.Path(self.out_file_edit.text())
 
-        # Enhanced user error feedback for input validation
         if not in_dir.is_dir():
-            self._show_error("Input folder not found:\n{}\n\nPlease select a valid folder containing PNG images.".format(in_dir), stage="Input Validation", user_error=True)
+            self._show_error("Input directory is not valid.", user_error=True)
             return
-        if not out_file.parent.exists():
-            self._show_error("Output directory not found:\n{}\n\nPlease select a valid output directory.".format(out_file.parent), stage="Input Validation", user_error=True)
+        if not out_file.parent.is_dir():
+            self._show_error("Output file directory is not valid.", user_error=True)
             return
-        if not self.out_edit.text() or not out_file.name:
-            self._show_error("Output filename cannot be empty.\n\nPlease specify a valid output filename.", stage="Input Validation", user_error=True)
-            return
+        if out_file.suffix.lower() != ".mp4":
+             self._show_error("Output file must have a .mp4 extension.", user_error=True)
+             return
 
-        # Ensure output directory exists (though parent check mostly covers this)
-        out_file.parent.mkdir(parents=True, exist_ok=True)
-
-        # Check for input PNGs
-        if not any(in_dir.glob("*.png")):
-            self._show_error("No PNG images found in:\n{}\n\nPlease ensure the input folder contains PNG files.".format(in_dir), stage="Input Validation", user_error=True)
-            return
-
-        # Gather settings
-        fps = self.fps_spin.value()
-        mid_count = self.inter_spin.value()
+        # --- Get common settings ---
+        fps = self.fps_spinbox.value()
+        mid_count = self.mid_count_spinbox.value()
+        max_workers = self.max_workers_spinbox.value()
         encoder = self.encoder_combo.currentText()
-        skip_model = self.skip_model_cb.isChecked()
-        model_key = self.model_combo.currentText()
-        # RIFE settings
-        rife_tile_enable = self.rife_tile_enable_cb.isChecked()
-        rife_tile_size = self.rife_tile_size_spin.value()
-        rife_uhd_mode = self.rife_uhd_mode_cb.isChecked()
-        rife_thread_spec = self.rife_thread_spec_edit.text()
-        rife_tta_spatial = self.rife_tta_spatial_cb.isChecked()
-        rife_tta_temporal = self.rife_tta_temporal_cb.isChecked()
-        # Sanchez settings
-        false_colour = self.false_colour_check.isChecked()
-        sanchez_res_km = self.sanchez_res_spin.value()
-        # FFmpeg settings (Corrected retrieval from UI elements)
-        use_ffmpeg_interp = self.ffmpeg_interp_cb.isChecked()
-        filter_preset = self.filter_preset_combo.currentText()
-        mi_mode = self.mi_combo.currentText()
-        mc_mode = self.mc_combo.currentText()
-        me_mode = self.me_combo.currentText()
-        me_algo = self.me_algo_combo.currentText()
-        search_param = self.search_param_spin.value()
-        scd_mode = self.scd_combo.currentText()
-        scd_threshold = self.scd_thresh_spin.value() if self.scd_thresh_spin.isEnabled() else None
-        # Correctly check combo box text for mb_size
-        mb_size_text = self.mbsize_combo.currentText()
-        minter_mb_size = int(mb_size_text) if mb_size_text != "(default)" else None
-        minter_vsbmc = 1 if self.vsbmc_cb.isChecked() else 0
-        apply_unsharp = self.unsharp_group.isChecked() # Get state from groupbox
-        unsharp_lx = self.luma_x_spin.value()
-        unsharp_ly = self.luma_y_spin.value()
-        unsharp_la = self.luma_amount_spin.value()
-        unsharp_cx = self.chroma_x_spin.value()
-        unsharp_cy = self.chroma_y_spin.value()
-        unsharp_ca = self.chroma_amount_spin.value()
-        # Get quality settings based on encoder type
-        if self.preset_combo.isEnabled(): # Software encoder (RIFE/FFmpeg)
-            preset_text = self.preset_combo.currentText()
-            # Extract CRF value from preset text (e.g., "Very High (CRF 16)")
-            crf_match = re.search(r'\(CRF (\d+)\)', preset_text)
-            crf = int(crf_match.group(1)) if crf_match else 20 # Default to 20 if parsing fails
-            bitrate_kbps = -1 # Indicate CRF mode to worker
-            bufsize_kb = -1 # Indicate CRF mode to worker
-        else: # Hardware encoder
-            crf = -1 # Indicate bitrate mode to worker
-            bitrate_kbps = self.bitrate_spin.value()
-            bufsize_kb = self.bufsize_spin.value()
-        pix_fmt = self.pixfmt_combo.currentText()
 
-        # Reset progress and status
+        # --- Get RIFE specific settings ---
+        model_key = self.model_combo.currentData() # Get the key (e.g., "rife-v4.6")
+        rife_tile_enable = self.rife_tile_enable_checkbox.isChecked()
+        rife_tile_size = self.rife_tile_size_spinbox.value()
+        rife_uhd_mode = self.rife_uhd_mode_checkbox.isChecked()
+        rife_thread_spec = self.rife_thread_spec_edit.text()
+        rife_tta_spatial = self.rife_tta_spatial_checkbox.isChecked()
+        rife_tta_temporal = self.rife_tta_temporal_checkbox.isChecked()
+
+        # --- Get Sanchez specific settings ---
+        false_colour = self.sanchez_false_colour_checkbox.isChecked()
+        res_km = self.sanchez_res_km_spinbox.value()
+
+        # --- Get FFmpeg specific settings ---
+        use_ffmpeg_interp = self.ffmpeg_interp_group.isChecked()
+        filter_preset = self.ffmpeg_filter_preset_combo.currentText()
+        mi_mode = self.ffmpeg_mi_mode_combo.currentText()
+        mc_mode = self.ffmpeg_mc_mode_combo.currentText()
+        me_mode = self.ffmpeg_me_mode_combo.currentText()
+        me_algo = self.ffmpeg_me_algo_combo.currentText()
+        search_param = self.ffmpeg_search_param_spinbox.value()
+        scd_mode = self.ffmpeg_scd_combo.currentText()
+        scd_threshold = self.ffmpeg_scd_thresh_spinbox.value() if scd_mode == "fdiff" else None
+        mb_size_str = self.ffmpeg_mb_size_combo.currentText()
+        minter_mb_size = int(mb_size_str) if mb_size_str != "(default)" else None
+        minter_vsbmc = 1 if self.ffmpeg_vsbmc_checkbox.isChecked() else 0
+
+        # Unsharp
+        apply_unsharp = self.unsharp_groupbox.isChecked()
+        unsharp_lx = self.unsharp_lx_spinbox.value()
+        unsharp_ly = self.unsharp_ly_spinbox.value()
+        unsharp_la = self.unsharp_la_spinbox.value()
+        unsharp_cx = self.unsharp_cx_spinbox.value()
+        unsharp_cy = self.unsharp_cy_spinbox.value()
+        unsharp_ca = self.unsharp_ca_spinbox.value()
+
+        # Quality
+        crf = self.ffmpeg_crf_spinbox.value()
+        bitrate_kbps = self.ffmpeg_bitrate_spinbox.value()
+        bufsize_kb = self.ffmpeg_bufsize_spinbox.value()
+        pix_fmt = self.ffmpeg_pix_fmt_combo.currentText()
+        quality_preset = self.ffmpeg_quality_preset_combo.currentText()
+
+        # Determine final CRF/bitrate based on preset
+        final_crf = crf
+        final_bitrate = bitrate_kbps
+        if "Custom CRF" not in quality_preset and "Custom Bitrate" not in quality_preset:
+             # Use CRF from preset text if available
+             match = re.search(r"\(CRF (\d+)\)", quality_preset)
+             if match:
+                 final_crf = int(match.group(1))
+                 final_bitrate = 0 # Indicate CRF mode is used
+             else:
+                 # Fallback if preset text doesn't contain CRF (shouldn't happen with current setup)
+                 LOGGER.warning(f"Could not extract CRF from preset '{quality_preset}', using spinbox value.")
+                 final_bitrate = 0 # Default to CRF mode
+
+        elif "Custom Bitrate" in quality_preset:
+             final_crf = 0 # Indicate bitrate mode is used
+             final_bitrate = bitrate_kbps # Use bitrate spinbox value
+        # else "Custom CRF" uses final_crf = crf and final_bitrate = 0
+
+
+        # --- Validate RIFE settings if RIFE is selected ---
+        if encoder == 'RIFE':
+            if not model_key:
+                 self._show_error("No RIFE model selected.", user_error=True)
+                 return
+            # Validate thread spec format
+            if not re.fullmatch(r"\d+:\d+:\d+:\d+", rife_thread_spec):
+                 self._show_error("Invalid RIFE thread spec format. Use N:N:N:N (e.g., 0:0:0:0).", user_error=True)
+                 return
+
+        # --- Create and start worker ---
+        self._set_processing_state(True)
+        self.status_label.setText("Starting VFI process...")
         self.progress_bar.setValue(0)
 
-        # Use cast for crop_rect type hint consistency
-        current_crop_rect = self.crop_rect
-
-        # Start worker
         self.worker = VfiWorker(
             in_dir=in_dir,
             out_file_path=out_file,
             fps=fps,
             mid_count=mid_count,
-            max_workers=4, # Placeholder for max_workers spinbox if added
+            max_workers=max_workers,
             encoder=encoder,
-            skip_model=skip_model,
-            crop_rect=current_crop_rect,
-            debug_mode=self.debug_mode,
             # FFmpeg settings
             use_ffmpeg_interp=use_ffmpeg_interp,
             filter_preset=filter_preset,
@@ -1587,12 +1564,16 @@ class MainWindow(QWidget):
             unsharp_cx=unsharp_cx,
             unsharp_cy=unsharp_cy,
             unsharp_ca=unsharp_ca,
-            crf=crf,
-            bitrate_kbps=bitrate_kbps,
+            crf=final_crf, # Pass final determined CRF
+            bitrate_kbps=final_bitrate, # Pass final determined bitrate
             bufsize_kb=bufsize_kb,
             pix_fmt=pix_fmt,
-            # RIFE settings
-            model_key=model_key,
+            # Other
+            skip_model=False, # Add skip_model option later if needed
+            crop_rect=self.current_crop_rect,
+            debug_mode=self.debug_mode,
+            # RIFE v4.6 settings
+            model_key=model_key or "", # Pass empty string if None
             rife_tile_enable=rife_tile_enable,
             rife_tile_size=rife_tile_size,
             rife_uhd_mode=rife_uhd_mode,
@@ -1601,765 +1582,1107 @@ class MainWindow(QWidget):
             rife_tta_temporal=rife_tta_temporal,
             # Sanchez settings
             false_colour=false_colour,
-            res_km=sanchez_res_km,
+            res_km=res_km,
         )
         self.worker.progress.connect(self._on_progress)
         self.worker.finished.connect(self._on_finished)
-        self.worker.error.connect(lambda msg: self._show_error(msg, stage="Processing"))
+        self.worker.error.connect(lambda msg: self._show_error(msg, stage="Processing")) # Specify stage
         self.worker.start()
 
-        # Reset progress and status & Set Processing State
-        self._set_processing_state(True)
-        # Update status messages after setting processing state
-        self.status_bar.showMessage("Preparing to start interpolation...", 3000)
-        if hasattr(self, 'eta_label'): self.eta_label.setText("ETA: Starting...")
-
     def _on_progress(self, current: int, total: int, eta: float) -> None:
-        """Update progress bar, ETA label, and status bar with detailed feedback."""
-        try:
-            LOGGER.debug(f"_on_progress called with: current={current}, total={total}, eta={eta}") # Add log
-            if total > 0:
-                LOGGER.debug(f"Updating progress bar: range(0, {total}), value({current})") # Add log
-                self.progress_bar.setRange(0, total)
-                self.progress_bar.setValue(current)
-                percent = int((current / total) * 100) if total else 0
-                # Format ETA nicely
-                if eta > 0:
-                    eta_seconds = int(eta)
-                    minutes = eta_seconds // 60
-                    seconds = eta_seconds % 60
-                    eta_str = f"{minutes}m {seconds}s" if minutes > 0 else f"{seconds}s"
-                    self.eta_label.setText(f"ETA: {eta_str}")
-                else:
-                    self.eta_label.setText("ETA: --")
-                # Show progress in status bar with percent
-                self.status_bar.showMessage(f"Processing frames: {current}/{total} ({percent}%) - ETA: {self.eta_label.text()[5:]}", 2000)
-            else:
-                self.progress_bar.setRange(0, 0)
-                self.eta_label.setText("ETA: --")
-                self.status_bar.showMessage("Processing...", 2000)
-            LOGGER.debug("_on_progress finished successfully.")
-        except Exception as e:
-            LOGGER.exception(f"!!! EXCEPTION IN _on_progress !!!")
-            # Optionally re-raise or handle differently
-            # raise # Re-raising might make tests fail more obviously if an error occurs here
+        """Updates the progress bar and status label."""
+        progress_percent = int((current / total) * 100) if total > 0 else 0
+        self.progress_bar.setValue(progress_percent)
+        eta_str = f"{eta:.1f}s" if eta > 0 else "N/A"
+        self.status_label.setText(f"Processing frame {current}/{total}... ETA: {eta_str}")
 
     def _on_finished(self, mp4: pathlib.Path) -> None:
-        # Mark progress done and update UI for success
-        self._set_processing_state(False) # Reset UI state first
-        # Update status bar after UI is re-enabled
-        self.status_bar.showMessage(f"Finished successfully: {mp4.name}")
-        # Update progress/ETA labels (redundant if _set_processing_state resets them)
-        # if hasattr(self, 'progress_bar'):
-        #     self.progress_bar.setRange(0, 1)
-        #     self.progress_bar.setValue(1)
-        # if hasattr(self, 'eta_label'): self.eta_label.setText("ETA: Done")
-
-        # Store the path for the Open button
-        self._last_out = mp4
-        # Ensure Open button state is correct after setting processing state
-        if hasattr(self, 'open_btn'):
-             self.open_btn.setEnabled(hasattr(self, '_last_out') and self._last_out.exists())
-
-        # --- Load mid-frame preview --- #
-        if self.worker and hasattr(self.worker, 'mid_frame_path'):
-            mid_png_path_str = getattr(self.worker, 'mid_frame_path', None)
-            if mid_png_path_str:
-                mid_png = pathlib.Path(mid_png_path_str)
-                if mid_png.exists():
-                    try:
-                        pixm = QPixmap(str(mid_png)).scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                        self.preview_mid.setPixmap(pixm)
-                        self.preview_mid.file_path = str(mid_png)
-                        if not pixm.isNull():
-                            self.preview_mid.setText("")
-                    except Exception as e:
-                        LOGGER.error(f"Error loading mid-frame preview '{mid_png}': {e}")
-                        self.preview_mid.setText("Mid frame\n(Error)")
-                else:
-                    LOGGER.warning(f"Mid-frame path provided but file not found: {mid_png}")
-                    self.preview_mid.setText("Mid frame\n(Not found)")
-            else:
-                LOGGER.info("No mid-frame path available after run.")
-                self.preview_mid.setText("Mid frame")
-        else:
-            LOGGER.warning("Worker or mid_frame_path attribute not available in _on_finished")
-        # --- End mid-frame preview logic ---
-
-        self._show_info(f"Video saved to:\n{mp4}\n\nYou can now open the output file or start a new job.")
+        """Handles the completion of the VFI process."""
+        self._set_processing_state(False)
+        self.status_label.setText(f"Finished! Output saved to: {mp4.name}")
+        self.progress_bar.setValue(100)
+        QMessageBox.information(self, "VFI Complete", f"Video saved to:\n{mp4}")
+        self._update_start_button_state() # Re-enable VLC button if file exists
 
     def _show_error(self, msg: str, stage: str = "Error", user_error: bool = False) -> None:
-        """
-        Enhanced error dialog and feedback.
-        - stage: Optional string indicating which stage failed.
-        - user_error: If True, treat as user input error (friendlier wording).
-        """
+        """Displays an error message in a dialog and updates the status label."""
         LOGGER.error(f"{stage}: {msg}")
-        self._set_processing_state(False) # Reset UI state first
-        # Update status after UI is re-enabled
-        self.status_bar.showMessage(f"Error: {stage}", 5000)
+        self.status_label.setText(f"{stage}: {msg}")
+        if self.is_processing: # Ensure state is reset if error occurs during processing
+             self._set_processing_state(False)
+        # Use warning icon for user errors, critical for system errors
+        icon = QMessageBox.Icon.Warning if user_error else QMessageBox.Icon.Critical
+        QMessageBox.critical(self, stage, msg) # Use critical for all errors for now
+        self._update_start_button_state() # Update button states after error
 
-        # Friendlier error dialog
-        if user_error:
-            QMessageBox.warning(self, "Input Error", f"{msg}\n\nPlease check your input and try again.")
-        else:
-            QMessageBox.critical(self, "Processing Error", f"{stage} failed.\n\nDetails:\n{msg}")
-
-    def _show_info(self, msg: str) -> None:
-        QMessageBox.information(self, "Info", msg)
-
-    # ------------- Add VLC opener method -----------\
     def _open_in_vlc(self) -> None:
-        """Launch the last output MP4 in VLC (cross-platform)."""
-        import sys, subprocess, pathlib # Keep imports local if preferred
-        if not hasattr(self, "_last_out") or not self._last_out.exists():
-             self._show_error("No valid output file found to open.")
-             return
-        path = str(self._last_out)
-        try:
-            if sys.platform == "darwin":
-                subprocess.Popen(["open", "-a", "VLC", path])
-            elif sys.platform.startswith("win"):
-                # Use 'start' command which should find VLC if in PATH
-                # Providing full path to vlc.exe might be more robust if needed
-                subprocess.Popen(["cmd", "/c", "start", "vlc", path], shell=True) # Use shell=True cautiously on Windows
-            else:
-                # Assume Linux/other Unix-like
-                subprocess.Popen(["vlc", path])
-        except FileNotFoundError:
-             # Handle case where 'open', 'cmd', or 'vlc' command isn't found
-            self._show_error(f"Could not find command to launch VLC. Is it installed and in your PATH?")
-        except Exception as e:
-             self._show_error(f"Failed to open file in VLC: {e}")
+        """Attempts to open the output file in VLC."""
+        file_path = self.out_file_edit.text()
+        if file_path and Path(file_path).exists():
+            url = QUrl.fromLocalFile(file_path)
+            if not QDesktopServices.openUrl(url):
+                QMessageBox.warning(self, "Open Failed", f"Could not automatically open the file:\n{file_path}\n\nPlease open it manually.")
+        else:
+            QMessageBox.warning(self, "Open Failed", "Output file does not exist or path is not set.")
 
-    # --- Zoom Dialog Method ---\
+    # Modified _show_zoom function
     def _show_zoom(self, label: ClickableLabel) -> None:
-        """Pop up a frameless dialog showing the image from file_path, scaled to fit screen."""
-        if not label.file_path or not pathlib.Path(label.file_path).exists():
-            LOGGER.warning(f"Zoom requested but file_path is invalid: {label.file_path}")
-            return # Do nothing if no valid file path
+        """Shows a zoomable dialog for the preview image, loading the original processed file."""
+        if not label.file_path:
+            LOGGER.warning("Zoom requested, but label has no file_path set.")
+            # Optionally show a small warning to the user?
+            # QMessageBox.information(label, "Zoom", "Preview image path not available.")
+            return
 
         try:
-            pix = QPixmap(label.file_path)
-            if pix.isNull():
-                LOGGER.error(f"Failed to load pixmap for zoom: {label.file_path}")
-                self._show_error(f"Could not load image:\\n{label.file_path}")
+            # Load the original full-resolution image
+            img = QImage(label.file_path)
+            if img.isNull():
+                LOGGER.error(f"Zoom: Failed to load image from {label.file_path}")
+                QMessageBox.warning(label, "Zoom Error", f"Could not load image:\n{label.file_path}")
                 return
 
-            # --- Apply crop if it exists --- #
-            if self.crop_rect:
-                try:
-                    x, y, w, h = self.crop_rect # Removed redundant cast
-                    pix = pix.copy(x, y, w, h)
-                    if pix.isNull(): # Check if copy resulted in an empty pixmap
-                        LOGGER.error(f"Cropping resulted in null pixmap. Rect: {self.crop_rect}, Orig Size: {pix.size()}")
-                        self._show_error("Error applying crop to image.")
-                        return
-                except Exception as crop_err:
-                    LOGGER.exception(f"Error applying crop rect {self.crop_rect} during zoom")
-                    self._show_error(f"Error applying crop:\\n{crop_err}")
-                    return
-            # --- End Apply crop --- #
+            # --- Re-apply Sanchez Processing (Placeholder) ---
+            # if self.sanchez_false_colour_checkbox.isChecked():
+            #     # TODO: Implement Sanchez processing call here on the full-res 'img'
+            #     pass
+            # --- End Sanchez Processing ---
 
-            # scale to fit screen (80% of available geometry)
-            target_size: QSize
-            screen = self.screen()
+            # --- Re-apply Crop ---
+            if self.current_crop_rect:
+                x, y, w, h = self.current_crop_rect
+                img_w, img_h = img.width(), img.height()
+                if x < img_w and y < img_h:
+                    crop_w = min(w, img_w - x)
+                    crop_h = min(h, img_h - y)
+                    if crop_w > 0 and crop_h > 0:
+                        img = img.copy(x, y, crop_w, crop_h)
+                    # No warning here, assume rect was valid when set
+                # No warning here
+            # --- End Crop ---
+
+            # Convert processed full-res image to QPixmap
+            full_res_processed_pixmap = QPixmap.fromImage(img)
+
+            # Scale the *processed full-resolution* pixmap for the zoom dialog
+            screen = QApplication.primaryScreen()
             if screen:
-                screen_geo = screen.availableGeometry()
-                target_size = screen_geo.size() * 0.8 # Scale QSize directly
+                max_size = screen.availableGeometry().size() * 0.95 # Use 95% of screen
+                scaled_pix = full_res_processed_pixmap.scaled(
+                    max_size,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation
+                )
+                dialog = ZoomDialog(scaled_pix, self)
+                dialog.exec()
             else:
-                LOGGER.warning("Could not get screen geometry, using default size for zoom.")
-                target_size = QSize(1000, 1000) # Default fallback size
+                 LOGGER.warning("Zoom: Could not get screen geometry, showing unscaled image.")
+                 dialog = ZoomDialog(full_res_processed_pixmap, self) # Show unscaled if no screen info
+                 dialog.exec()
 
-            scaled_pix = pix.scaled(
+        except Exception as e:
+            LOGGER.error(f"Error showing zoom for {label.file_path}: {e}")
+            QMessageBox.critical(label, "Zoom Error", f"Could not display zoomed image:\n{e}")
+
+
+    def _makeModelLibraryTab(self) -> QWidget:
+        """Creates the Model Library management tab."""
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+
+        layout.addWidget(QLabel("Installed RIFE Models:"))
+
+        self.model_table = QTableWidget()
+        self.model_table.setColumnCount(4) # Name, Type, Path, Capabilities
+        self.model_table.setHorizontalHeaderLabels(["Name", "Type", "Path", "Capabilities"])
+        self.model_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers) # Read-only
+        v_header = self.model_table.verticalHeader()
+        if v_header:
+            v_header.setVisible(False)
+        h_header = self.model_table.horizontalHeader()
+        if h_header:
+            h_header.setStretchLastSection(True)
+        layout.addWidget(self.model_table)
+
+        # Add button or mechanism to refresh/scan for models later if needed
+        # refresh_button = QPushButton("Refresh Models")
+        # layout.addWidget(refresh_button)
+
+        self._populate_model_table() # Populate the table initially
+
+        return tab
+
+    def _populate_model_table(self) -> None:
+        """Populates the model library table with discovered models."""
+        self.model_table.setRowCount(0) # Clear existing rows
+        models = config.get_available_rife_models() # Assumes this returns list[str] or similar
+
+        # Base path for models
+        project_root = pathlib.Path(__file__).parent.parent # Go up one level from gui.py to project root
+        models_base_dir = project_root / "models"
+
+        # Iterate directly if models is a list of names
+        # If models is a dict {key: {name: ..., path: ...}}, adjust accordingly
+        for i, model_name in enumerate(models): # Assuming models is a list of names
+            self.model_table.insertRow(i)
+            # Construct path based on the name if needed, or retrieve from models if it's a dict
+            model_path = models_base_dir / model_name
+            model_type = "RIFE" # Assuming all discovered models are RIFE for now
+
+            self.model_table.setItem(i, 0, QTableWidgetItem(model_name)) # Use model_name as name
+            self.model_table.setItem(i, 1, QTableWidgetItem(model_type)) # Set type
+            self.model_table.setItem(i, 2, QTableWidgetItem(str(model_path))) # Set path
+
+            # Get capabilities from the manager
+            caps_dict = self.rife_capability_manager.capabilities
+            supported_caps = [k for k, v in caps_dict.items() if v]
+            caps_str = ", ".join(supported_caps) if supported_caps else "None"
+            self.model_table.setItem(i, 3, QTableWidgetItem(caps_str))
+
+        self.model_table.resizeColumnsToContents()
+        h_header = self.model_table.horizontalHeader()
+        if h_header:
+            h_header.setStretchLastSection(True)
+
+
+    def _on_clear_crop_clicked(self) -> None:
+        """Clears the current crop selection."""
+        if self.current_crop_rect:
+            self.current_crop_rect = None
+            LOGGER.info("Crop region cleared.")
+            self.clear_crop_button.setEnabled(False)
+            self.request_previews_update.emit() # Update previews without crop
+
+
+    def _connect_model_combo(self) -> None:
+        """Connects the model combo box signal if it exists."""
+        if hasattr(self, 'model_combo'):
+            self.model_combo.currentTextChanged.connect(self._on_model_changed)
+        else:
+            LOGGER.warning("model_combo not found during connection setup.")
+
+
+    def _on_tab_changed(self, index: int) -> None:
+        """Handles actions when the selected tab changes."""
+        # Example: Refresh model library tab if selected
+        tab_text = self.main_tabs.tabText(index)
+        if tab_text == "Model Library":
+            self._populate_model_table()
+
+    def _check_settings_match_profile(self, profile_dict: FfmpegProfile) -> bool:
+        """Checks if current FFmpeg settings match a given profile dictionary."""
+        try:
+            current_settings = {
+                "use_ffmpeg_interp": self.ffmpeg_interp_group.isChecked(),
+                "mi_mode": self.ffmpeg_mi_mode_combo.currentText(),
+                "mc_mode": self.ffmpeg_mc_mode_combo.currentText(),
+                "me_mode": self.ffmpeg_me_mode_combo.currentText(),
+                "me_algo": self.ffmpeg_me_algo_combo.currentText(),
+                "search_param": self.ffmpeg_search_param_spinbox.value(),
+                "vsbmc": self.ffmpeg_vsbmc_checkbox.isChecked(),
+                "scd": self.ffmpeg_scd_combo.currentText(),
+                "scd_threshold": self.ffmpeg_scd_thresh_spinbox.value(),
+                "mb_size": self.ffmpeg_mb_size_combo.currentText(),
+                "apply_unsharp": self.unsharp_groupbox.isChecked(),
+                "unsharp_lx": self.unsharp_lx_spinbox.value(),
+                "unsharp_ly": self.unsharp_ly_spinbox.value(),
+                "unsharp_la": self.unsharp_la_spinbox.value(),
+                "unsharp_cx": self.unsharp_cx_spinbox.value(),
+                "unsharp_cy": self.unsharp_cy_spinbox.value(),
+                "unsharp_ca": self.unsharp_ca_spinbox.value(),
+                "preset_text": self.ffmpeg_quality_preset_combo.currentText(),
+                "crf": self.ffmpeg_crf_spinbox.value(),
+                "bitrate": self.ffmpeg_bitrate_spinbox.value(),
+                "bufsize": self.ffmpeg_bufsize_spinbox.value(),
+                "pix_fmt": self.ffmpeg_pix_fmt_combo.currentText(),
+                "filter_preset": self.ffmpeg_filter_preset_combo.currentText(),
+            }
+
+            # Compare relevant fields, considering disabled states might affect comparison
+            for key, profile_value in profile_dict.items():
+                current_value = current_settings.get(key)
+
+                # Special handling for SCD threshold (only compare if scd is 'fdiff')
+                if key == "scd_threshold" and profile_dict.get("scd") != "fdiff":
+                    continue # Don't compare threshold if SCD is off
+
+                # Special handling for unsharp values (only compare if apply_unsharp is True)
+                if key.startswith("unsharp_") and key != "apply_unsharp" and not profile_dict.get("apply_unsharp"):
+                     continue # Don't compare specific unsharp values if group is off
+
+                # Special handling for CRF/Bitrate based on preset_text
+                preset = profile_dict.get("preset_text", "")
+                if "Custom CRF" in preset:
+                     if key == "bitrate" or key == "bufsize": continue # Don't compare bitrate/bufsize
+                elif "Custom Bitrate" in preset:
+                     if key == "crf": continue # Don't compare CRF
+                elif "CRF" in preset: # Preset defines CRF
+                     if key == "bitrate" or key == "bufsize": continue # Don't compare bitrate/bufsize
+                     # CRF value is derived from preset_text, so comparing preset_text is sufficient
+
+                # General comparison
+                if current_value != profile_value:
+                    # LOGGER.debug(f"Profile mismatch: Key='{key}', Current='{current_value}', Profile='{profile_value}'")
+                    return False
+            return True
+        except Exception as e:
+            LOGGER.error(f"Error checking profile match: {e}")
+            return False # Assume mismatch on error
+
+    def loadSettings(self) -> None:
+        """Loads settings from QSettings."""
+        LOGGER.info("Loading settings...")
+        # Input/Output
+        self.in_dir_edit.setText(self.settings.value("paths/inputDirectory", "", type=str))
+        self.out_file_edit.setText(self.settings.value("paths/outputFile", "", type=str))
+
+        # Interpolation
+        self.fps_spinbox.setValue(self.settings.value("interpolation/fps", 30, type=int))
+        self.mid_count_spinbox.setValue(self.settings.value("interpolation/midCount", 7, type=int))
+        self.max_workers_spinbox.setValue(self.settings.value("interpolation/maxWorkers", 4, type=int))
+        self.encoder_combo.setCurrentText(self.settings.value("interpolation/encoder", "RIFE", type=str))
+        self.model_combo.setCurrentText(self.settings.value("interpolation/rifeModel", "", type=str)) # Load model name
+
+        # RIFE Options
+        self.rife_tile_enable_checkbox.setChecked(self.settings.value("rife/tileEnable", True, type=bool))
+        self.rife_tile_size_spinbox.setValue(self.settings.value("rife/tileSize", 384, type=int))
+        self.rife_uhd_mode_checkbox.setChecked(self.settings.value("rife/uhdMode", False, type=bool))
+        self.rife_thread_spec_edit.setText(self.settings.value("rife/threadSpec", "0:0:0:0", type=str))
+        self.rife_tta_spatial_checkbox.setChecked(self.settings.value("rife/ttaSpatial", False, type=bool))
+        self.rife_tta_temporal_checkbox.setChecked(self.settings.value("rife/ttaTemporal", False, type=bool))
+
+        # Sanchez Options
+        self.sanchez_false_colour_checkbox.setChecked(self.settings.value("sanchez/falseColour", False, type=bool))
+        self.sanchez_res_km_spinbox.setValue(self.settings.value("sanchez/resKm", 500, type=int))
+
+        # FFmpeg Profile and Settings
+        # Load profile first, then individual settings which might override profile if saved as "Custom"
+        saved_profile_name = self.settings.value("ffmpeg/profileName", "Default", type=str)
+
+        # Load individual FFmpeg settings (use profile defaults if key missing)
+        default_prof = FFMPEG_PROFILES.get(saved_profile_name, DEFAULT_FFMPEG_PROFILE) # Fallback to Default
+
+        self.ffmpeg_interp_group.setChecked(self.settings.value("ffmpeg/use_ffmpeg_interp", default_prof["use_ffmpeg_interp"], type=bool))
+        self.ffmpeg_mi_mode_combo.setCurrentText(self.settings.value("ffmpeg/mi_mode", default_prof["mi_mode"], type=str))
+        self.ffmpeg_mc_mode_combo.setCurrentText(self.settings.value("ffmpeg/mc_mode", default_prof["mc_mode"], type=str))
+        self.ffmpeg_me_mode_combo.setCurrentText(self.settings.value("ffmpeg/me_mode", default_prof["me_mode"], type=str))
+        self.ffmpeg_me_algo_combo.setCurrentText(self.settings.value("ffmpeg/me_algo", default_prof["me_algo"], type=str))
+        self.ffmpeg_search_param_spinbox.setValue(self.settings.value("ffmpeg/search_param", default_prof["search_param"], type=int))
+        self.ffmpeg_vsbmc_checkbox.setChecked(self.settings.value("ffmpeg/vsbmc", default_prof["vsbmc"], type=bool))
+        self.ffmpeg_scd_combo.setCurrentText(self.settings.value("ffmpeg/scd", default_prof["scd"], type=str))
+        self.ffmpeg_scd_thresh_spinbox.setValue(self.settings.value("ffmpeg/scd_threshold", default_prof["scd_threshold"], type=float))
+        self.ffmpeg_mb_size_combo.setCurrentText(self.settings.value("ffmpeg/mb_size", default_prof["mb_size"], type=str))
+
+        self.unsharp_groupbox.setChecked(self.settings.value("ffmpeg/apply_unsharp", default_prof["apply_unsharp"], type=bool))
+        self.unsharp_lx_spinbox.setValue(self.settings.value("ffmpeg/unsharp_lx", default_prof["unsharp_lx"], type=int))
+        self.unsharp_ly_spinbox.setValue(self.settings.value("ffmpeg/unsharp_ly", default_prof["unsharp_ly"], type=int))
+        self.unsharp_la_spinbox.setValue(self.settings.value("ffmpeg/unsharp_la", default_prof["unsharp_la"], type=float))
+        self.unsharp_cx_spinbox.setValue(self.settings.value("ffmpeg/unsharp_cx", default_prof["unsharp_cx"], type=int))
+        self.unsharp_cy_spinbox.setValue(self.settings.value("ffmpeg/unsharp_cy", default_prof["unsharp_cy"], type=int))
+        self.unsharp_ca_spinbox.setValue(self.settings.value("ffmpeg/unsharp_ca", default_prof["unsharp_ca"], type=float))
+
+        # Load quality preset text first, as it determines which other controls are relevant
+        quality_preset_text = self.settings.value("ffmpeg/preset_text", default_prof["preset_text"], type=str)
+        self.ffmpeg_quality_preset_combo.setCurrentText(quality_preset_text)
+
+        self.ffmpeg_crf_spinbox.setValue(self.settings.value("ffmpeg/crf", default_prof["crf"], type=int))
+        self.ffmpeg_bitrate_spinbox.setValue(self.settings.value("ffmpeg/bitrate", default_prof["bitrate"], type=int))
+        self.ffmpeg_bufsize_spinbox.setValue(self.settings.value("ffmpeg/bufsize", default_prof["bufsize"], type=int)) # Load bufsize
+        self.ffmpeg_pix_fmt_combo.setCurrentText(self.settings.value("ffmpeg/pix_fmt", default_prof["pix_fmt"], type=str))
+        self.ffmpeg_filter_preset_combo.setCurrentText(self.settings.value("ffmpeg/filter_preset", default_prof["filter_preset"], type=str))
+
+        # After loading individual settings, check if they still match the saved profile name
+        if saved_profile_name != "Custom" and saved_profile_name in FFMPEG_PROFILES:
+             if self._check_settings_match_profile(FFMPEG_PROFILES[saved_profile_name]):
+                  self.ffmpeg_profile_combo.setCurrentText(saved_profile_name)
+             else:
+                  self.ffmpeg_profile_combo.setCurrentText("Custom")
+        else:
+             # If saved profile was "Custom" or invalid, set combo to "Custom"
+             self.ffmpeg_profile_combo.setCurrentText("Custom")
+
+
+        # Window Geometry
+        geom = self.settings.value("window/geometry")
+        if isinstance(geom, QByteArray):
+            self.restoreGeometry(geom)
+
+        LOGGER.info("Settings loaded.")
+
+
+    def saveSettings(self) -> None:
+        """Saves settings to QSettings."""
+        LOGGER.info("Saving settings...")
+        # Paths
+        self.settings.setValue("paths/inputDirectory", self.in_dir_edit.text())
+        self.settings.setValue("paths/outputFile", self.out_file_edit.text())
+
+        # Interpolation
+        self.settings.setValue("interpolation/fps", self.fps_spinbox.value())
+        self.settings.setValue("interpolation/midCount", self.mid_count_spinbox.value())
+        self.settings.setValue("interpolation/maxWorkers", self.max_workers_spinbox.value())
+        self.settings.setValue("interpolation/encoder", self.encoder_combo.currentText())
+        self.settings.setValue("interpolation/rifeModel", self.model_combo.currentText()) # Save model name
+
+        # RIFE Options
+        self.settings.setValue("rife/tileEnable", self.rife_tile_enable_checkbox.isChecked())
+        self.settings.setValue("rife/tileSize", self.rife_tile_size_spinbox.value())
+        self.settings.setValue("rife/uhdMode", self.rife_uhd_mode_checkbox.isChecked())
+        self.settings.setValue("rife/threadSpec", self.rife_thread_spec_edit.text())
+        self.settings.setValue("rife/ttaSpatial", self.rife_tta_spatial_checkbox.isChecked())
+        self.settings.setValue("rife/ttaTemporal", self.rife_tta_temporal_checkbox.isChecked())
+
+        # Sanchez Options
+        self.settings.setValue("sanchez/falseColour", self.sanchez_false_colour_checkbox.isChecked())
+        self.settings.setValue("sanchez/resKm", self.sanchez_res_km_spinbox.value())
+
+        # FFmpeg Profile and Settings
+        self.settings.setValue("ffmpeg/profileName", self.ffmpeg_profile_combo.currentText())
+        # Save all individual FFmpeg settings regardless of profile
+        self.settings.setValue("ffmpeg/use_ffmpeg_interp", self.ffmpeg_interp_group.isChecked())
+        self.settings.setValue("ffmpeg/mi_mode", self.ffmpeg_mi_mode_combo.currentText())
+        self.settings.setValue("ffmpeg/mc_mode", self.ffmpeg_mc_mode_combo.currentText())
+        self.settings.setValue("ffmpeg/me_mode", self.ffmpeg_me_mode_combo.currentText())
+        self.settings.setValue("ffmpeg/me_algo", self.ffmpeg_me_algo_combo.currentText())
+        self.settings.setValue("ffmpeg/search_param", self.ffmpeg_search_param_spinbox.value())
+        self.settings.setValue("ffmpeg/vsbmc", self.ffmpeg_vsbmc_checkbox.isChecked())
+        self.settings.setValue("ffmpeg/scd", self.ffmpeg_scd_combo.currentText())
+        self.settings.setValue("ffmpeg/scd_threshold", self.ffmpeg_scd_thresh_spinbox.value())
+        self.settings.setValue("ffmpeg/mb_size", self.ffmpeg_mb_size_combo.currentText())
+        self.settings.setValue("ffmpeg/apply_unsharp", self.unsharp_groupbox.isChecked())
+        self.settings.setValue("ffmpeg/unsharp_lx", self.unsharp_lx_spinbox.value())
+        self.settings.setValue("ffmpeg/unsharp_ly", self.unsharp_ly_spinbox.value())
+        self.settings.setValue("ffmpeg/unsharp_la", self.unsharp_la_spinbox.value())
+        self.settings.setValue("ffmpeg/unsharp_cx", self.unsharp_cx_spinbox.value())
+        self.settings.setValue("ffmpeg/unsharp_cy", self.unsharp_cy_spinbox.value())
+        self.settings.setValue("ffmpeg/unsharp_ca", self.unsharp_ca_spinbox.value())
+        self.settings.setValue("ffmpeg/preset_text", self.ffmpeg_quality_preset_combo.currentText())
+        self.settings.setValue("ffmpeg/crf", self.ffmpeg_crf_spinbox.value())
+        self.settings.setValue("ffmpeg/bitrate", self.ffmpeg_bitrate_spinbox.value())
+        self.settings.setValue("ffmpeg/bufsize", self.ffmpeg_bufsize_spinbox.value()) # Save bufsize
+        self.settings.setValue("ffmpeg/pix_fmt", self.ffmpeg_pix_fmt_combo.currentText())
+        self.settings.setValue("ffmpeg/filter_preset", self.ffmpeg_filter_preset_combo.currentText())
+
+
+        # Window Geometry
+        self.settings.setValue("window/geometry", self.saveGeometry())
+
+        self.settings.sync()
+        LOGGER.info("Settings saved.")
+
+
+    def _validate_thread_spec(self, text: str) -> None:
+        """Validates the RIFE thread spec input."""
+        edit = self.rife_thread_spec_edit
+        valid_format = re.fullmatch(r"\d+:\d+:\d+:\d+", text) is not None
+        # Change background color to indicate validity (subtle)
+        palette = edit.palette()
+        if valid_format or not text: # Allow empty string during typing
+            palette.setColor(palette.ColorRole.Base, QColor("white"))
+        else:
+            palette.setColor(palette.ColorRole.Base, QColor("#fff0f0")) # Light red background for invalid
+        edit.setPalette(palette)
+        # Update start button state as validity affects it
+        self._update_start_button_state()
+
+
+    def _populate_models(self) -> None:
+        """Populates the RIFE model combo box."""
+        self.model_combo.clear()
+        self.model_combo.addItem("Scanning for models...", None) # Placeholder
+        self.model_combo.setEnabled(False)
+
+        try:
+            models = config.get_available_rife_models() # Returns list[str]
+            self.model_combo.clear() # Clear placeholder/previous items
+            if models:
+                # Iterate over the list of model keys/names
+                for model_key in models:
+                    # For now, add the key as both text and data.
+                    # TODO: Fetch model display name if needed separately.
+                    self.model_combo.addItem(model_key, model_key)
+                self.model_combo.setEnabled(True)
+                LOGGER.info(f"Found {len(models)} RIFE models.")
+                # Try to restore last selected model
+                last_model_name = self.settings.value("interpolation/rifeModel", "", type=str)
+                if last_model_name:
+                     index = self.model_combo.findText(last_model_name)
+                     if index != -1:
+                          self.model_combo.setCurrentIndex(index)
+                     else:
+                          LOGGER.warning(f"Previously selected model '{last_model_name}' not found.")
+                          self.model_combo.setCurrentIndex(0) # Select first available
+                else:
+                     self.model_combo.setCurrentIndex(0) # Select first available if none saved
+
+            else:
+                self.model_combo.addItem("No RIFE models found", None)
+                self.model_combo.setEnabled(False)
+                LOGGER.warning("No RIFE models found in expected locations.")
+
+        except Exception as e:
+            LOGGER.exception(f"Error populating RIFE models: {e}")
+            self.model_combo.clear()
+            self.model_combo.addItem("Error finding models", None)
+            self.model_combo.setEnabled(False)
+            self._show_error(f"Could not find RIFE models: {e}", stage="Initialization")
+
+        # Update UI elements that depend on model availability/selection
+        self._update_rife_ui_elements()
+        self._update_start_button_state()
+
+
+    def _toggle_sanchez_res_enabled(self, state: Qt.CheckState) -> None:
+        """Enables or disables the Sanchez resolution spinbox based on the false colour checkbox state."""
+        # Revert: Just enable/disable based on checkbox state. Groupbox enable state handles the rest.
+        is_checked = (state == Qt.CheckState.Checked)
+        is_rife_enabled = (self.encoder_combo.currentText() == "RIFE")
+        self.sanchez_res_km_spinbox.setEnabled(is_checked and is_rife_enabled)
+        self.sanchez_res_km_label.setEnabled(is_checked and is_rife_enabled) # Also enable/disable label
+
+    def _update_rife_ui_elements(self) -> None:
+        """Updates the visibility and state of RIFE-specific UI elements."""
+        # NOTE: Visibility is primarily handled by _update_rife_options_state based on encoder.
+        # This method ensures consistency after model population.
+        is_rife_encoder = (self.encoder_combo.currentText() == "RIFE")
+        self.rife_options_groupbox.setVisible(is_rife_encoder)
+        self.model_label.setVisible(is_rife_encoder)
+        self.model_combo.setVisible(is_rife_encoder)
+        # The enabled state of model_combo is handled in _populate_models and _set_processing_state
+        pass # Keep method structure for now, might need further review
+
+    def _on_model_changed(self, model_key: str) -> None:
+        """Handles actions when the selected RIFE model changes."""
+        # Currently no specific actions needed on model change, but this is a placeholder
+        LOGGER.info(f"Selected RIFE model: {model_key}")
+        self._update_start_button_state() # Update start button state as model selection affects it
+
+
+    def closeEvent(self, event: QCloseEvent | None) -> None:
+        """Handles the window close event."""
+        if self.is_processing:
+            reply = QMessageBox.question(
+                self,
+                "Quit GOES-VFI",
+                "A VFI process is currently running. Are you sure you want to quit?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                # Attempt to terminate the worker thread gracefully
+                if self.worker and self.worker.isRunning():
+                    LOGGER.info("Attempting to terminate worker thread...")
+                    self.worker.terminate()
+                    self.worker.wait() # Wait for the thread to finish
+                    LOGGER.info("Worker thread terminated.")
+                self.saveSettings() # Save settings before closing
+                if event:
+                    event.accept()
+            else:
+                if event:
+                    event.ignore()
+        else:
+            self.saveSettings() # Save settings before closing
+            if event:
+                event.accept()
+
+    # Corrected indentation and removed stray else blocks
+    def _load_process_scale_preview(self, image_path: Path, target_label: ClickableLabel) -> QPixmap | None:
+        """Loads, processes (crop/sanchez), scales, and returns a preview pixmap."""
+        try:
+            img = QImage(str(image_path))
+            if img.isNull():
+                LOGGER.error(f"Failed to load image: {image_path}")
+                return None
+
+            # --- Apply Sanchez Processing ---
+            sanchez_processing_failed = False
+            sanchez_error_message = ""
+            
+            # Import _bin from Sanchez runner to get binary path
+            try:
+                from goesvfi.sanchez.runner import _bin
+            except ImportError as e:
+                LOGGER.error(f"Could not import _bin function from Sanchez runner: {e}")
+                sanchez_processing_failed = True
+                sanchez_error_message = f"Sanchez import error: {e}"
+            
+            if self.sanchez_false_colour_checkbox.isChecked():
+                temp_input_path = None
+                temp_output_path = None
+                
+                try:
+                    LOGGER.debug(f"Starting Sanchez processing for: {image_path.name}")
+                    
+                    # First verify that Sanchez binary exists and is executable
+                    try:
+                        sanchez_binary = _bin()
+                        if not sanchez_binary.exists():
+                            LOGGER.error(f"Sanchez binary not found at: {sanchez_binary}")
+                            raise FileNotFoundError(f"Sanchez binary not found: {sanchez_binary}")
+                        
+                        # Check if the binary has execute permissions
+                        if not os.access(sanchez_binary, os.X_OK):
+                            LOGGER.error(f"Sanchez binary exists but is not executable: {sanchez_binary}")
+                            # Try to make it executable
+                            try:
+                                os.chmod(sanchez_binary, 0o755)  # rwx for owner, rx for group and others
+                                LOGGER.info(f"Added execute permission to Sanchez binary: {sanchez_binary}")
+                            except Exception as chmod_error:
+                                LOGGER.error(f"Failed to add execute permission to Sanchez binary: {chmod_error}")
+                                raise RuntimeError(f"Sanchez binary is not executable: {sanchez_binary}")
+                    except Exception as bin_error:
+                        LOGGER.error(f"Error accessing Sanchez binary: {bin_error}")
+                        raise RuntimeError(f"Sanchez binary access failed: {bin_error}")
+                    
+                    LOGGER.debug(f"Using Sanchez binary: {sanchez_binary}")
+                    
+                    # Create a more distinctive temp directory to avoid issues with permissions
+                    temp_dir = Path(tempfile.gettempdir()) / "goes_vfi_sanchez"
+                    os.makedirs(temp_dir, exist_ok=True)
+                    
+                    # Preserve original filename exactly - Sanchez parser depends on it!
+                    original_name = image_path.name
+                    temp_input_path = temp_dir / original_name
+                    # Create output path with same name but add "_processed" suffix
+                    output_name = image_path.stem + "_processed" + image_path.suffix
+                    temp_output_path = temp_dir / output_name
+                    
+                    # Save the image with highest quality for processing
+                    LOGGER.debug(f"Saving image to: {temp_input_path}")
+                    save_result = img.save(str(temp_input_path), "PNG", 100)
+                    
+                    if not save_result:
+                        LOGGER.error(f"Failed to save temporary image for processing: {temp_input_path}")
+                        raise IOError(f"Failed to save temporary image to {temp_input_path}")
+                        
+                    # Verify the file was created
+                    if not temp_input_path.exists() or temp_input_path.stat().st_size == 0:
+                        LOGGER.error(f"Temporary file is empty or not created: {temp_input_path}")
+                        raise IOError(f"Temporary file creation failed: {temp_input_path}")
+                        
+                    # Get the resolution setting
+                    res_km = self.sanchez_res_km_spinbox.value()
+                    LOGGER.debug(f"Applying Sanchez processing with resolution {res_km}km")
+                    
+                    try:
+                        # Get binary path
+                        bin_path = _bin()
+                        binary_dir = bin_path.parent
+                        
+                        # Build command directly for debugging
+                        cmd = [str(bin_path), "-s", str(temp_input_path), "-o", str(temp_output_path),
+                               "-r", str(res_km)]
+                               
+                        LOGGER.info(f"Running Sanchez command: {' '.join(cmd)}")
+                        LOGGER.info(f"In directory: {binary_dir}")
+                        
+                        # Make sure the binary exists and has execute permissions
+                        if not os.path.exists(bin_path):
+                            LOGGER.error(f"Sanchez binary not found at runtime: {bin_path}")
+                            raise FileNotFoundError(f"Sanchez binary not found at runtime: {bin_path}")
+                            
+                        if not os.access(bin_path, os.X_OK):
+                            LOGGER.error(f"Sanchez binary not executable at runtime: {bin_path}")
+                            # Try to make it executable
+                            try:
+                                os.chmod(bin_path, 0o755)
+                                LOGGER.info(f"Added execute permission to Sanchez binary at runtime: {bin_path}")
+                            except Exception as chmod_error:
+                                LOGGER.error(f"Failed to add execute permission: {chmod_error}")
+                                raise RuntimeError(f"Cannot execute Sanchez binary: {bin_path}")
+                        
+                        # Run process manually for maximum control and debugging
+                        import subprocess
+                        LOGGER.debug(f"Starting subprocess for Sanchez")
+                        
+                        # Set full path for output explicitly to debug permission issues
+                        full_output_path = os.path.abspath(str(temp_output_path))
+                        # Use directly the same command that works in our test script
+                        full_input_path = os.path.abspath(str(temp_input_path))
+                        # Use the 'geostationary' verb explicitly
+                        cmd = [str(bin_path), "geostationary", "-s", full_input_path,
+                               "-o", full_output_path, "-r", str(res_km), "-v"]
+                        LOGGER.info(f"Using absolute paths: input={full_input_path}, output={full_output_path}")
+                        LOGGER.info("Using the command that works from our standalone test")
+                        
+                        # We now know that Sanchez strictly depends on the original filename format,
+                        # so we don't need to create alternative filenames with different extensions
+                        LOGGER.info(f"Using original filename: {temp_input_path.name}")
+                        
+                        result = subprocess.run(
+                            cmd,
+                            check=False,  # Don't raise exception, we'll handle errors
+                            capture_output=True,
+                            text=True,
+                            encoding='utf-8',
+                            errors='replace',
+                            cwd=binary_dir
+                        )
+                        
+                        # Log full output for debugging
+                        LOGGER.info(f"Sanchez command completed with return code: {result.returncode}")
+                        if result.stdout:
+                            LOGGER.info(f"Sanchez stdout: {result.stdout}")
+                        else:
+                            LOGGER.info("No stdout output from Sanchez")
+                            
+                        if result.stderr:
+                            LOGGER.info(f"Sanchez stderr: {result.stderr}")
+                        else:
+                            LOGGER.info("No stderr output from Sanchez")
+                            
+                        # Check return code
+                        if result.returncode != 0:
+                            LOGGER.error(f"Sanchez process failed with code {result.returncode}")
+                            raise RuntimeError(f"Sanchez process failed with code {result.returncode}")
+                            
+                        # Check if the output directory exists and is writable
+                        output_dir = os.path.dirname(full_output_path)
+                        if not os.path.exists(output_dir):
+                            LOGGER.error(f"Output directory does not exist: {output_dir}")
+                            raise FileNotFoundError(f"Output directory does not exist: {output_dir}")
+                            
+                        if not os.access(output_dir, os.W_OK):
+                            LOGGER.error(f"Output directory is not writable: {output_dir}")
+                            raise PermissionError(f"Output directory is not writable: {output_dir}")
+                    
+                    except Exception as sanchez_error:
+                        LOGGER.error(f"Sanchez processing failed: {sanchez_error}")
+                        raise
+                        
+                    # Check if the output file was created
+                    if not temp_output_path.exists():
+                        LOGGER.error(f"Sanchez output file was not created: {temp_output_path}")
+                        
+                        # Try to create a simple test file in the same directory to check permissions
+                        try:
+                            test_file_path = Path(temp_output_path.parent) / "test_write_permission.txt"
+                            with open(test_file_path, 'w') as f:
+                                f.write("Test write permission")
+                            LOGGER.info(f"Successfully created test file at {test_file_path}")
+                            os.remove(test_file_path)
+                            LOGGER.info(f"Successfully removed test file")
+                        except Exception as perm_error:
+                            LOGGER.error(f"Permission test failed: {perm_error}")
+                            
+                        # Try fallback with different options before giving up
+                        LOGGER.info("Attempting fallback with different Sanchez options...")
+                        
+                        fallback_succeeded = False
+                        
+                        try:
+                            # Try with help flag first to see available options
+                            help_cmd = [str(bin_path), "--help"]
+                            help_result = subprocess.run(
+                                help_cmd,
+                                check=False,
+                                capture_output=True,
+                                text=True,
+                                cwd=binary_dir
+                            )
+                            if help_result.stdout:
+                                LOGGER.info(f"Sanchez help: {help_result.stdout}")
+                            if help_result.stderr:
+                                LOGGER.info(f"Sanchez help stderr: {help_result.stderr}")
+                                
+                            # Try with debug flag
+                            debug_cmd = [str(bin_path), "-s", str(temp_input_path), "-o", full_output_path, "-r", str(res_km), "--debug"]
+                            LOGGER.info(f"Trying with debug flag: {' '.join(debug_cmd)}")
+                            debug_result = subprocess.run(
+                                debug_cmd,
+                                check=False,
+                                capture_output=True,
+                                text=True,
+                                cwd=binary_dir
+                            )
+                            
+                            if temp_output_path.exists() and temp_output_path.stat().st_size > 0:
+                                LOGGER.info("Success! Debug flag worked!")
+                                fallback_succeeded = True
+                                
+                            # Try explicitly without the geostationary verb (as used in colourise function)
+                            if not fallback_succeeded:
+                                no_verb_cmd = [str(bin_path), "-s", full_input_path,
+                                              "-o", full_output_path, "-r", str(res_km)]
+                                LOGGER.info(f"Trying without verb: {' '.join(no_verb_cmd)}")
+                                no_verb_result = subprocess.run(
+                                    no_verb_cmd,
+                                    check=False,
+                                    capture_output=True,
+                                    text=True,
+                                    cwd=binary_dir
+                                )
+                                
+                                if temp_output_path.exists() and temp_output_path.stat().st_size > 0:
+                                    LOGGER.info("Success! No-verb command worked!")
+                                    fallback_succeeded = True
+                                    
+                            # We no longer need the IR PNG fallback since we preserve the original filename
+                            # Try with another approach: attempt directly using the original file
+                            if not fallback_succeeded:
+                                # Get the original image path from our function parameter
+                                orig_cmd = [str(bin_path), "geostationary", "-s", str(image_path),
+                                         "-o", full_output_path, "-r", str(res_km), "-v"]
+                                LOGGER.info(f"Trying with direct original file: {' '.join(orig_cmd)}")
+                                orig_result = subprocess.run(
+                                    orig_cmd,
+                                    check=False,
+                                    capture_output=True,
+                                    text=True,
+                                    cwd=binary_dir
+                                )
+                                
+                                if temp_output_path.exists() and temp_output_path.stat().st_size > 0:
+                                    LOGGER.info("Success! Direct original file worked!")
+                                    fallback_succeeded = True
+                        except Exception as fallback_error:
+                            LOGGER.error(f"Error during fallback attempts: {fallback_error}")
+                        
+                        # If a fallback succeeded, continue with the existing code path
+                        if fallback_succeeded:
+                            LOGGER.info("Using successfully generated output file from fallback")
+                        else:
+                            # If we got here, all fallbacks failed
+                            # Since the Sanchez command completed but no output was created
+                            # this might be an issue with the input image format or Sanchez itself
+                            sanchez_error_message = "Sanchez failed to process the image (no output file created)"
+                            raise FileNotFoundError(f"Sanchez output file not found: {temp_output_path}")
+                        
+                    # Check output file size
+                    if temp_output_path.stat().st_size == 0:
+                        LOGGER.error(f"Sanchez output file is empty: {temp_output_path}")
+                        raise IOError(f"Sanchez output file is empty: {temp_output_path}")
+                    
+                    LOGGER.debug(f"Loading processed image from: {temp_output_path}")
+                    processed_img = QImage(str(temp_output_path))
+                    
+                    if not processed_img.isNull():
+                        LOGGER.debug(f"Successfully applied Sanchez processing to {image_path.name}")
+                        img = processed_img
+                    else:
+                        LOGGER.error(f"Sanchez processing resulted in null image for {image_path.name}")
+                        raise IOError(f"Processed image is null: {temp_output_path}")
+                        
+                except Exception as e:
+                    LOGGER.error(f"Error during Sanchez processing for {image_path.name}: {e}")
+                    sanchez_processing_failed = True
+                    sanchez_error_message = str(e)
+                    # Continue with the original image if Sanchez fails
+                finally:
+                    # Clean up temporary files
+                    try:
+                        if temp_input_path and temp_input_path.exists():
+                            os.remove(temp_input_path)
+                        if temp_output_path and temp_output_path.exists():
+                            os.remove(temp_output_path)
+                    except Exception as cleanup_error:
+                        LOGGER.warning(f"Failed to clean up temporary files: {cleanup_error}")
+            # --- End Sanchez Processing ---
+
+            # --- Apply Crop ---
+            if self.current_crop_rect:
+                x, y, w, h = self.current_crop_rect
+                # Ensure crop rect is within image bounds
+                img_w, img_h = img.width(), img.height()
+                if x < img_w and y < img_h: # Use < directly
+                    crop_w = min(w, img_w - x)
+                    crop_h = min(h, img_h - y)
+                    if crop_w > 0 and crop_h > 0:
+                        img = img.copy(x, y, crop_w, crop_h)
+                    else:
+                        LOGGER.warning(f"Invalid crop rect {self.current_crop_rect} for image size {img_w}x{img_h}")
+                else:
+                     LOGGER.warning(f"Crop start point {x},{y} outside image bounds {img_w}x{img_h}")
+            # --- End Crop ---
+
+            # Store original path for zoom function
+            target_label.file_path = str(image_path) # Store the *original* path
+
+            # Scale for preview display
+            target_size = target_label.size()
+            # Ensure target size is valid before scaling
+            if target_size.width() <= 0 or target_size.height() <= 0:
+                 # If label size isn't determined yet, use a reasonable default or skip scaling
+                 LOGGER.warning(f"Target label '{target_label.objectName()}' has invalid size {target_size}, cannot scale preview.")
+                 # Let's try scaling to a fixed size if label size is invalid
+                 target_size = QSize(100, 100) # Fallback size
+
+            scaled_img = img.scaled(
                 target_size,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation
             )
-
-            dlg = ZoomDialog(scaled_pix, self)
-            dlg.exec()
-
-        except Exception as e:
-            LOGGER.exception(f"Error showing zoom dialog for {label.file_path}")
-            self._show_error(f"Error displaying image:\\n{e}")
-
-    # +++ Restore Models Tab Method +++
-    def _makeModelLibraryTab(self) -> QWidget:
-        """Builds the Models tab with a simple table of available checkpoints."""
-        # --- Create Content Widget and Layout ---
-        scroll_content_widget = QWidget()
-        layout = QVBoxLayout(scroll_content_widget)
-
-        # Set vertical size policy for the content widget
-        scroll_content_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-
-        # --- Create the Table --- 
-        tbl = QTableWidget(1, 4) # Parent removed, will be set by layout
-        tbl.setHorizontalHeaderLabels(["Name", "Size", "Speed (FPS)", "ΔPSNR"])
-        # Row 0: RIFE v4.6
-        tbl.setItem(0, 0, QTableWidgetItem("RIFE v4.6 (ncnn)")) # Clarify it's ncnn
-        tbl.setItem(0, 1, QTableWidgetItem("Uses included binary")) # Placeholder
-        tbl.setItem(0, 2, QTableWidgetItem("Fast (GPU/Metal)")) # Placeholder
-        tbl.setItem(0, 3, QTableWidgetItem("–")) # Placeholder for PSNR
-        tbl.resizeColumnsToContents()
-
-        # --- Add Table to Layout ---
-        layout.addWidget(tbl)
-        layout.addStretch() # Add stretch within the scrollable area
-
-        # --- Create Scroll Area and Set Content --- #
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll_area.setWidget(scroll_content_widget)
-
-        return scroll_area # Return the scroll area
-
-    def _on_clear_crop_clicked(self) -> None:
-        """Clears the stored crop rectangle and updates previews."""
-        if self.crop_rect is None:
-            self.status_bar.showMessage("No crop is currently set.", 3000)
-            return
-
-        LOGGER.info("Clearing crop rectangle.")
-        self.crop_rect = None
-        self.settings.remove("main/cropRect") # Remove from persistent settings
-        self._update_previews() # Refresh previews with full images
-        self.status_bar.showMessage("Crop cleared.", 3000)
-
-    # --- Slot to toggle tile size spinbox enabled state --- #
-    def _toggle_tile_size_enabled(self, checked: bool) -> None:
-        """Enable/disable the tile size spinbox based on the tile checkbox and RIFE capability."""
-        self._update_rife_ui_elements()
-        # The following lines were removed as they were incorrectly indented and likely remnants of previous code:
-        # # (This duplicate function definition is removed to resolve the lint error)
-        #         LOGGER.warning("minterpolate_content_widget not found in _toggle_minterpolate_content")
-        #         LOGGER.warning("minterpolate_content_widget not found in _toggle_minterpolate_content")
-        #         LOGGER.warning("minterpolate_content_widget not found in _toggle_minterpolate_content")
-        #         LOGGER.warning("minterpolate_content_widget not found in _toggle_minterpolate_content")
-        #         LOGGER.warning("minterpolate_content_widget not found in _toggle_minterpolate_content")
-            # QTimer.singleShot(0, self._adjust_window_to_content)
-        if hasattr(self, 'unsharp_content_widget'):
-            self.unsharp_content_widget.setVisible(checked)
-        else:
-            LOGGER.warning("unsharp_content_widget not found in _toggle_unsharp_content")
-        # --- End Content Toggle Slots ---
-
-        # --- Slot for tab changes --- #
-    def _on_tab_changed(self, index: int) -> None:
-        """Handle actions when the active tab changes, like resizing."""
-        LOGGER.debug(f"Tab changed to index: {index}")
-        # Trigger window adjustment after a minimal delay to allow layout to settle
-        QTimer.singleShot(10, self._adjust_window_to_content)
-    # --- End Tab Change Slot ---
-
-    # --- Helper to check if UI settings match a profile --- #
-    def _check_settings_match_profile(self, profile_dict: Dict[str, Any]) -> bool:
-        """Helper to check if current UI settings match a given profile dictionary."""
-        # Check existence of controls before comparing
-        try:
-            return (
-                (not hasattr(self, 'ffmpeg_interp_cb') or self.ffmpeg_interp_cb.isChecked() == profile_dict.get("use_ffmpeg_interp", True)) and
-                (not hasattr(self, 'mi_combo') or self.mi_combo.currentText() == profile_dict.get("mi_mode", "mci")) and
-                (not hasattr(self, 'mc_combo') or self.mc_combo.currentText() == profile_dict.get("mc_mode", "obmc")) and
-                (not hasattr(self, 'me_combo') or self.me_combo.currentText() == profile_dict.get("me_mode", "bidir")) and
-                (not hasattr(self, 'me_algo_combo') or self.me_algo_combo.currentText() == profile_dict.get("me_algo", "(default)")) and
-                (not hasattr(self, 'search_param_spin') or self.search_param_spin.value() == profile_dict.get("search_param", 96)) and
-                (not hasattr(self, 'scd_combo') or self.scd_combo.currentText() == profile_dict.get("scd", "fdiff")) and
-                (not hasattr(self, 'scd_thresh_spin') or self.scd_thresh_spin.value() == profile_dict.get("scd_threshold", 10.0)) and
-                (not hasattr(self, 'filter_preset_combo') or self.filter_preset_combo.currentText() == profile_dict.get("filter_preset", "slow")) and
-                (not hasattr(self, 'mbsize_combo') or self.mbsize_combo.currentText() == profile_dict.get("mb_size", "(default)")) and
-                (not hasattr(self, 'vsbmc_cb') or self.vsbmc_cb.isChecked() == profile_dict.get("vsbmc", False)) and
-                (not hasattr(self, 'unsharp_group') or self.unsharp_group.isChecked() == profile_dict.get("apply_unsharp", True)) and
-                (not hasattr(self, 'luma_x_spin') or self.luma_x_spin.value() == profile_dict.get("unsharp_lx", 7)) and
-                (not hasattr(self, 'luma_y_spin') or self.luma_y_spin.value() == profile_dict.get("unsharp_ly", 7)) and
-                (not hasattr(self, 'luma_amount_spin') or self.luma_amount_spin.value() == profile_dict.get("unsharp_la", 1.0)) and
-                (not hasattr(self, 'chroma_x_spin') or self.chroma_x_spin.value() == profile_dict.get("unsharp_cx", 5)) and
-                (not hasattr(self, 'chroma_y_spin') or self.chroma_y_spin.value() == profile_dict.get("unsharp_cy", 5)) and
-                (not hasattr(self, 'chroma_amount_spin') or self.chroma_amount_spin.value() == profile_dict.get("unsharp_ca", 0.0)) and
-                (not hasattr(self, 'preset_combo') or self.preset_combo.currentText() == profile_dict.get("preset_text", "Very High (CRF 16)")) and
-                (not hasattr(self, 'bitrate_spin') or self.bitrate_spin.value() == profile_dict.get("bitrate", 15000)) and
-                # Bufsize check needs to be careful, might be auto-calculated
-                # (not hasattr(self, 'bufsize_spin') or self.bufsize_spin.value() == profile_dict.get("bufsize", int(profile_dict.get("bitrate", 15000)*1.5))) and
-                (not hasattr(self, 'pixfmt_combo') or self.pixfmt_combo.currentText() == profile_dict.get("pix_fmt", "yuv444p"))
-            )
-        except Exception as e:
-            LOGGER.error(f"Error checking settings against profile: {e}")
-            return False # Return False on error
-    # --- End Profile Check Helper ---
-
-    # +++ Settings Persistence Methods +++
-    def loadSettings(self) -> None:
-        """Load settings from QSettings and apply them to the UI."""
-        LOGGER.info("Loading settings...")
-        self._ffmpeg_setting_change_active = False # Disable profile switching during load
-        settings = self.settings # Use instance member
-        self._geometry_restored = False # Flag to track if geometry was loaded
-
-        # --- Window Geometry ---
-        geom = settings.value("window/geometry")
-        if isinstance(geom, QByteArray):
-             if self.restoreGeometry(geom):
-                 self._geometry_restored = True
-                 LOGGER.debug("Restored window geometry.")
-             else:
-                 LOGGER.warning("Failed to restore window geometry from settings.")
-
-        # --- Main Tab ---
-        if hasattr(self, 'in_edit'):
-            self.in_edit.setText(settings.value("main/inputDir", "", type=str))
-
-        # --- Output Path --- #
-        # Load last used full output path if available, otherwise derive default
-        saved_output_path = settings.value("main/outputFile", "", type=str)
-        if saved_output_path and pathlib.Path(saved_output_path).parent.exists():
-            if hasattr(self, 'out_edit'): self.out_edit.setText(saved_output_path)
-            LOGGER.info(f"Loaded output path: {saved_output_path}")
-        else:
-            # Derive default if saved path is missing or invalid
-            input_dir_str = getattr(self, 'in_edit', QLineEdit()).text()
-            out_dir = config.get_output_dir()
-            out_dir.mkdir(parents=True, exist_ok=True)
-            base_name = "goes_timelapse"
-            # Try to use input dir name for default output name
-            try:
-                input_path = pathlib.Path(input_dir_str)
-                if input_path.is_dir() and input_path.name:
-                    base_name = f"{input_path.name}_timelapse"
-            except Exception:
-                pass # Keep default base name
-            # Add timestamp
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            default_filename = f"{base_name}_{timestamp}.mp4"
-            default_path = out_dir / default_filename
-            if hasattr(self, 'out_edit'): self.out_edit.setText(str(default_path))
-            LOGGER.info(f"Derived default output path: {default_path}")
-
-        # --- Load Last Directory (used for browsers) ---
-        self.last_dir = pathlib.Path(settings.value("main/lastDir", str(pathlib.Path.home())))
-
-        # --- Other Main Tab Settings ---
-        if hasattr(self, 'fps_spin'): self.fps_spin.setValue(settings.value("main/fps", 30, type=int))
-        if hasattr(self, 'encoder_combo'): self.encoder_combo.setCurrentText(settings.value("main/encoder", "RIFE", type=str))
-        if hasattr(self, 'skip_model_cb'): self.skip_model_cb.setChecked(settings.value("main/skipModel", False, type=bool))
-        # Load crop rect
-        saved_crop_str = settings.value("main/cropRect", None)
-        crop_tuple: Optional[Tuple[int, int, int, int]] = None
-        if isinstance(saved_crop_str, str):
-            try:
-                parts = list(map(int, saved_crop_str.split(',')))
-                if len(parts) == 4:
-                    crop_tuple = (parts[0], parts[1], parts[2], parts[3])
-            except (ValueError, TypeError):
-                LOGGER.warning(f"Could not parse cropRect from settings: {saved_crop_str}")
-        self.crop_rect = crop_tuple
-
-        # --- RIFE v4.6 Settings ---
-        if hasattr(self, 'inter_spin'): self.inter_spin.setValue(settings.value("rife/intermediateFrames", 1, type=int))
-        if hasattr(self, 'model_combo'): self.model_combo.setCurrentText(settings.value("rife/modelName", "rife-v4.6", type=str))
-        if hasattr(self, 'rife_tile_enable_cb'): self.rife_tile_enable_cb.setChecked(settings.value("rife/tilingEnabled", False, type=bool))
-        if hasattr(self, 'rife_tile_size_spin'): self.rife_tile_size_spin.setValue(settings.value("rife/tileSize", 256, type=int))
-        if hasattr(self, 'rife_uhd_mode_cb'): self.rife_uhd_mode_cb.setChecked(settings.value("rife/uhdMode", False, type=bool))
-        if hasattr(self, 'rife_thread_spec_edit'): self.rife_thread_spec_edit.setText(settings.value("rife/threadSpec", "1:2:2", type=str))
-        if hasattr(self, 'rife_tta_spatial_cb'): self.rife_tta_spatial_cb.setChecked(settings.value("rife/ttaSpatial", False, type=bool))
-        if hasattr(self, 'rife_tta_temporal_cb'): self.rife_tta_temporal_cb.setChecked(settings.value("rife/ttaTemporal", False, type=bool))
-
-        # --- Enhancements (Sanchez) ---
-        if hasattr(self, 'false_colour_check'): self.false_colour_check.setChecked(settings.value("enhancements/falseColour", False, type=bool))
-        if hasattr(self, 'sanchez_res_spin'): self.sanchez_res_spin.setValue(settings.value("enhancements/sanchezResKm", 4, type=int))
-
-        # --- FFmpeg Settings Tab --- #
-        # Load profile first, but don't apply it yet
-        loaded_profile = settings.value("ffmpeg/profile", "Default", type=str)
-
-        # Load individual FFmpeg settings
-        if hasattr(self, 'ffmpeg_interp_cb'): self.ffmpeg_interp_cb.setChecked(settings.value("ffmpeg/enabled", True, type=bool))
-        if hasattr(self, 'mi_combo'): self.mi_combo.setCurrentText(settings.value("ffmpeg/miMode", "mci", type=str))
-        if hasattr(self, 'mc_combo'): self.mc_combo.setCurrentText(settings.value("ffmpeg/mcMode", "obmc", type=str))
-        if hasattr(self, 'me_combo'): self.me_combo.setCurrentText(settings.value("ffmpeg/meMode", "bidir", type=str))
-        if hasattr(self, 'me_algo_combo'): self.me_algo_combo.setCurrentText(settings.value("ffmpeg/meAlgo", "(default)", type=str))
-        if hasattr(self, 'search_param_spin'): self.search_param_spin.setValue(settings.value("ffmpeg/searchParam", 96, type=int))
-        if hasattr(self, 'scd_combo'): self.scd_combo.setCurrentText(settings.value("ffmpeg/scdMode", "fdiff", type=str))
-        if hasattr(self, 'scd_thresh_spin'): self.scd_thresh_spin.setValue(settings.value("ffmpeg/scdThreshold", 10.0, type=float))
-        if hasattr(self, 'filter_preset_combo'): self.filter_preset_combo.setCurrentText(settings.value("ffmpeg/filterPreset", "slow", type=str))
-        if hasattr(self, 'mbsize_combo'): self.mbsize_combo.setCurrentText(settings.value("ffmpeg/mbSize", "(default)", type=str))
-        if hasattr(self, 'vsbmc_cb'): self.vsbmc_cb.setChecked(settings.value("ffmpeg/vsbmc", False, type=bool))
-        if hasattr(self, 'unsharp_group'): self.unsharp_group.setChecked(settings.value("ffmpeg/unsharpChecked", True, type=bool))
-        if hasattr(self, 'luma_x_spin'): self.luma_x_spin.setValue(settings.value("ffmpeg/unsharpLx", 7, type=int))
-        if hasattr(self, 'luma_y_spin'): self.luma_y_spin.setValue(settings.value("ffmpeg/unsharpLy", 7, type=int))
-        if hasattr(self, 'luma_amount_spin'): self.luma_amount_spin.setValue(settings.value("ffmpeg/unsharpLa", 1.0, type=float))
-        if hasattr(self, 'chroma_x_spin'): self.chroma_x_spin.setValue(settings.value("ffmpeg/unsharpCx", 5, type=int))
-        if hasattr(self, 'chroma_y_spin'): self.chroma_y_spin.setValue(settings.value("ffmpeg/unsharpCy", 5, type=int))
-        if hasattr(self, 'chroma_amount_spin'): self.chroma_amount_spin.setValue(settings.value("ffmpeg/unsharpCa", 0.0, type=float))
-        if hasattr(self, 'preset_combo'): self.preset_combo.setCurrentText(settings.value("ffmpeg/presetCRF", "Very High (CRF 16)", type=str))
-        if hasattr(self, 'bitrate_spin'): self.bitrate_spin.setValue(settings.value("ffmpeg/bitrate", 15000, type=int))
-        if hasattr(self, 'bufsize_spin'): self.bufsize_spin.setValue(settings.value("ffmpeg/bufsize", 22500, type=int))
-        if hasattr(self, 'pixfmt_combo'): self.pixfmt_combo.setCurrentText(settings.value("ffmpeg/pixFmt", "yuv444p", type=str))
-        if hasattr(self, 'minterpolate_group'): self.minterpolate_group.setChecked(settings.value("ffmpeg/minterpolateChecked", True, type=bool))
-
-        # --- Set Profile ComboBox *after* loading individual settings ---
-        if hasattr(self, 'ffmpeg_profile_combo'):
-            self.ffmpeg_profile_combo.blockSignals(True)
-            self.ffmpeg_profile_combo.setCurrentText(loaded_profile)
-            self.ffmpeg_profile_combo.blockSignals(False)
-            # If the loaded profile was NOT custom, re-apply it to ensure consistency
-            if loaded_profile != "Custom" and loaded_profile in FFMPEG_PROFILES:
-                self._apply_ffmpeg_profile(loaded_profile)
-            else:
-                 # Check if the loaded settings match any known profile, otherwise set to Custom
-                 current_settings_match_profile = False
-                 for name, prof_dict in FFMPEG_PROFILES.items():
-                     if self._check_settings_match_profile(prof_dict):
-                         self.ffmpeg_profile_combo.blockSignals(True)
-                         self.ffmpeg_profile_combo.setCurrentText(name)
-                         self.ffmpeg_profile_combo.blockSignals(False)
-                         current_settings_match_profile = True
-                         break
-                 if not current_settings_match_profile:
-                     self.ffmpeg_profile_combo.blockSignals(True)
-                     self.ffmpeg_profile_combo.setCurrentText("Custom")
-                     self.ffmpeg_profile_combo.blockSignals(False)
-
-        # --- Update UI state after loading --- #
-        # Manually trigger state updates for dependent controls
-        if hasattr(self, 'rife_tile_enable_cb'): self._toggle_tile_size_enabled(self.rife_tile_enable_cb.isChecked())
-        if hasattr(self, 'skip_model_cb') and hasattr(self, 'rife_opts_group'): # Assuming rife_opts_group exists
-            self.rife_opts_group.setEnabled(not self.skip_model_cb.isChecked())
-        if hasattr(self, 'false_colour_check'): self._toggle_sanchez_res_enabled(self.false_colour_check.checkState().value)
-        if hasattr(self, 'ffmpeg_interp_cb'): self._update_ffmpeg_controls_state(self.ffmpeg_interp_cb.isChecked())
-        if hasattr(self, 'scd_combo'): self._update_scd_thresh_state(self.scd_combo.currentText())
-        # Update unsharp content visibility based on group check state
-        if hasattr(self, 'unsharp_group'): self._toggle_unsharp_content(self.unsharp_group.isChecked())
-        if hasattr(self, 'minterpolate_group'): self._toggle_minterpolate_content(self.minterpolate_group.isChecked())
-        # Populate models after loading other settings
-        self._populate_models()
-        # Load RIFE model selection AFTER populating the combo box
-        if hasattr(self, 'model_combo'):
-            saved_model = settings.value("rife/modelName", "rife-v4.6", type=str)
-            self.model_combo.setCurrentText(saved_model)
-            # Ensure combo box is enabled correctly based on population
-            if self.model_combo.count() > 0 and not self.model_combo.currentText().startswith(("Error", "No models")):
-                self.model_combo.setEnabled(True)
-            else:
-                self.model_combo.setEnabled(False)
-
-        self._update_previews() # Load previews based on loaded input dir
-        self._ffmpeg_setting_change_active = True # Re-enable profile switching
-        LOGGER.info("Settings loaded.")
-
-    # --- Slot to validate thread spec format ---
-    def _validate_thread_spec(self, text: str) -> None:
-        """Validate thread spec format using regex and update style."""
-        if not hasattr(self, 'thread_edit'): return
-
-        # Regex: 1+ digits, optionally followed by :digits up to two times
-        valid_format = re.fullmatch(r'^\d+(?::\d+){0,2}$', text) # Added missing closing parenthesis
-        if valid_format:
-            self.thread_edit.setStyleSheet("") # Reset style
-        else:
-            # Indicate error with background color
-            self.thread_edit.setStyleSheet("background-color: #ffdddd;") # Light red
-    # --- End Slot ---
-
-    # --- Populate Model Combo Box --- #
-    def _populate_models(self) -> None:
-        """Scan the models directory and populate the model combo box."""
-        if not hasattr(self, 'model_combo'): return
-
-        self.model_combo.clear() # Clear existing items
-        models_dir = pathlib.Path("goesvfi/models")
-        default_model = "rife-v4.6"
-        models_found: List[str] = []
-
-        if not models_dir.is_dir():
-            LOGGER.error(f"Models directory not found: {models_dir}")
-            self.model_combo.addItem(f"Error: Dir not found")
-            self.model_combo.setEnabled(False)
-            return
-
-        try:
-            for item in models_dir.iterdir():
-                if item.is_dir() and item.name.startswith("rife-"):
-                    # Add model name (e.g., "rife-v4.6")
-                    models_found.append(item.name)
-
-            if not models_found:
-                LOGGER.warning(f"No RIFE models found in {models_dir}")
-                self.model_combo.addItem("No models found")
-                self.model_combo.setEnabled(False)
-            else:
-                models_found.sort() # Sort alphabetically
-                self.model_combo.addItems(models_found)
-                # Try to set default
-                if default_model in models_found:
-                    self.model_combo.setCurrentText(default_model)
-                elif models_found: # Set first found as default otherwise
-                    self.model_combo.setCurrentIndex(0)
-                self.model_combo.setEnabled(True)
+            
+            # If Sanchez processing was attempted but failed, draw an indicator
+            pixmap = QPixmap.fromImage(scaled_img)
+            
+            if sanchez_processing_failed and self.sanchez_false_colour_checkbox.isChecked():
+                # Paint warning indicator on the image
+                painter = QPainter(pixmap)
+                font = painter.font()
+                font.setBold(True)
+                painter.setFont(font)
+                
+                # Draw semi-transparent background for text
+                painter.fillRect(0, 0, pixmap.width(), 20, QColor(0, 0, 0, 150))
+                
+                # Draw warning text
+                painter.setPen(Qt.GlobalColor.red)
+                painter.drawText(5, 15, f"Sanchez failed: {sanchez_error_message[:35]}...")
+                painter.end()
+            
+            return pixmap
 
         except Exception as e:
-            LOGGER.exception(f"Error scanning models directory: {models_dir}")
-            self.model_combo.addItem(f"Error scanning models")
-            self.model_combo.setEnabled(False)
-    # --- End Populate --- #
+            LOGGER.error(f"Error processing preview for {image_path}: {e}")
+            target_label.file_path = None # Clear path on error
+            return None
+        # Stray else blocks removed
 
-    def _connect_model_combo(self) -> None: # Add -> None return type
-        """Connect model selection change to update RIFE capabilities."""
-        if hasattr(self, 'model_combo'):
-            self.model_combo.currentTextChanged.connect(self._on_model_changed)
-
-    def _toggle_sanchez_res_enabled(self, state: Qt.CheckState) -> None:
-        # State is Qt.CheckState enum value (Unchecked=0, PartiallyChecked=1, Checked=2)
-        enable = (state == Qt.CheckState.Checked) # Compare with enum member
-        if hasattr(self, 'sanchez_res_label'): self.sanchez_res_label.setEnabled(enable)
-        if hasattr(self, 'sanchez_res_spin'): self.sanchez_res_spin.setEnabled(enable)
-        
-    def _update_rife_ui_elements(self) -> None:
-        """Update UI elements based on RIFE capabilities."""
-        # Update UI elements using the capability manager
-        self.rife_capability_manager.update_ui_elements(
-            self.rife_tile_enable_cb,
-            self.rife_tile_size_spin,
-            self.rife_uhd_mode_cb,
-            self.rife_thread_spec_edit,
-            self.thread_spec_label,
-            self.rife_tta_spatial_cb,
-            self.rife_tta_temporal_cb
-        )
-        
-        # Update capability summary label
-        self.rife_capability_label.setText(self.rife_capability_manager.get_capability_summary())
-        
-    def _on_model_changed(self, model_key: str) -> None:
-        """Handle model selection change."""
-        # Update the capability manager with the new model
-        self.rife_capability_manager = RifeCapabilityManager(model_key)
-        
-        # Update UI elements based on new capabilities
-        self._update_rife_ui_elements()
-
-    def closeEvent(self, event: QCloseEvent | None) -> None:
-        LOGGER.info("Saving settings...")
-        settings = self.settings # Use instance member
-
-        # --- Window Geometry ---
-        settings.setValue("window/geometry", self.saveGeometry())
-
-        # --- Main Tab ---
-        if hasattr(self, 'in_edit'): settings.setValue("main/inputDir", self.in_edit.text())
-        if hasattr(self, 'out_edit'): settings.setValue("main/outputFile", self.out_edit.text()) # Save full path
-        # Save parent dir of output if available
-        if hasattr(self, 'out_edit'):
-            try:
-                out_path = pathlib.Path(self.out_edit.text())
-                settings.setValue("main/lastDir", str(out_path.parent))
-            except Exception:
-                # Fallback to saving input dir's parent if output is invalid
-                if hasattr(self, 'in_edit'):
-                     try:
-                        in_path = pathlib.Path(self.in_edit.text())
-                        settings.setValue("main/lastDir", str(in_path.parent))
-                     except Exception:
-                         settings.setValue("main/lastDir", str(pathlib.Path.home())) # Absolute fallback
-                else:
-                    settings.setValue("main/lastDir", str(pathlib.Path.home()))
-
-        if hasattr(self, 'fps_spin'): settings.setValue("main/fps", self.fps_spin.value())
-        if hasattr(self, 'inter_spin'): settings.setValue("rife/intermediateFrames", self.inter_spin.value()) # Note: Moved to RIFE section
-        if hasattr(self, 'encoder_combo'): settings.setValue("main/encoder", self.encoder_combo.currentText())
-        if hasattr(self, 'skip_model_cb'): settings.setValue("main/skipModel", self.skip_model_cb.isChecked())
-        # Save crop rect if it exists
-        if self.crop_rect:
-            settings.setValue("main/cropRect", ",".join(map(str, self.crop_rect)))
-        else:
-            settings.remove("main/cropRect") # Remove if cleared
-
-        # --- RIFE v4.6 Settings --- #
-        if hasattr(self, 'model_combo'): settings.setValue("rife/modelName", self.model_combo.currentText())
-        if hasattr(self, 'rife_tile_enable_cb'): settings.setValue("rife/tilingEnabled", self.rife_tile_enable_cb.isChecked())
-        if hasattr(self, 'rife_tile_size_spin'): settings.setValue("rife/tileSize", self.rife_tile_size_spin.value())
-        if hasattr(self, 'rife_uhd_mode_cb'): settings.setValue("rife/uhdMode", self.rife_uhd_mode_cb.isChecked())
-        if hasattr(self, 'rife_thread_spec_edit'): settings.setValue("rife/threadSpec", self.rife_thread_spec_edit.text())
-        if hasattr(self, 'rife_tta_spatial_cb'): settings.setValue("rife/ttaSpatial", self.rife_tta_spatial_cb.isChecked())
-        if hasattr(self, 'rife_tta_temporal_cb'): settings.setValue("rife/ttaTemporal", self.rife_tta_temporal_cb.isChecked())
-
-        # --- Enhancements (Sanchez) ---
-        if hasattr(self, 'false_colour_check'): settings.setValue("enhancements/falseColour", self.false_colour_check.isChecked())
-        if hasattr(self, 'sanchez_res_spin'): settings.setValue("enhancements/sanchezResKm", self.sanchez_res_spin.value())
-
-        # --- FFmpeg Settings Tab ---
-        if hasattr(self, 'ffmpeg_profile_combo'): settings.setValue("ffmpeg/profile", self.ffmpeg_profile_combo.currentText())
-        if hasattr(self, 'ffmpeg_interp_cb'): settings.setValue("ffmpeg/enabled", self.ffmpeg_interp_cb.isChecked())
-        if hasattr(self, 'mi_combo'): settings.setValue("ffmpeg/miMode", self.mi_combo.currentText())
-        if hasattr(self, 'mc_combo'): settings.setValue("ffmpeg/mcMode", self.mc_combo.currentText())
-        if hasattr(self, 'me_combo'): settings.setValue("ffmpeg/meMode", self.me_combo.currentText())
-        if hasattr(self, 'me_algo_combo'): settings.setValue("ffmpeg/meAlgo", self.me_algo_combo.currentText())
-        if hasattr(self, 'search_param_spin'): settings.setValue("ffmpeg/searchParam", self.search_param_spin.value())
-        if hasattr(self, 'scd_combo'): settings.setValue("ffmpeg/scdMode", self.scd_combo.currentText())
-        if hasattr(self, 'scd_thresh_spin'): settings.setValue("ffmpeg/scdThreshold", self.scd_thresh_spin.value())
-        if hasattr(self, 'filter_preset_combo'): settings.setValue("ffmpeg/filterPreset", self.filter_preset_combo.currentText())
-        if hasattr(self, 'mbsize_combo'): settings.setValue("ffmpeg/mbSize", self.mbsize_combo.currentText())
-        if hasattr(self, 'vsbmc_cb'): settings.setValue("ffmpeg/vsbmc", self.vsbmc_cb.isChecked())
-        if hasattr(self, 'unsharp_group'): settings.setValue("ffmpeg/unsharpChecked", self.unsharp_group.isChecked())
-        if hasattr(self, 'luma_x_spin'): settings.setValue("ffmpeg/unsharpLx", self.luma_x_spin.value())
-        if hasattr(self, 'luma_y_spin'): settings.setValue("ffmpeg/unsharpLy", self.luma_y_spin.value())
-        if hasattr(self, 'luma_amount_spin'): settings.setValue("ffmpeg/unsharpLa", self.luma_amount_spin.value())
-        if hasattr(self, 'chroma_x_spin'): settings.setValue("ffmpeg/unsharpCx", self.chroma_x_spin.value())
-        if hasattr(self, 'chroma_y_spin'): settings.setValue("ffmpeg/unsharpCy", self.chroma_y_spin.value())
-        if hasattr(self, 'chroma_amount_spin'): settings.setValue("ffmpeg/unsharpCa", self.chroma_amount_spin.value())
-        if hasattr(self, 'preset_combo'): settings.setValue("ffmpeg/presetCRF", self.preset_combo.currentText())
-        if hasattr(self, 'bitrate_spin'): settings.setValue("ffmpeg/bitrate", self.bitrate_spin.value())
-        if hasattr(self, 'bufsize_spin'): settings.setValue("ffmpeg/bufsize", self.bufsize_spin.value())
-        if hasattr(self, 'pixfmt_combo'): settings.setValue("ffmpeg/pixFmt", self.pixfmt_combo.currentText())
-        if hasattr(self, 'minterpolate_group'): settings.setValue("ffmpeg/minterpolateChecked", self.minterpolate_group.isChecked())
-        # Note: unsharpChecked is already saved above
-
-        LOGGER.info("Settings saved.")
-        super().closeEvent(event) # Accept the close event
-
-    # +++ Re-insert _update_previews method +++
+    # Rewritten _update_previews function
     def _update_previews(self) -> None:
-        # Moved from ~line 1762 / Restored after accidental deletion
-        LOGGER.info("Starting preview update...")
-        start_time = datetime.now()
-        from pathlib import Path
-        folder = Path(self.in_edit.text()).expanduser()
-        try:
-            files = sorted(folder.glob("*.png"))
-        except Exception as e:
-            LOGGER.error(f"Error listing files in {folder}: {e}")
-            files = [] # Ensure files is a list
+        """Updates the preview images for first, middle, and last frames."""
+        in_dir_path = pathlib.Path(self.in_dir_edit.text())
 
-        if not files:
-            LOGGER.info("No PNG files found, clearing previews.")
-            self.preview_first.clear(); self.preview_first.file_path = None
-            self.preview_mid.clear(); self.preview_mid.file_path = None
-            self.preview_last.clear(); self.preview_last.file_path = None
+        # Define labels and default texts
+        labels = [self.preview_label_1, self.preview_label_mid, self.preview_label_2]
+        default_texts = ["Preview 1 (First)", "Preview 2 (Middle)", "Preview 3 (Last)"]
+
+        # --- Clear previews and reset state ---
+        def clear_all_previews(message: str = "") -> None:
+            for i, label in enumerate(labels):
+                label.setPixmap(QPixmap())
+                label.setText(default_texts[i] if not message else message if i == 0 else "")
+                label.file_path = None
+            self._update_crop_buttons_state()
+
+        # --- Handle invalid input directory ---
+        if not in_dir_path.is_dir():
+            clear_all_previews()
+            # Optionally add a specific message if the path is not empty but invalid
+            if self.in_dir_edit.text():
+                 labels[0].setText("Invalid Directory")
             return
 
-        LOGGER.info(f"Found {len(files)} PNG files.")
+        # --- Find image files ---
+        try:
+            image_files = sorted([
+                f for f in in_dir_path.iterdir()
+                if f.is_file() and f.suffix.lower() in ['.png', '.jpg', '.jpeg', '.tif', '.tiff']
+            ])
+        except Exception as e:
+            LOGGER.error(f"Error listing image files in {in_dir_path}: {e}")
+            clear_all_previews("Error listing files")
+            return
 
-        def crop_and_scale(path: Path) -> QPixmap:
-            try:
-                pix = QPixmap(str(path))
-                if pix.isNull():
-                    LOGGER.warning(f"Loaded null pixmap for {path.name}")
-                    return QPixmap() # Return empty pixmap
-                orig_size = pix.size()
-                if self.crop_rect:
-                    x,y,w,h = self.crop_rect
-                    pix = pix.copy(x,y,w,h)
-                    if pix.isNull():
-                        LOGGER.warning(f"Cropping {path.name} resulted in null pixmap. Rect: {(x,y,w,h)}, Orig: {orig_size}")
-                        return QPixmap() # Return empty pixmap
-                return pix.scaled(128,128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            except Exception as e:
-                LOGGER.exception(f"Error cropping/scaling {path.name}")
-                return QPixmap() # Return empty pixmap on error
+        num_images = len(image_files)
 
-        previews = [self.preview_first, self.preview_mid, self.preview_last]
-        preview_names = ["First", "Mid", "Last"] # For logging
-        indices = [0, len(files)//2, -1]
+        # --- Handle case: No images found ---
+        if num_images == 0:
+            clear_all_previews("No images found")
+            return
 
-        if len(files) == 1:
-            indices = [0, 0, 0]
-        elif len(files) == 2:
-            indices = [0, 0, 1]
+        # --- Determine paths for first, middle, and last images ---
+        first_image_path = image_files[0]
+        middle_image_path: Path | None = None
+        last_image_path: Path | None = None
 
-        for i, (idx, lbl) in enumerate(zip(indices, previews)):
-            p = files[idx]
-            preview_name = preview_names[i]
-            LOGGER.info(f"Updating preview '{preview_name}' with image index {idx}: {p.name}")
-            pixmap = crop_and_scale(p)
-            if not pixmap.isNull():
-                lbl.setPixmap(pixmap)
-                lbl.file_path = str(p)
+        if num_images > 2:
+            middle_index = num_images // 2
+            middle_image_path = image_files[middle_index]
+            last_image_path = image_files[-1]
+        elif num_images == 2:
+            # If exactly two images, show first and second (last)
+            last_image_path = image_files[1]
+            # Middle remains None
+        # If num_images == 1, only first_image_path is set
+
+        # --- Create list of (path, label) pairs to process ---
+        preview_tasks = [(first_image_path, self.preview_label_1)]
+        if middle_image_path:
+            preview_tasks.append((middle_image_path, self.preview_label_mid))
+        if last_image_path:
+            preview_tasks.append((last_image_path, self.preview_label_2))
+
+        # --- Clear existing previews before loading new ones ---
+        for label in labels:
+             label.setPixmap(QPixmap())
+             label.setText("Loading...") # Indicate loading state
+             label.file_path = None
+
+        # --- Load, process, and display previews using the helper ---
+        processed_indices = set()
+        for i, (path, label) in enumerate(preview_tasks):
+            # Assign object name for better logging
+            label.setObjectName(f"preview_label_{labels.index(label)+1}")
+            pixmap = self._load_process_scale_preview(path, label)
+            if pixmap:
+                label.setPixmap(pixmap)
+                label.setText("")
+                processed_indices.add(labels.index(label)) # Mark as processed
             else:
-                lbl.clear()
-                lbl.setText(f"{preview_name}\\n(Error)") # Indicate error on label
-                lbl.file_path = None
+                label.setPixmap(QPixmap())
+                label.setText("Error")
+                label.file_path = None # Ensure path is cleared
 
-        end_time = datetime.now()
-        LOGGER.info(f"Preview update finished in {(end_time - start_time).total_seconds():.3f} seconds.")
+        # --- Clear any labels that didn't have a task ---
+        for i, label in enumerate(labels):
+            if i not in processed_indices:
+                label.setPixmap(QPixmap())
+                label.setText("") # Clear text (e.g., middle/last if only 1 or 2 images)
+                label.file_path = None
+
+        self._update_crop_buttons_state() # Update crop button state
+
 
     def _update_start_button_state(self) -> None:
-        """Enables the start button only if both input and output paths are set."""
-        # Ensure widgets exist before accessing text
-        if hasattr(self, 'in_edit') and hasattr(self, 'out_edit') and hasattr(self, 'start_btn'):
-            in_path = self.in_edit.text().strip()
-            out_path = self.out_edit.text().strip()
-            self.start_btn.setEnabled(bool(in_path and out_path))
+        """Updates the enabled state of the start button."""
+        in_dir_ok = pathlib.Path(self.in_dir_edit.text()).is_dir()
+        out_file_path_str = self.out_file_edit.text()
+        out_file_ok = bool(out_file_path_str) and pathlib.Path(out_file_path_str).parent.is_dir() and out_file_path_str.lower().endswith(".mp4")
+        encoder = self.encoder_combo.currentText()
+        model_selected = (encoder == 'FFmpeg') or (encoder == 'RIFE' and self.model_combo.currentData() is not None)
+
+        # Check RIFE thread spec validity if RIFE is selected
+        rife_spec_ok = True
+        if encoder == 'RIFE':
+             rife_spec_ok = re.fullmatch(r"\d+:\d+:\d+:\d+", self.rife_thread_spec_edit.text()) is not None
+
+        self.start_button.setEnabled(in_dir_ok and out_file_ok and model_selected and rife_spec_ok and not self.is_processing)
+
+        # Also update the state of the Open in VLC button
+        out_file_exists = bool(out_file_path_str) and pathlib.Path(out_file_path_str).exists() # Check non-empty path first
+        self.open_vlc_button.setEnabled(out_file_exists and not self.is_processing)
+
 
     def _set_processing_state(self, processing: bool) -> None:
-        """Sets the UI state for processing (True) or idle (False)."""
-        enable_idle = not processing
+        """Sets the processing state and updates UI elements accordingly."""
+        self.is_processing = processing
+        is_rife_encoder = self.encoder_combo.currentText() == 'RIFE' # Check current encoder
+        model_available = self.model_combo.count() > 0 and self.model_combo.currentData() is not None
 
-        # Core Controls
-        if hasattr(self, 'start_btn'): self.start_btn.setEnabled(enable_idle)
-        if hasattr(self, 'tab_widget'): self.tab_widget.setEnabled(enable_idle)
+        can_start = (
+            pathlib.Path(self.in_dir_edit.text()).is_dir() and
+            pathlib.Path(self.out_file_edit.text()).parent.is_dir() and
+            self.out_file_edit.text().lower().endswith(".mp4") and
+            (is_rife_encoder and model_available) or (not is_rife_encoder)
+        )
+        # Check RIFE thread spec validity if RIFE is selected
+        rife_spec_ok = True
+        if is_rife_encoder:
+             rife_spec_ok = re.fullmatch(r"\d+:\d+:\d+:\d+", self.rife_thread_spec_edit.text()) is not None
 
-        # Input/Output Controls
-        if hasattr(self, 'in_edit'): self.in_edit.setEnabled(enable_idle)
-        if hasattr(self, 'out_edit'): self.out_edit.setEnabled(enable_idle)
-        if hasattr(self, 'in_btn'): self.in_btn.setEnabled(enable_idle)
-        if hasattr(self, 'out_btn'): self.out_btn.setEnabled(enable_idle)
-        if hasattr(self, 'crop_btn'): self.crop_btn.setEnabled(enable_idle)
-        if hasattr(self, 'clear_crop_btn'): self.clear_crop_btn.setEnabled(enable_idle)
-        if hasattr(self, 'open_btn'): self.open_btn.setEnabled(enable_idle and hasattr(self, '_last_out') and self._last_out.exists())
 
-        # Main Tab Settings (Consider disabling these too)
-        if hasattr(self, 'fps_spin'): self.fps_spin.setEnabled(enable_idle)
-        if hasattr(self, 'inter_spin'): self.inter_spin.setEnabled(enable_idle)
-        if hasattr(self, 'encoder_combo'): self.encoder_combo.setEnabled(enable_idle)
-        if hasattr(self, 'skip_model_cb'): self.skip_model_cb.setEnabled(enable_idle)
-        if hasattr(self, 'model_combo'): self.model_combo.setEnabled(enable_idle)
-        # Add other main tab controls (RIFE group, Enhancements group) if needed
-
-        # Reset progress bar if stopping processing
-        if not processing:
-            if hasattr(self, 'progress_bar'):
-                 self.progress_bar.setRange(0, 1)
-                 self.progress_bar.setValue(0)
-            if hasattr(self, 'eta_label'): self.eta_label.setText("ETA: --")
+        self.start_button.setEnabled(can_start and rife_spec_ok and not processing)
+        self.open_vlc_button.setEnabled(not processing and pathlib.Path(self.out_file_edit.text()).exists())
+        # Disable other controls while processing
+        self.in_dir_edit.setEnabled(not processing)
+        self.in_dir_button.setEnabled(not processing)
+        self.out_file_edit.setEnabled(not processing)
+        self.out_file_button.setEnabled(not processing)
+        self.fps_spinbox.setEnabled(not processing)
+        self.mid_count_spinbox.setEnabled(not processing)
+        self.max_workers_spinbox.setEnabled(not processing)
+        self.encoder_combo.setEnabled(not processing)
+        # Explicitly disable model_combo if not RIFE or if processing
+        self.model_combo.setEnabled(not processing and is_rife_encoder and self.model_combo.count() > 0)
+        self.crop_button.setEnabled(not processing and pathlib.Path(self.in_dir_edit.text()).is_dir()) # Crop button enabled if not processing and input dir is set
+        self.clear_crop_button.setEnabled(not processing and self.current_crop_rect is not None) # Clear crop button enabled if not processing and crop is set
+        self.main_tabs.setEnabled(not processing) # Disable the entire tab widget while processing
 
     def _update_crop_buttons_state(self) -> None:
-        """Enables crop buttons only if input path is set."""
-        if hasattr(self, 'in_edit') and hasattr(self, 'crop_btn') and hasattr(self, 'clear_crop_btn'):
-            in_path = self.in_edit.text().strip()
-            enable = bool(in_path)
-            self.crop_btn.setEnabled(enable)
-            # Clear button enabled if input path is set OR if a crop is currently defined
-            self.clear_crop_btn.setEnabled(enable or self.crop_rect is not None)
+        """Updates the enabled state of the crop buttons."""
+        in_dir_path_str = self.in_dir_edit.text()
+        # Enable crop button only if the input directory path is non-empty AND it's a directory
+        in_dir_ok = bool(in_dir_path_str) and pathlib.Path(in_dir_path_str).is_dir()
+        # Also check if there are any images loaded in preview 1 (using file_path as proxy)
+        preview_loaded = bool(self.preview_label_1.file_path)
+        self.crop_button.setEnabled(in_dir_ok and preview_loaded and not self.is_processing)
+        self.clear_crop_button.setEnabled(self.current_crop_rect is not None and not self.is_processing)
 
-    # --- Update RIFE Options State --- #
-    def _update_rife_options_state(self) -> None:
-        """Enable/disable RIFE options group based on encoder and skip model settings."""
-        is_rife_selected = self.encoder_combo.currentText() == "RIFE"
-        is_skip_model = self.skip_model_cb.isChecked()
-        self.rife_opts_group.setEnabled(is_rife_selected and not is_skip_model)
-        # Optional: You might want to visually indicate why it's disabled,
-        # e.g., by changing the group box title or adding a status message,
-        # but for now, just enabling/disabling is standard.
 
-# --- REMOVED DUPLICATE _on_profile_selected METHOD ---
+    def _update_rife_options_state(self, encoder_type: str) -> None:
+        """Updates the enabled state of RIFE/FFmpeg options based on the selected encoder."""
+        is_rife = (encoder_type == "RIFE")
+        is_ffmpeg = (encoder_type == "FFmpeg")
 
-# ────────────────────────── top‑level launcher ────────────────────────────
+        # RIFE controls
+        self.rife_options_groupbox.setEnabled(is_rife)
+        self.model_label.setEnabled(is_rife)
+        self.model_combo.setEnabled(is_rife and self.model_combo.count() > 0 and self.model_combo.currentData() is not None) # Check data too
+        self.sanchez_options_groupbox.setEnabled(is_rife)
+
+        # Explicitly update Sanchez spinbox state *after* groupbox state is set
+        if is_rife:
+            self._toggle_sanchez_res_enabled(self.sanchez_false_colour_checkbox.checkState())
+        else:
+            # Ensure spinbox is disabled if not RIFE
+            self.sanchez_res_km_spinbox.setEnabled(False)
+            self.sanchez_res_km_label.setEnabled(False) # Also disable label
+
+        # FFmpeg controls
+        if hasattr(self, 'ffmpeg_settings_tab'):
+             self._update_ffmpeg_controls_state(is_ffmpeg, update_group=True)
+        else:
+             LOGGER.warning("ffmpeg_settings_tab not found during _update_rife_options_state")
+
+        # Update other states dependent on encoder change
+        self._update_start_button_state()
+
+# ────────────────────────────── Entry Point ──────────────────────────────
 def main() -> None:
-    # --- Add Argument Parsing --- #
+    """Main function to run the GUI application."""
+    # --- Argument Parsing ---
     parser = argparse.ArgumentParser(description="GOES-VFI GUI")
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
+    parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Set the logging level (default: INFO)",
+    )
+    parser.add_argument(
+         "--debug",
+         action="store_true",
+         help="Enable debug mode (sets log level to DEBUG and potentially other debug features)"
+    )
     args = parser.parse_args()
 
-    # --- Setup Logging Level ---
-    log.set_level(args.debug) # Call set_level based on parsed arg
+    log_level = args.log_level # Keep this line for potential future use
+    if args.debug:
+         log_level = "DEBUG" # Override log level if --debug is set
 
+    # --- Logging Setup ---
+    log.set_level(debug_mode=args.debug) # Use the correct function and argument
+
+    LOGGER.info("Starting GOES-VFI GUI...")
+    if args.debug:
+         LOGGER.info("Debug mode enabled.")
+
+    # --- Application Setup ---
     app = QApplication(sys.argv)
-    # Pass the parsed debug flag to the MainWindow
-    win = MainWindow(debug_mode=args.debug)
-    win.show()
+
+    # Set application icon (optional)
+    try:
+        # Assuming icon.png is in the same directory as gui.py or accessible via package resources
+        # If using package resources:
+        # icon_path = pkgres.files('goesvfi').joinpath('icon.png')
+        # If relative to script:
+        icon_path = Path(__file__).parent / 'icon.png'
+        if icon_path.exists():
+            app.setWindowIcon(QIcon(str(icon_path)))
+        else:
+            LOGGER.warning("Application icon not found.")
+    except Exception as e:
+        LOGGER.warning(f"Could not set application icon: {e}")
+
+
+    window = MainWindow(debug_mode=args.debug) # Pass debug mode flag
+    window.show()
+    # window._adjust_window_to_content() # Adjust size after showing
+
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()

@@ -7,6 +7,9 @@ import numpy as np
 # Import NDArray and Any for specific typing
 from numpy.typing import NDArray
 from typing import Any, List, Optional, cast
+from goesvfi.utils.log import get_logger
+
+LOGGER = get_logger(__name__)
 
 CACHE_DIR = pathlib.Path.home() / "Documents/goesvfi/cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -28,7 +31,9 @@ def _get_cache_filepath(base_key: str, index: int, total_frames: int) -> pathlib
 
 # Load a list of frames if all exist for the given count
 def load_cached(path1: pathlib.Path, path2: pathlib.Path, model_id: str, num_intermediate_frames: int) -> Optional[List[NDArray[Any]]]:
+    LOGGER.debug(f"Attempting to load cache for {path1.name}, {path2.name}, model={model_id}, frames={num_intermediate_frames}")
     if num_intermediate_frames <= 0:
+        LOGGER.debug("num_intermediate_frames is 0 or less, returning None")
         return None # Cannot cache zero frames
 
     base_key = _hash_pair(path1, path2, model_id, num_intermediate_frames)
@@ -36,41 +41,52 @@ def load_cached(path1: pathlib.Path, path2: pathlib.Path, model_id: str, num_int
     all_exist = True
 
     # Check if all expected frame files exist
+    LOGGER.debug(f"Checking for existence of {num_intermediate_frames} cache files with base key {base_key}")
     for i in range(num_intermediate_frames):
         npy_path = _get_cache_filepath(base_key, i, num_intermediate_frames)
+        LOGGER.debug(f"Checking if {npy_path} exists")
         if npy_path.exists():
             frame_paths.append(npy_path)
         else:
+            LOGGER.debug(f"Cache file {npy_path} missing")
             all_exist = False
             break # No need to check further if one is missing
 
     if all_exist:
         # Load all frames if they all exist
+        LOGGER.debug(f"All cache files found, attempting to load {len(frame_paths)} files")
         loaded_frames: List[NDArray[Any]] = []
         try:
             for npy_path in frame_paths:
+                LOGGER.debug(f"Loading cache file: {npy_path}")
                 # Cast assumes loaded array is NDArray[Any]
                 loaded_frames.append(cast(NDArray[Any], np.load(npy_path)))
+            LOGGER.debug("Successfully loaded all cache files")
             return loaded_frames
         except Exception as e:
-            # Log error during loading? Handle potential corruption?
-            print(f"Warning: Error loading cache files for key {base_key}: {e}")
+            LOGGER.warning(f"Error loading cache files for key {base_key}: {e}")
             return None # Treat load error as cache miss
     else:
+        LOGGER.debug("Not all cache files exist, cache miss")
         return None # Cache miss if not all files were found
 
 # Save a list of frames as separate files
 def save_cache(path1: pathlib.Path, path2: pathlib.Path, model_id: str, num_intermediate_frames: int, frames: List[NDArray[Any]]) -> None:
+    LOGGER.debug(f"Attempting to save cache for {path1.name}, {path2.name}, model={model_id}, frames={num_intermediate_frames}")
+    LOGGER.debug(f"save_cache - num_intermediate_frames: {num_intermediate_frames} (type: {type(num_intermediate_frames)}), len(frames): {len(frames)} (type: {type(frames)})")
     if not frames or num_intermediate_frames != len(frames):
-        # Log error? Should not happen if called correctly
-        print(f"Warning: Cache save called with mismatch: num_intermediate_frames={num_intermediate_frames}, len(frames)={len(frames)}")
+        LOGGER.warning(f"Cache save called with mismatch: num_intermediate_frames={num_intermediate_frames}, len(frames)={len(frames)}")
+        LOGGER.debug("save_cache returning early due to mismatch")
         return
 
     base_key = _hash_pair(path1, path2, model_id, num_intermediate_frames)
+    base_key = _hash_pair(path1, path2, model_id, num_intermediate_frames)
+    LOGGER.debug(f"Saving {len(frames)} cache files with base key {base_key}")
     try:
         for i, frame in enumerate(frames):
             npy_path = _get_cache_filepath(base_key, i, num_intermediate_frames)
+            LOGGER.debug(f"Saving cache file: {npy_path}")
             np.save(npy_path, frame)
+        LOGGER.debug("Successfully saved all cache files")
     except Exception as e:
-        # Log error during saving? Clean up partial saves?
-        print(f"Warning: Error saving cache files for key {base_key}: {e}")
+        LOGGER.warning(f"Error saving cache files for key {base_key}: {e}")

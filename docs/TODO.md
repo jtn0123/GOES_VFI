@@ -40,4 +40,7 @@
 ## Bugs / Refactoring
 
 - [ ] Tile Size spinbox in Interpolate tab doesn't visually enable/disable when 'Enable tiling' is toggled, despite internal logic appearing correct. Needs investigation into potential event/update issues or style conflicts.
-- [ ] ... (Placeholder for bugs or code cleanup tasks) 
+- [ ] Investigate and fix `AttributeError`/Segfault in `tests/integration/test_pipeline.py::test_basic_interpolation` (currently skipped).
+- [ ] Investigate and fix Segmentation Fault in `tests/integration/test_pipeline.py::test_skip_model` (currently skipped).
+- [ ] Investigate and fix Segmentation Fault in `tests/integration/test_pipeline.py::test_cropping` (currently skipped).
+- [ ] ... (Placeholder for bugs or code cleanup tasks)

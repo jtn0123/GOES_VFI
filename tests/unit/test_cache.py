@@ -4,7 +4,10 @@ import pytest
 from unittest.mock import patch, MagicMock, PropertyMock
 
 from goesvfi.pipeline import cache
+from goesvfi.utils.log import get_logger
+from PyQt6.QtWidgets import QApplication
 
+LOGGER = get_logger(__name__)
 
 @pytest.fixture
 def sample_paths(tmp_path):
@@ -79,20 +82,22 @@ def test_save_and_load_cache_roundtrip(monkeypatch, sample_paths, tmp_path):
 
 
 @patch("goesvfi.pipeline.cache.CACHE_DIR")
-def test_save_cache_mismatch_length_warns_and_does_nothing(mock_cache_dir, sample_paths, capsys):
+def test_save_cache_mismatch_length_warns_and_does_nothing(mock_cache_dir, sample_paths, caplog):
     mock_cache_dir.return_value = pathlib.Path("/tmp/fake_cache_dir")
     file1, file2 = sample_paths
     model_id = "modelA"
     num_frames = 3
     frames = [np.ones((2, 2))]  # length 1, mismatch with num_frames=3
 
+    LOGGER.debug(f"test_save_cache_mismatch_length_warns_and_does_nothing - num_frames: {num_frames}, frames length: {len(frames)}")
     cache.save_cache(file1, file2, model_id, num_frames, frames)
-    captured = capsys.readouterr()
-    assert "Warning: Cache save called with mismatch" in captured.out
+    
+    # Check log messages using caplog
+    assert "Cache save called with mismatch" in caplog.text
 
 
 @patch("goesvfi.pipeline.cache.pathlib.Path")
-def test_load_cached_handles_load_error(mock_Path, monkeypatch, sample_paths, tmp_path, capsys):
+def test_load_cached_handles_load_error(mock_Path, monkeypatch, sample_paths, tmp_path, caplog):
     # Use monkeypatch to set the module-level CACHE_DIR value for the test duration
     monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
 
@@ -112,5 +117,4 @@ def test_load_cached_handles_load_error(mock_Path, monkeypatch, sample_paths, tm
 
     result = cache.load_cached(file1, file2, model_id, num_frames)
     assert result is None
-    captured = capsys.readouterr()
-    assert "Warning: Error loading cache files" in captured.out
+    assert "Error loading cache files" in caplog.text

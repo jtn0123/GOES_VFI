@@ -91,3 +91,21 @@ def find_rife_executable(model_key: str) -> pathlib.Path:
         f"  - '{bin_fallback}'\n"
         f"  - '{model_fallback}'"
     )
+def get_available_rife_models() -> list[str]:
+    """
+    Scans the 'goesvfi/models/' directory for available RIFE models.
+
+    Returns:
+        A sorted list of model directory names found.
+    """
+    project_root = pathlib.Path(__file__).parent.parent
+    models_dir = project_root / "models"
+    available_models = []
+    if models_dir.is_dir():
+        for item in models_dir.iterdir():
+            # Check if it's a directory and potentially contains model files
+            # A simple check is just to see if it's a directory.
+            # More robust checks could look for specific files like flownet.param
+            if item.is_dir():
+                available_models.append(item.name)
+    return sorted(available_models)

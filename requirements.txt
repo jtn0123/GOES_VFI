@@ -14,3 +14,4 @@ imageio
 mypy
 types-tqdm # Add stubs for tqdm 
 pytest-qt # Add pytest-qt for GUI testing 
+python-dateutil>=2.9.0
