@@ -13,7 +13,7 @@ A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the R
 ![Sanchez false color processing example](docs/assets/Sanchez-FalseColorUI.png)
 
 ### Cropping Feature Demo
-[▶️ Watch video: Cropping tool in action](docs/assets/Cropping.gif)
+![Cropping tool in action](docs/assets/Cropping.gif)
 
 ## Features
 
