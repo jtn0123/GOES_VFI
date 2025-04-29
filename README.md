@@ -4,6 +4,17 @@
 
 A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the RIFE model to sequences of satellite images (like GOES) or any PNG sequence, creating smooth timelapse videos.
 
+## Screenshots & Demos
+
+### User Interface
+![Main application interface](docs/assets/UI.png)
+
+### Sanchez Processing / False Color
+![Sanchez false color processing example](docs/assets/Sanchez-FalseColorUI.png)
+
+### Cropping Feature Demo
+[▶️ Watch video: Cropping tool in action](docs/assets/Cropping.mov)
+
 ## Features
 
 *   **RIFE Interpolation:** Uses RIFE v4.6 (ncnn build) via the included `rife-cli` executable to generate 1 intermediate frame per original pair.

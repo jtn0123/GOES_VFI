@@ -1,1 +1,0 @@
-# GOES‑VFI Docs
