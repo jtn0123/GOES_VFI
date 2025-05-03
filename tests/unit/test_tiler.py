@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from goesvfi.pipeline.tiler import tile_image, merge_tiles
 
+
 def test_tile_image_basic():
     # Create a mock image of size 4096x4096 with 3 channels
     img = np.random.rand(4096, 4096, 3).astype(np.float32)
@@ -30,6 +31,7 @@ def test_tile_image_basic():
         # Tiles should be float32
         assert tile.dtype == np.float32
 
+
 def test_tile_image_edge_case():
     # Image size not divisible by tile size
     img = np.random.rand(4100, 4100, 3).astype(np.float32)
@@ -46,6 +48,7 @@ def test_tile_image_edge_case():
     assert h == img.shape[0] - tiles[-1][1]
     assert w == img.shape[1] - tiles[-1][0]
 
+
 def test_merge_tiles_basic():
     # Create a mock image
     img = np.random.rand(4096, 4096, 3).astype(np.float32)
@@ -59,6 +62,7 @@ def test_merge_tiles_basic():
     # Allow some tolerance due to overlap averaging
     assert merged.shape == img.shape
     assert np.allclose(merged, img, atol=1e-5)
+
 
 def test_merge_tiles_with_overlap():
     # Create a small image to test overlap handling

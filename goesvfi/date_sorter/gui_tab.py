@@ -1,60 +1,43 @@
 import logging
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QFileDialog, QMessageBox,
-    QProgressBar, QGroupBox, QGridLayout, QTextEdit, QSizePolicy, QScrollBar
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QHBoxLayout,
+    QFileDialog,
+    QMessageBox,
+    QProgressBar,
+    QGroupBox,
+    QGridLayout,
+    QTextEdit,
+    QSizePolicy,
+    QScrollBar,
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
-from goesvfi.date_sorter import sorter # Import the sorter module
+from goesvfi.date_sorter import sorter  # Import the sorter module
+from goesvfi.date_sorter.view_model import DateSorterViewModel  # Import the ViewModel
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Callable
 
 LOGGER = logging.getLogger(__name__)
 
-class ScannerWorker(QThread):
-    """Worker thread to run the DateSorter logic."""
-    progress = pyqtSignal(int)  # For updating progress bar (0-100%)
-    status = pyqtSignal(str)    # For status messages
-    finished = pyqtSignal(str)  # For completion message
-    error = pyqtSignal(str)     # For error handling
-
-    def __init__(self, source_path: str) -> None:
-        super().__init__()
-        self.source_path = source_path
-
-    def run(self) -> None:
-        try:
-            # Change working directory to source path for scan
-            import os
-            original_dir = os.getcwd()
-            os.chdir(self.source_path)
-            
-            # Progress callback to handle both percentage and text status
-            def progress_handler(percent):
-                self.progress.emit(percent)
-                
-            # Status callback to emit text messages
-            def status_handler(message):
-                self.status.emit(message)
-                
-            # Call the main function from sorter.py, passing callbacks
-            sorter.main(
-                interactive=False, # Disable interactive mode
-                progress_callback=progress_handler,
-                status_callback=status_handler,
-                log_callback=None # We can add a log callback later if needed
-            )
-            
-            # Restore original working directory
-            os.chdir(original_dir)
-            
-            self.finished.emit("Scanning and analysis complete!")
-        except Exception as e:
-            self.error.emit(f"Error during scanning: {str(e)}")
 
 class DateSorterTab(QWidget):
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    directory_selected = pyqtSignal(str) # Signal emitted when a directory is selected
+
+    # Modified __init__ to accept a ViewModel instance
+    def __init__(
+        self, view_model: DateSorterViewModel, parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent)
+
+        if not isinstance(view_model, DateSorterViewModel):
+            raise TypeError("view_model must be an instance of DateSorterViewModel")
+
+        self.view_model = view_model  # Use the provided ViewModel
 
         # Main Layout
         main_layout = QVBoxLayout(self)
@@ -63,7 +46,9 @@ class DateSorterTab(QWidget):
 
         # Source Group
         source_group = QGroupBox("Source")
-        source_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        source_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         source_layout = QGridLayout()
         source_layout.setContentsMargins(10, 15, 10, 10)
         source_layout.setSpacing(8)
@@ -72,7 +57,7 @@ class DateSorterTab(QWidget):
         self.source_line_edit = QLineEdit()
         source_browse_button = QPushButton("Browse...")
         source_browse_button.setFixedWidth(100)
-        
+
         source_layout.addWidget(source_label, 0, 0)
         source_layout.addWidget(self.source_line_edit, 0, 1)
         source_layout.addWidget(source_browse_button, 0, 2)
@@ -81,7 +66,9 @@ class DateSorterTab(QWidget):
 
         # Options Group
         options_group = QGroupBox("Analysis Options")
-        options_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        options_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         options_layout = QGridLayout()
         options_layout.setContentsMargins(10, 15, 10, 10)
         options_layout.setSpacing(8)
@@ -89,7 +76,7 @@ class DateSorterTab(QWidget):
         interval_label = QLabel("Time Interval Detection:")
         interval_info = QLabel("(Automatic interval detection will be used)")
         interval_info.setStyleSheet("color: #666; font-style: italic;")
-        
+
         options_layout.addWidget(interval_label, 0, 0)
         options_layout.addWidget(interval_info, 0, 1, 1, 2)
         options_group.setLayout(options_layout)
@@ -97,7 +84,9 @@ class DateSorterTab(QWidget):
 
         # Actions Group
         actions_group = QGroupBox("Actions")
-        actions_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        actions_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         actions_layout = QVBoxLayout()
         actions_layout.setContentsMargins(10, 15, 10, 10)
         actions_layout.setSpacing(8)
@@ -122,12 +111,14 @@ class DateSorterTab(QWidget):
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setFormat("%p%")
         status_layout.addWidget(self.progress_bar)
-        
+
         # Status Text Display
         self.status_text = QTextEdit()
         self.status_text.setReadOnly(True)
         self.status_text.setMinimumHeight(200)
-        self.status_text.setStyleSheet("background-color: #f5f5f5; font-family: monospace;")
+        self.status_text.setStyleSheet(
+            "background-color: #f5f5f5; font-family: monospace;"
+        )
         status_layout.addWidget(self.status_text)
 
         status_group.setLayout(status_layout)
@@ -140,66 +131,39 @@ class DateSorterTab(QWidget):
         # Set main layout
         self.setLayout(main_layout)
 
+        # Register observer with ViewModel
+        self.view_model.set_observer(self._update_ui)
+        self._update_ui()  # Initial UI update
+
     def _browse_source(self) -> None:
-        """Opens a dialog to select the source folder."""
+        """Opens a dialog to select the source folder and updates the ViewModel."""
         folder_path = QFileDialog.getExistingDirectory(self, "Select Source Folder")
         if folder_path:
-            self.source_line_edit.setText(folder_path)
+            self.view_model.source_directory = folder_path
             LOGGER.info(f"Selected source folder: {folder_path}")
+            self.directory_selected.emit(folder_path) # Emit signal with selected path
 
     def _start_scan(self) -> None:
-        """Starts the scanning process in a background thread."""
-        source_path = self.source_line_edit.text()
-        if not source_path:
-            QMessageBox.warning(self, "Input Error", "Please select a source folder.")
-            return
+        """Calls the start scan command on the ViewModel."""
+        if self.view_model.can_start_sorting:
+            self.view_model.start_sorting()
+        else:
+            # This case should ideally be handled by the ViewModel's can_execute
+            # but adding a fallback message here for clarity.
+            QMessageBox.warning(
+                self, "Action Not Allowed", "Cannot start scan at this time."
+            )
 
-        # Clear previous logs and reset progress
-        self.status_text.clear()
-        self.progress_bar.setValue(0)
-        self._add_status_message("Starting date scanning operation...")
-        self._add_status_message(f"Source folder: {source_path}")
-        
-        LOGGER.info(f"Starting scan for folder: {source_path}")
-        self.scan_button.setEnabled(False) # Disable button while scanning
+    def _update_ui(self) -> None:
+        """Updates the UI elements based on the ViewModel's state."""
+        self.source_line_edit.setText(self.view_model.source_directory)
+        self.status_text.setPlainText(
+            self.view_model.status_message
+        )  # Use setPlainText to replace content
+        self.progress_bar.setValue(int(self.view_model.progress_percentage))
+        self.scan_button.setEnabled(self.view_model.can_start_sorting)
 
-        self.worker = ScannerWorker(source_path)
-        self.worker.progress.connect(self._update_progress)
-        self.worker.status.connect(self._update_status)
-        self.worker.finished.connect(self._on_scan_finished)
-        self.worker.error.connect(self._handle_error)
-        self.worker.start()
-
-    def _update_progress(self, percent: int) -> None:
-        """Updates the progress bar."""
-        LOGGER.info(f"Progress: {percent}%")
-        self.progress_bar.setValue(percent)
-
-    def _update_status(self, message: str) -> None:
-        """Updates the status text with messages from worker."""
-        LOGGER.info(f"Status: {message}")
-        self._add_status_message(message)
-
-    def _add_status_message(self, message: str) -> None:
-        """Adds a new message to the status text area with timestamp."""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        self.status_text.append(f"[{timestamp}] {message}")
-        # Auto-scroll to bottom
+        # Auto-scroll status text to bottom
         v_scrollbar: Optional[QScrollBar] = self.status_text.verticalScrollBar()
         if v_scrollbar:
             v_scrollbar.setValue(v_scrollbar.maximum())
-
-    def _on_scan_finished(self, message: str) -> None:
-        """Handles the completion of the scanning process."""
-        LOGGER.info(f"Scan finished: {message}")
-        self._add_status_message(f"✓ {message}")
-        QMessageBox.information(self, "Scan Complete", message)
-        self.progress_bar.setValue(100)
-        self.scan_button.setEnabled(True)
-
-    def _handle_error(self, message: str) -> None:
-        """Handles errors during the scanning process."""
-        LOGGER.error(f"Scan error: {message}")
-        self._add_status_message(f"❌ ERROR: {message}")
-        QMessageBox.critical(self, "Scan Error", message)
-        self.scan_button.setEnabled(True)

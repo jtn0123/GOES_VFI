@@ -17,21 +17,28 @@ import argparse
 import logging
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from goesvfi.utils.config import find_rife_executable
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def main():
     """Main function."""
-    parser = argparse.ArgumentParser(description='Test RIFE CLI capability detection')
-    parser.add_argument('model_key', nargs='?', default='rife-v4.6', help='Model key to use (default: rife-v4.6)')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Show verbose output')
+    parser = argparse.ArgumentParser(description="Test RIFE CLI capability detection")
+    parser.add_argument(
+        "model_key",
+        nargs="?",
+        default="rife-v4.6",
+        help="Model key to use (default: rife-v4.6)",
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Show verbose output"
+    )
     args = parser.parse_args()
 
     # Set log level
@@ -52,11 +59,11 @@ def main():
         print("\n" + "=" * 60)
         print(f"RIFE CLI Capability Report for: {exe_path}")
         print("=" * 60)
-        
+
         # Version
         print(f"Version: {detector.version or 'Unknown'}")
         print()
-        
+
         # Capabilities
         print("Capabilities:")
         capabilities = {
@@ -70,12 +77,12 @@ def main():
             "model_path": detector.supports_model_path(),
             "gpu_id": detector.supports_gpu_id(),
         }
-        
+
         for capability, supported in capabilities.items():
             status = "✅ Supported" if supported else "❌ Not supported"
             print(f"  {capability.ljust(15)}: {status}")
         print()
-        
+
         # Supported arguments
         print("Supported Arguments:")
         args_list = detector.supported_args
@@ -84,25 +91,25 @@ def main():
         else:
             print("  None detected")
         print()
-        
+
         # Help text (if verbose)
         if args.verbose and detector.help_text:
             print("Help Text:")
             print("-" * 60)
             print(detector.help_text)
             print("-" * 60)
-            
+
         print("\nSummary:")
         supported_count = sum(1 for v in capabilities.values() if v)
         total_count = len(capabilities)
         print(f"  {supported_count}/{total_count} features supported")
-        
+
         # Recommendation
         if supported_count < 5:
             print("\nRecommendation:")
             print("  This RIFE CLI executable has limited capabilities.")
             print("  Consider using a newer version with more features.")
-        
+
         print("\n" + "=" * 60)
 
     except Exception as e:

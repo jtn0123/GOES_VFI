@@ -1,7 +1,7 @@
 import pathlib
 import numpy as np
 import pytest
-import subprocess # Import subprocess for exceptions
+import subprocess  # Import subprocess for exceptions
 from unittest.mock import patch, MagicMock, ANY
 
 # Import the mock utility
@@ -9,10 +9,12 @@ from tests.utils.mocks import create_mock_subprocess_run
 
 from goesvfi.pipeline import raw_encoder
 
+
 @pytest.fixture
 def dummy_frames():
     # Create 3 dummy float32 RGB frames (4x4)
     return [np.ones((4, 4, 3), dtype=np.float32) * i for i in range(3)]
+
 
 def test_write_raw_mp4_success(tmp_path, dummy_frames):
     raw_path = tmp_path / "output.mp4"
@@ -23,28 +25,40 @@ def test_write_raw_mp4_success(tmp_path, dummy_frames):
     fps = 30
     expected_pattern = str(temp_dir_path / "%06d.png")
     expected_cmd = [
-        "ffmpeg", "-y",
-        "-framerate", str(fps),
-        "-i", expected_pattern,
-        "-c:v", "ffv1",
-        str(raw_path)
+        "ffmpeg",
+        "-y",
+        "-framerate",
+        str(fps),
+        "-i",
+        expected_pattern,
+        "-c:v",
+        "ffv1",
+        str(raw_path),
     ]
 
     # Use the mock factory
     mock_run_factory = create_mock_subprocess_run(
         expected_command=expected_cmd,
-        output_file_to_create=raw_path # Simulate file creation on success
+        output_file_to_create=raw_path,  # Simulate file creation on success
     )
 
-    with patch("goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory") as mock_tempdir, \
-         patch("goesvfi.pipeline.raw_encoder.Image.fromarray") as mock_fromarray, \
-         patch("goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory) as mock_run_patch: # Apply factory
+    with (
+        patch(
+            "goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory"
+        ) as mock_tempdir,
+        patch("goesvfi.pipeline.raw_encoder.Image.fromarray") as mock_fromarray,
+        patch(
+            "goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory
+        ) as mock_run_patch,
+    ):  # Apply factory
 
         # Setup tempdir context manager mock (still needed)
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
         mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
         mock_tempdir.return_value.__exit__.return_value = None
-        mock_tempdir.return_value.name = str(temp_dir_path) # Ensure the mock uses the correct path
+        mock_tempdir.return_value.name = str(
+            temp_dir_path
+        )  # Ensure the mock uses the correct path
 
         # Mock save (still needed)
         mock_img = MagicMock()
@@ -55,7 +69,9 @@ def test_write_raw_mp4_success(tmp_path, dummy_frames):
 
         # Assert
         # assert mock_fromarray.call_count == len(dummy_frames) # Fails (4 == 3), reason unclear
-        assert mock_fromarray.call_count >= len(dummy_frames) # Check it's called at least enough times
+        assert mock_fromarray.call_count >= len(
+            dummy_frames
+        )  # Check it's called at least enough times
         # FIX: Assert count is 3 again now that mock interference is fixed
         # Add debug print
         # print(f"DEBUG: mock_fromarray call count: {mock_fromarray.call_count}")
@@ -64,9 +80,10 @@ def test_write_raw_mp4_success(tmp_path, dummy_frames):
         # assert mock_fromarray.call_count == 4
         # assert mock_fromarray.call_count == len(dummy_frames)
         # assert mock_img.save.call_count == len(dummy_frames) # Save is called correct number of times
-        mock_run_patch.assert_called_once() # Check ffmpeg was called
+        mock_run_patch.assert_called_once()  # Check ffmpeg was called
         assert result == raw_path
-        assert raw_path.exists() # Check mock file creation
+        assert raw_path.exists()  # Check mock file creation
+
 
 def test_write_raw_mp4_ffmpeg_error(tmp_path, dummy_frames):
     raw_path = tmp_path / "output.mp4"
@@ -77,23 +94,32 @@ def test_write_raw_mp4_ffmpeg_error(tmp_path, dummy_frames):
     fps = 30
     expected_pattern = str(temp_dir_path / "%06d.png")
     expected_cmd = [
-        "ffmpeg", "-y",
-        "-framerate", str(fps),
-        "-i", expected_pattern,
-        "-c:v", "ffv1",
-        str(raw_path)
+        "ffmpeg",
+        "-y",
+        "-framerate",
+        str(fps),
+        "-i",
+        expected_pattern,
+        "-c:v",
+        "ffv1",
+        str(raw_path),
     ]
 
     # Use the mock factory to raise CalledProcessError
     ffmpeg_error = subprocess.CalledProcessError(1, expected_cmd, stderr="fail")
     mock_run_factory = create_mock_subprocess_run(
-        expected_command=expected_cmd,
-        side_effect=ffmpeg_error
+        expected_command=expected_cmd, side_effect=ffmpeg_error
     )
 
-    with patch("goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory") as mock_tempdir, \
-         patch("goesvfi.pipeline.raw_encoder.Image.fromarray") as mock_fromarray, \
-         patch("goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory) as mock_run_patch:
+    with (
+        patch(
+            "goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory"
+        ) as mock_tempdir,
+        patch("goesvfi.pipeline.raw_encoder.Image.fromarray") as mock_fromarray,
+        patch(
+            "goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory
+        ) as mock_run_patch,
+    ):
 
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
         mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
@@ -107,7 +133,8 @@ def test_write_raw_mp4_ffmpeg_error(tmp_path, dummy_frames):
         with pytest.raises(subprocess.CalledProcessError):
             raw_encoder.write_raw_mp4(dummy_frames, raw_path, fps=fps)
 
-        mock_run_patch.assert_called_once() # Check mock was called
+        mock_run_patch.assert_called_once()  # Check mock was called
+
 
 def test_write_raw_mp4_ffmpeg_not_found(tmp_path, dummy_frames):
     raw_path = tmp_path / "output.mp4"
@@ -118,23 +145,32 @@ def test_write_raw_mp4_ffmpeg_not_found(tmp_path, dummy_frames):
     fps = 30
     expected_pattern = str(temp_dir_path / "%06d.png")
     expected_cmd = [
-        "ffmpeg", "-y",
-        "-framerate", str(fps),
-        "-i", expected_pattern,
-        "-c:v", "ffv1",
-        str(raw_path)
+        "ffmpeg",
+        "-y",
+        "-framerate",
+        str(fps),
+        "-i",
+        expected_pattern,
+        "-c:v",
+        "ffv1",
+        str(raw_path),
     ]
 
     # Use the mock factory to raise FileNotFoundError
     not_found_error = FileNotFoundError("ffmpeg not found")
     mock_run_factory = create_mock_subprocess_run(
-        expected_command=expected_cmd,
-        side_effect=not_found_error
+        expected_command=expected_cmd, side_effect=not_found_error
     )
 
-    with patch("goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory") as mock_tempdir, \
-         patch("goesvfi.pipeline.raw_encoder.Image.fromarray") as mock_fromarray, \
-         patch("goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory) as mock_run_patch:
+    with (
+        patch(
+            "goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory"
+        ) as mock_tempdir,
+        patch("goesvfi.pipeline.raw_encoder.Image.fromarray") as mock_fromarray,
+        patch(
+            "goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory
+        ) as mock_run_patch,
+    ):
 
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
         mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
@@ -148,4 +184,4 @@ def test_write_raw_mp4_ffmpeg_not_found(tmp_path, dummy_frames):
         with pytest.raises(FileNotFoundError):
             raw_encoder.write_raw_mp4(dummy_frames, raw_path, fps=fps)
 
-        mock_run_patch.assert_called_once() # Check mock was called
+        mock_run_patch.assert_called_once()  # Check mock was called

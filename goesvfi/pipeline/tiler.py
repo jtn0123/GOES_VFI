@@ -6,10 +6,12 @@ from typing import List, Tuple, Any
 from numpy.typing import NDArray
 
 
-def tile_image(img: NDArray[np.float32], tile_size: int = 2048, overlap: int = 32) -> List[Tuple[int,int,NDArray[np.float32]]]:
+def tile_image(
+    img: NDArray[np.float32], tile_size: int = 2048, overlap: int = 32
+) -> List[Tuple[int, int, NDArray[np.float32]]]:
     """Split H×W×3 image into overlapping RGB float32 tiles."""
     h, w, _ = img.shape
-    tiles: List[Tuple[int,int,NDArray[np.float32]]] = []
+    tiles: List[Tuple[int, int, NDArray[np.float32]]] = []
     y = 0
     while y < h:
         x = 0
@@ -23,14 +25,18 @@ def tile_image(img: NDArray[np.float32], tile_size: int = 2048, overlap: int = 3
     return tiles
 
 
-def merge_tiles(tiles: List[Tuple[int,int,NDArray[np.float32]]], full_shape: Tuple[int,int], overlap: int = 32) -> NDArray[np.float32]:
+def merge_tiles(
+    tiles: List[Tuple[int, int, NDArray[np.float32]]],
+    full_shape: Tuple[int, int],
+    overlap: int = 32,
+) -> NDArray[np.float32]:
     H, W = full_shape
     canvas = np.zeros((H, W, 3), dtype=np.float32)
     weight = np.zeros((H, W, 1), dtype=np.float32)
     for x, y, tile in tiles:
         h, w, _ = tile.shape
         alpha = np.ones((h, w, 1), dtype=np.float32)
-        canvas[y:y+h, x:x+w] += tile * alpha
-        weight[y:y+h, x:x+w] += alpha
+        canvas[y : y + h, x : x + w] += tile * alpha
+        weight[y : y + h, x : x + w] += alpha
     canvas /= np.maximum(weight, 1e-5)
     return canvas

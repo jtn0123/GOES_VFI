@@ -2,17 +2,19 @@ import platform, subprocess, tarfile, zipfile
 from pathlib import Path
 from urllib.request import urlretrieve
 import logging
+from goesvfi.utils import config  # Import config module
 
 LOGGER = logging.getLogger(__name__)
 
-SAN_VERSION = "1.0.25"
-BIN_DIR = Path(__file__).parent / "bin"
+# SAN_VERSION removed (not configurable)
+# BIN_DIR removed (get from config)
 
-_LOOKUP = {                               #  << only the two targets you need
-    ("Darwin",  "x86_64"): BIN_DIR / "osx-x64" / "Sanchez",
-    ("Darwin",  "arm64"):  BIN_DIR / "osx-x64" / "Sanchez",
-    ("Windows", "AMD64"):  BIN_DIR / "win-x64" / "Sanchez.exe",
+_LOOKUP = {  #  << only the two targets you need
+    ("Darwin", "x86_64"): config.get_sanchez_bin_dir() / "osx-x64" / "Sanchez",
+    ("Darwin", "arm64"): config.get_sanchez_bin_dir() / "osx-x64" / "Sanchez",
+    ("Windows", "AMD64"): config.get_sanchez_bin_dir() / "win-x64" / "Sanchez.exe",
 }
+
 
 def _bin() -> Path:
     key = (platform.system(), platform.machine())
@@ -23,6 +25,7 @@ def _bin() -> Path:
     if not path.exists():
         raise RuntimeError(f"Binary missing: {path}")
     return path
+
 
 def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Path:
     """Run the Sanchez binary to colourise an IR image.
@@ -41,19 +44,20 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
     out_png_str = str(out_png)
     # Determine the directory containing the binary
     binary_dir = bin_path.parent
-    cmd = [str(bin_path), "-s", ir_png_str, "-o", out_png_str,
-           "-r", str(res_km)]
-    LOGGER.info(f"Running Sanchez: {' '.join(cmd)} in directory {binary_dir}") # Log cwd
+    cmd = [str(bin_path), "-s", ir_png_str, "-o", out_png_str, "-r", str(res_km)]
+    LOGGER.info(
+        f"Running Sanchez: {' '.join(cmd)} in directory {binary_dir}"
+    )  # Log cwd
     try:
         # Use subprocess.run to capture output
         result = subprocess.run(
             cmd,
-            check=True, # Still raise error on non-zero exit code
+            check=True,  # Still raise error on non-zero exit code
             capture_output=True,
-            text=True, # Decode stdout/stderr as text
-            encoding='utf-8', # Explicitly set encoding
-            errors='replace', # Handle potential decoding errors
-            cwd=binary_dir # <-- Set the current working directory
+            text=True,  # Decode stdout/stderr as text
+            encoding="utf-8",  # Explicitly set encoding
+            errors="replace",  # Handle potential decoding errors
+            cwd=binary_dir,  # <-- Set the current working directory
         )
         # Log stdout/stderr even on success if needed for debugging
         if result.stdout:
@@ -65,7 +69,9 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
 
     except subprocess.CalledProcessError as e:
         # Log detailed error information if check=True fails
-        LOGGER.error(f"Sanchez failed (Exit Code: {e.returncode}) for {Path(ir_png).name}")
+        LOGGER.error(
+            f"Sanchez failed (Exit Code: {e.returncode}) for {Path(ir_png).name}"
+        )
         if e.stdout:
             LOGGER.error(f"--> Sanchez stdout:\n{e.stdout}")
         if e.stderr:
@@ -74,10 +80,12 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
         raise RuntimeError(f"Sanchez execution failed: {e}") from e
     except FileNotFoundError:
         LOGGER.error(f"Sanchez executable not found at: {bin_path}")
-        raise # Re-raise
+        raise  # Re-raise
     except Exception as e:
-        LOGGER.exception(f"An unexpected error occurred while running Sanchez for {Path(ir_png).name}")
-        raise # Re-raise unexpected errors
+        LOGGER.exception(
+            f"An unexpected error occurred while running Sanchez for {Path(ir_png).name}"
+        )
+        raise  # Re-raise unexpected errors
 
     # Return the output path as a Path object
-    return Path(out_png) 
+    return Path(out_png)

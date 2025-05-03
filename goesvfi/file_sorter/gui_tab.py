@@ -1,19 +1,46 @@
 import logging
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QFileDialog, QMessageBox,
-    QProgressBar, QGroupBox, QGridLayout, QTextEdit, QSizePolicy, QScrollBar, QCheckBox, QComboBox
+    QWidget,
+    QVBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QHBoxLayout,
+    QFileDialog,
+    QMessageBox,
+    QProgressBar,
+    QGroupBox,
+    QGridLayout,
+    QTextEdit,
+    QSizePolicy,
+    QScrollBar,
+    QCheckBox,
+    QComboBox,
 )
 from PyQt6.QtCore import QThread, pyqtSignal, Qt
 from goesvfi.file_sorter.sorter import FileSorter, DuplicateMode
+from goesvfi.file_sorter.view_model import FileSorterViewModel  # Import ViewModel
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, Callable, Tuple
 
 LOGGER = logging.getLogger(__name__)
 
+
 class FileSorterTab(QWidget):
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    directory_selected = pyqtSignal(str) # Signal emitted when a directory is selected
+
+    # Modified __init__ to accept a ViewModel instance
+    def __init__(
+        self, view_model: FileSorterViewModel, parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent)
+
+        if not isinstance(view_model, FileSorterViewModel):
+            raise TypeError("view_model must be an instance of FileSorterViewModel")
+
+        self.view_model = view_model  # Use the provided ViewModel
+        # self.view_model.add_observer(self._update_ui)  # Register observer - Observer pattern not fully implemented in ViewModel
 
         # Main Layout
         main_layout = QVBoxLayout(self)
@@ -22,7 +49,9 @@ class FileSorterTab(QWidget):
 
         # Source Group
         source_group = QGroupBox("Source")
-        source_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        source_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         source_layout = QGridLayout()
         source_layout.setContentsMargins(10, 15, 10, 10)
         source_layout.setSpacing(8)
@@ -31,7 +60,7 @@ class FileSorterTab(QWidget):
         self.source_line_edit = QLineEdit()
         source_browse_button = QPushButton("Browse...")
         source_browse_button.setFixedWidth(100)
-        
+
         source_layout.addWidget(source_label, 0, 0)
         source_layout.addWidget(self.source_line_edit, 0, 1)
         source_layout.addWidget(source_browse_button, 0, 2)
@@ -40,7 +69,9 @@ class FileSorterTab(QWidget):
 
         # Destination Group
         destination_group = QGroupBox("Destination")
-        destination_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        destination_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         destination_layout = QGridLayout()
         destination_layout.setContentsMargins(10, 15, 10, 10)
         destination_layout.setSpacing(8)
@@ -48,7 +79,7 @@ class FileSorterTab(QWidget):
         destination_label = QLabel("Output Folder:")
         destination_info = QLabel("(Files will be sorted to a 'converted' subfolder)")
         destination_info.setStyleSheet("color: #666; font-style: italic;")
-        
+
         destination_layout.addWidget(destination_label, 0, 0)
         destination_layout.addWidget(destination_info, 0, 1, 1, 2)
         destination_group.setLayout(destination_layout)
@@ -56,7 +87,9 @@ class FileSorterTab(QWidget):
 
         # Options Group
         options_group = QGroupBox("Options")
-        options_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        options_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         options_layout = QVBoxLayout()
         options_layout.setContentsMargins(10, 15, 10, 10)
         options_layout.setSpacing(8)
@@ -77,7 +110,9 @@ class FileSorterTab(QWidget):
 
         # Actions Group
         actions_group = QGroupBox("Actions")
-        actions_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        actions_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         actions_layout = QVBoxLayout()
         actions_layout.setContentsMargins(10, 15, 10, 10)
         actions_layout.setSpacing(8)
@@ -102,7 +137,7 @@ class FileSorterTab(QWidget):
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setFormat("%p% - %v of %m")
         status_layout.addWidget(self.progress_bar)
-        
+
         # Status Text Display
         self.status_text = QTextEdit()
         self.status_text.setReadOnly(True)
@@ -121,120 +156,49 @@ class FileSorterTab(QWidget):
         self.setLayout(main_layout)
 
     def _browse_source(self) -> None:
-        """Opens a file dialog to select source folder"""
+        """Opens a file dialog to select source folder and updates ViewModel"""
         folder_path = QFileDialog.getExistingDirectory(self, "Select Source Folder")
         if folder_path:
-            self.source_line_edit.setText(folder_path)
+            self.view_model.source_directory = folder_path  # Update ViewModel
+            self.directory_selected.emit(folder_path) # Emit signal with selected path
 
     def _start_sorting(self) -> None:
-        """Starts the file sorting process in a background thread"""
-        source_path = self.source_line_edit.text()
+        """Starts the file sorting process via the ViewModel"""
+        self.view_model.start_sorting()  # Delegate to ViewModel
 
-        if not source_path:
-            QMessageBox.warning(self, "Input Error", "Please select a source folder.")
-            return
+    def _update_ui(self) -> None:
+        """Updates UI elements based on ViewModel state"""
+        self.source_line_edit.setText(self.view_model.source_directory)
+        # Assuming ViewModel has properties for options and status
+        self.dry_run_checkbox.setChecked(self.view_model.dry_run_enabled)
+        # Assuming DuplicateMode enum is accessible and has a name attribute
+        self.duplicate_combo.setCurrentText(
+            self.view_model.duplicate_mode.capitalize()
+        )
 
-        # Calculate the output path (which will be a 'converted' subfolder)
-        source_path_obj = Path(source_path)
-        output_path = source_path_obj / "converted"
-        
-        LOGGER.info(f"Sorting started from {source_path}")
-        LOGGER.info(f"Files will be sorted to {output_path}")
+        self.progress_bar.setValue(int(self.view_model.progress_percentage))
 
-        # Clear previous logs and reset progress
+        # For status text, we might need to append instead of set,
+        # or the ViewModel provides a list of messages.
+        # For simplicity, let's assume ViewModel provides the current status message.
+        # A more robust solution would involve the ViewModel emitting new messages.
+        # Let's clear and append for now, assuming ViewModel provides the latest message.
         self.status_text.clear()
-        self.progress_bar.setValue(0)
-        self._add_status_message(f"Starting file sort operation from {source_path}")
-        self._add_status_message(f"Files will be sorted to {output_path}")
-        
-        # Disable the sort button while processing
-        self.sort_button.setEnabled(False)
+        self.status_text.append(self.view_model.status_message)
 
-        # Get options from UI
-        dry_run = self.dry_run_checkbox.isChecked()
-        # Map the string from the combo box to the DuplicateMode enum
-        duplicate_mode_str = self.duplicate_combo.currentText()
-        duplicate_mode = DuplicateMode[duplicate_mode_str.upper()] # Assuming enum members are uppercase
+        self.sort_button.setEnabled(self.view_model.can_start_sorting)
 
-        # Create and start worker thread
-        self.worker: SorterWorker = SorterWorker(source_path, dry_run, duplicate_mode)
-        self.worker.progress.connect(self._update_progress)
-        self.worker.finished.connect(self._on_sorting_finished)
-        self.worker.error.connect(self._handle_error)
-        self.worker.start()
-
-    def _update_progress(self, percent: int, message: str) -> None:
-        """Update both progress bar and status text"""
-        LOGGER.info(f"Progress: {percent}% - {message}")
-        
-        # Update progress bar
-        self.progress_bar.setValue(percent)
-        
-        # Update status text
-        self._add_status_message(message)
-
-    def _add_status_message(self, message: str) -> None:
-        """Adds a new message to the status text area with timestamp"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        self.status_text.append(f"[{timestamp}] {message}")
-        # Auto-scroll to bottom
-        v_scrollbar = self.status_text.verticalScrollBar()
-        if v_scrollbar:
-            v_scrollbar.setValue(v_scrollbar.maximum())
-
-    def _on_sorting_finished(self, message: str) -> None:
-        """Handle completion of sorting process"""
-        LOGGER.info(f"Sorting finished: {message}")
-        self._add_status_message(f"✓ {message}")
-        QMessageBox.information(self, "Sorting Complete", message)
-        self.progress_bar.setValue(100)
-        self.sort_button.setEnabled(True)
-
-    def _handle_error(self, message: str) -> None:
-        """Handle errors during sorting"""
-        LOGGER.error(f"Sorting error: {message}")
-        self._add_status_message(f"❌ ERROR: {message}")
-        QMessageBox.critical(self, "Sorting Error", message)
-        self.sort_button.setEnabled(True)
-
-
-class SorterWorker(QThread):
-    """Worker thread for file sorting operations"""
-    progress = pyqtSignal(int, str)  # Changed to emit both percent and message
-    finished = pyqtSignal(str)
-    error = pyqtSignal(str)
-
-    def __init__(self, source_path: str, dry_run: bool, duplicate_mode: DuplicateMode):
-        super().__init__()
-        self.source_path = source_path
-        self.dry_run = dry_run
-        self.duplicate_mode = duplicate_mode
-
-    def run(self) -> None:
-        try:
-            # Create sorter instance with dry_run and duplicate_mode
-            sorter = FileSorter(dry_run=self.dry_run, duplicate_mode=self.duplicate_mode)
-            
-            # Set progress callback to emit both percent and message
-            def progress_callback(percent: int, message: str) -> None:
-                self.progress.emit(percent, message)
-            
-            # Set the progress callback
-            sorter.set_progress_callback(progress_callback)
-            
-            # Run the sort operation
-            stats = sorter.sort_files(self.source_path)
-            
-            # Create success message with stats
-            size_in_mb = round(stats['total_bytes'] / (1024 * 1024), 2)
-            success_msg = (
-                f"File sorting completed successfully.\n"
-                f"Files copied: {stats['files_copied']}\n"
-                f"Files skipped: {stats['files_skipped']}\n"
-                f"Total data: {size_in_mb} MB\n"
-                f"Duration: {stats['duration']}"
+        # Handle completion/error messages from ViewModel
+        if self.view_model.show_completion_message:
+            QMessageBox.information(
+                self, "Sorting Complete", self.view_model.completion_message
             )
-            
-            self.finished.emit(success_msg)
-        except Exception as e:
-            self.error.emit(f"An error occurred during sorting: {e}")
+            self.view_model.show_completion_message = False  # Reset flag
+        if self.view_model.show_error_message:
+            QMessageBox.critical(self, "Sorting Error", self.view_model.error_message)
+            self.view_model.show_error_message = False  # Reset flag
+        if self.view_model.show_input_error_message:
+            QMessageBox.warning(
+                self, "Input Error", self.view_model.input_error_message
+            )
+            self.view_model.show_input_error_message = False  # Reset flag

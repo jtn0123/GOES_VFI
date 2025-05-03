@@ -2,8 +2,12 @@
 from __future__ import annotations
 import pathlib
 from typing import List
+from goesvfi.utils import config  # Import config module
 
-SUPPORTED_EXT = {".png", ".jpg", ".jpeg"}
+SUPPORTED_EXT = set(
+    config.get_supported_extensions()
+)  # Get from config and convert to set
+
 
 def discover_frames(folder: pathlib.Path) -> List[pathlib.Path]:
     """Return frame paths sorted by timestamp (in filename)."""

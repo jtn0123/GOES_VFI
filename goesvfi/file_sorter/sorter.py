@@ -11,30 +11,34 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Callable, Tuple, List, Dict, Any
 
+
 class DuplicateMode(Enum):
     OVERWRITE = auto()
     SKIP = auto()
     RENAME = auto()
 
+
 class FileSorter:
-    def __init__(self, dry_run: bool = False, duplicate_mode: DuplicateMode = DuplicateMode.OVERWRITE):
+    def __init__(
+        self,
+        dry_run: bool = False,
+        duplicate_mode: DuplicateMode = DuplicateMode.OVERWRITE,
+    ):
         self.files_copied = 0
         self.files_skipped = 0
         self.total_bytes_copied = 0
-        self.progress_callback: Optional[Callable[[int, str], None]] = None
         self.dry_run = dry_run
         self.duplicate_mode = duplicate_mode
+        self._progress_callback: Optional[Callable[[int, int], None]] = None
+        self._should_cancel: Optional[Callable[[], bool]] = None
 
-    def set_progress_callback(self, callback: Callable[[int, str], None]) -> None:
-        self.progress_callback = callback
-
-    def update_progress(self, percent: int, message: str) -> None:
-        if self.progress_callback:
-            self.progress_callback(percent, message)
-        else:
-            print(f"[{percent}%] {message}", end="\\r")
-
-    def copy_file_with_buffer(self, source_path: Path, dest_path: Path, source_mtime_utc: float, buffer_size: int = 1048576) -> None:
+    def copy_file_with_buffer(
+        self,
+        source_path: Path,
+        dest_path: Path,
+        source_mtime_utc: float,
+        buffer_size: int = 1048576,
+    ) -> None:
         """
         Copies a file in chunks (buffered) and preserves its last modified time (UTC).
         :param source_path: The full path to the source file.
@@ -43,7 +47,7 @@ class FileSorter:
         :param buffer_size: The size of the read/write buffer in bytes (default is 1 MB).
         """
         try:
-            with open(source_path, 'rb') as sf, open(dest_path, 'wb') as df:
+            with open(source_path, "rb") as sf, open(dest_path, "wb") as df:
                 while True:
                     buffer = sf.read(buffer_size)
                     if not buffer:
@@ -57,41 +61,55 @@ class FileSorter:
         # os.utime expects (atime, mtime) in *epoch seconds*.
         os.utime(dest_path, (source_mtime_utc, source_mtime_utc))
 
-    def sort_files(self, root_dir: Optional[str] = None) -> Dict[str, Any]:
-        current_dir: Path
-        if root_dir is None:
-            current_dir = Path.cwd()
-        else:
-            current_dir = Path(root_dir)
+    def sort_files(
+        self,
+        source: str,
+        destination: str,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
+        should_cancel: Optional[Callable[[], bool]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Sorts files from a source directory into a destination directory based on date/time.
+
+        :param source: The source directory to read files from.
+        :param destination: The destination directory to copy sorted files to.
+        :param progress_callback: A function to call with current and total file counts for progress updates.
+        :param should_cancel: A function that returns True if cancellation is requested.
+        :return: A dictionary containing sorting statistics.
+        """
+        source_dir = Path(source)
+        destination_dir = Path(destination)
+
+        if not source_dir.is_dir():
+            raise FileNotFoundError(f"Source directory not found: {source}")
+        if not destination_dir.exists():
+            destination_dir.mkdir(parents=True, exist_ok=True)
+        if not destination_dir.is_dir():
+            raise NotADirectoryError(f"Destination is not a directory: {destination}")
 
         script_start_time = datetime.now()
-        
+
         # Reset counters
         self.files_copied = 0
         self.files_skipped = 0
         self.total_bytes_copied = 0
 
-        # Setup directories
-        converted_folder_name = "converted"
-        converted_folder_path = current_dir / converted_folder_name
-
-        if not converted_folder_path.exists():
-            converted_folder_path.mkdir()
+        # Store callbacks
+        self._progress_callback = progress_callback
+        self._should_cancel = should_cancel
 
         # --------------------------------------------------------------------------------
-        # 3. Get all date/time folders in the current directory, excluding the "converted" folder
+        # 3. Get all date/time folders in the source directory
         # --------------------------------------------------------------------------------
         try:
-            date_folders: List[Path] = [
-                f for f in current_dir.iterdir()
-                if f.is_dir() and f.name != converted_folder_name
-            ]
+            # We now iterate directly over the source directory
+            date_folders: List[Path] = [f for f in source_dir.iterdir() if f.is_dir()]
         except Exception as e:
-            print(f"Error retrieving date folders: {e}")
+            print(f"Error retrieving date folders from source directory: {e}")
             raise
 
         total_folders = len(date_folders)
-        print(f"Found {total_folders} date folders.")
+        print(f"Found {total_folders} date folders in source directory.")
 
         # --------------------------------------------------------------------------------
         # 4. Build a list of files to process along with the extracted date/time
@@ -99,27 +117,29 @@ class FileSorter:
         files_to_process: List[Tuple[Path, str]] = []
 
         folder_counter = 0
-        folder_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$')
+        folder_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$")
 
         def is_valid_date_folder(folder_name: str) -> bool:
             """Validate if folder name contains valid date and time components"""
             if not folder_pattern.match(folder_name):
                 return False
-            
+
             try:
                 # Extract date and time components
-                date_part, time_part = folder_name.split('_')
-                year, month, day = map(int, date_part.split('-'))
-                hour, minute, second = map(int, time_part.split('-'))
-                
+                date_part, time_part = folder_name.split("_")
+                year, month, day = map(int, date_part.split("-"))
+                hour, minute, second = map(int, time_part.split("-"))
+
                 # Validate components
-                if not (1 <= month <= 12 and
-                        1 <= day <= 31 and
-                        0 <= hour <= 23 and
-                        0 <= minute <= 59 and
-                        0 <= second <= 59):
+                if not (
+                    1 <= month <= 12
+                    and 1 <= day <= 31
+                    and 0 <= hour <= 23
+                    and 0 <= minute <= 59
+                    and 0 <= second <= 59
+                ):
                     return False
-                
+
                 # Additional validation using datetime
                 datetime(year, month, day, hour, minute, second)
                 return True
@@ -127,9 +147,14 @@ class FileSorter:
                 return False
 
         for folder in date_folders:
+            if self._should_cancel and self._should_cancel():
+                print("Cancellation requested during file collection.")
+                return {"status": "cancelled"}  # Indicate cancellation
+
             folder_counter += 1
-            percent_complete = int((folder_counter / total_folders) * 100)
-            self.update_progress(percent_complete, f"Collecting files: processing folder {folder_counter} of {total_folders} ({percent_complete}%) - '{folder.name}'")
+            # Progress update during file collection (optional, but good for long lists)
+            if self._progress_callback:
+                self._progress_callback(folder_counter, total_folders)
 
             # Skip null or unexpected format
             if folder is None:
@@ -147,7 +172,7 @@ class FileSorter:
                 continue
 
             # Insert 'T' between the date part (8 digits) and time part (6 digits)
-            folder_datetime = folder_datetime_raw[:8] + 'T' + folder_datetime_raw[8:]
+            folder_datetime = folder_datetime_raw[:8] + "T" + folder_datetime_raw[8:]
 
             # Gather all PNG files
             try:
@@ -165,32 +190,47 @@ class FileSorter:
         # --------------------------------------------------------------------------------
         # 5. Process files (copy, rename, skip if identical, track stats)
         # --------------------------------------------------------------------------------
-        time_tolerance_seconds: float = 1.0  # Tolerance for "last modified" comparison, in seconds
+        time_tolerance_seconds: float = (
+            1.0  # Tolerance for "last modified" comparison, in seconds
+        )
 
         counter = 0
         start_time = time.time()
 
-        for (file_path, folder_datetime) in files_to_process:
+        for file_path, folder_datetime in files_to_process:
+            if self._should_cancel and self._should_cancel():
+                print("Cancellation requested during file processing.")
+                return {"status": "cancelled"}  # Indicate cancellation
+
             counter += 1
             file_name: str = file_path.name
 
             # --- Calculate progress and display info early --- #
-            percent_complete = int((counter / total_files) * 100) if total_files > 0 else 0
+            # Update progress using the callback with current and total
+            if self._progress_callback:
+                self._progress_callback(counter, total_files)
+
             max_file_name_length: int = 50
-            display_file_name: str = (file_name[:max_file_name_length] + "...") if len(file_name) > max_file_name_length else file_name
+            display_file_name: str = (
+                (file_name[:max_file_name_length] + "...")
+                if len(file_name) > max_file_name_length
+                else file_name
+            )
             # --- End progress info --- #
 
             try:
                 # We will check whether the file_name ends with _YYYYMMDDThhmmssZ.png or just .png
                 base_name: str = file_name
                 # If it matches "_YYYYMMDDThhmmssZ.png" (20 chars from end), strip that part:
-                if re.search(r'_\d{8}T\d{6}Z\.png$', file_name):
-                    base_name = file_name[:-20]  # remove the date/time portion + extension
+                if re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
+                    base_name = file_name[
+                        :-20
+                    ]  # remove the date/time portion + extension
                 elif file_name.endswith(".png"):
                     base_name = file_name[:-4]
 
-                # Create sub-folder in 'converted' for this base_name if it doesn't exist
-                target_folder: Path = converted_folder_path / base_name
+                # Create sub-folder in 'destination' for this base_name if it doesn't exist
+                target_folder: Path = destination_dir / base_name
                 if not target_folder.exists() and not self.dry_run:
                     try:
                         target_folder.mkdir(parents=True, exist_ok=True)
@@ -199,7 +239,7 @@ class FileSorter:
                         raise
 
                 # Construct new file name, if it doesn't already have the date/time suffix
-                if not re.search(r'_\d{8}T\d{6}Z\.png$', file_name):
+                if not re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
                     new_file_name: str = f"{base_name}_{folder_datetime}Z.png"
                 else:
                     # Already has date/time suffix, keep it
@@ -209,7 +249,9 @@ class FileSorter:
 
                 # Check if the destination file exists and is identical in size & mtime (within tolerance)
                 source_size: int = file_path.stat().st_size
-                source_mtime_utc: float = file_path.stat().st_mtime  # seconds since epoch (UTC-based)
+                source_mtime_utc: float = (
+                    file_path.stat().st_mtime
+                )  # seconds since epoch (UTC-based)
                 files_are_identical: bool = False
 
                 if new_file_path.exists():
@@ -222,7 +264,8 @@ class FileSorter:
                             self.files_skipped += 1
                             files_are_identical = True
 
-                # -- Prepare base status message --
+                # -- Prepare base status message (optional, can be handled by ViewModel) --
+                # Keeping this for CLI usage, but ViewModel will use its own status
                 elapsed_time: float = time.time() - start_time
                 if elapsed_time > 0 and counter > 0:
                     files_per_minute: float = round((counter / elapsed_time) * 60, 2)
@@ -234,7 +277,7 @@ class FileSorter:
                     eta_str = "Calculating..."
 
                 base_status_msg: str = (
-                    f"{counter}/{total_files} ({percent_complete}%) "
+                    f"{counter}/{total_files} "
                     f"Skipped: {self.files_skipped} | "
                     f"Speed: {files_per_minute} files/min | "
                     f"ETA: {eta_str}"
@@ -248,45 +291,52 @@ class FileSorter:
                         if self.duplicate_mode == DuplicateMode.SKIP:
                             self.files_skipped += 1
                             action_msg = "SKIPPED (Duplicate)"
-                            self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}")
-                            continue # Skip to next file
+                            # self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}") # ViewModel handles status
+                            continue  # Skip to next file
                         elif self.duplicate_mode == DuplicateMode.RENAME:
                             # Generate a new unique name
                             rename_counter = 1
                             original_stem = new_file_path.stem
                             original_suffix = new_file_path.suffix
-                            temp_new_name = new_file_name # Store original target name for message
+                            temp_new_name = (
+                                new_file_name  # Store original target name for message
+                            )
                             while new_file_path.exists():
-                                new_file_name = f"{original_stem}_{rename_counter}{original_suffix}"
+                                new_file_name = (
+                                    f"{original_stem}_{rename_counter}{original_suffix}"
+                                )
                                 new_file_path = target_folder / new_file_name
                                 rename_counter += 1
                             action_msg = f"RENAMED to {new_file_name}"
-                            # Update progress *before* copy/move
-                            self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}")
-                        else: # Overwrite mode
-                             action_msg = f"OVERWRITING {new_file_name}"
-                             self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}")
+                            # self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}") # ViewModel handles status
+                        else:  # Overwrite mode
+                            action_msg = f"OVERWRITING {new_file_name}"
+                            # self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}") # ViewModel handles status
                         # If mode is 'Overwrite', no extra action needed before copy
 
                     if self.dry_run:
                         action_msg = f"DRY RUN: Would copy to {new_file_path.name}"
-                        self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}")
+                        # self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}") # ViewModel handles status
                     else:
                         # Perform the actual copy only if not dry run
-                        self.copy_file_with_buffer(file_path, new_file_path, source_mtime_utc)
+                        self.copy_file_with_buffer(
+                            file_path, new_file_path, source_mtime_utc
+                        )
                         self.files_copied += 1
                         self.total_bytes_copied += source_size
                         # action_msg should be set above based on Rename/Overwrite or be empty
-                        if not action_msg: action_msg = f"COPIED to {new_file_path.name}"
-                        # Update progress *after* successful copy
-                        self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}")
+                        if not action_msg:
+                            action_msg = f"COPIED to {new_file_path.name}"
+                        # self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}") # ViewModel handles status
                 else:
                     # Files are identical, log as skipped
                     action_msg = "SKIPPED (Identical)"
-                    self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}")
+                    # self.update_progress(percent_complete, f"{base_status_msg} | File: {display_file_name} | {action_msg}") # ViewModel handles status
 
             except Exception as e:
-                print(f"\nError processing file '{file_path.name}': {e}") # Print error on new line
+                print(
+                    f"\nError processing file '{file_path.name}': {e}"
+                )  # Print error on new line
 
         # --------------------------------------------------------------------------------
         # 6. Final Stats and Cleanup
@@ -304,43 +354,66 @@ class FileSorter:
         print(f"Total data copied: {size_in_mb} MB")
 
         if total_files > 0:
-            average_time_per_file = round(total_duration.total_seconds() / total_files, 2)
+            average_time_per_file = round(
+                total_duration.total_seconds() / total_files, 2
+            )
         else:
             average_time_per_file = 0
         print(f"Average time per file: {average_time_per_file} seconds")
 
         # Remove the input() call and just return stats
         final_stats = {
-            'files_copied': self.files_copied,
-            'files_skipped': self.files_skipped,
-            'total_bytes': self.total_bytes_copied,
-            'duration': str(datetime.now() - script_start_time)  # Convert timedelta to string
+            "files_copied": self.files_copied,
+            "files_skipped": self.files_skipped,
+            "total_bytes": self.total_bytes_copied,
+            "duration": str(
+                datetime.now() - script_start_time
+            ),  # Convert timedelta to string
         }
-        
+
         print("Returning stats:", final_stats)  # Debug print
         print("\nAnalysis complete!")
 
         return final_stats
+
 
 def main() -> None:
     # The GUI is not included in this integration, so we only keep the CLI logic.
     # The original code had an if/else for GUI vs CLI, we remove the GUI part.
     import argparse
 
-    parser = argparse.ArgumentParser(description="Sorts image files into folders based on date/time.")
-    parser.add_argument("root_dir", nargs="?", default=None,
-                        help="Root directory to process. Defaults to the current directory.")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="Perform a dry run without actually copying or modifying files.")
-    parser.add_argument("--duplicate-mode", choices=["overwrite", "skip", "rename"],
-                        default="overwrite", help="Action to take when a duplicate file is found. Options: overwrite, skip, rename. Defaults to overwrite.")
+    parser = argparse.ArgumentParser(
+        description="Sorts image files into folders based on date/time."
+    )
+    parser.add_argument(
+        "root_dir",
+        nargs="?",
+        default=None,
+        help="Root directory to process. Defaults to the current directory.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without actually copying or modifying files.",
+    )
+    parser.add_argument(
+        "--duplicate-mode",
+        choices=["overwrite", "skip", "rename"],
+        default="overwrite",
+        help="Action to take when a duplicate file is found. Options: overwrite, skip, rename. Defaults to overwrite.",
+    )
 
     args = parser.parse_args()
 
     duplicate_mode = DuplicateMode[args.duplicate_mode.upper()]
 
     sorter = FileSorter(dry_run=args.dry_run, duplicate_mode=duplicate_mode)
-    sorter.sort_files(root_dir=args.root_dir)
+    # In CLI mode, we still use root_dir for simplicity, not source/destination
+    # The GUI will use source/destination with the ViewModel
+    sorter.sort_files(
+        source=args.root_dir if args.root_dir else ".", destination="./converted"
+    )
+
 
 if __name__ == "__main__":
     main()

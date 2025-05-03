@@ -40,18 +40,32 @@ A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the R
     *   FFmpeg settings profiles ("Default", "Optimal", "Optimal 2", "Custom").
     *   Progress bar and ETA display.
     *   "Open in VLC" button.
-*   **Settings Persistence:** Saves UI state, input directory, crop selection, and FFmpeg settings between sessions (via `QSettings`).
+*   **Settings Persistence:** Saves UI state, input directory, crop selection, and FFmpeg settings between sessions (see Configuration section).
 *   **Debug Mode:** Run with `--debug` to keep intermediate files.
+
+## Architecture Overview
+
+GOES-VFI is structured using modern software architecture patterns to maximize maintainability and extensibility:
+
+* **MVVM (Model-View-ViewModel):** The GUI is organized using the Model-View-ViewModel pattern, which separates the user interface (View), presentation logic (ViewModel), and backend/data processing (Model). This decoupling makes the codebase easier to test and extend.
+* **Decoupled Pipeline Components:** The core processing pipeline is modular:
+    * **FFmpeg Command Builder:** Constructs and manages FFmpeg command invocations for encoding and filtering.
+    * **ImageProcessor Interface:** Abstracts image processing steps, with concrete implementations such as `ImageLoader`, `SanchezProcessor`, and `ImageCropper`.
+    * Each pipeline stage is independently testable and replaceable, supporting future enhancements.
 
 ## Requirements
 
-*   **Python:** 3.9+ recommended.
-*   **Packages:** See `requirements.txt` (mainly `PyQt6`, `numpy`, `Pillow`). Install with `pip install -r requirements.txt`.
-*   **FFmpeg:** Required for video processing/encoding. Must be installed and available in your system's PATH.
-*   **RIFE v4.6 ncnn:** The `rife-cli` executable and associated model files (`flownet.bin`, `flownet.param`) are expected.
-    *   The application looks for `rife-cli` in `goesvfi/bin/rife-cli` relative to the package installation.
-    *   The model files (`flownet.bin`, `flownet.param`) need to be placed within a model directory (e.g., `goesvfi/models/rife-v4.6/`). The GUI auto-detects folders named `rife-*` in `goesvfi/models/`.
-    *   *Ensure you have obtained the RIFE v4.6 ncnn executable and model files and placed them correctly.* 
+* **Python:** 3.9+ recommended.
+* **Packages:** See `requirements.txt` (mainly `PyQt6`, `numpy`, `Pillow`). Install with `pip install -r requirements.txt`.
+* **FFmpeg:** Required for video processing/encoding. Must be installed and available in your system's PATH.
+* **RIFE v4.6 ncnn:** The `rife-cli` executable and associated model files (`flownet.bin`, `flownet.param`) are expected.
+    * The application looks for `rife-cli` in `goesvfi/bin/rife-cli` relative to the package installation.
+    * The model files (`flownet.bin`, `flownet.param`) need to be placed within a model directory (e.g., `goesvfi/models/rife-v4.6/`). The GUI auto-detects folders named `rife-*` in `goesvfi/models/`.
+    * *Ensure you have obtained the RIFE v4.6 ncnn executable and model files and placed them correctly.*
+* **Development Tools:** For contributors, please install the following tools in your virtual environment:
+    * [`black`](https://black.readthedocs.io/en/stable/) (code formatter)
+    * [`flake8`](https://flake8.pycqa.org/en/latest/) (linter)
+    * Install with: `pip install black flake8`
 
 ## Installation
 
@@ -68,6 +82,8 @@ A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the R
 3.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
+    # For development (optional, but recommended):
+    pip install black flake8
     ```
 4.  **Place RIFE executable:** Put your downloaded/built `rife-cli` into the `goesvfi/bin/` directory.
 5.  **Place RIFE models:** Create `goesvfi/models/rife-v4.6/` (or similar `rife-*` name) and place `flownet.bin` and `flownet.param` inside it.
@@ -98,10 +114,21 @@ python -m goesvfi.gui [--debug]
 
 ## Configuration
 
-*   **RIFE Executable:** Expected at `goesvfi/bin/rife-cli`.
-*   **RIFE Models:** Expected in `goesvfi/models/rife-v4.6/` (or similar).
-*   **Output/Cache Directories:** Default locations are managed by `goesvfi/utils/config.py`.
-*   **Persistent Settings:** Stored using `QSettings` (platform-specific location, typically `~/.config/YourOrg/GOESVFI.conf` on Linux/macOS).
+GOES-VFI uses a standardized configuration mechanism for core settings:
+
+* **Primary Configuration File:**  
+  The main configuration is stored in a TOML file located at `~/.config/goesvfi/config.toml` (on Linux/macOS) or the platform equivalent (e.g., `%APPDATA%\goesvfi\config.toml` on Windows).
+* **Configuration Management:**  
+  The module `goesvfi/utils/config.py` is responsible for loading this TOML file and providing default values for all core settings, such as:
+    * Cache directory
+    * Logging level
+    * Paths to RIFE/Sanchez executables and models
+    * Other pipeline and application options
+* **UI State Persistence:**  
+  Some user interface state (such as window geometry, last-used directories, and certain UI preferences) may still be saved using `QSettings` (platform-specific location).  
+  **Note:** Only UI state is managed by `QSettings`; all core configuration is handled by the TOML file.
+* **Defaults:**  
+  If the TOML file does not exist, sensible defaults are used and a new file is created on first run.
 
 ## License
 
@@ -110,3 +137,18 @@ This project does not currently have a license. Consider adding one (e.g., MIT L
 ## Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues.
+
+**Guidelines for Contributors:**
+
+* **Architecture:**  
+  The project uses the MVVM (Model-View-ViewModel) pattern for the GUI and a modular, decoupled pipeline for processing. Please follow these patterns when adding new features or refactoring code.
+* **Utilities:**  
+  Use the centralized logging (`goesvfi.utils.log`) and configuration (`goesvfi.utils.config`) utilities for all logging and configuration access.
+* **Code Style:**  
+  Before submitting changes, run the following commands to ensure code quality and consistency:
+    ```bash
+    black .
+    flake8 .
+    ```
+* **Pull Requests:**  
+  Clearly describe your changes and reference any related issues or discussions.

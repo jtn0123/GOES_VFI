@@ -3,6 +3,7 @@ import pathlib
 import shutil
 import os
 
+
 def main() -> None:
     """Removes cache directories and log files from the project."""
     project_root = pathlib.Path(__file__).parent.resolve()
@@ -65,5 +66,6 @@ def main() -> None:
 
     print("\nCleanup complete.")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

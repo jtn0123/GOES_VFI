@@ -32,3 +32,10 @@ testpaths = [
 ]
 python_files = "test_*.py"
 addopts = "-ra -q --cov=goesvfi --cov-report=term-missing"
+
+[tool.black]
+line-length = 88
+
+[tool.flake8]
+max-line-length = 88
+ignore = ["E203", "W503"]

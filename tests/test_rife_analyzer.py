@@ -10,15 +10,20 @@ import pytest
 import sys
 import os
 import json
-import subprocess # Import subprocess for exceptions
+import subprocess  # Import subprocess for exceptions
 from unittest.mock import patch, MagicMock
 import logging
 from unittest.mock import call
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from goesvfi.utils.rife_analyzer import RifeCapabilityDetector, RifeCommandBuilder, analyze_rife_executable
+from goesvfi.utils.rife_analyzer import (
+    RifeCapabilityDetector,
+    RifeCommandBuilder,
+    analyze_rife_executable,
+)
+
 # Import the mock utility
 from tests.utils.mocks import create_mock_subprocess_run
 
@@ -66,19 +71,18 @@ Usage: rife-cli -0 first.png -1 second.png -o output.png [options]...
 class TestRifeCapabilityDetector:
     """Test the RifeCapabilityDetector class."""
 
-    @patch('goesvfi.utils.rife_analyzer.subprocess.run') # Patch run within the module
+    @patch("goesvfi.utils.rife_analyzer.subprocess.run")  # Patch run within the module
     def test_detect_capabilities_full(self, mock_run_patch, tmp_path):
         """Test capability detection with full-featured RIFE CLI."""
         # Use tmp_path fixture for dummy executable
         dummy_exe_path = tmp_path / "rife-cli"
-        dummy_exe_path.touch() # Create the dummy file
+        dummy_exe_path.touch()  # Create the dummy file
         # Expected command to get help
         expected_cmd = [str(dummy_exe_path), "--help"]
 
         # Configure mock run using the factory
         mock_run_factory = create_mock_subprocess_run(
-            expected_command=expected_cmd,
-            stdout=SAMPLE_HELP_TEXT_FULL
+            expected_command=expected_cmd, stdout=SAMPLE_HELP_TEXT_FULL
         )
         mock_run_patch.side_effect = mock_run_factory
 
@@ -91,7 +95,7 @@ class TestRifeCapabilityDetector:
         assert detector.supports_tta_spatial() is True
         assert detector.supports_tta_temporal() is True
         assert detector.supports_thread_spec() is True
-        assert detector.supports_batch_processing() is True # -i flag
+        assert detector.supports_batch_processing() is True  # -i flag
         assert detector.supports_timestep() is True
         assert detector.supports_model_path() is True
         assert detector.supports_gpu_id() is True
@@ -99,19 +103,18 @@ class TestRifeCapabilityDetector:
         # Assert mock was called
         mock_run_patch.assert_called_once()
 
-    @patch('goesvfi.utils.rife_analyzer.subprocess.run') # Patch run within the module
+    @patch("goesvfi.utils.rife_analyzer.subprocess.run")  # Patch run within the module
     def test_detect_capabilities_basic(self, mock_run_patch, tmp_path):
         """Test capability detection with basic RIFE CLI."""
         # Use tmp_path fixture for dummy executable
         dummy_exe_path = tmp_path / "rife-cli"
-        dummy_exe_path.touch() # Create the dummy file
+        dummy_exe_path.touch()  # Create the dummy file
         # Expected command to get help
         expected_cmd = [str(dummy_exe_path), "--help"]
 
         # Configure mock run using the factory
         mock_run_factory = create_mock_subprocess_run(
-            expected_command=expected_cmd,
-            stdout=SAMPLE_HELP_TEXT_BASIC
+            expected_command=expected_cmd, stdout=SAMPLE_HELP_TEXT_BASIC
         )
         mock_run_patch.side_effect = mock_run_factory
 
@@ -124,7 +127,7 @@ class TestRifeCapabilityDetector:
         assert detector.supports_tta_spatial() is False
         assert detector.supports_tta_temporal() is False
         assert detector.supports_thread_spec() is False
-        assert detector.supports_batch_processing() is False # -i flag missing
+        assert detector.supports_batch_processing() is False  # -i flag missing
         assert detector.supports_timestep() is False
         assert detector.supports_model_path() is True
         assert detector.supports_gpu_id() is False
@@ -132,19 +135,18 @@ class TestRifeCapabilityDetector:
         # Assert mock was called
         mock_run_patch.assert_called_once()
 
-    @patch('goesvfi.utils.rife_analyzer.subprocess.run') # Patch run within the module
+    @patch("goesvfi.utils.rife_analyzer.subprocess.run")  # Patch run within the module
     def test_version_detection(self, mock_run_patch, tmp_path):
         """Test version detection."""
         # Use tmp_path fixture for dummy executable
         dummy_exe_path = tmp_path / "rife-cli"
-        dummy_exe_path.touch() # Create the dummy file
+        dummy_exe_path.touch()  # Create the dummy file
         # Expected command to get help
         expected_cmd = [str(dummy_exe_path), "--help"]
 
         # Configure mock run using the factory
         mock_run_factory = create_mock_subprocess_run(
-            expected_command=expected_cmd,
-            stdout=SAMPLE_HELP_TEXT_FULL
+            expected_command=expected_cmd, stdout=SAMPLE_HELP_TEXT_FULL
         )
         mock_run_patch.side_effect = mock_run_factory
 
@@ -157,7 +159,7 @@ class TestRifeCapabilityDetector:
         # Assert mock was called
         mock_run_patch.assert_called_once()
 
-    @patch('goesvfi.utils.rife_analyzer.subprocess.run') # Patch run within the module
+    @patch("goesvfi.utils.rife_analyzer.subprocess.run")  # Patch run within the module
     def test_detection_failure(self, mock_run_patch, tmp_path, caplog):
         """Test handling of subprocess failure during detection."""
         # Use tmp_path fixture for dummy executable
@@ -168,16 +170,16 @@ class TestRifeCapabilityDetector:
             RifeCapabilityDetector(dummy_exe_path)
 
         # Now test graceful handling if file exists but help command fails
-        dummy_exe_path.touch() # Create the file now
+        dummy_exe_path.touch()  # Create the file now
         expected_cmd_help = [str(dummy_exe_path), "--help"]
         expected_cmd_h = [str(dummy_exe_path), "-h"]
 
         # Create a factory that returns a failing mock process
         failing_mock_factory = create_mock_subprocess_run(
-            expected_command=None, # Don't check command inside factory
+            expected_command=None,  # Don't check command inside factory
             returncode=1,
             stdout="",
-            stderr="Help failed"
+            stderr="Help failed",
         )
 
         # Define a side effect that expects --help then -h and returns failure for both
@@ -205,20 +207,24 @@ class TestRifeCapabilityDetector:
         assert detector.supports_model_path() is False
         # Check logs for the error message from _detect_capabilities
         assert "RIFE help command failed. Help text/error captured:" in caplog.text
-        assert "Help failed" in caplog.text # Check the specific stderr message is logged
+        assert (
+            "Help failed" in caplog.text
+        )  # Check the specific stderr message is logged
 
         # Assert mock was called twice (once for --help, once for -h)
         assert mock_run_patch.call_count == 2
-        mock_run_patch.assert_has_calls([
-            call(expected_cmd_help, capture_output=True, text=True, timeout=5),
-            call(expected_cmd_h, capture_output=True, text=True, timeout=5)
-        ])
+        mock_run_patch.assert_has_calls(
+            [
+                call(expected_cmd_help, capture_output=True, text=True, timeout=5),
+                call(expected_cmd_h, capture_output=True, text=True, timeout=5),
+            ]
+        )
 
 
 class TestRifeCommandBuilder:
     """Test the RifeCommandBuilder class."""
 
-    @patch('goesvfi.utils.rife_analyzer.RifeCapabilityDetector')
+    @patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector")
     def test_build_command_full(self, mock_detector_class):
         """Test command building with full-featured RIFE CLI."""
         # Mock the detector to return full capabilities
@@ -239,49 +245,49 @@ class TestRifeCommandBuilder:
 
         # Build a command with all options
         options = {
-            'model_path': 'models/rife-v4.6',
-            'timestep': 0.5,
-            'num_frames': 1,
-            'tile_enable': True,
-            'tile_size': 256,
-            'uhd_mode': True,
-            'tta_spatial': True,
-            'tta_temporal': True,
-            'thread_spec': '1:2:2',
-            'gpu_id': 0,
+            "model_path": "models/rife-v4.6",
+            "timestep": 0.5,
+            "num_frames": 1,
+            "tile_enable": True,
+            "tile_size": 256,
+            "uhd_mode": True,
+            "tta_spatial": True,
+            "tta_temporal": True,
+            "thread_spec": "1:2:2",
+            "gpu_id": 0,
         }
         cmd = builder.build_command(
             pathlib.Path("input1.png"),
             pathlib.Path("input2.png"),
             pathlib.Path("output.png"),
-            options
+            options,
         )
 
         # Check that the command includes all options
         assert str(pathlib.Path("dummy/path")) in cmd
-        assert '-0' in cmd
+        assert "-0" in cmd
         assert str(pathlib.Path("input1.png")) in cmd
-        assert '-1' in cmd
+        assert "-1" in cmd
         assert str(pathlib.Path("input2.png")) in cmd
-        assert '-o' in cmd
+        assert "-o" in cmd
         assert str(pathlib.Path("output.png")) in cmd
-        assert '-m' in cmd
-        assert 'models/rife-v4.6' in cmd
-        assert '-s' in cmd
-        assert '0.5' in cmd
-        assert '-n' in cmd
-        assert '1' in cmd
-        assert '-t' in cmd
-        assert '256' in cmd
-        assert '-u' in cmd
-        assert '-x' in cmd
-        assert '-z' in cmd
-        assert '-j' in cmd
-        assert '1:2:2' in cmd
-        assert '-g' in cmd
-        assert '0' in cmd
+        assert "-m" in cmd
+        assert "models/rife-v4.6" in cmd
+        assert "-s" in cmd
+        assert "0.5" in cmd
+        assert "-n" in cmd
+        assert "1" in cmd
+        assert "-t" in cmd
+        assert "256" in cmd
+        assert "-u" in cmd
+        assert "-x" in cmd
+        assert "-z" in cmd
+        assert "-j" in cmd
+        assert "1:2:2" in cmd
+        assert "-g" in cmd
+        assert "0" in cmd
 
-    @patch('goesvfi.utils.rife_analyzer.RifeCapabilityDetector')
+    @patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector")
     def test_build_command_basic(self, mock_detector_class):
         """Test command building with basic RIFE CLI."""
         # Mock the detector to return basic capabilities
@@ -302,45 +308,45 @@ class TestRifeCommandBuilder:
 
         # Build a command with all options
         options = {
-            'model_path': 'models/rife-v4.6',
-            'timestep': 0.5,
-            'num_frames': 1,
-            'tile_enable': True,
-            'tile_size': 256,
-            'uhd_mode': True,
-            'tta_spatial': True,
-            'tta_temporal': True,
-            'thread_spec': '1:2:2',
-            'gpu_id': 0,
+            "model_path": "models/rife-v4.6",
+            "timestep": 0.5,
+            "num_frames": 1,
+            "tile_enable": True,
+            "tile_size": 256,
+            "uhd_mode": True,
+            "tta_spatial": True,
+            "tta_temporal": True,
+            "thread_spec": "1:2:2",
+            "gpu_id": 0,
         }
         cmd = builder.build_command(
             pathlib.Path("input1.png"),
             pathlib.Path("input2.png"),
             pathlib.Path("output.png"),
-            options
+            options,
         )
 
         # Check that the command includes only supported options
         assert str(pathlib.Path("dummy/path")) in cmd
-        assert '-0' in cmd
+        assert "-0" in cmd
         assert str(pathlib.Path("input1.png")) in cmd
-        assert '-1' in cmd
+        assert "-1" in cmd
         assert str(pathlib.Path("input2.png")) in cmd
-        assert '-o' in cmd
+        assert "-o" in cmd
         assert str(pathlib.Path("output.png")) in cmd
-        assert '-m' in cmd
-        assert 'models/rife-v4.6' in cmd
-        assert '-n' in cmd
-        assert '1' in cmd
-        
+        assert "-m" in cmd
+        assert "models/rife-v4.6" in cmd
+        assert "-n" in cmd
+        assert "1" in cmd
+
         # Check that unsupported options are not included
-        assert '-s' not in cmd
-        assert '-t' not in cmd
-        assert '-u' not in cmd
-        assert '-x' not in cmd
-        assert '-z' not in cmd
-        assert '-j' not in cmd
-        assert '-g' not in cmd
+        assert "-s" not in cmd
+        assert "-t" not in cmd
+        assert "-u" not in cmd
+        assert "-x" not in cmd
+        assert "-z" not in cmd
+        assert "-j" not in cmd
+        assert "-g" not in cmd
 
 
 if __name__ == "__main__":

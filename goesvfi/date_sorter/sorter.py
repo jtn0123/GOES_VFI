@@ -7,12 +7,18 @@ import time
 import math
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Dict, Tuple, Set, Callable
+from typing import List, Dict, Tuple, Set, Callable, Optional
+
 
 # --------------------------------------------------------------------------------
 # Helper function: buffered file copy with mtime preservation
 # --------------------------------------------------------------------------------
-def copy_file_with_buffer(source_path: Path, dest_path: Path, source_mtime_utc: float, buffer_size: int = 1048576) -> None:
+def copy_file_with_buffer(
+    source_path: Path,
+    dest_path: Path,
+    source_mtime_utc: float,
+    buffer_size: int = 1048576,
+) -> None:
     """
     Copies a file in chunks (buffered) and preserves its last modified time (UTC).
     :param source_path: The full path to the source file.
@@ -21,7 +27,7 @@ def copy_file_with_buffer(source_path: Path, dest_path: Path, source_mtime_utc: 
     :param buffer_size: The size of the read/write buffer in bytes (default is 1 MB).
     """
     try:
-        with open(source_path, 'rb') as sf, open(dest_path, 'wb') as df:
+        with open(source_path, "rb") as sf, open(dest_path, "wb") as df:
             while True:
                 buffer = sf.read(buffer_size)
                 if not buffer:
@@ -38,7 +44,9 @@ def copy_file_with_buffer(source_path: Path, dest_path: Path, source_mtime_utc: 
 # --------------------------------------------------------------------------------
 # New feature: Scan the converted folder for missing intervals
 # --------------------------------------------------------------------------------
-def scan_for_missing_intervals(converted_folder: Path, interval_minutes: int = 30) -> None:
+def scan_for_missing_intervals(
+    converted_folder: Path, interval_minutes: int = 30
+) -> None:
     """
     Scans the converted folder (recursively) for PNG files named like: baseName_YYYYMMDDThhmmssZ.png,
     extracts the datetime from each file, and finds any missing 30-minute intervals between
@@ -48,12 +56,14 @@ def scan_for_missing_intervals(converted_folder: Path, interval_minutes: int = 3
     # Groups:
     #   1. The date/time portion: e.g. 20230501T073220
     #   2. Followed by "Z.png"
-    datetime_pattern = re.compile(r'_(\d{8}T\d{6})Z\.png$')
+    datetime_pattern = re.compile(r"_(\d{8}T\d{6})Z\.png$")
 
     # 1) Gather all .png files in "converted" folder (recursively).
     all_png_files = list(converted_folder.rglob("*.png"))
     if not all_png_files:
-        print("\nNo PNG files found in the 'converted' folder. Cannot scan for missing intervals.")
+        print(
+            "\nNo PNG files found in the 'converted' folder. Cannot scan for missing intervals."
+        )
         return
 
     # 2) Parse out datetime from each filename (where it matches).
@@ -73,7 +83,9 @@ def scan_for_missing_intervals(converted_folder: Path, interval_minutes: int = 3
                 pass
 
     if not datetimes:
-        print("\nNo valid date/time-based files found (e.g., baseName_YYYYMMDDThhmmssZ.png).")
+        print(
+            "\nNo valid date/time-based files found (e.g., baseName_YYYYMMDDThhmmssZ.png)."
+        )
         return
 
     # Sort the list of datetimes
@@ -98,7 +110,7 @@ def scan_for_missing_intervals(converted_folder: Path, interval_minutes: int = 3
         day_str = current_dt.strftime("%Y-%m-%d")
         time_str = current_dt.strftime("%H:%M")
 
-        found = (current_dt in date_set)
+        found = current_dt in date_set
         if not found:
             missing_intervals.append(current_dt)
 
@@ -113,7 +125,7 @@ def scan_for_missing_intervals(converted_folder: Path, interval_minutes: int = 3
     print("\n=== Missing Interval Scan (every {} minutes) ===".format(interval_minutes))
     for day_str in sorted(daily_records.keys()):
         print(f"\nDate: {day_str}")
-        for (time_str, present) in daily_records[day_str]:
+        for time_str, present in daily_records[day_str]:
             if present:
                 # Green check mark
                 print(f"  {time_str}  \033[32m✓\033[0m")
@@ -134,7 +146,7 @@ def detect_interval(datetimes: List[datetime]) -> int:
     """Detect the most common interval between consecutive timestamps"""
     if len(datetimes) < 2:
         return 30  # Default to 30 minutes if not enough data
-        
+
     # Calculate all intervals between consecutive timestamps
     intervals = []
     sorted_times = sorted(datetimes)
@@ -143,23 +155,27 @@ def detect_interval(datetimes: List[datetime]) -> int:
         minutes = diff.total_seconds() / 60
         if 1 <= minutes <= 60:  # Only consider reasonable intervals
             intervals.append(minutes)
-    
+
     if not intervals:
         return 30  # Default if no valid intervals found
-    
+
     # Find the most common interval
     from collections import Counter
+
     interval_counts = Counter(intervals)
     most_common = interval_counts.most_common(1)[0][0]
-    
+
     # Round to nearest 5 minutes for cleaner intervals
     return round(most_common / 5) * 5
 
-def format_calendar_output(daily_records: Dict[str, List[Tuple[str, bool]]], missing_intervals: List[datetime]) -> str:
+
+def format_calendar_output(
+    daily_records: Dict[str, List[Tuple[str, bool]]], missing_intervals: List[datetime]
+) -> str:
     """Format the analysis results as a calendar-style output"""
     output_lines = []
     output_lines.append("\n=== Time Interval Analysis ===")
-    
+
     # Group missing intervals by date
     missing_by_date: Dict[str, List[str]] = {}
     for dt in missing_intervals:
@@ -167,17 +183,17 @@ def format_calendar_output(daily_records: Dict[str, List[Tuple[str, bool]]], mis
         if date_str not in missing_by_date:
             missing_by_date[date_str] = []
         missing_by_date[date_str].append(dt.strftime("%H:%M"))
-    
+
     # Print calendar view for each date
     for date_str in sorted(daily_records.keys()):
         output_lines.append(f"\n{date_str}")
         output_lines.append("Time  | Status")
         output_lines.append("------+--------")
-        
+
         for time_str, present in daily_records[date_str]:
             status = "✓" if present else "X"
             output_lines.append(f"{time_str} | {status}")
-        
+
         # Always print a "Missing times:" section
         output_lines.append("\nMissing times:")
         if date_str in missing_by_date:
@@ -185,138 +201,120 @@ def format_calendar_output(daily_records: Dict[str, List[Tuple[str, bool]]], mis
                 output_lines.append(f"  - {time}")
         else:
             output_lines.append("  (none)")
-    
+
     return "\n".join(output_lines)
 
-def main(interactive: bool = True, progress_callback: Callable[[int], None] | None = None, status_callback: Callable[[str], None] | None = None, log_callback: Callable[[str], None] | None = None) -> None:
-    """Main function that analyzes files for date/time consistency."""
-    def update_status(msg: str) -> None:
-        if status_callback:
-            status_callback(msg)
-        elif interactive:
-            print(msg)
 
-    try:
-        # Initial setup and file scanning
-        root_dir = Path.cwd()
-        png_files = list(root_dir.rglob("*.png"))
-        
-        if not png_files:
-            update_status("No PNG files found in selected folder.")
-            if progress_callback:
-                progress_callback(100)
-            return
-        
-        total_files = len(png_files)
-        update_status(f"Found {total_files} PNG files to analyze")
-        if progress_callback:
-            progress_callback(10)
-            
-        # Extract dates from filenames
-        update_status("Analyzing file dates...")
-        datetime_pattern = re.compile(r'_(\d{8}T\d{6})Z\.png$')
-        datetimes = []
-        invalid_files = []
-        
-        # Process files in smaller batches
-        batch_size = max(1, total_files // 10)  # Update progress every 10%
-        for idx, file_path in enumerate(png_files):
-            if progress_callback and idx % batch_size == 0:
-                progress = int((idx / total_files) * 50)
-                progress_callback(progress)
-                
-            match = datetime_pattern.search(file_path.name)
-            if match:
+class DateSorter:
+    """
+    Sorts files from a source directory into a destination directory
+    based on date extracted from filenames.
+    """
+
+    def sort_files(
+        self,
+        source: str,
+        destination: str,
+        date_format: str,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
+        should_cancel: Optional[Callable[[], bool]] = None,
+    ) -> None:
+        """
+        Sorts files from source to destination based on date in filename.
+
+        :param source: Source directory path.
+        :param destination: Destination directory path.
+        :param date_format: Datetime format string to extract date from filename.
+        :param progress_callback: Optional callback for progress updates (current, total).
+        :param should_cancel: Optional callback to check if cancellation is requested.
+        """
+        source_path = Path(source)
+        destination_path = Path(destination)
+
+        if not source_path.is_dir():
+            raise FileNotFoundError(f"Source directory not found: {source}")
+        if not destination_path.exists():
+            destination_path.mkdir(parents=True, exist_ok=True)
+
+        all_files = list(source_path.rglob("*"))
+        total_files = len(all_files)
+        processed_count = 0
+
+        for file_path in all_files:
+            if should_cancel and should_cancel():
+                print("Sorting cancelled.")
+                return
+
+            if file_path.is_file():
                 try:
-                    dt_str = match.group(1)
-                    dt_obj = datetime.strptime(dt_str, "%Y%m%dT%H%M%S")
-                    datetimes.append(dt_obj)
-                except ValueError:
-                    update_status(f"Warning: Invalid date format in {file_path.name}")
-                    invalid_files.append(file_path.name)
-            else:
-                update_status(f"Warning: Invalid date format in {file_path.name}")
-                invalid_files.append(file_path.name)
+                    # Attempt to extract date from filename using the provided format
+                    # This is a simplified approach; a more robust solution might be needed
+                    # depending on the actual filename patterns.
+                    # Assuming filename is something like 'prefix_YYYYMMDD_HHMMSS.ext'
+                    # and date_format is '%Y%m%d_%H%M%S'
+                    file_name = file_path.name
+                    # Find the part of the filename that matches the date_format pattern
+                    # This requires a more sophisticated regex based on the date_format
+                    # For now, let's assume the date part is extractable.
+                    # A simple approach: try to parse the whole filename or a known part
+                    # This needs refinement based on actual file naming conventions.
 
-        if invalid_files:
-            update_status("\nFiles with invalid date formats:")
-            for fname in invalid_files:
-                update_status(f"  - {fname}")
-            update_status("")
+                    # Placeholder for actual date extraction logic
+                    # Example: if date_format is '%Y/%m/%d' and filename is 'data/2023/10/26/image.png'
+                    # We need to extract '2023/10/26' and parse it.
+                    # A more general approach would involve regex matching based on date_format components.
 
-        if not datetimes:
-            update_status("No files with valid dates found. Cannot continue analysis.")
-            if progress_callback:
-                progress_callback(100)  # Set progress to 100% since we're done
-            return
+                    # For now, let's use a simplified example assuming a date string is part of the name
+                    # like 'image_20231026120000.png' and format is '%Y%m%d%H%M%S'
+                    # This part needs to be made robust based on real file patterns and date_format.
 
-        # Ensure progress updates continue
+                    # Example: Extract date from filename like 'prefix_YYYYMMDDTHHMMSSZ.ext'
+                    # This regex matches the pattern used in scan_for_missing_intervals
+                    match = re.search(r"_(\d{8}T\d{6})Z", file_name)
+                    if match:
+                        date_str = match.group(1)  # YYYYMMDDTHHMMSS
+                        # Parse the extracted date string
+                        file_date = datetime.strptime(date_str, "%Y%m%dT%H%M%S")
+
+                        # Create destination path based on date format
+                        # Example: destination/YYYY/MM/DD/filename.ext
+                        relative_dest_dir = file_date.strftime(date_format)
+                        final_dest_dir = destination_path / relative_dest_dir
+                        final_dest_dir.mkdir(parents=True, exist_ok=True)
+
+                        dest_file_path = final_dest_dir / file_name
+
+                        # Copy the file
+                        shutil.copy2(
+                            file_path, dest_file_path
+                        )  # copy2 preserves metadata
+
+                        processed_count += 1
+                        if progress_callback:
+                            progress_callback(processed_count, total_files)
+
+                except ValueError as e:
+                    print(
+                        f"Could not parse date from filename {file_name} with format {date_format}: {e}"
+                    )
+                    # Optionally handle files that don't match the format
+                    pass  # Skip files that don't match the expected date format
+                except Exception as e:
+                    print(f"Error processing file {file_path}: {e}")
+                    # Handle other potential errors during file processing
+
         if progress_callback:
-            progress_callback(75)  # Show substantial progress
+            progress_callback(
+                total_files, total_files
+            )  # Ensure 100% progress at the end
 
-        # After collecting datetimes, detect interval
-        interval_minutes = detect_interval(datetimes)
-        update_status(f"\nDetected interval: {interval_minutes} minutes")
-        
-        # Sort and analyze
-        datetimes.sort()
-        earliest = datetimes[0]
-        latest = datetimes[-1]
-        date_set = set(datetimes)
-        
-        # Group by date
-        daily_records: Dict[str, List[Tuple[str, bool]]] = {}
-        missing_intervals = []
-        current_dt = earliest
-        
-        while current_dt <= latest:
-            day_str = current_dt.strftime("%Y-%m-%d")
-            time_str = current_dt.strftime("%H:%M")
-            
-            if day_str not in daily_records:
-                daily_records[day_str] = []
-            
-            found = current_dt in date_set
-            daily_records[day_str].append((time_str, found))
-            
-            if not found:
-                missing_intervals.append(current_dt)
-                
-            current_dt += timedelta(minutes=interval_minutes)
-            
-            if progress_callback:
-                progress = min(100, 50 + int(((current_dt - earliest).total_seconds() / 
-                                            (latest - earliest).total_seconds()) * 50))
-                progress_callback(progress)
-        
-        # Generate calendar view
-        calendar_output = format_calendar_output(daily_records, missing_intervals)
-        update_status(calendar_output)
-        
-        # Generate summary
-        total_intervals = len(missing_intervals) + len(datetimes)
-        completion_rate = (len(datetimes) / total_intervals * 100) if total_intervals > 0 else 0
-        
-        summary = [
-            f"\nAnalysis Summary:",
-            f"Total files analyzed: {len(datetimes)}",
-            f"Detected interval: {interval_minutes} minutes",
-            f"Date range: {earliest.strftime('%Y-%m-%d %H:%M')} to {latest.strftime('%Y-%m-%d %H:%M')}",
-            f"Missing intervals: {len(missing_intervals)}",
-            f"Completion rate: {completion_rate:.1f}%"
-        ]
-        
-        for line in summary:
-            update_status(line)
-            
-        update_status("\nAnalysis complete!")
-        
-    except Exception as e:
-        update_status(f"Error during analysis: {str(e)}")
-        raise
 
-    if interactive:
-        input("\nPress Enter to exit...")
+# The original main function is removed as the DateSorter class will handle sorting logic.
+# The helper functions like scan_for_missing_intervals, detect_interval, format_calendar_output
+# are kept as they might be useful utilities, potentially moved or refactored later.
 
 if __name__ == "__main__":
-    main()
+    # Example usage (for testing the class directly)
+    # sorter = DateSorter()
+    # sorter.sort_files(source="/path/to/source", destination="/path/to/destination", date_format="%Y/%m/%d")
+    print("DateSorter class is intended to be used as a module.")

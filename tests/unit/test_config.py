@@ -3,6 +3,7 @@ import pathlib
 import sys
 import builtins
 import pytest
+
 # import toml # Removed unnecessary import for Python 3.11+
 from unittest import mock
 
@@ -31,8 +32,8 @@ def test_load_config_defaults(mock_exists, monkeypatch, tmp_path):
     # Assert: Defaults are used and directory created (get_output_dir ensures creation)
     expected_default_out = pathlib.Path(config.DEFAULTS["output_dir"]).expanduser()
     assert out_dir == expected_default_out
-    assert mock_exists.called # Check that exists was called (on CONFIG_FILE path)
-    assert out_dir.is_dir() # Check dir creation
+    assert mock_exists.called  # Check that exists was called (on CONFIG_FILE path)
+    assert out_dir.is_dir()  # Check dir creation
 
 
 def test_load_config_from_file(monkeypatch, tmp_path, sample_toml_content):
@@ -102,11 +103,13 @@ def test_find_rife_executable_in_path(mock_exists, mock_which):
 def test_find_rife_executable_in_bin_dir(mock_exists, mock_which):
     # Simulate not found in PATH
     mock_which.return_value = None
+
     # Simulate bin fallback exists
     def exists_side_effect(self_path):
         if "bin/rife-cli" in str(self_path):
             return True
         return False
+
     mock_exists.side_effect = exists_side_effect
 
     path = config.find_rife_executable("rife-v4.6")

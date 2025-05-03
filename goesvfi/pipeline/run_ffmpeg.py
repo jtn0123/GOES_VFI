@@ -4,6 +4,7 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
+
 def run_ffmpeg_interpolation(
     input_dir: Path,
     output_mp4_path: Path,
@@ -33,11 +34,11 @@ def run_ffmpeg_interpolation(
     crf: int,
     bitrate_kbps: int,
     bufsize_kb: int,
-    pix_fmt: str
+    pix_fmt: str,
 ) -> Path:
     """
     Stub for FFmpeg interpolation pipeline.
     Currently not implemented.
     """
     LOGGER.error("run_ffmpeg_interpolation is not implemented for FFmpeg pipeline.")
-    raise NotImplementedError("FFmpeg interpolation pipeline not implemented yet") 
+    raise NotImplementedError("FFmpeg interpolation pipeline not implemented yet")
