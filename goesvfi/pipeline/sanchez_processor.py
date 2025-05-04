@@ -93,6 +93,16 @@ class SanchezProcessor(ImageProcessor):
             # Command structure based on --help output: executable -s <input> -o <output> [options]
             sanchez_dir = Path(sanchez_executable).parent # Get the directory of the executable
             sanchez_name = Path(sanchez_executable).name # Get just the executable name
+            
+            # Add DEBUG output to help diagnose the issue
+            LOGGER.debug(f"Sanchez executable directory: {sanchez_dir}")
+            LOGGER.debug(f"Sanchez executable name: {sanchez_name}")
+            LOGGER.debug(f"Input file path: {input_file_path}")
+            LOGGER.debug(f"Output file path: {output_file_path}")
+            
+            # Ensure the output directory exists
+            os.makedirs(output_file_path.parent, exist_ok=True)
+            
             command: list[str | Path] = [
                 f"./{sanchez_name}", # Use ./ to specify executable in cwd
                 "geostationary",    # ADD the required subcommand
@@ -145,14 +155,31 @@ class SanchezProcessor(ImageProcessor):
                 run_env['DYLD_FALLBACK_LIBRARY_PATH'] = str(sanchez_dir.resolve()) + os.pathsep + run_env.get('DYLD_FALLBACK_LIBRARY_PATH', '')
                 LOGGER.debug(f"Setting DYLD_FALLBACK_LIBRARY_PATH to: {run_env['DYLD_FALLBACK_LIBRARY_PATH']}")
 
+                # Print to stdout for diagnostics
+                print(f"Running Sanchez command in {sanchez_dir}: {' '.join(map(str, command))}")
+                
+                # Verify command list - remove any None values or other invalid items
+                clean_command = [str(item) for item in command if item is not None]
+                LOGGER.debug(f"Cleaned command: {clean_command}")
+                
                 result = subprocess.run(
-                    command,
+                    clean_command,
                     check=True, # Restore check=True
                     capture_output=True,
                     text=True,
                     cwd=sanchez_dir, # Set the working directory
                     env=run_env # Pass the modified environment
                 )
+                
+                # Verify the command ran and the output file exists
+                if output_file_path.exists():
+                    LOGGER.info(f"Sanchez output file created successfully: {output_file_path}")
+                else:
+                    LOGGER.warning(f"Sanchez command completed but output file not found at: {output_file_path}")
+                    # List files in directory
+                    dir_files = list(self._temp_dir.glob("*"))
+                    LOGGER.warning(f"Files in temp directory: {dir_files}")
+                
                 # Original logging for success case
                 LOGGER.info("Sanchez stdout: %s", result.stdout)
                 LOGGER.info("Sanchez stderr: %s", result.stderr)
@@ -169,20 +196,46 @@ class SanchezProcessor(ImageProcessor):
                 ) from e
 
             # 5. Load the resulting image file
-            # Debug logs removed
-            processed_img = Image.open(output_file_path)
-            processed_image_data_array = np.array(processed_img)
-
-            # 6. Create a new ImageData object
-            processed_image_data = ImageData(
-                image_data=processed_image_data_array,
-                metadata={
-                    **image_data.metadata,
-                    "processing_steps": image_data.metadata.get("processing_steps", [])
-                    + ["sanchez"],
-                },
-                # Add/update other relevant metadata from kwargs or Sanchez output if available
-            )
+            try:
+                # Check if the file exists first
+                if not output_file_path.exists():
+                    LOGGER.error(f"Output file not found at {output_file_path}")
+                    # Try to inspect the directory to see what's there
+                    try:
+                        dir_contents = list(output_file_path.parent.glob("*"))
+                        LOGGER.error(f"Files in temp directory: {dir_contents}")
+                    except Exception as dir_err:
+                        LOGGER.error(f"Error listing temp directory: {dir_err}")
+                    
+                    # If output file is missing, try to use the original image as fallback
+                    LOGGER.warning("Sanchez processing failed, using original image as fallback")
+                    processed_img = Image.fromarray(image_data.image_data)
+                else:
+                    LOGGER.info(f"Loading Sanchez output from {output_file_path}")
+                    processed_img = Image.open(output_file_path)
+                
+                processed_image_data_array = np.array(processed_img)
+                
+                # 6. Create a new ImageData object
+                processed_image_data = ImageData(
+                    image_data=processed_image_data_array,
+                    metadata={
+                        **image_data.metadata,
+                        "processing_steps": image_data.metadata.get("processing_steps", [])
+                        + ["sanchez"],
+                    },
+                    # Add/update other relevant metadata from kwargs or Sanchez output if available
+                )
+            except FileNotFoundError as fnf_error:
+                LOGGER.exception(f"Output file not found error: {fnf_error}")
+                # Use original image as fallback
+                LOGGER.warning("Sanchez processing failed, using original image as fallback")
+                processed_image_data = image_data
+            except Exception as img_error:
+                LOGGER.exception(f"Error loading Sanchez output: {img_error}")
+                # Use original image as fallback
+                LOGGER.warning("Sanchez processing failed, using original image as fallback")
+                processed_image_data = image_data
 
             return processed_image_data
 

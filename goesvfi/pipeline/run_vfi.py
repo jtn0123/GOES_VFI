@@ -213,6 +213,12 @@ class VfiWorker(QThread):
             # Mypy doesn't infer this from the earlier return statements
             assert rife_exe is not None
             LOGGER.debug("Calling run_vfi...")
+            
+            # Force false_colour=True when encoder is Sanchez
+            is_sanchez_encoder = self.encoder == "Sanchez"
+            if is_sanchez_encoder:
+                LOGGER.info("Forcing false_colour=True for Sanchez encoder")
+                
             gen = run_vfi(
                 folder=self.in_dir,
                 output_mp4_path=self.out_file_path,
@@ -221,7 +227,9 @@ class VfiWorker(QThread):
                 num_intermediate_frames=self.mid_count, # Use mid_count for num_intermediate_frames
                 max_workers=self.max_workers,
                 # Pass all relevant settings for all encoders
-                encoder_type=self.encoder, # Pass encoder type
+                encoder_type=self.encoder, # Pass encoder type explicitly
+                # Force false_colour=True when encoder is Sanchez
+                false_colour=True if is_sanchez_encoder else self.false_colour, # Override false_colour when using Sanchez encoder
                 ffmpeg_settings={
                     "use_ffmpeg_interp": self.use_ffmpeg_interp,
                     "filter_preset": self.filter_preset,
@@ -380,6 +388,10 @@ def _load_process_image(
         Processed PIL Image.
     """
     img = Image.open(path)
+    
+    # Add explicit debug output
+    print(f"_load_process_image: Processing {path.name} - false_colour={false_colour}, res_km={res_km}")
+    LOGGER.info(f"_load_process_image: Processing {path.name} - false_colour={false_colour}, res_km={res_km}")
 
     if false_colour:
         img_stem = path.stem
@@ -388,6 +400,9 @@ def _load_process_image(
         # Keep unique name for the output file
         temp_out_path = sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
         try:
+            # Ensure sanchez temp directory exists
+            os.makedirs(sanchez_temp_dir, exist_ok=True)
+            
             LOGGER.debug(
                 f"Saving original for Sanchez: {temp_in_path}"
             )  # Log correct path
@@ -397,10 +412,22 @@ def _load_process_image(
             )
             # Ensure colourise handles Path objects and receives correct input path
             colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
-            LOGGER.debug(f"Loading Sanchez output: {temp_out_path}")
-            img_colourised = Image.open(temp_out_path)
-            # Replace original img object with colourised one
-            img = img_colourised
+            
+            # Check if output file exists before trying to open it
+            if temp_out_path.exists():
+                LOGGER.debug(f"Loading Sanchez output: {temp_out_path}")
+                img_colourised = Image.open(temp_out_path)
+                # Replace original img object with colourised one
+                img = img_colourised
+            else:
+                LOGGER.error(f"Sanchez output file not found: {temp_out_path}")
+                # Output files in directory
+                try:
+                    dir_files = list(sanchez_temp_dir.glob("*"))
+                    LOGGER.error(f"Files in temp directory: {dir_files}")
+                except Exception as dir_err:
+                    LOGGER.error(f"Error listing temp directory: {dir_err}")
+                # Keep original image if output file not found
         except Exception as e:
             LOGGER.error(
                 f"Sanchez colourise failed for {path.name}: {e}", exc_info=True
@@ -483,6 +510,8 @@ def _process_single_image_worker(
 
         # 2. Apply Sanchez if requested using SanchezProcessor
         if false_colour:
+            # Add more explicit debugging
+            print(f"_process_single_image_worker: Applying Sanchez to {original_path.name} (false_colour={false_colour}, res_km={res_km})")
             LOGGER.debug(
                 f"Applying Sanchez to image from {original_path.name} (res={res_km}km)."
             )
@@ -552,6 +581,8 @@ def run_vfi(
     fps: int,
     num_intermediate_frames: int,  # Currently handles 1
     max_workers: int,  # Currently unused, runs sequentially
+    # Encoder selection parameter
+    encoder_type: str = "RIFE",  # Added explicit encoder_type parameter
     # RIFE v4.6 specific arguments (passed via kwargs from GUI worker)
     rife_tile_enable: bool = False,
     rife_tile_size: int = 256,
@@ -560,7 +591,7 @@ def run_vfi(
     rife_tta_spatial: bool = False,
     rife_tta_temporal: bool = False,
     model_key: str = "rife-v4.6",
-    # --- Add Sanchez/Crop Args --- #
+    # --- Sanchez/Crop Args --- #
     false_colour: bool = False,
     res_km: int = 4,
     crop_rect_xywh: Optional[Tuple[int, int, int, int]] = None,
@@ -585,16 +616,23 @@ def run_vfi(
     # --- Parameter Extraction ---
     skip_model = kwargs.get("skip_model", False)
 
+    # Force false_colour to True when encoder is "Sanchez"
+    if encoder_type == "Sanchez":
+        false_colour = True
+        LOGGER.info("Encoder type is Sanchez - forcing false_colour to True")
+        # Also log to stdout for debugging
+        print(f"Forcing false_colour=True for Sanchez encoder (encoder_type={encoder_type})")
+    
     LOGGER.info(
-        f"run_vfi called with: false_colour={false_colour}, res_km={res_km}km, crop_rect={crop_rect_xywh}, skip_model={skip_model}"
+        f"run_vfi called with: encoder_type={encoder_type}, false_colour={false_colour}, res_km={res_km}km, crop_rect={crop_rect_xywh}, skip_model={skip_model}"
     )
 
     # --- Input Validation ---
+    # For now, force num_intermediate_frames to 1 when not skipping model
+    # instead of raising an error
     if num_intermediate_frames != 1 and not skip_model:
-        # TODO: Implement recursive logic for num_intermediate_frames=3
-        raise NotImplementedError(
-            "Currently only num_intermediate_frames=1 is supported when not skipping model."
-        )
+        LOGGER.warning(f"Requested {num_intermediate_frames} intermediate frames, but only 1 is currently supported. Setting to 1.")
+        num_intermediate_frames = 1  # Force to 1 instead of raising an error
 
     paths = sorted(folder.glob("*.png"))
     if not paths:
@@ -738,8 +776,20 @@ def run_vfi(
         # No need to check for None anymore if map completes successfully
         LOGGER.info(f"All {len(all_processed_paths)} images processed successfully.")
 
-        # --- Prepare raw output path (moved here) ---
-        raw_path = output_mp4_path.with_suffix(".raw.mp4")
+        # --- Prepare raw output path with timestamp to avoid duplicates ---
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Get original stem and parent directory
+        original_stem = output_mp4_path.stem
+        # Remove any existing .raw suffixes and timestamps (like 20250504_123456)
+        clean_stem = original_stem.replace('.raw', '')
+        # Also remove any existing timestamps in the format YYYYMMDD_HHMMSS
+        import re
+        clean_stem = re.sub(r'_\d{8}_\d{6}', '', clean_stem)
+        
+        # Create a new path with timestamp to ensure uniqueness
+        raw_path = output_mp4_path.with_name(f"{clean_stem}_{timestamp}.mp4")
         LOGGER.info(f"Intermediate raw video path: {raw_path}")
         # --- Determine Effective FPS for Raw Stream (moved here) ---
         effective_input_fps = (

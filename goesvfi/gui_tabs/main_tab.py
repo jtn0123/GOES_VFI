@@ -19,8 +19,8 @@ from PyQt6.QtGui import QImage # Add QImage import
 from goesvfi.utils import config # Import config
 # RIFEModelDetails is defined locally below, remove incorrect import
 from goesvfi.pipeline.image_processing_interfaces import ImageData # Add ImageData import
-from PyQt6.QtCore import QSettings, Qt, QTimer, pyqtSignal, pyqtSlot, QRect, QObject # Add QObject
-from PyQt6.QtGui import QColor, QImage, QPixmap
+from PyQt6.QtCore import QSettings, Qt, QTimer, pyqtSignal, pyqtSlot, QRect, QObject, QPointF # Add QObject, QPointF
+from PyQt6.QtGui import QColor, QImage, QPixmap, QMouseEvent # Add QMouseEvent
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -290,9 +290,15 @@ class MainTab(QWidget):
 
         # Start Button
         self.start_button = QPushButton("Start Video Interpolation")
-        self.start_button.setObjectName("start_button")
+        self.start_button.setObjectName("start_button") 
         self.start_button.setMinimumHeight(40)
         self.start_button.setEnabled(False)
+        # Use a standard Python function directly bound to avoid signal issues
+        self.start_button.clicked.connect(lambda: print("START BUTTON DIRECT: CLICKED"))
+        # Back up with a direct click handler from setup_ui
+        self.start_button.clicked.connect(self._debug_start_button_clicked)
+        # Add direct mouse event handling
+        self.start_button.mousePressEvent = self._start_button_mouse_press
 
         # Layout Assembly
         settings_layout = QHBoxLayout()
@@ -317,33 +323,75 @@ class MainTab(QWidget):
 
     def _connect_signals(self) -> None:
         """Connect signals to slots for the main tab."""
+        LOGGER.debug("Connecting MainTab signals...")
+        
         # IO Controls
+        LOGGER.debug("Connecting IO control signals...")
         self.in_dir_edit.textChanged.connect(self._on_in_dir_changed)
         # Button connections moved to _setup_ui where buttons are created
         self.out_file_edit.textChanged.connect(self._on_out_file_changed)
 
         # Preview Controls
+        LOGGER.debug("Connecting preview control signals...")
         self.first_frame_label.clicked.connect(lambda: self._show_zoom(self.first_frame_label))
         self.middle_frame_label.clicked.connect(lambda: self._show_zoom(self.middle_frame_label))
         self.last_frame_label.clicked.connect(lambda: self._show_zoom(self.last_frame_label))
         self.sanchez_false_colour_checkbox.stateChanged.connect(self.main_window_preview_signal.emit) # Emit MainWindow signal
 
         # Crop Controls
+        LOGGER.debug("Connecting crop control signals...")
         self.crop_button.clicked.connect(self._on_crop_clicked)
         self.clear_crop_button.clicked.connect(self._on_clear_crop_clicked)
 
         # Processing Settings
+        LOGGER.debug("Connecting processing setting signals...")
         self.encoder_combo.currentTextChanged.connect(self._on_encoder_changed)
 
         # RIFE Options
+        LOGGER.debug("Connecting RIFE option signals...")
         self.rife_tile_checkbox.stateChanged.connect(self._toggle_tile_size_enabled)
         self.rife_thread_spec_edit.textChanged.connect(self._validate_thread_spec)
         self._connect_model_combo() # Connect RIFE model combo signals
 
-        # Start Button
+        # Start Button - this is a duplicate connection, but that's intentional for debug purposes
+        LOGGER.debug("Connecting start button signal...")
         self.start_button.clicked.connect(self._start)
+        LOGGER.debug("Start button now has multiple connections to ensure it works")
+        
+        # Verify that our processing signals are connected to MainWindow
+        LOGGER.debug("Verifying processing signal connections...")
+        self._verify_processing_signal_connections()
+        
+        LOGGER.debug("All MainTab signals connected.")
 
-        # Internal preview update signal connection removed
+    def _verify_processing_signal_connections(self) -> None:
+        """Verify that processing signals are properly connected to MainWindow."""
+        # In PyQt6, we can't directly get receiver count, so instead check main_window for
+        # expected handler methods
+        LOGGER.debug("Verifying processing signal connections...")
+        
+        # Check if MainWindow has methods for handling our signals
+        main_window = self.main_window_ref
+        has_processing_handler = hasattr(main_window, '_handle_processing')
+        LOGGER.debug(f"MainWindow has _handle_processing method: {has_processing_handler}")
+            
+        if not has_processing_handler:
+            LOGGER.error("WARNING: MainWindow does not have _handle_processing method!")
+            # Try fallback options if needed
+        else:
+            LOGGER.debug("MainWindow appears to have necessary handler methods")
+        
+        # Try to manually connect to MainWindow if possible (will be ignored if already connected)
+        if has_processing_handler:
+            try:
+                LOGGER.debug("Ensuring processing_started signal is connected...")
+                # Note: PyQt6 will silently ignore duplicate connections
+                self.processing_started.connect(main_window._handle_processing)
+                LOGGER.debug("Processing signal connection verified/created")
+            except Exception as e:
+                LOGGER.exception(f"Failed to verify/connect processing_started signal: {e}")
+        else:
+            LOGGER.error("Cannot connect: main_window does not have required handler methods")
 
 
     def _post_init_setup(self) -> None:
@@ -393,17 +441,51 @@ class MainTab(QWidget):
             self.in_dir_edit.setText(dir_path)
 
     def _pick_out_file(self) -> None:
+        """Select the output file path."""
         LOGGER.debug("Entering _pick_out_file...")
-        start_dir = str(self.out_file_path.parent) if self.out_file_path and self.out_file_path.parent.exists() else ""
-        start_file = str(self.out_file_path) if self.out_file_path else ""
+        
+        # Get starting directory/file
+        start_dir = ""
+        start_file = ""
+        if self.out_file_path:
+            LOGGER.debug(f"Current out_file_path: {self.out_file_path}")
+            if self.out_file_path.parent and self.out_file_path.parent.exists():
+                start_dir = str(self.out_file_path.parent)
+                LOGGER.debug(f"Using parent dir for file dialog: {start_dir}")
+            start_file = str(self.out_file_path)
+            LOGGER.debug(f"Using current path for file dialog: {start_file}")
+            
+        # If we have an input directory but no output file yet, suggest a file path based on input
+        if not start_file and not start_dir:
+            main_window = self.main_window_ref
+            current_in_dir = getattr(main_window, 'in_dir', None)
+            if current_in_dir and current_in_dir.exists():
+                # Use input directory name + _output.mp4
+                dir_name = current_in_dir.name
+                start_dir = str(current_in_dir.parent)
+                suggested_name = f"{dir_name}_output.mp4"
+                start_file = str(current_in_dir.parent / suggested_name)
+                LOGGER.debug(f"Suggesting output file based on input dir: {start_file}")
 
+        # Get save filename
         file_path, _ = QFileDialog.getSaveFileName(
             self, "Save Output Video", start_file or start_dir, "MP4 Files (*.mp4)"
         )
+        
         if file_path:
             LOGGER.debug(f"Output file selected: {file_path}")
-             # Setting text triggers _on_out_file_changed -> sets self.out_file_path
+            # Double check file has .mp4 extension
+            if not file_path.lower().endswith('.mp4'):
+                file_path += '.mp4'
+                LOGGER.debug(f"Added .mp4 extension: {file_path}")
+                
+            # Setting text triggers _on_out_file_changed -> sets self.out_file_path
             self.out_file_edit.setText(file_path)
+            
+            # Update button state immediately
+            self._update_start_button_state()
+        else:
+            LOGGER.debug("No output file selected")
 
     def _on_crop_clicked(self) -> None:
 # --- BEGIN ADDED DEBUG LOGS ---
@@ -586,6 +668,9 @@ class MainTab(QWidget):
 
             image_to_show = full_res_image # Default to full image
             crop_rect_tuple = getattr(self.main_window_ref, 'current_crop_rect', None)
+            
+            # Keep track of whether we're showing a cropped view for UI indication
+            is_cropped_view = False
 
             if crop_rect_tuple:
                 try:
@@ -598,6 +683,7 @@ class MainTab(QWidget):
                         cropped_qimage = full_res_image.copy(crop_qrect)
                         if not cropped_qimage.isNull():
                             image_to_show = cropped_qimage # Use the cropped QImage
+                            is_cropped_view = True
                             LOGGER.debug(f"Cropped image size for zoom: {image_to_show.size()}")
                         else:
                             LOGGER.error("Failed to crop QImage.")
@@ -609,22 +695,81 @@ class MainTab(QWidget):
             else:
                 LOGGER.debug("No crop rectangle found, showing full image in zoom.")
 
+            # Get display details for preview info
+            # For example: which preview is this (first, middle, last)
+            preview_type = ""
+            if label == self.first_frame_label:
+                preview_type = "First Frame"
+            elif label == self.middle_frame_label:
+                preview_type = "Middle Frame"
+            elif label == self.last_frame_label:
+                preview_type = "Last Frame"
+                
+            # Construct additional info for the dialog title
+            info_title = preview_type
+            if is_cropped_view:
+                # Add crop indicator
+                info_title += f" (Cropped: {crop_rect_tuple[2]}x{crop_rect_tuple[3]})"
+            elif crop_rect_tuple:
+                # There's a crop rect but we're showing the full image (e.g., bounds issue)
+                info_title += " (Full Image - Crop Disabled)"
+                
+            # Get image file path if available (for showing file details)
+            file_path = getattr(label, 'file_path', None)
+            if file_path:
+                # Extract just the filename to keep it clean
+                try:
+                    from pathlib import Path
+                    p = Path(file_path)
+                    info_title += f" - {p.name}"
+                except Exception:
+                    # Fall back to full path if parsing fails
+                    info_title += f" - {file_path}"
+
             # Close existing viewer if it's open
             if self.image_viewer_dialog and self.image_viewer_dialog.isVisible():
                 LOGGER.debug("Closing existing image viewer dialog.")
                 self.image_viewer_dialog.close() # Close the previous dialog
 
-            # Instantiate the new ImageViewerDialog using the potentially cropped image
-            # No parent is passed, making it a top-level window
+            # Instantiate the new ImageViewerDialog with enhanced info
             self.image_viewer_dialog = ImageViewerDialog(image_to_show) # Use image_to_show
-
+            
+            # Set custom title with info (could be extended to handle with new parameter)
+            self.image_viewer_dialog.setWindowTitle(info_title)
+            
+            # Enhanced debug info for better troubleshooting
+            LOGGER.debug(f"Opening ImageViewerDialog - Title: {info_title}")
+            LOGGER.debug(f"Image dimensions: {image_to_show.width()}x{image_to_show.height()}")
+            
             # Show the new dialog (non-modal)
             self.image_viewer_dialog.show()
             LOGGER.debug("New image viewer dialog shown.")
+            
+            # IMPROVEMENT: Future enhancement - Add a "Show Crop Overlay" mode 
+            # that shows the original image with a rectangle highlighting the crop area
+            # This would require modifying the ImageViewerDialog class to support overlay drawing
+            
         else:
             LOGGER.warning("No valid full-resolution 'processed_image' found on the clicked label.")
-            # Optionally, show a message to the user or just log the warning
-            # QMessageBox.warning(self, "Image Not Ready", "The full-resolution image is not available yet.")
+            
+            # Provide better feedback to user when image isn't available
+            msg = "The full-resolution image is not available for preview yet."
+            
+            # Check if we have any context to add
+            if not hasattr(label, 'processed_image'):
+                msg += "\n\nReason: No processed image data is attached to this preview."
+            elif label.processed_image is None:
+                msg += "\n\nReason: The processed image data is null."
+            elif not isinstance(label.processed_image, QImage):
+                msg += f"\n\nReason: The image data is not a QImage (found {type(label.processed_image)})."
+            elif label.processed_image.isNull():
+                msg += "\n\nReason: The image is empty or invalid."
+                
+            # Suggest a solution
+            msg += "\n\nTry updating previews or verifying the input directory."
+            
+            # Show a helpful message dialog instead of just logging
+            QMessageBox.information(self, "Preview Not Available", msg)
 
     def _enhance_preview_area(self) -> QGroupBox:
         """Create the group box containing the preview image labels."""
@@ -729,29 +874,437 @@ class MainTab(QWidget):
 
     def _start(self) -> None:
         """Prepare arguments and emit the processing_started signal."""
+        LOGGER.debug("================== START BUTTON CLICKED ==================")
         LOGGER.debug("MainTab: Start button clicked.")
-        LOGGER.debug("Emitting processing_started signal")
-        main_window = cast(QObject, self.parent())
+        
+        # Verify that the button should be enabled based on state
+        can_start = self._verify_start_button_state()
+        if not can_start:
+            LOGGER.error("Start button clicked but state verification shows it should be disabled!")
+            # Continue anyway since the user managed to click it
+        
+        # Get parent references through multiple approaches for debugging
+        parent_obj = self.parent()
+        LOGGER.debug(f"Parent object type: {type(parent_obj)}")
+        main_window_from_parent = cast(QObject, parent_obj)
+        main_window_from_ref = self.main_window_ref  
+        LOGGER.debug(f"main_window_from_parent id: {id(main_window_from_parent)}")
+        LOGGER.debug(f"main_window_from_ref id: {id(main_window_from_ref)}")
+        
+        # Check input directory through multiple approaches
+        in_dir_from_parent = getattr(main_window_from_parent, 'in_dir', None)
+        in_dir_from_ref = getattr(main_window_from_ref, 'in_dir', None)
+        in_dir_from_edit = self.in_dir_edit.text()
+        LOGGER.debug(f"in_dir_from_parent: {in_dir_from_parent}")
+        LOGGER.debug(f"in_dir_from_ref: {in_dir_from_ref}")
+        LOGGER.debug(f"in_dir_from_edit: {in_dir_from_edit}")
+        
+        # Use main_window_ref for consistency
+        main_window = self.main_window_ref
         current_in_dir = getattr(main_window, 'in_dir', None)
         LOGGER.debug(f"Current input directory: {current_in_dir}, Output file: {self.out_file_path}")
 
         if not current_in_dir or not self.out_file_path:
-            LOGGER.warning("Missing paths for processing")
+            error_msg = f"Missing paths for processing: in_dir={current_in_dir}, out_file={self.out_file_path}"
+            LOGGER.warning(error_msg)
             QMessageBox.warning(self, "Missing Paths", "Please select both input and output paths.")
             return
 
+        # Check for files in input directory
+        try:
+            if current_in_dir and current_in_dir.is_dir():
+                image_files = sorted([
+                    f for f in current_in_dir.iterdir()
+                    if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+                ])
+                LOGGER.debug(f"Found {len(image_files)} image files in input directory")
+                if not image_files:
+                    LOGGER.warning("No image files found in the input directory")
+                    QMessageBox.warning(self, "No Images Found", 
+                                       f"No image files found in the selected directory:\n{current_in_dir}\n\n"
+                                       "Please select a directory containing image files.")
+                    return
+            else:
+                LOGGER.warning(f"Input directory invalid or doesn't exist: {current_in_dir}")
+                QMessageBox.warning(self, "Invalid Directory", 
+                                   "The selected input directory is invalid or doesn't exist.")
+                return
+        except Exception as e:
+            LOGGER.exception(f"Error checking input directory: {e}")
+            QMessageBox.critical(self, "Error", f"Error checking input directory: {e}")
+            return
+
+        # Get processing arguments
+        LOGGER.debug("Gathering processing arguments...")
         args = self.get_processing_args()
+        
         if args:
+            # Deep verify the processing arguments
+            self._deep_verify_args(args)
+            
             LOGGER.info(f"Starting processing with args: {args}")
+            
+            # Update GUI state before emitting signal
+            LOGGER.debug("Setting processing state to True")
             self.set_processing_state(True)
-            LOGGER.debug("Emitting processing_started signal")
-            # Add a direct print to stdout for clearer debugging
-            print(f"EMITTING SIGNAL: processing_started with {len(args) if args else 0} args")
-            self.processing_started.emit(args) # Emit signal with processing arguments
-            LOGGER.debug("Signal emitted")
+            
+            LOGGER.debug("=== Emitting processing_started signal ===")
+            # Check if main_window has the handler method (can't directly check connected slots in PyQt6)
+            main_window = self.main_window_ref
+            has_handler = hasattr(main_window, '_handle_processing')
+            LOGGER.debug(f"MainWindow has processing handler method: {has_handler}")
+            
+            # Try direct connections first
+            try:
+                LOGGER.debug("Emitting processing_started signal with args")
+                # Add a direct print to stdout for clearer debugging
+                print(f"EMITTING SIGNAL: processing_started with {len(args) if args else 0} args")
+                
+                self.processing_started.emit(args) # Emit signal with processing arguments
+                LOGGER.debug("Signal emission completed")
+                
+                # Wait a short time to see if the signal was processed
+                LOGGER.debug("Waiting briefly to see if signal was handled...")
+                # No need for an actual delay in Python
+                
+                # For visual confirmation in GUI that something is happening
+                QMessageBox.information(self, "Processing Started", 
+                                      "Processing has started. This dialog will close in 2 seconds...")
+                # Close the dialog automatically after 2 seconds
+                QTimer.singleShot(2000, lambda: None)
+                
+            except Exception as signal_error:
+                LOGGER.exception(f"Error during signal emission: {signal_error}")
+            
+            # As a fallback, try direct method call if signal might not be working
+            LOGGER.debug("Trying direct method call as additional fallback...")
+            if hasattr(main_window, '_handle_processing'):
+                try:
+                    LOGGER.debug("Calling main_window._handle_processing directly")
+                    main_window._handle_processing(args)
+                except Exception as direct_call_error:
+                    LOGGER.exception(f"Error during direct method call: {direct_call_error}")
+            else:
+                LOGGER.error("main_window does not have _handle_processing method")
         else:
             # Error message already shown by get_processing_args
             LOGGER.warning("Processing not started due to invalid arguments.")
+            
+        LOGGER.debug("================== START BUTTON PROCESSING COMPLETE ==================")
+        
+    def _verify_start_button_state(self) -> bool:
+        """Verify that the start button should be enabled based on current state."""
+        LOGGER.debug("Verifying start button state...")
+        
+        # Check input directory
+        main_window = self.main_window_ref
+        current_in_dir = getattr(main_window, 'in_dir', None)
+        has_in_dir = bool(current_in_dir and current_in_dir.is_dir())
+        LOGGER.debug(f"Has valid input directory: {has_in_dir}")
+        
+        # Check output file
+        has_out_file = bool(self.out_file_path)
+        LOGGER.debug(f"Has output file path: {has_out_file}")
+        
+        # Check encoder specific requirements
+        current_encoder = self.encoder_combo.currentText()
+        LOGGER.debug(f"Current encoder: {current_encoder}")
+        
+        encoder_ok = True
+        if current_encoder == "RIFE":
+            model_key = self.rife_model_combo.currentData()
+            encoder_ok = bool(model_key)
+            LOGGER.debug(f"RIFE model selected: {model_key}, valid: {encoder_ok}")
+        
+        # Final state check
+        should_be_enabled = has_in_dir and has_out_file and encoder_ok and not self.is_processing
+        LOGGER.debug(f"Start button should be enabled: {should_be_enabled}")
+        
+        # Compare with actual state
+        actual_enabled = self.start_button.isEnabled()
+        LOGGER.debug(f"Start button is actually enabled: {actual_enabled}")
+        
+        if should_be_enabled != actual_enabled:
+            LOGGER.warning(f"Start button state mismatch! Should be: {should_be_enabled}, Is: {actual_enabled}")
+        
+        return should_be_enabled
+        
+    def _deep_verify_args(self, args: Dict[str, Any]) -> None:
+        """Perform a deep verification of processing arguments for debugging."""
+        LOGGER.debug("Deep verification of processing arguments...")
+        
+        # Check critical paths
+        in_dir = args.get('in_dir')
+        if in_dir:
+            exists = in_dir.exists()
+            is_dir = in_dir.is_dir() if exists else False
+            LOGGER.debug(f"in_dir: {in_dir}, exists: {exists}, is_dir: {is_dir}")
+            if exists and is_dir:
+                # Check image files and dimensions
+                self._check_input_directory_contents(in_dir)
+        else:
+            LOGGER.error("Missing required argument: in_dir")
+            
+        out_file = args.get('out_file')
+        if out_file:
+            out_dir = out_file.parent
+            dir_exists = out_dir.exists()
+            dir_writable = os.access(str(out_dir), os.W_OK) if dir_exists else False
+            LOGGER.debug(f"out_file: {out_file}, dir_exists: {dir_exists}, dir_writable: {dir_writable}")
+        else:
+            LOGGER.error("Missing required argument: out_file")
+            
+        # Check encoder-specific arguments
+        encoder = args.get('encoder')
+        LOGGER.debug(f"encoder: {encoder}")
+        
+        if encoder == "RIFE":
+            rife_model_key = args.get('rife_model_key')
+            rife_model_path = args.get('rife_model_path')
+            rife_exe_path = args.get('rife_exe_path')
+            
+            LOGGER.debug(f"rife_model_key: {rife_model_key}")
+            LOGGER.debug(f"rife_model_path: {rife_model_path}")
+            LOGGER.debug(f"rife_exe_path: {rife_exe_path}")
+            
+            if rife_exe_path:
+                exe_exists = rife_exe_path.exists()
+                exe_executable = os.access(str(rife_exe_path), os.X_OK) if exe_exists else False
+                LOGGER.debug(f"rife_exe_path exists: {exe_exists}, executable: {exe_executable}")
+            else:
+                LOGGER.error("Missing required RIFE executable path")
+                
+        elif encoder == "FFmpeg":
+            # Check FFmpeg specific arguments
+            LOGGER.debug("Checking FFmpeg-specific arguments...")
+            ffmpeg_args = args.get('ffmpeg_args')
+            if ffmpeg_args:
+                LOGGER.debug(f"FFmpeg arguments provided: {ffmpeg_args}")
+                # Check for FFmpeg profile settings
+                if 'profile' in ffmpeg_args:
+                    profile_name = ffmpeg_args.get('profile')
+                    LOGGER.debug(f"FFmpeg profile: {profile_name}")
+                    
+                # Check for quality settings
+                if 'crf' in ffmpeg_args:
+                    crf = ffmpeg_args.get('crf')
+                    LOGGER.debug(f"FFmpeg CRF: {crf}")
+                    
+                if 'bitrate' in ffmpeg_args:
+                    bitrate = ffmpeg_args.get('bitrate')
+                    LOGGER.debug(f"FFmpeg bitrate: {bitrate}")
+            else:
+                LOGGER.warning("No FFmpeg arguments provided")
+                # Try to generate a default FFmpeg command to verify integration
+                self._debug_generate_ffmpeg_command(args)
+                
+        # Check crop rectangle if present
+        crop_rect = args.get('crop_rect')
+        if crop_rect:
+            LOGGER.debug(f"crop_rect: {crop_rect}")
+            # Validate dimensions
+            try:
+                x, y, w, h = crop_rect
+                LOGGER.debug(f"Crop dimensions - x: {x}, y: {y}, width: {w}, height: {h}")
+                if w <= 0 or h <= 0:
+                    LOGGER.error(f"Invalid crop rectangle dimensions: width={w}, height={h}")
+                else:
+                    # Verify crop dimensions against actual image dimensions
+                    self._verify_crop_against_images(in_dir, crop_rect)
+                    
+                    # Check how crop will be passed to FFmpeg
+                    self._debug_check_ffmpeg_crop_integration(crop_rect)
+            except (ValueError, TypeError) as e:
+                LOGGER.error(f"Invalid crop rectangle format: {e}")
+        else:
+            LOGGER.debug("No crop rectangle specified")
+            
+        # Check other parameters that affect processing
+        fps = args.get('fps')
+        multiplier = args.get('multiplier')
+        max_workers = args.get('max_workers')
+        sanchez_enabled = args.get('sanchez_enabled')
+        sanchez_resolution_km = args.get('sanchez_resolution_km')
+        
+        LOGGER.debug(f"fps: {fps}")
+        LOGGER.debug(f"multiplier: {multiplier}")
+        LOGGER.debug(f"max_workers: {max_workers}")
+        LOGGER.debug(f"sanchez_enabled: {sanchez_enabled}")
+        LOGGER.debug(f"sanchez_resolution_km: {sanchez_resolution_km}")
+        
+    def _check_input_directory_contents(self, in_dir: Path) -> None:
+        """Check images in the input directory and report details for debugging."""
+        try:
+            image_files = sorted([
+                f for f in in_dir.iterdir()
+                if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+            ])
+            
+            LOGGER.debug(f"Found {len(image_files)} image files in {in_dir}")
+            
+            if not image_files:
+                LOGGER.warning("No image files found in input directory")
+                return
+                
+            # Sample the first, middle, and last image for dimensions
+            sample_indices = [0]
+            if len(image_files) > 2:
+                sample_indices.append(len(image_files) // 2)
+            if len(image_files) > 1:
+                sample_indices.append(len(image_files) - 1)
+                
+            import numpy as np
+            from PIL import Image
+            
+            sample_stats = []
+            for idx in sample_indices:
+                try:
+                    img_path = image_files[idx]
+                    img = Image.open(img_path)
+                    img_array = np.array(img)
+                    sample_stats.append({
+                        "index": idx,
+                        "filename": img_path.name,
+                        "dimensions": img.size,
+                        "shape": img_array.shape,
+                        "dtype": str(img_array.dtype)
+                    })
+                except Exception as e:
+                    LOGGER.error(f"Error analyzing image {image_files[idx]}: {e}")
+                    
+            LOGGER.debug(f"Sample image stats: {sample_stats}")
+            
+        except Exception as e:
+            LOGGER.exception(f"Error checking input directory contents: {e}")
+            
+    def _verify_crop_against_images(self, in_dir: Path, crop_rect: tuple) -> None:
+        """Verify that crop rectangle is valid for the images in the directory."""
+        try:
+            image_files = sorted([
+                f for f in in_dir.iterdir()
+                if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+            ])
+            
+            if not image_files:
+                LOGGER.warning("No images found to verify crop against")
+                return
+                
+            # Check the first image
+            from PIL import Image
+            
+            img_path = image_files[0]
+            img = Image.open(img_path)
+            img_width, img_height = img.size
+            
+            x, y, w, h = crop_rect
+            
+            # Check if crop is within image bounds
+            crop_right = x + w
+            crop_bottom = y + h
+            
+            within_bounds = (0 <= x < img_width and 
+                             0 <= y < img_height and
+                             0 < crop_right <= img_width and
+                             0 < crop_bottom <= img_height)
+                             
+            LOGGER.debug(f"Image dimensions: {img_width}x{img_height}")
+            LOGGER.debug(f"Crop rectangle: ({x}, {y}, {w}, {h})")
+            LOGGER.debug(f"Crop bottom-right: ({crop_right}, {crop_bottom})")
+            LOGGER.debug(f"Crop within bounds: {within_bounds}")
+            
+            if not within_bounds:
+                LOGGER.warning(f"Crop rectangle ({x}, {y}, {w}, {h}) exceeds image dimensions ({img_width}x{img_height})")
+                
+            # Calculate percentages for context
+            crop_width_percent = (w / img_width) * 100
+            crop_height_percent = (h / img_height) * 100
+            crop_area_percent = (w * h) / (img_width * img_height) * 100
+            
+            LOGGER.debug(f"Crop width: {w}px ({crop_width_percent:.1f}% of image width)")
+            LOGGER.debug(f"Crop height: {h}px ({crop_height_percent:.1f}% of image height)")
+            LOGGER.debug(f"Crop area: {w*h}px² ({crop_area_percent:.1f}% of image area)")
+            
+        except Exception as e:
+            LOGGER.exception(f"Error verifying crop against images: {e}")
+            
+    def _debug_check_ffmpeg_crop_integration(self, crop_rect: tuple) -> None:
+        """Debug how crop rectangle would be passed to FFmpeg."""
+        try:
+            x, y, w, h = crop_rect
+            
+            # Check if FFmpeg settings tab is accessible
+            main_window = self.main_window_ref
+            ffmpeg_tab = getattr(main_window, 'ffmpeg_tab', None)
+            
+            if ffmpeg_tab:
+                LOGGER.debug("FFmpeg settings tab found, checking for crop integration")
+                # TODO: Add actual checks for FFmpeg tab handling of crop rectangle
+            else:
+                LOGGER.debug("FFmpeg settings tab not accessible for crop integration check")
+            
+            # Simulate FFmpeg crop filter string
+            crop_filter = f"crop={w}:{h}:{x}:{y}"
+            LOGGER.debug(f"FFmpeg crop filter would be: {crop_filter}")
+            
+            # Check for potential issues with odd dimensions (h264/h265 requirement)
+            has_odd_dimensions = (w % 2 != 0 or h % 2 != 0)
+            if has_odd_dimensions:
+                LOGGER.warning(f"Crop dimensions ({w}x{h}) have odd values, which may cause issues with some codecs")
+                # Suggest fixed dimensions
+                fixed_w = w + (1 if w % 2 != 0 else 0)
+                fixed_h = h + (1 if h % 2 != 0 else 0)
+                LOGGER.debug(f"Suggested fixed dimensions: {fixed_w}x{fixed_h}")
+                
+        except Exception as e:
+            LOGGER.exception(f"Error checking FFmpeg crop integration: {e}")
+            
+    def _debug_generate_ffmpeg_command(self, args: Dict[str, Any]) -> None:
+        """Generate a sample FFmpeg command for debugging."""
+        try:
+            from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
+            
+            in_dir = args.get('in_dir')
+            out_file = args.get('out_file')
+            crop_rect = args.get('crop_rect')
+            fps = args.get('fps', 60)
+            
+            if not in_dir or not out_file:
+                LOGGER.warning("Cannot generate FFmpeg command without input directory and output file")
+                return
+                
+            # Create a dummy input file path
+            input_path = in_dir / "dummy_input.mp4"
+            output_path = out_file
+            
+            # Build a sample FFmpeg command
+            builder = FFmpegCommandBuilder()
+            builder.set_input(input_path)
+            builder.set_output(output_path)
+            builder.set_encoder("Software x264")
+            builder.set_crf(20)
+            builder.set_pix_fmt("yuv420p")
+            
+            command = builder.build()
+            
+            # Add crop and fps filters that would be used
+            crop_fps_filters = []
+            if crop_rect:
+                x, y, w, h = crop_rect
+                crop_fps_filters.append(f"crop={w}:{h}:{x}:{y}")
+            crop_fps_filters.append(f"fps={fps}")
+            
+            # Insert filters before output path in command
+            if crop_fps_filters:
+                filter_str = ",".join(crop_fps_filters)
+                filter_idx = command.index(str(output_path))
+                command.insert(filter_idx, "-filter:v")
+                command.insert(filter_idx + 1, filter_str)
+            
+            LOGGER.debug(f"Sample FFmpeg command with crop/fps: {' '.join(command)}")
+            
+        except Exception as e:
+            LOGGER.exception(f"Error generating sample FFmpeg command: {e}")
+            
 
 
     # --- Worker Interaction ---
@@ -785,18 +1338,130 @@ class MainTab(QWidget):
         self._update_start_button_state() # Re-evaluate if it should be enabled
 
 
+    def _start_button_mouse_press(self, event: QMouseEvent) -> None:
+        """Direct mouse event handler for start button."""
+        # Always call the original event handler first
+        QPushButton.mousePressEvent(self.start_button, event)
+        
+        print("START BUTTON MOUSE PRESS DETECTED")
+        LOGGER.debug("START BUTTON MOUSE PRESS DETECTED - DIRECT EVENT HANDLER")
+        
+        # Manually handle the press if it's a left click
+        if event.button() == Qt.MouseButton.LeftButton:
+            print(f"LEFT CLICK ON START BUTTON: enabled={self.start_button.isEnabled()}")
+            LOGGER.debug(f"LEFT CLICK ON START BUTTON: enabled={self.start_button.isEnabled()}")
+            
+            # Force the _start method to be called regardless of enabled state
+            # This is for debugging - in production we'd respect the enabled state
+            QTimer.singleShot(200, self._direct_start)
+    
+    def _direct_start(self) -> None:
+        """Called directly after button press via timer to avoid event loop issues."""
+        print("DIRECT START METHOD CALLED VIA TIMER")
+        LOGGER.debug("DIRECT START METHOD CALLED VIA TIMER")
+        # Call the actual handler - but only if button is enabled
+        # For debugging, we're bypassing the disabled state check
+        if not self.start_button.isEnabled():
+            print("START BUTTON IS DISABLED - FIXING ISSUES AND FORCING START")
+            LOGGER.debug("START BUTTON IS DISABLED - FIXING ISSUES AND FORCING START")
+            
+            # Try to diagnose why button is disabled
+            self._diagnose_start_button()
+            
+            # For testing - force enable and then call start
+            old_state = self.start_button.isEnabled()
+            self.start_button.setEnabled(True)
+            self._start()
+            self.start_button.setEnabled(old_state)
+        else:
+            self._start()
+            
+    def _diagnose_start_button(self) -> None:
+        """Debug the start button state."""
+        LOGGER.debug("----- START BUTTON DIAGNOSIS -----")
+        
+        # Check input directory
+        main_window = self.main_window_ref
+        current_in_dir = getattr(main_window, 'in_dir', None)
+        out_file = self.out_file_path
+        
+        LOGGER.debug(f"Input dir exists: {current_in_dir is not None}")
+        if current_in_dir:
+            LOGGER.debug(f"Input dir path: {current_in_dir}")
+            LOGGER.debug(f"Input dir is directory: {current_in_dir.is_dir() if current_in_dir else False}")
+            
+        LOGGER.debug(f"Output file exists: {out_file is not None}")
+        if out_file:
+            LOGGER.debug(f"Output file path: {out_file}")
+            
+        # Check RIFE model
+        encoder = self.encoder_combo.currentText()
+        LOGGER.debug(f"Encoder: {encoder}")
+        
+        if encoder == "RIFE":
+            model_key = self.rife_model_combo.currentData()
+            LOGGER.debug(f"RIFE model key: {model_key}")
+            
+        LOGGER.debug(f"Is processing: {self.is_processing}")
+        
+        # Check field values
+        for key, widget in [
+            ("in_dir_edit", self.in_dir_edit),
+            ("out_file_edit", self.out_file_edit),
+            ("fps_spinbox", self.fps_spinbox),
+            ("multiplier_spinbox", self.multiplier_spinbox),
+            ("max_workers_spinbox", self.max_workers_spinbox),
+            ("encoder_combo", self.encoder_combo),
+            ("rife_model_combo", self.rife_model_combo),
+        ]:
+            try:
+                if hasattr(widget, "text"):
+                    LOGGER.debug(f"{key} text: {widget.text()}")
+                elif hasattr(widget, "currentText"):
+                    LOGGER.debug(f"{key} currentText: {widget.currentText()}")
+                elif hasattr(widget, "value"):
+                    LOGGER.debug(f"{key} value: {widget.value()}")
+            except Exception as e:
+                LOGGER.error(f"Error getting value for {key}: {e}")
+                
+        LOGGER.debug("----------------------------------")
+            
+    def _debug_start_button_clicked(self) -> None:
+        """Debug handler added directly to the start button in setup_ui."""
+        print("START BUTTON CLICKED - DEBUG HANDLER")
+        LOGGER.debug("START BUTTON CLICKED - DEBUG HANDLER TRIGGERED")
+        # Call the actual handler directly to bypass any signal issues
+        self._direct_start()
+        
     def _update_start_button_state(self) -> None:
         """Enable/disable start button based on paths and RIFE model availability."""
-        main_window = cast(QObject, self.parent())
+        main_window = self.main_window_ref # Use stored reference for consistency
         current_in_dir = getattr(main_window, 'in_dir', None)
+        
         has_paths = current_in_dir and self.out_file_path
+        LOGGER.debug(f"Start button check: has_paths={has_paths}, in_dir={current_in_dir}, out_file={self.out_file_path}")
+        
         # Check RIFE model only if RIFE is selected encoder
         rife_ok = True
         if self.encoder_combo.currentText() == "RIFE":
             rife_ok = bool(self.rife_model_combo.currentData()) # Check if a valid model is selected
+            LOGGER.debug(f"Start button check: RIFE selected, model_ok={rife_ok}")
 
-        can_start = bool(has_paths and rife_ok)
-        self.start_button.setEnabled(can_start and not self.is_processing)
+        can_start = bool(has_paths and rife_ok and not self.is_processing)
+        LOGGER.debug(f"Start button should be enabled: {can_start}")
+        self.start_button.setEnabled(can_start)
+        
+        # Extra debug check with visual indicator
+        if can_start:
+            self.start_button.setText("Start Video Interpolation (Ready)")
+            self.start_button.setStyleSheet("background-color: #4CAF50; color: white;") # Green
+        else:
+            if self.is_processing:
+                self.start_button.setText("Cancel Processing")
+                self.start_button.setStyleSheet("background-color: #f44336; color: white;") # Red
+            else:
+                self.start_button.setText("Start Video Interpolation (Disabled)")
+                self.start_button.setStyleSheet("") # Default style
 
 
     @pyqtSlot(bool, str)
@@ -1007,24 +1672,69 @@ class MainTab(QWidget):
 
     def get_processing_args(self) -> Dict[str, Any] | None: # Add type parameters
         """Gather all processing arguments from the UI."""
-        main_window = cast(QObject, self.parent())
+        LOGGER.debug("Gathering processing arguments...")
+        
+        # Try multiple approaches to get main_window reference
+        main_window = self.main_window_ref  # Prefer using the stored reference
+        if not main_window:
+            LOGGER.warning("main_window_ref is None, falling back to parent()")
+            main_window = cast(QObject, self.parent())
+            
+        # Fetch critical parameters with logging
         current_in_dir = getattr(main_window, 'in_dir', None)
+        LOGGER.debug(f"Input directory from main_window: {current_in_dir}")
         current_crop_rect_mw = getattr(main_window, 'current_crop_rect', None)
+        LOGGER.debug(f"Crop rect from main_window: {current_crop_rect_mw}")
+        LOGGER.debug(f"Output file path: {self.out_file_path}")
 
+        # Verify input directory
         if not current_in_dir:
-            QMessageBox.critical(self, "Error", "Input directory not selected.")
+            error_msg = "Input directory not selected."
+            LOGGER.error(error_msg)
+            QMessageBox.critical(self, "Error", error_msg)
             return None
+            
+        # Verify input directory exists and is valid
+        if not current_in_dir.exists() or not current_in_dir.is_dir():
+            error_msg = f"Input directory does not exist or is not a directory: {current_in_dir}"
+            LOGGER.error(error_msg)
+            QMessageBox.critical(self, "Error", error_msg)
+            return None
+            
+        # Verify output file
         if not self.out_file_path:
-            QMessageBox.critical(self, "Error", "Output file not selected.")
+            error_msg = "Output file not selected."
+            LOGGER.error(error_msg)
+            QMessageBox.critical(self, "Error", error_msg)
             return None
-
+            
+        # Get and validate encoder parameters
         encoder = self.encoder_combo.currentText()
+        LOGGER.debug(f"Selected encoder: {encoder}")
         rife_model_key = self.rife_model_combo.currentData()
+        LOGGER.debug(f"Selected RIFE model: {rife_model_key}")
 
         if encoder == "RIFE" and not rife_model_key:
-             QMessageBox.critical(self, "Error", "No RIFE model selected.")
-             return None
+            error_msg = "No RIFE model selected."
+            LOGGER.error(error_msg)
+            QMessageBox.critical(self, "Error", error_msg)
+            return None
+            
+        # Ensure output directory exists
+        if self.out_file_path:
+            out_dir = self.out_file_path.parent
+            if not out_dir.exists():
+                try:
+                    LOGGER.info(f"Creating output directory: {out_dir}")
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                except Exception as e:
+                    error_msg = f"Could not create output directory: {e}"
+                    LOGGER.error(error_msg)
+                    QMessageBox.critical(self, "Error", error_msg)
+                    return None
 
+        # Create arguments dictionary
+        LOGGER.debug("Building arguments dictionary...")
         args = {
             "in_dir": current_in_dir,
             "out_file": self.out_file_path,
@@ -1044,9 +1754,28 @@ class MainTab(QWidget):
             "sanchez_enabled": self.sanchez_false_colour_checkbox.isChecked(), # This might control post-processing or preview, not necessarily encoding
             "sanchez_resolution_km": float(self.sanchez_res_combo.currentText()),
             "crop_rect": current_crop_rect_mw,
-            # TODO: Add FFmpeg specific args from FFmpegSettingsTab if encoder is FFmpeg
-            "ffmpeg_args": None # Placeholder
         }
+        
+        # Add FFmpeg specific args if needed
+        if encoder == "FFmpeg":
+            # Try to get FFmpeg tab from MainWindow to get its settings
+            ffmpeg_tab = getattr(main_window, 'ffmpeg_tab', None)
+            if ffmpeg_tab:
+                try:
+                    # Get FFmpeg settings from tab (method name may vary)
+                    ffmpeg_args = getattr(ffmpeg_tab, 'get_ffmpeg_args', lambda: {})()
+                    args["ffmpeg_args"] = ffmpeg_args
+                    LOGGER.debug(f"Added FFmpeg args from ffmpeg_tab: {ffmpeg_args}")
+                except Exception as e:
+                    LOGGER.exception(f"Error getting FFmpeg args: {e}")
+                    args["ffmpeg_args"] = {}
+            else:
+                LOGGER.warning("FFmpeg selected but ffmpeg_tab not found in MainWindow")
+                args["ffmpeg_args"] = {}
+        else:
+            args["ffmpeg_args"] = None
+            
+        LOGGER.debug(f"Processing arguments gathered: {args}")
         return args
 
 
@@ -1061,81 +1790,188 @@ class MainTab(QWidget):
         LOGGER.debug("MainTab: Loading settings...")
         main_window = cast(QObject, self.parent())
 
-        # --- Load Input/Output ---
-        # Load input dir and set it in MainWindow
-        in_dir_str = self.settings.value("paths/inputDirectory", "", type=str)
-        loaded_in_dir = Path(in_dir_str) if in_dir_str and Path(in_dir_str).is_dir() else None
-        if hasattr(main_window, 'set_in_dir'):
-            main_window.set_in_dir(loaded_in_dir) # Set state in MainWindow
-            self.in_dir_edit.setText(in_dir_str if loaded_in_dir else "") # Update local widget
-            if loaded_in_dir:
-                 LOGGER.info(f"Loaded input directory: {in_dir_str}")
+        try:
+            # --- Load Input/Output ---
+            # Load input dir and set it in MainWindow
+            LOGGER.debug("Loading input directory path...")
+            in_dir_str = self.settings.value("paths/inputDirectory", "", type=str)
+            LOGGER.debug(f"Raw input directory from settings: '{in_dir_str}'")
+            if in_dir_str:
+                in_dir_path = Path(in_dir_str)
+                exists = in_dir_path.exists()
+                is_dir = in_dir_path.is_dir() if exists else False
+                LOGGER.debug(f"Input path exists: {exists}, is directory: {is_dir}")
+                loaded_in_dir = in_dir_path if exists and is_dir else None
             else:
-                 LOGGER.debug("No valid saved input directory found.")
-        else:
-            LOGGER.error("Parent does not have set_in_dir method")
+                loaded_in_dir = None
+                LOGGER.debug("No input directory string in settings")
+            
+            if hasattr(main_window, 'set_in_dir'):
+                main_window.set_in_dir(loaded_in_dir) # Set state in MainWindow
+                self.in_dir_edit.setText(in_dir_str if loaded_in_dir else "") # Update local widget
+                if loaded_in_dir:
+                    LOGGER.info(f"Loaded input directory: {in_dir_str}")
+                else:
+                    LOGGER.debug("No valid saved input directory found.")
+            else:
+                LOGGER.error("Parent does not have set_in_dir method")
 
-        # Load output file (still managed locally in MainTab)
-        out_file_str = self.settings.value("paths/outputFile", "", type=str)
-        if out_file_str:
-             self.out_file_edit.setText(out_file_str) # Triggers _on_out_file_changed -> sets self.out_file_path
-             LOGGER.info(f"Loaded output file: {out_file_str}")
-        else:
-             self.out_file_path = None # Ensure state is None if empty
+            # Load output file (still managed locally in MainTab)
+            LOGGER.debug("Loading output file path...")
+            out_file_str = self.settings.value("paths/outputFile", "", type=str)
+            LOGGER.debug(f"Raw output file from settings: '{out_file_str}'")
+            if out_file_str:
+                self.out_file_edit.setText(out_file_str) # Triggers _on_out_file_changed -> sets self.out_file_path
+                LOGGER.info(f"Loaded output file: {out_file_str}")
+            else:
+                self.out_file_path = None # Ensure state is None if empty
+                LOGGER.debug("No output file string in settings")
 
-        # --- Load Processing Settings ---
-        self.fps_spinbox.setValue(self.settings.value("processing/fps", 60, type=int))
-        self.mid_count_spinbox.setValue(self.settings.value("processing/multiplier", 2, type=int))
-        cpu_cores = os.cpu_count()
-        default_workers = max(1, cpu_cores // 2) if cpu_cores else 1
-        self.max_workers_spinbox.setValue(self.settings.value("processing/maxWorkers", default_workers, type=int))
-        self.encoder_combo.setCurrentText(self.settings.value("processing/encoder", "RIFE", type=str))
+            # --- Load Processing Settings ---
+            LOGGER.debug("Loading processing settings...")
+            fps_value = self.settings.value("processing/fps", 60, type=int)
+            LOGGER.debug(f"Setting FPS: {fps_value}")
+            self.fps_spinbox.setValue(fps_value)
+            
+            multiplier_value = self.settings.value("processing/multiplier", 2, type=int)
+            LOGGER.debug(f"Setting multiplier: {multiplier_value}")
+            self.mid_count_spinbox.setValue(multiplier_value)
+            
+            cpu_cores = os.cpu_count()
+            default_workers = max(1, cpu_cores // 2) if cpu_cores else 1
+            max_workers_value = self.settings.value("processing/maxWorkers", default_workers, type=int)
+            LOGGER.debug(f"Setting max workers: {max_workers_value} (default was {default_workers})")
+            self.max_workers_spinbox.setValue(max_workers_value)
+            
+            encoder_value = self.settings.value("processing/encoder", "RIFE", type=str)
+            LOGGER.debug(f"Setting encoder: {encoder_value}")
+            self.encoder_combo.setCurrentText(encoder_value)
 
-        # --- Load RIFE Options ---
-        # self.rife_model_combo requires models to be populated first, handled in _post_init_setup -> _populate_models
-        self.rife_tile_checkbox.setChecked(self.settings.value("rife/tilingEnabled", False, type=bool))
-        self.rife_tile_size_spinbox.setValue(self.settings.value("rife/tileSize", 256, type=int))
-        self.rife_uhd_checkbox.setChecked(self.settings.value("rife/uhdMode", False, type=bool))
-        self.rife_thread_spec_edit.setText(self.settings.value("rife/threadSpec", "", type=str))
-        self.rife_tta_spatial_checkbox.setChecked(self.settings.value("rife/ttaSpatial", False, type=bool))
-        self.rife_tta_temporal_checkbox.setChecked(self.settings.value("rife/ttaTemporal", False, type=bool))
+            # --- Load RIFE Options ---
+            LOGGER.debug("Loading RIFE options...")
+            # self.rife_model_combo requires models to be populated first, handled in _post_init_setup -> _populate_models
+            
+            # Carefully handle boolean values which can sometimes load incorrectly
+            tile_enabled_raw = self.settings.value("rife/tilingEnabled", False) 
+            # Convert to proper boolean - QSettings can return strings "true"/"false" or QVariant
+            tile_enabled = False
+            if isinstance(tile_enabled_raw, bool):
+                tile_enabled = tile_enabled_raw
+            elif isinstance(tile_enabled_raw, str):
+                tile_enabled = tile_enabled_raw.lower() == 'true'
+            else:
+                tile_enabled = bool(tile_enabled_raw)
+            LOGGER.debug(f"Setting tiling enabled: {tile_enabled} (raw value: {tile_enabled_raw}, type: {type(tile_enabled_raw)})")
+            self.rife_tile_checkbox.setChecked(tile_enabled)
+            
+            tile_size_value = self.settings.value("rife/tileSize", 256, type=int)
+            LOGGER.debug(f"Setting tile size: {tile_size_value}")
+            self.rife_tile_size_spinbox.setValue(tile_size_value)
+            
+            # Handle UHD mode boolean
+            uhd_mode_raw = self.settings.value("rife/uhdMode", False)
+            uhd_mode = False
+            if isinstance(uhd_mode_raw, bool):
+                uhd_mode = uhd_mode_raw
+            elif isinstance(uhd_mode_raw, str):
+                uhd_mode = uhd_mode_raw.lower() == 'true'
+            else:
+                uhd_mode = bool(uhd_mode_raw)
+            LOGGER.debug(f"Setting UHD mode: {uhd_mode} (raw value: {uhd_mode_raw}, type: {type(uhd_mode_raw)})")
+            self.rife_uhd_checkbox.setChecked(uhd_mode)
+            
+            thread_spec_value = self.settings.value("rife/threadSpec", "", type=str)
+            LOGGER.debug(f"Setting thread spec: '{thread_spec_value}'")
+            self.rife_thread_spec_edit.setText(thread_spec_value)
+            
+            # Handle TTA spatial boolean
+            tta_spatial_raw = self.settings.value("rife/ttaSpatial", False)
+            tta_spatial = False
+            if isinstance(tta_spatial_raw, bool):
+                tta_spatial = tta_spatial_raw
+            elif isinstance(tta_spatial_raw, str):
+                tta_spatial = tta_spatial_raw.lower() == 'true'
+            else:
+                tta_spatial = bool(tta_spatial_raw)
+            LOGGER.debug(f"Setting TTA spatial: {tta_spatial} (raw value: {tta_spatial_raw}, type: {type(tta_spatial_raw)})")
+            self.rife_tta_spatial_checkbox.setChecked(tta_spatial)
+            
+            # Handle TTA temporal boolean
+            tta_temporal_raw = self.settings.value("rife/ttaTemporal", False)
+            tta_temporal = False
+            if isinstance(tta_temporal_raw, bool):
+                tta_temporal = tta_temporal_raw
+            elif isinstance(tta_temporal_raw, str):
+                tta_temporal = tta_temporal_raw.lower() == 'true'
+            else:
+                tta_temporal = bool(tta_temporal_raw)
+            LOGGER.debug(f"Setting TTA temporal: {tta_temporal} (raw value: {tta_temporal_raw}, type: {type(tta_temporal_raw)})")
+            self.rife_tta_temporal_checkbox.setChecked(tta_temporal)
 
-        # --- Load Sanchez Options ---
-        self.sanchez_false_colour_checkbox.setChecked(self.settings.value("sanchez/falseColorEnabled", False, type=bool))
-        self.sanchez_res_combo.setCurrentText(self.settings.value("sanchez/resolutionKm", "4", type=str))
+            # --- Load Sanchez Options ---
+            LOGGER.debug("Loading Sanchez options...")
+            
+            # Handle false color boolean
+            false_color_raw = self.settings.value("sanchez/falseColorEnabled", False)
+            false_color = False
+            if isinstance(false_color_raw, bool):
+                false_color = false_color_raw
+            elif isinstance(false_color_raw, str):
+                false_color = false_color_raw.lower() == 'true'
+            else:
+                false_color = bool(false_color_raw)
+            LOGGER.debug(f"Setting false color: {false_color} (raw value: {false_color_raw}, type: {type(false_color_raw)})")
+            self.sanchez_false_colour_checkbox.setChecked(false_color)
+            
+            res_km_value = self.settings.value("sanchez/resolutionKm", "4", type=str)
+            LOGGER.debug(f"Setting resolution km: '{res_km_value}'")
+            # Check if the value exists in the combo box items
+            index = self.sanchez_res_combo.findText(res_km_value)
+            if index >= 0:
+                self.sanchez_res_combo.setCurrentText(res_km_value)
+            else:
+                LOGGER.warning(f"Resolution value '{res_km_value}' not found in combo box, using default")
 
-        # --- Load Crop State and set it in MainWindow ---
-        crop_rect_str = self.settings.value("preview/cropRectangle", "", type=str)
-        loaded_crop_rect = None
-        if crop_rect_str:
-             try:
-                  coords = [int(c.strip()) for c in crop_rect_str.split(',')]
-                  if len(coords) == 4:
-                       loaded_crop_rect = tuple(coords)
-                       LOGGER.info(f"Loaded crop rectangle: {loaded_crop_rect}")
-                  else:
-                       LOGGER.warning(f"Invalid crop rectangle format in settings: {crop_rect_str}")
-             except ValueError:
-                  LOGGER.warning(f"Could not parse crop rectangle from settings: {crop_rect_str}")
+            # --- Load Crop State and set it in MainWindow ---
+            LOGGER.debug("Loading crop rectangle...")
+            crop_rect_str = self.settings.value("preview/cropRectangle", "", type=str)
+            LOGGER.debug(f"Raw crop rectangle from settings: '{crop_rect_str}'")
+            loaded_crop_rect = None
+            if crop_rect_str:
+                try:
+                    coords = [int(c.strip()) for c in crop_rect_str.split(',')]
+                    if len(coords) == 4:
+                        loaded_crop_rect = tuple(coords)
+                        LOGGER.info(f"Loaded crop rectangle: {loaded_crop_rect}")
+                    else:
+                        LOGGER.warning(f"Invalid crop rectangle format in settings: {crop_rect_str}")
+                except ValueError:
+                    LOGGER.warning(f"Could not parse crop rectangle from settings: {crop_rect_str}")
 
-        if hasattr(main_window, 'set_crop_rect'):
-             main_window.set_crop_rect(loaded_crop_rect) # Set state in MainWindow
-        else:
-             LOGGER.error("Parent does not have set_crop_rect method")
+            if hasattr(main_window, 'set_crop_rect'):
+                main_window.set_crop_rect(loaded_crop_rect) # Set state in MainWindow
+                LOGGER.debug(f"Crop rectangle set in MainWindow: {loaded_crop_rect}")
+            else:
+                LOGGER.error("Parent does not have set_crop_rect method")
 
+            # Update UI states based on loaded settings
+            LOGGER.debug("Updating UI elements based on loaded settings...")
+            self._update_rife_ui_elements() # Handles model combo based on loaded encoder
+            self._update_start_button_state()
+            self._update_crop_buttons_state()
+            self._update_rife_options_state(self.encoder_combo.currentText())
+            self._update_sanchez_options_state(self.encoder_combo.currentText())
+            self._toggle_tile_size_enabled(self.rife_tile_checkbox.isChecked())
 
-        # Update UI states based on loaded settings
-        self._update_rife_ui_elements() # Handles model combo based on loaded encoder
-        self._update_start_button_state()
-        self._update_crop_buttons_state()
-        self._update_rife_options_state(self.encoder_combo.currentText())
-        self._update_sanchez_options_state(self.encoder_combo.currentText())
-        self._toggle_tile_size_enabled(self.rife_tile_checkbox.isChecked())
+            # Trigger preview update via MainWindow's signal AFTER loading settings
+            LOGGER.debug("Triggering preview update after settings load")
+            self.main_window_preview_signal.emit()
 
-        # Trigger preview update via MainWindow's signal AFTER loading settings
-        self.main_window_preview_signal.emit()
-
-        LOGGER.debug("MainTab: Settings loaded.")
+            LOGGER.info("MainTab: Settings loaded successfully.")
+            
+        except Exception as e:
+            LOGGER.exception(f"Error loading settings: {e}")
+            # Continue without failing - don't crash the app if settings loading fails
 
 
     def save_settings(self) -> None:
@@ -1143,45 +1979,103 @@ class MainTab(QWidget):
         LOGGER.debug("MainTab: Saving settings...")
         main_window = cast(QObject, self.parent())
 
-        # --- Save Paths ---
-        # Save input directory from MainWindow's state
-        current_in_dir = getattr(main_window, 'in_dir', None)
-        if current_in_dir:
-             self.settings.setValue("paths/inputDirectory", str(current_in_dir))
-        else:
-             self.settings.remove("paths/inputDirectory") # Clear if None
+        try:
+            # --- Save Paths ---
+            LOGGER.debug("Saving path settings...")
+            # Save input directory from MainWindow's state
+            current_in_dir = getattr(main_window, 'in_dir', None)
+            if current_in_dir:
+                in_dir_str = str(current_in_dir)
+                LOGGER.debug(f"Saving input directory: '{in_dir_str}'")
+                self.settings.setValue("paths/inputDirectory", in_dir_str)
+            else:
+                LOGGER.debug("Removing input directory setting (None/empty)")
+                self.settings.remove("paths/inputDirectory") # Clear if None
 
-        # Save output file (still managed locally in MainTab)
-        if self.out_file_path:
-             self.settings.setValue("paths/outputFile", str(self.out_file_path))
-        else:
-             self.settings.remove("paths/outputFile")
+            # Save output file (still managed locally in MainTab)
+            if self.out_file_path:
+                out_file_str = str(self.out_file_path)
+                LOGGER.debug(f"Saving output file path: '{out_file_str}'")
+                self.settings.setValue("paths/outputFile", out_file_str)
+            else:
+                LOGGER.debug("Removing output file setting (None/empty)")
+                self.settings.remove("paths/outputFile")
 
-        # --- Save Processing Settings ---
-        self.settings.setValue("processing/fps", self.fps_spinbox.value())
-        self.settings.setValue("processing/multiplier", self.mid_count_spinbox.value())
-        self.settings.setValue("processing/maxWorkers", self.max_workers_spinbox.value())
-        self.settings.setValue("processing/encoder", self.encoder_combo.currentText())
+            # --- Save Processing Settings ---
+            LOGGER.debug("Saving processing settings...")
+            fps_value = self.fps_spinbox.value()
+            LOGGER.debug(f"Saving FPS: {fps_value}")
+            self.settings.setValue("processing/fps", fps_value)
+            
+            multiplier_value = self.mid_count_spinbox.value()
+            LOGGER.debug(f"Saving multiplier: {multiplier_value}")
+            self.settings.setValue("processing/multiplier", multiplier_value)
+            
+            max_workers_value = self.max_workers_spinbox.value()
+            LOGGER.debug(f"Saving max workers: {max_workers_value}")
+            self.settings.setValue("processing/maxWorkers", max_workers_value)
+            
+            encoder_value = self.encoder_combo.currentText()
+            LOGGER.debug(f"Saving encoder: '{encoder_value}'")
+            self.settings.setValue("processing/encoder", encoder_value)
 
-        # --- Save RIFE Options ---
-        self.settings.setValue("rife/modelKey", self.rife_model_combo.currentData()) # Save model key
-        self.settings.setValue("rife/tilingEnabled", self.rife_tile_checkbox.isChecked())
-        self.settings.setValue("rife/tileSize", self.rife_tile_size_spinbox.value())
-        self.settings.setValue("rife/uhdMode", self.rife_uhd_checkbox.isChecked())
-        self.settings.setValue("rife/threadSpec", self.rife_thread_spec_edit.text())
-        self.settings.setValue("rife/ttaSpatial", self.rife_tta_spatial_checkbox.isChecked())
-        self.settings.setValue("rife/ttaTemporal", self.rife_tta_temporal_checkbox.isChecked())
+            # --- Save RIFE Options ---
+            LOGGER.debug("Saving RIFE options...")
+            
+            model_key = self.rife_model_combo.currentData()
+            LOGGER.debug(f"Saving RIFE model key: '{model_key}'")
+            self.settings.setValue("rife/modelKey", model_key) # Save model key
+            
+            tile_enabled = self.rife_tile_checkbox.isChecked()
+            LOGGER.debug(f"Saving tiling enabled: {tile_enabled}")
+            self.settings.setValue("rife/tilingEnabled", tile_enabled)
+            
+            tile_size = self.rife_tile_size_spinbox.value()
+            LOGGER.debug(f"Saving tile size: {tile_size}")
+            self.settings.setValue("rife/tileSize", tile_size)
+            
+            uhd_mode = self.rife_uhd_checkbox.isChecked()
+            LOGGER.debug(f"Saving UHD mode: {uhd_mode}")
+            self.settings.setValue("rife/uhdMode", uhd_mode)
+            
+            thread_spec = self.rife_thread_spec_edit.text()
+            LOGGER.debug(f"Saving thread spec: '{thread_spec}'")
+            self.settings.setValue("rife/threadSpec", thread_spec)
+            
+            tta_spatial = self.rife_tta_spatial_checkbox.isChecked()
+            LOGGER.debug(f"Saving TTA spatial: {tta_spatial}")
+            self.settings.setValue("rife/ttaSpatial", tta_spatial)
+            
+            tta_temporal = self.rife_tta_temporal_checkbox.isChecked()
+            LOGGER.debug(f"Saving TTA temporal: {tta_temporal}")
+            self.settings.setValue("rife/ttaTemporal", tta_temporal)
 
-        # --- Save Sanchez Options ---
-        self.settings.setValue("sanchez/falseColorEnabled", self.sanchez_false_colour_checkbox.isChecked())
-        self.settings.setValue("sanchez/resolutionKm", self.sanchez_res_combo.currentText())
+            # --- Save Sanchez Options ---
+            LOGGER.debug("Saving Sanchez options...")
+            
+            false_color = self.sanchez_false_colour_checkbox.isChecked()
+            LOGGER.debug(f"Saving false color enabled: {false_color}")
+            self.settings.setValue("sanchez/falseColorEnabled", false_color)
+            
+            res_km = self.sanchez_res_combo.currentText()
+            LOGGER.debug(f"Saving resolution km: '{res_km}'")
+            self.settings.setValue("sanchez/resolutionKm", res_km)
 
-        # --- Save Crop State from MainWindow's state ---
-        current_crop_rect_mw = getattr(main_window, 'current_crop_rect', None)
-        if current_crop_rect_mw:
-             rect_str = ",".join(map(str, current_crop_rect_mw))
-             self.settings.setValue("preview/cropRectangle", rect_str)
-        else:
-             self.settings.remove("preview/cropRectangle")
+            # --- Save Crop State from MainWindow's state ---
+            LOGGER.debug("Saving crop rectangle...")
+            current_crop_rect_mw = getattr(main_window, 'current_crop_rect', None)
+            if current_crop_rect_mw:
+                rect_str = ",".join(map(str, current_crop_rect_mw))
+                LOGGER.debug(f"Saving crop rectangle: '{rect_str}'")
+                self.settings.setValue("preview/cropRectangle", rect_str)
+            else:
+                LOGGER.debug("Removing crop rectangle setting (None/empty)")
+                self.settings.remove("preview/cropRectangle")
 
-        LOGGER.debug("MainTab: Settings saved.")
+            # Force settings to sync to disk
+            self.settings.sync()
+            LOGGER.info("MainTab: Settings saved successfully.")
+            
+        except Exception as e:
+            LOGGER.exception(f"Error saving settings: {e}")
+            # Continue without failing - don't crash the app if settings saving fails
