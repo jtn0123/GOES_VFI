@@ -730,7 +730,7 @@ class MainTab(QWidget):
     def _start(self) -> None:
         """Prepare arguments and emit the processing_started signal."""
         LOGGER.debug("MainTab: Start button clicked.")
-        LOGGER.debug(f"Signal connections: {self.processing_started.receivers()} receivers for processing_started signal")
+        LOGGER.debug("Emitting processing_started signal")
         main_window = cast(QObject, self.parent())
         current_in_dir = getattr(main_window, 'in_dir', None)
         LOGGER.debug(f"Current input directory: {current_in_dir}, Output file: {self.out_file_path}")
@@ -745,6 +745,8 @@ class MainTab(QWidget):
             LOGGER.info(f"Starting processing with args: {args}")
             self.set_processing_state(True)
             LOGGER.debug("Emitting processing_started signal")
+            # Add a direct print to stdout for clearer debugging
+            print(f"EMITTING SIGNAL: processing_started with {len(args) if args else 0} args")
             self.processing_started.emit(args) # Emit signal with processing arguments
             LOGGER.debug("Signal emitted")
         else:

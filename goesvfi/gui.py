@@ -388,7 +388,12 @@ class MainWindow(QWidget):
         self.file_sorter_tab.directory_selected.connect(self._set_in_dir_from_sorter)
         self.date_sorter_tab.directory_selected.connect(self._set_in_dir_from_sorter)
         # Connect the MainTab's processing_started signal to our handler
-        self.main_tab.processing_started.connect(self._handle_processing)
+        try:
+            LOGGER.debug("Connecting MainTab.processing_started to MainWindow._handle_processing")
+            self.main_tab.processing_started.connect(self._handle_processing)
+            LOGGER.info("Successfully connected MainTab.processing_started signal")
+        except Exception as e:
+            LOGGER.exception(f"Error connecting processing_started signal: {e}")
 
         # Populate initial data
         self._populate_models()
@@ -1271,6 +1276,8 @@ class MainWindow(QWidget):
             args: Dictionary of processing arguments from MainTab
         """
         LOGGER.info("MainWindow: _handle_processing called - Starting video interpolation processing")
+        # Add a direct print to stdout for clearer debugging
+        print(f"HANDLING SIGNAL: _handle_processing with {len(args) if args else 0} args")
         LOGGER.debug(f"Processing arguments: {args}")
         
         # Update UI state
