@@ -386,6 +386,8 @@ class MainWindow(QWidget):
         self.main_view_model.status_updated.connect(self.status_bar.showMessage)
         self.file_sorter_tab.directory_selected.connect(self._set_in_dir_from_sorter)
         self.date_sorter_tab.directory_selected.connect(self._set_in_dir_from_sorter)
+        # Connect the MainTab's processing_started signal to our handler
+        self.main_tab.processing_started.connect(self._handle_processing)
 
         # Populate initial data
         self._populate_models()
@@ -1256,6 +1258,108 @@ class MainWindow(QWidget):
         self._update_rife_ui_elements()  # Update RIFE options based on new model
         self._update_start_button_state()  # Re-check start button state
 
+    def _handle_processing(self, args: dict) -> None:
+        """Handle the processing_started signal from MainTab.
+        
+        Creates and starts a VfiWorker with the provided arguments.
+        
+        Args:
+            args: Dictionary of processing arguments from MainTab
+        """
+        LOGGER.info("MainWindow: Starting video interpolation processing")
+        LOGGER.debug(f"Processing arguments: {args}")
+        
+        # Update UI state
+        self.is_processing = True
+        
+        # If a previous worker is still running, terminate it
+        if self.vfi_worker and self.vfi_worker.isRunning():
+            LOGGER.warning("Terminating previous VfiWorker thread")
+            self.vfi_worker.terminate()
+            self.vfi_worker.wait()
+        
+        # Create new worker thread with the arguments from MainTab
+        self.vfi_worker = VfiWorker(
+            in_dir=args["in_dir"],
+            out_file=args["out_file"],
+            fps=args["fps"],
+            multiplier=args["multiplier"],
+            max_workers=args["max_workers"],
+            encoder=args["encoder"],
+            rife_model_key=args["rife_model_key"],
+            rife_exe_path=args["rife_exe_path"],
+            rife_tta_spatial=args["rife_tta_spatial"],
+            rife_tta_temporal=args["rife_tta_temporal"],
+            rife_uhd=args["rife_uhd"],
+            rife_tiling_enabled=args["rife_tiling_enabled"],
+            rife_tile_size=args["rife_tile_size"],
+            rife_thread_spec=args["rife_thread_spec"],
+            sanchez_enabled=args["sanchez_enabled"],
+            sanchez_resolution_km=args["sanchez_resolution_km"],
+            crop_rect=args["crop_rect"],
+            ffmpeg_args=args["ffmpeg_args"]
+        )
+        
+        # Connect worker signals
+        self.vfi_worker.progress_update.connect(self._on_processing_progress)
+        self.vfi_worker.processing_finished.connect(self._on_processing_finished)
+        self.vfi_worker.processing_error.connect(self._on_processing_error)
+        
+        # Start the worker thread
+        self.vfi_worker.start()
+        LOGGER.info("VfiWorker thread started")
+        
+        # Update UI to reflect processing state
+        self.main_view_model.processing_vm.start_processing()
+
+    def _on_processing_progress(self, current: int, total: int, time_elapsed: float) -> None:
+        """Handle progress updates from the VfiWorker.
+        
+        Args:
+            current: Current frame being processed
+            total: Total number of frames to process
+            time_elapsed: Time elapsed in seconds
+        """
+        LOGGER.debug(f"Processing progress: {current}/{total} ({time_elapsed:.2f}s)")
+        # Update progress in view model
+        self.main_view_model.processing_vm.update_progress(current, total, time_elapsed)
+
+    def _on_processing_finished(self, output_path: str) -> None:
+        """Handle successful completion of processing.
+        
+        Args:
+            output_path: Path to the generated output file
+        """
+        LOGGER.info(f"Processing finished successfully. Output: {output_path}")
+        self.is_processing = False
+        
+        # Update the view model
+        self.main_view_model.processing_vm.finish_processing(success=True, message=output_path)
+        
+        # Reset UI in MainTab
+        self.main_tab._reset_start_button()
+        
+        # Show success message (could be handled by MainTab but keeping it here for consistency)
+        QMessageBox.information(self, "Success", f"Video interpolation finished!\nOutput: {output_path}")
+        
+    def _on_processing_error(self, error_message: str) -> None:
+        """Handle processing errors from the VfiWorker.
+        
+        Args:
+            error_message: Error message from the worker
+        """
+        LOGGER.error(f"Processing error: {error_message}")
+        self.is_processing = False
+        
+        # Update the view model
+        self.main_view_model.processing_vm.finish_processing(success=False, message=error_message)
+        
+        # Reset UI in MainTab
+        self.main_tab._reset_start_button()
+        
+        # Show error message (could be handled by MainTab but keeping it here for consistency)
+        QMessageBox.critical(self, "Error", f"Processing failed:\n{error_message}")
+        
     def closeEvent(self, event: QCloseEvent | None) -> None:
         LOGGER.debug("Entering closeEvent...")
         """Handle the window closing event."""
