@@ -335,6 +335,8 @@ class MainWindow(QWidget):
             sanchez_processor=self.sanchez_processor,
             image_cropper=self.image_cropper,
             settings=self.settings,
+            request_previews_update_signal=self.request_previews_update, # Pass the signal
+            main_window_ref=self, # Pass the MainWindow instance itself
             parent=self,
         )
 # --- Create FFmpeg Widgets (to be passed to FFmpegSettingsTab) ---
@@ -569,6 +571,28 @@ class MainWindow(QWidget):
         # LOGGER.debug("Exiting _post_init_setup...") # Removed log
         LOGGER.info("MainWindow post-initialization setup complete.")
 
+    # --- State Setters for Child Tabs ---
+    def set_in_dir(self, path: Path | None) -> None:
+        """Set the input directory state and clear Sanchez cache."""
+        if self.in_dir != path:
+            LOGGER.debug(f"MainWindow setting in_dir to: {path}")
+            self.in_dir = path
+            self.sanchez_preview_cache.clear() # Clear cache when dir changes
+            # Preview update will be triggered separately by the caller via signal
+        self.main_tab._update_crop_buttons_state() # ADDED: Explicitly update crop buttons
+
+    def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
+        """Set the current crop rectangle state."""
+        if self.current_crop_rect != rect:
+            LOGGER.debug(f"MainWindow setting crop_rect to: {rect}")
+            self.current_crop_rect = rect
+            # Explicitly trigger preview and button state updates when crop changes
+            self.request_previews_update.emit()
+            if hasattr(self, 'main_tab') and hasattr(self.main_tab, '_update_crop_buttons_state'):
+                 self.main_tab._update_crop_buttons_state()
+            else:
+                 LOGGER.warning("Could not call main_tab._update_crop_buttons_state() from set_crop_rect")
+    # ------------------------------------
     def _set_in_dir_from_sorter(self, directory: Path) -> None:
         LOGGER.debug(f"Entering _set_in_dir_from_sorter... directory={directory}")
         """Sets the input directory from a sorter tab."""
@@ -1454,117 +1478,169 @@ class MainWindow(QWidget):
         image_loader: ImageLoader,
         sanchez_processor: SanchezProcessor,
         image_cropper: ImageCropper,
-        # Add missing parameters
-        apply_sanchez: bool,
+        apply_sanchez: bool, # Renamed from sanchez_enabled for clarity
         crop_rect: Optional[Tuple[int, int, int, int]],
     ) -> QPixmap | None:
         """Loads, processes (crop/sanchez), scales, and returns a preview pixmap
-        using the provided ImageProcessor instances.
+        using the provided ImageProcessor instances. Handles Sanchez caching.
         """
+        target_label.file_path = None # Clear previous path
+        target_label.processed_image = None # Clear previous full-res image
+        processed_qimage: QImage | None = None # To store the full-res processed image
+        sanchez_processing_failed = False # Flag to indicate Sanchez processing failure
+        sanchez_error_message = ""
+        image_data_to_process: ImageData | None = None # Store loaded/cached data
+        using_cache = False # Flag to indicate if cache was used
+
         try:
-            # 1. Load original image
-            LOGGER.debug(f"Loading image: {image_path}")
-            current_image_data_obj = image_loader.load(str(image_path))
-            LOGGER.debug(f"Image loaded successfully. Original type: {type(current_image_data_obj.image_data)}")
-
-            sanchez_processing_failed = False
-            sanchez_error_message = ""
-
-            # 2. Apply Sanchez if requested
+            # 1. Load Original or Get from Cache (if Sanchez enabled)
+            # -------------------------------------------------------
             if apply_sanchez:
-                processed_data_obj = None
-                # Check cache first
                 if image_path in self.sanchez_preview_cache:
-                    LOGGER.debug(f"Using cached Sanchez result for: {image_path.name}")
+                    LOGGER.debug(f"Using cached Sanchez result for {image_path.name}")
                     cached_array = self.sanchez_preview_cache[image_path]
-                    # Create a new ImageData object from the cached array
-                    # Preserve metadata if possible, otherwise create minimal
-                    metadata = current_image_data_obj.metadata if hasattr(current_image_data_obj, 'metadata') else {}
-                    processed_data_obj = ImageData(image_data=cached_array, metadata=metadata)
+                    # Create ImageData manually from cached numpy array
+                    # Assume original metadata isn't critical for preview display after Sanchez
+                    image_data_to_process = ImageData(image_data=cached_array, metadata={'source_path': image_path, 'cached': True})
+                    using_cache = True
                 else:
                     LOGGER.debug(f"No cached Sanchez result for {image_path.name}, processing...")
+                    original_image_data = None
                     try:
-                        # Read resolution from ComboBox
-                        res_km_str = "4"
-                        # Use alias self.sanchez_res_km_combo which points to self.main_tab.sanchez_res_combo
-                        if hasattr(self, 'sanchez_res_km_combo') and self.sanchez_res_km_combo is not None:
-                            try: res_km_str = self.sanchez_res_km_combo.currentText()
-                            except (RuntimeError, AttributeError) as e: LOGGER.warning(f"Could not get Sanchez resolution value: {e}")
-                        else: LOGGER.warning("Sanchez resolution ComboBox not found")
+                        # Load original first
+                        original_image_data = image_loader.load(str(image_path))
+                        if original_image_data and original_image_data.image_data is not None:
+                             # Read resolution from ComboBox
+                            res_km_str = "4"
+                            if hasattr(self, 'sanchez_res_km_combo') and self.sanchez_res_km_combo is not None:
+                                try: res_km_str = self.sanchez_res_km_combo.currentText()
+                                except (RuntimeError, AttributeError) as e: LOGGER.warning(f"Could not get Sanchez resolution value: {e}")
+                            else: LOGGER.warning("Sanchez resolution ComboBox not found")
+                            try: res_km_val = float(res_km_str)
+                            except ValueError: res_km_val = 4.0
 
-                        try: res_km_val = float(res_km_str)
-                        except ValueError: res_km_val = 4.0
+                            LOGGER.debug(f"Applying Sanchez to preview for: {image_path.name} with res_km={res_km_val}")
+                            sanchez_kwargs = {'res_km': res_km_val}
+                            if 'filename' not in original_image_data.metadata:
+                                original_image_data.metadata['filename'] = image_path.name
 
-                        LOGGER.debug(f"Applying Sanchez to preview for: {image_path.name} with res_km={res_km_val}")
-                        sanchez_kwargs = {'res_km': res_km_val}
-                        if 'filename' not in current_image_data_obj.metadata:
-                             current_image_data_obj.metadata['filename'] = image_path.name
-                             LOGGER.debug(f"Added filename to metadata for Sanchez: {image_path.name}")
+                            # Run Sanchez Processor
+                            sanchez_result = sanchez_processor.process(original_image_data, **sanchez_kwargs)
 
-                        # Run Sanchez Processor
-                        processed_data_obj = sanchez_processor.process(current_image_data_obj, **sanchez_kwargs)
-                        LOGGER.debug("Sanchez processing completed.")
+                            if sanchez_result and sanchez_result.image_data is not None:
+                                LOGGER.debug("Sanchez processing completed.")
+                                # Cache the result (as NumPy array)
+                                result_array: Optional[np.ndarray[Any, np.dtype[np.uint8]]] = None
+                                if isinstance(sanchez_result.image_data, Image.Image):
+                                    result_array = np.array(sanchez_result.image_data)
+                                elif isinstance(sanchez_result.image_data, np.ndarray):
+                                    result_array = sanchez_result.image_data
 
-                        # Cache the result (as NumPy array)
-                        result_array: Optional[np.ndarray[Any, np.dtype[np.uint8]]] = None
-                        if isinstance(processed_data_obj.image_data, Image.Image):
-                            result_array = np.array(processed_data_obj.image_data)
-                        elif isinstance(processed_data_obj.image_data, np.ndarray):
-                            result_array = processed_data_obj.image_data
-
-                        if result_array is not None:
-                            self.sanchez_preview_cache[image_path] = result_array.copy()
-                            LOGGER.debug(f"Stored Sanchez result in cache for: {image_path.name}")
+                                if result_array is not None:
+                                    self.sanchez_preview_cache[image_path] = result_array.copy()
+                                    LOGGER.debug(f"Stored Sanchez result in cache for: {image_path.name}")
+                                    image_data_to_process = sanchez_result # Use the successful result
+                                else:
+                                    LOGGER.warning("Sanchez processed data was not in expected format (PIL/NumPy) for caching.")
+                                    sanchez_processing_failed = True # Treat as failure if format wrong
+                                    sanchez_error_message = "Invalid output format"
+                                    image_data_to_process = original_image_data # Fallback
+                            else:
+                                LOGGER.warning(f"Sanchez processing returned no data for {image_path.name}")
+                                sanchez_processing_failed = True
+                                sanchez_error_message = "Processing returned None"
+                                image_data_to_process = original_image_data # Fallback
                         else:
-                            LOGGER.warning("Sanchez processed data was not in expected format (PIL/NumPy) for caching.")
+                             LOGGER.warning(f"Failed to load original image for Sanchez: {image_path.name}")
+                             sanchez_processing_failed = True # Treat as failure if load fails
+                             sanchez_error_message = "Load failed"
+                             # image_data_to_process remains None here
 
-                    except Exception as e:
-                        LOGGER.exception(f"Error during Sanchez processing for preview {image_path.name}: {e}")
+                    except Exception as e_sanchez:
+                        LOGGER.exception(f"Error during Sanchez processing for {image_path.name}: {e_sanchez}")
                         sanchez_processing_failed = True
-                        sanchez_error_message = str(e)
-                        # Keep original image data if Sanchez fails
-                        processed_data_obj = current_image_data_obj
+                        sanchez_error_message = str(e_sanchez)
+                        # Use original data if loaded, otherwise it remains None
+                        image_data_to_process = original_image_data if original_image_data else None
 
-                # Update the main object if Sanchez processing was successful (or retrieved from cache)
-                if processed_data_obj is not None and not sanchez_processing_failed:
-                    current_image_data_obj = processed_data_obj
-                    LOGGER.debug("Updated current_image_data_obj with Sanchez result.")
-                elif sanchez_processing_failed:
-                     LOGGER.warning("Keeping original image data due to Sanchez failure.")
-                else:
-                     LOGGER.warning("Sanchez was requested but processed_data_obj is None and no failure recorded.")
-
-
-            # 3. Apply Crop if requested
-            # Use the passed crop_rect parameter, not self.current_crop_rect
-            if crop_rect:
-                LOGGER.debug("Cropping requested")
+            else: # Sanchez not enabled
                 try:
-                    LOGGER.debug(f"Applying crop {crop_rect} to preview for {image_path.name}")
+                    image_data_to_process = image_loader.load(str(image_path))
+                except Exception as e_load:
+                     LOGGER.exception(f"Error loading image when Sanchez disabled: {e_load}")
+                     return None # Cannot proceed if basic load fails
+
+            # Check if we have any image data at all
+            if image_data_to_process is None or image_data_to_process.image_data is None:
+                LOGGER.warning(f"Failed to load or process image: {image_path}")
+                return None
+
+            # 2. Convert Initial Data to NumPy Array (for consistency)
+            # -------------------------------------------------------
+            initial_img_array: Optional[np.ndarray[Any, np.dtype[np.uint8]]] = None
+            if isinstance(image_data_to_process.image_data, Image.Image):
+                initial_img_array = np.array(image_data_to_process.image_data)
+            elif isinstance(image_data_to_process.image_data, np.ndarray):
+                initial_img_array = image_data_to_process.image_data
+            else:
+                LOGGER.error(f"Unsupported initial image data type: {type(image_data_to_process.image_data)}")
+                return None
+
+            # 3. Convert to QImage (Full Resolution, Uncropped) and Store for Dialogs
+            # ----------------------------------------------------------------------
+            full_res_qimage: Optional[QImage] = None
+            try:
+                height, width, channel = initial_img_array.shape
+                bytes_per_line = channel * width
+                if channel == 4: format = QImage.Format.Format_RGBA8888
+                elif channel == 3: format = QImage.Format.Format_RGB888
+                elif channel == 1:
+                    format = QImage.Format.Format_Grayscale8
+                    bytes_per_line = width
+                else: raise ValueError(f"Unsupported number of channels: {channel}")
+                contiguous_img_array = np.ascontiguousarray(initial_img_array)
+                full_res_qimage = QImage(
+                    contiguous_img_array.data, width, height, bytes_per_line, format
+                ).copy()
+                target_label.processed_image = full_res_qimage.copy() # Store for dialogs
+                target_label.file_path = str(image_path) # Store path too
+                LOGGER.debug("Stored full-res, uncropped, potentially Sanchez'd QImage in label.")
+            except Exception as conversion_err:
+                LOGGER.exception(f"Failed converting initial NumPy array to QImage: {conversion_err}")
+                return None # Cannot proceed if initial conversion fails
+
+            # 4. Crop (if requested) - Operates on the NumPy array
+            # ----------------------------------------------------
+            final_img_array = initial_img_array # Start with the potentially Sanchez'd array
+            LOGGER.debug(f"PRE-CROP Check: crop_rect={crop_rect}, initial_img_array shape={initial_img_array.shape if initial_img_array is not None else 'None'}") # DEBUG LOG
+            if crop_rect:
+                LOGGER.debug(f"INSIDE CROP BLOCK: Applying crop {crop_rect} to preview for {image_path.name}") # DEBUG LOG
+                try:
+                    # Create a temporary ImageData for cropping API
+                    LOGGER.debug(f"BEFORE CROP: initial_img_array shape={initial_img_array.shape if initial_img_array is not None else 'None'}") # DEBUG LOG
+                    temp_image_data_for_crop = ImageData(image_data=initial_img_array, metadata=image_data_to_process.metadata)
                     x, y, w, h = crop_rect
                     crop_rect_pil = (x, y, x + w, y + h)
-                    # Crop the *current* image data object
-                    current_image_data_obj = image_cropper.crop(current_image_data_obj, crop_rect_pil)
-                    LOGGER.debug("Cropping completed successfully.")
-                except Exception as e:
-                    LOGGER.exception(f"Error during crop processing for preview {image_path.name}: {e}")
-                    # If cropping fails, continue with the uncropped image data
+                    cropped_image_data = image_cropper.crop(temp_image_data_for_crop, crop_rect_pil)
 
-            # 4. Convert the FINAL image data (original, sanchez, cropped, or sanchez+cropped) to QImage
+                    # Extract NumPy array from cropped result
+                    if cropped_image_data and cropped_image_data.image_data is not None:
+                        if isinstance(cropped_image_data.image_data, Image.Image):
+                            final_img_array = np.array(cropped_image_data.image_data)
+                        elif isinstance(cropped_image_data.image_data, np.ndarray):
+                            final_img_array = cropped_image_data.image_data
+                        LOGGER.debug(f"AFTER CROP (Success): final_img_array shape={final_img_array.shape if final_img_array is not None else 'None'}") # DEBUG LOG
+                    else:
+                         LOGGER.warning("Cropping returned no data, using uncropped image.")
+                         LOGGER.debug(f"AFTER CROP (No Data): final_img_array shape={final_img_array.shape if final_img_array is not None else 'None'}") # DEBUG LOG (still uncropped)
+                except Exception as e_crop:
+                    LOGGER.exception(f"Error during crop processing for preview {image_path.name}: {e_crop}")
+                    LOGGER.debug(f"AFTER CROP (Exception): final_img_array shape={final_img_array.shape if final_img_array is not None else 'None'}") # DEBUG LOG (still uncropped)
+                    # If cropping fails, final_img_array remains the uncropped version
+
+            # 5. Convert Final (potentially cropped) NumPy Array to QImage
+            # ------------------------------------------------------------
             final_q_image: Optional[QImage] = None
-            final_img_array: Optional[np.ndarray[Any, np.dtype[np.uint8]]] = None
-
-            if isinstance(current_image_data_obj.image_data, Image.Image):
-                LOGGER.debug("Final image data is PIL Image, converting to NumPy array")
-                final_img_array = np.array(current_image_data_obj.image_data)
-            elif isinstance(current_image_data_obj.image_data, np.ndarray):
-                LOGGER.debug("Final image data is NumPy array")
-                final_img_array = current_image_data_obj.image_data
-            else:
-                LOGGER.error(f"Unsupported final image data type: {type(current_image_data_obj.image_data)}")
-                return None # Cannot proceed
-
-            LOGGER.debug("Converting final NumPy array to QImage")
             try:
                 height, width, channel = final_img_array.shape
                 bytes_per_line = channel * width
@@ -1574,22 +1650,19 @@ class MainWindow(QWidget):
                     format = QImage.Format.Format_Grayscale8
                     bytes_per_line = width
                 else: raise ValueError(f"Unsupported number of channels: {channel}")
-
-                # Ensure the array is C-contiguous for QImage
                 contiguous_img_array = np.ascontiguousarray(final_img_array)
                 final_q_image = QImage(
                     contiguous_img_array.data, width, height, bytes_per_line, format
                 ).copy()
-                LOGGER.debug("Successfully converted final NumPy array to QImage")
+                LOGGER.debug("Successfully converted final (potentially cropped) NumPy array to QImage")
             except Exception as conversion_err:
                 LOGGER.exception(f"Failed converting final NumPy array to QImage: {conversion_err}")
+                # If final conversion fails, maybe try using the uncropped full_res_qimage?
+                # For now, let's return None to indicate failure.
                 return None
 
-            # 5. Store original path and final processed QImage in the label
-            target_label.file_path = str(image_path)
-            target_label.processed_image = final_q_image.copy() # Store the full-res processed image
-
-            # 6. Scale the final QImage for preview display
+            # 6. Scale the Final QImage for Preview Display
+            # ---------------------------------------------
             LOGGER.debug("Scaling final QImage for preview display")
             target_size = QSize(100, 100) # Default size
             try:
@@ -1606,18 +1679,22 @@ class MainWindow(QWidget):
             )
             LOGGER.debug("Image scaled successfully")
 
-            # 7. Create QPixmap and add Sanchez warning if needed
+            # 7. Create QPixmap and Add Sanchez Warning if Needed
+            # ---------------------------------------------------
             pixmap = QPixmap.fromImage(scaled_img)
             LOGGER.debug("QPixmap created successfully")
 
             draw_sanchez_warning = False
-            if sanchez_processing_failed and apply_sanchez: # Only show warning if Sanchez was requested
+            # Only show warning if Sanchez was requested AND failed
+            if apply_sanchez and sanchez_processing_failed:
+                 # Double-check checkbox state in case user toggled it off during processing
+                 sanchez_still_checked = False
                  if hasattr(self.main_tab, 'sanchez_false_colour_checkbox') and self.main_tab.sanchez_false_colour_checkbox is not None:
                      try:
-                         # Check current state, maybe user unchecked it while processing failed
-                         if self.main_tab.sanchez_false_colour_checkbox.isChecked():
-                             draw_sanchez_warning = True
+                         sanchez_still_checked = self.main_tab.sanchez_false_colour_checkbox.isChecked()
                      except (RuntimeError, AttributeError): pass # Ignore if checkbox gone
+                 if sanchez_still_checked:
+                     draw_sanchez_warning = True
 
             if draw_sanchez_warning:
                 LOGGER.debug("Drawing Sanchez failure warning on pixmap")
@@ -1638,6 +1715,7 @@ class MainWindow(QWidget):
         except Exception as e:
             LOGGER.exception(f"Unhandled error processing preview for {image_path}: {e}")
             try:
+                # Ensure label state is cleared on error
                 if hasattr(target_label, 'file_path'): target_label.file_path = None
                 if hasattr(target_label, 'processed_image'): target_label.processed_image = None
             except (RuntimeError, AttributeError): pass
@@ -1820,6 +1898,8 @@ class MainWindow(QWidget):
             except Exception as e:
                 LOGGER.error(f"Error processing last frame preview: {e}")
 
+# Update crop button state after previews are handled
+            self.main_tab._update_crop_buttons_state()
         except Exception as e:
             LOGGER.exception(f"Error updating previews: {e}")
             
@@ -2057,7 +2137,8 @@ class MainWindow(QWidget):
 
             # Other args
             # skip_model corresponds to 'Keep Intermediate Files' checkbox in MainTab
-            skip_model = self.main_tab.keep_temps_checkbox.isChecked()
+            # skip_model = self.main_tab.keep_temps_checkbox.isChecked() # Removed: Checkbox doesn't exist
+            skip_model = False # Default to not keeping intermediate files
             crop_rect = self.current_crop_rect
             debug_mode = self.debug_mode
 

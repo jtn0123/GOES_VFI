@@ -150,13 +150,21 @@ def get_supported_extensions() -> List[str]:
     return cast(List[str], extensions)
 
 
+def get_project_root() -> pathlib.Path:
+    """
+    Returns the root directory of the project.
+    Assumes this config.py file is located within a subdirectory of the project root
+    (e.g., goesvfi/utils/).
+    """
+    # Navigate up two levels from this file's directory (utils -> goesvfi -> project_root)
+    return pathlib.Path(__file__).resolve().parent.parent
 def find_rife_executable(model_key: str) -> pathlib.Path:
     """
     Locate the RIFE CLI executable.
     Searches in order:
     1. System PATH for 'rife-ncnn-vulkan' (or .exe)
-    2. Configured Sanchez bin directory for 'rife-cli' (or .exe)
-    3. Project 'goesvfi/models/<model_key>/' directory for 'rife-ncnn-vulkan' (or .exe)
+    2. Project 'goesvfi/bin/' directory for 'rife-cli' (or .exe)
+    3. Project 'goesvfi/models/<model_key>/' directory for 'rife-cli' (or .exe)
     """
     # 1. Check PATH for standard name
     exe_name_std = "rife-ncnn-vulkan"
@@ -169,28 +177,27 @@ def find_rife_executable(model_key: str) -> pathlib.Path:
     # Get project root (assuming this file is in goesvfi/utils/)
     project_root = pathlib.Path(__file__).parent.parent
 
-    # 2. Check configured Sanchez bin directory for 'rife-cli'
-    # Use the configured Sanchez bin directory
-    sanchez_bin_dir = get_sanchez_bin_dir()
-    bin_fallback = sanchez_bin_dir / "rife-cli"
+    # 2. Check project 'bin' directory for 'rife-cli'
+    exe_name_cli = "rife-cli"
     if sys.platform == "win32":
-        bin_fallback = sanchez_bin_dir / "rife-cli.exe"  # Check for .exe on Windows
+        exe_name_cli += ".exe"
+    project_bin_dir = project_root / "bin"
+    project_bin_exe = project_bin_dir / exe_name_cli
+    if project_bin_exe.exists():
+        return project_bin_exe
 
-    if bin_fallback.exists():
-        return bin_fallback
-
-    # 3. Check model-specific directory for standard name
+    # 3. Check model-specific directory for 'rife-cli'
     model_dir = project_root / "models" / model_key
-    model_fallback = model_dir / exe_name_std
-    if model_fallback.exists():
-        return model_fallback
+    model_specific_exe = model_dir / exe_name_cli
+    if model_specific_exe.exists():
+        return model_specific_exe
 
     # If none found, raise error
     raise FileNotFoundError(
         f"RIFE executable not found. Searched:\n"
         f"  - PATH for '{exe_name_std}'\n"
-        f"  - '{bin_fallback}' (from configured sanchez bin dir)\n"
-        f"  - '{model_fallback}'"
+        f"  - '{project_bin_exe}'\n"
+        f"  - '{model_specific_exe}'"
     )
 
 
