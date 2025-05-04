@@ -30,6 +30,272 @@ from goesvfi.utils import log
 
 LOGGER = log.get_logger(__name__)  # Setup logger for this module
 
+# ────────────────────────────── Worker thread ──────────────────────────────
+from PyQt6.QtCore import QThread, pyqtSignal # Import QThread and pyqtSignal for VfiWorker
+from goesvfi.utils import config # Import config for find_rife_executable
+
+class VfiWorker(QThread):
+    progress = pyqtSignal(int, int, float)
+    finished = pyqtSignal(pathlib.Path)
+    error = pyqtSignal(str)
+
+    def __init__(
+        self,
+        in_dir: pathlib.Path,
+        out_file_path: pathlib.Path,
+        fps: int,
+        mid_count: int,
+        max_workers: int,
+        encoder: str,
+        # FFmpeg settings passed directly
+        use_preset_optimal: bool,
+        use_ffmpeg_interp: bool,
+        filter_preset: str,  # Intermediate filter preset
+        mi_mode: str,
+        mc_mode: str,
+        me_mode: str,
+        me_algo: str,
+        search_param: int,
+        scd_mode: str,
+        scd_threshold: Optional[float],
+        minter_mb_size: Optional[int],
+        minter_vsbmc: int,  # Pass as 0 or 1
+        # Unsharp settings
+        apply_unsharp: bool,
+        unsharp_lx: int,
+        unsharp_ly: int,
+        unsharp_la: float,
+        unsharp_cx: int,
+        unsharp_cy: int,
+        unsharp_ca: float,
+        # Final encoding quality settings
+        crf: int,
+        bitrate_kbps: int,
+        bufsize_kb: int,
+        pix_fmt: str,
+        # Other args
+        skip_model: bool,
+        crop_rect: tuple[int, int, int, int] | None,
+        debug_mode: bool,
+        # RIFE v4.6 specific settings
+        rife_tile_enable: bool,
+        rife_tile_size: int,
+        rife_uhd_mode: bool,
+        rife_thread_spec: str,
+        rife_tta_spatial: bool,
+        rife_tta_temporal: bool,
+        model_key: str,
+        # --- Add Sanchez Args ---
+        false_colour: bool,
+        res_km: int,
+        # -----------------------
+        # Add the sanchez_gui_temp_dir parameter
+        sanchez_gui_temp_dir: pathlib.Path,
+    ) -> None:
+        LOGGER.debug(
+            f"Entering VfiWorker.__init__... in_dir={in_dir}, out_file_path={out_file_path}, debug_mode={debug_mode}")
+        super().__init__()
+        self.in_dir = in_dir
+        self.out_file_path = out_file_path
+        self.fps = fps
+        self.mid_count = mid_count
+        self.max_workers = max_workers
+        self.encoder = encoder
+        # Store FFmpeg settings
+        self.use_preset_optimal = use_preset_optimal
+        self.use_ffmpeg_interp = use_ffmpeg_interp
+        self.filter_preset = filter_preset
+        self.mi_mode = mi_mode
+        self.mc_mode = mc_mode
+        self.me_mode = me_mode
+        self.me_algo = me_algo
+        self.search_param = search_param
+        self.scd_mode = scd_mode
+        self.scd_threshold = scd_threshold
+        self.minter_mb_size = minter_mb_size
+        self.minter_vsbmc = minter_vsbmc
+        # Unsharp
+        self.apply_unsharp = apply_unsharp
+        self.unsharp_lx = unsharp_lx
+        self.unsharp_ly = unsharp_ly
+        self.unsharp_la = unsharp_la
+        self.unsharp_cx = unsharp_cx
+        self.unsharp_cy = unsharp_cy
+        self.unsharp_ca = unsharp_ca
+        # Quality
+        self.crf = crf
+        self.bitrate_kbps = bitrate_kbps
+        self.bufsize_kb = bufsize_kb
+        self.pix_fmt = pix_fmt
+        # Other args
+        self.skip_model = skip_model
+        self.crop_rect = crop_rect
+        self.debug_mode = debug_mode
+        # RIFE v4.6 specific settings
+        self.rife_tile_enable = rife_tile_enable
+        self.rife_tile_size = rife_tile_size
+        self.rife_uhd_mode = rife_uhd_mode
+        self.rife_thread_spec = rife_thread_spec
+        self.rife_tta_spatial = rife_tta_spatial
+        self.rife_tta_temporal = rife_tta_temporal
+        self.model_key = model_key
+        # Sanchez Args
+        self.false_colour = false_colour
+        self.res_km = res_km
+        # Sanchez temp dir from MainWindow
+        self.sanchez_gui_temp_dir = sanchez_gui_temp_dir
+
+
+    def run(self) -> None:
+        LOGGER.debug("Entering VfiWorker.run...")
+        try:
+            # Determine the image processor based on the selected encoder
+            if self.encoder == "RIFE":
+                # Use the RIFE image processor
+                # The RIFE processor is expected to handle its own model loading
+                # based on the model_key provided.
+                # We need to pass the RIFE-specific settings to the processor.
+                # Assuming RIFEProcessor exists and implements ImageProcessor
+                # from goesvfi.pipeline.rife_processor import RIFEProcessor # Need to import this
+                # processor: ImageProcessor = RIFEProcessor(
+                #     model_key=self.model_key,
+                #     tile_size=self.rife_tile_size if self.rife_tile_enable else None,
+                #     uhd_mode=self.rife_uhd_mode,
+                #     thread_spec=self.rife_thread_spec,
+                #     tta_spatial=self.rife_tta_spatial,
+                #     tta_temporal=self.rife_tta_temporal,
+                # )
+                # For now, using a placeholder or assuming the pipeline handles this
+                # If the pipeline run_vfi handles processor instantiation, we don't need this here.
+                # Let's assume run_vfi handles it for now based on the encoder type.
+                processor = None # Placeholder, actual processor handled by run_vfi
+            elif self.encoder == "Sanchez":
+                # Use the Sanchez image processor
+                # The Sanchez processor needs the false_colour and res_km settings
+                # from goesvfi.pipeline.sanchez_processor import SanchezProcessor # Already imported at top
+                # processor: ImageProcessor = SanchezProcessor(
+                #     false_colour=self.false_colour,
+                #     res_km=self.res_km,
+                #     temp_dir=tempfile.gettempdir() # Sanchez needs a temp dir
+                # )
+                processor = None # Placeholder, actual processor handled by run_vfi
+            elif self.encoder == "FFmpeg":
+                 processor = None # Placeholder, actual processor handled by run_vfi
+            else:
+                raise ValueError(f"Unknown encoder type: {self.encoder}")
+
+            # Find the RIFE executable path if RIFE is selected
+            rife_exe = None
+            if self.encoder == "RIFE":
+                try:
+                    # Pass the model_key to find_rife_executable
+                    rife_exe = config.find_rife_executable(self.model_key)
+                    if rife_exe is None:
+                        raise FileNotFoundError("RIFE executable not found.")
+                    LOGGER.debug(f"Found RIFE executable at: {rife_exe}")
+                except FileNotFoundError as e:
+                    self.error.emit(f"RIFE executable not found: {e}")
+                    LOGGER.error(f"RIFE executable not found: {e}")
+                    return # Exit run method on error
+                except Exception as e:
+                    self.error.emit(f"Error finding RIFE executable: {e}")
+                    LOGGER.exception(f"Error finding RIFE executable:")
+                    return # Exit run method on error
+
+            # Run the VFI pipeline
+            # The run_vfi function is expected to yield progress updates
+            # and return the path to the final MP4 file.
+            # It should also handle the instantiation of the correct processor
+            # based on the encoder type and pass the relevant settings.
+            # from goesvfi.pipeline.run_vfi import run_vfi # Need to import this - No, already in this file
+
+# Ensure rife_exe is not None before calling run_vfi
+            # Mypy doesn't infer this from the earlier return statements
+            assert rife_exe is not None
+            LOGGER.debug("Calling run_vfi...")
+            gen = run_vfi(
+                folder=self.in_dir,
+                output_mp4_path=self.out_file_path,
+                rife_exe_path=rife_exe, # Pass the found executable path positionally
+                fps=self.fps,
+                num_intermediate_frames=self.mid_count, # Use mid_count for num_intermediate_frames
+                max_workers=self.max_workers,
+                # Pass all relevant settings for all encoders
+                encoder_type=self.encoder, # Pass encoder type
+                ffmpeg_settings={
+                    "use_ffmpeg_interp": self.use_ffmpeg_interp,
+                    "filter_preset": self.filter_preset,
+                    "mi_mode": self.mi_mode,
+                    "mc_mode": self.mc_mode,
+                    "me_mode": self.me_mode,
+                    "me_algo": self.me_algo,
+                    "search_param": self.search_param,
+                    "scd_mode": self.scd_mode,
+                    "scd_threshold": self.scd_threshold,
+                    "minter_mb_size": self.minter_mb_size,
+                    "minter_vsbmc": self.minter_vsbmc,
+                    "apply_unsharp": self.apply_unsharp,
+                    "unsharp_lx": self.unsharp_lx,
+                    "unsharp_ly": self.unsharp_ly,
+                    "unsharp_la": self.unsharp_la,
+                    "unsharp_cx": self.unsharp_cx,
+                    "unsharp_cy": self.unsharp_cy,
+                    "unsharp_ca": self.unsharp_ca,
+                    "crf": self.crf,
+                    "bitrate_kbps": self.bitrate_kbps,
+                    "bufsize_kb": self.bufsize_kb,
+                    "pix_fmt": self.pix_fmt,
+                },
+                rife_settings={
+                    "model_key": self.model_key,
+                    "tile_size": self.rife_tile_size if self.rife_tile_enable else None,
+                    "uhd_mode": self.rife_uhd_mode,
+                    "thread_spec": self.rife_thread_spec,
+                    "tta_spatial": self.rife_tta_spatial,
+                    "tta_temporal": self.rife_tta_temporal,
+                    # "rife_exe": rife_exe, # Removed: Passed positionally now
+                },
+                sanchez_settings={
+                    "false_colour": self.false_colour,
+                    "res_km": self.res_km,
+                    # Pass the Sanchez temp dir from the worker's init
+                    "temp_dir": self.sanchez_gui_temp_dir,
+                },
+                skip_model=self.skip_model,
+                crop_rect_xywh=self.crop_rect, # Pass crop_rect with correct name
+                debug_mode=self.debug_mode,
+            )
+
+            final_mp4_path = None
+            for progress_data in gen:
+                if isinstance(progress_data, tuple) and len(progress_data) == 3:
+                    # It's a progress update (current, total, eta)
+                    current, total, eta = progress_data
+                    self.progress.emit(current, total, eta)
+                elif isinstance(progress_data, pathlib.Path):
+                    # It's the final output path
+                    final_mp4_path = progress_data
+                elif isinstance(progress_data, str) and progress_data.startswith("ERROR:"):
+                    # It's an error message
+                    self.error.emit(progress_data[6:].strip()) # Emit error message
+                    LOGGER.error(f"Error from run_vfi: {progress_data}")
+                    return # Exit run method on error
+                else:
+                    LOGGER.warning(f"Unexpected data from run_vfi generator: {progress_data}")
+
+
+            if final_mp4_path:
+                LOGGER.debug(f"run_vfi finished, emitting finished signal with: {final_mp4_path}")
+                self.finished.emit(final_mp4_path)
+            else:
+                # If gen completed without yielding a path, it means an error occurred
+                # or the process was cancelled. An error should have been emitted already.
+                LOGGER.warning("run_vfi generator finished without yielding a final path.")
+                # If no error was emitted, emit a generic error
+                # self.error.emit("Video processing failed or was cancelled.") # Avoid duplicate error if one was already emitted")
+        except Exception as e:
+            LOGGER.exception("Error during VFI processing:")
+            self.error.emit(f"Video processing failed: {e}")
 
 # --- Helper function to encode frame to PNG bytes ---
 def _encode_frame_to_png_bytes(img: Image.Image) -> bytes:

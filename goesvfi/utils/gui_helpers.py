@@ -15,6 +15,190 @@ from goesvfi.utils.config import find_rife_executable
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 
 # Set up logging
+from typing import Any, Optional, Tuple # Added Any
+from PyQt6.QtCore import pyqtSignal, Qt, QPoint, QRect, QSize
+from PyQt6.QtWidgets import ( # Added more imports here
+    QLabel,
+    QDialog,
+    QWidget,
+    QVBoxLayout,
+    QApplication,
+    QDialogButtonBox,
+    QRubberBand,
+)
+from PyQt6.QtGui import QPixmap, QMouseEvent, QImage, QPainter, QPen, QColor
+
+# Set up logging
+# logger = logging.getLogger(__name__) # Already defined below, remove duplicate if inserting here
+LOGGER = logging.getLogger(__name__) # Use consistent naming
+
+
+# ─── Custom clickable label ────────────────────────────────────────────────
+class ClickableLabel(QLabel):
+    clicked = pyqtSignal()
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        LOGGER.debug("Entering ClickableLabel.__init__...")
+        super().__init__(*args, **kwargs)
+        self.file_path: str | None = None  # Original file path
+        self.processed_image: QImage | None = None  # Store processed version
+        # enable mouse tracking / events
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mouseReleaseEvent(self, ev: QMouseEvent | None) -> None:
+        LOGGER.debug("Entering ClickableLabel.mouseReleaseEvent...")
+        # Check if ev is not None before accessing attributes
+        if ev is not None and ev.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        # Pass ev to super method (it handles None correctly)
+        super().mouseReleaseEvent(ev)
+
+
+# ─── ZoomDialog closes on any click ──────────────────────────────────────
+class ZoomDialog(QDialog):
+    def __init__(self, pixmap: QPixmap, parent: QWidget | None = None):
+        LOGGER.debug(
+            f"Entering ZoomDialog.__init__... pixmap.size={pixmap.size()}")
+        super().__init__(parent)
+        self.setWindowFlags(Qt.WindowType.Dialog |
+                            Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        lbl = QLabel(self)
+        lbl.setPixmap(pixmap)
+        lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout = QVBoxLayout(self)
+        layout.addWidget(lbl)
+        self.resize(pixmap.size())
+
+    # Add type hint for event
+    def mousePressEvent(self, ev: QMouseEvent | None) -> None:
+        LOGGER.debug("Entering ZoomDialog.mousePressEvent...")
+        self.close()
+
+
+# ─── CropDialog class ─────────────────────────────────────────────
+class CropDialog(QDialog):
+    def __init__(
+        self,
+        pixmap: QPixmap,
+        init: tuple[int, int, int, int] | None,
+        parent: QWidget | None = None,
+    ):
+        LOGGER.debug(
+            f"Entering CropDialog.__init__... pixmap.size={pixmap.size()}, init={init}")
+        super().__init__(parent)
+        self.setWindowTitle("Select Crop Region")
+
+        self.original_pixmap = pixmap
+        self.scale_factor = 1.0
+
+        # --- Scale pixmap for display ---
+        screen = QApplication.primaryScreen()
+        if not screen:
+            LOGGER.warning(
+                "Could not get screen geometry, crop dialog might be too large."
+            )
+            max_size = QSize(1024, 768)  # Fallback size
+        else:
+            # Use 90% of available screen size
+            max_size = screen.availableGeometry().size() * 0.9
+
+        scaled_pix = pixmap.scaled(
+            max_size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self.scale_factor = pixmap.width() / scaled_pix.width()
+        # --- End scaling ---
+
+        self.lbl = QLabel()
+        self.lbl.setPixmap(scaled_pix)  # Display scaled pixmap
+        self.lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.rubber = QRubberBand(QRubberBand.Shape.Rectangle, self.lbl)
+        self.origin = QPoint()
+        self.crop_rect_scaled = QRect()  # Store the rect drawn on the scaled pixmap
+
+        if init:
+            # Scale the initial rect DOWN for display
+            init_rect_orig = QRect(*init)
+            scaled_x = int(init_rect_orig.x() / self.scale_factor)
+            scaled_y = int(init_rect_orig.y() / self.scale_factor)
+            scaled_w = int(init_rect_orig.width() / self.scale_factor)
+            scaled_h = int(init_rect_orig.height() / self.scale_factor)
+            scaled_init_rect = QRect(scaled_x, scaled_y, scaled_w, scaled_h)
+            self.rubber.setGeometry(scaled_init_rect)
+            self.crop_rect_scaled = scaled_init_rect
+            self.rubber.show()
+        else:
+            # Ensure crop_rect_scaled is initialized if no init rect
+            self.crop_rect_scaled = QRect()
+
+        btns = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            parent=self,
+        )
+        btns.accepted.connect(self.accept)
+        btns.rejected.connect(self.reject)
+
+        lay = QVBoxLayout(self)
+        lay.addWidget(self.lbl)
+        lay.addWidget(btns)
+
+        # Adjust dialog size hint based on scaled content
+        self.resize(lay.sizeHint())
+
+    def mousePressEvent(self, ev: QMouseEvent | None) -> None:
+        LOGGER.debug("Entering CropDialog.mousePressEvent...")
+        if (
+            ev is not None
+            and ev.button() == Qt.MouseButton.LeftButton
+            and self.lbl.geometry().contains(ev.pos())
+        ):
+            self.origin = self.lbl.mapFromParent(ev.pos())
+            # Ensure origin is within scaled pixmap boundaries
+            if not self.lbl.pixmap().rect().contains(self.origin):
+                self.origin = QPoint()
+                return
+            self.rubber.setGeometry(QRect(self.origin, QSize()))
+            self.rubber.show()
+
+    def mouseMoveEvent(self, ev: QMouseEvent | None) -> None:
+        LOGGER.debug("Entering CropDialog.mouseMoveEvent...")
+        if ev is not None and not self.origin.isNull():
+            cur = self.lbl.mapFromParent(ev.pos())
+            # Clamp the current position to be within the scaled pixmap bounds
+            scaled_pix_rect = self.lbl.pixmap().rect()
+            cur.setX(max(0, min(cur.x(), scaled_pix_rect.width())))
+            cur.setY(max(0, min(cur.y(), scaled_pix_rect.height())))
+            self.rubber.setGeometry(QRect(self.origin, cur).normalized())
+
+    def mouseReleaseEvent(self, ev: QMouseEvent | None) -> None:
+        LOGGER.debug("Entering CropDialog.mouseReleaseEvent...")
+        if (
+            ev is not None
+            and ev.button() == Qt.MouseButton.LeftButton
+            and not self.origin.isNull()
+        ):
+            # Store the geometry relative to the scaled pixmap
+            self.crop_rect_scaled = self.rubber.geometry()
+            self.origin = QPoint()
+
+    # Return the rectangle coordinates scaled UP to the original pixmap size
+    def getRect(self) -> QRect:
+        LOGGER.debug("Entering CropDialog.getRect...")
+        orig_x = int(self.crop_rect_scaled.x() * self.scale_factor)
+        orig_y = int(self.crop_rect_scaled.y() * self.scale_factor)
+        orig_w = int(self.crop_rect_scaled.width() * self.scale_factor)
+        orig_h = int(self.crop_rect_scaled.height() * self.scale_factor)
+
+        # Clamp to original image boundaries
+        orig_w = max(0, min(orig_w, self.original_pixmap.width() - orig_x))
+        orig_h = max(0, min(orig_h, self.original_pixmap.height() - orig_y))
+        orig_x = max(0, min(orig_x, self.original_pixmap.width()))
+        orig_y = max(0, min(orig_y, self.original_pixmap.height()))
+
+        return QRect(orig_x, orig_y, orig_w, orig_h)
 logger = logging.getLogger(__name__)
 
 
