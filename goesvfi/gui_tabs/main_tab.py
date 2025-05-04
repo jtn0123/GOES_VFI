@@ -730,10 +730,13 @@ class MainTab(QWidget):
     def _start(self) -> None:
         """Prepare arguments and emit the processing_started signal."""
         LOGGER.debug("MainTab: Start button clicked.")
+        LOGGER.debug(f"Signal connections: {self.processing_started.receivers()} receivers for processing_started signal")
         main_window = cast(QObject, self.parent())
         current_in_dir = getattr(main_window, 'in_dir', None)
+        LOGGER.debug(f"Current input directory: {current_in_dir}, Output file: {self.out_file_path}")
 
         if not current_in_dir or not self.out_file_path:
+            LOGGER.warning("Missing paths for processing")
             QMessageBox.warning(self, "Missing Paths", "Please select both input and output paths.")
             return
 
@@ -741,7 +744,9 @@ class MainTab(QWidget):
         if args:
             LOGGER.info(f"Starting processing with args: {args}")
             self.set_processing_state(True)
+            LOGGER.debug("Emitting processing_started signal")
             self.processing_started.emit(args) # Emit signal with processing arguments
+            LOGGER.debug("Signal emitted")
         else:
             # Error message already shown by get_processing_args
             LOGGER.warning("Processing not started due to invalid arguments.")

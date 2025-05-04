@@ -151,6 +151,7 @@ class MainWindow(QWidget):
 
 # --- Settings ---
         self.settings = QSettings("GoesVFI", "GoesVFI") # Initialize QSettings
+        self.settings_loaded = False  # Flag to avoid duplicate loading
         # ----------------
         # --- Models ---
         # Instantiate Models needed by ViewModels
@@ -391,6 +392,9 @@ class MainWindow(QWidget):
 
         # Populate initial data
         self._populate_models()
+        
+        # Load settings
+        self._load_all_settings()
 
         # Update initial UI state
         self._update_rife_ui_elements()
@@ -1266,7 +1270,7 @@ class MainWindow(QWidget):
         Args:
             args: Dictionary of processing arguments from MainTab
         """
-        LOGGER.info("MainWindow: Starting video interpolation processing")
+        LOGGER.info("MainWindow: _handle_processing called - Starting video interpolation processing")
         LOGGER.debug(f"Processing arguments: {args}")
         
         # Update UI state
@@ -1359,10 +1363,97 @@ class MainWindow(QWidget):
         
         # Show error message (could be handled by MainTab but keeping it here for consistency)
         QMessageBox.critical(self, "Error", f"Processing failed:\n{error_message}")
+    
+    def _load_all_settings(self) -> None:
+        """Load all settings from QSettings for all tabs and components."""
+        if self.settings_loaded:
+            LOGGER.debug("Settings already loaded, skipping...")
+            return
+            
+        LOGGER.info("Loading application settings...")
+        
+        # Call load_settings on each tab that supports it
+        if hasattr(self.main_tab, 'load_settings'):
+            self.main_tab.load_settings()
+            LOGGER.debug("Main tab settings loaded")
+            
+        if hasattr(self.ffmpeg_settings_tab, 'load_settings'):
+            self.ffmpeg_settings_tab.load_settings()
+            LOGGER.debug("FFmpeg settings tab settings loaded")
+            
+        if hasattr(self.file_sorter_tab, 'load_settings'):
+            self.file_sorter_tab.load_settings()
+            LOGGER.debug("File sorter tab settings loaded")
+            
+        if hasattr(self.date_sorter_tab, 'load_settings'):
+            self.date_sorter_tab.load_settings()
+            LOGGER.debug("Date sorter tab settings loaded")
+            
+        if hasattr(self.model_library_tab, 'load_settings'):
+            self.model_library_tab.load_settings()
+            LOGGER.debug("Model library tab settings loaded")
+        
+        # Load main window specific settings
+        last_tab_index = self.settings.value("main/lastTabIndex", 0, type=int)
+        if 0 <= last_tab_index < self.tab_widget.count():
+            self.tab_widget.setCurrentIndex(last_tab_index)
+            LOGGER.debug(f"Restored last active tab: {last_tab_index}")
+        
+        self.settings_loaded = True
+        LOGGER.info("All settings loaded")
+    
+    def _save_all_settings(self) -> None:
+        """Save all settings to QSettings for all tabs and components."""
+        LOGGER.info("Saving application settings...")
+        
+        # Call save_settings on each tab that supports it
+        if hasattr(self.main_tab, 'save_settings'):
+            try:
+                self.main_tab.save_settings()
+                LOGGER.debug("Main tab settings saved")
+            except Exception as e:
+                LOGGER.error(f"Error saving main tab settings: {e}")
+            
+        if hasattr(self.ffmpeg_settings_tab, 'save_settings'):
+            try:
+                self.ffmpeg_settings_tab.save_settings()
+                LOGGER.debug("FFmpeg settings tab settings saved")
+            except Exception as e:
+                LOGGER.error(f"Error saving FFmpeg settings tab settings: {e}")
+            
+        if hasattr(self.file_sorter_tab, 'save_settings'):
+            try:
+                self.file_sorter_tab.save_settings()
+                LOGGER.debug("File sorter tab settings saved")
+            except Exception as e:
+                LOGGER.error(f"Error saving file sorter tab settings: {e}")
+            
+        if hasattr(self.date_sorter_tab, 'save_settings'):
+            try:
+                self.date_sorter_tab.save_settings()
+                LOGGER.debug("Date sorter tab settings saved")
+            except Exception as e:
+                LOGGER.error(f"Error saving date sorter tab settings: {e}")
+            
+        if hasattr(self.model_library_tab, 'save_settings'):
+            try:
+                self.model_library_tab.save_settings()
+                LOGGER.debug("Model library tab settings saved")
+            except Exception as e:
+                LOGGER.error(f"Error saving model library tab settings: {e}")
+        
+        # Save main window specific settings
+        self.settings.setValue("main/lastTabIndex", self.tab_widget.currentIndex())
+        
+        LOGGER.info("All settings saved")
         
     def closeEvent(self, event: QCloseEvent | None) -> None:
-        LOGGER.debug("Entering closeEvent...")
         """Handle the window closing event."""
+        LOGGER.debug("Entering closeEvent...")
+        
+        # Save settings before closing
+        self._save_all_settings()
+        
         if self.is_processing:
             reply = QMessageBox.question(
                 self,
