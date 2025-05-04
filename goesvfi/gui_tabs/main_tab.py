@@ -61,7 +61,7 @@ from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.run_vfi import VfiWorker
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
-from goesvfi.gui_tabs.ffmpeg_settings_tab import FFMPEG_PROFILES # Correct import path
+from goesvfi.utils.config import FFMPEG_PROFILES
 from goesvfi.utils.gui_helpers import ClickableLabel, CropDialog, ZoomDialog, ImageViewerDialog, CropSelectionDialog # Import moved classes AND ImageViewerDialog AND CropSelectionDialog
 from goesvfi.utils.log import get_logger # Use get_logger
 LOGGER = get_logger(__name__) # Get logger instance

@@ -1,6 +1,6 @@
 # TODO: path + TOML config
 from __future__ import annotations
-from typing import Dict, Any, List, cast # Add Any, List, and cast
+from typing import Dict, Any, List, cast, TypedDict # Add Any, List, cast, and TypedDict
 
 """goesvfi.utils.config – user paths and TOML config loader"""
 
@@ -32,6 +32,134 @@ DEFAULTS: Dict[str, Any] = {
     },
 }
 
+# Define TypedDict for profile structure first
+class FfmpegProfile(TypedDict):
+    use_ffmpeg_interp: bool
+    mi_mode: str
+    mc_mode: str
+    me_mode: str
+    vsbmc: bool
+    scd: str
+    me_algo: str
+    search_param: int
+    scd_threshold: float
+    mb_size: str
+    apply_unsharp: bool
+    unsharp_lx: int
+    unsharp_ly: int
+    unsharp_la: float
+    unsharp_cx: int
+    unsharp_cy: int
+    unsharp_ca: float
+    preset_text: str
+    crf: int  # Added crf
+    bitrate: int
+    bufsize: int
+    pix_fmt: str
+    filter_preset: str
+
+
+# Optimal FFmpeg interpolation settings profile
+# (Values for quality settings are based on current defaults, adjust if needed)
+OPTIMAL_FFMPEG_PROFILE: FfmpegProfile = {
+    # Interpolation
+    "use_ffmpeg_interp": True,
+    "mi_mode": "mci",
+    "mc_mode": "aobmc",
+    "me_mode": "bidir",
+    "vsbmc": True,  # Boolean representation for checkbox
+    "scd": "none",
+    "me_algo": "(default)",  # Assuming default algo for optimal
+    "search_param": 96,  # Assuming default search param
+    "scd_threshold": 10.0,  # Default threshold (though scd is none)
+    "mb_size": "(default)",  # Assuming default mb_size
+    # Sharpening
+    "apply_unsharp": False,  # <-- Key for groupbox check state
+    "unsharp_lx": 7,
+    "unsharp_ly": 7,
+    "unsharp_la": 1.0,
+    "unsharp_cx": 5,
+    "unsharp_cy": 5,
+    "unsharp_ca": 0.0,
+    # Quality
+    "preset_text": "Very High (CRF 16)",
+    "crf": 16,  # Added CRF value
+    "bitrate": 15000,
+    "bufsize": 22500,  # Auto-calculated from bitrate
+    "pix_fmt": "yuv444p",
+    # Filter Preset
+    "filter_preset": "slow",
+}
+
+# Optimal profile 2 - Based on PowerShell script defaults
+OPTIMAL_FFMPEG_PROFILE_2: FfmpegProfile = {
+    # Interpolation
+    "use_ffmpeg_interp": True,
+    "mi_mode": "mci",
+    "mc_mode": "aobmc",
+    "me_mode": "bidir",
+    "vsbmc": True,
+    "scd": "none",
+    "me_algo": "epzs",  # Explicitly set based on PS default
+    "search_param": 32,  # Set based on likely PS default
+    "scd_threshold": 10.0,  # Value doesn't matter when scd="none"
+    "mb_size": "(default)",  # Keep default
+    # Sharpening (Disabled, mimicking lack of unsharp/presence of tmix in PS)
+    "apply_unsharp": False,
+    "unsharp_lx": 7,  # Values kept for structure, but unused
+    "unsharp_ly": 7,
+    "unsharp_la": 1.0,
+    "unsharp_cx": 5,
+    "unsharp_cy": 5,
+    "unsharp_ca": 0.0,
+    # Quality (Adjusted based on PS comparison)
+    "preset_text": "Medium (CRF 20)",  # Changed preset level example
+    "crf": 20,  # Added CRF value
+    "bitrate": 10000,  # Lowered bitrate example
+    "bufsize": 15000,  # Lowered bufsize (1.5*bitrate)
+    "pix_fmt": "yuv444p",  # Keep high quality format
+    # Filter Preset (Intermediate step)
+    "filter_preset": "medium",  # Match final preset level choice
+}
+
+# Default profile based on initial GUI values
+DEFAULT_FFMPEG_PROFILE: FfmpegProfile = {
+    # Interpolation
+    "use_ffmpeg_interp": True,
+    "mi_mode": "mci",
+    "mc_mode": "obmc",
+    "me_mode": "bidir",
+    "vsbmc": False,
+    "scd": "fdiff",
+    "me_algo": "(default)",
+    "search_param": 96,
+    "scd_threshold": 10.0,
+    "mb_size": "(default)",
+    # Sharpening
+    "apply_unsharp": True,  # <-- Key for groupbox check state
+    "unsharp_lx": 7,
+    "unsharp_ly": 7,
+    "unsharp_la": 1.0,
+    "unsharp_cx": 5,
+    "unsharp_cy": 5,
+    "unsharp_ca": 0.0,
+    # Quality
+    "preset_text": "Very High (CRF 16)",
+    "crf": 16,  # Added CRF value
+    "bitrate": 15000,
+    "bufsize": 22500,
+    "pix_fmt": "yuv444p",
+    # Filter Preset
+    "filter_preset": "slow",
+}
+
+# Store profiles in a dictionary for easy access with type hint
+FFMPEG_PROFILES: Dict[str, FfmpegProfile] = {
+    "Default": DEFAULT_FFMPEG_PROFILE,
+    "Optimal": OPTIMAL_FFMPEG_PROFILE,
+    "Optimal 2": OPTIMAL_FFMPEG_PROFILE_2,
+    # "Custom" is handled implicitly when settings change
+}
 
 @lru_cache(maxsize=1)
 # Specify dict return type

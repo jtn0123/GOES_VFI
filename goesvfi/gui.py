@@ -103,6 +103,7 @@ from PIL import Image
 # Correct import for find_rife_executable
 from goesvfi.utils import config, log
 from goesvfi.utils.gui_helpers import RifeCapabilityManager
+from goesvfi.utils.config import FFMPEG_PROFILES, DEFAULT_FFMPEG_PROFILE, FfmpegProfile, OPTIMAL_FFMPEG_PROFILE, OPTIMAL_FFMPEG_PROFILE_2 # Moved constants
 from goesvfi.utils.gui_helpers import ClickableLabel, ZoomDialog, CropDialog # Import moved classes
 from goesvfi.pipeline.run_vfi import VfiWorker # <-- ADDED IMPORT
 
@@ -118,134 +119,7 @@ LOGGER = log.get_logger(__name__)
 LOGGER = log.get_logger(__name__)
 
 
-# Define TypedDict for profile structure first
-class FfmpegProfile(TypedDict):
-    use_ffmpeg_interp: bool
-    mi_mode: str
-    mc_mode: str
-    me_mode: str
-    vsbmc: bool
-    scd: str
-    me_algo: str
-    search_param: int
-    scd_threshold: float
-    mb_size: str
-    apply_unsharp: bool
-    unsharp_lx: int
-    unsharp_ly: int
-    unsharp_la: float
-    unsharp_cx: int
-    unsharp_cy: int
-    unsharp_ca: float
-    preset_text: str
-    crf: int  # Added crf
-    bitrate: int
-    bufsize: int
-    pix_fmt: str
-    filter_preset: str
-
-
-# Optimal FFmpeg interpolation settings profile
-# (Values for quality settings are based on current defaults, adjust if needed)
-OPTIMAL_FFMPEG_PROFILE: FfmpegProfile = {
-    # Interpolation
-    "use_ffmpeg_interp": True,
-    "mi_mode": "mci",
-    "mc_mode": "aobmc",
-    "me_mode": "bidir",
-    "vsbmc": True,  # Boolean representation for checkbox
-    "scd": "none",
-    "me_algo": "(default)",  # Assuming default algo for optimal
-    "search_param": 96,  # Assuming default search param
-    "scd_threshold": 10.0,  # Default threshold (though scd is none)
-    "mb_size": "(default)",  # Assuming default mb_size
-    # Sharpening
-    "apply_unsharp": False,  # <-- Key for groupbox check state
-    "unsharp_lx": 7,
-    "unsharp_ly": 7,
-    "unsharp_la": 1.0,
-    "unsharp_cx": 5,
-    "unsharp_cy": 5,
-    "unsharp_ca": 0.0,
-    # Quality
-    "preset_text": "Very High (CRF 16)",
-    "crf": 16,  # Added CRF value
-    "bitrate": 15000,
-    "bufsize": 22500,  # Auto-calculated from bitrate
-    "pix_fmt": "yuv444p",
-    # Filter Preset
-    "filter_preset": "slow",
-}
-
-# Optimal profile 2 - Based on PowerShell script defaults
-OPTIMAL_FFMPEG_PROFILE_2: FfmpegProfile = {
-    # Interpolation
-    "use_ffmpeg_interp": True,
-    "mi_mode": "mci",
-    "mc_mode": "aobmc",
-    "me_mode": "bidir",
-    "vsbmc": True,
-    "scd": "none",
-    "me_algo": "epzs",  # Explicitly set based on PS default
-    "search_param": 32,  # Set based on likely PS default
-    "scd_threshold": 10.0,  # Value doesn't matter when scd="none"
-    "mb_size": "(default)",  # Keep default
-    # Sharpening (Disabled, mimicking lack of unsharp/presence of tmix in PS)
-    "apply_unsharp": False,
-    "unsharp_lx": 7,  # Values kept for structure, but unused
-    "unsharp_ly": 7,
-    "unsharp_la": 1.0,
-    "unsharp_cx": 5,
-    "unsharp_cy": 5,
-    "unsharp_ca": 0.0,
-    # Quality (Adjusted based on PS comparison)
-    "preset_text": "Medium (CRF 20)",  # Changed preset level example
-    "crf": 20,  # Added CRF value
-    "bitrate": 10000,  # Lowered bitrate example
-    "bufsize": 15000,  # Lowered bufsize (1.5*bitrate)
-    "pix_fmt": "yuv444p",  # Keep high quality format
-    # Filter Preset (Intermediate step)
-    "filter_preset": "medium",  # Match final preset level choice
-}
-
-# Default profile based on initial GUI values
-DEFAULT_FFMPEG_PROFILE: FfmpegProfile = {
-    # Interpolation
-    "use_ffmpeg_interp": True,
-    "mi_mode": "mci",
-    "mc_mode": "obmc",
-    "me_mode": "bidir",
-    "vsbmc": False,
-    "scd": "fdiff",
-    "me_algo": "(default)",
-    "search_param": 96,
-    "scd_threshold": 10.0,
-    "mb_size": "(default)",
-    # Sharpening
-    "apply_unsharp": True,  # <-- Key for groupbox check state
-    "unsharp_lx": 7,
-    "unsharp_ly": 7,
-    "unsharp_la": 1.0,
-    "unsharp_cx": 5,
-    "unsharp_cy": 5,
-    "unsharp_ca": 0.0,
-    # Quality
-    "preset_text": "Very High (CRF 16)",
-    "crf": 16,  # Added CRF value
-    "bitrate": 15000,
-    "bufsize": 22500,
-    "pix_fmt": "yuv444p",
-    # Filter Preset
-    "filter_preset": "slow",
-}
-
-# Store profiles in a dictionary for easy access with type hint
-FFMPEG_PROFILES: Dict[str, FfmpegProfile] = {
-    "Default": DEFAULT_FFMPEG_PROFILE,
-    "Optimal": OPTIMAL_FFMPEG_PROFILE,
-    "Optimal 2": OPTIMAL_FFMPEG_PROFILE_2,
-    # "Custom" is handled implicitly when settings change
-}
+# FFmpeg profile definitions moved to goesvfi.utils.config
 
 # Commented out as it seems unused and might cause type issues if FfmpegProfile changes
 # # OPTIMAL_FFMPEG_INTERP_SETTINGS = {
@@ -403,44 +277,7 @@ class MainWindow(QWidget):
         # -----------------------------------------------------------------
         # Instantiate FFmpegSettingsTab, passing required widgets and signals
         self.ffmpeg_settings_tab: FFmpegSettingsTab # <-- ADDED TYPE HINT
-        self.ffmpeg_settings_tab = FFmpegSettingsTab(
-            # Pass the widgets created above in MainWindow
-            ffmpeg_settings_group=self.ffmpeg_settings_group,
-            ffmpeg_unsharp_group=self.ffmpeg_unsharp_group,
-            ffmpeg_quality_group=self.ffmpeg_quality_group,
-            ffmpeg_profile_combo=self.ffmpeg_profile_combo,
-            ffmpeg_mi_mode_combo=self.ffmpeg_mi_mode_combo,
-            ffmpeg_mc_mode_combo=self.ffmpeg_mc_mode_combo,
-            ffmpeg_me_mode_combo=self.ffmpeg_me_mode_combo,
-            ffmpeg_vsbmc_checkbox=self.ffmpeg_vsbmc_checkbox,
-            ffmpeg_scd_combo=self.ffmpeg_scd_combo,
-            ffmpeg_me_algo_edit=self.ffmpeg_me_algo_edit,
-            ffmpeg_search_param_spinbox=self.ffmpeg_search_param_spinbox,
-            ffmpeg_scd_threshold_spinbox=self.ffmpeg_scd_threshold_spinbox,
-            ffmpeg_mb_size_edit=self.ffmpeg_mb_size_edit,
-            ffmpeg_unsharp_lx_spinbox=self.ffmpeg_unsharp_lx_spinbox,
-            ffmpeg_unsharp_ly_spinbox=self.ffmpeg_unsharp_ly_spinbox,
-            ffmpeg_unsharp_la_spinbox=self.ffmpeg_unsharp_la_spinbox,
-            ffmpeg_unsharp_cx_spinbox=self.ffmpeg_unsharp_cx_spinbox,
-            ffmpeg_unsharp_cy_spinbox=self.ffmpeg_unsharp_cy_spinbox,
-            ffmpeg_unsharp_ca_spinbox=self.ffmpeg_unsharp_ca_spinbox,
-            ffmpeg_quality_combo=self.ffmpeg_quality_combo,
-            ffmpeg_crf_spinbox=self.ffmpeg_crf_spinbox,
-            ffmpeg_bitrate_spinbox=self.ffmpeg_bitrate_spinbox,
-            ffmpeg_bufsize_spinbox=self.ffmpeg_bufsize_spinbox,
-            ffmpeg_pix_fmt_combo=self.ffmpeg_pix_fmt_combo,
-            ffmpeg_filter_preset_combo=self.ffmpeg_filter_preset_combo,
-            # Pass widgets from MainTab needed for preview updates
-            in_dir_edit=self.main_tab.in_dir_edit,
-            mid_count_spinbox=self.main_tab.multiplier_spinbox, # Corrected reference
-            encoder_combo=self.main_tab.encoder_combo,
-            rife_model_combo=self.main_tab.rife_model_combo,
-            sanchez_false_colour_checkbox=self.main_tab.sanchez_false_colour_checkbox,
-            sanchez_res_combo=self.main_tab.sanchez_res_combo,
-            # Pass the signal
-            request_previews_update=self.request_previews_update,
-            parent=self
-        )
+        self.ffmpeg_settings_tab = FFmpegSettingsTab(parent=self)
         # Assuming ModelLibraryTab needs main_view_model
         self.model_library_tab = ModelLibraryTab(parent=self)
         # Pass ViewModels to Existing Tabs
@@ -578,7 +415,8 @@ class MainWindow(QWidget):
             LOGGER.debug(f"MainWindow setting in_dir to: {path}")
             self.in_dir = path
             self.sanchez_preview_cache.clear() # Clear cache when dir changes
-            # Preview update will be triggered separately by the caller via signal
+            self.request_previews_update.emit() # Trigger preview update
+            # Preview update is now triggered directly above
         self.main_tab._update_crop_buttons_state() # ADDED: Explicitly update crop buttons
 
     def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
@@ -1602,9 +1440,9 @@ class MainWindow(QWidget):
                 full_res_qimage = QImage(
                     contiguous_img_array.data, width, height, bytes_per_line, format
                 ).copy()
-                target_label.processed_image = full_res_qimage.copy() # Store for dialogs
-                target_label.file_path = str(image_path) # Store path too
-                LOGGER.debug("Stored full-res, uncropped, potentially Sanchez'd QImage in label.")
+                # Store path - moved assignment to after final QImage creation
+                target_label.file_path = str(image_path)
+                LOGGER.debug("Converted initial NumPy array to QImage (full_res_qimage).")
             except Exception as conversion_err:
                 LOGGER.exception(f"Failed converting initial NumPy array to QImage: {conversion_err}")
                 return None # Cannot proceed if initial conversion fails
@@ -1654,7 +1492,9 @@ class MainWindow(QWidget):
                 final_q_image = QImage(
                     contiguous_img_array.data, width, height, bytes_per_line, format
                 ).copy()
-                LOGGER.debug("Successfully converted final (potentially cropped) NumPy array to QImage")
+                # Store the final, potentially cropped, full-resolution QImage
+                target_label.processed_image = final_q_image.copy()
+                LOGGER.debug("Successfully converted final NumPy array to QImage and stored in label.processed_image")
             except Exception as conversion_err:
                 LOGGER.exception(f"Failed converting final NumPy array to QImage: {conversion_err}")
                 # If final conversion fails, maybe try using the uncropped full_res_qimage?
@@ -2014,72 +1854,25 @@ class MainWindow(QWidget):
         )
 
     def _update_rife_options_state(self, encoder_type: str) -> None:
-        """Updates the visibility and enabled state of RIFE-specific options."""
+        """Enable/disable RIFE-specific options and the FFmpeg tab based on encoder selection."""
         is_rife = encoder_type == "RIFE"
+        is_ffmpeg = encoder_type == "FFmpeg"
 
-        # Toggle visibility of RIFE options group
-        rife_options_parent = self.main_tab.rife_options_group.parentWidget() # Use group
-        if rife_options_parent is not None: # Check if parent exists
-            rife_options_parent.setVisible(is_rife)
-            
-    def _update_scd_thresh_state(self, scd_mode: str) -> None:
-        """Updates the enabled state of the SCD threshold control based on the selected SCD mode."""
-        # Enable SCD threshold only when SCD mode is not 'none'
-        self.ffmpeg_settings_tab.ffmpeg_scd_threshold_spinbox.setEnabled(scd_mode != "none")
-        
-    def _update_unsharp_controls_state(self, enabled: bool) -> None:
-        """Updates the enabled state of the unsharp mask controls based on whether the group is checked."""
-        # These controls should be enabled only when the unsharp group is checked
-        if hasattr(self, "ffmpeg_unsharp_lx_spinbox"):
-            self.ffmpeg_unsharp_lx_spinbox.setEnabled(enabled)
-        if hasattr(self, "ffmpeg_unsharp_ly_spinbox"):
-            self.ffmpeg_unsharp_ly_spinbox.setEnabled(enabled)
-        if hasattr(self, "ffmpeg_unsharp_la_spinbox"):
-            self.ffmpeg_unsharp_la_spinbox.setEnabled(enabled)
-        if hasattr(self, "ffmpeg_unsharp_cx_spinbox"):
-            self.ffmpeg_unsharp_cx_spinbox.setEnabled(enabled)
-        if hasattr(self, "ffmpeg_unsharp_cy_spinbox"):
-            self.ffmpeg_unsharp_cy_spinbox.setEnabled(enabled)
-        if hasattr(self, "ffmpeg_unsharp_ca_spinbox"):
-            self.ffmpeg_unsharp_ca_spinbox.setEnabled(enabled)
-            
-    def _update_quality_controls_state(self, preset_text: str) -> None:
-        """Updates the state of quality controls based on the selected preset."""
-        is_custom = preset_text == "Custom (CRF/Bitrate)"
-        
-        # Enable manual controls only in custom mode
-        if hasattr(self, "ffmpeg_crf_spinbox"):
-            self.ffmpeg_crf_spinbox.setEnabled(is_custom)
-        if hasattr(self, "ffmpeg_bitrate_spinbox"):
-            self.ffmpeg_bitrate_spinbox.setEnabled(is_custom)
-        if hasattr(self, "ffmpeg_bufsize_spinbox"):
-            self.ffmpeg_bufsize_spinbox.setEnabled(is_custom)
-            
-        # If not custom, set suitable values based on the preset
-        if not is_custom and "CRF" in preset_text:
-            try:
-                # Extract CRF value from preset text (e.g., "Very High (CRF 16)" -> 16)
-                crf_value = int(preset_text.split("CRF")[1].strip().split(")")[0])
-                if hasattr(self, "ffmpeg_crf_spinbox"):
-                    self.ffmpeg_crf_spinbox.setValue(crf_value)
-                    
-                # Set reasonable bitrate/bufsize based on quality level
-                if "Very High" in preset_text:
-                    bitrate = 15000
-                elif "High" in preset_text:
-                    bitrate = 10000
-                elif "Medium" in preset_text:
-                    bitrate = 5000
-                else:  # Low
-                    bitrate = 2500
-                    
-                if hasattr(self, "ffmpeg_bitrate_spinbox"):
-                    self.ffmpeg_bitrate_spinbox.setValue(bitrate)
-                if hasattr(self, "ffmpeg_bufsize_spinbox"):
-                    self.ffmpeg_bufsize_spinbox.setValue(int(bitrate * 1.5))
-            except (ValueError, IndexError):
-                # If parsing fails, use defaults
-                pass
+        # Enable/disable RIFE specific controls on MainTab
+        self.main_tab.rife_model_combo.setEnabled(is_rife)
+        self.main_tab.rife_tile_checkbox.setEnabled(is_rife)
+        # Ensure tile size spinbox state depends on checkbox state *and* RIFE selection
+        self.main_tab.rife_tile_size_spinbox.setEnabled(is_rife and self.main_tab.rife_tile_checkbox.isChecked())
+        self.main_tab.rife_uhd_checkbox.setEnabled(is_rife)
+        self.main_tab.rife_tta_spatial_checkbox.setEnabled(is_rife)
+        self.main_tab.rife_tta_temporal_checkbox.setEnabled(is_rife)
+        self.main_tab.rife_threads_edit.setEnabled(is_rife)
+
+        # Enable/disable the entire FFmpeg settings tab content
+        self.ffmpeg_settings_tab.set_enabled(is_ffmpeg)
+
+    # Methods _update_scd_thresh_state, _update_unsharp_controls_state, _update_quality_controls_state removed
+    # as this logic is now handled within FFmpegSettingsTab.
 
     def _start(self) -> None:
         LOGGER.debug("Entering _start...")
@@ -2102,38 +1895,35 @@ class MainWindow(QWidget):
             max_workers = os.cpu_count() or 1
             encoder = self.main_tab.encoder_combo.currentText()
 
-            # FFmpeg settings (Access widgets directly from self)
-            use_ffmpeg_interp = self.ffmpeg_settings_group.isChecked() # Use groupbox state
-            filter_preset = self.ffmpeg_filter_preset_combo.currentText()
-            mi_mode = self.ffmpeg_mi_mode_combo.currentText()
-            mc_mode = self.ffmpeg_mc_mode_combo.currentText()
-            me_mode = self.ffmpeg_me_mode_combo.currentText()
-            me_algo = self.ffmpeg_me_algo_edit.text() # Use .text() for QLineEdit
-            search_param = self.ffmpeg_search_param_spinbox.value()
-            scd_mode = self.ffmpeg_scd_combo.currentText()
-            # scd_threshold is only relevant if scd_mode is not 'none'
-            scd_threshold = self.ffmpeg_scd_threshold_spinbox.value() if scd_mode != "none" else None
-
-            # minter_mb_size needs parsing from QLineEdit text
-            mb_size_text = self.ffmpeg_mb_size_edit.text() # Use .text() for QLineEdit
+            # FFmpeg settings (Get from the dedicated tab)
+            ffmpeg_settings = self.ffmpeg_settings_tab.get_current_settings()
+            use_ffmpeg_interp = ffmpeg_settings.get("use_ffmpeg_interp", False)
+            filter_preset = ffmpeg_settings.get("filter_preset", "slow")
+            mi_mode = ffmpeg_settings.get("mi_mode", "mci")
+            mc_mode = ffmpeg_settings.get("mc_mode", "obmc")
+            me_mode = ffmpeg_settings.get("me_mode", "bidir")
+            me_algo = ffmpeg_settings.get("me_algo", "") # Default to empty string
+            search_param = ffmpeg_settings.get("search_param", 96)
+            scd_mode = ffmpeg_settings.get("scd", "fdiff")
+            scd_threshold = ffmpeg_settings.get("scd_threshold") if scd_mode != "none" else None
+            mb_size_text = ffmpeg_settings.get("mb_size", "") # Default to empty string
             minter_mb_size = int(mb_size_text) if mb_size_text.isdigit() else None
-
-            minter_vsbmc = 1 if self.ffmpeg_vsbmc_checkbox.isChecked() else 0
+            minter_vsbmc = 1 if ffmpeg_settings.get("vsbmc", False) else 0
 
             # Unsharp settings
-            apply_unsharp = self.ffmpeg_unsharp_group.isChecked()
-            unsharp_lx = self.ffmpeg_unsharp_lx_spinbox.value()
-            unsharp_ly = self.ffmpeg_unsharp_ly_spinbox.value()
-            unsharp_la = self.ffmpeg_unsharp_la_spinbox.value()
-            unsharp_cx = self.ffmpeg_unsharp_cx_spinbox.value()
-            unsharp_cy = self.ffmpeg_unsharp_cy_spinbox.value()
-            unsharp_ca = self.ffmpeg_unsharp_ca_spinbox.value()
+            apply_unsharp = ffmpeg_settings.get("apply_unsharp", False)
+            unsharp_lx = ffmpeg_settings.get("unsharp_lx", 7)
+            unsharp_ly = ffmpeg_settings.get("unsharp_ly", 7)
+            unsharp_la = ffmpeg_settings.get("unsharp_la", 1.0)
+            unsharp_cx = ffmpeg_settings.get("unsharp_cx", 5)
+            unsharp_cy = ffmpeg_settings.get("unsharp_cy", 5)
+            unsharp_ca = ffmpeg_settings.get("unsharp_ca", 0.0)
 
             # Quality settings
-            crf = self.ffmpeg_crf_spinbox.value()
-            bitrate_kbps = self.ffmpeg_bitrate_spinbox.value()
-            bufsize_kb = self.ffmpeg_bufsize_spinbox.value()
-            pix_fmt = self.ffmpeg_pix_fmt_combo.currentText()
+            crf = ffmpeg_settings.get("crf", 16)
+            bitrate_kbps = ffmpeg_settings.get("bitrate", 15000)
+            bufsize_kb = ffmpeg_settings.get("bufsize", 22500)
+            pix_fmt = ffmpeg_settings.get("pix_fmt", "yuv444p")
 
             # Other args
             # skip_model corresponds to 'Keep Intermediate Files' checkbox in MainTab
