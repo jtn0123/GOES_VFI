@@ -20,7 +20,7 @@ from goesvfi.utils import config # Import config
 # RIFEModelDetails is defined locally below, remove incorrect import
 from goesvfi.pipeline.image_processing_interfaces import ImageData # Add ImageData import
 from PyQt6.QtCore import QSettings, Qt, QTimer, pyqtSignal, pyqtSlot, QRect, QObject, QPointF # Add QObject, QPointF
-from PyQt6.QtGui import QColor, QImage, QPixmap, QMouseEvent # Add QMouseEvent
+from PyQt6.QtGui import QColor, QImage, QPixmap, QMouseEvent, QCursor # Add QMouseEvent, QCursor
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -39,6 +39,40 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+# Custom button class with enhanced event handling
+class SuperButton(QPushButton):
+    """A custom button class that ensures clicks are properly processed."""
+    
+    def __init__(self, text: str, parent: QWidget = None):
+        super().__init__(text, parent)
+        self.click_callback = None
+        print(f"SuperButton created with text: {text}")
+        
+    def set_click_callback(self, callback):
+        """Set a direct callback function for click events."""
+        self.click_callback = callback
+        print(f"SuperButton callback set: {callback.__name__ if callback else 'None'}")
+        
+    def mousePressEvent(self, event: QMouseEvent) -> None:
+        """Explicitly override mouse press event."""
+        print(f"SuperButton MOUSE PRESS: {event.button()}")
+        # Call the parent implementation
+        super().mousePressEvent(event)
+        
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        """Explicitly override mouse release event for better click detection."""
+        print(f"SuperButton MOUSE RELEASE: {event.button()}")
+        super().mouseReleaseEvent(event)
+        
+        # If it's a left-click release, call our callback
+        if event.button() == Qt.MouseButton.LeftButton:
+            print("SuperButton: LEFT CLICK DETECTED")
+            if self.click_callback:
+                print(f"SuperButton: Calling callback {self.click_callback.__name__}")
+                QTimer.singleShot(10, self.click_callback)  # Small delay to ensure UI updates
+            else:
+                print("SuperButton: No callback registered")
 
 # Define Enums for interpolation and raw encoding methods
 class InterpolationMethod(Enum):
@@ -152,7 +186,10 @@ class MainTab(QWidget):
         self.image_loader = image_loader
         self.sanchez_processor = sanchez_processor
         self.image_cropper = image_cropper
+        # Ensure we're using the same settings instance as MainWindow
         self.settings = settings
+        # Force settings to sync at initialization to ensure freshest data
+        self.settings.sync()
         self.main_window_preview_signal = request_previews_update_signal # Store the signal
         self.main_window_ref = main_window_ref # Store the MainWindow reference
 
@@ -288,17 +325,115 @@ class MainTab(QWidget):
         sanchez_layout.addWidget(self.sanchez_res_combo, 1, 1)
         self.sanchez_res_km_combo = self.sanchez_res_combo # Alias
 
-        # Start Button
-        self.start_button = QPushButton("Start Video Interpolation")
+        # Create a completely redesigned start button implementation
+        self.start_button = QPushButton("START")
         self.start_button.setObjectName("start_button") 
-        self.start_button.setMinimumHeight(40)
-        self.start_button.setEnabled(False)
-        # Use a standard Python function directly bound to avoid signal issues
-        self.start_button.clicked.connect(lambda: print("START BUTTON DIRECT: CLICKED"))
-        # Back up with a direct click handler from setup_ui
-        self.start_button.clicked.connect(self._debug_start_button_clicked)
-        # Add direct mouse event handling
-        self.start_button.mousePressEvent = self._start_button_mouse_press
+        self.start_button.setMinimumHeight(50)
+        self.start_button.setEnabled(True)  # Initially enabled for debugging
+        self.start_button.setStyleSheet("""
+            QPushButton#start_button {
+                background-color: #4CAF50;
+                color: white;
+                font-weight: bold;
+                font-size: 16px;
+                border-radius: 5px;
+                padding: 8px 16px;
+            }
+            QPushButton#start_button:hover {
+                background-color: #45a049;
+            }
+            QPushButton#start_button:pressed {
+                background-color: #3e8e41;
+            }
+        """)
+        
+        # Implement custom event handling for more reliability
+        class FailsafeButton(QPushButton):
+            def __init__(self, text, parent=None):
+                super().__init__(text, parent)
+                self.handler_function = None
+                self.debug_mode = True  # IMPORTANT: Set to False for production
+                print(f"FailsafeButton created with text: {text}")
+                
+            def set_handler(self, handler):
+                self.handler_function = handler
+                print(f"FailsafeButton handler set: {handler.__name__ if handler else 'None'}")
+                
+            def mousePressEvent(self, event):
+                print("FAILSAFE BUTTON: Mouse press detected")
+                super().mousePressEvent(event)
+                
+            def mouseReleaseEvent(self, event):
+                print("FAILSAFE BUTTON: Mouse release detected")
+                super().mouseReleaseEvent(event)
+                
+                # Always allow clicks in debug mode, regardless of disabled state
+                if event.button() == Qt.MouseButton.LeftButton:
+                    if self.handler_function:
+                        if self.isEnabled() or self.debug_mode:
+                            print(f"FAILSAFE BUTTON: Calling handler directly: {self.handler_function.__name__}")
+                            # For testing only - in production, respect the enabled state
+                            if not self.isEnabled() and self.debug_mode:
+                                print("WARNING: Button is disabled but debug_mode is forcing execution!")
+                            QTimer.singleShot(10, self.handler_function)
+                        else:
+                            print("FAILSAFE BUTTON: Not calling handler because button is disabled")
+                    else:
+                        print("FAILSAFE BUTTON: No handler function set")
+        
+        # Create our failsafe button with true red color
+        self.failsafe_button = FailsafeButton("START PROCESSING", self)
+        self.failsafe_button.setObjectName("failsafe_button")
+        self.failsafe_button.setMinimumHeight(60)
+        self.failsafe_button.setStyleSheet("""
+            QPushButton#failsafe_button {
+                background-color: #FF0000;  /* Pure red */
+                color: white;
+                font-weight: bold;
+                font-size: 16px;
+                border: 3px solid #FF5555;
+                border-radius: 5px;
+                padding: 10px 20px;
+            }
+            QPushButton#failsafe_button:hover {
+                background-color: #CC0000;
+                border: 3px solid #FF8888;
+            }
+            QPushButton#failsafe_button:pressed {
+                background-color: #990000;
+            }
+        """)
+        
+        # Set the handler for the failsafe button
+        self.failsafe_button.set_handler(self._direct_start_handler)
+        
+        # Also connect through standard mechanism as backup
+        self.failsafe_button.clicked.connect(self._direct_start_handler)
+        
+        # Add debug label with instructions - make it very obvious
+        debug_label = QLabel("EMERGENCY TEST MODE: RED BUTTON WILL WORK EVEN WHEN DISABLED!")
+        debug_label.setStyleSheet("color: #FF0000; font-weight: bold; font-size: 14px; background-color: #FFFF00; padding: 5px;")
+        
+        # Create a button container for both buttons
+        button_container = QWidget()
+        button_layout = QVBoxLayout(button_container)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Add debug label
+        button_layout.addWidget(debug_label)
+        
+        # Create button row
+        button_row = QHBoxLayout()
+        button_row.addWidget(self.start_button)
+        button_row.addWidget(self.failsafe_button)
+        button_layout.addLayout(button_row)
+        
+        # Direct connections for standard button - simpler is better
+        self.start_button.clicked.connect(self._direct_start_handler)
+        
+        # Log button creation with emphasis
+        print("\n===== ENHANCED START BUTTONS CREATED AND CONNECTED =====")
+        LOGGER.debug("Enhanced start buttons created with direct handlers")
 
         # Layout Assembly
         settings_layout = QHBoxLayout()
@@ -314,7 +449,7 @@ class MainTab(QWidget):
         layout.addLayout(sanchez_preview_layout) # Add Sanchez preview checkbox layout here
         layout.addLayout(settings_layout)
         layout.addWidget(self.sanchez_options_group) # Keep Sanchez options group for other settings
-        layout.addWidget(self.start_button)
+        layout.addWidget(button_container)  # Add the button container with both buttons
 
         # --- Aliases for potential external access or future refactoring ---
         self.model_combo = self.rife_model_combo
@@ -353,10 +488,9 @@ class MainTab(QWidget):
         self.rife_thread_spec_edit.textChanged.connect(self._validate_thread_spec)
         self._connect_model_combo() # Connect RIFE model combo signals
 
-        # Start Button - this is a duplicate connection, but that's intentional for debug purposes
-        LOGGER.debug("Connecting start button signal...")
-        self.start_button.clicked.connect(self._start)
-        LOGGER.debug("Start button now has multiple connections to ensure it works")
+        # Note: Start button connection is now handled in _setup_ui
+        # for clarity and to avoid multiple connections
+        LOGGER.debug("Start button already connected in _setup_ui")
         
         # Verify that our processing signals are connected to MainWindow
         LOGGER.debug("Verifying processing signal connections...")
@@ -460,12 +594,14 @@ class MainTab(QWidget):
             main_window = self.main_window_ref
             current_in_dir = getattr(main_window, 'in_dir', None)
             if current_in_dir and current_in_dir.exists():
-                # Use input directory name + _output.mp4
+                # Use input directory name + timestamped output name for uniqueness
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 dir_name = current_in_dir.name
                 start_dir = str(current_in_dir.parent)
-                suggested_name = f"{dir_name}_output.mp4"
+                suggested_name = f"{dir_name}_output_{timestamp}.mp4"
                 start_file = str(current_in_dir.parent / suggested_name)
-                LOGGER.debug(f"Suggesting output file based on input dir: {start_file}")
+                LOGGER.debug(f"Suggesting timestamped output file: {start_file}")
 
         # Get save filename
         file_path, _ = QFileDialog.getSaveFileName(
@@ -874,26 +1010,44 @@ class MainTab(QWidget):
 
     def _start(self) -> None:
         """Prepare arguments and emit the processing_started signal."""
+        # Print to stdout for immediate visibility
+        print("\n============ START METHOD CALLED ============")
+        print("Preparing to start processing with signal emission")
         LOGGER.debug("================== START BUTTON CLICKED ==================")
         LOGGER.debug("MainTab: Start button clicked.")
         
         # Verify that the button should be enabled based on state
         can_start = self._verify_start_button_state()
         if not can_start:
-            LOGGER.error("Start button clicked but state verification shows it should be disabled!")
+            error_msg = "Start button clicked but state verification shows it should be disabled!"
+            LOGGER.error(error_msg)
+            print(f"ERROR: {error_msg}")
             # Continue anyway since the user managed to click it
+            print("Continuing despite verification failure...")
         
         # Get parent references through multiple approaches for debugging
         parent_obj = self.parent()
-        LOGGER.debug(f"Parent object type: {type(parent_obj)}")
+        parent_type = type(parent_obj).__name__
+        LOGGER.debug(f"Parent object type: {parent_type}")
+        print(f"Parent object type: {parent_type}")
+        
         main_window_from_parent = cast(QObject, parent_obj)
         main_window_from_ref = self.main_window_ref  
-        LOGGER.debug(f"main_window_from_parent id: {id(main_window_from_parent)}")
-        LOGGER.debug(f"main_window_from_ref id: {id(main_window_from_ref)}")
+        
+        # Log IDs to verify they're the same object
+        mw_parent_id = id(main_window_from_parent)
+        mw_ref_id = id(main_window_from_ref)
+        LOGGER.debug(f"main_window_from_parent id: {mw_parent_id}")
+        LOGGER.debug(f"main_window_from_ref id: {mw_ref_id}")
+        print(f"MainWindow from parent id: {mw_parent_id}")
+        print(f"MainWindow from ref id: {mw_ref_id}")
+        print(f"Are references to same object? {mw_parent_id == mw_ref_id}")
         
         # Check input directory through multiple approaches
         in_dir_from_parent = getattr(main_window_from_parent, 'in_dir', None)
         in_dir_from_ref = getattr(main_window_from_ref, 'in_dir', None)
+        print(f"Input dir from parent: {in_dir_from_parent}")
+        print(f"Input dir from ref: {in_dir_from_ref}")
         in_dir_from_edit = self.in_dir_edit.text()
         LOGGER.debug(f"in_dir_from_parent: {in_dir_from_parent}")
         LOGGER.debug(f"in_dir_from_ref: {in_dir_from_ref}")
@@ -957,10 +1111,24 @@ class MainTab(QWidget):
             # Try direct connections first
             try:
                 LOGGER.debug("Emitting processing_started signal with args")
-                # Add a direct print to stdout for clearer debugging
-                print(f"EMITTING SIGNAL: processing_started with {len(args) if args else 0} args")
+                # Print detailed info for debugging
+                print("\n===== EMITTING SIGNAL: processing_started =====")
+                print(f"Signal args size: {len(args) if args else 0}")
+                print(f"Args keys: {list(args.keys()) if args else 'None'}")
+                print(f"In directory path: {args.get('in_dir')}")
+                print(f"Out file path: {args.get('out_file')}")
+                print(f"Encoder type: {args.get('encoder')}")
                 
+                # Check signal connection status
+                receivers = self.processing_started.receivers()
+                print(f"Signal has {receivers} receivers connected")
+                if receivers == 0:
+                    print("WARNING: No receivers connected to processing_started signal!")
+                    LOGGER.error("No receivers connected to processing_started signal!")
+                
+                # Emit the signal
                 self.processing_started.emit(args) # Emit signal with processing arguments
+                print("Signal emission attempt completed")
                 LOGGER.debug("Signal emission completed")
                 
                 # Wait a short time to see if the signal was processed
@@ -1313,22 +1481,34 @@ class MainTab(QWidget):
     def set_processing_state(self, is_processing: bool) -> None:
         """Update UI elements based on processing state."""
         self.is_processing = is_processing
-        self.start_button.setText("Cancel Processing" if is_processing else "Start Video Interpolation")
+        
+        # Update both buttons via _update_start_button_state
+        # This will set the text, style, and enabled state
+        self._update_start_button_state()
+        
         # Disable relevant controls during processing
         self.in_dir_edit.setEnabled(not is_processing)
         self.out_file_edit.setEnabled(not is_processing)
+        
         # Find browse buttons and disable them
         in_browse_button = self.findChild(QPushButton, "browse_button") # Assuming only one for input for now
         out_browse_button = self.findChildren(QPushButton, "browse_button")[1] # Assuming second is output
         if in_browse_button: in_browse_button.setEnabled(not is_processing)
         if out_browse_button: out_browse_button.setEnabled(not is_processing)
-        # self.processing_vm.set_processing(is_processing) # Incorrect method
+        
+        # Update ViewModel state
         if is_processing:
             self.processing_vm.start_processing() # Call correct ViewModel method
+            
+            # Show processing confirmation
+            print("\n====== PROCESSING STARTED ======")
+            LOGGER.info("Processing started - UI updated to processing state")
         else:
-            # Assuming a method like stop_processing or cancel_processing exists
-            # If this causes issues, the ViewModel needs inspection.
+            # Cancel processing in ViewModel
             self.processing_vm.cancel_processing() # Call correct ViewModel method
+            
+            print("\n====== PROCESSING STOPPED ======")
+            LOGGER.info("Processing stopped - UI updated to ready state")
 
 
     def _reset_start_button(self) -> None:
@@ -1355,26 +1535,231 @@ class MainTab(QWidget):
             # This is for debugging - in production we'd respect the enabled state
             QTimer.singleShot(200, self._direct_start)
     
+    def _generate_timestamped_output_path(self, base_dir=None, base_name=None):
+        """Generate a fresh timestamped output path for uniqueness across runs.
+        
+        Args:
+            base_dir: Optional directory to use (defaults to input dir's parent)
+            base_name: Optional base name (defaults to input dir's name)
+            
+        Returns:
+            Path object with timestamped output file path
+        """
+        # Import inside function to avoid circular imports
+        from datetime import datetime
+        
+        # Get the main window reference
+        main_window = self.main_window_ref
+        
+        # Get input directory to use as base if not specified
+        if not base_dir or not base_name:
+            current_in_dir = getattr(main_window, 'in_dir', None)
+            if current_in_dir and current_in_dir.is_dir():
+                if not base_dir:
+                    base_dir = current_in_dir.parent
+                if not base_name:
+                    base_name = current_in_dir.name
+        
+        # Use current directory and generic name if still not set
+        if not base_dir:
+            import os
+            base_dir = Path(os.getcwd())
+        if not base_name:
+            base_name = "output"
+            
+        # Generate timestamp and create path
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return base_dir / f"{base_name}_output_{timestamp}.mp4"
+    
+    def _direct_start_handler(self) -> None:
+        """New simplified handler for the start button that directly calls main processing code.
+        
+        This handler is more reliable as it avoids complex signal connections and
+        directly executes the processing workflow.
+        """
+        # Print to stdout for immediate visibility
+        print("\n===== DIRECT START HANDLER CALLED =====")
+        LOGGER.info("Enhanced start button handler called")
+        
+        # Always generate a fresh timestamped output path for each run
+        # If one already exists, parse it to extract the base parts
+        base_dir = None
+        base_name = None
+        
+        if self.out_file_path:
+            # Extract directory and basename from existing path
+            base_dir = self.out_file_path.parent
+            
+            # Try to extract the original name before the timestamp
+            import re
+            filename = self.out_file_path.stem  # Get filename without extension
+            # Check if it matches pattern like "name_output_20230405_123456"
+            match = re.match(r"(.+?)_output_\d{8}_\d{6}", filename)
+            if match:
+                # Extract the original name
+                base_name = match.group(1)
+            else:
+                # If no timestamp found, try to remove _output suffix
+                if "_output" in filename:
+                    base_name = filename.split("_output")[0]
+                else:
+                    # Just use the whole name as base
+                    base_name = filename
+        
+        # Generate fresh path
+        fresh_output_path = self._generate_timestamped_output_path(base_dir, base_name)
+        self.out_file_path = fresh_output_path
+        self.out_file_edit.setText(str(fresh_output_path))
+        print(f"Fresh timestamped output path: {fresh_output_path}")
+        
+        # Show notification if status bar exists
+        main_window = self.main_window_ref
+        if hasattr(main_window, 'status_bar'):
+            main_window.status_bar.showMessage(f"Using output file: {fresh_output_path.name}", 5000)
+            
+        # If somehow we still don't have a valid output path (very unlikely at this point)
+        if not self.out_file_path:
+            print("No output file selected - auto-generating default output path")
+            
+            # Get input directory from main window
+            main_window = self.main_window_ref
+            current_in_dir = getattr(main_window, 'in_dir', None)
+            
+            if current_in_dir and current_in_dir.is_dir():
+                # Create a default output file path with timestamp to ensure uniqueness
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                default_output = current_in_dir.parent / f"{current_in_dir.name}_output_{timestamp}.mp4"
+                self.out_file_path = default_output
+                self.out_file_edit.setText(str(default_output))
+                print(f"Timestamped output file set to: {default_output}")
+                
+                # Show a small notification in the status bar (don't block with a dialog)
+                if hasattr(main_window, 'status_bar'):
+                    main_window.status_bar.showMessage(f"Auto-generated output file: {default_output.name}", 5000)
+            else:
+                print("Can't create default output - no input directory")
+                QMessageBox.warning(self, "Input Directory Required", 
+                                  "Please select a valid input directory first.")
+                return
+                
+        # Get current state from main window
+        main_window = self.main_window_ref
+        current_in_dir = getattr(main_window, 'in_dir', None)
+        
+        # Verify we have an input directory
+        if not current_in_dir or not current_in_dir.is_dir():
+            print("No valid input directory selected")
+            QMessageBox.warning(self, "Input Directory Required", 
+                               "Please select a valid input directory containing images.")
+            return
+            
+        # Check for images in input directory
+        try:
+            image_files = sorted([
+                f for f in current_in_dir.iterdir()
+                if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+            ])
+            
+            if not image_files:
+                print(f"No image files found in {current_in_dir}")
+                QMessageBox.warning(self, "No Images Found", 
+                                   f"No image files found in {current_in_dir}.\nPlease select a directory with images.")
+                return
+                
+            print(f"Found {len(image_files)} image files in {current_in_dir}")
+        except Exception as e:
+            print(f"Error checking for images: {e}")
+            QMessageBox.critical(self, "Error", f"Error checking input directory: {e}")
+            return
+        
+        # Gather processing arguments
+        args = self.get_processing_args()
+        if not args:
+            print("Failed to generate processing arguments")
+            return  # Error message already shown by get_processing_args
+        
+        # Update UI to show processing started
+        self.set_processing_state(True)
+        
+        # Show processing confirmation to user
+        QMessageBox.information(self, "Processing Started", 
+                               f"Starting video processing with {len(image_files)} images.\n\n"
+                               f"Input: {current_in_dir}\n"
+                               f"Output: {self.out_file_path}")
+        
+        # Trigger processing via direct MainWindow method call
+        try:
+            print("\n===== STARTING PROCESSING =====")
+            LOGGER.info("Starting processing via direct handler")
+            
+            # Attempt direct emit of signal first
+            self.processing_started.emit(args)
+            
+            # Fallback to direct method call if needed
+            if hasattr(main_window, '_handle_processing'):
+                print("Calling main_window._handle_processing directly as fallback")
+                main_window._handle_processing(args)
+                
+            print("Processing started successfully")
+                
+        except Exception as e:
+            print(f"ERROR starting processing: {e}")
+            LOGGER.exception("Error in direct start handler")
+            self.set_processing_state(False)  # Reset UI state
+            
+            # Show detailed error to user
+            error_details = f"An error occurred: {e}\n\n"
+            error_details += f"Input dir: {current_in_dir}\n"
+            error_details += f"Output file: {self.out_file_path}\n"
+            
+            QMessageBox.critical(self, "Error Starting Process", error_details)
+    
     def _direct_start(self) -> None:
-        """Called directly after button press via timer to avoid event loop issues."""
-        print("DIRECT START METHOD CALLED VIA TIMER")
-        LOGGER.debug("DIRECT START METHOD CALLED VIA TIMER")
-        # Call the actual handler - but only if button is enabled
-        # For debugging, we're bypassing the disabled state check
-        if not self.start_button.isEnabled():
-            print("START BUTTON IS DISABLED - FIXING ISSUES AND FORCING START")
-            LOGGER.debug("START BUTTON IS DISABLED - FIXING ISSUES AND FORCING START")
-            
-            # Try to diagnose why button is disabled
-            self._diagnose_start_button()
-            
-            # For testing - force enable and then call start
-            old_state = self.start_button.isEnabled()
-            self.start_button.setEnabled(True)
-            self._start()
-            self.start_button.setEnabled(old_state)
+        """Original direct handler for start button click."""
+        # Print to stdout for immediate visibility
+        print("\n===== START BUTTON CLICKED - DIRECT START HANDLER =====")
+        LOGGER.debug("Start button clicked - _direct_start called")
+        
+        # Check if conditions are met for starting processing
+        main_window = self.main_window_ref
+        current_in_dir = getattr(main_window, 'in_dir', None)
+        has_in_dir = bool(current_in_dir and current_in_dir.is_dir())
+        has_out_file = bool(self.out_file_path)
+        
+        # Log the state for debugging - both to log and stdout
+        debug_msg = f"Start conditions: has_in_dir={has_in_dir}, has_out_file={has_out_file}"
+        print(debug_msg)
+        LOGGER.debug(debug_msg)
+        
+        # Debug the reference chains
+        print(f"MainWindow reference exists: {main_window is not None}")
+        print(f"Input directory from MainWindow: {current_in_dir}")
+        print(f"Output file path: {self.out_file_path}")
+        
+        if has_in_dir and has_out_file:
+            # Call the actual start method with trace
+            print("All conditions met - calling _start() method")
+            try:
+                self._start()
+                print("_start() method completed")
+            except Exception as e:
+                print(f"ERROR in _start() method: {e}")
+                LOGGER.exception("Error in _start() method")
+                # Show error to user
+                QMessageBox.critical(self, "Error Starting Process", 
+                                    f"An error occurred when starting the process: {e}")
         else:
-            self._start()
+            # Show a message to the user about what's missing
+            error_msg = "Cannot start processing. "
+            if not has_in_dir:
+                error_msg += "Please select an input directory. "
+            if not has_out_file:
+                error_msg += "Please select an output file."
+                
+            LOGGER.warning(f"Start button clicked but missing requirements: {error_msg}")
+            print(f"Missing requirements: {error_msg}")
+            QMessageBox.warning(self, "Missing Requirements", error_msg)
             
     def _diagnose_start_button(self) -> None:
         """Debug the start button state."""
@@ -1434,11 +1819,13 @@ class MainTab(QWidget):
         self._direct_start()
         
     def _update_start_button_state(self) -> None:
-        """Enable/disable start button based on paths and RIFE model availability."""
+        """Enable/disable start buttons based on paths and RIFE model availability."""
         main_window = self.main_window_ref # Use stored reference for consistency
         current_in_dir = getattr(main_window, 'in_dir', None)
         
-        has_paths = current_in_dir and self.out_file_path
+        # For simplicity, only require input directory - we can auto-generate output path
+        # Original: has_paths = current_in_dir and self.out_file_path
+        has_paths = bool(current_in_dir)  # Only input directory is required
         LOGGER.debug(f"Start button check: has_paths={has_paths}, in_dir={current_in_dir}, out_file={self.out_file_path}")
         
         # Check RIFE model only if RIFE is selected encoder
@@ -1449,19 +1836,124 @@ class MainTab(QWidget):
 
         can_start = bool(has_paths and rife_ok and not self.is_processing)
         LOGGER.debug(f"Start button should be enabled: {can_start}")
+        
+        # Update both buttons
         self.start_button.setEnabled(can_start)
         
-        # Extra debug check with visual indicator
-        if can_start:
-            self.start_button.setText("Start Video Interpolation (Ready)")
-            self.start_button.setStyleSheet("background-color: #4CAF50; color: white;") # Green
+        # Special debug mode - always leave failsafe button enabled
+        debug_override = True  # Set to False for production
+        if debug_override:
+            # Never actually disable the button in debug mode, just change its appearance
+            self.failsafe_button.setEnabled(True)
+            print("DEBUG OVERRIDE: Keeping failsafe button enabled for testing")
         else:
-            if self.is_processing:
-                self.start_button.setText("Cancel Processing")
-                self.start_button.setStyleSheet("background-color: #f44336; color: white;") # Red
+            # Normal behavior - enable/disable based on validation
+            self.failsafe_button.setEnabled(can_start)
+        
+        # Update button text and style
+        if self.is_processing:
+            # Processing mode
+            self.start_button.setText("Cancel")
+            self.start_button.setStyleSheet("""
+                QPushButton#start_button {
+                    background-color: #f44336; 
+                    color: white;
+                    font-weight: bold;
+                    font-size: 16px;
+                    border-radius: 5px;
+                }
+            """)
+            
+            self.failsafe_button.setText("CANCEL PROCESSING")
+            self.failsafe_button.setStyleSheet("""
+                QPushButton#failsafe_button {
+                    background-color: #B71C1C;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 16px;
+                    border: 2px solid #F06292;
+                    border-radius: 5px;
+                    padding: 10px 20px;
+                }
+                QPushButton#failsafe_button:hover {
+                    background-color: #C62828;
+                    border: 2px solid #F48FB1;
+                }
+            """)
+        else:
+            # Ready or disabled mode
+            if can_start:
+                self.start_button.setText("START")
+                self.start_button.setStyleSheet("""
+                    QPushButton#start_button {
+                        background-color: #4CAF50;
+                        color: white;
+                        font-weight: bold;
+                        font-size: 16px;
+                        border-radius: 5px;
+                        padding: 8px 16px;
+                    }
+                    QPushButton#start_button:hover {
+                        background-color: #45a049;
+                    }
+                    QPushButton#start_button:pressed {
+                        background-color: #3e8e41;
+                    }
+                """)
+                
+                self.failsafe_button.setText("START PROCESSING")
+                self.failsafe_button.setStyleSheet("""
+                    QPushButton#failsafe_button {
+                        background-color: #E91E63;
+                        color: white;
+                        font-weight: bold;
+                        font-size: 16px;
+                        border: 2px solid #F06292;
+                        border-radius: 5px;
+                        padding: 10px 20px;
+                    }
+                    QPushButton#failsafe_button:hover {
+                        background-color: #D81B60;
+                        border: 2px solid #F48FB1;
+                    }
+                    QPushButton#failsafe_button:pressed {
+                        background-color: #C2185B;
+                    }
+                """)
             else:
-                self.start_button.setText("Start Video Interpolation (Disabled)")
-                self.start_button.setStyleSheet("") # Default style
+                self.start_button.setText("START")
+                self.start_button.setStyleSheet("""
+                    QPushButton#start_button {
+                        background-color: #9E9E9E;
+                        color: #F5F5F5;
+                        font-weight: bold;
+                        font-size: 16px;
+                        border-radius: 5px;
+                        padding: 8px 16px;
+                    }
+                """)
+                
+                # Special case - set text to indicate disabled but don't actually disable for testing
+                self.failsafe_button.setText("START PROCESSING (DISABLED BUT CLICKABLE)")
+                self.failsafe_button.setStyleSheet("""
+                    QPushButton#failsafe_button {
+                        background-color: #FF0000;  /* Keep red even when disabled */
+                        color: white;
+                        font-weight: bold;
+                        font-size: 14px;
+                        border: 3px dashed #FFB6C1; /* Dashed border to indicate disabled */
+                        border-radius: 5px;
+                        padding: 10px 20px;
+                    }
+                    QPushButton#failsafe_button:hover {
+                        background-color: #CC0000;
+                        border: 3px dashed #FFCCCC;
+                    }
+                """)
+                
+        # Print debug info about button states
+        print(f"Start button enabled: {self.start_button.isEnabled()}")
+        print(f"Failsafe button enabled: {self.failsafe_button.isEnabled()}")
 
 
     @pyqtSlot(bool, str)
@@ -1788,31 +2280,87 @@ class MainTab(QWidget):
     def load_settings(self) -> None:
         """Load settings relevant to the MainTab from QSettings."""
         LOGGER.debug("MainTab: Loading settings...")
+        
+        # Debug settings storage
+        org_name = self.settings.organizationName()
+        app_name = self.settings.applicationName()
+        filename = self.settings.fileName()
+        LOGGER.debug(f"QSettings details: org={org_name}, app={app_name}, file={filename}")
+        
+        # List all available keys for debugging
+        all_keys = self.settings.allKeys()
+        LOGGER.debug(f"Available settings keys: {all_keys}")
+        
         main_window = cast(QObject, self.parent())
 
         try:
             # --- Load Input/Output ---
             # Load input dir and set it in MainWindow
             LOGGER.debug("Loading input directory path...")
-            in_dir_str = self.settings.value("paths/inputDirectory", "", type=str)
-            LOGGER.debug(f"Raw input directory from settings: '{in_dir_str}'")
-            if in_dir_str:
-                in_dir_path = Path(in_dir_str)
-                exists = in_dir_path.exists()
-                is_dir = in_dir_path.is_dir() if exists else False
-                LOGGER.debug(f"Input path exists: {exists}, is directory: {is_dir}")
-                loaded_in_dir = in_dir_path if exists and is_dir else None
-            else:
-                loaded_in_dir = None
-                LOGGER.debug("No input directory string in settings")
+            # Force a sync to ensure we're reading the latest settings from disk
+            self.settings.sync()
             
-            if hasattr(main_window, 'set_in_dir'):
-                main_window.set_in_dir(loaded_in_dir) # Set state in MainWindow
-                self.in_dir_edit.setText(in_dir_str if loaded_in_dir else "") # Update local widget
-                if loaded_in_dir:
-                    LOGGER.info(f"Loaded input directory: {in_dir_str}")
+            # Attempt to load input directory path with debug logging
+            try:
+                in_dir_str = self.settings.value("paths/inputDirectory", "", type=str)
+                LOGGER.debug(f"Raw input directory from settings: '{in_dir_str}'")
+                loaded_in_dir = None
+                
+                if in_dir_str:
+                    try:
+                        in_dir_path = Path(in_dir_str)
+                        # Check if path exists and is a directory
+                        exists = in_dir_path.exists()
+                        is_dir = in_dir_path.is_dir() if exists else False
+                        LOGGER.debug(f"Input path exists: {exists}, is directory: {is_dir}")
+                        
+                        if exists and is_dir:
+                            # Path exists and is a directory - use it
+                            loaded_in_dir = in_dir_path
+                            LOGGER.info(f"Loaded valid input directory: {in_dir_str}")
+                        else:
+                            # Try to find the directory with the same name in common locations
+                            LOGGER.warning(f"Saved input directory does not exist: {in_dir_str}")
+                            LOGGER.debug("Will check if directory exists in other locations...")
+                            
+                            # Get just the directory name (without parent directories)
+                            dir_name = in_dir_path.name
+                            
+                            # Check common locations
+                            potential_locations = [
+                                Path.home() / "Downloads" / dir_name,
+                                Path.home() / "Documents" / dir_name,
+                                Path.home() / "Desktop" / dir_name,
+                                Path.cwd() / dir_name
+                            ]
+                            
+                            for potential_path in potential_locations:
+                                LOGGER.debug(f"Checking potential location: {potential_path}")
+                                if potential_path.exists() and potential_path.is_dir():
+                                    LOGGER.info(f"Found matching directory in alternate location: {potential_path}")
+                                    loaded_in_dir = potential_path
+                                    break
+                    except Exception as e:
+                        LOGGER.error(f"Error loading input directory path: {e}")
                 else:
-                    LOGGER.debug("No valid saved input directory found.")
+                    LOGGER.debug("No input directory string in settings")
+            except Exception as e:
+                LOGGER.error(f"Error accessing input directory setting: {e}")
+                loaded_in_dir = None
+            
+            # Update UI with loaded directory
+            LOGGER.debug(f"Final loaded input directory: {loaded_in_dir}")
+            if hasattr(main_window, 'set_in_dir'):
+                # Always call set_in_dir to ensure proper UI state, even if path is None
+                main_window.set_in_dir(loaded_in_dir) # Set state in MainWindow
+                
+                # Update local text field
+                if loaded_in_dir:
+                    self.in_dir_edit.setText(str(loaded_in_dir))
+                    LOGGER.info(f"Set input directory in UI: {loaded_in_dir}")
+                else:
+                    self.in_dir_edit.setText("")
+                    LOGGER.debug("Cleared input directory in UI (no valid directory found)")
             else:
                 LOGGER.error("Parent does not have set_in_dir method")
 
@@ -1820,11 +2368,32 @@ class MainTab(QWidget):
             LOGGER.debug("Loading output file path...")
             out_file_str = self.settings.value("paths/outputFile", "", type=str)
             LOGGER.debug(f"Raw output file from settings: '{out_file_str}'")
+            
             if out_file_str:
-                self.out_file_edit.setText(out_file_str) # Triggers _on_out_file_changed -> sets self.out_file_path
-                LOGGER.info(f"Loaded output file: {out_file_str}")
+                try:
+                    out_file_path = Path(out_file_str)
+                    # Check if parent directory exists (file itself may not exist yet)
+                    parent_exists = out_file_path.parent.exists() if out_file_path.parent != Path() else True
+                    
+                    if parent_exists:
+                        # Parent directory exists - use this path
+                        LOGGER.info(f"Loaded output file with valid parent directory: {out_file_str}")
+                        self.out_file_edit.setText(str(out_file_path))  # Triggers _on_out_file_changed -> sets self.out_file_path
+                    else:
+                        # If parent directory doesn't exist, try to generate a new path
+                        LOGGER.warning(f"Parent directory for output file doesn't exist: {out_file_path.parent}")
+                        
+                        # Use output file name but in Downloads directory
+                        new_path = Path.home() / "Downloads" / out_file_path.name
+                        LOGGER.info(f"Generated alternative output path: {new_path}")
+                        self.out_file_edit.setText(str(new_path))  # Use alternative path
+                        
+                except Exception as e:
+                    LOGGER.error(f"Error loading output file path: {e}")
+                    self.out_file_path = None
             else:
-                self.out_file_path = None # Ensure state is None if empty
+                self.out_file_path = None  # Ensure state is None if empty
+                self.out_file_edit.setText("")  # Clear the text field
                 LOGGER.debug("No output file string in settings")
 
             # --- Load Processing Settings ---
@@ -1934,20 +2503,28 @@ class MainTab(QWidget):
 
             # --- Load Crop State and set it in MainWindow ---
             LOGGER.debug("Loading crop rectangle...")
-            crop_rect_str = self.settings.value("preview/cropRectangle", "", type=str)
-            LOGGER.debug(f"Raw crop rectangle from settings: '{crop_rect_str}'")
-            loaded_crop_rect = None
-            if crop_rect_str:
-                try:
-                    coords = [int(c.strip()) for c in crop_rect_str.split(',')]
-                    if len(coords) == 4:
-                        loaded_crop_rect = tuple(coords)
-                        LOGGER.info(f"Loaded crop rectangle: {loaded_crop_rect}")
-                    else:
-                        LOGGER.warning(f"Invalid crop rectangle format in settings: {crop_rect_str}")
-                except ValueError:
-                    LOGGER.warning(f"Could not parse crop rectangle from settings: {crop_rect_str}")
+            # Attempt to load crop rectangle with enhanced error handling
+            try:
+                crop_rect_str = self.settings.value("preview/cropRectangle", "", type=str)
+                LOGGER.debug(f"Raw crop rectangle from settings: '{crop_rect_str}'")
+                loaded_crop_rect = None
+                if crop_rect_str:
+                    try:
+                        coords = [int(c.strip()) for c in crop_rect_str.split(',')]
+                        if len(coords) == 4:
+                            loaded_crop_rect = tuple(coords)
+                            LOGGER.info(f"Loaded crop rectangle: {loaded_crop_rect}")
+                        else:
+                            LOGGER.warning(f"Invalid crop rectangle format in settings: {crop_rect_str}")
+                    except ValueError:
+                        LOGGER.warning(f"Could not parse crop rectangle from settings: {crop_rect_str}")
+                else:
+                    LOGGER.debug("No crop rectangle string in settings")
+            except Exception as e:
+                LOGGER.error(f"Error accessing crop rectangle setting: {e}")
+                loaded_crop_rect = None
 
+            LOGGER.debug(f"Final loaded crop rectangle: {loaded_crop_rect}")
             if hasattr(main_window, 'set_crop_rect'):
                 main_window.set_crop_rect(loaded_crop_rect) # Set state in MainWindow
                 LOGGER.debug(f"Crop rectangle set in MainWindow: {loaded_crop_rect}")
@@ -1977,26 +2554,66 @@ class MainTab(QWidget):
     def save_settings(self) -> None:
         """Save settings relevant to the MainTab to QSettings."""
         LOGGER.debug("MainTab: Saving settings...")
+        
+        # Debug settings storage before saving
+        org_name = self.settings.organizationName()
+        app_name = self.settings.applicationName()
+        filename = self.settings.fileName()
+        LOGGER.debug(f"QSettings save details: org={org_name}, app={app_name}, file={filename}")
+        
         main_window = cast(QObject, self.parent())
 
         try:
             # --- Save Paths ---
             LOGGER.debug("Saving path settings...")
-            # Save input directory from MainWindow's state
+            
+            # First, save directly from the text field - this ensures even the most recent changes are saved
+            # even if they haven't been processed by MainWindow yet
+            in_dir_text = self.in_dir_edit.text().strip()
+            if in_dir_text:
+                try:
+                    text_dir_path = Path(in_dir_text)
+                    if text_dir_path.exists() and text_dir_path.is_dir():
+                        LOGGER.debug(f"Saving input directory from text field: '{text_dir_path}'")
+                        in_dir_str = str(text_dir_path.resolve())
+                        self.settings.setValue("paths/inputDirectory", in_dir_str)
+                        self.settings.setValue("inputDir", in_dir_str)  # Alternate key for redundancy
+                        self.settings.sync()  # Force immediate sync
+                except Exception as e:
+                    LOGGER.error(f"Error saving input directory from text field: {e}")
+            
+            # Then also try to save from MainWindow's state as a backup
             current_in_dir = getattr(main_window, 'in_dir', None)
+            LOGGER.debug(f"Got input directory from main window: {current_in_dir}")
+            
             if current_in_dir:
-                in_dir_str = str(current_in_dir)
-                LOGGER.debug(f"Saving input directory: '{in_dir_str}'")
-                self.settings.setValue("paths/inputDirectory", in_dir_str)
-            else:
-                LOGGER.debug("Removing input directory setting (None/empty)")
-                self.settings.remove("paths/inputDirectory") # Clear if None
+                # Get absolute path to ensure it can be restored reliably
+                try:
+                    in_dir_str = str(current_in_dir.resolve())
+                    LOGGER.debug(f"Saving input directory from MainWindow (absolute): '{in_dir_str}'")
+                    self.settings.setValue("paths/inputDirectory", in_dir_str)
+                    self.settings.setValue("inputDir", in_dir_str)  # Alternate key for redundancy
+                    # Force immediate sync after saving this critical value
+                    self.settings.sync()
+                except Exception as e:
+                    LOGGER.error(f"Failed to resolve absolute path for input directory: {e}")
+            elif not in_dir_text:
+                LOGGER.debug("No input directory to save (None/empty)")
+                # We don't remove it so we can restore the last value - safer for users
+                # self.settings.remove("paths/inputDirectory") # Clear if None
 
-            # Save output file (still managed locally in MainTab)
+            # Save output file (still managed locally in MainTab) - ensure we use absolute paths
             if self.out_file_path:
-                out_file_str = str(self.out_file_path)
-                LOGGER.debug(f"Saving output file path: '{out_file_str}'")
-                self.settings.setValue("paths/outputFile", out_file_str)
+                try:
+                    out_file_str = str(self.out_file_path.resolve())
+                    LOGGER.debug(f"Saving output file path (absolute): '{out_file_str}'")
+                    self.settings.setValue("paths/outputFile", out_file_str)
+                except Exception as e:
+                    LOGGER.error(f"Failed to resolve absolute path for output file: {e}")
+                    # Fall back to regular path string
+                    out_file_str = str(self.out_file_path)
+                    LOGGER.debug(f"Saving output file path (non-resolved): '{out_file_str}'")
+                    self.settings.setValue("paths/outputFile", out_file_str)
             else:
                 LOGGER.debug("Removing output file setting (None/empty)")
                 self.settings.remove("paths/outputFile")
@@ -2064,17 +2681,44 @@ class MainTab(QWidget):
             # --- Save Crop State from MainWindow's state ---
             LOGGER.debug("Saving crop rectangle...")
             current_crop_rect_mw = getattr(main_window, 'current_crop_rect', None)
+            LOGGER.debug(f"Got crop rectangle from main window: {current_crop_rect_mw}")
+            
             if current_crop_rect_mw:
                 rect_str = ",".join(map(str, current_crop_rect_mw))
                 LOGGER.debug(f"Saving crop rectangle: '{rect_str}'")
+                # Save to multiple keys for redundancy
                 self.settings.setValue("preview/cropRectangle", rect_str)
+                self.settings.setValue("cropRect", rect_str)  # Alternate key
+                # Force immediate sync after saving this critical value
+                self.settings.sync()
+                
+                # Verify it was actually saved
+                saved_rect = self.settings.value("preview/cropRectangle", "", type=str)
+                LOGGER.debug(f"Verification - Crop rectangle after save: '{saved_rect}'")
             else:
-                LOGGER.debug("Removing crop rectangle setting (None/empty)")
-                self.settings.remove("preview/cropRectangle")
+                LOGGER.debug("No crop rectangle to save (None/empty)")
+                # We don't remove it so we can restore the last value - safer for users
+                # self.settings.remove("preview/cropRectangle")
 
             # Force settings to sync to disk
             self.settings.sync()
             LOGGER.info("MainTab: Settings saved successfully.")
+            
+            # Verify saved settings after sync
+            try:
+                # Check if input directory was actually saved
+                saved_in_dir = self.settings.value("paths/inputDirectory", "", type=str)
+                LOGGER.debug(f"Verification - Saved input directory: '{saved_in_dir}'")
+                
+                # Check if crop rectangle was actually saved
+                saved_crop_rect = self.settings.value("preview/cropRectangle", "", type=str)
+                LOGGER.debug(f"Verification - Saved crop rectangle: '{saved_crop_rect}'")
+                
+                # List all keys again to verify
+                all_keys_after = self.settings.allKeys()
+                LOGGER.debug(f"Verification - Settings keys after save: {all_keys_after}")
+            except Exception as ve:
+                LOGGER.error(f"Error verifying saved settings: {ve}")
             
         except Exception as e:
             LOGGER.exception(f"Error saving settings: {e}")

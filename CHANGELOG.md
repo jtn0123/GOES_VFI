@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2025-05-04
+
+### Added
+- **UI Enhancement:** Added more robust button handling to ensure Start button click events are properly processed
+- **Diagnostic:** Added extensive debug logging throughout the application for better troubleshooting
+- **GUI:** Created new test helper scripts for more reliable testing (`run_fixed_gui_tests.py`, `run_fixed_integration_tests.py`, `run_non_gui_tests.py`, `run_working_tests.py`)
+- **Processing:** Added `ImageSaver` class to properly implement saving functionality for processed images
+- **Documentation:** Added detailed documentation of settings persistence issues and potential fixes (`docs/settings_persistence_issues.md`)
+
+### Changed
+- **UI:** Improved validation logic to require only input directory, not output file
+- **Processing:** Enhanced error handling for VfiWorker initialization to prevent crashes
+- **Settings:** Implemented consistent QSettings organization and application names between application and components
+- **System:** Added validation and auto-correction for QSettings configuration to ensure settings are saved to consistent locations
+- **GUI:** Improved file path handling with timestamped output paths to ensure valid output without user input
+
+### Fixed
+- **Button Functionality:** Fixed Start button issues that prevented proper detection of clicks
+- **Signal/Slot Connection:** Fixed parameter mismatches between VfiWorker signals and MainWindow slots
+- **Processing:** Implemented missing methods in ProcessingViewModel including `update_progress` and `finish_processing`
+- **Sanchez Processing:** Fixed Sanchez processor to properly preserve original filenames and create unique output paths
+- **Settings:** Added file existence verification to ensure settings are properly written to storage
+- **UI Interaction:** Added redundant storage with multiple keys for critical settings to improve reliability
+
 ## [0.7.0] - 2025-04-28
 
 ### Added

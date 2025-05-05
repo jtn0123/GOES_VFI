@@ -150,8 +150,25 @@ class MainWindow(QWidget):
         self.setGeometry(100, 100, 800, 600)  # x, y, w, h
 
 # --- Settings ---
-        self.settings = QSettings("GoesVFI", "GoesVFI") # Initialize QSettings
+        # Get the application-wide organization and application names
+        app = QApplication.instance()
+        org_name = app.organizationName()
+        app_name = app.applicationName()
+        
+        if not org_name or not app_name:
+            # Default fallback values if not set at the application level
+            org_name = "GOES_VFI"
+            app_name = "GOES_VFI_App"
+            LOGGER.warning(f"Application organization/name not set! Using defaults: {org_name}/{app_name}")
+        
+        # Initialize QSettings with application-wide settings to ensure consistency
+        self.settings = QSettings(org_name, app_name)
         self.settings_loaded = False  # Flag to avoid duplicate loading
+        # Disable fallbacks to ensure we only use our specified settings
+        self.settings.setFallbacksEnabled(False)
+        
+        # Log where settings will be stored
+        LOGGER.debug(f"Settings will be stored at: {self.settings.fileName()}")
         # ----------------
         # --- Models ---
         # Instantiate Models needed by ViewModels
@@ -345,8 +362,8 @@ class MainWindow(QWidget):
         self.pix_fmt_combo = self.ffmpeg_pix_fmt_combo  # Alias points to self
         self.profile_combo = self.ffmpeg_profile_combo  # Alias points to self
         
-        # Set up settings
-        self.settings = QSettings("GOES_VFI", "gui")
+        # Set up settings - reusing the same settings instance from line 153
+        # self.settings = QSettings("GOES_VFI", "gui")  # Commented out to use consistent QSettings
         
         # Apply dark theme
         self.apply_dark_theme()
@@ -420,10 +437,67 @@ class MainWindow(QWidget):
         LOGGER.info("MainWindow post-initialization setup complete.")
 
     # --- State Setters for Child Tabs ---
+    def _save_input_directory(self, path: Path) -> bool:
+        """Save input directory to settings persistently."""
+        if not path:
+            return False
+            
+        try:
+            # Always save as an absolute, resolved path for maximum compatibility
+            in_dir_str = str(path.resolve())
+            LOGGER.debug(f"Saving input directory directly (absolute): '{in_dir_str}'")
+            
+            # Log QSettings details to ensure settings are being saved to the right place
+            org_name = self.settings.organizationName()
+            app_name = self.settings.applicationName()
+            filename = self.settings.fileName()
+            LOGGER.debug(f"QSettings details during save: org={org_name}, app={app_name}, file={filename}")
+            
+            # Verify QSettings consistency - this will detect if we have mismatched organization/application names
+            app_org = QApplication.instance().organizationName()
+            app_name_global = QApplication.instance().applicationName()
+            if org_name != app_org or app_name != app_name_global:
+                LOGGER.error(f"QSettings mismatch during save! MainWindow: org={org_name}, app={app_name}, " +
+                             f"but Application: org={app_org}, app={app_name_global}")
+                LOGGER.error(f"This will cause settings to be saved in different locations!")
+                # Force consistency by updating our settings instance to match the application
+                self.settings = QSettings(app_org, app_name_global)
+                LOGGER.info(f"Corrected QSettings to: org={app_org}, app={app_name_global}, " +
+                           f"file={self.settings.fileName()}")
+            
+            # Save to multiple keys to ensure redundancy
+            self.settings.setValue("paths/inputDirectory", in_dir_str)
+            self.settings.setValue("inputDir", in_dir_str)  # Alternate key
+            
+            # Force immediate sync to disk
+            self.settings.sync()
+            
+            # Verify the saved value
+            saved_dir = self.settings.value("paths/inputDirectory", "", type=str)
+            LOGGER.debug(f"Verification - Input directory after direct save: '{saved_dir}'")
+            
+            # Check if settings file exists and has appropriate size
+            try:
+                settings_file = Path(self.settings.fileName())
+                if settings_file.exists():
+                    LOGGER.debug(f"Settings file exists: {settings_file} (size: {settings_file.stat().st_size} bytes)")
+                else:
+                    LOGGER.warning(f"Settings file does not exist after save attempt: {settings_file}")
+                    return False
+            except Exception as file_error:
+                LOGGER.error(f"Error checking settings file: {file_error}")
+            
+            return saved_dir == in_dir_str
+        except Exception as e:
+            LOGGER.error(f"Error directly saving input directory: {e}")
+            return False
+
     def set_in_dir(self, path: Path | None) -> None:
-        """Set the input directory state and clear Sanchez cache."""
+        """Set the input directory state, save settings, and clear Sanchez cache."""
+        LOGGER.debug(f"MainWindow set_in_dir called with path: {path}")
         if self.in_dir != path:
             LOGGER.debug(f"MainWindow setting in_dir to: {path}")
+            old_path = self.in_dir  # Store old path for fallback
             self.in_dir = path
             self.sanchez_preview_cache.clear() # Clear cache when dir changes
             
@@ -437,25 +511,137 @@ class MainWindow(QWidget):
             # Trigger preview update
             self.request_previews_update.emit()
             
+            # Save input directory directly to settings - this is the most critical part
+            if path:
+                success = self._save_input_directory(path)
+                if not success:
+                    LOGGER.error("Failed to save input directory to settings!")
+                    
+                # Also update the UI text field to ensure consistency
+                if hasattr(self.main_tab, 'in_dir_edit'):
+                    self.main_tab.in_dir_edit.setText(str(path))
+            
+            # Save all settings immediately when input directory changes
+            # This ensures input directory is preserved even if the app crashes
+            try:
+                if hasattr(self.main_tab, 'save_settings'):
+                    LOGGER.info("Saving all settings due to input directory change")
+                    self.main_tab.save_settings()
+                    
+                    # Final verification 
+                    if path:
+                        saved_dir = self.settings.value("paths/inputDirectory", "", type=str)
+                        LOGGER.debug(f"Final verification - Input directory: '{saved_dir}'")
+                        
+                        # If saving failed, try to revert to previous state
+                        if not saved_dir and old_path:
+                            LOGGER.warning("Input directory not saved, attempting to revert to previous value")
+                            self._save_input_directory(old_path)
+            except Exception as e:
+                LOGGER.error(f"Error saving settings after input directory change: {e}")
+            
         # Always update crop buttons state
-        self.main_tab._update_crop_buttons_state()
+        if hasattr(self.main_tab, '_update_crop_buttons_state'):
+            self.main_tab._update_crop_buttons_state()
+
+    def _save_crop_rect(self, rect: tuple[int, int, int, int]) -> bool:
+        """Save crop rectangle to settings persistently."""
+        if not rect:
+            return False
+            
+        try:
+            rect_str = ",".join(map(str, rect))
+            LOGGER.debug(f"Saving crop rectangle directly: '{rect_str}'")
+            
+            # Log QSettings details to ensure settings are being saved to the right place
+            org_name = self.settings.organizationName()
+            app_name = self.settings.applicationName()
+            filename = self.settings.fileName()
+            LOGGER.debug(f"QSettings details during crop save: org={org_name}, app={app_name}, file={filename}")
+            
+            # Verify QSettings consistency - this will detect if we have mismatched organization/application names
+            app_org = QApplication.instance().organizationName()
+            app_name_global = QApplication.instance().applicationName()
+            if org_name != app_org or app_name != app_name_global:
+                LOGGER.error(f"QSettings mismatch during crop save! MainWindow: org={org_name}, app={app_name}, " +
+                             f"but Application: org={app_org}, app={app_name_global}")
+                # Force consistency by updating our settings instance to match the application
+                self.settings = QSettings(app_org, app_name_global)
+                LOGGER.info(f"Corrected QSettings to: org={app_org}, app={app_name_global}, " +
+                           f"file={self.settings.fileName()}")
+            
+            # Save to multiple keys to ensure redundancy
+            self.settings.setValue("preview/cropRectangle", rect_str)
+            self.settings.setValue("cropRect", rect_str)  # Alternate key
+            
+            # Force immediate sync to disk
+            self.settings.sync()
+            
+            # Verify the saved value
+            saved_rect = self.settings.value("preview/cropRectangle", "", type=str)
+            LOGGER.debug(f"Verification - Crop rectangle after direct save: '{saved_rect}'")
+            
+            # Check if settings file exists and has appropriate size
+            try:
+                settings_file = Path(self.settings.fileName())
+                if settings_file.exists():
+                    LOGGER.debug(f"Settings file exists after crop save: {settings_file} (size: {settings_file.stat().st_size} bytes)")
+                else:
+                    LOGGER.warning(f"Settings file does not exist after crop save attempt: {settings_file}")
+                    return False
+            except Exception as file_error:
+                LOGGER.error(f"Error checking settings file after crop save: {file_error}")
+            
+            return saved_rect == rect_str
+        except Exception as e:
+            LOGGER.error(f"Error directly saving crop rectangle: {e}")
+            return False
 
     def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
         """Set the current crop rectangle state."""
+        LOGGER.debug(f"MainWindow set_crop_rect called with rect: {rect}")
         if self.current_crop_rect != rect:
             LOGGER.debug(f"MainWindow setting crop_rect to: {rect}")
+            old_rect = self.current_crop_rect  # Store old rect for fallback
             self.current_crop_rect = rect
+            
             # Explicitly trigger preview and button state updates when crop changes
             self.request_previews_update.emit()
             if hasattr(self, 'main_tab') and hasattr(self.main_tab, '_update_crop_buttons_state'):
                  self.main_tab._update_crop_buttons_state()
             else:
                  LOGGER.warning("Could not call main_tab._update_crop_buttons_state() from set_crop_rect")
+            
+            # Save crop rectangle directly to settings - this is the most critical part
+            if rect:
+                success = self._save_crop_rect(rect)
+                if not success:
+                    LOGGER.error("Failed to save crop rectangle to settings!")
+                 
+            # Save all settings immediately when crop rectangle changes
+            # This ensures crop settings are preserved even if the app crashes
+            try:
+                if hasattr(self.main_tab, 'save_settings'):
+                    LOGGER.info("Saving all settings due to crop rectangle change")
+                    self.main_tab.save_settings()
+                    
+                    # Final verification
+                    if rect:
+                        saved_rect = self.settings.value("preview/cropRectangle", "", type=str)
+                        LOGGER.debug(f"Final verification - Crop rectangle: '{saved_rect}'")
+                        
+                        # If saving failed, try to revert to previous state
+                        if not saved_rect and old_rect:
+                            LOGGER.warning("Crop rectangle not saved, attempting to revert to previous value")
+                            self._save_crop_rect(old_rect)
+            except Exception as e:
+                LOGGER.error(f"Error saving settings after crop rectangle change: {e}")
     # ------------------------------------
     def _set_in_dir_from_sorter(self, directory: Path) -> None:
-        LOGGER.debug(f"Entering _set_in_dir_from_sorter... directory={directory}")
         """Sets the input directory from a sorter tab."""
-        self.in_dir = directory
+        LOGGER.debug(f"Entering _set_in_dir_from_sorter... directory={directory}")
+        # Use the regular set_in_dir method to ensure proper state updates and settings saving
+        self.set_in_dir(directory)
         self.main_tab.in_dir_edit.setText(str(directory))
         self._update_start_button_state()
         self.request_previews_update.emit()  # Request preview update
@@ -743,10 +929,34 @@ class MainWindow(QWidget):
 
     def loadSettings(self) -> None:
         """Load settings from QSettings."""
-        # Simplified version for debugging - just set defaults
-        LOGGER.debug("Using simplified loadSettings")
+        # Debug settings information
+        org_name = self.settings.organizationName()
+        app_name = self.settings.applicationName()
+        filename = self.settings.fileName()
+        LOGGER.debug(f"MainWindow loadSettings - QSettings details: org={org_name}, app={app_name}, file={filename}")
+        
+        # Verify QSettings consistency - this will detect if we have mismatched organization/application names
+        app_org = QApplication.instance().organizationName()
+        app_name_global = QApplication.instance().applicationName()
+        if org_name != app_org or app_name != app_name_global:
+            LOGGER.error(f"QSettings mismatch detected! MainWindow: org={org_name}, app={app_name}, " +
+                         f"but Application: org={app_org}, app={app_name_global}")
+            LOGGER.error(f"This will cause settings to be saved in different locations!")
+            # Force consistency by updating our settings instance to match the application
+            self.settings = QSettings(app_org, app_name_global)
+            LOGGER.info(f"Corrected QSettings to: org={app_org}, app={app_name_global}, " +
+                       f"file={self.settings.fileName()}")
+        
+        # List all keys to see what's available
+        all_keys = self.settings.allKeys()
+        LOGGER.debug(f"MainWindow loadSettings - Available keys: {all_keys}")
+        
+        # Initialize default values
         self.in_dir = None
         self.out_file_path = None
+        
+        # Load tab-specific settings via their respective load_settings methods
+        # This is handled in _post_init_setup
         self.current_encoder = "RIFE"
         # Skip all other settings - they will use widget defaults
         # Ultra-defensive fps_spinbox handling - the primary crash point
@@ -1531,6 +1741,106 @@ class MainWindow(QWidget):
             
         LOGGER.info("Loading application settings...")
         
+        # Verify QSettings configuration
+        org_name = self.settings.organizationName()
+        app_name = self.settings.applicationName()
+        filename = self.settings.fileName()
+        LOGGER.debug(f"MainWindow _load_all_settings - QSettings: org={org_name}, app={app_name}, file={filename}")
+        
+        # Check if settings file exists
+        settings_file = Path(filename)
+        if settings_file.exists():
+            LOGGER.debug(f"Settings file exists: {settings_file} (size: {settings_file.stat().st_size} bytes)")
+            
+            # Force a sync to ensure settings are loaded from disk, not just from cache
+            self.settings.sync()
+            
+            # Get all available keys for debugging
+            all_keys = self.settings.allKeys()
+            LOGGER.debug(f"All available settings keys: {all_keys}")
+            
+            # Try to load input directory from multiple possible keys for redundancy
+            input_dir_str = ""
+            for key in ["paths/inputDirectory", "inputDir"]:
+                temp_dir = self.settings.value(key, "", type=str)
+                if temp_dir:
+                    LOGGER.debug(f"Found input directory in key '{key}': {temp_dir}")
+                    input_dir_str = temp_dir
+                    break
+                    
+            LOGGER.debug(f"Final input directory from settings: '{input_dir_str}'")
+            
+            # Try to load input directory directly
+            if input_dir_str:
+                try:
+                    input_dir_path = Path(input_dir_str)
+                    if input_dir_path.exists() and input_dir_path.is_dir():
+                        LOGGER.info(f"Pre-loading input directory from settings: {input_dir_path}")
+                        self.in_dir = input_dir_path
+                        
+                        # Also update the UI text field to ensure consistency
+                        if hasattr(self.main_tab, 'in_dir_edit'):
+                            self.main_tab.in_dir_edit.setText(str(input_dir_path))
+                    else:
+                        LOGGER.warning(f"Saved input directory doesn't exist, will try to find it: {input_dir_path}")
+                        # Try to find directory with the same name in common locations
+                        dir_name = input_dir_path.name
+                        LOGGER.debug(f"Looking for directory named: {dir_name}")
+                        potential_locations = [
+                            Path.home() / "Downloads" / dir_name,
+                            Path.home() / "Documents" / dir_name,
+                            Path.home() / "Desktop" / dir_name,
+                            Path.cwd() / dir_name
+                        ]
+                        for potential_path in potential_locations:
+                            LOGGER.debug(f"Checking potential path: {potential_path}")
+                            if potential_path.exists() and potential_path.is_dir():
+                                LOGGER.info(f"Found input directory in alternative location: {potential_path}")
+                                self.in_dir = potential_path
+                                
+                                # Also update the UI text field to ensure consistency
+                                if hasattr(self.main_tab, 'in_dir_edit'):
+                                    self.main_tab.in_dir_edit.setText(str(potential_path))
+                                    
+                                # Save this new location for future use
+                                self._save_input_directory(potential_path)
+                                break
+                except Exception as e:
+                    LOGGER.error(f"Error pre-loading input directory: {e}")
+            
+            # Try to load crop rectangle from multiple possible keys for redundancy
+            crop_rect_str = ""
+            for key in ["preview/cropRectangle", "cropRect"]:
+                temp_rect = self.settings.value(key, "", type=str)
+                if temp_rect:
+                    LOGGER.debug(f"Found crop rectangle in key '{key}': {temp_rect}")
+                    crop_rect_str = temp_rect
+                    break
+                    
+            LOGGER.debug(f"Final crop rectangle from settings: '{crop_rect_str}'")
+            
+            if crop_rect_str:
+                try:
+                    coords = [int(c.strip()) for c in crop_rect_str.split(',')]
+                    if len(coords) == 4:
+                        self.current_crop_rect = tuple(coords)
+                        LOGGER.info(f"Pre-loaded crop rectangle from settings: {self.current_crop_rect}")
+                        
+                        # Save this crop rectangle to ensure it's in all keys
+                        self._save_crop_rect(self.current_crop_rect)
+                except Exception as e:
+                    LOGGER.error(f"Error pre-loading crop rectangle: {e}")
+        else:
+            LOGGER.warning(f"Settings file does not exist: {settings_file}")
+            # Create the directory if it doesn't exist
+            try:
+                settings_dir = settings_file.parent
+                if not settings_dir.exists():
+                    settings_dir.mkdir(parents=True, exist_ok=True)
+                    LOGGER.info(f"Created settings directory: {settings_dir}")
+            except Exception as e:
+                LOGGER.error(f"Error creating settings directory: {e}")
+        
         # Call load_settings on each tab that supports it
         if hasattr(self.main_tab, 'load_settings'):
             self.main_tab.load_settings()
@@ -1564,6 +1874,16 @@ class MainWindow(QWidget):
     def _save_all_settings(self) -> None:
         """Save all settings to QSettings for all tabs and components."""
         LOGGER.info("Saving application settings...")
+        
+        # Verify QSettings configuration before saving
+        org_name = self.settings.organizationName()
+        app_name = self.settings.applicationName()
+        filename = self.settings.fileName()
+        LOGGER.debug(f"MainWindow _save_all_settings - QSettings: org={org_name}, app={app_name}, file={filename}")
+        
+        # List current keys before saving
+        current_keys = self.settings.allKeys()
+        LOGGER.debug(f"Current settings keys before save: {current_keys}")
         
         # Call save_settings on each tab that supports it
         if hasattr(self.main_tab, 'save_settings'):
@@ -1603,6 +1923,38 @@ class MainWindow(QWidget):
         
         # Save main window specific settings
         self.settings.setValue("main/lastTabIndex", self.tab_widget.currentIndex())
+        
+        # Explicitly save critical settings using our dedicated methods
+        if self.in_dir:
+            self._save_input_directory(self.in_dir)
+            
+        if self.current_crop_rect:
+            self._save_crop_rect(self.current_crop_rect)
+        
+        # Force sync to ensure settings are written to disk
+        self.settings.sync()
+        
+        # Verify settings were saved properly
+        try:
+            # Check if settings file exists after saving
+            settings_file = Path(filename)
+            if settings_file.exists():
+                LOGGER.debug(f"Settings file exists after save: {settings_file} (size: {settings_file.stat().st_size} bytes)")
+            else:
+                LOGGER.warning(f"Settings file does not exist after save: {settings_file}")
+                
+            # List keys after saving to verify
+            saved_keys = self.settings.allKeys()
+            LOGGER.debug(f"Settings keys after save: {saved_keys}")
+                
+            # Check specific important settings
+            saved_in_dir = self.settings.value("paths/inputDirectory", "", type=str)
+            LOGGER.debug(f"Verification - Saved input directory: '{saved_in_dir}'")
+            
+            saved_crop_rect = self.settings.value("preview/cropRectangle", "", type=str)
+            LOGGER.debug(f"Verification - Saved crop rectangle: '{saved_crop_rect}'")
+        except Exception as ve:
+            LOGGER.error(f"Error verifying saved settings: {ve}")
         
         LOGGER.info("All settings saved")
         
@@ -2808,10 +3160,13 @@ def main() -> None:
         LOGGER.debug("Debug mode enabled via --debug flag.")
 
     app = QApplication(sys.argv)
-    # Set application name for QSettings
-    app.setApplicationName("GOES-VFI")
-    app.setOrganizationName("YourOrganization")  # Replace with your organization name
-
+    # Set application name for QSettings - MUST match the values used in MainWindow
+    app.setApplicationName("GOES_VFI_App")
+    app.setOrganizationName("GOES_VFI")
+    
+    # Log QSettings details to help diagnose where settings will be stored
+    LOGGER.debug(f"QSettings will be stored at: {QSettings('GOES_VFI', 'GOES_VFI_App').fileName()}")
+    
     main_window = MainWindow(debug_mode=args.debug)
     main_window.show()
     # _post_init_setup() is primarily for test setup, not needed here now
