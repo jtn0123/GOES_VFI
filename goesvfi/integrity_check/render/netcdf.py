@@ -1,0 +1,192 @@
+"""
+NetCDF renderer for GOES satellite imagery.
+
+This module provides functions to render PNG images from GOES NetCDF files,
+specifically for Band 13 (Clean IR, 10.3 µm) data.
+"""
+import logging
+from pathlib import Path
+from typing import Optional, Tuple, Union, Dict, Any
+
+import numpy as np
+import xarray as xr
+from PIL import Image
+
+from goesvfi.integrity_check.time_index import SatellitePattern
+from goesvfi.utils.log import get_logger
+
+LOGGER = get_logger(__name__)
+
+# GOES-16/18 Band 13 (Clean IR, 10.3 µm) rendering constants
+# Temperature ranges (Kelvin) for IR visualization
+DEFAULT_MIN_TEMP_K = 180.0  # Very cold cloud tops
+DEFAULT_MAX_TEMP_K = 320.0  # Warm surface
+DEFAULT_COLORMAP = "gray"  # Default grayscale
+
+# Band 13 variable names in NetCDF files
+RADIANCE_VAR = "Rad"
+BAND_ID_VAR = "band_id"
+BAND_WAVELENGTH_VAR = "band_wavelength"
+Y_VAR = "y"
+X_VAR = "x"
+
+# Target band information
+TARGET_BAND_ID = 13  # Clean IR (10.3 µm)
+
+
+def render_png(
+    netcdf_path: Union[str, Path],
+    output_path: Optional[Union[str, Path]] = None,
+    min_temp_k: float = DEFAULT_MIN_TEMP_K,
+    max_temp_k: float = DEFAULT_MAX_TEMP_K,
+    colormap: str = DEFAULT_COLORMAP,
+    satellite: Optional[SatellitePattern] = None,
+    resolution: Optional[Tuple[int, int]] = None,
+) -> Path:
+    """Render a PNG image from a GOES NetCDF file.
+    
+    Args:
+        netcdf_path: Path to the NetCDF file
+        output_path: Path to save the PNG image (if None, create alongside NetCDF)
+        min_temp_k: Minimum temperature in Kelvin for scaling
+        max_temp_k: Maximum temperature in Kelvin for scaling
+        colormap: Colormap name (from matplotlib)
+        satellite: Satellite pattern enum (used for metadata)
+        resolution: Optional output resolution (width, height)
+        
+    Returns:
+        Path to the rendered PNG image
+        
+    Raises:
+        FileNotFoundError: If the NetCDF file doesn't exist
+        ValueError: If the NetCDF file doesn't contain Band 13 data
+        IOError: If there's an error during rendering
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LinearSegmentedColormap
+    
+    netcdf_path = Path(netcdf_path)
+    if not netcdf_path.exists():
+        raise FileNotFoundError(f"NetCDF file not found: {netcdf_path}")
+    
+    # If no output path, create one alongside the NetCDF file
+    if output_path is None:
+        output_path = netcdf_path.with_suffix(".png")
+    else:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    LOGGER.debug(f"Rendering {netcdf_path} to {output_path}")
+    
+    try:
+        # Open the NetCDF dataset
+        with xr.open_dataset(netcdf_path) as ds:
+            # Check if this is Band 13 data
+            if BAND_ID_VAR in ds.variables:
+                band_id = ds[BAND_ID_VAR].values
+                if np.isscalar(band_id):
+                    if band_id != TARGET_BAND_ID:
+                        raise ValueError(f"Expected Band {TARGET_BAND_ID}, found Band {band_id}")
+                else:
+                    if TARGET_BAND_ID not in band_id:
+                        raise ValueError(f"Band {TARGET_BAND_ID} not found in dataset")
+            
+            # Extract the Clean IR band data
+            if RADIANCE_VAR in ds.variables:
+                # Get the radiance data
+                data = ds[RADIANCE_VAR].values
+                
+                # Convert radiance to brightness temperature if needed
+                # Some datasets include planck_fk1 and planck_fk2 constants
+                if all(k in ds.attrs for k in ['planck_fk1', 'planck_fk2', 'planck_bc1', 'planck_bc2']):
+                    fk1 = ds.attrs['planck_fk1']
+                    fk2 = ds.attrs['planck_fk2']
+                    bc1 = ds.attrs['planck_bc1']
+                    bc2 = ds.attrs['planck_bc2']
+                    
+                    # Apply Planck function to convert radiance to brightness temperature
+                    data = (fk2 / np.log((fk1 / data) + 1) - bc1) / bc2
+                
+                # Mask invalid data
+                data = np.ma.masked_less_equal(data, 0)
+                
+                # Clip data to the specified temperature range
+                data = np.clip(data, min_temp_k, max_temp_k)
+                
+                # Normalize to 0-1 range
+                normalized_data = (data - min_temp_k) / (max_temp_k - min_temp_k)
+                
+                # Inverse for IR (cold = bright, warm = dark)
+                normalized_data = 1 - normalized_data
+                
+                # Create a figure
+                dpi = 100
+                fig_width = data.shape[1] / dpi
+                fig_height = data.shape[0] / dpi
+                
+                fig = plt.figure(figsize=(fig_width, fig_height), dpi=dpi)
+                ax = fig.add_axes([0, 0, 1, 1])
+                ax.axis('off')
+                
+                # Apply colormap
+                if colormap == 'gray':
+                    # Custom grayscale with enhanced contrast
+                    cmap = LinearSegmentedColormap.from_list(
+                        'enhanced_gray', [(0, 0, 0), (1, 1, 1)], N=256
+                    )
+                else:
+                    cmap = plt.get_cmap(colormap)
+                
+                # Plot the image
+                ax.imshow(normalized_data, cmap=cmap, aspect='auto')
+                
+                # Save to file
+                plt.savefig(output_path, dpi=dpi, bbox_inches='tight', pad_inches=0)
+                plt.close(fig)
+                
+                # Optional resize
+                if resolution is not None:
+                    img = Image.open(output_path)
+                    img = img.resize(resolution, Image.LANCZOS)
+                    img.save(output_path)
+                
+                LOGGER.debug(f"Rendered {output_path}")
+                return output_path
+            else:
+                raise ValueError(f"Radiance variable '{RADIANCE_VAR}' not found in dataset")
+    except Exception as e:
+        raise IOError(f"Error rendering NetCDF file: {e}")
+
+
+def extract_metadata(netcdf_path: Union[str, Path]) -> Dict[str, Any]:
+    """Extract metadata from a GOES NetCDF file.
+    
+    Args:
+        netcdf_path: Path to the NetCDF file
+        
+    Returns:
+        Dictionary of metadata
+        
+    Raises:
+        FileNotFoundError: If the NetCDF file doesn't exist
+        ValueError: If the NetCDF file doesn't contain valid metadata
+    """
+    netcdf_path = Path(netcdf_path)
+    if not netcdf_path.exists():
+        raise FileNotFoundError(f"NetCDF file not found: {netcdf_path}")
+    
+    try:
+        with xr.open_dataset(netcdf_path) as ds:
+            metadata = {
+                "satellite": ds.attrs.get("platform_ID", None),
+                "instrument": ds.attrs.get("instrument_type", None),
+                "timestamp": ds.attrs.get("date_created", None),
+                "band_id": ds[BAND_ID_VAR].values.item() if BAND_ID_VAR in ds.variables else None,
+                "band_wavelength": ds[BAND_WAVELENGTH_VAR].values.item() 
+                    if BAND_WAVELENGTH_VAR in ds.variables else None,
+                "resolution_x": ds[X_VAR].size if X_VAR in ds.variables else None,
+                "resolution_y": ds[Y_VAR].size if Y_VAR in ds.variables else None,
+            }
+            return metadata
+    except Exception as e:
+        raise ValueError(f"Error extracting metadata: {e}")

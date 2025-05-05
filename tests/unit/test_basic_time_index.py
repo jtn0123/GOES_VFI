@@ -1,0 +1,112 @@
+"""Unit tests for TimeIndex core functionality."""
+
+import unittest
+from datetime import datetime, timedelta
+from pathlib import Path
+
+from goesvfi.integrity_check.time_index import (
+    TimeIndex, SatellitePattern, 
+    to_cdn_url, to_s3_key, to_local_path, is_recent,
+    DEFAULT_CDN_RESOLUTION
+)
+
+
+class TestBasicTimeIndex(unittest.TestCase):
+    """Test cases for core TimeIndex functionality."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        # Sample dates for testing
+        self.test_date_recent = datetime(2023, 6, 15, 12, 30, 0)  # Recent date
+        self.test_date_old = datetime(2022, 1, 1, 0, 0, 0)  # Old date
+        
+        # Test satellites
+        self.goes16 = SatellitePattern.GOES_16
+        self.goes18 = SatellitePattern.GOES_18
+
+    def test_to_cdn_url(self):
+        """Test generating CDN URLs."""
+        # GOES-16 URL
+        url = to_cdn_url(self.test_date_recent, self.goes16)
+        expected = (
+            f"https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/13/"
+            f"2023166123000_GOES16-ABI-FD-13-{DEFAULT_CDN_RESOLUTION}.jpg"
+        )
+        self.assertEqual(url, expected)
+        
+        # GOES-18 URL
+        url = to_cdn_url(self.test_date_recent, self.goes18)
+        expected = (
+            f"https://cdn.star.nesdis.noaa.gov/GOES18/ABI/FD/13/"
+            f"2023166123000_GOES18-ABI-FD-13-{DEFAULT_CDN_RESOLUTION}.jpg"
+        )
+        self.assertEqual(url, expected)
+        
+        # With custom resolution
+        custom_res = "250m"
+        url = to_cdn_url(self.test_date_recent, self.goes16, custom_res)
+        expected = (
+            f"https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/13/"
+            f"2023166123000_GOES16-ABI-FD-13-{custom_res}.jpg"
+        )
+        self.assertEqual(url, expected)
+
+    def test_to_s3_key(self):
+        """Test generating S3 keys."""
+        # GOES-16 S3 key
+        key = to_s3_key(self.test_date_old, self.goes16)
+        expected = (
+            f"ABI-L1b-RadF/2022/001/00/"
+            f"OR_ABI-L1b-RadF-M6C13_G16_s20220010000*.nc"
+        )
+        self.assertEqual(key, expected)
+        
+        # GOES-18 S3 key
+        key = to_s3_key(self.test_date_old, self.goes18)
+        expected = (
+            f"ABI-L1b-RadF/2022/001/00/"
+            f"OR_ABI-L1b-RadF-M6C13_G18_s20220010000*.nc"
+        )
+        self.assertEqual(key, expected)
+
+    def test_to_local_path(self):
+        """Test generating local paths."""
+        # GOES-16 path
+        path = to_local_path(self.test_date_recent, self.goes16)
+        expected = Path(
+            f"2023/06/15/goes16_20230615_123000_band13.png"
+        )
+        self.assertEqual(path, expected)
+        
+        # GOES-18 path
+        path = to_local_path(self.test_date_recent, self.goes18)
+        expected = Path(
+            f"2023/06/15/goes18_20230615_123000_band13.png"
+        )
+        self.assertEqual(path, expected)
+
+    def test_is_recent(self):
+        """Test the is_recent function."""
+        # Set up a known cutoff time
+        now = datetime(2023, 6, 20, 0, 0, 0)
+        window_days = 7
+        
+        # Test dates
+        recent_date = now - timedelta(days=3)  # Within window
+        border_date = now - timedelta(days=7)  # At the window edge
+        old_date = now - timedelta(days=14)  # Outside window
+        
+        # Test with monkeypatching datetime.now
+        with unittest.mock.patch('goesvfi.integrity_check.time_index.datetime') as mock_datetime:
+            mock_datetime.now.return_value = now
+            mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
+            
+            # Test recent date
+            self.assertTrue(is_recent(recent_date))
+            
+            # Test old date
+            self.assertFalse(is_recent(old_date))
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -14,6 +14,15 @@ from goesvfi.file_sorter.gui_tab import FileSorterTab
 from goesvfi.gui_tabs.main_tab import MainTab  # <-- Add new tab import
 from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab # <-- Add new tab import
 from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab # <-- Add new tab import
+# Import Integrity Check components
+from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
+from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
+from goesvfi.integrity_check.reconcile_manager import ReconcileManager
+from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
+from goesvfi.integrity_check.cache_db import CacheDB
+from goesvfi.integrity_check.reconciler import Reconciler
+from goesvfi.integrity_check.remote.cdn_store import CDNStore
+from goesvfi.integrity_check.remote.s3_store import S3Store
 
 
 """
@@ -305,6 +314,39 @@ class MainWindow(QWidget):
         self.date_sorter_tab = DateSorterTab(
             view_model=self.main_view_model.date_sorter_vm, parent=self
         )  # <-- Pass VM
+        
+        # Initialize Integrity Check components
+        # Create the database directory if it doesn't exist
+        db_dir = Path.home() / ".goes_vfi" / "integrity_check"
+        db_dir.mkdir(parents=True, exist_ok=True)
+        db_path = db_dir / "cache.db"
+        
+        # Create CacheDB instance for the integrity check
+        cache_db = CacheDB(db_path=db_path)
+        
+        # Initialize stores
+        cdn_store = CDNStore(resolution=TimeIndex.CDN_RES) 
+        s3_store = S3Store(aws_region="us-east-1")
+        
+        # Create a reconciler with the cache db path
+        reconciler = Reconciler(cache_db_path=db_path)
+        
+        # Create the integrity check view model and tab with all necessary components
+        self.integrity_check_vm = EnhancedIntegrityCheckViewModel(
+            base_reconciler=reconciler,
+            cache_db=cache_db,
+            cdn_store=cdn_store,
+            s3_store=s3_store
+        )
+        
+        # Disable the disk space timer since it blocks the application
+        if hasattr(self.integrity_check_vm, '_disk_space_timer'):
+            if self.integrity_check_vm._disk_space_timer.isRunning():
+                self.integrity_check_vm._disk_space_timer.terminate()
+                self.integrity_check_vm._disk_space_timer.wait()
+        self.integrity_check_tab = EnhancedIntegrityCheckTab(
+            view_model=self.integrity_check_vm, parent=self
+        )
 
         self.tab_widget.addTab(self.main_tab, "Main")
         self.tab_widget.addTab(self.ffmpeg_settings_tab, "FFmpeg Settings")
@@ -317,6 +359,9 @@ class MainWindow(QWidget):
         self.tab_widget.addTab(
             self.date_sorter_tab, "Date Sorter"
         )  # Add Date Sorter tab
+        self.tab_widget.addTab(
+            self.integrity_check_tab, "Integrity Check"
+        )  # Add Integrity Check tab
 
         # self.loadSettings() # Moved lower
 
@@ -1988,6 +2033,15 @@ class MainWindow(QWidget):
                         LOGGER.warning(
                             f"Failed to clean up GUI Sanchez temp directory: {cleanup_error}"
                         )
+                
+                # Clean up integrity check resources
+                if hasattr(self, 'integrity_check_vm'):
+                    try:
+                        self.integrity_check_vm.cleanup()
+                        LOGGER.info("Cleaned up integrity check resources")
+                    except Exception as e:
+                        LOGGER.warning(f"Failed to clean up integrity check resources: {e}")
+                
                 if event:
                     event.accept()
             else:
@@ -2005,6 +2059,14 @@ class MainWindow(QWidget):
                     LOGGER.warning(
                         f"Failed to clean up GUI Sanchez temp directory: {cleanup_error}"
                     )
+            
+            # Clean up integrity check resources on normal exit
+            if hasattr(self, 'integrity_check_vm'):
+                try:
+                    self.integrity_check_vm.cleanup()
+                    LOGGER.info("Cleaned up integrity check resources")
+                except Exception as e:
+                    LOGGER.warning(f"Failed to clean up integrity check resources: {e}")
             # Settings are saved proactively or not saved on close to avoid widget deletion errors.
             # try:
             #     self.saveSettings()  # Save settings on exit - REMOVED
