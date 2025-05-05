@@ -18,6 +18,7 @@ from goesvfi.pipeline.image_processing_interfaces import ImageData, ImageProcess
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
 from goesvfi.pipeline.image_cropper import ImageCropper
+from goesvfi.pipeline.image_saver import ImageSaver
 
 # Import colourise from sanchez.runner
 from goesvfi.sanchez.runner import colourise
@@ -374,8 +375,15 @@ def _load_process_image(
     false_colour: bool,
     res_km: int,
     sanchez_temp_dir: pathlib.Path,
+    image_loader: Optional[ImageLoader] = None,
+    sanchez_processor: Optional[SanchezProcessor] = None,
+    image_cropper: Optional[ImageCropper] = None,
 ) -> Image.Image:
     """Loads image, optionally applies Sanchez, optionally crops.
+    
+    This function can work in two modes:
+    1. Using the processor objects directly (preferred, consistent with preview processing)
+    2. Using direct file operations with colourise (legacy mode)
 
     Args:
         path: Path to the image.
@@ -383,81 +391,125 @@ def _load_process_image(
         false_colour: Whether to apply Sanchez colourise.
         res_km: Resolution for Sanchez.
         sanchez_temp_dir: Temporary directory for Sanchez intermediate files.
+        image_loader: Optional ImageLoader instance. If provided, uses processor mode.
+        sanchez_processor: Optional SanchezProcessor instance. Required if false_colour=True in processor mode.
+        image_cropper: Optional ImageCropper instance. Required if crop_rect_pil is not None in processor mode.
 
     Returns:
         Processed PIL Image.
     """
-    img = Image.open(path)
-    
     # Add explicit debug output
     print(f"_load_process_image: Processing {path.name} - false_colour={false_colour}, res_km={res_km}")
     LOGGER.info(f"_load_process_image: Processing {path.name} - false_colour={false_colour}, res_km={res_km}")
 
-    if false_colour:
-        img_stem = path.stem
-        # Use the ORIGINAL stem for the input file to satisfy Sanchez
-        temp_in_path = sanchez_temp_dir / f"{img_stem}.png"
-        # Keep unique name for the output file
-        temp_out_path = sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
+    # Check if we should use processor mode (preferred for consistency with preview)
+    use_processor_mode = image_loader is not None
+    
+    if use_processor_mode:
+        # Processor mode - Uses the same approach as preview images
+        LOGGER.debug(f"Using processor mode for image: {path.name}")
+        
+        # Sanity checks
+        if false_colour and sanchez_processor is None:
+            LOGGER.warning("false_colour=True but no sanchez_processor provided, falling back to direct mode")
+            use_processor_mode = False
+        elif crop_rect_pil is not None and image_cropper is None:
+            LOGGER.warning("crop_rect_pil provided but no image_cropper provided, falling back to direct mode")
+            use_processor_mode = False
+    
+    if use_processor_mode:
+        # Modern processor-based approach (same as preview)
         try:
-            # Ensure sanchez temp directory exists
-            os.makedirs(sanchez_temp_dir, exist_ok=True)
+            # 1. Load image using ImageLoader
+            image_data = image_loader.load(str(path))
             
-            LOGGER.debug(
-                f"Saving original for Sanchez: {temp_in_path}"
-            )  # Log correct path
-            img.save(temp_in_path, "PNG")  # Save with correct name
-            LOGGER.info(
-                f"Running Sanchez on {temp_in_path.name} (res={res_km}km) -> {temp_out_path.name}"
-            )
-            # Ensure colourise handles Path objects and receives correct input path
-            colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
+            # 2. Apply Sanchez if requested
+            if false_colour:
+                LOGGER.debug(f"Applying Sanchez to image using SanchezProcessor: {path.name} (res={res_km}km)")
+                # Make sure to add filename to metadata for Sanchez
+                if 'filename' not in image_data.metadata:
+                    image_data.metadata['filename'] = path.name
+                # Process image with Sanchez
+                image_data = sanchez_processor.process(image_data, res_km=res_km)
             
-            # Check if output file exists before trying to open it
-            if temp_out_path.exists():
-                LOGGER.debug(f"Loading Sanchez output: {temp_out_path}")
-                img_colourised = Image.open(temp_out_path)
-                # Replace original img object with colourised one
-                img = img_colourised
+            # 3. Apply crop if requested
+            if crop_rect_pil:
+                LOGGER.debug(f"Applying crop {crop_rect_pil} to image: {path.name}")
+                image_data = image_cropper.crop(image_data, crop_rect_pil)
+            
+            # 4. Convert to PIL Image for return
+            if isinstance(image_data.image_data, Image.Image):
+                return image_data.image_data
+            elif isinstance(image_data.image_data, np.ndarray):
+                return Image.fromarray(image_data.image_data)
             else:
-                LOGGER.error(f"Sanchez output file not found: {temp_out_path}")
-                # Output files in directory
-                try:
-                    dir_files = list(sanchez_temp_dir.glob("*"))
-                    LOGGER.error(f"Files in temp directory: {dir_files}")
-                except Exception as dir_err:
-                    LOGGER.error(f"Error listing temp directory: {dir_err}")
-                # Keep original image if output file not found
+                LOGGER.error(f"Unexpected image data type: {type(image_data.image_data)}")
+                # Fall back to direct mode
+                use_processor_mode = False
+                
         except Exception as e:
-            LOGGER.error(
-                f"Sanchez colourise failed for {path.name}: {e}", exc_info=True
-            )
-            # Keep original image if colourise fails
-        finally:
-            # Clean up temp files (both input and output)
-            if temp_in_path.exists():
-                temp_in_path.unlink(missing_ok=True)
-            if temp_out_path.exists():
-                temp_out_path.unlink(missing_ok=True)
+            LOGGER.exception(f"Error in processor mode: {e}")
+            # Fall back to direct mode
+            use_processor_mode = False
+    
+    # If we're not using processor mode or it failed, use direct approach
+    if not use_processor_mode:
+        LOGGER.debug(f"Using direct mode for image: {path.name}")
+        img = Image.open(path)
+        
+        # Apply Sanchez directly using colourise
+        if false_colour:
+            img_stem = path.stem
+            # Use the ORIGINAL stem for the input file to satisfy Sanchez
+            temp_in_path = sanchez_temp_dir / f"{img_stem}.png"
+            # Keep unique name for the output file
+            temp_out_path = sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
+            try:
+                # Ensure sanchez temp directory exists
+                os.makedirs(sanchez_temp_dir, exist_ok=True)
+                
+                LOGGER.debug(f"Saving original for Sanchez: {temp_in_path}")
+                img.save(temp_in_path, "PNG")  # Save with correct name
+                LOGGER.info(f"Running Sanchez on {temp_in_path.name} (res={res_km}km) -> {temp_out_path.name}")
+                # Ensure colourise handles Path objects and receives correct input path
+                colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
+                
+                # Check if output file exists before trying to open it
+                if temp_out_path.exists():
+                    LOGGER.debug(f"Loading Sanchez output: {temp_out_path}")
+                    img_colourised = Image.open(temp_out_path)
+                    # Replace original img object with colourised one
+                    img = img_colourised
+                else:
+                    LOGGER.error(f"Sanchez output file not found: {temp_out_path}")
+                    # Output files in directory
+                    try:
+                        dir_files = list(sanchez_temp_dir.glob("*"))
+                        LOGGER.error(f"Files in temp directory: {dir_files}")
+                    except Exception as dir_err:
+                        LOGGER.error(f"Error listing temp directory: {dir_err}")
+                    # Keep original image if output file not found
+            except Exception as e:
+                LOGGER.error(f"Sanchez colourise failed for {path.name}: {e}", exc_info=True)
+                # Keep original image if colourise fails
+            finally:
+                # Clean up temp files (both input and output)
+                if temp_in_path.exists():
+                    temp_in_path.unlink(missing_ok=True)
+                if temp_out_path.exists():
+                    temp_out_path.unlink(missing_ok=True)
 
-    # Apply crop *after* potential colourisation
-    if crop_rect_pil:
-        try:
-            LOGGER.debug(
-                f"Applying crop {crop_rect_pil} to image from {path.name} (post-Sanchez if applied)."
-            )
-            img_cropped = img.crop(crop_rect_pil)
-            img = img_cropped  # Update img reference to cropped version
-        except Exception as e:
-            LOGGER.error(
-                f"Failed to crop image {path.name} with rect {crop_rect_pil}: {e}",
-                exc_info=True,
-            )
-            # Decide whether to raise or return uncropped image
-            # Returning uncropped for now, dimension validation should fail later
+        # Apply crop *after* potential colourisation
+        if crop_rect_pil:
+            try:
+                LOGGER.debug(f"Applying crop {crop_rect_pil} to image from {path.name} (post-Sanchez if applied).")
+                img_cropped = img.crop(crop_rect_pil)
+                img = img_cropped  # Update img reference to cropped version
+            except Exception as e:
+                LOGGER.error(f"Failed to crop image {path.name} with rect {crop_rect_pil}: {e}", exc_info=True)
+                # Returning uncropped since validation will fail later if needed
 
-    return img
-
+        return img
 
 # --- End Sanchez/Crop Helper ---
 
@@ -507,6 +559,12 @@ def _process_single_image_worker(
 
         if orig_w is None or orig_h is None:
             raise ValueError(f"Could not determine dimensions for image {original_path.name}")
+            
+        # Add filename to metadata to help Sanchez process correctly
+        if 'filename' not in image_data.metadata:
+            image_data.metadata['filename'] = original_path.name
+        if 'source_path' not in image_data.metadata:
+            image_data.metadata['source_path'] = str(original_path)
 
         # 2. Apply Sanchez if requested using SanchezProcessor
         if false_colour:
@@ -616,15 +674,18 @@ def run_vfi(
     # --- Parameter Extraction ---
     skip_model = kwargs.get("skip_model", False)
 
-    # Force false_colour to True when encoder is "Sanchez"
+    # For Sanchez encoder, false_colour should always be true
+    # For other encoders, respect the user's choice from the UI
+    original_false_colour = false_colour  # Store the original setting for logging
     if encoder_type == "Sanchez":
-        false_colour = True
-        LOGGER.info("Encoder type is Sanchez - forcing false_colour to True")
-        # Also log to stdout for debugging
-        print(f"Forcing false_colour=True for Sanchez encoder (encoder_type={encoder_type})")
+        if not false_colour:
+            LOGGER.info("Encoder type is Sanchez - forcing false_colour to True")
+            # Also log to stdout for debugging
+            print(f"Forcing false_colour=True for Sanchez encoder (encoder_type={encoder_type})")
+            false_colour = True
     
     LOGGER.info(
-        f"run_vfi called with: encoder_type={encoder_type}, false_colour={false_colour}, res_km={res_km}km, crop_rect={crop_rect_xywh}, skip_model={skip_model}"
+        f"run_vfi called with: encoder_type={encoder_type}, false_colour={false_colour} (original setting: {original_false_colour}), res_km={res_km}km, crop_rect={crop_rect_xywh}, skip_model={skip_model}"
     )
 
     # --- Input Validation ---
@@ -693,6 +754,9 @@ def run_vfi(
             LOGGER.info(f"Processing first image sequentially: {paths[0].name}")
             # Process first image using worker function (sequentially)
             # Do not pass target dimensions yet
+            # Create an ImageSaver for saving processed images
+            image_saver = ImageSaver()
+            
             processed_path_0 = _process_single_image_worker(
                 original_path=paths[0],
                 image_loader=image_loader,
@@ -702,7 +766,7 @@ def run_vfi(
                 false_colour=false_colour,
                 res_km=res_km,
                 output_dir=processed_img_path,
-                image_saver=image_loader, # Add missing argument
+                image_saver=image_saver, # Use the ImageSaver instance
                 # target_width=orig_width, # REMOVED - determined after processing
                 # target_height=orig_height # REMOVED
             )
@@ -739,7 +803,7 @@ def run_vfi(
                     false_colour,
                     res_km,
                     processed_img_path,
-                    image_loader,  # Pass image_loader instance as the ImageProcessor for saving
+                    image_saver,  # Use ImageSaver instance instead of ImageLoader for saving
                     target_width,
                     target_height,
                 )

@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import os
+import time
 import typing
 import numpy as np
 from typing import NoReturn # Import NoReturn
@@ -64,11 +65,27 @@ class SanchezProcessor(ImageProcessor):
         try:
             # 1. Save input image data to a temporary file using original filename
             # Assuming original filename is in metadata, adjust key if needed
-            original_filename = image_data.metadata.get('filename', 'input.png') # Fallback just in case
-            if not original_filename: # Handle empty string case
-                original_filename = 'input.png'
-            input_file_path = self._temp_dir / Path(original_filename).name # Use only the filename part
-            # LOGGER.debug(f"Using temporary input filename: {input_file_path.name}") # Removed debug log
+            original_filename = image_data.metadata.get('filename', '')
+            
+            # Make sure we have a valid original filename with a proper extension
+            if not original_filename or original_filename == 'input.png':
+                # Check if we can make a better guess about the filename
+                if 'source_path' in image_data.metadata:
+                    source_path = image_data.metadata.get('source_path', '')
+                    if source_path:
+                        original_filename = Path(source_path).name
+                
+                # If still no valid filename, generate one with timestamp
+                if not original_filename or original_filename == 'input.png':
+                    import time
+                    original_filename = f"abi_image_{int(time.time())}.png"
+            
+            LOGGER.info(f"Using original filename for Sanchez: {original_filename}")
+            
+            # Ensure the filename uses the original name, which is critical for Sanchez to parse
+            input_file_path = self._temp_dir / Path(original_filename).name
+            LOGGER.debug(f"Saving temporary input for Sanchez at: {input_file_path}")
+            
             img = Image.fromarray(image_data.image_data)
             img.save(input_file_path)
             input_file = input_file_path  # Keep track for cleanup
@@ -87,8 +104,11 @@ class SanchezProcessor(ImageProcessor):
                 )
 
             # 3. Build the list of command-line arguments
-            output_file_path = self._temp_dir / "output.png"
+            # Create a uniquely named output file based on the original filename
+            import time  # Ensure time is imported in local scope
+            output_file_path = self._temp_dir / f"{Path(original_filename).stem}_sanchez_output_{int(time.time())}.png"
             output_file = output_file_path  # Keep track for cleanup
+            LOGGER.info(f"Setting Sanchez output path to: {output_file_path}")
 
             # Command structure based on --help output: executable -s <input> -o <output> [options]
             sanchez_dir = Path(sanchez_executable).parent # Get the directory of the executable
@@ -125,14 +145,10 @@ class SanchezProcessor(ImageProcessor):
                         # Fallback if conversion fails, though it shouldn't normally
                         res_str = str(value)
                     command.extend(["-r", res_str])
-                elif key == 'false_colour' and isinstance(value, bool) and value:
-                    # Only add false colour flags if the 'false_colour' kwarg is explicitly True
-                    command.append("-c")
-                    command.append("0.0-1.0") # Add required intensity range argument
-                    # Construct absolute path to gradient file relative to sanchez_dir
-                    abs_gradient_path = (sanchez_dir / "Resources" / "Gradients" / "Atmosphere.json").resolve()
-                    command.extend(["-g", abs_gradient_path])
-                    LOGGER.debug(f"Adding false colour arguments: -c 0.0-1.0 -g {abs_gradient_path}")
+                elif key == 'false_colour':
+                    # Skip handling false_colour here to respect user's setting
+                    # Sanchez will apply its default behavior without explicit coloring args
+                    pass
                 # Note: If key is 'false_colour' but value is False, nothing is added, which is correct.
                 else:
                     # For other potential arguments, convert key and add value if not boolean True

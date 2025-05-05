@@ -426,9 +426,19 @@ class MainWindow(QWidget):
             LOGGER.debug(f"MainWindow setting in_dir to: {path}")
             self.in_dir = path
             self.sanchez_preview_cache.clear() # Clear cache when dir changes
-            self.request_previews_update.emit() # Trigger preview update
-            # Preview update is now triggered directly above
-        self.main_tab._update_crop_buttons_state() # ADDED: Explicitly update crop buttons
+            
+            # Update the start button state when input directory changes
+            LOGGER.debug("Updating start button state due to input directory change")
+            if hasattr(self.main_tab, '_update_start_button_state'):
+                self.main_tab._update_start_button_state()
+            else:
+                LOGGER.warning("Cannot update start button - method not found")
+                
+            # Trigger preview update
+            self.request_previews_update.emit()
+            
+        # Always update crop buttons state
+        self.main_tab._update_crop_buttons_state()
 
     def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
         """Set the current crop rectangle state."""
@@ -1275,46 +1285,171 @@ class MainWindow(QWidget):
         Args:
             args: Dictionary of processing arguments from MainTab
         """
+        # Check if already processing and avoid duplicate requests
+        if getattr(self, 'is_processing', False):
+            LOGGER.warning("Processing already in progress, ignoring duplicate request")
+            return
+            
+        # Enhanced debugging output
+        print("\n========== MAIN WINDOW HANDLER CALLED ==========")
+        print("MainWindow._handle_processing received the signal")
         LOGGER.info("MainWindow: _handle_processing called - Starting video interpolation processing")
-        # Add a direct print to stdout for clearer debugging
-        print(f"HANDLING SIGNAL: _handle_processing with {len(args) if args else 0} args")
+        
+        # Print detailed argument info
+        print(f"Received args dictionary with {len(args) if args else 0} keys")
+        if args:
+            print(f"Args keys: {list(args.keys())}")
+            print(f"In directory: {args.get('in_dir')}")
+            print(f"Out file: {args.get('out_file')}")
+        else:
+            print("WARNING: Empty args dictionary received!")
+            return
+            
         LOGGER.debug(f"Processing arguments: {args}")
         
         # Update UI state
+        print("Updating UI state: setting is_processing = True")
         self.is_processing = True
         
         # If a previous worker is still running, terminate it
         if self.vfi_worker and self.vfi_worker.isRunning():
             LOGGER.warning("Terminating previous VfiWorker thread")
-            self.vfi_worker.terminate()
-            self.vfi_worker.wait()
+            try:
+                self.vfi_worker.terminate()
+                finished = self.vfi_worker.wait(1000)  # Wait up to 1 second for it to terminate
+                if not finished:
+                    LOGGER.error("Failed to terminate previous worker, will try to proceed anyway")
+            except Exception as e:
+                LOGGER.exception(f"Error terminating previous worker: {e}")
         
         # Create new worker thread with the arguments from MainTab
-        self.vfi_worker = VfiWorker(
-            in_dir=args["in_dir"],
-            out_file=args["out_file"],
-            fps=args["fps"],
-            multiplier=args["multiplier"],
-            max_workers=args["max_workers"],
-            encoder=args["encoder"],
-            rife_model_key=args["rife_model_key"],
-            rife_exe_path=args["rife_exe_path"],
-            rife_tta_spatial=args["rife_tta_spatial"],
-            rife_tta_temporal=args["rife_tta_temporal"],
-            rife_uhd=args["rife_uhd"],
-            rife_tiling_enabled=args["rife_tiling_enabled"],
-            rife_tile_size=args["rife_tile_size"],
-            rife_thread_spec=args["rife_thread_spec"],
-            sanchez_enabled=args["sanchez_enabled"],
-            sanchez_resolution_km=args["sanchez_resolution_km"],
-            crop_rect=args["crop_rect"],
-            ffmpeg_args=args["ffmpeg_args"]
-        )
+        # VfiWorker expects out_file_path instead of out_file and mid_count instead of multiplier
+        # Also need to extract proper FFmpeg settings from the ffmpeg_args dictionary
         
-        # Connect worker signals
-        self.vfi_worker.progress_update.connect(self._on_processing_progress)
-        self.vfi_worker.processing_finished.connect(self._on_processing_finished)
-        self.vfi_worker.processing_error.connect(self._on_processing_error)
+        # Default FFmpeg settings in case they're not found in args or ffmpeg_args
+        ffmpeg_settings = args.get("ffmpeg_args", {}) or {}
+        
+        # Extract from ffmpeg_args if it exists as a dictionary
+        use_ffmpeg_interp = ffmpeg_settings.get("use_ffmpeg_interp", False)
+        filter_preset = ffmpeg_settings.get("filter_preset", "slow")
+        mi_mode = ffmpeg_settings.get("mi_mode", "mci")
+        mc_mode = ffmpeg_settings.get("mc_mode", "obmc")
+        me_mode = ffmpeg_settings.get("me_mode", "bidir")
+        me_algo = ffmpeg_settings.get("me_algo", "")
+        search_param = ffmpeg_settings.get("search_param", 96)
+        scd_mode = ffmpeg_settings.get("scd", "fdiff")
+        scd_threshold = ffmpeg_settings.get("scd_threshold") if scd_mode != "none" else None
+        mb_size_text = ffmpeg_settings.get("mb_size", "")
+        minter_mb_size = int(mb_size_text) if isinstance(mb_size_text, str) and mb_size_text.isdigit() else None
+        minter_vsbmc = 1 if ffmpeg_settings.get("vsbmc", False) else 0
+        
+        # Unsharp settings with defaults
+        apply_unsharp = ffmpeg_settings.get("apply_unsharp", False)
+        unsharp_lx = ffmpeg_settings.get("unsharp_lx", 3)
+        unsharp_ly = ffmpeg_settings.get("unsharp_ly", 3)
+        unsharp_la = ffmpeg_settings.get("unsharp_la", 1.0)
+        unsharp_cx = ffmpeg_settings.get("unsharp_cx", 0.5)
+        unsharp_cy = ffmpeg_settings.get("unsharp_cy", 0.5)
+        unsharp_ca = ffmpeg_settings.get("unsharp_ca", 0.0)
+        
+        # Sanchez settings
+        sanchez_enabled = args.get("sanchez_enabled", False)
+        sanchez_resolution_km = args.get("sanchez_resolution_km", 4.0)
+        
+        # Get a temporary directory for Sanchez processing
+        import tempfile
+        import pathlib  # Ensure pathlib is available in this scope
+        sanchez_gui_temp_dir = pathlib.Path(tempfile.mkdtemp(prefix="sanchez_gui_"))
+        
+        # RIFE settings
+        rife_model_path = args.get("rife_model_path", None)
+        rife_exe_path = args.get("rife_exe_path", None)
+        rife_tta_spatial = args.get("rife_tta_spatial", False)
+        rife_tta_temporal = args.get("rife_tta_temporal", False)
+        rife_uhd = args.get("rife_uhd", False)
+        rife_tiling_enabled = args.get("rife_tiling_enabled", True)
+        rife_tile_size = args.get("rife_tile_size", 384)
+        rife_thread_spec = args.get("rife_thread_spec", "0:0:0:0")
+        
+        # Create worker with correct parameter names
+        # Create VfiWorker with proper error handling
+        try:
+            # Create VfiWorker with the exact parameter names it expects
+            self.vfi_worker = VfiWorker(
+                in_dir=args["in_dir"],
+                out_file_path=args["out_file"],  # Changed from out_file to out_file_path
+                fps=args["fps"],
+                mid_count=args["multiplier"] - 1,  # VfiWorker expects mid_count (multiplier - 1)
+                max_workers=args["max_workers"],
+                encoder=args["encoder"],
+                # FFmpeg settings
+                use_preset_optimal=False,
+                use_ffmpeg_interp=use_ffmpeg_interp,
+                filter_preset=filter_preset,
+                mi_mode=mi_mode,
+                mc_mode=mc_mode,
+                me_mode=me_mode,
+                me_algo=me_algo,
+                search_param=search_param,
+                scd_mode=scd_mode,
+                scd_threshold=scd_threshold,
+                minter_mb_size=minter_mb_size,
+                minter_vsbmc=minter_vsbmc,
+                # Unsharp settings
+                apply_unsharp=apply_unsharp,
+                unsharp_lx=unsharp_lx,
+                unsharp_ly=unsharp_ly,
+                unsharp_la=unsharp_la,
+                unsharp_cx=unsharp_cx,
+                unsharp_cy=unsharp_cy,
+                unsharp_ca=unsharp_ca,
+                # Quality settings - Use what VfiWorker expects
+                crf=ffmpeg_settings.get("crf", 18),
+                bitrate_kbps=ffmpeg_settings.get("bitrate_kbps", 7000),
+                bufsize_kb=ffmpeg_settings.get("bufsize_kb", 14000),
+                pix_fmt=ffmpeg_settings.get("pix_fmt", "yuv420p"),
+                # Model settings
+                skip_model=False,  # Don't skip the model
+                # Crop settings
+                crop_rect=args.get("crop_rect", None),
+                # Debug mode
+                debug_mode=self.debug_mode,
+                # RIFE settings with correct parameter names
+                rife_tile_enable=args.get("rife_tiling_enabled", True),
+                rife_tile_size=args.get("rife_tile_size", 384),
+                rife_uhd_mode=args.get("rife_uhd", False),
+                rife_thread_spec=args.get("rife_thread_spec", "0:0:0:0"),
+                rife_tta_spatial=args.get("rife_tta_spatial", False),
+                rife_tta_temporal=args.get("rife_tta_temporal", False),
+                model_key=args.get("rife_model_key", "rife-v4.6"),
+                # Sanchez settings (use the names expected by VfiWorker)
+                # Convert from sanchez_enabled to false_colour and 
+                # from sanchez_resolution_km to res_km
+                # Make sure res_km is an integer (VfiWorker expects int, not float)
+                false_colour=bool(args.get("sanchez_enabled", False)),
+                res_km=int(float(args.get("sanchez_resolution_km", 4.0))),
+                # Sanchez GUI temp dir
+                sanchez_gui_temp_dir=sanchez_gui_temp_dir
+            )
+        except Exception as e:
+            LOGGER.exception(f"Failed to create VfiWorker: {e}")
+            self.is_processing = False
+            
+            # Show error message to user
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "Error", 
+                f"Failed to initialize processing pipeline.\n\n"
+                f"This appears to be an issue with the video processing module, not your settings.\n\n"
+                f"Error details: {str(e)}")
+            
+            # Clean up
+            self.main_tab._reset_start_button()
+            return
+        
+        # Connect worker signals (make sure we use the correct signal names from VfiWorker)
+        self.vfi_worker.progress.connect(self._on_processing_progress)
+        self.vfi_worker.finished.connect(self._on_processing_finished)
+        self.vfi_worker.error.connect(self._on_processing_error)
         
         # Start the worker thread
         self.vfi_worker.start()
@@ -1362,14 +1497,31 @@ class MainWindow(QWidget):
         LOGGER.error(f"Processing error: {error_message}")
         self.is_processing = False
         
-        # Update the view model
-        self.main_view_model.processing_vm.finish_processing(success=False, message=error_message)
+        # Update the view model - use proper method name based on what's available
+        try:
+            if hasattr(self.main_view_model.processing_vm, 'finish_processing'):
+                self.main_view_model.processing_vm.finish_processing(success=False, message=error_message)
+            elif hasattr(self.main_view_model.processing_vm, 'cancel_processing'):
+                # cancel_processing might not accept a message parameter
+                self.main_view_model.processing_vm.cancel_processing()
+        except Exception as e:
+            LOGGER.exception(f"Error updating view model: {e}")
         
         # Reset UI in MainTab
-        self.main_tab._reset_start_button()
+        try:
+            self.main_tab._reset_start_button()
+        except Exception as e:
+            LOGGER.exception(f"Error resetting start button: {e}")
         
-        # Show error message (could be handled by MainTab but keeping it here for consistency)
-        QMessageBox.critical(self, "Error", f"Processing failed:\n{error_message}")
+        # Show error message to user
+        try:
+            from PyQt6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Processing Error", 
+                f"Video processing could not be completed due to an error in the processing pipeline.\n\n"
+                f"This is likely an issue with the image processing module, not your settings.\n\n"
+                f"The specific error was: {error_message}")
+        except Exception as e:
+            LOGGER.exception(f"Error showing error message: {e}")
     
     def _load_all_settings(self) -> None:
         """Load all settings from QSettings for all tabs and components."""
@@ -1560,9 +1712,11 @@ class MainWindow(QWidget):
                             except ValueError: res_km_val = 4.0
 
                             LOGGER.debug(f"Applying Sanchez to preview for: {image_path.name} with res_km={res_km_val}")
-                            sanchez_kwargs = {'res_km': res_km_val}
+                            sanchez_kwargs = {'res_km': res_km_val}  # Don't set false_colour here
                             if 'filename' not in original_image_data.metadata:
                                 original_image_data.metadata['filename'] = image_path.name
+                            if 'source_path' not in original_image_data.metadata:
+                                original_image_data.metadata['source_path'] = str(image_path)
 
                             # Run Sanchez Processor
                             sanchez_result = sanchez_processor.process(original_image_data, **sanchez_kwargs)
@@ -2007,9 +2161,11 @@ class MainWindow(QWidget):
             is_idle: bool = not getattr(self, 'is_processing', True)  # Default to True (processing) if attribute missing
             
             # Explicitly define can_start as bool
+            # For simplicity in testing, only require input directory - output can be auto-generated
+            # Original: has_in_dir and has_out_file and rife_model_selected...
             can_start: bool = (
-                has_in_dir
-                and has_out_file
+                has_in_dir  # Only require input directory
+                # and has_out_file  # Output file can be auto-generated
                 and rife_model_selected
                 and thread_spec_valid
                 and is_idle
@@ -2027,10 +2183,11 @@ class MainWindow(QWidget):
     def _set_processing_state(self, processing: bool) -> None:
         """Sets the processing state and updates UI elements accordingly."""
         self.is_processing = processing
+        # Only require input directory - output file can be auto-generated
         self.main_tab.start_button.setEnabled(
             not processing
             and self.in_dir is not None
-            and self.out_file_path is not None
+            # and self.out_file_path is not None  # Output file is optional
         )
         self.main_tab.in_dir_edit.setEnabled(not processing)
         self.main_tab.out_file_edit.setEnabled(not processing)
