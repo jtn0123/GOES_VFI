@@ -347,93 +347,19 @@ class MainTab(QWidget):
             }
         """)
         
-        # Implement custom event handling for more reliability
-        class FailsafeButton(QPushButton):
-            def __init__(self, text, parent=None):
-                super().__init__(text, parent)
-                self.handler_function = None
-                self.debug_mode = True  # IMPORTANT: Set to False for production
-                print(f"FailsafeButton created with text: {text}")
-                
-            def set_handler(self, handler):
-                self.handler_function = handler
-                print(f"FailsafeButton handler set: {handler.__name__ if handler else 'None'}")
-                
-            def mousePressEvent(self, event):
-                print("FAILSAFE BUTTON: Mouse press detected")
-                super().mousePressEvent(event)
-                
-            def mouseReleaseEvent(self, event):
-                print("FAILSAFE BUTTON: Mouse release detected")
-                super().mouseReleaseEvent(event)
-                
-                # Always allow clicks in debug mode, regardless of disabled state
-                if event.button() == Qt.MouseButton.LeftButton:
-                    if self.handler_function:
-                        if self.isEnabled() or self.debug_mode:
-                            print(f"FAILSAFE BUTTON: Calling handler directly: {self.handler_function.__name__}")
-                            # For testing only - in production, respect the enabled state
-                            if not self.isEnabled() and self.debug_mode:
-                                print("WARNING: Button is disabled but debug_mode is forcing execution!")
-                            QTimer.singleShot(10, self.handler_function)
-                        else:
-                            print("FAILSAFE BUTTON: Not calling handler because button is disabled")
-                    else:
-                        print("FAILSAFE BUTTON: No handler function set")
-        
-        # Create our failsafe button with true red color
-        self.failsafe_button = FailsafeButton("START PROCESSING", self)
-        self.failsafe_button.setObjectName("failsafe_button")
-        self.failsafe_button.setMinimumHeight(60)
-        self.failsafe_button.setStyleSheet("""
-            QPushButton#failsafe_button {
-                background-color: #FF0000;  /* Pure red */
-                color: white;
-                font-weight: bold;
-                font-size: 16px;
-                border: 3px solid #FF5555;
-                border-radius: 5px;
-                padding: 10px 20px;
-            }
-            QPushButton#failsafe_button:hover {
-                background-color: #CC0000;
-                border: 3px solid #FF8888;
-            }
-            QPushButton#failsafe_button:pressed {
-                background-color: #990000;
-            }
-        """)
-        
-        # Set the handler for the failsafe button
-        self.failsafe_button.set_handler(self._direct_start_handler)
-        
-        # Also connect through standard mechanism as backup
-        self.failsafe_button.clicked.connect(self._direct_start_handler)
-        
-        # Add debug label with instructions - make it very obvious
-        debug_label = QLabel("EMERGENCY TEST MODE: RED BUTTON WILL WORK EVEN WHEN DISABLED!")
-        debug_label.setStyleSheet("color: #FF0000; font-weight: bold; font-size: 14px; background-color: #FFFF00; padding: 5px;")
-        
-        # Create a button container for both buttons
+        # Create a button container for the start button
         button_container = QWidget()
         button_layout = QVBoxLayout(button_container)
         button_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Add debug label
-        button_layout.addWidget(debug_label)
+        # Add just the regular start button
+        button_layout.addWidget(self.start_button)
         
-        # Create button row
-        button_row = QHBoxLayout()
-        button_row.addWidget(self.start_button)
-        button_row.addWidget(self.failsafe_button)
-        button_layout.addLayout(button_row)
-        
-        # Direct connections for standard button - simpler is better
+        # Connect standard button
         self.start_button.clicked.connect(self._direct_start_handler)
         
-        # Log button creation with emphasis
-        print("\n===== ENHANCED START BUTTONS CREATED AND CONNECTED =====")
-        LOGGER.debug("Enhanced start buttons created with direct handlers")
+        # Log button creation
+        LOGGER.debug("Start button created and connected")
 
         # Layout Assembly
         settings_layout = QHBoxLayout()
@@ -1819,7 +1745,7 @@ class MainTab(QWidget):
         self._direct_start()
         
     def _update_start_button_state(self) -> None:
-        """Enable/disable start buttons based on paths and RIFE model availability."""
+        """Enable/disable start button based on paths and RIFE model availability."""
         main_window = self.main_window_ref # Use stored reference for consistency
         current_in_dir = getattr(main_window, 'in_dir', None)
         
@@ -1837,18 +1763,8 @@ class MainTab(QWidget):
         can_start = bool(has_paths and rife_ok and not self.is_processing)
         LOGGER.debug(f"Start button should be enabled: {can_start}")
         
-        # Update both buttons
+        # Update button state
         self.start_button.setEnabled(can_start)
-        
-        # Special debug mode - always leave failsafe button enabled
-        debug_override = True  # Set to False for production
-        if debug_override:
-            # Never actually disable the button in debug mode, just change its appearance
-            self.failsafe_button.setEnabled(True)
-            print("DEBUG OVERRIDE: Keeping failsafe button enabled for testing")
-        else:
-            # Normal behavior - enable/disable based on validation
-            self.failsafe_button.setEnabled(can_start)
         
         # Update button text and style
         if self.is_processing:
@@ -1861,23 +1777,6 @@ class MainTab(QWidget):
                     font-weight: bold;
                     font-size: 16px;
                     border-radius: 5px;
-                }
-            """)
-            
-            self.failsafe_button.setText("CANCEL PROCESSING")
-            self.failsafe_button.setStyleSheet("""
-                QPushButton#failsafe_button {
-                    background-color: #B71C1C;
-                    color: white;
-                    font-weight: bold;
-                    font-size: 16px;
-                    border: 2px solid #F06292;
-                    border-radius: 5px;
-                    padding: 10px 20px;
-                }
-                QPushButton#failsafe_button:hover {
-                    background-color: #C62828;
-                    border: 2px solid #F48FB1;
                 }
             """)
         else:
@@ -1900,26 +1799,6 @@ class MainTab(QWidget):
                         background-color: #3e8e41;
                     }
                 """)
-                
-                self.failsafe_button.setText("START PROCESSING")
-                self.failsafe_button.setStyleSheet("""
-                    QPushButton#failsafe_button {
-                        background-color: #E91E63;
-                        color: white;
-                        font-weight: bold;
-                        font-size: 16px;
-                        border: 2px solid #F06292;
-                        border-radius: 5px;
-                        padding: 10px 20px;
-                    }
-                    QPushButton#failsafe_button:hover {
-                        background-color: #D81B60;
-                        border: 2px solid #F48FB1;
-                    }
-                    QPushButton#failsafe_button:pressed {
-                        background-color: #C2185B;
-                    }
-                """)
             else:
                 self.start_button.setText("START")
                 self.start_button.setStyleSheet("""
@@ -1933,27 +1812,8 @@ class MainTab(QWidget):
                     }
                 """)
                 
-                # Special case - set text to indicate disabled but don't actually disable for testing
-                self.failsafe_button.setText("START PROCESSING (DISABLED BUT CLICKABLE)")
-                self.failsafe_button.setStyleSheet("""
-                    QPushButton#failsafe_button {
-                        background-color: #FF0000;  /* Keep red even when disabled */
-                        color: white;
-                        font-weight: bold;
-                        font-size: 14px;
-                        border: 3px dashed #FFB6C1; /* Dashed border to indicate disabled */
-                        border-radius: 5px;
-                        padding: 10px 20px;
-                    }
-                    QPushButton#failsafe_button:hover {
-                        background-color: #CC0000;
-                        border: 3px dashed #FFCCCC;
-                    }
-                """)
-                
-        # Print debug info about button states
-        print(f"Start button enabled: {self.start_button.isEnabled()}")
-        print(f"Failsafe button enabled: {self.failsafe_button.isEnabled()}")
+        # Print debug info about button state
+        LOGGER.debug(f"Start button enabled: {self.start_button.isEnabled()}")
 
 
     @pyqtSlot(bool, str)
