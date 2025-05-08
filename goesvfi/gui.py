@@ -23,6 +23,8 @@ from goesvfi.integrity_check.cache_db import CacheDB
 from goesvfi.integrity_check.reconciler import Reconciler
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
+# Import the Combined tab with enhanced error handling
+from goesvfi.integrity_check.combined_tab import CombinedIntegrityAndImageryTab
 
 
 """
@@ -344,9 +346,12 @@ class MainWindow(QWidget):
             if self.integrity_check_vm._disk_space_timer.isRunning():
                 self.integrity_check_vm._disk_space_timer.terminate()
                 self.integrity_check_vm._disk_space_timer.wait()
-        self.integrity_check_tab = EnhancedIntegrityCheckTab(
+        # Use the combined tab which includes both enhanced integrity check and enhanced GOES imagery
+        self.combined_tab = CombinedIntegrityAndImageryTab(
             view_model=self.integrity_check_vm, parent=self
         )
+        # Reference the integrity check tab from within the combined tab for backward compatibility
+        self.integrity_check_tab = self.combined_tab.integrity_tab
 
         self.tab_widget.addTab(self.main_tab, "Main")
         self.tab_widget.addTab(self.ffmpeg_settings_tab, "FFmpeg Settings")
@@ -360,8 +365,8 @@ class MainWindow(QWidget):
             self.date_sorter_tab, "Date Sorter"
         )  # Add Date Sorter tab
         self.tab_widget.addTab(
-            self.integrity_check_tab, "Integrity Check"
-        )  # Add Integrity Check tab
+            self.combined_tab, "Satellite Integrity"
+        )  # Add our Combined tab with enhanced error handling
 
         # self.loadSettings() # Moved lower
 
@@ -1868,11 +1873,13 @@ class MainWindow(QWidget):
                 try:
                     coords = [int(c.strip()) for c in crop_rect_str.split(',')]
                     if len(coords) == 4:
-                        self.current_crop_rect = tuple(coords)
+                        # Convert to proper tuple type with explicit indices
+                        self.current_crop_rect = (coords[0], coords[1], coords[2], coords[3])
                         LOGGER.info(f"Pre-loaded crop rectangle from settings: {self.current_crop_rect}")
                         
                         # Save this crop rectangle to ensure it's in all keys
-                        self._save_crop_rect(self.current_crop_rect)
+                        if self.current_crop_rect is not None:
+                            self._save_crop_rect(self.current_crop_rect)
                 except Exception as e:
                     LOGGER.error(f"Error pre-loading crop rectangle: {e}")
         else:
@@ -1891,9 +1898,9 @@ class MainWindow(QWidget):
             self.main_tab.load_settings()
             LOGGER.debug("Main tab settings loaded")
             
-        if hasattr(self.ffmpeg_settings_tab, 'load_settings'):
-            self.ffmpeg_settings_tab.load_settings()
-            LOGGER.debug("FFmpeg settings tab settings loaded")
+        # FFmpeg settings tab doesn't have a load_settings method
+        # This will be implemented in a future update
+        LOGGER.debug("FFmpeg settings tab settings loading not implemented yet")
             
         if hasattr(self.file_sorter_tab, 'load_settings'):
             self.file_sorter_tab.load_settings()
