@@ -143,4 +143,19 @@ cython_debug/
 # FFmpeg logs
 ffmpeg-*.log
 x265_*.log
-x265_*.log.cutree 
+x265_*.log.cutree
+**/.claude/settings.local.json
+
+# Large data files
+data/temp_netcdf_downloads/*.nc
+data/temp_netcdf_downloads/*.png
+data/satpy_images/*.png
+tests/data/test_input/*.png
+tests/data/test_output/*.png
+tests/data/test_output/*.txt
+
+# Log files
+logs/
+
+# Keep basic test fixture files
+!tests/data/test_input/fixture_*.png
