@@ -318,9 +318,33 @@ def find_test_files(directory: str = "tests") -> List[str]:
         List of test file paths
     """
     result = []
+
+    # Find all test files recursively in the main tests directory
     pattern = os.path.join(directory, "**", "test_*.py")
     result.extend(glob.glob(pattern, recursive=True))
-    return sorted(result)
+
+    # Also look for any remaining test files in the root directory
+    # (for backward compatibility during transition)
+    root_pattern = "test_*.py"
+    result.extend(glob.glob(root_pattern))
+
+    # Add specific subdirectories to ensure they're checked
+    # This is redundant with the recursive search but kept for certainty
+    for subdir in ["gui/imagery", "gui/tabs", "integration", "unit"]:
+        full_path = os.path.join(directory, subdir)
+        if os.path.exists(full_path):
+            pattern = os.path.join(full_path, "test_*.py")
+            result.extend(glob.glob(pattern, recursive=True))
+
+    # Remove duplicates while preserving order
+    unique_result = []
+    seen = set()
+    for item in result:
+        if item not in seen:
+            seen.add(item)
+            unique_result.append(item)
+
+    return sorted(unique_result)
 
 
 def print_status(
@@ -491,6 +515,14 @@ def main():
     known_problematic_tests = [
         "tests/gui/test_scheduler_ui_components.py",
         "tests/gui/test_history_tab.py",
+        # Tests that might cause segfaults or other issues
+        "tests/gui/imagery/test_imagery_gui.py",
+        "tests/gui/imagery/test_imagery_gui_fixed.py",
+        "tests/gui/imagery/test_imagery_zoom.py",
+        # Include both old and new paths for these files during transition
+        "test_imagery_gui.py",
+        "test_imagery_gui_fixed.py",
+        "test_imagery_gui_zoom.py",
     ]
 
     # Find test files

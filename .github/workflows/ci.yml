@@ -35,10 +35,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .[test] # Install package and test dependencies from pyproject.toml in editable mode
+        # Explicitly install mypy and type stubs to ensure they're available
+        pip install mypy types-requests types-Pillow types-aiofiles
 
     - name: Run mypy type checking
       run: |
-        mypy --strict goesvfi
+        python -m mypy --strict goesvfi
 
     - name: Test with pytest (working tests only)
       run: |

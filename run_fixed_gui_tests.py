@@ -28,6 +28,19 @@ if __name__ == "__main__":
         "tests/unit/test_main_tab.py::test_encoder_selection",
         "tests/unit/test_main_tab.py::test_rife_options_toggles", 
         "tests/unit/test_main_tab.py::test_sanchez_options_toggles",
+        
+        # GUI imagery tests
+        "tests/gui/imagery/test_fallback_preview.py",
+        "tests/gui/imagery/test_imagery_enhancement.py",
+        "tests/gui/imagery/test_imagery_simple.py",
+        "tests/gui/imagery/test_imagery_simplified.py",
+
+        # GUI tabs tests
+        "tests/gui/tabs/test_enhanced_imagery_tab.py",
+
+        # Other GUI tests
+        "tests/gui/test_goes_ui.py",
+        "tests/gui/test_imagery_error_handling.py",
         "tests/unit/test_main_tab.py::test_processing_state_updates_ui",
         "tests/unit/test_main_tab.py::test_browse_input_path",
         "tests/unit/test_main_tab.py::test_browse_output_path",
