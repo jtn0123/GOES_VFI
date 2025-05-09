@@ -6,21 +6,20 @@ functionality and the GOES imagery visualization features in a unified, optimize
 """
 
 import logging
-from typing import Optional, cast, Dict, Any
-from datetime import datetime
 
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, 
-    QStackedWidget, QPushButton, QSplitter, QFrame
+    QWidget, QVBoxLayout, QHBoxLayout, 
+    QStackedWidget, QPushButton, QSplitter
 )
-from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import Qt, QDate, QTime
+from typing import Dict, Optional, Any, List, Tuple, Union, cast
+from pathlib import Path
 
 from .enhanced_gui_tab import EnhancedIntegrityCheckTab
 from .enhanced_view_model import EnhancedIntegrityCheckViewModel
 from .enhanced_imagery_tab import EnhancedGOESImageryTab
 from .shared_components import (
-    SharedPreviewPanel, SidebarSettingsPanel, 
-    CollapsibleSettingsGroup, PreviewMetadata
+    SharedPreviewPanel, SidebarSettingsPanel, PreviewMetadata
 )
 
 # Configure logging
@@ -37,134 +36,173 @@ class UnifiedCombinedTab(QWidget):
     3. Shared components for a more integrated experience
     """
     
-    def __init__(self, view_model: EnhancedIntegrityCheckViewModel, parent=None):
+    def __init__(self, view_model: EnhancedIntegrityCheckViewModel, parent: Optional[QWidget] = None) -> None:
         """
-        Initialize the unified combined tab.
-        
+        Initialize the unified combined tab with optimized vertical space usage.
+
         Args:
             view_model: The EnhancedIntegrityCheckViewModel instance to use
             parent: Optional parent widget
         """
         super().__init__(parent)
         self.view_model = view_model
-        
-        # Create layout
+
+        # Create layout - optimize vertical space with minimal margins
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
-        
-        # Create tab switcher (more compact buttons)
+
+        # Create tab switcher (ultra-compact buttons)
         self._create_tab_switcher(main_layout)
-        
+
         # Create main content area with shared preview and settings
         content_widget = QWidget()
         content_layout = QHBoxLayout(content_widget)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
-        
-        # Create central content area
+
+        # Create central content area with horizontal orientation
+        # This puts the content, preview, and settings side by side
+        # which preserves more vertical space
         self.central_splitter = QSplitter(Qt.Orientation.Horizontal)
-        
+        # Make splitter handles visually distinct so users understand they can adjust
+        self.central_splitter.setHandleWidth(5)
+        self.central_splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: #444;
+                border: 1px solid #555;
+                border-width: 0 1px;
+            }
+            QSplitter::handle:hover {
+                background-color: #3498db;  /* Highlight on hover */
+            }
+        """)
+
         # Create and add main content stack that will contain the tabs
         self._create_main_content_stack()
-        
+
         # Create the shared preview panel
         self.preview_panel = SharedPreviewPanel()
-        
+
         # Create the settings sidebar
         self.settings_panel = SidebarSettingsPanel()
-        
+
         # Add panels to central splitter
         self.central_splitter.addWidget(self.stacked_widget)  # Main tab content
         self.central_splitter.addWidget(self.preview_panel)   # Shared preview
         self.central_splitter.addWidget(self.settings_panel)  # Settings sidebar
-        
-        # Set initial splitter sizes (main content : preview : settings) ratio ~3:4:2
-        self.central_splitter.setSizes([300, 400, 200])
-        
+
+        # Set initial splitter sizes (main content : preview : settings) optimal ratio for horizontal layout
+        # These proportions ensure good horizontal space utilization
+        self.central_splitter.setSizes([400, 450, 150])
+
         # Add to content layout
         content_layout.addWidget(self.central_splitter)
-        
-        # Add content widget to main layout
+
+        # Add content widget to main layout with stretch factor
         main_layout.addWidget(content_widget, 1)  # Give it stretch
-        
+
         # Connect signals between components
         self._connect_signals()
-        
+
         # Set initial state
         self._switch_tab(0)  # Start with integrity tab
-        
-        LOGGER.info("Unified combined tab initialized")
+
+        LOGGER.info("Unified combined tab initialized with optimized vertical space")
     
-    def _create_tab_switcher(self, parent_layout):
+    def _create_tab_switcher(self, parent_layout: QVBoxLayout) -> None:
         """
         Create the tab switcher component with buttons.
-        
+
         Args:
             parent_layout: Parent layout to add the switcher to
         """
-        # Create a widget for the tab buttons
+        # Create a widget for the tab buttons - more compact vertical version with visual separation
         tab_switcher = QWidget()
-        tab_switcher.setMaximumHeight(40)
-        
-        # Create layout
+        tab_switcher.setMaximumHeight(36)  # Slightly increased to accommodate the button borders
+        # Add a subtle background and border to make the tab switcher visually distinct
+        tab_switcher.setStyleSheet("""
+            QWidget {
+                background-color: #222222;
+                border-bottom: 1px solid #444;
+            }
+        """)
+
+        # Create layout - using tighter spacing
         switcher_layout = QHBoxLayout(tab_switcher)
-        switcher_layout.setContentsMargins(5, 0, 5, 0)
-        
-        # Create tab buttons
-        self.integrity_button = QPushButton("File Integrity")
-        self.imagery_button = QPushButton("GOES Imagery")
-        
-        # Style the buttons to look like tabs
+        switcher_layout.setContentsMargins(2, 0, 2, 0)  # Reduced margins
+        switcher_layout.setSpacing(4)  # Reduced spacing between buttons
+
+        # Create tab buttons with clear descriptive text
+        self.integrity_button = QPushButton("File Integrity")  # More descriptive
+        self.imagery_button = QPushButton("GOES Imagery")     # More descriptive
+
+        # Style the buttons to look like distinct tabs - more visually separated
         button_style = """
             QPushButton {
-                background-color: #3a3a3a;
+                background-color: #2d2d2d;
                 color: #b0b0b0;
-                border: none;
-                padding: 5px 10px;
-                border-bottom: 2px solid transparent;
+                border: 1px solid #444;
+                border-radius: 4px;
+                padding: 4px 10px;  /* Increased padding */
+                margin: 0 3px;     /* More spacing between buttons */
+                font-size: 12px;   /* Increased font size */
+                min-width: 90px;   /* Ensure minimum width */
             }
             QPushButton:checked, QPushButton:pressed {
                 color: white;
-                background-color: #444444;
-                border-bottom: 2px solid #3498db;
+                background-color: #3a3a3a;
+                border: 1px solid #555;
+                border-left: 4px solid #3498db;  /* Thicker blue accent for selected tab */
+                padding-left: 7px;  /* Compensate for thicker border */
+                font-weight: bold;  /* Make selected tab text bold */
+            }
+            QPushButton:hover:!checked {
+                background-color: #353535;
+                border: 1px solid #4a4a4a;
+                color: #ffffff;  /* Brighter text on hover */
             }
         """
         self.integrity_button.setStyleSheet(button_style)
         self.imagery_button.setStyleSheet(button_style)
         self.integrity_button.setCheckable(True)
         self.imagery_button.setCheckable(True)
-        
-        # Set minimum width for buttons
-        self.integrity_button.setMinimumWidth(120)
-        self.imagery_button.setMinimumWidth(120)
-        
+
+        # Set minimum width for buttons - slightly wider for better visibility
+        self.integrity_button.setMinimumWidth(100)  # Increased from 80
+        self.imagery_button.setMinimumWidth(100)    # Increased from 80
+
+        # Set fixed height for buttons with more space for readability
+        self.integrity_button.setFixedHeight(30)  # Increased from 26
+        self.imagery_button.setFixedHeight(30)    # Increased from 26
+
         # Add to layout
         switcher_layout.addWidget(self.integrity_button)
         switcher_layout.addWidget(self.imagery_button)
-        
-        # Add split view button
-        self.split_view_button = QPushButton("Split View")
+
+        # Add split view button - more visible
+        self.split_view_button = QPushButton("Split View")  # More descriptive text
         self.split_view_button.setCheckable(True)
         self.split_view_button.setStyleSheet(button_style)
-        self.split_view_button.setMinimumWidth(120)
+        self.split_view_button.setMinimumWidth(90)  # Increased from 60
+        self.split_view_button.setFixedHeight(30)   # Increased from 26
         switcher_layout.addWidget(self.split_view_button)
-        
+
         # Add spacer to push buttons to the left
         switcher_layout.addStretch(1)
-        
+
         # Connect signals
         self.integrity_button.clicked.connect(lambda: self._switch_tab(0))
         self.imagery_button.clicked.connect(lambda: self._switch_tab(1))
         self.split_view_button.clicked.connect(self._toggle_split_view)
-        
+
         # Set default state
         self.integrity_button.setChecked(True)
-        
+
         # Add to parent layout
         parent_layout.addWidget(tab_switcher)
     
-    def _create_main_content_stack(self):
+    def _create_main_content_stack(self) -> None:
         """Create the stacked widget that contains main tab content."""
         # Create stacked widget
         self.stacked_widget = QStackedWidget()
@@ -177,25 +215,46 @@ class UnifiedCombinedTab(QWidget):
         self.split_view = QWidget()
         split_layout = QVBoxLayout(self.split_view)
         split_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Create inner splitter for split view
+        split_layout.setSpacing(0)  # Eliminate spacing to maximize vertical space
+
+        # Create inner splitter for split view - using vertical orientation
+        # but with optimized proportions and minimal spacing
         self.view_splitter = QSplitter(Qt.Orientation.Vertical)
-        
-        # Add tabs to the splitter
+        self.view_splitter.setHandleWidth(5)  # Moderate width for clear visibility
+        self.view_splitter.setChildrenCollapsible(False)  # Prevent collapsing tabs entirely
+        # Style the vertical splitter handle to be visually distinct
+        self.view_splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: #444;
+                border: 1px solid #555;
+                border-width: 1px 0;
+            }
+            QSplitter::handle:hover {
+                background-color: #3498db;  /* Highlight on hover */
+            }
+        """)
+
+        # Add tabs to the splitter with ultra-compact containers
         self.integrity_container = QWidget()
         integrity_layout = QVBoxLayout(self.integrity_container)
         integrity_layout.setContentsMargins(0, 0, 0, 0)
+        integrity_layout.setSpacing(0)  # No spacing
         integrity_layout.addWidget(self.integrity_tab)
-        
+
         self.imagery_container = QWidget()
         imagery_layout = QVBoxLayout(self.imagery_container)
         imagery_layout.setContentsMargins(0, 0, 0, 0)
+        imagery_layout.setSpacing(0)  # No spacing
         imagery_layout.addWidget(self.imagery_tab)
-        
+
         # Add containers to splitter
         self.view_splitter.addWidget(self.integrity_container)
         self.view_splitter.addWidget(self.imagery_container)
-        
+
+        # Set initial splitter sizes for optimal vertical space usage
+        # This ensures both tabs get a fair amount of space but prioritizes content
+        self.view_splitter.setSizes([500, 500])  # Equal split by default
+
         # Add splitter to split view
         split_layout.addWidget(self.view_splitter)
         
@@ -204,7 +263,7 @@ class UnifiedCombinedTab(QWidget):
         self.stacked_widget.addWidget(self.imagery_tab)    # Index 1
         self.stacked_widget.addWidget(self.split_view)     # Index 2
     
-    def _connect_signals(self):
+    def _connect_signals(self) -> None:
         """Connect signals between components for interaction."""
         # Connect preview panel signals
         self.preview_panel.previewSelected.connect(self._on_preview_selected)
@@ -218,7 +277,7 @@ class UnifiedCombinedTab(QWidget):
         if hasattr(self.integrity_tab, 'files_downloaded'):
             self.integrity_tab.files_downloaded.connect(self._on_files_downloaded)
     
-    def _switch_tab(self, index):
+    def _switch_tab(self, index: int) -> None:
         """
         Switch to the tab at the specified index and update button states.
         
@@ -241,7 +300,7 @@ class UnifiedCombinedTab(QWidget):
         
         LOGGER.info(f"Switched to tab index: {index}")
     
-    def _toggle_split_view(self, checked):
+    def _toggle_split_view(self, checked: bool) -> None:
         """
         Toggle split view mode.
         
@@ -263,7 +322,7 @@ class UnifiedCombinedTab(QWidget):
                 self.stacked_widget.setCurrentIndex(1)
             LOGGER.info("Disabled split view mode")
     
-    def _update_settings_context(self, tab_index):
+    def _update_settings_context(self, tab_index: int) -> None:
         """
         Update settings panel to show context-specific settings.
         
@@ -285,7 +344,7 @@ class UnifiedCombinedTab(QWidget):
             self.settings_panel.show_section("advanced", True)
             self.settings_panel.show_section("visualization", True)
     
-    def _on_preview_selected(self, key, metadata):
+    def _on_preview_selected(self, key: str, metadata: PreviewMetadata) -> None:
         """
         Handle when a preview is selected in the shared preview panel.
         
@@ -301,7 +360,7 @@ class UnifiedCombinedTab(QWidget):
             # Could update other settings based on metadata
             LOGGER.info(f"Preview selected: {key}, updated settings")
     
-    def _on_date_changed(self, new_date):
+    def _on_date_changed(self, new_date: QDate) -> None:
         """
         Handle date changes in settings panel.
         
@@ -314,7 +373,7 @@ class UnifiedCombinedTab(QWidget):
         
         # Example: could force refresh of previews or data
     
-    def _on_time_changed(self, new_time):
+    def _on_time_changed(self, new_time: QTime) -> None:
         """
         Handle time changes in settings panel.
         
@@ -324,7 +383,7 @@ class UnifiedCombinedTab(QWidget):
         # Update both tabs with the new time
         LOGGER.info(f"Time changed: {new_time.toString('HH:mm')}")
     
-    def _on_files_downloaded(self, file_list):
+    def _on_files_downloaded(self, file_list: List[Path]) -> None:
         """
         Handle when files are downloaded in the integrity tab.
         

@@ -573,11 +573,23 @@ class MainWindow(QWidget):
         # Instantiate capability manager
         self.rife_capability_manager = RifeCapabilityManager()
 
-        # Instantiate File Sorter Tab
-        self.file_sorter_tab = FileSorterTab()
+        # Create the View Models for sorter tabs
+        from goesvfi.file_sorter.view_model import FileSorterViewModel  # Import here to avoid circular imports
+        from goesvfi.date_sorter.view_model import DateSorterViewModel  # Import here to avoid circular imports
+        from goesvfi.file_sorter.sorter import FileSorter, DuplicateMode
+        from goesvfi.date_sorter.sorter import DateSorter
+        
+        # Create model instances
+        file_sorter_model = FileSorter(dry_run=False, duplicate_mode=DuplicateMode.OVERWRITE)
+        date_sorter_model = DateSorter()
+        
+        # Instantiate File Sorter Tab with its view model
+        file_sorter_vm = FileSorterViewModel(sorter_model=file_sorter_model)
+        self.file_sorter_tab = FileSorterTab(view_model=file_sorter_vm)
 
-        # Instantiate Date Sorter Tab
-        self.date_sorter_tab = DateSorterTab()
+        # Instantiate Date Sorter Tab with its view model
+        date_sorter_vm = DateSorterViewModel(sorter_model=date_sorter_model)
+        self.date_sorter_tab = DateSorterTab(view_model=date_sorter_vm)
 
         # Create the main tab widget
         self.main_tabs = QTabWidget()
@@ -1370,8 +1382,10 @@ class MainWindow(QWidget):
 
     def _toggle_tile_size_enabled(self, state: int) -> None:
         """Enables/disables the tile size spinbox based on the tile enable checkbox."""
-        self.rife_tile_size_spinbox.setEnabled(state == Qt.CheckState.Checked.value)
-        self.rife_tile_size_label.setEnabled(state == Qt.CheckState.Checked.value)
+        # Compare as integers to avoid type issues
+        is_enabled = state == 2  # Qt.CheckState.Checked has value 2
+        self.rife_tile_size_spinbox.setEnabled(is_enabled)
+        self.rife_tile_size_label.setEnabled(is_enabled)
 
     def _update_scd_thresh_state(self, scd_mode: str) -> None:
         """Enables/disables the SCD threshold spinbox based on the SCD mode."""
@@ -2647,7 +2661,9 @@ def main() -> None:
          log_level = "DEBUG" # Override log level if --debug is set
 
     # --- Logging Setup ---
-    log.set_level(debug_mode=args.debug) # Use the correct function and argument
+    import logging
+    level = logging.DEBUG if args.debug else logging.INFO
+    log.set_global_log_level(level)  # Call the existing function with proper argument
 
     LOGGER.info("Starting GOES-VFI GUI...")
     if args.debug:

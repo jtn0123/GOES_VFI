@@ -5,9 +5,10 @@ operations in background threads, ensuring the UI remains responsive.
 """
 
 import time
+import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Set
+from typing import Dict, List, Optional, Any, Callable, Set, Union, Type, TypeVar, cast
 
 from PyQt6.QtCore import QObject, pyqtSignal, QRunnable
 
@@ -67,7 +68,7 @@ class ScanTask(QRunnable):
         self.signals = TaskSignals()
         self._cancel_requested = False
     
-    def run(self):
+    def run(self) -> None:
         """Execute the scan task."""
         try:
             # Run the scan
@@ -139,7 +140,7 @@ class DownloadTask(QRunnable):
         self.signals = DownloadSignals()
         self._cancel_requested = False
     
-    def run(self):
+    def run(self) -> None:
         """Execute the download task."""
         try:
             # Construct URL
@@ -230,7 +231,7 @@ class BatchDownloadTask(QRunnable):
         self.signals = BatchDownloadSignals()
         self._cancel_requested = False
     
-    def run(self):
+    def run(self) -> None:
         """Execute the batch download task."""
         try:
             success_count = 0
@@ -239,7 +240,7 @@ class BatchDownloadTask(QRunnable):
             # Process items in batches of max_concurrent
             for i in range(0, total_count, self.max_concurrent):
                 batch = self.items[i:i + self.max_concurrent]
-                threads = []
+                threads: List[threading.Thread] = []
                 
                 # Start downloads for this batch
                 for j, item in enumerate(batch):
@@ -281,7 +282,7 @@ class BatchDownloadTask(QRunnable):
                         continue
                     
                     # Download the file
-                    def progress_callback(current, total, item_idx=item_index):
+                    def progress_callback(current: int, total: int, eta: float, item_idx: int = item_index) -> None:
                         self.signals.item_progress.emit(item_idx, current, total)
                     
                     success = self.remote_store.download_file(

@@ -11,7 +11,7 @@ import time
 import threading
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Dict, Optional, Set, Any, Callable, cast, Union, Tuple
+from typing import List, Dict, Optional, Set, Any, Callable, cast, Union, Tuple, TypeVar
 from enum import Enum, auto
 import traceback
 
@@ -22,7 +22,11 @@ from goesvfi.utils import config
 from .reconciler import Reconciler
 from .time_index import TimeIndex, SatellitePattern
 from .cache_db import CacheDB
+from .thread_cache_db import ThreadLocalCacheDB
 from .reconcile_manager import ReconcileManager
+from .remote.base import (
+    RemoteStoreError, ResourceNotFoundError, AuthenticationError, ConnectionError
+)
 from .remote.cdn_store import CDNStore
 from .remote.s3_store import S3Store
 from .view_model import IntegrityCheckViewModel, ScanStatus, MissingTimestamp
@@ -99,15 +103,26 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         self._fetch_source = FetchSource.AUTO  # Default to auto (hybrid)
         self._max_concurrent_downloads = 5
         self._cdn_resolution = TimeIndex.CDN_RES  # Default resolution
-        self._aws_profile = None  # Use default credentials
+        self._aws_profile: str = ""  # Use default credentials (empty string instead of None)
         self._s3_region = "us-east-1"
         
-        # Initialize CacheDB and stores
-        self._cache_db = cache_db or CacheDB()
+        # Initialize thread-local CacheDB and stores for thread safety
+        # Check if passed cache_db is already thread-local
+        if cache_db is not None and not isinstance(cache_db, ThreadLocalCacheDB):
+            LOGGER.info("Converting regular CacheDB to thread-local CacheDB for thread safety")
+            self._cache_db = ThreadLocalCacheDB(db_path=cache_db.db_path)
+            # Close the original connection since we won't use it
+            cache_db.close()
+        else:
+            self._cache_db = cache_db or ThreadLocalCacheDB()
+            
+        # Log the type of cache DB being used
+        LOGGER.debug(f"Enhanced view model using cache DB of type: {type(self._cache_db).__name__}")
+        
         self._cdn_store = cdn_store or CDNStore(resolution=self._cdn_resolution)
         self._s3_store = s3_store or S3Store(aws_profile=self._aws_profile, aws_region=self._s3_region)
         
-        # Create the ReconcileManager
+        # Create the ReconcileManager with thread-local cache
         self._reconcile_manager = ReconcileManager(
             cache_db=self._cache_db,
             base_dir=self._base_directory,
@@ -126,6 +141,21 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         self._async_task = None
         self._scan_task_future = None
         self._download_task_future = None
+        
+        # Initialize thread pool with min lifetime to keep tasks alive
+        self._thread_pool = QThreadPool.globalInstance()
+        if self._thread_pool is not None:
+            self._thread_pool.setExpiryTimeout(30000)  # Keep threads alive for 30 seconds
+        
+        # Keep references to active tasks to prevent premature cleanup
+        self._active_tasks: List[QRunnable] = []
+        
+        # Download tracking properties
+        self._downloaded_success_count = 0
+        self._downloaded_failed_count = 0
+        self._download_start_time = 0.0
+        self._last_download_rate = 0.0
+        self._currently_downloading_items: List[datetime] = []
         
         # Setup disk space check timer - disabled for now due to blocking issues
         self._disk_space_timer = QThread()
@@ -170,8 +200,75 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         """Get the CDN resolution."""
         return self._cdn_resolution
     
-    @cdn_resolution.setter
-    def cdn_resolution(self, value: str) -> None:
+    @property
+    def downloaded_success_count(self) -> int:
+        """Get the number of successfully downloaded files in the current session."""
+        return self._downloaded_success_count
+    
+    @property
+    def downloaded_failed_count(self) -> int:
+        """Get the number of failed downloads in the current session."""
+        return self._downloaded_failed_count
+    
+    @property 
+    def currently_downloading_items(self) -> List[datetime]:
+        """Get the list of timestamps currently being downloaded."""
+        return self._currently_downloading_items
+        
+    def is_item_downloading(self, timestamp: datetime) -> bool:
+        """Check if a specific timestamp is currently being downloaded.
+        
+        Args:
+            timestamp: The timestamp to check
+            
+        Returns:
+            True if the timestamp is in the downloading list, False otherwise
+        """
+        return timestamp in self._currently_downloading_items
+        
+    def get_downloading_item_by_timestamp(self, timestamp: datetime) -> Optional[MissingTimestamp]:
+        """Get a downloading item by its timestamp.
+        
+        Args:
+            timestamp: The timestamp to look for
+            
+        Returns:
+            The MissingTimestamp object if found, None otherwise
+        """
+        for item in self._missing_timestamps:
+            if item.timestamp == timestamp and item.is_downloading:
+                return item
+        return None
+        
+    def cancel_item_download(self, timestamp: datetime) -> bool:
+        """Cancel the download of a specific item.
+        
+        Args:
+            timestamp: The timestamp of the item to cancel
+            
+        Returns:
+            True if the item was found and canceled, False otherwise
+        """
+        # First check if the item is in the download list
+        if timestamp not in self._currently_downloading_items:
+            return False
+            
+        # Remove from the currently downloading list
+        self._currently_downloading_items.remove(timestamp)
+        
+        # Find the corresponding item and update its state
+        for i, item in enumerate(self._missing_timestamps):
+            if item.timestamp == timestamp:
+                item.is_downloading = False
+                item.download_error = "Download canceled by user"
+                # Update the UI
+                self.download_item_updated.emit(i, item)
+                return True
+                
+        return False
+    
+    # Define a separate method instead of property setter to avoid conflicts
+    def update_cdn_resolution(self, value: str) -> None:
         """Set the CDN resolution."""
         self._cdn_resolution = value
         
@@ -191,14 +288,15 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             )
     
     @property
-    def aws_profile(self) -> Optional[str]:
+    def aws_profile(self) -> str:
         """Get the AWS profile name."""
         return self._aws_profile
     
-    @aws_profile.setter
-    def aws_profile(self, value: Optional[str]) -> None:
+    # Use regular method instead of property setter to avoid type issues
+    def set_aws_profile(self, value: Optional[str]) -> None:
         """Set the AWS profile name."""
-        self._aws_profile = value
+        # If value is None, use empty string
+        self._aws_profile = "" if value is None else value
         
         # Update the S3 store
         if self._s3_store:
@@ -244,6 +342,13 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             LOGGER.warning("Cannot start scan: Operation in progress or directory invalid")
             return
         
+        # Log scan parameters for debugging
+        LOGGER.debug(f"Starting enhanced scan with parameters:")
+        LOGGER.debug(f"  Base directory: {self._base_directory}")
+        LOGGER.debug(f"  Satellite: {self._satellite}")
+        LOGGER.debug(f"  Date range: {self._start_date} to {self._end_date}")
+        LOGGER.debug(f"  Interval minutes: {self._interval_minutes}")
+        
         # Update state
         self.status = ScanStatus.SCANNING
         self.status_message = "Starting scan..."
@@ -252,11 +357,22 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         self.missing_items_updated.emit([])
         
         # Create AsyncScanTask
+        LOGGER.debug("Creating AsyncScanTask instance")
         scan_task = AsyncScanTask(self)
         
+        # Keep a reference to prevent garbage collection
+        if not hasattr(self, '_active_tasks'):
+            self._active_tasks = []
+        self._active_tasks.append(scan_task)
+        
+        # Configure the task to be auto-deleting only AFTER all processing is done
+        scan_task.setAutoDelete(False)
+        
         # Start the task
-        self._thread_pool.start(scan_task)
-        LOGGER.info("Enhanced scan task started")
+        LOGGER.debug("Starting AsyncScanTask in thread pool")
+        if self._thread_pool is not None:
+            self._thread_pool.start(scan_task)
+        LOGGER.info("Enhanced scan task started - waiting for progress updates")
     
     def start_enhanced_downloads(self) -> None:
         """Start downloading missing files with enhanced CDN/S3 support."""
@@ -275,11 +391,25 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         self._downloaded_count = 0
         self._failed_count = 0
         
+        # Reset download tracking metrics for this session
+        self._downloaded_success_count = 0
+        self._downloaded_failed_count = 0
+        self._download_start_time = time.time()
+        self._last_download_rate = 0.0
+        
+        # Clear previous download list and add all timestamps that need to be downloaded
+        self._currently_downloading_items = []
+        for item in self._missing_timestamps:
+            if not item.is_downloaded and not item.download_error:
+                self._currently_downloading_items.append(item.timestamp)
+                item.is_downloading = True
+        
         # Create AsyncDownloadTask
         download_task = AsyncDownloadTask(self)
         
         # Start the task
-        self._thread_pool.start(download_task)
+        if self._thread_pool is not None:
+            self._thread_pool.start(download_task)
         LOGGER.info(f"Enhanced download task started for {len(self._missing_timestamps)} items")
     
     def get_disk_space_info(self) -> Tuple[float, float]:
@@ -310,8 +440,11 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
     def reset_database(self) -> None:
         """Reset the database and clear all cached data."""
         try:
-            self._cache_db.reset_database()
-            self.status_message = "Database reset successfully"
+            if hasattr(self._cache_db, 'reset_database'):
+                self._cache_db.reset_database()
+                self.status_message = "Database reset successfully"
+            else:
+                self.status_message = "Database reset not supported by current cache implementation"
         except Exception as e:
             LOGGER.error(f"Error resetting database: {e}")
             self.status_message = f"Error resetting database: {e}"
@@ -379,7 +512,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             expected_filename = f"{self._satellite.name.lower()}_{ts.strftime('%Y%m%d_%H%M%S')}_band13.png"
             
             item = EnhancedMissingTimestamp(ts, expected_filename)
-            item.satellite = self._satellite
+            item.satellite = cast(Any, self._satellite)
             
             # Determine source based on recency
             cutoff = datetime.utcnow() - timedelta(days=TimeIndex.RECENT_WINDOW_DAYS)
@@ -405,12 +538,74 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             self.status_message = "Scan complete: No missing items found"
             self.status = ScanStatus.COMPLETED
             self.missing_items_updated.emit([])
-        
+            
         # Emit completion signal
         self.scan_completed.emit(
             True,
             f"Found {missing_count} missing out of {self._total_expected} expected timestamps"
         )
+    
+    def download_missing_items(self, items: List[MissingTimestamp]) -> None:
+        """Download specific missing items.
+        
+        Args:
+            items: List of MissingTimestamp objects to download
+        """
+        if not items:
+            LOGGER.warning("No items to download")
+            return
+            
+        if self._status == ScanStatus.DOWNLOADING:
+            LOGGER.warning("Download already in progress")
+            return
+            
+        # Update state
+        self.status = ScanStatus.DOWNLOADING
+        self.status_message = f"Starting downloads for {len(items)} items..."
+        self._cancel_requested = False
+        self._downloaded_count = 0
+        self._failed_count = 0
+        
+        # Reset download tracking metrics for this session
+        self._downloaded_success_count = 0
+        self._downloaded_failed_count = 0
+        self._download_start_time = time.time()
+        self._last_download_rate = 0.0
+        
+        # Clear previous download list and add all timestamps that need to be downloaded
+        self._currently_downloading_items = []
+        for item in items:
+            if not item.is_downloaded and not item.download_error:
+                if hasattr(item, 'timestamp'):
+                    self._currently_downloading_items.append(item.timestamp)
+                item.is_downloading = True
+        
+        # Create AsyncDownloadTask
+        download_task = AsyncDownloadTask(self)
+        
+        # Start the task
+        if self._thread_pool is not None:
+            self._thread_pool.start(download_task)
+        LOGGER.info(f"Enhanced download task started for {len(items)} items")
+        
+    def retry_failed_downloads(self, items: List[MissingTimestamp]) -> None:
+        """Retry failed downloads.
+        
+        Args:
+            items: List of MissingTimestamp objects with failed downloads to retry
+        """
+        retry_items = [item for item in items if not item.is_downloaded and item.download_error]
+        
+        if not retry_items:
+            LOGGER.warning("No failed items to retry")
+            return
+            
+        # Reset error status for these items
+        for item in retry_items:
+            item.download_error = ""
+            
+        # Start download for these items
+        self.download_missing_items(retry_items)
     
     def _handle_enhanced_download_progress(self, current: int, total: int, message: str) -> None:
         """Handle progress updates from the enhanced download operation."""
@@ -425,7 +620,18 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         """Handle progress updates for a specific download item."""
         if 0 <= index < len(self._missing_timestamps):
             item = self._missing_timestamps[index]
-            item.progress = progress
+            if hasattr(item, 'progress'):
+                item.progress = progress
+            # Make sure this item is marked as downloading and is in the currently_downloading_items list
+            if progress > 0 and progress < 100:
+                if not item.is_downloading:
+                    item.is_downloading = True
+                if item.timestamp not in self._currently_downloading_items:
+                    self._currently_downloading_items.append(item.timestamp)
+            # If download is complete, update tracking
+            elif progress >= 100:
+                if item.timestamp in self._currently_downloading_items:
+                    self._currently_downloading_items.remove(item.timestamp)
             self.download_item_progress.emit(index, progress)
     
     def _handle_enhanced_download_completed(self, results: Dict[datetime, Union[Path, Exception]]) -> None:
@@ -438,24 +644,122 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                 # Update item state
                 item.is_downloading = False
                 
+                # Remove from currently downloading items list if it's there
+                if item.timestamp in self._currently_downloading_items:
+                    self._currently_downloading_items.remove(item.timestamp)
+                
                 if isinstance(result, Path):
                     item.is_downloaded = True
                     item.download_error = ""
                     item.local_path = str(result)
                     self._downloaded_count += 1
+                    self._downloaded_success_count += 1
                 else:
-                    item.download_error = str(result)
+                    # Enhanced error handling with detailed message and special cases
+                    error_message = ""
+                    
+                    # Handle SQLite thread errors specially with a user-friendly message
+                    if "SQLite objects created in a thread" in str(result):
+                        error_message = "Database thread conflict: SQLite database accessed from multiple threads."
+                        # Add a more detailed explanation and workaround
+                        if hasattr(result, 'technical_details'):
+                            result.technical_details += "\n\nThis is a known limitation with SQLite. The application needs to be restarted to fix this issue."
+                    # Use the custom error message if available 
+                    elif hasattr(result, 'get_user_message'):
+                        error_message = result.get_user_message()
+                    else:
+                        error_message = str(result)
+                    
+                    item.download_error = error_message
+                    
+                    # Add contextual information about day of year for easier debugging
+                    doy = item.timestamp.strftime("%j")  # Day of year as string
+                    
+                    # Log detailed error information
+                    if hasattr(result, 'technical_details'):
+                        LOGGER.error(f"Download error for {item.timestamp} (DOY={doy}): {error_message}")
+                        LOGGER.debug(f"Technical details: {result.technical_details}")
+                    else:
+                        LOGGER.error(f"Download error for {item.timestamp} (DOY={doy}): {error_message}")
+                        
+                    # For "File not found" errors, add helpful debugging notes about GOES data intervals
+                    if "not found" in error_message.lower() or "no such key" in error_message.lower():
+                        LOGGER.debug(f"Note: NOAA GOES imagery may not be available at exactly {item.timestamp.minute} minutes")
+                        LOGGER.debug(f"Available timestamps are usually at intervals like 00, 10, 20, 30, 40, 50 minutes")
+                        LOGGER.debug(f"Check actual timestamps available in the S3 bucket for year={item.timestamp.year}, doy={doy}")
+                        
+                        # Enhance the error message with more information for the user
+                        if "note:" not in error_message.lower():
+                            item.download_error = f"{error_message} (Note: GOES imagery is available at specific intervals, not at every timestamp)"
+                    
                     self._failed_count += 1
+                    self._downloaded_failed_count += 1
                 
                 # Emit signal for UI update
                 self.download_item_updated.emit(i, item)
         
+        # Ensure currently_downloading_items is empty at the end of all downloads
+        self._currently_downloading_items = cast(List[datetime], [])
+        
         # Update status
         self.status = ScanStatus.COMPLETED
-        self.status_message = (
-            f"Downloads complete: {self._downloaded_count} successful, "
-            f"{self._failed_count} failed"
-        )
+        
+        # Calculate download rate if we have a start time
+        download_rate_info = ""
+        if self._download_start_time > 0:
+            total_time = time.time() - self._download_start_time
+            if total_time > 0 and (self._downloaded_success_count + self._downloaded_failed_count) > 0:
+                rate = (self._downloaded_success_count + self._downloaded_failed_count) / total_time
+                download_rate_info = f" (Avg: {rate:.1f} files/sec)"
+            self._download_start_time = 0.0  # Reset timer
+        
+        # Enhanced status message with more details
+        if self._failed_count > 0:
+            self.status_message = (
+                f"Downloads complete: {self._downloaded_count} successful, "
+                f"{self._failed_count} failed.{download_rate_info} See error details in the table."
+            )
+            self.status_type_changed.emit(ScanStatus.ERROR)
+        else:
+            self.status_message = (
+                f"Downloads complete: {self._downloaded_count} successful.{download_rate_info} "
+                f"All files downloaded successfully."
+            )
+        
+        # Clear cancel flag
+        self._cancel_requested = False
+    
+    def _handle_scan_error(self, error_msg: str) -> None:
+        """Handle errors during scanning with enhanced error reporting.
+        
+        Args:
+            error_msg: The error message
+        """
+        LOGGER.error(f"Scan error: {error_msg}")
+        
+        # Update status
+        self.status = ScanStatus.ERROR
+        self.status_message = f"Error: {error_msg}"
+        self.status_type_changed.emit(self.status)
+        
+        # Emit scan completion signal with failure
+        self.scan_completed.emit(False, error_msg)
+        
+        # Clear cancel flag
+        self._cancel_requested = False
+    
+    def _handle_download_error(self, error_msg: str) -> None:
+        """Handle errors during download with enhanced error reporting.
+        
+        Args:
+            error_msg: The error message
+        """
+        LOGGER.error(f"Download error: {error_msg}")
+        
+        # Update status
+        self.status = ScanStatus.ERROR
+        self.status_message = f"Download error: {error_msg}"
+        self.status_type_changed.emit(self.status)
         
         # Clear cancel flag
         self._cancel_requested = False
@@ -464,6 +768,18 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
     
     def cleanup(self) -> None:
         """Clean up resources."""
+        # Check if any operations are in progress
+        if hasattr(self, '_active_tasks') and self._active_tasks:
+            LOGGER.warning(f"Cleanup called with {len(self._active_tasks)} active tasks - will wait for completion")
+            
+            # Wait for a while to let tasks complete
+            for task in self._active_tasks:
+                if hasattr(task, 'is_running') and task.is_running:
+                    LOGGER.debug(f"Task {task} is still running during cleanup")
+            
+            # Don't terminate active tasks, just log a warning
+            # We'll leave the tasks running to complete properly
+        
         # Set stop flag for disk space check
         if hasattr(self, '_stop_disk_space_check'):
             self._stop_disk_space_check = True
@@ -483,7 +799,10 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         # Close database connection
         if hasattr(self, '_cache_db'):
             try:
-                LOGGER.debug("Closing cache database")
+                LOGGER.debug(f"Closing cache database (type: {type(self._cache_db).__name__})")
+                if isinstance(self._cache_db, ThreadLocalCacheDB):
+                    # For thread-local DB, close all thread connections
+                    LOGGER.debug("Performing thread-local database cleanup")
                 self._cache_db.close()
             except Exception as e:
                 LOGGER.error(f"Error closing cache database: {e}")
@@ -495,16 +814,21 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                 self._reconciler.close()
             except Exception as e:
                 LOGGER.error(f"Error closing reconciler: {e}")
+
+        # Store active tasks list locally before removing reference
+        active_tasks: List[QRunnable] = []
+        if hasattr(self, '_active_tasks'):
+            active_tasks = self._active_tasks.copy()
                 
-        LOGGER.info("Cleanup completed")
+        LOGGER.info(f"Cleanup completed (with {len(active_tasks)} active tasks still running)")
 
 
 class AsyncTaskSignals(QObject):
     """Signals for async worker threads."""
     progress = pyqtSignal(int, int, str)  # current, total, message
     error = pyqtSignal(str)
-    scan_finished = pyqtSignal(dict)  # Scan result dictionary
-    download_finished = pyqtSignal(dict)  # Download results dictionary
+    scan_finished = pyqtSignal(object)  # Scan result dictionary
+    download_finished = pyqtSignal(object)  # Download results dictionary
 
 
 class AsyncScanTask(QRunnable):
@@ -521,14 +845,41 @@ class AsyncScanTask(QRunnable):
         
         self.view_model = view_model
         self.signals = AsyncTaskSignals()
+        self.is_running = False
+        self.is_complete = False
         
         # Connect signals to view model
         self.signals.progress.connect(view_model._handle_enhanced_scan_progress)
-        self.signals.scan_finished.connect(view_model._handle_enhanced_scan_completed)
-        self.signals.error.connect(view_model._handle_scan_error)
+        self.signals.scan_finished.connect(self._handle_scan_finished)
+        self.signals.error.connect(self._handle_error)
     
-    def run(self):
+    def _handle_scan_finished(self, result: Dict[str, Any]) -> None:
+        """Handle scan finished signal and cleanly remove the task."""
+        self.view_model._handle_enhanced_scan_completed(result)
+        self.is_complete = True
+        self.is_running = False
+        
+        # Safe removal from active tasks list
+        if hasattr(self.view_model, '_active_tasks'):
+            if self in self.view_model._active_tasks:
+                LOGGER.debug("Removing completed task from active tasks list")
+                self.view_model._active_tasks.remove(self)
+    
+    def _handle_error(self, error_msg: str) -> None:
+        """Handle error signal and cleanly remove the task."""
+        self.view_model._handle_scan_error(error_msg)
+        self.is_complete = True
+        self.is_running = False
+        
+        # Safe removal from active tasks list
+        if hasattr(self.view_model, '_active_tasks'):
+            if self in self.view_model._active_tasks:
+                LOGGER.debug("Removing failed task from active tasks list")
+                self.view_model._active_tasks.remove(self)
+    
+    def run(self) -> None:
         """Execute the scan task."""
+        self.is_running = True
         try:
             # Setup async event loop
             loop = asyncio.new_event_loop()
@@ -543,10 +894,17 @@ class AsyncScanTask(QRunnable):
             # Clean up
             loop.close()
             
+        except (RemoteStoreError, AuthenticationError, ConnectionError, ResourceNotFoundError) as e:
+            # Use our custom error types for better error messages
+            LOGGER.error(f"Remote store error in scan task: {e.get_user_message()}")
+            if hasattr(e, 'technical_details') and e.technical_details:
+                LOGGER.debug(f"Technical details: {e.technical_details}")
+            # Emit a user-friendly error message
+            self.signals.error.emit(e.get_user_message())
         except Exception as e:
             LOGGER.error(f"Error in async scan task: {e}")
             LOGGER.error(traceback.format_exc())
-            self.signals.error.emit(str(e))
+            self.signals.error.emit(f"Unexpected error: {str(e)}")
     
     async def _run_scan(self) -> Dict[str, Any]:
         """
@@ -557,18 +915,33 @@ class AsyncScanTask(QRunnable):
         """
         try:
             # Progress callback that emits signals
-            def progress_callback(current, total, message):
+            def progress_callback(current: int, total: int, message: str) -> None:
+                LOGGER.debug(f"Progress callback: {current}/{total} - {message}")
                 self.signals.progress.emit(current, total, message)
             
-            # Run the scan
+            # Run the scan with enhanced progress reporting
+            # Progress callback that formats step data nicely 
+            def enhanced_progress_callback(current_step: int, total_steps: int, message: str) -> None:
+                # Log the raw progress data for debugging
+                LOGGER.debug(f"Enhanced progress callback: step {current_step}/{total_steps} - {message}")
+                
+                # Format the message with step information and pass it to the original callback
+                progress_message = f"{message}"
+                # Pass both the numeric progress and the formatted message
+                progress_callback(current_step, total_steps, progress_message)
+            
+            LOGGER.debug(f"Starting scan operation with params: dir={self.view_model._base_directory}, sat={self.view_model._satellite.name}, start={self.view_model._start_date}, end={self.view_model._end_date}")
+            
             existing, missing = await self.view_model._reconcile_manager.scan_directory(
                 directory=self.view_model._base_directory,
                 satellite=self.view_model._satellite,
                 start_time=self.view_model._start_date,
                 end_time=self.view_model._end_date,
                 interval_minutes=self.view_model._interval_minutes,
-                progress_callback=progress_callback
+                progress_callback=enhanced_progress_callback
             )
+            
+            LOGGER.debug(f"Scan completed with {len(existing)} existing files and {len(missing)} missing files")
             
             return {
                 "status": "completed",
@@ -607,10 +980,15 @@ class AsyncDownloadTask(QRunnable):
         # Connect signals to view model
         self.signals.progress.connect(view_model._handle_enhanced_download_progress)
         self.signals.download_finished.connect(view_model._handle_enhanced_download_completed)
-        self.signals.error.connect(view_model._handle_scan_error)
+        self.signals.error.connect(view_model._handle_download_error)  # Use dedicated download error handler
+        
+        # Keep track of running state
+        self.is_running = False
+        self.is_complete = False
     
-    def run(self):
+    def run(self) -> None:
         """Execute the download task."""
+        self.is_running = True
         try:
             # Setup async event loop
             loop = asyncio.new_event_loop()
@@ -625,10 +1003,70 @@ class AsyncDownloadTask(QRunnable):
             # Clean up
             loop.close()
             
+            # Update task state
+            self.is_complete = True
+            self.is_running = False
+            
+            # Safe removal from active tasks list
+            if hasattr(self.view_model, '_active_tasks'):
+                if self in self.view_model._active_tasks:
+                    LOGGER.debug("Removing completed download task from active tasks list")
+                    self.view_model._active_tasks.remove(self)
+            
+        except (RemoteStoreError, AuthenticationError, ConnectionError, ResourceNotFoundError) as e:
+            # Enhanced error handling for our custom error types
+            error_code = getattr(e, 'error_code', 'UNK-001')
+            LOGGER.error(f"[Error {error_code}] Remote store error in download task: {e.get_user_message()}")
+            
+            # Log troubleshooting tips if available
+            if hasattr(e, 'troubleshooting_tips') and e.troubleshooting_tips:
+                LOGGER.info(f"Troubleshooting tips: {e.troubleshooting_tips}")
+            
+            # Log technical details if available
+            if hasattr(e, 'technical_details') and e.technical_details:
+                LOGGER.debug(f"Technical details: {e.technical_details}")
+                
+            # Create a detailed error message with the error code
+            if error_code:
+                error_message = f"[Error {error_code}] {e.get_user_message()}"
+                if hasattr(e, 'technical_details') and e.technical_details:
+                    error_message += f"\n\nTechnical details: {e.technical_details}"
+            else:
+                error_message = e.get_user_message()
+                
+            # Emit error with detailed message
+            self.signals.error.emit(error_message)
+            
+            # Update task state
+            self.is_complete = True
+            self.is_running = False
+            
+            # Safe removal from active tasks list
+            if hasattr(self.view_model, '_active_tasks'):
+                if self in self.view_model._active_tasks:
+                    LOGGER.debug("Removing failed download task from active tasks list")
+                    self.view_model._active_tasks.remove(self)
+            
         except Exception as e:
+            # Enhanced error handling for generic exceptions
             LOGGER.error(f"Error in async download task: {e}")
             LOGGER.error(traceback.format_exc())
-            self.signals.error.emit(str(e))
+            
+            # Create a detailed error message with stack trace
+            error_message = f"Unexpected error: {str(e)}"
+            
+            # Emit error with detailed message
+            self.signals.error.emit(error_message)
+            
+            # Update task state
+            self.is_complete = True
+            self.is_running = False
+            
+            # Safe removal from active tasks list
+            if hasattr(self.view_model, '_active_tasks'):
+                if self in self.view_model._active_tasks:
+                    LOGGER.debug("Removing failed download task from active tasks list")
+                    self.view_model._active_tasks.remove(self)
     
     async def _run_downloads(self) -> Dict[datetime, Union[Path, Exception]]:
         """
@@ -641,23 +1079,52 @@ class AsyncDownloadTask(QRunnable):
             # Extract missing timestamps for download
             missing_timestamps = {item.timestamp for item in self.view_model._missing_timestamps}
             
-            # Progress callback that emits signals
-            def progress_callback(current, total, message):
+            # Progress callback that emits signals and handles tracking files in progress
+            def progress_callback(current: int, total: int, message: str) -> None:
+                # Check if this is a message about starting to download a specific file
+                if message.startswith("Downloading file:") or message.startswith("Processing file:"):
+                    try:
+                        # Extract timestamp from message if possible
+                        timestamp_str = None
+                        if "timestamp:" in message:
+                            # Try to parse date from the message
+                            timestamp_str = message.split("timestamp:")[1].strip().split()[0]
+                            dt_format = "%Y-%m-%d_%H:%M:%S"
+                            if "_" not in timestamp_str and " " in timestamp_str:
+                                dt_format = "%Y-%m-%d %H:%M:%S"
+                            timestamp = datetime.strptime(timestamp_str, dt_format)
+                            
+                            # Add to currently downloading items if not already there
+                            if timestamp not in self.view_model._currently_downloading_items:
+                                self.view_model._currently_downloading_items.append(timestamp)
+                                LOGGER.debug(f"Added timestamp {timestamp} to currently downloading items")
+                    except Exception as e:
+                        LOGGER.debug(f"Failed to parse timestamp from message: {message}, error: {e}")
+                        
+                # Emit the progress signal
                 self.signals.progress.emit(current, total, message)
             
             # File callback for updating individual items
-            def file_callback(path, success):
+            def file_callback(path: Path, success: bool) -> None:
                 # Find the matching timestamp for this path
                 for i, item in enumerate(self.view_model._missing_timestamps):
                     if path.name == item.expected_filename or path.stem == item.expected_filename:
                         if success:
                             item.local_path = str(path)
+                            self.view_model._downloaded_success_count += 1
+                        else:
+                            self.view_model._downloaded_failed_count += 1
+                            
+                        # Remove timestamp from currently downloading list when file is processed
+                        if item.timestamp in self.view_model._currently_downloading_items:
+                            self.view_model._currently_downloading_items.remove(item.timestamp)
+                            LOGGER.debug(f"Removed timestamp {item.timestamp} from currently downloading items")
+                            
                         self.view_model.download_item_updated.emit(i, item)
                         break
             
-            # Item progress callback for updating download progress
-            def item_progress_callback(index, progress):
-                self.view_model._handle_download_item_progress(index, progress)
+            # Reset currently downloading items before starting
+            self.view_model._currently_downloading_items = cast(List[datetime], [])
             
             # Run the downloads
             results = await self.view_model._reconcile_manager.fetch_missing_files(
@@ -667,6 +1134,13 @@ class AsyncDownloadTask(QRunnable):
                 file_callback=file_callback,
                 error_callback=lambda path, error: None  # Handled via results
             )
+            
+            # Calculate and store download rate for display
+            if self.view_model._download_start_time > 0:
+                total_time = time.time() - self.view_model._download_start_time
+                if total_time > 0 and len(results) > 0:
+                    self.view_model._last_download_rate = len(results) / total_time
+                    LOGGER.info(f"Download rate: {self.view_model._last_download_rate:.2f} files/sec")
             
             return results
             

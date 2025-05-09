@@ -10,7 +10,8 @@ import json
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple, Set, Union
+from typing import List, Dict, Any, Optional, Tuple, Set, Union, Type
+from types import TracebackType
 
 from goesvfi.utils import log
 from goesvfi.utils import config
@@ -184,7 +185,8 @@ class CacheDB:
                 options_json
             ))
             
-            scan_id = cursor.lastrowid
+            # lastrowid could be None if no row was inserted
+            scan_id = cursor.lastrowid if cursor.lastrowid is not None else 0
             
             # Insert missing timestamps
             for dt in missing_timestamps:
@@ -207,7 +209,7 @@ class CacheDB:
             LOGGER.error(f"Error storing scan results: {e}")
             if self.conn:
                 self.conn.rollback()
-            return -1
+            return 0  # Return a default value on error
     
     def get_cached_scan(self,
                        start_date: datetime,
@@ -406,7 +408,8 @@ class CacheDB:
             if not row:
                 return False
                 
-            return row['found'] == 1
+            # Explicitly cast to bool to fix mypy no-any-return error
+            return bool(row['found'] == 1)
             
         except sqlite3.Error as e:
             LOGGER.error(f"Error checking timestamp in cache: {e}")
@@ -525,10 +528,12 @@ class CacheDB:
             LOGGER.error(f"Error getting cache stats: {e}")
             return {'error': str(e)}
     
-    def __enter__(self):
+    def __enter__(self) -> 'CacheDB':
         """Enter context manager."""
         return self
         
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type: Optional[Type[BaseException]],
+                 exc_value: Optional[BaseException],
+                 traceback: Optional[TracebackType]) -> None:
         """Exit context manager and close connection."""
         self.close()

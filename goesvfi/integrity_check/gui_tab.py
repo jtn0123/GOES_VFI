@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Any, Tuple, cast
+from typing import Dict, List, Optional, Set, Any, Tuple, cast, Type
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout,
@@ -39,20 +39,20 @@ LOGGER = log.get_logger(__name__)
 class MissingTimestampsModel(QAbstractTableModel):
     """Model for displaying missing timestamps in a table view."""
     
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QObject] = None) -> None:
         super().__init__(parent)
         self._items: List[MissingTimestamp] = []
         self._headers = ["Timestamp", "Filename", "Status", "Path"]
         
-    def rowCount(self, parent=QModelIndex()) -> int:
+    def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """Return the number of rows in the model."""
         return len(self._items)
     
-    def columnCount(self, parent=QModelIndex()) -> int:
+    def columnCount(self, parent: QModelIndex = QModelIndex()) -> int:
         """Return the number of columns in the model."""
         return len(self._headers)
     
-    def data(self, index: QModelIndex, role=Qt.ItemDataRole.DisplayRole) -> Any:
+    def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
         """Return data for the specified index and role."""
         if not index.isValid() or not (0 <= index.row() < len(self._items)):
             return None
@@ -91,7 +91,7 @@ class MissingTimestampsModel(QAbstractTableModel):
             
         return None
     
-    def headerData(self, section: int, orientation: Qt.Orientation, role=Qt.ItemDataRole.DisplayRole) -> Any:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
         """Return header data for the specified section, orientation, and role."""
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
             return self._headers[section]
@@ -115,7 +115,7 @@ class MissingTimestampsModel(QAbstractTableModel):
 class CacheInfoDialog(QDialog):
     """Dialog displaying cache statistics and management options."""
     
-    def __init__(self, view_model: IntegrityCheckViewModel, parent=None):
+    def __init__(self, view_model: IntegrityCheckViewModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         
         self.view_model = view_model
@@ -206,10 +206,10 @@ class IntegrityCheckTab(QWidget):
     # Signal when directory is selected (for coordination with other tabs)
     directory_selected = pyqtSignal(str)
     
-    def __init__(self, view_model: IntegrityCheckViewModel, parent=None):
+    def __init__(self, view_model: IntegrityCheckViewModel, parent: Optional[QWidget] = None) -> None:
         """
         Initialize the IntegrityCheckTab.
-        
+
         Args:
             view_model: The ViewModel instance to use
             parent: Optional parent widget
@@ -357,9 +357,17 @@ class IntegrityCheckTab(QWidget):
         self.table_view = QTableView()
         self.table_model = MissingTimestampsModel()
         self.table_view.setModel(self.table_model)
-        self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-        self.table_view.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
-        self.table_view.verticalHeader().setVisible(False)
+        
+        # Handle headers with null checks
+        horizontal_header = self.table_view.horizontalHeader()
+        if horizontal_header is not None:
+            horizontal_header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+            horizontal_header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
+        
+        vertical_header = self.table_view.verticalHeader()
+        if vertical_header is not None:
+            vertical_header.setVisible(False)
+            
         self.table_view.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         self.table_view.setAlternatingRowColors(True)
         results_layout.addWidget(self.table_view)
@@ -485,15 +493,40 @@ class IntegrityCheckTab(QWidget):
         directory = QFileDialog.getExistingDirectory(self, "Select Directory", 
                                                     str(self.view_model.base_directory))
         if directory:
-            self.view_model.base_directory = directory
+            # TODO: Add type ignore here: view_model.base_directory setter converts str to Path
+            self.view_model.base_directory = directory  # type: ignore[assignment]
             self.directory_edit.setText(directory)
             self.directory_selected.emit(directory)
     
     def _start_scan(self) -> None:
         """Start the scan operation."""
         # Update view model parameters from UI
-        self.view_model.start_date = self.start_date_edit.dateTime().toPython()
-        self.view_model.end_date = self.end_date_edit.dateTime().toPython()
+        # Convert QDateTime to Python datetime
+        start_dt = self.start_date_edit.dateTime()
+        end_dt = self.end_date_edit.dateTime()
+        
+        # Convert QDateTime to Python datetime
+        from datetime import datetime
+        start_date = datetime(
+            start_dt.date().year(),
+            start_dt.date().month(), 
+            start_dt.date().day(),
+            start_dt.time().hour(),
+            start_dt.time().minute(),
+            start_dt.time().second()
+        )
+        
+        end_date = datetime(
+            end_dt.date().year(),
+            end_dt.date().month(), 
+            end_dt.date().day(),
+            end_dt.time().hour(),
+            end_dt.time().minute(),
+            end_dt.time().second()
+        )
+        
+        self.view_model.start_date = start_date
+        self.view_model.end_date = end_date
         self.view_model.interval_minutes = self.interval_spinbox.value()
         
         pattern_value = self.satellite_combo.currentData()

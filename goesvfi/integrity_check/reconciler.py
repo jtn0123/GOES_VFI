@@ -310,7 +310,7 @@ class Reconciler:
             "max_gap_end": max_gap_end
         }
     
-    def close(self):
+    def close(self) -> None:
         """Close resources (like database connections)."""
         if hasattr(self, 'cache') and self.cache:
             self.cache.close()

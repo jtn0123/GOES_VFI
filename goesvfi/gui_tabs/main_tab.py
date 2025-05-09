@@ -6,7 +6,7 @@ import os
 import re
 import tempfile
 from pathlib import Path
-from typing import Any, cast, TypedDict, Dict, List, Optional, Set, TYPE_CHECKING # Add TypedDict, Dict, List, Optional, Set
+from typing import Any, cast, TypedDict, Dict, List, Optional, Set, TYPE_CHECKING, Callable # Add TypedDict, Dict, List, Optional, Set, Callable
 
 if TYPE_CHECKING:
     from typing import NotRequired # Use NotRequired for optional keys in TypedDict (Python 3.11+)
@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 from enum import Enum # Add this import
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image # Add PIL Image import
 from PyQt6.QtGui import QImage # Add QImage import
 from goesvfi.utils import config # Import config
@@ -44,24 +45,30 @@ from PyQt6.QtWidgets import (
 class SuperButton(QPushButton):
     """A custom button class that ensures clicks are properly processed."""
     
-    def __init__(self, text: str, parent: QWidget = None):
+    def __init__(self, text: str, parent: Optional[QWidget] = None):
         super().__init__(text, parent)
-        self.click_callback = None
+        self.click_callback: Optional[Callable[[], None]] = None
         print(f"SuperButton created with text: {text}")
         
-    def set_click_callback(self, callback):
+    def set_click_callback(self, callback: Optional[Callable[[], None]]) -> None:
         """Set a direct callback function for click events."""
         self.click_callback = callback
         print(f"SuperButton callback set: {callback.__name__ if callback else 'None'}")
         
-    def mousePressEvent(self, event: QMouseEvent) -> None:
+    def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Explicitly override mouse press event."""
+        if event is None:
+            return
+            
         print(f"SuperButton MOUSE PRESS: {event.button()}")
         # Call the parent implementation
         super().mousePressEvent(event)
         
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
         """Explicitly override mouse release event for better click detection."""
+        if event is None:
+            return
+            
         print(f"SuperButton MOUSE RELEASE: {event.button()}")
         super().mouseReleaseEvent(event)
         
@@ -116,7 +123,7 @@ class RIFEModelDetails(TypedDict, total=False): # Use total=False for compatibil
 
 
 # Helper function (to be added inside MainTab or globally in the file)
-def numpy_to_qimage(array: np.ndarray) -> QImage:
+def numpy_to_qimage(array: NDArray[np.uint8]) -> QImage:
     """Converts a NumPy array (H, W, C) in RGB format to QImage."""
     if array is None or array.size == 0:
         return QImage()
@@ -769,10 +776,12 @@ class MainTab(QWidget):
                 
             # Construct additional info for the dialog title
             info_title = preview_type
-            if is_cropped_view:
+            if is_cropped_view and crop_rect_tuple is not None:
                 # Add crop indicator
-                info_title += f" (Cropped: {crop_rect_tuple[2]}x{crop_rect_tuple[3]})"
-            elif crop_rect_tuple:
+                # Only access crop_rect_tuple after checking it's not None
+                if len(crop_rect_tuple) >= 4:  # Ensure it has the expected format (x, y, width, height)
+                    info_title += f" (Cropped: {crop_rect_tuple[2]}x{crop_rect_tuple[3]})"
+            elif crop_rect_tuple is not None:
                 # There's a crop rect but we're showing the full image (e.g., bounds issue)
                 info_title += " (Full Image - Crop Disabled)"
                 
@@ -1045,12 +1054,10 @@ class MainTab(QWidget):
                 print(f"Out file path: {args.get('out_file')}")
                 print(f"Encoder type: {args.get('encoder')}")
                 
-                # Check signal connection status
-                receivers = self.processing_started.receivers()
-                print(f"Signal has {receivers} receivers connected")
-                if receivers == 0:
-                    print("WARNING: No receivers connected to processing_started signal!")
-                    LOGGER.error("No receivers connected to processing_started signal!")
+                # We can't directly check receiver count in PyQt6, so we'll use a different approach
+                # to debug signal connection issues
+                print("Emitting processing_started signal - if nothing happens, signal connections may be missing")
+                LOGGER.info("Emitting processing_started signal")
                 
                 # Emit the signal
                 self.processing_started.emit(args) # Emit signal with processing arguments
@@ -1171,7 +1178,7 @@ class MainTab(QWidget):
         elif encoder == "FFmpeg":
             # Check FFmpeg specific arguments
             LOGGER.debug("Checking FFmpeg-specific arguments...")
-            ffmpeg_args = args.get('ffmpeg_args')
+            ffmpeg_args: Optional[Dict[str, Any]] = args.get('ffmpeg_args')
             if ffmpeg_args:
                 LOGGER.debug(f"FFmpeg arguments provided: {ffmpeg_args}")
                 # Check for FFmpeg profile settings
@@ -1204,7 +1211,10 @@ class MainTab(QWidget):
                     LOGGER.error(f"Invalid crop rectangle dimensions: width={w}, height={h}")
                 else:
                     # Verify crop dimensions against actual image dimensions
-                    self._verify_crop_against_images(in_dir, crop_rect)
+                    # Convert in_dir to Path if it's a string
+                    if in_dir is not None:
+                        in_dir_path = Path(in_dir) if isinstance(in_dir, str) else in_dir
+                        self._verify_crop_against_images(in_dir_path, crop_rect)
                     
                     # Check how crop will be passed to FFmpeg
                     self._debug_check_ffmpeg_crop_integration(crop_rect)
@@ -1271,7 +1281,7 @@ class MainTab(QWidget):
         except Exception as e:
             LOGGER.exception(f"Error checking input directory contents: {e}")
             
-    def _verify_crop_against_images(self, in_dir: Path, crop_rect: tuple) -> None:
+    def _verify_crop_against_images(self, in_dir: Path, crop_rect: tuple[int, int, int, int]) -> None:
         """Verify that crop rectangle is valid for the images in the directory."""
         try:
             image_files = sorted([
@@ -1321,7 +1331,7 @@ class MainTab(QWidget):
         except Exception as e:
             LOGGER.exception(f"Error verifying crop against images: {e}")
             
-    def _debug_check_ffmpeg_crop_integration(self, crop_rect: tuple) -> None:
+    def _debug_check_ffmpeg_crop_integration(self, crop_rect: tuple[int, int, int, int]) -> None:
         """Debug how crop rectangle would be passed to FFmpeg."""
         try:
             x, y, w, h = crop_rect
@@ -1461,7 +1471,7 @@ class MainTab(QWidget):
             # This is for debugging - in production we'd respect the enabled state
             QTimer.singleShot(200, self._direct_start)
     
-    def _generate_timestamped_output_path(self, base_dir=None, base_name=None):
+    def _generate_timestamped_output_path(self, base_dir: Optional[Path] = None, base_name: Optional[str] = None) -> Path:
         """Generate a fresh timestamped output path for uniqueness across runs.
         
         Args:
@@ -2115,7 +2125,7 @@ class MainTab(QWidget):
             if ffmpeg_tab:
                 try:
                     # Get FFmpeg settings from tab (method name may vary)
-                    ffmpeg_args = getattr(ffmpeg_tab, 'get_ffmpeg_args', lambda: {})()
+                    ffmpeg_args: Dict[str, Any] = getattr(ffmpeg_tab, 'get_ffmpeg_args', lambda: {})()
                     args["ffmpeg_args"] = ffmpeg_args
                     LOGGER.debug(f"Added FFmpeg args from ffmpeg_tab: {ffmpeg_args}")
                 except Exception as e:

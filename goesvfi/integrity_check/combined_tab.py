@@ -31,7 +31,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
     2. The GOES imagery visualization tab for viewing and processing images
     """
     
-    def __init__(self, view_model: EnhancedIntegrityCheckViewModel, parent=None):
+    def __init__(self, view_model: EnhancedIntegrityCheckViewModel, parent: Optional[QWidget] = None) -> None:
         """
         Initialize the combined tab.
         
@@ -115,7 +115,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
         
         LOGGER.info("Combined integrity and imagery tab initialized")
         
-    def _switch_tab(self, index):
+    def _switch_tab(self, index: int) -> None:
         """Switch to the tab at the specified index and update button states."""
         self.stacked_widget.setCurrentIndex(index)
         

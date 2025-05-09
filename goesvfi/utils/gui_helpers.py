@@ -17,7 +17,7 @@ from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 # Set up logging
 from typing import Any, Optional, Tuple # Added Any
 from PyQt6.QtCore import pyqtSignal, Qt, QPoint, QRect, QSize, QPointF # Added QPointF
-from PyQt6.QtGui import QWheelEvent, QScreen # Added QWheelEvent, QScreen
+from PyQt6.QtGui import QWheelEvent, QScreen, QResizeEvent, QPaintEvent # Added QWheelEvent, QScreen, QResizeEvent, QPaintEvent
 from PyQt6.QtWidgets import ( # Added more imports here
     QLabel,
     QDialog,
@@ -531,10 +531,11 @@ class ImageViewerDialog(QDialog):
         self.image_label.setPixmap(pixmap_to_display)
 
 
-    def wheelEvent(self, event: QWheelEvent) -> None:
+    def wheelEvent(self, event: Optional[QWheelEvent]) -> None:
         """Handle mouse wheel scrolling for zooming towards the cursor."""
-        if self.original_qimage.isNull():
-            event.ignore()
+        if event is None or self.original_qimage.isNull():
+            if event is not None:
+                event.ignore()
             return
 
         angle = event.angleDelta().y()
@@ -680,7 +681,7 @@ class CropLabel(QLabel):
         super().setPixmap(pixmap)
         self._recalculate_pixmap_offset()
 
-    def resizeEvent(self, event) -> None:
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         super().resizeEvent(event)
         self._recalculate_pixmap_offset()
 
@@ -781,7 +782,7 @@ class CropLabel(QLabel):
         else:
             super().mouseReleaseEvent(event)
 
-    def paintEvent(self, event) -> None:
+    def paintEvent(self, event: Optional[QPaintEvent]) -> None:
         """Draws the base pixmap and the selection rectangle over it."""
         super().paintEvent(event) # Draw the label background etc.
 
@@ -882,7 +883,7 @@ class CropSelectionDialog(QDialog):
         # Adjust dialog size to fit the scaled pixmap + buttons
         self.resize(self.display_pixmap.size() + QSize(0, 50)) # Add some height for buttons
 
-    def _store_final_selection(self, rect_display: QRect):
+    def _store_final_selection(self, rect_display: QRect) -> None:
         """Stores the final selection rectangle received from CropLabel."""
         if rect_display.isNull() or rect_display.width() <= 0 or rect_display.height() <= 0:
              self._final_selected_rect_display = None

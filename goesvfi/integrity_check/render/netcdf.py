@@ -6,7 +6,7 @@ specifically for Band 13 (Clean IR, 10.3 µm) data.
 """
 import logging
 from pathlib import Path
-from typing import Optional, Tuple, Union, Dict, Any
+from typing import Optional, Tuple, cast, Union, Dict, Any
 
 import numpy as np
 import xarray as xr
@@ -83,10 +83,18 @@ def render_png(
         with xr.open_dataset(netcdf_path) as ds:
             # Check if this is Band 13 data
             if BAND_ID_VAR in ds.variables:
-                band_id = ds[BAND_ID_VAR].values
+                band_id_raw = ds[BAND_ID_VAR].values
+                # Cast to Any to avoid type inference issues
+                band_id: Any = band_id_raw
+                
                 if np.isscalar(band_id):
                     if band_id != TARGET_BAND_ID:
-                        raise ValueError(f"Expected Band {TARGET_BAND_ID}, found Band {band_id}")
+                        # Convert to string safely, regardless of type
+                        if isinstance(band_id, bytes):
+                            band_str = band_id.decode('utf-8')
+                        else:
+                            band_str = str(band_id)
+                        raise ValueError(f"Expected Band {TARGET_BAND_ID}, found Band {band_str}")
                 else:
                     if TARGET_BAND_ID not in band_id:
                         raise ValueError(f"Band {TARGET_BAND_ID} not found in dataset")
@@ -108,7 +116,7 @@ def render_png(
                     data = (fk2 / np.log((fk1 / data) + 1) - bc1) / bc2
                 
                 # Mask invalid data
-                data = np.ma.masked_less_equal(data, 0)
+                data = np.ma.masked_less_equal(data, 0)  # type: ignore
                 
                 # Clip data to the specified temperature range
                 data = np.clip(data, min_temp_k, max_temp_k)
@@ -125,7 +133,7 @@ def render_png(
                 fig_height = data.shape[0] / dpi
                 
                 fig = plt.figure(figsize=(fig_width, fig_height), dpi=dpi)
-                ax = fig.add_axes([0, 0, 1, 1])
+                ax = fig.add_axes((0, 0, 1, 1))  # Use tuple instead of list for rect parameter
                 ax.axis('off')
                 
                 # Apply colormap
@@ -135,7 +143,13 @@ def render_png(
                         'enhanced_gray', [(0, 0, 0), (1, 1, 1)], N=256
                     )
                 else:
-                    cmap = plt.get_cmap(colormap)
+                    # Get the colormap - we just need a Colormap, not specifically LinearSegmentedColormap
+                    _cmap = plt.get_cmap(colormap)
+                    # Create a new LinearSegmentedColormap with the data from _cmap
+                    # This ensures type safety while maintaining the colormap
+                    cmap = LinearSegmentedColormap.from_list(
+                        colormap, _cmap(np.linspace(0, 1, 256)), N=256
+                    )
                 
                 # Plot the image
                 ax.imshow(normalized_data, cmap=cmap, aspect='auto')

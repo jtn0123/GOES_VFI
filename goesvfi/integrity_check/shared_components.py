@@ -5,31 +5,25 @@ This module provides shared components that can be used by both the GOES Imagery
 and Integrity Check tabs for improved integration and user experience.
 """
 
-import os
 import logging
-import tempfile
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional, Union, Any, Tuple, Callable
+from typing import Dict, Optional, Union, Any, Tuple, List, Set, TypeVar, cast
+from PyQt6.QtWidgets import QLayout
 
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QSplitter,
+    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QComboBox, QPushButton, QCheckBox, QRadioButton,
-    QButtonGroup, QGroupBox, QFrame, QSpacerItem, QSizePolicy,
-    QProgressBar, QToolButton, QSpinBox, QDateEdit, QTimeEdit,
-    QFileDialog, QMessageBox, QTabWidget, QScrollArea, QSlider,
-    QStackedWidget, QDialog
+    QButtonGroup, QGroupBox, QFrame, 
+    QSpinBox, QDateEdit, QTimeEdit,
+    QTabWidget, QScrollArea, QSlider
 )
 from PyQt6.QtCore import (
-    Qt, QDateTime, QDate, QTime, pyqtSignal, pyqtSlot, QSize, 
-    QTimer, QRect, QObject
+    Qt, QDate, QTime, pyqtSignal, QRect
 )
 from PyQt6.QtGui import (
-    QPixmap, QIcon, QFont, QMovie, QImage, QPainter, QColor
+    QPixmap, QIcon, QFont, QPainter, QColor
 )
-
-from PIL import Image, ImageDraw, ImageFont
-import numpy as np
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -124,21 +118,21 @@ class SharedPreviewPanel(QWidget):
     previewRemoved = pyqtSignal(str)            # Key
     previewBookmarked = pyqtSignal(str, bool)   # Key, is_bookmarked
     
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         """
         Initialize the shared preview panel.
-        
+
         Args:
             parent: Optional parent widget
         """
         super().__init__(parent)
-        self.preview_cache = {}  # Key -> {'image': QPixmap, 'metadata': PreviewMetadata}
-        self.bookmarks = set()   # Set of bookmarked preview keys
-        self.current_key = None  # Currently displayed preview key
-        
+        self.preview_cache: Dict[str, Dict[str, Any]] = {}  # Key -> {'image': QPixmap, 'metadata': PreviewMetadata}
+        self.bookmarks: Set[str] = set()   # Set of bookmarked preview keys
+        self.current_key: Optional[str] = None  # Currently displayed preview key
+
         self.initUI()
         
-    def initUI(self):
+    def initUI(self) -> None:
         """Initialize the UI components."""
         # Main layout
         layout = QVBoxLayout(self)
@@ -209,7 +203,7 @@ class SharedPreviewPanel(QWidget):
         layout.addWidget(info_frame)
         layout.addLayout(action_layout)
         
-    def addPreview(self, key: str, image: QPixmap, metadata: PreviewMetadata, select: bool = True):
+    def addPreview(self, key: str, image: QPixmap, metadata: PreviewMetadata, select: bool = True) -> None:
         """
         Add a preview image to the cache.
         
@@ -233,7 +227,7 @@ class SharedPreviewPanel(QWidget):
             
         logger.info(f"Added preview to cache: {key}")
         
-    def selectPreview(self, key: str):
+    def selectPreview(self, key: str) -> None:
         """
         Select and display a specific preview.
         
@@ -301,7 +295,7 @@ class SharedPreviewPanel(QWidget):
             
         return self.preview_cache.get(self.current_key)
         
-    def clearPreviews(self):
+    def clearPreviews(self) -> None:
         """Clear all non-bookmarked previews from the cache."""
         # Keep only bookmarked previews
         keys_to_remove = [key for key in self.preview_cache if key not in self.bookmarks]
@@ -322,7 +316,7 @@ class SharedPreviewPanel(QWidget):
             
         logger.info(f"Cleared {len(keys_to_remove)} non-bookmarked previews")
         
-    def removePreview(self, key: str):
+    def removePreview(self, key: str) -> None:
         """
         Remove a specific preview from the cache.
         
@@ -351,7 +345,7 @@ class SharedPreviewPanel(QWidget):
             
             logger.info(f"Removed preview: {key}")
             
-    def updateZoom(self):
+    def updateZoom(self) -> None:
         """Update the zoom level of the current preview."""
         if self.current_key is None or self.current_key not in self.preview_cache:
             return
@@ -374,7 +368,7 @@ class SharedPreviewPanel(QWidget):
         else:
             self.image_label.setPixmap(original)
             
-    def toggleBookmark(self, checked: bool):
+    def toggleBookmark(self, checked: bool) -> None:
         """
         Toggle bookmark status for the current preview.
         
@@ -556,7 +550,7 @@ class CollapsibleSettingsGroup(QWidget):
     be clicked to expand or collapse the content.
     """
     
-    def __init__(self, title: str, parent=None):
+    def __init__(self, title: str, parent: Optional[QWidget] = None) -> None:
         """
         Initialize the collapsible settings group.
         
@@ -567,9 +561,9 @@ class CollapsibleSettingsGroup(QWidget):
         super().__init__(parent)
         
         # Create layout
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(0)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(0)
         
         # Create header
         self.header = QWidget()
@@ -607,19 +601,19 @@ class CollapsibleSettingsGroup(QWidget):
         self.content_layout.setContentsMargins(15, 5, 5, 5)
         
         # Add to main layout
-        self.layout.addWidget(self.header)
-        self.layout.addWidget(self.content)
+        self.main_layout.addWidget(self.header)
+        self.main_layout.addWidget(self.content)
         
         # Initial state
         self.expanded = True
         
-    def toggle_content(self):
+    def toggle_content(self) -> None:
         """Toggle content visibility."""
         self.expanded = not self.expanded
         self.content.setVisible(self.expanded)
         self.toggle_btn.setText("▼" if self.expanded else "▶")
         
-    def addWidget(self, widget):
+    def addWidget(self, widget: QWidget) -> None:
         """
         Add a widget to the content area.
         
@@ -628,7 +622,7 @@ class CollapsibleSettingsGroup(QWidget):
         """
         self.content_layout.addWidget(widget)
         
-    def addLayout(self, layout):
+    def addLayout(self, layout: QLayout) -> None:
         """
         Add a layout to the content area.
         
@@ -646,7 +640,7 @@ class SidebarSettingsPanel(QWidget):
     collapsible sections for different categories of settings.
     """
     
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         """
         Initialize the sidebar settings panel.
         
@@ -671,9 +665,9 @@ class SidebarSettingsPanel(QWidget):
         self.scroll_area.setFrameShape(QFrame.Shape.NoFrame)
         
         self.container = QWidget()
-        self.layout = QVBoxLayout(self.container)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(0)
+        self.container_layout = QVBoxLayout(self.container)
+        self.container_layout.setContentsMargins(0, 0, 0, 0)
+        self.container_layout.setSpacing(0)
         
         # Title section
         title_widget = QWidget()
@@ -686,35 +680,35 @@ class SidebarSettingsPanel(QWidget):
         title_layout.addWidget(title_label)
         
         # Add to layout
-        self.layout.addWidget(title_widget)
+        self.container_layout.addWidget(title_widget)
         
         # Presets section
         self.presets_group = CollapsibleSettingsGroup("Quick Actions")
         self.create_presets_section(self.presets_group)
-        self.layout.addWidget(self.presets_group)
+        self.container_layout.addWidget(self.presets_group)
         
         # Data section (date/time, product, etc.)
         self.data_group = CollapsibleSettingsGroup("Data Selection")
         self.create_data_section(self.data_group)
-        self.layout.addWidget(self.data_group)
+        self.container_layout.addWidget(self.data_group)
         
         # Visualization section
         self.viz_group = CollapsibleSettingsGroup("Visualization")
         self.create_visualization_section(self.viz_group)
-        self.layout.addWidget(self.viz_group)
+        self.container_layout.addWidget(self.viz_group)
         
         # Processing section
         self.processing_group = CollapsibleSettingsGroup("Processing")
         self.create_processing_section(self.processing_group)
-        self.layout.addWidget(self.processing_group)
+        self.container_layout.addWidget(self.processing_group)
         
         # Advanced section
         self.advanced_group = CollapsibleSettingsGroup("Advanced")
         self.create_advanced_section(self.advanced_group)
-        self.layout.addWidget(self.advanced_group)
+        self.container_layout.addWidget(self.advanced_group)
         
         # Add spacer at the bottom
-        self.layout.addStretch()
+        self.container_layout.addStretch()
         
         # Set scroll area widget
         self.scroll_area.setWidget(self.container)
@@ -724,7 +718,7 @@ class SidebarSettingsPanel(QWidget):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(self.scroll_area)
         
-    def create_presets_section(self, group):
+    def create_presets_section(self, group: CollapsibleSettingsGroup) -> None:
         """
         Create the presets section with quick action buttons.
         
@@ -749,7 +743,7 @@ class SidebarSettingsPanel(QWidget):
         
         group.addLayout(presets_layout)
         
-    def create_data_section(self, group):
+    def create_data_section(self, group: CollapsibleSettingsGroup) -> None:
         """
         Create the data selection section (date/time, product, etc.).
         
@@ -809,7 +803,7 @@ class SidebarSettingsPanel(QWidget):
         
         group.addLayout(data_layout)
         
-    def create_visualization_section(self, group):
+    def create_visualization_section(self, group: CollapsibleSettingsGroup) -> None:
         """
         Create the visualization section.
         
@@ -915,7 +909,7 @@ class SidebarSettingsPanel(QWidget):
         
         group.addLayout(viz_layout)
         
-    def create_processing_section(self, group):
+    def create_processing_section(self, group: CollapsibleSettingsGroup) -> None:
         """
         Create the processing section.
         
@@ -963,7 +957,7 @@ class SidebarSettingsPanel(QWidget):
         
         group.addLayout(proc_layout)
         
-    def create_advanced_section(self, group):
+    def create_advanced_section(self, group: CollapsibleSettingsGroup) -> None:
         """
         Create the advanced options section.
         
@@ -1044,7 +1038,7 @@ class SidebarSettingsPanel(QWidget):
         time = self.time_edit.time().toPyTime()
         return datetime.combine(date, time)
         
-    def set_date_time(self, dt: datetime):
+    def set_date_time(self, dt: datetime) -> None:
         """
         Set the date and time controls.
         
@@ -1073,7 +1067,7 @@ class SidebarSettingsPanel(QWidget):
         """
         return self.product_combo.currentText().upper().replace(' ', '_')
         
-    def show_section(self, section_name: str, show: bool = True):
+    def show_section(self, section_name: str, show: bool = True) -> None:
         """
         Show or hide a specific section.
         
