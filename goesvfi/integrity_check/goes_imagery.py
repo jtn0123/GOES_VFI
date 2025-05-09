@@ -19,6 +19,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 import boto3
 import botocore
+import botocore.config
 from typing import Dict, List, Tuple, Optional, Union, Any
 from enum import Enum
 
@@ -158,7 +159,7 @@ class GOESImageryDownloader:
         # Create S3 client for raw data
         self.s3_client = boto3.client(
             's3',
-            config=boto3.session.Config(
+            config=botocore.config.Config(  # Use botocore.config.Config instead of boto3.session.Config
                 signature_version=botocore.UNSIGNED,
                 retries={'max_attempts': 5}
             )

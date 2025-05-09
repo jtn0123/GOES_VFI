@@ -18,6 +18,7 @@ from PIL import Image, ImageDraw, ImageFont
 import requests
 import boto3
 import botocore
+import botocore.config
 import xarray as xr
 
 from .goes_imagery import ChannelType, ProductType, ProcessingMode, ImageryMode
@@ -54,7 +55,7 @@ class SampleProcessor:
         # Create S3 client for raw data access
         self.s3_client = boto3.client(
             's3',
-            config=boto3.session.Config(
+            config=botocore.config.Config(  # Use botocore.config.Config instead of boto3.session.Config
                 signature_version=botocore.UNSIGNED,
                 retries={'max_attempts': 3}
             )

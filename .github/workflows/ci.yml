@@ -38,15 +38,10 @@ jobs:
         # Explicitly install mypy and all required type stubs to ensure they're available
         pip install mypy types-requests types-Pillow types-aiofiles types-tqdm types-boto3
 
-    - name: Install type stubs
+    - name: Install type stubs and run mypy type checking
       run: |
-        # Make sure all necessary type stubs are installed
-        python -m pip install --upgrade mypy-extensions
-        python -m mypy --install-types --non-interactive
-
-    - name: Run mypy type checking
-      run: |
-        python -m mypy --strict goesvfi
+        # Use our improved script to install stubs and run type checking
+        python ./run_mypy_checks.py --install-stubs --all --strict
 
     - name: Test with pytest (working tests only)
       run: |
