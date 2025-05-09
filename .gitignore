@@ -146,13 +146,12 @@ x265_*.log
 x265_*.log.cutree
 **/.claude/settings.local.json
 
-# Large data files
-data/temp_netcdf_downloads/*.nc
-data/temp_netcdf_downloads/*.png
-data/satpy_images/*.png
-tests/data/test_input/*.png
-tests/data/test_output/*.png
-tests/data/test_output/*.txt
+# Large data files and directories
+data/
+satpy_images/
+temp_netcdf_downloads/
+tests/data/test_output/
+tests/data/test_input/
 
 # Log files
 logs/
