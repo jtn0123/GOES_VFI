@@ -32,6 +32,30 @@ Note: Some tests may fail due to recent refactoring. When testing new changes:
 - Use `run_fixed_gui_tests.py` for GUI tests (avoids segmentation faults)
 - PyQt GUI tests are prone to segmentation faults - be careful when running all GUI tests at once
 
+## Project Structure and Organization
+
+The repository has been reorganized to follow a clean, maintainable structure that separates core code, tests, examples, and documentation. The reorganization focuses on:
+
+1. **Proper Packaging**: Core code is in the `goesvfi` package with appropriate submodules
+2. **Test Organization**: Tests are categorized by type (unit, integration, GUI)
+3. **Example Scripts**: Examples are organized by functionality
+4. **Documentation**: Documentation files are stored in the `docs` directory
+5. **Data & Logs**: Large data files and logs are separated and excluded from Git
+
+An overview of the directory structure can be found in [DIRECTORY_STRUCTURE.md](DIRECTORY_STRUCTURE.md).
+
+### Avoiding Large File Commits
+
+When working on this codebase, NEVER commit large data files (.nc files, large .png files). The repository includes a [cleanup.py](cleanup.py) script that can be used to clean up temporary data files before committing:
+
+```bash
+# List large files without deleting them
+python cleanup.py --list-only
+
+# Clean up all large files automatically
+python cleanup.py --delete-data
+```
+
 ## Test Organization and Strategy
 
 The repository has a well-organized structure for tests and examples:
