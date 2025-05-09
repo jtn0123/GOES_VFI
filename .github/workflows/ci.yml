@@ -35,8 +35,14 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .[test] # Install package and test dependencies from pyproject.toml in editable mode
-        # Explicitly install mypy and type stubs to ensure they're available
-        pip install mypy types-requests types-Pillow types-aiofiles
+        # Explicitly install mypy and all required type stubs to ensure they're available
+        pip install mypy types-requests types-Pillow types-aiofiles types-tqdm types-boto3
+
+    - name: Install type stubs
+      run: |
+        # Make sure all necessary type stubs are installed
+        python -m pip install --upgrade mypy-extensions
+        python -m mypy --install-types --non-interactive
 
     - name: Run mypy type checking
       run: |

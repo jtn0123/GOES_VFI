@@ -52,9 +52,9 @@ class SampleProcessor:
         )
         
         # Create S3 client for raw data access
-        self.s3_client = boto3.client(  # type: ignore[call-overload]
+        self.s3_client = boto3.client(
             's3',
-            config=boto3.session.Config(  # type: ignore[attr-defined]
+            config=boto3.session.Config(
                 signature_version=botocore.UNSIGNED,
                 retries={'max_attempts': 3}
             )

@@ -156,9 +156,9 @@ class GOESImageryDownloader:
         os.makedirs(self.output_dir, exist_ok=True)
         
         # Create S3 client for raw data
-        self.s3_client = boto3.client(  # type: ignore[call-overload]
+        self.s3_client = boto3.client(
             's3',
-            config=boto3.session.Config(  # type: ignore[attr-defined]
+            config=boto3.session.Config(
                 signature_version=botocore.UNSIGNED,
                 retries={'max_attempts': 5}
             )

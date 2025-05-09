@@ -44,6 +44,8 @@ test = [
     "types-requests",
     "types-Pillow",
     "types-aiofiles",
+    "types-tqdm",
+    "types-boto3",
 ]
 
 dev = [
