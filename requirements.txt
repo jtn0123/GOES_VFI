@@ -5,13 +5,27 @@ Pillow
 opencv-python-headless
 ffmpeg-python
 colorlog
+requests
 # Optional dependencies:
 tqdm  # For progress bars (not required for core functionality)
+
+# Integrity Check module dependencies
+aiohttp>=3.11.0        # Async HTTP requests for CDN fetching
+aioboto3>=14.0.0       # Async AWS SDK for S3 access
+xarray>=2025.4.0       # For NetCDF file handling
+netCDF4>=1.6.0         # Required by xarray for NetCDF support
+matplotlib>=3.10.0     # For rendering NetCDF to PNG
+aiofiles>=24.1.0       # Async file I/O
+
 # Type stubs for MyPy
 types-Pillow
+types-requests
+types-aiofiles
 imageio
+
 # Development tools
 mypy
-types-tqdm # Add stubs for tqdm 
-pytest-qt # Add pytest-qt for GUI testing 
+pytest>=8.3.0
+pytest-qt           # For GUI testing
+pytest-mock>=3.14.0 # For mocking in tests
 python-dateutil>=2.9.0

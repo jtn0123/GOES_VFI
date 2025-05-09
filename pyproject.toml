@@ -1,7 +1,7 @@
 [project]
 name = "goesvfi"
-version = "0.4.0"
-description = "GOES satellite frame interpolation tool"
+version = "0.5.0"  # Updated version for Integrity Check feature
+description = "GOES satellite frame interpolation tool with integrity checking"
 dependencies = [
     "PyQt6",
     "onnxruntime",
@@ -10,19 +10,38 @@ dependencies = [
     "opencv-python-headless",
     "ffmpeg-python",
     "colorlog",
-    ]
+    "requests",
+    "tqdm",
+    # Integrity Check module dependencies
+    "aiohttp>=3.11.0",
+    "aioboto3>=14.0.0",
+    "xarray>=2025.4.0",
+    "netCDF4>=1.6.0",
+    "matplotlib>=3.10.0",
+    "aiofiles>=24.1.0",
+]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"  # Updated Python requirement
 
 [project.scripts]
 goesvfi = "goesvfi.cli:main"
 
 [project.optional-dependencies]
 test = [
-    "pytest",
-    "pytest-cov",
-    "pytest-qt",
-    "pytest-mock",
+    "pytest>=8.3.0",
+    "pytest-cov>=4.1.0",
+    "pytest-qt>=4.4.0",
+    "pytest-mock>=3.14.0",
+    "mock>=5.2.0",
+    "mypy",
+    "types-requests",
+    "types-Pillow",
+    "types-aiofiles",
+]
+
+dev = [
+    "black>=24.2.0",
+    "ruff>=0.1.15",
 ]
 
 [tool.pytest.ini_options]

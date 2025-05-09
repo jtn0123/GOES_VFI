@@ -163,8 +163,8 @@ class MainWindow(QWidget):
 # --- Settings ---
         # Get the application-wide organization and application names
         app = QApplication.instance()
-        org_name = app.organizationName()
-        app_name = app.applicationName()
+        org_name = app.organizationName() if app is not None else ""
+        app_name = app.applicationName() if app is not None else ""
         
         if not org_name or not app_name:
             # Default fallback values if not set at the application level
@@ -228,8 +228,49 @@ class MainWindow(QWidget):
         # --- Layout ---
         main_layout = QVBoxLayout(self)
 
-        # Tab Widget
+        # Tab Widget - Using West position for more vertical space
         self.tab_widget = QTabWidget()
+        # Set tabs to left side for better vertical space usage
+        self.tab_widget.setTabPosition(QTabWidget.TabPosition.West)
+        # Enable document mode for a more compact appearance
+        self.tab_widget.setDocumentMode(True)
+        # Set elide mode for tabs to make them more compact
+        self.tab_widget.setElideMode(Qt.TextElideMode.ElideRight)
+
+        # Apply custom styling to make vertical tabs more distinct and readable
+        self.tab_widget.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #3c3c3c;
+                background-color: #2a2a2a;
+            }
+            QTabWidget::tab-bar {
+                alignment: left;
+            }
+            QTabBar::tab:left {
+                background-color: #303030;
+                color: #b0b0b0;
+                border: 1px solid #444;
+                border-right: none;
+                border-top-left-radius: 4px;
+                border-bottom-left-radius: 4px;
+                min-height: 30px;
+                padding: 6px;
+                margin: 2px 0;
+                margin-right: -1px; /* Create slight overlap with the pane */
+            }
+            QTabBar::tab:left:selected {
+                background-color: #2a2a2a;
+                color: white;
+                border-left: 3px solid #3498db; /* Blue accent for selected tab */
+                padding-left: 4px; /* Compensate for thicker border */
+            }
+            QTabBar::tab:left:hover:!selected {
+                background-color: #383838;
+                border-left: 2px solid #666;
+                padding-left: 5px; /* Compensate for border */
+            }
+        """)
+
         # Instantiate new tab classes, passing necessary arguments (e.g., view models, config)
         # Assuming MainTab needs main_view_model and processing_view_model
         self.main_tab = MainTab(
@@ -474,7 +515,8 @@ class MainWindow(QWidget):
         self._update_start_button_state()
         self._update_crop_buttons_state()
         self._update_rife_options_state(self.current_encoder)
-        self._update_quality_controls_state(self.current_encoder) # Note: This likely needs adjustment if quality controls moved
+        # Quality controls state is now handled in the FFmpeg settings tab
+        # self._update_quality_controls_state(self.current_encoder) # Method moved to FFmpeg tab
         # self._update_ffmpeg_controls_state(self.current_encoder == "FFmpeg", update_group=False) # Removed - FFmpeg groups moved to own tab
 
         # Set up preview update (MOVED TO __init__)
@@ -504,8 +546,9 @@ class MainWindow(QWidget):
             LOGGER.debug(f"QSettings details during save: org={org_name}, app={app_name}, file={filename}")
             
             # Verify QSettings consistency - this will detect if we have mismatched organization/application names
-            app_org = QApplication.instance().organizationName()
-            app_name_global = QApplication.instance().applicationName()
+            app_instance = QApplication.instance()
+            app_org = app_instance.organizationName() if app_instance is not None else ""
+            app_name_global = app_instance.applicationName() if app_instance is not None else ""
             if org_name != app_org or app_name != app_name_global:
                 LOGGER.error(f"QSettings mismatch during save! MainWindow: org={org_name}, app={app_name}, " +
                              f"but Application: org={app_org}, app={app_name_global}")
@@ -537,7 +580,8 @@ class MainWindow(QWidget):
             except Exception as file_error:
                 LOGGER.error(f"Error checking settings file: {file_error}")
             
-            return saved_dir == in_dir_str
+            # Explicitly cast bool to avoid Any return type
+            return bool(saved_dir == in_dir_str)
         except Exception as e:
             LOGGER.error(f"Error directly saving input directory: {e}")
             return False
@@ -610,8 +654,9 @@ class MainWindow(QWidget):
             LOGGER.debug(f"QSettings details during crop save: org={org_name}, app={app_name}, file={filename}")
             
             # Verify QSettings consistency - this will detect if we have mismatched organization/application names
-            app_org = QApplication.instance().organizationName()
-            app_name_global = QApplication.instance().applicationName()
+            app_instance = QApplication.instance()
+            app_org = app_instance.organizationName() if app_instance is not None else ""
+            app_name_global = app_instance.applicationName() if app_instance is not None else ""
             if org_name != app_org or app_name != app_name_global:
                 LOGGER.error(f"QSettings mismatch during crop save! MainWindow: org={org_name}, app={app_name}, " +
                              f"but Application: org={app_org}, app={app_name_global}")
@@ -642,7 +687,8 @@ class MainWindow(QWidget):
             except Exception as file_error:
                 LOGGER.error(f"Error checking settings file after crop save: {file_error}")
             
-            return saved_rect == rect_str
+            # Explicitly cast bool to avoid Any return type
+            return bool(saved_rect == rect_str)
         except Exception as e:
             LOGGER.error(f"Error directly saving crop rectangle: {e}")
             return False
@@ -986,8 +1032,9 @@ class MainWindow(QWidget):
         LOGGER.debug(f"MainWindow loadSettings - QSettings details: org={org_name}, app={app_name}, file={filename}")
         
         # Verify QSettings consistency - this will detect if we have mismatched organization/application names
-        app_org = QApplication.instance().organizationName()
-        app_name_global = QApplication.instance().applicationName()
+        app_instance = QApplication.instance()
+        app_org = app_instance.organizationName() if app_instance is not None else ""
+        app_name_global = app_instance.applicationName() if app_instance is not None else ""
         if org_name != app_org or app_name != app_name_global:
             LOGGER.error(f"QSettings mismatch detected! MainWindow: org={org_name}, app={app_name}, " +
                          f"but Application: org={app_org}, app={app_name_global}")
@@ -1537,7 +1584,7 @@ class MainWindow(QWidget):
         self._update_rife_ui_elements()  # Update RIFE options based on new model
         self._update_start_button_state()  # Re-check start button state
 
-    def _handle_processing(self, args: dict) -> None:
+    def _handle_processing(self, args: Dict[str, Any]) -> None:
         """Handle the processing_started signal from MainTab.
         
         Creates and starts a VfiWorker with the provided arguments.
@@ -2646,7 +2693,7 @@ class MainWindow(QWidget):
         self.main_tab.rife_uhd_checkbox.setEnabled(is_rife)
         self.main_tab.rife_tta_spatial_checkbox.setEnabled(is_rife)
         self.main_tab.rife_tta_temporal_checkbox.setEnabled(is_rife)
-        self.main_tab.rife_threads_edit.setEnabled(is_rife)
+        self.main_tab.rife_thread_spec_edit.setEnabled(is_rife)
 
         # Enable/disable the entire FFmpeg settings tab content
         self.ffmpeg_settings_tab.set_enabled(is_ffmpeg)

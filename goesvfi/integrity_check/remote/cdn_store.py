@@ -8,7 +8,7 @@ import asyncio
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast, Type
 
 import aiohttp
 from aiohttp.client_exceptions import ClientError, ClientResponseError
@@ -31,7 +31,7 @@ class CDNStore(RemoteStore):
         """
         self.resolution = resolution or TimeIndex.CDN_RES
         self.timeout = timeout
-        self._session = None
+        self._session: Optional[aiohttp.ClientSession] = None
     
     @property
     async def session(self) -> aiohttp.ClientSession:
@@ -41,20 +41,27 @@ class CDNStore(RemoteStore):
                 timeout=aiohttp.ClientTimeout(total=self.timeout),
                 headers={'User-Agent': 'GOES-VFI/1.0'}
             )
+        # The session has been created above if it was None
+        assert self._session is not None, "Session is unexpectedly None"
         return self._session
     
-    async def close(self):
+    async def close(self) -> None:
         """Close the HTTP session."""
         if self._session and not self._session.closed:
             await self._session.close()
             self._session = None
     
-    async def __aenter__(self):
+    async def __aenter__(self) -> 'CDNStore':
         """Context manager entry."""
         await self.session
         return self
     
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self, 
+        exc_type: Optional[Type[BaseException]], 
+        exc_val: Optional[BaseException], 
+        exc_tb: Optional[object]
+    ) -> None:
         """Context manager exit."""
         await self.close()
     
@@ -111,7 +118,8 @@ class CDNStore(RemoteStore):
                 if response.status != 200:
                     raise FileNotFoundError(f"File not found at {url} (status: {response.status})")
                 
-                total_size = int(response.headers.get('Content-Length', 0))
+                content_length = response.headers.get('Content-Length', '0')
+                total_size = int(content_length) if content_length.isdigit() else 0
                 LOGGER.debug(f"Total size: {total_size} bytes")
                 
                 with open(dest_path, 'wb') as f:
@@ -120,9 +128,9 @@ class CDNStore(RemoteStore):
                         f.write(chunk)
                         downloaded += len(chunk)
                         
-                        # Log progress every ~10%
-                        if total_size > 0 and downloaded % (total_size // 10) < 8192:
-                            progress = downloaded / total_size * 100
+                        # Log progress every ~10% only if we have a valid size
+                        if total_size > 0 and downloaded % max(1, (total_size // 10)) < 8192:
+                            progress = (downloaded / total_size) * 100.0
                             LOGGER.debug(f"Download progress: {progress:.1f}%")
             
             LOGGER.debug(f"Download complete: {dest_path}")

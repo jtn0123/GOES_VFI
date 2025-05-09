@@ -134,6 +134,44 @@ GOES-VFI uses a standardized configuration mechanism for core settings:
 
 This project does not currently have a license. Consider adding one (e.g., MIT License).
 
+## Examples and Testing
+
+### Examples
+
+The repository includes various example scripts showcasing different aspects of the GOES-VFI project. These examples are located in the `examples/` directory and are organized by functionality:
+
+* **Download Examples:** Scripts for downloading GOES satellite imagery from NOAA S3 buckets
+* **S3 Access Examples:** Examples demonstrating how to interact with NOAA S3 buckets directly
+* **Imagery Examples:** Examples of processing and rendering satellite imagery
+* **Processing Examples:** Demonstrations of various processing techniques
+
+Each example can be run directly from its directory. The examples are designed to be self-contained and include appropriate documentation.
+
+```bash
+python -m examples.download.download_band13
+```
+
+### Testing
+
+The project uses pytest for unit testing, integration testing, and GUI testing. Tests are organized in the `tests/` directory with subdirectories for different types of tests:
+
+* **Unit Tests:** Tests for individual components and modules
+* **Integration Tests:** Tests for interactions between components
+* **GUI Tests:** Tests for the PyQt6 user interface
+
+To run the tests, use one of the test runner scripts:
+
+```bash
+# Run all working tests
+./run_working_tests.py
+
+# Run fixed GUI tests
+./run_fixed_gui_tests.py
+
+# Run all tests
+./run_all_tests.py
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit pull requests or open issues.
@@ -144,6 +182,10 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
   The project uses the MVVM (Model-View-ViewModel) pattern for the GUI and a modular, decoupled pipeline for processing. Please follow these patterns when adding new features or refactoring code.
 * **Utilities:**  
   Use the centralized logging (`goesvfi.utils.log`) and configuration (`goesvfi.utils.config`) utilities for all logging and configuration access.
+* **Examples and Tests:**
+  - When adding new functionality, consider adding appropriate examples to the `examples/` directory
+  - Add tests for new functionality to the appropriate test directory
+  - Follow existing patterns for both examples and tests
 * **Code Style:**  
   Before submitting changes, run the following commands to ensure code quality and consistency:
     ```bash

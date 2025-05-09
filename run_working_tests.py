@@ -28,6 +28,9 @@ if __name__ == "__main__":
         "tests/unit/test_encode.py",
         "tests/unit/test_ffmpeg_builder.py",
         "tests/unit/test_file_sorter.py",
+        # These tests have been moved to examples
+        # "tests/unit/test_signal.py",
+        # "tests/unit/test_timestamp.py",
         "tests/unit/test_interpolate.py",
         "tests/unit/test_loader.py",
         "tests/unit/test_raw_encoder.py",

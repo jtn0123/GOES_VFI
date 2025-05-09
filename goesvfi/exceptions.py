@@ -16,6 +16,9 @@ class GoesVfiError(Exception):
     """
     pass
 
+# Alias for consistent naming
+GoesvfiError = GoesVfiError
+
 class PipelineError(GoesVfiError):
     """Exception raised for errors occurring during pipeline processing.
 

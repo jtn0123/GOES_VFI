@@ -18,3 +18,9 @@ from .reconcile_manager import ReconcileManager
 from .remote.cdn_store import CDNStore
 from .remote.s3_store import S3Store
 from .render.netcdf import render_png
+
+# GOES Imagery visualization components
+from .enhanced_imagery_tab import EnhancedGOESImageryTab
+from .visualization_manager import VisualizationManager, ExtendedChannelType
+from .sample_processor import SampleProcessor
+from .combined_tab import CombinedIntegrityAndImageryTab

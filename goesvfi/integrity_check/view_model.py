@@ -305,8 +305,11 @@ class IntegrityCheckViewModel(QObject):
         scan_task.signals.error.connect(self._handle_scan_error)
         
         # Start the task
-        self._thread_pool.start(scan_task)
-        LOGGER.info("Scan task started")
+        if self._thread_pool is not None:
+            self._thread_pool.start(scan_task)
+            LOGGER.info("Scan task started")
+        else:
+            LOGGER.error("Thread pool is None, cannot start scan task")
     
     def cancel_scan(self) -> None:
         """Cancel the ongoing scan operation."""
@@ -358,7 +361,10 @@ class IntegrityCheckViewModel(QObject):
                 )
                 
                 # Start the task
-                self._thread_pool.start(download_task)
+                if self._thread_pool is not None:
+                    self._thread_pool.start(download_task)
+                else:
+                    LOGGER.error("Thread pool is None, cannot start download task")
                 
                 # Update item state
                 item.is_downloading = True
@@ -567,7 +573,7 @@ class ScanTask(QRunnable):
         self.signals = TaskSignals()
         self._cancel_requested = False
     
-    def run(self):
+    def run(self) -> None:
         """Execute the scan task."""
         try:
             # Run the scan
@@ -635,7 +641,7 @@ class DownloadTask(QRunnable):
         self.signals = DownloadSignals()
         self._cancel_requested = False
     
-    def run(self):
+    def run(self) -> None:
         """Execute the download task."""
         try:
             # Construct URL

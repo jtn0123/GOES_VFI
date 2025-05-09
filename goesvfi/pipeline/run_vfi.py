@@ -1,4 +1,5 @@
 import pathlib
+import os
 from PIL import Image
 import numpy as np
 from typing import Iterator, Union, Tuple, Any, cast, IO, Optional, List, Dict
@@ -369,7 +370,7 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
 
 
 # --- Add Sanchez/Crop Helper ---
-def _load_process_image(
+def _load_process_image(  # type: ignore[return]
     path: pathlib.Path,
     crop_rect_pil: Optional[Tuple[int, int, int, int]],
     false_colour: bool,
@@ -379,6 +380,10 @@ def _load_process_image(
     sanchez_processor: Optional[SanchezProcessor] = None,
     image_cropper: Optional[ImageCropper] = None,
 ) -> Image.Image:
+    """
+    This function always returns an Image.Image object, either from the processor-based
+    approach or by falling back to the direct approach if the processor approach fails.
+    """
     """Loads image, optionally applies Sanchez, optionally crops.
     
     This function can work in two modes:
@@ -421,6 +426,8 @@ def _load_process_image(
         # Modern processor-based approach (same as preview)
         try:
             # 1. Load image using ImageLoader
+            if image_loader is None:
+                raise ValueError("ImageLoader is None but use_processor_mode is True")
             image_data = image_loader.load(str(path))
             
             # 2. Apply Sanchez if requested
@@ -430,11 +437,15 @@ def _load_process_image(
                 if 'filename' not in image_data.metadata:
                     image_data.metadata['filename'] = path.name
                 # Process image with Sanchez
+                if sanchez_processor is None:
+                    raise ValueError("SanchezProcessor is None but false_colour is True")
                 image_data = sanchez_processor.process(image_data, res_km=res_km)
             
             # 3. Apply crop if requested
             if crop_rect_pil:
                 LOGGER.debug(f"Applying crop {crop_rect_pil} to image: {path.name}")
+                if image_cropper is None:
+                    raise ValueError("ImageCropper is None but crop_rect_pil is provided")
                 image_data = image_cropper.crop(image_data, crop_rect_pil)
             
             # 4. Convert to PIL Image for return
@@ -451,11 +462,13 @@ def _load_process_image(
             LOGGER.exception(f"Error in processor mode: {e}")
             # Fall back to direct mode
             use_processor_mode = False
+            
+    # If processor mode failed or wasn't used, use direct approach (below)
     
     # If we're not using processor mode or it failed, use direct approach
     if not use_processor_mode:
         LOGGER.debug(f"Using direct mode for image: {path.name}")
-        img = Image.open(path)
+        img = Image.open(path)  # Always returns an Image.Image
         
         # Apply Sanchez directly using colourise
         if false_colour:
@@ -554,6 +567,8 @@ def _process_single_image_worker(
     """
     try:
         # 1. Load original image using ImageLoader
+        if image_loader is None:
+            raise ValueError("ImageLoader is None but required for processing")
         image_data = image_loader.load(str(original_path))
         orig_w, orig_h = image_data.width, image_data.height
 
@@ -574,6 +589,8 @@ def _process_single_image_worker(
                 f"Applying Sanchez to image from {original_path.name} (res={res_km}km)."
             )
             # SanchezProcessor handles its own temp files
+            if sanchez_processor is None:
+                raise ValueError("SanchezProcessor is None but false_colour is True")
             image_data = sanchez_processor.process(image_data, res_km=res_km)
 
         # 3. Apply crop if requested using ImageCropper
@@ -587,6 +604,8 @@ def _process_single_image_worker(
             LOGGER.debug(
                 f"Applying crop {crop_rect_pil} to image from {original_path.name} (post-Sanchez if applied)."
             )
+            if image_cropper is None:
+                raise ValueError("ImageCropper is None but crop_rect_pil is provided")
             image_data = image_cropper.crop(image_data, crop_rect_pil)
 
         # 4. Validate dimensions - REMOVED (Validation will happen in run_vfi after first image)
@@ -606,7 +625,7 @@ def _process_single_image_worker(
     except Exception as e:
         # Log any exception from the worker and re-raise
         LOGGER.exception(f"Worker failed processing {original_path.name}")
-        raise
+        raise e  # Explicitly re-raise the caught exception to satisfy mypy
 
 
 # --- Wrapper for map compatibility --- #
@@ -744,6 +763,7 @@ def run_vfi(
         image_loader = ImageLoader()
         sanchez_processor = SanchezProcessor(sanchez_temp_path) # Pass the Sanchez temporary directory
         image_cropper = ImageCropper()
+        image_saver = ImageSaver()  # Create an ImageSaver instance for saving processed images
         LOGGER.info("Image processors instantiated.")
 
         # --- Determine Target Dimensions & Process First Image --- #
@@ -754,9 +774,7 @@ def run_vfi(
             LOGGER.info(f"Processing first image sequentially: {paths[0].name}")
             # Process first image using worker function (sequentially)
             # Do not pass target dimensions yet
-            # Create an ImageSaver for saving processed images
-            image_saver = ImageSaver()
-            
+            # We already created an ImageSaver instance above
             processed_path_0 = _process_single_image_worker(
                 original_path=paths[0],
                 image_loader=image_loader,

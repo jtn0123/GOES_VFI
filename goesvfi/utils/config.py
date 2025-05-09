@@ -347,3 +347,17 @@ def get_available_rife_models() -> list[str]:
             if item.is_dir():
                 available_models.append(item.name)
     return sorted(available_models)
+
+
+def get_user_config_dir() -> pathlib.Path:
+    """
+    Returns the directory for user-specific configuration files.
+    
+    Uses CONFIG_DIR from the module, which defaults to ~/.config/goesvfi
+    
+    Returns:
+        Path to the user's configuration directory
+    """
+    # Create the directory if it doesn't exist
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    return CONFIG_DIR

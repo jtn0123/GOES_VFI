@@ -15,6 +15,9 @@ if __name__ == "__main__":
         python_executable, "-m", "pytest",
         # Integration tests that are fixed
         "tests/integration/test_pipeline.py::test_basic_interpolation",
+        # Newly organized integration tests
+        "tests/integration/test_vfi_worker.py",
+        "tests/integration/test_combined_tab.py",
     ]
     
     print(f"Running fixed integration tests with: {' '.join(cmd)}")

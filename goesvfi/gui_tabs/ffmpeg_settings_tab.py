@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING, Optional, Any, Dict, List, TypedDict, cast
 from PyQt6.QtCore import pyqtSignal, Qt, QTimer # Added QTimer
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QGroupBox, QComboBox, QLineEdit, QSpinBox,
-    QDoubleSpinBox, QCheckBox, QGridLayout, QLabel, QHBoxLayout, QSizePolicy
+    QDoubleSpinBox, QCheckBox, QGridLayout, QLabel, QHBoxLayout, QSizePolicy,
+    QFrame  # Added QFrame for separators
 )
 from PyQt6.QtGui import QIntValidator, QDoubleValidator # Import validators
 
@@ -39,6 +40,9 @@ class FFmpegSettingsTab(QWidget):
         """Initialize the FFmpegSettingsTab."""
         super().__init__(parent)
 
+        # Apply a modern, styled look for the tab
+        self._apply_stylesheet()
+
         # --- Create Widgets ---
         self._create_widgets()
 
@@ -50,6 +54,103 @@ class FFmpegSettingsTab(QWidget):
 
         # --- Initialize Control States ---
         self._update_all_control_states()
+
+    def _apply_stylesheet(self) -> None:
+        """Apply an enhanced stylesheet for better visual appearance."""
+        self.setStyleSheet("""
+            /* Main container styling */
+            QWidget {
+                background-color: #2a2a2a;
+                color: #e0e0e0;
+            }
+
+            /* Group box styling with gradient background */
+            QGroupBox {
+                font-weight: bold;
+                border: 1px solid #444;
+                border-radius: 6px;
+                margin-top: 12px;
+                padding-top: 18px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #333333, stop:1 #2a2a2a);
+            }
+
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px;
+                color: #e0e0e0;
+            }
+
+            QGroupBox::indicator {
+                width: 16px;
+                height: 16px;
+                background-color: #2d2d2d;
+                border: 1px solid #555;
+                border-radius: 3px;
+            }
+
+            QGroupBox::indicator:checked {
+                background-color: #2b5d8e;
+                border: 1px solid #3a6ea5;
+            }
+
+            /* Controls styling */
+            QComboBox, QSpinBox, QDoubleSpinBox {
+                background-color: #333;
+                color: white;
+                border: 1px solid #555;
+                border-radius: 4px;
+                padding: 3px 5px;
+                min-height: 22px;
+            }
+
+            QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover {
+                background-color: #3a3a3a;
+                border: 1px solid #666;
+            }
+
+            QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus {
+                border: 1px solid #3a6ea5;
+            }
+
+            QComboBox::drop-down {
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 15px;
+                border-left: 1px solid #555;
+                border-top-right-radius: 3px;
+                border-bottom-right-radius: 3px;
+            }
+
+            QCheckBox {
+                spacing: 8px;
+            }
+
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                background-color: #333;
+                border: 1px solid #555;
+                border-radius: 2px;
+            }
+
+            QCheckBox::indicator:checked {
+                background-color: #2b5d8e;
+                border: 1px solid #3a6ea5;
+            }
+
+            QLabel {
+                color: #e0e0e0;
+            }
+
+            /* First row styling for emphasis */
+            #profile_label {
+                font-weight: bold;
+                font-size: 11pt;
+                color: #e6e6e6;
+            }
+        """)
 
     def _create_widgets(self) -> None:
         """Create all the widgets for the FFmpeg settings tab."""
@@ -182,70 +283,222 @@ class FFmpegSettingsTab(QWidget):
         """Setup the layout and add widgets."""
         main_layout = QVBoxLayout(self)
 
-        # Profile Selection Layout
-        profile_layout = QHBoxLayout()
-        profile_layout.addWidget(QLabel("FFmpeg Profile:"))
+        # Profile Selection Layout with enhanced styling
+        profile_container = QWidget()
+        profile_container.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #364154, stop:1 #2b3445);
+                border: 1px solid #444;
+                border-radius: 6px;
+            }
+            QLabel {
+                font-weight: bold;
+                color: #e6e6e6;
+                padding-left: 5px;
+            }
+            QComboBox {
+                background-color: #3a3a3a;
+                min-width: 180px;
+            }
+        """)
+
+        profile_layout = QHBoxLayout(profile_container)
+        profile_layout.setContentsMargins(10, 10, 10, 10)
+
+        profile_label = QLabel("📋 FFmpeg Profile:")
+        profile_label.setObjectName("profile_label")
+        self.ffmpeg_profile_combo.setMinimumWidth(200)
+
+        profile_layout.addWidget(profile_label)
         profile_layout.addWidget(self.ffmpeg_profile_combo)
         profile_layout.addStretch()
-        main_layout.addLayout(profile_layout)
 
-        # Interpolation Settings Layout
+        main_layout.addWidget(profile_container)
+
+        # Interpolation Settings Layout with improved labels and spacing
+        # Update the group title with an icon
+        self.ffmpeg_settings_group.setTitle("🔄 Interpolation (minterpolate filter)")
+
         interp_layout = QGridLayout(self.ffmpeg_settings_group)
-        interp_layout.addWidget(QLabel("MI Mode:"), 0, 0)
+        interp_layout.setSpacing(8)  # Increase spacing for better readability
+        interp_layout.setContentsMargins(10, 15, 10, 10)  # More comfortable margins
+
+        # Add styled labels with better descriptions
+        mi_label = QLabel("Motion Interp:")
+        mi_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        interp_layout.addWidget(mi_label, 0, 0)
         interp_layout.addWidget(self.ffmpeg_mi_mode_combo, 0, 1)
-        interp_layout.addWidget(QLabel("MC Mode:"), 0, 2)
+
+        mc_label = QLabel("Motion Comp:")
+        mc_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        interp_layout.addWidget(mc_label, 0, 2)
         interp_layout.addWidget(self.ffmpeg_mc_mode_combo, 0, 3)
-        interp_layout.addWidget(QLabel("ME Mode:"), 1, 0)
+
+        me_label = QLabel("Motion Est:")
+        me_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        interp_layout.addWidget(me_label, 1, 0)
         interp_layout.addWidget(self.ffmpeg_me_mode_combo, 1, 1)
+
+        # Enhance checkbox with better contrast
+        self.ffmpeg_vsbmc_checkbox.setText("Variable Size Blocks")
+        self.ffmpeg_vsbmc_checkbox.setStyleSheet("color: #e0e0e0;")
         interp_layout.addWidget(self.ffmpeg_vsbmc_checkbox, 1, 2, 1, 2) # Span 2 columns
-        interp_layout.addWidget(QLabel("SCD Mode:"), 2, 0)
+        # Scene detection row with enhanced styling
+        scd_label = QLabel("Scene Detect:")
+        scd_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        interp_layout.addWidget(scd_label, 2, 0)
         interp_layout.addWidget(self.ffmpeg_scd_combo, 2, 1)
-        interp_layout.addWidget(QLabel("SCD Thresh:"), 2, 2)
+
+        scd_thresh_label = QLabel("SCD Threshold:")
+        scd_thresh_label.setStyleSheet("color: #e0e0e0;")
+        interp_layout.addWidget(scd_thresh_label, 2, 2)
         interp_layout.addWidget(self.ffmpeg_scd_threshold_spinbox, 2, 3)
-        interp_layout.addWidget(QLabel("ME Algo:"), 3, 0)
+
+        # Advanced motion estimation row
+        me_algo_label = QLabel("ME Algorithm:")
+        me_algo_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        interp_layout.addWidget(me_algo_label, 3, 0)
         interp_layout.addWidget(self.ffmpeg_me_algo_combo, 3, 1)
-        interp_layout.addWidget(QLabel("Search Param:"), 3, 2)
+
+        search_param_label = QLabel("Search Range:")
+        search_param_label.setStyleSheet("color: #e0e0e0;")
+        interp_layout.addWidget(search_param_label, 3, 2)
         interp_layout.addWidget(self.ffmpeg_search_param_spinbox, 3, 3)
-        interp_layout.addWidget(QLabel("MB Size:"), 4, 0)
+
+        # Block size row
+        mb_size_label = QLabel("Block Size:")
+        mb_size_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        interp_layout.addWidget(mb_size_label, 4, 0)
         interp_layout.addWidget(self.ffmpeg_mb_size_combo, 4, 1)
         interp_layout.setColumnStretch(1, 1) # Allow combos/spinners to expand
         interp_layout.setColumnStretch(3, 1)
         main_layout.addWidget(self.ffmpeg_settings_group)
 
-        # Unsharp Mask Layout
+        # Unsharp Mask Layout with enhanced styling
+        # Update the group title with an icon
+        self.ffmpeg_unsharp_group.setTitle("🔍 Sharpening (unsharp filter)")
+
         unsharp_layout = QGridLayout(self.ffmpeg_unsharp_group)
-        unsharp_layout.addWidget(QLabel("Luma X:"), 0, 0)
-        unsharp_layout.addWidget(self.ffmpeg_unsharp_lx_spinbox, 0, 1)
-        unsharp_layout.addWidget(QLabel("Luma Y:"), 0, 2)
-        unsharp_layout.addWidget(self.ffmpeg_unsharp_ly_spinbox, 0, 3)
-        unsharp_layout.addWidget(QLabel("Luma Amt:"), 0, 4)
-        unsharp_layout.addWidget(self.ffmpeg_unsharp_la_spinbox, 0, 5)
-        unsharp_layout.addWidget(QLabel("Chroma X:"), 1, 0)
-        unsharp_layout.addWidget(self.ffmpeg_unsharp_cx_spinbox, 1, 1)
-        unsharp_layout.addWidget(QLabel("Chroma Y:"), 1, 2)
-        unsharp_layout.addWidget(self.ffmpeg_unsharp_cy_spinbox, 1, 3)
-        unsharp_layout.addWidget(QLabel("Chroma Amt:"), 1, 4)
-        unsharp_layout.addWidget(self.ffmpeg_unsharp_ca_spinbox, 1, 5)
-        for i in [1, 3, 5]: # Allow spinboxes to expand
-            unsharp_layout.setColumnStretch(i, 1)
+        unsharp_layout.setSpacing(8)  # Increase spacing for better readability
+        unsharp_layout.setContentsMargins(10, 15, 10, 10)  # More comfortable margins
+
+        # Add section headers
+        luma_header = QLabel("Luma (Brightness):")
+        luma_header.setStyleSheet("font-weight: bold; color: #88ccff;")
+        unsharp_layout.addWidget(luma_header, 0, 0, 1, 2)
+
+        chroma_header = QLabel("Chroma (Color):")
+        chroma_header.setStyleSheet("font-weight: bold; color: #88ccff;")
+        unsharp_layout.addWidget(chroma_header, 0, 3, 1, 2)
+
+        # Luma controls
+        luma_x_label = QLabel("X Size:")
+        luma_x_label.setStyleSheet("color: #e0e0e0;")
+        unsharp_layout.addWidget(luma_x_label, 1, 0)
+        unsharp_layout.addWidget(self.ffmpeg_unsharp_lx_spinbox, 1, 1)
+
+        luma_y_label = QLabel("Y Size:")
+        luma_y_label.setStyleSheet("color: #e0e0e0;")
+        unsharp_layout.addWidget(luma_y_label, 2, 0)
+        unsharp_layout.addWidget(self.ffmpeg_unsharp_ly_spinbox, 2, 1)
+
+        luma_amt_label = QLabel("Amount:")
+        luma_amt_label.setStyleSheet("color: #e0e0e0;")
+        unsharp_layout.addWidget(luma_amt_label, 3, 0)
+        unsharp_layout.addWidget(self.ffmpeg_unsharp_la_spinbox, 3, 1)
+
+        # Add a visual separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.VLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
+        separator.setStyleSheet("background-color: #444;")
+        separator.setMaximumWidth(1)
+        unsharp_layout.addWidget(separator, 1, 2, 3, 1)
+
+        # Chroma controls
+        chroma_x_label = QLabel("X Size:")
+        chroma_x_label.setStyleSheet("color: #e0e0e0;")
+        unsharp_layout.addWidget(chroma_x_label, 1, 3)
+        unsharp_layout.addWidget(self.ffmpeg_unsharp_cx_spinbox, 1, 4)
+
+        chroma_y_label = QLabel("Y Size:")
+        chroma_y_label.setStyleSheet("color: #e0e0e0;")
+        unsharp_layout.addWidget(chroma_y_label, 2, 3)
+        unsharp_layout.addWidget(self.ffmpeg_unsharp_cy_spinbox, 2, 4)
+
+        chroma_amt_label = QLabel("Amount:")
+        chroma_amt_label.setStyleSheet("color: #e0e0e0;")
+        unsharp_layout.addWidget(chroma_amt_label, 3, 3)
+        unsharp_layout.addWidget(self.ffmpeg_unsharp_ca_spinbox, 3, 4)
+
+        # Add column stretch
+        unsharp_layout.setColumnStretch(1, 1)
+        unsharp_layout.setColumnStretch(4, 1)
+
         main_layout.addWidget(self.ffmpeg_unsharp_group)
 
-        # Quality Settings Layout
+        # Quality Settings Layout with enhanced styling
+        # Update the group title with an icon
+        self.ffmpeg_quality_group.setTitle("🎬 Encoding Quality (libx264)")
+
         quality_layout = QGridLayout(self.ffmpeg_quality_group)
-        quality_layout.addWidget(QLabel("Quality Preset:"), 0, 0)
+        quality_layout.setSpacing(8)  # Increase spacing for better readability
+        quality_layout.setContentsMargins(10, 15, 10, 10)  # More comfortable margins
+
+        # Quality preset with styled label
+        quality_preset_label = QLabel("Quality Preset:")
+        quality_preset_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        quality_layout.addWidget(quality_preset_label, 0, 0)
         quality_layout.addWidget(self.ffmpeg_quality_combo, 0, 1)
-        quality_layout.addWidget(QLabel("CRF:"), 0, 2)
+
+        # CRF with emphasis
+        crf_label = QLabel("CRF Value:")
+        crf_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        quality_layout.addWidget(crf_label, 0, 2)
+        self.ffmpeg_crf_spinbox.setToolTip("Constant Rate Factor: Lower values = higher quality (0-51)")
         quality_layout.addWidget(self.ffmpeg_crf_spinbox, 0, 3)
-        quality_layout.addWidget(QLabel("Bitrate:"), 1, 0)
+
+        # Bitrate section
+        bitrate_label = QLabel("Target Bitrate:")
+        bitrate_label.setStyleSheet("color: #e0e0e0;")
+        quality_layout.addWidget(bitrate_label, 1, 0)
         quality_layout.addWidget(self.ffmpeg_bitrate_spinbox, 1, 1)
-        quality_layout.addWidget(QLabel("Bufsize:"), 1, 2)
+
+        # Buffer size
+        bufsize_label = QLabel("Buffer Size:")
+        bufsize_label.setStyleSheet("color: #e0e0e0;")
+        quality_layout.addWidget(bufsize_label, 1, 2)
         quality_layout.addWidget(self.ffmpeg_bufsize_spinbox, 1, 3)
-        quality_layout.addWidget(QLabel("Pixel Format:"), 2, 0)
-        quality_layout.addWidget(self.ffmpeg_pix_fmt_combo, 2, 1)
-        quality_layout.addWidget(QLabel("Encoder Preset:"), 2, 2)
-        quality_layout.addWidget(self.ffmpeg_filter_preset_combo, 2, 3)
-        quality_layout.setColumnStretch(1, 1) # Allow combos/spinners to expand
+
+        # Add a separator
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setFrameShadow(QFrame.Shadow.Sunken)
+        separator.setStyleSheet("background-color: #444;")
+        separator.setMaximumHeight(1)
+        quality_layout.addWidget(separator, 2, 0, 1, 4)
+
+        # Format and presets section
+        format_label = QLabel("Pixel Format:")
+        format_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        quality_layout.addWidget(format_label, 3, 0)
+        quality_layout.addWidget(self.ffmpeg_pix_fmt_combo, 3, 1)
+
+        preset_label = QLabel("Encoder Speed:")
+        preset_label.setStyleSheet("font-weight: bold; color: #88ccff;")
+        quality_layout.addWidget(preset_label, 3, 2)
+        quality_layout.addWidget(self.ffmpeg_filter_preset_combo, 3, 3)
+
+        # Add a note about quality
+        note_label = QLabel("<i>Note: Slower encoder presets generally produce better quality at the same bitrate</i>")
+        note_label.setStyleSheet("color: #bbbbbb; font-size: 8pt;")
+        note_label.setWordWrap(True)
+        quality_layout.addWidget(note_label, 4, 0, 1, 4)
+
+        quality_layout.setColumnStretch(1, 1)  # Allow combos/spinners to expand
         quality_layout.setColumnStretch(3, 1)
+
         main_layout.addWidget(self.ffmpeg_quality_group)
 
         main_layout.addStretch() # Push everything to the top
@@ -379,10 +632,14 @@ class FFmpegSettingsTab(QWidget):
             ]
             for w in widgets_to_block: w.blockSignals(True)
             try:
-                if "crf" in preset_settings: self.ffmpeg_crf_spinbox.setValue(preset_settings["crf"])
-                if "bitrate" in preset_settings: self.ffmpeg_bitrate_spinbox.setValue(preset_settings["bitrate"])
-                if "bufsize" in preset_settings: self.ffmpeg_bufsize_spinbox.setValue(preset_settings["bufsize"])
-                if "pix_fmt" in preset_settings: self.ffmpeg_pix_fmt_combo.setCurrentText(preset_settings["pix_fmt"])
+                if "crf" in preset_settings and isinstance(preset_settings["crf"], int): 
+                    self.ffmpeg_crf_spinbox.setValue(preset_settings["crf"])
+                if "bitrate" in preset_settings and isinstance(preset_settings["bitrate"], int): 
+                    self.ffmpeg_bitrate_spinbox.setValue(preset_settings["bitrate"])
+                if "bufsize" in preset_settings and isinstance(preset_settings["bufsize"], int): 
+                    self.ffmpeg_bufsize_spinbox.setValue(preset_settings["bufsize"])
+                if "pix_fmt" in preset_settings and isinstance(preset_settings["pix_fmt"], str): 
+                    self.ffmpeg_pix_fmt_combo.setCurrentText(preset_settings["pix_fmt"])
             finally:
                 for w in widgets_to_block: w.blockSignals(False)
 

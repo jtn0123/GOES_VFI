@@ -1,0 +1,20 @@
+# Test dependencies for GOES-VFI project
+pytest>=8.3.0
+pytest-qt>=4.4.0     # For GUI testing
+pytest-mock>=3.14.0  # For mocking in tests
+pytest-cov>=4.1.0    # For test coverage reports
+
+# Mock library for tests
+mock>=5.2.0
+
+# Type checker for tests
+mypy
+
+# Type stubs for libraries used in tests
+types-requests
+types-Pillow
+types-aiofiles
+
+# Dev utilities
+black>=24.2.0        # Code formatter
+ruff>=0.1.15         # Linter
