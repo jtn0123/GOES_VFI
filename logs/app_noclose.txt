@@ -1,0 +1,2 @@
+usage: gui.py [-h] [--debug]
+gui.py: error: unrecognized arguments: --no-auto-close

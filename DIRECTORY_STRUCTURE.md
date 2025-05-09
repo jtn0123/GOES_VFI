@@ -29,6 +29,9 @@ This document provides an overview of the directory structure for the GOES VFI p
     - **[imagery/](tests/gui/imagery/)**: Tests for imagery-related GUI components
     - **[tabs/](tests/gui/tabs/)**: Tests for tab components in the UI
   - **[utils/](tests/utils/)**: Test utilities and helpers
+  - **[data/](tests/data/)**: Test data files
+    - **[test_input/](tests/data/test_input/)**: Input files for tests
+    - **[test_output/](tests/data/test_output/)**: Output files from tests
 
 ### Examples
 
@@ -46,22 +49,47 @@ This document provides an overview of the directory structure for the GOES VFI p
 - **[docs/](docs/)**: Documentation files
   - **[assets/](docs/assets/)**: Images and other assets for documentation
   - **[testing/](docs/testing/)**: Testing documentation
+  - **[reports/](docs/reports/)**: Project reports and documentation
+    - Performance reports
+    - Improvement plans
+    - Status reports
+    - Feature guides
+
+### Data & Logs
+
+- **[data/](data/)**: Data files and cached downloads
+  - **[satpy_images/](data/satpy_images/)**: Images processed with satpy
+  - **[temp_netcdf_downloads/](data/temp_netcdf_downloads/)**: Temporary NetCDF files
+
+- **[logs/](logs/)**: Log files from application runs
+  - Application logs
+  - Debug logs
+  - Error logs
+  - AWS and S3 logs
+
+### Scripts
+
+- **[scripts/](scripts/)**: Utility and helper scripts
+  - Tools for analysis
+  - Date conversion examples
+  - Repository management
 
 ## Important Files
 
 - **[pyproject.toml](pyproject.toml)**: Project configuration and dependencies
 - **[README.md](README.md)**: Main project documentation
 - **[CLAUDE.md](CLAUDE.md)**: Instructions for Claude Code AI
+- **[DIRECTORY_STRUCTURE.md](DIRECTORY_STRUCTURE.md)**: This directory structure guide
+- **[CHANGELOG.md](CHANGELOG.md)**: Project changelog and version history
+- **[requirements.txt](requirements.txt)**: Python dependencies
+- **[test-requirements.txt](test-requirements.txt)**: Test-specific dependencies
+- **[mypy.ini](mypy.ini)**: Type checking configuration
+
+## Test Runner Scripts
+
 - **[run_all_tests.py](run_all_tests.py)**: Script to run all tests
 - **[run_fixed_gui_tests.py](run_fixed_gui_tests.py)**: Script to run only fixed GUI tests
 - **[run_working_tests.py](run_working_tests.py)**: Script to run only working tests
-
-## Data Directories
-
-- **[satpy_images/](satpy_images/)**: Images processed with satpy
-- **[temp_netcdf_downloads/](temp_netcdf_downloads/)**: Temporary NetCDF files downloaded for processing
-
-## Test Data
-
-- **[test_input/](test_input/)**: Input files for tests
-- **[test_output/](test_output/)**: Output files from tests
+- **[run_fixed_integration_tests.py](run_fixed_integration_tests.py)**: Script to run integration tests
+- **[run_non_gui_tests.py](run_non_gui_tests.py)**: Script to run non-GUI tests
+- **[run_mypy_checks.py](run_mypy_checks.py)**: Script to run mypy type checking

@@ -1,0 +1,60 @@
+{
+  "download": [
+    "download_and_process_cmip.py",
+    "download_goes_data.py",
+    "download_goes_jpeg.py",
+    "download_goes_l2_data.py",
+    "download_ir_sanchez.py",
+    "download_ir_simple.py",
+    "download_l1b_test.py",
+    "download_mesoscale_l2.py",
+    "download_quicklook_images.py",
+    "download_true_color.py",
+    "download_water_vapor.py",
+    "list_and_download.py"
+  ],
+  "imagery": [
+    "create_rgb_composites.py",
+    "enhanced_true_color.py",
+    "extract_cmip_truecolor.py",
+    "goes_satpy_processor.py",
+    "improved_cmip_processor.py",
+    "improved_goes_processor.py",
+    "improved_true_color.py",
+    "natural_earth_color.py",
+    "visualize_all_channels.py"
+  ],
+  "processing": [
+    "analyze_cmip_structure.py",
+    "discover_goes_channels.py",
+    "signal_test.py",
+    "time_index_updated.py",
+    "update_time_index.py",
+    "verify_cmip_path.py"
+  ],
+  "s3_access": [
+    "check_aws_credentials.py",
+    "check_recent_goes.py",
+    "check_s3_paths.py",
+    "find_actual_files.py",
+    "list_s3_contents.py",
+    "list_specific_paths.py",
+    "scan_goes_dates.py",
+    "scan_goes_hours.py",
+    "scan_mesoscale.py"
+  ],
+  "debugging": [
+    "debug_integrity_browse.py",
+    "debug_integrity_crash.py",
+    "debug_integrity_scan.py",
+    "debug_integrity_tab.py",
+    "debug_run.py",
+    "debug_without_integrity.py"
+  ],
+  "utilities": [
+    "add_type_annotations.py",
+    "cleanup.py",
+    "fix_syntax.py",
+    "mypy_analyzer.py"
+  ]
+}
