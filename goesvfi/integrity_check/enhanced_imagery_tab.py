@@ -367,13 +367,27 @@ class EnhancedImageSelectionPanel(QWidget):
         """Initialize the UI components with optimized space usage."""
         # Main layout with minimal margins
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(2, 2, 2, 2)
-        layout.setSpacing(4)
+        layout.setContentsMargins(1, 1, 1, 1)  # Minimal margins
+        layout.setSpacing(2)  # Minimal spacing
 
-        # Create tab widget for organizing channel groups
+        # Create tab widget for organizing channel groups with wider layout to show all tabs
         self.tabs = QTabWidget()
         self.tabs.setTabPosition(QTabWidget.TabPosition.North)
         self.tabs.setDocumentMode(True)  # More compact tab appearance
+        # Make tabs more compact but ensure they're all visible
+        self.tabs.setStyleSheet("""
+            QTabBar::tab {
+                padding: 3px 6px;
+                height: 20px;
+                min-width: 60px;
+                max-width: 120px;
+            }
+            QTabBar::scroller {
+                width: 20px;
+            }
+        """)
+        # Enable scrolling tabs to ensure all tabs are accessible
+        self.tabs.setUsesScrollButtons(True)
 
         # Create tabs for different channel groups
         self.create_ir_tab()
@@ -444,9 +458,9 @@ class EnhancedImageSelectionPanel(QWidget):
         """)
 
         fields_layout = QGridLayout(control_frame)
-        fields_layout.setContentsMargins(8, 8, 8, 8)
-        fields_layout.setHorizontalSpacing(8)
-        fields_layout.setVerticalSpacing(8)
+        fields_layout.setContentsMargins(4, 4, 4, 4)  # Reduced margins
+        fields_layout.setHorizontalSpacing(4)  # Reduced spacing
+        fields_layout.setVerticalSpacing(4)  # Reduced spacing
 
         # Row 1: Product Type with icon
         product_label = QLabel("<b>Product:</b>")
@@ -502,10 +516,11 @@ class EnhancedImageSelectionPanel(QWidget):
         button_container = QWidget()
         button_container.setStyleSheet("""
             QPushButton {
-                min-height: 30px;
+                min-height: 34px;
                 border-radius: 6px;
                 font-weight: bold;
-                padding: 6px 14px;
+                padding: 6px 18px;
+                font-size: 11pt;
             }
             QPushButton#preview {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -564,150 +579,484 @@ class EnhancedImageSelectionPanel(QWidget):
         fields_layout.addWidget(dummy_btn2, 2, 3)
     
     def create_ir_tab(self) -> None:
-        """Create tab for infrared channels with a compact layout."""
+        """Create tab for infrared channels with a compact layout and scientific organization."""
         ir_tab = QWidget()
         ir_layout = QVBoxLayout(ir_tab)
-        ir_layout.setContentsMargins(2, 2, 2, 2)
-        ir_layout.setSpacing(2)
+        ir_layout.setContentsMargins(3, 3, 3, 3)
+        ir_layout.setSpacing(4)
 
-        # Create container widget directly (no scrollbar needed with compact layout)
+        # Add explanatory header with scientific context
+        header = QLabel("Infrared Channels (Thermal)")
+        header.setStyleSheet("""
+            font-weight: bold;
+            color: #e0e0e0;
+            background-color: #333;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12pt;
+            border: 1px solid #4a8cce;
+        """)
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        ir_layout.addWidget(header)
+
+        # Add description of IR channels
+        desc = QLabel("Thermal channels detect heat radiation from Earth and clouds. Used for temperature measurement, cloud studies, and nighttime imaging.")
+        desc.setStyleSheet("color: #ccc; font-size: 9pt; font-style: italic;")
+        desc.setWordWrap(True)
+        desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        ir_layout.addWidget(desc)
+
+        # Create scrollable area to ensure buttons are always accessible
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+        # Create container widget for buttons
+        container = QWidget()
+        grid_layout = QGridLayout(container)
+        grid_layout.setContentsMargins(2, 2, 2, 2)  # Minimal margins
+        grid_layout.setSpacing(4)  # Slightly increased spacing for readability
+
+        # Group 1: Primary IR Channels (most commonly used)
+        group1_label = QLabel("Primary IR Channels")
+        group1_label.setStyleSheet("""
+            color: #aaddff;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 10pt;
+            background-color: #2a2a2a;
+            padding: 3px;
+            border-radius: 3px;
+        """)
+        grid_layout.addWidget(group1_label, 0, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
+
+        # Add primary IR channels
+        ch13_btn = self.create_channel_button(
+            13, "Clean IR", "10.3 μm",
+            "Primary infrared window channel. Used for cloud detection, fog/dew point, temperature, and surface/cloud top temperature."
+        )
+        ch07_btn = self.create_channel_button(
+            7, "Shortwave IR", "3.9 μm",
+            "Shortwave window. Used for fire detection, fog/stratus, and nighttime cloud discrimination."
+        )
+        ch14_btn = self.create_channel_button(
+            14, "IR Longwave", "11.2 μm",
+            "Longwave infrared window. Similar to Band 13 but less sensitive to water vapor."
+        )
+
+        grid_layout.addWidget(ch13_btn, 1, 0)
+        grid_layout.addWidget(ch07_btn, 1, 1)
+        grid_layout.addWidget(ch14_btn, 1, 2)
+
+        # Group 2: Specialized IR Channels
+        group2_label = QLabel("Specialized IR Channels")
+        group2_label.setStyleSheet("""
+            color: #aaddff;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 10pt;
+            background-color: #2a2a2a;
+            padding: 3px;
+            border-radius: 3px;
+        """)
+        grid_layout.addWidget(group2_label, 2, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
+
+        # Add specialized IR channels
+        ch15_btn = self.create_channel_button(
+            15, "IR 'Dirty'", "12.3 μm",
+            "Dirty longwave window. Sensitive to volcanic ash and dust. Used with Band 13 for split window techniques."
+        )
+        ch11_btn = self.create_channel_button(
+            11, "Cloud Phase", "8.4 μm",
+            "Cloud phase detection. Helps distinguish between ice and water clouds."
+        )
+        ch12_btn = self.create_channel_button(
+            12, "Ozone", "9.6 μm",
+            "Ozone absorption. Used for total ozone estimation and jet stream identification."
+        )
+        ch16_btn = self.create_channel_button(
+            16, "CO2 Longwave", "13.3 μm",
+            "CO2 absorption band. Used for cloud height detection and atmospheric motion vectors."
+        )
+
+        grid_layout.addWidget(ch15_btn, 3, 0)
+        grid_layout.addWidget(ch11_btn, 3, 1)
+        grid_layout.addWidget(ch12_btn, 3, 2)
+        grid_layout.addWidget(ch16_btn, 4, 0)
+
+        # Default selection - most commonly used channel
+        ch13_btn.setChecked(True)
+
+        # Add container to scroll area
+        scroll.setWidget(container)
+
+        # Add scroll area to layout
+        ir_layout.addWidget(scroll)
+
+        # Add the tab with descriptive icon and name
+        self.tabs.addTab(ir_tab, "🔴 IR")
+    
+    def create_water_vapor_tab(self) -> None:
+        """Create tab for water vapor channels with scientific organization."""
+        wv_tab = QWidget()
+        wv_layout = QVBoxLayout(wv_tab)
+        wv_layout.setContentsMargins(3, 3, 3, 3)
+        wv_layout.setSpacing(4)
+
+        # Add explanatory header with scientific context
+        header = QLabel("Water Vapor Channels")
+        header.setStyleSheet("""
+            font-weight: bold;
+            color: #e0e0e0;
+            background-color: #333;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12pt;
+            border: 1px solid #4a8cce;
+        """)
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        wv_layout.addWidget(header)
+
+        # Add description of water vapor channels
+        desc = QLabel("Water vapor channels detect atmospheric moisture at different altitudes. Essential for tracking atmospheric motion, jet streams, and storm development.")
+        desc.setStyleSheet("color: #ccc; font-size: 9pt; font-style: italic;")
+        desc.setWordWrap(True)
+        desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        wv_layout.addWidget(desc)
+
+        # Create scrollable area
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+
+        # Create container widget
         container = QWidget()
         grid_layout = QGridLayout(container)
         grid_layout.setContentsMargins(2, 2, 2, 2)
-        grid_layout.setSpacing(4)  # Reduced spacing
+        grid_layout.setSpacing(4)
 
-        # Add channel selection buttons
-        ch13_btn = self.create_channel_button(13, "Clean IR", "10.3 μm")
-        ch14_btn = self.create_channel_button(14, "IR Longwave", "11.2 μm")
-        ch15_btn = self.create_channel_button(15, "IR 'Dirty'", "12.3 μm")
-        ch07_btn = self.create_channel_button(7, "Shortwave IR", "3.9 μm")
-        ch11_btn = self.create_channel_button(11, "Cloud Phase", "8.4 μm")
-        ch12_btn = self.create_channel_button(12, "Ozone", "9.6 μm")
-        ch16_btn = self.create_channel_button(16, "CO2 Longwave", "13.3 μm")
+        # Add informative label
+        altitude_info = QLabel("Channels are organized by atmospheric altitude:")
+        altitude_info.setStyleSheet("""
+            color: #aaddff;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 10pt;
+            background-color: #2a2a2a;
+            padding: 3px;
+            border-radius: 3px;
+        """)
+        grid_layout.addWidget(altitude_info, 0, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
 
-        # Default selection
-        ch13_btn.setChecked(True)
+        # Add channel selection buttons with scientific descriptions
+        ch08_btn = self.create_channel_button(
+            8, "Upper-Level WV", "6.2 μm",
+            "Detects water vapor in the upper atmosphere (approximately 350-500 mb). Shows high-altitude moisture and helps track jet streams and upper-level disturbances."
+        )
+        ch09_btn = self.create_channel_button(
+            9, "Mid-Level WV", "6.9 μm",
+            "Detects water vapor in the mid-atmosphere (approximately 500-700 mb). Provides information about mid-level moisture content and atmospheric circulation."
+        )
+        ch10_btn = self.create_channel_button(
+            10, "Lower-Level WV", "7.3 μm",
+            "Detects water vapor in the lower atmosphere (approximately 700-850 mb). Useful for tracking lower tropospheric moisture and potential thunderstorm development."
+        )
 
-        # Use more efficient 4x2 grid layout
-        grid_layout.addWidget(ch13_btn, 0, 0)
-        grid_layout.addWidget(ch14_btn, 0, 1)
-        grid_layout.addWidget(ch15_btn, 1, 0)
-        grid_layout.addWidget(ch07_btn, 1, 1)
-        grid_layout.addWidget(ch11_btn, 2, 0)
-        grid_layout.addWidget(ch12_btn, 2, 1)
-        grid_layout.addWidget(ch16_btn, 3, 0)
-        
-        # Add container directly to layout (no scroll needed with more compact layout)
-        ir_layout.addWidget(container)
+        # Add visual diagram (as text)
+        level_diagram = QLabel("""
+        Atmospheric Levels:      Example Features:
 
-        # Add the tab with shorter name
-        self.tabs.addTab(ir_tab, "IR")
-    
-    def create_water_vapor_tab(self) -> None:
-        """Create tab for water vapor channels."""
-        wv_tab = QWidget()
-        wv_layout = QVBoxLayout(wv_tab)
-        
-        # Create scrollable area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        
-        # Create container widget
-        container = QWidget()
-        grid_layout = QGridLayout(container)
-        
-        # Add channel selection buttons
-        ch08_btn = self.create_channel_button(8, "Upper-Level WV", "6.2 μm")
-        ch09_btn = self.create_channel_button(9, "Mid-Level WV", "6.9 μm")
-        ch10_btn = self.create_channel_button(10, "Lower-Level WV", "7.3 μm")
-        
-        # Add to grid layout
-        grid_layout.addWidget(ch08_btn, 0, 0)
-        grid_layout.addWidget(ch09_btn, 0, 1)
-        grid_layout.addWidget(ch10_btn, 1, 0)
-        
+        Upper (6.2 μm)           Jet streams, high clouds
+           ↑
+        Mid (6.9 μm)             Mid-level moisture, fronts
+           ↑
+        Lower (7.3 μm)           Low-level moisture, fog
+        """)
+        level_diagram.setStyleSheet("""
+            color: #dddddd;
+            font-size: 9pt;
+            font-family: monospace;
+            background-color: #252525;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #3c3c3c;
+        """)
+
+        # Add to grid layout with organization by height
+        grid_layout.addWidget(ch08_btn, 1, 0)
+        grid_layout.addWidget(ch09_btn, 1, 1)
+        grid_layout.addWidget(ch10_btn, 1, 2)
+        grid_layout.addWidget(level_diagram, 2, 0, 1, 3)
+
         # Add container to scroll area
         scroll.setWidget(container)
         wv_layout.addWidget(scroll)
-        
-        # Add the tab
-        self.tabs.addTab(wv_tab, "Water Vapor")
+
+        # Add the tab with descriptive icon
+        self.tabs.addTab(wv_tab, "💧 Water")
     
     def create_visible_tab(self) -> None:
-        """Create tab for visible and near-IR channels."""
+        """Create tab for visible and near-IR channels with scientific organization."""
         vis_tab = QWidget()
         vis_layout = QVBoxLayout(vis_tab)
-        
+        vis_layout.setContentsMargins(3, 3, 3, 3)
+        vis_layout.setSpacing(4)
+
+        # Add explanatory header with scientific context
+        header = QLabel("Visible & Near-IR Channels")
+        header.setStyleSheet("""
+            font-weight: bold;
+            color: #e0e0e0;
+            background-color: #333;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12pt;
+            border: 1px solid #4a8cce;
+        """)
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        vis_layout.addWidget(header)
+
+        # Add description of visible channels
+        desc = QLabel("Visible and near-infrared channels show reflected sunlight from Earth's surface, clouds, and atmosphere. These channels are only effective during daylight hours.")
+        desc.setStyleSheet("color: #ccc; font-size: 9pt; font-style: italic;")
+        desc.setWordWrap(True)
+        desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        vis_layout.addWidget(desc)
+
         # Create scrollable area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        
+
         # Create container widget
         container = QWidget()
         grid_layout = QGridLayout(container)
-        
-        # Add channel selection buttons
-        ch01_btn = self.create_channel_button(1, "Blue", "0.47 μm")
-        ch02_btn = self.create_channel_button(2, "Red", "0.64 μm")
-        ch03_btn = self.create_channel_button(3, "Veggie", "0.86 μm")
-        ch04_btn = self.create_channel_button(4, "Cirrus", "1.37 μm")
-        ch05_btn = self.create_channel_button(5, "Snow/Ice", "1.6 μm")
-        ch06_btn = self.create_channel_button(6, "Cloud Particle", "2.2 μm")
-        
-        # Add to grid layout
-        grid_layout.addWidget(ch01_btn, 0, 0)
-        grid_layout.addWidget(ch02_btn, 0, 1)
-        grid_layout.addWidget(ch03_btn, 1, 0)
-        grid_layout.addWidget(ch04_btn, 1, 1)
-        grid_layout.addWidget(ch05_btn, 2, 0)
-        grid_layout.addWidget(ch06_btn, 2, 1)
-        
+        grid_layout.setContentsMargins(2, 2, 2, 2)
+        grid_layout.setSpacing(4)
+
+        # Group 1: Visible Light Channels
+        group1_label = QLabel("Visible Spectrum Channels")
+        group1_label.setStyleSheet("""
+            color: #aaddff;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 10pt;
+            background-color: #2a2a2a;
+            padding: 3px;
+            border-radius: 3px;
+        """)
+        grid_layout.addWidget(group1_label, 0, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
+
+        # Add visible channels with scientific descriptions
+        ch01_btn = self.create_channel_button(
+            1, "Blue", "0.47 μm",
+            "Blue visible channel. Used for daytime aerosol detection and as a component of true-color imagery. Helps detect dust, haze, and smoke."
+        )
+        ch02_btn = self.create_channel_button(
+            2, "Red", "0.64 μm",
+            "Red visible channel. Primary visible band for cloud detection, monitoring dust storms, and volcano plumes. Component of true-color imagery."
+        )
+        ch03_btn = self.create_channel_button(
+            3, "Veggie", "0.86 μm",
+            "Near-IR vegetation channel. Strongly reflects healthy vegetation. Used for vegetation health monitoring, fire monitoring, and fog detection."
+        )
+
+        grid_layout.addWidget(ch01_btn, 1, 0)
+        grid_layout.addWidget(ch02_btn, 1, 1)
+        grid_layout.addWidget(ch03_btn, 1, 2)
+
+        # Group 2: Special Near-IR Channels
+        group2_label = QLabel("Near-IR Specialty Channels")
+        group2_label.setStyleSheet("""
+            color: #aaddff;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 10pt;
+            background-color: #2a2a2a;
+            padding: 3px;
+            border-radius: 3px;
+        """)
+        grid_layout.addWidget(group2_label, 2, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
+
+        # Add specialized near-IR channels
+        ch04_btn = self.create_channel_button(
+            4, "Cirrus", "1.37 μm",
+            "Cirrus cloud detection. This channel readily detects thin cirrus clouds which might be missed by other channels."
+        )
+        ch05_btn = self.create_channel_button(
+            5, "Snow/Ice", "1.6 μm",
+            "Snow/Ice discrimination. Helps distinguish between clouds (highly reflective) and snow/ice (absorbs at this wavelength)."
+        )
+        ch06_btn = self.create_channel_button(
+            6, "Cloud Particle", "2.2 μm",
+            "Cloud particle size. Helps distinguish between water and ice clouds based on particle size. Also useful for land applications."
+        )
+
+        # Add information about typical applications
+        applications = QLabel("""
+        • True Color images use bands 1, 2, and 3
+        • Snow detection uses band 5
+        • Cirrus cloud detection uses band 4
+        • Daytime fog detection uses bands 3 and 2
+        """)
+        applications.setStyleSheet("""
+            color: #dddddd;
+            font-size: 9pt;
+            background-color: #252525;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #3c3c3c;
+        """)
+        applications.setWordWrap(True)
+
+        grid_layout.addWidget(ch04_btn, 3, 0)
+        grid_layout.addWidget(ch05_btn, 3, 1)
+        grid_layout.addWidget(ch06_btn, 3, 2)
+        grid_layout.addWidget(applications, 4, 0, 1, 3)
+
         # Add container to scroll area
         scroll.setWidget(container)
         vis_layout.addWidget(scroll)
-        
-        # Add the tab
-        self.tabs.addTab(vis_tab, "Visible/Near-IR")
+
+        # Add the tab with descriptive icon
+        self.tabs.addTab(vis_tab, "☀️ Visible")
     
     def create_rgb_tab(self) -> None:
-        """Create tab for RGB composite products."""
+        """Create tab for RGB composite products with scientific organization."""
         rgb_tab = QWidget()
         rgb_layout = QVBoxLayout(rgb_tab)
-        
+        rgb_layout.setContentsMargins(3, 3, 3, 3)
+        rgb_layout.setSpacing(4)
+
+        # Add explanatory header with scientific context
+        header = QLabel("RGB Composite Products")
+        header.setStyleSheet("""
+            font-weight: bold;
+            color: #e0e0e0;
+            background-color: #333;
+            padding: 5px;
+            border-radius: 4px;
+            font-size: 12pt;
+            border: 1px solid #4a8cce;
+        """)
+        header.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        rgb_layout.addWidget(header)
+
+        # Add description of RGB composite products
+        desc = QLabel("RGB composites combine multiple satellite channels to highlight specific atmospheric and surface features. These derived products simplify analysis of complex phenomena.")
+        desc.setStyleSheet("color: #ccc; font-size: 9pt; font-style: italic;")
+        desc.setWordWrap(True)
+        desc.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        rgb_layout.addWidget(desc)
+
         # Create scrollable area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-        
+
         # Create container widget
         container = QWidget()
         grid_layout = QGridLayout(container)
-        
-        # Add RGB product selection buttons
-        true_color_btn = self.create_channel_button(100, "True Color", "RGB")
-        airmass_btn = self.create_channel_button(103, "Airmass RGB", "RGB")
-        fire_rgb_btn = self.create_channel_button(104, "Fire Temperature", "RGB")
-        dust_rgb_btn = self.create_channel_button(105, "Dust RGB", "RGB")
-        cloud_phase_btn = self.create_channel_button(106, "Day Cloud Phase", "RGB")
-        
-        # Add to grid layout
-        grid_layout.addWidget(true_color_btn, 0, 0)
-        grid_layout.addWidget(airmass_btn, 0, 1)
-        grid_layout.addWidget(fire_rgb_btn, 1, 0)
-        grid_layout.addWidget(dust_rgb_btn, 1, 1)
-        grid_layout.addWidget(cloud_phase_btn, 2, 0)
-        
+        grid_layout.setContentsMargins(2, 2, 2, 2)
+        grid_layout.setSpacing(4)
+
+        # Group 1: Basic RGB Products
+        group1_label = QLabel("Standard RGB Products")
+        group1_label.setStyleSheet("""
+            color: #aaddff;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 10pt;
+            background-color: #2a2a2a;
+            padding: 3px;
+            border-radius: 3px;
+        """)
+        grid_layout.addWidget(group1_label, 0, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
+
+        # Add RGB composite buttons with descriptions
+        true_color_btn = self.create_channel_button(
+            100, "True Color", "RGB",
+            "Natural-looking RGB composite made from Bands 1 (blue), 2 (red), and 3 (green, approximated). Shows Earth as the human eye would see it."
+        )
+        airmass_btn = self.create_channel_button(
+            103, "Airmass RGB", "RGB",
+            "Distinguishes between warm/cold and dry/moist air masses. Useful for tracking jet streams, frontal systems, and high-level moisture."
+        )
+
+        grid_layout.addWidget(true_color_btn, 1, 0)
+        grid_layout.addWidget(airmass_btn, 1, 1)
+
+        # Group 2: Specialized RGB Products
+        group2_label = QLabel("Specialized RGB Products")
+        group2_label.setStyleSheet("""
+            color: #aaddff;
+            font-weight: bold;
+            margin-top: 5px;
+            font-size: 10pt;
+            background-color: #2a2a2a;
+            padding: 3px;
+            border-radius: 3px;
+        """)
+        grid_layout.addWidget(group2_label, 2, 0, 1, 3, Qt.AlignmentFlag.AlignCenter)
+
+        # Add specialized RGB products
+        fire_rgb_btn = self.create_channel_button(
+            104, "Fire Temperature", "RGB",
+            "Highlights hot spots related to fires. Combines shortwave IR and visible bands to detect active fires and hot surfaces."
+        )
+        dust_rgb_btn = self.create_channel_button(
+            105, "Dust RGB", "RGB",
+            "Detects airborne dust and sand. Uses split window IR channels to distinguish dust from other features."
+        )
+        cloud_phase_btn = self.create_channel_button(
+            106, "Day Cloud Phase", "RGB",
+            "Distinguishes between ice clouds (red), water clouds (white/cyan), and snow (green). Helps identify different cloud types and phase states."
+        )
+
+        # Add RGB composite information
+        rgb_info = QLabel("""
+        RGB composites are created by assigning different channels to the
+        red, green, and blue components of a color image. Each has specific
+        applications for weather forecasting and analysis:
+
+        • True Color: General Earth viewing, smoke, dust, clouds
+        • Airmass: Jet streams, air masses, stratospheric intrusions
+        • Fire: Active fire detection, hot surfaces
+        • Dust: Dust and sand storms, aerosol tracking
+        • Cloud Phase: Cloud type identification, aviation safety
+        """)
+        rgb_info.setStyleSheet("""
+            color: #dddddd;
+            font-size: 9pt;
+            background-color: #252525;
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #3c3c3c;
+        """)
+        rgb_info.setWordWrap(True)
+
+        grid_layout.addWidget(fire_rgb_btn, 3, 0)
+        grid_layout.addWidget(dust_rgb_btn, 3, 1)
+        grid_layout.addWidget(cloud_phase_btn, 3, 2)
+        grid_layout.addWidget(rgb_info, 4, 0, 1, 3)
+
         # Add container to scroll area
         scroll.setWidget(container)
         rgb_layout.addWidget(scroll)
-        
-        # Add the tab
-        self.tabs.addTab(rgb_tab, "RGB Composites")
+
+        # Add the tab with descriptive icon
+        self.tabs.addTab(rgb_tab, "🌈 RGB")
     
-    def create_channel_button(self, channel_num: int, name: str, wavelength: str) -> QPushButton:
-        """Create a visually-enhanced button for channel selection with improved readability."""
+    def create_channel_button(self, channel_num: int, name: str, wavelength: str, description: str = "") -> QPushButton:
+        """Create a visually-enhanced button for channel selection with improved readability.
+
+        Args:
+            channel_num: The ABI channel number
+            name: Display name for the channel
+            wavelength: Wavelength in μm or other unit
+            description: Optional scientific description of the channel
+        """
         # Use push button with enhanced styling
         button = QPushButton()
         button.setCheckable(True)
@@ -755,22 +1104,45 @@ class EnhancedImageSelectionPanel(QWidget):
             else:
                 icon = "🌈"  # Rainbow for other RGB products
 
-        # Create a simple text format without HTML formatting
-        label_text = f"{icon} {name}\n{wavelength}\nBand {channel_num}"
+        # Format text with proper spacing and alignment for better display
+        # For RGB composites, we don't need to show band number
+        if "RGB" in wavelength:
+            label_text = f"{icon} {name}\n{wavelength}"
+        else:
+            label_text = f"{icon} {name}\n{wavelength}\nBand {channel_num}"
 
         # Set the text directly on the button
         button.setText(label_text)
-        button.setMinimumWidth(100)  # Slightly wider for better readability
-        button.setMaximumHeight(50)  # Taller for better content spacing
+        button.setMinimumWidth(100)  # Moderate width to fit more in a row
+        button.setMaximumHeight(70)  # Slightly shorter for better vertical space usage
 
-        # Add tooltips with details about the channel
-        button.setToolTip(f"Channel {channel_num}: {name}\nWavelength: {wavelength}\nClick to select this channel")
+        # Add detailed tooltips with scientific information
+        tooltip = f"ABI Band {channel_num}: {name}\nWavelength: {wavelength}"
 
-        # Apply additional styling for better text alignment and appearance
+        # Add scientific description if provided
+        if description:
+            tooltip += f"\n\n{description}"
+
+        button.setToolTip(tooltip)
+
+        # Apply enhanced styling for better text appearance in all tabs
         button.setStyleSheet("""
-            text-align: center;
-            padding: 4px;
-            line-height: 120%;
+            QPushButton {
+                text-align: center;
+                padding: 6px;
+                background-color: #2d2d2d;
+                border: 1px solid #444;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #3a3a3a;
+                border: 1px solid #555;
+            }
+            QPushButton:checked {
+                background-color: #2b5d8e;
+                border: 1px solid #3a6ea5;
+                font-weight: bold;
+            }
         """)
 
         # Store channel number as a property
@@ -1142,16 +1514,19 @@ class EnhancedGOESImageryTab(QWidget):
             QPushButton.channel-button {
                 background-color: #252525;
                 color: #e0e0e0;
-                padding: 6px;
+                padding: 4px;  /* Reduced padding */
                 border: 1px solid #3c3c3c;
-                border-radius: 6px;
-                min-height: 30px;
-                text-align: left;
+                border-radius: 4px;  /* Smaller radius */
+                min-height: 28px;  /* Reduced height */
+                text-align: center;
                 /* Add gradient background for depth */
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
                     stop:0 #2d2d2d, stop:1 #222222);
                 /* Add slight shadow effect */
-                margin: 2px 4px;
+                margin: 2px 2px;  /* Reduced margins */
+                /* Better text display for multiline content */
+                line-height: 120%;  /* Tighter line spacing */
+                font-size: 11pt;
             }
 
             QPushButton.channel-button:hover {
@@ -1180,7 +1555,7 @@ class EnhancedGOESImageryTab(QWidget):
 
             QLabel.channel-info {
                 color: #b0b0b0;
-                font-size: 9pt;
+                font-size: 10pt;
             }
 
             /* Enhanced Tab styling with stronger visual identity */
@@ -1240,9 +1615,9 @@ class EnhancedGOESImageryTab(QWidget):
         scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         # Make the scroll area more compact by removing any padding/margins
         scroll_area.setContentsMargins(0, 0, 0, 0)
-        # Set the scroll area to have a fixed width that's appropriate for the controls
-        scroll_area.setMinimumWidth(200)
-        scroll_area.setMaximumWidth(260)
+        # Set the scroll area to have a width that ensures tabs are fully visible
+        scroll_area.setMinimumWidth(350)  # Increased for better tab visibility
+        scroll_area.setMaximumWidth(450)  # Increased to allow enough space for all tabs
         # We want the scroll area to take as little horizontal space as needed
         scroll_area.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
 
@@ -1253,8 +1628,8 @@ class EnhancedGOESImageryTab(QWidget):
         self.main_splitter.addWidget(scroll_area)
         self.main_splitter.addWidget(self.view_panel)
 
-        # Set relative sizes (1:4 ratio) to give more space to the image and less to the controls
-        self.main_splitter.setSizes([80, 320])
+        # Set relative sizes (4:6 ratio) to give more space to the controls/tabs
+        self.main_splitter.setSizes([400, 600])
         # Make splitter handle more compact but visually distinct
         self.main_splitter.setHandleWidth(5)
         # Style the splitter handle to be more visible
