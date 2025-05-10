@@ -5,14 +5,13 @@ finding missing timestamps, and reconciling local data with expectations.
 """
 
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Set, Tuple, Optional, Any, Callable, Union
+from typing import Dict, List, Optional, Any, Callable
 
 from goesvfi.utils import log
 from .time_index import (
     SatellitePattern,
-    extract_timestamp,
     scan_directory_for_timestamps,
     generate_timestamp_sequence,
     detect_interval,
@@ -30,21 +29,19 @@ CancelCallback = Callable[[], bool]
 class Reconciler:
     """
     Core business logic for scanning directories and identifying missing timestamps.
-    
+
     This class handles the process of scanning a directory for satellite imagery,
     identifying missing timestamps within a date range, and providing detailed
     analysis of the findings.
     """
-    
     def __init__(self, cache_db_path: Optional[Path] = None):
         """
         Initialize the Reconciler with optional cache database.
-        
+
         Args:
             cache_db_path: Optional path to the cache database file
         """
         self.cache = CacheDB(cache_db_path) if cache_db_path else CacheDB()
-    
     def scan_date_range(
         self,
         start_date: datetime,
@@ -58,7 +55,7 @@ class Reconciler:
     ) -> Dict[str, Any]:
         """
         Scan for missing timestamps within the date range.
-        
+
         Args:
             start_date: Start date/time for the range
             end_date: End date/time for the range
@@ -68,33 +65,29 @@ class Reconciler:
             progress_callback: Optional callback for progress updates
             should_cancel: Optional callback to check if scan should be cancelled
             force_rescan: Whether to force a rescan even if cached results exist
-            
+
         Returns:
             Dict with scan results including missing timestamps
         """
         LOGGER.info(f"Starting scan for date range {start_date} to {end_date} "
-                   f"with pattern {satellite_pattern.name}")
-        
+                  f"with pattern {satellite_pattern.name}")
         scan_start_time = time.time()
-        
         # Check cache first if not forcing a rescan
         if not force_rescan:
             options = {"interval_auto_detect": interval_minutes == 0}
             cached_result = self.cache.get_cached_scan(
-                start_date, end_date, satellite_pattern, 
+                start_date, end_date, satellite_pattern,
                 interval_minutes, base_directory, options
             )
-            
             if cached_result:
                 LOGGER.info(f"Using cached scan results from {cached_result['scan_time']}")
-                
                 # Report progress if callback provided
                 if progress_callback:
                     progress_callback(100, 100, 0.0)  # Complete
-                
+
                 # Extract missing timestamps as datetime objects
                 missing_timestamps = [item['timestamp'] for item in cached_result['missing']]
-                
+
                 # Return results
                 return {
                     "status": "completed",
@@ -111,7 +104,7 @@ class Reconciler:
         if start_date > end_date:
             LOGGER.warning("Start date is after end date, swapping values")
             start_date, end_date = end_date, start_date
-        
+
         # Validate directory exists
         if not base_directory.exists() or not base_directory.is_dir():
             error_msg = f"Base directory does not exist: {base_directory}"
@@ -136,7 +129,7 @@ class Reconciler:
         
         # Step 1: Scan directory for existing files and extract timestamps
         LOGGER.info(f"Scanning directory {base_directory} for timestamps")
-        
+
         # Start directory scan with filtering by date range
         found_timestamps = scan_directory_for_timestamps(
             base_directory, satellite_pattern, start_date, end_date
@@ -187,8 +180,7 @@ class Reconciler:
         found_set = set(found_timestamps)
         expected_set = set(expected_timestamps)
         missing_set = expected_set - found_set
-        missing_timestamps = sorted(list(missing_set))
-        
+        missing_timestamps = sorted(missing_set)
         # Progress update
         if progress_callback:
             progress_callback(70, 100, 0.0)  # 70% progress after finding missing
@@ -265,7 +257,7 @@ class Reconciler:
         current_gap = [sorted_timestamps[0]]
         
         for i in range(1, len(sorted_timestamps)):
-            prev = sorted_timestamps[i-1]
+            prev = sorted_timestamps[i - 1]
             curr = sorted_timestamps[i]
             
             # Check if consecutive (allowing for small variations)

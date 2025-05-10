@@ -9,13 +9,13 @@ and error handling.
 import logging
 import traceback
 import time
-from typing import Dict, Any, List, Optional, Tuple, Union, Callable, TypeVar, Generic
+from typing import Dict, Any, Optional, Callable, TypeVar, Generic
 from dataclasses import dataclass
 from enum import Enum, auto
-from concurrent.futures import ThreadPoolExecutor, Future
+# Concurrent futures for thread management
 
-from PyQt6.QtCore import QObject, pyqtSignal, QTimer, QThread, QRunnable, QThreadPool
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import QObject, pyqtSignal, QTimer, QRunnable, QThreadPool
+# PyQt widgets for UI integration
 
 # Configure logging
 LOGGER = logging.getLogger(__name__)
@@ -71,8 +71,8 @@ class Task(QRunnable, Generic[T, P]):
     with support for progress reporting, cancellation, and error handling.
     """
     
-    def __init__(self, task_id: str, func: Callable[..., T], 
-                *args, **kwargs) -> None:
+    def __init__(self, task_id: str, func: Callable[..., T],
+                 *args, **kwargs) -> None:
         """
         Initialize the task.
         
@@ -134,7 +134,7 @@ class Task(QRunnable, Generic[T, P]):
             self.signals.failed.emit(self.task_id, e, error_traceback)
             
             # Log error
-            LOGGER.error(f"Task {self.task_id} failed: {e}\n{error_traceback}")
+            LOGGER.error("Task %s failed: %s\n%s", self.task_id, e, error_traceback)
     
     def _progress_callback(self, progress_info: P) -> None:
         """
@@ -157,7 +157,7 @@ class Task(QRunnable, Generic[T, P]):
     def cancel(self) -> None:
         """Request cancellation of the task."""
         self._cancel_requested = True
-        LOGGER.debug(f"Cancellation requested for task {self.task_id}")
+        LOGGER.debug("Cancellation requested for task %s", self.task_id)
 
 
 class TaskManager(QObject):
@@ -190,9 +190,9 @@ class TaskManager(QObject):
         self._tasks: Dict[str, Task] = {}
         
         # Configure logging
-        LOGGER.info(f"Task manager initialized with {max_threads} threads")
+        LOGGER.info("Task manager initialized with %d threads", max_threads)
     
-    def submit_task(self, task_id: str, func: Callable[..., T], 
+    def submit_task(self, task_id: str, func: Callable[..., T],
                    *args, **kwargs) -> None:
         """
         Submit a task for execution in the background.
@@ -219,7 +219,7 @@ class TaskManager(QObject):
         # Submit task to thread pool
         self.thread_pool.start(task)
         
-        LOGGER.debug(f"Task {task_id} submitted")
+        LOGGER.debug("Task %s submitted", task_id)
     
     def cancel_task(self, task_id: str) -> bool:
         """
@@ -234,10 +234,10 @@ class TaskManager(QObject):
         """
         if task_id in self._tasks:
             self._tasks[task_id].cancel()
-            LOGGER.debug(f"Cancellation requested for task {task_id}")
+            LOGGER.debug("Cancellation requested for task %s", task_id)
             return True
         
-        LOGGER.warning(f"Cannot cancel task {task_id}: not found")
+        LOGGER.warning("Cannot cancel task %s: not found", task_id)
         return False
     
     def cancel_all_tasks(self) -> None:
@@ -245,7 +245,7 @@ class TaskManager(QObject):
         for task_id in list(self._tasks.keys()):
             self.cancel_task(task_id)
         
-        LOGGER.info(f"Cancellation requested for all {len(self._tasks)} tasks")
+        LOGGER.info("Cancellation requested for all %d tasks", len(self._tasks))
     
     def is_task_active(self, task_id: str) -> bool:
         """
@@ -278,7 +278,7 @@ class TaskManager(QObject):
         # Emit started signal
         self.task_started.emit(task_id)
         
-        LOGGER.debug(f"Task {task_id} started")
+        LOGGER.debug("Task %s started", task_id)
     
     def _on_task_progress(self, task_id: str, progress_info: Any) -> None:
         """
@@ -306,10 +306,10 @@ class TaskManager(QObject):
         # Emit completed signal
         self.task_completed.emit(task_id, result)
         
-        LOGGER.debug(f"Task {task_id} completed")
+        LOGGER.debug("Task %s completed", task_id)
     
-    def _on_task_failed(self, task_id: str, error: Exception, 
-                       error_traceback: str) -> None:
+    def _on_task_failed(self, task_id: str, error: Exception,
+                        error_traceback: str) -> None:
         """
         Handle task failed event.
         
@@ -325,7 +325,7 @@ class TaskManager(QObject):
         # Emit failed signal
         self.task_failed.emit(task_id, error, error_traceback)
         
-        LOGGER.error(f"Task {task_id} failed: {error}\n{error_traceback}")
+        LOGGER.error("Task %s failed: %s\n%s", task_id, error, error_traceback)
     
     def _on_task_cancelled(self, task_id: str) -> None:
         """
@@ -341,7 +341,7 @@ class TaskManager(QObject):
         # Emit cancelled signal
         self.task_cancelled.emit(task_id)
         
-        LOGGER.debug(f"Task {task_id} cancelled")
+        LOGGER.debug("Task %s cancelled", task_id)
     
     def cleanup(self) -> None:
         """Clean up resources used by the task manager."""
@@ -366,9 +366,9 @@ class UIFreezeMonitor(QObject):
     freeze_detected = pyqtSignal(float)  # duration_ms
     freeze_resolved = pyqtSignal(float)  # total_duration_ms
     
-    def __init__(self, parent: Optional[QObject] = None, 
-                check_interval_ms: int = 100,
-                freeze_threshold_ms: int = 500) -> None:
+    def __init__(self, parent: Optional[QObject] = None,
+                 check_interval_ms: int = 100,
+                 freeze_threshold_ms: int = 500) -> None:
         """
         Initialize the freeze monitor.
         
@@ -441,13 +441,13 @@ class UIFreezeMonitor(QObject):
                 self._is_frozen = True
                 self._freeze_start_time = self._last_check_time
                 self.freeze_detected.emit(elapsed)
-                LOGGER.warning(f"UI freeze detected: {elapsed:.1f}ms")
+                LOGGER.warning("UI freeze detected: %.1fms", elapsed)
         elif self._is_frozen:
             # Freeze has resolved
             total_duration = current_time - self._freeze_start_time
             self._is_frozen = False
             self.freeze_resolved.emit(total_duration)
-            LOGGER.info(f"UI freeze resolved after {total_duration:.1f}ms")
+            LOGGER.info("UI freeze resolved after %.1fms", total_duration)
         
         # Update last check time
         self._last_check_time = current_time
@@ -479,7 +479,7 @@ class BackgroundProcessManager:
         
         LOGGER.info("Background process manager initialized")
     
-    def submit_task(self, task_id: str, func: Callable[..., T], 
+    def submit_task(self, task_id: str, func: Callable[..., T],
                    *args, **kwargs) -> None:
         """
         Submit a task for execution in the background.
@@ -513,7 +513,7 @@ class BackgroundProcessManager:
             duration_ms: Duration of the freeze, in milliseconds
         """
         # Log the freeze
-        LOGGER.warning(f"UI freeze detected: {duration_ms:.1f}ms")
+        LOGGER.warning("UI freeze detected: %.1fms", duration_ms)
     
     def _on_freeze_resolved(self, total_duration_ms: float) -> None:
         """
@@ -523,7 +523,7 @@ class BackgroundProcessManager:
             total_duration_ms: Total duration of the freeze, in milliseconds
         """
         # Log the resolution
-        LOGGER.info(f"UI freeze resolved after {total_duration_ms:.1f}ms")
+        LOGGER.info("UI freeze resolved after %.1fms", total_duration_ms)
     
     def cleanup(self) -> None:
         """Clean up resources used by the background process manager."""
@@ -540,8 +540,8 @@ class BackgroundProcessManager:
 background_manager = BackgroundProcessManager()
 
 
-def run_in_background(task_id: str, func: Callable[..., T], 
-                     *args, **kwargs) -> None:
+def run_in_background(task_id: str, func: Callable[..., T],
+                      *args, **kwargs) -> None:
     """
     Run a function in the background without freezing the UI.
     

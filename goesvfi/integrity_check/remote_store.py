@@ -6,15 +6,15 @@ satellite imagery repositories, downloading missing files, and reporting progres
 
 import os
 import requests
-import hashlib
+# Import standard libraries
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Callable, Dict, Any, List, Tuple
+from typing import Optional, Callable
 from urllib.parse import urlparse
 
 from goesvfi.utils import log
-from .time_index import SatellitePattern, format_timestamp, generate_expected_filename
+from .time_index import SatellitePattern, generate_expected_filename
 
 LOGGER = log.get_logger(__name__)
 
@@ -30,57 +30,54 @@ class RemoteStore(ABC):
     def construct_url(self, timestamp: datetime, pattern: SatellitePattern) -> str:
         """
         Construct a URL for a specific timestamp and satellite pattern.
-        
+
         Args:
             timestamp: The datetime for the image
             pattern: The satellite pattern to use
-            
+
         Returns:
             A URL string for the remote file
         """
-        pass
     
     @abstractmethod
     def check_file_exists(self, url: str) -> bool:
         """
         Check if a file exists at the given URL.
-        
+
         Args:
             url: The URL to check
-            
+
         Returns:
             True if the file exists, False otherwise
         """
-        pass
     
     @abstractmethod
-    def download_file(self, 
-                    url: str, 
-                    destination: Path,
-                    progress_callback: Optional[ProgressCallback] = None,
-                    should_cancel: Optional[CancelCallback] = None) -> bool:
+    def download_file(self,
+                     url: str,
+                     destination: Path,
+                     progress_callback: Optional[ProgressCallback] = None,
+                     should_cancel: Optional[CancelCallback] = None) -> bool:
         """
         Download a file from the remote store.
-        
+
         Args:
             url: The URL to download from
             destination: The local path to save to
             progress_callback: Optional callback for progress updates
             should_cancel: Optional callback to check if download should be cancelled
-            
+
         Returns:
             True if download succeeded, False otherwise
         """
-        pass
 
 
 class HttpRemoteStore(RemoteStore):
     """HTTP-based remote store implementation."""
     
-    def __init__(self, 
-                base_url: str,
-                timeout: int = 30,
-                verify_ssl: bool = True):
+    def __init__(self,
+                 base_url: str,
+                 timeout: int = 30,
+                 verify_ssl: bool = True):
         """
         Initialize the HTTP remote store.
         
@@ -99,14 +96,14 @@ class HttpRemoteStore(RemoteStore):
         # Ensure base URL is accessible
         try:
             response = self.session.head(
-                self.base_url, 
-                timeout=self.timeout,
-                verify=self.verify_ssl
+                self.base_url,
+                 timeout=self.timeout,
+                 verify=self.verify_ssl
             )
             if response.status_code not in [200, 301, 302]:
-                LOGGER.warning(f"Base URL may not be accessible: {self.base_url}, status: {response.status_code}")
+                LOGGER.warning("Base URL may not be accessible: %s, status: %d", self.base_url, response.status_code)
         except requests.RequestException as e:
-            LOGGER.error(f"Error connecting to base URL {self.base_url}: {e}")
+            LOGGER.error("Error connecting to base URL %s: %s", self.base_url, e)
     
     def construct_url(self, timestamp: datetime, pattern: SatellitePattern) -> str:
         """
@@ -153,14 +150,14 @@ class HttpRemoteStore(RemoteStore):
             )
             return response.status_code == 200
         except requests.RequestException as e:
-            LOGGER.debug(f"Error checking if file exists at {url}: {e}")
+            LOGGER.debug("Error checking if file exists at %s: %s", url, e)
             return False
     
     def download_file(self, 
-                    url: str, 
-                    destination: Path,
-                    progress_callback: Optional[ProgressCallback] = None,
-                    should_cancel: Optional[CancelCallback] = None) -> bool:
+ {21}url: str, 
+ {21}destination: Path,
+ {21}progress_callback: Optional[ProgressCallback] = None,
+ {21}should_cancel: Optional[CancelCallback] = None) -> bool:
         """
         Download a file from the remote store.
         
@@ -306,10 +303,10 @@ class FileSystemRemoteStore(RemoteStore):
         return path.exists() and path.is_file()
     
     def download_file(self, 
-                    url: str, 
-                    destination: Path,
-                    progress_callback: Optional[ProgressCallback] = None,
-                    should_cancel: Optional[CancelCallback] = None) -> bool:
+ {21}url: str, 
+ {21}destination: Path,
+ {21}progress_callback: Optional[ProgressCallback] = None,
+ {21}should_cancel: Optional[CancelCallback] = None) -> bool:
         """
         Copy a file from one location to another.
         
