@@ -117,7 +117,7 @@ class DateSorterTab(QWidget):
         self.status_text.setReadOnly(True)
         self.status_text.setMinimumHeight(200)
         self.status_text.setStyleSheet(
-            "background-color: #f5f5f5; font-family: monospace;"
+            "background-color: #f5f5f5; font-family: 'Courier New', 'DejaVu Sans Mono', monospace;"
         )
         status_layout.addWidget(self.status_text)
 

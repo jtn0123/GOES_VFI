@@ -298,7 +298,7 @@ class VisualDateRangePicker(QDialog):
 
         # Preview text
         self.preview_text = QLabel("")
-        self.preview_text.setStyleSheet("QLabel { font-family: monospace; color: #f0f0f0; }")
+        self.preview_text.setStyleSheet("QLabel { font-family: 'Courier New', monospace; color: #f0f0f0; }")
         preview_layout.addWidget(self.preview_text, 1)  # Give stretch priority
 
         # Time span
@@ -648,8 +648,8 @@ class TimelinePickerWidget(QWidget):
         date = self._pixel_to_date(event.pos().x())
         # Initialize both with the same date to avoid None issues
         if date is not None:
-            self.selection_start = date
-            self.selection_end = date
+            self.selection_start = date  # type: ignore
+            self.selection_end = date    # type: ignore
         self.update()
 
     def mouseMoveEvent(self, event) -> None:

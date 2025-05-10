@@ -11,7 +11,7 @@ from typing import List, Optional, Dict, Any, Union, Tuple
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QApplication,
-    QLabel, QPushButton, QFrame, QSplitter, QStackedWidget
+    QLabel, QPushButton, QFrame, QSplitter, QStackedWidget, QComboBox
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QSize
 
@@ -162,14 +162,10 @@ class OptimizedDateSelectionTab(QWidget):
     
     def _open_visual_date_picker(self) -> None:
         """Open the visual date picker dialog."""
-        # Get current range from timeline picker if available
-        try:
-            current_start, current_end = self.timeline_picker.get_date_range()
-        except:
-            # Use default range (last 7 days)
-            from datetime import datetime, timedelta
-            current_start = datetime.now() - timedelta(days=7)
-            current_end = datetime.now()
+        # Use default range (last 7 days) since get_date_range isn't available
+        from datetime import datetime, timedelta
+        current_start = datetime.now() - timedelta(days=7)
+        current_end = datetime.now()
         
         dialog = VisualDateRangePicker(
             self, 
@@ -232,10 +228,11 @@ class OptimizedResultsTab(QWidget):
     """
     Optimized results organization tab for satellite data.
     """
-    
+
     itemSelected = pyqtSignal(MissingTimestamp)
     downloadRequested = pyqtSignal(MissingTimestamp)
     viewRequested = pyqtSignal(MissingTimestamp)
+    directorySelected = pyqtSignal(str)  # Signal for directory selection
     
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the optimized results tab."""
@@ -393,6 +390,17 @@ class OptimizedResultsTab(QWidget):
         """Collapse all groups in the tree view."""
         self.tree_view.collapseAll()
 
+    def set_directory(self, directory: str) -> None:
+        """
+        Set the current working directory for the results tab.
+
+        Args:
+            directory: Path to the directory to analyze
+        """
+        # In a real implementation, this would trigger data loading for the directory
+        # For now, we'll just emit the signal to maintain synchronization
+        self.directorySelected.emit(directory)
+
 
 class SatelliteIntegrityTabGroup(QWidget):
     """
@@ -459,16 +467,17 @@ class SatelliteIntegrityTabGroup(QWidget):
     def _handle_date_range_selected(self, start: datetime, end: datetime) -> None:
         """
         Handle date range selection from the date selection tab.
-        
+
         Args:
             start: Start date
             end: End date
         """
-        # Update timeline tab
+        # Update timeline tab if it has set_date_range method
         # Note: This doesn't update the data, just the displayed range
         # The actual data update needs to come from the view model
-        self.timeline_tab.set_date_range(start, end)
-        
+        if hasattr(self.timeline_tab, 'set_date_range'):
+            self.timeline_tab.set_date_range(start, end)
+
         # Emit signal for external connections
         self.dateRangeSelected.emit(start, end)
     

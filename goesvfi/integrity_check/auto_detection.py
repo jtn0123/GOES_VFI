@@ -26,7 +26,6 @@ LOGGER = logging.getLogger(__name__)
 
 class AutoDetectionError(Exception):
     """Exception raised for auto-detection errors."""
-    pass
 
 
 class DetectionProgressDialog(QProgressDialog):
@@ -85,7 +84,7 @@ class DetectionProgressDialog(QProgressDialog):
                 background-color: #2980b9;
             }
         """)
-        
+
         # Create a status log widget that will display detailed progress
         self.log_widget = QListWidget()
         self.log_widget.setMaximumHeight(150)
@@ -99,15 +98,14 @@ class DetectionProgressDialog(QProgressDialog):
                 font-size: 11px;
             }
         """)
-        
+
         # Find the progress dialog's layout and add our log widget
         layout = self.layout()
         if layout:
             layout.addWidget(self.log_widget, 2, 0, 1, layout.columnCount())
-        
+
         # Adjust default size for better visibility
         self.resize(450, 350)
-    
     def add_log_message(self, message: str, level: str = "info") -> None:
         """Add a log message to the progress dialog.
 
@@ -155,12 +153,11 @@ class AutoDetectionWorker(QThread):
         self.directory = directory
         self.kwargs = kwargs
         self._cancel_requested = False
-    
     def run(self) -> None:
         """Execute the auto-detection operation."""
         try:
             self.progress.emit(0, f"Starting {self.operation} detection...", "info")
-            
+
             if self.operation == "satellite":
                 self._detect_satellite()
             elif self.operation == "date_range":
@@ -169,11 +166,10 @@ class AutoDetectionWorker(QThread):
                 self._detect_interval()
             else:
                 raise AutoDetectionError(f"Unknown operation: {self.operation}")
-            
+
         except Exception as e:
             error_traceback = traceback.format_exc()
             self.error.emit(str(e), error_traceback)
-    
     def _detect_satellite(self) -> None:
         """Detect satellite type from files in the directory."""
         self.progress.emit(10, "Checking directory contents...", "info")
@@ -183,51 +179,57 @@ class AutoDetectionWorker(QThread):
             png_files = list(self.directory.glob("**/*.png"))
             nc_files = list(self.directory.glob("**/*.nc"))
             jpg_files = list(self.directory.glob("**/*.jpg"))
-            
-            self.progress.emit(20, f"Found {len(png_files)} PNG files, {len(nc_files)} NetCDF files, {len(jpg_files)} JPG files", "info")
+
+            self.progress.emit(
+                20,
+                (
+                    f"Found {len(png_files)} PNG files, {len(nc_files)} NetCDF files, "
+                    f"{len(jpg_files)} JPG files"
+                ),
+                "info"
+            )
             
             # Log a few sample filenames for debugging
             if png_files:
                 sample_files = ", ".join([f.name for f in png_files[:3]])
                 self.progress.emit(30, f"Sample PNG files: {sample_files}", "info")
-            
+
             if nc_files:
                 sample_files = ", ".join([f.name for f in nc_files[:3]])
                 self.progress.emit(35, f"Sample NetCDF files: {sample_files}", "info")
-                
             if jpg_files:
                 sample_files = ", ".join([f.name for f in jpg_files[:3]])
                 self.progress.emit(40, f"Sample JPG files: {sample_files}", "info")
-                
         except Exception as dir_error:
             self.progress.emit(30, f"Error listing directory contents: {dir_error}", "error")
-        
+
         # Look for GOES-16 files
         self.progress.emit(50, "Scanning for GOES-16 files...", "info")
-        
         goes16_files = []
         try:
-            goes16_files = TimeIndex.scan_directory_for_timestamps(self.directory, SatellitePattern.GOES_16)
+            goes16_files = TimeIndex.scan_directory_for_timestamps(
+                self.directory, SatellitePattern.GOES_16
+            )
             self.progress.emit(60, f"Found {len(goes16_files)} GOES-16 files", "info")
         except Exception as scan_error:
             self.progress.emit(60, f"Error scanning for GOES-16 files: {scan_error}", "error")
-        
+
         # Look for GOES-18 files
         self.progress.emit(70, "Scanning for GOES-18 files...", "info")
-        
+
         goes18_files = []
         try:
-            goes18_files = TimeIndex.scan_directory_for_timestamps(self.directory, SatellitePattern.GOES_18)
+            goes18_files = TimeIndex.scan_directory_for_timestamps(
+                self.directory, SatellitePattern.GOES_18
+            )
             self.progress.emit(80, f"Found {len(goes18_files)} GOES-18 files", "info")
         except Exception as scan_error:
             self.progress.emit(80, f"Error scanning for GOES-18 files: {scan_error}", "error")
-        
+
         # Select satellite based on file count
         self.progress.emit(90, "Determining satellite type...", "info")
-        
         goes16_count = len(goes16_files)
         goes18_count = len(goes18_files)
-        
         if goes16_count == 0 and goes18_count == 0:
             self.progress.emit(95, "No valid GOES files found", "warning")
             result = {
@@ -236,7 +238,11 @@ class AutoDetectionWorker(QThread):
                 "goes18_count": 0
             }
         elif goes16_count > goes18_count:
-            self.progress.emit(100, f"Detected GOES-16 as primary satellite ({goes16_count} files vs {goes18_count})", "success")
+            self.progress.emit(
+                100,
+                f"Detected GOES-16 as primary satellite ({goes16_count} files vs {goes18_count})",
+                "success"
+            )
             result = {
                 "status": "success",
                 "satellite": SatellitePattern.GOES_16,
@@ -245,7 +251,11 @@ class AutoDetectionWorker(QThread):
                 "goes18_count": goes18_count
             }
         else:
-            self.progress.emit(100, f"Detected GOES-18 as primary satellite ({goes18_count} files vs {goes16_count})", "success")
+            self.progress.emit(
+                100,
+                f"Detected GOES-18 as primary satellite ({goes18_count} files vs {goes16_count})",
+                "success"
+            )
             result = {
                 "status": "success",
                 "satellite": SatellitePattern.GOES_18,
@@ -253,26 +263,25 @@ class AutoDetectionWorker(QThread):
                 "goes16_count": goes16_count,
                 "goes18_count": goes18_count
             }
-        
+
         self.finished.emit(result)
-    
     def _detect_date_range(self) -> None:
         """Detect date range from files in the directory."""
         satellite = self.kwargs.get("satellite", SatellitePattern.GENERIC)
-        
+
         self.progress.emit(10, f"Checking directory for {satellite.name} files...", "info")
-        
         # Look for timestamps in directory based on the specified satellite pattern
         self.progress.emit(30, f"Scanning directory using {satellite.name} pattern...", "info")
-        
         timestamps = []
         try:
             timestamps = TimeIndex.scan_directory_for_timestamps(self.directory, satellite)
             self.progress.emit(50, f"Found {len(timestamps)} valid timestamps", "info")
-            
+
             # Log sample timestamps
             if timestamps:
-                sample_timestamps = ", ".join([ts.strftime("%Y-%m-%d %H:%M") for ts in timestamps[:3]])
+                sample_timestamps = ", ".join(
+                    [ts.strftime("%Y-%m-%d %H:%M") for ts in timestamps[:3]]
+                )
                 self.progress.emit(60, f"Sample timestamps: {sample_timestamps}", "info")
             
         except Exception as scan_error:
@@ -288,7 +297,6 @@ class AutoDetectionWorker(QThread):
         
         # Process the timestamps to find the min and max dates
         self.progress.emit(70, "Analyzing timestamps...", "info")
-        
         if not timestamps:
             self.progress.emit(90, "No valid timestamps found", "warning")
             result = {
@@ -299,15 +307,20 @@ class AutoDetectionWorker(QThread):
         else:
             # Sort timestamps
             timestamps.sort()
-            
+
             # Get min and max dates
             start_date = timestamps[0]
             end_date = timestamps[-1]
-            
             # Ensure end date has time set to end of day
             end_date = end_date.replace(hour=23, minute=59, second=59)
-            
-            self.progress.emit(90, f"Detected date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}", "success")
+            self.progress.emit(
+                90,
+                (
+                    f"Detected date range: {start_date.strftime('%Y-%m-%d')} "
+                    f"to {end_date.strftime('%Y-%m-%d')}"
+                ),
+                "success"
+            )
             
             result = {
                 "status": "success",
@@ -315,23 +328,17 @@ class AutoDetectionWorker(QThread):
                 "end": end_date,
                 "timestamps": timestamps
             }
-        
         self.finished.emit(result)
-    
     def _detect_interval(self) -> None:
         """Detect time interval between files in the directory."""
         timestamps = self.kwargs.get("timestamps", [])
-        
         if not timestamps:
             # Try to get timestamps from the directory
             satellite = self.kwargs.get("satellite", SatellitePattern.GENERIC)
-            
             self.progress.emit(10, "No timestamps provided, scanning directory...", "info")
-            
             try:
                 timestamps = TimeIndex.scan_directory_for_timestamps(self.directory, satellite)
                 self.progress.emit(30, f"Found {len(timestamps)} valid timestamps", "info")
-                
             except Exception as scan_error:
                 self.progress.emit(30, f"Error scanning for timestamps: {scan_error}", "error")
                 result = {
@@ -370,7 +377,8 @@ class AutoDetectionWorker(QThread):
         interval_counts = Counter(intervals)
         
         # Filter out any intervals that are clearly too large (e.g., gaps in data)
-        # Typically, GOES data is available in 5-minute, 10-minute, 15-minute, or 30-minute intervals
+        # Typically, GOES data is available in various standard intervals:
+        # 5-minute, 10-minute, 15-minute, or 30-minute
         valid_intervals = [i for i in intervals if i <= 60]  # Consider intervals up to 1 hour
         
         if not valid_intervals:
@@ -390,7 +398,14 @@ class AutoDetectionWorker(QThread):
             standard_intervals = [5, 10, 15, 30, 60]
             rounded_interval = min(standard_intervals, key=lambda x: abs(x - most_common_interval))
             
-            self.progress.emit(90, f"Detected interval: {rounded_interval} minutes (raw: {most_common_interval:.1f} minutes)", "success")
+            self.progress.emit(
+                90,
+                (
+                    f"Detected interval: {rounded_interval} minutes "
+                    f"(raw: {most_common_interval:.1f} minutes)"
+                ),
+                "success"
+            )
             
             result = {
                 "status": "success",
@@ -400,7 +415,6 @@ class AutoDetectionWorker(QThread):
             }
         
         self.finished.emit(result)
-    
     def cancel(self) -> None:
         """Request cancellation of the operation."""
         self._cancel_requested = True
@@ -409,29 +423,29 @@ class AutoDetectionWorker(QThread):
 class EnhancedAutoDetector:
     """
     Enhanced auto-detection system with improved feedback and cross-tab integration.
-    
-    This class provides methods for auto-detecting various properties of satellite 
-    data, including satellite type, date range, and time interval, with improved 
+
+    This class provides methods for auto-detecting various properties of satellite
+    data, including satellite type, date range, and time interval, with improved
     feedback and integration with the rest of the integrity check system.
     """
-    
+
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """
         Initialize the enhanced auto-detector.
-        
+
         Args:
             parent: Optional parent widget for dialogs
         """
         self.parent = parent
         self._workers: List[AutoDetectionWorker] = []
-    
+
     def detect_satellite(self, directory: Path) -> Optional[Dict[str, Any]]:
         """
         Auto-detect satellite type from files in the directory.
-        
+
         Args:
             directory: Directory to scan for satellite files
-        
+
         Returns:
             Dictionary with detection results, or None if canceled
         """
@@ -458,7 +472,8 @@ class EnhancedAutoDetector:
         
         # Connect signals
         worker.progress.connect(
-            lambda value, message, level: self._update_detection_progress(progress_dialog, value, message, level)
+            lambda value, message, level:
+                self._update_detection_progress(progress_dialog, value, message, level)
         )
         worker.finished.connect(
             lambda result: self._finish_detection(progress_dialog, result, "satellite")
@@ -483,14 +498,17 @@ class EnhancedAutoDetector:
         # Return the result
         return getattr(progress_dialog, "result", None)
     
-    def detect_date_range(self, directory: Path, satellite: SatellitePattern = SatellitePattern.GENERIC) -> Optional[Dict[str, Any]]:
+    def detect_date_range(
+        self, directory: Path,
+        satellite: SatellitePattern = SatellitePattern.GENERIC
+    ) -> Optional[Dict[str, Any]]:
         """
         Auto-detect date range from files in the directory.
-        
+
         Args:
             directory: Directory to scan for files
             satellite: Satellite pattern to use for detection
-        
+
         Returns:
             Dictionary with detection results, or None if canceled
         """
@@ -517,7 +535,8 @@ class EnhancedAutoDetector:
         
         # Connect signals
         worker.progress.connect(
-            lambda value, message, level: self._update_detection_progress(progress_dialog, value, message, level)
+            lambda value, message, level:
+                self._update_detection_progress(progress_dialog, value, message, level)
         )
         worker.finished.connect(
             lambda result: self._finish_detection(progress_dialog, result, "date_range")
@@ -541,17 +560,18 @@ class EnhancedAutoDetector:
         
         # Return the result
         return getattr(progress_dialog, "result", None)
-    
-    def detect_interval(self, directory: Path, timestamps: Optional[List[datetime]] = None, 
-                        satellite: SatellitePattern = SatellitePattern.GENERIC) -> Optional[Dict[str, Any]]:
+    def detect_interval(
+        self, directory: Path, timestamps: Optional[List[datetime]] = None,
+        satellite: SatellitePattern = SatellitePattern.GENERIC
+    ) -> Optional[Dict[str, Any]]:
         """
         Auto-detect time interval between files in the directory.
-        
+
         Args:
             directory: Directory to scan for files
             timestamps: Optional list of timestamps (if already available)
             satellite: Satellite pattern to use for detection if timestamps not provided
-        
+
         Returns:
             Dictionary with detection results, or None if canceled
         """
@@ -573,12 +593,15 @@ class EnhancedAutoDetector:
         progress_dialog.setMinimumDuration(0)  # Show immediately
         
         # Create worker thread
-        worker = AutoDetectionWorker("interval", directory, timestamps=timestamps, satellite=satellite)
+        worker = AutoDetectionWorker(
+            "interval", directory, timestamps=timestamps, satellite=satellite
+        )
         self._workers.append(worker)
         
         # Connect signals
         worker.progress.connect(
-            lambda value, message, level: self._update_detection_progress(progress_dialog, value, message, level)
+            lambda value, message, level:
+                self._update_detection_progress(progress_dialog, value, message, level)
         )
         worker.finished.connect(
             lambda result: self._finish_detection(progress_dialog, result, "interval")
@@ -603,11 +626,12 @@ class EnhancedAutoDetector:
         # Return the result
         return getattr(progress_dialog, "result", None)
     
-    def _update_detection_progress(self, dialog: DetectionProgressDialog, 
-                                  value: int, message: str, level: str) -> None:
-        """
-        Update the detection progress dialog.
-        
+    def _update_detection_progress(
+        self, dialog: DetectionProgressDialog,
+        value: int, message: str, level: str
+    ) -> None:
+        """Update the detection progress dialog.
+
         Args:
             dialog: Progress dialog to update
             value: Progress value (0-100)
@@ -616,12 +640,13 @@ class EnhancedAutoDetector:
         """
         dialog.setValue(value)
         dialog.add_log_message(message, level)
-    
-    def _finish_detection(self, dialog: DetectionProgressDialog, 
-                         result: Dict[str, Any], detection_type: str) -> None:
-        """
-        Handle completion of detection operation.
-        
+
+    def _finish_detection(
+        self, dialog: DetectionProgressDialog,
+        result: Dict[str, Any], detection_type: str
+    ) -> None:
+        """Handle completion of detection operation.
+
         Args:
             dialog: Progress dialog to update
             result: Detection result dictionary
@@ -633,7 +658,8 @@ class EnhancedAutoDetector:
         # Set the dialog's label based on the detection type and result
         if detection_type == "satellite":
             if result.get("status") == "success":
-                dialog.setLabelText(f"Detected {result['satellite_name']} as the primary satellite.")
+                satellite_name = result['satellite_name']
+                dialog.setLabelText(f"Detected {satellite_name} as the primary satellite.")
             elif result.get("status") == "no_files":
                 dialog.setLabelText("No valid GOES files found in the directory.")
         
@@ -659,11 +685,12 @@ class EnhancedAutoDetector:
         if result.get("status") == "success":
             QTimer.singleShot(2000, dialog.accept)
     
-    def _handle_detection_error(self, dialog: DetectionProgressDialog, 
-                               error: str, error_traceback: str) -> None:
-        """
-        Handle detection error.
-        
+    def _handle_detection_error(
+        self, dialog: DetectionProgressDialog,
+        error: str, error_traceback: str
+    ) -> None:
+        """Handle detection error.
+
         Args:
             dialog: Progress dialog to update
             error: Error message
@@ -672,7 +699,7 @@ class EnhancedAutoDetector:
         dialog.setLabelText(f"Error: {error}")
         dialog.add_log_message(f"Error: {error}", "error")
         dialog.add_log_message(f"Traceback: {error_traceback}", "error")
-        
+
         # Enable the cancel button for the user to dismiss the dialog
         dialog.setCancelButtonText("Close")
     

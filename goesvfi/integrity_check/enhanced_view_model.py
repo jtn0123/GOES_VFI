@@ -17,6 +17,13 @@ import traceback
 
 from PyQt6.QtCore import QObject, pyqtSignal, QThread, QThreadPool, QRunnable, QMetaObject, Qt
 
+# Define fetch source enum
+class FetchSource(Enum):
+    AUTO = "auto"
+    S3 = "s3"
+    CDN = "cdn"
+    LOCAL = "local"  # Local files only
+
 from goesvfi.utils import log
 from goesvfi.utils import config
 from .reconciler import Reconciler
@@ -39,7 +46,7 @@ class EnhancedMissingTimestamp(MissingTimestamp):
     
     def __init__(self, timestamp: datetime, expected_filename: str):
         super().__init__(timestamp, expected_filename)
-        self.satellite = None
+        self.satellite: str = ""  # Override parent's satellite property
         self.source = ""  # "cdn" or "s3"
         self.progress = 0  # Download progress (0-100)
     
@@ -54,12 +61,7 @@ class EnhancedMissingTimestamp(MissingTimestamp):
         return result
 
 
-class FetchSource(Enum):
-    """Enumeration of data source types."""
-    AUTO = auto()    # Automatic selection based on date
-    CDN = auto()     # Force CDN
-    S3 = auto()      # Force S3
-    LOCAL = auto()   # Local files only
+# FetchSource enum is already defined above (line 21) with all options
 
 
 class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
@@ -101,6 +103,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         # Initialize enhanced state properties
         self._satellite = SatellitePattern.GOES_18  # Default to GOES-18
         self._fetch_source = FetchSource.AUTO  # Default to auto (hybrid)
+        self.preferred_source = self._fetch_source  # For backward compatibility
         self._max_concurrent_downloads = 5
         self._cdn_resolution = TimeIndex.CDN_RES  # Default resolution
         self._aws_profile: str = ""  # Use default credentials (empty string instead of None)

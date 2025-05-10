@@ -29,6 +29,7 @@ from .goes_imagery import (
 )
 from .visualization_manager import VisualizationManager, ExtendedChannelType
 from .sample_processor import SampleProcessor
+from .date_range_selector import CompactDateRangeSelector
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -484,24 +485,26 @@ class EnhancedImageSelectionPanel(QWidget):
         fields_layout.addWidget(product_label, 0, 0)
         fields_layout.addWidget(self.product_combo, 0, 1, 1, 3)
 
-        # Row 2: Date and Time with calendar/clock icons
-        date_label = QLabel("<b>Date:</b> 📅")
+        # Row 2: Unified Date Range selector with better UX
+        date_label = QLabel("<b>Time Range:</b>")
         date_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
+        # Use the new CompactDateRangeSelector for better date selection
+        self.date_range_selector = CompactDateRangeSelector()
+        self.date_range_selector.dateRangeSelected.connect(self._on_date_range_selected)
+
+        # Keep legacy date time controls for backward compatibility (hidden)
         self.date_edit = QDateEdit(QDate.currentDate())
         self.date_edit.setCalendarPopup(True)
         self.date_edit.setDisplayFormat("yyyy-MM-dd")
-
-        time_label = QLabel("<b>Time:</b> 🕒")
-        time_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.date_edit.hide()  # Hide legacy control
 
         self.time_edit = QTimeEdit(QTime.currentTime())
         self.time_edit.setDisplayFormat("HH:mm")
+        self.time_edit.hide()  # Hide legacy control
 
         fields_layout.addWidget(date_label, 1, 0)
-        fields_layout.addWidget(self.date_edit, 1, 1)
-        fields_layout.addWidget(time_label, 1, 2)
-        fields_layout.addWidget(self.time_edit, 1, 3)
+        fields_layout.addWidget(self.date_range_selector, 1, 1, 1, 3)  # Span all remaining columns
 
         # Row 3: Verify check (with better UI text)
         self.verify_check = QCheckBox("Preview before processing")
@@ -577,6 +580,22 @@ class EnhancedImageSelectionPanel(QWidget):
         dummy_btn2.setVisible(False)
         fields_layout.addWidget(dummy_btn1, 2, 2)
         fields_layout.addWidget(dummy_btn2, 2, 3)
+
+    def _on_date_range_selected(self, start: datetime, end: datetime) -> None:
+        """
+        Handle date range selection from the compact date range selector.
+        Updates the legacy date/time controls for backward compatibility.
+
+        Args:
+            start: The selected start date
+            end: The selected end date
+        """
+        # Update legacy controls while keeping them hidden
+        self.date_edit.setDate(QDate(start.year, start.month, start.day))
+        self.time_edit.setTime(QTime(start.hour, start.minute))
+
+        # Log the selection
+        logger.debug(f"Date range selected: {start} to {end}")
     
     def create_ir_tab(self) -> None:
         """Create tab for infrared channels with a compact layout and scientific organization."""
@@ -776,7 +795,7 @@ class EnhancedImageSelectionPanel(QWidget):
         level_diagram.setStyleSheet("""
             color: #dddddd;
             font-size: 9pt;
-            font-family: monospace;
+            font-family: 'Courier New', 'DejaVu Sans Mono', monospace;
             background-color: #252525;
             padding: 6px;
             border-radius: 4px;

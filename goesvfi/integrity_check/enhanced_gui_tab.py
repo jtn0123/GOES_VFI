@@ -40,6 +40,7 @@ from .enhanced_view_model import (
     EnhancedIntegrityCheckViewModel, EnhancedMissingTimestamp, FetchSource
 )
 from .enhanced_imagery_tab import EnhancedGOESImageryTab
+from .date_range_selector import UnifiedDateRangeSelector
 
 LOGGER = log.get_logger(__name__)
 
@@ -63,7 +64,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
             if col == 0:  # Timestamp
                 return item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
             elif col == 1:  # Satellite
-                return item.satellite.name if item.satellite else "Unknown"
+                return item.satellite if isinstance(item.satellite, str) else "Unknown"
             elif col == 2:  # Source
                 return item.source.upper() if item.source else "AUTO"
             elif col == 3:  # Status
@@ -588,7 +589,7 @@ class BatchOperationsDialog(QDialog):
 class EnhancedIntegrityCheckTab(IntegrityCheckTab):
     """
     Enhanced QWidget tab for verifying timestamp integrity and finding gaps in GOES imagery.
-    
+
     This tab extends the base IntegrityCheckTab with support for:
     1. GOES-16 and GOES-18 satellites
     2. Hybrid CDN/S3 fetching based on timestamp recency
@@ -598,8 +599,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
     6. Batch operations for efficient file management
     7. Advanced configuration options
     """
-    # Custom signal for directory selection
+    # Custom signals
     directory_selected = pyqtSignal(str)
+    date_range_changed = pyqtSignal(datetime, datetime)  # Signal when date range changes
     
     def __init__(self, view_model: EnhancedIntegrityCheckViewModel, parent: Optional[QWidget] = None) -> None:
         """
@@ -818,9 +820,11 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         controls_layout = QHBoxLayout(controls_section)
         controls_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Date range group with dark mode styling
-        date_group = QGroupBox("Date Range")
-        date_group.setStyleSheet("""
+        # Use the new unified date range selector component
+        self.date_selector = UnifiedDateRangeSelector(self, include_visual_picker=True, include_presets=True)
+
+        # Apply some styling to match the dark theme
+        self.date_selector.setStyleSheet("""
             QGroupBox {
                 border: 1px solid #555;
                 border-radius: 5px;
@@ -838,173 +842,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                 color: #e0e0e0;
             }
         """)
-        date_layout = QFormLayout()
-        
-        # Start date
-        self.start_date_edit = QDateTimeEdit()
-        self.start_date_edit.setCalendarPopup(True)
-        self.start_date_edit.setDisplayFormat("yyyy-MM-dd HH:mm")
-        self.start_date_edit.setMinimumWidth(180)  # Provide more space for the date display
-        self.start_date_edit.setButtonSymbols(QDateTimeEdit.ButtonSymbols.PlusMinus)
-        
-        # Apply dark mode compatible styling to the date editor
-        self.start_date_edit.setStyleSheet("""
-            QDateTimeEdit {
-                padding: 4px;
-                border: 1px solid #555;
-                border-radius: 4px;
-                background-color: #2d2d2d;
-                color: #e0e0e0;
-                selection-background-color: #4c72b0;
-                selection-color: white;
-            }
-            QDateTimeEdit::drop-down {
-                subcontrol-origin: padding;
-                subcontrol-position: top right;
-                width: 20px;
-                border-left: 1px solid #555;
-                border-top-right-radius: 3px;
-                border-bottom-right-radius: 3px;
-            }
-            QDateTimeEdit::up-button, QDateTimeEdit::down-button {
-                subcontrol-origin: border;
-                width: 16px;
-                border-width: 1px;
-                background-color: #444;
-            }
-            QDateTimeEdit::up-button:hover, QDateTimeEdit::down-button:hover {
-                background-color: #555;
-            }
-            QCalendarWidget {
-                background-color: #2d2d2d;
-                color: #e0e0e0;
-            }
-            QCalendarWidget QToolButton {
-                color: #e0e0e0;
-                background-color: #3d3d3d;
-                border: 1px solid #555;
-                border-radius: 3px;
-                padding: 3px;
-                margin: 2px;
-            }
-            QCalendarWidget QToolButton:hover {
-                background-color: #4c72b0;
-                border: 1px solid #4c72b0;
-            }
-            QCalendarWidget QMenu {
-                color: #e0e0e0;
-                background-color: #2d2d2d;
-                border: 1px solid #555;
-                selection-background-color: #4c72b0;
-                selection-color: white;
-            }
-            QCalendarWidget QSpinBox {
-                color: #e0e0e0;
-                background-color: #2d2d2d;
-                selection-background-color: #4c72b0;
-                selection-color: white;
-                border: 1px solid #555;
-            }
-            QCalendarWidget QSpinBox::up-button, QCalendarWidget QSpinBox::down-button {
-                background-color: #444;
-            }
-            QCalendarWidget QAbstractItemView:enabled {
-                color: #e0e0e0;
-                background-color: #2d2d2d;
-                selection-background-color: #4c72b0;
-                selection-color: white;
-                outline: 0;
-            }
-            QCalendarWidget QWidget#qt_calendar_navigationbar {
-                background-color: #3d3d3d;
-                border-bottom: 1px solid #555;
-            }
-            QCalendarWidget QAbstractItemView:disabled {
-                color: #666;
-            }
-            QCalendarWidget QWidget {
-                alternate-background-color: #3d3d3d;
-            }
-            QCalendarWidget QTableView {
-                alternate-background-color: #3d3d3d;
-            }
-        """)
-        
-        yesterday = datetime.now() - timedelta(days=1)
-        yesterday_start = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
-        self.start_date_edit.setDateTime(QDateTime(
-            QDate(yesterday_start.year, yesterday_start.month, yesterday_start.day),
-            QTime(yesterday_start.hour, yesterday_start.minute)
-        ))
-        date_layout.addRow("From:", self.start_date_edit)
-        
-        # End date
-        self.end_date_edit = QDateTimeEdit()
-        self.end_date_edit.setCalendarPopup(True)
-        self.end_date_edit.setDisplayFormat("yyyy-MM-dd HH:mm")
-        self.end_date_edit.setMinimumWidth(180)  # Provide more space for the date display
-        self.end_date_edit.setButtonSymbols(QDateTimeEdit.ButtonSymbols.PlusMinus)
-        
-        # Apply the same styling to the end date editor
-        self.end_date_edit.setStyleSheet(self.start_date_edit.styleSheet())
-        
-        yesterday_end = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
-        self.end_date_edit.setDateTime(QDateTime(
-            QDate(yesterday_end.year, yesterday_end.month, yesterday_end.day),
-            QTime(yesterday_end.hour, yesterday_end.minute)
-        ))
-        date_layout.addRow("To:", self.end_date_edit)
-        
-        # Quick select buttons
-        quick_select_layout = QHBoxLayout()
-        
-        # Common button style for dark theme
-        button_style = """
-            QPushButton {
-                background-color: #444;
-                color: #e0e0e0;
-                padding: 5px 10px;
-                border: 1px solid #555;
-                border-radius: 4px;
-                font-weight: normal;
-            }
-            QPushButton:hover {
-                background-color: #4c72b0;
-                border: 1px solid #5d83c1;
-                color: white;
-            }
-            QPushButton:pressed {
-                background-color: #3b61a0;
-                border: 1px solid #4c72b0;
-            }
-            QPushButton:disabled {
-                background-color: #333;
-                color: #777;
-                border: 1px solid #444;
-            }
-        """
-        
-        yesterday_button = QPushButton("Yesterday")
-        yesterday_button.setStyleSheet(button_style)
-        yesterday_button.clicked.connect(self._set_yesterday)
-        yesterday_button.setToolTip("Set date range to yesterday (full day)")
-        quick_select_layout.addWidget(yesterday_button)
-        
-        week_button = QPushButton("Last Week")
-        week_button.setStyleSheet(button_style)
-        week_button.clicked.connect(self._set_last_week)
-        week_button.setToolTip("Set date range to last 7 days including yesterday")
-        quick_select_layout.addWidget(week_button)
-        
-        month_button = QPushButton("Last Month")
-        month_button.setStyleSheet(button_style)
-        month_button.clicked.connect(self._set_last_month)
-        month_button.setToolTip("Set date range to last 30 days including yesterday")
-        quick_select_layout.addWidget(month_button)
-        
-        date_layout.addRow("Quick Select:", quick_select_layout)
-        
-        # Auto detect date range button
+
+        # Add auto detect button manually to maintain that functionality
+        # since it requires access to the directory
         auto_detect_button = QPushButton("Auto Detect from Files")
         auto_detect_button.setToolTip("Automatically detect date range from files in the selected directory")
         auto_detect_button.clicked.connect(self._auto_detect_date_range)
@@ -1031,14 +871,36 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                 border: 1px solid #444;
             }
         """)
-        date_layout.addRow("Auto Detect:", auto_detect_button)
-        
-        date_group.setLayout(date_layout)
-        controls_layout.addWidget(date_group)
+
+        # Create container for the date selector and auto-detect button
+        date_container = QWidget()
+        date_layout = QVBoxLayout(date_container)
+        date_layout.setContentsMargins(0, 0, 0, 0)
+        date_layout.addWidget(self.date_selector)
+        date_layout.addWidget(auto_detect_button)
+
+        controls_layout.addWidget(date_container)
         
         # Satellite group with dark mode styling
         satellite_group = QGroupBox("Satellite")
-        satellite_group.setStyleSheet(date_group.styleSheet())  # Reuse styling from date group
+        satellite_group.setStyleSheet("""
+            QGroupBox {
+                border: 1px solid #555;
+                border-radius: 5px;
+                margin-top: 1.5ex;
+                font-weight: bold;
+                color: #e0e0e0;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                padding: 0 5px;
+                color: #e0e0e0;
+            }
+            QLabel {
+                color: #e0e0e0;
+            }
+        """)
         satellite_layout = QVBoxLayout()
         
         # Radio button styling for dark theme
@@ -1493,31 +1355,27 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         self.view_model.scan_completed.connect(self._handle_scan_completed)
         self.view_model.download_progress_updated.connect(self._update_download_progress)
         self.view_model.download_item_updated.connect(self._update_download_item)
-        
+
         # Connect enhanced signals
         enhanced_view_model = cast(EnhancedIntegrityCheckViewModel, self.view_model)
         enhanced_view_model.satellite_changed.connect(self._update_satellite_ui)
         enhanced_view_model.fetch_source_changed.connect(self._update_fetch_source_ui)
         enhanced_view_model.download_item_progress.connect(self._update_download_item_progress)
         enhanced_view_model.disk_space_updated.connect(self._update_disk_space)
+
+        # Connect date range selector signals
+        self.date_selector.dateRangeSelected.connect(self._on_date_range_selected)
     
     def _update_ui_from_view_model(self) -> None:
         """Update UI elements with the current state from the view model."""
         # Directory
         self.directory_edit.setText(str(self.view_model.base_directory))
-        
-        # Date range
-        start_dt = self.view_model.start_date
-        self.start_date_edit.setDateTime(QDateTime(
-            QDate(start_dt.year, start_dt.month, start_dt.day),
-            QTime(start_dt.hour, start_dt.minute)
-        ))
-        
-        end_dt = self.view_model.end_date
-        self.end_date_edit.setDateTime(QDateTime(
-            QDate(end_dt.year, end_dt.month, end_dt.day),
-            QTime(end_dt.hour, end_dt.minute)
-        ))
+
+        # Date range - use the unified date range selector
+        self.date_selector.set_date_range(
+            self.view_model.start_date,
+            self.view_model.end_date
+        )
         
         # Options
         self.interval_spinbox.setValue(self.view_model.interval_minutes)
@@ -1920,7 +1778,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                     status = "downloaded" if item.is_downloaded else "error" if item.download_error else "missing"
                     writer.writerow({
                         'timestamp': item.timestamp.isoformat(),
-                        'satellite': item.satellite.name if hasattr(item, 'satellite') and item.satellite else "Unknown",
+                        'satellite': item.satellite if hasattr(item, 'satellite') and isinstance(item.satellite, str) else "Unknown",
                         'source': item.source if hasattr(item, 'source') and item.source else "AUTO",
                         'status': status,
                         'local_path': item.local_path if item.local_path else "",
@@ -2492,58 +2350,26 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         elif self.local_radio.isChecked():
             enhanced_view_model.fetch_source = FetchSource.LOCAL
     
-    def _set_yesterday(self) -> None:
-        """Set the date range to yesterday (full day)."""
-        yesterday = datetime.now() - timedelta(days=1)
-        yesterday_start = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
-        yesterday_end = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
-        
-        self.start_date_edit.setDateTime(QDateTime(
-            QDate(yesterday_start.year, yesterday_start.month, yesterday_start.day),
-            QTime(yesterday_start.hour, yesterday_start.minute)
-        ))
-        
-        self.end_date_edit.setDateTime(QDateTime(
-            QDate(yesterday_end.year, yesterday_end.month, yesterday_end.day),
-            QTime(yesterday_end.hour, yesterday_end.minute)
-        ))
+    # Date preset methods removed as they are now handled by UnifiedDateRangeSelector
     
-    def _set_last_week(self) -> None:
-        """Set the date range to the last week."""
-        end_date = datetime.now() - timedelta(days=1)
-        start_date = end_date - timedelta(days=6)  # Last 7 days including yesterday
-        
-        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=0)
-        
-        self.start_date_edit.setDateTime(QDateTime(
-            QDate(start_date.year, start_date.month, start_date.day),
-            QTime(start_date.hour, start_date.minute)
-        ))
-        
-        self.end_date_edit.setDateTime(QDateTime(
-            QDate(end_date.year, end_date.month, end_date.day),
-            QTime(end_date.hour, end_date.minute)
-        ))
-    
-    def _set_last_month(self) -> None:
-        """Set the date range to the last month."""
-        end_date = datetime.now() - timedelta(days=1)
-        start_date = end_date - timedelta(days=29)  # Last 30 days including yesterday
-        
-        start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=0)
-        
-        self.start_date_edit.setDateTime(QDateTime(
-            QDate(start_date.year, start_date.month, start_date.day),
-            QTime(start_date.hour, start_date.minute)
-        ))
-        
-        self.end_date_edit.setDateTime(QDateTime(
-            QDate(end_date.year, end_date.month, end_date.day),
-            QTime(end_date.hour, end_date.minute)
-        ))
-    
+    def _on_date_range_selected(self, start_date: datetime, end_date: datetime) -> None:
+        """
+        Handle date range selection from the UnifiedDateRangeSelector.
+
+        Args:
+            start_date: The selected start date
+            end_date: The selected end date
+        """
+        # Update the view model with the new date range
+        self.view_model.start_date = start_date
+        self.view_model.end_date = end_date
+
+        # Log date range change
+        LOGGER.debug(f"Date range changed: {start_date.isoformat()} to {end_date.isoformat()}")
+
+        # Emit our own signal for other components that might be listening
+        self.date_range_changed.emit(start_date, end_date)
+
     def _auto_detect_date_range(self) -> None:
         """Auto-detect date range from files in the selected directory."""
         # Check if base directory is set and exists
@@ -2554,27 +2380,27 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                 "Please select a directory first to auto-detect date range."
             )
             return
-        
+
         try:
             # Show wait cursor and processing message
             self.setCursor(Qt.CursorShape.WaitCursor)
             QApplication.processEvents()
             self.status_message = "Detecting date range from files..."
-            
+
             # Get current satellite
             enhanced_view_model = cast(EnhancedIntegrityCheckViewModel, self.view_model)
             satellite = enhanced_view_model.satellite
-            
+
             # Find date range
             from .time_index import TimeIndex
             LOGGER.debug(f"Attempting to auto-detect date range for {satellite.name} in {self.view_model.base_directory}")
-            
+
             start_date, end_date = TimeIndex.find_date_range_in_directory(
                 self.view_model.base_directory, satellite
             )
-            
+
             LOGGER.debug(f"Auto-detect found dates: start={start_date}, end={end_date}")
-            
+
             if start_date is None or end_date is None:
                 # No valid timestamps found
                 QMessageBox.information(
@@ -2584,22 +2410,21 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                     f"Please check that the directory contains properly named GOES imagery files."
                 )
                 return
-            
+
             # Add some padding to the dates
             start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
             end_date = end_date.replace(hour=23, minute=59, second=59, microsecond=0)
-            
-            # Set the date range in the UI
-            self.start_date_edit.setDateTime(QDateTime(
-                QDate(start_date.year, start_date.month, start_date.day),
-                QTime(start_date.hour, start_date.minute)
-            ))
-            
-            self.end_date_edit.setDateTime(QDateTime(
-                QDate(end_date.year, end_date.month, end_date.day),
-                QTime(end_date.hour, end_date.minute)
-            ))
-            
+
+            # Set the date range in the unified date selector
+            self.date_selector.set_date_range(start_date, end_date)
+
+            # Update the view model with the new date range
+            self.view_model.start_date = start_date
+            self.view_model.end_date = end_date
+
+            # Emit date range changed signal
+            self.date_range_changed.emit(start_date, end_date)
+
             # Show success message
             QMessageBox.information(
                 self,
@@ -2783,31 +2608,10 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             # Log the start of scan operation
             LOGGER.debug("Starting enhanced scan operation")
             
-            # Update view model parameters from UI
-            # Convert QDateTime to Python datetime - PyQt6 doesn't have toPython()
-            start_dt = self.start_date_edit.dateTime()
-            end_dt = self.end_date_edit.dateTime()
-            
-            # Convert QDateTime to Python datetime
-            start_date = datetime(
-                start_dt.date().year(),
-                start_dt.date().month(),
-                start_dt.date().day(),
-                start_dt.time().hour(),
-                start_dt.time().minute(),
-                start_dt.time().second()
-            )
-            
-            end_date = datetime(
-                end_dt.date().year(),
-                end_dt.date().month(),
-                end_dt.date().day(),
-                end_dt.time().hour(),
-                end_dt.time().minute(),
-                end_dt.time().second()
-            )
-            
-            # Update view model with converted dates
+            # Get the date range from the UnifiedDateRangeSelector
+            start_date, end_date = self.date_selector.get_date_range()
+
+            # Update view model with dates
             self.view_model.start_date = start_date
             self.view_model.end_date = end_date
             

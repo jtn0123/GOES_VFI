@@ -35,7 +35,7 @@ class ScanStatus(Enum):
 
 class MissingTimestamp:
     """Class representing a missing timestamp with additional metadata."""
-    
+
     def __init__(self, timestamp: datetime, expected_filename: str):
         self.timestamp = timestamp
         self.expected_filename = expected_filename
@@ -44,7 +44,27 @@ class MissingTimestamp:
         self.download_error = ""
         self.remote_url = ""
         self.local_path = ""
-    
+        self.satellite = ""  # Satellite identifier (G16, G17, G18, etc.)
+        self.source = ""     # Source of the data (AWS S3, NOAA CDN, etc.)
+
+        # Try to extract satellite from filename
+        if 'G16' in expected_filename:
+            self.satellite = "GOES-16"
+        elif 'G17' in expected_filename:
+            self.satellite = "GOES-17"
+        elif 'G18' in expected_filename:
+            self.satellite = "GOES-18"
+        else:
+            self.satellite = "Unknown"
+
+        # Determine source based on self.remote_url if available
+        if self.remote_url and 's3://' in self.remote_url:
+            self.source = "AWS S3"
+        elif self.remote_url and 'cdn.star.nesdis.noaa.gov' in self.remote_url:
+            self.source = "NOAA CDN"
+        else:
+            self.source = "Unknown"
+
     def as_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
         return {
@@ -55,6 +75,8 @@ class MissingTimestamp:
             'download_error': self.download_error,
             'remote_url': self.remote_url,
             'local_path': self.local_path,
+            'satellite': self.satellite,
+            'source': self.source,
         }
 
 

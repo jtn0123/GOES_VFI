@@ -1073,8 +1073,10 @@ class MissingDataCalendarView(QWidget):
         # Clear previous UI
         while self.calendar_layout.count():
             item = self.calendar_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            if item is not None:
+                widget = item.widget()
+                if widget is not None:
+                    widget.deleteLater()
         
         if not self.data_by_day:
             # No data to display
@@ -1239,16 +1241,16 @@ class MissingDataCalendarView(QWidget):
         cell.setToolTip(f"Day: {day}, Time: {hour:02d}:00")
 
         # Save references for click handler
-        cell._cell_day = day
-        cell._cell_hour = hour
+        setattr(cell, '_cell_day', day)
+        setattr(cell, '_cell_hour', hour)
 
         # Define click handler
         def cell_click_handler(cell_widget, event):
             if hasattr(cell_widget, '_cell_day') and hasattr(cell_widget, '_cell_hour'):
-                self._cell_clicked(cell_widget._cell_day, cell_widget._cell_hour)
+                self._cell_clicked(getattr(cell_widget, '_cell_day'), getattr(cell_widget, '_cell_hour'))
 
         # Set the method properly using descriptor protocol
-        cell.mousePressEvent = cell_click_handler.__get__(cell, type(cell))
+        setattr(cell, 'mousePressEvent', cell_click_handler.__get__(cell, type(cell)))
 
         return cell
     

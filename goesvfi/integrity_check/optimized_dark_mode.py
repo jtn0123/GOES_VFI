@@ -347,4 +347,73 @@ QToolTip {
     padding: 4px;
     border-radius: 3px;
 }
+
+/* QComboBox styling */
+QComboBox {
+    background-color: #3a3a3a;
+    border: 1px solid #555555;
+    border-radius: 3px;
+    padding: 4px 8px;
+    min-width: 120px;
+    color: #f0f0f0;
+    selection-background-color: #2a82da;
+}
+
+QComboBox:hover {
+    background-color: #454545;
+    border-color: #656565;
+}
+
+QComboBox:focus {
+    border-color: #2a82da;
+}
+
+QComboBox:disabled {
+    background-color: #2d2d2d;
+    color: #777777;
+    border-color: #3d3d3d;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: center right;
+    width: 20px;
+    border-left: 1px solid #555555;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+}
+
+QComboBox::down-arrow {
+    image: none;
+    width: 0px;
+    height: 0px;
+    border-style: solid;
+    border-width: 5px 5px 0 5px;
+    border-color: #f0f0f0 transparent transparent transparent;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #3a3a3a;
+    border: 1px solid #555555;
+    border-radius: 3px;
+    selection-background-color: #2a82da;
+    selection-color: #ffffff;
+    padding: 4px;
+    outline: none;
+}
+
+QComboBox QAbstractItemView::item {
+    min-height: 24px;
+    padding: 4px 8px;
+    border-radius: 2px;
+}
+
+QComboBox QAbstractItemView::item:hover {
+    background-color: #454545;
+}
+
+QComboBox QAbstractItemView::item:selected {
+    background-color: #2a82da;
+    color: white;
+}
 """

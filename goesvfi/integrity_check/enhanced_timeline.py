@@ -404,10 +404,10 @@ class EnhancedTimeline(TimelineVisualization):
                         int(height / 2)
                     )
     
-    def mousePressEvent(self, event: QMouseEvent) -> None:
+    def mousePressEvent(self, event: QMouseEvent | None) -> None:
         """
         Handle mouse press with enhanced feedback.
-        
+
         Args:
             event: Mouse event
         """
@@ -419,10 +419,10 @@ class EnhancedTimeline(TimelineVisualization):
         self.animation_progress = 0.0
         self.animation_timer.start()
     
-    def resizeEvent(self, event: QResizeEvent) -> None:
+    def resizeEvent(self, event: QResizeEvent | None) -> None:
         """
         Handle resize events with smooth animation.
-        
+
         Args:
             event: Resize event
         """

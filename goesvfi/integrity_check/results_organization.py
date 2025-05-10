@@ -35,30 +35,31 @@ from goesvfi.integrity_check.view_model import MissingTimestamp
 
 class GroupingModel(QAbstractItemModel):
     """Model for grouped missing timestamps."""
-    
+
     def __init__(self, parent: Optional[QObject] = None) -> None:
         """Initialize the model."""
         super().__init__(parent)
         self._root_item = GroupItem("Root", None)
         self._headers = ["Group", "Count", "Status"]
-    
+
     def index(self, row: int, column: int, parent: QModelIndex = QModelIndex()) -> QModelIndex:
         """Create an index for the given row, column, and parent."""
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
-        
+
         if not parent.isValid():
             parent_item = self._root_item
         else:
             parent_item = parent.internalPointer()
-        
+
         child_item = parent_item.child(row)
         if child_item:
             return self.createIndex(row, column, child_item)
         else:
             return QModelIndex()
-    
-    def parent(self, index: QModelIndex) -> QModelIndex:
+
+    # Override QAbstractItemModel.parent(QModelIndex) -> QModelIndex
+    def parent(self, index: QModelIndex) -> QModelIndex:  # type: ignore
         """Return the parent index for the given index."""
         if not index.isValid():
             return QModelIndex()
@@ -127,16 +128,16 @@ class GroupingModel(QAbstractItemModel):
     def setItems(self, items: List[MissingTimestamp], grouping: str) -> None:
         """
         Set the items to be displayed in the model.
-        
+
         Args:
             items: List of missing timestamps
-            grouping: Grouping method ("day", "hour", "status")
+            grouping: Grouping method ("day", "hour", "status", "satellite", "source")
         """
         self.beginResetModel()
-        
+
         # Clear existing items
         self._root_item = GroupItem("Root", None)
-        
+
         # Group by selected method
         if grouping == "day":
             self._group_by_day(items)
@@ -144,13 +145,17 @@ class GroupingModel(QAbstractItemModel):
             self._group_by_hour(items)
         elif grouping == "status":
             self._group_by_status(items)
+        elif grouping == "satellite":
+            self._group_by_satellite(items)
+        elif grouping == "source":
+            self._group_by_source(items)
         else:
             # No grouping, just add all items
             for item in items:
                 self._root_item.addChild(GroupItem(
                     str(item.timestamp), self._root_item, item
                 ))
-        
+
         self.endResetModel()
     
     def _group_by_day(self, items: List[MissingTimestamp]) -> None:
@@ -220,7 +225,7 @@ class GroupingModel(QAbstractItemModel):
     def _group_by_status(self, items: List[MissingTimestamp]) -> None:
         """
         Group items by status.
-        
+
         Args:
             items: List of missing timestamps
         """
@@ -231,7 +236,7 @@ class GroupingModel(QAbstractItemModel):
             "Error": [],
             "Missing": []
         }
-        
+
         # Assign items to groups
         for item in items:
             if getattr(item, 'is_downloaded', False):
@@ -242,22 +247,115 @@ class GroupingModel(QAbstractItemModel):
                 status_groups["Error"].append(item)
             else:
                 status_groups["Missing"].append(item)
-        
+
         # Create group items
         for status, status_items in status_groups.items():
             if status_items:  # Only create groups with items
                 status_group = GroupItem(status, self._root_item)
                 self._root_item.addChild(status_group)
-                
+
                 # Sort items by timestamp
                 status_items.sort(key=lambda x: x.timestamp)
-                
+
                 # Add items to status group
                 for item in status_items:
                     # Use timestamp as item text
                     timestamp_text = item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
                     status_group.addChild(GroupItem(timestamp_text, status_group, item))
-    
+
+    def _group_by_satellite(self, items: List[MissingTimestamp]) -> None:
+        """
+        Group items by satellite identifier.
+
+        Args:
+            items: List of missing timestamps
+        """
+        # Group by satellite
+        satellite_groups: Dict[str, List[MissingTimestamp]] = {}
+
+        for item in items:
+            # Extract satellite from filename or metadata
+            satellite = "Unknown"
+
+            # Try to extract satellite name from filename or expected_filename
+            filename = getattr(item, 'expected_filename', '')
+            if filename:
+                # Common pattern for GOES satellites in filenames:
+                # OR_ABI-L1b-RadF-M6C01_G16_
+                if 'G16' in filename:
+                    satellite = "GOES-16"
+                elif 'G17' in filename:
+                    satellite = "GOES-17"
+                elif 'G18' in filename:
+                    satellite = "GOES-18"
+                # Add more satellite patterns as needed
+
+            # Add to appropriate group
+            if satellite not in satellite_groups:
+                satellite_groups[satellite] = []
+            satellite_groups[satellite].append(item)
+
+        # Create group items (sorted by satellite name)
+        for satellite, satellite_items in sorted(satellite_groups.items()):
+            satellite_group = GroupItem(satellite, self._root_item)
+            self._root_item.addChild(satellite_group)
+
+            # Sort items by timestamp
+            satellite_items.sort(key=lambda x: x.timestamp)
+
+            # Add items to satellite group
+            for item in satellite_items:
+                # Use timestamp as item text
+                timestamp_text = item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                satellite_group.addChild(GroupItem(timestamp_text, satellite_group, item))
+
+    def _group_by_source(self, items: List[MissingTimestamp]) -> None:
+        """
+        Group items by data source (S3, local, etc).
+
+        Args:
+            items: List of missing timestamps
+        """
+        # Group by source
+        source_groups: Dict[str, List[MissingTimestamp]] = {
+            "AWS S3": [],
+            "Local Storage": [],
+            "NOAA CDN": [],
+            "Other": []
+        }
+
+        for item in items:
+            # Determine the source based on path or metadata
+            source = "Other"
+
+            # Check for source information
+            source_info = getattr(item, 'source', '')
+            if source_info:
+                if 'S3' in source_info or 's3://' in source_info:
+                    source = "AWS S3"
+                elif 'CDN' in source_info or 'cdn.star.nesdis.noaa.gov' in source_info:
+                    source = "NOAA CDN"
+                elif 'local' in source_info.lower() or 'file://' in source_info:
+                    source = "Local Storage"
+
+            # Add to the appropriate group
+            source_groups[source].append(item)
+
+        # Create group items (only for non-empty groups)
+        for source, source_items in source_groups.items():
+            if source_items:  # Only create groups with items
+                source_group = GroupItem(source, self._root_item)
+                self._root_item.addChild(source_group)
+
+                # Sort items by timestamp
+                source_items.sort(key=lambda x: x.timestamp)
+
+                # Add items to source group
+                for item in source_items:
+                    # Use timestamp as item text
+                    timestamp_text = item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                    source_group.addChild(GroupItem(timestamp_text, source_group, item))
+
     def getItem(self, index: QModelIndex) -> Optional['GroupItem']:
         """
         Get the item at the given index.
@@ -395,49 +493,52 @@ class GroupItem:
 
 class MissingItemsTreeView(QWidget):
     """Tree view for grouped missing timestamps."""
-    
+
     itemSelected = pyqtSignal(MissingTimestamp)
-    
+
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the tree view."""
         super().__init__(parent)
         self._items: List[MissingTimestamp] = []
+        self._grouping: str = "day"  # Default grouping
         self._setup_ui()
-    
+
     def _setup_ui(self) -> None:
         """Set up the widget UI."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        
+
         # Create controls for grouping
         controls_layout = QHBoxLayout()
-        
+
         # Group by label
         controls_layout.addWidget(QLabel("Group by:"))
-        
+
         # Group by combo
         self.group_combo = QComboBox()
         self.group_combo.addItem("Day", "day")
         self.group_combo.addItem("Hour", "hour")
         self.group_combo.addItem("Status", "status")
+        self.group_combo.addItem("Satellite", "satellite")
+        self.group_combo.addItem("Source", "source")
         self.group_combo.setCurrentIndex(0)
         self.group_combo.currentIndexChanged.connect(self._update_grouping)
         controls_layout.addWidget(self.group_combo)
-        
+
         # Add stretch to push controls to left
         controls_layout.addStretch()
-        
+
         # Expand/collapse all buttons
         self.expand_all_btn = QPushButton("Expand All")
         self.expand_all_btn.clicked.connect(self._expand_all)
         controls_layout.addWidget(self.expand_all_btn)
-        
+
         self.collapse_all_btn = QPushButton("Collapse All")
         self.collapse_all_btn.clicked.connect(self._collapse_all)
         controls_layout.addWidget(self.collapse_all_btn)
-        
+
         layout.addLayout(controls_layout)
-        
+
         # Tree view
         self.tree_view = QTreeView()
         self.tree_view.setAlternatingRowColors(True)
@@ -446,7 +547,7 @@ class MissingItemsTreeView(QWidget):
         self.tree_view.setEditTriggers(QTreeView.EditTrigger.NoEditTriggers)
         self.tree_view.setSortingEnabled(False)
         self.tree_view.setUniformRowHeights(True)
-        
+
         # Create model and set it before accessing header
         self.model = GroupingModel()
         self.tree_view.setModel(self.model)
@@ -460,24 +561,54 @@ class MissingItemsTreeView(QWidget):
         # Connect selection signal (using walrus operator to handle optional value)
         if selection_model := self.tree_view.selectionModel():
             selection_model.selectionChanged.connect(self._handle_selection)
-        
+
         layout.addWidget(self.tree_view)
-    
+
     def set_items(self, items: List[MissingTimestamp]) -> None:
         """
         Set the items to be displayed.
-        
+
         Args:
             items: List of missing timestamps
         """
         self._items = items
         self._update_grouping()
-    
+
+    def set_grouping(self, group_by: str) -> None:
+        """
+        Set the grouping method for the tree view.
+
+        Args:
+            group_by: Grouping method (day, hour, satellite, status, source)
+        """
+        # Ensure valid grouping type
+        if group_by not in ['day', 'hour', 'satellite', 'status', 'source']:
+            group_by = 'day'  # Default to day
+
+        # Store the current grouping
+        self._grouping = group_by
+
+        # Update the combo box to reflect the new grouping
+        for i in range(self.group_combo.count()):
+            if self.group_combo.itemData(i) == group_by:
+                self.group_combo.setCurrentIndex(i)
+                break
+
+        # Update the model with the new grouping if we have items
+        if self._items:
+            self.model.setItems(self._items, group_by)
+
+            # Expand top-level items after changing grouping
+            for i in range(self.model.rowCount()):
+                index = self.model.index(i, 0)
+                self.tree_view.expand(index)
+
     def _update_grouping(self) -> None:
         """Update the tree view with the current grouping."""
         grouping = self.group_combo.currentData()
+        self._grouping = grouping
         self.model.setItems(self._items, grouping)
-        
+
         # Expand top-level items
         for i in range(self.model.rowCount()):
             index = self.model.index(i, 0)
@@ -486,20 +617,62 @@ class MissingItemsTreeView(QWidget):
     def _expand_all(self) -> None:
         """Expand all items in the tree."""
         self.tree_view.expandAll()
-    
+
     def _collapse_all(self) -> None:
         """Collapse all items in the tree."""
         self.tree_view.collapseAll()
-        
+
+        # Expand top-level items
+        for i in range(self.model.rowCount()):
+            index = self.model.index(i, 0)
+            self.tree_view.expand(index)
+
+    def expandAll(self) -> None:
+        """Expand all items in the tree (for external calls)."""
+        self.tree_view.expandAll()
+
+    def collapseAll(self) -> None:
+        """Collapse all items in the tree (for external calls)."""
+        self.tree_view.collapseAll()
+
         # Expand top-level items
         for i in range(self.model.rowCount()):
             index = self.model.index(i, 0)
             self.tree_view.expand(index)
     
+    def highlight_timestamp(self, timestamp: datetime) -> None:
+        """
+        Highlight an item with the given timestamp.
+
+        Args:
+            timestamp: The timestamp to highlight
+        """
+        # Find the item that matches this timestamp
+        for row in range(self.model.rowCount()):
+            parent_index = self.model.index(row, 0)
+            for child_row in range(self.model.rowCount(parent_index)):
+                child_index = self.model.index(child_row, 0, parent_index)
+                item = self.model.getItem(child_index)
+
+                if item and item._item and hasattr(item._item, 'timestamp'):
+                    # Check if timestamps are close (within a minute)
+                    time_diff = abs((item._item.timestamp - timestamp).total_seconds())
+                    if time_diff < 60:  # Within a minute
+                        # Select this item
+                        self.tree_view.setCurrentIndex(child_index)
+                        self.tree_view.scrollTo(child_index)
+
+                        # Ensure parent is expanded
+                        self.tree_view.expand(parent_index)
+
+                        # Emit the signal
+                        self.itemSelected.emit(item._item)
+                        return
+
     def _handle_selection(self, selected, deselected) -> None:
         """
         Handle selection changes in the tree view.
-        
+
         Args:
             selected: Selected indexes
             deselected: Deselected indexes
@@ -507,11 +680,11 @@ class MissingItemsTreeView(QWidget):
         indexes = selected.indexes()
         if not indexes:
             return
-        
+
         # Get the selected item
         index = indexes[0]
         item = self.model.getItem(index)
-        
+
         if item and item._item:
             # Only emit for leaf items with an associated MissingTimestamp
             self.itemSelected.emit(item._item)
@@ -637,6 +810,8 @@ class ItemPreviewWidget(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the preview widget."""
         super().__init__(parent)
+        # Track the current item for action buttons
+        self.current_item: Optional[MissingTimestamp] = None
         self._setup_ui()
     
     def _setup_ui(self) -> None:
@@ -702,23 +877,33 @@ class ItemPreviewWidget(QWidget):
         # Add stretch to push everything to the top
         layout.addStretch()
     
+    def clear(self) -> None:
+        """Clear all fields in the preview widget."""
+        self.timestamp_label.setText("")
+        self.filename_label.setText("")
+        self.status_label.setText("")
+        self.path_label.setText("")
+        self.error_text.setText("")
+        self.error_group.setVisible(False)
+        self.download_btn.setEnabled(False)
+        self.view_btn.setEnabled(False)
+
+        # Reset the current item
+        self.current_item = None
+
     def set_item(self, item: Optional[MissingTimestamp]) -> None:
         """
         Set the item to preview.
-        
+
         Args:
             item: MissingTimestamp to preview, or None to clear
         """
+        # Store the current item for action buttons
+        self.current_item = item
+
         if item is None:
             # Clear all fields
-            self.timestamp_label.setText("")
-            self.filename_label.setText("")
-            self.status_label.setText("")
-            self.path_label.setText("")
-            self.error_text.setText("")
-            self.error_group.setVisible(False)
-            self.download_btn.setEnabled(False)
-            self.view_btn.setEnabled(False)
+            self.clear()
             return
         
         # Update fields

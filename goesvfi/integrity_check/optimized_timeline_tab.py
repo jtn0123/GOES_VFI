@@ -32,6 +32,7 @@ class OptimizedTimelineTab(QWidget):
     
     timestampSelected = pyqtSignal(datetime)
     rangeSelected = pyqtSignal(datetime, datetime)
+    directorySelected = pyqtSignal(str)  # Signal for directory selection
     
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the optimized timeline tab."""
@@ -89,14 +90,10 @@ class OptimizedTimelineTab(QWidget):
         layout.setContentsMargins(6, 3, 6, 3)
         layout.setSpacing(8)
 
-        # Add data selection button at the beginning
-        self.data_select_btn = QPushButton("Select Data")
-        self.data_select_btn.setProperty("class", "ActionButton")
-        self.data_select_btn.setToolTip("Select data files to analyze")
-        self.data_select_btn.clicked.connect(self._select_data)
-        layout.addWidget(self.data_select_btn)
+        # Add a spacer at the beginning
+        layout.addSpacerItem(QSpacerItem(10, 10, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
 
-        # Add separator line after data selection button
+        # Add separator line
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.VLine)
         separator.setFrameShadow(QFrame.Shadow.Sunken)
@@ -386,14 +383,14 @@ class OptimizedTimelineTab(QWidget):
         
         return panel
     
-    def set_data(self, 
-                missing_items: List[MissingTimestamp], 
-                start_time: datetime, 
+    def set_data(self,
+                missing_items: List[MissingTimestamp],
+                start_time: datetime,
                 end_time: datetime,
                 interval_minutes: Optional[int] = None) -> None:
         """
         Set the data for visualization.
-        
+
         Args:
             missing_items: List of missing timestamps
             start_time: Start of the time range
@@ -633,19 +630,31 @@ class OptimizedTimelineTab(QWidget):
         if self.selected_item and not getattr(self.selected_item, 'is_downloaded', False):
             print(f"Downloading {self.selected_item.expected_filename}")
 
-    def _select_data(self) -> None:
-        """Handle data selection button click."""
-        # In a real application, this would open a file dialog or data source selection UI
-        # For the demo, we'll just show a message
-        from PyQt6.QtWidgets import QMessageBox
+    def set_directory(self, directory: str) -> None:
+        """
+        Set the current working directory for the timeline tab.
 
-        msg = QMessageBox()
-        msg.setWindowTitle("Data Selection")
-        msg.setText("This is a demo with pre-loaded data.")
-        msg.setInformativeText(
-            "In a real application, this button would open a file selection dialog or "
-            "data source configuration panel where you could choose which files to analyze. "
-            "The Date Selection tab would typically contain this functionality as well."
-        )
-        msg.setIcon(QMessageBox.Icon.Information)
-        msg.exec()
+        Args:
+            directory: Path to the directory to analyze
+        """
+        # In a real implementation, this would trigger data loading for the directory
+        # For now, we'll just emit the signal to maintain synchronization
+        self.directorySelected.emit(directory)
+
+    def set_date_range(self, start_time: datetime, end_time: datetime) -> None:
+        """
+        Set the date range for visualization without changing the data.
+
+        Args:
+            start_time: Start of the time range
+            end_time: End of the time range
+        """
+        self.start_timestamp = start_time
+        self.end_timestamp = end_time
+
+        # Update both visualizations with the new date range
+        if hasattr(self.timeline_viz, 'set_date_range'):
+            self.timeline_viz.set_date_range(start_time, end_time)
+
+        if hasattr(self.calendar_view, 'set_date_range'):
+            self.calendar_view.set_date_range(start_time, end_time)

@@ -32,6 +32,7 @@ from PyQt6.QtGui import (
 from goesvfi.utils import log
 from .view_model import IntegrityCheckViewModel, ScanStatus, MissingTimestamp
 from .time_index import SatellitePattern, SATELLITE_NAMES
+from .date_range_selector import UnifiedDateRangeSelector
 
 LOGGER = log.get_logger(__name__)
 
@@ -240,35 +241,10 @@ class IntegrityCheckTab(QWidget):
         controls_layout = QHBoxLayout(controls_section)
         controls_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Date range group
-        date_group = QGroupBox("Date Range")
-        date_layout = QFormLayout()
-        
-        # Start date
-        self.start_date_edit = QDateTimeEdit()
-        self.start_date_edit.setCalendarPopup(True)
-        self.start_date_edit.setDisplayFormat("yyyy-MM-dd HH:mm")
-        yesterday = datetime.now() - timedelta(days=1)
-        yesterday_start = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
-        self.start_date_edit.setDateTime(QDateTime(
-            QDate(yesterday_start.year, yesterday_start.month, yesterday_start.day),
-            QTime(yesterday_start.hour, yesterday_start.minute)
-        ))
-        date_layout.addRow("From:", self.start_date_edit)
-        
-        # End date
-        self.end_date_edit = QDateTimeEdit()
-        self.end_date_edit.setCalendarPopup(True)
-        self.end_date_edit.setDisplayFormat("yyyy-MM-dd HH:mm")
-        yesterday_end = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
-        self.end_date_edit.setDateTime(QDateTime(
-            QDate(yesterday_end.year, yesterday_end.month, yesterday_end.day),
-            QTime(yesterday_end.hour, yesterday_end.minute)
-        ))
-        date_layout.addRow("To:", self.end_date_edit)
-        
-        date_group.setLayout(date_layout)
-        controls_layout.addWidget(date_group)
+        # Create unified date range selector
+        self.date_range_selector = UnifiedDateRangeSelector()
+        self.date_range_selector.dateRangeSelected.connect(self._handle_date_range_selected)
+        controls_layout.addWidget(self.date_range_selector)
         
         # Options group
         options_group = QGroupBox("Options")
@@ -419,17 +395,10 @@ class IntegrityCheckTab(QWidget):
         self.directory_edit.setText(str(self.view_model.base_directory))
         
         # Date range
-        start_dt = self.view_model.start_date
-        self.start_date_edit.setDateTime(QDateTime(
-            QDate(start_dt.year, start_dt.month, start_dt.day),
-            QTime(start_dt.hour, start_dt.minute)
-        ))
-        
-        end_dt = self.view_model.end_date
-        self.end_date_edit.setDateTime(QDateTime(
-            QDate(end_dt.year, end_dt.month, end_dt.day),
-            QTime(end_dt.hour, end_dt.minute)
-        ))
+        self.date_range_selector.set_date_range(
+            self.view_model.start_date,
+            self.view_model.end_date
+        )
         
         # Options
         self.interval_spinbox.setValue(self.view_model.interval_minutes)
@@ -473,20 +442,27 @@ class IntegrityCheckTab(QWidget):
         yesterday = datetime.now() - timedelta(days=1)
         yesterday_start = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
         yesterday_end = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
-        
-        self.start_date_edit.setDateTime(QDateTime(
-            QDate(yesterday_start.year, yesterday_start.month, yesterday_start.day),
-            QTime(yesterday_start.hour, yesterday_start.minute)
-        ))
-        
-        self.end_date_edit.setDateTime(QDateTime(
-            QDate(yesterday_end.year, yesterday_end.month, yesterday_end.day),
-            QTime(yesterday_end.hour, yesterday_end.minute)
-        ))
-        
+
+        # Update date range selector
+        self.date_range_selector.set_date_range(yesterday_start, yesterday_end)
+
         # Update view model
         self.view_model.start_date = yesterday_start
         self.view_model.end_date = yesterday_end
+
+    def _handle_date_range_selected(self, start: datetime, end: datetime) -> None:
+        """
+        Handle date range selection from the date range selector.
+
+        Args:
+            start: Selected start date
+            end: Selected end date
+        """
+        # Update view model
+        self.view_model.start_date = start
+        self.view_model.end_date = end
+
+        LOGGER.debug(f"Date range selected: {start} - {end}")
     
     def _browse_directory(self) -> None:
         """Open a dialog to select the base directory."""
@@ -501,29 +477,8 @@ class IntegrityCheckTab(QWidget):
     def _start_scan(self) -> None:
         """Start the scan operation."""
         # Update view model parameters from UI
-        # Convert QDateTime to Python datetime
-        start_dt = self.start_date_edit.dateTime()
-        end_dt = self.end_date_edit.dateTime()
-        
-        # Convert QDateTime to Python datetime
-        from datetime import datetime
-        start_date = datetime(
-            start_dt.date().year(),
-            start_dt.date().month(), 
-            start_dt.date().day(),
-            start_dt.time().hour(),
-            start_dt.time().minute(),
-            start_dt.time().second()
-        )
-        
-        end_date = datetime(
-            end_dt.date().year(),
-            end_dt.date().month(), 
-            end_dt.date().day(),
-            end_dt.time().hour(),
-            end_dt.time().minute(),
-            end_dt.time().second()
-        )
+        # Get date range from the unified selector
+        start_date, end_date = self.date_range_selector.get_date_range()
         
         self.view_model.start_date = start_date
         self.view_model.end_date = end_date

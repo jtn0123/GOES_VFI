@@ -237,3 +237,6 @@ The `examples/` directory includes several workflows demonstrating:
 - Processing NetCDF files to extract imagery
 - Creating RGB composites from multiple bands
 - Visualizing and comparing different products
+
+## Development Best Practices
+- Always test directory with mypy after large code change with `run_linters.py`

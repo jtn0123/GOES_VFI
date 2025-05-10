@@ -20,7 +20,7 @@ LOGGER = log.get_logger(__name__)
 
 class SatellitePattern(Enum):
     """Enumeration of supported satellite name and timestamp patterns."""
-    
+
     GOES_16 = auto()  # GOES-16 (GOES-East)
     GOES_17 = auto()  # GOES-17 (GOES-West)
     GOES_18 = auto()  # GOES-18 (New GOES-West)
@@ -103,14 +103,14 @@ BAND_PATTERN = re.compile(r"ABI-L1b-(?:RadF|RadC|RadM)-M\d+C(\d+)_")
 def extract_timestamp(filename: str, pattern: SatellitePattern) -> datetime:
     """
     Extract a timestamp from a filename using the specified pattern.
-    
+
     Args:
         filename: The filename to extract from
         pattern: The satellite pattern to use for extraction
-        
+
     Returns:
         A datetime object if extraction succeeded
-        
+
     Raises:
         ValueError: If the timestamp cannot be extracted
     """
@@ -124,20 +124,20 @@ def extract_timestamp(filename: str, pattern: SatellitePattern) -> datetime:
             return datetime.strptime(f"{date_str}_{time_str}", "%Y%m%d_%H%M%S")
         except ValueError:
             pass  # Fall through to legacy patterns
-    
+
     # Legacy pattern handling
     compiled_pattern = COMPILED_PATTERNS.get(pattern)
     if not compiled_pattern:
         LOGGER.error(f"Unknown satellite pattern: {pattern}")
         raise ValueError(f"Unknown satellite pattern: {pattern}")
-        
+
     match = compiled_pattern.search(filename)
     if not match:
         raise ValueError(f"Filename does not match pattern for {pattern}: {filename}")
-        
+
     # Extract the timestamp string (format: YYYYMMDDTHHMMSS)
     timestamp_str = match.group(1)
-    
+
     try:
         # Parse the timestamp string into a datetime object
         dt = datetime.strptime(timestamp_str, "%Y%m%dT%H%M%S")
@@ -150,10 +150,10 @@ def extract_timestamp(filename: str, pattern: SatellitePattern) -> datetime:
 def extract_timestamp_and_satellite(filename: str) -> Tuple[Optional[datetime], Optional[SatellitePattern]]:
     """
     Extract a timestamp and satellite from a GOES ABI filename.
-    
+
     Args:
         filename: Filename to parse (e.g., 20251150420_GOES18-ABI-FD-13-5424x5424.jpg)
-        
+
     Returns:
         Tuple of (datetime object, satellite pattern) if successful, (None, None) otherwise
     """
@@ -165,24 +165,24 @@ def extract_timestamp_and_satellite(filename: str) -> Tuple[Optional[datetime], 
             doy = int(match.group(2))  # Day of year
             hour = int(match.group(3))
             minute = int(match.group(4))
-            
+
             try:
                 # Convert day of year to date using our utility function
                 date_obj = date_utils.doy_to_date(year, doy)
-                
+
                 # Create datetime with the time components
                 ts = datetime(
-                    date_obj.year, 
-                    date_obj.month, 
-                    date_obj.day, 
-                    hour=hour, 
+                    date_obj.year,
+                    date_obj.month,
+                    date_obj.day,
+                    hour=hour,
                     minute=minute
                 )
-                
+
                 return ts, satellite
             except ValueError as e:
                 LOGGER.warning(f"Invalid date in filename {filename}: {e}")
-    
+
     return None, None
 
 
@@ -193,51 +193,51 @@ def generate_timestamp_sequence(
 ) -> List[datetime]:
     """
     Generate a sequence of timestamps at regular intervals.
-    
+
     Args:
         start_time: The start datetime (inclusive)
         end_time: The end datetime (inclusive)
         interval_minutes: The interval between timestamps in minutes
-        
+
     Returns:
         A list of datetime objects at the specified interval
     """
     if interval_minutes <= 0:
         raise ValueError("Interval must be a positive number of minutes")
-        
+
     # Ensure start time is before end time
     if start_time > end_time:
         LOGGER.warning("Start time is after end time, swapping values")
         start_time, end_time = end_time, start_time
-        
+
     result: List[datetime] = []
     current = start_time
-    
+
     # Generate timestamps at regular intervals
     while current <= end_time:
         result.append(current)
         current += timedelta(minutes=interval_minutes)
-        
+
     return result
 
 
 def detect_interval(timestamps: List[datetime]) -> int:
     """
     Detect the most common interval between consecutive timestamps.
-    
+
     Args:
         timestamps: A list of timestamp datetime objects
-        
+
     Returns:
         The most common interval in minutes, rounded to nearest 5 minutes
     """
     if len(timestamps) < 2:
         LOGGER.warning("Not enough timestamps to detect interval, using default of 30 minutes")
         return 30  # Default to 30 minutes if not enough data
-    
+
     # Sort timestamps to ensure correct interval calculation
     sorted_times = sorted(timestamps)
-    
+
     # Calculate intervals between consecutive timestamps
     intervals = []
     for i in range(len(sorted_times) - 1):
@@ -246,20 +246,20 @@ def detect_interval(timestamps: List[datetime]) -> int:
         # Only consider reasonable intervals (1 minute to 60 minutes)
         if 1 <= minutes <= 60:
             intervals.append(minutes)
-    
+
     if not intervals:
         LOGGER.warning("No valid intervals found, using default of 30 minutes")
         return 30  # Default if no valid intervals found
-    
+
     # Find the most common interval using Counter
     from collections import Counter
     interval_counts = Counter(intervals)
     most_common = interval_counts.most_common(1)[0][0]
-    
+
     # Round to nearest 5 minutes for cleaner intervals
     rounded_interval = round(most_common / 5) * 5
     LOGGER.info(f"Detected interval of {rounded_interval} minutes")
-    
+
     return int(rounded_interval)
 
 

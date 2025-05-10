@@ -29,3 +29,10 @@ pytest>=8.3.0
 pytest-qt           # For GUI testing
 pytest-mock>=3.14.0 # For mocking in tests
 python-dateutil>=2.9.0
+
+# Linting tools
+flake8>=7.2.0
+flake8-bugbear      # Additional bug finding for flake8
+flake8-comprehensions  # Checks for unnecessary comprehensions
+flake8-qt-tr       # PyQt translation string linting
+pylint>=3.3.7
