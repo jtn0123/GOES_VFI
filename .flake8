@@ -1,0 +1,55 @@
+[flake8]
+# Basic Settings
+max-line-length = 100
+max-complexity = 12
+statistics = True
+count = True
+show-source = True
+
+# PyQt Related Settings
+ignore = 
+    # Ignore line break before binary operator - PyQt layouts often look better this way
+    W503,
+    # Ignore line too long for PyQt UI string literals and multiline assignments
+    E501,
+    # Ignore module level import not at top of file (sometimes needed for PyQt)
+    E402
+    
+# Exclude patterns
+exclude = 
+    .git,
+    __pycache__,
+    .pytest_cache,
+    venv*,
+    build,
+    dist,
+    *.egg-info,
+    # Add any generated files here
+
+# Additional error checks to include
+select =
+    # Regular flake8 errors
+    E,F,W,
+    # Additional checks from bugbear
+    B,B9,
+    # Comprehension checks
+    C,
+    # Qt translation checks
+    QTR
+
+# Plugins to be enabled
+enable-extensions =
+    B,  # bugbear
+    C,  # comprehensions
+
+# PyQt-specific warning configuration
+per-file-ignores =
+    # Qt UI files often need different quotation styles, etc.
+    *_ui.py:E501,
+    # Files with extensive GUI layouts may need special treatment
+    */gui/*.py:E501,
+    */gui_tabs/*.py:E501,
+    # Don't check QTR in test files or examples
+    test_*.py:QTR,
+    */tests/*.py:QTR,
+    */examples/*.py:QTR

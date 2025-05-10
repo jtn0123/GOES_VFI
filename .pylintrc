@@ -1,0 +1,125 @@
+[MASTER]
+# Add files or directories to the blacklist
+ignore=venv,venv-py313,venv-new,dist,build,docs
+# Python version
+py-version=3.13
+# Use multiple processes to speed up Pylint
+jobs=4
+# Allow loading of arbitrary C extensions
+unsafe-load-any-extension=no
+# optimize-ast is no longer supported in pylint 3+
+# Keeping this comment for documentation purposes
+# Minimum line length for similarity reports
+min-similarity-lines=10
+
+# Control the amount of potential inferred values when inferring a single
+# object. This can help the performance when dealing with large functions or
+# complex, nested conditions.
+limit-inference-results=100
+
+# Show exceptions and stacktraces for syntax errors
+fail-on=syntax-error
+
+[MESSAGES CONTROL]
+# Only show warnings with the listed confidence levels
+confidence=HIGH,INFERENCE,UNDEFINED
+
+# Disable the message, report, category or checker with the given id(s).
+disable=
+    # Specific to PyQt
+    invalid-name,        # PyQt uses camelCase and mixedCase names
+    no-name-in-module,   # PyQt imports can appear to be invalid 
+    c-extension-no-member,  # For PyQt
+    too-many-instance-attributes,  # Common in GUI widgets
+    unused-argument,      # For PyQt signal handlers
+    unused-variable,      # Sometimes needed for PyQt signals
+    arguments-differ,     # Can happen with PyQt overrides
+    
+    # Common Python warnings you might want to reconsider
+    missing-docstring,     # Add back if you want docstrings enforced  
+    too-many-locals,       # GUI code often has many local variables
+    too-many-statements,
+    too-many-branches,     # GUI event handling often has many branches
+    too-many-public-methods,
+    protected-access,      # Sometimes needed for Qt subclassing
+    fixme,                 # Allow TODOs
+    broad-except,          # Sometimes needed for Qt error handling
+    logging-format-interpolation,  # Allow f-strings in logging
+    
+    # Import related - consider re-enabling these
+    wrong-import-order,    # Use isort instead
+    wildcard-import,       # Sometimes useful in PyQt code but consider enabling
+    import-outside-toplevel,  # Sometimes needed in PyQt context
+    redefined-builtin,     # Allow shadowing Python builtins
+
+[BASIC]
+# Good variable names which should always be accepted
+good-names=i,j,k,ex,Run,_,id,qt,ui,x,y,on,a,b,ip,to,db,vm,fs
+
+# Don't require docstrings on special methods
+no-docstring-rgx=__.*__
+
+[FORMAT]
+# Maximum number of characters on a single line
+max-line-length=100
+
+# Maximum number of lines in a module
+max-module-lines=1500
+
+# Allow the body of an if to be on the same line as the test if there is no else
+single-line-if-stmt=yes
+
+# Allow indentation with 4 spaces and multiples
+indent-string='    '
+
+[SIMILARITIES]
+# Minimum lines number of a similarity
+min-similarity-lines=10
+
+# Ignore imports when computing similarities
+ignore-imports=yes
+
+[DESIGN]
+# Maximum number of arguments for function / method
+max-args=10
+
+# Maximum number of attributes for a class
+max-attributes=15
+
+# Maximum number of boolean expressions in an if statement
+max-bool-expr=6
+
+# Maximum number of branch for function / method body
+max-branches=15
+
+# Maximum number of locals for function / method body
+max-locals=20
+
+# Maximum number of parents for a class
+max-parents=10
+
+# Maximum number of public methods for a class
+max-public-methods=30
+
+# Maximum number of return / yield for function / method body
+max-returns=8
+
+# Maximum number of statements in function / method body
+max-statements=80
+
+[EXCEPTIONS]
+# Exceptions that will emit a warning when being caught
+overgeneral-exceptions=builtins.Exception
+
+[TYPECHECK]
+# List of module names for which member attributes should not be checked
+ignored-modules=PyQt6,PyQt6.QtCore,PyQt6.QtWidgets,PyQt6.QtGui,numpy,torch,satpy
+
+# List of classes names for which member attributes should not be checked
+ignored-classes=PyQt6,PyQt6.QtCore,PyQt6.QtWidgets,PyQt6.QtGui,numpy
+
+# List of members which are set dynamically and missed by pylint inference system
+generated-members=REQUEST,acl_users,aq_parent,objects
+
+# Tells whether missing members accessed in mixin class should be ignored
+ignore-mixin-members=yes
