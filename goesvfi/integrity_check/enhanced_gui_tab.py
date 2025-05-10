@@ -1012,7 +1012,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         
         # Fetch options group with dark mode styling
         fetch_group = QGroupBox("Fetch Options")
-        fetch_group.setStyleSheet(date_group.styleSheet())  # Reuse styling from date group
+        fetch_group.setStyleSheet(satellite_group.styleSheet())  # Reuse styling from satellite group
         fetch_layout = QVBoxLayout()
         
         # Fetch source radio buttons
@@ -1102,7 +1102,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         
         # Directory group with dark mode styling
         directory_group = QGroupBox("Directory")
-        directory_group.setStyleSheet(date_group.styleSheet())  # Reuse styling from date group
+        directory_group.setStyleSheet(satellite_group.styleSheet())  # Reuse styling from satellite group
         directory_layout = QVBoxLayout()
         
         # Directory selection
@@ -1122,9 +1122,31 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             }
         """)
         
-        # Browse button styling - reuse the same button style
+        # Browse button styling
         self.directory_browse_button = QPushButton("Browse...")
-        self.directory_browse_button.setStyleSheet(button_style)
+        self.directory_browse_button.setStyleSheet("""
+            QPushButton {
+                background-color: #4c72b0;
+                color: white;
+                font-weight: bold;
+                padding: 6px;
+                border-radius: 4px;
+                border: 1px solid #5d83c1;
+            }
+            QPushButton:hover {
+                background-color: #5a80c0;
+                border: 1px solid #6a90d0;
+            }
+            QPushButton:pressed {
+                background-color: #3c629a;
+                border: 1px solid #4c72b0;
+            }
+            QPushButton:disabled {
+                background-color: #333;
+                color: #777;
+                border: 1px solid #444;
+            }
+        """)
         self.directory_browse_button.setToolTip("Browse for a directory containing GOES imagery")
         
         directory_select_layout.addWidget(self.directory_edit)
@@ -1179,7 +1201,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         
         # Bottom section: Results table with dark mode styling
         results_group = QGroupBox("Missing Timestamps")
-        results_group.setStyleSheet(date_group.styleSheet())  # Reuse styling from date group
+        results_group.setStyleSheet(satellite_group.styleSheet())  # Reuse styling from satellite group
         results_layout = QVBoxLayout()
         
         # Table view with enhanced model and dark theme styling

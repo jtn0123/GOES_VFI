@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This project uses Python 3.13. A virtual environment should be used:
 
 ```bash
-# Create virtual environment with Python 3.13
-python3 -m venv venv-py313
+# Create virtual environment
+python3 -m venv .venv
 
 # Activate the environment
-source venv-py313/bin/activate
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
@@ -24,8 +24,8 @@ pip install -r requirements.txt
 - Run a specific test function: `python -m pytest tests/path/to/test_file.py::test_function_name`
 - Run with debug options: `./run_all_tests.py --debug-mode`
 - Run in parallel: `./run_all_tests.py --parallel 4`
-- Launch application: `source venv-py313/bin/activate && python -m goesvfi.gui`
-- Debug mode: `source venv-py313/bin/activate && python -m goesvfi.gui --debug`
+- Launch application: `source .venv/bin/activate && python -m goesvfi.gui`
+- Debug mode: `source .venv/bin/activate && python -m goesvfi.gui --debug`
 
 Note: Some tests may fail due to recent refactoring. When testing new changes:
 - Use `run_working_tests.py` for non-GUI tests

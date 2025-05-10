@@ -957,7 +957,7 @@ class MainWindow(QWidget):
             "me_mode": self.me_mode_combo.currentText(),
             "me_algo": self.me_algo_combo.text(),
             "search_param": self.search_param_spinbox.value(),
-            "scd_mode": self.scd_mode_combo.currentText(),
+            "scd": self.scd_mode_combo.currentText(),
             "scd_threshold": self.scd_threshold_spinbox.value(),
             "mb_size": self.mb_size_combo.text(),
             "vsbmc": self.vsbmc_checkbox.isChecked(),
@@ -968,6 +968,7 @@ class MainWindow(QWidget):
             "unsharp_cx": self.unsharp_cx_spinbox.value(),
             "unsharp_cy": self.unsharp_cy_spinbox.value(),
             "unsharp_ca": self.unsharp_ca_spinbox.value(),
+            "preset_text": self.ffmpeg_quality_combo.currentText(),
             "crf": self.crf_spinbox.value(),
             "bitrate": self.bitrate_spinbox.value(),
             "bufsize": self.bufsize_spinbox.value(),
@@ -3005,7 +3006,7 @@ class MainWindow(QWidget):
             QWidget {
                 background-color: #2D2D2D;
                 color: #EFEFEF;
-                font-family: Arial, sans-serif;
+                font-family: Arial, Helvetica, sans;
             }
             
             /* Tab Widget Styling */

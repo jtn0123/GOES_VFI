@@ -266,11 +266,11 @@ def detect_interval(timestamps: List[datetime]) -> int:
 def get_filename_pattern(pattern: SatellitePattern, base_name: str = "image") -> str:
     """
     Get a filename pattern string for the given satellite pattern.
-    
+
     Args:
         pattern: The satellite pattern to use
         base_name: The base filename to use (default: 'image')
-        
+
     Returns:
         A string pattern for constructing filenames
     """
@@ -287,10 +287,10 @@ def get_filename_pattern(pattern: SatellitePattern, base_name: str = "image") ->
 def format_timestamp(dt: datetime) -> str:
     """
     Format a datetime object as a timestamp string for filenames.
-    
+
     Args:
         dt: The datetime object to format
-        
+
     Returns:
         A formatted timestamp string (YYYYMMDDTHHMMSS)
     """
@@ -304,12 +304,12 @@ def generate_expected_filename(
 ) -> str:
     """
     Generate an expected filename for a given timestamp and pattern.
-    
+
     Args:
         timestamp: The datetime to use for the filename
         pattern: The satellite pattern to use
         base_name: The base filename to use (default: 'image')
-        
+
     Returns:
         A filename string
     """
@@ -321,7 +321,7 @@ def generate_expected_filename(
 def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
     """
     Extract a timestamp from a directory name with various formats.
-    
+
     Supported formats:
     - YYYY-MM-DD_HH-MM-SS (primary format)
     - YYYYMMDD_HHMMSS
@@ -330,10 +330,10 @@ def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
     - SATNAME_YYYYMMDD_HHMMSS
     - YYYY/DDD (year and day of year)
     - YYYYDDD (compact year and day of year)
-    
+
     Args:
         dirname: Directory name to parse (e.g., "2024-12-21_18-00-22")
-        
+
     Returns:
         datetime object if extraction succeeded, None otherwise
     """
