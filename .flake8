@@ -7,24 +7,25 @@ count = True
 show-source = True
 
 # PyQt Related Settings
-ignore = 
+ignore =
     # Ignore line break before binary operator - PyQt layouts often look better this way
     W503,
     # Ignore line too long for PyQt UI string literals and multiline assignments
     E501,
     # Ignore module level import not at top of file (sometimes needed for PyQt)
     E402
-    
+
 # Exclude patterns
-exclude = 
+exclude =
     .git,
     __pycache__,
     .pytest_cache,
     venv*,
+    .venv*,
     build,
     dist,
     *.egg-info,
-    # Add any generated files here
+    linting_backups/
 
 # Additional error checks to include
 select =
