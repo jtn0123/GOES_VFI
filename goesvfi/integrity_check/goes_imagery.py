@@ -14,13 +14,13 @@ Key features:
 import os
 import logging
 import requests
-import numpy as np
+# import numpy as np  # Uncomment when needed
 from pathlib import Path
 from datetime import datetime, timedelta
 import boto3
 import botocore
 import botocore.config
-from typing import Dict, List, Tuple, Optional, Union, Any
+from typing import Optional, Union
 from enum import Enum
 
 # Configure logging
@@ -144,10 +144,10 @@ class ImageryMode(Enum):
 class GOESImageryDownloader:
     """Class for downloading GOES satellite imagery."""
     
-    def __init__(self, 
-                satellite: str = "goes16", 
-                output_dir: Optional[Union[str, Path]] = None, 
-                cache: bool = True):
+    def __init__(self,
+                 satellite: str = "goes16",
+                 output_dir: Optional[Union[str, Path]] = None,
+                 cache: bool = True):
         """Initialize the downloader."""
         self.satellite = satellite
         self.output_dir = output_dir or DEFAULT_OUTPUT_DIR
@@ -201,7 +201,7 @@ class GOESImageryDownloader:
                 url_suffix = f"{size}x{size}.jpg"
                 url_channel = "13"
             else:
-                logger.error(f"Unsupported composite channel: {channel}")
+                logger.error("Unsupported composite channel: %s", channel)
                 return None
         else:
             url_suffix = f"{size}x{size}.jpg"
@@ -210,7 +210,7 @@ class GOESImageryDownloader:
         # Construct URL
         url = f"{GOES_IMAGE_BASE_URL}/{web_path}/latest/{url_channel}_{url_suffix}"
         
-        logger.info(f"Downloading pre-colorized image from: {url}")
+        logger.info("Downloading pre-colorized image from: %s", url)
         
         # Create filename
         timestamp = date.strftime("%Y%m%d_%H%M%S")
@@ -219,7 +219,7 @@ class GOESImageryDownloader:
         
         # Check cache
         if self.cache and output_path.exists():
-            logger.info(f"Using cached image: {output_path}")
+            logger.info("Using cached image: %s", output_path)
             return output_path
         
         # Download the image
@@ -230,17 +230,17 @@ class GOESImageryDownloader:
             with open(output_path, 'wb') as f:
                 f.write(response.content)
             
-            logger.info(f"Downloaded image to: {output_path}")
+            logger.info("Downloaded image to: %s", output_path)
             return output_path
         except Exception as e:
-            logger.error(f"Error downloading image: {e}")
+            logger.error("Error downloading image: %s", e)
             return None
     
-    def find_raw_data(self, 
-                     channel: ChannelType, 
-                     product_type: ProductType,
-                     date: Optional[datetime] = None,
-                     hour: Optional[int] = None) -> Optional[str]:
+    def find_raw_data(self,
+                      channel: ChannelType,
+                      product_type: ProductType,
+                      date: Optional[datetime] = None,
+                      hour: Optional[int] = None) -> Optional[str]:
         """
         Find raw NetCDF data in S3 bucket.
         
@@ -263,15 +263,15 @@ class GOESImageryDownloader:
         # Get S3 prefix
         prefix = ProductType.to_s3_prefix(product_type)
         if not prefix:
-            logger.error(f"Invalid product type: {product_type}")
+            logger.error("Invalid product type: %s", product_type)
             return None
-        
+
         # Build search prefix
         search_prefix = f"{prefix}/{date.year}/{day_of_year:03d}"
         if hour is not None:
             search_prefix += f"/{hour:02d}"
-        
-        logger.info(f"Searching for raw data in: {search_prefix}")
+
+        logger.info("Searching for raw data in: %s", search_prefix)
         
         try:
             # List objects with the given prefix
@@ -282,19 +282,19 @@ class GOESImageryDownloader:
             )
             
             if 'Contents' not in response:
-                logger.warning(f"No files found for {search_prefix}")
+                logger.warning("No files found for %s", search_prefix)
                 return None
-            
+
             # Filter by channel if needed
             matching_files = []
-            
+
             for obj in response['Contents']:
                 file_key = obj['Key']
-                
+
                 # Skip non-NetCDF files
                 if not file_key.endswith('.nc'):
                     continue
-                
+
                 # Filter by channel
                 if channel.is_composite:
                     # For composites, we need multiple files
@@ -305,11 +305,11 @@ class GOESImageryDownloader:
                     channel_pattern = f"C{channel.number:02d}_"
                     if channel_pattern not in file_key:
                         continue
-                
+
                 matching_files.append(file_key)
-            
+
             if not matching_files:
-                logger.warning(f"No matching files found for {channel}")
+                logger.warning("No matching files found for %s", channel)
                 return None
             
             # Sort by name and return the latest
@@ -318,30 +318,30 @@ class GOESImageryDownloader:
             return str(matching_files[-1]) if matching_files else None
         
         except Exception as e:
-            logger.error(f"Error searching for raw data: {e}")
+            logger.error("Error searching for raw data: %s", e)
             return None
-    
-    def download_raw_data(self, 
-                         file_key: str) -> Optional[Path]:
+
+    def download_raw_data(self,
+                          file_key: str) -> Optional[Path]:
         """
         Download raw NetCDF data from S3 bucket.
-        
+
         Args:
             file_key: S3 key for the file
-            
+
         Returns:
             Path to the downloaded file or None if download failed
         """
         # Create output filename
         filename = os.path.basename(file_key)
         output_path = Path(self.output_dir) / filename
-        
+
         # Check cache
         if self.cache and output_path.exists():
-            logger.info(f"Using cached file: {output_path}")
+            logger.info("Using cached file: %s", output_path)
             return output_path
-        
-        logger.info(f"Downloading raw data: {file_key}")
+
+        logger.info("Downloading raw data: %s", file_key)
         
         try:
             self.s3_client.download_file(
@@ -349,11 +349,11 @@ class GOESImageryDownloader:
                 Key=file_key,
                 Filename=str(output_path)
             )
-            
-            logger.info(f"Downloaded file to: {output_path}")
+
+            logger.info("Downloaded file to: %s", output_path)
             return output_path
         except Exception as e:
-            logger.error(f"Error downloading file: {e}")
+            logger.error("Error downloading file: %s", e)
             return None
 
 
@@ -370,28 +370,28 @@ class GOESImageProcessor:
         # Create output directory if it doesn't exist
         os.makedirs(self.output_dir, exist_ok=True)
     
-    def process_raw_data(self, 
-                         file_path: Path, 
+    def process_raw_data(self,
+                         file_path: Path,
                          channel: ChannelType,
                          resolution: Optional[int] = None) -> Optional[Path]:
         """
         Process raw NetCDF data into an image.
-        
+
         Args:
             file_path: Path to NetCDF file
             channel: Channel type
             resolution: Output resolution (defaults to half of native)
-            
+
         Returns:
             Path to processed image or None if processing failed
         """
-        logger.info(f"Processing raw data: {file_path}")
-        
+        logger.info("Processing raw data: %s", file_path)
+
         # Create output filename
         timestamp = self._extract_timestamp_from_filename(file_path.name)
         filename = f"processed_{channel.name.lower().replace(' ', '_')}_{timestamp}.png"
         output_path = Path(self.output_dir) / filename
-        
+
         # Process data based on mode
         try:
             # For simplicity, we'll use a basic processing approach here
@@ -406,74 +406,74 @@ class GOESImageProcessor:
                 # Example: call an advanced processing function
                 success = self._advanced_processing(file_path, output_path, channel, resolution)
             else:
-                logger.error(f"Invalid processing mode: {self.mode}")
+                logger.error("Invalid processing mode: %s", self.mode)
                 return None
-            
+
             if success:
-                logger.info(f"Processed image saved to: {output_path}")
+                logger.info("Processed image saved to: %s", output_path)
                 return output_path
             else:
-                logger.error(f"Processing failed")
+                logger.error("Processing failed")
                 return None
         except Exception as e:
-            logger.error(f"Error processing raw data: {e}")
+            logger.error("Error processing raw data: %s", e)
             return None
     
-    def _basic_processing(self, 
-                         input_path: Path, 
+    def _basic_processing(self,
+                         input_path: Path,
                          output_path: Path,
                          channel: ChannelType,
                          resolution: Optional[int] = None) -> bool:
         """Basic image processing."""
-        logger.info(f"Applying basic processing to {input_path}")
-        
+        logger.info("Applying basic processing to %s", input_path)
+
         try:
             # In a real implementation, this would use xarray, etc.
             # For now, we'll just log what would happen
-            logger.info(f"Would process {channel.name} data at resolution {resolution}")
-            logger.info(f"Would save output to {output_path}")
-            
+            logger.info("Would process %s data at resolution %s", channel.name, resolution)
+            logger.info("Would save output to %s", output_path)
+
             # Placeholder - in real implementation, we would:
             # 1. Read NetCDF data
             # 2. Apply basic scaling/normalization
             # 3. Convert to image and save
-            
+
             # For testing, create a dummy image
             with open(output_path, 'w') as f:
                 f.write("Placeholder for processed image")
-            
+
             return True
         except Exception as e:
-            logger.error(f"Error in basic processing: {e}")
+            logger.error("Error in basic processing: %s", e)
             return False
-    
-    def _advanced_processing(self, 
-                            input_path: Path, 
+
+    def _advanced_processing(self,
+                            input_path: Path,
                             output_path: Path,
                             channel: ChannelType,
                             resolution: Optional[int] = None) -> bool:
         """Advanced image processing."""
-        logger.info(f"Applying advanced processing to {input_path}")
-        
+        logger.info("Applying advanced processing to %s", input_path)
+
         try:
             # In a real implementation, this would use satpy, etc.
             # For now, we'll just log what would happen
-            logger.info(f"Would apply advanced processing to {channel.name} data")
-            logger.info(f"Would use atmospheric correction, enhancement, etc.")
-            logger.info(f"Would save output to {output_path}")
-            
+            logger.info("Would apply advanced processing to %s data", channel.name)
+            logger.info("Would use atmospheric correction, enhancement, etc.")
+            logger.info("Would save output to %s", output_path)
+
             # Placeholder - in real implementation, we would:
             # 1. Use satpy to read and process data
             # 2. Apply advanced corrections and enhancements
             # 3. Save as image
-            
+
             # For testing, create a dummy image
             with open(output_path, 'w') as f:
                 f.write("Placeholder for advanced processed image")
-            
+
             return True
         except Exception as e:
-            logger.error(f"Error in advanced processing: {e}")
+            logger.error("Error in advanced processing: %s", e)
             return False
     
     def _extract_timestamp_from_filename(self, filename: str) -> str:
@@ -562,12 +562,12 @@ class GOESImageryManager:
         if isinstance(channel, int):
             channel_obj = ChannelType.from_number(channel)
             if channel_obj is None:
-                logger.error(f"Invalid channel number: {channel}")
+                logger.error("Invalid channel number: %s", channel)
                 return None
-        
+
         # Ensure we have a valid ChannelType object
         if channel_obj is None:
-            logger.error(f"Invalid channel type: {type(channel).__name__}")
+            logger.error("Invalid channel type: %s", type(channel).__name__)
             return None
         
         # Use defaults if not specified
@@ -595,14 +595,14 @@ class GOESImageryManager:
             if not file_key:
                 # Handle case where channel_obj might be an int (even though we've tried to convert it)
                 channel_name = getattr(channel_obj, 'name', f"Channel {channel_obj}")
-                logger.error(f"No raw data found for {channel_name}, {product_type.name}")
+                logger.error("No raw data found for %s, %s", channel_name, product_type.name)
                 return None
-            
+
             # Download the data
             file_path = self.downloader.download_raw_data(file_key)
-            
+
             if not file_path:
-                logger.error(f"Failed to download raw data")
+                logger.error("Failed to download raw data")
                 return None
             
             # Process the data
@@ -612,7 +612,7 @@ class GOESImageryManager:
                 resolution=resolution
             )
         else:
-            logger.error(f"Invalid imagery mode: {mode}")
+            logger.error("Invalid imagery mode: %s", mode)
             return None
 
 

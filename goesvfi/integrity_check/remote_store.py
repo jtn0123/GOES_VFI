@@ -154,10 +154,10 @@ class HttpRemoteStore(RemoteStore):
             return False
     
     def download_file(self, 
- {21}url: str, 
- {21}destination: Path,
- {21}progress_callback: Optional[ProgressCallback] = None,
- {21}should_cancel: Optional[CancelCallback] = None) -> bool:
+ url: str, 
+ destination: Path,
+ progress_callback: Optional[ProgressCallback] = None,
+ should_cancel: Optional[CancelCallback] = None) -> bool:
         """
         Download a file from the remote store.
         
@@ -182,7 +182,7 @@ class HttpRemoteStore(RemoteStore):
             )
             
             if response.status_code != 200:
-                LOGGER.error(f"File not found or not accessible: {url}, status: {response.status_code}")
+                LOGGER.error("File not found or not accessible: %s, status: %d", url, response.status_code)
                 return False
             
             # Get file size if available
@@ -206,7 +206,7 @@ class HttpRemoteStore(RemoteStore):
                     for chunk in response.iter_content(chunk_size=8192):
                         # Check for cancellation
                         if should_cancel and should_cancel():
-                            LOGGER.info(f"Download cancelled for {url}")
+                            LOGGER.info("Download cancelled for %s", url)
                             return False
                         
                         if chunk:  # Filter out keep-alive chunks
@@ -231,14 +231,14 @@ class HttpRemoteStore(RemoteStore):
                     0.0  # Download complete
                 )
             
-            LOGGER.info(f"Successfully downloaded {url} to {destination}")
+            LOGGER.info("Successfully downloaded %s to %s", url, destination)
             return True
             
         except requests.RequestException as e:
-            LOGGER.error(f"Error downloading file from {url}: {e}")
+            LOGGER.error("Error downloading file from %s: %s", url, e)
             return False
         except IOError as e:
-            LOGGER.error(f"IO error writing to {destination}: {e}")
+            LOGGER.error("IO error writing to %s: %s", destination, e)
             return False
 
 
@@ -260,7 +260,7 @@ class FileSystemRemoteStore(RemoteStore):
         self.base_path = base_path
         
         if not self.base_path.exists() or not self.base_path.is_dir():
-            LOGGER.warning(f"Base directory does not exist: {self.base_path}")
+            LOGGER.warning("Base directory does not exist: %s", self.base_path)
     
     def construct_url(self, timestamp: datetime, pattern: SatellitePattern) -> str:
         """
@@ -303,10 +303,10 @@ class FileSystemRemoteStore(RemoteStore):
         return path.exists() and path.is_file()
     
     def download_file(self, 
- {21}url: str, 
- {21}destination: Path,
- {21}progress_callback: Optional[ProgressCallback] = None,
- {21}should_cancel: Optional[CancelCallback] = None) -> bool:
+ url: str, 
+ destination: Path,
+ progress_callback: Optional[ProgressCallback] = None,
+ should_cancel: Optional[CancelCallback] = None) -> bool:
         """
         Copy a file from one location to another.
         
@@ -326,14 +326,14 @@ class FileSystemRemoteStore(RemoteStore):
             # Get source file size
             source_path = Path(url)
             if not source_path.exists() or not source_path.is_file():
-                LOGGER.error(f"Source file not found: {source_path}")
+                LOGGER.error("Source file not found: %s", source_path)
                 return False
                 
             total_size = source_path.stat().st_size
             
             # Check for cancellation before starting
             if should_cancel and should_cancel():
-                LOGGER.info(f"File copy cancelled for {url}")
+                LOGGER.info("File copy cancelled for %s", url)
                 return False
             
             # Copy the file in chunks to allow progress reporting
@@ -344,7 +344,7 @@ class FileSystemRemoteStore(RemoteStore):
                 while True:
                     # Check for cancellation
                     if should_cancel and should_cancel():
-                        LOGGER.info(f"File copy cancelled for {url}")
+                        LOGGER.info("File copy cancelled for %s", url)
                         return False
                     
                     # Read a chunk
@@ -374,11 +374,11 @@ class FileSystemRemoteStore(RemoteStore):
                     0.0  # Copy complete
                 )
             
-            LOGGER.info(f"Successfully copied {url} to {destination}")
+            LOGGER.info("Successfully copied %s to %s", url, destination)
             return True
             
         except IOError as e:
-            LOGGER.error(f"IO error copying {url} to {destination}: {e}")
+            LOGGER.error("IO error copying %s to %s: %s", url, destination, e)
             return False
 
 
@@ -398,7 +398,7 @@ def create_remote_store(source: str) -> RemoteStore:
     if parsed.scheme in ('http', 'https'):
         # HTTP/HTTPS URL
         return HttpRemoteStore(source)
-    elif parsed.scheme == 'file' or not parsed.scheme:
+    if parsed.scheme == 'file' or not parsed.scheme:
         # Local file system path
         if not parsed.scheme:  # No scheme, assume local path
             path = Path(source)
@@ -407,5 +407,5 @@ def create_remote_store(source: str) -> RemoteStore:
         
         return FileSystemRemoteStore(path)
     else:
-        LOGGER.error(f"Unsupported scheme in source: {source}")
+        LOGGER.error("Unsupported scheme in source: %s", source)
         raise ValueError(f"Unsupported scheme in source: {source}")

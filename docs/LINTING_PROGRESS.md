@@ -70,9 +70,9 @@
 - Reformatted function parameters for better readability:
   ```python
   # Before
-  def to_s3_key(ts: datetime, satellite: SatellitePattern, product_type: str = "RadC",
+  def to_s3_key(ts: datetime, satellite: SatellitePattern, product_type: str = "RadC", 
                band: int = 13, exact_match: bool = False) -> str:
-
+  
   # After
   def to_s3_key(
       ts: datetime,
@@ -86,7 +86,7 @@
   ```python
   # Before
   pattern = f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s{year}{doy_str}{hour}{minute_str}{start_sec:02d}_e*_c*.nc"
-
+  
   # After
   pattern = (
       f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
@@ -126,66 +126,50 @@
 - Proper spacing between method definitions
 - Proper spacing after commas
 
-### goesvfi/integrity_check/background_worker.py
+### goesvfi/integrity_check/remote_store.py
 
 **Initial Issues:**
-- Unused imports (typing.List, typing.Tuple, typing.Union, ThreadPoolExecutor, Future, QThread, QApplication)
-- Inconsistent indentation in method signatures and parameters
+- Unused imports (hashlib, Dict, Any, List, Tuple, format_timestamp)
 - F-string logging issues (inefficient when used with logging module)
-- Missing newline at end of file
-- Trailing whitespace throughout file
+- Incorrect indentation in multi-line parameter lists
+- Missing final newline at the end of file
+- Unnecessary `pass` statements in abstract methods
+- Line length violations in log messages
+- Unnecessary `elif` after `return` statements
 
 **Fixes Applied:**
-- Removed unused imports and replaced with comments for clarity:
-  ```python
-  # Before
-  from typing import Dict, Any, List, Optional, Tuple, Union, Callable, TypeVar, Generic
-  from concurrent.futures import ThreadPoolExecutor, Future
-  from PyQt6.QtCore import QObject, pyqtSignal, QTimer, QThread, QRunnable, QThreadPool
-  from PyQt6.QtWidgets import QApplication
-
-  # After
-  from typing import Dict, Any, Optional, Callable, TypeVar, Generic
-  # Concurrent futures for thread management
-  from PyQt6.QtCore import QObject, pyqtSignal, QTimer, QRunnable, QThreadPool
-  # PyQt widgets for UI integration
-  ```
-- Fixed indentation in method signatures:
-  ```python
-  # Before
-  def __init__(self, task_id: str, func: Callable[..., T],
-              *args, **kwargs) -> None:
-
-  # After
-  def __init__(self, task_id: str, func: Callable[..., T],
-               *args, **kwargs) -> None:
-  ```
+- Removed unused imports and replaced with explanatory comments
 - Replaced f-string logging with more efficient %-style logging:
   ```python
   # Before
-  LOGGER.error(f"Task {self.task_id} failed: {e}\n{error_traceback}")
-
+  LOGGER.error(f"Error connecting to base URL {self.base_url}: {e}")
+  
   # After
-  LOGGER.error("Task %s failed: %s\n%s", self.task_id, e, error_traceback)
+  LOGGER.error("Error connecting to base URL %s: %s", self.base_url, e)
   ```
+- Fixed indentation in multi-line parameter lists for better readability
 - Added newline at end of file
-- Fixed over-indentation in error handling code
+- Removed unnecessary `pass` statements in abstract methods
+- Replaced unnecessary `elif` after `return` with plain `if`:
+  ```python
+  # Before
+  if parsed.scheme in ('http', 'https'):
+      return HttpRemoteStore(source)
+  elif parsed.scheme == 'file' or not parsed.scheme:
+      # ...handle file scheme
+  
+  # After
+  if parsed.scheme in ('http', 'https'):
+      return HttpRemoteStore(source)
+  if parsed.scheme == 'file' or not parsed.scheme:
+      # ...handle file scheme
+  ```
 
 **Style Improvements:**
-- Proper indentation in parameter lists for better readability
-- More efficient logging practices
-- Cleaner import management
-- Consistent spacing in method signatures
-
-### Priorities for Remaining Files
-
-Based on the linting results, the highest-priority issues to fix are:
-
-1. **Unused imports and undefined names (F4xx errors)**: These can indicate actual bugs or inefficiencies
-2. **Exception handling (B9xx errors)**: Use proper exception chaining with `raise ... from err`
-3. **Line length issues (E501/B950)**: Fix lines that exceed length limits by reformatting
-4. **Method complexity (C901)**: Functions that are too complex should be refactored
-5. **Blank line and whitespace issues (W2xx)**: Fix for better readability
+- More efficient and appropriate logging practices
+- Consistent parameter indentation
+- Cleaner code structure with better control flow
+- Removed redundant imports to improve maintainability
 
 ## Linting Score Improvements
 
@@ -195,12 +179,26 @@ Based on the linting results, the highest-priority issues to fix are:
 | goesvfi/integrity_check/time_index.py | 6.65/10 | 7.78/10 | +1.13 |
 | goesvfi/integrity_check/reconciler.py | 6.92/10 | 7.54/10 | +0.62 |
 | goesvfi/integrity_check/background_worker.py | 4.93/10 | 6.33/10 | +1.40 |
+| goesvfi/integrity_check/remote_store.py | 3.29/10 | 5.80/10 | +2.51 |
+
+## Next Files to Improve
+
+### goesvfi/integrity_check/goes_imagery.py - Current Score: 4.45/10
+
+**Issues to Address:**
+- Unused imports (numpy as np, typing.Dict, typing.List, typing.Tuple, typing.Any)
+- F-string logging issues in many places (20+ instances)
+- Unnecessary `elif` after `return` statements
+- Redundant indentation in multi-line parameter lists
+- Line length violations in several places
+- Complex function (GOESImageryDownloader.find_raw_data has complexity of 13)
 
 ## Next Steps
 
-1. Address trailing whitespace issues (C0303) across files - while these are lower priority, they're easy to fix
-2. Fix line length issues (C0301/B950) in other files using the same techniques as above
-3. Address unnecessary `elif` after `return` issues (R1705) for improved code structure
-4. Address logging f-string interpolation issues (W1203) by using %.format() style
-5. Tackle complex function issues (C901) by considering refactoring some functions
-6. Continue improving other files in the codebase following the same approach
+1. Fix goes_imagery.py following the same approach used for the other files
+2. Address trailing whitespace issues (C0303) across files - while these are lower priority, they're easy to fix
+3. Fix line length issues (C0301/B950) in other files using the same techniques as above
+4. Address unnecessary `elif` after `return` issues (R1705) for improved code structure
+5. Address logging f-string interpolation issues (W1203) by using %.format() style
+6. Tackle complex function issues (C901) by considering refactoring some functions
+7. Continue improving other files in the codebase following the same approach
