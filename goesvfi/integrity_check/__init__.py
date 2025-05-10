@@ -5,6 +5,27 @@ functionality to verify timestamp completeness in satellite imagery data
 and fetch missing images from remote sources using a hybrid CDN/S3 strategy.
 """
 
+# Make public API explicitly available
+__all__ = [
+    # Basic implementation components
+    'IntegrityCheckTab',
+    'IntegrityCheckViewModel', 'ScanStatus', 'MissingTimestamp',
+    'Reconciler',
+    'SatellitePattern', 'TimeIndex',
+    # Enhanced implementation components
+    'EnhancedIntegrityCheckTab',
+    'EnhancedIntegrityCheckViewModel', 'FetchSource',
+    'ReconcileManager',
+    'CDNStore',
+    'S3Store',
+    'render_png',
+    # GOES Imagery visualization components
+    'EnhancedGOESImageryTab',
+    'VisualizationManager', 'ExtendedChannelType',
+    'SampleProcessor',
+    'CombinedIntegrityAndImageryTab',
+]
+
 # Basic implementation components
 from .gui_tab import IntegrityCheckTab
 from .view_model import IntegrityCheckViewModel, ScanStatus, MissingTimestamp
