@@ -19,12 +19,15 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+# Runtime import for constants defined in gui.py
+from goesvfi.utils.config import (
+    DEFAULT_FFMPEG_PROFILE,  # Import from config
+    FFMPEG_PROFILES,
+    FfmpegProfile,
+)
+
 # Setup logger
 from goesvfi.utils import log
-
-# Runtime import for constants defined in gui.py
-from goesvfi.utils.config import DEFAULT_FFMPEG_PROFILE  # Import from config
-from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
 
 LOGGER = log.get_logger(__name__)  # Use __name__ for specific logger
 
@@ -165,62 +168,54 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_profile_combo = QComboBox()
         self.ffmpeg_profile_combo.addItems(list(FFMPEG_PROFILES.keys()) + ["Custom"])
         self.ffmpeg_profile_combo.setToolTip(
-            self.tr("Select a predefined FFmpeg settings profile or 'Custom'")
+            "Select a predefined FFmpeg settings profile or 'Custom'"
         )
 
         # --- Interpolation Settings Group ---
-        self.ffmpeg_settings_group = QGroupBox(
-            self.tr("Interpolation (minterpolate filter)")
-        )
+        self.ffmpeg_settings_group = QGroupBox("Interpolation (minterpolate filter)")
         self.ffmpeg_settings_group.setCheckable(
             True
         )  # Corresponds to use_ffmpeg_interp
         self.ffmpeg_settings_group.setToolTip(
-            self.tr("Enable and configure FFmpeg's motion interpolation filter")
+            "Enable and configure FFmpeg's motion interpolation filter"
         )
 
         self.ffmpeg_mi_mode_combo = QComboBox()
-        self.ffmpeg_mi_mode_combo.addItems(
-            [self.tr("dup"), self.tr("blend"), self.tr("mci")]
-        )
-        self.ffmpeg_mi_mode_combo.setToolTip(self.tr("Motion interpolation mode"))
+        self.ffmpeg_mi_mode_combo.addItems(["dup", "blend", "mci"])
+        self.ffmpeg_mi_mode_combo.setToolTip("Motion interpolation mode")
 
         self.ffmpeg_mc_mode_combo = QComboBox()
-        self.ffmpeg_mc_mode_combo.addItems([self.tr("obmc"), self.tr("aobmc")])
-        self.ffmpeg_mc_mode_combo.setToolTip(self.tr("Motion compensation mode"))
+        self.ffmpeg_mc_mode_combo.addItems(["obmc", "aobmc"])
+        self.ffmpeg_mc_mode_combo.setToolTip("Motion compensation mode")
 
         self.ffmpeg_me_mode_combo = QComboBox()
-        self.ffmpeg_me_mode_combo.addItems([self.tr("bidir"), self.tr("bilat")])
-        self.ffmpeg_me_mode_combo.setToolTip(self.tr("Motion estimation mode"))
+        self.ffmpeg_me_mode_combo.addItems(["bidir", "bilat"])
+        self.ffmpeg_me_mode_combo.setToolTip("Motion estimation mode")
 
-        self.ffmpeg_vsbmc_checkbox = QCheckBox(self.tr("VSBMC"))
-        self.ffmpeg_vsbmc_checkbox.setToolTip(
-            self.tr("Variable size block motion compensation")
-        )
+        self.ffmpeg_vsbmc_checkbox = QCheckBox("VSBMC")
+        self.ffmpeg_vsbmc_checkbox.setToolTip("Variable size block motion compensation")
 
         self.ffmpeg_scd_combo = QComboBox()
-        self.ffmpeg_scd_combo.addItems([self.tr("none"), self.tr("fdiff")])
-        self.ffmpeg_scd_combo.setToolTip(self.tr("Scene change detection mode"))
+        self.ffmpeg_scd_combo.addItems(["none", "fdiff"])
+        self.ffmpeg_scd_combo.setToolTip("Scene change detection mode")
 
         self.ffmpeg_me_algo_combo = QComboBox()  # Changed from QLineEdit
         self.ffmpeg_me_algo_combo.addItems(
             [
-                self.tr("(default)"),
-                self.tr("esa"),
-                self.tr("tss"),
-                self.tr("tdls"),
-                self.tr("ntss"),
-                self.tr("fss"),
-                self.tr("ds"),
-                self.tr("hexbs"),
-                self.tr("epzs"),
-                self.tr("umh"),
+                "(default)",
+                "esa",
+                "tss",
+                "tdls",
+                "ntss",
+                "fss",
+                "ds",
+                "hexbs",
+                "epzs",
+                "umh",
             ]
         )
         self.ffmpeg_me_algo_combo.setToolTip(
-            self.tr(
-                "Motion estimation algorithm (leave as default unless you know why)"
-            )
+            "Motion estimation algorithm (leave as default unless you know why)"
         )
 
         self.ffmpeg_search_param_spinbox = QSpinBox()
@@ -228,7 +223,7 @@ class FFmpegSettingsTab(QWidget):
             4, 2048
         )  # Example range, adjust if needed
         self.ffmpeg_search_param_spinbox.setToolTip(
-            self.tr("Motion estimation search parameter")
+            "Motion estimation search parameter"
         )
 
         self.ffmpeg_scd_threshold_spinbox = QDoubleSpinBox()
@@ -236,75 +231,63 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_scd_threshold_spinbox.setDecimals(1)
         self.ffmpeg_scd_threshold_spinbox.setSingleStep(0.1)
         self.ffmpeg_scd_threshold_spinbox.setToolTip(
-            self.tr("Scene change detection threshold (0-100)")
+            "Scene change detection threshold (0-100)"
         )
 
         self.ffmpeg_mb_size_combo = QComboBox()  # Changed from QLineEdit
         self.ffmpeg_mb_size_combo.addItems(
-            [
-                self.tr("(default)"),
-                self.tr("8"),
-                self.tr("16"),
-                self.tr("32"),
-                self.tr("64"),
-            ]
+            ["(default)", "8", "16", "32", "64"]
         )  # Common block sizes
-        self.ffmpeg_mb_size_combo.setToolTip(
-            self.tr("Macroblock size for motion estimation")
-        )
+        self.ffmpeg_mb_size_combo.setToolTip("Macroblock size for motion estimation")
 
         # --- Unsharp Mask Group ---
-        self.ffmpeg_unsharp_group = QGroupBox(self.tr("Sharpening (unsharp filter)"))
+        self.ffmpeg_unsharp_group = QGroupBox("Sharpening (unsharp filter)")
         self.ffmpeg_unsharp_group.setCheckable(True)  # Corresponds to apply_unsharp
-        self.ffmpeg_unsharp_group.setToolTip(
-            self.tr("Apply unsharp mask for sharpening")
-        )
+        self.ffmpeg_unsharp_group.setToolTip("Apply unsharp mask for sharpening")
 
         self.ffmpeg_unsharp_lx_spinbox = QSpinBox()
         self.ffmpeg_unsharp_lx_spinbox.setRange(3, 63)
         self.ffmpeg_unsharp_lx_spinbox.setSingleStep(2)
         self.ffmpeg_unsharp_lx_spinbox.setToolTip(
-            self.tr("Luma matrix horizontal size (odd, 3-63)")
+            "Luma matrix horizontal size (odd, 3-63)"
         )
 
         self.ffmpeg_unsharp_ly_spinbox = QSpinBox()
         self.ffmpeg_unsharp_ly_spinbox.setRange(3, 63)
         self.ffmpeg_unsharp_ly_spinbox.setSingleStep(2)
         self.ffmpeg_unsharp_ly_spinbox.setToolTip(
-            self.tr("Luma matrix vertical size (odd, 3-63)")
+            "Luma matrix vertical size (odd, 3-63)"
         )
 
         self.ffmpeg_unsharp_la_spinbox = QDoubleSpinBox()
         self.ffmpeg_unsharp_la_spinbox.setRange(-10.0, 10.0)  # Wider range
         self.ffmpeg_unsharp_la_spinbox.setDecimals(2)
         self.ffmpeg_unsharp_la_spinbox.setSingleStep(0.1)
-        self.ffmpeg_unsharp_la_spinbox.setToolTip(self.tr("Luma amount (-10 to 10)"))
+        self.ffmpeg_unsharp_la_spinbox.setToolTip("Luma amount (-10 to 10)")
 
         self.ffmpeg_unsharp_cx_spinbox = QSpinBox()
         self.ffmpeg_unsharp_cx_spinbox.setRange(3, 63)
         self.ffmpeg_unsharp_cx_spinbox.setSingleStep(2)
         self.ffmpeg_unsharp_cx_spinbox.setToolTip(
-            self.tr("Chroma matrix horizontal size (odd, 3-63)")
+            "Chroma matrix horizontal size (odd, 3-63)"
         )
 
         self.ffmpeg_unsharp_cy_spinbox = QSpinBox()
         self.ffmpeg_unsharp_cy_spinbox.setRange(3, 63)
         self.ffmpeg_unsharp_cy_spinbox.setSingleStep(2)
         self.ffmpeg_unsharp_cy_spinbox.setToolTip(
-            self.tr("Chroma matrix vertical size (odd, 3-63)")
+            "Chroma matrix vertical size (odd, 3-63)"
         )
 
         self.ffmpeg_unsharp_ca_spinbox = QDoubleSpinBox()
         self.ffmpeg_unsharp_ca_spinbox.setRange(-10.0, 10.0)  # Wider range
         self.ffmpeg_unsharp_ca_spinbox.setDecimals(2)
         self.ffmpeg_unsharp_ca_spinbox.setSingleStep(0.1)
-        self.ffmpeg_unsharp_ca_spinbox.setToolTip(self.tr("Chroma amount (-10 to 10)"))
+        self.ffmpeg_unsharp_ca_spinbox.setToolTip("Chroma amount (-10 to 10)")
 
         # --- Quality Settings Group ---
-        self.ffmpeg_quality_group = QGroupBox(self.tr("Encoding Quality (libx264)"))
-        self.ffmpeg_quality_group.setToolTip(
-            self.tr("Settings for the final video encoding")
-        )
+        self.ffmpeg_quality_group = QGroupBox("Encoding Quality (libx264)")
+        self.ffmpeg_quality_group.setToolTip("Settings for the final video encoding")
 
         self.ffmpeg_quality_combo = QComboBox()
         # Define presets similar to gui_backup.py
@@ -343,24 +326,20 @@ class FFmpegSettingsTab(QWidget):
         }
         self.ffmpeg_quality_combo.addItems(list(self.quality_presets.keys()))
         self.ffmpeg_quality_combo.setToolTip(
-            self.tr(
-                "Select a quality preset (adjusts CRF, Bitrate, Bufsize, Pixel Format)"
-            )
+            "Select a quality preset (adjusts CRF, Bitrate, Bufsize, Pixel Format)"
         )
 
         self.ffmpeg_crf_spinbox = QSpinBox()
         self.ffmpeg_crf_spinbox.setRange(0, 51)  # x264 CRF range
         self.ffmpeg_crf_spinbox.setToolTip(
-            self.tr("Constant Rate Factor (0=lossless, 51=worst)")
+            "Constant Rate Factor (0=lossless, 51=worst)"
         )
 
         self.ffmpeg_bitrate_spinbox = QSpinBox()
         self.ffmpeg_bitrate_spinbox.setRange(100, 100000)  # In kbps
         self.ffmpeg_bitrate_spinbox.setSuffix(" kbps")
         self.ffmpeg_bitrate_spinbox.setToolTip(
-            self.tr(
-                "Target video bitrate (used if CRF is not the primary mode, often informational)"
-            )
+            "Target video bitrate (used if CRF is not the primary mode, often informational)"
         )
         self.ffmpeg_bitrate_spinbox.setDisabled(
             True
@@ -370,7 +349,7 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_bufsize_spinbox.setRange(100, 200000)  # In kb
         self.ffmpeg_bufsize_spinbox.setSuffix(" kB")
         self.ffmpeg_bufsize_spinbox.setToolTip(
-            self.tr("Decoder buffer size (often 1.5x-2x bitrate)")
+            "Decoder buffer size (often 1.5x-2x bitrate)"
         )
         self.ffmpeg_bufsize_spinbox.setDisabled(
             True
@@ -378,33 +357,28 @@ class FFmpegSettingsTab(QWidget):
 
         self.ffmpeg_pix_fmt_combo = QComboBox()
         self.ffmpeg_pix_fmt_combo.addItems(
-            [
-                self.tr("yuv444p"),
-                self.tr("yuv420p"),
-                self.tr("yuv422p"),
-                self.tr("rgb24"),
-            ]
+            ["yuv444p", "yuv420p", "yuv422p", "rgb24"]
         )  # Common formats
         self.ffmpeg_pix_fmt_combo.setToolTip(
-            self.tr("Pixel format for encoding (yuv444p recommended for quality)")
+            "Pixel format for encoding (yuv444p recommended for quality)"
         )
 
         self.ffmpeg_filter_preset_combo = QComboBox()
         self.ffmpeg_filter_preset_combo.addItems(
             [
-                self.tr("ultrafast"),
-                self.tr("superfast"),
-                self.tr("veryfast"),
-                self.tr("faster"),
-                self.tr("fast"),
-                self.tr("medium"),
-                self.tr("slow"),
-                self.tr("slower"),
-                self.tr("veryslow"),
+                "ultrafast",
+                "superfast",
+                "veryfast",
+                "faster",
+                "fast",
+                "medium",
+                "slow",
+                "slower",
+                "veryslow",
             ]
         )
         self.ffmpeg_filter_preset_combo.setToolTip(
-            self.tr("x264 encoding speed preset (slower = better compression/quality)")
+            "x264 encoding speed preset (slower = better compression/quality)"
         )
 
     def _setup_layout(self) -> None:
@@ -436,7 +410,7 @@ class FFmpegSettingsTab(QWidget):
         profile_layout = QHBoxLayout(profile_container)
         profile_layout.setContentsMargins(10, 10, 10, 10)
 
-        profile_label = QLabel(self.tr("📋 FFmpeg Profile:"))
+        profile_label = QLabel("📋 FFmpeg Profile:")
         profile_label.setObjectName("profile_label")
         self.ffmpeg_profile_combo.setMinimumWidth(200)
 
@@ -455,51 +429,51 @@ class FFmpegSettingsTab(QWidget):
         interp_layout.setContentsMargins(10, 15, 10, 10)  # More comfortable margins
 
         # Add styled labels with better descriptions
-        mi_label = QLabel(self.tr("Motion Interp:"))
+        mi_label = QLabel("Motion Interp:")
         mi_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         interp_layout.addWidget(mi_label, 0, 0)
         interp_layout.addWidget(self.ffmpeg_mi_mode_combo, 0, 1)
 
-        mc_label = QLabel(self.tr("Motion Comp:"))
+        mc_label = QLabel("Motion Comp:")
         mc_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         interp_layout.addWidget(mc_label, 0, 2)
         interp_layout.addWidget(self.ffmpeg_mc_mode_combo, 0, 3)
 
-        me_label = QLabel(self.tr("Motion Est:"))
+        me_label = QLabel("Motion Est:")
         me_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         interp_layout.addWidget(me_label, 1, 0)
         interp_layout.addWidget(self.ffmpeg_me_mode_combo, 1, 1)
 
         # Enhance checkbox with better contrast
-        self.ffmpeg_vsbmc_checkbox.setText(self.tr("Variable Size Blocks"))
+        self.ffmpeg_vsbmc_checkbox.setText("Variable Size Blocks")
         self.ffmpeg_vsbmc_checkbox.setStyleSheet("color: #e0e0e0;")
         interp_layout.addWidget(
             self.ffmpeg_vsbmc_checkbox, 1, 2, 1, 2
         )  # Span 2 columns
         # Scene detection row with enhanced styling
-        scd_label = QLabel(self.tr("Scene Detect:"))
+        scd_label = QLabel("Scene Detect:")
         scd_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         interp_layout.addWidget(scd_label, 2, 0)
         interp_layout.addWidget(self.ffmpeg_scd_combo, 2, 1)
 
-        scd_thresh_label = QLabel(self.tr("SCD Threshold:"))
+        scd_thresh_label = QLabel("SCD Threshold:")
         scd_thresh_label.setStyleSheet("color: #e0e0e0;")
         interp_layout.addWidget(scd_thresh_label, 2, 2)
         interp_layout.addWidget(self.ffmpeg_scd_threshold_spinbox, 2, 3)
 
         # Advanced motion estimation row
-        me_algo_label = QLabel(self.tr("ME Algorithm:"))
+        me_algo_label = QLabel("ME Algorithm:")
         me_algo_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         interp_layout.addWidget(me_algo_label, 3, 0)
         interp_layout.addWidget(self.ffmpeg_me_algo_combo, 3, 1)
 
-        search_param_label = QLabel(self.tr("Search Range:"))
+        search_param_label = QLabel("Search Range:")
         search_param_label.setStyleSheet("color: #e0e0e0;")
         interp_layout.addWidget(search_param_label, 3, 2)
         interp_layout.addWidget(self.ffmpeg_search_param_spinbox, 3, 3)
 
         # Block size row
-        mb_size_label = QLabel(self.tr("Block Size:"))
+        mb_size_label = QLabel("Block Size:")
         mb_size_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         interp_layout.addWidget(mb_size_label, 4, 0)
         interp_layout.addWidget(self.ffmpeg_mb_size_combo, 4, 1)
@@ -516,26 +490,26 @@ class FFmpegSettingsTab(QWidget):
         unsharp_layout.setContentsMargins(10, 15, 10, 10)  # More comfortable margins
 
         # Add section headers
-        luma_header = QLabel(self.tr("Luma (Brightness):"))
+        luma_header = QLabel("Luma (Brightness):")
         luma_header.setStyleSheet("font-weight: bold; color: #88ccff;")
         unsharp_layout.addWidget(luma_header, 0, 0, 1, 2)
 
-        chroma_header = QLabel(self.tr("Chroma (Color):"))
+        chroma_header = QLabel("Chroma (Color):")
         chroma_header.setStyleSheet("font-weight: bold; color: #88ccff;")
         unsharp_layout.addWidget(chroma_header, 0, 3, 1, 2)
 
         # Luma controls
-        luma_x_label = QLabel(self.tr("X Size:"))
+        luma_x_label = QLabel("X Size:")
         luma_x_label.setStyleSheet("color: #e0e0e0;")
         unsharp_layout.addWidget(luma_x_label, 1, 0)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_lx_spinbox, 1, 1)
 
-        luma_y_label = QLabel(self.tr("Y Size:"))
+        luma_y_label = QLabel("Y Size:")
         luma_y_label.setStyleSheet("color: #e0e0e0;")
         unsharp_layout.addWidget(luma_y_label, 2, 0)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_ly_spinbox, 2, 1)
 
-        luma_amt_label = QLabel(self.tr("Amount:"))
+        luma_amt_label = QLabel("Amount:")
         luma_amt_label.setStyleSheet("color: #e0e0e0;")
         unsharp_layout.addWidget(luma_amt_label, 3, 0)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_la_spinbox, 3, 1)
@@ -549,17 +523,17 @@ class FFmpegSettingsTab(QWidget):
         unsharp_layout.addWidget(separator, 1, 2, 3, 1)
 
         # Chroma controls
-        chroma_x_label = QLabel(self.tr("X Size:"))
+        chroma_x_label = QLabel("X Size:")
         chroma_x_label.setStyleSheet("color: #e0e0e0;")
         unsharp_layout.addWidget(chroma_x_label, 1, 3)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_cx_spinbox, 1, 4)
 
-        chroma_y_label = QLabel(self.tr("Y Size:"))
+        chroma_y_label = QLabel("Y Size:")
         chroma_y_label.setStyleSheet("color: #e0e0e0;")
         unsharp_layout.addWidget(chroma_y_label, 2, 3)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_cy_spinbox, 2, 4)
 
-        chroma_amt_label = QLabel(self.tr("Amount:"))
+        chroma_amt_label = QLabel("Amount:")
         chroma_amt_label.setStyleSheet("color: #e0e0e0;")
         unsharp_layout.addWidget(chroma_amt_label, 3, 3)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_ca_spinbox, 3, 4)
@@ -579,28 +553,28 @@ class FFmpegSettingsTab(QWidget):
         quality_layout.setContentsMargins(10, 15, 10, 10)  # More comfortable margins
 
         # Quality preset with styled label
-        quality_preset_label = QLabel(self.tr("Quality Preset:"))
+        quality_preset_label = QLabel("Quality Preset:")
         quality_preset_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         quality_layout.addWidget(quality_preset_label, 0, 0)
         quality_layout.addWidget(self.ffmpeg_quality_combo, 0, 1)
 
         # CRF with emphasis
-        crf_label = QLabel(self.tr("CRF Value:"))
+        crf_label = QLabel("CRF Value:")
         crf_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         quality_layout.addWidget(crf_label, 0, 2)
         self.ffmpeg_crf_spinbox.setToolTip(
-            self.tr("Constant Rate Factor: Lower values = higher quality (0-51)")
+            "Constant Rate Factor: Lower values = higher quality (0-51)"
         )
         quality_layout.addWidget(self.ffmpeg_crf_spinbox, 0, 3)
 
         # Bitrate section
-        bitrate_label = QLabel(self.tr("Target Bitrate:"))
+        bitrate_label = QLabel("Target Bitrate:")
         bitrate_label.setStyleSheet("color: #e0e0e0;")
         quality_layout.addWidget(bitrate_label, 1, 0)
         quality_layout.addWidget(self.ffmpeg_bitrate_spinbox, 1, 1)
 
         # Buffer size
-        bufsize_label = QLabel(self.tr("Buffer Size:"))
+        bufsize_label = QLabel("Buffer Size:")
         bufsize_label.setStyleSheet("color: #e0e0e0;")
         quality_layout.addWidget(bufsize_label, 1, 2)
         quality_layout.addWidget(self.ffmpeg_bufsize_spinbox, 1, 3)
@@ -614,21 +588,19 @@ class FFmpegSettingsTab(QWidget):
         quality_layout.addWidget(separator, 2, 0, 1, 4)
 
         # Format and presets section
-        format_label = QLabel(self.tr("Pixel Format:"))
+        format_label = QLabel("Pixel Format:")
         format_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         quality_layout.addWidget(format_label, 3, 0)
         quality_layout.addWidget(self.ffmpeg_pix_fmt_combo, 3, 1)
 
-        preset_label = QLabel(self.tr("Encoder Speed:"))
+        preset_label = QLabel("Encoder Speed:")
         preset_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         quality_layout.addWidget(preset_label, 3, 2)
         quality_layout.addWidget(self.ffmpeg_filter_preset_combo, 3, 3)
 
         # Add a note about quality
         note_label = QLabel(
-            self.tr(
-                "<i>Note: Slower encoder presets generally produce better quality at the same bitrate</i>"
-            )
+            "<i>Note: Slower encoder presets generally produce better quality at the same bitrate</i>"
         )
         note_label.setStyleSheet("color: #bbbbbb; font-size: 8pt;")
         note_label.setWordWrap(True)
@@ -954,7 +926,7 @@ class FFmpegSettingsTab(QWidget):
         current_value: Any,
         profile_value: Any,
         current_settings: Dict[str, Any] = None,
-        profile_dict: FfmpegProfile = None,
+        profile_dict: FfmpegProfile = None
     ) -> bool:
         """
         Compare float values with proper handling of None, NaN, and type conversions.
@@ -974,9 +946,7 @@ class FFmpegSettingsTab(QWidget):
             current_scd_mode = current_settings.get("scd")
             profile_scd_mode = profile_dict.get("scd")
             if current_scd_mode == "none" and profile_scd_mode == "none":
-                return (
-                    True  # Threshold doesn't matter if both are none, consider matching
-                )
+                return True  # Threshold doesn't matter if both are none, consider matching
             # No need to handle the case where one is "none" - the main key loop will catch it
 
         # Handle potential None values and NaN
@@ -993,14 +963,10 @@ class FFmpegSettingsTab(QWidget):
             return False
 
         # Handle type conversion if needed
-        if not isinstance(current_value, (float, int)) or not isinstance(
-            profile_value, (float, int)
-        ):
+        if not isinstance(current_value, (float, int)) or not isinstance(profile_value, (float, int)):
             LOGGER.warning(
                 "Non-numeric value for float key %r. Current: %s, Profile: %s",
-                key,
-                current_value,
-                profile_value,
+                key, current_value, profile_value
             )
             # Try to convert both to float
             try:
@@ -1012,9 +978,7 @@ class FFmpegSettingsTab(QWidget):
         # Normal numeric comparison with tolerance
         return abs(float(current_value) - float(profile_value)) <= 1e-6
 
-    def _compare_text_values(
-        self, key: str, current_value: Any, profile_value: Any
-    ) -> bool:
+    def _compare_text_values(self, key: str, current_value: Any, profile_value: Any) -> bool:
         """
         Compare text values with handling for special cases like "(default)".
 
@@ -1083,7 +1047,8 @@ class FFmpegSettingsTab(QWidget):
             # Ensure key exists in current_settings before accessing
             if key not in current_settings:
                 LOGGER.warning(
-                    "Key %r in profile but not returned by get_current_settings().", key
+                    "Key %r in profile but not returned by get_current_settings().",
+                    key
                 )
                 return False
 
@@ -1094,9 +1059,8 @@ class FFmpegSettingsTab(QWidget):
             # Choose appropriate comparison strategy based on key type
             # Float comparison for numeric values that need precision handling
             if key in ["scd_threshold", "unsharp_la", "unsharp_ca"]:
-                if not self._compare_float_values(
-                    key, current_value, profile_value, current_settings, profile_dict
-                ):
+                if not self._compare_float_values(key, current_value, profile_value,
+                                               current_settings, profile_dict):
                     return False
 
             # Special handling for text fields that might be "(default)" or empty

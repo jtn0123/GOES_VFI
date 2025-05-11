@@ -24,17 +24,25 @@ from enum import Enum  # Add this import
 
 import numpy as np
 from numpy.typing import NDArray
-
 # We were importing PIL.Image but it's not used
-from PyQt6.QtCore import QRect  # QPointF is unused
-from PyQt6.QtCore import QObject, QSettings, Qt, QTimer, pyqtSignal, pyqtSlot
+from PyQt6.QtCore import (
+    QObject,
+    QRect,  # QPointF is unused
+    QSettings,
+    Qt,
+    QTimer,
+    pyqtSignal,
+    pyqtSlot,
+)
 from PyQt6.QtGui import QImage  # Add QImage import
-from PyQt6.QtGui import QMouseEvent  # QColor, QCursor, and QPixmap are unused
-from PyQt6.QtWidgets import QFileDialog  # QDoubleSpinBox is unused
+from PyQt6.QtGui import (
+    QMouseEvent,  # QColor, QCursor, and QPixmap are unused
+)
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
+    QFileDialog,  # QDoubleSpinBox is unused
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -132,7 +140,7 @@ from goesvfi.utils.gui_helpers import (  # Import moved classes AND ImageViewerD
 from goesvfi.utils.log import get_logger  # Use get_logger
 
 LOGGER = get_logger(__name__)  # Get logger instance
-# Removed redundant import of 'ImageData' (original import at line 60)
+from goesvfi.pipeline.image_processing_interfaces import ImageData  # Import ImageData
 from goesvfi.utils.config import (  # Import from config
     get_available_rife_models,
     get_cache_dir,
@@ -269,7 +277,7 @@ class MainTab(QWidget):
         layout.setSpacing(10)  # Adjust spacing between major groups
 
         # Input/Output Group
-        io_group = QGroupBox(self.tr("Input/Output"))
+        io_group = QGroupBox("Input/Output")
         io_layout = QGridLayout(io_group)
         io_layout.setContentsMargins(10, 15, 10, 10)
         io_layout.setSpacing(8)
@@ -281,14 +289,14 @@ class MainTab(QWidget):
         self.in_dir_edit.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
-        in_dir_button = QPushButton(self.tr("Browse..."))
+        in_dir_button = QPushButton("Browse...")
         in_dir_button.setObjectName("browse_button")
         in_dir_layout.addWidget(self.in_dir_edit)
         in_dir_layout.addWidget(in_dir_button)
         # Connect button click here for clarity
         in_dir_button.clicked.connect(self._pick_in_dir)
 
-        io_layout.addWidget(QLabel(self.tr("Input Directory:")), 0, 0)
+        io_layout.addWidget(QLabel("Input Directory:"), 0, 0)
         io_layout.addLayout(in_dir_layout, 0, 1, 1, 2)  # Span layout across 2 columns
 
         # Output file row (Layout for LineEdit and Button)
@@ -298,14 +306,14 @@ class MainTab(QWidget):
         self.out_file_edit.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
         )
-        out_file_button = QPushButton(self.tr("Browse..."))
+        out_file_button = QPushButton("Browse...")
         out_file_button.setObjectName("browse_button")
         out_file_layout.addWidget(self.out_file_edit)
         out_file_layout.addWidget(out_file_button)
         # Connect button click here
         out_file_button.clicked.connect(self._pick_out_file)
 
-        io_layout.addWidget(QLabel(self.tr("Output File (MP4):")), 1, 0)
+        io_layout.addWidget(QLabel("Output File (MP4):"), 1, 0)
         io_layout.addLayout(out_file_layout, 1, 1, 1, 2)  # Span layout across 2 columns
 
         # Preview Area
@@ -317,9 +325,9 @@ class MainTab(QWidget):
         # Crop Buttons
         crop_buttons_layout = QHBoxLayout()
         crop_buttons_layout.setContentsMargins(10, 0, 10, 0)
-        self.crop_button = QPushButton(self.tr("Select Crop Region"))
+        self.crop_button = QPushButton("Select Crop Region")
         self.crop_button.setObjectName("crop_button")
-        self.clear_crop_button = QPushButton(self.tr("Clear Crop"))
+        self.clear_crop_button = QPushButton("Clear Crop")
         self.clear_crop_button.setObjectName("clear_crop_button")
         crop_buttons_layout.addWidget(self.crop_button)
         crop_buttons_layout.addWidget(self.clear_crop_button)
@@ -329,11 +337,11 @@ class MainTab(QWidget):
         sanchez_preview_layout = QHBoxLayout()
         sanchez_preview_layout.setContentsMargins(10, 5, 10, 0)  # Add some top margin
         self.sanchez_false_colour_checkbox = QCheckBox(
-            self.tr("Enable Sanchez/False Color Preview")
+            "Enable Sanchez/False Color Preview"
         )
         self.sanchez_false_colour_checkbox.setChecked(False)
         self.sanchez_false_colour_checkbox.setToolTip(
-            self.tr("Show previews processed with Sanchez false color.")
+            "Show previews processed with Sanchez false color."
         )
         sanchez_preview_layout.addWidget(self.sanchez_false_colour_checkbox)
         sanchez_preview_layout.addStretch(1)
@@ -342,13 +350,13 @@ class MainTab(QWidget):
         processing_group = self._create_processing_settings_group()  # Calls helper
 
         # RIFE Options Group
-        self.rife_options_group = QGroupBox(self.tr("RIFE Options"))
+        self.rife_options_group = QGroupBox("RIFE Options")
         self.rife_options_group.setCheckable(False)
         rife_layout = QGridLayout(self.rife_options_group)
-        rife_layout.addWidget(QLabel(self.tr("RIFE Model:")), 0, 0)
+        rife_layout.addWidget(QLabel("RIFE Model:"), 0, 0)
         self.rife_model_combo = QComboBox()
         rife_layout.addWidget(self.rife_model_combo, 0, 1)
-        self.rife_tile_checkbox = QCheckBox(self.tr("Enable Tiling"))
+        self.rife_tile_checkbox = QCheckBox("Enable Tiling")
         self.rife_tile_checkbox.setChecked(False)
         rife_layout.addWidget(self.rife_tile_checkbox, 1, 0)
         self.rife_tile_size_spinbox = QSpinBox()
@@ -357,42 +365,42 @@ class MainTab(QWidget):
         self.rife_tile_size_spinbox.setEnabled(False)
         rife_layout.addWidget(self.rife_tile_size_spinbox, 1, 1)
         self.tile_size_spinbox = self.rife_tile_size_spinbox  # Alias
-        self.rife_uhd_checkbox = QCheckBox(self.tr("UHD Mode"))
+        self.rife_uhd_checkbox = QCheckBox("UHD Mode")
         self.rife_uhd_checkbox.setChecked(False)
         rife_layout.addWidget(self.rife_uhd_checkbox, 2, 0, 1, 2)
-        rife_layout.addWidget(QLabel(self.tr("Thread Spec:")), 3, 0)
+        rife_layout.addWidget(QLabel("Thread Spec:"), 3, 0)
         self.rife_thread_spec_edit = QLineEdit()
         self.rife_thread_spec_edit.setPlaceholderText("e.g., 1:2:2, 2:2:1")
         self.rife_thread_spec_edit.setToolTip(
-            self.tr("Specify thread distribution (encoder:decoder:processor)")
+            "Specify thread distribution (encoder:decoder:processor)"
         )
         rife_layout.addWidget(self.rife_thread_spec_edit, 3, 1)
-        self.rife_tta_spatial_checkbox = QCheckBox(self.tr("TTA Spatial"))
+        self.rife_tta_spatial_checkbox = QCheckBox("TTA Spatial")
         self.rife_tta_spatial_checkbox.setChecked(False)
         rife_layout.addWidget(self.rife_tta_spatial_checkbox, 4, 0, 1, 2)
-        self.rife_tta_temporal_checkbox = QCheckBox(self.tr("TTA Temporal"))
+        self.rife_tta_temporal_checkbox = QCheckBox("TTA Temporal")
         self.rife_tta_temporal_checkbox.setChecked(False)
         rife_layout.addWidget(self.rife_tta_temporal_checkbox, 5, 0, 1, 2)
 
         # Sanchez Options Group
-        self.sanchez_options_group = QGroupBox(self.tr("Sanchez Options"))
+        self.sanchez_options_group = QGroupBox("Sanchez Options")
         self.sanchez_options_group.setCheckable(False)
         sanchez_layout = QGridLayout(self.sanchez_options_group)
         # False colour checkbox moved near previews
         # sanchez_layout.addWidget(self.sanchez_false_colour_checkbox, 0, 0, 1, 2) # REMOVED
         sanchez_layout.addWidget(
-            QLabel(self.tr("Resolution (km):")), 1, 0
+            QLabel("Resolution (km):"), 1, 0
         )  # Adjusted row index if needed (seems okay)
         self.sanchez_res_combo = QComboBox()
         self.sanchez_res_combo.addItems(
-            [self.tr("0.5"), self.tr("1"), self.tr("2"), self.tr("4")]
+            ["0.5", "1", "2", "4"]
         )  # Keep other Sanchez options here
         self.sanchez_res_combo.setCurrentText("4")
         sanchez_layout.addWidget(self.sanchez_res_combo, 1, 1)
         self.sanchez_res_km_combo = self.sanchez_res_combo  # Alias
 
         # Create a completely redesigned start button implementation
-        self.start_button = QPushButton(self.tr("START"))
+        self.start_button = QPushButton("START")
         self.start_button.setObjectName("start_button")
         self.start_button.setMinimumHeight(50)
         self.start_button.setEnabled(True)  # Initially enabled for debugging
@@ -1024,7 +1032,7 @@ class MainTab(QWidget):
 
     def _enhance_preview_area(self) -> QGroupBox:
         """Create the group box containing the preview image labels."""
-        previews_group = QGroupBox(self.tr("Previews"))
+        previews_group = QGroupBox("Previews")
         previews_layout = QHBoxLayout(previews_group)
         previews_layout.setContentsMargins(10, 15, 10, 10)
         previews_layout.setSpacing(10)
@@ -1046,7 +1054,7 @@ class MainTab(QWidget):
             title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            label.setToolTip(self.tr("Click to zoom"))
+            label.setToolTip("Click to zoom")
             label.setMinimumSize(100, 100)  # Ensure minimum size
             label.setSizePolicy(
                 QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored
@@ -1063,7 +1071,7 @@ class MainTab(QWidget):
 
     def _create_processing_settings_group(self) -> QGroupBox:
         """Create the group box for general processing settings."""
-        group = QGroupBox(self.tr("Processing Settings"))
+        group = QGroupBox("Processing Settings")
         layout = QGridLayout(group)
         layout.setContentsMargins(10, 15, 10, 10)
         layout.setSpacing(8)
@@ -1077,7 +1085,7 @@ class MainTab(QWidget):
         self.fps_spinbox = QSpinBox()
         self.fps_spinbox.setRange(1, 120)
         self.fps_spinbox.setValue(60)
-        layout.addWidget(QLabel(self.tr("Output FPS:")), 0, 0)
+        layout.addWidget(QLabel("Output FPS:"), 0, 0)
         layout.addWidget(self.fps_spinbox, 0, 1)
 
         self.multiplier_spinbox = (
@@ -1085,7 +1093,7 @@ class MainTab(QWidget):
         )  # Renamed from mid_count_spinbox for clarity
         self.multiplier_spinbox.setRange(2, 16)  # Example range
         self.multiplier_spinbox.setValue(2)
-        layout.addWidget(QLabel(self.tr("Frame Multiplier:")), 1, 0)
+        layout.addWidget(QLabel("Frame Multiplier:"), 1, 0)
         layout.addWidget(self.multiplier_spinbox, 1, 1)
         self.mid_count_spinbox = (
             self.multiplier_spinbox
@@ -1096,14 +1104,14 @@ class MainTab(QWidget):
         default_workers = max(1, cpu_cores // 2) if cpu_cores else 1
         self.max_workers_spinbox.setRange(1, os.cpu_count() or 1)
         self.max_workers_spinbox.setValue(default_workers)
-        layout.addWidget(QLabel(self.tr("Max Workers:")), 2, 0)
+        layout.addWidget(QLabel("Max Workers:"), 2, 0)
         layout.addWidget(self.max_workers_spinbox, 2, 1)
 
         self.encoder_combo = QComboBox()
         self.encoder_combo.addItems(
-            [self.tr("RIFE"), self.tr("FFmpeg")]
+            ["RIFE", "FFmpeg"]
         )  # Add other encoders if supported
-        layout.addWidget(QLabel(self.tr("Encoder:")), 3, 0)
+        layout.addWidget(QLabel("Encoder:"), 3, 0)
         layout.addWidget(self.encoder_combo, 3, 1)
 
         return group
@@ -1711,7 +1719,7 @@ class MainTab(QWidget):
 
     def _reset_start_button(self) -> None:
         """Resets the start button text and enables it."""
-        self.start_button.setText(self.tr("Start Video Interpolation"))
+        self.start_button.setText("Start Video Interpolation")
         self.set_processing_state(False)
         self._update_start_button_state()  # Re-evaluate if it should be enabled
 
@@ -2084,7 +2092,7 @@ class MainTab(QWidget):
         # Update button text and style
         if self.is_processing:
             # Processing mode
-            self.start_button.setText(self.tr("Cancel"))
+            self.start_button.setText("Cancel")
             self.start_button.setStyleSheet(
                 """
                 QPushButton#start_button {
@@ -2099,7 +2107,7 @@ class MainTab(QWidget):
         else:
             # Ready or disabled mode
             if can_start:
-                self.start_button.setText(self.tr("START"))
+                self.start_button.setText("START")
                 self.start_button.setStyleSheet(
                     """
                     QPushButton#start_button {
@@ -2119,7 +2127,7 @@ class MainTab(QWidget):
                 """
                 )
             else:
-                self.start_button.setText(self.tr("START"))
+                self.start_button.setText("START")
                 self.start_button.setStyleSheet(
                     """
                     QPushButton#start_button {
@@ -2217,7 +2225,7 @@ class MainTab(QWidget):
         if not caps.get("tiling", False):
             self.rife_tile_checkbox.setChecked(False)
         if not caps.get("custom_thread_count", False):
-            self.rife_thread_spec_edit.setText(self.tr(""))
+            self.rife_thread_spec_edit.setText("")
 
     def _update_rife_options_state(self, encoder: str) -> None:
         """Enable/disable the RIFE options group based on the selected encoder."""
@@ -2603,7 +2611,7 @@ class MainTab(QWidget):
                     self.in_dir_edit.setText(str(loaded_in_dir))
                     LOGGER.info(f"Set input directory in UI: {loaded_in_dir}")
                 else:
-                    self.in_dir_edit.setText(self.tr(""))
+                    self.in_dir_edit.setText("")
                     LOGGER.debug(
                         "Cleared input directory in UI (no valid directory found)"
                     )
@@ -2651,7 +2659,7 @@ class MainTab(QWidget):
                     self.out_file_path = None
             else:
                 self.out_file_path = None  # Ensure state is None if empty
-                self.out_file_edit.setText(self.tr(""))  # Clear the text field
+                self.out_file_edit.setText("")  # Clear the text field
                 LOGGER.debug("No output file string in settings")
 
             # --- Load Processing Settings ---
@@ -2765,9 +2773,8 @@ class MainTab(QWidget):
             self.sanchez_false_colour_checkbox.setChecked(false_color)
 
             res_km_value = self.settings.value("sanchez/resolutionKm", "4", type=str)
-            LOGGER.debug(
-                f"Setting resolution km: '{res_km_value}{res_km_value!r} not found in combo box, using default"
-            )
+            LOGGER.debug(f"Setting resolution km: '{res_km_value}{res_km_value!r} not found in combo box, using default"
+                )
 
             # --- Load Crop State and set it in MainWindow ---
             LOGGER.debug("Loading crop rectangle...")
@@ -2970,11 +2977,8 @@ class MainTab(QWidget):
 
             if current_crop_rect_mw:
                 rect_str = ",".join(map(str, current_crop_rect_mw))
-                LOGGER.debug(f"Saving crop rectangle: '{rect_str}'")
-                self.settings.setValue("preview/cropRectangle", rect_str)
-                self.settings.setValue(
-                    "cropRect", rect_str
-                )  # Alternate key for redundancy
+                LOGGER.debug(f"Saving crop rectangle: '{rect_str}{saved_rect!r}"
+                )
             else:
                 LOGGER.debug("No crop rectangle to save (None/empty)")
                 # We don't remove it so we can restore the last value - safer for users
@@ -2988,14 +2992,7 @@ class MainTab(QWidget):
             try:
                 # Check if input directory was actually saved
                 saved_in_dir = self.settings.value("paths/inputDirectory", "", type=str)
-                LOGGER.debug(f"Verification - Saved input directory: '{saved_in_dir}'")
-
-                # Check if crop rectangle was actually saved
-                saved_crop_rect = self.settings.value(
-                    "preview/cropRectangle", "", type=str
-                )
-                LOGGER.debug(
-                    f"Verification - Saved crop rectangle: '{saved_crop_rect}'"
+                LOGGER.debug(f"Verification - Saved input directory: '{saved_in_dir}{saved_crop_rect!r}"
                 )
 
                 # List all keys again to verify
