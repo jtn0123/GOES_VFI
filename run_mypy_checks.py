@@ -15,8 +15,8 @@ Options:
 """
 
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 # Core files that should pass mypy checks
@@ -39,21 +39,21 @@ ALL_DIRS = [
 def run_mypy(target_files, strict=False):
     """Run mypy on the specified target files."""
     cmd = ["python", "-m", "mypy", "--disable-error-code=import-untyped"]
-    
+
     if strict:
         cmd.append("--strict")
-        
+
     cmd.extend(target_files)
     print(f"Running: {' '.join(cmd)}")
-    
+
     result = subprocess.run(cmd, capture_output=True, text=True)
-    
+
     if result.returncode == 0:
         print("✅ Success! No type errors found.")
     else:
         print("❌ Type errors found:")
         print(result.stdout or result.stderr)
-    
+
     return result.returncode
 
 
@@ -71,16 +71,22 @@ def install_type_stubs():
 
     try:
         # Install mypy-extensions
-        subprocess.run(["python", "-m", "pip", "install", "--upgrade", "mypy-extensions"],
-                      check=True, capture_output=True)
+        subprocess.run(
+            ["python", "-m", "pip", "install", "--upgrade", "mypy-extensions"],
+            check=True,
+            capture_output=True,
+        )
 
         # Install type stubs
         cmd = ["python", "-m", "pip", "install", "--upgrade"] + stubs
         subprocess.run(cmd, check=True, capture_output=True)
 
         # Also run mypy's built-in install-types
-        subprocess.run(["python", "-m", "mypy", "--install-types", "--non-interactive"],
-                      check=True, capture_output=True)
+        subprocess.run(
+            ["python", "-m", "mypy", "--install-types", "--non-interactive"],
+            check=True,
+            capture_output=True,
+        )
 
         print("✅ Type stubs installed successfully.")
     except subprocess.SubprocessError as e:
@@ -94,10 +100,11 @@ def main():
     """Run mypy checks based on command line arguments."""
     # Check if Python executable is available in the environment
     try:
-        subprocess.run(["python", "--version"],
-                       check=True, capture_output=True)
+        subprocess.run(["python", "--version"], check=True, capture_output=True)
     except (subprocess.SubprocessError, FileNotFoundError):
-        print("Error: Python executable not found. Please activate your virtual environment.")
+        print(
+            "Error: Python executable not found. Please activate your virtual environment."
+        )
         print("   source venv-py313/bin/activate")
         return 1
 

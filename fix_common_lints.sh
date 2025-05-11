@@ -17,15 +17,15 @@ find goesvfi -name "*.py" -type f | while read -r file; do
     backup_path="linting_backups/$rel_path"
     mkdir -p "$(dirname "$backup_path")"
     cp "$file" "$backup_path"
-    
+
     # Fix trailing whitespace and ensure final newline
     sed -i 's/[[:space:]]*$//' "$file"
-    
+
     # Ensure file ends with a newline if it doesn't already
     if [ "$(tail -c1 "$file" | wc -l)" -eq 0 ]; then
         echo "" >> "$file"
     fi
-    
+
     echo "Fixed whitespace in $file"
 done
 

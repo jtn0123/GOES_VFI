@@ -22,7 +22,6 @@ import argparse
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -66,9 +65,7 @@ def run_command(
         return True, None
 
     try:
-        result = subprocess.run(
-            command, capture_output=True, text=True, check=True
-        )
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
         return True, result.stdout
     except subprocess.CalledProcessError as e:
         print(f"Error running {cmd_str}: {e}")
@@ -84,18 +81,18 @@ def fix_trailing_whitespace(file_path: Path, dry_run: bool) -> bool:
         return True
 
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             content = f.read()
-        
+
         # Fix trailing whitespace
         fixed_content = "\n".join(line.rstrip() for line in content.splitlines())
-        
+
         # Ensure file ends with a newline
         if not fixed_content.endswith("\n"):
             fixed_content += "\n"
-        
+
         if fixed_content != content:
-            with open(file_path, 'w') as f:
+            with open(file_path, "w") as f:
                 f.write(fixed_content)
             print(f"Fixed whitespace issues in {file_path}")
             return True
@@ -109,13 +106,13 @@ def fix_file(file_path: Path, backup: bool, dry_run: bool) -> None:
     """Apply all fixes to a single file."""
     if backup:
         create_backup(file_path)
-    
+
     # Fix whitespace issues
     fix_trailing_whitespace(file_path, dry_run)
-    
+
     # Run isort
     run_command(["isort", "--profile", "black", str(file_path)], dry_run)
-    
+
     # Run black
     run_command(["black", "--line-length=88", str(file_path)], dry_run)
 
@@ -123,20 +120,20 @@ def fix_file(file_path: Path, backup: bool, dry_run: bool) -> None:
 def main() -> None:
     """Main function to process files and apply fixes."""
     args = parse_args()
-    
+
     # Ensure backup directory exists if needed
     if args.backup:
         os.makedirs("linting_backups", exist_ok=True)
-    
+
     # Find Python files
     files = find_python_files(args.directory)
     print(f"Found {len(files)} Python files in {args.directory}")
-    
+
     # Process each file
     for file_path in files:
         print(f"Processing {file_path}")
         fix_file(file_path, args.backup, args.dry_run)
-    
+
     print("Done!")
 
 

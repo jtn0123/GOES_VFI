@@ -4,12 +4,12 @@ Script to run Flake8, Flake8-Qt, and Pylint linters on the GOES_VFI codebase.
 This provides a consistent way to lint the code and can be integrated with CI/CD.
 """
 
-import os
-import sys
-import subprocess
 import argparse
+import os
+import subprocess
+import sys
 from pathlib import Path
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 # Default directories to check
 DEFAULT_PATHS = [
@@ -26,6 +26,7 @@ BLUE = "\033[94m"
 RESET = "\033[0m"
 BOLD = "\033[1m"
 
+
 def print_colored(message: str, color: str = RESET, bold: bool = False) -> None:
     """Print a message with color."""
     if bold:
@@ -33,19 +34,21 @@ def print_colored(message: str, color: str = RESET, bold: bool = False) -> None:
     else:
         print(f"{color}{message}{RESET}")
 
+
 def run_command(cmd: List[str]) -> Tuple[int, str]:
     """Run a command and return the exit code and output."""
     try:
         result = subprocess.run(
-            cmd, 
-            check=False, 
-            stdout=subprocess.PIPE, 
+            cmd,
+            check=False,
+            stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            text=True
+            text=True,
         )
         return result.returncode, result.stdout
     except Exception as e:
         return 1, str(e)
+
 
 def run_flake8(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, int]:
     """
@@ -78,6 +81,7 @@ def run_flake8(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, 
 
     return exit_code, output, issue_count
 
+
 def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     """
     Run flake8-qt-tr on the given paths focusing on PyQt files.
@@ -96,22 +100,27 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     if "flake8-qt-tr" not in plugins_output:
         print_colored(
             "WARNING: flake8-qt-tr plugin not found. Install with 'pip install flake8-qt-tr'",
-            YELLOW, bold=True
+            YELLOW,
+            bold=True,
         )
         return 0, "flake8-qt-tr plugin not found", 0
 
-    print_colored(f"\n{BOLD}Running Flake8-Qt-TR for PyQt files...{RESET}", BLUE, bold=True)
+    print_colored(
+        f"\n{BOLD}Running Flake8-Qt-TR for PyQt files...{RESET}", BLUE, bold=True
+    )
 
     # Filter for PyQt files
     qt_paths = []
     for path in paths:
-        # Include PyQt-related directories or files
-        if (
-            "/gui/" in path or
-            "/gui_tabs/" in path or
-            "integrity_check" in path or
-            path.endswith(".py")
-        ):
+        # If path is a directory, include all Python files in it
+        if os.path.isdir(path):
+            for root, _, files in os.walk(path):
+                for file in files:
+                    if file.endswith(".py"):
+                        qt_file_path = os.path.join(root, file)
+                        qt_paths.append(qt_file_path)
+        # If path is a file and it's a Python file, include it directly
+        elif os.path.isfile(path) and path.endswith(".py"):
             qt_paths.append(path)
 
     if not qt_paths:
@@ -122,7 +131,7 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     verbose_cmd = [
         "flake8",
         "--select=QTR",  # Select only Qt translation errors
-        "--verbose",     # Get verbose output to detect silent failures
+        "--verbose",  # Get verbose output to detect silent failures
     ]
     verbose_cmd.extend(qt_paths)
 
@@ -133,7 +142,11 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     if "Found a total of" in verbose_output:
         try:
             # Extract issue count from verbose output
-            issue_part = verbose_output.split("Found a total of")[1].split("violations")[0].strip()
+            issue_part = (
+                verbose_output.split("Found a total of")[1]
+                .split("violations")[0]
+                .strip()
+            )
             silent_issues = int(issue_part)
         except (IndexError, ValueError):
             pass
@@ -155,12 +168,17 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     issue_count = max(silent_issues, reported_issues)
 
     if exit_code == 0 and issue_count == 0:
-        print_colored("Flake8-Qt-TR found no translation issues in PyQt files! ✅", GREEN, bold=True)
+        print_colored(
+            "Flake8-Qt-TR found no translation issues in PyQt files! ✅",
+            GREEN,
+            bold=True,
+        )
     elif exit_code == 0 and issue_count > 0:
         # This means we detected issues that weren't being reported - a plugin problem
         print_colored(
             f"⚠️ Flake8-Qt-TR found {issue_count} issues but didn't report them properly.",
-            YELLOW, bold=True
+            YELLOW,
+            bold=True,
         )
         # Print the verbose output to help debug
         print_colored("Verbose output:", YELLOW)
@@ -169,9 +187,12 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
         exit_code = 1
     else:
         print(output)
-        print_colored(f"Flake8-Qt-TR found {issue_count} translation issues in PyQt files. ❌", RED)
+        print_colored(
+            f"Flake8-Qt-TR found {issue_count} translation issues in PyQt files. ❌", RED
+        )
 
     return exit_code, output, issue_count
+
 
 def run_pylint(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, int]:
     """
@@ -181,6 +202,55 @@ def run_pylint(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, 
         Tuple of (exit_code, output, issue_count)
     """
     print_colored(f"\n{BOLD}Running Pylint...{RESET}", BLUE, bold=True)
+
+    # Check if pylint is available and handle any potential issues
+    try:
+        # Try to import pylint modules
+        import pylint
+        # Also check for the dill import issue
+        try:
+            import dill
+            from dill import Pickler, Unpickler
+        except ImportError as e:
+            if "circular import" in str(e):
+                print_colored(
+                    "⚠️ Pylint has a dependency issue that prevents it from running correctly.",
+                    YELLOW,
+                    bold=True
+                )
+                print_colored(
+                    "This is a known issue with the dill package that pylint depends on.",
+                    YELLOW
+                )
+                print_colored(
+                    "SOLUTION: Use ./run_only_flake8.py instead for linting with flake8 only:",
+                    YELLOW,
+                    bold=True
+                )
+                print_colored(
+                    f"    python run_only_flake8.py {' '.join(paths)}",
+                    GREEN
+                )
+                return 1, "Circular import in dill package", 1
+    except ImportError:
+        print_colored(
+            "⚠️ Pylint is not properly installed in your environment. Skipping pylint checks.",
+            YELLOW,
+            bold=True
+        )
+        print_colored(
+            "To install pylint: pip install pylint",
+            YELLOW
+        )
+        print_colored(
+            f"Or use run_only_flake8.py which doesn't require pylint:",
+            YELLOW
+        )
+        print_colored(
+            f"    python run_only_flake8.py {' '.join(paths)}",
+            GREEN
+        )
+        return 1, "Pylint not installed", 1
 
     cmd = ["pylint", "--output-format=parseable"]
     if jobs:
@@ -199,52 +269,50 @@ def run_pylint(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, 
     if exit_code == 0:
         print_colored("Pylint found no issues! ✅", GREEN, bold=True)
     elif exit_code < 4:  # Convention/refactor issues only
-        print_colored(f"Pylint found {issue_count} minor issues. Exit code: {exit_code} ⚠️", YELLOW)
+        print_colored(
+            f"Pylint found {issue_count} minor issues. Exit code: {exit_code} ⚠️",
+            YELLOW,
+        )
     elif exit_code < 8:  # Warning issues
-        print_colored(f"Pylint found {issue_count} warnings. Exit code: {exit_code} ⚠️", YELLOW)
+        print_colored(
+            f"Pylint found {issue_count} warnings. Exit code: {exit_code} ⚠️", YELLOW
+        )
     else:  # Error/fatal issues
-        print_colored(f"Pylint found {issue_count} significant issues. Exit code: {exit_code} ❌", RED)
+        print_colored(
+            f"Pylint found {issue_count} significant issues. Exit code: {exit_code} ❌",
+            RED,
+        )
 
     # Normalize exit code to 0 or 1
     exit_code = min(exit_code, 1)
 
     return exit_code, output, issue_count
 
+
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Run linters on GOES_VFI codebase")
     parser.add_argument(
-        "paths", 
-        nargs="*", 
+        "paths",
+        nargs="*",
         default=DEFAULT_PATHS,
-        help=f"Paths to lint (default: {' '.join(DEFAULT_PATHS)})"
+        help=f"Paths to lint (default: {' '.join(DEFAULT_PATHS)})",
     )
     parser.add_argument(
-        "--jobs", "-j", 
-        type=int, 
-        help="Number of parallel jobs (default: auto)"
+        "--jobs", "-j", type=int, help="Number of parallel jobs (default: auto)"
     )
-    parser.add_argument(
-        "--flake8-only",
-        action="store_true",
-        help="Run only flake8"
-    )
+    parser.add_argument("--flake8-only", action="store_true", help="Run only flake8")
     parser.add_argument(
         "--flake8-qt-only",
         action="store_true",
-        help="Run only flake8-qt for PyQt files"
+        help="Run only flake8-qt for PyQt files",
     )
+    parser.add_argument("--pylint-only", action="store_true", help="Run only pylint")
     parser.add_argument(
-        "--pylint-only",
-        action="store_true",
-        help="Run only pylint"
-    )
-    parser.add_argument(
-        "--fix", 
-        action="store_true", 
-        help="Try to auto-fix issues (limited support)"
+        "--fix", action="store_true", help="Try to auto-fix issues (limited support)"
     )
     return parser.parse_args()
+
 
 def main() -> int:
     """Run the linters and return an exit code."""
@@ -258,9 +326,11 @@ def main() -> int:
     linter_results = []  # List of (linter_name, exit_code, issue_count) tuples
 
     # Print header
-    print_colored("\n" + "="*70, BLUE)
-    print_colored("             GOES_VFI LINTER RUNNER                ", BLUE, bold=True)
-    print_colored("="*70 + "\n", BLUE)
+    print_colored("\n" + "=" * 70, BLUE)
+    print_colored(
+        "             GOES_VFI LINTER RUNNER                ", BLUE, bold=True
+    )
+    print_colored("=" * 70 + "\n", BLUE)
 
     # Run linters based on options
     if args.flake8_only:
@@ -278,16 +348,18 @@ def main() -> int:
         flake8_qt_code, _, flake8_qt_count = run_flake8_qt(paths)
         pylint_code, _, pylint_count = run_pylint(paths, args.jobs)
 
-        linter_results.extend([
-            ("Flake8", flake8_code, flake8_count),
-            ("Flake8-Qt-TR", flake8_qt_code, flake8_qt_count),
-            ("Pylint", pylint_code, pylint_count)
-        ])
+        linter_results.extend(
+            [
+                ("Flake8", flake8_code, flake8_count),
+                ("Flake8-Qt-TR", flake8_qt_code, flake8_qt_count),
+                ("Pylint", pylint_code, pylint_count),
+            ]
+        )
 
     # Print summary
-    print_colored("\n" + "="*70, BLUE)
+    print_colored("\n" + "=" * 70, BLUE)
     print_colored("                   SUMMARY                      ", BLUE, bold=True)
-    print_colored("="*70, BLUE)
+    print_colored("=" * 70, BLUE)
 
     # Calculate total issues and display results by linter
     total_issues = 0
@@ -306,12 +378,19 @@ def main() -> int:
 
     # Display total and final result
     if all(code == 0 for code in exit_codes) and total_issues == 0:
-        print_colored(f"Total: {total_issues} issues - All linters passed! 🎉", GREEN, bold=True)
+        print_colored(
+            f"Total: {total_issues} issues - All linters passed! 🎉", GREEN, bold=True
+        )
         return 0
     else:
         color = YELLOW if total_issues < 20 else RED
-        print_colored(f"Total: {total_issues} issues found - Check output above for details ⚠️", color, bold=True)
+        print_colored(
+            f"Total: {total_issues} issues found - Check output above for details ⚠️",
+            color,
+            bold=True,
+        )
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())
