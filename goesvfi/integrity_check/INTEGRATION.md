@@ -75,14 +75,14 @@ Add this code to your `closeEvent` method to ensure proper cleanup:
 ```python
 def closeEvent(self, event):
     # Existing cleanup code...
-    
+
     # Cleanup integrity check resources
     if hasattr(self, 'integrity_check_view_model'):
         if isinstance(self.integrity_check_view_model, EnhancedIntegrityCheckViewModel):
             self.integrity_check_view_model.cleanup()
         else:
             self.integrity_check_view_model._reconciler.close()
-    
+
     # Continue with event.accept() or other cleanup logic
     event.accept()
 ```

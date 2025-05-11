@@ -85,7 +85,7 @@ This document outlines the step-by-step implementation plan for the new "Integri
 ### Phase 8: Testing and Documentation
 - [ ] Unit tests for core models
   - [ ] TimeIndex URL/path generation tests
-  - [ ] Renderer output validation tests 
+  - [ ] Renderer output validation tests
   - [ ] Reconciler partitioning tests
 - [ ] ViewModel tests with mocked signals
 - [ ] UI tests with pytest-qt
@@ -133,7 +133,7 @@ Primary responsibility: Coordinating business logic and UI state
 - Handle signal routing from workers to UI
 - Expose data properties for View binding
 
-### `IntegrityCheckTab` (View) 
+### `IntegrityCheckTab` (View)
 Primary responsibility: Visual representation and user interaction
 - Render UI components according to current state
 - Handle user input and actions

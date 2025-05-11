@@ -6,7 +6,7 @@ This module provides functionality to verify the completeness of satellite image
 
 ### Basic Features
 - **Timestamp Verification**: Scan directories to identify missing files in a time sequence
-- **Automatic Interval Detection**: Detect the time interval between images 
+- **Automatic Interval Detection**: Detect the time interval between images
 - **Caching**: Cache scan results for fast retrieval during subsequent scans
 - **Download Integration**: Download missing files from remote repositories
 - **Progress Reporting**: Show real-time progress during scanning and downloading
@@ -135,13 +135,13 @@ async def main():
     # Create dependencies
     cache_db = CacheDB()
     base_dir = Path("/path/to/images")
-    
+
     # Create reconcile manager
     manager = ReconcileManager(
         cache_db=cache_db,
         base_dir=base_dir
     )
-    
+
     # Scan and fetch
     total, existing, fetched = await manager.reconcile(
         directory=base_dir,
@@ -151,9 +151,9 @@ async def main():
         interval_minutes=10,
         progress_callback=lambda c, t, m: print(f"Progress: {c}/{t} - {m}")
     )
-    
+
     print(f"Total: {total}, Existing: {existing}, Fetched: {fetched}")
-    
+
     # Clean up
     await cache_db.close()
 
