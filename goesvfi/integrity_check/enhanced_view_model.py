@@ -697,8 +697,10 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
 
                     # Handle SQLite thread errors specially with a user-friendly message
                     if "SQLite objects created in a thread" in str(result):
-                        error_message = ("Database thread conflict: SQLite database "
-                                           "accessed from multiple threads.")
+                        error_message = (
+                            "Database thread conflict: SQLite database "
+                            "accessed from multiple threads."
+                        )
                         # Add a more detailed explanation and workaround
                         if hasattr(result, "technical_details"):
                             result.technical_details += (

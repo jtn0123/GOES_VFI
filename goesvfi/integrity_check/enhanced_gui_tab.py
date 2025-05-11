@@ -395,7 +395,9 @@ class AdvancedOptionsDialog(QDialog):
         self.max_concurrent_spinbox.setRange(1, 20)
         self.max_concurrent_spinbox.setValue(5)
         self.max_concurrent_spinbox.setToolTip(
-            self.tr("Maximum number of concurrent downloads. Higher values may improve speed but increase resource usage.")
+            self.tr(
+                "Maximum number of concurrent downloads. Higher values may improve speed but increase resource usage."
+            )
         )
         connection_layout.addRow(
             "Max Concurrent Downloads:", self.max_concurrent_spinbox
@@ -436,9 +438,13 @@ class AdvancedOptionsDialog(QDialog):
 
         # Process priority
         self.priority_combo = QComboBox()
-        self.priority_combo.addItems([self.tr("Normal"), self.tr("Low"), self.tr("High")])
+        self.priority_combo.addItems(
+            [self.tr("Normal"), self.tr("Low"), self.tr("High")]
+        )
         self.priority_combo.setCurrentText("Normal")
-        self.priority_combo.setToolTip(self.tr("Process priority for download operations"))
+        self.priority_combo.setToolTip(
+            self.tr("Process priority for download operations")
+        )
         performance_layout.addRow("Process Priority:", self.priority_combo)
 
         performance_group.setLayout(performance_layout)
@@ -968,7 +974,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         # since it requires access to the directory
         auto_detect_button = QPushButton(self.tr("Auto Detect from Files"))
         auto_detect_button.setToolTip(
-            self.tr("Automatically detect date range from files in the selected directory")
+            self.tr(
+                "Automatically detect date range from files in the selected directory"
+            )
         )
         auto_detect_button.clicked.connect(self._auto_detect_date_range)
         auto_detect_button.setStyleSheet(
@@ -1069,7 +1077,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         # Auto-detect satellite button
         auto_detect_satellite_button = QPushButton(self.tr("Auto-Detect Satellite"))
         auto_detect_satellite_button.setToolTip(
-            self.tr("Automatically detect satellite type from files in the selected directory")
+            self.tr(
+                "Automatically detect satellite type from files in the selected directory"
+            )
         )
         auto_detect_satellite_button.clicked.connect(self._auto_detect_satellite)
         auto_detect_satellite_button.setStyleSheet(
@@ -1159,11 +1169,15 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         self.auto_radio.setChecked(True)
 
         self.cdn_radio = QRadioButton("CDN Only")
-        self.cdn_radio.setToolTip(self.tr("NOAA STAR CDN (faster, but limited history)"))
+        self.cdn_radio.setToolTip(
+            self.tr("NOAA STAR CDN (faster, but limited history)")
+        )
         self.cdn_radio.setStyleSheet(radio_style)
 
         self.s3_radio = QRadioButton("S3 Only")
-        self.s3_radio.setToolTip(self.tr("AWS S3 buckets (full history, NetCDF format)"))
+        self.s3_radio.setToolTip(
+            self.tr("AWS S3 buckets (full history, NetCDF format)")
+        )
         self.s3_radio.setStyleSheet(radio_style)
 
         self.local_radio = QRadioButton("Local Only")
@@ -1497,7 +1511,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         self.reset_db_button = QPushButton(self.tr("Reset Database"))
         self.reset_db_button.setProperty("destructive", "true")
         self.reset_db_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.reset_db_button.setToolTip(self.tr("Reset the database and clear all cached data"))
+        self.reset_db_button.setToolTip(
+            self.tr("Reset the database and clear all cached data")
+        )
         actions_layout.addWidget(self.reset_db_button)
 
         actions_layout.addStretch()
@@ -3023,7 +3039,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         # Clear status and force UI update
         self.status_label.setText(
-            self.tr("<span style='color: #66aaff; font-weight: bold;'>Starting download of missing files...</span>")
+            self.tr(
+                "<span style='color: #66aaff; font-weight: bold;'>Starting download of missing files...</span>"
+            )
         )
         QApplication.processEvents()
 

@@ -12,15 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from PyQt6.QtCore import (
-    QDate,
-    QRect,
-    QSize,
-    Qt,
-    QTime,
-    QTimer,
-    pyqtSignal,
-)
+from PyQt6.QtCore import QDate, QRect, QSize, Qt, QTime, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont, QImage, QPainter, QPixmap
 from PyQt6.QtWidgets import (
     QButtonGroup,
@@ -49,11 +41,7 @@ from PyQt6.QtWidgets import (
 )
 
 from .date_range_selector import CompactDateRangeSelector
-from .goes_imagery import (
-    ChannelType,
-    GOESImageryManager,
-    ProductType,
-)
+from .goes_imagery import ChannelType, GOESImageryManager, ProductType
 from .sample_processor import SampleProcessor
 from .visualization_manager import ExtendedChannelType, VisualizationManager
 
@@ -566,7 +554,9 @@ class EnhancedImageSelectionPanel(QWidget):
         # Row 3: Verify check (with better UI text)
         self.verify_check = QCheckBox(self.tr("Preview before processing"))
         self.verify_check.setChecked(True)
-        self.verify_check.setToolTip(self.tr("Show a preview before generating the full image"))
+        self.verify_check.setToolTip(
+            self.tr("Show a preview before generating the full image")
+        )
         fields_layout.addWidget(self.verify_check, 2, 0, 1, 4)
 
         # Add the frame directly to the main layout
@@ -617,7 +607,9 @@ class EnhancedImageSelectionPanel(QWidget):
         self.preview_btn.setObjectName("preview")
         self.preview_btn.clicked.connect(self.requestPreview)
         self.preview_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.preview_btn.setToolTip(self.tr("Preview the selected channel before processing"))
+        self.preview_btn.setToolTip(
+            self.tr("Preview the selected channel before processing")
+        )
 
         self.download_btn = QPushButton(self.tr("⚙️ Process"))
         self.download_btn.setObjectName("process")
@@ -845,7 +837,9 @@ class EnhancedImageSelectionPanel(QWidget):
         grid_layout.setSpacing(4)
 
         # Add informative label
-        altitude_info = QLabel(self.tr("Channels are organized by atmospheric altitude:"))
+        altitude_info = QLabel(
+            self.tr("Channels are organized by atmospheric altitude:")
+        )
         altitude_info.setStyleSheet(
             """
             color: #aaddff;
