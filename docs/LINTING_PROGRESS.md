@@ -1,175 +1,72 @@
 # Linting Progress Report
 
-## Files Improved
+## Current Status
 
-### goesvfi/integrity_check/auto_detection.py
+Pre-commit hooks and GitHub Actions workflows have been set up for automated linting and code quality checks. The initial run of pre-commit tools identified and fixed many formatting issues across the codebase.
 
-**Initial Issues:**
-- Trailing whitespace throughout the file
-- Inconsistent spacing after docstrings
-- Missing blank lines between method definitions
-- Line length violations in several places
-- Unnecessary whitespace in method definitions
+## Priority Issues to Address
 
-**Fixes Applied:**
-- Removed trailing whitespace across the entire file
-- Fixed inconsistent spacing in method definitions
-- Added proper blank lines between class methods
-- Ensured consistent spacing in docstrings
-- Fixed line formatting in lengthy method signatures:
-  ```python
-  # Before
-  def detect_interval(self, directory: Path, timestamps: Optional[List[datetime]] = None, 
-      satellite: SatellitePattern = SatellitePattern.GENERIC
-  ) -> Optional[Dict[str, Any]]:
-  
-  # After
-  def detect_interval(
-      self, directory: Path, timestamps: Optional[List[datetime]] = None,
-      satellite: SatellitePattern = SatellitePattern.GENERIC
-  ) -> Optional[Dict[str, Any]]:
-  ```
-- Fixed string formatting in long messages:
-  ```python
-  # Before
-  self.progress.emit(20, f"Found {len(png_files)} PNG files, {len(nc_files)} NetCDF files, {len(jpg_files)} JPG files", "info")
-  
-  # After
-  self.progress.emit(
-      20,
-      (
-          f"Found {len(png_files)} PNG files, {len(nc_files)} NetCDF files, "
-          f"{len(jpg_files)} JPG files"
-      ),
-      "info"
-  )
-  ```
+1. **Critical Syntax Errors**:
+   - Fixed missing parentheses in `goesvfi/gui.py` that were causing syntax errors
+   - Need to systematically review other files for similar syntax issues
 
-**Style Improvements:**
-- Removed unnecessary `pass` statement from exception class
-- Fixed whitespace after method definitions
-- Fixed indentation in method parameters
-- Added proper newline at end of file
-- Removed extra whitespace between class methods
+2. **Whitespace and Formatting**:
+   - Trailing whitespace has been fixed in many files via pre-commit
+   - Code has been formatted with Black for consistent style
+   - Import organization with isort is partially complete
 
-### goesvfi/integrity_check/time_index.py
+3. **Logging Practices**:
+   - F-string logging needs to be replaced with more efficient %-style logging
+   - Many files still use inefficient patterns like `LOGGER.info(f"message {var}")`
 
-**Initial Issues:**
-- Trailing whitespace in docstrings and method definitions
-- Inconsistent spacing between functions and docstrings
-- Inconsistent line spacing in complex functions
-- Line length violations (B950) in several places
-- Missing blank lines between function definitions (E302)
-- Unnecessarily complex code structure in several functions (C901)
+4. **Type Annotations**:
+   - Several files need more consistent type annotations
+   - Generic type parameters need to be added where missing
 
-**Fixes Applied:**
-- Removed trailing whitespace from docstrings
-- Fixed inconsistent spacing in method definitions
-- Fixed line spacing in long docstrings with multiple sections
-- Ensured consistent whitespace in complex datetime handling code
-- Reformatted function parameters for better readability:
-  ```python
-  # Before
-  def to_s3_key(ts: datetime, satellite: SatellitePattern, product_type: str = "RadC", 
-               band: int = 13, exact_match: bool = False) -> str:
-  
-  # After
-  def to_s3_key(
-      ts: datetime,
-      satellite: SatellitePattern,
-      product_type: str = "RadC",
-      band: int = 13,
-      exact_match: bool = False
-  ) -> str:
-  ```
-- Fixed line length issues by breaking long f-strings into multiline strings:
-  ```python
-  # Before
-  pattern = f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s{year}{doy_str}{hour}{minute_str}{start_sec:02d}_e*_c*.nc"
-  
-  # After
-  pattern = (
-      f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
-      f"{year}{doy_str}{hour}{minute_str}{start_sec:02d}_e*_c*.nc"
-  )
-  ```
-- Added proper blank lines between function definitions
+## Files with Major Improvements
 
-**Style Improvements:**
-- Ensured consistent spacing between class methods
-- Removed redundant whitespace at the end of lines
-- Fixed indentation in multi-line statements
-- Made docstring formatting consistent across the file
-- Split long comments into multiple lines to improve readability
-- Fixed exception handling to use proper chaining: `raise ... from err`
-- Added two blank lines between functions consistently
+1. **goesvfi/integrity_check/background_worker.py**:
+   - Removed unused imports
+   - Replaced f-string logging with %-style logging
+   - Fixed indentation in parameter lists
+   - Improved docstrings and code organization
 
-### goesvfi/integrity_check/reconciler.py
+2. **goesvfi/integrity_check/time_index.py**:
+   - Fixed trailing whitespace and docstring formatting
+   - Restructured complex functions for better readability
+   - Added proper blank lines between functions
+   - Fixed formatting of long parameter lists
+   - Improved error handling with proper exception chaining
 
-**Initial Issues:**
-- Unused imports (datetime.timedelta, typing.Set, typing.Tuple, typing.Union)
-- Reference to unused import (extract_timestamp)
-- Trailing whitespace in docstrings
-- Inconsistent indentation in method calls
-- Unnecessary list conversion in sorted() call
+3. **goesvfi/integrity_check/reconciler.py**:
+   - Removed unused imports
+   - Fixed indentation in method calls
+   - Improved spacing consistency
 
-**Fixes Applied:**
-- Removed unused imports
-- Fixed trailing whitespace in docstrings
-- Fixed indentation in method calls and parameters
-- Replaced `sorted(list(missing_set))` with `sorted(missing_set)`
-- Added proper spacing between operators: `i-1` to `i - 1`
-- Added proper newline at end of file
+4. **goesvfi/integrity_check/remote_store.py**:
+   - Replaced f-string logging with more efficient %-style logging
+   - Improved error handling and code structure
+   - Fixed unnecessary elif after return statements
 
-**Style Improvements:**
-- Consistent docstring formatting
-- Proper spacing between method definitions
-- Proper spacing after commas
+## Next Steps
 
-### goesvfi/integrity_check/remote_store.py
+1. **Critical Issues**:
+   - Fix any remaining syntax errors in the codebase
+   - Ensure all files have proper closing parentheses and brackets
 
-**Initial Issues:**
-- Unused imports (hashlib, Dict, Any, List, Tuple, format_timestamp)
-- F-string logging issues (inefficient when used with logging module)
-- Incorrect indentation in multi-line parameter lists
-- Missing final newline at the end of file
-- Unnecessary `pass` statements in abstract methods
-- Line length violations in log messages
-- Unnecessary `elif` after `return` statements
+2. **High Priority**:
+   - Address remaining f-string logging issues across the codebase
+   - Fix unused imports in core modules
+   - Address line length issues in complex functions
 
-**Fixes Applied:**
-- Removed unused imports and replaced with explanatory comments
-- Replaced f-string logging with more efficient %-style logging:
-  ```python
-  # Before
-  LOGGER.error(f"Error connecting to base URL {self.base_url}: {e}")
-  
-  # After
-  LOGGER.error("Error connecting to base URL %s: %s", self.base_url, e)
-  ```
-- Fixed indentation in multi-line parameter lists for better readability
-- Added newline at end of file
-- Removed unnecessary `pass` statements in abstract methods
-- Replaced unnecessary `elif` after `return` with plain `if`:
-  ```python
-  # Before
-  if parsed.scheme in ('http', 'https'):
-      return HttpRemoteStore(source)
-  elif parsed.scheme == 'file' or not parsed.scheme:
-      # ...handle file scheme
-  
-  # After
-  if parsed.scheme in ('http', 'https'):
-      return HttpRemoteStore(source)
-  if parsed.scheme == 'file' or not parsed.scheme:
-      # ...handle file scheme
-  ```
+3. **Medium Priority**:
+   - Improve type annotations in core modules
+   - Clean up redundant code in larger functions
+   - Fix `elif` after `return` patterns for better control flow
 
-**Style Improvements:**
-- More efficient and appropriate logging practices
-- Consistent parameter indentation
-- Cleaner code structure with better control flow
-- Removed redundant imports to improve maintainability
+4. **Testing**:
+   - Run the application to verify fixes don't introduce new issues
+   - Run test suite to ensure code remains functional
 
 ## Linting Score Improvements
 
@@ -181,24 +78,18 @@
 | goesvfi/integrity_check/background_worker.py | 4.93/10 | 6.33/10 | +1.40 |
 | goesvfi/integrity_check/remote_store.py | 3.29/10 | 5.80/10 | +2.51 |
 
-## Next Files to Improve
+## Target Files for Next Round of Improvements
 
-### goesvfi/integrity_check/goes_imagery.py - Current Score: 4.45/10
+1. **goesvfi/gui.py**:
+   - Fix any remaining syntax errors
+   - Improve error handling and logging practices
+   - Restructure complex functions
 
-**Issues to Address:**
-- Unused imports (numpy as np, typing.Dict, typing.List, typing.Tuple, typing.Any)
-- F-string logging issues in many places (20+ instances)
-- Unnecessary `elif` after `return` statements
-- Redundant indentation in multi-line parameter lists
-- Line length violations in several places
-- Complex function (GOESImageryDownloader.find_raw_data has complexity of 13)
+2. **goesvfi/integrity_check/goes_imagery.py**:
+   - Address unused imports
+   - Fix f-string logging issues
+   - Improve complex function structure
 
-## Next Steps
-
-1. Fix goes_imagery.py following the same approach used for the other files
-2. Address trailing whitespace issues (C0303) across files - while these are lower priority, they're easy to fix
-3. Fix line length issues (C0301/B950) in other files using the same techniques as above
-4. Address unnecessary `elif` after `return` issues (R1705) for improved code structure
-5. Address logging f-string interpolation issues (W1203) by using %.format() style
-6. Tackle complex function issues (C901) by considering refactoring some functions
-7. Continue improving other files in the codebase following the same approach
+3. **goesvfi/pipeline** modules:
+   - Ensure consistent typing
+   - Fix logging practices

@@ -14,13 +14,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
-from PyQt6.QtCore import (
-    QObject,
-    QRunnable,
-    QThread,
-    QThreadPool,
-    pyqtSignal,
-)
+from PyQt6.QtCore import QObject, QRunnable, QThread, QThreadPool, pyqtSignal
 
 
 # Define fetch source enum
@@ -703,9 +697,8 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
 
                     # Handle SQLite thread errors specially with a user-friendly message
                     if "SQLite objects created in a thread" in str(result):
-                        error_message = (
-                            "Database thread conflict: SQLite database accessed from multiple threads."
-                        )
+                        error_message = ("Database thread conflict: SQLite database "
+                                           "accessed from multiple threads.")
                         # Add a more detailed explanation and workaround
                         if hasattr(result, "technical_details"):
                             result.technical_details += (
@@ -741,7 +734,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                     ):
                         LOGGER.debug(
                             "Note: NOAA GOES imagery may not be available at exactly %s minutes",
-                            item.timestamp.minute
+                            item.timestamp.minute,
                         )
                         LOGGER.debug(
                             "Available timestamps are usually at intervals like "
@@ -749,7 +742,8 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                         )
                         LOGGER.debug(
                             "Check actual timestamps available in the S3 bucket for year=%s, doy=%s",
-                            item.timestamp.year, doy
+                            item.timestamp.year,
+                            doy,
                         )
 
                         # Enhance the error message with more information for the user
@@ -1023,7 +1017,7 @@ class AsyncScanTask(QRunnable):
                 self.view_model._base_directory,
                 self.view_model._satellite.name,
                 self.view_model._start_date,
-                self.view_model._end_date
+                self.view_model._end_date,
             )
 
             existing, missing = await self.view_model._reconcile_manager.scan_directory(

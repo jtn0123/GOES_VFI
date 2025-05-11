@@ -103,7 +103,7 @@ python -m goesvfi.gui [--debug]
 1.  **Input folder:** Select the directory containing your sequence of PNG images.
 2.  **Output MP4:** Select the desired base output file path (the application will suggest a default; a timestamp will be added automatically to the actual output file).
 3.  **Crop (Optional):** Click "Crop..." to define a region on the first frame.
-4.  **Adjust Settings:** 
+4.  **Adjust Settings:**
     *   Set Target FPS.
     *   Configure RIFE v4.6 settings (Tiling, UHD, TTA, etc.) or check "Skip AI Interpolation".
     *   Select Encoder.
@@ -116,18 +116,18 @@ python -m goesvfi.gui [--debug]
 
 GOES-VFI uses a standardized configuration mechanism for core settings:
 
-* **Primary Configuration File:**  
+* **Primary Configuration File:**
   The main configuration is stored in a TOML file located at `~/.config/goesvfi/config.toml` (on Linux/macOS) or the platform equivalent (e.g., `%APPDATA%\goesvfi\config.toml` on Windows).
-* **Configuration Management:**  
+* **Configuration Management:**
   The module `goesvfi/utils/config.py` is responsible for loading this TOML file and providing default values for all core settings, such as:
     * Cache directory
     * Logging level
     * Paths to RIFE/Sanchez executables and models
     * Other pipeline and application options
-* **UI State Persistence:**  
-  Some user interface state (such as window geometry, last-used directories, and certain UI preferences) may still be saved using `QSettings` (platform-specific location).  
+* **UI State Persistence:**
+  Some user interface state (such as window geometry, last-used directories, and certain UI preferences) may still be saved using `QSettings` (platform-specific location).
   **Note:** Only UI state is managed by `QSettings`; all core configuration is handled by the TOML file.
-* **Defaults:**  
+* **Defaults:**
   If the TOML file does not exist, sensible defaults are used and a new file is created on first run.
 
 ## License

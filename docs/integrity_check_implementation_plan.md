@@ -96,7 +96,7 @@ To manage test data effectively:
    - Support both complete and incomplete sequences
 
 2. **Mock remote sources**
-   - Create mock CDN and S3 responses 
+   - Create mock CDN and S3 responses
    - Implement latency and error simulation
    - Support both happy path and error cases
 

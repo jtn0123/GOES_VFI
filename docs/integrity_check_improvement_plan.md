@@ -40,7 +40,7 @@ This document outlines a comprehensive plan to improve test coverage, fix non-wo
 
 - **File Integrity Tab (EnhancedIntegrityCheckTab)**
   - [x] Test directory selection functionality
-  - [x] Test auto-detect date range functionality 
+  - [x] Test auto-detect date range functionality
   - [x] Test date range selection via UI
   - [x] Test verify integrity process and results
   - [x] Test download functionality
@@ -77,7 +77,7 @@ This document outlines a comprehensive plan to improve test coverage, fix non-wo
 
 ### Phase 2: Implementation Plan
 
-#### 1. Fix Fundamental Issues 
+#### 1. Fix Fundamental Issues
 
 ##### Fix Signal Connections
 - [x] Review and update all signal connections between tabs to ensure proper data flow
@@ -249,7 +249,7 @@ Based on the performance analysis results, we have implemented several optimizat
 
 ### Current Issues
 
-1. **Tab Synchronization Issues**: 
+1. **Tab Synchronization Issues**:
    - ✅ Date range auto-detection not propagating to all tabs
    - ✅ Directory selection not consistently updating all tabs
    - ✅ Scan results not always appearing in Timeline and Results tabs

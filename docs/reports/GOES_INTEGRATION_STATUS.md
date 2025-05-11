@@ -8,7 +8,7 @@ The GOES satellite imagery functionality has been successfully integrated into t
 
 1. **Core Module (`goes_imagery.py`)**
    - ✅ Core classes (`GOESImageryManager`, `GOESImageryDownloader`, `GOESImageProcessor`)
-   - ✅ Enumerations (`ProductType`, `ChannelType`, `ProcessingMode`, `ImageryMode`) 
+   - ✅ Enumerations (`ProductType`, `ChannelType`, `ProcessingMode`, `ImageryMode`)
    - ✅ Unit tests passing
 
 2. **UI Module (`goes_imagery_tab.py`)**

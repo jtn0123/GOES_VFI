@@ -22,7 +22,7 @@ This document summarizes the fixes made to GUI tests in the GOES_VFI project, sp
 
 4. **test_change_ffmpeg_profile** (new)
    - New test that safely tests FFmpeg profile selection
-   - Uses `blockSignals(True/False)` to prevent signal-related crashes 
+   - Uses `blockSignals(True/False)` to prevent signal-related crashes
    - Directly calls methods instead of relying on signals
    - Restores original state after testing
 
@@ -62,7 +62,7 @@ The window fixture has been enhanced with:
    - Improved fixture teardown to avoid resource leaks
 
 5. **Documentation**
-   - Updated `CLAUDE.md` with best practices for GUI testing 
+   - Updated `CLAUDE.md` with best practices for GUI testing
    - Added this detailed document explaining all test fixes and improvements
 
 ## Best Practices for GUI Testing

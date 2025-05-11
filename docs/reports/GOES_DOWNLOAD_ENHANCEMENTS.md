@@ -36,8 +36,8 @@ The `time_index.py` file was updated to:
 Enhanced S3 access using boto3's unsigned configuration to access NOAA's public S3 buckets:
 
 ```python
-s3 = boto3.client('s3', 
-                 region_name='us-east-1', 
+s3 = boto3.client('s3',
+                 region_name='us-east-1',
                  config=Config(signature_version=UNSIGNED))
 ```
 
@@ -61,8 +61,8 @@ The test scripts successfully downloaded:
    - GOES-16: Bands 2, 3, 8, 13
    - GOES-18: Bands 2, 3, 8, 13
    - File sizes ranged from 2.9MB to 53MB
-   
-3. **Mesoscale (RadM)**: 
+
+3. **Mesoscale (RadM)**:
    - Additional testing needed to confirm all time patterns
    - Directory structure confirmed but file structure requires verification
 

@@ -83,14 +83,14 @@ self._signal_map = {
         "directorySelected",
         "dirChanged"
     ],
-    
+
     # Date range selection
     "date_range_selection": [
         "date_range_changed",
         "dateRangeSelected",
         "dateRangeChanged"
     ],
-    
+
     # ... other signal groups ...
 }
 ```
@@ -100,14 +100,14 @@ self._signal_map = {
 All signal connections follow a consistent pattern:
 
 ```python
-def _connect_signal_group(self, tab: QObject, group_key: str, all_tabs: Dict[str, QObject], 
+def _connect_signal_group(self, tab: QObject, group_key: str, all_tabs: Dict[str, QObject],
                          handler: Callable) -> None:
     for signal_name in self._signal_map[group_key]:
         if hasattr(tab, signal_name):
             signal = getattr(tab, signal_name)
             if isinstance(signal, pyqtSignal):
                 try:
-                    signal.connect(lambda *args, sender=tab, signal=signal_name: 
+                    signal.connect(lambda *args, sender=tab, signal=signal_name:
                                    handler(all_tabs, sender, signal, *args))
                     LOGGER.debug(f"Connected {signal_name} signal")
                 except Exception as e:

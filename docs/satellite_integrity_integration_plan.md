@@ -101,28 +101,28 @@ from goesvfi.integrity_check.satellite_integrity_tab_group import SatelliteInteg
 class MainWindow(QMainWindow):
     def __init__(self):
         # ... existing code ...
-        
+
         # Create tab widget
         self.tab_widget = QTabWidget()
-        
+
         # Create GOES imagery tab
         self.imagery_tab = GoesImageryTab()
-        
+
         # Create satellite integrity tab group
         self.satellite_integrity_tabs = SatelliteIntegrityTabGroup()
-        
+
         # Create file integrity tab
         self.integrity_tab = FileIntegrityTab()
-        
+
         # Add tabs to widget
         self.tab_widget.addTab(self.imagery_tab, "GOES Imagery")
         self.tab_widget.addTab(self.satellite_integrity_tabs, "Satellite Integrity")
         self.tab_widget.addTab(self.integrity_tab, "File Integrity")
-        
+
         # Connect tabs
         self.satellite_integrity_tabs.connect_to_goes_imagery_tab(self.imagery_tab)
         self.satellite_integrity_tabs.connect_to_integrity_tab(self.integrity_tab)
-        
+
         # ... rest of initialization ...
 ```
 
@@ -134,11 +134,11 @@ def _connect_signals(self):
     # Connect imagery tab to satellite integrity tabs
     self.imagery_tab.dateRangeSelected.connect(self.satellite_integrity_tabs.set_date_range)
     self.imagery_tab.satelliteSelected.connect(self._handle_satellite_change)
-    
+
     # Connect satellite integrity tabs to file integrity tab
     self.satellite_integrity_tabs.itemSelected.connect(self.integrity_tab.select_item)
     self.satellite_integrity_tabs.downloadRequested.connect(self.integrity_tab.download_item)
-    
+
     # Connect to view model updates
     self.view_model.dataChanged.connect(self._update_all_tabs)
 
@@ -146,11 +146,11 @@ def _handle_satellite_change(self, satellite):
     # Update both satellite integrity and file integrity tabs
     self.satellite_integrity_tabs.set_satellite(satellite)
     self.integrity_tab.set_satellite(satellite)
-    
+
 def _update_all_tabs(self):
     # Update all tabs with new data from view model
     self.imagery_tab.set_data(self.view_model.imagery_data)
-    
+
     self.satellite_integrity_tabs.set_data(
         self.view_model.missing_items,
         self.view_model.start_date,
@@ -158,7 +158,7 @@ def _update_all_tabs(self):
         self.view_model.total_expected,
         self.view_model.interval_minutes
     )
-    
+
     self.integrity_tab.set_data(self.view_model.missing_items)
 ```
 

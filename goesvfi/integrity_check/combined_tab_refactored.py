@@ -6,21 +6,23 @@ functionality and the GOES imagery visualization features in a unified, optimize
 """
 
 import logging
-
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, 
-    QStackedWidget, QPushButton, QSplitter
-)
-from PyQt6.QtCore import Qt, QDate, QTime
-from typing import Dict, Optional, Any, List, Tuple, Union, cast
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
+
+from PyQt6.QtCore import QDate, Qt, QTime
+from PyQt6.QtWidgets import (
+    QHBoxLayout,
+    QPushButton,
+    QSplitter,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .enhanced_gui_tab import EnhancedIntegrityCheckTab
-from .enhanced_view_model import EnhancedIntegrityCheckViewModel
 from .enhanced_imagery_tab import EnhancedGOESImageryTab
-from .shared_components import (
-    SharedPreviewPanel, SidebarSettingsPanel, PreviewMetadata
-)
+from .enhanced_view_model import EnhancedIntegrityCheckViewModel
+from .shared_components import PreviewMetadata, SharedPreviewPanel, SidebarSettingsPanel
 
 # Configure logging
 LOGGER = logging.getLogger(__name__)
@@ -29,14 +31,18 @@ LOGGER = logging.getLogger(__name__)
 class UnifiedCombinedTab(QWidget):
     """
     Combined tab with unified interface for both integrity check and GOES imagery.
-    
+
     This tab integrates:
     1. The enhanced integrity check tab for verifying imagery files
     2. The GOES imagery visualization tab for viewing and processing images
     3. Shared components for a more integrated experience
     """
-    
-    def __init__(self, view_model: EnhancedIntegrityCheckViewModel, parent: Optional[QWidget] = None) -> None:
+
+    def __init__(
+        self,
+        view_model: EnhancedIntegrityCheckViewModel,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """
         Initialize the unified combined tab with optimized vertical space usage.
 
@@ -67,7 +73,8 @@ class UnifiedCombinedTab(QWidget):
         self.central_splitter = QSplitter(Qt.Orientation.Horizontal)
         # Make splitter handles visually distinct so users understand they can adjust
         self.central_splitter.setHandleWidth(5)
-        self.central_splitter.setStyleSheet("""
+        self.central_splitter.setStyleSheet(
+            """
             QSplitter::handle {
                 background-color: #444;
                 border: 1px solid #555;
@@ -76,7 +83,8 @@ class UnifiedCombinedTab(QWidget):
             QSplitter::handle:hover {
                 background-color: #3498db;  /* Highlight on hover */
             }
-        """)
+        """
+        )
 
         # Create and add main content stack that will contain the tabs
         self._create_main_content_stack()
@@ -89,7 +97,7 @@ class UnifiedCombinedTab(QWidget):
 
         # Add panels to central splitter
         self.central_splitter.addWidget(self.stacked_widget)  # Main tab content
-        self.central_splitter.addWidget(self.preview_panel)   # Shared preview
+        self.central_splitter.addWidget(self.preview_panel)  # Shared preview
         self.central_splitter.addWidget(self.settings_panel)  # Settings sidebar
 
         # Set initial splitter sizes (main content : preview : settings) optimal ratio for horizontal layout
@@ -109,7 +117,7 @@ class UnifiedCombinedTab(QWidget):
         self._switch_tab(0)  # Start with integrity tab
 
         LOGGER.info("Unified combined tab initialized with optimized vertical space")
-    
+
     def _create_tab_switcher(self, parent_layout: QVBoxLayout) -> None:
         """
         Create the tab switcher component with buttons.
@@ -119,14 +127,18 @@ class UnifiedCombinedTab(QWidget):
         """
         # Create a widget for the tab buttons - more compact vertical version with visual separation
         tab_switcher = QWidget()
-        tab_switcher.setMaximumHeight(36)  # Slightly increased to accommodate the button borders
+        tab_switcher.setMaximumHeight(
+            36
+        )  # Slightly increased to accommodate the button borders
         # Add a subtle background and border to make the tab switcher visually distinct
-        tab_switcher.setStyleSheet("""
+        tab_switcher.setStyleSheet(
+            """
             QWidget {
                 background-color: #222222;
                 border-bottom: 1px solid #444;
             }
-        """)
+        """
+        )
 
         # Create layout - using tighter spacing
         switcher_layout = QHBoxLayout(tab_switcher)
@@ -134,8 +146,8 @@ class UnifiedCombinedTab(QWidget):
         switcher_layout.setSpacing(4)  # Reduced spacing between buttons
 
         # Create tab buttons with clear descriptive text
-        self.integrity_button = QPushButton("File Integrity")  # More descriptive
-        self.imagery_button = QPushButton("GOES Imagery")     # More descriptive
+        self.integrity_button = QPushButton(self.tr("File Integrity"))  # More descriptive
+        self.imagery_button = QPushButton(self.tr("GOES Imagery"))  # More descriptive
 
         # Style the buttons to look like distinct tabs - more visually separated
         button_style = """
@@ -170,22 +182,22 @@ class UnifiedCombinedTab(QWidget):
 
         # Set minimum width for buttons - slightly wider for better visibility
         self.integrity_button.setMinimumWidth(100)  # Increased from 80
-        self.imagery_button.setMinimumWidth(100)    # Increased from 80
+        self.imagery_button.setMinimumWidth(100)  # Increased from 80
 
         # Set fixed height for buttons with more space for readability
         self.integrity_button.setFixedHeight(30)  # Increased from 26
-        self.imagery_button.setFixedHeight(30)    # Increased from 26
+        self.imagery_button.setFixedHeight(30)  # Increased from 26
 
         # Add to layout
         switcher_layout.addWidget(self.integrity_button)
         switcher_layout.addWidget(self.imagery_button)
 
         # Add split view button - more visible
-        self.split_view_button = QPushButton("Split View")  # More descriptive text
+        self.split_view_button = QPushButton(self.tr("Split View"))  # More descriptive text
         self.split_view_button.setCheckable(True)
         self.split_view_button.setStyleSheet(button_style)
         self.split_view_button.setMinimumWidth(90)  # Increased from 60
-        self.split_view_button.setFixedHeight(30)   # Increased from 26
+        self.split_view_button.setFixedHeight(30)  # Increased from 26
         switcher_layout.addWidget(self.split_view_button)
 
         # Add spacer to push buttons to the left
@@ -201,16 +213,16 @@ class UnifiedCombinedTab(QWidget):
 
         # Add to parent layout
         parent_layout.addWidget(tab_switcher)
-    
+
     def _create_main_content_stack(self) -> None:
         """Create the stacked widget that contains main tab content."""
         # Create stacked widget
         self.stacked_widget = QStackedWidget()
-        
+
         # Create normal view tabs
         self.integrity_tab = EnhancedIntegrityCheckTab(self.view_model, self)
         self.imagery_tab = EnhancedGOESImageryTab(parent=self)
-        
+
         # Create the split view (combination of both tabs)
         self.split_view = QWidget()
         split_layout = QVBoxLayout(self.split_view)
@@ -221,9 +233,12 @@ class UnifiedCombinedTab(QWidget):
         # but with optimized proportions and minimal spacing
         self.view_splitter = QSplitter(Qt.Orientation.Vertical)
         self.view_splitter.setHandleWidth(5)  # Moderate width for clear visibility
-        self.view_splitter.setChildrenCollapsible(False)  # Prevent collapsing tabs entirely
+        self.view_splitter.setChildrenCollapsible(
+            False
+        )  # Prevent collapsing tabs entirely
         # Style the vertical splitter handle to be visually distinct
-        self.view_splitter.setStyleSheet("""
+        self.view_splitter.setStyleSheet(
+            """
             QSplitter::handle {
                 background-color: #444;
                 border: 1px solid #555;
@@ -232,7 +247,8 @@ class UnifiedCombinedTab(QWidget):
             QSplitter::handle:hover {
                 background-color: #3498db;  /* Highlight on hover */
             }
-        """)
+        """
+        )
 
         # Add tabs to the splitter with ultra-compact containers
         self.integrity_container = QWidget()
@@ -257,53 +273,53 @@ class UnifiedCombinedTab(QWidget):
 
         # Add splitter to split view
         split_layout.addWidget(self.view_splitter)
-        
+
         # Add all views to stacked widget
         self.stacked_widget.addWidget(self.integrity_tab)  # Index 0
-        self.stacked_widget.addWidget(self.imagery_tab)    # Index 1
-        self.stacked_widget.addWidget(self.split_view)     # Index 2
-    
+        self.stacked_widget.addWidget(self.imagery_tab)  # Index 1
+        self.stacked_widget.addWidget(self.split_view)  # Index 2
+
     def _connect_signals(self) -> None:
         """Connect signals between components for interaction."""
         # Connect preview panel signals
         self.preview_panel.previewSelected.connect(self._on_preview_selected)
-        
+
         # Connect settings panel signals
         # Date/time changes in settings should update both tabs
         self.settings_panel.date_edit.dateChanged.connect(self._on_date_changed)
         self.settings_panel.time_edit.timeChanged.connect(self._on_time_changed)
-        
+
         # Example of tab-specific data sharing
-        if hasattr(self.integrity_tab, 'files_downloaded'):
+        if hasattr(self.integrity_tab, "files_downloaded"):
             self.integrity_tab.files_downloaded.connect(self._on_files_downloaded)
-    
+
     def _switch_tab(self, index: int) -> None:
         """
         Switch to the tab at the specified index and update button states.
-        
+
         Args:
             index: Tab index to switch to (0 for integrity, 1 for imagery)
         """
         # Reset split view button if it was active
         if self.split_view_button.isChecked() and index != 2:
             self.split_view_button.setChecked(False)
-        
+
         # Set the current widget
         self.stacked_widget.setCurrentIndex(index)
-        
+
         # Update button states
         self.integrity_button.setChecked(index == 0)
         self.imagery_button.setChecked(index == 1)
-        
+
         # Update settings panel context for the current tab
         self._update_settings_context(index)
-        
+
         LOGGER.info(f"Switched to tab index: {index}")
-    
+
     def _toggle_split_view(self, checked: bool) -> None:
         """
         Toggle split view mode.
-        
+
         Args:
             checked: Whether split view is activated
         """
@@ -321,11 +337,11 @@ class UnifiedCombinedTab(QWidget):
             else:
                 self.stacked_widget.setCurrentIndex(1)
             LOGGER.info("Disabled split view mode")
-    
+
     def _update_settings_context(self, tab_index: int) -> None:
         """
         Update settings panel to show context-specific settings.
-        
+
         Args:
             tab_index: Index of the active tab
         """
@@ -343,11 +359,11 @@ class UnifiedCombinedTab(QWidget):
             # Show all settings for split view
             self.settings_panel.show_section("advanced", True)
             self.settings_panel.show_section("visualization", True)
-    
+
     def _on_preview_selected(self, key: str, metadata: PreviewMetadata) -> None:
         """
         Handle when a preview is selected in the shared preview panel.
-        
+
         Args:
             key: Selected preview key
             metadata: Preview metadata
@@ -356,46 +372,46 @@ class UnifiedCombinedTab(QWidget):
         if isinstance(metadata, PreviewMetadata):
             # Update date/time
             self.settings_panel.set_date_time(metadata.date_time)
-            
+
             # Could update other settings based on metadata
             LOGGER.info(f"Preview selected: {key}, updated settings")
-    
+
     def _on_date_changed(self, new_date: QDate) -> None:
         """
         Handle date changes in settings panel.
-        
+
         Args:
             new_date: New date selected
         """
         # Update both tabs with the new date
         # Implementation depends on specific tab APIs
         LOGGER.info(f"Date changed: {new_date.toString('yyyy-MM-dd')}")
-        
+
         # Example: could force refresh of previews or data
-    
+
     def _on_time_changed(self, new_time: QTime) -> None:
         """
         Handle time changes in settings panel.
-        
+
         Args:
             new_time: New time selected
         """
         # Update both tabs with the new time
         LOGGER.info(f"Time changed: {new_time.toString('HH:mm')}")
-    
+
     def _on_files_downloaded(self, file_list: List[Path]) -> None:
         """
         Handle when files are downloaded in the integrity tab.
-        
+
         Args:
             file_list: List of downloaded files
         """
         # Notify the imagery tab about new files
         LOGGER.info(f"Files downloaded: {len(file_list)} files")
-        
+
         # Could add code here to pass the files to the imagery tab
         # or create previews from them
-        
+
         # Example of creating a preview from a downloaded file
         # if file_list and hasattr(self.imagery_tab, 'process_file'):
         #     # Process the first file as an example

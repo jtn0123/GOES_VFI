@@ -33,7 +33,7 @@
 ## Planned Enhancements
 
 ### Timeline Navigator
-- [ ] Implement horizontal timeline component showing imagery availability 
+- [ ] Implement horizontal timeline component showing imagery availability
 - [ ] Add color-coding: green (available), red (missing), yellow (corrupted)
 - [ ] Create draggable handles for time range selection
 - [ ] Add zoom controls for different temporal resolutions

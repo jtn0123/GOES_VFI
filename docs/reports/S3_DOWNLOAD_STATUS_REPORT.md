@@ -42,12 +42,12 @@ This report summarizes the current work on enhancing the S3 download capabilitie
 ### 1. SQLite Thread Safety Issue
 **Description**: The most critical issue currently affecting downloads is a SQLite thread safety problem. SQL operations are being attempted from different threads than where the database connection was created.
 
-**Error Message**: 
+**Error Message**:
 ```
 SQLite objects created in a thread can only be used in that same thread. The object was created in thread id 8799325312 and this is thread id 6130413568.
 ```
 
-**Root Cause**: 
+**Root Cause**:
 - The CacheDB object is created in the main thread but then accessed from worker threads during download operations.
 - SQLite doesn't support multi-threaded access to the same connection object.
 
@@ -111,7 +111,7 @@ The current implementation has some gaps in progress tracking:
    - Add support for more CDN sources as fallbacks
    - Implement automatic failover between sources
    - Add peer-to-peer options for sharing downloaded files
-   
+
 ## Technical Notes
 
 ### Key Files Modified
@@ -136,7 +136,7 @@ The current implementation has some gaps in progress tracking:
    - Improved error handling
    - Enhanced download progress tracking
 
-### Current Statistics 
+### Current Statistics
 From our testing, we're seeing:
 - Success rate: Variable, heavily affected by SQLite thread issue
 - Average download time: ~1.2 seconds per file (when successful)

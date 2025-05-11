@@ -1,32 +1,21 @@
 import logging
-from PyQt6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QHBoxLayout,
-    QFileDialog,
-    QMessageBox,
-    QProgressBar,
-    QGroupBox,
-    QGridLayout,
-    QTextEdit,
-    QSizePolicy,
-    QScrollBar,
-)
-from PyQt6.QtCore import QThread, pyqtSignal, Qt
+from typing import Optional
+
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import (QFileDialog, QGridLayout, QGroupBox, QLabel,
+                             QLineEdit, QMessageBox, QProgressBar, QPushButton,
+                             QScrollBar, QSizePolicy, QTextEdit, QVBoxLayout,
+                             QWidget)
+
 from goesvfi.date_sorter import sorter  # Import the sorter module
-from goesvfi.date_sorter.view_model import DateSorterViewModel  # Import the ViewModel
-from pathlib import Path
-from datetime import datetime
-from typing import Optional, Callable
+from goesvfi.date_sorter.view_model import \
+    DateSorterViewModel  # Import the ViewModel
 
 LOGGER = logging.getLogger(__name__)
 
 
 class DateSorterTab(QWidget):
-    directory_selected = pyqtSignal(str) # Signal emitted when a directory is selected
+    directory_selected = pyqtSignal(str)  # Signal emitted when a directory is selected
 
     # Modified __init__ to accept a ViewModel instance
     def __init__(
@@ -45,7 +34,7 @@ class DateSorterTab(QWidget):
         main_layout.setContentsMargins(10, 10, 10, 10)
 
         # Source Group
-        source_group = QGroupBox("Source")
+        source_group = QGroupBox(self.tr("Source"))
         source_group.setSizePolicy(
             QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
         )
@@ -53,9 +42,9 @@ class DateSorterTab(QWidget):
         source_layout.setContentsMargins(10, 15, 10, 10)
         source_layout.setSpacing(8)
 
-        source_label = QLabel("Folder:")
+        source_label = QLabel(self.tr("Folder:"))
         self.source_line_edit = QLineEdit()
-        source_browse_button = QPushButton("Browse...")
+        source_browse_button = QPushButton(self.tr("Browse..."))
         source_browse_button.setFixedWidth(100)
 
         source_layout.addWidget(source_label, 0, 0)
@@ -65,7 +54,7 @@ class DateSorterTab(QWidget):
         main_layout.addWidget(source_group)
 
         # Options Group
-        options_group = QGroupBox("Analysis Options")
+        options_group = QGroupBox(self.tr("Analysis Options"))
         options_group.setSizePolicy(
             QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
         )
@@ -73,8 +62,8 @@ class DateSorterTab(QWidget):
         options_layout.setContentsMargins(10, 15, 10, 10)
         options_layout.setSpacing(8)
 
-        interval_label = QLabel("Time Interval Detection:")
-        interval_info = QLabel("(Automatic interval detection will be used)")
+        interval_label = QLabel(self.tr("Time Interval Detection:"))
+        interval_info = QLabel(self.tr("(Automatic interval detection will be used)"))
         interval_info.setStyleSheet("color: #666; font-style: italic;")
 
         options_layout.addWidget(interval_label, 0, 0)
@@ -83,7 +72,7 @@ class DateSorterTab(QWidget):
         main_layout.addWidget(options_group)
 
         # Actions Group
-        actions_group = QGroupBox("Actions")
+        actions_group = QGroupBox(self.tr("Actions"))
         actions_group.setSizePolicy(
             QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
         )
@@ -92,14 +81,14 @@ class DateSorterTab(QWidget):
         actions_layout.setSpacing(8)
 
         # Scan Button
-        self.scan_button = QPushButton("Scan Folder")
+        self.scan_button = QPushButton(self.tr("Scan Folder"))
         self.scan_button.setFixedHeight(30)
         actions_layout.addWidget(self.scan_button)
         actions_group.setLayout(actions_layout)
         main_layout.addWidget(actions_group)
 
         # Status Group
-        status_group = QGroupBox("Status")
+        status_group = QGroupBox(self.tr("Status"))
         status_layout = QVBoxLayout()
         status_layout.setContentsMargins(10, 15, 10, 10)
         status_layout.setSpacing(10)
@@ -141,7 +130,7 @@ class DateSorterTab(QWidget):
         if folder_path:
             self.view_model.source_directory = folder_path
             LOGGER.info(f"Selected source folder: {folder_path}")
-            self.directory_selected.emit(folder_path) # Emit signal with selected path
+            self.directory_selected.emit(folder_path)  # Emit signal with selected path
 
     def _start_scan(self) -> None:
         """Calls the start scan command on the ViewModel."""

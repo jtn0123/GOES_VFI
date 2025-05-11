@@ -18,7 +18,7 @@ This document outlines a systematic approach to debug several issues in the Main
 ## 2. Sanchez Integration with Cropping
 
 ### Debug Areas:
-- Sanchez Preview Caching: 
+- Sanchez Preview Caching:
   - Add cache size monitoring to prevent memory issues
   - Add timestamps to track cache staleness
   - Log cache hits/misses statistics
@@ -36,7 +36,7 @@ This document outlines a systematic approach to debug several issues in the Main
   - Check data type consistency between save and load operations
 
 ### Common Issues:
-- Checkbox State Persistence: 
+- Checkbox State Persistence:
   - Verify `QSettings.value()` type casting for boolean values
   - Add explicit type conversion for all checkbox states
 - Path Restoration: Ensure file and directory paths are validated before usage
@@ -45,10 +45,10 @@ This document outlines a systematic approach to debug several issues in the Main
 ## 4. Start Interpolation Button Functionality
 
 ### Debug Points:
-- Signal Connection: 
+- Signal Connection:
   - Verify `processing_started` signal is properly connected
   - Add direct debugging in `_start()` function to trace signal emission
-- Argument Preparation: 
+- Argument Preparation:
   - Add validation for all arguments in `get_processing_args()`
   - Log complete argument dictionary before emission
 
@@ -67,7 +67,7 @@ This document outlines a systematic approach to debug several issues in the Main
 ## 6. MainTab and MainWindow Integration
 
 ### State Management:
-- State Synchronization: 
+- State Synchronization:
   - Add sanity checks when state is passed between components
   - Verify signals are connected between MainTab and MainWindow
   - Track state changes with detailed logging
@@ -75,7 +75,7 @@ This document outlines a systematic approach to debug several issues in the Main
 ## 7. General Debugging Tools
 
 ### Recommended Debug Methods:
-- Add Visual Debug Indicators: 
+- Add Visual Debug Indicators:
   - Show crop rectangle dimensions in UI
   - Display scaling factors and coordinate mappings
 - Add Performance Metrics:
@@ -85,10 +85,10 @@ This document outlines a systematic approach to debug several issues in the Main
 ## 8. Preview Functionality Improvements
 
 ### Potential Enhancements:
-- Real-time Crop Updates: 
+- Real-time Crop Updates:
   - Implement progressive rendering during crop operation
   - Add mini-view of full image during cropping
-- Zoom/Pan Controls: 
+- Zoom/Pan Controls:
   - Add explicit controls for navigation during cropping
   - Implement keyboard shortcuts for precision adjustments
 

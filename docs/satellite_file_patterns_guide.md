@@ -144,7 +144,7 @@ s3_key = f"ABI-L1b-RadC/{year}/{doy_str}/{hour}/OR_ABI-L1b-RadC-M6C13_G18_s{year
 objects = s3_client.list_objects_v2(Bucket="noaa-goes18", Prefix=s3_key.split('*')[0])
 
 # Filter for the desired band
-filtered_keys = [obj['Key'] for obj in objects.get('Contents', []) 
+filtered_keys = [obj['Key'] for obj in objects.get('Contents', [])
                 if f"M6C{band:02d}_" in obj['Key']]
 
 # Download the best match

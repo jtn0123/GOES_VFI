@@ -5,19 +5,38 @@ This module provides interactive visualizations of satellite data availability o
 allowing users to easily identify gaps and patterns in the data coverage.
 """
 
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional, Tuple, Union, Any, cast, TypeVar
 import math
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, Union, cast
 
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QLabel, 
-    QPushButton, QSizePolicy, QFrame, QToolTip, QStyleOption,
-    QStyle, QGridLayout, QButtonGroup, QRadioButton
-)
-from PyQt6.QtCore import Qt, QRect, QRectF, QSize, QPoint, QDateTime, pyqtSignal
+from PyQt6.QtCore import QDateTime, QPoint, QRect, QRectF, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import (
-    QPainter, QColor, QPen, QBrush, QLinearGradient, 
-    QFont, QFontMetrics, QPainterPath, QResizeEvent, QMouseEvent
+    QBrush,
+    QColor,
+    QFont,
+    QFontMetrics,
+    QLinearGradient,
+    QMouseEvent,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QResizeEvent,
+)
+from PyQt6.QtWidgets import (
+    QButtonGroup,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QRadioButton,
+    QScrollArea,
+    QSizePolicy,
+    QStyle,
+    QStyleOption,
+    QToolTip,
+    QVBoxLayout,
+    QWidget,
 )
 
 from goesvfi.integrity_check.view_model import MissingTimestamp
@@ -26,25 +45,25 @@ from goesvfi.integrity_check.view_model import MissingTimestamp
 class TimelineVisualization(QWidget):
     """
     Interactive timeline visualization of GOES satellite data coverage.
-    
+
     This widget provides a visual representation of data coverage over time,
     highlighting gaps and missing timestamps with interactive tooltips.
     """
-    
+
     timestampSelected = pyqtSignal(datetime)
     rangeSelected = pyqtSignal(datetime, datetime)
-    
+
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the timeline visualization widget."""
         super().__init__(parent)
-        
+
         # UI setup
         self.setMinimumHeight(120)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        
+
         # Configure the widget for mouse tracking
         self.setMouseTracking(True)
-        
+
         # Data for visualization
         self.start_timestamp: Optional[datetime] = None
         self.end_timestamp: Optional[datetime] = None
@@ -52,60 +71,64 @@ class TimelineVisualization(QWidget):
         self.missing_timestamps: List[datetime] = []
         self.downloaded_timestamps: List[datetime] = []
         self.expected_interval: Optional[int] = None  # in minutes
-        
+
         # Colors (tuned for dark mode)
-        self.available_color = QColor(40, 167, 69)    # Green
-        self.missing_color = QColor(220, 53, 69)      # Red
-        self.downloaded_color = QColor(0, 123, 255)   # Blue
-        self.bg_color = QColor(45, 45, 45)            # Dark gray for dark mode
-        self.timeline_bg_color = QColor(60, 60, 60)   # Slightly lighter gray for dark mode
-        self.axis_color = QColor(180, 180, 180)       # Light gray for axis
-        
+        self.available_color = QColor(40, 167, 69)  # Green
+        self.missing_color = QColor(220, 53, 69)  # Red
+        self.downloaded_color = QColor(0, 123, 255)  # Blue
+        self.bg_color = QColor(45, 45, 45)  # Dark gray for dark mode
+        self.timeline_bg_color = QColor(
+            60, 60, 60
+        )  # Slightly lighter gray for dark mode
+        self.axis_color = QColor(180, 180, 180)  # Light gray for axis
+
         # Selection state
         self.selection_start: Optional[int] = None
         self.selection_end: Optional[int] = None
         self.is_selecting = False
         self.hover_timestamp: Optional[datetime] = None
-        
+
         # UI state
         self.zoom_level = 1.0  # 1.0 = 100% (showing all data)
         self.viewport_start = 0.0  # 0-1 range representing visible portion start
-        
+
         # Control panel shown/hidden
         self.show_controls = True
-        
+
         # Default view settings
-        self.view_mode = 'both'  # 'missing', 'available', or 'both'
-        
+        self.view_mode = "both"  # 'missing', 'available', or 'both'
+
         # Set up the UI
         self._setup_ui()
-    
+
     def _setup_ui(self) -> None:
         """Set up the user interface."""
         # Main layout
         layout = QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(2)
-        
+
         # Control panel
         self.control_panel = QWidget()
         control_layout = QHBoxLayout(self.control_panel)
         control_layout.setContentsMargins(0, 0, 0, 0)
-        
+
         # View mode selection - Enhanced with dark mode styling
         view_group = QFrame()
         view_group.setFrameShape(QFrame.Shape.StyledPanel)
-        view_group.setStyleSheet("""
+        view_group.setStyleSheet(
+            """
             QFrame {
                 background-color: #3a3a3a;
                 border: 1px solid #545454;
                 border-radius: 4px;
             }
-        """)
+        """
+        )
         view_layout = QHBoxLayout(view_group)
         view_layout.setContentsMargins(8, 5, 8, 5)
 
-        view_label = QLabel("View:")
+        view_label = QLabel(self.tr("View:"))
         view_label.setStyleSheet("color: #f0f0f0; font-weight: bold;")
         view_layout.addWidget(view_label)
 
@@ -150,29 +173,33 @@ class TimelineVisualization(QWidget):
         self.view_available_radio.setStyleSheet(radio_style)
         self.view_mode_group.addButton(self.view_available_radio)
         view_layout.addWidget(self.view_available_radio)
-        
+
         # Connect radio buttons
-        self.view_all_radio.toggled.connect(lambda: self._set_view_mode('both'))
-        self.view_missing_radio.toggled.connect(lambda: self._set_view_mode('missing'))
-        self.view_available_radio.toggled.connect(lambda: self._set_view_mode('available'))
-        
+        self.view_all_radio.toggled.connect(lambda: self._set_view_mode("both"))
+        self.view_missing_radio.toggled.connect(lambda: self._set_view_mode("missing"))
+        self.view_available_radio.toggled.connect(
+            lambda: self._set_view_mode("available")
+        )
+
         control_layout.addWidget(view_group)
         control_layout.addStretch(1)
-        
+
         # Zoom controls - Enhanced with dark mode styling
         zoom_group = QFrame()
         zoom_group.setFrameShape(QFrame.Shape.StyledPanel)
-        zoom_group.setStyleSheet("""
+        zoom_group.setStyleSheet(
+            """
             QFrame {
                 background-color: #3a3a3a;
                 border: 1px solid #545454;
                 border-radius: 4px;
             }
-        """)
+        """
+        )
         zoom_layout = QHBoxLayout(zoom_group)
         zoom_layout.setContentsMargins(8, 5, 8, 5)
 
-        zoom_label = QLabel("Zoom:")
+        zoom_label = QLabel(self.tr("Zoom:"))
         zoom_label.setStyleSheet("color: #f0f0f0; font-weight: bold;")
         zoom_layout.addWidget(zoom_label)
 
@@ -196,43 +223,45 @@ class TimelineVisualization(QWidget):
             }
         """
 
-        self.zoom_out_btn = QPushButton("-")
+        self.zoom_out_btn = QPushButton(self.tr("-"))
         self.zoom_out_btn.setMaximumWidth(30)
         self.zoom_out_btn.setStyleSheet(button_style)
-        self.zoom_out_btn.setToolTip("Zoom out")
+        self.zoom_out_btn.setToolTip(self.tr("Zoom out"))
         self.zoom_out_btn.clicked.connect(self._zoom_out)
         zoom_layout.addWidget(self.zoom_out_btn)
 
-        self.zoom_in_btn = QPushButton("+")
+        self.zoom_in_btn = QPushButton(self.tr("+"))
         self.zoom_in_btn.setMaximumWidth(30)
         self.zoom_in_btn.setStyleSheet(button_style)
-        self.zoom_in_btn.setToolTip("Zoom in")
+        self.zoom_in_btn.setToolTip(self.tr("Zoom in"))
         self.zoom_in_btn.clicked.connect(self._zoom_in)
         zoom_layout.addWidget(self.zoom_in_btn)
 
-        self.zoom_reset_btn = QPushButton("Reset")
+        self.zoom_reset_btn = QPushButton(self.tr("Reset"))
         self.zoom_reset_btn.setStyleSheet(button_style)
-        self.zoom_reset_btn.setToolTip("Reset to default zoom level")
+        self.zoom_reset_btn.setToolTip(self.tr("Reset to default zoom level"))
         self.zoom_reset_btn.clicked.connect(self._zoom_reset)
         zoom_layout.addWidget(self.zoom_reset_btn)
-        
+
         control_layout.addWidget(zoom_group)
-        
+
         # Add control panel to main layout
         layout.addWidget(self.control_panel)
-        
+
         # Timeline canvas area
         self.timeline_area = QFrame()
         self.timeline_area.setFrameShape(QFrame.Shape.StyledPanel)
         self.timeline_area.setMinimumHeight(80)
-        self.timeline_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        
+        self.timeline_area.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+
         # Make timeline area paintable (override the paintEvent method)
         class TimelineFrame(QFrame):
-            def __init__(self, parent: 'TimelineVisualization'):
+            def __init__(self, parent: "TimelineVisualization"):
                 super().__init__(parent)
                 self.parent_widget = parent
-            
+
             def paintEvent(self, event):
                 # Standard QFrame painting
                 opt = QStyleOption()
@@ -240,11 +269,13 @@ class TimelineVisualization(QWidget):
                 painter = QPainter(self)
                 # Check if style exists before calling drawPrimitive
                 if style := self.style():
-                    style.drawPrimitive(QStyle.PrimitiveElement.PE_Widget, opt, painter, self)
-                
+                    style.drawPrimitive(
+                        QStyle.PrimitiveElement.PE_Widget, opt, painter, self
+                    )
+
                 # Delegate to parent's drawing method
                 self.parent_widget._paint_timeline(painter)
-            
+
             def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:
                 if event:
                     self.parent_widget._timeline_mouse_move(event)
@@ -256,19 +287,21 @@ class TimelineVisualization(QWidget):
             def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
                 if event:
                     self.parent_widget._timeline_mouse_release(event)
-        
+
         # Replace with custom frame
         self.timeline_area = TimelineFrame(self)
         layout.addWidget(self.timeline_area)
-    
-    def set_data(self, 
-                missing_items: List[MissingTimestamp], 
-                start_time: datetime, 
-                end_time: datetime,
-                interval_minutes: Optional[int] = None) -> None:
+
+    def set_data(
+        self,
+        missing_items: List[MissingTimestamp],
+        start_time: datetime,
+        end_time: datetime,
+        interval_minutes: Optional[int] = None,
+    ) -> None:
         """
         Set the data for visualization.
-        
+
         Args:
             missing_items: List of missing timestamps
             start_time: Start of the time range
@@ -278,14 +311,20 @@ class TimelineVisualization(QWidget):
         self.start_timestamp = start_time
         self.end_timestamp = end_time
         self.expected_interval = interval_minutes
-        
+
         # Extract timestamps
-        self.missing_timestamps = [item.timestamp for item in missing_items 
-                                  if not getattr(item, 'is_downloaded', False)]
-        
-        self.downloaded_timestamps = [item.timestamp for item in missing_items 
-                                     if getattr(item, 'is_downloaded', False)]
-        
+        self.missing_timestamps = [
+            item.timestamp
+            for item in missing_items
+            if not getattr(item, "is_downloaded", False)
+        ]
+
+        self.downloaded_timestamps = [
+            item.timestamp
+            for item in missing_items
+            if getattr(item, "is_downloaded", False)
+        ]
+
         # If interval is provided, generate expected timestamps
         if interval_minutes is not None and interval_minutes > 0:
             all_expected = []
@@ -293,36 +332,39 @@ class TimelineVisualization(QWidget):
             while current <= end_time:
                 all_expected.append(current)
                 current += timedelta(minutes=interval_minutes)
-            
+
             # Calculate available timestamps as difference
             missing_set = set(self.missing_timestamps)
             downloaded_set = set(self.downloaded_timestamps)
-            
+
             # Available are timestamps that are expected but not missing or downloaded
-            self.available_timestamps = [ts for ts in all_expected 
-                                        if ts not in missing_set and ts not in downloaded_set]
-        
+            self.available_timestamps = [
+                ts
+                for ts in all_expected
+                if ts not in missing_set and ts not in downloaded_set
+            ]
+
         # Reset view state
         self.zoom_level = 1.0
         self.viewport_start = 0.0
         self.hover_timestamp = None
         self.selection_start = None
         self.selection_end = None
-        
+
         # Refresh the display
         self.update()
-    
+
     def _set_view_mode(self, mode: str) -> None:
         """Set the view mode (both, missing, available)."""
         self.view_mode = mode
         self.update()
-    
+
     def _zoom_in(self) -> None:
         """Zoom in the timeline view."""
         if self.zoom_level < 10.0:  # Limit maximum zoom
             self.zoom_level *= 1.5
             self.update()
-    
+
     def _zoom_out(self) -> None:
         """Zoom out the timeline view."""
         if self.zoom_level > 0.5:  # Limit minimum zoom
@@ -330,49 +372,63 @@ class TimelineVisualization(QWidget):
             if self.zoom_level < 1.0:
                 self.zoom_level = 1.0  # Don't zoom out beyond showing all data
             self.update()
-    
+
     def _zoom_reset(self) -> None:
         """Reset zoom to show all data."""
         self.zoom_level = 1.0
         self.viewport_start = 0.0
         self.update()
-    
+
     def _paint_timeline(self, painter: QPainter) -> None:
         """
         Paint the timeline visualization.
-        
+
         Args:
             painter: QPainter object to use for drawing
         """
         # Ensure we have data to visualize
-        if (self.start_timestamp is None or 
-            self.end_timestamp is None or 
-            self.start_timestamp == self.end_timestamp):
+        if (
+            self.start_timestamp is None
+            or self.end_timestamp is None
+            or self.start_timestamp == self.end_timestamp
+        ):
             self._paint_empty_state(painter)
             return
-        
+
         width = self.timeline_area.width()
         height = self.timeline_area.height()
-        
+
         # Draw background
         painter.fillRect(0, 0, width, height, self.bg_color)
-        
+
         # Calculate timeline area
         timeline_height = height * 0.6
         timeline_y = (height - timeline_height) // 2
         timeline_width = width - 40  # Leave margins
         timeline_x = 20
-        
+
         # Draw timeline background
         painter.fillRect(
-            QRect(int(timeline_x), int(timeline_y), int(timeline_width), int(timeline_height)),
-            self.timeline_bg_color
+            QRect(
+                int(timeline_x),
+                int(timeline_y),
+                int(timeline_width),
+                int(timeline_height),
+            ),
+            self.timeline_bg_color,
         )
-        
+
         # Draw timeline border
         painter.setPen(QPen(self.axis_color, 1))
-        painter.drawRect(QRect(int(timeline_x), int(timeline_y), int(timeline_width), int(timeline_height)))
-        
+        painter.drawRect(
+            QRect(
+                int(timeline_x),
+                int(timeline_y),
+                int(timeline_width),
+                int(timeline_height),
+            )
+        )
+
         # Convert all coordinate values to integers to avoid type errors
         int_x = int(timeline_x)
         int_y = int(timeline_y)
@@ -380,63 +436,75 @@ class TimelineVisualization(QWidget):
         int_height = int(timeline_height)
 
         # Draw time markers
-        self._draw_time_markers(
-            painter, int_x, int_y, int_width, int_height
-        )
+        self._draw_time_markers(painter, int_x, int_y, int_width, int_height)
 
         # Draw data points based on view mode
-        if self.view_mode in ['both', 'available']:
+        if self.view_mode in ["both", "available"]:
             self._draw_data_points(
-                painter, self.available_timestamps, self.available_color,
-                int_x, int_y, int_width, int_height
+                painter,
+                self.available_timestamps,
+                self.available_color,
+                int_x,
+                int_y,
+                int_width,
+                int_height,
             )
 
-        if self.view_mode in ['both', 'missing']:
+        if self.view_mode in ["both", "missing"]:
             self._draw_data_points(
-                painter, self.missing_timestamps, self.missing_color,
-                int_x, int_y, int_width, int_height
+                painter,
+                self.missing_timestamps,
+                self.missing_color,
+                int_x,
+                int_y,
+                int_width,
+                int_height,
             )
 
         # Always draw downloaded timestamps
         self._draw_data_points(
-            painter, self.downloaded_timestamps, self.downloaded_color,
-            int_x, int_y, int_width, int_height
+            painter,
+            self.downloaded_timestamps,
+            self.downloaded_color,
+            int_x,
+            int_y,
+            int_width,
+            int_height,
         )
 
         # Draw selection if active
         if self.selection_start is not None and self.selection_end is not None:
-            self._draw_selection(
-                painter, int_x, int_y, int_width, int_height
-            )
+            self._draw_selection(painter, int_x, int_y, int_width, int_height)
 
         # Draw hover indicator
         if self.hover_timestamp is not None:
-            self._draw_hover_indicator(
-                painter, int_x, int_y, int_width, int_height
-            )
-    
+            self._draw_hover_indicator(painter, int_x, int_y, int_width, int_height)
+
     def _paint_empty_state(self, painter: QPainter) -> None:
         """Paint an empty state when no data is available."""
         width = self.timeline_area.width()
         height = self.timeline_area.height()
-        
+
         # Draw background
         painter.fillRect(0, 0, width, height, self.bg_color)
-        
+
         # Draw message
-        painter.setPen(QColor(200, 200, 200))  # Light gray for better visibility in dark mode
+        painter.setPen(
+            QColor(200, 200, 200)
+        )  # Light gray for better visibility in dark mode
         font = painter.font()
         font.setPointSize(12)
         painter.setFont(font)
-        
+
         text = "No data available for visualization"
-        text_rect = painter.fontMetrics().boundingRect(0, 0, width, height, Qt.AlignmentFlag.AlignCenter, text)
+        text_rect = painter.fontMetrics().boundingRect(
+            0, 0, width, height, Qt.AlignmentFlag.AlignCenter, text
+        )
         painter.drawText((width - text_rect.width()) // 2, height // 2, text)
-    
-    def _draw_time_markers(self,
-                          painter: QPainter,
-                          x: int, y: int,
-                          width: int, height: int) -> None:
+
+    def _draw_time_markers(
+        self, painter: QPainter, x: int, y: int, width: int, height: int
+    ) -> None:
         """
         Draw time markers along the timeline.
 
@@ -452,7 +520,7 @@ class TimelineVisualization(QWidget):
         width, height = int(width), int(height)
         """
         Draw time markers along the timeline.
-        
+
         Args:
             painter: QPainter object to use for drawing
             x: X coordinate of timeline start
@@ -462,39 +530,39 @@ class TimelineVisualization(QWidget):
         """
         if self.start_timestamp is None or self.end_timestamp is None:
             return
-            
+
         # Calculate total duration in seconds
         total_duration = (self.end_timestamp - self.start_timestamp).total_seconds()
-        
+
         # Don't try to draw if duration is zero
         if total_duration <= 0:
             return
-        
+
         # Determine appropriate marker interval
         intervals = [  # (seconds, format)
-            (60,              "%H:%M"),       # 1 minute
-            (300,             "%H:%M"),       # 5 minutes
-            (600,             "%H:%M"),       # 10 minutes
-            (1800,            "%H:%M"),       # 30 minutes
-            (3600,            "%H:%M"),       # 1 hour
-            (7200,            "%H:%M"),       # 2 hours
-            (14400,           "%H:%M"),       # 4 hours
-            (21600,           "%H:%M"),       # 6 hours
-            (43200,           "%b %d %H:%M"), # 12 hours
-            (86400,           "%b %d"),       # 1 day
-            (172800,          "%b %d"),       # 2 days
-            (432000,          "%b %d"),       # 5 days
-            (604800,          "%b %d"),       # 1 week
-            (1209600,         "%b %d"),       # 2 weeks
-            (2592000,         "%b %Y"),       # 1 month
-            (5184000,         "%b %Y"),       # 2 months
-            (15552000,        "%b %Y"),       # 6 months
-            (31536000,        "%Y"),          # 1 year
+            (60, "%H:%M"),  # 1 minute
+            (300, "%H:%M"),  # 5 minutes
+            (600, "%H:%M"),  # 10 minutes
+            (1800, "%H:%M"),  # 30 minutes
+            (3600, "%H:%M"),  # 1 hour
+            (7200, "%H:%M"),  # 2 hours
+            (14400, "%H:%M"),  # 4 hours
+            (21600, "%H:%M"),  # 6 hours
+            (43200, "%b %d %H:%M"),  # 12 hours
+            (86400, "%b %d"),  # 1 day
+            (172800, "%b %d"),  # 2 days
+            (432000, "%b %d"),  # 5 days
+            (604800, "%b %d"),  # 1 week
+            (1209600, "%b %d"),  # 2 weeks
+            (2592000, "%b %Y"),  # 1 month
+            (5184000, "%b %Y"),  # 2 months
+            (15552000, "%b %Y"),  # 6 months
+            (31536000, "%Y"),  # 1 year
         ]
-        
+
         # Adjust for zoom level
         visible_duration = total_duration / self.zoom_level
-        
+
         # Find appropriate interval
         marker_interval = intervals[-1]  # Default to largest
         for interval, format_str in intervals:
@@ -502,62 +570,66 @@ class TimelineVisualization(QWidget):
             if visible_duration / interval <= 10:
                 marker_interval = (interval, format_str)
                 break
-        
+
         # Draw markers
         interval_seconds, format_str = marker_interval
-        
+
         # Calculate visible range
         visible_start = self.start_timestamp + timedelta(
             seconds=total_duration * self.viewport_start
         )
         visible_end = visible_start + timedelta(seconds=visible_duration)
-        
+
         # Round down to nearest interval
         marker_time = datetime.fromtimestamp(
             (visible_start.timestamp() // interval_seconds) * interval_seconds
         )
-        
+
         # Set up font and pen - use brighter color for dark mode
         painter.setPen(QPen(QColor(200, 200, 200), 1))
         font = painter.font()
         font.setPointSize(8)
         painter.setFont(font)
-        
+
         while marker_time <= visible_end:
             # Skip if before visible range
             if marker_time < visible_start:
                 marker_time += timedelta(seconds=interval_seconds)
                 continue
-            
+
             # Calculate position
-            position_ratio = ((marker_time - self.start_timestamp).total_seconds() / total_duration - self.viewport_start) * self.zoom_level
-            
+            position_ratio = (
+                (marker_time - self.start_timestamp).total_seconds() / total_duration
+                - self.viewport_start
+            ) * self.zoom_level
+
             if 0 <= position_ratio <= 1:
                 marker_x = x + position_ratio * width
-                
+
                 # Draw tick
                 painter.drawLine(
-                    int(marker_x), int(y + height),
-                    int(marker_x), int(y + height + 5)
+                    int(marker_x), int(y + height), int(marker_x), int(y + height + 5)
                 )
-                
+
                 # Draw label
                 marker_text = marker_time.strftime(format_str)
                 text_width = painter.fontMetrics().horizontalAdvance(marker_text)
                 painter.drawText(
-                    int(marker_x - text_width // 2),
-                    y + height + 18,
-                    marker_text
+                    int(marker_x - text_width // 2), y + height + 18, marker_text
                 )
-            
+
             marker_time += timedelta(seconds=interval_seconds)
-    
-    def _draw_data_points(self,
-                         painter: QPainter,
-                         timestamps: List[datetime],
-                         color: QColor,
-                         x: int, y: int,
-                         width: int, height: int) -> None:
+
+    def _draw_data_points(
+        self,
+        painter: QPainter,
+        timestamps: List[datetime],
+        color: QColor,
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+    ) -> None:
         # Ensure values are integers to avoid type errors
         x, y = int(x), int(y)
         width, height = int(width), int(height)
@@ -607,7 +679,9 @@ class TimelineVisualization(QWidget):
         # Special handling for intervals
         if self.expected_interval is not None and self.expected_interval > 0:
             expected_interval_seconds = self.expected_interval * 60
-            pixels_per_interval = (expected_interval_seconds / total_duration) * width * self.zoom_level
+            pixels_per_interval = (
+                (expected_interval_seconds / total_duration) * width * self.zoom_level
+            )
 
             # Adjust point width to not overlap
             point_width = min(point_base_size, int(pixels_per_interval * 0.8))
@@ -619,7 +693,10 @@ class TimelineVisualization(QWidget):
                 continue
 
             # Calculate position
-            position_ratio = ((timestamp - self.start_timestamp).total_seconds() / total_duration - self.viewport_start) * self.zoom_level
+            position_ratio = (
+                (timestamp - self.start_timestamp).total_seconds() / total_duration
+                - self.viewport_start
+            ) * self.zoom_level
 
             if 0 <= position_ratio <= 1:
                 point_x = x + position_ratio * width
@@ -633,7 +710,8 @@ class TimelineVisualization(QWidget):
                         int(y + height / 4),  # Middle height
                         point_width,
                         int(height / 2),
-                        2, 2  # Corner radius
+                        2,
+                        2,  # Corner radius
                     )
                 else:
                     # Use simple rectangle for smaller points to maintain visibility
@@ -641,13 +719,12 @@ class TimelineVisualization(QWidget):
                         int(point_x - point_width / 2),
                         int(y + height / 4),  # Middle height
                         point_width,
-                        int(height / 2)
+                        int(height / 2),
                     )
-    
-    def _draw_selection(self,
-                       painter: QPainter,
-                       x: int, y: int,
-                       width: int, height: int) -> None:
+
+    def _draw_selection(
+        self, painter: QPainter, x: int, y: int, width: int, height: int
+    ) -> None:
         # Ensure values are integers to avoid type errors
         x, y = int(x), int(y)
         width, height = int(width), int(height)
@@ -673,16 +750,21 @@ class TimelineVisualization(QWidget):
 
         # Create a gradient for selection rectangle
         gradient = QLinearGradient(start_pos, y, end_pos, y)
-        gradient.setColorAt(0, QColor(30, 110, 190, 160))    # Start with slightly darker, more transparent
+        gradient.setColorAt(
+            0, QColor(30, 110, 190, 160)
+        )  # Start with slightly darker, more transparent
         gradient.setColorAt(0.5, QColor(42, 130, 218, 180))  # Middle more vibrant
-        gradient.setColorAt(1, QColor(30, 110, 190, 160))    # End with slightly darker, more transparent
+        gradient.setColorAt(
+            1, QColor(30, 110, 190, 160)
+        )  # End with slightly darker, more transparent
 
         # Draw selection rectangle with rounded corners
         path = QPainterPath()
         # Add 1px padding on top and bottom for better visual appeal
         path.addRoundedRect(
             QRectF(start_pos, y - 1, end_pos - start_pos, height + 2),
-            3, 3  # Subtle rounding of corners
+            3,
+            3,  # Subtle rounding of corners
         )
 
         painter.setPen(Qt.PenStyle.NoPen)
@@ -711,11 +793,10 @@ class TimelineVisualization(QWidget):
         painter.drawEllipse(start_pos - 3, y + height - 3, 6, 6)  # Bottom handle start
         painter.drawEllipse(end_pos - 3, y - 3, 6, 6)  # Top handle end
         painter.drawEllipse(end_pos - 3, y + height - 3, 6, 6)  # Bottom handle end
-    
-    def _draw_hover_indicator(self,
-                             painter: QPainter,
-                             x: int, y: int,
-                             width: int, height: int) -> None:
+
+    def _draw_hover_indicator(
+        self, painter: QPainter, x: int, y: int, width: int, height: int
+    ) -> None:
         # Ensure values are integers to avoid type errors
         x, y = int(x), int(y)
         width, height = int(width), int(height)
@@ -729,12 +810,20 @@ class TimelineVisualization(QWidget):
             width: Width of timeline
             height: Height of timeline
         """
-        if self.hover_timestamp is None or self.start_timestamp is None or self.end_timestamp is None:
+        if (
+            self.hover_timestamp is None
+            or self.start_timestamp is None
+            or self.end_timestamp is None
+        ):
             return
 
         # Calculate position
         total_duration = (self.end_timestamp - self.start_timestamp).total_seconds()
-        position_ratio = ((self.hover_timestamp - self.start_timestamp).total_seconds() / total_duration - self.viewport_start) * self.zoom_level
+        position_ratio = (
+            (self.hover_timestamp - self.start_timestamp).total_seconds()
+            / total_duration
+            - self.viewport_start
+        ) * self.zoom_level
 
         if 0 <= position_ratio <= 1:
             hover_x = x + position_ratio * width
@@ -752,15 +841,12 @@ class TimelineVisualization(QWidget):
             gradient_pen.setStyle(Qt.PenStyle.DashLine)
 
             painter.setPen(gradient_pen)
-            painter.drawLine(
-                int(hover_x), y,
-                int(hover_x), y + height
-            )
+            painter.drawLine(int(hover_x), y, int(hover_x), y + height)
 
             # Draw dot indicator at hover position for better visibility
             painter.setBrush(QBrush(QColor(120, 195, 255)))
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.drawEllipse(int(hover_x) - 4, int(y + height/2) - 4, 8, 8)
+            painter.drawEllipse(int(hover_x) - 4, int(y + height / 2) - 4, 8, 8)
 
             # Draw enhanced timestamp tooltip
             tooltip_text = self.hover_timestamp.strftime("%Y-%m-%d %H:%M:%S")
@@ -784,7 +870,8 @@ class TimelineVisualization(QWidget):
             path = QPainterPath()
             path.addRoundedRect(
                 QRectF(tooltip_x - 6, tooltip_y - 5, text_width + 12, text_height + 10),
-                6, 6  # Corner radius
+                6,
+                6,  # Corner radius
             )
 
             # Draw shadow first (slight offset)
@@ -803,65 +890,65 @@ class TimelineVisualization(QWidget):
             painter.drawText(tooltip_x + 1, tooltip_y + text_height - 1, tooltip_text)
             painter.setPen(QPen(QColor(240, 240, 240), 1))  # Actual text
             painter.drawText(tooltip_x, tooltip_y + text_height - 2, tooltip_text)
-    
+
     def _timeline_mouse_move(self, event: QMouseEvent) -> None:
         """
         Handle mouse move events on the timeline.
-        
+
         Args:
             event: Mouse event object
         """
         if self.start_timestamp is None or self.end_timestamp is None:
             return
-            
+
         # Update hover timestamp
         self.hover_timestamp = self._position_to_timestamp(event.position().x())
-        
+
         # Update selection end if selecting
         if self.is_selecting and self.selection_start is not None:
             self.selection_end = int(event.position().x())
-        
+
         # Update the display
         self.update()
-    
+
     def _timeline_mouse_press(self, event: QMouseEvent) -> None:
         """
         Handle mouse press events on the timeline.
-        
+
         Args:
             event: Mouse event object
         """
         if self.start_timestamp is None or self.end_timestamp is None:
             return
-            
+
         # Start selection
         self.is_selecting = True
         self.selection_start = int(event.position().x())
         self.selection_end = self.selection_start
-        
+
         # Update the display
         self.update()
-    
+
     def _timeline_mouse_release(self, event: QMouseEvent) -> None:
         """
         Handle mouse release events on the timeline.
-        
+
         Args:
             event: Mouse event object
         """
         if not self.is_selecting or self.selection_start is None:
             return
-            
+
         self.is_selecting = False
         self.selection_end = int(event.position().x())
-        
+
         # If it's just a click (no drag), emit timestamp selected
         if abs(self.selection_start - self.selection_end) < 5:
             # Single click - emit timestamp selected
             ts = self._position_to_timestamp(event.position().x())
             if ts is not None:
                 self.timestampSelected.emit(ts)
-                
+
             # Reset selection
             self.selection_start = None
             self.selection_end = None
@@ -869,117 +956,123 @@ class TimelineVisualization(QWidget):
             # Selection drag - emit range selected
             start_pos = min(self.selection_start, self.selection_end)
             end_pos = max(self.selection_start, self.selection_end)
-            
+
             start_ts = self._position_to_timestamp(start_pos)
             end_ts = self._position_to_timestamp(end_pos)
-            
+
             if start_ts is not None and end_ts is not None:
                 self.rangeSelected.emit(start_ts, end_ts)
-        
+
         # Update the display
         self.update()
-    
+
     def _position_to_timestamp(self, position: float) -> Optional[datetime]:
         """
         Convert a pixel position to a timestamp.
-        
+
         Args:
             position: X position in pixels
-            
+
         Returns:
             Corresponding timestamp or None if invalid
         """
         if self.start_timestamp is None or self.end_timestamp is None:
             return None
-            
+
         # Calculate timeline area
         timeline_x = 20
         timeline_width = self.timeline_area.width() - 40
-        
+
         # Check if position is within timeline
         if position < timeline_x or position > timeline_x + timeline_width:
             return None
-            
+
         # Calculate position as a ratio of the timeline
         position_ratio = (position - timeline_x) / timeline_width
-        
+
         # Adjust for zoom and pan
         adjusted_ratio = position_ratio / self.zoom_level + self.viewport_start
-        
+
         # Ensure within bounds
         if adjusted_ratio < 0:
             adjusted_ratio = 0
         elif adjusted_ratio > 1:
             adjusted_ratio = 1
-            
+
         # Calculate timestamp
         total_duration = (self.end_timestamp - self.start_timestamp).total_seconds()
         seconds_offset = total_duration * adjusted_ratio
-        
+
         return self.start_timestamp + timedelta(seconds=seconds_offset)
 
 
 class MissingDataCalendarView(QWidget):
     """Calendar view showing data coverage by day and hour."""
-    
+
     dateSelected = pyqtSignal(datetime)
-    
+
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the calendar view widget."""
         super().__init__(parent)
-        
+
         # Set up the UI
         self.setMinimumSize(300, 200)
-        
+
         # Data for visualization
         self.start_date: Optional[datetime] = None
         self.end_date: Optional[datetime] = None
         self.data_by_day: Dict[str, Dict[int, int]] = {}  # day -> hour -> status
-        
+
         # Statuses: 0 = missing, 1 = available, 2 = downloaded
         # Use slightly brighter colors for better visibility in dark mode
         self.status_colors = [
-            QColor(255, 80, 90),    # Missing: Bright Red
-            QColor(60, 200, 90),    # Available: Bright Green
-            QColor(30, 150, 255)    # Downloaded: Bright Blue
+            QColor(255, 80, 90),  # Missing: Bright Red
+            QColor(60, 200, 90),  # Available: Bright Green
+            QColor(30, 150, 255),  # Downloaded: Bright Blue
         ]
-        
+
         # UI state
         self.selected_day: Optional[str] = None  # YYYY-MM-DD
         self.selected_hour: Optional[int] = None
-        
+
         # Set up timer for delayed repaints
         self._setup_ui()
-    
+
     def _setup_ui(self) -> None:
         """Set up the calendar view UI."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(5, 5, 5, 5)
-        
+
         # Title - dark mode styling
-        title_label = QLabel("Data Coverage by Day/Hour")
+        title_label = QLabel(self.tr("Data Coverage by Day/Hour"))
         title_label.setStyleSheet("font-weight: bold; font-size: 14px; color: #f0f0f0;")
         layout.addWidget(title_label)
-        
+
         # Calendar scroll area
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        
+        self.scroll_area.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.scroll_area.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAsNeeded
+        )
+
         # Calendar container
         self.calendar_container = QWidget()
         self.calendar_layout = QVBoxLayout(self.calendar_container)
         self.calendar_layout.setContentsMargins(0, 0, 0, 0)
         self.calendar_layout.setSpacing(1)
-        
+
         self.scroll_area.setWidget(self.calendar_container)
         layout.addWidget(self.scroll_area)
-        
+
         # Color legend - dark mode styling
         legend_frame = QFrame()
         legend_frame.setFrameShape(QFrame.Shape.StyledPanel)
-        legend_frame.setStyleSheet("QFrame { background-color: #3a3a3a; border: 1px solid #545454; border-radius: 4px; }")
+        legend_frame.setStyleSheet(
+            "QFrame { background-color: #3a3a3a; border: 1px solid #545454; border-radius: 4px; }"
+        )
         legend_layout = QHBoxLayout(legend_frame)
         legend_layout.setContentsMargins(5, 5, 5, 5)
 
@@ -990,7 +1083,9 @@ class MissingDataCalendarView(QWidget):
             # Color box
             color_box = QFrame()
             color_box.setFixedSize(16, 16)
-            color_box.setStyleSheet(f"background-color: {self.status_colors[i].name()}; border: 1px solid #545454;")
+            color_box.setStyleSheet(
+                f"background-color: {self.status_colors[i].name()}; border: 1px solid #545454;"
+            )
 
             # Label - light text for dark mode
             label = QLabel(name)
@@ -1011,15 +1106,17 @@ class MissingDataCalendarView(QWidget):
 
         legend_layout.addStretch()
         layout.addWidget(legend_frame)
-    
-    def set_data(self, 
-                missing_items: List[MissingTimestamp], 
-                start_date: datetime, 
-                end_date: datetime,
-                interval_minutes: Optional[int] = None) -> None:
+
+    def set_data(
+        self,
+        missing_items: List[MissingTimestamp],
+        start_date: datetime,
+        end_date: datetime,
+        interval_minutes: Optional[int] = None,
+    ) -> None:
         """
         Set data for the calendar view.
-        
+
         Args:
             missing_items: List of missing timestamps
             start_date: Start of the time range
@@ -1028,25 +1125,25 @@ class MissingDataCalendarView(QWidget):
         """
         self.start_date = start_date
         self.end_date = end_date
-        
+
         # Clear previous data
         self.data_by_day = {}
-        
+
         # Process missing items
         for item in missing_items:
             day_key = item.timestamp.strftime("%Y-%m-%d")
             hour = item.timestamp.hour
-            
+
             # Initialize day if needed
             if day_key not in self.data_by_day:
                 self.data_by_day[day_key] = {}
-            
+
             # Set status: 0 = missing, 2 = downloaded
-            if getattr(item, 'is_downloaded', False):
+            if getattr(item, "is_downloaded", False):
                 self.data_by_day[day_key][hour] = 2
             else:
                 self.data_by_day[day_key][hour] = 0
-        
+
         # Fill in expected timestamps if interval is provided
         if interval_minutes is not None and interval_minutes > 0:
             # Generate all expected timestamps
@@ -1054,20 +1151,20 @@ class MissingDataCalendarView(QWidget):
             while current <= end_date:
                 day_key = current.strftime("%Y-%m-%d")
                 hour = current.hour
-                
+
                 # Initialize day if needed
                 if day_key not in self.data_by_day:
                     self.data_by_day[day_key] = {}
-                
+
                 # If hour not already marked as missing or downloaded, mark as available
                 if hour not in self.data_by_day[day_key]:
                     self.data_by_day[day_key][hour] = 1  # available
-                
+
                 current += timedelta(minutes=interval_minutes)
-        
+
         # Create the calendar UI
         self._create_calendar_ui()
-    
+
     def _create_calendar_ui(self) -> None:
         """Create the calendar UI based on current data."""
         # Clear previous UI
@@ -1077,25 +1174,25 @@ class MissingDataCalendarView(QWidget):
                 widget = item.widget()
                 if widget is not None:
                     widget.deleteLater()
-        
+
         if not self.data_by_day:
             # No data to display
-            label = QLabel("No data to display")
+            label = QLabel(self.tr("No data to display"))
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.calendar_layout.addWidget(label)
             return
-        
+
         # Sort days
         days = sorted(self.data_by_day.keys())
-        
+
         # Create day rows
         for day in days:
             day_frame = self._create_day_row(day)
             self.calendar_layout.addWidget(day_frame)
-        
+
         # Add stretch to bottom
         self.calendar_layout.addStretch()
-    
+
     def _create_day_row(self, day: str) -> QFrame:
         """
         Create a row representing a day with hour cells.
@@ -1109,7 +1206,9 @@ class MissingDataCalendarView(QWidget):
         # Create frame - dark mode styling
         frame = QFrame()
         frame.setFrameShape(QFrame.Shape.StyledPanel)
-        frame.setStyleSheet("QFrame { background-color: #2d2d2d; border: 1px solid #454545; border-radius: 4px; }")
+        frame.setStyleSheet(
+            "QFrame { background-color: #2d2d2d; border: 1px solid #454545; border-radius: 4px; }"
+        )
 
         # Create layout
         layout = QVBoxLayout(frame)
@@ -1146,7 +1245,7 @@ class MissingDataCalendarView(QWidget):
         layout.addWidget(hours_widget)
 
         return frame
-    
+
     def _create_hour_cell(self, day: str, hour: int) -> QFrame:
         """
         Create a cell representing an hour.
@@ -1158,11 +1257,19 @@ class MissingDataCalendarView(QWidget):
         Returns:
             Frame representing the hour cell
         """
+
         # Create a custom cell class that directly paints its content
         # This ensures the hour text is always visible regardless of Qt's style system
         class HourCell(QFrame):
-            def __init__(self, parent=None, hour=0, day="", bg_color=QColor(70, 70, 70),
-                        text_color=QColor(240, 240, 240), is_selected=False):
+            def __init__(
+                self,
+                parent=None,
+                hour=0,
+                day="",
+                bg_color=QColor(70, 70, 70),
+                text_color=QColor(240, 240, 240),
+                is_selected=False,
+            ):
                 super().__init__(parent)
                 self.hour = hour
                 self.day = day
@@ -1182,21 +1289,27 @@ class MissingDataCalendarView(QWidget):
                 # Draw background
                 if self.is_selected:
                     # Draw with selection border
-                    painter.fillRect(1, 1, self.width()-2, self.height()-2, self.bg_color)
+                    painter.fillRect(
+                        1, 1, self.width() - 2, self.height() - 2, self.bg_color
+                    )
                     pen = QPen(QColor(255, 255, 255), 2)  # White border for selection
                     painter.setPen(pen)
-                    painter.drawRect(1, 1, self.width()-3, self.height()-3)
+                    painter.drawRect(1, 1, self.width() - 3, self.height() - 3)
                 else:
                     # Draw normal cell
                     painter.fillRect(0, 0, self.width(), self.height(), self.bg_color)
                     pen = QPen(QColor(85, 85, 85), 1)  # Dark gray border
                     painter.setPen(pen)
-                    painter.drawRect(0, 0, self.width()-1, self.height()-1)
+                    painter.drawRect(0, 0, self.width() - 1, self.height() - 1)
 
                 # Draw hover effect
                 if self.is_hovering and not self.is_selected:
-                    hover_brush = QBrush(QColor(255, 255, 255, 40))  # Semi-transparent white
-                    painter.fillRect(1, 1, self.width()-2, self.height()-2, hover_brush)
+                    hover_brush = QBrush(
+                        QColor(255, 255, 255, 40)
+                    )  # Semi-transparent white
+                    painter.fillRect(
+                        1, 1, self.width() - 2, self.height() - 2, hover_brush
+                    )
 
                 # Draw time text
                 font = painter.font()
@@ -1205,7 +1318,9 @@ class MissingDataCalendarView(QWidget):
                 painter.setFont(font)
 
                 painter.setPen(self.text_color)
-                painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.time_text)
+                painter.drawText(
+                    self.rect(), Qt.AlignmentFlag.AlignCenter, self.time_text
+                )
 
             def enterEvent(self, event):
                 self.is_hovering = True
@@ -1230,9 +1345,14 @@ class MissingDataCalendarView(QWidget):
                 text_color = QColor(0, 0, 0)  # Black text
 
         # Create the custom cell
-        is_selected = (day == self.selected_day and hour == self.selected_hour)
-        cell = HourCell(hour=hour, day=day, bg_color=bg_color, text_color=text_color,
-                       is_selected=is_selected)
+        is_selected = day == self.selected_day and hour == self.selected_hour
+        cell = HourCell(
+            hour=hour,
+            day=day,
+            bg_color=bg_color,
+            text_color=text_color,
+            is_selected=is_selected,
+        )
 
         # Set fixed size - increased for better visibility
         cell.setFixedSize(65, 36)
@@ -1241,40 +1361,45 @@ class MissingDataCalendarView(QWidget):
         cell.setToolTip(f"Day: {day}, Time: {hour:02d}:00")
 
         # Save references for click handler
-        setattr(cell, '_cell_day', day)
-        setattr(cell, '_cell_hour', hour)
+        setattr(cell, "_cell_day", day)
+        setattr(cell, "_cell_hour", hour)
 
         # Define click handler
         def cell_click_handler(cell_widget, event):
-            if hasattr(cell_widget, '_cell_day') and hasattr(cell_widget, '_cell_hour'):
-                self._cell_clicked(getattr(cell_widget, '_cell_day'), getattr(cell_widget, '_cell_hour'))
+            if hasattr(cell_widget, "_cell_day") and hasattr(cell_widget, "_cell_hour"):
+                self._cell_clicked(
+                    getattr(cell_widget, "_cell_day"),
+                    getattr(cell_widget, "_cell_hour"),
+                )
 
         # Set the method properly using descriptor protocol
-        setattr(cell, 'mousePressEvent', cell_click_handler.__get__(cell, type(cell)))
+        setattr(cell, "mousePressEvent", cell_click_handler.__get__(cell, type(cell)))
 
         return cell
-    
+
     def _cell_clicked(self, day: str, hour: int) -> None:
         """
         Handle cell click event.
-        
+
         Args:
             day: Day string in YYYY-MM-DD format
             hour: Hour (0-23)
         """
         self.selected_day = day
         self.selected_hour = hour
-        
+
         # Convert to datetime
         try:
             date = datetime.strptime(day, "%Y-%m-%d")
-            selected_datetime = date.replace(hour=hour, minute=0, second=0, microsecond=0)
-            
+            selected_datetime = date.replace(
+                hour=hour, minute=0, second=0, microsecond=0
+            )
+
             # Emit signal
             self.dateSelected.emit(selected_datetime)
-            
+
             # Refresh UI to show selection
             self._create_calendar_ui()
-            
+
         except ValueError:
             pass

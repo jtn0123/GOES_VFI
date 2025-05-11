@@ -5,30 +5,27 @@ from goesvfi.date_sorter.gui_tab import DateSorterTab
 from goesvfi.date_sorter.sorter import DateSorter  # <-- Add Model import
 from goesvfi.file_sorter.gui_tab import FileSorterTab
 from goesvfi.file_sorter.sorter import FileSorter  # <-- Add Model import
-from goesvfi.gui_tabs.ffmpeg_settings_tab import (  # <-- Add new tab import
-    FFmpegSettingsTab,
-)
+from goesvfi.gui_tabs.ffmpeg_settings_tab import \
+    FFmpegSettingsTab  # <-- Add new tab import
 from goesvfi.gui_tabs.main_tab import MainTab  # <-- Add new tab import
-from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab  # <-- Add new tab import
+from goesvfi.gui_tabs.model_library_tab import \
+    ModelLibraryTab  # <-- Add new tab import
 from goesvfi.integrity_check.cache_db import CacheDB
-
 # Import the Combined tab with enhanced error handling
 from goesvfi.integrity_check.combined_tab import CombinedIntegrityAndImageryTab
-
 # Import Integrity Check components
-from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
+from goesvfi.integrity_check.enhanced_view_model import \
+    EnhancedIntegrityCheckViewModel
 from goesvfi.integrity_check.reconciler import Reconciler
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
-
 from goesvfi.integrity_check.time_index import TimeIndex
 from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
-from goesvfi.pipeline.image_processing_interfaces import ImageData, ImageProcessor
+from goesvfi.pipeline.image_processing_interfaces import ImageData
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
-from goesvfi.view_models.main_window_view_model import (  # <-- Add ViewModel import
-    MainWindowViewModel,
-)
+from goesvfi.view_models.main_window_view_model import \
+    MainWindowViewModel  # <-- Add ViewModel import
 
 """
 GOES‑VFI PyQt6 GUI – v0.1
@@ -36,7 +33,6 @@ Run with:  python -m goesvfi.gui
 """
 
 import argparse  # <-- Import argparse
-
 # Import needed for pretty printing the dict
 import logging
 import os  # Import os for os.cpu_count()
@@ -45,79 +41,30 @@ import shutil  # Import shutil for file operations
 import sys
 import tempfile  # Import tempfile for temporary files handling
 from pathlib import Path  # Import Path for file path handling
-
 # <-- Import time for time.sleep
-from datetime import datetime
-from typing import Iterator  # Added Dict, List, cast, TypedDict
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
+from typing import Iterator  # Added Dict, List, cast
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import numpy as np
 from PIL import Image
 from PyQt6.QtCore import QRect  # Added QTimer, QUrl
-from PyQt6.QtCore import (
-    QByteArray,
-    QPoint,
-    QSettings,
-    QSize,
-    Qt,
-    QThread,
-    QTimer,
-    QUrl,
-    pyqtSignal,
-)
-from PyQt6.QtGui import (  # Added Image, Painter, Pen, Color, Icon, DesktopServices
-    QCloseEvent,
-    QColor,
-    QDesktopServices,
-    QIcon,
-    QImage,
-    QMouseEvent,
-    QPainter,
-    QPen,
-    QPixmap,
-)
-from PyQt6.QtWidgets import (  # Added GroupBox, SizePolicy, Splitter, ScrollArea
-    QApplication,
-    QCheckBox,
-    QComboBox,
-    QDialog,
-    QDialogButtonBox,
-    QDoubleSpinBox,
-    QFileDialog,
-    QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QMessageBox,
-    QProgressBar,
-    QPushButton,
-    QRubberBand,
-    QScrollArea,
-    QSizePolicy,
-    QSpinBox,
-    QSplitter,
-    QStatusBar,
-    QTableWidget,
-    QTableWidgetItem,
-    QTabWidget,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt6.QtCore import QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
+from PyQt6.QtGui import (QCloseEvent, QColor, QDesktopServices, QImage,
+                         QPainter, QPixmap)
+from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
+                             QDoubleSpinBox, QFileDialog, QGridLayout,
+                             QGroupBox, QLabel, QLineEdit, QMessageBox,
+                             QSizePolicy, QSpinBox, QSplitter, QStatusBar,
+                             QTabWidget, QVBoxLayout, QWidget)
 
 from goesvfi.pipeline.run_vfi import VfiWorker  # <-- ADDED IMPORT
-
 # Correct import for find_rife_executable
 from goesvfi.utils import config, log
 from goesvfi.utils.config import DEFAULT_FFMPEG_PROFILE  # Moved constants
-from goesvfi.utils.config import (
-    FFMPEG_PROFILES,
-    OPTIMAL_FFMPEG_PROFILE,
-    OPTIMAL_FFMPEG_PROFILE_2,
-    FfmpegProfile,
-)
+from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
 from goesvfi.utils.gui_helpers import ClickableLabel  # Import moved classes
-from goesvfi.utils.gui_helpers import CropDialog, RifeCapabilityManager, ZoomDialog
+from goesvfi.utils.gui_helpers import (CropDialog, RifeCapabilityManager,
+                                       ZoomDialog)
 
 LOGGER = log.get_logger(__name__)
 
@@ -153,7 +100,7 @@ class MainWindow(QWidget):
         LOGGER.debug(f"Entering MainWindow.__init__... debug_mode={debug_mode}")
         super().__init__()
         self.debug_mode = debug_mode
-        self.setWindowTitle("GOES-VFI")
+        self.setWindowTitle(self.tr("GOES-VFI"))
         self.setGeometry(100, 100, 800, 600)  # x, y, w, h
 
         # --- Settings ---
@@ -288,26 +235,26 @@ class MainWindow(QWidget):
         # --- Create FFmpeg Widgets (to be passed to FFmpegSettingsTab) ---
         # These widgets are logically part of the FFmpeg settings but need to be owned by MainWindow
         # to be passed correctly during instantiation. FFmpegSettingsTab will then manage their layout.  # noqa: B950
-        self.ffmpeg_settings_group = QGroupBox("FFmpeg Interpolation Settings")
+        self.ffmpeg_settings_group = QGroupBox(self.tr("FFmpeg Interpolation Settings"))
         self.ffmpeg_settings_group.setCheckable(
             True
         )  # Assuming it should be checkable like in profiles
-        self.ffmpeg_unsharp_group = QGroupBox("Unsharp Mask")
+        self.ffmpeg_unsharp_group = QGroupBox(self.tr("Unsharp Mask"))
         self.ffmpeg_unsharp_group.setCheckable(True)
-        self.ffmpeg_quality_group = QGroupBox("Encoding Quality")
+        self.ffmpeg_quality_group = QGroupBox(self.tr("Encoding Quality"))
         # Profile Combo
         self.ffmpeg_profile_combo = QComboBox()
         self.ffmpeg_profile_combo.addItems(["Custom"] + list(FFMPEG_PROFILES.keys()))
         # Interpolation Widgets
         self.ffmpeg_mi_mode_combo = QComboBox()
-        self.ffmpeg_mi_mode_combo.addItems(["dup", "blend", "mci"])
+        self.ffmpeg_mi_mode_combo.addItems([self.tr("dup"), self.tr("blend"), self.tr("mci")])
         self.ffmpeg_mc_mode_combo = QComboBox()
-        self.ffmpeg_mc_mode_combo.addItems(["obmc", "aobmc"])
+        self.ffmpeg_mc_mode_combo.addItems([self.tr("obmc"), self.tr("aobmc")])
         self.ffmpeg_me_mode_combo = QComboBox()
-        self.ffmpeg_me_mode_combo.addItems(["bidir", "bilat"])
-        self.ffmpeg_vsbmc_checkbox = QCheckBox("VSBMC")
+        self.ffmpeg_me_mode_combo.addItems([self.tr("bidir"), self.tr("bilat")])
+        self.ffmpeg_vsbmc_checkbox = QCheckBox(self.tr("VSBMC"))
         self.ffmpeg_scd_combo = QComboBox()
-        self.ffmpeg_scd_combo.addItems(["none", "fdiff"])
+        self.ffmpeg_scd_combo.addItems([self.tr("none"), self.tr("fdiff")])
         self.ffmpeg_me_algo_edit = QLineEdit("(default)")  # QLineEdit, not combo
         self.ffmpeg_search_param_spinbox = QSpinBox()
         self.ffmpeg_search_param_spinbox.setRange(4, 1024)  # Example range
@@ -332,16 +279,7 @@ class MainWindow(QWidget):
         self.ffmpeg_unsharp_ca_spinbox.setDecimals(1)
         # Quality Widgets
         self.ffmpeg_quality_combo = QComboBox()
-        self.ffmpeg_quality_combo.addItems(
-            [
-                "Very High (CRF 16)",
-                "High (CRF 18)",
-                "Medium (CRF 20)",
-                "Low (CRF 23)",
-                "Very Low (CRF 26)",
-                "Custom Quality",
-            ]
-        )
+        self.ffmpeg_quality_combo.addItems([self.tr("Very High (CRF 16)"), self.tr("High (CRF 18)"), self.tr("Medium (CRF 20)"), self.tr("Low (CRF 23)"), self.tr("Very Low (CRF 26)"), self.tr("Custom Quality")])
         self.ffmpeg_crf_spinbox = QSpinBox()
         self.ffmpeg_crf_spinbox.setRange(0, 51)
         self.ffmpeg_bitrate_spinbox = QSpinBox()
@@ -351,21 +289,9 @@ class MainWindow(QWidget):
         self.ffmpeg_bufsize_spinbox.setRange(150, 150000)  # KBit
         self.ffmpeg_bufsize_spinbox.setSuffix(" kbit")
         self.ffmpeg_pix_fmt_combo = QComboBox()
-        self.ffmpeg_pix_fmt_combo.addItems(["yuv420p", "yuv444p"])  # Common options
+        self.ffmpeg_pix_fmt_combo.addItems([self.tr("yuv420p"), self.tr("yuv444p")])  # Common options
         self.ffmpeg_filter_preset_combo = QComboBox()
-        self.ffmpeg_filter_preset_combo.addItems(
-            [
-                "ultrafast",
-                "superfast",
-                "veryfast",
-                "faster",
-                "fast",
-                "medium",
-                "slow",
-                "slower",
-                "veryslow",
-            ]
-        )
+        self.ffmpeg_filter_preset_combo.addItems([self.tr("ultrafast"), self.tr("superfast"), self.tr("veryfast"), self.tr("faster"), self.tr("fast"), self.tr("medium"), self.tr("slow"), self.tr("slower"), self.tr("veryslow")])
         # -----------------------------------------------------------------
         # Instantiate FFmpegSettingsTab, passing required widgets and signals
         self.ffmpeg_settings_tab: FFmpegSettingsTab  # <-- ADDED TYPE HINT
@@ -437,7 +363,7 @@ class MainWindow(QWidget):
         # Status Bar
         self.status_bar = QStatusBar()
 
-        # self.progress_label = QLabel("Idle") # <-- Remove direct label
+        # self.progress_label = QLabel(self.tr("Idle")) # <-- Remove direct label
         # self.status_bar.addWidget(self.progress_label) # <-- Remove direct label widget
         # self.progress_bar = QProgressBar() # <-- Progress bar likely managed by Processing VM later  # noqa: B950
         # self.progress_bar.setVisible(False) # Hide initially
@@ -570,7 +496,7 @@ class MainWindow(QWidget):
         try:
             # Always save as an absolute, resolved path for maximum compatibility
             in_dir_str = str(path.resolve())
-            LOGGER.debug(f"Saving input directory directly (absolute): '{in_dir_str}'")
+            LOGGER.debug(f"Saving input directory directly (absolute): {in_dir_str!r}")
 
             # Log QSettings details to ensure settings are being saved to the right place
             org_name = self.settings.organizationName()
@@ -613,7 +539,7 @@ class MainWindow(QWidget):
             # Verify the saved value
             saved_dir = self.settings.value("paths/inputDirectory", "", type=str)
             LOGGER.debug(
-                f"Verification - Input directory after direct save: '{saved_dir}'"
+                f"Verification - Input directory after direct save: {saved_dir!r}"
             )
 
             # Check if settings file exists and has appropriate size
@@ -679,7 +605,7 @@ class MainWindow(QWidget):
                             "paths/inputDirectory", "", type=str
                         )
                         LOGGER.debug(
-                            f"Final verification - Input directory: '{saved_dir}'"
+                            f"Final verification - Input directory: {saved_dir!r}"
                         )
 
                         # If saving failed, try to revert to previous state
@@ -702,7 +628,7 @@ class MainWindow(QWidget):
 
         try:
             rect_str = ",".join(map(str, rect))
-            LOGGER.debug(f"Saving crop rectangle directly: '{rect_str}'")
+            LOGGER.debug(f"Saving crop rectangle directly: {rect_str!r}")
 
             # Log QSettings details to ensure settings are being saved to the right place
             org_name = self.settings.organizationName()
@@ -742,7 +668,7 @@ class MainWindow(QWidget):
             # Verify the saved value
             saved_rect = self.settings.value("preview/cropRectangle", "", type=str)
             LOGGER.debug(
-                f"Verification - Crop rectangle after direct save: '{saved_rect}'"
+                f"Verification - Crop rectangle after direct save: {saved_rect!r}"
             )
 
             # Check if settings file exists and has appropriate size
@@ -806,7 +732,7 @@ class MainWindow(QWidget):
                             "preview/cropRectangle", "", type=str
                         )
                         LOGGER.debug(
-                            f"Final verification - Crop rectangle: '{saved_rect}'"
+                            f"Final verification - Crop rectangle: {saved_rect!r}"
                         )
 
                         # If saving failed, try to revert to previous state
@@ -1140,7 +1066,7 @@ class MainWindow(QWidget):
         for key in ffmpeg_profile_keys:
             # Ensure key exists in current_settings before accessing
             if key not in current_settings:
-                LOGGER.warning(f"Key '{key}' in profile but not in current settings.")
+                LOGGER.warning(f"Key {key!r} in profile but not in current settings.")
                 return False
 
             current_value = current_settings[key]
@@ -1845,7 +1771,7 @@ class MainWindow(QWidget):
                 self.model_combo.currentText()
             )  # Update state variable using alias
         else:
-            self.model_combo.addItem("No RIFE models found")
+            self.model_combo.addItem(self.tr("No RIFE models found"))
             self.model_combo.setEnabled(False)
             self.current_model_key = ""  # Clear state variable
             LOGGER.warning("No RIFE models found.")
@@ -2975,7 +2901,7 @@ class MainWindow(QWidget):
             ):
                 try:
                     self.main_tab.middle_frame_label.clear()
-                    self.main_tab.middle_frame_label.setText("Middle Frame")
+                    self.main_tab.middle_frame_label.setText(self.tr("Middle Frame"))
                     self.main_tab.middle_frame_label.file_path = None
                     self.main_tab.middle_frame_label.processed_image = None
                 except (RuntimeError, AttributeError) as e:
@@ -2988,7 +2914,7 @@ class MainWindow(QWidget):
             ):
                 try:
                     self.main_tab.last_frame_label.clear()
-                    self.main_tab.last_frame_label.setText("Last Frame")
+                    self.main_tab.last_frame_label.setText(self.tr("Last Frame"))
                     self.main_tab.last_frame_label.file_path = None
                     self.main_tab.last_frame_label.processed_image = None
                 except (RuntimeError, AttributeError) as e:
@@ -3060,7 +2986,7 @@ class MainWindow(QWidget):
                     LOGGER.warning("First frame preview generation failed")
                     try:
                         self.main_tab.first_frame_label.clear()
-                        self.main_tab.first_frame_label.setText("Error loading preview")
+                        self.main_tab.first_frame_label.setText(self.tr("Error loading preview"))
                         self.main_tab.first_frame_label.file_path = None
                         self.main_tab.first_frame_label.processed_image = None
                     except (RuntimeError, AttributeError) as e:
@@ -3095,7 +3021,7 @@ class MainWindow(QWidget):
                         try:
                             self.main_tab.middle_frame_label.clear()
                             self.main_tab.middle_frame_label.setText(
-                                "Error loading preview"
+                                self.tr("Error loading preview")
                             )
                             self.main_tab.middle_frame_label.file_path = None
                             self.main_tab.middle_frame_label.processed_image = None
@@ -3107,7 +3033,7 @@ class MainWindow(QWidget):
                 try:
                     LOGGER.debug("No middle frame available")
                     self.main_tab.middle_frame_label.clear()
-                    self.main_tab.middle_frame_label.setText("Middle Frame (N/A)")
+                    self.main_tab.middle_frame_label.setText(self.tr("Middle Frame (N/A)"))
                     self.main_tab.middle_frame_label.file_path = None
                     self.main_tab.middle_frame_label.processed_image = None
                 except (RuntimeError, AttributeError) as e:
@@ -3136,7 +3062,7 @@ class MainWindow(QWidget):
                     LOGGER.warning("Last frame preview generation failed")
                     try:
                         self.main_tab.last_frame_label.clear()
-                        self.main_tab.last_frame_label.setText("Error loading preview")
+                        self.main_tab.last_frame_label.setText(self.tr("Error loading preview"))
                         self.main_tab.last_frame_label.file_path = None
                         self.main_tab.last_frame_label.processed_image = None
                     except (RuntimeError, AttributeError) as e:
@@ -3794,7 +3720,7 @@ class MainWindow(QWidget):
     def _enhance_preview_area(self) -> QWidget:
         """Create an enhanced preview area with better spacing and styling."""
         # Create a container widget for previews with better styling
-        previews_group = QGroupBox("Previews")
+        previews_group = QGroupBox(self.tr("Previews"))
         previews_group.setObjectName("previews_group")
         previews_layout = QVBoxLayout(previews_group)
         previews_layout.setContentsMargins(10, 20, 10, 10)  # More top margin for title
@@ -3845,13 +3771,13 @@ class MainWindow(QWidget):
 
     def _create_processing_settings_group(self) -> QWidget:
         """Create processing settings group with improved layout."""
-        processing_group = QGroupBox("Processing Settings")
+        processing_group = QGroupBox(self.tr("Processing Settings"))
         processing_layout = QGridLayout(processing_group)
         processing_layout.setContentsMargins(10, 15, 10, 10)  # Adjust internal margins
         processing_layout.setSpacing(8)  # Adjust spacing between elements
 
         # FPS control
-        processing_layout.addWidget(QLabel("Output FPS:"), 0, 0)
+        processing_layout.addWidget(QLabel(self.tr("Output FPS:")), 0, 0)
         # Assign to main_tab attribute
         self.main_tab.fps_spinbox = QSpinBox()
         self.main_tab.fps_spinbox.setRange(1, 240)
@@ -3859,7 +3785,7 @@ class MainWindow(QWidget):
         processing_layout.addWidget(self.main_tab.fps_spinbox, 0, 1)
 
         # Mid frames control
-        processing_layout.addWidget(QLabel("Mid Frames per Pair:"), 1, 0)
+        processing_layout.addWidget(QLabel(self.tr("Mid Frames per Pair:")), 1, 0)
         # Assign to main_tab attribute
         self.main_tab.mid_count_spinbox = QSpinBox()
         self.main_tab.mid_count_spinbox.setRange(1, 10)
@@ -3867,7 +3793,7 @@ class MainWindow(QWidget):
         processing_layout.addWidget(self.main_tab.mid_count_spinbox, 1, 1)
 
         # Max workers control
-        processing_layout.addWidget(QLabel("Max Workers:"), 2, 0)
+        processing_layout.addWidget(QLabel(self.tr("Max Workers:")), 2, 0)
         # Assign to main_tab attribute
         self.main_tab.max_workers_spinbox = QSpinBox()
         self.main_tab.max_workers_spinbox.setRange(1, os.cpu_count() or 1)
@@ -3875,10 +3801,10 @@ class MainWindow(QWidget):
         processing_layout.addWidget(self.main_tab.max_workers_spinbox, 2, 1)
 
         # Encoder selection
-        processing_layout.addWidget(QLabel("Encoder:"), 3, 0)
+        processing_layout.addWidget(QLabel(self.tr("Encoder:")), 3, 0)
         # Assign to main_tab attribute
         self.main_tab.encoder_combo = QComboBox()
-        self.main_tab.encoder_combo.addItems(["RIFE", "FFmpeg", "Sanchez"])
+        self.main_tab.encoder_combo.addItems([self.tr("RIFE"), self.tr("FFmpeg"), self.tr("Sanchez")])
         self.main_tab.encoder_combo.setCurrentText(
             self.current_encoder
         )  # Set initial value

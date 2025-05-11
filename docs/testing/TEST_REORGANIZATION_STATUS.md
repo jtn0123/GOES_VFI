@@ -67,7 +67,7 @@ Currently, the reorganization is in a transitional state:
 - The evaluation of legacy tests has not yet been completed
 - Examples have been properly documented and verified to be working correctly
 
-The verification of copied tests and examples has been completed. These files function correctly in their new locations with the proper import paths and configuration. 
+The verification of copied tests and examples has been completed. These files function correctly in their new locations with the proper import paths and configuration.
 
 The next step is to proceed with the evaluation of legacy tests and, once that's complete, the removal of original files.
 

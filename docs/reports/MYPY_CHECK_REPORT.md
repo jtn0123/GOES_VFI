@@ -18,7 +18,7 @@ The following files pass strict type checking without any issues:
 
 ### Files with Type Issues
 
-When running type checking across the entire codebase, we found 142 type issues in 19 files. 
+When running type checking across the entire codebase, we found 142 type issues in 19 files.
 The most common issues are:
 
 1. Missing type annotations on functions (no-untyped-def)
@@ -47,7 +47,7 @@ def initUI():  # Should be: def initUI() -> None:
 # Missing parameter type annotations
 def handle_event(event):  # Should be: def handle_event(event: Event) -> None:
     ...
-    
+
 # Missing type parameters for generic types
 Pattern = re.compile(r'file_pattern')  # Should be: Pattern[str] = re.compile(r'file_pattern')
 ```

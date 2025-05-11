@@ -152,7 +152,7 @@ To use these components in the existing codebase:
 1. Import shared components:
    ```python
    from goesvfi.integrity_check.shared_components import (
-       SharedPreviewPanel, SidebarSettingsPanel, 
+       SharedPreviewPanel, SidebarSettingsPanel,
        CollapsibleSettingsGroup, PreviewMetadata
    )
    ```
@@ -162,7 +162,7 @@ To use these components in the existing codebase:
    # Create component instances
    self.preview_panel = SharedPreviewPanel()
    self.settings_panel = SidebarSettingsPanel()
-   
+
    # Add to layout with splitter
    self.splitter.addWidget(self.content_widget)
    self.splitter.addWidget(self.preview_panel)
@@ -173,7 +173,7 @@ To use these components in the existing codebase:
    ```python
    # Connect preview signals
    self.preview_panel.previewSelected.connect(self.on_preview_selected)
-   
+
    # Connect settings signals
    self.settings_panel.date_edit.dateChanged.connect(self.on_date_changed)
    ```

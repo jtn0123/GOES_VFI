@@ -26,7 +26,7 @@ Currently, both tab implementations have:
    ```python
    # Before:
    self.preview_label.setPixmap(pixmap)
-   
+
    # After:
    self.shared_preview_panel.addPreview(
        key=key,
@@ -46,11 +46,11 @@ Currently, both tab implementations have:
        """Update shared settings panel with integrity-specific settings."""
        # Update date/time
        settings_panel.set_date_time(self.view_model.selected_date)
-       
+
        # Show/hide sections
        settings_panel.show_section("visualization", False)
        settings_panel.show_section("advanced", False)
-       
+
        # Update settings values
        # ...
    ```
@@ -62,7 +62,7 @@ Currently, both tab implementations have:
        # Get date/time
        date_time = settings_panel.get_date_time()
        self.view_model.set_date_time(date_time)
-       
+
        # Get other settings
        # ...
    ```
@@ -80,7 +80,7 @@ Currently, both tab implementations have:
    ```python
    # Define signal
    imagery_requested = pyqtSignal(str, object)  # file_path, metadata
-   
+
    # Emit signal when needed
    self.imagery_requested.emit(file_path, metadata)
    ```
@@ -93,7 +93,7 @@ Currently, both tab implementations have:
    ```python
    # Before:
    self.view_panel.showImage(image_path)
-   
+
    # After:
    self.shared_preview_panel.addPreview(
        key=key,
@@ -113,11 +113,11 @@ Currently, both tab implementations have:
        """Update shared settings panel with imagery-specific settings."""
        # Update date/time
        settings_panel.set_date_time(self.current_date_time)
-       
+
        # Show/hide sections
        settings_panel.show_section("visualization", True)
        settings_panel.show_section("advanced", True)
-       
+
        # Update settings values
        # ...
    ```
@@ -129,7 +129,7 @@ Currently, both tab implementations have:
        # Get date/time
        date_time = settings_panel.get_date_time()
        self.current_date_time = date_time
-       
+
        # Get other settings
        # ...
    ```
@@ -147,7 +147,7 @@ Currently, both tab implementations have:
    ```python
    # Define signal
    verification_requested = pyqtSignal(str, object)  # file_path, metadata
-   
+
    # Emit signal when needed
    self.verification_requested.emit(file_path, metadata)
    ```
@@ -163,12 +163,12 @@ Currently, both tab implementations have:
 2. Pass shared components to both tabs:
    ```python
    self.integrity_tab = EnhancedIntegrityCheckTab(
-       view_model, 
+       view_model,
        shared_preview=self.preview_panel,
        shared_settings=self.settings_panel,
        parent=self
    )
-   
+
    self.imagery_tab = EnhancedGOESImageryTab(
        shared_preview=self.preview_panel,
        shared_settings=self.settings_panel,
@@ -182,7 +182,7 @@ Currently, both tab implementations have:
    self.integrity_tab.imagery_requested.connect(
        self.imagery_tab.visualize_file
    )
-   
+
    # Connect imagery tab signals to integrity tab actions
    self.imagery_tab.verification_requested.connect(
        self.integrity_tab.verify_imagery
@@ -194,7 +194,7 @@ Currently, both tab implementations have:
    def _switch_tab(self, index):
        """Switch to tab at specified index."""
        self.stacked_widget.setCurrentIndex(index)
-       
+
        # Update settings based on active tab
        if index == 0:
            self.integrity_tab.update_shared_settings(self.settings_panel)
