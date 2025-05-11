@@ -7,14 +7,14 @@ to diagnose issues with image processing.
 Usage: python test_sanchez.py path/to/input/image.png
 """
 
+import argparse
+import logging
 import os
-import sys
+import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
-import shutil
-import logging
-import argparse
 
 # Configure logging
 logging.basicConfig(

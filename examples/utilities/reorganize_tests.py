@@ -4,28 +4,30 @@ Script to reorganize test files from the root directory to appropriate test subd
 """
 import os
 import shutil
-from pathlib import Path
 import sys
+from pathlib import Path
+
 
 def ensure_directory(directory):
     """Ensure the directory exists."""
     os.makedirs(directory, exist_ok=True)
 
+
 def move_file(source, destination):
     """Move a file from source to destination."""
     # Create parent directory if it doesn't exist
     ensure_directory(os.path.dirname(destination))
-    
+
     # Check if the file exists at the destination
     if os.path.exists(destination):
         print(f"Warning: {destination} already exists. Skipping...")
         return False
-    
+
     # Check if the source file exists
     if not os.path.exists(source):
         print(f"Error: Source file {source} does not exist. Skipping...")
         return False
-    
+
     # Move the file
     try:
         shutil.copy2(source, destination)
@@ -34,6 +36,7 @@ def move_file(source, destination):
     except Exception as e:
         print(f"Error moving {source} to {destination}: {e}")
         return False
+
 
 def main():
     """Main function to reorganize test files."""
@@ -57,12 +60,10 @@ def main():
         "test_satpy_rendering.py": "tests/unit/test_satpy_rendering.py",
         "test_signal.py": "tests/unit/test_signal.py",
         "test_timestamp.py": "tests/unit/test_timestamp.py",
-        
         # Integration tests
         "test_combined_tab.py": "tests/integration/test_combined_tab.py",
         "test_unified_interface.py": "tests/integration/test_unified_interface.py",
         "test_vfi_worker.py": "tests/integration/test_vfi_worker.py",
-        
         # GUI tests - imagery
         "test_fallback_preview.py": "tests/gui/imagery/test_fallback_preview.py",
         "test_imagery_enhancement.py": "tests/gui/imagery/test_imagery_enhancement.py",
@@ -71,20 +72,19 @@ def main():
         "test_imagery_gui_zoom.py": "tests/gui/imagery/test_imagery_zoom.py",
         "test_imagery_simple.py": "tests/gui/imagery/test_imagery_simple.py",
         "test_imagery_simplified.py": "tests/gui/imagery/test_imagery_simplified.py",
-        
         # GUI tests - tabs
         "test_enhanced_imagery_tab.py": "tests/gui/tabs/test_enhanced_imagery_tab.py",
-        
         # GUI tests - other
         "test_goes_ui.py": "tests/gui/test_goes_ui.py",
         "test_imagery_error_handling.py": "tests/gui/test_imagery_error_handling.py",
     }
-    
+
     # Move the files
     for source, destination in test_mapping.items():
         move_file(source, destination)
-    
+
     print("Test reorganization complete.")
+
 
 if __name__ == "__main__":
     main()

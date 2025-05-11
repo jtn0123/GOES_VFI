@@ -6,6 +6,7 @@ that have already been moved to the proper test directories.
 import os
 import sys
 
+
 def main():
     """Main function to remove redundant test files."""
     # List of test files to remove from root directory
@@ -41,10 +42,10 @@ def main():
         "test_unified_interface.py",
         "test_vfi_worker.py",
     ]
-    
+
     # Count of removed files
     removed_count = 0
-    
+
     # Remove each file if it exists
     for filename in files_to_remove:
         if os.path.exists(filename):
@@ -54,8 +55,9 @@ def main():
                 removed_count += 1
             except Exception as e:
                 print(f"Error removing {filename}: {e}")
-                
+
     print(f"\nRemoved {removed_count} redundant test files from root directory.")
+
 
 if __name__ == "__main__":
     main()
