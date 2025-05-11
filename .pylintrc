@@ -28,15 +28,15 @@ confidence=HIGH,INFERENCE,UNDEFINED
 disable=
     # Specific to PyQt
     invalid-name,        # PyQt uses camelCase and mixedCase names
-    no-name-in-module,   # PyQt imports can appear to be invalid 
+    no-name-in-module,   # PyQt imports can appear to be invalid
     c-extension-no-member,  # For PyQt
     too-many-instance-attributes,  # Common in GUI widgets
     unused-argument,      # For PyQt signal handlers
     unused-variable,      # Sometimes needed for PyQt signals
     arguments-differ,     # Can happen with PyQt overrides
-    
+
     # Common Python warnings you might want to reconsider
-    missing-docstring,     # Add back if you want docstrings enforced  
+    missing-docstring,     # Add back if you want docstrings enforced
     too-many-locals,       # GUI code often has many local variables
     too-many-statements,
     too-many-branches,     # GUI event handling often has many branches
@@ -45,7 +45,7 @@ disable=
     fixme,                 # Allow TODOs
     broad-except,          # Sometimes needed for Qt error handling
     logging-format-interpolation,  # Allow f-strings in logging
-    
+
     # Import related - consider re-enabling these
     wrong-import-order,    # Use isort instead
     wildcard-import,       # Sometimes useful in PyQt code but consider enabling

@@ -3,7 +3,7 @@
 ## Issues to Fix
 
 1. Missing type annotation for `__init__` method (line 120)
-   - Add proper type for `parent` parameter 
+   - Add proper type for `parent` parameter
    - Return type should be `None`
 
 2. Missing return type for `initUI` method (line 134)

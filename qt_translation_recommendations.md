@@ -51,11 +51,11 @@ from PyQt6.QtCore import QTranslator, QLocale
 def setup_translation(app):
     # Create translator
     translator = QTranslator()
-    
+
     # Get system locale or user preference
     locale = QLocale.system().name()  # e.g., "en_US", "es_ES"
     language = locale.split('_')[0]   # e.g., "en", "es"
-    
+
     # Try to load translation file
     if translator.load(f"goesvfi_{language}", "translations"):
         app.installTranslator(translator)

@@ -4,16 +4,18 @@ Run only the tests that are known to pass after the refactoring.
 """
 
 import os
-import sys
 import subprocess
+import sys
 
 if __name__ == "__main__":
     # Get the path to Python in the current virtual environment
     python_executable = sys.executable
-    
+
     # Only run tests that are known to work
     cmd = [
-        python_executable, "-m", "pytest",
+        python_executable,
+        "-m",
+        "pytest",
         "tests/test_placeholder.py",
         "tests/test_rife_analyzer.py",
         "tests/unit/test_config.py::test_load_config_defaults",
@@ -37,8 +39,8 @@ if __name__ == "__main__":
         "tests/unit/test_tiler.py",
         "tests/integration/test_pipeline.py::test_error_insufficient_frames",
         "tests/integration/test_pipeline.py::test_error_insufficient_frames_skip_model",
-        "-v"
+        "-v",
     ]
-    
+
     result = subprocess.run(cmd, check=False)
     sys.exit(result.returncode)

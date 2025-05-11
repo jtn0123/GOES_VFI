@@ -1,6 +1,6 @@
 ---
 description: Project rules and convetions
-globs: 
+globs:
 alwaysApply: false
 ---
 # GOES-VFI Project Rules & Conventions

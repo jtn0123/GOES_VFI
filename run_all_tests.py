@@ -6,15 +6,15 @@ This script runs tests directly with pytest, bypassing the custom test runner
 that has issues with classifying tests that pass but have teardown errors.
 """
 
-import os
-import sys
-import subprocess
-import time
 import glob
-from pathlib import Path
-from typing import List, Dict, Any, Tuple
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
 import re
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
 # Define colors for different statuses (globally)
 STATUS_COLOR = {

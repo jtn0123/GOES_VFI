@@ -10,11 +10,11 @@ Usage:
     python test_rife_capabilities.py [model_key]
 """
 
-import sys
-import os
-import pathlib
 import argparse
 import logging
+import os
+import pathlib
+import sys
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

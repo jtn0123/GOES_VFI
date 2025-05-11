@@ -10,11 +10,11 @@ Usage:
     python analyze_rife_cli.py <path_to_rife_executable>
 """
 
-import sys
-import os
-import json
-import pathlib
 import argparse
+import json
+import os
+import pathlib
+import sys
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))

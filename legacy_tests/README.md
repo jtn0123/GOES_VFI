@@ -1,6 +1,6 @@
 # Legacy Tests
 
-This directory contains test files that may be redundant or superseded by newer tests. 
+This directory contains test files that may be redundant or superseded by newer tests.
 These files are preserved for evaluation - they may be updated and moved to proper test directories,
 converted to examples, or removed in the future.
 
