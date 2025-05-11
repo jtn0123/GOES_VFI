@@ -1,6 +1,6 @@
 """Remote fetching module for retrieving satellite imagery.
 
-This package provides implementations for accessing and downloading 
+This package provides implementations for accessing and downloading
 satellite imagery from various remote sources.
 """
 
