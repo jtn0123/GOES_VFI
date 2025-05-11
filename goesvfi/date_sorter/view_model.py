@@ -5,7 +5,6 @@ presentation logic for the Date Sorter feature. It interacts with the DateSorter
 model and exposes data and commands to the GUI view layer.
 """
 
-import os
 import threading
 from typing import Callable, Optional
 

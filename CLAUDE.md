@@ -27,6 +27,22 @@ pip install -r requirements.txt
 - Launch application: `source .venv/bin/activate && python -m goesvfi.gui`
 - Debug mode: `source .venv/bin/activate && python -m goesvfi.gui --debug`
 
+### Linting Commands
+The project uses a comprehensive linting setup with multiple tools:
+- Run all linters: `python run_linters.py`
+- Run specific linters:
+  - Flake8 only: `python run_linters.py --flake8-only`
+  - Flake8-Qt-TR only: `python run_linters.py --flake8-qt-only`
+  - MyPy type checking: `python run_linters.py --mypy-only`
+  - Black code formatter: `python run_linters.py --black-only`
+  - isort import sorter: `python run_linters.py --isort-only`
+  - Pylint: `python run_linters.py --pylint-only`
+- Safe mode options (formatter tools):
+  - Check only (default): `python run_linters.py --check`
+  - Apply formatting: `python run_linters.py --format`
+- Specific paths: `python run_linters.py path/to/file_or_directory`
+- MyPy strict mode: `python run_linters.py --mypy-only --strict`
+
 Note: Some tests may fail due to recent refactoring. When testing new changes:
 - Use `run_working_tests.py` for non-GUI tests
 - Use `run_fixed_gui_tests.py` for GUI tests (avoids segmentation faults)
@@ -239,4 +255,15 @@ The `examples/` directory includes several workflows demonstrating:
 - Visualizing and comparing different products
 
 ## Development Best Practices
-- Always test directory with mypy after large code change with `run_linters.py`
+- Always run linters on changed code before committing:
+  - For quick checks: `python run_linters.py path/to/changed_file.py`
+  - For comprehensive checks: `python run_linters.py`
+- Use the same linting tools that pre-commit hooks use:
+  - Flake8: Style and static code analysis
+  - Black: Code formatting (line length: 88)
+  - isort: Import sorting
+  - MyPy: Type checking
+- Ensure consistent formatting with pre-commit hooks:
+  - Black for code formatting
+  - isort for import ordering
+  - Flake8 for style checking

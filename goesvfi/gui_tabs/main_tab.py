@@ -3,9 +3,9 @@
 import json
 import os
 import re
+from enum import Enum
 from pathlib import Path
-from typing import (  # Add TypedDict, Dict, List, Optional, Callable
-    TYPE_CHECKING,
+from typing import (
     Any,
     Callable,
     Dict,
@@ -15,26 +15,15 @@ from typing import (  # Add TypedDict, Dict, List, Optional, Callable
     cast,
 )
 
-if TYPE_CHECKING:
-    # NotRequired can be used for optional keys in TypedDict (Python 3.11+)
-    # If using Python < 3.11, use total=False in TypedDict definition instead
-    pass
-
-from enum import Enum  # Add this import
-
 import numpy as np
 from numpy.typing import NDArray
-
-# We were importing PIL.Image but it's not used
-from PyQt6.QtCore import QRect  # QPointF is unused
-from PyQt6.QtCore import QObject, QSettings, Qt, QTimer, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QImage  # Add QImage import
-from PyQt6.QtGui import QMouseEvent  # QColor, QCursor, and QPixmap are unused
-from PyQt6.QtWidgets import QFileDialog  # QDoubleSpinBox is unused
+from PyQt6.QtCore import QObject, QRect, QSettings, Qt, QTimer, pyqtSignal, pyqtSlot
+from PyQt6.QtGui import QImage, QMouseEvent
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
+    QFileDialog,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -48,11 +37,19 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-# RIFEModelDetails is defined locally below, remove incorrect import
-from goesvfi.pipeline.image_processing_interfaces import (  # Add ImageData import
-    ImageData,
-)
-from goesvfi.utils import config  # Import config
+from goesvfi.pipeline.image_cropper import ImageCropper
+from goesvfi.pipeline.image_loader import ImageLoader
+from goesvfi.pipeline.image_processing_interfaces import ImageData
+from goesvfi.pipeline.run_vfi import VfiWorker
+from goesvfi.pipeline.sanchez_processor import SanchezProcessor
+from goesvfi.utils import config
+from goesvfi.utils.config import get_available_rife_models, get_cache_dir
+from goesvfi.utils.gui_helpers import ClickableLabel, CropSelectionDialog, ImageViewerDialog
+from goesvfi.utils.log import get_logger
+from goesvfi.utils.rife_analyzer import analyze_rife_executable
+from goesvfi.view_models.main_window_view_model import MainWindowViewModel
+
+LOGGER = get_logger(__name__)
 
 
 # Custom button class with enhanced event handling
@@ -109,39 +106,6 @@ class RawEncoderMethod(Enum):
     NONE = "None"
     RIFE = "RIFE"
     SANCHEZ = "Sanchez"
-
-
-# Remove incorrect import from ffmpeg_builder
-# from goesvfi.pipeline.ffmpeg_builder import (
-#     FFmpegParams,
-#     QualityParams,
-#     UnsharpParams,
-# )
-from goesvfi.pipeline.image_cropper import ImageCropper
-from goesvfi.pipeline.image_loader import ImageLoader
-from goesvfi.pipeline.run_vfi import VfiWorker
-from goesvfi.pipeline.sanchez_processor import SanchezProcessor
-from goesvfi.utils.config import FFMPEG_PROFILES
-from goesvfi.utils.gui_helpers import (  # Import moved classes AND ImageViewerDialog AND CropSelectionDialog
-    ClickableLabel,
-    CropDialog,
-    CropSelectionDialog,
-    ImageViewerDialog,
-    ZoomDialog,
-)
-from goesvfi.utils.log import get_logger  # Use get_logger
-
-LOGGER = get_logger(__name__)  # Get logger instance
-# Removed redundant import of 'ImageData' (original import at line 60)
-from goesvfi.utils.config import (  # Import from config
-    get_available_rife_models,
-    get_cache_dir,
-)
-from goesvfi.utils.rife_analyzer import (  # Import analyzer function
-    analyze_rife_executable,
-)
-from goesvfi.view_models.main_window_view_model import MainWindowViewModel
-from goesvfi.view_models.processing_view_model import ProcessingViewModel
 
 
 # Define RIFEModelDetails TypedDict locally
@@ -1576,7 +1540,7 @@ class MainTab(QWidget):
                 f"Crop height: {h}px ({crop_height_percent:.1f}% of image height)"
             )
             LOGGER.debug(
-                f"Crop area: {w*h}px² ({crop_area_percent:.1f}% of image area)"
+                f"Crop area: {w * h}px² ({crop_area_percent:.1f}% of image area)"
             )
 
         except Exception as e:

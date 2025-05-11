@@ -18,7 +18,6 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from goesvfi.date_sorter import sorter  # Import the sorter module
 from goesvfi.date_sorter.view_model import DateSorterViewModel  # Import the ViewModel
 
 LOGGER = logging.getLogger(__name__)

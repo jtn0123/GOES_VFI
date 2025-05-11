@@ -2073,7 +2073,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     window = QWidget()
-    window.setWindowTitle(self.tr("Enhanced GOES Imagery Tab Demo"))
+    window.setWindowTitle("Enhanced GOES Imagery Tab Demo")
     window.setGeometry(100, 100, 1200, 800)
 
     layout = QVBoxLayout(window)
