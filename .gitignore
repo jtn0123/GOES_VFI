@@ -156,5 +156,9 @@ tests/data/test_input/
 # Log files
 logs/
 
+# Linting and temporary backup files
+linting_backups/
+*.bak
+
 # Keep basic test fixture files
 !tests/data/test_input/fixture_*.png
