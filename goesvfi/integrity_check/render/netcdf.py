@@ -4,9 +4,8 @@ NetCDF renderer for GOES satellite imagery.
 This module provides functions to render PNG images from GOES NetCDF files,
 specifically for Band 13 (Clean IR, 10.3 µm) data.
 """
-import logging
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union, cast
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 import xarray as xr
@@ -32,6 +31,182 @@ X_VAR = "x"
 
 # Target band information
 TARGET_BAND_ID = 13  # Clean IR (10.3 µm)
+
+
+def _validate_band_id(ds: xr.Dataset) -> None:
+    """
+    Validate that the dataset contains the target band.
+
+    Args:
+        ds: xarray Dataset to validate
+
+    Raises:
+        ValueError: If the target band is not found in the dataset
+    """
+    if BAND_ID_VAR not in ds.variables:
+        return  # Skip validation if band_id variable is not present
+
+    band_id_raw = ds[BAND_ID_VAR].values
+    # Cast to Any to avoid type inference issues
+    band_id: Any = band_id_raw
+
+    if np.isscalar(band_id):
+        if band_id != TARGET_BAND_ID:
+            # Convert to string safely, regardless of type
+            if isinstance(band_id, bytes):
+                band_str = band_id.decode("utf-8")
+            else:
+                band_str = str(band_id)
+            raise ValueError(
+                f"Expected Band {TARGET_BAND_ID}, found Band {band_str}"
+            )
+    else:
+        if TARGET_BAND_ID not in band_id:
+            raise ValueError(f"Band {TARGET_BAND_ID} not found in dataset")
+
+
+def _convert_radiance_to_temperature(
+    data: np.ndarray,
+    ds: xr.Dataset,
+    min_temp_k: float,
+    max_temp_k: float
+) -> np.ndarray:
+    """
+    Convert radiance data to brightness temperature and normalize.
+
+    Args:
+        data: Raw radiance data from the NetCDF file
+        ds: xarray Dataset containing the Planck constants
+        min_temp_k: Minimum temperature for scaling
+        max_temp_k: Maximum temperature for scaling
+
+    Returns:
+        Normalized temperature data (0-1 range, inverted for IR)
+    """
+    # Convert radiance to brightness temperature if Planck constants are available
+    if all(
+        k in ds.attrs
+        for k in ["planck_fk1", "planck_fk2", "planck_bc1", "planck_bc2"]
+    ):
+        fk1 = ds.attrs["planck_fk1"]
+        fk2 = ds.attrs["planck_fk2"]
+        bc1 = ds.attrs["planck_bc1"]
+        bc2 = ds.attrs["planck_bc2"]
+
+        # Apply Planck function to convert radiance to brightness temperature
+        data = (fk2 / np.log((fk1 / data) + 1) - bc1) / bc2
+
+    # Mask invalid data
+    data = np.ma.masked_less_equal(data, 0)  # type: ignore
+
+    # Clip data to the specified temperature range
+    data = np.clip(data, min_temp_k, max_temp_k)
+
+    # Normalize to 0-1 range
+    normalized_data = (data - min_temp_k) / (max_temp_k - min_temp_k)
+
+    # Inverse for IR (cold = bright, warm = dark)
+    normalized_data = 1 - normalized_data
+
+    return normalized_data
+
+
+def _get_colormap(colormap_name: str):
+    """
+    Get a matplotlib colormap based on name.
+
+    Args:
+        colormap_name: Name of the colormap
+
+    Returns:
+        LinearSegmentedColormap instance
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LinearSegmentedColormap
+
+    if colormap_name == "gray":
+        # Custom grayscale with enhanced contrast
+        return LinearSegmentedColormap.from_list(
+            "enhanced_gray", [(0, 0, 0), (1, 1, 1)], N=256
+        )
+    else:
+        # Get the colormap - we just need a Colormap,
+        # not specifically LinearSegmentedColormap
+        _cmap = plt.get_cmap(colormap_name)
+        # Create a new LinearSegmentedColormap with the data from _cmap
+        # This ensures type safety while maintaining the colormap
+        return LinearSegmentedColormap.from_list(
+            colormap_name, _cmap(np.linspace(0, 1, 256)), N=256
+        )
+
+
+def _create_figure(data: np.ndarray, colormap_name: str, output_path: Path):
+    """
+    Create a matplotlib figure and save it to a file.
+
+    Args:
+        data: Normalized data to visualize
+        colormap_name: Name of the colormap to use
+        output_path: Path to save the figure
+
+    Returns:
+        None
+    """
+    import matplotlib.pyplot as plt
+
+    # Get appropriate colormap
+    cmap = _get_colormap(colormap_name)
+
+    # Create a figure
+    dpi = 100
+    fig_width = data.shape[1] / dpi
+    fig_height = data.shape[0] / dpi
+
+    fig = plt.figure(figsize=(fig_width, fig_height), dpi=dpi)
+    ax = fig.add_axes((0, 0, 1, 1))  # Use tuple instead of list for rect parameter
+    ax.axis("off")
+
+    # Plot the image
+    ax.imshow(data, cmap=cmap, aspect="auto")
+
+    # Save to file
+    plt.savefig(output_path, dpi=dpi, bbox_inches="tight", pad_inches=0)
+    plt.close(fig)
+
+
+def _resize_image(image_path: Path, resolution: Tuple[int, int]):
+    """
+    Resize an image to the specified resolution.
+
+    Args:
+        image_path: Path to the image
+        resolution: Target resolution (width, height)
+
+    Returns:
+        None
+    """
+    img = Image.open(image_path)
+    img = img.resize(resolution, Image.LANCZOS)
+    img.save(image_path)
+
+
+def _prepare_output_path(netcdf_path: Path, output_path: Optional[Union[str, Path]]) -> Path:
+    """
+    Prepare the output path for the rendered image.
+
+    Args:
+        netcdf_path: Path to the input NetCDF file
+        output_path: Optional path to save the image
+
+    Returns:
+        Path: The prepared output path
+    """
+    if output_path is None:
+        return netcdf_path.with_suffix(".png")
+    else:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        return output_path
 
 
 def render_png(
@@ -62,123 +237,43 @@ def render_png(
         ValueError: If the NetCDF file doesn't contain Band 13 data
         IOError: If there's an error during rendering
     """
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import LinearSegmentedColormap
-
+    # Convert to Path and validate existence
     netcdf_path = Path(netcdf_path)
     if not netcdf_path.exists():
         raise FileNotFoundError(f"NetCDF file not found: {netcdf_path}")
 
-    # If no output path, create one alongside the NetCDF file
-    if output_path is None:
-        output_path = netcdf_path.with_suffix(".png")
-    else:
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+    # Prepare output path
+    final_output_path = _prepare_output_path(netcdf_path, output_path)
 
-    LOGGER.debug(f"Rendering {netcdf_path} to {output_path}")
+    LOGGER.debug("Rendering %s to %s", netcdf_path, final_output_path)
 
     try:
         # Open the NetCDF dataset
         with xr.open_dataset(netcdf_path) as ds:
-            # Check if this is Band 13 data
-            if BAND_ID_VAR in ds.variables:
-                band_id_raw = ds[BAND_ID_VAR].values
-                # Cast to Any to avoid type inference issues
-                band_id: Any = band_id_raw
+            # 1. Validate that this dataset contains the target band
+            _validate_band_id(ds)
 
-                if np.isscalar(band_id):
-                    if band_id != TARGET_BAND_ID:
-                        # Convert to string safely, regardless of type
-                        if isinstance(band_id, bytes):
-                            band_str = band_id.decode("utf-8")
-                        else:
-                            band_str = str(band_id)
-                        raise ValueError(
-                            f"Expected Band {TARGET_BAND_ID}, found Band {band_str}"
-                        )
-                else:
-                    if TARGET_BAND_ID not in band_id:
-                        raise ValueError(f"Band {TARGET_BAND_ID} not found in dataset")
+            # 2. Extract the radiance data
+            if RADIANCE_VAR not in ds.variables:
+                raise ValueError(f"Radiance variable {RADIANCE_VAR!r} not found in dataset")
 
-            # Extract the Clean IR band data
-            if RADIANCE_VAR in ds.variables:
-                # Get the radiance data
-                data = ds[RADIANCE_VAR].values
+            data = ds[RADIANCE_VAR].values
 
-                # Convert radiance to brightness temperature if needed
-                # Some datasets include planck_fk1 and planck_fk2 constants
-                if all(
-                    k in ds.attrs
-                    for k in ["planck_fk1", "planck_fk2", "planck_bc1", "planck_bc2"]
-                ):
-                    fk1 = ds.attrs["planck_fk1"]
-                    fk2 = ds.attrs["planck_fk2"]
-                    bc1 = ds.attrs["planck_bc1"]
-                    bc2 = ds.attrs["planck_bc2"]
+            # 3. Convert radiance to brightness temperature and normalize
+            normalized_data = _convert_radiance_to_temperature(data, ds, min_temp_k, max_temp_k)
 
-                    # Apply Planck function to convert radiance to brightness temperature
-                    data = (fk2 / np.log((fk1 / data) + 1) - bc1) / bc2
+            # 4. Create figure and save to file
+            _create_figure(normalized_data, colormap, final_output_path)
 
-                # Mask invalid data
-                data = np.ma.masked_less_equal(data, 0)  # type: ignore
+            # 5. Optional resize
+            if resolution is not None:
+                _resize_image(final_output_path, resolution)
 
-                # Clip data to the specified temperature range
-                data = np.clip(data, min_temp_k, max_temp_k)
+            LOGGER.debug("Rendered %s", final_output_path)
+            return final_output_path
 
-                # Normalize to 0-1 range
-                normalized_data = (data - min_temp_k) / (max_temp_k - min_temp_k)
-
-                # Inverse for IR (cold = bright, warm = dark)
-                normalized_data = 1 - normalized_data
-
-                # Create a figure
-                dpi = 100
-                fig_width = data.shape[1] / dpi
-                fig_height = data.shape[0] / dpi
-
-                fig = plt.figure(figsize=(fig_width, fig_height), dpi=dpi)
-                ax = fig.add_axes(
-                    (0, 0, 1, 1)
-                )  # Use tuple instead of list for rect parameter
-                ax.axis("off")
-
-                # Apply colormap
-                if colormap == "gray":
-                    # Custom grayscale with enhanced contrast
-                    cmap = LinearSegmentedColormap.from_list(
-                        "enhanced_gray", [(0, 0, 0), (1, 1, 1)], N=256
-                    )
-                else:
-                    # Get the colormap - we just need a Colormap, not specifically LinearSegmentedColormap
-                    _cmap = plt.get_cmap(colormap)
-                    # Create a new LinearSegmentedColormap with the data from _cmap
-                    # This ensures type safety while maintaining the colormap
-                    cmap = LinearSegmentedColormap.from_list(
-                        colormap, _cmap(np.linspace(0, 1, 256)), N=256
-                    )
-
-                # Plot the image
-                ax.imshow(normalized_data, cmap=cmap, aspect="auto")
-
-                # Save to file
-                plt.savefig(output_path, dpi=dpi, bbox_inches="tight", pad_inches=0)
-                plt.close(fig)
-
-                # Optional resize
-                if resolution is not None:
-                    img = Image.open(output_path)
-                    img = img.resize(resolution, Image.LANCZOS)
-                    img.save(output_path)
-
-                LOGGER.debug(f"Rendered {output_path}")
-                return output_path
-            else:
-                raise ValueError(
-                    f"Radiance variable '{RADIANCE_VAR}' not found in dataset"
-                )
     except Exception as e:
-        raise IOError(f"Error rendering NetCDF file: {e}")
+        raise IOError(f"Error rendering NetCDF file: {e}") from e
 
 
 def extract_metadata(netcdf_path: Union[str, Path]) -> Dict[str, Any]:
@@ -215,4 +310,4 @@ def extract_metadata(netcdf_path: Union[str, Path]) -> Dict[str, Any]:
             }
             return metadata
     except Exception as e:
-        raise ValueError(f"Error extracting metadata: {e}")
+        raise ValueError("Error extracting metadata: %s" % e) from e
