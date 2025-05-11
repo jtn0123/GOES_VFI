@@ -1014,7 +1014,9 @@ class EnhancedProgressDialog(QDialog):
 
         # Update cancel button
         self.cancel_button.setEnabled(cancellable)
-        self.cancel_button.setText(self.tr("Cancel" if cancellable else "Cannot Cancel"))
+        self.cancel_button.setText(
+            self.tr("Cancel" if cancellable else "Cannot Cancel")
+        )
 
     def is_canceled(self) -> bool:
         """Check if the operation has been canceled."""

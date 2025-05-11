@@ -326,7 +326,15 @@ class OptimizedResultsTab(QWidget):
         layout.addWidget(QLabel(self.tr("Group by:")))
 
         self.group_combo = QComboBox()
-        self.group_combo.addItems([self.tr("Day"), self.tr("Hour"), self.tr("Satellite"), self.tr("Status"), self.tr("Source")])
+        self.group_combo.addItems(
+            [
+                self.tr("Day"),
+                self.tr("Hour"),
+                self.tr("Satellite"),
+                self.tr("Status"),
+                self.tr("Source"),
+            ]
+        )
         self.group_combo.currentTextChanged.connect(self._handle_group_changed)
         layout.addWidget(self.group_combo)
 
