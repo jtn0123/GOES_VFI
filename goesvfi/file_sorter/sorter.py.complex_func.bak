@@ -57,11 +57,6 @@ class FileSorter:
         # os.utime expects (atime, mtime) in *epoch seconds*.
         os.utime(dest_path, (source_mtime_utc, source_mtime_utc))
 
-    # 3. Extract repeated code patterns into utility functions
-    # 2. Consider using helper classes to group related functionality
-    # 1. Extract conditional blocks into separate helper functions
-    # Consider breaking into smaller helper functions for:
-    # TODO: This function has high cyclomatic complexity (42) and should be refactored.
     def sort_files(
         self,
         source: str,
