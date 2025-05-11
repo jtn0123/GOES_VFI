@@ -42,11 +42,6 @@ def copy_file_with_buffer(
 # --------------------------------------------------------------------------------
 # New feature: Scan the converted folder for missing intervals
 # --------------------------------------------------------------------------------
-    # 3. Extract repeated code patterns into utility functions
-    # 2. Consider using helper classes to group related functionality
-    # 1. Extract conditional blocks into separate helper functions
-    # Consider breaking into smaller helper functions for:
-    # TODO: This function has high cyclomatic complexity (15) and should be refactored.
 def scan_for_missing_intervals(
     converted_folder: Path, interval_minutes: int = 30
 ) -> None:

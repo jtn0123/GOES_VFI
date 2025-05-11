@@ -37,9 +37,7 @@ class DateSorterViewModel:
 
         Attributes:
             _source_directory (Optional[str]): The currently selected source directory for sorting.
-_destination_directory(
-                Optional[str]
-            ): The currently selected destination directory for sorted files.
+            _destination_directory (Optional[str]): The currently selected destination directory for sorted files.
             _is_sorting (bool): Whether a sorting operation is currently in progress.
             _progress_percentage (float): The current progress of the sorting operation (0-100).
             _status_message (str): A message describing the current status for display in the UI.
