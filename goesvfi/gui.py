@@ -5,17 +5,18 @@ from goesvfi.date_sorter.gui_tab import DateSorterTab
 from goesvfi.date_sorter.sorter import DateSorter  # <-- Add Model import
 from goesvfi.file_sorter.gui_tab import FileSorterTab
 from goesvfi.file_sorter.sorter import FileSorter  # <-- Add Model import
-from goesvfi.gui_tabs.ffmpeg_settings_tab import \
-    FFmpegSettingsTab  # <-- Add new tab import
+from goesvfi.gui_tabs.ffmpeg_settings_tab import (
+    FFmpegSettingsTab,
+)  # <-- Add new tab import
 from goesvfi.gui_tabs.main_tab import MainTab  # <-- Add new tab import
-from goesvfi.gui_tabs.model_library_tab import \
-    ModelLibraryTab  # <-- Add new tab import
+from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab  # <-- Add new tab import
 from goesvfi.integrity_check.cache_db import CacheDB
+
 # Import the Combined tab with enhanced error handling
 from goesvfi.integrity_check.combined_tab import CombinedIntegrityAndImageryTab
+
 # Import Integrity Check components
-from goesvfi.integrity_check.enhanced_view_model import \
-    EnhancedIntegrityCheckViewModel
+from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
 from goesvfi.integrity_check.reconciler import Reconciler
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
@@ -24,8 +25,9 @@ from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
-from goesvfi.view_models.main_window_view_model import \
-    MainWindowViewModel  # <-- Add ViewModel import
+from goesvfi.view_models.main_window_view_model import (
+    MainWindowViewModel,
+)  # <-- Add ViewModel import
 
 """
 GOES‑VFI PyQt6 GUI – v0.1
@@ -33,6 +35,7 @@ Run with:  python -m goesvfi.gui
 """
 
 import argparse  # <-- Import argparse
+
 # Import needed for pretty printing the dict
 import logging
 import os  # Import os for os.cpu_count()
@@ -41,6 +44,7 @@ import shutil  # Import shutil for file operations
 import sys
 import tempfile  # Import tempfile for temporary files handling
 from pathlib import Path  # Import Path for file path handling
+
 # <-- Import time for time.sleep
 from typing import Iterator  # Added Dict, List, cast
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
@@ -49,22 +53,36 @@ import numpy as np
 from PIL import Image
 from PyQt6.QtCore import QRect  # Added QTimer, QUrl
 from PyQt6.QtCore import QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
-from PyQt6.QtGui import (QCloseEvent, QColor, QDesktopServices, QImage,
-                         QPainter, QPixmap)
-from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
-                             QDoubleSpinBox, QFileDialog, QGridLayout,
-                             QGroupBox, QLabel, QLineEdit, QMessageBox,
-                             QSizePolicy, QSpinBox, QSplitter, QStatusBar,
-                             QTabWidget, QVBoxLayout, QWidget)
+from PyQt6.QtGui import QCloseEvent, QColor, QDesktopServices, QImage, QPainter, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDoubleSpinBox,
+    QFileDialog,
+    QGridLayout,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QSizePolicy,
+    QSpinBox,
+    QSplitter,
+    QStatusBar,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from goesvfi.pipeline.run_vfi import VfiWorker  # <-- ADDED IMPORT
+
 # Correct import for find_rife_executable
 from goesvfi.utils import config, log
 from goesvfi.utils.config import DEFAULT_FFMPEG_PROFILE  # Moved constants
 from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
 from goesvfi.utils.gui_helpers import ClickableLabel  # Import moved classes
-from goesvfi.utils.gui_helpers import (CropDialog, RifeCapabilityManager,
-                                       ZoomDialog)
+from goesvfi.utils.gui_helpers import CropDialog, RifeCapabilityManager, ZoomDialog
 
 LOGGER = log.get_logger(__name__)
 
@@ -158,14 +176,14 @@ class MainWindow(QWidget):
         # ---------------------------------
 
         # --- State Variables ---
-        self.sanchez_preview_cache: dict[Path, np.ndarray[Any, Any]] = (
-            {}
-        )  # Cache for Sanchez results
+        self.sanchez_preview_cache: dict[
+            Path, np.ndarray[Any, Any]
+        ] = {}  # Cache for Sanchez results
         self.in_dir: Path | None = None
         self.out_file_path: Path | None = None
-        self.current_crop_rect: tuple[int, int, int, int] | None = (
-            None  # Store crop rect as (x, y, w, h)
-        )
+        self.current_crop_rect: tuple[
+            int, int, int, int
+        ] | None = None  # Store crop rect as (x, y, w, h)
         self.vfi_worker: VfiWorker | None = None
         self.is_processing = False
         self.current_encoder = "RIFE"  # Default encoder
@@ -247,7 +265,9 @@ class MainWindow(QWidget):
         self.ffmpeg_profile_combo.addItems(["Custom"] + list(FFMPEG_PROFILES.keys()))
         # Interpolation Widgets
         self.ffmpeg_mi_mode_combo = QComboBox()
-        self.ffmpeg_mi_mode_combo.addItems([self.tr("dup"), self.tr("blend"), self.tr("mci")])
+        self.ffmpeg_mi_mode_combo.addItems(
+            [self.tr("dup"), self.tr("blend"), self.tr("mci")]
+        )
         self.ffmpeg_mc_mode_combo = QComboBox()
         self.ffmpeg_mc_mode_combo.addItems([self.tr("obmc"), self.tr("aobmc")])
         self.ffmpeg_me_mode_combo = QComboBox()
@@ -279,7 +299,16 @@ class MainWindow(QWidget):
         self.ffmpeg_unsharp_ca_spinbox.setDecimals(1)
         # Quality Widgets
         self.ffmpeg_quality_combo = QComboBox()
-        self.ffmpeg_quality_combo.addItems([self.tr("Very High (CRF 16)"), self.tr("High (CRF 18)"), self.tr("Medium (CRF 20)"), self.tr("Low (CRF 23)"), self.tr("Very Low (CRF 26)"), self.tr("Custom Quality")])
+        self.ffmpeg_quality_combo.addItems(
+            [
+                self.tr("Very High (CRF 16)"),
+                self.tr("High (CRF 18)"),
+                self.tr("Medium (CRF 20)"),
+                self.tr("Low (CRF 23)"),
+                self.tr("Very Low (CRF 26)"),
+                self.tr("Custom Quality"),
+            ]
+        )
         self.ffmpeg_crf_spinbox = QSpinBox()
         self.ffmpeg_crf_spinbox.setRange(0, 51)
         self.ffmpeg_bitrate_spinbox = QSpinBox()
@@ -289,9 +318,23 @@ class MainWindow(QWidget):
         self.ffmpeg_bufsize_spinbox.setRange(150, 150000)  # KBit
         self.ffmpeg_bufsize_spinbox.setSuffix(" kbit")
         self.ffmpeg_pix_fmt_combo = QComboBox()
-        self.ffmpeg_pix_fmt_combo.addItems([self.tr("yuv420p"), self.tr("yuv444p")])  # Common options
+        self.ffmpeg_pix_fmt_combo.addItems(
+            [self.tr("yuv420p"), self.tr("yuv444p")]
+        )  # Common options
         self.ffmpeg_filter_preset_combo = QComboBox()
-        self.ffmpeg_filter_preset_combo.addItems([self.tr("ultrafast"), self.tr("superfast"), self.tr("veryfast"), self.tr("faster"), self.tr("fast"), self.tr("medium"), self.tr("slow"), self.tr("slower"), self.tr("veryslow")])
+        self.ffmpeg_filter_preset_combo.addItems(
+            [
+                self.tr("ultrafast"),
+                self.tr("superfast"),
+                self.tr("veryfast"),
+                self.tr("faster"),
+                self.tr("fast"),
+                self.tr("medium"),
+                self.tr("slow"),
+                self.tr("slower"),
+                self.tr("veryslow"),
+            ]
+        )
         # -----------------------------------------------------------------
         # Instantiate FFmpegSettingsTab, passing required widgets and signals
         self.ffmpeg_settings_tab: FFmpegSettingsTab  # <-- ADDED TYPE HINT
@@ -2582,9 +2625,9 @@ class MainWindow(QWidget):
                                 "res_km": res_km_val
                             }  # Don't set false_colour here
                             if "filename" not in original_image_data.metadata:
-                                original_image_data.metadata["filename"] = (
-                                    image_path.name
-                                )
+                                original_image_data.metadata[
+                                    "filename"
+                                ] = image_path.name
                             if "source_path" not in original_image_data.metadata:
                                 original_image_data.metadata["source_path"] = str(
                                     image_path
@@ -2607,9 +2650,9 @@ class MainWindow(QWidget):
                                     result_array = sanchez_result.image_data
 
                                 if result_array is not None:
-                                    self.sanchez_preview_cache[image_path] = (
-                                        result_array.copy()
-                                    )
+                                    self.sanchez_preview_cache[
+                                        image_path
+                                    ] = result_array.copy()
                                     LOGGER.debug(
                                         f"Stored Sanchez result in cache for: {image_path.name}"
                                     )
@@ -2986,7 +3029,9 @@ class MainWindow(QWidget):
                     LOGGER.warning("First frame preview generation failed")
                     try:
                         self.main_tab.first_frame_label.clear()
-                        self.main_tab.first_frame_label.setText(self.tr("Error loading preview"))
+                        self.main_tab.first_frame_label.setText(
+                            self.tr("Error loading preview")
+                        )
                         self.main_tab.first_frame_label.file_path = None
                         self.main_tab.first_frame_label.processed_image = None
                     except (RuntimeError, AttributeError) as e:
@@ -3033,7 +3078,9 @@ class MainWindow(QWidget):
                 try:
                     LOGGER.debug("No middle frame available")
                     self.main_tab.middle_frame_label.clear()
-                    self.main_tab.middle_frame_label.setText(self.tr("Middle Frame (N/A)"))
+                    self.main_tab.middle_frame_label.setText(
+                        self.tr("Middle Frame (N/A)")
+                    )
                     self.main_tab.middle_frame_label.file_path = None
                     self.main_tab.middle_frame_label.processed_image = None
                 except (RuntimeError, AttributeError) as e:
@@ -3062,7 +3109,9 @@ class MainWindow(QWidget):
                     LOGGER.warning("Last frame preview generation failed")
                     try:
                         self.main_tab.last_frame_label.clear()
-                        self.main_tab.last_frame_label.setText(self.tr("Error loading preview"))
+                        self.main_tab.last_frame_label.setText(
+                            self.tr("Error loading preview")
+                        )
                         self.main_tab.last_frame_label.file_path = None
                         self.main_tab.last_frame_label.processed_image = None
                     except (RuntimeError, AttributeError) as e:
@@ -3804,7 +3853,9 @@ class MainWindow(QWidget):
         processing_layout.addWidget(QLabel(self.tr("Encoder:")), 3, 0)
         # Assign to main_tab attribute
         self.main_tab.encoder_combo = QComboBox()
-        self.main_tab.encoder_combo.addItems([self.tr("RIFE"), self.tr("FFmpeg"), self.tr("Sanchez")])
+        self.main_tab.encoder_combo.addItems(
+            [self.tr("RIFE"), self.tr("FFmpeg"), self.tr("Sanchez")]
+        )
         self.main_tab.encoder_combo.setCurrentText(
             self.current_encoder
         )  # Set initial value

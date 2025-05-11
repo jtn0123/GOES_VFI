@@ -1,25 +1,29 @@
 from __future__ import annotations
-import pathlib
-import os  # Added for cpu_count
-import time  # Added for model_id timestamp
+
 import concurrent.futures  # Added for ProcessPoolExecutor
+import os  # Added for cpu_count
+import pathlib
+import time  # Added for model_id timestamp
+from typing import Any, Iterable, Iterator, List, Optional, Tuple, Union, cast
+
+import numpy as np  # Re-added missing numpy import
+
+# Add imports for typing
+from numpy.typing import NDArray
+from PIL import Image  # Import PIL directly
+
+from goesvfi.utils import config  # Import config module
+from goesvfi.utils import log
+
+from .pipeline.cache import load_cached, save_cache
+from .pipeline.interpolate import RifeBackend, interpolate_three
 
 # imageio unused ignore removed by previous step or not needed
 # from PIL import Image # Unused ignore removed
 # from tqdm import tqdm # Unused ignore removed
 from .pipeline.loader import discover_frames
-from .pipeline.tiler import tile_image, merge_tiles
-from .pipeline.interpolate import RifeBackend, interpolate_three
-from .pipeline.cache import load_cached, save_cache
-from goesvfi.utils import log
 from .pipeline.raw_encoder import write_raw_mp4
-
-# Add imports for typing
-from numpy.typing import NDArray
-from typing import Any, List, Tuple, Iterable, Optional, Iterator, Union, cast
-from PIL import Image  # Import PIL directly
-import numpy as np  # Re-added missing numpy import
-from goesvfi.utils import config  # Import config module
+from .pipeline.tiler import merge_tiles, tile_image
 
 # Define a type alias for float numpy arrays
 FloatNDArray = NDArray[np.float32]
@@ -320,9 +324,9 @@ def run_vfi(
                     [img1_fallback],
                     f"error: {exc}",
                 )
-                results_list[task_index] = (
-                    fallback_result  # Store result in correct order
-                )
+                results_list[
+                    task_index
+                ] = fallback_result  # Store result in correct order
                 status = "error"
 
             processed_indices += 1

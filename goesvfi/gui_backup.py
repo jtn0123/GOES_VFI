@@ -19,22 +19,13 @@ import tempfile  # Import tempfile for temporary files handling
 import time  # <-- Import time for time.sleep
 from datetime import datetime
 from pathlib import Path  # Ensure Path is explicitly imported
-from typing import (
-    Any,
-    Dict,
-    Iterator,  # Added Dict, List, cast, TypedDict
-    List,
-    Optional,
-    Tuple,
-    TypedDict,
-    Union,
-    cast,
-)
+from typing import Iterator  # Added Dict, List, cast, TypedDict
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union, cast
 
+from PyQt6.QtCore import QRect  # Added QTimer, QUrl
 from PyQt6.QtCore import (
     QByteArray,
     QPoint,
-    QRect,  # Added QTimer, QUrl
     QSettings,
     QSize,
     Qt,
@@ -719,7 +710,9 @@ class MainWindow(QWidget):
         # Encoder Selection
         self.encoder_label = QLabel(self.tr("Encoder:"))
         self.encoder_combo = QComboBox()
-        self.encoder_combo.addItems([self.tr("RIFE"), self.tr("FFmpeg")])  # Add FFmpeg option
+        self.encoder_combo.addItems(
+            [self.tr("RIFE"), self.tr("FFmpeg")]
+        )  # Add FFmpeg option
 
         # RIFE Model Selection (Only visible if RIFE is selected)
         self.model_label = QLabel(self.tr("RIFE Model:"))
@@ -747,7 +740,9 @@ class MainWindow(QWidget):
         self.rife_thread_spec_edit = QLineEdit("0:0:0:0")  # Default thread spec
         self.rife_thread_spec_edit.setPlaceholderText("e.g., 0:0:0:0 or 1:1:1:1")
         self.rife_thread_spec_edit.setToolTip(
-            self.tr("Specify threads for [encoder]:[decoder]:[pre]:[post]. 0 means auto.")
+            self.tr(
+                "Specify threads for [encoder]:[decoder]:[pre]:[post]. 0 means auto."
+            )
         )
 
         self.rife_tta_spatial_checkbox = QCheckBox(self.tr("TTA Spatial"))
@@ -1166,7 +1161,9 @@ class MainWindow(QWidget):
 
         self.ffmpeg_mi_mode_label = QLabel(self.tr("MI Mode:"))
         self.ffmpeg_mi_mode_combo = QComboBox()
-        self.ffmpeg_mi_mode_combo.addItems([self.tr("dup"), self.tr("blend"), self.tr("mci")])
+        self.ffmpeg_mi_mode_combo.addItems(
+            [self.tr("dup"), self.tr("blend"), self.tr("mci")]
+        )
         interp_layout.addWidget(self.ffmpeg_mi_mode_label, 0, 0)
         interp_layout.addWidget(self.ffmpeg_mi_mode_combo, 0, 1)
 
@@ -1184,7 +1181,20 @@ class MainWindow(QWidget):
 
         self.ffmpeg_me_algo_label = QLabel(self.tr("ME Algorithm:"))
         self.ffmpeg_me_algo_combo = QComboBox()
-        self.ffmpeg_me_algo_combo.addItems([self.tr("(default)"), self.tr("esa"), self.tr("tss"), self.tr("tdls"), self.tr("ntss"), self.tr("fss"), self.tr("ds"), self.tr("hexbs"), self.tr("epzs"), self.tr("umh")])
+        self.ffmpeg_me_algo_combo.addItems(
+            [
+                self.tr("(default)"),
+                self.tr("esa"),
+                self.tr("tss"),
+                self.tr("tdls"),
+                self.tr("ntss"),
+                self.tr("fss"),
+                self.tr("ds"),
+                self.tr("hexbs"),
+                self.tr("epzs"),
+                self.tr("umh"),
+            ]
+        )
         interp_layout.addWidget(self.ffmpeg_me_algo_label, 0, 2)
         interp_layout.addWidget(self.ffmpeg_me_algo_combo, 0, 3)
 
@@ -1213,7 +1223,9 @@ class MainWindow(QWidget):
 
         self.ffmpeg_mb_size_label = QLabel(self.tr("Macroblock Size:"))
         self.ffmpeg_mb_size_combo = QComboBox()
-        self.ffmpeg_mb_size_combo.addItems([self.tr("(default)"), self.tr("8"), self.tr("16")])  # Common values
+        self.ffmpeg_mb_size_combo.addItems(
+            [self.tr("(default)"), self.tr("8"), self.tr("16")]
+        )  # Common values
         interp_layout.addWidget(self.ffmpeg_mb_size_label, 4, 0)
         interp_layout.addWidget(self.ffmpeg_mb_size_combo, 4, 1)
 
@@ -1277,7 +1289,17 @@ class MainWindow(QWidget):
         self.ffmpeg_quality_preset_label = QLabel(self.tr("Preset:"))
         self.ffmpeg_quality_preset_combo = QComboBox()
         # Example presets - map these to CRF/bitrate values
-        self.ffmpeg_quality_preset_combo.addItems([self.tr("Very High (CRF 16)"), self.tr("High (CRF 18)"), self.tr("Medium (CRF 20)"), self.tr("Low (CRF 23)"), self.tr("Very Low (CRF 26)"), self.tr("Custom CRF"), self.tr("Custom Bitrate")])
+        self.ffmpeg_quality_preset_combo.addItems(
+            [
+                self.tr("Very High (CRF 16)"),
+                self.tr("High (CRF 18)"),
+                self.tr("Medium (CRF 20)"),
+                self.tr("Low (CRF 23)"),
+                self.tr("Very Low (CRF 26)"),
+                self.tr("Custom CRF"),
+                self.tr("Custom Bitrate"),
+            ]
+        )
         quality_layout.addWidget(self.ffmpeg_quality_preset_label, 0, 0)
         quality_layout.addWidget(
             self.ffmpeg_quality_preset_combo, 0, 1, 1, 3
@@ -1306,13 +1328,27 @@ class MainWindow(QWidget):
 
         self.ffmpeg_pix_fmt_label = QLabel(self.tr("Pixel Format:"))
         self.ffmpeg_pix_fmt_combo = QComboBox()
-        self.ffmpeg_pix_fmt_combo.addItems([self.tr("yuv444p"), self.tr("yuv420p"), self.tr("yuv422p")])  # Common options
+        self.ffmpeg_pix_fmt_combo.addItems(
+            [self.tr("yuv444p"), self.tr("yuv420p"), self.tr("yuv422p")]
+        )  # Common options
         quality_layout.addWidget(self.ffmpeg_pix_fmt_label, 3, 0)
         quality_layout.addWidget(self.ffmpeg_pix_fmt_combo, 3, 1)
 
         self.ffmpeg_filter_preset_label = QLabel(self.tr("Filter Preset:"))
         self.ffmpeg_filter_preset_combo = QComboBox()
-        self.ffmpeg_filter_preset_combo.addItems([self.tr("ultrafast"), self.tr("superfast"), self.tr("veryfast"), self.tr("faster"), self.tr("fast"), self.tr("medium"), self.tr("slow"), self.tr("slower"), self.tr("veryslow")])
+        self.ffmpeg_filter_preset_combo.addItems(
+            [
+                self.tr("ultrafast"),
+                self.tr("superfast"),
+                self.tr("veryfast"),
+                self.tr("faster"),
+                self.tr("fast"),
+                self.tr("medium"),
+                self.tr("slow"),
+                self.tr("slower"),
+                self.tr("veryslow"),
+            ]
+        )
         quality_layout.addWidget(self.ffmpeg_filter_preset_label, 3, 2)
         quality_layout.addWidget(self.ffmpeg_filter_preset_combo, 3, 3)
 
