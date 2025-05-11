@@ -1,18 +1,20 @@
 # tests/gui/test_main_window.py
-import sys
-import pytest
-from unittest.mock import patch, MagicMock, call
-import pathlib
-from typing import List
-import warnings
-import goesvfi.gui
-from PyQt6.QtWidgets import QApplication, QFileDialog, QMessageBox, QDialog, QWidget
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QRect
-from PyQt6.QtGui import QPixmap, QImage
 import logging
+import pathlib
+import sys
+import warnings
+from typing import List
+from unittest.mock import MagicMock, call, patch
+
+import pytest
+from PyQt6.QtCore import QRect, Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QImage, QPixmap
+from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox, QWidget
+
+import goesvfi.gui
 
 # Import the class to be tested and related utilities
-from goesvfi.gui import MainWindow, CropDialog, ClickableLabel, VfiWorker
+from goesvfi.gui import ClickableLabel, CropDialog, MainWindow, VfiWorker
 from goesvfi.utils.gui_helpers import RifeCapabilityManager
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 
@@ -187,8 +189,8 @@ def window(
         mock_settings_inst.value.side_effect = settings_value_side_effect
 
         main_window = MainWindow()
-        qtbot.wait(10) # Add a small wait to allow event loop processing
-        QApplication.processEvents() # Process events to ensure widgets are fully initialized
+        qtbot.wait(10)  # Add a small wait to allow event loop processing
+        QApplication.processEvents()  # Process events to ensure widgets are fully initialized
         # Mock the signal that causes AttributeError in tests
         # Connect the actual signal to a mock slot instead of patching the signal object
         mock_slot = mocker.MagicMock()

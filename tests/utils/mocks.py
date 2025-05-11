@@ -1,11 +1,11 @@
 # tests/utils/mocks.py
 """Reusable mocks for testing external process interactions."""
 
-import subprocess
-import pathlib
 import io  # Import io
+import pathlib
+import subprocess
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from unittest.mock import MagicMock, Mock
-from typing import List, Optional, Tuple, Union, Dict, Any, Callable
 
 # Add imports for creating PNG test images
 import numpy as np
