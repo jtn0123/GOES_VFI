@@ -1,18 +1,19 @@
 import pathlib
 import subprocess
-import pytest
-from unittest.mock import patch, MagicMock, call, ANY
+from unittest.mock import ANY, MagicMock, call, patch
+
 import numpy as np
+import pytest
 from PIL import Image
 
 from goesvfi.pipeline import run_vfi as run_vfi_mod
-from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 from goesvfi.utils.gui_helpers import RifeCapabilityManager
+from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 from tests.utils.mocks import (
+    MockPopen,
+    create_mock_colourise,
     create_mock_popen,
     create_mock_subprocess_run,
-    create_mock_colourise,
-    MockPopen,
 )
 
 

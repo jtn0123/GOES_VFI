@@ -1,8 +1,10 @@
-import pathlib
-import pytest
-import subprocess  # Import subprocess for exceptions
 import os  # For os.devnull
-from unittest.mock import patch, MagicMock, ANY
+import pathlib
+import subprocess  # Import subprocess for exceptions
+from unittest.mock import ANY, MagicMock, patch
+
+import pytest
+
 from goesvfi.pipeline import encode
 
 # Import the mock utility

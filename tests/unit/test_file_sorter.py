@@ -1,13 +1,14 @@
-import re
-import pytest
 import os
+import re
 import shutil
-from pathlib import Path
-from datetime import datetime
 import time
-from typing import Dict, List, Tuple, Any  # Add type hints
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Tuple  # Add type hints
 
-from goesvfi.file_sorter.sorter import FileSorter, DuplicateMode
+import pytest
+
+from goesvfi.file_sorter.sorter import DuplicateMode, FileSorter
 
 # --- Fixtures ---
 
@@ -99,13 +100,14 @@ def create_files(sorter_dirs):
 
 
 class TestFileSorter:
-
     def test_basic_sort(self, sorter_dirs, create_files):
         """Test basic file sorting into base name folders."""
         source_dir, _, expected_structure, expected_copied = create_files
 
         sorter = FileSorter(dry_run=False, duplicate_mode=DuplicateMode.OVERWRITE)
-        sorter.sort_files(source=str(source_dir), destination=str(source_dir / "converted"))
+        sorter.sort_files(
+            source=str(source_dir), destination=str(source_dir / "converted")
+        )
 
         # Assertions
         converted_dir = source_dir / "converted"
@@ -141,7 +143,9 @@ class TestFileSorter:
         source_dir, files_details, expected_structure, expected_copied = create_files
 
         sorter = FileSorter(dry_run=True, duplicate_mode=DuplicateMode.SKIP)
-        sorter.sort_files(source=str(source_dir), destination=str(source_dir / "converted"))
+        sorter.sort_files(
+            source=str(source_dir), destination=str(source_dir / "converted")
+        )
 
         # Assertions
         converted_dir = source_dir / "converted"
@@ -176,7 +180,9 @@ class TestFileSorter:
         os.utime(existing_file, (existing_mtime, existing_mtime))  # Set mtime
 
         sorter = FileSorter(dry_run=False, duplicate_mode=DuplicateMode.SKIP)
-        sorter.sort_files(source=str(source_dir), destination=str(source_dir / "converted"))
+        sorter.sort_files(
+            source=str(source_dir), destination=str(source_dir / "converted")
+        )
 
         # Assertions
         # One file ('imageA' from 10-00-00) should be skipped.
@@ -203,9 +209,12 @@ class TestFileSorter:
 
     def test_duplicate_overwrite(self, sorter_dirs, create_files):
         """Test duplicate handling: Overwrite."""
-        source_dir, files_details_by_output, expected_structure, expected_copied = (
-            create_files
-        )
+        (
+            source_dir,
+            files_details_by_output,
+            expected_structure,
+            expected_copied,
+        ) = create_files
 
         # Pre-create one destination file to be overwritten
         converted_dir = source_dir / "converted"
@@ -223,7 +232,9 @@ class TestFileSorter:
         ]
 
         sorter = FileSorter(dry_run=False, duplicate_mode=DuplicateMode.OVERWRITE)
-        sorter.sort_files(source=str(source_dir), destination=str(source_dir / "converted"))
+        sorter.sort_files(
+            source=str(source_dir), destination=str(source_dir / "converted")
+        )
 
         # Assertions
         assert sorter.files_copied == expected_copied  # All files attempted to copy
@@ -269,7 +280,9 @@ class TestFileSorter:
         (dest_path / rename_conflict_name_1).write_text("Existing rename 1")
 
         sorter = FileSorter(dry_run=False, duplicate_mode=DuplicateMode.RENAME)
-        sorter.sort_files(source=str(source_dir), destination=str(source_dir / "converted"))
+        sorter.sort_files(
+            source=str(source_dir), destination=str(source_dir / "converted")
+        )
 
         # Assertions
         assert sorter.files_copied == expected_copied  # All files copied (one renamed)
@@ -320,7 +333,9 @@ class TestFileSorter:
         # No need for create_files fixture here
 
         sorter = FileSorter(dry_run=False, duplicate_mode=DuplicateMode.SKIP)
-        sorter.sort_files(source=str(source_dir), destination=str(source_dir / "converted"))
+        sorter.sort_files(
+            source=str(source_dir), destination=str(source_dir / "converted")
+        )
 
         # Assertions
         converted_dir = source_dir / "converted"
@@ -340,7 +355,9 @@ class TestFileSorter:
         sorter = FileSorter(
             dry_run=False, duplicate_mode=DuplicateMode.SKIP
         )  # Using SKIP for variety
-        sorter.sort_files(source=str(source_dir), destination=str(source_dir / "converted"))
+        sorter.sort_files(
+            source=str(source_dir), destination=str(source_dir / "converted")
+        )
 
         # Assertions - files should still be sorted correctly based on folder names
         converted_dir = source_dir / "converted"

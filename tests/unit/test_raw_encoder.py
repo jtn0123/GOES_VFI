@@ -1,13 +1,14 @@
 import pathlib
+import subprocess  # Import subprocess for exceptions
+from unittest.mock import ANY, MagicMock, patch
+
 import numpy as np
 import pytest
-import subprocess  # Import subprocess for exceptions
-from unittest.mock import patch, MagicMock, ANY
+
+from goesvfi.pipeline import raw_encoder
 
 # Import the mock utility
 from tests.utils.mocks import create_mock_subprocess_run
-
-from goesvfi.pipeline import raw_encoder
 
 
 @pytest.fixture
@@ -51,7 +52,6 @@ def test_write_raw_mp4_success(tmp_path, dummy_frames):
             "goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory
         ) as mock_run_patch,
     ):  # Apply factory
-
         # Setup tempdir context manager mock (still needed)
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
         mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
@@ -120,7 +120,6 @@ def test_write_raw_mp4_ffmpeg_error(tmp_path, dummy_frames):
             "goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory
         ) as mock_run_patch,
     ):
-
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
         mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
         mock_tempdir.return_value.__exit__.return_value = None
@@ -171,7 +170,6 @@ def test_write_raw_mp4_ffmpeg_not_found(tmp_path, dummy_frames):
             "goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory
         ) as mock_run_patch,
     ):
-
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
         mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
         mock_tempdir.return_value.__exit__.return_value = None

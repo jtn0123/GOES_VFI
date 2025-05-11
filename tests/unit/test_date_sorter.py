@@ -1,15 +1,15 @@
-import pytest
-from pathlib import Path
-from datetime import datetime, timedelta, timezone
 import os  # Needed for os.utime
+import re  # Need re for simulating file parsing
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import pytest
 
 # Functions to test from the sorter module
-from goesvfi.date_sorter.sorter import (
+from goesvfi.date_sorter.sorter import (  # main as date_sorter_main,  # Removed as main function no longer exists
     detect_interval,
     format_calendar_output,
-    # main as date_sorter_main,  # Removed as main function no longer exists
 )
-import re  # Need re for simulating file parsing
 
 # --- Fixtures ---
 

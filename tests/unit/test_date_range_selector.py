@@ -3,16 +3,18 @@ Unit tests for the unified date range selector component.
 """
 
 import sys
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
+
 import pytest
 from PyQt6.QtCore import QDateTime
 from PyQt6.QtWidgets import QApplication
-from tests.utils.pyqt_async_test import PyQtAsyncTestCase
+
 from goesvfi.integrity_check.date_range_selector import (
+    CompactDateRangeSelector,
     UnifiedDateRangeSelector,
-    CompactDateRangeSelector
 )
+from tests.utils.pyqt_async_test import PyQtAsyncTestCase
 
 # Add repository root to Python path
 repo_root = str(Path(__file__).parent.parent.parent)
@@ -62,10 +64,16 @@ class TestUnifiedDateRangeSelector(PyQtAsyncTestCase):
         new_end = now
 
         # Convert to QDateTime
-        q_start = QDateTime(new_start.year, new_start.month, new_start.day,
-                            new_start.hour, new_start.minute)
-        q_end = QDateTime(new_end.year, new_end.month, new_end.day,
-                          new_end.hour, new_end.minute)
+        q_start = QDateTime(
+            new_start.year,
+            new_start.month,
+            new_start.day,
+            new_start.hour,
+            new_start.minute,
+        )
+        q_end = QDateTime(
+            new_end.year, new_end.month, new_end.day, new_end.hour, new_end.minute
+        )
 
         # Set dates
         self.selector.start_date_edit.setDateTime(q_start)
@@ -84,7 +92,9 @@ class TestUnifiedDateRangeSelector(PyQtAsyncTestCase):
         self.assertEqual(end.date(), new_end.date())
 
         # Verify signal was emitted
-        self.assertEqual(len(self.emitted_ranges), 2)  # Two changes should emit two signals
+        self.assertEqual(
+            len(self.emitted_ranges), 2
+        )  # Two changes should emit two signals
 
     def test_preset_applications(self) -> None:
         """Test applying date presets."""
@@ -224,12 +234,9 @@ class TestCompactDateRangeSelector(PyQtAsyncTestCase):
         # Check that both day numbers appear (either as '1' or '01' and '15')
         self.assertTrue(
             "1" in display_text or "01" in display_text,
-            f"Day '1' or '01' not found in: {display_text}"
+            f"Day '1' or '01' not found in: {display_text}",
         )
-        self.assertTrue(
-            "15" in display_text,
-            f"Day '15' not found in: {display_text}"
-        )
+        self.assertTrue("15" in display_text, f"Day '15' not found in: {display_text}")
 
         # No signal should be emitted when using set_date_range
         self.assertEqual(len(self.emitted_ranges), 0)

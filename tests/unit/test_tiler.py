@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
-from goesvfi.pipeline.tiler import tile_image, merge_tiles
+
+from goesvfi.pipeline.tiler import merge_tiles, tile_image
 
 
 def test_tile_image_basic():

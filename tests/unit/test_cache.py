@@ -1,11 +1,12 @@
 import pathlib
+from unittest.mock import MagicMock, PropertyMock, patch
+
 import numpy as np
 import pytest
-from unittest.mock import patch, MagicMock, PropertyMock
+from PyQt6.QtWidgets import QApplication
 
 from goesvfi.pipeline import cache
 from goesvfi.utils.log import get_logger
-from PyQt6.QtWidgets import QApplication
 
 LOGGER = get_logger(__name__)
 

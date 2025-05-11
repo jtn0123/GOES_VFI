@@ -1,7 +1,8 @@
-import pytest
-import numpy as np
 import subprocess  # Import subprocess for exceptions
-from unittest.mock import patch, MagicMock, call, ANY
+from unittest.mock import ANY, MagicMock, call, patch
+
+import numpy as np
+import pytest
 
 import goesvfi.pipeline.interpolate as interpolate_mod
 
@@ -33,7 +34,6 @@ def test_interpolate_pair_invokes_command_and_file_ops(tmp_path, dummy_img):
             "goesvfi.pipeline.interpolate.pathlib.Path.exists", return_value=True
         ) as mock_exists,
     ):  # Give exists a name
-
         # --- Setup Mocks ---
         # Mock Command Builder (as before)
         mock_cmd_builder = MagicMock()
@@ -73,7 +73,6 @@ def test_interpolate_pair_invokes_command_and_file_ops(tmp_path, dummy_img):
         with patch(
             "numpy.array", return_value=np.ones((4, 4, 3), dtype=np.uint8)
         ) as mock_np_array:
-
             # --- Setup Backend ---
             # Create dummy executable file before creating backend
             dummy_exe_path = tmp_path / "rife-cli"
@@ -117,7 +116,6 @@ def test_interpolate_pair_raises_on_subprocess_error(tmp_path, dummy_img):
         patch("goesvfi.pipeline.interpolate.shutil.rmtree") as mock_rmtree,
         patch("goesvfi.pipeline.interpolate.pathlib.Path.exists", return_value=True),
     ):  # Keep exists mock simple
-
         mock_cmd_builder = MagicMock()
         expected_rife_cmd = ["rife", "args"]
         mock_cmd_builder.build_command.return_value = expected_rife_cmd

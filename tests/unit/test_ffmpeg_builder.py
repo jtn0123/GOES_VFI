@@ -1,11 +1,11 @@
-import unittest
-import pathlib
 import os
+import pathlib
+import unittest
+
 from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
 
 
 class TestFFmpegCommandBuilder(unittest.TestCase):
-
     def setUp(self):
         """Set up a temporary directory and file paths for testing."""
         self.test_dir = pathlib.Path("test_temp_dir")

@@ -1,21 +1,25 @@
-from PyQt6.QtCore import QObject, pyqtSignal
 import sys
+
+from PyQt6.QtCore import QObject, pyqtSignal
+
 
 class Test(QObject):
     signal = pyqtSignal()
-    
+
     def emit_signal(self):
-        print('Emitting signal')
+        print("Emitting signal")
         self.signal.emit()
-        print('Signal emitted')
+        print("Signal emitted")
+
 
 def handler():
-    print('Handler called')
+    print("Handler called")
 
-print('Creating object')
+
+print("Creating object")
 obj = Test()
-print('Connecting signal to handler')
+print("Connecting signal to handler")
 obj.signal.connect(handler)
-print('Connection established')
+print("Connection established")
 obj.emit_signal()
-print('Done')
+print("Done")
