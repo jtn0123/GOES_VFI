@@ -19,7 +19,7 @@
 ## Failing Tests: 14/42 (33%)
 
 ### Remote Stores Tests: 8/14 PASSING, 6/14 FAILING ✗
-- `tests/unit/test_remote_stores.py`: 
+- `tests/unit/test_remote_stores.py`:
   - CDN Store Issues:
     - `test_close`: Expected 'close' to have been called once. Called 0 times.
     - `test_download`: TypeError: object AsyncMock can't be used in 'await' expression

@@ -5,15 +5,15 @@ This script tests the RifeCapabilityDetector and RifeCommandBuilder classes
 to ensure they correctly detect and handle the capabilities of the RIFE CLI executable.
 """
 
-import pathlib
-import pytest
-import sys
-import os
 import json
-import subprocess  # Import subprocess for exceptions
-from unittest.mock import patch, MagicMock
 import logging
-from unittest.mock import call
+import os
+import pathlib
+import subprocess  # Import subprocess for exceptions
+import sys
+from unittest.mock import MagicMock, call, patch
+
+import pytest
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -26,7 +26,6 @@ from goesvfi.utils.rife_analyzer import (
 
 # Import the mock utility
 from tests.utils.mocks import create_mock_subprocess_run
-
 
 # Sample help text for different RIFE CLI versions
 SAMPLE_HELP_TEXT_FULL = """

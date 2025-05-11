@@ -5,12 +5,12 @@ This file defines shared fixtures, hooks, and plugins for the test suite.
 Fixtures defined here are automatically available to all tests.
 """
 
-import pytest
-import tempfile
 import pathlib
 import shutil
 import sys
+import tempfile
 
+import pytest
 
 # More robust solution to prevent pytest-qt segmentation faults
 
@@ -44,5 +44,3 @@ def project_root():
 
 # Add more shared fixtures here as needed, e.g., for sample data,
 # mocked objects, or application instances.
-
-

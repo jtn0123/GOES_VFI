@@ -42,12 +42,12 @@
 1. CacheDB implementation
    - Fixed SQL schema initialization to use separate statements
    - Added `add_timestamp`, `get_timestamps`, and `timestamp_exists` methods
-   
+
 2. TimeIndex
    - Updated URL generation to match test expectations for both CDN and S3
    - Fixed timestamp extraction to handle both formats
    - Fixed timezone handling in is_recent method
-   
+
 3. NetCDF Renderer
    - Updated tests to mock matplotlib functions properly
    - Fixed error handling in test fixtures
