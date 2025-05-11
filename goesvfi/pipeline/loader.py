@@ -1,7 +1,9 @@
 # TODO: discover + sort input frames
 from __future__ import annotations
+
 import pathlib
 from typing import List
+
 from goesvfi.utils import config  # Import config module
 
 SUPPORTED_EXT = set(

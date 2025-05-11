@@ -9,7 +9,7 @@ and hardware/software backends for the GOES_VFI pipeline.
 
 import os
 import pathlib
-from typing import Optional, List
+from typing import List, Optional
 
 
 class FFmpegCommandBuilder:
@@ -169,6 +169,7 @@ class FFmpegCommandBuilder:
         if not self._input_path or not self._output_path or not self._encoder:
             raise ValueError("Input path, output path, and encoder must be set.")
 
+        # Creating a new list to avoid modifying the original command template
         cmd = list(self._command)  # Start with base command elements
 
         # Handle "None" encoder (stream copy)

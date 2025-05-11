@@ -156,176 +156,175 @@ class VfiWorker(QThread):
         # Sanchez temp dir from MainWindow
         self.sanchez_gui_temp_dir = sanchez_gui_temp_dir
 
-    # Helper methods for the run method
-    def _get_rife_executable(self) -> Optional[pathlib.Path]:
-        """
-        Find the RIFE executable path for the current model key.
-
-        Returns:
-            Path to RIFE executable or None if not found/error
-        """
-        if self.encoder != "RIFE":
-            return None
-
-        try:
-            # Pass the model_key to find_rife_executable
-            rife_exe = config.find_rife_executable(self.model_key)
-            if rife_exe is None:
-                raise FileNotFoundError("RIFE executable not found.")
-
-            LOGGER.debug(f"Found RIFE executable at: {rife_exe}")
-            return rife_exe
-        except FileNotFoundError as e:
-            self.error.emit(f"RIFE executable not found: {e}")
-            LOGGER.error(f"RIFE executable not found: {e}")
-            return None
-        except Exception as e:
-            self.error.emit(f"Error finding RIFE executable: {e}")
-            LOGGER.exception("Error finding RIFE executable:")
-            return None
-
-    def _prepare_ffmpeg_settings(self) -> Dict[str, Any]:
-        """
-        Create a dictionary of FFmpeg settings from worker attributes.
-
-        Returns:
-            Dictionary with all FFmpeg settings
-        """
-        return {
-            "use_ffmpeg_interp": self.use_ffmpeg_interp,
-            "filter_preset": self.filter_preset,
-            "mi_mode": self.mi_mode,
-            "mc_mode": self.mc_mode,
-            "me_mode": self.me_mode,
-            "me_algo": self.me_algo,
-            "search_param": self.search_param,
-            "scd_mode": self.scd_mode,
-            "scd_threshold": self.scd_threshold,
-            "minter_mb_size": self.minter_mb_size,
-            "minter_vsbmc": self.minter_vsbmc,
-            "apply_unsharp": self.apply_unsharp,
-            "unsharp_lx": self.unsharp_lx,
-            "unsharp_ly": self.unsharp_ly,
-            "unsharp_la": self.unsharp_la,
-            "unsharp_cx": self.unsharp_cx,
-            "unsharp_cy": self.unsharp_cy,
-            "unsharp_ca": self.unsharp_ca,
-            "crf": self.crf,
-            "bitrate_kbps": self.bitrate_kbps,
-            "bufsize_kb": self.bufsize_kb,
-            "pix_fmt": self.pix_fmt,
-        }
-
-    def _prepare_rife_settings(self) -> Dict[str, Any]:
-        """
-        Create a dictionary of RIFE settings from worker attributes.
-
-        Returns:
-            Dictionary with all RIFE settings
-        """
-        return {
-            "model_key": self.model_key,
-            "tile_size": self.rife_tile_size if self.rife_tile_enable else None,
-            "uhd_mode": self.rife_uhd_mode,
-            "thread_spec": self.rife_thread_spec,
-            "tta_spatial": self.rife_tta_spatial,
-            "tta_temporal": self.rife_tta_temporal,
-        }
-
-    def _prepare_sanchez_settings(self) -> Dict[str, Any]:
-        """
-        Create a dictionary of Sanchez settings from worker attributes.
-
-        Returns:
-            Dictionary with all Sanchez settings
-        """
-        # Determine if false_colour should be forced
-        is_sanchez_encoder = self.encoder == "Sanchez"
-        false_colour = True if is_sanchez_encoder else self.false_colour
-
-        if is_sanchez_encoder and not self.false_colour:
-            LOGGER.info("Forcing false_colour=True for Sanchez encoder")
-
-        return {
-            "false_colour": false_colour,
-            "res_km": self.res_km,
-            "temp_dir": self.sanchez_gui_temp_dir,
-        }
-
-    def _process_run_vfi_output(self, gen: Iterator[Union[Tuple[int, int, float], pathlib.Path, str]]) -> None:
-        """
-        Process output from the run_vfi generator.
-
-        Args:
-            gen: Generator from run_vfi function
-        """
-        final_mp4_path = None
-        for progress_data in gen:
-            if isinstance(progress_data, tuple) and len(progress_data) == 3:
-                # It's a progress update (current, total, eta)
-                current, total, eta = progress_data
-                self.progress.emit(current, total, eta)
-            elif isinstance(progress_data, pathlib.Path):
-                # It's the final output path
-                final_mp4_path = progress_data
-            elif isinstance(progress_data, str) and progress_data.startswith("ERROR:"):
-                # It's an error message
-                error_msg = progress_data[6:].strip()
-                self.error.emit(error_msg)
-                LOGGER.error(f"Error from run_vfi: {progress_data}")
-                return  # Exit method on error
-            else:
-                LOGGER.warning(f"Unexpected data from run_vfi generator: {progress_data}")
-
-        # Handle the final result
-        if final_mp4_path:
-            LOGGER.debug(f"run_vfi finished, emitting finished signal with: {final_mp4_path}")
-            self.finished.emit(final_mp4_path)
-        else:
-            # If gen completed without yielding a path, it means an error occurred
-            # or the process was cancelled. An error should have been emitted already.
-            LOGGER.warning("run_vfi generator finished without yielding a final path.")
-            # No need to emit a generic error if one was already emitted
-
+    # 3. Extract repeated code patterns into utility functions
+    # 2. Consider using helper classes to group related functionality
+    # 1. Extract conditional blocks into separate helper functions
+    # Consider breaking into smaller helper functions for:
+    # TODO: This function has high cyclomatic complexity (17) and should be refactored.
     def run(self) -> None:
-        """
-        Run the VFI processing task.
-        """
         LOGGER.debug("Entering VfiWorker.run...")
         try:
-            # 1. Find the RIFE executable if needed
-            rife_exe = self._get_rife_executable()
-            if self.encoder == "RIFE" and rife_exe is None:
-                return  # Exit if RIFE exe not found (error already emitted)
+            # Determine the image processor based on the selected encoder
+            if self.encoder == "RIFE":
+                # Use the RIFE image processor
+                # The RIFE processor is expected to handle its own model loading
+                # based on the model_key provided.
+                # We need to pass the RIFE-specific settings to the processor.
+                # Assuming RIFEProcessor exists and implements ImageProcessor
+                # from goesvfi.pipeline.rife_processor import RIFEProcessor # Need to import this
+                # processor: ImageProcessor = RIFEProcessor(
+                #     model_key=self.model_key,
+                #     tile_size=self.rife_tile_size if self.rife_tile_enable else None,
+                #     uhd_mode=self.rife_uhd_mode,
+                #     thread_spec=self.rife_thread_spec,
+                #     tta_spatial=self.rife_tta_spatial,
+                #     tta_temporal=self.rife_tta_temporal,
+                # )
+                # For now, using a placeholder or assuming the pipeline handles this
+                # If the pipeline run_vfi handles processor instantiation, we don't need this here.
+                # Let's assume run_vfi handles it for now based on the encoder type.
+                processor = None  # Placeholder, actual processor handled by run_vfi
+            elif self.encoder == "Sanchez":
+                # Use the Sanchez image processor
+                # The Sanchez processor needs the false_colour and res_km settings
+                # from goesvfi.pipeline.sanchez_processor import SanchezProcessor # Already imported at top
+                # processor: ImageProcessor = SanchezProcessor(
+                #     false_colour=self.false_colour,
+                #     res_km=self.res_km,
+                #     temp_dir=tempfile.gettempdir() # Sanchez needs a temp dir
+                # )
+                processor = None  # Placeholder, actual processor handled by run_vfi
+            elif self.encoder == "FFmpeg":
+                processor = None  # Placeholder, actual processor handled by run_vfi
+            else:
+                raise ValueError(f"Unknown encoder type: {self.encoder}")
 
-            # 2. Prepare parameter dictionaries
-            ffmpeg_settings = self._prepare_ffmpeg_settings()
-            rife_settings = self._prepare_rife_settings()
-            sanchez_settings = self._prepare_sanchez_settings()
+            # Find the RIFE executable path if RIFE is selected
+            rife_exe = None
+            if self.encoder == "RIFE":
+                try:
+                    # Pass the model_key to find_rife_executable
+                    rife_exe = config.find_rife_executable(self.model_key)
+                    if rife_exe is None:
+                        raise FileNotFoundError("RIFE executable not found.")
+                    LOGGER.debug(f"Found RIFE executable at: {rife_exe}")
+                except FileNotFoundError as e:
+                    self.error.emit(f"RIFE executable not found: {e}")
+                    LOGGER.error(f"RIFE executable not found: {e}")
+                    return  # Exit run method on error
+                except Exception as e:
+                    self.error.emit(f"Error finding RIFE executable: {e}")
+                    LOGGER.exception("Error finding RIFE executable:")
+                    return  # Exit run method on error
 
-            # 3. Call run_vfi with all parameters
+            # Run the VFI pipeline
+            # The run_vfi function is expected to yield progress updates
+            # and return the path to the final MP4 file.
+            # It should also handle the instantiation of the correct processor
+            # based on the encoder type and pass the relevant settings.
+            # from goesvfi.pipeline.run_vfi import run_vfi # Need to import this - No, already in this file
+
+            # Ensure rife_exe is not None before calling run_vfi
+            # Mypy doesn't infer this from the earlier return statements
+            assert rife_exe is not None
             LOGGER.debug("Calling run_vfi...")
+
+            # Force false_colour=True when encoder is Sanchez
+            is_sanchez_encoder = self.encoder == "Sanchez"
+            if is_sanchez_encoder:
+                LOGGER.info("Forcing false_colour=True for Sanchez encoder")
+
             gen = run_vfi(
                 folder=self.in_dir,
                 output_mp4_path=self.out_file_path,
-                rife_exe_path=rife_exe,  # This will be None for non-RIFE encoders
+                rife_exe_path=rife_exe,  # Pass the found executable path positionally
                 fps=self.fps,
-                num_intermediate_frames=self.mid_count,
+                num_intermediate_frames=self.mid_count,  # Use mid_count for num_intermediate_frames
                 max_workers=self.max_workers,
-                encoder_type=self.encoder,
-                false_colour=sanchez_settings["false_colour"],
-                res_km=self.res_km,
-                ffmpeg_settings=ffmpeg_settings,
-                rife_settings=rife_settings,
-                sanchez_settings=sanchez_settings,
+                # Pass all relevant settings for all encoders
+                encoder_type=self.encoder,  # Pass encoder type explicitly
+                # Force false_colour=True when encoder is Sanchez
+                false_colour=True
+                if is_sanchez_encoder
+                else self.false_colour,  # Override false_colour when using Sanchez encoder
+                ffmpeg_settings={
+                    "use_ffmpeg_interp": self.use_ffmpeg_interp,
+                    "filter_preset": self.filter_preset,
+                    "mi_mode": self.mi_mode,
+                    "mc_mode": self.mc_mode,
+                    "me_mode": self.me_mode,
+                    "me_algo": self.me_algo,
+                    "search_param": self.search_param,
+                    "scd_mode": self.scd_mode,
+                    "scd_threshold": self.scd_threshold,
+                    "minter_mb_size": self.minter_mb_size,
+                    "minter_vsbmc": self.minter_vsbmc,
+                    "apply_unsharp": self.apply_unsharp,
+                    "unsharp_lx": self.unsharp_lx,
+                    "unsharp_ly": self.unsharp_ly,
+                    "unsharp_la": self.unsharp_la,
+                    "unsharp_cx": self.unsharp_cx,
+                    "unsharp_cy": self.unsharp_cy,
+                    "unsharp_ca": self.unsharp_ca,
+                    "crf": self.crf,
+                    "bitrate_kbps": self.bitrate_kbps,
+                    "bufsize_kb": self.bufsize_kb,
+                    "pix_fmt": self.pix_fmt,
+                },
+                rife_settings={
+                    "model_key": self.model_key,
+                    "tile_size": self.rife_tile_size if self.rife_tile_enable else None,
+                    "uhd_mode": self.rife_uhd_mode,
+                    "thread_spec": self.rife_thread_spec,
+                    "tta_spatial": self.rife_tta_spatial,
+                    "tta_temporal": self.rife_tta_temporal,
+                    # "rife_exe": rife_exe, # Removed: Passed positionally now
+                },
+                sanchez_settings={
+                    "false_colour": self.false_colour,
+                    "res_km": self.res_km,
+                    # Pass the Sanchez temp dir from the worker's init
+                    "temp_dir": self.sanchez_gui_temp_dir,
+                },
                 skip_model=self.skip_model,
-                crop_rect_xywh=self.crop_rect,
+                crop_rect_xywh=self.crop_rect,  # Pass crop_rect with correct name
                 debug_mode=self.debug_mode,
             )
 
-            # 4. Process output from run_vfi
-            self._process_run_vfi_output(gen)
+            final_mp4_path = None
+            for progress_data in gen:
+                if isinstance(progress_data, tuple) and len(progress_data) == 3:
+                    # It's a progress update (current, total, eta)
+                    current, total, eta = progress_data
+                    self.progress.emit(current, total, eta)
+                elif isinstance(progress_data, pathlib.Path):
+                    # It's the final output path
+                    final_mp4_path = progress_data
+                elif isinstance(progress_data, str) and progress_data.startswith(
+                    "ERROR:"
+                ):
+                    # It's an error message
+                    self.error.emit(progress_data[6:].strip())  # Emit error message
+                    LOGGER.error(f"Error from run_vfi: {progress_data}")
+                    return  # Exit run method on error
+                else:
+                    LOGGER.warning(
+                        f"Unexpected data from run_vfi generator: {progress_data}"
+                    )
 
+            if final_mp4_path:
+                LOGGER.debug(
+                    f"run_vfi finished, emitting finished signal with: {final_mp4_path}"
+                )
+                self.finished.emit(final_mp4_path)
+            else:
+                # If gen completed without yielding a path, it means an error occurred
+                # or the process was cancelled. An error should have been emitted already.
+                LOGGER.warning(
+                    "run_vfi generator finished without yielding a final path."
+                )
+                # If no error was emitted, emit a generic error
+                # self.error.emit("Video processing failed or was cancelled.") # Avoid duplicate error if one was already emitted")
         except Exception as e:
             LOGGER.exception("Error during VFI processing:")
             self.error.emit(f"Video processing failed: {e}")
@@ -393,253 +392,12 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
 # --- End Helper ---
 
 
-# Helper functions for _load_process_image
-
-def _validate_processor_mode(
-    path: pathlib.Path,
-    false_colour: bool,
-    crop_rect_pil: Optional[Tuple[int, int, int, int]],
-    image_loader: Optional[ImageLoader],
-    sanchez_processor: Optional[SanchezProcessor],
-    image_cropper: Optional[ImageCropper]
-) -> bool:
-    """
-    Validate if processor mode can be used based on available processors.
-
-    Args:
-        path: Path to the image file
-        false_colour: Whether Sanchez false color is requested
-        crop_rect_pil: Optional crop rectangle
-        image_loader: Optional ImageLoader instance
-        sanchez_processor: Optional SanchezProcessor instance
-        image_cropper: Optional ImageCropper instance
-
-    Returns:
-        bool: Whether processor mode should be used
-    """
-    if image_loader is None:
-        LOGGER.debug(f"Processor mode disabled for {path.name}: No ImageLoader provided")
-        return False
-
-    # Check if required processors are available
-    if false_colour and sanchez_processor is None:
-        LOGGER.warning(
-            "false_colour=True but no sanchez_processor provided, falling back to direct mode"
-        )
-        return False
-
-    if crop_rect_pil is not None and image_cropper is None:
-        LOGGER.warning(
-            "crop_rect_pil provided but no image_cropper provided, falling back to direct mode"
-        )
-        return False
-
-    LOGGER.debug(f"Using processor mode for image: {path.name}")
-    return True
-
-def _process_with_processors(
-    path: pathlib.Path,
-    false_colour: bool,
-    res_km: int,
-    crop_rect_pil: Optional[Tuple[int, int, int, int]],
-    image_loader: ImageLoader,
-    sanchez_processor: Optional[SanchezProcessor],
-    image_cropper: Optional[ImageCropper]
-) -> Optional[Image.Image]:
-    """
-    Process image using the image processor objects.
-
-    Args:
-        path: Path to the image file
-        false_colour: Whether to apply false color
-        res_km: Resolution in km for Sanchez
-        crop_rect_pil: Optional crop rectangle in PIL format
-        image_loader: ImageLoader instance
-        sanchez_processor: Optional SanchezProcessor instance
-        image_cropper: Optional ImageCropper instance
-
-    Returns:
-        Processed PIL Image or None if processing failed
-    """
-    try:
-        # 1. Load image using ImageLoader
-        image_data = image_loader.load(str(path))
-
-        # 2. Apply Sanchez if requested
-        if false_colour:
-            LOGGER.debug(
-                f"Applying Sanchez to image using SanchezProcessor: {path.name} (res={res_km}km)"
-            )
-            # Make sure to add filename to metadata for Sanchez
-            if "filename" not in image_data.metadata:
-                image_data.metadata["filename"] = path.name
-
-            # Process image with Sanchez
-            if sanchez_processor is None:
-                raise ValueError("SanchezProcessor is None but false_colour is True")
-
-            image_data = sanchez_processor.process(image_data, res_km=res_km)
-
-        # 3. Apply crop if requested
-        if crop_rect_pil:
-            LOGGER.debug(f"Applying crop {crop_rect_pil} to image: {path.name}")
-            if image_cropper is None:
-                raise ValueError("ImageCropper is None but crop_rect_pil is provided")
-
-            image_data = image_cropper.crop(image_data, crop_rect_pil)
-
-        # 4. Convert to PIL Image for return
-        if isinstance(image_data.image_data, Image.Image):
-            return image_data.image_data
-        elif isinstance(image_data.image_data, np.ndarray):
-            return Image.fromarray(image_data.image_data)
-        else:
-            LOGGER.error(f"Unexpected image data type: {type(image_data.image_data)}")
-            return None
-
-    except Exception as e:
-        LOGGER.exception(f"Error in processor mode: {e}")
-        return None
-
-def _apply_sanchez_direct_mode(
-    img: Image.Image,
-    path: pathlib.Path,
-    false_colour: bool,
-    res_km: int,
-    sanchez_temp_dir: pathlib.Path
-) -> Image.Image:
-    """
-    Apply Sanchez color processing in direct mode.
-
-    Args:
-        img: Original PIL Image
-        path: Original file path
-        false_colour: Whether to apply false color
-        res_km: Resolution in km for Sanchez
-        sanchez_temp_dir: Temporary directory for Sanchez files
-
-    Returns:
-        Processed PIL Image (either colourised or original if processing failed)
-    """
-    if not false_colour:
-        return img
-
-    img_stem = path.stem
-    # Use the ORIGINAL stem for the input file to satisfy Sanchez
-    temp_in_path = sanchez_temp_dir / f"{img_stem}.png"
-    # Keep unique name for the output file
-    temp_out_path = sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
-
-    try:
-        # Ensure sanchez temp directory exists
-        os.makedirs(sanchez_temp_dir, exist_ok=True)
-
-        LOGGER.debug(f"Saving original for Sanchez: {temp_in_path}")
-        img.save(temp_in_path, "PNG")  # Save with correct name
-
-        LOGGER.info(
-            f"Running Sanchez on {temp_in_path.name} (res={res_km}km) -> {temp_out_path.name}"
-        )
-        # Ensure colourise handles Path objects and receives correct input path
-        colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
-
-        # Check if output file exists before trying to open it
-        if temp_out_path.exists():
-            LOGGER.debug(f"Loading Sanchez output: {temp_out_path}")
-            img_colourised = Image.open(temp_out_path)
-            # Replace original img object with colourised one
-            return img_colourised
-        else:
-            LOGGER.error(f"Sanchez output file not found: {temp_out_path}")
-            # Output files in directory
-            try:
-                dir_files = list(sanchez_temp_dir.glob("*"))
-                LOGGER.error(f"Files in temp directory: {dir_files}")
-            except Exception as dir_err:
-                LOGGER.error(f"Error listing temp directory: {dir_err}")
-            # Keep original image if output file not found
-            return img
-    except Exception as e:
-        LOGGER.error(
-            f"Sanchez colourise failed for {path.name}: {e}", exc_info=True
-        )
-        # Keep original image if colourise fails
-        return img
-    finally:
-        # Clean up temp files (both input and output)
-        if temp_in_path.exists():
-            temp_in_path.unlink(missing_ok=True)
-        if temp_out_path.exists():
-            temp_out_path.unlink(missing_ok=True)
-
-def _apply_crop_direct_mode(
-    img: Image.Image,
-    path: pathlib.Path,
-    crop_rect_pil: Optional[Tuple[int, int, int, int]]
-) -> Image.Image:
-    """
-    Apply cropping in direct mode.
-
-    Args:
-        img: PIL Image to crop
-        path: Original file path (for logging)
-        crop_rect_pil: PIL format crop rectangle (left, upper, right, lower)
-
-    Returns:
-        Cropped PIL Image or original if cropping failed
-    """
-    if crop_rect_pil is None:
-        return img
-
-    try:
-        LOGGER.debug(
-            f"Applying crop {crop_rect_pil} to image from {path.name}."
-        )
-        img_cropped = img.crop(crop_rect_pil)
-        return img_cropped
-    except Exception as e:
-        LOGGER.error(
-            f"Failed to crop image {path.name} with rect {crop_rect_pil}: {e}",
-            exc_info=True,
-        )
-        # Return uncropped since validation will fail later if needed
-        return img
-
-def _process_direct_mode(
-    path: pathlib.Path,
-    false_colour: bool,
-    res_km: int,
-    crop_rect_pil: Optional[Tuple[int, int, int, int]],
-    sanchez_temp_dir: pathlib.Path
-) -> Image.Image:
-    """
-    Process image using direct file operations (legacy mode).
-
-    Args:
-        path: Path to the image file
-        false_colour: Whether to apply Sanchez colourisation
-        res_km: Resolution in km for Sanchez
-        crop_rect_pil: Optional crop rectangle
-        sanchez_temp_dir: Temporary directory for Sanchez files
-
-    Returns:
-        Processed PIL Image
-    """
-    LOGGER.debug(f"Using direct mode for image: {path.name}")
-
-    # 1. Load the image
-    img = Image.open(path)  # Always returns an Image.Image
-
-    # 2. Apply Sanchez (if requested)
-    img = _apply_sanchez_direct_mode(img, path, false_colour, res_km, sanchez_temp_dir)
-
-    # 3. Apply crop (if requested)
-    img = _apply_crop_direct_mode(img, path, crop_rect_pil)
-
-    return img
-
-# --- Main function with reduced complexity ---
-def _load_process_image(
+# --- Add Sanchez/Crop Helper ---
+    # 2. Create helper functions for different data categories
+    # 1. Separate serialization logic from business logic
+    # Consider breaking into smaller helper functions for:
+    # TODO: This function has high cyclomatic complexity (25) and should be refactored.
+def _load_process_image(  # type: ignore[return]
     path: pathlib.Path,
     crop_rect_pil: Optional[Tuple[int, int, int, int]],
     false_colour: bool,
@@ -650,7 +408,10 @@ def _load_process_image(
     image_cropper: Optional[ImageCropper] = None,
 ) -> Image.Image:
     """
-    Loads image, optionally applies Sanchez, optionally crops.
+    This function always returns an Image.Image object, either from the processor-based
+    approach or by falling back to the direct approach if the processor approach fails.
+    """
+    """Loads image, optionally applies Sanchez, optionally crops.
 
     This function can work in two modes:
     1. Using the processor objects directly (preferred, consistent with preview processing)
@@ -669,28 +430,153 @@ def _load_process_image(
     Returns:
         Processed PIL Image.
     """
-    # Log processing parameters
+    # Add explicit debug output
+    print(
+        f"_load_process_image: Processing {path.name} - false_colour={false_colour}, res_km={res_km}"
+    )
     LOGGER.info(
         f"_load_process_image: Processing {path.name} - false_colour={false_colour}, res_km={res_km}"
     )
 
-    # 1. Determine processing mode
-    use_processor_mode = _validate_processor_mode(
-        path, false_colour, crop_rect_pil, image_loader, sanchez_processor, image_cropper
-    )
+    # Check if we should use processor mode (preferred for consistency with preview)
+    use_processor_mode = image_loader is not None
 
-    # 2. Process image using preferred mode
-    if use_processor_mode and image_loader is not None:
-        # Try processor mode first
-        result = _process_with_processors(
-            path, false_colour, res_km, crop_rect_pil,
-            image_loader, sanchez_processor, image_cropper
-        )
-        if result is not None:
-            return result
+    if use_processor_mode:
+        # Processor mode - Uses the same approach as preview images
+        LOGGER.debug(f"Using processor mode for image: {path.name}")
 
-    # 3. Fall back to direct mode if processor mode failed or was not available
-    return _process_direct_mode(path, false_colour, res_km, crop_rect_pil, sanchez_temp_dir)
+        # Sanity checks
+        if false_colour and sanchez_processor is None:
+            LOGGER.warning(
+                "false_colour=True but no sanchez_processor provided, falling back to direct mode"
+            )
+            use_processor_mode = False
+        elif crop_rect_pil is not None and image_cropper is None:
+            LOGGER.warning(
+                "crop_rect_pil provided but no image_cropper provided, falling back to direct mode"
+            )
+            use_processor_mode = False
+
+    if use_processor_mode:
+        # Modern processor-based approach (same as preview)
+        try:
+            # 1. Load image using ImageLoader
+            if image_loader is None:
+                raise ValueError("ImageLoader is None but use_processor_mode is True")
+            image_data = image_loader.load(str(path))
+
+            # 2. Apply Sanchez if requested
+            if false_colour:
+                LOGGER.debug(
+                    f"Applying Sanchez to image using SanchezProcessor: {path.name} (res={res_km}km)"
+                )
+                # Make sure to add filename to metadata for Sanchez
+                if "filename" not in image_data.metadata:
+                    image_data.metadata["filename"] = path.name
+                # Process image with Sanchez
+                if sanchez_processor is None:
+                    raise ValueError(
+                        "SanchezProcessor is None but false_colour is True"
+                    )
+                image_data = sanchez_processor.process(image_data, res_km=res_km)
+
+            # 3. Apply crop if requested
+            if crop_rect_pil:
+                LOGGER.debug(f"Applying crop {crop_rect_pil} to image: {path.name}")
+                if image_cropper is None:
+                    raise ValueError(
+                        "ImageCropper is None but crop_rect_pil is provided"
+                    )
+                image_data = image_cropper.crop(image_data, crop_rect_pil)
+
+            # 4. Convert to PIL Image for return
+            if isinstance(image_data.image_data, Image.Image):
+                return image_data.image_data
+            elif isinstance(image_data.image_data, np.ndarray):
+                return Image.fromarray(image_data.image_data)
+            else:
+                LOGGER.error(
+                    f"Unexpected image data type: {type(image_data.image_data)}"
+                )
+                # Fall back to direct mode
+                use_processor_mode = False
+
+        except Exception as e:
+            LOGGER.exception(f"Error in processor mode: {e}")
+            # Fall back to direct mode
+            use_processor_mode = False
+
+    # If processor mode failed or wasn't used, use direct approach (below)
+
+    # If we're not using processor mode or it failed, use direct approach
+    if not use_processor_mode:
+        LOGGER.debug(f"Using direct mode for image: {path.name}")
+        img = Image.open(path)  # Always returns an Image.Image
+
+        # Apply Sanchez directly using colourise
+        if false_colour:
+            img_stem = path.stem
+            # Use the ORIGINAL stem for the input file to satisfy Sanchez
+            temp_in_path = sanchez_temp_dir / f"{img_stem}.png"
+            # Keep unique name for the output file
+            temp_out_path = (
+                sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
+            )
+            try:
+                # Ensure sanchez temp directory exists
+                os.makedirs(sanchez_temp_dir, exist_ok=True)
+
+                LOGGER.debug(f"Saving original for Sanchez: {temp_in_path}")
+                img.save(temp_in_path, "PNG")  # Save with correct name
+                LOGGER.info(
+                    f"Running Sanchez on {temp_in_path.name} (res={res_km}km) -> {temp_out_path.name}"
+                )
+                # Ensure colourise handles Path objects and receives correct input path
+                colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
+
+                # Check if output file exists before trying to open it
+                if temp_out_path.exists():
+                    LOGGER.debug(f"Loading Sanchez output: {temp_out_path}")
+                    img_colourised = Image.open(temp_out_path)
+                    # Replace original img object with colourised one
+                    img = img_colourised
+                else:
+                    LOGGER.error(f"Sanchez output file not found: {temp_out_path}")
+                    # Output files in directory
+                    try:
+                        dir_files = list(sanchez_temp_dir.glob("*"))
+                        LOGGER.error(f"Files in temp directory: {dir_files}")
+                    except Exception as dir_err:
+                        LOGGER.error(f"Error listing temp directory: {dir_err}")
+                    # Keep original image if output file not found
+            except Exception as e:
+                LOGGER.error(
+                    f"Sanchez colourise failed for {path.name}: {e}", exc_info=True
+                )
+                # Keep original image if colourise fails
+            finally:
+                # Clean up temp files (both input and output)
+                if temp_in_path.exists():
+                    temp_in_path.unlink(missing_ok=True)
+                if temp_out_path.exists():
+                    temp_out_path.unlink(missing_ok=True)
+
+        # Apply crop *after* potential colourisation
+        if crop_rect_pil:
+            try:
+                LOGGER.debug(
+                    f"Applying crop {crop_rect_pil} to image from {path.name} (post-Sanchez if applied)."
+                )
+                img_cropped = img.crop(crop_rect_pil)
+                img = img_cropped  # Update img reference to cropped version
+            except Exception as e:
+                LOGGER.error(
+                    f"Failed to crop image {path.name} with rect {crop_rect_pil}: {e}",
+                    exc_info=True,
+                )
+                # Returning uncropped since validation will fail later if needed
+
+        return img
 
 
 # --- End Sanchez/Crop Helper ---
@@ -1576,6 +1462,568 @@ def run_vfi(
         LOGGER.exception("Error in run_vfi:")
         yield f"ERROR: {str(e)}"
         raise
+            LOGGER.info("Encoder type is Sanchez - forcing false_colour to True")
+            # Also log to stdout for debugging
+            print(
+                f"Forcing false_colour=True for Sanchez encoder (encoder_type={encoder_type})"
+            )
+            false_colour = True
+
+    LOGGER.info(
+        f"run_vfi called with: encoder_type={encoder_type}, false_colour={false_colour} (original setting: {original_false_colour}), res_km={res_km}km, crop_rect={crop_rect_xywh}, skip_model={skip_model}"
+    )
+
+    # --- Input Validation ---
+    # For now, force num_intermediate_frames to 1 when not skipping model
+    # instead of raising an error
+    if num_intermediate_frames != 1 and not skip_model:
+        LOGGER.warning(
+            f"Requested {num_intermediate_frames} intermediate frames, but only 1 is currently supported. Setting to 1."
+        )
+        num_intermediate_frames = 1  # Force to 1 instead of raising an error
+
+    paths = sorted(folder.glob("*.png"))
+    if not paths:
+        raise ValueError("No PNG images found in the input folder.")
+    if len(paths) < 2 and not skip_model:
+        raise ValueError("At least two PNG images are required for interpolation.")
+    if len(paths) < 1 and skip_model:
+        raise ValueError("At least one PNG image is required when skipping model.")
+
+    LOGGER.info(f"Found {len(paths)} images. Skip AI model: {skip_model}")
+
+    # --- Crop Setup (Convert XYWH to PIL LURB format) ---
+    crop_for_pil: Tuple[int, int, int, int] | None = None
+    if crop_rect_xywh:
+        try:
+            x, y, w, h = crop_rect_xywh  # No cast needed here
+            if w <= 0 or h <= 0:
+                raise ValueError("Crop width and height must be positive.")
+            crop_for_pil = (x, y, x + w, y + h)  # Convert to PIL format
+            LOGGER.info(
+                f"Applying crop rectangle (x,y,w,h): {crop_rect_xywh} -> PIL format: {crop_for_pil}"
+            )
+        except (TypeError, ValueError) as e:
+            LOGGER.error(
+                f"Invalid crop rectangle format provided: {crop_rect_xywh}. Error: {e}. Cropping will be disabled."
+            )
+            crop_for_pil = None  # Disable cropping if format is wrong
+            crop_rect_xywh = None  # Also clear the original tuple
+    else:
+        LOGGER.info("No crop rectangle provided.")
+        crop_for_pil = None  # Explicitly None if no tuple provided
+
+    # --- Setup Temporary Directories --- #
+    # One for Sanchez intermediates, one for final processed images
+    with (
+        tempfile.TemporaryDirectory(prefix="goesvfi_sanchez_") as sanchez_temp_dir_str,
+        tempfile.TemporaryDirectory(
+            prefix="goesvfi_processed_"
+        ) as processed_img_dir_str,
+    ):
+        sanchez_temp_path = pathlib.Path(sanchez_temp_dir_str)
+        processed_img_path = pathlib.Path(processed_img_dir_str)
+        LOGGER.info(f"Using Sanchez temp dir: {sanchez_temp_path}")
+        LOGGER.info(f"Using processed image temp dir: {processed_img_path}")
+
+        # --- Instantiate Processors ---
+        image_loader = ImageLoader()
+        sanchez_processor = SanchezProcessor(
+            sanchez_temp_path
+        )  # Pass the Sanchez temporary directory
+        image_cropper = ImageCropper()
+        image_saver = (
+            ImageSaver()
+        )  # Create an ImageSaver instance for saving processed images
+        LOGGER.info("Image processors instantiated.")
+
+        # --- Determine Target Dimensions & Process First Image --- #
+        target_width: int
+        target_height: int
+        processed_path_0: pathlib.Path
+        try:
+            LOGGER.info(f"Processing first image sequentially: {paths[0].name}")
+            # Process first image using worker function (sequentially)
+            # Do not pass target dimensions yet
+            # We already created an ImageSaver instance above
+            processed_path_0 = _process_single_image_worker(
+                original_path=paths[0],
+                image_loader=image_loader,
+                sanchez_processor=sanchez_processor,
+                image_cropper=image_cropper,
+                crop_rect_pil=crop_for_pil,
+                false_colour=false_colour,
+                res_km=res_km,
+                output_dir=processed_img_path,
+                image_saver=image_saver,  # Use the ImageSaver instance
+                # target_width=orig_width, # REMOVED - determined after processing
+                # target_height=orig_height # REMOVED
+            )
+            # Now determine actual target dimensions from the first *processed* image
+            with Image.open(processed_path_0) as img0_processed_handle:
+                target_width, target_height = img0_processed_handle.size
+            LOGGER.info(
+                f"Target frame dimensions set by first processed image: {target_width}x{target_height}"
+            )
+
+        except Exception as e:
+            LOGGER.exception(
+                f"Failed processing first image {paths[0]}. Cannot continue."
+            )
+            raise IOError(f"Could not process first image {paths[0]}") from e
+
+        # --- Parallel Processing for Remaining Images --- #
+        LOGGER.info(
+            f"Processing remaining {len(paths) - 1} images in parallel (max_workers={max_workers})..."
+        )
+        processed_paths_rest: List[pathlib.Path] = []  # Initialize as empty list
+        args_list = []  # Prepare list of arguments for map
+        start_parallel_time = time.time()
+
+        # Prepare arguments for each worker task
+        for i, p_path in enumerate(paths[1:]):
+            args_list.append(
+                (
+                    p_path,
+                    image_loader,
+                    sanchez_processor,
+                    image_cropper,
+                    crop_for_pil,
+                    false_colour,
+                    res_km,
+                    processed_img_path,
+                    image_saver,  # Use ImageSaver instance instead of ImageLoader for saving
+                    target_width,
+                    target_height,
+                )
+            )
+
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            try:
+                # Use map to preserve order and collect results directly
+                # The _process_single_image_worker needs to accept a tuple of args now
+                # We need to create a simple wrapper or adjust the worker
+
+                # --- Let's adjust the worker to accept the tuple --- #
+                # (No code change here, assumed worker is adjusted or wrapped)
+
+                # Map the worker function over the arguments
+                results_iterator = executor.map(
+                    _process_single_image_worker_wrapper, args_list
+                )
+
+                # Consume the iterator to get results and catch potential exceptions
+                processed_paths_rest = list(results_iterator)
+
+            except Exception as e:
+                LOGGER.exception("Parallel processing failed during map execution.")
+                raise RuntimeError(f"Parallel processing failed: {e}") from e
+
+        end_parallel_time = time.time()
+        LOGGER.info(
+            f"Parallel processing finished in {end_parallel_time - start_parallel_time:.2f} seconds."
+        )
+
+        # Combine all processed paths
+        all_processed_paths = [processed_path_0] + processed_paths_rest
+        # No need to check for None anymore if map completes successfully
+        LOGGER.info(f"All {len(all_processed_paths)} images processed successfully.")
+
+        # --- Prepare raw output path with timestamp to avoid duplicates ---
+        import datetime
+
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # Get original stem and parent directory
+        original_stem = output_mp4_path.stem
+        # Remove any existing .raw suffixes and timestamps (like 20250504_123456)
+        clean_stem = original_stem.replace(".raw", "")
+        # Also remove any existing timestamps in the format YYYYMMDD_HHMMSS
+        import re
+
+        clean_stem = re.sub(r"_\d{8}_\d{6}", "", clean_stem)
+
+        # Create a new path with timestamp to ensure uniqueness
+        raw_path = output_mp4_path.with_name(f"{clean_stem}_{timestamp}.mp4")
+        LOGGER.info(f"Intermediate raw video path: {raw_path}")
+        # --- Determine Effective FPS for Raw Stream (moved here) ---
+        effective_input_fps = (
+            fps * (num_intermediate_frames + 1) if not skip_model else fps
+        )
+        # --- FFmpeg command (moved here) ---
+        ffmpeg_cmd = [
+            "ffmpeg",
+            "-hide_banner",
+            "-loglevel",
+            "verbose",  # Increased log level
+            "-stats",
+            "-y",
+            "-f",
+            "image2pipe",
+            "-framerate",
+            str(effective_input_fps),
+            "-vcodec",
+            "png",
+            "-i",
+            "-",
+            "-an",
+            "-vcodec",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-pix_fmt",
+            "yuv420p",
+            "-vf",
+            "scale=trunc(iw/2)*2:trunc(ih/2)*2",  # Ensure dimensions are divisible by 2
+            str(raw_path),
+        ]
+
+        ffmpeg_proc: subprocess.Popen[bytes] | None = None
+        try:
+            # --- Start FFmpeg --- #
+            # Start ffmpeg process, redirect stderr to stdout, capture combined stdout/stderr
+            ffmpeg_proc = subprocess.Popen(
+                ffmpeg_cmd,
+                stdin=subprocess.PIPE,
+                stderr=subprocess.STDOUT,  # Redirect stderr to stdout
+                stdout=subprocess.PIPE,  # Capture combined stdout/stderr
+            )
+            if ffmpeg_proc.stdin is None:
+                raise IOError("Failed to get ffmpeg stdin pipe.")
+
+            # --- Write First Processed Frame --- #
+            try:
+                with Image.open(processed_path_0) as im0_processed_handle:
+                    LOGGER.debug(
+                        f"Encoding first processed frame {processed_path_0.name} (size {im0_processed_handle.size}) for ffmpeg."
+                    )
+                    png_data = _encode_frame_to_png_bytes(im0_processed_handle)
+                _safe_write(
+                    ffmpeg_proc, png_data, f"initial frame {processed_path_0.name}"
+                )
+            except IOError:  # Includes BrokenPipeError which is a subclass
+                raise
+            except Exception as e:
+                raise IOError(
+                    f"Failed encoding first processed frame {processed_path_0.name}"
+                ) from e
+
+            # --- Main Processing Logic (using processed paths) --- #
+            if skip_model:
+                LOGGER.info("Skipping AI model. Writing processed frames directly.")
+                for idx, processed_path in enumerate(all_processed_paths[1:], start=1):
+                    try:
+                        with Image.open(processed_path) as img_to_write:
+                            LOGGER.debug(
+                                f"Encoding frame {processed_path.name} (size {img_to_write.size}) for ffmpeg (skip_model)."
+                            )
+                            png_data = _encode_frame_to_png_bytes(img_to_write)
+                        _safe_write(
+                            ffmpeg_proc,
+                            png_data,
+                            f"processed frame {idx} ({processed_path.name})",
+                        )
+                        yield (idx + 1, len(all_processed_paths), 0.0)
+                    except IOError:  # Includes BrokenPipeError which is a subclass
+                        raise
+                    except Exception as e:
+                        raise IOError(
+                            f"Failed processing frame {processed_path.name}: {e}"
+                        ) from e
+            else:  # Perform RIFE interpolation
+                LOGGER.info("Starting AI interpolation using processed frames.")
+                total_pairs = len(all_processed_paths) - 1
+                start_time = time.time()
+                last_yield_time = start_time
+
+                # RIFE needs its own temp dir for inputs/outputs
+                with tempfile.TemporaryDirectory(
+                    prefix="goesvfi_rife_inputs_"
+                ) as rife_input_temp_dir_str:
+                    rife_input_temp_path = pathlib.Path(rife_input_temp_dir_str)
+
+                    # --- Detect RIFE Capabilities (ONCE before loop) --- #
+                    capability_detector = RifeCapabilityDetector(rife_exe_path)
+                    LOGGER.info(
+                        f"RIFE executable capabilities: tiling={capability_detector.supports_tiling()}, "
+                        f"uhd={capability_detector.supports_uhd()}, "
+                        f"tta_spatial={capability_detector.supports_tta_spatial()}, "
+                        f"tta_temporal={capability_detector.supports_tta_temporal()}, "
+                        f"thread_spec={capability_detector.supports_thread_spec()}"
+                    )
+
+                    # --- Warn about unsupported requested features (ONCE before loop) --- #
+                    if rife_tile_enable and not capability_detector.supports_tiling():
+                        LOGGER.warning(
+                            "Tiling requested but not supported by RIFE executable"
+                        )
+                    if (
+                        rife_uhd_mode
+                        and not rife_tile_enable
+                        and not capability_detector.supports_uhd()
+                    ):  # Only warn if tiling isn't overriding
+                        LOGGER.warning(
+                            "UHD mode requested but not supported by RIFE executable"
+                        )
+                    if (
+                        rife_tta_spatial
+                        and not capability_detector.supports_tta_spatial()
+                    ):
+                        LOGGER.warning(
+                            "Spatial TTA requested but not supported by RIFE executable"
+                        )
+                    if (
+                        rife_tta_temporal
+                        and not capability_detector.supports_tta_temporal()
+                    ):
+                        LOGGER.warning(
+                            "Temporal TTA requested but not supported by RIFE executable"
+                        )
+                    if (
+                        rife_thread_spec != "1:2:2"
+                        and capability_detector.supports_thread_spec()
+                    ):
+                        LOGGER.warning(
+                            f"Custom thread specification '{rife_thread_spec}' requested but not supported by RIFE executable"
+                        )
+
+                    for idx, (p1_processed_path, p2_processed_path) in enumerate(
+                        zip(all_processed_paths, all_processed_paths[1:])
+                    ):
+                        pair_start_time = time.time()
+                        # RIFE output will go to the main processed_img_path initially
+                        interpolated_frame_path = (
+                            processed_img_path / f"interp_{idx:04d}.png"
+                        )
+
+                        # --- Prepare RIFE inputs (just need paths now) ---
+                        # Inputs are already processed and validated
+                        temp_p1_path_for_rife = p1_processed_path
+                        temp_p2_path_for_rife = p2_processed_path
+
+                        # --- RIFE Execution --- #
+                        rife_cmd = [
+                            str(rife_exe_path),
+                            "-0",
+                            str(temp_p1_path_for_rife),  # Use temp cropped path
+                            "-1",
+                            str(temp_p2_path_for_rife),  # Use temp cropped path
+                            "-o",
+                            str(interpolated_frame_path),
+                        ]
+
+                        # Add model path if supported
+                        if capability_detector.supports_model_path():
+                            # FIX: Resolve model_key to full path relative to RIFE executable
+                            # Assuming models are in ../models/ relative to rife_exe_path's directory
+                            models_base_dir = rife_exe_path.parent.parent / "models"
+                            full_model_path = models_base_dir / model_key
+                            if not full_model_path.exists():
+                                raise FileNotFoundError(
+                                    f"Model path {full_model_path} does not exist."
+                                )
+                            rife_cmd.extend(["-m", str(model_key)])
+                        else:
+                            LOGGER.warning("RIFE model check skipped.")
+
+                        # Add tiling arguments if supported and enabled
+                        if rife_tile_enable and capability_detector.supports_tiling():
+                            rife_cmd.extend(["-t", str(rife_tile_size)])
+                            LOGGER.debug(
+                                f"Added RIFE tiling argument: -t {rife_tile_size}"
+                            )
+
+                        # Add UHD argument if supported and enabled (and tiling not enabled)
+                        if (
+                            rife_uhd_mode
+                            and capability_detector.supports_uhd()
+                            and not (
+                                rife_tile_enable
+                                and capability_detector.supports_tiling()
+                            )
+                        ):
+                            rife_cmd.append("-u")
+                            LOGGER.debug("Added RIFE UHD argument: -u")
+
+                        # Add TTA arguments if supported and enabled
+                        if (
+                            rife_tta_spatial
+                            and capability_detector.supports_tta_spatial()
+                        ):
+                            rife_cmd.append("-s")
+                            LOGGER.debug("Added RIFE TTA spatial argument: -s")
+                        if (
+                            rife_tta_temporal
+                            and capability_detector.supports_tta_temporal()
+                        ):
+                            rife_cmd.append("-T")
+                            LOGGER.debug("Added RIFE TTA temporal argument: -T")
+
+                        # Add thread specification if supported and not default
+                        if (
+                            rife_thread_spec != "1:2:2"
+                            and capability_detector.supports_thread_spec()
+                        ):
+                            rife_cmd.extend(["-y", rife_thread_spec])
+                            LOGGER.debug(
+                                f"Added RIFE thread specification: -y {rife_thread_spec}"
+                            )
+
+                        LOGGER.debug(f"Running RIFE command: {' '.join(rife_cmd)}")
+                        rife_result = subprocess.run(
+                            rife_cmd, capture_output=True, text=True
+                        )
+
+                        if rife_result.returncode != 0:
+                            LOGGER.error(
+                                f"RIFE execution failed for pair {idx}: {rife_result.stderr}"
+                            )
+                            raise RuntimeError(
+                                f"RIFE execution failed: {rife_result.stderr}"
+                            )
+
+                        LOGGER.debug(
+                            f"RIFE output for pair {idx}:\n{rife_result.stdout}"
+                        )
+
+                        # --- Write Interpolated Frame --- #
+                        try:
+                            with Image.open(
+                                interpolated_frame_path
+                            ) as interp_img_handle:
+                                LOGGER.debug(
+                                    f"Encoding interpolated frame {interpolated_frame_path.name} (size {interp_img_handle.size}) for ffmpeg."
+                                )
+                                png_data = _encode_frame_to_png_bytes(interp_img_handle)
+                            _safe_write(
+                                ffmpeg_proc,
+                                png_data,
+                                f"interpolated frame {idx} ({interpolated_frame_path.name})",
+                            )
+                        except (IOError, BrokenPipeError):
+                            raise
+                        except Exception as e:
+                            raise IOError(
+                                f"Failed encoding interpolated frame {interpolated_frame_path.name}"
+                            ) from e
+                        finally:
+                            # Clean up the intermediate interpolated frame file
+                            if interpolated_frame_path.exists():
+                                interpolated_frame_path.unlink(missing_ok=True)
+
+                        # --- Write Second Processed Frame --- #
+                        # Only write the second processed frame if it's the last frame overall
+                        # or if we are not interpolating between it and the next frame.
+                        # Since num_intermediate_frames is 1, we always write the second processed frame
+                        # after the interpolated frame.
+                        try:
+                            with Image.open(p2_processed_path) as im2_handle:
+                                LOGGER.debug(
+                                    f"Encoding second processed frame {p2_processed_path.name} (size {im2_handle.size}) for ffmpeg."
+                                )
+                                png_data = _encode_frame_to_png_bytes(im2_handle)
+                            _safe_write(
+                                ffmpeg_proc,
+                                png_data,
+                                f"second processed frame {idx} ({p2_processed_path.name})",
+                            )
+                        except (IOError, BrokenPipeError):
+                            raise
+                        except Exception as e:
+                            raise IOError(
+                                f"Failed encoding second processed frame {p2_processed_path.name}"
+                            ) from e
+
+                        # --- Progress Update --- #
+                        current_pair = idx + 1
+                        elapsed_time = time.time() - start_time
+                        # Simple ETA calculation: time_per_pair * remaining_pairs
+                        time_per_pair = (
+                            elapsed_time / current_pair if current_pair > 0 else 0
+                        )
+                        remaining_pairs = total_pairs - current_pair
+                        eta_seconds = time_per_pair * remaining_pairs
+                        yield (current_pair, total_pairs, eta_seconds)
+
+                        # Yield periodically to keep GUI responsive
+                        if (
+                            time.time() - last_yield_time > 0.5
+                        ):  # Yield at most twice per second
+                            yield (current_pair, total_pairs, eta_seconds)
+                            last_yield_time = time.time()
+
+        except (IOError, BrokenPipeError):
+            # FFmpeg pipe broken, read and log stderr before re-raising
+            stderr_output = ""
+            if (
+                ffmpeg_proc and ffmpeg_proc.stdout
+            ):  # Read from stdout as stderr is redirected
+                try:
+                    stderr_output = ffmpeg_proc.stdout.read().decode(errors="ignore")
+                except Exception as read_err:
+                    stderr_output += (
+                        f"\n(Error reading ffmpeg output after pipe break: {read_err})"
+                    )
+            LOGGER.error(
+                f"FFmpeg pipe broken during processing. FFmpeg output:\n{stderr_output}"
+            )
+            raise  # Re-raise the original pipe error
+
+        except Exception as e:
+            LOGGER.exception(
+                "An error occurred during RIFE interpolation or frame writing."
+            )
+            # Attempt to read ffmpeg output on other errors too
+            ffmpeg_output = ""
+            if ffmpeg_proc and ffmpeg_proc.stdout:
+                try:
+                    ffmpeg_output = ffmpeg_proc.stdout.read().decode(errors="ignore")
+                except Exception as read_err:
+                    ffmpeg_output += (
+                        f"\n(Error reading ffmpeg output on error: {read_err})"
+                    )
+            LOGGER.error(f"FFmpeg output during error:\n{ffmpeg_output}")
+            raise RuntimeError(f"Processing failed: {e}") from e
+
+        finally:
+            # Ensure ffmpeg process is terminated and pipes are closed
+            if ffmpeg_proc:
+                if ffmpeg_proc.stdin:
+                    try:
+                        ffmpeg_proc.stdin.close()
+                    except Exception as close_err:
+                        LOGGER.warning(f"Error closing ffmpeg stdin: {close_err}")
+                # Give ffmpeg a moment to finish or error out
+                try:
+                    ffmpeg_proc.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    LOGGER.warning(
+                        "FFmpeg process did not terminate within 5 seconds, killing it."
+                    )
+                    ffmpeg_proc.kill()
+                # Read any remaining output after wait/kill
+                if ffmpeg_proc.stdout:
+                    try:
+                        remaining_output = ffmpeg_proc.stdout.read().decode(
+                            errors="ignore"
+                        )
+                        if remaining_output:
+                            LOGGER.warning(
+                                f"Remaining FFmpeg output after process end:\n{remaining_output}"
+                            )
+                    except Exception as read_err:
+                        LOGGER.warning(
+                            f"Error reading remaining ffmpeg output: {read_err}"
+                        )
+
+        # --- Cleanup processed images temp dir ---
+        # The temp directory context manager handles this automatically
+
+        # --- Yield raw video path ---
+        yield raw_path
+
+
+# Helper function to encode a list of PIL images to PNG bytes for ffmpeg stdin
 def _encode_frames_for_ffmpeg(frames: List[Image.Image]) -> Iterator[bytes]:
     """Encodes a list of PIL Images into PNG bytes, yielding each one."""
     for img in frames:

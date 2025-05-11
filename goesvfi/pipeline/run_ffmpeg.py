@@ -1,6 +1,6 @@
+import logging
 from pathlib import Path
 from typing import Optional, Tuple
-import logging
 
 LOGGER = logging.getLogger(__name__)
 
@@ -39,6 +39,11 @@ def run_ffmpeg_interpolation(
     """
     Stub for FFmpeg interpolation pipeline.
     Currently not implemented.
+
+    TODO: This is a placeholder for future FFmpeg-based interpolation implementation.
+    The implementation would use FFmpeg's minterpolate filter to generate intermediate
+    frames between input frames, with various options for motion estimation and
+    interpolation algorithms.
     """
-    LOGGER.error("run_ffmpeg_interpolation is not implemented for FFmpeg pipeline.")
+    LOGGER.error("FFmpeg interpolation pipeline not implemented yet.")
     raise NotImplementedError("FFmpeg interpolation pipeline not implemented yet")

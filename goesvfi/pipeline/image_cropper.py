@@ -1,5 +1,3 @@
-from numpy import ndarray
-
 """image_cropper.py
 
 Provides the ImageCropper class, an ImageProcessor implementation for cropping images
@@ -8,8 +6,10 @@ to a specified rectangular area in the GOES_VFI pipeline.
 
 import abc
 import typing
+from typing import Any, Dict, Tuple, cast
+
 import numpy as np
-from typing import Tuple, Dict, Any, cast # Import cast
+from numpy import ndarray
 
 from .image_processing_interfaces import ImageData, ImageProcessor
 

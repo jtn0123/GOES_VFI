@@ -23,11 +23,14 @@ from PIL import Image  # Import PIL.Image
 # Define ImageType as a type alias
 if TYPE_CHECKING:
     # Use np.ndarray with type parameters for static analysis
+    import numpy as np
+
     ImageType: TypeAlias = Union[Image.Image, np.ndarray[Any, Any]]
 else:
     # Use a more general type at runtime if numpy isn't strictly typed or for fallback
     try:
-        # np is already imported at the top of the file
+        import numpy as np
+
         ImageType: TypeAlias = Union[Image.Image, np.ndarray]
     except ImportError:
         ImageType: TypeAlias = Any  # type: ignore

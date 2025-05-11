@@ -1,18 +1,20 @@
 # TODO: IFRNet‑S via ONNX Runtime (CoreML/DirectML)
 
 from __future__ import annotations
-import tempfile
-import subprocess
+
+import logging
 import pathlib
 import shutil
+import subprocess
+import tempfile
+from typing import Any, Dict, List, Optional
+
 import numpy as np
-import logging
-from PIL import Image
 from numpy.typing import NDArray
-from typing import Any, List, Dict, Optional
+from PIL import Image
 
 # Import the new RIFE analyzer utilities
-from goesvfi.utils.rife_analyzer import RifeCommandBuilder, RifeCapabilityDetector
+from goesvfi.utils.rife_analyzer import RifeCapabilityDetector, RifeCommandBuilder
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -159,16 +161,16 @@ def interpolate_three(
 
     # Calculate the frame between img1 and img_mid (t=0.25)
     left_options = options.copy()
-    left_options["timestep"] = (
-        0.5  # Always 0.5 for the pair, which is effectively 0.25 overall
-    )
+    left_options[
+        "timestep"
+    ] = 0.5  # Always 0.5 for the pair, which is effectively 0.25 overall
     img_left = backend.interpolate_pair(img1, img_mid, left_options)
 
     # Calculate the frame between img_mid and img2 (t=0.75)
     right_options = options.copy()
-    right_options["timestep"] = (
-        0.5  # Always 0.5 for the pair, which is effectively 0.75 overall
-    )
+    right_options[
+        "timestep"
+    ] = 0.5  # Always 0.5 for the pair, which is effectively 0.75 overall
     img_right = backend.interpolate_pair(img_mid, img2, right_options)
 
     return [img_left, img_mid, img_right]

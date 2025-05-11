@@ -53,8 +53,7 @@ def load_cached(
     num_intermediate_frames: int,
 ) -> Optional[List[NDArray[Any]]]:
     LOGGER.debug(
-        f"Attempting to load cache for {path1.name}, {path2.name}, model={model_id}, " \
-        f"frames={num_intermediate_frames}"
+        f"Attempting to load cache for {path1.name}, {path2.name}, model={model_id}, frames={num_intermediate_frames}"
     )
     if num_intermediate_frames <= 0:
         LOGGER.debug("num_intermediate_frames is 0 or less, returning None")
@@ -93,7 +92,6 @@ def load_cached(
             return loaded_frames
         except Exception as e:
             LOGGER.warning(f"Error loading cache files for key {base_key}: {e}")
-            LOGGER.debug("Exception details:", exc_info=True)
             return None  # Treat load error as cache miss
     else:
         LOGGER.debug("Not all cache files exist, cache miss")
@@ -122,6 +120,7 @@ def save_cache(
         return
 
     base_key = _hash_pair(path1, path2, model_id, num_intermediate_frames)
+    base_key = _hash_pair(path1, path2, model_id, num_intermediate_frames)
     LOGGER.debug(f"Saving {len(frames)} cache files with base key {base_key}")
     try:
         for i, frame in enumerate(frames):
@@ -131,4 +130,3 @@ def save_cache(
         LOGGER.debug("Successfully saved all cache files")
     except Exception as e:
         LOGGER.warning(f"Error saving cache files for key {base_key}: {e}")
-        LOGGER.debug("Exception details:", exc_info=True)

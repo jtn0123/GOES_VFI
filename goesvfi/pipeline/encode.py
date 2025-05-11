@@ -1,9 +1,10 @@
 # goesvfi/pipeline/encode.py
-import subprocess
-import pathlib
 import logging
-import tempfile
 import os
+import pathlib
+import subprocess
+import tempfile
+
 from .ffmpeg_builder import FFmpegCommandBuilder  # Import the builder
 
 LOGGER = logging.getLogger(__name__)
@@ -80,7 +81,7 @@ def encode_with_ffmpeg(
                 LOGGER.info("Fallback rename successful.")
             except Exception as move_e:
                 LOGGER.error(f"Fallback rename failed: {move_e}")
-                raise e
+                raise e from move_e
         except FileNotFoundError:
             raise
         except Exception as e:

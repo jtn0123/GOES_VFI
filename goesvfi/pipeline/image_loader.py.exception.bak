@@ -67,10 +67,10 @@ class ImageLoader(ImageProcessor):
                 )
         except IOError as e:
             # Re-raise other IOErrors encountered by Pillow
-            raise IOError(f"Error reading image file {source_path}: {e}") from e
+            raise IOError(f"Error reading image file {source_path}: {e}")
         except Exception as e:
             # Catch any other unexpected errors during loading
-            raise ValueError(f"Could not load image from {source_path}: {e}") from e
+            raise ValueError(f"Could not load image from {source_path}: {e}")
 
     def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
         """Not implemented. ImageLoader does not perform processing.

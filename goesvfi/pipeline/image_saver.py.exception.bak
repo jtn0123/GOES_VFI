@@ -39,9 +39,9 @@ class ImageSaver(ImageProcessor):
             img = Image.fromarray(image_data.image_data)
             img.save(destination_path)
         except IOError as e:
-            raise IOError(f"Error writing image file {destination_path}: {e}") from e
+            raise IOError(f"Error writing image file {destination_path}: {e}")
         except Exception as e:
-            raise ValueError(f"Could not save image to {destination_path}: {e}") from e
+            raise ValueError(f"Could not save image to {destination_path}: {e}")
 
     def load(self, source_path: str) -> ImageData:
         """Not implemented. ImageSaver does not perform loading.

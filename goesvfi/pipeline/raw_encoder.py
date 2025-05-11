@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 import pathlib
-import tempfile
 import subprocess
+import tempfile
+from typing import Any, Iterable, List  # Adjusted imports
+
 import numpy as np
-from PIL import Image
-from typing import Iterable, List, Any  # Adjusted imports
 from numpy.typing import NDArray
+from PIL import Image
 
 # Define FloatNDArray alias if needed, or import if defined elsewhere
 # Assuming FloatNDArray = NDArray[np.float32] for consistency
@@ -48,7 +50,7 @@ def write_raw_mp4(
         subprocess.run(cmd, check=True, capture_output=True, text=True)
         print("Lossless encoding successful.")
     except subprocess.CalledProcessError as e:
-        print(f"FFmpeg (raw) error:")
+        print("FFmpeg (raw) error:")
         print(f"STDOUT: {e.stdout}")
         print(f"STDERR: {e.stderr}")
         # Clean up temp dir even on error

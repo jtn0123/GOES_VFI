@@ -173,8 +173,8 @@ class SanchezProcessor(ImageProcessor):
                 # sanchez_dir is already defined above
                 LOGGER.debug(
                     "Running Sanchez command: %s in CWD: %s",
-                    ' '.join(map(str, command)),
-                    sanchez_dir
+                    " ".join(map(str, command)),
+                    sanchez_dir,
                 )
                 # Create a copy of the current environment
                 run_env = os.environ.copy()
@@ -187,7 +187,7 @@ class SanchezProcessor(ImageProcessor):
                 )
                 LOGGER.debug(
                     "Setting DYLD_FALLBACK_LIBRARY_PATH to: %s",
-                    run_env['DYLD_FALLBACK_LIBRARY_PATH']
+                    run_env["DYLD_FALLBACK_LIBRARY_PATH"],
                 )
 
                 # Print to stdout for diagnostics
@@ -215,7 +215,8 @@ class SanchezProcessor(ImageProcessor):
                     )
                 else:
                     LOGGER.warning(
-                        "Sanchez command completed but output file not found at: %s", output_file_path
+                        "Sanchez command completed but output file not found at: %s",
+                        output_file_path,
                     )
                     # List files in directory
                     dir_files = list(self._temp_dir.glob("*"))
@@ -278,6 +279,8 @@ class SanchezProcessor(ImageProcessor):
                     "Sanchez processing failed, using original image as fallback"
                 )
                 processed_image_data = image_data
+                # Record the error in the metadata
+                processed_image_data.metadata["error"] = f"Sanchez output file not found: {fnf_error}"
             except Exception as img_error:
                 LOGGER.exception("Error loading Sanchez output: %s", img_error)
                 # Use original image as fallback
@@ -285,6 +288,8 @@ class SanchezProcessor(ImageProcessor):
                     "Sanchez processing failed, using original image as fallback"
                 )
                 processed_image_data = image_data
+                # Record the error in the metadata
+                processed_image_data.metadata["error"] = f"Sanchez processing error: {img_error}"
 
             return processed_image_data
 
