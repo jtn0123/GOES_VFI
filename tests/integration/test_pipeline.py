@@ -1,10 +1,11 @@
-import pytest
 import pathlib
 import subprocess
 import time
-from unittest.mock import patch, MagicMock, call, ANY
+from typing import Any, Dict, List, Optional, Tuple
+from unittest.mock import ANY, MagicMock, call, patch
+
+import pytest
 from PyQt6.QtWidgets import QComboBox
-from typing import List, Tuple, Optional, Dict, Any
 
 # Import the main pipeline function (Corrected path)
 from goesvfi.pipeline.run_vfi import run_vfi
@@ -26,9 +27,9 @@ MOCK_FFMPEG_EXE = "ffmpeg"  # Assume ffmpeg is in PATH for command construction
 
 # Import the mock utilities
 from tests.utils.mocks import (
+    create_mock_colourise,
     create_mock_popen,
     create_mock_subprocess_run,
-    create_mock_colourise,
 )
 
 
@@ -254,7 +255,7 @@ def test_basic_interpolation(
     """Test basic interpolation (2 frames -> 1 intermediate)."""
     # Patch the request_previews_update signal on all Qt classes that might use it
     # This prevents "AttributeError: '...' does not have a signal with the signature request_previews_update()"
-    from PyQt6.QtWidgets import QComboBox, QLabel, QCheckBox
+    from PyQt6.QtWidgets import QCheckBox, QComboBox, QLabel
 
     mocker.patch.object(QComboBox, "request_previews_update", lambda: None, create=True)
     mocker.patch.object(QLabel, "request_previews_update", lambda: None, create=True)
