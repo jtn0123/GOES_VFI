@@ -5,32 +5,35 @@ This module provides consistent dark mode styling that matches the main applicat
 look and feel.
 """
 
-from PyQt6.QtGui import QPalette, QColor
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import QApplication
 
 
 def apply_dark_mode_palette(app: QApplication) -> None:
     """
     Apply a dark mode color palette to the entire application.
-    
+
     Args:
         app: QApplication instance
     """
     dark_palette = QPalette()
-    
+
     # Base colors
     dark_color = QColor(45, 45, 45)
     disabled_color = QColor(70, 70, 70)
     text_color = QColor(240, 240, 240)
     highlight_color = QColor(42, 130, 218)
     link_color = QColor(42, 130, 218)
-    
+
     # Window colors
     dark_palette.setColor(QPalette.ColorRole.Window, dark_color)
     dark_palette.setColor(QPalette.ColorRole.WindowText, text_color)
-    dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText,
-                         QColor(127, 127, 127))
+    dark_palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.WindowText,
+        QColor(127, 127, 127),
+    )
 
     # Base and alternate base
     dark_palette.setColor(QPalette.ColorRole.Base, QColor(36, 36, 36))
@@ -38,22 +41,26 @@ def apply_dark_mode_palette(app: QApplication) -> None:
 
     # Text
     dark_palette.setColor(QPalette.ColorRole.Text, text_color)
-    dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text,
-                         QColor(127, 127, 127))
+    dark_palette.setColor(
+        QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(127, 127, 127)
+    )
 
     # Button
     dark_palette.setColor(QPalette.ColorRole.Button, dark_color)
     dark_palette.setColor(QPalette.ColorRole.ButtonText, text_color)
-    dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText,
-                         QColor(127, 127, 127))
-    
+    dark_palette.setColor(
+        QPalette.ColorGroup.Disabled,
+        QPalette.ColorRole.ButtonText,
+        QColor(127, 127, 127),
+    )
+
     # Highlight
     dark_palette.setColor(QPalette.ColorRole.Highlight, highlight_color)
     dark_palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.white)
-    
+
     # Link
     dark_palette.setColor(QPalette.ColorRole.Link, link_color)
-    
+
     # Set the palette
     app.setPalette(dark_palette)
 

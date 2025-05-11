@@ -146,7 +146,9 @@ class UnifiedCombinedTab(QWidget):
         switcher_layout.setSpacing(4)  # Reduced spacing between buttons
 
         # Create tab buttons with clear descriptive text
-        self.integrity_button = QPushButton(self.tr("File Integrity"))  # More descriptive
+        self.integrity_button = QPushButton(
+            self.tr("File Integrity")
+        )  # More descriptive
         self.imagery_button = QPushButton(self.tr("GOES Imagery"))  # More descriptive
 
         # Style the buttons to look like distinct tabs - more visually separated
@@ -193,7 +195,9 @@ class UnifiedCombinedTab(QWidget):
         switcher_layout.addWidget(self.imagery_button)
 
         # Add split view button - more visible
-        self.split_view_button = QPushButton(self.tr("Split View"))  # More descriptive text
+        self.split_view_button = QPushButton(
+            self.tr("Split View")
+        )  # More descriptive text
         self.split_view_button.setCheckable(True)
         self.split_view_button.setStyleSheet(button_style)
         self.split_view_button.setMinimumWidth(90)  # Increased from 60

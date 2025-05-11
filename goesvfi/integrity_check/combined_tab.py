@@ -7,22 +7,23 @@ and GOES imagery visualization features in a unified interface.
 """
 
 import logging
-from typing import Optional
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout,
-    QStackedWidget, QPushButton
-)
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import (
+    QHBoxLayout,
+    QPushButton,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .enhanced_gui_tab import EnhancedIntegrityCheckTab
-from .enhanced_view_model import EnhancedIntegrityCheckViewModel
 from .enhanced_imagery_tab import EnhancedGOESImageryTab
-from .satellite_integrity_tab_group import (
-    OptimizedTimelineTab, OptimizedResultsTab
-)
+from .enhanced_view_model import EnhancedIntegrityCheckViewModel
+from .satellite_integrity_tab_group import OptimizedResultsTab, OptimizedTimelineTab
 from .view_model import MissingTimestamp
 
 # Configure logging
@@ -48,7 +49,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
     def __init__(
         self,
         view_model: EnhancedIntegrityCheckViewModel,
-        parent: Optional[QWidget] = None
+        parent: Optional[QWidget] = None,
     ) -> None:
         """
         Initialize the combined tab.
@@ -85,10 +86,10 @@ class CombinedIntegrityAndImageryTab(QWidget):
         self.imagery_tab = EnhancedGOESImageryTab(parent=self)
 
         # Add all pages to the stacked widget
-        self.stacked_widget.addWidget(self.integrity_tab)     # Index 0
-        self.stacked_widget.addWidget(self.timeline_tab)      # Index 1
-        self.stacked_widget.addWidget(self.results_tab)       # Index 2
-        self.stacked_widget.addWidget(self.imagery_tab)       # Index 3
+        self.stacked_widget.addWidget(self.integrity_tab)  # Index 0
+        self.stacked_widget.addWidget(self.timeline_tab)  # Index 1
+        self.stacked_widget.addWidget(self.results_tab)  # Index 2
+        self.stacked_widget.addWidget(self.imagery_tab)  # Index 3
 
         # Create switcher buttons (removed date selection button)
         self.integrity_button = QPushButton(self.tr("File Integrity"))
@@ -158,38 +159,34 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
     def _initialize_satellite_tabs(self) -> None:
         """Initialize all satellite-related tabs with data from the view model."""
-        if hasattr(self.view_model, 'missing_items') and self.view_model.missing_items:
+        if hasattr(self.view_model, "missing_items") and self.view_model.missing_items:
             # Get the date range and interval from the view model
             start_date = self.view_model.start_date
             end_date = self.view_model.end_date
             # Get total expected count, default to current item count if not set
             items_count = len(self.view_model.missing_items)
-            total_expected = getattr(self.view_model, 'total_expected', items_count)
+            total_expected = getattr(self.view_model, "total_expected", items_count)
 
             # Determine the interval (assume hourly if not specified)
             interval_minutes = 60
-            if hasattr(self.view_model, 'expected_interval_minutes'):
+            if hasattr(self.view_model, "expected_interval_minutes"):
                 interval_minutes = self.view_model.expected_interval_minutes
 
             # Set the data for each tab
             # We update the date selector in the integrity tab
             tab = self.integrity_tab
-            if hasattr(tab, 'date_selector') and hasattr(tab.date_selector, 'set_date_range'):
+            if hasattr(tab, "date_selector") and hasattr(
+                tab.date_selector, "set_date_range"
+            ):
                 tab.date_selector.set_date_range(start_date, end_date)
 
             # Timeline Tab
             self.timeline_tab.set_data(
-                self.view_model.missing_items,
-                start_date,
-                end_date,
-                interval_minutes
+                self.view_model.missing_items, start_date, end_date, interval_minutes
             )
 
             # Results Tab
-            self.results_tab.set_items(
-                self.view_model.missing_items,
-                total_expected
-            )
+            self.results_tab.set_items(self.view_model.missing_items, total_expected)
 
             # Log initialization status
             items_count = len(self.view_model.missing_items)
@@ -198,32 +195,36 @@ class CombinedIntegrityAndImageryTab(QWidget):
     def _connect_tab_signals(self) -> None:
         """Connect signals between tabs for integrated functionality."""
         # Connect integrity tab signals
-        if hasattr(self.integrity_tab, 'download_completed'):
+        if hasattr(self.integrity_tab, "download_completed"):
             self.integrity_tab.download_completed.connect(self._on_download_completed)
 
         # Connect scan completion signal
-        if hasattr(self.integrity_tab.view_model, 'scan_completed'):
-            self.integrity_tab.view_model.scan_completed.connect(self._on_scan_completed)
+        if hasattr(self.integrity_tab.view_model, "scan_completed"):
+            self.integrity_tab.view_model.scan_completed.connect(
+                self._on_scan_completed
+            )
 
         # Connect missing items updated signal
-        if hasattr(self.integrity_tab.view_model, 'missing_items_updated'):
+        if hasattr(self.integrity_tab.view_model, "missing_items_updated"):
             # Connect missing items update signal
             view_model = self.integrity_tab.view_model
             view_model.missing_items_updated.connect(self._on_missing_items_updated)
 
         # Connect integrity tab directory selection
-        if hasattr(self.integrity_tab, 'directory_selected'):
+        if hasattr(self.integrity_tab, "directory_selected"):
             self.integrity_tab.directory_selected.connect(self._on_directory_selected)
 
         # Connect integrity tab date range selection
-        if hasattr(self.integrity_tab, 'date_range_changed'):
+        if hasattr(self.integrity_tab, "date_range_changed"):
             self.integrity_tab.date_range_changed.connect(self._on_date_range_selected)
-        elif hasattr(self.integrity_tab, 'dateRangeSelected'):
+        elif hasattr(self.integrity_tab, "dateRangeSelected"):
             self.integrity_tab.dateRangeSelected.connect(self._on_date_range_selected)
 
         # Connect to the date_selector signal if available
         tab = self.integrity_tab
-        if hasattr(tab, 'date_selector') and hasattr(tab.date_selector, 'dateRangeSelected'):
+        if hasattr(tab, "date_selector") and hasattr(
+            tab.date_selector, "dateRangeSelected"
+        ):
             tab.date_selector.dateRangeSelected.connect(self._on_date_range_selected)
 
         # Connect unified date selector's signal from our date selection tab
@@ -232,18 +233,18 @@ class CombinedIntegrityAndImageryTab(QWidget):
         # Connect timeline tab signals
         self.timeline_tab.timestampSelected.connect(self._on_timestamp_selected)
         self.timeline_tab.rangeSelected.connect(self._on_date_range_selected)
-        if hasattr(self.timeline_tab, 'directorySelected'):
+        if hasattr(self.timeline_tab, "directorySelected"):
             self.timeline_tab.directorySelected.connect(self._on_directory_selected)
 
         # Connect results tab signals
         self.results_tab.itemSelected.connect(self._on_item_selected)
         self.results_tab.downloadRequested.connect(self._on_download_requested)
         self.results_tab.viewRequested.connect(self._on_view_requested)
-        if hasattr(self.results_tab, 'directorySelected'):
+        if hasattr(self.results_tab, "directorySelected"):
             self.results_tab.directorySelected.connect(self._on_directory_selected)
 
         # Connect imagery tab signals if available
-        if hasattr(self.imagery_tab, 'file_selected'):
+        if hasattr(self.imagery_tab, "file_selected"):
             self.imagery_tab.file_selected.connect(self._on_imagery_file_selected)
 
     def _on_download_completed(self) -> None:
@@ -285,11 +286,13 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
         # Update the date selector in the integrity tab with the new date range (if it exists)
         tab = self.integrity_tab
-        if hasattr(tab, 'date_selector') and hasattr(tab.date_selector, 'set_date_range'):
+        if hasattr(tab, "date_selector") and hasattr(
+            tab.date_selector, "set_date_range"
+        ):
             tab.date_selector.set_date_range(start, end)
 
         # If timeline has data from the model, update that too
-        if hasattr(self.timeline_tab, 'set_date_range'):
+        if hasattr(self.timeline_tab, "set_date_range"):
             self.timeline_tab.set_date_range(start, end)
 
         # Emit signal
@@ -305,7 +308,9 @@ class CombinedIntegrityAndImageryTab(QWidget):
         It propagates the changes to the other tabs.
         """
         tab = self.integrity_tab
-        if hasattr(tab, 'date_selector') and hasattr(tab.date_selector, 'get_date_range'):
+        if hasattr(tab, "date_selector") and hasattr(
+            tab.date_selector, "get_date_range"
+        ):
             # Get the date values from the unified date range selector
             start_date, end_date = tab.date_selector.get_date_range()
 
@@ -313,19 +318,23 @@ class CombinedIntegrityAndImageryTab(QWidget):
             self._on_date_range_selected(start_date, end_date)
 
             # Emit the date range change signal if available
-            if hasattr(self.integrity_tab, 'date_range_changed'):
+            if hasattr(self.integrity_tab, "date_range_changed"):
                 self.integrity_tab.date_range_changed.emit(start_date, end_date)
-            elif hasattr(self.integrity_tab, 'dateRangeSelected'):
+            elif hasattr(self.integrity_tab, "dateRangeSelected"):
                 self.integrity_tab.dateRangeSelected.emit(start_date, end_date)
 
-            LOGGER.debug("Date range changed in integrity tab: %s to %s", start_date, end_date)
+            LOGGER.debug(
+                "Date range changed in integrity tab: %s to %s", start_date, end_date
+            )
 
     def _on_timestamp_selected(self, timestamp: datetime) -> None:
         """Handle timestamp selection from timeline tab."""
         # Find matching item
         selected_item = None
         for item in self.view_model.missing_items:
-            if abs((item.timestamp - timestamp).total_seconds()) < 60:  # Within a minute
+            if (
+                abs((item.timestamp - timestamp).total_seconds()) < 60
+            ):  # Within a minute
                 selected_item = item
                 break
 
@@ -348,15 +357,15 @@ class CombinedIntegrityAndImageryTab(QWidget):
     def _on_download_requested(self, item: MissingTimestamp) -> None:
         """Handle download request from results tab."""
         # Forward to integrity tab
-        if hasattr(self.integrity_tab, 'download_item'):
+        if hasattr(self.integrity_tab, "download_item"):
             self.integrity_tab.download_item(item)
 
     def _on_view_requested(self, item: MissingTimestamp) -> None:
         """Handle view request from results tab."""
         # Switch to imagery tab and load the file
-        if hasattr(item, 'local_path') and item.local_path:
+        if hasattr(item, "local_path") and item.local_path:
             self._switch_tab(3)  # Switch to imagery tab (index 3)
-            if hasattr(self.imagery_tab, 'load_file'):
+            if hasattr(self.imagery_tab, "load_file"):
                 self.imagery_tab.load_file(item.local_path)
 
     def _on_imagery_file_selected(self, file_path: str) -> None:
@@ -374,7 +383,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
         LOGGER.debug("Directory selected: %s", directory)
 
         # Set directory in view model
-        if hasattr(self.view_model, 'base_directory'):
+        if hasattr(self.view_model, "base_directory"):
             if isinstance(self.view_model.base_directory, Path):
                 self.view_model.base_directory = Path(directory)
             else:
@@ -382,15 +391,15 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
         # Propagate to all tabs
         # Timeline tab
-        if hasattr(self.timeline_tab, 'set_directory'):
+        if hasattr(self.timeline_tab, "set_directory"):
             self.timeline_tab.set_directory(directory)
 
         # Results tab
-        if hasattr(self.results_tab, 'set_directory'):
+        if hasattr(self.results_tab, "set_directory"):
             self.results_tab.set_directory(directory)
 
         # Update UI in integrity tab if it has a directory field
-        if hasattr(self.integrity_tab, 'directory_edit'):
+        if hasattr(self.integrity_tab, "directory_edit"):
             self.integrity_tab.directory_edit.setText(directory)
 
     def _switch_tab(self, index: int) -> None:
@@ -406,11 +415,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
     # --- Public methods for external interaction ---
 
     def update_data(
-        self,
-        missing_items=None,
-        start_date=None,
-        end_date=None,
-        total_expected=None
+        self, missing_items=None, start_date=None, end_date=None, total_expected=None
     ) -> None:
         """
         Update the tab with new data.
@@ -423,9 +428,9 @@ class CombinedIntegrityAndImageryTab(QWidget):
         """
         # Update view model if values provided
         if missing_items is not None:
-            if hasattr(self.view_model, '_missing_items'):
+            if hasattr(self.view_model, "_missing_items"):
                 self.view_model._missing_items = missing_items
-            elif hasattr(self.view_model, 'set_missing_items'):
+            elif hasattr(self.view_model, "set_missing_items"):
                 self.view_model.set_missing_items(missing_items)
             # Don't use missing_items property directly as it may be read-only
 
@@ -442,7 +447,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
         self._initialize_satellite_tabs()
 
         # Also update integrity tab if it has an update method
-        if hasattr(self.integrity_tab, 'update_data'):
+        if hasattr(self.integrity_tab, "update_data"):
             self.integrity_tab.update_data()
 
     # Removed the show_date_selection_tab method since we no longer have that tab
