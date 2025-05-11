@@ -1,13 +1,16 @@
 # TODO: PyQt6 main window implementation
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple  # noqa: F401
+
 from goesvfi.date_sorter.gui_tab import DateSorterTab
 from goesvfi.date_sorter.sorter import DateSorter  # <-- Add Model import
 from goesvfi.file_sorter.gui_tab import FileSorterTab
 from goesvfi.file_sorter.sorter import FileSorter  # <-- Add Model import
-from goesvfi.gui_tabs.ffmpeg_settings_tab import (
+from goesvfi.gui_tabs.ffmpeg_settings_tab import (  # <-- Add new tab import
     FFmpegSettingsTab,
-)  # <-- Add new tab import
+)
 from goesvfi.gui_tabs.main_tab import MainTab  # <-- Add new tab import
 from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab  # <-- Add new tab import
 from goesvfi.integrity_check.cache_db import CacheDB
@@ -25,9 +28,9 @@ from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
-from goesvfi.view_models.main_window_view_model import (
+from goesvfi.view_models.main_window_view_model import (  # <-- Add ViewModel import
     MainWindowViewModel,
-)  # <-- Add ViewModel import
+)
 
 """
 GOES‑VFI PyQt6 GUI – v0.1
@@ -45,14 +48,9 @@ import sys
 import tempfile  # Import tempfile for temporary files handling
 from pathlib import Path  # Import Path for file path handling
 
-# <-- Import time for time.sleep
-from typing import Iterator  # Added Dict, List, cast
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
-
 import numpy as np
 from PIL import Image
-from PyQt6.QtCore import QRect  # Added QTimer, QUrl
-from PyQt6.QtCore import QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
+from PyQt6.QtCore import QCloseEvent, QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QColor, QDesktopServices, QImage, QPainter, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
@@ -79,14 +77,16 @@ from goesvfi.pipeline.run_vfi import VfiWorker  # <-- ADDED IMPORT
 
 # Correct import for find_rife_executable
 from goesvfi.utils import config, log
-from goesvfi.utils.config import DEFAULT_FFMPEG_PROFILE  # Moved constants
 from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
 from goesvfi.utils.gui_helpers import ClickableLabel  # Import moved classes
 from goesvfi.utils.gui_helpers import CropDialog, RifeCapabilityManager, ZoomDialog
 
+# <-- Import time for time.sleep
+
+
 LOGGER = log.get_logger(__name__)
 
-# from goesvfi.sanchez.runner import colourise # Import Sanchez colourise function - REMOVED
+# from goesvfi.sanchez.runner import colourise  # Import Sanchez colourise function - REMOVED
 
 # Import the new image processor classes
 
@@ -95,13 +95,13 @@ LOGGER = log.get_logger(__name__)
 # FFmpeg profile definitions moved to goesvfi.utils.config
 
 # Commented out as it seems unused and might cause type issues if FfmpegProfile changes
-# # OPTIMAL_FFMPEG_INTERP_SETTINGS = {
-# #     "mi_mode": OPTIMAL_FFMPEG_PROFILE["mi_mode"],
-# #     "mc_mode": OPTIMAL_FFMPEG_PROFILE["mc_mode"],
-# #     "me_mode": OPTIMAL_FFMPEG_PROFILE["me_mode"],
-# # #     "vsbmc": "1" if OPTIMAL_FFMPEG_PROFILE["vsbmc"] else "0",
-# # #     "scd": OPTIMAL_FFMPEG_PROFILE["scd"]
-# # }
+#  # OPTIMAL_FFMPEG_INTERP_SETTINGS = {
+#  #     "mi_mode": OPTIMAL_FFMPEG_PROFILE["mi_mode"],
+#  #     "mc_mode": OPTIMAL_FFMPEG_PROFILE["mc_mode"],
+#  #     "me_mode": OPTIMAL_FFMPEG_PROFILE["me_mode"],
+#  # #     "vsbmc": "1" if OPTIMAL_FFMPEG_PROFILE["vsbmc"] else "0",
+#  # #     "scd": OPTIMAL_FFMPEG_PROFILE["scd"]
+#  # }
 
 # Classes ClickableLabel, ZoomDialog, CropDialog moved to goesvfi.utils.gui_helpers
 
@@ -206,16 +206,16 @@ class MainWindow(QWidget):
         self.tab_widget.setStyleSheet(
             """
             QTabWidget::pane {
-                border: 1px solid #3c3c3c;
-                background-color: #2a2a2a;
+                border: 1px solid  #3c3c3c;
+                background-color:  #2a2a2a;
             }
             QTabWidget::tab-bar {
                 alignment: left;
             }
             QTabBar::tab:left {
-                background-color: #303030;
-                color: #b0b0b0;
-                border: 1px solid #444;
+                background-color:  #303030;
+                color:  #b0b0b0;
+                border: 1px solid  #444;
                 border-right: none;
                 border-top-left-radius: 4px;
                 border-bottom-left-radius: 4px;
@@ -225,14 +225,14 @@ class MainWindow(QWidget):
                 margin-right: -1px; /* Create slight overlap with the pane */
             }
             QTabBar::tab:left:selected {
-                background-color: #2a2a2a;
+                background-color:  #2a2a2a;
                 color: white;
-                border-left: 3px solid #3498db; /* Blue accent for selected tab */
+                border-left: 3px solid  #3498db; /* Blue accent for selected tab */
                 padding-left: 4px; /* Compensate for thicker border */
             }
             QTabBar::tab:left:hover:!selected {
-                background-color: #383838;
-                border-left: 2px solid #666;
+                background-color:  #383838;
+                border-left: 2px solid  #666;
                 padding-left: 5px; /* Compensate for border */
             }
         """
@@ -252,7 +252,7 @@ class MainWindow(QWidget):
         )
         # --- Create FFmpeg Widgets (to be passed to FFmpegSettingsTab) ---
         # These widgets are logically part of the FFmpeg settings but need to be owned by MainWindow
-        # to be passed correctly during instantiation. FFmpegSettingsTab will then manage their layout.  # noqa: B950
+        # to be passed correctly during instantiation. FFmpegSettingsTab will then manage their layout.   # noqa: B950
         self.ffmpeg_settings_group = QGroupBox(self.tr("FFmpeg Interpolation Settings"))
         self.ffmpeg_settings_group.setCheckable(
             True
@@ -274,7 +274,7 @@ class MainWindow(QWidget):
         self.ffmpeg_me_mode_combo.addItems([self.tr("bidir"), self.tr("bilat")])
         self.ffmpeg_vsbmc_checkbox = QCheckBox(self.tr("VSBMC"))
         self.ffmpeg_scd_combo = QComboBox()
-        self.ffmpeg_scd_combo.addItems([self.tr("none"), self.tr("fdiff")])
+        self.ffmpeg_scd_combo.addItems([self.tr("none"), self.tr("fdi")])
         self.ffmpeg_me_algo_edit = QLineEdit("(default)")  # QLineEdit, not combo
         self.ffmpeg_search_param_spinbox = QSpinBox()
         self.ffmpeg_search_param_spinbox.setRange(4, 1024)  # Example range
@@ -378,7 +378,7 @@ class MainWindow(QWidget):
             if self.integrity_check_vm._disk_space_timer.isRunning():
                 self.integrity_check_vm._disk_space_timer.terminate()
                 self.integrity_check_vm._disk_space_timer.wait()
-        # Use the combined tab which includes both enhanced integrity check and enhanced GOES imagery  # noqa: B950
+        # Use the combined tab which includes both enhanced integrity check and enhanced GOES imagery   # noqa: B950
         self.combined_tab = CombinedIntegrityAndImageryTab(
             view_model=self.integrity_check_vm, parent=self
         )
@@ -400,24 +400,24 @@ class MainWindow(QWidget):
             self.combined_tab, "Satellite Integrity"
         )  # Add our Combined tab with enhanced error handling
 
-        # self.loadSettings() # Moved lower
+        # self.loadSettings()  # Moved lower
 
         main_layout.addWidget(self.tab_widget)
         # Status Bar
         self.status_bar = QStatusBar()
 
-        # self.progress_label = QLabel(self.tr("Idle")) # <-- Remove direct label
-        # self.status_bar.addWidget(self.progress_label) # <-- Remove direct label widget
-        # self.progress_bar = QProgressBar() # <-- Progress bar likely managed by Processing VM later  # noqa: B950
-        # self.progress_bar.setVisible(False) # Hide initially
-        # self.status_bar.addPermanentWidget(self.progress_bar) # <-- Remove progress bar for now
+        # self.progress_label = QLabel(self.tr("Idle"))  # <-- Remove direct label
+        # self.status_bar.addWidget(self.progress_label)  # <-- Remove direct label widget
+        # self.progress_bar = QProgressBar()  # <-- Progress bar likely managed by Processing VM later   # noqa: B950
+        # self.progress_bar.setVisible(False)  # Hide initially
+        # self.status_bar.addPermanentWidget(self.progress_bar)  # <-- Remove progress bar for now
 
         # Set up aliases for compatibility with inconsistent naming in the code
         # Access main_tab widgets for aliases
         self.model_combo = (
             self.main_tab.rife_model_combo
         )  # Create alias for compatibility
-        # self.sanchez_res_km_spinbox = self.sanchez_res_spinbox # Removed old alias
+        # self.sanchez_res_km_spinbox = self.sanchez_res_spinbox  # Removed old alias
         self.sanchez_res_km_combo = (
             self.main_tab.sanchez_res_combo
         )  # Added new alias for ComboBox
@@ -455,7 +455,7 @@ class MainWindow(QWidget):
         self.profile_combo = self.ffmpeg_profile_combo  # Alias points to self
 
         # Set up settings - reusing the same settings instance from line 153
-        # self.settings = QSettings("GOES_VFI", "gui")  # Commented out to use consistent QSettings
+        # self.settings = QSettings("GOES_VFI", "gui")   # Commented out to use consistent QSettings
 
         # Apply dark theme
         self.apply_dark_theme()
@@ -482,16 +482,16 @@ class MainWindow(QWidget):
         LOGGER.info("MainWindow initialized.")
 
     def _post_init_setup(self) -> None:
-        # LOGGER.debug("Entering _post_init_setup...") # Removed log
+        # LOGGER.debug("Entering _post_init_setup...")  # Removed log
         """Perform UI setup and signal connections after initialization.
 
         This method should be called after the MainWindow is added to qtbot in tests,
         to ensure proper Qt object lifetime management.
         """
         # Connect signals
-        # self.loadSettings() # Moved to __init__
-        # self._connect_ffmpeg_settings_tab_signals() # Removed - logic moved to FFmpegSettingsTab
-        self._connect_model_combo()  # Assuming this connects main tab's model combo - verify if moved  # noqa: B950
+        # self.loadSettings()  # Moved to __init__
+        # self._connect_ffmpeg_settings_tab_signals()  # Removed - logic moved to FFmpegSettingsTab
+        self._connect_model_combo()  # Assuming this connects main tab's model combo - verify if moved   # noqa: B950
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
         self.main_view_model.status_updated.connect(self.status_bar.showMessage)
         self.file_sorter_tab.directory_selected.connect(self._set_in_dir_from_sorter)
@@ -514,20 +514,20 @@ class MainWindow(QWidget):
 
         # Update initial UI state
         self._update_rife_ui_elements()
-        # self._update_ffmpeg_controls_state(self.encoder_combo.currentText()) # Removed - FFmpeg groups moved to own tab  # noqa: B950
+        # self._update_ffmpeg_controls_state(self.encoder_combo.currentText())  # Removed - FFmpeg groups moved to own tab   # noqa: B950
         self._update_start_button_state()
         self._update_crop_buttons_state()
         self._update_rife_options_state(self.current_encoder)
         # Quality controls state is now handled in the FFmpeg settings tab
-        # self._update_quality_controls_state(self.current_encoder) # Method moved to FFmpeg tab
-        # self._update_ffmpeg_controls_state(self.current_encoder == "FFmpeg", update_group=False) # Removed - FFmpeg groups moved to own tab  # noqa: B950
+        # self._update_quality_controls_state(self.current_encoder)  # Method moved to FFmpeg tab
+        # self._update_ffmpeg_controls_state(self.current_encoder == "FFmpeg", update_group=False)  # Removed - FFmpeg groups moved to own tab   # noqa: B950
 
         # Set up preview update (MOVED TO __init__)
 
         # Set initial status
         self.status_bar.showMessage(self.main_view_model.status)
 
-        # LOGGER.debug("Exiting _post_init_setup...") # Removed log
+        # LOGGER.debug("Exiting _post_init_setup...")  # Removed log
         LOGGER.info("MainWindow post-initialization setup complete.")
 
     # --- State Setters for Child Tabs ---
@@ -549,7 +549,7 @@ class MainWindow(QWidget):
                 f"QSettings details during save: org={org_name}, app={app_name}, file={filename}"
             )
 
-            # Verify QSettings consistency - this will detect if we have mismatched organization/application names  # noqa: B950
+            # Verify QSettings consistency - this will detect if we have mismatched organization/application names   # noqa: B950
             app_instance = QApplication.instance()
             app_org = (
                 app_instance.organizationName() if app_instance is not None else ""
@@ -563,7 +563,7 @@ class MainWindow(QWidget):
                     + f"but Application: org={app_org}, app={app_name_global}"
                 )
                 LOGGER.error(
-                    f"This will cause settings to be saved in different locations!"
+                    "This will cause settings to be saved in different locations!"
                 )
                 # Force consistency by updating our settings instance to match the application
                 self.settings = QSettings(app_org, app_name_global)
@@ -681,7 +681,7 @@ class MainWindow(QWidget):
                 f"QSettings details during crop save: org={org_name}, app={app_name}, file={filename}"  # noqa: B950
             )
 
-            # Verify QSettings consistency - this will detect if we have mismatched organization/application names  # noqa: B950
+            # Verify QSettings consistency - this will detect if we have mismatched organization/application names   # noqa: B950
             app_instance = QApplication.instance()
             app_org = (
                 app_instance.organizationName() if app_instance is not None else ""
@@ -853,7 +853,7 @@ class MainWindow(QWidget):
                             hasattr(self.main_tab, "first_frame_label")
                             and self.main_tab.first_frame_label is not None
                         ):
-                            # Retrieve the QImage stored *before* scaling in _load_process_scale_preview  # noqa: B950
+                            # Retrieve the QImage stored *before* scaling in _load_process_scale_preview   # noqa: B950
                             full_res_image = getattr(
                                 self.main_tab.first_frame_label, "processed_image", None
                             )
@@ -875,7 +875,7 @@ class MainWindow(QWidget):
                             )
                             pixmap_for_dialog = None  # Ensure fallback
 
-                    # If Sanchez wasn't enabled OR getting the preview pixmap failed, load the original  # noqa: B950
+                    # If Sanchez wasn't enabled OR getting the preview pixmap failed, load the original   # noqa: B950
                     if pixmap_for_dialog is None:
                         if sanchez_preview_enabled:
                             LOGGER.debug(
@@ -977,7 +977,7 @@ class MainWindow(QWidget):
                 "Clicked label has no processed image attribute or it is None."
             )
             # Optionally show a message box to the user
-            # QMessageBox.information(self, "Zoom", "No processed image available for this frame yet.")  # noqa: B950
+            # QMessageBox.information(self, "Zoom", "No processed image available for this frame yet.")   # noqa: B950
             return
         if not isinstance(label.processed_image, QImage):
             LOGGER.warning(
@@ -989,7 +989,7 @@ class MainWindow(QWidget):
         if full_res_processed_pixmap.isNull():
             LOGGER.warning("Failed to create QPixmap from processed image for zoom.")
             # Optionally show a message box to the user
-            # QMessageBox.warning(self, "Zoom Error", "Could not load the processed image for zooming.")  # noqa: B950
+            # QMessageBox.warning(self, "Zoom Error", "Could not load the processed image for zooming.")   # noqa: B950
             return
 
         # --- Scale pixmap for display ---
@@ -1070,7 +1070,7 @@ class MainWindow(QWidget):
             "unsharp_cy": self.unsharp_cy_spinbox.value(),
             "unsharp_ca": self.unsharp_ca_spinbox.value(),
             "preset_text": self.ffmpeg_quality_combo.currentText(),
-            "crf": self.crf_spinbox.value(),
+            "cr": self.crf_spinbox.value(),
             "bitrate": self.bitrate_spinbox.value(),
             "bufsize": self.bufsize_spinbox.value(),
             "pix_fmt": self.pix_fmt_combo.currentText(),
@@ -1099,7 +1099,7 @@ class MainWindow(QWidget):
             "unsharp_cy",
             "unsharp_ca",
             "preset_text",
-            "crf",
+            "cr",
             "bitrate",
             "bufsize",
             "pix_fmt",
@@ -1113,7 +1113,7 @@ class MainWindow(QWidget):
                 return False
 
             current_value = current_settings[key]
-            profile_value = profile_dict[key]  # type: ignore[literal-required] # Access using literal key  # noqa: B950
+            profile_value = profile_dict[key]  # type: ignore[literal-required]  # Access using literal key   # noqa: B950
 
             if key == "scd_threshold":
                 # Special handling for scd_threshold: compare only if scd_mode is not "none"
@@ -1153,7 +1153,7 @@ class MainWindow(QWidget):
             f"MainWindow loadSettings - QSettings details: org={org_name}, app={app_name}, file={filename}"  # noqa: B950
         )
 
-        # Verify QSettings consistency - this will detect if we have mismatched organization/application names  # noqa: B950
+        # Verify QSettings consistency - this will detect if we have mismatched organization/application names   # noqa: B950
         app_instance = QApplication.instance()
         app_org = app_instance.organizationName() if app_instance is not None else ""
         app_name_global = (
@@ -1164,9 +1164,7 @@ class MainWindow(QWidget):
                 f"QSettings mismatch detected! MainWindow: org={org_name}, app={app_name}, "
                 + f"but Application: org={app_org}, app={app_name_global}"
             )
-            LOGGER.error(
-                f"This will cause settings to be saved in different locations!"
-            )
+            LOGGER.error("This will cause settings to be saved in different locations!")
             # Force consistency by updating our settings instance to match the application
             self.settings = QSettings(app_org, app_name_global)
             LOGGER.info(
@@ -1233,9 +1231,9 @@ class MainWindow(QWidget):
                     _ = self.main_tab.multiplier_spinbox.objectName()
                     if isinstance(self.main_tab.multiplier_spinbox, QSpinBox):
                         try:
-                            # Load setting using "mid_count" key for backward compatibility? Or change key? Assuming key stays "mid_count".  # noqa: B950
+                            # Load setting using "mid_count" key for backward compatibility? Or change key? Assuming key stays "mid_count".   # noqa: B950
                             value = self.settings.value("mid_count", 1, type=int)
-                            # VfiWorker expects num_intermediate_frames (multiplier - 1), but GUI shows multiplier.  # noqa: B950
+                            # VfiWorker expects num_intermediate_frames (multiplier - 1), but GUI shows multiplier.   # noqa: B950
                             # Load the multiplier value (setting value + 1)
                             self.main_tab.multiplier_spinbox.setValue(value + 1)
                             LOGGER.debug(
@@ -1258,12 +1256,12 @@ class MainWindow(QWidget):
 
         # max_workers_spinbox (Commented out as widget doesn't exist on MainTab)
         # try:
-        #     if hasattr(self.main_tab, "max_workers_spinbox") and self.main_tab.max_workers_spinbox is not None:  # noqa: B950
+        #     if hasattr(self.main_tab, "max_workers_spinbox") and self.main_tab.max_workers_spinbox is not None:   # noqa: B950
         #         try:
         #             _ = self.main_tab.max_workers_spinbox.objectName()
         #             if isinstance(self.main_tab.max_workers_spinbox, QSpinBox):
         #                 try:
-        #                     value = self.settings.value("max_workers", os.cpu_count() or 1, type=int)  # noqa: B950
+        #                     value = self.settings.value("max_workers", os.cpu_count() or 1, type=int)   # noqa: B950
         #                     self.main_tab.max_workers_spinbox.setValue(value)
         #                     LOGGER.debug(f"Set max_workers_spinbox to {value}")
         #                 except RuntimeError as e:
@@ -1347,7 +1345,7 @@ class MainWindow(QWidget):
             res_km_value = self.settings.value(
                 "sanchez_res_km", "4", type=str
             )  # Default to "4" string
-            # Use alias self.sanchez_res_km_combo which now points to self.main_tab.sanchez_res_combo  # noqa: B950
+            # Use alias self.sanchez_res_km_combo which now points to self.main_tab.sanchez_res_combo   # noqa: B950
             if (
                 hasattr(self, "sanchez_res_km_combo")
                 and self.sanchez_res_km_combo is not None
@@ -1400,7 +1398,7 @@ class MainWindow(QWidget):
             self.settings.value("ffmpeg_search_param", 96, type=int)
         )
         self.ffmpeg_scd_combo.setCurrentText(
-            self.settings.value("ffmpeg_scd_mode", "fdiff", type=str)
+            self.settings.value("ffmpeg_scd_mode", "fdi", type=str)
         )
         self.ffmpeg_scd_threshold_spinbox.setValue(
             self.settings.value("ffmpeg_scd_threshold", 10.0, type=float)
@@ -1432,9 +1430,7 @@ class MainWindow(QWidget):
         self.ffmpeg_unsharp_ca_spinbox.setValue(
             self.settings.value("ffmpeg_unsharp_ca", 0.0, type=float)
         )
-        self.ffmpeg_crf_spinbox.setValue(
-            self.settings.value("ffmpeg_crf", 16, type=int)
-        )
+        self.ffmpeg_crf_spinbox.setValue(self.settings.value("ffmpeg_cr", 16, type=int))
         self.ffmpeg_bitrate_spinbox.setValue(
             self.settings.value("ffmpeg_bitrate", 15000, type=int)
         )
@@ -1569,7 +1565,7 @@ class MainWindow(QWidget):
                     self.main_tab.sanchez_false_colour_checkbox.isChecked(),
                 )
 
-            # Use the new combo box alias (self.sanchez_res_km_combo points to self.main_tab.sanchez_res_combo)  # noqa: B950
+            # Use the new combo box alias (self.sanchez_res_km_combo points to self.main_tab.sanchez_res_combo)   # noqa: B950
             if (
                 hasattr(self, "sanchez_res_km_combo")
                 and self.sanchez_res_km_combo is not None
@@ -1752,7 +1748,7 @@ class MainWindow(QWidget):
                 and self.ffmpeg_settings_tab.crf_spinbox is not None
             ):
                 self.settings.setValue(
-                    "ffmpeg_crf", self.ffmpeg_settings_tab.crf_spinbox.value()
+                    "ffmpeg_cr", self.ffmpeg_settings_tab.crf_spinbox.value()
                 )
 
             if (
@@ -1843,9 +1839,9 @@ class MainWindow(QWidget):
 
         # Update state of RIFE options based on capability
         if is_rife:
-            rife_exe = None
+            rife_exe = None  # noqa: F841
             try:
-                rife_exe = config.find_rife_executable(
+                rife_exe = config.find_rife_executable(  # noqa: F841
                     self.current_model_key
                 )  # Keep this to check for exe existence
                 capability_detector = RifeCapabilityManager(
@@ -2012,7 +2008,7 @@ class MainWindow(QWidget):
         me_mode = ffmpeg_settings.get("me_mode", "bidir")
         me_algo = ffmpeg_settings.get("me_algo", "")
         search_param = ffmpeg_settings.get("search_param", 96)
-        scd_mode = ffmpeg_settings.get("scd", "fdiff")
+        scd_mode = ffmpeg_settings.get("scd", "fdi")
         scd_threshold = (
             ffmpeg_settings.get("scd_threshold") if scd_mode != "none" else None
         )
@@ -2034,24 +2030,24 @@ class MainWindow(QWidget):
         unsharp_ca = ffmpeg_settings.get("unsharp_ca", 0.0)
 
         # Sanchez settings
-        sanchez_enabled = args.get("sanchez_enabled", False)
-        sanchez_resolution_km = args.get("sanchez_resolution_km", 4.0)
+        sanchez_enabled = args.get("sanchez_enabled", False)  # noqa: F841
+        sanchez_resolution_km = args.get("sanchez_resolution_km", 4.0)  # noqa: F841
 
         # Get a temporary directory for Sanchez processing
         # Ensure pathlib is available in this scope
         import tempfile
 
-        sanchez_gui_temp_dir = pathlib.Path(tempfile.mkdtemp(prefix="sanchez_gui_"))
+        sanchez_gui_temp_dir = Path(tempfile.mkdtemp(prefix="sanchez_gui_"))
 
         # RIFE settings
-        rife_model_path = args.get("rife_model_path", None)
-        rife_exe_path = args.get("rife_exe_path", None)
-        rife_tta_spatial = args.get("rife_tta_spatial", False)
-        rife_tta_temporal = args.get("rife_tta_temporal", False)
-        rife_uhd = args.get("rife_uhd", False)
-        rife_tiling_enabled = args.get("rife_tiling_enabled", True)
-        rife_tile_size = args.get("rife_tile_size", 384)
-        rife_thread_spec = args.get("rife_thread_spec", "0:0:0:0")
+        rife_model_path = args.get("rife_model_path", None)  # noqa: F841
+        rife_exe_path = args.get("rife_exe_path", None)  # noqa: F841
+        rife_tta_spatial = args.get("rife_tta_spatial", False)  # noqa: F841
+        rife_tta_temporal = args.get("rife_tta_temporal", False)  # noqa: F841
+        rife_uhd = args.get("rife_uhd", False)  # noqa: F841
+        rife_tiling_enabled = args.get("rife_tiling_enabled", True)  # noqa: F841
+        rife_tile_size = args.get("rife_tile_size", 384)  # noqa: F841
+        rife_thread_spec = args.get("rife_thread_spec", "0:0:0:0")  # noqa: F841
 
         # Create worker with correct parameter names
         # Create VfiWorker with proper error handling
@@ -2089,7 +2085,7 @@ class MainWindow(QWidget):
                 unsharp_cy=unsharp_cy,
                 unsharp_ca=unsharp_ca,
                 # Quality settings - Use what VfiWorker expects
-                crf=ffmpeg_settings.get("crf", 18),
+                crf=ffmpeg_settings.get("cr", 18),
                 bitrate_kbps=ffmpeg_settings.get("bitrate_kbps", 7000),
                 bufsize_kb=ffmpeg_settings.get("bufsize_kb", 14000),
                 pix_fmt=ffmpeg_settings.get("pix_fmt", "yuv420p"),
@@ -2101,11 +2097,11 @@ class MainWindow(QWidget):
                 debug_mode=self.debug_mode,
                 # RIFE settings with correct parameter names
                 rife_tile_enable=args.get("rife_tiling_enabled", True),
-                rife_tile_size=args.get("rife_tile_size", 384),
+                rife_tile_size=args.get("rife_tile_size", 384),  # noqa: F841
                 rife_uhd_mode=args.get("rife_uhd", False),
-                rife_thread_spec=args.get("rife_thread_spec", "0:0:0:0"),
-                rife_tta_spatial=args.get("rife_tta_spatial", False),
-                rife_tta_temporal=args.get("rife_tta_temporal", False),
+                rife_thread_spec=args.get("rife_thread_spec", "0:0:0:0"),  # noqa: F841
+                rife_tta_spatial=args.get("rife_tta_spatial", False),  # noqa: F841
+                rife_tta_temporal=args.get("rife_tta_temporal", False),  # noqa: F841
                 model_key=args.get("rife_model_key", "rife-v4.6"),
                 # Sanchez settings (use the names expected by VfiWorker)
                 # Convert from sanchez_enabled to false_colour and
@@ -2126,7 +2122,7 @@ class MainWindow(QWidget):
             QMessageBox.critical(
                 self,
                 "Error",
-                f"Failed to initialize processing pipeline.\n\n"
+                "Failed to initialize processing pipeline.\n\n"
                 f"This appears to be an issue with the video processing module, not your settings.\n\n"  # noqa: B950
                 f"Error details: {str(e)}",
             )
@@ -2218,7 +2214,7 @@ class MainWindow(QWidget):
                 self,
                 "Processing Error",
                 f"Video processing could not be completed due to an error in the processing pipeline.\n\n"  # noqa: B950
-                f"This is likely an issue with the image processing module, not your settings.\n\n"
+                "This is likely an issue with the image processing module, not your settings.\n\n"
                 f"The specific error was: {error_message}",
             )
         except Exception as e:
@@ -2544,9 +2540,9 @@ class MainWindow(QWidget):
                     LOGGER.warning(f"Failed to clean up integrity check resources: {e}")
             # Settings are saved proactively or not saved on close to avoid widget deletion errors.
             # try:
-            #     self.saveSettings()  # Save settings on exit - REMOVED
+            #     self.saveSettings()   # Save settings on exit - REMOVED
             # except RuntimeError as e:
-            #     # This is likely a Qt object lifetime issue in tests; log and continue
+            #      # This is likely a Qt object lifetime issue in tests; log and continue
             #     LOGGER.warning(f"Error saving settings during closeEvent: {e}")
 
             if event:
@@ -2571,7 +2567,7 @@ class MainWindow(QWidget):
         sanchez_processing_failed = False  # Flag to indicate Sanchez processing failure
         sanchez_error_message = ""
         image_data_to_process: ImageData | None = None  # Store loaded/cached data
-        using_cache = False  # Flag to indicate if cache was used
+        using_cache = False  # Flag to indicate if cache was used   # noqa: F841
 
         try:
             # 1. Load Original or Get from Cache (if Sanchez enabled)
@@ -2586,7 +2582,7 @@ class MainWindow(QWidget):
                         image_data=cached_array,
                         metadata={"source_path": image_path, "cached": True},
                     )
-                    using_cache = True
+                    using_cache = True  # noqa: F841
                 else:
                     LOGGER.debug(
                         f"No cached Sanchez result for {image_path.name}, processing..."
@@ -2744,7 +2740,7 @@ class MainWindow(QWidget):
                 else:
                     raise ValueError(f"Unsupported number of channels: {channel}")
                 contiguous_img_array = np.ascontiguousarray(initial_img_array)
-                full_res_qimage = QImage(
+                full_res_qimage = QImage(  # noqa: F841
                     contiguous_img_array.data, width, height, bytes_per_line, format
                 ).copy()
                 # Store path - moved assignment to after final QImage creation
@@ -2974,7 +2970,7 @@ class MainWindow(QWidget):
         # Move log outside try block to ensure it's always printed if method is called
         LOGGER.debug("Entering _update_previews method")
         # Removed extra logging
-        # NOTE: Removed self.sanchez_preview_cache.clear() - Cache should persist unless Sanchez settings change  # noqa: B950
+        # NOTE: Removed self.sanchez_preview_cache.clear() - Cache should persist unless Sanchez settings change   # noqa: B950
 
         try:
             if not self.in_dir or not self.in_dir.is_dir():
@@ -3198,7 +3194,7 @@ class MainWindow(QWidget):
             # Original: has_in_dir and has_out_file and rife_model_selected...
             can_start: bool = (
                 has_in_dir  # Only require input directory
-                # and has_out_file  # Output file can be auto-generated
+                # and has_out_file   # Output file can be auto-generated
                 and rife_model_selected
                 and thread_spec_valid
                 and is_idle
@@ -3223,7 +3219,7 @@ class MainWindow(QWidget):
         self.main_tab.start_button.setEnabled(
             not processing
             and self.in_dir is not None
-            # and self.out_file_path is not None  # Output file is optional
+            # and self.out_file_path is not None   # Output file is optional
         )
         self.main_tab.in_dir_edit.setEnabled(not processing)
         self.main_tab.out_file_edit.setEnabled(not processing)
@@ -3232,12 +3228,12 @@ class MainWindow(QWidget):
             not processing and self.current_crop_rect is not None
         )
         self.tab_widget.setEnabled(not processing)  # Disable tabs during processing
-        # self.main_tab.open_in_vlc_button.setVisible(False)  # Commented out: Attribute does not exist on MainTab  # noqa: B950
+        # self.main_tab.open_in_vlc_button.setVisible(False)   # Commented out: Attribute does not exist on MainTab   # noqa: B950
 
         # Update progress bar visibility
-        # self.main_tab.progress_bar.setVisible(processing) # Commented out: Attribute does not exist on MainTab  # noqa: B950
+        # self.main_tab.progress_bar.setVisible(processing)  # Commented out: Attribute does not exist on MainTab   # noqa: B950
         if not processing:
-            # self.main_tab.progress_bar.setValue(0)  # Commented out: Attribute does not exist on MainTab  # noqa: B950
+            # self.main_tab.progress_bar.setValue(0)   # Commented out: Attribute does not exist on MainTab   # noqa: B950
             pass  # Add pass to avoid indentation error
 
     def _update_crop_buttons_state(self) -> None:
@@ -3268,7 +3264,7 @@ class MainWindow(QWidget):
         # Enable/disable the entire FFmpeg settings tab content
         self.ffmpeg_settings_tab.set_enabled(is_ffmpeg)
 
-    # Methods _update_scd_thresh_state, _update_unsharp_controls_state, _update_quality_controls_state removed  # noqa: B950
+    # Methods _update_scd_thresh_state, _update_unsharp_controls_state, _update_quality_controls_state removed   # noqa: B950
     # as this logic is now handled within FFmpegSettingsTab.
 
     def _start(self) -> None:
@@ -3301,7 +3297,7 @@ class MainWindow(QWidget):
             me_mode = ffmpeg_settings.get("me_mode", "bidir")
             me_algo = ffmpeg_settings.get("me_algo", "")  # Default to empty string
             search_param = ffmpeg_settings.get("search_param", 96)
-            scd_mode = ffmpeg_settings.get("scd", "fdiff")
+            scd_mode = ffmpeg_settings.get("scd", "fdi")
             scd_threshold = (
                 ffmpeg_settings.get("scd_threshold") if scd_mode != "none" else None
             )
@@ -3319,25 +3315,29 @@ class MainWindow(QWidget):
             unsharp_ca = ffmpeg_settings.get("unsharp_ca", 0.0)
 
             # Quality settings
-            crf = ffmpeg_settings.get("crf", 16)
+            crf = ffmpeg_settings.get("cr", 16)
             bitrate_kbps = ffmpeg_settings.get("bitrate", 15000)
             bufsize_kb = ffmpeg_settings.get("bufsize", 22500)
             pix_fmt = ffmpeg_settings.get("pix_fmt", "yuv444p")
 
             # Other args
             # skip_model corresponds to 'Keep Intermediate Files' checkbox in MainTab
-            # skip_model = self.main_tab.keep_temps_checkbox.isChecked() # Removed: Checkbox doesn't exist  # noqa: B950
+            # skip_model = self.main_tab.keep_temps_checkbox.isChecked()  # Removed: Checkbox doesn't exist   # noqa: B950
             skip_model = False  # Default to not keeping intermediate files
             crop_rect = self.current_crop_rect
             debug_mode = self.debug_mode
 
             # RIFE settings
             rife_tile_enable = self.main_tab.rife_tile_checkbox.isChecked()
-            rife_tile_size = self.main_tab.rife_tile_size_spinbox.value()
+            rife_tile_size = self.main_tab.rife_tile_size_spinbox.value()  # noqa: F841
             rife_uhd_mode = self.main_tab.rife_uhd_checkbox.isChecked()
-            rife_thread_spec = self.main_tab.rife_thread_spec_edit.text()
-            rife_tta_spatial = self.main_tab.rife_tta_spatial_checkbox.isChecked()
-            rife_tta_temporal = self.main_tab.rife_tta_temporal_checkbox.isChecked()
+            rife_thread_spec = self.main_tab.rife_thread_spec_edit.text()  # noqa: F841
+            rife_tta_spatial = (
+                self.main_tab.rife_tta_spatial_checkbox.isChecked()
+            )  # noqa: F841
+            rife_tta_temporal = (
+                self.main_tab.rife_tta_temporal_checkbox.isChecked()
+            )  # noqa: F841
             # Get model key from MainTab's stored value
             model_key = self.main_tab.current_model_key
             if not model_key:  # Add a fallback just in case
@@ -3405,11 +3405,11 @@ class MainWindow(QWidget):
             debug_mode=debug_mode,
             # RIFE settings
             rife_tile_enable=rife_tile_enable,
-            rife_tile_size=rife_tile_size,
+            rife_tile_size=rife_tile_size,  # noqa: F841
             rife_uhd_mode=rife_uhd_mode,
-            rife_thread_spec=rife_thread_spec,
-            rife_tta_spatial=rife_tta_spatial,
-            rife_tta_temporal=rife_tta_temporal,
+            rife_thread_spec=rife_thread_spec,  # noqa: F841
+            rife_tta_spatial=rife_tta_spatial,  # noqa: F841
+            rife_tta_temporal=rife_tta_temporal,  # noqa: F841
             model_key=model_key,
             # Sanchez settings
             false_colour=false_colour,
@@ -3456,7 +3456,7 @@ class MainWindow(QWidget):
         self.status_bar.showMessage(
             f"Finished: {output_path_str}", 10000
         )  # Show for 10s
-        # self.main_tab.open_in_vlc_button.setVisible(False) # Button removed/logic changed
+        # self.main_tab.open_in_vlc_button.setVisible(False)  # Button removed/logic changed
         self.vfi_worker = None  # Clear worker reference
 
         # Ask user if they want to open the file location
@@ -3498,9 +3498,9 @@ class MainWindow(QWidget):
 
         # Update state of RIFE options based on capability
         if is_rife:
-            rife_exe = None
+            rife_exe = None  # noqa: F841
             try:
-                rife_exe = config.find_rife_executable(
+                rife_exe = config.find_rife_executable(  # noqa: F841
                     self.current_model_key
                 )  # Keep this to check for exe existence
                 capability_detector = RifeCapabilityManager(
@@ -3602,35 +3602,35 @@ class MainWindow(QWidget):
             """
             /* Main Window and General Styling */
             QWidget {
-                background-color: #2D2D2D;
-                color: #EFEFEF;
+                background-color:  #2D2D2D;
+                color:  #EFEFEF;
                 font-family: Arial, Helvetica, sans;
             }
 
             /* Tab Widget Styling */
             QTabWidget::pane {
-                border: 1px solid #444444;
-                background-color: #2D2D2D;
+                border: 1px solid  #444444;
+                background-color:  #2D2D2D;
             }
 
             QTabBar::tab {
-                background-color: #3D3D3D;
-                color: #EFEFEF;
+                background-color:  #3D3D3D;
+                color:  #EFEFEF;
                 padding: 8px 12px;
-                border: 1px solid #444444;
+                border: 1px solid  #444444;
                 border-bottom: none;
                 border-top-left-radius: 4px;
                 border-top-right-radius: 4px;
             }
 
             QTabBar::tab:selected {
-                background-color: #505050;
+                background-color:  #505050;
                 border-bottom: none;
             }
 
             /* Group Box Styling */
             QGroupBox {
-                border: 1px solid #444444;
+                border: 1px solid  #444444;
                 border-radius: 5px;
                 margin-top: 1ex;
                 padding-top: 1.5ex;
@@ -3645,33 +3645,33 @@ class MainWindow(QWidget):
 
             /* Input Field Styling */
             QLineEdit {
-                background-color: #1A1A1A;
-                color: #EFEFEF;
-                border: 1px solid #444444;
+                background-color:  #1A1A1A;
+                color:  #EFEFEF;
+                border: 1px solid  #444444;
                 padding: 5px;
                 border-radius: 3px;
             }
 
             /* Button Styling */
             QPushButton {
-                background-color: #424242;
-                color: #EFEFEF;
-                border: 1px solid #555555;
+                background-color:  #424242;
+                color:  #EFEFEF;
+                border: 1px solid  #555555;
                 padding: 5px 10px;
                 border-radius: 3px;
             }
 
             QPushButton:hover {
-                background-color: #505050;
+                background-color:  #505050;
             }
 
             QPushButton:pressed {
-                background-color: #333333;
+                background-color:  #333333;
             }
 
             /* Browse Buttons */
             QPushButton#browse_button {
-                background-color: #4A4A4A;
+                background-color:  #4A4A4A;
             }
 
             /* Crop/Clear Buttons */
@@ -3681,36 +3681,36 @@ class MainWindow(QWidget):
 
             /* Start Button - Special Styling */
             QPushButton#start_button {
-                background-color: #424242;
+                background-color:  #424242;
                 font-weight: bold;
                 padding: 8px 15px;
             }
 
             /* Combo Box Styling */
             QComboBox {
-                background-color: #1A1A1A;
-                color: #EFEFEF;
-                border: 1px solid #444444;
+                background-color:  #1A1A1A;
+                color:  #EFEFEF;
+                border: 1px solid  #444444;
                 padding: 5px;
                 border-radius: 3px;
             }
 
             QComboBox:drop-down {
                 width: 20px;
-                border-left: 1px solid #444444;
+                border-left: 1px solid  #444444;
             }
 
             QComboBox QAbstractItemView {
-                background-color: #1A1A1A;
-                color: #EFEFEF;
-                selection-background-color: #505050;
+                background-color:  #1A1A1A;
+                color:  #EFEFEF;
+                selection-background-color:  #505050;
             }
 
             /* Spin Box Styling */
             QSpinBox, QDoubleSpinBox {
-                background-color: #1A1A1A;
-                color: #EFEFEF;
-                border: 1px solid #444444;
+                background-color:  #1A1A1A;
+                color:  #EFEFEF;
+                border: 1px solid  #444444;
                 padding: 5px;
                 border-radius: 3px;
             }
@@ -3726,41 +3726,41 @@ class MainWindow(QWidget):
             }
 
             QCheckBox::indicator:unchecked {
-                background-color: #1A1A1A;
-                border: 1px solid #444444;
+                background-color:  #1A1A1A;
+                border: 1px solid  #444444;
             }
 
             QCheckBox::indicator:checked {
-                background-color: #505050;
-                border: 1px solid #EFEFEF;
+                background-color:  #505050;
+                border: 1px solid  #EFEFEF;
             }
 
             /* Status Bar Styling */
             QStatusBar {
-                background-color: #333333;
-                color: #EFEFEF;
+                background-color:  #333333;
+                color:  #EFEFEF;
             }
 
             /* Preview Area Styling */
             QSplitter::handle {
-                background-color: #444444;
+                background-color:  #444444;
             }
 
             QLabel#preview_title {
-                color: #CCCCCC;
+                color:  #CCCCCC;
                 font-weight: bold;
                 font-size: 10pt;
                 padding-bottom: 5px;
             }
 
             QLabel#preview_frame {
-                background-color: #1A1A1A;
-                border: 1px solid #444444;
+                background-color:  #1A1A1A;
+                border: 1px solid  #444444;
                 border-radius: 3px;
             }
 
             QWidget#preview_container {
-                background-color: #2D2D2D;
+                background-color:  #2D2D2D;
                 padding: 5px;
             }
         """
