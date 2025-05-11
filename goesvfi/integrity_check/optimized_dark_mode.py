@@ -6,72 +6,78 @@ designed for the optimized UI components with improved contrast and
 visual design.
 """
 
-from PyQt6.QtGui import QPalette, QColor, QBrush, QLinearGradient
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QBrush, QColor, QLinearGradient, QPalette
 from PyQt6.QtWidgets import QApplication, QStyle
 
 
 def apply_optimized_dark_palette(app: QApplication) -> None:
     """
     Apply an optimized dark mode color palette to the application.
-    
+
     Args:
         app: QApplication instance
     """
     # Create palette
     dark_palette = QPalette()
-    
+
     # Define optimized color palette with higher contrast
     # Base colors
-    bg_dark = QColor(35, 35, 35)        # Darker background
-    bg_medium = QColor(45, 45, 45)      # Medium background
-    bg_light = QColor(55, 55, 55)       # Lighter background
-    
+    bg_dark = QColor(35, 35, 35)  # Darker background
+    bg_medium = QColor(45, 45, 45)  # Medium background
+    bg_light = QColor(55, 55, 55)  # Lighter background
+
     # Text colors
-    text_bright = QColor(240, 240, 240) # Bright text
-    text_medium = QColor(200, 200, 200) # Medium text
-    text_disabled = QColor(130, 130, 130) # Disabled text
-    
+    text_bright = QColor(240, 240, 240)  # Bright text
+    text_medium = QColor(200, 200, 200)  # Medium text
+    text_disabled = QColor(130, 130, 130)  # Disabled text
+
     # Accent colors
     accent_blue = QColor(42, 130, 218)  # Blue accent
-    accent_blue_light = QColor(70, 150, 230) # Lighter blue
-    accent_blue_dark = QColor(30, 110, 200) # Darker blue
-    
+    accent_blue_light = QColor(70, 150, 230)  # Lighter blue
+    accent_blue_dark = QColor(30, 110, 200)  # Darker blue
+
     # Status colors
     status_success = QColor(60, 180, 80)  # Success green
     status_warning = QColor(230, 180, 40)  # Warning yellow
-    status_error = QColor(230, 70, 80)     # Error red
-    
+    status_error = QColor(230, 70, 80)  # Error red
+
     # Basic window settings
     dark_palette.setColor(QPalette.ColorRole.Window, bg_medium)
     dark_palette.setColor(QPalette.ColorRole.WindowText, text_bright)
-    dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, text_disabled)
-    
+    dark_palette.setColor(
+        QPalette.ColorGroup.Disabled, QPalette.ColorRole.WindowText, text_disabled
+    )
+
     # Text settings
     dark_palette.setColor(QPalette.ColorRole.Text, text_bright)
-    dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, text_disabled)
-    
+    dark_palette.setColor(
+        QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, text_disabled
+    )
+
     # Button settings
     dark_palette.setColor(QPalette.ColorRole.Button, bg_light)
     dark_palette.setColor(QPalette.ColorRole.ButtonText, text_bright)
-    dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, text_disabled)
-    
+    dark_palette.setColor(
+        QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, text_disabled
+    )
+
     # Base settings
     dark_palette.setColor(QPalette.ColorRole.Base, bg_dark)
     dark_palette.setColor(QPalette.ColorRole.AlternateBase, bg_medium)
-    
+
     # Highlight settings
     dark_palette.setColor(QPalette.ColorRole.Highlight, accent_blue)
     dark_palette.setColor(QPalette.ColorRole.HighlightedText, Qt.GlobalColor.white)
-    
+
     # Link settings
     dark_palette.setColor(QPalette.ColorRole.Link, accent_blue_light)
     dark_palette.setColor(QPalette.ColorRole.LinkVisited, accent_blue)
-    
+
     # ToolTip settings
     dark_palette.setColor(QPalette.ColorRole.ToolTipBase, bg_medium)
     dark_palette.setColor(QPalette.ColorRole.ToolTipText, text_bright)
-    
+
     # Apply the palette
     app.setPalette(dark_palette)
 
