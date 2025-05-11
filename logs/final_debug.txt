@@ -206,7 +206,7 @@ Processing started successfully
 [36m[D] PIL.PngImagePlugin: STREAM b'IDAT' 41 65536[0m
 [36m[D] goesvfi.pipeline.run_vfi: Encoding first processed frame processed_abi_rgb_Clean_Longwave_IR_Window_Band_map_20241005T195020Z_216698841755166.png (size (383, 462)) for ffmpeg.[0m
 [37m[I] goesvfi.pipeline.run_vfi: Starting AI interpolation using processed frames.[0m
-[31m[E] goesvfi.utils.rife_analyzer: RIFE help command failed. Help text/error captured: 
+[31m[E] goesvfi.utils.rife_analyzer: RIFE help command failed. Help text/error captured:
 Usage: rife-ncnn-vulkan -0 infile -1 infile1 -o outfile [options]...
        rife-ncnn-vulkan -i indir -o outdir [options]...
 

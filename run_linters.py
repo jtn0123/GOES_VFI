@@ -207,6 +207,7 @@ def run_pylint(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, 
     try:
         # Try to import pylint modules
         import pylint
+
         # Also check for the dill import issue
         try:
             import dill
@@ -216,40 +217,30 @@ def run_pylint(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, 
                 print_colored(
                     "⚠️ Pylint has a dependency issue that prevents it from running correctly.",
                     YELLOW,
-                    bold=True
+                    bold=True,
                 )
                 print_colored(
                     "This is a known issue with the dill package that pylint depends on.",
-                    YELLOW
+                    YELLOW,
                 )
                 print_colored(
                     "SOLUTION: Use ./run_only_flake8.py instead for linting with flake8 only:",
                     YELLOW,
-                    bold=True
+                    bold=True,
                 )
-                print_colored(
-                    f"    python run_only_flake8.py {' '.join(paths)}",
-                    GREEN
-                )
+                print_colored(f"    python run_only_flake8.py {' '.join(paths)}", GREEN)
                 return 1, "Circular import in dill package", 1
     except ImportError:
         print_colored(
             "⚠️ Pylint is not properly installed in your environment. Skipping pylint checks.",
             YELLOW,
-            bold=True
+            bold=True,
         )
+        print_colored("To install pylint: pip install pylint", YELLOW)
         print_colored(
-            "To install pylint: pip install pylint",
-            YELLOW
+            f"Or use run_only_flake8.py which doesn't require pylint:", YELLOW
         )
-        print_colored(
-            f"Or use run_only_flake8.py which doesn't require pylint:",
-            YELLOW
-        )
-        print_colored(
-            f"    python run_only_flake8.py {' '.join(paths)}",
-            GREEN
-        )
+        print_colored(f"    python run_only_flake8.py {' '.join(paths)}", GREEN)
         return 1, "Pylint not installed", 1
 
     cmd = ["pylint", "--output-format=parseable"]

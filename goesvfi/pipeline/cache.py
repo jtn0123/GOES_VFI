@@ -53,7 +53,7 @@ def load_cached(
     num_intermediate_frames: int,
 ) -> Optional[List[NDArray[Any]]]:
     LOGGER.debug(
-        f"Attempting to load cache for {path1.name}, {path2.name}, model={model_id}, " \
+        f"Attempting to load cache for {path1.name}, {path2.name}, model={model_id}, "
         f"frames={num_intermediate_frames}"
     )
     if num_intermediate_frames <= 0:

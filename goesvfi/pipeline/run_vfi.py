@@ -6,10 +6,8 @@ import shutil  # Add shutil
 import subprocess
 import tempfile
 import time
-from concurrent.futures import (
-    ProcessPoolExecutor,  # Add parallel processing
-    as_completed,
-)
+from concurrent.futures import ProcessPoolExecutor  # Add parallel processing
+from concurrent.futures import as_completed
 from typing import IO, Any, Dict, Iterator, List, Optional, Tuple, Union, cast
 
 import numpy as np
@@ -252,7 +250,9 @@ class VfiWorker(QThread):
             "temp_dir": self.sanchez_gui_temp_dir,
         }
 
-    def _process_run_vfi_output(self, gen: Iterator[Union[Tuple[int, int, float], pathlib.Path, str]]) -> None:
+    def _process_run_vfi_output(
+        self, gen: Iterator[Union[Tuple[int, int, float], pathlib.Path, str]]
+    ) -> None:
         """
         Process output from the run_vfi generator.
 
@@ -275,11 +275,15 @@ class VfiWorker(QThread):
                 LOGGER.error(f"Error from run_vfi: {progress_data}")
                 return  # Exit method on error
             else:
-                LOGGER.warning(f"Unexpected data from run_vfi generator: {progress_data}")
+                LOGGER.warning(
+                    f"Unexpected data from run_vfi generator: {progress_data}"
+                )
 
         # Handle the final result
         if final_mp4_path:
-            LOGGER.debug(f"run_vfi finished, emitting finished signal with: {final_mp4_path}")
+            LOGGER.debug(
+                f"run_vfi finished, emitting finished signal with: {final_mp4_path}"
+            )
             self.finished.emit(final_mp4_path)
         else:
             # If gen completed without yielding a path, it means an error occurred
@@ -395,13 +399,14 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
 
 # Helper functions for _load_process_image
 
+
 def _validate_processor_mode(
     path: pathlib.Path,
     false_colour: bool,
     crop_rect_pil: Optional[Tuple[int, int, int, int]],
     image_loader: Optional[ImageLoader],
     sanchez_processor: Optional[SanchezProcessor],
-    image_cropper: Optional[ImageCropper]
+    image_cropper: Optional[ImageCropper],
 ) -> bool:
     """
     Validate if processor mode can be used based on available processors.
@@ -418,7 +423,9 @@ def _validate_processor_mode(
         bool: Whether processor mode should be used
     """
     if image_loader is None:
-        LOGGER.debug(f"Processor mode disabled for {path.name}: No ImageLoader provided")
+        LOGGER.debug(
+            f"Processor mode disabled for {path.name}: No ImageLoader provided"
+        )
         return False
 
     # Check if required processors are available
@@ -437,6 +444,7 @@ def _validate_processor_mode(
     LOGGER.debug(f"Using processor mode for image: {path.name}")
     return True
 
+
 def _process_with_processors(
     path: pathlib.Path,
     false_colour: bool,
@@ -444,7 +452,7 @@ def _process_with_processors(
     crop_rect_pil: Optional[Tuple[int, int, int, int]],
     image_loader: ImageLoader,
     sanchez_processor: Optional[SanchezProcessor],
-    image_cropper: Optional[ImageCropper]
+    image_cropper: Optional[ImageCropper],
 ) -> Optional[Image.Image]:
     """
     Process image using the image processor objects.
@@ -501,12 +509,13 @@ def _process_with_processors(
         LOGGER.exception(f"Error in processor mode: {e}")
         return None
 
+
 def _apply_sanchez_direct_mode(
     img: Image.Image,
     path: pathlib.Path,
     false_colour: bool,
     res_km: int,
-    sanchez_temp_dir: pathlib.Path
+    sanchez_temp_dir: pathlib.Path,
 ) -> Image.Image:
     """
     Apply Sanchez color processing in direct mode.
@@ -560,9 +569,7 @@ def _apply_sanchez_direct_mode(
             # Keep original image if output file not found
             return img
     except Exception as e:
-        LOGGER.error(
-            f"Sanchez colourise failed for {path.name}: {e}", exc_info=True
-        )
+        LOGGER.error(f"Sanchez colourise failed for {path.name}: {e}", exc_info=True)
         # Keep original image if colourise fails
         return img
     finally:
@@ -572,10 +579,11 @@ def _apply_sanchez_direct_mode(
         if temp_out_path.exists():
             temp_out_path.unlink(missing_ok=True)
 
+
 def _apply_crop_direct_mode(
     img: Image.Image,
     path: pathlib.Path,
-    crop_rect_pil: Optional[Tuple[int, int, int, int]]
+    crop_rect_pil: Optional[Tuple[int, int, int, int]],
 ) -> Image.Image:
     """
     Apply cropping in direct mode.
@@ -592,9 +600,7 @@ def _apply_crop_direct_mode(
         return img
 
     try:
-        LOGGER.debug(
-            f"Applying crop {crop_rect_pil} to image from {path.name}."
-        )
+        LOGGER.debug(f"Applying crop {crop_rect_pil} to image from {path.name}.")
         img_cropped = img.crop(crop_rect_pil)
         return img_cropped
     except Exception as e:
@@ -605,12 +611,13 @@ def _apply_crop_direct_mode(
         # Return uncropped since validation will fail later if needed
         return img
 
+
 def _process_direct_mode(
     path: pathlib.Path,
     false_colour: bool,
     res_km: int,
     crop_rect_pil: Optional[Tuple[int, int, int, int]],
-    sanchez_temp_dir: pathlib.Path
+    sanchez_temp_dir: pathlib.Path,
 ) -> Image.Image:
     """
     Process image using direct file operations (legacy mode).
@@ -637,6 +644,7 @@ def _process_direct_mode(
     img = _apply_crop_direct_mode(img, path, crop_rect_pil)
 
     return img
+
 
 # --- Main function with reduced complexity ---
 def _load_process_image(
@@ -676,21 +684,33 @@ def _load_process_image(
 
     # 1. Determine processing mode
     use_processor_mode = _validate_processor_mode(
-        path, false_colour, crop_rect_pil, image_loader, sanchez_processor, image_cropper
+        path,
+        false_colour,
+        crop_rect_pil,
+        image_loader,
+        sanchez_processor,
+        image_cropper,
     )
 
     # 2. Process image using preferred mode
     if use_processor_mode and image_loader is not None:
         # Try processor mode first
         result = _process_with_processors(
-            path, false_colour, res_km, crop_rect_pil,
-            image_loader, sanchez_processor, image_cropper
+            path,
+            false_colour,
+            res_km,
+            crop_rect_pil,
+            image_loader,
+            sanchez_processor,
+            image_cropper,
         )
         if result is not None:
             return result
 
     # 3. Fall back to direct mode if processor mode failed or was not available
-    return _process_direct_mode(path, false_colour, res_km, crop_rect_pil, sanchez_temp_dir)
+    return _process_direct_mode(
+        path, false_colour, res_km, crop_rect_pil, sanchez_temp_dir
+    )
 
 
 # --- End Sanchez/Crop Helper ---
@@ -826,6 +846,7 @@ def _process_single_image_worker_wrapper(
 # Function to run RIFE interpolation and write raw video stream via ffmpeg
 # Helper functions for run_vfi
 
+
 def _validate_and_prepare_run_vfi_parameters(
     folder: pathlib.Path,
     num_intermediate_frames: int,
@@ -861,7 +882,9 @@ def _validate_and_prepare_run_vfi_parameters(
         if not false_colour:
             LOGGER.info("Encoder type is Sanchez - forcing false_colour to True")
             # Also log to stdout for debugging
-            print(f"Forcing false_colour=True for Sanchez encoder (encoder_type={encoder_type})")
+            print(
+                f"Forcing false_colour=True for Sanchez encoder (encoder_type={encoder_type})"
+            )
             updated_false_colour = True
 
     LOGGER.info(
@@ -910,7 +933,17 @@ def _validate_and_prepare_run_vfi_parameters(
 
     return updated_false_colour, paths, crop_for_pil
 
-def _setup_processors_and_temp_dirs() -> Tuple[pathlib.Path, pathlib.Path, ImageLoader, SanchezProcessor, ImageCropper, ImageSaver]:
+
+def _setup_processors_and_temp_dirs() -> (
+    Tuple[
+        pathlib.Path,
+        pathlib.Path,
+        ImageLoader,
+        SanchezProcessor,
+        ImageCropper,
+        ImageSaver,
+    ]
+):
     """
     Set up temporary directories and instantiate image processors.
 
@@ -938,9 +971,19 @@ def _setup_processors_and_temp_dirs() -> Tuple[pathlib.Path, pathlib.Path, Image
 
     LOGGER.info("Image processors instantiated.")
 
-    return sanchez_temp_dir, processed_img_dir, image_loader, sanchez_processor, image_cropper, image_saver
+    return (
+        sanchez_temp_dir,
+        processed_img_dir,
+        image_loader,
+        sanchez_processor,
+        image_cropper,
+        image_saver,
+    )
 
-def _build_ffmpeg_command(effective_input_fps: int, output_path: pathlib.Path) -> List[str]:
+
+def _build_ffmpeg_command(
+    effective_input_fps: int, output_path: pathlib.Path
+) -> List[str]:
     """
     Build the FFmpeg command for raw video encoding.
 
@@ -978,6 +1021,7 @@ def _build_ffmpeg_command(effective_input_fps: int, output_path: pathlib.Path) -
         str(output_path),
     ]
 
+
 def _get_unique_output_path(output_mp4_path: pathlib.Path) -> pathlib.Path:
     """
     Generate a unique output path with timestamp to avoid overwrites.
@@ -1006,9 +1050,9 @@ def _get_unique_output_path(output_mp4_path: pathlib.Path) -> pathlib.Path:
 
     return raw_path
 
+
 def _process_in_skip_model_mode(
-    ffmpeg_proc: subprocess.Popen,
-    all_processed_paths: List[pathlib.Path]
+    ffmpeg_proc: subprocess.Popen, all_processed_paths: List[pathlib.Path]
 ) -> Iterator[Tuple[int, int, float]]:
     """
     Process images in skip_model mode (no AI interpolation).
@@ -1041,9 +1085,8 @@ def _process_in_skip_model_mode(
         except IOError:  # Includes BrokenPipeError which is a subclass
             raise
         except Exception as e:
-            raise IOError(
-                f"Failed processing frame {processed_path.name}: {e}"
-            ) from e
+            raise IOError(f"Failed processing frame {processed_path.name}: {e}") from e
+
 
 def _create_rife_command(
     rife_exe_path: pathlib.Path,
@@ -1057,7 +1100,7 @@ def _create_rife_command(
     rife_uhd_mode: bool,
     rife_tta_spatial: bool,
     rife_tta_temporal: bool,
-    rife_thread_spec: str
+    rife_thread_spec: str,
 ) -> List[str]:
     """
     Create the RIFE command with appropriate arguments based on capabilities.
@@ -1081,9 +1124,12 @@ def _create_rife_command(
     """
     rife_cmd = [
         str(rife_exe_path),
-        "-0", str(temp_p1_path),
-        "-1", str(temp_p2_path),
-        "-o", str(output_path),
+        "-0",
+        str(temp_p1_path),
+        "-1",
+        str(temp_p2_path),
+        "-o",
+        str(output_path),
     ]
 
     # Add model path if supported
@@ -1126,13 +1172,14 @@ def _create_rife_command(
 
     return rife_cmd
 
+
 def _check_rife_capability_warnings(
     capability_detector: RifeCapabilityDetector,
     rife_tile_enable: bool,
     rife_uhd_mode: bool,
     rife_tta_spatial: bool,
     rife_tta_temporal: bool,
-    rife_thread_spec: str
+    rife_thread_spec: str,
 ) -> None:
     """
     Log warnings for unsupported RIFE features that were requested.
@@ -1170,6 +1217,7 @@ def _check_rife_capability_warnings(
             f"Custom thread specification '{rife_thread_spec}' requested but not supported by RIFE executable"
         )
 
+
 def _handle_ffmpeg_cleanup(ffmpeg_proc: Optional[subprocess.Popen[bytes]]) -> None:
     """
     Clean up FFmpeg process and capture any remaining output.
@@ -1199,9 +1247,12 @@ def _handle_ffmpeg_cleanup(ffmpeg_proc: Optional[subprocess.Popen[bytes]]) -> No
         try:
             remaining_output = ffmpeg_proc.stdout.read().decode(errors="ignore")
             if remaining_output:
-                LOGGER.warning(f"Remaining FFmpeg output after process end:\n{remaining_output}")
+                LOGGER.warning(
+                    f"Remaining FFmpeg output after process end:\n{remaining_output}"
+                )
         except Exception as read_err:
             LOGGER.warning(f"Error reading remaining ffmpeg output: {read_err}")
+
 
 def _process_with_rife(
     ffmpeg_proc: subprocess.Popen,
@@ -1214,7 +1265,7 @@ def _process_with_rife(
     rife_uhd_mode: bool,
     rife_thread_spec: str,
     rife_tta_spatial: bool,
-    rife_tta_temporal: bool
+    rife_tta_temporal: bool,
 ) -> Iterator[Tuple[int, int, float]]:
     """
     Process frames using RIFE AI interpolation.
@@ -1245,7 +1296,9 @@ def _process_with_rife(
     last_yield_time = start_time
 
     # Create temporary directory for RIFE inputs
-    with tempfile.TemporaryDirectory(prefix="goesvfi_rife_inputs_") as rife_input_temp_dir_str:
+    with tempfile.TemporaryDirectory(
+        prefix="goesvfi_rife_inputs_"
+    ) as rife_input_temp_dir_str:
         rife_input_temp_path = pathlib.Path(rife_input_temp_dir_str)
 
         # Detect RIFE capabilities once before loop
@@ -1258,7 +1311,7 @@ def _process_with_rife(
             rife_uhd_mode,
             rife_tta_spatial,
             rife_tta_temporal,
-            rife_thread_spec
+            rife_thread_spec,
         )
 
         # Process each pair of frames
@@ -1287,7 +1340,7 @@ def _process_with_rife(
                 rife_uhd_mode,
                 rife_tta_spatial,
                 rife_tta_temporal,
-                rife_thread_spec
+                rife_thread_spec,
             )
 
             # Run RIFE
@@ -1295,7 +1348,9 @@ def _process_with_rife(
             rife_result = subprocess.run(rife_cmd, capture_output=True, text=True)
 
             if rife_result.returncode != 0:
-                LOGGER.error(f"RIFE execution failed for pair {idx}: {rife_result.stderr}")
+                LOGGER.error(
+                    f"RIFE execution failed for pair {idx}: {rife_result.stderr}"
+                )
                 raise RuntimeError(f"RIFE execution failed: {rife_result.stderr}")
 
             LOGGER.debug(f"RIFE output for pair {idx}:\n{rife_result.stdout}")
@@ -1360,6 +1415,7 @@ def _process_with_rife(
             # Always yield at the end of each iteration
             yield (current_pair, total_pairs, eta_seconds)
 
+
 def _capture_ffmpeg_error_output(ffmpeg_proc: Optional[subprocess.Popen[bytes]]) -> str:
     """
     Capture and return error output from FFmpeg process.
@@ -1378,6 +1434,7 @@ def _capture_ffmpeg_error_output(ffmpeg_proc: Optional[subprocess.Popen[bytes]])
         return output
     except Exception as read_err:
         return f"(Error reading FFmpeg output: {read_err})"
+
 
 # Main function with reduced complexity
 def run_vfi(
@@ -1422,8 +1479,17 @@ def run_vfi(
     skip_model = kwargs.get("skip_model", False)
 
     # 1. Validate parameters and prepare data
-    updated_false_colour, paths, crop_for_pil = _validate_and_prepare_run_vfi_parameters(
-        folder, num_intermediate_frames, encoder_type, false_colour, crop_rect_xywh, skip_model
+    (
+        updated_false_colour,
+        paths,
+        crop_for_pil,
+    ) = _validate_and_prepare_run_vfi_parameters(
+        folder,
+        num_intermediate_frames,
+        encoder_type,
+        false_colour,
+        crop_rect_xywh,
+        skip_model,
     )
 
     # Use the updated false_colour value for processing
@@ -1437,7 +1503,7 @@ def run_vfi(
             image_loader,
             sanchez_processor,
             image_cropper,
-            image_saver
+            image_saver,
         ) = _setup_processors_and_temp_dirs()
 
         try:
@@ -1457,10 +1523,14 @@ def run_vfi(
             # Get dimensions from first processed image
             with Image.open(processed_path_0) as img0_processed_handle:
                 target_width, target_height = img0_processed_handle.size
-            LOGGER.info(f"Target frame dimensions set by first processed image: {target_width}x{target_height}")
+            LOGGER.info(
+                f"Target frame dimensions set by first processed image: {target_width}x{target_height}"
+            )
 
             # 4. Process remaining images in parallel
-            LOGGER.info(f"Processing remaining {len(paths) - 1} images in parallel (max_workers={max_workers})...")
+            LOGGER.info(
+                f"Processing remaining {len(paths) - 1} images in parallel (max_workers={max_workers})..."
+            )
             processed_paths_rest: List[pathlib.Path] = []
             args_list = []
 
@@ -1484,18 +1554,24 @@ def run_vfi(
 
             # Process images in parallel
             with ProcessPoolExecutor(max_workers=max_workers) as executor:
-                results_iterator = executor.map(_process_single_image_worker_wrapper, args_list)
+                results_iterator = executor.map(
+                    _process_single_image_worker_wrapper, args_list
+                )
                 processed_paths_rest = list(results_iterator)
 
             # Combine all processed paths
             all_processed_paths = [processed_path_0] + processed_paths_rest
-            LOGGER.info(f"All {len(all_processed_paths)} images processed successfully.")
+            LOGGER.info(
+                f"All {len(all_processed_paths)} images processed successfully."
+            )
 
             # 5. Prepare output path
             raw_path = _get_unique_output_path(output_mp4_path)
 
             # 6. Determine effective FPS
-            effective_input_fps = fps * (num_intermediate_frames + 1) if not skip_model else fps
+            effective_input_fps = (
+                fps * (num_intermediate_frames + 1) if not skip_model else fps
+            )
 
             # 7. Build FFmpeg command
             ffmpeg_cmd = _build_ffmpeg_command(effective_input_fps, raw_path)
@@ -1521,16 +1597,22 @@ def run_vfi(
                             f"(size {im0_processed_handle.size}) for ffmpeg."
                         )
                         png_data = _encode_frame_to_png_bytes(im0_processed_handle)
-                    _safe_write(ffmpeg_proc, png_data, f"initial frame {processed_path_0.name}")
+                    _safe_write(
+                        ffmpeg_proc, png_data, f"initial frame {processed_path_0.name}"
+                    )
                 except IOError:
                     raise
                 except Exception as e:
-                    raise IOError(f"Failed encoding first processed frame {processed_path_0.name}") from e
+                    raise IOError(
+                        f"Failed encoding first processed frame {processed_path_0.name}"
+                    ) from e
 
                 # 10. Process frames based on mode
                 if skip_model:
                     # Skip AI model - directly encode processed frames
-                    for progress_data in _process_in_skip_model_mode(ffmpeg_proc, all_processed_paths):
+                    for progress_data in _process_in_skip_model_mode(
+                        ffmpeg_proc, all_processed_paths
+                    ):
                         yield progress_data
                 else:
                     # Use RIFE interpolation
@@ -1545,7 +1627,7 @@ def run_vfi(
                         rife_uhd_mode=rife_uhd_mode,
                         rife_thread_spec=rife_thread_spec,
                         rife_tta_spatial=rife_tta_spatial,
-                        rife_tta_temporal=rife_tta_temporal
+                        rife_tta_temporal=rife_tta_temporal,
                     ):
                         yield progress_data
 
@@ -1555,11 +1637,15 @@ def run_vfi(
             except (IOError, BrokenPipeError):
                 # FFmpeg pipe broken, read and log stderr before re-raising
                 stderr_output = _capture_ffmpeg_error_output(ffmpeg_proc)
-                LOGGER.error(f"FFmpeg pipe broken during processing. FFmpeg output:\n{stderr_output}")
+                LOGGER.error(
+                    f"FFmpeg pipe broken during processing. FFmpeg output:\n{stderr_output}"
+                )
                 raise
             except Exception as e:
                 # Other errors
-                LOGGER.exception("An error occurred during RIFE interpolation or frame writing.")
+                LOGGER.exception(
+                    "An error occurred during RIFE interpolation or frame writing."
+                )
                 ffmpeg_output = _capture_ffmpeg_error_output(ffmpeg_proc)
                 LOGGER.error(f"FFmpeg output during error:\n{ffmpeg_output}")
                 raise RuntimeError(f"Processing failed: {e}") from e
@@ -1576,6 +1662,8 @@ def run_vfi(
         LOGGER.exception("Error in run_vfi:")
         yield f"ERROR: {str(e)}"
         raise
+
+
 def _encode_frames_for_ffmpeg(frames: List[Image.Image]) -> Iterator[bytes]:
     """Encodes a list of PIL Images into PNG bytes, yielding each one."""
     for img in frames:

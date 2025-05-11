@@ -1,13 +1,8 @@
 # TODO: path + TOML config
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Dict,
-    List,  # Add Any, List, cast, and TypedDict
-    TypedDict,
-    cast,
-)
+from typing import List  # Add Any, List, cast, and TypedDict
+from typing import Any, Dict, TypedDict, cast
 
 """goesvfi.utils.config – user paths and TOML config loader"""
 

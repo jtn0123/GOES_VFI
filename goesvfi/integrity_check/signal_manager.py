@@ -539,7 +539,7 @@ class TabSignalManager:
         missing_items: List[MissingTimestamp],
         start_date: datetime,
         end_date: datetime,
-        interval_minutes: int
+        interval_minutes: int,
     ) -> bool:
         """
         Update a timeline tab with data.
@@ -569,7 +569,7 @@ class TabSignalManager:
         tab: QObject,
         tab_name: str,
         missing_items: List[MissingTimestamp],
-        total_expected: int
+        total_expected: int,
     ) -> bool:
         """
         Update a results tab with items.

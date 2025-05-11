@@ -649,13 +649,13 @@ class MainWindow(QWidget):
 
         # Create the View Models for sorter tabs
         from goesvfi.date_sorter.sorter import DateSorter
-        from goesvfi.date_sorter.view_model import (
+        from goesvfi.date_sorter.view_model import (  # Import here to avoid circular imports
             DateSorterViewModel,
-        )  # Import here to avoid circular imports
+        )
         from goesvfi.file_sorter.sorter import DuplicateMode, FileSorter
-        from goesvfi.file_sorter.view_model import (
+        from goesvfi.file_sorter.view_model import (  # Import here to avoid circular imports
             FileSorterViewModel,
-        )  # Import here to avoid circular imports
+        )
 
         # Create model instances
         file_sorter_model = FileSorter(

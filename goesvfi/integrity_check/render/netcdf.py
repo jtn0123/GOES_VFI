@@ -57,19 +57,14 @@ def _validate_band_id(ds: xr.Dataset) -> None:
                 band_str = band_id.decode("utf-8")
             else:
                 band_str = str(band_id)
-            raise ValueError(
-                f"Expected Band {TARGET_BAND_ID}, found Band {band_str}"
-            )
+            raise ValueError(f"Expected Band {TARGET_BAND_ID}, found Band {band_str}")
     else:
         if TARGET_BAND_ID not in band_id:
             raise ValueError(f"Band {TARGET_BAND_ID} not found in dataset")
 
 
 def _convert_radiance_to_temperature(
-    data: np.ndarray,
-    ds: xr.Dataset,
-    min_temp_k: float,
-    max_temp_k: float
+    data: np.ndarray, ds: xr.Dataset, min_temp_k: float, max_temp_k: float
 ) -> np.ndarray:
     """
     Convert radiance data to brightness temperature and normalize.
@@ -85,8 +80,7 @@ def _convert_radiance_to_temperature(
     """
     # Convert radiance to brightness temperature if Planck constants are available
     if all(
-        k in ds.attrs
-        for k in ["planck_fk1", "planck_fk2", "planck_bc1", "planck_bc2"]
+        k in ds.attrs for k in ["planck_fk1", "planck_fk2", "planck_bc1", "planck_bc2"]
     ):
         fk1 = ds.attrs["planck_fk1"]
         fk2 = ds.attrs["planck_fk2"]
@@ -190,7 +184,9 @@ def _resize_image(image_path: Path, resolution: Tuple[int, int]):
     img.save(image_path)
 
 
-def _prepare_output_path(netcdf_path: Path, output_path: Optional[Union[str, Path]]) -> Path:
+def _prepare_output_path(
+    netcdf_path: Path, output_path: Optional[Union[str, Path]]
+) -> Path:
     """
     Prepare the output path for the rendered image.
 
@@ -255,12 +251,16 @@ def render_png(
 
             # 2. Extract the radiance data
             if RADIANCE_VAR not in ds.variables:
-                raise ValueError(f"Radiance variable {RADIANCE_VAR!r} not found in dataset")
+                raise ValueError(
+                    f"Radiance variable {RADIANCE_VAR!r} not found in dataset"
+                )
 
             data = ds[RADIANCE_VAR].values
 
             # 3. Convert radiance to brightness temperature and normalize
-            normalized_data = _convert_radiance_to_temperature(data, ds, min_temp_k, max_temp_k)
+            normalized_data = _convert_radiance_to_temperature(
+                data, ds, min_temp_k, max_temp_k
+            )
 
             # 4. Create figure and save to file
             _create_figure(normalized_data, colormap, final_output_path)

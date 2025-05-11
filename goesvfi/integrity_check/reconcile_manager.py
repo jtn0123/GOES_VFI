@@ -368,13 +368,9 @@ class ReconcileManager:
                 overall_progress = len(results)
                 if progress_callback:
                     if is_recent:
-                        step_message = (
-                            f"Step 3/4: Downloading from CDN ({idx+1}/{source_total}): {ts.isoformat()}"
-                        )
+                        step_message = f"Step 3/4: Downloading from CDN ({idx+1}/{source_total}): {ts.isoformat()}"
                     else:
-                        step_message = (
-                            f"Step 4/4: Downloading from S3 ({idx+1}/{source_total}): {ts.isoformat()}"
-                        )
+                        step_message = f"Step 4/4: Downloading from S3 ({idx+1}/{source_total}): {ts.isoformat()}"
                     progress_callback(2 if is_recent else 3, 4, step_message)
 
                 local_path = self._get_local_path(ts, satellite)

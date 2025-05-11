@@ -28,20 +28,20 @@ class FileSorterViewModel:
 
     def __init__(self, sorter_model: FileSorter):
         """
-        Initializes the FileSorterViewModel with default state.
+                Initializes the FileSorterViewModel with default state.
 
-        Args:
-            sorter_model (FileSorter): The FileSorter model instance to use for file operations.
+                Args:
+                    sorter_model (FileSorter): The FileSorter model instance to use for file operations.
 
-        Attributes:
-            source_directory (Optional[str]): The currently selected source directory for sorting.
-destination_directory(
-                Optional[str]
-            ): The currently selected destination directory for sorted files.
-            is_sorting (bool): Whether a sorting operation is currently in progress.
-            progress_percentage (float): The current progress of the sorting operation (0-100).
-            status_message (str): A message describing the current status for display in the UI.
-            _cancel_requested (bool): Internal flag indicating if a cancel operation has been requested.
+                Attributes:
+                    source_directory (Optional[str]): The currently selected source directory for sorting.
+        destination_directory(
+                        Optional[str]
+                    ): The currently selected destination directory for sorted files.
+                    is_sorting (bool): Whether a sorting operation is currently in progress.
+                    progress_percentage (float): The current progress of the sorting operation (0-100).
+                    status_message (str): A message describing the current status for display in the UI.
+                    _cancel_requested (bool): Internal flag indicating if a cancel operation has been requested.
         """
         self.sorter_model = sorter_model  # Store the FileSorter model instance
         self.source_directory: typing.Optional[str] = None

@@ -38,7 +38,7 @@ def merge_tiles(
     for x, y, tile in tiles:
         h, w, _ = tile.shape
         alpha = np.ones((h, w, 1), dtype=np.float32)
-        canvas[y: y + h, x: x + w] += tile * alpha
-        weight[y: y + h, x: x + w] += alpha
+        canvas[y : y + h, x : x + w] += tile * alpha
+        weight[y : y + h, x : x + w] += alpha
     canvas /= np.maximum(weight, 1e-5)
     return canvas

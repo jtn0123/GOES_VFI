@@ -240,7 +240,7 @@ Traceback (most recent call last):
     raise NotImplementedError("ImageLoader does not implement the save method.")
 NotImplementedError: ImageLoader does not implement the save method.
 [31m[E] goesvfi.pipeline.run_vfi: Parallel processing failed during map execution.[0m
-concurrent.futures.process._RemoteTraceback: 
+concurrent.futures.process._RemoteTraceback:
 """
 Traceback (most recent call last):
   File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/process.py", line 254, in _process_worker
@@ -367,7 +367,7 @@ Traceback (most recent call last):
     raise NotImplementedError("ImageLoader does not implement the save method.")
 NotImplementedError: ImageLoader does not implement the save method.
 [31m[E] goesvfi.pipeline.run_vfi: Error during VFI processing:[0m
-concurrent.futures.process._RemoteTraceback: 
+concurrent.futures.process._RemoteTraceback:
 """
 Traceback (most recent call last):
   File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/process.py", line 254, in _process_worker

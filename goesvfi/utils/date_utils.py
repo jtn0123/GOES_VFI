@@ -55,6 +55,7 @@ def doy_to_date(year: int, doy: int) -> datetime.date:
 
 # Helper functions for date parsing
 
+
 def _try_create_date_from_year_month_day(
     year: int, month: int, day: int, pattern_name: str
 ) -> Optional[datetime.date]:
@@ -75,9 +76,16 @@ def _try_create_date_from_year_month_day(
         LOGGER.debug("Found date %s using %s pattern", date, pattern_name)
         return date
     except ValueError as e:
-        LOGGER.debug("Invalid date from %s pattern: %s-%s-%s (%s)",
-                    pattern_name, year, month, day, e)
+        LOGGER.debug(
+            "Invalid date from %s pattern: %s-%s-%s (%s)",
+            pattern_name,
+            year,
+            month,
+            day,
+            e,
+        )
         return None
+
 
 def _try_create_date_from_year_doy(
     year: int, doy: int, pattern_name: str
@@ -98,9 +106,11 @@ def _try_create_date_from_year_doy(
         LOGGER.debug("Found date %s using %s pattern", date, pattern_name)
         return date
     except ValueError as e:
-        LOGGER.debug("Invalid date from %s pattern: %s/%s (%s)",
-                    pattern_name, year, doy, e)
+        LOGGER.debug(
+            "Invalid date from %s pattern: %s/%s (%s)", pattern_name, year, doy, e
+        )
         return None
+
 
 def _try_satellite_filename_pattern(path_str: str) -> Optional[datetime.date]:
     """
@@ -122,6 +132,7 @@ def _try_satellite_filename_pattern(path_str: str) -> Optional[datetime.date]:
     day = int(sat_pattern.group(3))
     return _try_create_date_from_year_month_day(year, month, day, "satellite filename")
 
+
 def _try_year_doy_slash_pattern(path_str: str) -> Optional[datetime.date]:
     """
     Try to parse a date using the YYYY/DDD pattern.
@@ -141,6 +152,7 @@ def _try_year_doy_slash_pattern(path_str: str) -> Optional[datetime.date]:
     doy = int(doy_match.group(2))
     return _try_create_date_from_year_doy(year, doy, "YYYY/DDD")
 
+
 def _try_compact_doy_pattern(path_str: str) -> Optional[datetime.date]:
     """
     Try to parse a date using the YYYYDDD pattern.
@@ -159,6 +171,7 @@ def _try_compact_doy_pattern(path_str: str) -> Optional[datetime.date]:
     year = int(doy_match.group(1))
     doy = int(doy_match.group(2))
     return _try_create_date_from_year_doy(year, doy, "YYYYDDD")
+
 
 def _try_hyphen_date_pattern(path_str: str) -> Optional[datetime.date]:
     """
@@ -180,6 +193,7 @@ def _try_hyphen_date_pattern(path_str: str) -> Optional[datetime.date]:
     day = int(date_match.group(3))
     return _try_create_date_from_year_month_day(year, month, day, "YYYY-MM-DD")
 
+
 def _try_underscore_date_pattern(path_str: str) -> Optional[datetime.date]:
     """
     Try to parse a date using the YYYY_MM_DD pattern.
@@ -200,6 +214,7 @@ def _try_underscore_date_pattern(path_str: str) -> Optional[datetime.date]:
     day = int(date_match.group(3))
     return _try_create_date_from_year_month_day(year, month, day, "YYYY_MM_DD")
 
+
 def _try_timestamp_pattern(path_str: str) -> Optional[datetime.date]:
     """
     Try to parse a date using the timestamp pattern (YYYYMMDDTHHMMSSZ).
@@ -219,6 +234,7 @@ def _try_timestamp_pattern(path_str: str) -> Optional[datetime.date]:
     month = int(date_match.group(2))
     day = int(date_match.group(3))
     return _try_create_date_from_year_month_day(year, month, day, "timestamp")
+
 
 def _try_compact_date_pattern(path_str: str) -> Optional[datetime.date]:
     """
@@ -241,6 +257,7 @@ def _try_compact_date_pattern(path_str: str) -> Optional[datetime.date]:
     day = int(date_match.group(3))
     return _try_create_date_from_year_month_day(year, month, day, "YYYYMMDD")
 
+
 def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.date]:
     """Extract date from a satellite imagery path.
 
@@ -260,13 +277,13 @@ def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.date]:
 
     # Try all patterns in order from most specific to most general
     parsers = [
-        _try_satellite_filename_pattern,    # goes18_20231027_120000
-        _try_year_doy_slash_pattern,        # 2023/123
-        _try_compact_doy_pattern,           # 2023123
-        _try_hyphen_date_pattern,           # 2023-10-27
-        _try_underscore_date_pattern,       # 2023_10_27
-        _try_timestamp_pattern,             # 20231027T120000Z
-        _try_compact_date_pattern           # 20231027 (most general, comes last)
+        _try_satellite_filename_pattern,  # goes18_20231027_120000
+        _try_year_doy_slash_pattern,  # 2023/123
+        _try_compact_doy_pattern,  # 2023123
+        _try_hyphen_date_pattern,  # 2023-10-27
+        _try_underscore_date_pattern,  # 2023_10_27
+        _try_timestamp_pattern,  # 20231027T120000Z
+        _try_compact_date_pattern,  # 20231027 (most general, comes last)
     ]
 
     for parser in parsers:
@@ -330,7 +347,11 @@ def get_satellite_path_components(date: datetime.date) -> Tuple[str, str, str]:
     doy_format = format_satellite_path(date, "doy")
     compact_doy_format = format_satellite_path(date, "compact_doy")
 
-    LOGGER.debug("Generated all formats: calendar=%s, doy=%s, compact_doy=%s",
-                calendar_format, doy_format, compact_doy_format)
+    LOGGER.debug(
+        "Generated all formats: calendar=%s, doy=%s, compact_doy=%s",
+        calendar_format,
+        doy_format,
+        compact_doy_format,
+    )
 
     return (calendar_format, doy_format, compact_doy_format)

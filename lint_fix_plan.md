@@ -6,7 +6,7 @@ The codebase currently has the following linting issues:
 
 1. **Total linting issues**: 888
 2. **Line length issues (B950)**: 116
-3. **Unused imports (F401)**: 425 
+3. **Unused imports (F401)**: 425
 4. **f-string formatting issues (B907)**: 94
 5. **Complex functions (C901)**: 65
 6. **Other issues**: 188
@@ -24,7 +24,7 @@ These issues can be fixed with automated scripts with minimal risk:
 Clean up code module by module, prioritizing by importance:
 
 1. **Core modules**:
-   - `goesvfi/integrity_check/` - Core functionality for satellite data integrity 
+   - `goesvfi/integrity_check/` - Core functionality for satellite data integrity
    - `goesvfi/pipeline/` - Processing pipeline for images
    - `goesvfi/utils/` - Shared utility functions
 
@@ -68,7 +68,7 @@ Functions identified as too complex (C901) should be refactored:
 2. **Pipeline Module**:
    - Clean up imports
    - Fix string formatting
-   - Fix line length issues 
+   - Fix line length issues
 
 3. **Utils Module**:
    - Standardize logging practices
@@ -84,7 +84,7 @@ Functions identified as too complex (C901) should be refactored:
 
 2. **Tab Modules**:
    - Fix imports in tab modules
-   - Standardize tab interface implementations 
+   - Standardize tab interface implementations
    - Clean up long lines in UI construction code
 
 ### Week 4: Complex Function Refactoring
@@ -101,7 +101,7 @@ Identify and refactor the most complex functions:
 The following tools will be used:
 
 1. **Fix Imports**: `python fix_imports.py [FILE_PATH]`
-2. **Fix f-strings**: `python fix_fstrings.py [FILE_PATH]` 
+2. **Fix f-strings**: `python fix_fstrings.py [FILE_PATH]`
 3. **Fix Line Lengths**: `python fix_line_length.py [FILE_PATH]`
 
 ## Metrics and Monitoring

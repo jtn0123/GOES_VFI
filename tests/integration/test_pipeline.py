@@ -9,9 +9,9 @@ from PyQt6.QtWidgets import QComboBox
 
 # Import the main pipeline function (Corrected path)
 from goesvfi.pipeline.run_vfi import run_vfi
-from goesvfi.utils.rife_analyzer import (
+from goesvfi.utils.rife_analyzer import (  # For mocking capabilities
     RifeCapabilityDetector,
-)  # For mocking capabilities
+)
 
 # Import helper
 from tests.utils.helpers import create_dummy_png

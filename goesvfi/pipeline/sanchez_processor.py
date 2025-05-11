@@ -280,7 +280,9 @@ class SanchezProcessor(ImageProcessor):
                 )
                 processed_image_data = image_data
                 # Record the error in the metadata
-                processed_image_data.metadata["error"] = f"Sanchez output file not found: {fnf_error}"
+                processed_image_data.metadata[
+                    "error"
+                ] = f"Sanchez output file not found: {fnf_error}"
             except Exception as img_error:
                 LOGGER.exception("Error loading Sanchez output: %s", img_error)
                 # Use original image as fallback
@@ -289,7 +291,9 @@ class SanchezProcessor(ImageProcessor):
                 )
                 processed_image_data = image_data
                 # Record the error in the metadata
-                processed_image_data.metadata["error"] = f"Sanchez processing error: {img_error}"
+                processed_image_data.metadata[
+                    "error"
+                ] = f"Sanchez processing error: {img_error}"
 
             return processed_image_data
 

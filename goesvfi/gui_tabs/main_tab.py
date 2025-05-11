@@ -49,9 +49,9 @@ from PyQt6.QtWidgets import (
 )
 
 # RIFEModelDetails is defined locally below, remove incorrect import
-from goesvfi.pipeline.image_processing_interfaces import (
+from goesvfi.pipeline.image_processing_interfaces import (  # Add ImageData import
     ImageData,
-)  # Add ImageData import
+)
 from goesvfi.utils import config  # Import config
 
 
@@ -137,9 +137,9 @@ from goesvfi.utils.config import (  # Import from config
     get_available_rife_models,
     get_cache_dir,
 )
-from goesvfi.utils.rife_analyzer import (
+from goesvfi.utils.rife_analyzer import (  # Import analyzer function
     analyze_rife_executable,
-)  # Import analyzer function
+)
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 from goesvfi.view_models.processing_view_model import ProcessingViewModel
 

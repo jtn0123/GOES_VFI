@@ -30,22 +30,22 @@ class DateSorterViewModel:
 
     def __init__(self, sorter_model: DateSorter):
         """
-        Initializes the DateSorterViewModel with default state.
+                Initializes the DateSorterViewModel with default state.
 
-        Args:
-            sorter_model (DateSorter): The DateSorter model instance to use for file operations.
+                Args:
+                    sorter_model (DateSorter): The DateSorter model instance to use for file operations.
 
-        Attributes:
-            _source_directory (Optional[str]): The currently selected source directory for sorting.
-_destination_directory(
-                Optional[str]
-            ): The currently selected destination directory for sorted files.
-            _is_sorting (bool): Whether a sorting operation is currently in progress.
-            _progress_percentage (float): The current progress of the sorting operation (0-100).
-            _status_message (str): A message describing the current status for display in the UI.
-            _date_format_pattern (str): The date format pattern used for sorting files.
-            _cancel_requested (bool): Internal flag indicating if a cancel operation has been requested.
-            _observer (Optional[Callable[[], None]]): Optional callback for observer notification.
+                Attributes:
+                    _source_directory (Optional[str]): The currently selected source directory for sorting.
+        _destination_directory(
+                        Optional[str]
+                    ): The currently selected destination directory for sorted files.
+                    _is_sorting (bool): Whether a sorting operation is currently in progress.
+                    _progress_percentage (float): The current progress of the sorting operation (0-100).
+                    _status_message (str): A message describing the current status for display in the UI.
+                    _date_format_pattern (str): The date format pattern used for sorting files.
+                    _cancel_requested (bool): Internal flag indicating if a cancel operation has been requested.
+                    _observer (Optional[Callable[[], None]]): Optional callback for observer notification.
         """
         self.sorter_model = sorter_model  # Store the DateSorter model instance
         self._source_directory: Optional[str] = None

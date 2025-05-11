@@ -109,12 +109,17 @@ class TestParseSatellitePath:
         "path_str,expected_date",
         [
             # Test with Path objects
-            (pathlib.Path("goes18_20231027_120000_band13.png"), datetime.date(2023, 10, 27)),
+            (
+                pathlib.Path("goes18_20231027_120000_band13.png"),
+                datetime.date(2023, 10, 27),
+            ),
             (pathlib.Path("2023/123"), datetime.date(2023, 5, 3)),
             (pathlib.Path("2023-10-27"), datetime.date(2023, 10, 27)),
         ],
     )
-    def test_parse_with_path_objects(self, path_str: pathlib.Path, expected_date: datetime.date):
+    def test_parse_with_path_objects(
+        self, path_str: pathlib.Path, expected_date: datetime.date
+    ):
         """Test parsing dates from pathlib.Path objects."""
         result = parse_satellite_path(path_str)
         assert result == expected_date
@@ -144,7 +149,7 @@ class TestParseSatellitePath:
         # - goes18_20231027_120000 (satellite pattern)
         # - 20231027 (YYYYMMDD pattern)
         path_str = "goes18_20231027_120000_band13.png"
-        
+
         # This will use the satellite pattern parser first, which should correctly
         # extract the date as October 27, 2023
         result = parse_satellite_path(path_str)
@@ -192,7 +197,7 @@ class TestGetSatellitePathComponents:
         """Test getting all path format components for a date."""
         date = datetime.date(2023, 5, 3)  # Day 123 of 2023
         calendar, doy, compact_doy = get_satellite_path_components(date)
-        
+
         assert calendar == "2023-05-03"
         assert doy == "2023/123"
         assert compact_doy == "2023123"
@@ -201,7 +206,7 @@ class TestGetSatellitePathComponents:
         """Test getting components for a leap year date."""
         date = datetime.date(2024, 12, 31)  # Day 366 of 2024
         calendar, doy, compact_doy = get_satellite_path_components(date)
-        
+
         assert calendar == "2024-12-31"
         assert doy == "2024/366"
         assert compact_doy == "2024366"

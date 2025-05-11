@@ -50,19 +50,53 @@ Files that have had comprehensive linting improvements:
 
 ## Newly Created Linting Fix Scripts
 
-- [x] `fix_unused_imports.py` - Safely removes unused imports (F401) with backups
-- [x] `fix_fstring_quotes_enhanced.py` - Converts manually quoted f-strings to use !r formatter (B907)
-- [x] `fix_empty_fstrings.py` - Converts f-strings without placeholders to regular strings (F541)
-- [x] `document_complex_functions.py` - Adds TODO comments to document complex functions (C901)
-- [x] `fix_unused_variables.py` - Handles variables assigned but never used (F841)
-- [x] `fix_long_lines_enhanced.py` - Breaks long lines into multiple lines (B950)
-- [x] `fix_exception_chaining.py` - Properly chains exceptions in except blocks (B904)
-- [x] `fix_whitespace_colon.py` - Removes whitespace before colons in array slices (E203)
-- [x] `fix_redundant_exceptions.py` - Simplifies redundant exception types (B014)
-- [x] `fix_qt_tr_issues.py` - Wraps user-visible strings in translation functions (QTR)
-- [x] `fix_redefined_imports.py` - Removes redundant import redefinitions (F811)
+All linting fix scripts have been organized into the `linting_tools` directory with the following structure:
+
+### Main Tools
+- [x] `linting_tools/fix_gui_linting.py` - Main script for fixing linting issues in gui.py
+- [x] `linting_tools/bulk_lint_fix.py` - Script for applying multiple linting fixes across the codebase
+- [x] `linting_tools/targeted_lint_fix.py` - Script for applying targeted linting fixes to specific files
+- [x] `linting_tools/count_linting_issues.py` - Script for counting linting issues in the codebase
+
+### F-String Fixes
+- [x] `linting_tools/fstring_fixes/fix_fstring_quotes_enhanced.py` - Converts manually quoted f-strings to use !r formatter (B907)
+- [x] `linting_tools/fstring_fixes/fix_empty_fstrings.py` - Converts f-strings without placeholders to regular strings (F541)
+- [x] `linting_tools/fstring_fixes/fix_specific_fstrings.py` - Fixes specific f-string issues in targeted files
+- [x] `linting_tools/fstring_fixes/fix_fstrings.py` - General f-string fixes for multiple issues
+- [x] `linting_tools/fstring_fixes/fix_fstrings_integrity.py` - F-string fixes specific to integrity_check module
+
+### Import Fixes
+- [x] `linting_tools/import_fixes/fix_unused_imports.py` - Safely removes unused imports (F401) with backups
+- [x] `linting_tools/import_fixes/fix_imports.py` - General import fixes for multiple issues
+- [x] `linting_tools/import_fixes/fix_redefined_imports.py` - Removes redundant import redefinitions (F811)
+- [x] `linting_tools/import_fixes/fix_gui_imports.py` - Import fixes specific to gui.py
+
+### Style Fixes
+- [x] `linting_tools/style_fixes/fix_unused_variables.py` - Handles variables assigned but never used (F841)
+- [x] `linting_tools/style_fixes/fix_exception_chaining.py` - Properly chains exceptions in except blocks (B904)
+- [x] `linting_tools/style_fixes/fix_redundant_exceptions.py` - Simplifies redundant exception types (B014)
+
+### Whitespace Fixes
+- [x] `linting_tools/whitespace_fixes/fix_whitespace_colon.py` - Removes whitespace before colons in array slices (E203)
+- [x] `linting_tools/whitespace_fixes/fix_line_length.py` - Breaks long lines to conform to line length limits
+- [x] `linting_tools/whitespace_fixes/fix_long_lines_enhanced.py` - Breaks long lines into multiple lines (B950)
+
+### Qt Fixes
+- [x] `linting_tools/qt_fixes/fix_qt_tr_issues.py` - Wraps user-visible strings in translation functions (QTR)
+- [x] `linting_tools/qt_fixes/fix_pyqt_imports.py` - Fixes PyQt import issues
+
+### Shell Scripts
+- [x] `linting_tools/shell_scripts/fix_black.sh` - Applies black formatter to specific files
+- [x] `linting_tools/shell_scripts/fix_isort.sh` - Applies isort to fix import ordering
+- [x] `linting_tools/shell_scripts/fix_common_lints.sh` - Fixes common linting issues
+- [x] `linting_tools/shell_scripts/fix_targeted_lints.sh` - Applies targeted fixes to specific files
+
+### Configuration and Support
+- [x] `.flake8` - Configuration file for flake8 linting rules
+- [x] `.isort.cfg` - Configuration for isort to make it compatible with black
 - [x] `run_only_flake8.py` - Script to run only flake8 linting (bypassing pylint issues)
 - [x] Modified `run_linters.py` to handle circular import issues with dill package
+- [x] `document_complex_functions.py` - Adds TODO comments to document complex functions (C901)
 
 ## Common Issues Fixed
 

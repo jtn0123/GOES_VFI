@@ -7,15 +7,8 @@ are represented and interacted with, enabling modular and extensible pipeline de
 
 import abc
 from dataclasses import dataclass, field
-from typing import (
-    TYPE_CHECKING,  # Add Union, TypeAlias, and TYPE_CHECKING
-    Any,
-    Dict,
-    Optional,
-    Tuple,
-    TypeAlias,
-    Union,
-)
+from typing import TYPE_CHECKING  # Add Union, TypeAlias, and TYPE_CHECKING
+from typing import Any, Dict, Optional, Tuple, TypeAlias, Union
 
 import numpy as np  # Import numpy
 from PIL import Image  # Import PIL.Image
