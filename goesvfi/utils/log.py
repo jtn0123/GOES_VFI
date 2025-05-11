@@ -1,4 +1,3 @@
-
 # TODO: colorlog wrapper
 from __future__ import annotations
 
@@ -6,8 +5,9 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import Optional, cast
 from types import ModuleType
+from typing import Optional, cast
+
 from goesvfi.utils import config  # Import config module
 
 try:
@@ -68,6 +68,7 @@ def get_logger(name: str | None = None) -> logging.Logger:
     # by the root logger setup in set_global_log_level.
     return logging.getLogger(name)
 
+
 def set_global_log_level(level: int) -> None:
     """
     Configure the root logger with a single handler and set its level.
@@ -76,7 +77,7 @@ def set_global_log_level(level: int) -> None:
     root_logger = logging.getLogger()
 
     # Remove any existing handlers from the root logger
-    for handler in root_logger.handlers[:]: # Iterate over a copy
+    for handler in root_logger.handlers[:]:  # Iterate over a copy
         root_logger.removeHandler(handler)
 
     # Build and add the single desired handler
@@ -92,5 +93,6 @@ def set_global_log_level(level: int) -> None:
 
     # No need to update existing named loggers directly, propagation handles it.
     # No need for the global _LEVEL variable anymore.
+
 
 # set_level function removed, level is now controlled by config

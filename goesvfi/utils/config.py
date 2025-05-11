@@ -1,15 +1,21 @@
 # TODO: path + TOML config
 from __future__ import annotations
-from typing import Dict, Any, List, cast, TypedDict # Add Any, List, cast, and TypedDict
+
+from typing import (
+    Any,
+    Dict,
+    List,  # Add Any, List, cast, and TypedDict
+    TypedDict,
+    cast,
+)
 
 """goesvfi.utils.config – user paths and TOML config loader"""
 
-import os
 import pathlib
+import shutil  # Add for searching in PATH
+import sys  # Add for platform check
 import tomllib
 from functools import lru_cache
-import sys  # Add for platform check
-import shutil  # Add for searching in PATH
 
 CONFIG_DIR = pathlib.Path.home() / ".config/goesvfi"
 CONFIG_FILE = CONFIG_DIR / "config.toml"
@@ -31,6 +37,7 @@ DEFAULTS: Dict[str, Any] = {
         "level": "INFO",
     },
 }
+
 
 # Define TypedDict for profile structure first
 class FfmpegProfile(TypedDict):
@@ -161,6 +168,7 @@ FFMPEG_PROFILES: Dict[str, FfmpegProfile] = {
     # "Custom" is handled implicitly when settings change
 }
 
+
 @lru_cache(maxsize=1)
 # Specify dict return type
 def _load_config() -> Dict[str, Any]:
@@ -286,6 +294,8 @@ def get_project_root() -> pathlib.Path:
     """
     # Navigate up two levels from this file's directory (utils -> goesvfi -> project_root)
     return pathlib.Path(__file__).resolve().parent.parent
+
+
 def find_rife_executable(model_key: str) -> pathlib.Path:
     """
     Locate the RIFE CLI executable.
@@ -323,9 +333,9 @@ def find_rife_executable(model_key: str) -> pathlib.Path:
     # If none found, raise error
     raise FileNotFoundError(
         f"RIFE executable not found. Searched:\n"
-        f"  - PATH for '{exe_name_std}'\n"
-        f"  - '{project_bin_exe}'\n"
-        f"  - '{model_specific_exe}'"
+        f"  - PATH for {exe_name_std!r}\n"
+        f"  - {project_bin_exe!r}\n"
+        f"  - {model_specific_exe!r}"
     )
 
 
@@ -352,9 +362,9 @@ def get_available_rife_models() -> list[str]:
 def get_user_config_dir() -> pathlib.Path:
     """
     Returns the directory for user-specific configuration files.
-    
+
     Uses CONFIG_DIR from the module, which defaults to ~/.config/goesvfi
-    
+
     Returns:
         Path to the user's configuration directory
     """

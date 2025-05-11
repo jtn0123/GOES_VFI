@@ -6,11 +6,11 @@ helping to bridge the gap between what the application expects and what the exec
 actually supports.
 """
 
-import pathlib
-import subprocess
-import re
 import logging
-from typing import Dict, List, Optional, Set, Tuple, Any
+import pathlib
+import re
+import subprocess
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -370,8 +370,8 @@ if __name__ == "__main__":
     """
     When run as a script, analyze the RIFE executable specified as an argument.
     """
-    import sys
     import json
+    import sys
 
     if len(sys.argv) < 2:
         print("Usage: python rife_analyzer.py <path_to_rife_executable>")

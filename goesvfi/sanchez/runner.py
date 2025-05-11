@@ -1,7 +1,11 @@
-import platform, subprocess, tarfile, zipfile
+import logging
+import platform
+import subprocess
+import tarfile
+import zipfile
 from pathlib import Path
 from urllib.request import urlretrieve
-import logging
+
 from goesvfi.utils import config  # Import config module
 
 LOGGER = logging.getLogger(__name__)
@@ -44,24 +48,36 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
     out_png_str = str(out_png)
     # Determine the directory containing the binary
     binary_dir = bin_path.parent
-    
+
     # Ensure the output directory exists
     out_dir = Path(out_png).parent
     import os
+
     os.makedirs(out_dir, exist_ok=True)
     LOGGER.info(f"Ensuring output directory exists: {out_dir}")
-    
+
     # Add the geostationary subcommand which is required for proper operation
-    cmd = [str(bin_path), "geostationary", "-s", ir_png_str, "-o", out_png_str, "-r", str(res_km)]
-    
+    cmd = [
+        str(bin_path),
+        "geostationary",
+        "-s",
+        ir_png_str,
+        "-o",
+        out_png_str,
+        "-r",
+        str(res_km),
+    ]
+
     # Add false color options (-c and -g) for geostationary processing
     gradient_path = binary_dir / "Resources" / "Gradients" / "Atmosphere.json"
     if gradient_path.exists():
         cmd.extend(["-c", "0.0-1.0", "-g", str(gradient_path)])
         LOGGER.info(f"Adding false color gradient: {gradient_path}")
     else:
-        LOGGER.warning(f"Gradient file not found at {gradient_path}, false color may not be applied")
-    
+        LOGGER.warning(
+            f"Gradient file not found at {gradient_path}, false color may not be applied"
+        )
+
     LOGGER.info(
         f"Running Sanchez: {' '.join(map(str, cmd))} in directory {binary_dir}"
     )  # Log cwd with better formatting

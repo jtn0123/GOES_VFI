@@ -24,8 +24,8 @@ from PyQt6.QtGui import (  # Added QWheelEvent, QScreen, QResizeEvent, QPaintEve
     QScreen,
     QWheelEvent,
 )
-from PyQt6.QtWidgets import QApplication  # Added more imports here
 from PyQt6.QtWidgets import (
+    QApplication,  # Added more imports here
     QCheckBox,
     QComboBox,
     QDialog,
@@ -99,7 +99,7 @@ class CropDialog(QDialog):
             f"Entering CropDialog.__init__... pixmap.size={pixmap.size()}, init={init}"
         )
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Select Crop Region"))
+        self.setWindowTitle("Select Crop Region")
 
         self.original_pixmap = pixmap
         self.scale_factor = 1.0
@@ -310,71 +310,59 @@ class RifeCapabilityManager:
         # Update tiling elements
         if self.capabilities.get("tiling", False):
             tile_enable_cb.setEnabled(True)
-            tile_enable_cb.setToolTip(self.tr("Enable tiling for large images"))
+            tile_enable_cb.setToolTip("Enable tiling for large images")
             # Only enable tile size spinner if tiling is enabled
             tile_size_spin.setEnabled(tile_enable_cb.isChecked())
         else:
             tile_enable_cb.setEnabled(False)
-            tile_enable_cb.setToolTip(
-                self.tr("Tiling not supported by this RIFE executable")
-            )
+            tile_enable_cb.setToolTip("Tiling not supported by this RIFE executable")
             tile_size_spin.setEnabled(False)
-            tile_size_spin.setToolTip(
-                self.tr("Tiling not supported by this RIFE executable")
-            )
+            tile_size_spin.setToolTip("Tiling not supported by this RIFE executable")
 
         # Update UHD mode
         if self.capabilities.get("uhd", False):
             uhd_mode_cb.setEnabled(True)
             uhd_mode_cb.setToolTip(
-                self.tr("Enable UHD mode for 4K+ images (slower but better quality)")
+                "Enable UHD mode for 4K+ images (slower but better quality)"
             )
         else:
             uhd_mode_cb.setEnabled(False)
-            uhd_mode_cb.setToolTip(
-                self.tr("UHD mode not supported by this RIFE executable")
-            )
+            uhd_mode_cb.setToolTip("UHD mode not supported by this RIFE executable")
 
         # Update thread specification
         if self.capabilities.get("thread_spec", False):
             thread_spec_edit.setEnabled(True)
             thread_spec_label.setEnabled(True)
-            thread_spec_edit.setToolTip(
-                self.tr("Thread specification (load:proc:save)")
-            )
+            thread_spec_edit.setToolTip("Thread specification (load:proc:save)")
         else:
             thread_spec_edit.setEnabled(False)
             thread_spec_label.setEnabled(False)
             thread_spec_edit.setToolTip(
-                self.tr("Thread specification not supported by this RIFE executable")
+                "Thread specification not supported by this RIFE executable"
             )
 
         # Update TTA spatial
         if self.capabilities.get("tta_spatial", False):
             tta_spatial_cb.setEnabled(True)
             tta_spatial_cb.setToolTip(
-                self.tr(
-                    "Enable spatial test-time augmentation (slower but better quality)"
-                )
+                "Enable spatial test-time augmentation (slower but better quality)"
             )
         else:
             tta_spatial_cb.setEnabled(False)
             tta_spatial_cb.setToolTip(
-                self.tr("Spatial TTA not supported by this RIFE executable")
+                "Spatial TTA not supported by this RIFE executable"
             )
 
         # Update TTA temporal
         if self.capabilities.get("tta_temporal", False):
             tta_temporal_cb.setEnabled(True)
             tta_temporal_cb.setToolTip(
-                self.tr(
-                    "Enable temporal test-time augmentation (slower but better quality)"
-                )
+                "Enable temporal test-time augmentation (slower but better quality)"
             )
         else:
             tta_temporal_cb.setEnabled(False)
             tta_temporal_cb.setToolTip(
-                self.tr("Temporal TTA not supported by this RIFE executable")
+                "Temporal TTA not supported by this RIFE executable"
             )
 
     def get_capability_summary(self) -> str:
@@ -398,12 +386,28 @@ class RifeCapabilityManager:
         )
 
 
-from PyQt6.QtCore import Qt  # Added QRect, QPoint, pyqtSignal
-from PyQt6.QtCore import QPoint, QRect, pyqtSignal
-from PyQt6.QtGui import QMouseEvent  # Added QMouseEvent
-from PyQt6.QtGui import QColor, QImage, QPainter, QPen, QPixmap
-from PyQt6.QtWidgets import QLabel  # Added QWidget
-from PyQt6.QtWidgets import QApplication, QDialog, QSizePolicy, QVBoxLayout, QWidget
+from PyQt6.QtCore import (
+    QPoint,
+    QRect,
+    Qt,  # Added QRect, QPoint, pyqtSignal
+    pyqtSignal,
+)
+from PyQt6.QtGui import (
+    QColor,
+    QImage,
+    QMouseEvent,  # Added QMouseEvent
+    QPainter,
+    QPen,
+    QPixmap,
+)
+from PyQt6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QLabel,  # Added QWidget
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 # ────────────────────────────── Image Viewer Dialog ──────────────────────────────
@@ -429,14 +433,14 @@ class ImageViewerDialog(QDialog):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         # --- End Style Changes ---
         self.setWindowTitle(
-            self.tr("Image Viewer")
+            "Image Viewer"
         )  # Title won't be visible, but keep for identification
         self.setModal(False)  # Non-modal
 
         if self.original_qimage.isNull():
             # Handle case where image is invalid
             layout = QVBoxLayout(self)
-            error_label = QLabel(self.tr("Error: Invalid image provided."))
+            error_label = QLabel("Error: Invalid image provided.")
             layout.addWidget(error_label)
             self.setLayout(layout)
             self.resize(200, 50)
@@ -911,7 +915,7 @@ class CropSelectionDialog(QDialog):
 
     def __init__(self, image: QImage, parent: QWidget | None = None):
         super().__init__(parent)
-        self.setWindowTitle(self.tr("Select Crop Region"))
+        self.setWindowTitle("Select Crop Region")
         self.setModal(True)  # Ensure it blocks interaction until closed
 
         if image.isNull():

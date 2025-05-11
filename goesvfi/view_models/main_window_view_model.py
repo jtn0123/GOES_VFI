@@ -8,19 +8,22 @@ from __future__ import annotations
 
 import logging
 from typing import Optional
+
 from PyQt6.QtCore import QObject, pyqtSignal
+
+from goesvfi.date_sorter.sorter import DateSorter
+from goesvfi.date_sorter.view_model import DateSorterViewModel
 
 # Import Models
 from goesvfi.file_sorter.sorter import FileSorter
-from goesvfi.date_sorter.sorter import DateSorter
+
+# Import Child ViewModels
+from goesvfi.file_sorter.view_model import FileSorterViewModel
+from goesvfi.view_models.processing_view_model import ProcessingViewModel
 
 # Import other core components if needed for ProcessingViewModel later
 # from goesvfi.pipeline import ...
 
-# Import Child ViewModels
-from goesvfi.file_sorter.view_model import FileSorterViewModel
-from goesvfi.date_sorter.view_model import DateSorterViewModel
-from goesvfi.view_models.processing_view_model import ProcessingViewModel
 
 LOGGER = logging.getLogger(__name__)
 
