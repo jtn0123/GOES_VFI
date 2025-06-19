@@ -10,7 +10,7 @@ from goesvfi.utils.date_utils import (
     date_to_doy,
     doy_to_date,
     format_satellite_path,
-    get_satellite_path_components,
+    get_all_date_formats,
     parse_satellite_path,
 )
 
@@ -190,13 +190,13 @@ class TestFormatSatellitePath:
             format_satellite_path(date, "invalid_format")
 
 
-class TestGetSatellitePathComponents:
-    """Tests for get_satellite_path_components function."""
+class TestGetAllDateFormats:
+    """Tests for get_all_date_formats function."""
 
     def test_components(self):
         """Test getting all path format components for a date."""
         date = datetime.date(2023, 5, 3)  # Day 123 of 2023
-        calendar, doy, compact_doy = get_satellite_path_components(date)
+        calendar, doy, compact_doy = get_all_date_formats(date)
 
         assert calendar == "2023-05-03"
         assert doy == "2023/123"
@@ -205,7 +205,7 @@ class TestGetSatellitePathComponents:
     def test_components_leap_year(self):
         """Test getting components for a leap year date."""
         date = datetime.date(2024, 12, 31)  # Day 366 of 2024
-        calendar, doy, compact_doy = get_satellite_path_components(date)
+        calendar, doy, compact_doy = get_all_date_formats(date)
 
         assert calendar == "2024-12-31"
         assert doy == "2024/366"

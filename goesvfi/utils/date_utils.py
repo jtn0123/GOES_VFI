@@ -378,16 +378,7 @@ def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.date]:
             return None
 
     # Try various date patterns using existing helper functions
-
-    # Try YYYY/DDD pattern
-    result = _try_doy_pattern(path_str, r"(\d{4})/(\d{3})", "YYYY/DDD")
-    if result:
-        return result
-
-    # Try YYYYDDD pattern
-    result = _try_doy_pattern(path_str, r"(\d{4})(\d{3})", "YYYYDDD")
-    if result:
-        return result
+    # Order is important: more specific patterns first
 
     # Try YYYY-MM-DD pattern
     result = _try_calendar_pattern(path_str, r"(\d{4})-(\d{2})-(\d{2})", "YYYY-MM-DD")
@@ -399,13 +390,23 @@ def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.date]:
     if result:
         return result
 
+    # Try YYYY/DDD pattern (with slash separator)
+    result = _try_doy_pattern(path_str, r"(\d{4})/(\d{3})", "YYYY/DDD")
+    if result:
+        return result
+
     # Try ISO timestamp pattern (ignore time part)
     result = _try_timestamp_pattern(path_str, r"(\d{4})(\d{2})(\d{2})T\d{6}Z?", "ISO")
     if result:
         return result
 
-    # Try YYYYMMDD pattern
+    # Try YYYYMMDD pattern (8 digits for calendar date)
     result = _try_calendar_pattern(path_str, r"(\d{4})(\d{2})(\d{2})", "YYYYMMDD")
+    if result:
+        return result
+
+    # Try YYYYDDD pattern (7 digits for day-of-year) - LAST because it can match YYYYMMDD incorrectly
+    result = _try_doy_pattern(path_str, r"(\d{4})(\d{3})", "YYYYDDD")
     if result:
         return result
 
@@ -416,6 +417,17 @@ def _try_doy_pattern(
     path_str: str, pattern: str, pattern_name: str
 ) -> Optional[datetime.date]:
     """Try to parse using day-of-year pattern."""
+    # For YYYYDDD pattern, check if this string was already rejected as invalid YYYYMMDD
+    if pattern_name == "YYYYDDD":
+        if (
+            hasattr(_try_calendar_pattern, "_failed_yyyymmdd")
+            and path_str in _try_calendar_pattern._failed_yyyymmdd
+        ):
+            LOGGER.debug(
+                "Skipping %s as YYYYDDD because it failed as YYYYMMDD", path_str
+            )
+            return None
+
     match = re.search(pattern, path_str)
     if match:
         try:
@@ -444,6 +456,12 @@ def _try_calendar_pattern(
             return result
         except ValueError as e:
             LOGGER.debug("Invalid date from %s pattern: %s", pattern_name, e)
+            # For YYYYMMDD pattern specifically, mark as invalid to prevent fallback to YYYYDDD
+            if pattern_name == "YYYYMMDD":
+                # Store the failed pattern to prevent YYYYDDD from trying it
+                if not hasattr(_try_calendar_pattern, "_failed_yyyymmdd"):
+                    _try_calendar_pattern._failed_yyyymmdd = set()
+                _try_calendar_pattern._failed_yyyymmdd.add(path_str)
     return None
 
 
