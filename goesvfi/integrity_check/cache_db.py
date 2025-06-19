@@ -173,12 +173,14 @@ class CacheDB:
 
         # Store missing timestamps
         for ts in missing_timestamps:
+            # Generate expected filename based on timestamp
+            expected_filename = f"{ts.strftime('%Y%m%dT%H%M%S')}.png"
             cursor.execute(
                 """
-                INSERT INTO missing_timestamps (scan_id, timestamp)
-                VALUES (?, ?)
+                INSERT INTO missing_timestamps (scan_id, timestamp, expected_filename)
+                VALUES (?, ?, ?)
             """,
-                (scan_id, ts.isoformat()),
+                (scan_id, ts.isoformat(), expected_filename),
             )
 
         self.conn.commit()

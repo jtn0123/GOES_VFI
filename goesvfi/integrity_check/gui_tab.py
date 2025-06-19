@@ -166,7 +166,8 @@ class IntegrityCheckTab(QWidget):
         date_layout.addWidget(self.end_date_edit)
         
         self.auto_detect_btn = QPushButton("Auto Detect")
-        self.auto_detect_btn.setToolTip("Auto-detect date range from files (Feature under repair)")
+        self.auto_detect_btn.setToolTip("Auto-detect date range from files in the selected directory")
+        self.auto_detect_btn.clicked.connect(self._auto_detect_date_range)
         date_layout.addWidget(self.auto_detect_btn)
         
         date_group.setLayout(date_layout)
@@ -209,10 +210,34 @@ class IntegrityCheckTab(QWidget):
         self.progress_bar.setVisible(False)
         layout.addWidget(self.progress_bar)
 
-        # Status label
+        # Status label with better styling
         self.status_label = QLabel("Ready")
+        self.status_label.setStyleSheet("""
+            QLabel {
+                padding: 5px;
+                border-radius: 3px;
+                background-color: #f0f0f0;
+            }
+        """)
         layout.addWidget(self.status_label)
 
+        # Results table with selection controls
+        results_group = QGroupBox("Scan Results")
+        results_layout = QVBoxLayout()
+        
+        # Selection controls
+        selection_layout = QHBoxLayout()
+        self.select_all_btn = QPushButton("Select All")
+        self.select_all_btn.clicked.connect(self._select_all_items)
+        selection_layout.addWidget(self.select_all_btn)
+        
+        self.select_none_btn = QPushButton("Select None")
+        self.select_none_btn.clicked.connect(self._select_no_items)
+        selection_layout.addWidget(self.select_none_btn)
+        
+        selection_layout.addStretch()
+        results_layout.addLayout(selection_layout)
+        
         # Results table
         self.results_table = QTableView()
         self.results_model = MissingTimestampsModel()
@@ -220,7 +245,13 @@ class IntegrityCheckTab(QWidget):
         self.results_table.setSelectionBehavior(
             QTableView.SelectionBehavior.SelectRows
         )
-        layout.addWidget(self.results_table)
+        self.results_table.setSelectionMode(
+            QTableView.SelectionMode.MultiSelection
+        )
+        results_layout.addWidget(self.results_table)
+        
+        results_group.setLayout(results_layout)
+        layout.addWidget(results_group)
 
         # Summary label
         self.summary_label = QLabel("No scan performed yet")
@@ -295,8 +326,24 @@ class IntegrityCheckTab(QWidget):
 
         # Start download
         if self.view_model:
-            # The view model downloads all missing items, not just selected ones
-            # For now, start downloads for all items
+            # TODO: Implement selective download in view model
+            # For now, we download all missing items
+            # In the future, we should modify the view model to accept a list of items to download
+            
+            num_selected = len(selected_items)
+            total_missing = len(self.results_model._items)
+            
+            if num_selected < total_missing:
+                reply = QMessageBox.question(
+                    self, "Download Confirmation",
+                    f"You have selected {num_selected} out of {total_missing} missing files.\n"
+                    f"Currently, the system will download ALL {total_missing} missing files.\n\n"
+                    f"Do you want to continue?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                if reply != QMessageBox.StandardButton.Yes:
+                    return
+            
             self.view_model.start_downloads()
         else:
             self.status_label.setText("Error: No view model connected")
@@ -312,6 +359,24 @@ class IntegrityCheckTab(QWidget):
     def _on_status_updated(self, status: str) -> None:
         """Handle status update from view model."""
         self.status_label.setText(status)
+        
+        # Update status label color based on content
+        if "error" in status.lower():
+            bg_color = "#ffcccc"  # Light red
+        elif "complete" in status.lower() or "success" in status.lower():
+            bg_color = "#ccffcc"  # Light green
+        elif "scanning" in status.lower() or "downloading" in status.lower():
+            bg_color = "#ffffcc"  # Light yellow
+        else:
+            bg_color = "#f0f0f0"  # Default gray
+            
+        self.status_label.setStyleSheet(f"""
+            QLabel {{
+                padding: 5px;
+                border-radius: 3px;
+                background-color: {bg_color};
+            }}
+        """)
 
     def _on_status_type_changed(self, status: ScanStatus) -> None:
         """Handle status type change from view model."""
@@ -342,6 +407,16 @@ class IntegrityCheckTab(QWidget):
         """Handle progress update from view model."""
         self.progress_bar.setMaximum(total)
         self.progress_bar.setValue(current)
+        
+        # Update progress bar text to show percentage and ETA
+        if total > 0:
+            percentage = (current / total) * 100
+            if eta > 0:
+                eta_min = int(eta / 60)
+                eta_sec = int(eta % 60)
+                self.progress_bar.setFormat(f"{percentage:.1f}% - ETA: {eta_min}m {eta_sec}s")
+            else:
+                self.progress_bar.setFormat(f"{percentage:.1f}%")
 
     def _on_missing_items_updated(self, items: List[MissingTimestamp]) -> None:
         """Handle missing items update from view model."""
@@ -378,3 +453,71 @@ class IntegrityCheckTab(QWidget):
         
         selected_rows = selection.selectedRows()
         return [self.results_model._items[index.row()] for index in selected_rows]
+
+    def _auto_detect_date_range(self) -> None:
+        """Auto-detect date range from files in the selected directory."""
+        directory = self.dir_input.text()
+        if not directory or not os.path.isdir(directory):
+            QMessageBox.warning(
+                self, "Invalid Directory", 
+                "Please select a valid directory first."
+            )
+            return
+
+        try:
+            # Import TimeIndex for auto-detection
+            from .time_index import TimeIndex
+            
+            # Get selected satellite pattern
+            satellite_idx = self.satellite_combo.currentIndex()
+            satellite_patterns = list(SatellitePattern)
+            if 0 <= satellite_idx < len(satellite_patterns):
+                satellite = satellite_patterns[satellite_idx]
+            else:
+                satellite = SatellitePattern.GENERIC
+
+            # Scan directory for timestamps
+            timestamps = TimeIndex.scan_directory_for_timestamps(
+                Path(directory), satellite
+            )
+
+            if timestamps:
+                # Sort timestamps and get min/max
+                timestamps.sort()
+                start_date = timestamps[0]
+                end_date = timestamps[-1]
+
+                # Update date editors
+                self.start_date_edit.setDateTime(
+                    QDateTimeEdit.dateTimeFromText(start_date.isoformat())
+                )
+                self.end_date_edit.setDateTime(
+                    QDateTimeEdit.dateTimeFromText(end_date.isoformat())
+                )
+
+                QMessageBox.information(
+                    self, "Date Range Detected",
+                    f"Found files from:\n{start_date.strftime('%Y-%m-%d %H:%M')}\n"
+                    f"to:\n{end_date.strftime('%Y-%m-%d %H:%M')}\n\n"
+                    f"Total files: {len(timestamps)}"
+                )
+            else:
+                QMessageBox.information(
+                    self, "No Files Found",
+                    "No valid satellite files found in the selected directory."
+                )
+
+        except Exception as e:
+            LOGGER.exception("Error during auto-detection")
+            QMessageBox.critical(
+                self, "Auto-Detection Error",
+                f"An error occurred during auto-detection:\n{str(e)}"
+            )
+
+    def _select_all_items(self) -> None:
+        """Select all items in the results table."""
+        self.results_table.selectAll()
+
+    def _select_no_items(self) -> None:
+        """Clear selection in the results table."""
+        self.results_table.clearSelection()
