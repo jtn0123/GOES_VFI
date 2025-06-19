@@ -119,9 +119,11 @@ class SanchezProcessor(ImageProcessor):
                     data=processed_array,
                     width=processed_array.shape[1],
                     height=processed_array.shape[0],
-                    channels=len(processed_array.shape)
-                    if len(processed_array.shape) == 2
-                    else processed_array.shape[2],
+                    channels=(
+                        len(processed_array.shape)
+                        if len(processed_array.shape) == 2
+                        else processed_array.shape[2]
+                    ),
                     source_path=image_data.source_path,
                     metadata={
                         **image_data.metadata,

@@ -7,6 +7,7 @@ NetCDF data from AWS S3 buckets using asynchronous boto3 operations.
 Note: This implementation uses unsigned S3 access for public NOAA GOES buckets.
 No AWS credentials are required as these buckets are publicly accessible.
 """
+
 import asyncio
 import logging
 import random
@@ -23,7 +24,9 @@ import botocore.exceptions
 from botocore import UNSIGNED
 from botocore.config import Config
 
-from goesvfi.integrity_check.remote.base import AuthenticationError
+from goesvfi.integrity_check.remote.base import (
+    AuthenticationError,
+)
 from goesvfi.integrity_check.remote.base import ConnectionError as RemoteConnectionError
 from goesvfi.integrity_check.remote.base import (
     RemoteStore,
@@ -1184,9 +1187,9 @@ class S3Store(RemoteStore):
 
                     # Create error object using helper function
                     error = create_error_from_code(
-                        error_code=error_code
-                        if error_code is not None
-                        else "UnknownError",
+                        error_code=(
+                            error_code if error_code is not None else "UnknownError"
+                        ),
                         error_message=error_message,
                         technical_details=technical_details,
                         satellite_name=satellite.name,
@@ -1376,9 +1379,11 @@ class S3Store(RemoteStore):
                         success=False,
                         download_time=download_time,
                         error_type=error_type,
-                        error_message=f"{error_type}: {str(download_error)[:100]}..."
-                        if len(str(download_error)) > 100
-                        else str(download_error),
+                        error_message=(
+                            f"{error_type}: {str(download_error)[:100]}..."
+                            if len(str(download_error)) > 100
+                            else str(download_error)
+                        ),
                     )
 
                     # Log and raise the error
@@ -1706,9 +1711,11 @@ class S3Store(RemoteStore):
                             success=False,
                             download_time=download_time,
                             error_type=error_type,
-                            error_message=f"Wildcard {error_type}: {str(download_error)[:100]}..."
-                            if len(str(download_error)) > 100
-                            else str(download_error),
+                            error_message=(
+                                f"Wildcard {error_type}: {str(download_error)[:100]}..."
+                                if len(str(download_error)) > 100
+                                else str(download_error)
+                            ),
                         )
 
                         # Log and raise the error
@@ -1761,9 +1768,11 @@ class S3Store(RemoteStore):
                         error_msg=(
                             f"No files found for {satellite.name} at {ts.isoformat()}"
                             if error_code == "404"
-                            else "AWS S3 service is currently unavailable"
-                            if error_code in ("ServiceUnavailable", "InternalError")
-                            else f"Error listing {satellite.name} data files"
+                            else (
+                                "AWS S3 service is currently unavailable"
+                                if error_code in ("ServiceUnavailable", "InternalError")
+                                else f"Error listing {satellite.name} data files"
+                            )
                         ),
                     )
 
@@ -1836,9 +1845,11 @@ class S3Store(RemoteStore):
                 error_msg=(
                     f"File not found for {satellite.name} at {ts.isoformat()}"
                     if error_code in ("NoSuchBucket", "NoSuchKey", "404")
-                    else f"Timeout accessing {satellite.name} data"
-                    if "timeout" in str(e).lower()
-                    else None  # Use default message
+                    else (
+                        f"Timeout accessing {satellite.name} data"
+                        if "timeout" in str(e).lower()
+                        else None
+                    )  # Use default message
                 ),
             )
 
@@ -1873,11 +1884,15 @@ class S3Store(RemoteStore):
             error_code = (
                 "timeout"
                 if "timeout" in str(e).lower()
-                else "access"
-                if "permission" in str(e).lower() or "access" in str(e).lower()
-                else "disk"
-                if "disk" in str(e).lower() or "space" in str(e).lower()
-                else "unknown"
+                else (
+                    "access"
+                    if "permission" in str(e).lower() or "access" in str(e).lower()
+                    else (
+                        "disk"
+                        if "disk" in str(e).lower() or "space" in str(e).lower()
+                        else "unknown"
+                    )
+                )
             )
 
             # Create error object with the appropriate message

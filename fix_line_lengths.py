@@ -122,7 +122,7 @@ def analyze_directory(directory: str) -> Dict[str, Dict[str, List[Tuple[int, str
 
 
 def count_issues_by_category(
-    results: Dict[str, Dict[str, List[Tuple[int, str]]]]
+    results: Dict[str, Dict[str, List[Tuple[int, str]]]],
 ) -> Dict[str, int]:
     """Count issues by category across all analyzed files."""
     counts = {"total": 0}
@@ -136,7 +136,7 @@ def count_issues_by_category(
 
 
 def count_issues_by_file(
-    results: Dict[str, Dict[str, List[Tuple[int, str]]]]
+    results: Dict[str, Dict[str, List[Tuple[int, str]]]],
 ) -> Dict[str, int]:
     """Count total issues for each file."""
     counts = {}

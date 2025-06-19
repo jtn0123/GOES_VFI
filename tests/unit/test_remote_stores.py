@@ -351,11 +351,12 @@ class TestS3Store(unittest.TestCase):
         self.test_satellite = SatellitePattern.GOES_16
 
         # Create store under test with mocked diagnostics
-        with patch(
-            "goesvfi.integrity_check.remote.s3_store.get_system_network_info"
-        ), patch(
-            "goesvfi.integrity_check.remote.s3_store.socket.gethostbyname",
-            return_value="127.0.0.1",
+        with (
+            patch("goesvfi.integrity_check.remote.s3_store.get_system_network_info"),
+            patch(
+                "goesvfi.integrity_check.remote.s3_store.socket.gethostbyname",
+                return_value="127.0.0.1",
+            ),
         ):
             self.s3_store = S3Store(
                 aws_profile=None, aws_region="us-east-1", timeout=30

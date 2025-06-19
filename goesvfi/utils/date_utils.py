@@ -313,7 +313,7 @@ def format_timestamp(dt: datetime.datetime, compact: bool = False) -> str:
 
 
 def get_satellite_path_components(
-    path: Union[str, Path]
+    path: Union[str, Path],
 ) -> Optional[Tuple[int, int, int]]:
     """
     Extract year, day of year, and hour from a satellite data path.

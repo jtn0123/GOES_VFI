@@ -118,9 +118,9 @@ async def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
                             # Success for this product type
                             product_result["success"] = True
                         else:
-                            attempt[
-                                "error"
-                            ] = "File reported as downloaded but doesn't exist"
+                            attempt["error"] = (
+                                "File reported as downloaded but doesn't exist"
+                            )
                             LOGGER.error(
                                 f"✗ Download failed: File doesn't exist at {dest_path}"
                             )

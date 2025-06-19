@@ -167,16 +167,16 @@ def interpolate_three(
 
     # Calculate the frame between img1 and img_mid (t=0.25)
     left_options = options.copy()
-    left_options[
-        "timestep"
-    ] = 0.5  # Always 0.5 for the pair, which is effectively 0.25 overall
+    left_options["timestep"] = (
+        0.5  # Always 0.5 for the pair, which is effectively 0.25 overall
+    )
     img_left = backend.interpolate_pair(img1, img_mid, left_options)
 
     # Calculate the frame between img_mid and img2 (t=0.75)
     right_options = options.copy()
-    right_options[
-        "timestep"
-    ] = 0.5  # Always 0.5 for the pair, which is effectively 0.75 overall
+    right_options["timestep"] = (
+        0.5  # Always 0.5 for the pair, which is effectively 0.75 overall
+    )
     img_right = backend.interpolate_pair(img_mid, img2, right_options)
 
     return [img_left, img_mid, img_right]

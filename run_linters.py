@@ -188,7 +188,8 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     else:
         print(output)
         print_colored(
-            f"Flake8-Qt-TR found {issue_count} translation issues in PyQt files. ❌", RED
+            f"Flake8-Qt-TR found {issue_count} translation issues in PyQt files. ❌",
+            RED,
         )
 
     return exit_code, output, issue_count
@@ -221,7 +222,7 @@ def run_mypy(paths: List[str], strict: bool = False) -> Tuple[int, str, int]:
         return 1, "Mypy not installed", 1
 
     # Basic command with common options
-    cmd = ["python", "-m", "mypy", "--disable-error-code=import-untyped"]
+    cmd = [".venv/bin/python", "-m", "mypy", "--disable-error-code=import-untyped"]
 
     if strict:
         cmd.append("--strict")
@@ -277,7 +278,7 @@ def run_black(paths: List[str], check_only: bool = True) -> Tuple[int, str, int]
         return 1, "Black not installed", 1
 
     # Basic command
-    cmd = ["python", "-m", "black", "--line-length=88"]
+    cmd = [".venv/bin/python", "-m", "black", "--line-length=88"]
 
     # If we're only checking, add the --check flag
     if check_only:
@@ -340,7 +341,7 @@ def run_isort(paths: List[str], check_only: bool = True) -> Tuple[int, str, int]
         return 1, "isort not installed", 1
 
     # Basic command - using same settings as pre-commit
-    cmd = ["python", "-m", "isort"]
+    cmd = [".venv/bin/python", "-m", "isort"]
 
     # If we're only checking, add the --check flag
     if check_only:
@@ -423,9 +424,7 @@ def run_pylint(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, 
             bold=True,
         )
         print_colored("To install pylint: pip install pylint", YELLOW)
-        print_colored(
-            "Or use run_only_flake8.py which doesn't require pylint:", YELLOW
-        )
+        print_colored("Or use run_only_flake8.py which doesn't require pylint:", YELLOW)
         print_colored(f"    python run_only_flake8.py {' '.join(paths)}", GREEN)
         return 1, "Pylint not installed", 1
 

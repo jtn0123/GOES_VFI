@@ -85,9 +85,9 @@ def fix_type_aliases(file_path: str) -> bool:
                             }
                             current.add("TypeAlias")
                             sorted_imports = sorted(current)
-                            new_lines[
-                                i
-                            ] = f'from typing import {", ".join(sorted_imports)}\n'
+                            new_lines[i] = (
+                                f'from typing import {", ".join(sorted_imports)}\n'
+                            )
                         break
 
             # Convert the type alias
@@ -273,9 +273,9 @@ def fix_qcloseevent_import(file_path: str) -> bool:
                         if match:
                             imports = [imp.strip() for imp in match.group(1).split(",")]
                             imports.append("QCloseEvent")
-                            lines[
-                                j
-                            ] = f"from PyQt6.QtGui import {', '.join(sorted(set(imports)))}\n"
+                            lines[j] = (
+                                f"from PyQt6.QtGui import {', '.join(sorted(set(imports)))}\n"
+                            )
                     has_qtgui_import = True
                     break
 

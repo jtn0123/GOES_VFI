@@ -11,10 +11,10 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from goesvfi.utils import config
-
-get_correlation_id,
-get_enhanced_logger,
-setup_json_logging,
+from goesvfi.utils.enhanced_log import (
+    get_correlation_id,
+    get_enhanced_logger,
+    setup_json_logging,
 )
 from goesvfi.utils.operation_history import get_operation_store, track_operation
 

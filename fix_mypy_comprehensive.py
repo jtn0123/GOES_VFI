@@ -298,9 +298,11 @@ def fix_run_vfi():
     if "Optional" not in content and "from typing import" in content:
         content = re.sub(
             r"from typing import ([^)]+)",
-            lambda m: f"from typing import {m.group(1)}, Optional"
-            if "Optional" not in m.group(1)
-            else m.group(0),
+            lambda m: (
+                f"from typing import {m.group(1)}, Optional"
+                if "Optional" not in m.group(1)
+                else m.group(0)
+            ),
             content,
             count=1,
         )

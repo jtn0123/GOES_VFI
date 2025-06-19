@@ -280,7 +280,7 @@ def _process_single_image_worker_wrapper(
         pathlib.Path,
         int,
         int,
-    ]
+    ],
 ) -> pathlib.Path:
     """Unpacks arguments and calls the actual worker function."""
     # Expects 8 arguments: original_path, crop_rect_pil, false_colour, res_km,
@@ -373,11 +373,12 @@ def run_vfi(
 
     # --- Setup Temporary Directories --- #
     # One for Sanchez intermediates, one for final processed images
-    with tempfile.TemporaryDirectory(
-        prefix="goesvfi_sanchez_"
-    ) as sanchez_temp_dir_str, tempfile.TemporaryDirectory(
-        prefix="goesvfi_processed_"
-    ) as processed_img_dir_str:
+    with (
+        tempfile.TemporaryDirectory(prefix="goesvfi_sanchez_") as sanchez_temp_dir_str,
+        tempfile.TemporaryDirectory(
+            prefix="goesvfi_processed_"
+        ) as processed_img_dir_str,
+    ):
         sanchez_temp_path = pathlib.Path(sanchez_temp_dir_str)
         processed_img_path = pathlib.Path(processed_img_dir_str)
         LOGGER.info(f"Using Sanchez temp dir: {sanchez_temp_path}")
@@ -397,7 +398,7 @@ def run_vfi(
                 false_colour=false_colour,
                 res_km=res_km,
                 sanchez_temp_dir=sanchez_temp_path,
-                output_dir=processed_img_path
+                output_dir=processed_img_path,
                 # target_width=orig_width, # REMOVED - determined after processing
                 # target_height=orig_height # REMOVED
             )

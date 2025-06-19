@@ -26,7 +26,7 @@ class ReconcileManager:
         cdn_store: Optional[Any] = None,
         s3_store: Optional[Any] = None,
         max_concurrency: int = 5,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """Initialize the ReconcileManager.
 

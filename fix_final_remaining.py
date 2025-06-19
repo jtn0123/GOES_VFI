@@ -48,9 +48,9 @@ def fix_time_index_refactored_again():
             imports = re.findall(r"from typing import (.+)", current_line)[0]
             current_imports = {imp.strip() for imp in imports.split(",")}
             current_imports.update({"Dict", "List", "Optional", "Pattern", "Tuple"})
-            lines[
-                typing_line_index
-            ] = f"from typing import {', '.join(sorted(current_imports))}"
+            lines[typing_line_index] = (
+                f"from typing import {', '.join(sorted(current_imports))}"
+            )
 
     # Fix COMPILED_PATTERNS type annotation
     content = "\n".join(lines)

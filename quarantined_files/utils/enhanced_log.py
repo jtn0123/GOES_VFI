@@ -87,15 +87,17 @@ class PerformanceLogger:
                 self.metrics[operation].append(elapsed)
 
             # Log the timing
-            self.logger.info("Performance metric: %s", operation,)
-            extra={
-            "performance": {
-            "operation": operation,
-            "elapsed_seconds": elapsed,
-            "elapsed_ms": elapsed * 1000,
-            **extra,
-            }
-            },
+            self.logger.info(
+                "Performance metric: %s", 
+                operation,
+                extra={
+                    "performance": {
+                        "operation": operation,
+                        "elapsed_seconds": elapsed,
+                        "elapsed_ms": elapsed * 1000,
+                        **extra,
+                    }
+                },
             )
 
     def get_stats(self, operation: str) -> Dict[str, float]:

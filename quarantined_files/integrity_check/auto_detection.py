@@ -225,23 +225,21 @@ class AutoDetectionWorker(QThread):
                 sample_files = ", ".join([f.name for f in jpg_files[:3]])
                 self.progress.emit(40, f"Sample JPG files: {sample_files}", "info")
         except Exception as dir_error:
-            pass
-            self.progress.emit()
-            30, f"Error listing directory contents: {dir_error}", "error"
+            self.progress.emit(
+                30, f"Error listing directory contents: {dir_error}", "error"
             )
 
         # Look for GOES-16 files
         self.progress.emit(50, "Scanning for GOES-16 files...", "info")
         goes16_files = []
         try:
-            goes16_files = TimeIndex.scan_directory_for_timestamps()
-            self.directory, SatellitePattern.GOES_16
+            goes16_files = TimeIndex.scan_directory_for_timestamps(
+                self.directory, SatellitePattern.GOES_16
             )
             self.progress.emit(60, f"Found {len(goes16_files)} GOES-16 files", "info")
         except Exception as scan_error:
-            pass
-            self.progress.emit()
-            60, f"Error scanning for GOES-16 files: {scan_error}", "error"
+            self.progress.emit(
+                60, f"Error scanning for GOES-16 files: {scan_error}", "error"
             )
 
         # Look for GOES-18 files
@@ -249,14 +247,13 @@ class AutoDetectionWorker(QThread):
 
         goes18_files = []
         try:
-            goes18_files = TimeIndex.scan_directory_for_timestamps()
-            self.directory, SatellitePattern.GOES_18
+            goes18_files = TimeIndex.scan_directory_for_timestamps(
+                self.directory, SatellitePattern.GOES_18
             )
             self.progress.emit(80, f"Found {len(goes18_files)} GOES-18 files", "info")
         except Exception as scan_error:
-            pass
-            self.progress.emit()
-            80, f"Error scanning for GOES-18 files: {scan_error}", "error"
+            self.progress.emit(
+                80, f"Error scanning for GOES-18 files: {scan_error}", "error"
             )
 
         # Select satellite based on file count
@@ -268,11 +265,10 @@ class AutoDetectionWorker(QThread):
             self.progress.emit(95, "No valid GOES files found", "warning")
             result = {"status": "no_files", "goes16_count": 0, "goes18_count": 0}
         elif goes16_count > goes18_count:
-            pass
-            self.progress.emit()
-            100,
-            f"Detected GOES-16 as primary satellite ({goes16_count} files vs {goes18_count})",
-            "success",
+            self.progress.emit(
+                100,
+                f"Detected GOES-16 as primary satellite ({goes16_count} files vs {goes18_count})",
+                "success",
             )
             result = {
             "status": "success",
@@ -282,10 +278,10 @@ class AutoDetectionWorker(QThread):
             "goes18_count": goes18_count,
             }
         else:
-            self.progress.emit()
-            100,
-            f"Detected GOES-18 as primary satellite ({goes18_count} files vs {goes16_count})",
-            "success",
+            self.progress.emit(
+                100,
+                f"Detected GOES-18 as primary satellite ({goes18_count} files vs {goes16_count})",
+                "success",
             )
             result = {
             "status": "success",
@@ -301,12 +297,12 @@ class AutoDetectionWorker(QThread):
         """Detect date range from files in the directory."""
         satellite = self.kwargs.get("satellite", SatellitePattern.GENERIC)
 
-        self.progress.emit()
-        10, f"Checking directory for {satellite.name} files...", "info"
+        self.progress.emit(
+            10, f"Checking directory for {satellite.name} files...", "info"
         )
         # Look for timestamps in directory based on the specified satellite pattern
-        self.progress.emit()
-        30, f"Scanning directory using {satellite.name} pattern...", "info"
+        self.progress.emit(
+            30, f"Scanning directory using {satellite.name} pattern...", "info"
         )
         timestamps = []
         try:

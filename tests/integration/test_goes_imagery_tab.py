@@ -86,12 +86,16 @@ class ImageSelectionPanel(QWidget):
         request = {
             "channel": ChannelType.CH13,
             "product_type": self.product_combo.currentData(),
-            "mode": ImageryMode.IMAGE_PRODUCT
-            if self.image_product_btn.isChecked()
-            else ImageryMode.RAW_DATA,
-            "size": self.size_combo.currentData()
-            if self.image_product_btn.isChecked()
-            else None,
+            "mode": (
+                ImageryMode.IMAGE_PRODUCT
+                if self.image_product_btn.isChecked()
+                else ImageryMode.RAW_DATA
+            ),
+            "size": (
+                self.size_combo.currentData()
+                if self.image_product_btn.isChecked()
+                else None
+            ),
         }
         self.imageRequested.emit(request)
 

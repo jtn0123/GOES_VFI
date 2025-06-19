@@ -180,14 +180,14 @@ class MainWindow(QWidget):
         # ---------------------------------
 
         # --- State Variables ---
-        self.sanchez_preview_cache: dict[
-            Path, np.ndarray[Any, Any]
-        ] = {}  # Cache for Sanchez results
+        self.sanchez_preview_cache: dict[Path, np.ndarray[Any, Any]] = (
+            {}
+        )  # Cache for Sanchez results
         self.in_dir: Path | None = None
         self.out_file_path: Path | None = None
-        self.current_crop_rect: tuple[
-            int, int, int, int
-        ] | None = None  # Store crop rect as (x, y, w, h)
+        self.current_crop_rect: tuple[int, int, int, int] | None = (
+            None  # Store crop rect as (x, y, w, h)
+        )
         self.vfi_worker: VfiWorker | None = None
         self.is_processing = False
         self.current_encoder = "RIFE"  # Default encoder
@@ -2625,9 +2625,9 @@ class MainWindow(QWidget):
                                 "res_km": res_km_val
                             }  # Don't set false_colour here
                             if "filename" not in original_image_data.metadata:
-                                original_image_data.metadata[
-                                    "filename"
-                                ] = image_path.name
+                                original_image_data.metadata["filename"] = (
+                                    image_path.name
+                                )
                             if "source_path" not in original_image_data.metadata:
                                 original_image_data.metadata["source_path"] = str(
                                     image_path
@@ -2650,9 +2650,9 @@ class MainWindow(QWidget):
                                     result_array = sanchez_result.image_data
 
                                 if result_array is not None:
-                                    self.sanchez_preview_cache[
-                                        image_path
-                                    ] = result_array.copy()
+                                    self.sanchez_preview_cache[image_path] = (
+                                        result_array.copy()
+                                    )
                                     LOGGER.debug(
                                         f"Stored Sanchez result in cache for: {image_path.name}"
                                     )

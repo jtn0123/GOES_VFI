@@ -188,7 +188,8 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     else:
         print(output)
         print_colored(
-            f"Flake8-Qt-TR found {issue_count} translation issues in PyQt files. ❌", RED
+            f"Flake8-Qt-TR found {issue_count} translation issues in PyQt files. ❌",
+            RED,
         )
 
     return exit_code, output, issue_count

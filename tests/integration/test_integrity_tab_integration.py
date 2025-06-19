@@ -23,7 +23,9 @@ from goesvfi.integrity_check.enhanced_view_model import (
     FetchSource,
 )
 from goesvfi.integrity_check.optimized_timeline_tab import OptimizedTimelineTab
-from goesvfi.integrity_check.satellite_integrity_tab_group import OptimizedResultsTab
+from goesvfi.integrity_check.satellite_integrity_tab_group import (
+    OptimizedResultsTab,
+)
 from goesvfi.integrity_check.satellite_integrity_tab_group import (
     SatelliteIntegrityTabGroup as SatelliteIntegrityTabsContainer,
 )

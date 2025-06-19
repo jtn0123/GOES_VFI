@@ -149,15 +149,15 @@ def show_environment_info():
 
     # Check for AWS environment variables
     aws_env_vars = {
-        "AWS_ACCESS_KEY_ID": "REDACTED"
-        if "AWS_ACCESS_KEY_ID" in os.environ
-        else "Not set",
-        "AWS_SECRET_ACCESS_KEY": "REDACTED"
-        if "AWS_SECRET_ACCESS_KEY" in os.environ
-        else "Not set",
-        "AWS_SESSION_TOKEN": "REDACTED"
-        if "AWS_SESSION_TOKEN" in os.environ
-        else "Not set",
+        "AWS_ACCESS_KEY_ID": (
+            "REDACTED" if "AWS_ACCESS_KEY_ID" in os.environ else "Not set"
+        ),
+        "AWS_SECRET_ACCESS_KEY": (
+            "REDACTED" if "AWS_SECRET_ACCESS_KEY" in os.environ else "Not set"
+        ),
+        "AWS_SESSION_TOKEN": (
+            "REDACTED" if "AWS_SESSION_TOKEN" in os.environ else "Not set"
+        ),
         "AWS_PROFILE": os.environ.get("AWS_PROFILE", "Not set"),
         "AWS_DEFAULT_REGION": os.environ.get("AWS_DEFAULT_REGION", "Not set"),
     }

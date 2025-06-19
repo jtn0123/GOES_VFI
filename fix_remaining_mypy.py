@@ -97,9 +97,9 @@ def fix_visual_date_picker_imports():
                 current_imports = [imp.strip() for imp in imports.split(",")]
                 if "QPoint" not in current_imports:
                     current_imports.append("QPoint")
-                    lines[
-                        i
-                    ] = f"from PyQt6.QtCore import {', '.join(sorted(current_imports))}\n"
+                    lines[i] = (
+                        f"from PyQt6.QtCore import {', '.join(sorted(current_imports))}\n"
+                    )
             break
 
     with open(file_path, "w") as f:

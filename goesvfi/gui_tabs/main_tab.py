@@ -214,9 +214,9 @@ class MainTab(QWidget):
         self.current_encoder = "RIFE"  # Default encoder
         self.current_model_key: str | None = "rife-v4.6"  # Default RIFE model key
         self.available_models: Dict[str, RIFEModelDetails] = {}  # Use Dict
-        self.image_viewer_dialog: Optional[
-            ImageViewerDialog
-        ] = None  # Add member to hold viewer reference
+        self.image_viewer_dialog: Optional[ImageViewerDialog] = (
+            None  # Add member to hold viewer reference
+        )
         # -----------------------
 
         self._setup_ui()
@@ -2260,9 +2260,9 @@ class MainTab(QWidget):
                     # Cast the result to the TypedDict
                     details_raw = analyze_rife_executable(rife_exe)
                     details = cast(RIFEModelDetails, details_raw)
-                    details[
-                        "_mtime"
-                    ] = exe_mtime  # Store modification time for cache validation
+                    details["_mtime"] = (
+                        exe_mtime  # Store modification time for cache validation
+                    )
                     cached_analysis[exe_path_str] = details  # Update cache entry
                     needs_cache_update = True
                     LOGGER.debug(

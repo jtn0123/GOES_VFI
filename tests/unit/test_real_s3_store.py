@@ -183,7 +183,9 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
                 pass
                 print(f"✅ Product {product_type} exists for {test_date.isoformat()}")
             else:
-                print(f"❌ Product {product_type} not found for {test_date.isoformat()}")
+                print(
+                    f"❌ Product {product_type} not found for {test_date.isoformat()}"
+                )
 
         # Print summary
         print(f"Product type availability summary:")
