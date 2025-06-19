@@ -125,6 +125,11 @@ class IntegrityCheckTab(QWidget):
     ) -> None:
         super().__init__(parent)
         self.view_model = view_model
+        
+        # Create feedback manager for better user feedback
+        from .enhanced_feedback import FeedbackManager
+        self.feedback_manager = FeedbackManager()
+        
         self._setup_ui()
         self._connect_signals()
 
@@ -256,6 +261,16 @@ class IntegrityCheckTab(QWidget):
         # Summary label
         self.summary_label = QLabel("No scan performed yet")
         layout.addWidget(self.summary_label)
+        
+        # Add feedback widget for better user feedback
+        from .enhanced_feedback import FeedbackWidget
+        self.feedback_widget = FeedbackWidget()
+        self.feedback_widget.set_feedback_manager(self.feedback_manager)
+        feedback_group = QGroupBox("Activity Log")
+        feedback_layout = QVBoxLayout()
+        feedback_layout.addWidget(self.feedback_widget)
+        feedback_group.setLayout(feedback_layout)
+        layout.addWidget(feedback_group)
 
     def _connect_signals(self) -> None:
         """Connect signals to slots."""
@@ -281,6 +296,10 @@ class IntegrityCheckTab(QWidget):
         """Perform a scan for missing files."""
         directory = self.dir_input.text()
         if not directory or not os.path.isdir(directory):
+            self.feedback_manager.report_error(
+                "Invalid Directory", 
+                "Please select a valid directory."
+            )
             QMessageBox.warning(
                 self, "Invalid Directory", "Please select a valid directory."
             )
@@ -300,12 +319,33 @@ class IntegrityCheckTab(QWidget):
 
         # Update view model parameters
         if self.view_model:
+            self.feedback_manager.start_task("Scanning for missing files")
+            
+            # Log scan parameters
+            from .enhanced_feedback import MessageType
+            self.feedback_manager.add_message(
+                f"Directory: {directory}", 
+                MessageType.INFO
+            )
+            self.feedback_manager.add_message(
+                f"Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}", 
+                MessageType.INFO
+            )
+            self.feedback_manager.add_message(
+                f"Satellite: {satellite.name}", 
+                MessageType.INFO
+            )
+            
             self.view_model.base_directory = directory
             self.view_model.start_date = start_date
             self.view_model.end_date = end_date
             self.view_model.selected_pattern = satellite
             self.view_model.start_scan()
         else:
+            self.feedback_manager.report_error(
+                "Configuration Error",
+                "No view model connected"
+            )
             self.status_label.setText("Error: No view model connected")
 
     def _download_selected(self) -> None:
@@ -429,9 +469,18 @@ class IntegrityCheckTab(QWidget):
     def _on_scan_completed_vm(self, success: bool, message: str) -> None:
         """Handle scan completion from view model."""
         if not success:
+            self.feedback_manager.complete_task("Scanning for missing files", success=False)
+            self.feedback_manager.report_error("Scan Failed", message)
             QMessageBox.critical(self, "Scan Error", message)
         else:
             missing_count = len(self.results_model._items)
+            self.feedback_manager.complete_task("Scanning for missing files", success=True)
+            
+            from .enhanced_feedback import MessageType
+            self.feedback_manager.add_message(
+                f"Scan complete: Found {missing_count} missing files",
+                MessageType.SUCCESS
+            )
             self.scan_completed.emit(missing_count)
 
     def _on_download_progress_vm(self, current: int, total: int) -> None:
@@ -464,55 +513,92 @@ class IntegrityCheckTab(QWidget):
             )
             return
 
-        try:
-            # Import TimeIndex for auto-detection
-            from .time_index import TimeIndex
+        # Import enhanced auto-detection
+        from .auto_detection_enhanced import AutoDetectionWorker, DetectionProgressDialog
+        
+        # Get selected satellite pattern
+        satellite_idx = self.satellite_combo.currentIndex()
+        satellite_patterns = list(SatellitePattern)
+        if 0 <= satellite_idx < len(satellite_patterns):
+            satellite = satellite_patterns[satellite_idx]
+        else:
+            satellite = SatellitePattern.GENERIC
+
+        # Create progress dialog
+        progress_dialog = DetectionProgressDialog(
+            "Auto-Detecting Date Range",
+            "Scanning directory for satellite files...",
+            self
+        )
+        
+        # Create worker thread
+        worker = AutoDetectionWorker(
+            "date_range",
+            Path(directory),
+            satellite=satellite
+        )
+        
+        # Connect signals
+        def on_progress(value: int, message: str, level: str) -> None:
+            progress_dialog.setValue(value)
+            progress_dialog.setLabelText(message)
+            progress_dialog.add_log_message(message, level)
             
-            # Get selected satellite pattern
-            satellite_idx = self.satellite_combo.currentIndex()
-            satellite_patterns = list(SatellitePattern)
-            if 0 <= satellite_idx < len(satellite_patterns):
-                satellite = satellite_patterns[satellite_idx]
-            else:
-                satellite = SatellitePattern.GENERIC
-
-            # Scan directory for timestamps
-            timestamps = TimeIndex.scan_directory_for_timestamps(
-                Path(directory), satellite
-            )
-
-            if timestamps:
-                # Sort timestamps and get min/max
-                timestamps.sort()
-                start_date = timestamps[0]
-                end_date = timestamps[-1]
-
+        def on_finished(result: dict) -> None:
+            progress_dialog.close()
+            worker.quit()
+            worker.wait()
+            
+            if result["status"] == "success":
+                start_date = result["start"]
+                end_date = result["end"]
+                total_files = result["total_files"]
+                
                 # Update date editors
-                self.start_date_edit.setDateTime(
-                    QDateTimeEdit.dateTimeFromText(start_date.isoformat())
-                )
-                self.end_date_edit.setDateTime(
-                    QDateTimeEdit.dateTimeFromText(end_date.isoformat())
-                )
-
+                from PyQt6.QtCore import QDateTime
+                self.start_date_edit.setDateTime(QDateTime(start_date))
+                self.end_date_edit.setDateTime(QDateTime(end_date))
+                
                 QMessageBox.information(
                     self, "Date Range Detected",
-                    f"Found files from:\n{start_date.strftime('%Y-%m-%d %H:%M')}\n"
-                    f"to:\n{end_date.strftime('%Y-%m-%d %H:%M')}\n\n"
-                    f"Total files: {len(timestamps)}"
+                    f"Found {total_files} files from:\n"
+                    f"{start_date.strftime('%Y-%m-%d %H:%M')}\n"
+                    f"to:\n{end_date.strftime('%Y-%m-%d %H:%M')}"
                 )
-            else:
+            elif result["status"] == "no_timestamps":
                 QMessageBox.information(
                     self, "No Files Found",
                     "No valid satellite files found in the selected directory."
                 )
-
-        except Exception as e:
-            LOGGER.exception("Error during auto-detection")
+            else:
+                QMessageBox.warning(
+                    self, "Detection Failed",
+                    f"Failed to detect date range: {result.get('error', 'Unknown error')}"
+                )
+                
+        def on_error(error_msg: str, traceback: str) -> None:
+            progress_dialog.close()
+            worker.quit()
+            worker.wait()
+            
+            LOGGER.error(f"Auto-detection error: {error_msg}\n{traceback}")
             QMessageBox.critical(
                 self, "Auto-Detection Error",
-                f"An error occurred during auto-detection:\n{str(e)}"
+                f"An error occurred during auto-detection:\n{error_msg}"
             )
+            
+        worker.progress.connect(on_progress)
+        worker.finished.connect(on_finished)
+        worker.error.connect(on_error)
+        
+        # Connect cancel button
+        progress_dialog.canceled.connect(worker.cancel)
+        
+        # Start the worker
+        worker.start()
+        
+        # Show the progress dialog
+        progress_dialog.exec()
 
     def _select_all_items(self) -> None:
         """Select all items in the results table."""
