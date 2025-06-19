@@ -11,14 +11,7 @@ import threading
 from datetime import datetime
 from pathlib import Path
 from types import TracebackType
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Type,
-)
+from typing import Any, Dict, List, Optional, Set, Type
 
 from goesvfi.integrity_check.cache_db import CacheDB
 from goesvfi.integrity_check.time_index import SatellitePattern
@@ -29,14 +22,14 @@ LOGGER = log.get_logger(__name__)
 
 class ThreadLocalCacheDB:
     """Thread-local SQLite cache for integrity check results.
-    
+
     This class provides thread-safe access to CacheDB by creating
     separate CacheDB instances for each thread.
     """
-    
+
     def __init__(self, db_path: Optional[Path] = None) -> None:
         """Initialize the thread-local cache database.
-        
+
         Args:
             db_path: Optional path to the database file
         """
@@ -44,35 +37,35 @@ class ThreadLocalCacheDB:
         self._lock = threading.Lock()
         self._local = threading.local()
         self._connections: Dict[int, CacheDB] = {}
-        
+
         # Create initial connection for the main thread
         self.get_db()
-        
+
         LOGGER.info(f"ThreadLocalCacheDB initialized with path: {db_path}")
-    
+
     def __enter__(self) -> "ThreadLocalCacheDB":
         """Enter context manager."""
         return self
-    
+
     def __exit__(
         self,
         exc_type: Optional[Type[BaseException]],
         exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType]
+        exc_tb: Optional[TracebackType],
     ) -> None:
         """Exit context manager."""
         self.close_all()
-    
+
     def get_db(self) -> CacheDB:
         """Get or create a thread-local database connection.
-        
+
         Returns:
             CacheDB instance for the current thread
         """
         # Fast path: check if we already have a connection for this thread
         if hasattr(self._local, "db"):
             return self._local.db
-        
+
         # Slow path: create a new connection
         with self._lock:
             thread_id = threading.get_ident()
@@ -80,11 +73,11 @@ class ThreadLocalCacheDB:
                 self._connections[thread_id] = CacheDB(db_path=self.db_path)
             self._local.db = self._connections[thread_id]
             return self._local.db
-    
+
     def _get_connection(self) -> CacheDB:
         """Alias for get_db for compatibility."""
         return self.get_db()
-    
+
     def close_all(self) -> None:
         """Close all database connections."""
         with self._lock:
@@ -94,34 +87,35 @@ class ThreadLocalCacheDB:
                 except Exception as e:
                     LOGGER.error("Error closing connection: %s", e)
             self._connections.clear()
-    
+        
+        # Also clear thread-local storage if present
+        if hasattr(self._local, "db"):
+            del self._local.db
+
     # Delegate methods to the thread-local CacheDB instance
     def set_cache_data(
         self,
         satellite: SatellitePattern,
         missing_timestamps: List[datetime],
         remote_files: List[str],
-        local_files: Set[str]
+        local_files: Set[str],
     ) -> None:
         """Set cache data."""
         db = self.get_db()
         db.set_cache_data(satellite, missing_timestamps, remote_files, local_files)
-    
-    def get_cache_data(
-        self,
-        satellite: SatellitePattern
-    ) -> Optional[Dict[str, Any]]:
+
+    def get_cache_data(self, satellite: SatellitePattern) -> Optional[Dict[str, Any]]:
         """Get cache data."""
         db = self.get_db()
         return db.get_cache_data(satellite)
-    
+
     def clear_cache(self) -> None:
         """Clear all cache data."""
         db = self.get_db()
         db.clear_cache()
-    
-    def close(self) -> None:
-        """Close the database connection for the current thread."""
+
+    def close_current_thread(self) -> None:
+        """Close the database connection for the current thread only."""
         thread_id = threading.get_ident()
         with self._lock:
             if thread_id in self._connections:
@@ -130,10 +124,14 @@ class ThreadLocalCacheDB:
                     del self._connections[thread_id]
                 except Exception as e:
                     LOGGER.error("Error closing connection: %s", e)
-        
+
         if hasattr(self._local, "db"):
             del self._local.db
-    
+
+    def close(self) -> None:
+        """Close all database connections."""
+        self.close_all()
+
     # Async methods for compatibility with tests
     async def add_timestamp(
         self,
@@ -145,3 +143,13 @@ class ThreadLocalCacheDB:
         """Add timestamp via thread-local connection."""
         db = self.get_db()
         return await db.add_timestamp(timestamp, satellite, file_path, found)
+
+    async def get_timestamps(
+        self,
+        satellite: SatellitePattern,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> List[datetime]:
+        """Get timestamps via thread-local connection."""
+        db = self.get_db()
+        return await db.get_timestamps(satellite, start_time, end_time)

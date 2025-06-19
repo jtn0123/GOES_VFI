@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Direct test runner for all tests in the file_copy project.
 
@@ -38,8 +38,12 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
     Returns:
         Dict with test results
     """
-    # Basic command
-    cmd = ["python", "-m", "pytest", test_path, "-v"]
+    # Basic command - use virtual environment python
+    # Disable coverage plugin to avoid import issues
+    import os
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    venv_python = os.path.join(script_dir, ".venv", "bin", "python")
+    cmd = [venv_python, "-m", "pytest", test_path, "-v", "-p", "no:cov"]
 
     # Add debug options if requested
     if debug_mode:
