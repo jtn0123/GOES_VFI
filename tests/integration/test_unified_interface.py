@@ -35,14 +35,63 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Create stub implementations for missing components
+from PyQt6.QtCore import QDate, QTime, pyqtSignal
+from PyQt6.QtWidgets import QDateEdit, QTimeEdit
+
 # Import our shared components
 from goesvfi.integrity_check.shared_components import PreviewMetadata
 
-# TODO: These components need to be implemented in shared_components
-# from goesvfi.integrity_check.shared_components import (
-#     SharedPreviewPanel,
-#     SidebarSettingsPanel,
-# )
+
+class SharedPreviewPanel(QWidget):
+    """Stub implementation of SharedPreviewPanel."""
+
+    previewSelected = pyqtSignal(str, object)  # key, metadata
+    previewBookmarked = pyqtSignal(str, bool)  # key, is_bookmarked
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._previews = {}
+
+        layout = QVBoxLayout(self)
+        self.preview_label = QLabel("Preview Panel")
+        layout.addWidget(self.preview_label)
+
+    def addPreview(self, key, pixmap, metadata):
+        """Add a preview."""
+        self._previews[key] = {"pixmap": pixmap, "metadata": metadata}
+
+    def getPreview(self, key):
+        """Get preview data."""
+        return self._previews.get(key)
+
+
+class SidebarSettingsPanel(QWidget):
+    """Stub implementation of SidebarSettingsPanel."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._sections = {}
+
+        layout = QVBoxLayout(self)
+
+        # Add date/time controls for testing
+        self.date_edit = QDateEdit()
+        self.date_edit.setDate(QDate.currentDate())
+        self.time_edit = QTimeEdit()
+        self.time_edit.setTime(QTime.currentTime())
+
+        layout.addWidget(self.date_edit)
+        layout.addWidget(self.time_edit)
+
+    def show_section(self, section_name, visible):
+        """Show or hide a section."""
+        self._sections[section_name] = visible
+
+    def set_date_time(self, date_time):
+        """Set the date and time."""
+        self.date_edit.setDate(date_time.date())
+        self.time_edit.setTime(date_time.time())
 
 
 # Helper function to create sample images
