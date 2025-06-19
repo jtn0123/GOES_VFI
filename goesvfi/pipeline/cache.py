@@ -16,8 +16,9 @@ from goesvfi.utils.log import get_logger
 
 LOGGER = get_logger(__name__)
 
-# CACHE_DIR removed, get from config
-# CACHE_DIR.mkdir removed, handled by config module
+# Get cache directory from config
+CACHE_DIR = pathlib.Path(config.get_cache_dir())
+CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # Include num_intermediate_frames in the hash

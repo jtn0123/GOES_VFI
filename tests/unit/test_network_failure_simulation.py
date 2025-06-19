@@ -24,10 +24,7 @@ from goesvfi.integrity_check.remote.base import (
 )
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.composite_store import CompositeStore
-from goesvfi.integrity_check.remote.s3_store import (
-    S3Store,
-    retry_with_exponential_backoff,
-)
+from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import SatellitePattern
 
 

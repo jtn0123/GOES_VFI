@@ -53,11 +53,13 @@ class OptimizedDateSelectionTab(QWidget):
 
         # Add header
         header = QLabel(self.tr("Select Date Range for Analysis"))
-        header.setStyleSheet("""
+        header.setStyleSheet(
+            """
         font-size: 14px;
         font-weight: bold;
         margin-bottom: 5px;
-        """)
+        """
+        )
         layout.addWidget(header)
 
         # Add descriptive text
@@ -73,14 +75,16 @@ class OptimizedDateSelectionTab(QWidget):
         # Create date controls section
         controls_frame = QFrame()
         controls_frame.setObjectName("dateControlsFrame")
-        controls_frame.setStyleSheet("""
+        controls_frame.setStyleSheet(
+            """
         #dateControlsFrame {
         background-color: #2d2d2d;
         border: 1px solid #454545;
         border-radius: 4px;
         padding: 10px;
         }
-        """)
+        """
+        )
         controls_layout = QVBoxLayout(controls_frame)
 
         # Add visual date picker button
@@ -98,12 +102,14 @@ class OptimizedDateSelectionTab(QWidget):
 
         # Add date range display
         self.date_range_label = QLabel(self.tr("No date range selected"))
-        self.date_range_label.setStyleSheet("""
+        self.date_range_label.setStyleSheet(
+            """
         background-color: #3a3a3a;
         padding: 8px;
         border-radius: 4px;
         margin-top: 10px;
-        """)
+        """
+        )
         controls_layout.addWidget(self.date_range_label)
 
         # Add controls frame to main layout
@@ -112,7 +118,8 @@ class OptimizedDateSelectionTab(QWidget):
         # Add quick select buttons
         quick_select_frame = QFrame()
         quick_select_frame.setObjectName("quickSelectFrame")
-        quick_select_frame.setStyleSheet("""
+        quick_select_frame.setStyleSheet(
+            """
         #quickSelectFrame {
         background-color: #2d2d2d;
         border: 1px solid #454545;
@@ -120,7 +127,8 @@ class OptimizedDateSelectionTab(QWidget):
         padding: 10px;
         margin-top: 10px;
         }
-        """)
+        """
+        )
         quick_select_layout = QVBoxLayout(quick_select_frame)
 
         quick_select_layout.addWidget(QLabel(self.tr("Quick Select:")))
@@ -234,6 +242,7 @@ class OptimizedDateSelectionTab(QWidget):
         start = end - timedelta(days=30)
         self._handle_date_range_selected(start, end)
 
+
 class OptimizedResultsTab(QWidget):
     """
     Optimized results organization tab for satellite data.
@@ -297,13 +306,15 @@ class OptimizedResultsTab(QWidget):
         panel = QFrame()
         panel.setObjectName("resultsControlPanel")
         panel.setMaximumHeight(50)
-        panel.setStyleSheet("""
+        panel.setStyleSheet(
+            """
         #resultsControlPanel {
         background-color: #2d2d2d;
         border: 1px solid #454545;
         border-radius: 4px;
         }
-        """)
+        """
+        )
 
         layout = QHBoxLayout(panel)
         layout.setContentsMargins(10, 5, 10, 5)
@@ -313,14 +324,14 @@ class OptimizedResultsTab(QWidget):
         layout.addWidget(QLabel(self.tr("Group by:")))
 
         self.group_combo = QComboBox()
-        self.group_combo.addItems()
-        [
-        self.tr("Day"),
-        self.tr("Hour"),
-        self.tr("Satellite"),
-        self.tr("Status"),
-        self.tr("Source"),
-        ]
+        self.group_combo.addItems(
+            [
+                self.tr("Day"),
+                self.tr("Hour"),
+                self.tr("Satellite"),
+                self.tr("Status"),
+                self.tr("Source"),
+            ]
         )
         self.group_combo.currentTextChanged.connect(self._handle_group_changed)
         layout.addWidget(self.group_combo)
@@ -422,6 +433,7 @@ class OptimizedResultsTab(QWidget):
         # For now, we'll just emit the signal to maintain synchronization
         self.directorySelected.emit(directory)
 
+
 class SatelliteIntegrityTabGroup(QWidget):
     """
     Container for satellite integrity analysis tabs.
@@ -473,8 +485,8 @@ class SatelliteIntegrityTabGroup(QWidget):
     def _connect_internal_signals(self) -> None:
         """Connect signals between internal tabs."""
         # From date selection tab to timeline tab
-        self.date_selection_tab.dateRangeSelected.connect()
-        self._handle_date_range_selected
+        self.date_selection_tab.dateRangeSelected.connect(
+            self._handle_date_range_selected
         )
 
         # From timeline tab to results tab
@@ -504,12 +516,13 @@ class SatelliteIntegrityTabGroup(QWidget):
         # Emit signal for external connections
         self.dateRangeSelected.emit(start, end)
 
-    def set_data(self,
-    items: List[MissingTimestamp],
-    start_date: datetime,
-    end_date: datetime,
-    total_expected: int,
-    interval_minutes: Optional[int] = None,
+    def set_data(
+        self,
+        items: List[MissingTimestamp],
+        start_date: datetime,
+        end_date: datetime,
+        total_expected: int,
+        interval_minutes: Optional[int] = None,
     ) -> None:
         """
         Set data for all tabs in the group.

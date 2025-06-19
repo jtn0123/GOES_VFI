@@ -353,15 +353,15 @@ def get_satellite_path_components(
     return None
 
 
-def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.datetime]:
+def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.date]:
     """
-    Parse a satellite data path to extract a full datetime.
+    Parse a satellite data path to extract a date.
 
     Args:
         path: Path to parse
 
     Returns:
-        Parsed datetime if successful, None otherwise
+        Parsed date if successful, None otherwise
     """
     path_str = str(path)
 
@@ -372,22 +372,94 @@ def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.datetime]:
             year = int(match.group(1))
             month = int(match.group(2))
             day = int(match.group(3))
-            hour = int(match.group(4))
-            minute = int(match.group(5))
-            second = int(match.group(6))
-
-            return datetime.datetime(year, month, day, hour, minute, second)
+            # Ignore hour, minute, second for date parsing
+            return datetime.date(year, month, day)
         except ValueError:
             return None
 
-    # Try YYYY/DDD/HH pattern (assume minute=0, second=0)
-    components = get_satellite_path_components(path)
-    if components:
-        year, doy, hour = components
+    # Try various date patterns using existing helper functions
+
+    # Try YYYY/DDD pattern
+    result = _try_doy_pattern(path_str, r"(\d{4})/(\d{3})", "YYYY/DDD")
+    if result:
+        return result
+
+    # Try YYYYDDD pattern
+    result = _try_doy_pattern(path_str, r"(\d{4})(\d{3})", "YYYYDDD")
+    if result:
+        return result
+
+    # Try YYYY-MM-DD pattern
+    result = _try_calendar_pattern(path_str, r"(\d{4})-(\d{2})-(\d{2})", "YYYY-MM-DD")
+    if result:
+        return result
+
+    # Try YYYY_MM_DD pattern
+    result = _try_calendar_pattern(path_str, r"(\d{4})_(\d{2})_(\d{2})", "YYYY_MM_DD")
+    if result:
+        return result
+
+    # Try ISO timestamp pattern (ignore time part)
+    result = _try_timestamp_pattern(path_str, r"(\d{4})(\d{2})(\d{2})T\d{6}Z?", "ISO")
+    if result:
+        return result
+
+    # Try YYYYMMDD pattern
+    result = _try_calendar_pattern(path_str, r"(\d{4})(\d{2})(\d{2})", "YYYYMMDD")
+    if result:
+        return result
+
+    return None
+
+
+def _try_doy_pattern(
+    path_str: str, pattern: str, pattern_name: str
+) -> Optional[datetime.date]:
+    """Try to parse using day-of-year pattern."""
+    match = re.search(pattern, path_str)
+    if match:
         try:
-            date = doy_to_date(year, doy)
-            return datetime.datetime.combine(date, datetime.time(hour, 0, 0))
-        except ValueError:
-            return None
+            year = int(match.group(1))
+            doy = int(match.group(2))
+            result = doy_to_date(year, doy)
+            LOGGER.debug("Found date %s using %s pattern", result, pattern_name)
+            return result
+        except ValueError as e:
+            LOGGER.debug("Invalid date from %s pattern: %s", pattern_name, e)
+    return None
 
+
+def _try_calendar_pattern(
+    path_str: str, pattern: str, pattern_name: str
+) -> Optional[datetime.date]:
+    """Try to parse using calendar date pattern."""
+    match = re.search(pattern, path_str)
+    if match:
+        try:
+            year = int(match.group(1))
+            month = int(match.group(2))
+            day = int(match.group(3))
+            result = datetime.date(year, month, day)
+            LOGGER.debug("Found date %s using %s pattern", result, pattern_name)
+            return result
+        except ValueError as e:
+            LOGGER.debug("Invalid date from %s pattern: %s", pattern_name, e)
+    return None
+
+
+def _try_timestamp_pattern(
+    path_str: str, pattern: str, pattern_name: str
+) -> Optional[datetime.date]:
+    """Try to parse using timestamp pattern (extract date part only)."""
+    match = re.search(pattern, path_str)
+    if match:
+        try:
+            year = int(match.group(1))
+            month = int(match.group(2))
+            day = int(match.group(3))
+            result = datetime.date(year, month, day)
+            LOGGER.debug("Found date %s using %s pattern", result, pattern_name)
+            return result
+        except ValueError as e:
+            LOGGER.debug("Invalid date from %s pattern: %s", pattern_name, e)
     return None
