@@ -214,3 +214,26 @@ tests/**/test_output/
 *.test.jpg
 test_output_*.png
 test_output_*.jpg
+
+# Python artifacts
+*.pyo
+*.egg-info/
+.ruff_cache/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Editor directories
+.cursor/
+
+# Virtual environments
+precommit_env/
+
+# Log directories
+logs/
