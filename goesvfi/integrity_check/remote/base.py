@@ -44,6 +44,18 @@ class ConnectionError(RemoteStoreError):
     pass
 
 
+class NetworkError(RemoteStoreError):
+    """General network-related error."""
+
+    pass
+
+
+class TemporaryError(RemoteStoreError):
+    """Temporary error that may succeed on retry."""
+
+    pass
+
+
 class AuthenticationError(RemoteStoreError):
     """Authentication or authorization error."""
 

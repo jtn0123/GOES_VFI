@@ -232,12 +232,9 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
             self.assertTrue(downloaded_path.exists())
             self.assertGreater(downloaded_path.stat().st_size, 0)
         except Exception as e:
-            pass
-
-    pass
-    print(f"❌ Failed to download file: {e}")
-    # Re-raise for test failure
-    raise
+            print(f"❌ Failed to download file: {e}")
+            # Re-raise for test failure
+            raise
 
 
 # Mock tests that simulate real S3 responses but don't actually access S3

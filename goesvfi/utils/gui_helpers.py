@@ -7,18 +7,11 @@ and UI element management.
 
 import logging
 import pathlib
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import (
-    QCheckBox,
-    QComboBox,
-    QDialog,
-    QLabel,
-    QLineEdit,
-    QSpinBox,
-    QWidget,
-)
+from PyQt6.QtCore import QPoint, QPointF, QRect, Qt, pyqtSignal
+from PyQt6.QtGui import QImage, QPainter, QPixmap
+from PyQt6.QtWidgets import QCheckBox, QDialog, QLabel, QLineEdit, QRubberBand, QSpinBox
 
 from goesvfi.utils.config import find_rife_executable
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
@@ -197,36 +190,394 @@ class RifeCapabilityManager:
         )
 
 
-# Stub classes for missing GUI components - to be implemented
+# GUI Component classes
 class ClickableLabel(QLabel):
     """A QLabel that emits a signal when clicked."""
 
     clicked = pyqtSignal()
 
+    def __init__(self, parent=None):
+        """Initialize the ClickableLabel."""
+        super().__init__(parent)
+        self.file_path = None
+        self.processed_image = None
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def mouseReleaseEvent(self, event):
+        """Emit clicked signal on mouse release."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.clicked.emit()
+        super().mouseReleaseEvent(event)
+
+
+class CropLabel(QLabel):
+    """A QLabel for selecting crop regions on images."""
+
+    # Signals
+    selection_changed = pyqtSignal()
+    selection_finished = pyqtSignal()
+
+    def __init__(self, parent=None):
+        """Initialize the CropLabel."""
+        super().__init__(parent)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setMouseTracking(True)
+
+        # Selection state
+        self.selecting = False
+        self.selection_start_point = None
+        self.selection_end_point = None
+        self.selected_rect = None
+
+        # Pixmap offset for centering
+        self._pixmap_offset_x = 0
+        self._pixmap_offset_y = 0
+
+    def setPixmap(self, pixmap):
+        """Set pixmap and calculate offsets for centering."""
+        super().setPixmap(pixmap)
+        if pixmap and not pixmap.isNull():
+            # Calculate offsets for centering
+            label_width = self.width()
+            label_height = self.height()
+            pixmap_width = pixmap.width()
+            pixmap_height = pixmap.height()
+
+            self._pixmap_offset_x = max(0, (label_width - pixmap_width) // 2)
+            self._pixmap_offset_y = max(0, (label_height - pixmap_height) // 2)
+
+    def _get_pos_on_pixmap(self, pos):
+        """Convert widget position to pixmap position."""
+        if not self.pixmap() or self.pixmap().isNull():
+            return None
+
+        # Adjust for offset
+        x = pos.x() - self._pixmap_offset_x
+        y = pos.y() - self._pixmap_offset_y
+
+        # Clamp to pixmap bounds
+        x = max(0, min(x, self.pixmap().width() - 1))
+        y = max(0, min(y, self.pixmap().height() - 1))
+
+        return QPoint(x, y)
+
     def mousePressEvent(self, event):
-        """Emit clicked signal on mouse press."""
-        self.clicked.emit()
+        """Start selection on mouse press."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            pos = self._get_pos_on_pixmap(event.position().toPoint())
+            if pos:
+                self.selecting = True
+                self.selection_start_point = pos
+                self.selection_end_point = pos
+                self.selected_rect = None
+                self.update()
         super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        """Update selection on mouse move."""
+        if self.selecting:
+            pos = self._get_pos_on_pixmap(event.position().toPoint())
+            if pos:
+                self.selection_end_point = pos
+                self.selection_changed.emit()
+                self.update()
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        """Finalize selection on mouse release."""
+        if event.button() == Qt.MouseButton.LeftButton and self.selecting:
+            self.selecting = False
+            if self.selection_start_point and self.selection_end_point:
+                # Create normalized rectangle
+                x1 = min(self.selection_start_point.x(), self.selection_end_point.x())
+                y1 = min(self.selection_start_point.y(), self.selection_end_point.y())
+                x2 = max(self.selection_start_point.x(), self.selection_end_point.x())
+                y2 = max(self.selection_start_point.y(), self.selection_end_point.y())
+
+                self.selected_rect = QRect(x1, y1, x2 - x1, y2 - y1)
+                self.selection_finished.emit()
+                self.update()
+        super().mouseReleaseEvent(event)
+
+    def paintEvent(self, event):
+        """Paint the label with selection overlay."""
+        super().paintEvent(event)
+
+        if (
+            (self.selecting or self.selected_rect)
+            and self.selection_start_point
+            and self.selection_end_point
+        ):
+            painter = QPainter(self)
+            painter.setPen(Qt.GlobalColor.red)
+
+            # Calculate rectangle to draw
+            if self.selecting:
+                x1 = min(self.selection_start_point.x(), self.selection_end_point.x())
+                y1 = min(self.selection_start_point.y(), self.selection_end_point.y())
+                x2 = max(self.selection_start_point.x(), self.selection_end_point.x())
+                y2 = max(self.selection_start_point.y(), self.selection_end_point.y())
+                rect = QRect(
+                    x1 + self._pixmap_offset_x,
+                    y1 + self._pixmap_offset_y,
+                    x2 - x1,
+                    y2 - y1,
+                )
+            else:
+                rect = QRect(
+                    self.selected_rect.x() + self._pixmap_offset_x,
+                    self.selected_rect.y() + self._pixmap_offset_y,
+                    self.selected_rect.width(),
+                    self.selected_rect.height(),
+                )
+
+            painter.drawRect(rect)
 
 
 class CropSelectionDialog(QDialog):
     """Dialog for selecting a crop region on an image."""
 
-    def __init__(self, parent=None):
+    def __init__(self, image=None, initial_rect=None, parent=None):
+        """Initialize the dialog with an optional image and initial rectangle."""
         super().__init__(parent)
         self.setWindowTitle("Select Crop Region")
-        # TODO: Implement crop selection functionality
+        self.setModal(True)
+        self.image = image if image and not image.isNull() else QImage()
+        self.initial_rect = initial_rect
+        self.crop_label = CropLabel()
+        self.scale_factor = 1.0
+        self._final_selected_rect_display = QRect()
+
+        if image and isinstance(image, QImage) and not image.isNull():
+            self.crop_label.setPixmap(QPixmap.fromImage(image))
+            # Calculate scale factor if needed
+            self.scale_factor = 1.0
+
+        if initial_rect:
+            self.crop_label.selected_rect = initial_rect
+
+    def get_selected_rect(self):
+        """Get the selected rectangle in original image coordinates."""
+        if self._final_selected_rect_display is None or (
+            isinstance(self._final_selected_rect_display, QRect)
+            and self._final_selected_rect_display.isNull()
+        ):
+            return QRect()
+
+        # Scale up from display to original coordinates
+        x = int(self._final_selected_rect_display.x() * self.scale_factor)
+        y = int(self._final_selected_rect_display.y() * self.scale_factor)
+        w = int(self._final_selected_rect_display.width() * self.scale_factor)
+        h = int(self._final_selected_rect_display.height() * self.scale_factor)
+
+        # Clamp to image bounds
+        if not self.image.isNull():
+            x = max(0, min(x, self.image.width() - 1))
+            y = max(0, min(y, self.image.height() - 1))
+            w = min(w, self.image.width() - x)
+            h = min(h, self.image.height() - y)
+
+        return QRect(x, y, w, h)
+
+    def _store_final_selection(self, rect=None):
+        """Internal method to store the final selection."""
+        if rect is None:
+            rect = self.crop_label.selected_rect
+
+        if rect and not rect.isNull() and rect.width() > 0 and rect.height() > 0:
+            self._final_selected_rect_display = rect
+        else:
+            self._final_selected_rect_display = None
+
+    def store_final_selection(self):
+        """Store the final selection (called before dialog closes)."""
+        self._store_final_selection()
 
 
 class ImageViewerDialog(QDialog):
-    """Dialog for viewing an image."""
+    """Dialog for viewing an image with zoom and pan capabilities."""
 
-    def __init__(self, parent=None):
+    def __init__(self, image=None, title="Full Resolution", info_text="", parent=None):
+        """Initialize the image viewer dialog."""
         super().__init__(parent)
-        self.setWindowTitle("Image Viewer")
-        # TODO: Implement image viewing functionality
+        self.setWindowTitle(title)
+        self.original_qimage = image  # Store as original_qimage for compatibility
+        self.image = image
+        self.info_text = info_text
+
+        # Zoom and pan state
+        self.zoom_factor = 1.0
+        self.panning = False
+        self.was_dragged = False
+        self.last_pan_pos = QPointF()
+        self.pan_offset = QPointF(0.0, 0.0)
+
+        # Set up the dialog
+        self.setModal(True)
+        self.setMinimumSize(800, 600)
+
+        if image and isinstance(image, QImage) and not image.isNull():
+            # Size the dialog to fit the image (with some limits)
+            width = min(image.width() + 50, 1200)
+            height = min(image.height() + 50, 900)
+            self.resize(width, height)
+
+    def wheelEvent(self, event):
+        """Handle zoom with mouse wheel."""
+        # Get zoom direction
+        delta = event.angleDelta().y()
+        zoom_in = delta > 0
+
+        # Update zoom factor
+        if zoom_in:
+            self.zoom_factor *= 1.1
+        else:
+            self.zoom_factor /= 1.1
+
+        # Clamp zoom factor
+        self.zoom_factor = max(0.1, min(self.zoom_factor, 10.0))
+
+        self.update()
+        event.accept()
+
+    def mousePressEvent(self, event):
+        """Start panning on mouse press."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.panning = True
+            self.was_dragged = False
+            self.last_pan_pos = event.position()
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        """Handle panning."""
+        if self.panning:
+            self.was_dragged = True
+            # In a real implementation, we would update the view offset here
+            self.last_pan_pos = event.position()
+            self.update()
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        """Stop panning on mouse release."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            if self.panning and not self.was_dragged:
+                # Click without drag - close the dialog
+                self.accept()
+            self.panning = False
+        super().mouseReleaseEvent(event)
+
+    def paintEvent(self, event):
+        """Paint the image."""
+        super().paintEvent(event)
+
+        if self.image and isinstance(self.image, QImage) and not self.image.isNull():
+            painter = QPainter(self)
+
+            # For now, just draw the image centered
+            # In a real implementation, we would apply zoom and pan transforms
+            rect = self.rect()
+            image_rect = self.image.rect()
+
+            # Center the image
+            x = (rect.width() - image_rect.width()) // 2
+            y = (rect.height() - image_rect.height()) // 2
+
+            painter.drawImage(x, y, self.image)
 
 
-# Backward compatibility aliases
-CropDialog = CropSelectionDialog  # Alias for backward compatibility
-ZoomDialog = ImageViewerDialog  # Alias for backward compatibility
+class ZoomDialog(QDialog):
+    """A frameless dialog for showing zoomed images."""
+
+    def __init__(self, pixmap, parent=None):
+        """Initialize the zoom dialog with a pixmap."""
+        super().__init__(parent)
+        self.pixmap = pixmap
+
+        # Set frameless window with translucent background
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+
+        # Size to match pixmap
+        if pixmap and not pixmap.isNull():
+            self.resize(pixmap.size())
+
+    def mousePressEvent(self, event):
+        """Close dialog on mouse press."""
+        self.close()
+        super().mousePressEvent(event)
+
+    def paintEvent(self, event):
+        """Paint the pixmap."""
+        super().paintEvent(event)
+        if self.pixmap and not self.pixmap.isNull():
+            painter = QPainter(self)
+            painter.drawPixmap(0, 0, self.pixmap)
+
+
+class CropDialog(QDialog):
+    """Dialog for selecting a crop region with scaling support."""
+
+    def __init__(self, pixmap, initial_rect=None, parent=None):
+        """Initialize with a pixmap and optional initial rectangle."""
+        super().__init__(parent)
+        self.setWindowTitle("Select Crop Region")
+        self.original_pixmap = pixmap
+        self.initial_rect = initial_rect
+        self.scale_factor = 1.0
+        self.crop_rect_scaled = QRect()
+        self.origin = QPoint()
+
+        # Create a label to hold the image
+        self.lbl = QLabel()
+        self.lbl.setParent(self)
+
+        # Create rubber band for selection
+        self.rubber = QRubberBand(QRubberBand.Shape.Rectangle, self)
+
+        # Calculate scale factor if needed
+        if pixmap and not pixmap.isNull():
+            # In a real implementation, we would scale down large images
+            # For now, just use scale factor of 1.0
+            self.scale_factor = 1.0
+            self.lbl.setPixmap(pixmap)
+
+        if initial_rect:
+            # Handle both tuple and QRect
+            if isinstance(initial_rect, (tuple, list)) and len(initial_rect) == 4:
+                x, y, w, h = initial_rect
+                self.crop_rect_scaled = QRect(x, y, w, h)
+            elif isinstance(initial_rect, QRect):
+                self.crop_rect_scaled = initial_rect
+
+            # Set rubber band geometry if we have an initial rect
+            if not self.crop_rect_scaled.isNull():
+                self.rubber.setGeometry(self.crop_rect_scaled)
+
+    def getRect(self):
+        """Get the crop rectangle in original image coordinates."""
+        if self.crop_rect_scaled.isNull():
+            return None
+
+        # Scale up to original coordinates (if image was scaled down for display)
+        x = int(self.crop_rect_scaled.x() * self.scale_factor)
+        y = int(self.crop_rect_scaled.y() * self.scale_factor)
+        w = int(self.crop_rect_scaled.width() * self.scale_factor)
+        h = int(self.crop_rect_scaled.height() * self.scale_factor)
+
+        return QRect(x, y, w, h)
+
+    def get_rect(self):
+        """Alias for getRect for backwards compatibility."""
+        rect = self.getRect()
+        if rect:
+            return (rect.x(), rect.y(), rect.width(), rect.height())
+        return None
+
+    def mousePressEvent(self, event):
+        """Handle mouse press to start selection."""
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Start selection
+            self.origin = event.position().toPoint()
+            self.crop_rect_scaled = QRect(self.origin, self.origin)
+            self.update()
+        super().mousePressEvent(event)

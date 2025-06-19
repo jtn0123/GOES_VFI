@@ -31,6 +31,23 @@ class ProductType(Enum):
     CMIPF = "CMIPF"
 
 
+class ImageryMode(Enum):
+    """Imagery retrieval modes."""
+
+    RAW = "raw"
+    PROCESSED = "processed"
+    BOTH = "both"
+    IMAGE_PRODUCT = "image_product"  # Pre-processed image products
+
+
+class ProcessingMode(Enum):
+    """Processing modes for imagery."""
+
+    QUICKLOOK = "quicklook"
+    FULL_RESOLUTION = "full_resolution"
+    THUMBNAIL = "thumbnail"
+
+
 class ChannelType(Enum):
     """GOES ABI channel definitions with metadata.
 

@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QLabel, QLineEdit, QSpinBox
 from goesvfi.utils.gui_helpers import (
     ClickableLabel,
     CropDialog,
+    CropLabel,
     CropSelectionDialog,
     ImageViewerDialog,
     RifeCapabilityManager,

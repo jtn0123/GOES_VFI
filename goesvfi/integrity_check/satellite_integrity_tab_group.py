@@ -1,9 +1,4 @@
 """
-from typing import Any, List, Optional
-
-from PyQt6.QtCore import Qt, pyqtSignal
-from datetime import datetime
-
 Satellite Integrity Tab Group for the GOES Integrity Check application.
 
 This module provides a cohesive group of tabs that bridge the gap between
@@ -11,28 +6,34 @@ visualizing GOES imagery and checking file integrity, with a focus on
 temporal analysis and organization of satellite data.
 """
 
-QComboBox,
-QFrame,
-QHBoxLayout,
-QLabel,
-QPushButton,
-QSplitter,
-QTabWidget,
-QVBoxLayout,
-QWidget,
+from datetime import datetime
+from typing import Any, List, Optional
+
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSplitter,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
 from goesvfi.integrity_check.optimized_timeline_tab import OptimizedTimelineTab
-
-ItemPreviewWidget,
-MissingItemsTreeView,
-ResultsSummaryWidget,
+from goesvfi.integrity_check.shared_components import (
+    ItemPreviewWidget,
+    MissingItemsTreeView,
+    ResultsSummaryWidget,
 )
 from goesvfi.integrity_check.view_model import MissingTimestamp
-
-TimelinePickerWidget,
-VisualDateRangePicker,
+from goesvfi.integrity_check.visual_date_picker import (
+    TimelinePickerWidget,
+    VisualDateRangePicker,
 )
+
 
 class OptimizedDateSelectionTab(QWidget):
     """
@@ -52,20 +53,18 @@ class OptimizedDateSelectionTab(QWidget):
 
         # Add header
         header = QLabel(self.tr("Select Date Range for Analysis"))
-        header.setStyleSheet()
-        """
+        header.setStyleSheet("""
         font-size: 14px;
         font-weight: bold;
         margin-bottom: 5px;
-        """
-        )
+        """)
         layout.addWidget(header)
 
         # Add descriptive text
-        description = QLabel()
-        "Use the visual date picker or timeline slider to select a date range "
-        "for analysis. The selected range will be used for all visualization "
-        "and integrity check operations."
+        description = QLabel(
+            "Use the visual date picker or timeline slider to select a date range "
+            "for analysis. The selected range will be used for all visualization "
+            "and integrity check operations."
         )
         description.setWordWrap(True)
         description.setStyleSheet("margin-bottom: 10px;")
@@ -74,16 +73,14 @@ class OptimizedDateSelectionTab(QWidget):
         # Create date controls section
         controls_frame = QFrame()
         controls_frame.setObjectName("dateControlsFrame")
-        controls_frame.setStyleSheet()
-        """
+        controls_frame.setStyleSheet("""
         #dateControlsFrame {
         background-color: #2d2d2d;
         border: 1px solid #454545;
         border-radius: 4px;
         padding: 10px;
         }
-        """
-        )
+        """)
         controls_layout = QVBoxLayout(controls_frame)
 
         # Add visual date picker button
@@ -101,14 +98,12 @@ class OptimizedDateSelectionTab(QWidget):
 
         # Add date range display
         self.date_range_label = QLabel(self.tr("No date range selected"))
-        self.date_range_label.setStyleSheet()
-        """
+        self.date_range_label.setStyleSheet("""
         background-color: #3a3a3a;
         padding: 8px;
         border-radius: 4px;
         margin-top: 10px;
-        """
-        )
+        """)
         controls_layout.addWidget(self.date_range_label)
 
         # Add controls frame to main layout
@@ -117,8 +112,7 @@ class OptimizedDateSelectionTab(QWidget):
         # Add quick select buttons
         quick_select_frame = QFrame()
         quick_select_frame.setObjectName("quickSelectFrame")
-        quick_select_frame.setStyleSheet()
-        """
+        quick_select_frame.setStyleSheet("""
         #quickSelectFrame {
         background-color: #2d2d2d;
         border: 1px solid #454545;
@@ -126,8 +120,7 @@ class OptimizedDateSelectionTab(QWidget):
         padding: 10px;
         margin-top: 10px;
         }
-        """
-        )
+        """)
         quick_select_layout = QVBoxLayout(quick_select_frame)
 
         quick_select_layout.addWidget(QLabel(self.tr("Quick Select:")))
@@ -172,9 +165,9 @@ class OptimizedDateSelectionTab(QWidget):
         self.timeline_picker.set_date_range(start, end)
 
         # Update label
-        self.date_range_label.setText()
-        f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - "
-        f"{end.strftime('%Y-%m-%d %H:%M')}"
+        self.date_range_label.setText(
+            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - "
+            f"{end.strftime('%Y-%m-%d %H:%M')}"
         )
 
     def _open_visual_date_picker(self) -> None:
@@ -198,9 +191,9 @@ class OptimizedDateSelectionTab(QWidget):
             end: End date
         """
         # Update label
-        self.date_range_label.setText()
-        f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - "
-        f"{end.strftime('%Y-%m-%d %H:%M')}"
+        self.date_range_label.setText(
+            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - "
+            f"{end.strftime('%Y-%m-%d %H:%M')}"
         )
 
         # Update timeline picker
@@ -304,15 +297,13 @@ class OptimizedResultsTab(QWidget):
         panel = QFrame()
         panel.setObjectName("resultsControlPanel")
         panel.setMaximumHeight(50)
-        panel.setStyleSheet()
-        """
+        panel.setStyleSheet("""
         #resultsControlPanel {
         background-color: #2d2d2d;
         border: 1px solid #454545;
         border-radius: 4px;
         }
-        """
-        )
+        """)
 
         layout = QHBoxLayout(panel)
         layout.setContentsMargins(10, 5, 10, 5)

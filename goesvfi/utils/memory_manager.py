@@ -375,3 +375,78 @@ def log_memory_usage(context: str = "") -> None:
             round(stats.percent_used, 1),
             stats.available_mb,
         )
+
+
+# Global singleton monitor
+_memory_monitor = None
+
+
+def get_memory_monitor() -> MemoryMonitor:
+    """Get the global memory monitor instance."""
+    global _memory_monitor
+    if _memory_monitor is None:
+        _memory_monitor = MemoryMonitor()
+    return _memory_monitor
+
+
+class ObjectPool:
+    """Object pool for reusing expensive objects."""
+
+    def __init__(self, factory: Callable, max_size: int = 10):
+        """Initialize object pool.
+
+        Args:
+            factory: Function to create new objects
+            max_size: Maximum pool size
+        """
+        self.factory = factory
+        self.max_size = max_size
+        self.pool: List = []
+        self._lock = threading.Lock()
+
+    def acquire(self):
+        """Acquire an object from the pool."""
+        with self._lock:
+            if self.pool:
+                return self.pool.pop()
+            return self.factory()
+
+    def release(self, obj):
+        """Release an object back to the pool."""
+        with self._lock:
+            if len(self.pool) < self.max_size:
+                self.pool.append(obj)
+
+
+class StreamingProcessor:
+    """Process large data in streaming fashion."""
+
+    def __init__(self, chunk_size_mb: int = 100):
+        """Initialize streaming processor.
+
+        Args:
+            chunk_size_mb: Size of each chunk in MB
+        """
+        self.chunk_size_mb = chunk_size_mb
+        self.optimizer = MemoryOptimizer()
+
+    def process_array(self, array: np.ndarray, process_func: Callable) -> np.ndarray:
+        """Process array in chunks.
+
+        Args:
+            array: Input array
+            process_func: Function to process each chunk
+
+        Returns:
+            Processed array
+        """
+        chunks = self.optimizer.optimize_array_chunks(array, self.chunk_size_mb)
+        results = []
+
+        for chunk in chunks:
+            result = process_func(chunk)
+            results.append(result)
+            # Free memory after processing each chunk
+            self.optimizer.free_memory()
+
+        return np.concatenate(results)
