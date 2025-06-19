@@ -194,6 +194,8 @@ cleanup_documentation_auto.py
 
 # Test artifacts
 MagicMock/
+<MagicMock*
+*MagicMock*
 test_results*.txt
 linting_*.txt
 linter_output.txt
