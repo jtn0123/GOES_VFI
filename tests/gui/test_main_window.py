@@ -7,14 +7,14 @@ from typing import List
 from unittest.mock import MagicMock, call, patch
 
 import pytest
-from PyQt6.QtCore import QRect, Qt, QThread, pyqtSignal
+from PyQt6.QtCore import QByteArray, QRect, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox, QWidget
 
 import goesvfi.gui
 
 # Import the class to be tested and related utilities
-from goesvfi.gui import ClickableLabel, CropDialog, MainWindow, VfiWorker
+from goesvfi.gui import ClickableLabel, CropSelectionDialog, MainWindow, VfiWorker
 from goesvfi.utils.gui_helpers import RifeCapabilityManager
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 
@@ -178,7 +178,7 @@ def window(
             "output_file": "",
             "input_directory": "",
             "window/geometry": None,
-            "crop_rect": goesvfi.gui.QByteArray(),
+            "crop_rect": QByteArray(),
         }
 
         # Define a side_effect function for the 'value' method
@@ -636,10 +636,10 @@ def test_error_handling(qtbot, window, mock_dialogs, mock_worker, dummy_files):
     assert window.out_file_button.isEnabled()  # Updated name
 
 
-@patch("goesvfi.gui.CropDialog")
-def test_open_crop_dialog(MockCropDialog, qtbot, window, dummy_files):
+@patch("goesvfi.gui.CropSelectionDialog")
+def test_open_crop_dialog(MockCropSelectionDialog, qtbot, window, dummy_files):
     """Test opening the crop dialog."""
-    mock_dialog_instance = MockCropDialog.return_value
+    mock_dialog_instance = MockCropSelectionDialog.return_value
     mock_dialog_instance.exec.return_value = QDialog.DialogCode.Accepted
     mock_dialog_instance.getRect.return_value = QRect(10, 20, 100, 50)
 
@@ -651,8 +651,8 @@ def test_open_crop_dialog(MockCropDialog, qtbot, window, dummy_files):
 
     qtbot.mouseClick(window.crop_button, Qt.MouseButton.LeftButton)  # Updated name
 
-    MockCropDialog.assert_called_once()
-    call_args, call_kwargs = MockCropDialog.call_args
+    MockCropSelectionDialog.assert_called_once()
+    call_args, call_kwargs = MockCropSelectionDialog.call_args
     assert isinstance(call_args[0], QPixmap)  # Check first arg is pixmap
     assert call_kwargs.get("init") is None  # Crop rect is initially None
     mock_dialog_instance.exec.assert_called_once()
@@ -665,7 +665,7 @@ def test_open_crop_dialog(MockCropDialog, qtbot, window, dummy_files):
     # Simulate the user canceling the dialog
     # Need a new mock instance for the second interaction
     mock_dialog_instance = MagicMock()
-    MockCropDialog.return_value = mock_dialog_instance
+    MockCropSelectionDialog.return_value = mock_dialog_instance
     mock_dialog_instance.exec.return_value = QDialog.DialogCode.Rejected
     # Mock getRect again for the new instance, though it shouldn't be called on reject
     mock_dialog_instance.getRect.return_value = QRect(0, 0, 0, 0)  # Dummy value
