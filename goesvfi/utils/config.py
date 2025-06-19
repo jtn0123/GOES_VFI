@@ -1,16 +1,15 @@
-# TODO: path + TOML config
 from __future__ import annotations
 
-from typing import List  # Add Any, List, cast, and TypedDict
-from typing import Any, Dict, TypedDict, cast
+# TODO: path + TOML config
 
 """goesvfi.utils.config – user paths and TOML config loader"""
 
 import pathlib
-import shutil  # Add for searching in PATH
-import sys  # Add for platform check
+import shutil
+import sys
 import tomllib
 from functools import lru_cache
+from typing import Any, Dict, List, TypedDict, cast
 
 CONFIG_DIR = pathlib.Path.home() / ".config/goesvfi"
 CONFIG_FILE = CONFIG_DIR / "config.toml"
@@ -167,9 +166,11 @@ FFMPEG_PROFILES: Dict[str, FfmpegProfile] = {
 @lru_cache(maxsize=1)
 # Specify dict return type
 def _load_config() -> Dict[str, Any]:
+    pass
     # Initialize data with defaults
     data: Dict[str, Any] = DEFAULTS.copy()
     if CONFIG_FILE.exists():
+        pass
         with CONFIG_FILE.open("rb") as fp:
             try:
                 loaded_data = tomllib.load(fp)
@@ -183,6 +184,7 @@ def _load_config() -> Dict[str, Any]:
                         and isinstance(data[key], dict)
                         and isinstance(value, dict)
                     ):
+                        pass
                         # Simple recursive merge for nested dictionaries (up to one level deep for now)
                         data[key].update(value)
                     else:
@@ -190,23 +192,28 @@ def _load_config() -> Dict[str, Any]:
                         data[key] = value
 
             except tomllib.TOMLDecodeError:
-                # If TOML is invalid, just use defaults
                 pass
+    pass
+    # If TOML is invalid, just use defaults
+    pass
 
     # ensure dirs exist for known path configurations
     # Use .get() with a default to avoid KeyError if config is missing
     output_dir_str = data.get("output_dir")
     if isinstance(output_dir_str, str):
+        pass
         pathlib.Path(output_dir_str).expanduser().mkdir(parents=True, exist_ok=True)
 
     cache_dir_str = data.get("cache_dir")
     if isinstance(cache_dir_str, str):
+        pass
         pathlib.Path(cache_dir_str).expanduser().mkdir(parents=True, exist_ok=True)
 
     # Ensure sanchez bin dir exists if specified
     sanchez_config = data.get("sanchez", {})
     sanchez_bin_dir_str = sanchez_config.get("bin_dir")
     if isinstance(sanchez_bin_dir_str, str):
+        pass
         pathlib.Path(sanchez_bin_dir_str).expanduser().mkdir(
             parents=True, exist_ok=True
         )
@@ -222,20 +229,24 @@ def get_output_dir() -> pathlib.Path:
     output_dir_str = _load_config().get("output_dir", DEFAULTS["output_dir"])
     # Ensure it's a string before converting to Path
     if not isinstance(output_dir_str, str):
+        pass
         output_dir_str = DEFAULTS["output_dir"]  # Fallback to default if type is wrong
     return pathlib.Path(output_dir_str).expanduser()
 
 
 def get_cache_dir() -> pathlib.Path:
+    pass
     # Use .get() with a default to handle potential missing key after loading
     cache_dir_str = _load_config().get("cache_dir", DEFAULTS["cache_dir"])
     # Ensure it's a string before converting to Path
     if not isinstance(cache_dir_str, str):
+        pass
         cache_dir_str = DEFAULTS["cache_dir"]  # Fallback to default if type is wrong
     return pathlib.Path(cache_dir_str).expanduser()
 
 
 def get_default_tile_size() -> int:
+    pass
     # Access nested config using .get() for safety
     pipeline_config = _load_config().get("pipeline", {})
     tile_size = pipeline_config.get(
@@ -243,6 +254,7 @@ def get_default_tile_size() -> int:
     )
     # Ensure it's an int
     if not isinstance(tile_size, int):
+        pass
         tile_size = DEFAULTS["pipeline"]["default_tile_size"]  # Fallback to default
     return cast(int, tile_size)
 
@@ -253,6 +265,7 @@ def get_sanchez_bin_dir() -> pathlib.Path:
     bin_dir_str = sanchez_config.get("bin_dir", DEFAULTS["sanchez"]["bin_dir"])
     # Ensure it's a string before converting to Path
     if not isinstance(bin_dir_str, str):
+        pass
         bin_dir_str = DEFAULTS["sanchez"]["bin_dir"]  # Fallback to default
     return pathlib.Path(bin_dir_str).expanduser()
 
@@ -263,6 +276,7 @@ def get_logging_level() -> str:
     level = logging_config.get("level", DEFAULTS["logging"]["level"])
     # Ensure it's a string
     if not isinstance(level, str):
+        pass
         level = DEFAULTS["logging"]["level"]  # Fallback to default
     return cast(str, level)
 
@@ -277,6 +291,7 @@ def get_supported_extensions() -> List[str]:
     if not isinstance(extensions, list) or not all(
         isinstance(ext, str) for ext in extensions
     ):
+        pass
         extensions = DEFAULTS["pipeline"]["supported_extensions"]  # Fallback to default
     return cast(List[str], extensions)
 
@@ -295,16 +310,18 @@ def find_rife_executable(model_key: str) -> pathlib.Path:
     """
     Locate the RIFE CLI executable.
     Searches in order:
-    1. System PATH for 'rife-ncnn-vulkan' (or .exe)
+        1. System PATH for 'rife-ncnn-vulkan' (or .exe)
     2. Project 'goesvfi/bin/' directory for 'rife-cli' (or .exe)
     3. Project 'goesvfi/models/<model_key>/' directory for 'rife-cli' (or .exe)
     """
     # 1. Check PATH for standard name
     exe_name_std = "rife-ncnn-vulkan"
     if sys.platform == "win32":
+        pass
         exe_name_std += ".exe"
     path_exe = shutil.which(exe_name_std)
     if path_exe:
+        pass
         return pathlib.Path(path_exe)
 
     # Get project root (assuming this file is in goesvfi/utils/)
@@ -313,16 +330,19 @@ def find_rife_executable(model_key: str) -> pathlib.Path:
     # 2. Check project 'bin' directory for 'rife-cli'
     exe_name_cli = "rife-cli"
     if sys.platform == "win32":
+        pass
         exe_name_cli += ".exe"
     project_bin_dir = project_root / "bin"
     project_bin_exe = project_bin_dir / exe_name_cli
     if project_bin_exe.exists():
+        pass
         return project_bin_exe
 
     # 3. Check model-specific directory for 'rife-cli'
     model_dir = project_root / "models" / model_key
     model_specific_exe = model_dir / exe_name_cli
     if model_specific_exe.exists():
+        pass
         return model_specific_exe
 
     # If none found, raise error
@@ -335,6 +355,7 @@ def find_rife_executable(model_key: str) -> pathlib.Path:
 
 
 def get_available_rife_models() -> list[str]:
+    pass
     """
     Scans the 'goesvfi/models/' directory for available RIFE models.
 
@@ -345,11 +366,13 @@ def get_available_rife_models() -> list[str]:
     models_dir = project_root / "models"
     available_models = []
     if models_dir.is_dir():
+        pass
         for item in models_dir.iterdir():
             # Check if it's a directory and potentially contains model files
             # A simple check is just to see if it's a directory.
             # More robust checks could look for specific files like flownet.param
             if item.is_dir():
+                pass
                 available_models.append(item.name)
     return sorted(available_models)
 
@@ -361,6 +384,7 @@ def get_user_config_dir() -> pathlib.Path:
     Uses CONFIG_DIR from the module, which defaults to ~/.config/goesvfi
 
     Returns:
+        pass
         Path to the user's configuration directory
     """
     # Create the directory if it doesn't exist

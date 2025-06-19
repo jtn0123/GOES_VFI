@@ -1,145 +1,108 @@
-"""SQLite cache for integrity check results.
+"""Cache database for integrity check results.
 
-This module provides a simple SQLite-based cache for storing and retrieving
-scan results, avoiding redundant scanning of the same directories.
+This module provides SQLite-based caching for scan results to improve performance.
 """
 
-import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set
 import os
 import sqlite3
+import json
 from datetime import datetime
-from enum import Enum
-from pathlib import Path
-from types import TracebackType
-from typing import Any, Dict, List, Optional, Set, Tuple, Type, Union
 
 from goesvfi.utils import config, log
 
-from .time_index import SatellitePattern
-
 LOGGER = log.get_logger(__name__)
 
-# Default cache file location (in user config directory)
+# Default cache location
 DEFAULT_CACHE_PATH = Path(config.get_user_config_dir()) / "integrity_cache.db"
-
-# SQL Schema Definitions
-SCHEMA_VERSION = 1
-
-CREATE_TABLES_SQL = """
--- Scans table: Stores metadata about each scan operation
-CREATE TABLE IF NOT EXISTS scans (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    start_date TEXT NOT NULL,  -- ISO format date
-    end_date TEXT NOT NULL,    -- ISO format date
-    satellite TEXT NOT NULL,   -- Satellite pattern name
-    interval_minutes INTEGER NOT NULL,
-    base_dir TEXT NOT NULL,    -- Base directory that was scanned
-    total_expected INTEGER NOT NULL,
-    total_found INTEGER NOT NULL,
-    scan_time TEXT NOT NULL,   -- ISO format date of when scan was performed
-    options TEXT               -- JSON string of additional options
-);
-
--- Missing timestamps table: Stores individual missing timestamps
-CREATE TABLE IF NOT EXISTS missing_timestamps (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    scan_id INTEGER NOT NULL,
-    timestamp TEXT NOT NULL,   -- ISO format timestamp
-    expected_filename TEXT NOT NULL,
-    FOREIGN KEY (scan_id) REFERENCES scans(id) ON DELETE CASCADE
-);
-
--- Cache metadata table: Stores cache version and settings
-CREATE TABLE IF NOT EXISTS cache_metadata (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-);
-
--- Timestamps table: Stores information about individual timestamps
-CREATE TABLE IF NOT EXISTS timestamps (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT NOT NULL,   -- ISO format timestamp
-    satellite TEXT NOT NULL,   -- Satellite pattern name
-    file_path TEXT,           -- Path to the file if found, empty if not found
-    found INTEGER NOT NULL,    -- 1 if found, 0 if not found
-    last_checked TEXT NOT NULL, -- ISO format date of when it was last checked
-    UNIQUE(timestamp, satellite)
-);
-"""
-
-# Initialize metadata with schema version - separate for execute() calls
-INIT_SCHEMA_VERSION_SQL = (
-    "INSERT OR REPLACE INTO cache_metadata (key, value) VALUES ('schema_version', ?)"
-)
-INIT_LAST_CLEANUP_SQL = (
-    "INSERT OR REPLACE INTO cache_metadata (key, value) VALUES ('last_cleanup', ?)"
-)
 
 
 class CacheDB:
-    """SQLite cache for integrity check results."""
-
+    """SQLite cache for integrity check results.
+    
+    Provides caching of scan results to improve performance and avoid
+    redundant scanning operations.
+    """
+    
     def __init__(self, db_path: Optional[Path] = None):
-        """
-        Initialize the cache database.
-
-        Args:
-            db_path: Path to the SQLite database file, or None to use default
-        """
-        self.db_path = db_path or DEFAULT_CACHE_PATH
-        self.conn: Optional[sqlite3.Connection] = None
-
-        # Ensure parent directory exists
-        os.makedirs(self.db_path.parent, exist_ok=True)
-
-        # Initialize the database
-        self._connect()
-        self._init_schema()
-
-    def _connect(self) -> None:
-        """Connect to the SQLite database."""
-        try:
-            self.conn = sqlite3.connect(str(self.db_path))
-            # Enable foreign keys support
-            self.conn.execute("PRAGMA foreign_keys = ON")
-            # Configure connection to return rows as dictionaries
-            self.conn.row_factory = sqlite3.Row
-        except sqlite3.Error as e:
-            LOGGER.error(f"Error connecting to cache database: {e}")
-            raise
-
-    def _init_schema(self) -> None:
-        """Initialize the database schema if needed."""
-        if not self.conn:
-            LOGGER.error("Cannot initialize schema: No database connection")
-            return
-
-        try:
-            # Create tables
-            self.conn.executescript(CREATE_TABLES_SQL)
-
-            # Initialize metadata using separate statements
-            now_iso = datetime.now().isoformat()
-            self.conn.execute(INIT_SCHEMA_VERSION_SQL, (SCHEMA_VERSION,))
-            self.conn.execute(INIT_LAST_CLEANUP_SQL, (now_iso,))
-
-            self.conn.commit()
-            LOGGER.info(f"Cache database initialized at {self.db_path}")
-        except sqlite3.Error as e:
-            LOGGER.error(f"Error initializing cache database schema: {e}")
-            raise
-
+        """Initialize the cache database."""
+        self.db_path = Path(db_path) if db_path else DEFAULT_CACHE_PATH
+        
+        # Ensure directory exists
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Connect to database
+        self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        self.conn.row_factory = sqlite3.Row
+        
+        # Create tables
+        self._create_schema()
+        
+        LOGGER.info(f"CacheDB initialized at {self.db_path}")
+    
+    def _create_schema(self) -> None:
+        """Create the database schema."""
+        cursor = self.conn.cursor()
+        
+        # Scan results table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS scan_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                start_date TEXT NOT NULL,
+                end_date TEXT NOT NULL,
+                satellite TEXT NOT NULL,
+                interval_minutes INTEGER NOT NULL,
+                base_dir TEXT NOT NULL,
+                expected_count INTEGER,
+                found_count INTEGER,
+                missing_count INTEGER,
+                scan_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                options TEXT,
+                UNIQUE(start_date, end_date, satellite, interval_minutes, base_dir)
+            )
+        """)
+        
+        # Missing timestamps table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS missing_timestamps (
+                scan_id INTEGER NOT NULL,
+                timestamp TEXT NOT NULL,
+                expected_filename TEXT,
+                FOREIGN KEY (scan_id) REFERENCES scan_results(id) ON DELETE CASCADE
+            )
+        """)
+        
+        # Found timestamps table for tracking what exists
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS timestamps (
+                satellite TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                file_path TEXT,
+                found BOOLEAN DEFAULT 0,
+                last_checked TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (satellite, timestamp)
+            )
+        """)
+        
+        # Create indexes
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_scan_results_dates ON scan_results(start_date, end_date)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_missing_timestamps_scan ON missing_timestamps(scan_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_timestamps_satellite ON timestamps(satellite)")
+        
+        self.conn.commit()
+    
     def close(self) -> None:
         """Close the database connection."""
         if self.conn:
             self.conn.close()
             self.conn = None
-
+    
     def store_scan_results(
         self,
         start_date: datetime,
         end_date: datetime,
-        satellite: SatellitePattern,
+        satellite: Any,
         interval_minutes: int,
         base_dir: Path,
         missing_timestamps: List[datetime],
@@ -147,419 +110,295 @@ class CacheDB:
         found_count: int,
         options: Optional[Dict[str, Any]] = None,
     ) -> int:
-        """
-        Store scan results in the cache.
-
-        Args:
-            start_date: Start date of the scan
-            end_date: End date of the scan
-            satellite: Satellite pattern used
-            interval_minutes: Time interval in minutes
-            base_dir: Base directory that was scanned
-            missing_timestamps: List of missing timestamps
-            expected_count: Total expected timestamps
-            found_count: Total found timestamps
-            options: Additional scan options as a dictionary
-
+        """Store scan results in cache.
+        
         Returns:
-            The ID of the inserted scan record
+            The scan_id of the stored result
         """
-        if not self.conn:
-            LOGGER.error("Cannot store results: No database connection")
-            return -1
-
-        try:
-            # Convert options to JSON if present
-            options_json = json.dumps(options) if options else "{}"
-
-            # Insert scan record
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO scans
-                (start_date, end_date, satellite, interval_minutes, base_dir,
-                 total_expected, total_found, scan_time, options)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    start_date.isoformat(),
-                    end_date.isoformat(),
-                    satellite.name,
-                    interval_minutes,
-                    str(base_dir),
-                    expected_count,
-                    found_count,
-                    datetime.now().isoformat(),
-                    options_json,
-                ),
-            )
-
-            # lastrowid could be None if no row was inserted
-            scan_id = cursor.lastrowid if cursor.lastrowid is not None else 0
-
-            # Insert missing timestamps
-            for dt in missing_timestamps:
-                expected_filename = f"{dt.strftime('%Y%m%dT%H%M%S')}.png"  # Simplified
-                cursor.execute(
-                    """
-                    INSERT INTO missing_timestamps
-                    (scan_id, timestamp, expected_filename)
-                    VALUES (?, ?, ?)
-                """,
-                    (scan_id, dt.isoformat(), expected_filename),
-                )
-
-            self.conn.commit()
-            LOGGER.info(
-                f"Stored scan results with ID {scan_id}, {len(missing_timestamps)} missing timestamps"
-            )
-            return scan_id
-
-        except sqlite3.Error as e:
-            LOGGER.error(f"Error storing scan results: {e}")
-            if self.conn:
-                self.conn.rollback()
-            return 0  # Return a default value on error
-
+        cursor = self.conn.cursor()
+        
+        # Convert satellite to string if needed
+        sat_str = satellite.name if hasattr(satellite, 'name') else str(satellite)
+        
+        # Delete any existing scan with same parameters
+        cursor.execute("""
+            DELETE FROM scan_results 
+            WHERE start_date = ? AND end_date = ? 
+            AND satellite = ? AND interval_minutes = ? AND base_dir = ?
+        """, (
+            start_date.isoformat(), 
+            end_date.isoformat(), 
+            sat_str,
+            interval_minutes, 
+            str(base_dir)
+        ))
+        
+        # Insert new scan result
+        cursor.execute("""
+            INSERT INTO scan_results 
+            (start_date, end_date, satellite, interval_minutes, base_dir,
+             expected_count, found_count, missing_count, options)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            start_date.isoformat(),
+            end_date.isoformat(),
+            sat_str,
+            interval_minutes,
+            str(base_dir),
+            expected_count,
+            found_count,
+            len(missing_timestamps),
+            json.dumps(options) if options else None
+        ))
+        
+        scan_id = cursor.lastrowid
+        
+        # Store missing timestamps
+        for ts in missing_timestamps:
+            cursor.execute("""
+                INSERT INTO missing_timestamps (scan_id, timestamp)
+                VALUES (?, ?)
+            """, (scan_id, ts.isoformat()))
+        
+        self.conn.commit()
+        LOGGER.debug(f"Stored scan results with ID {scan_id}")
+        return scan_id
+    
     def get_cached_scan(
         self,
         start_date: datetime,
         end_date: datetime,
-        satellite: SatellitePattern,
+        satellite: Any,
         interval_minutes: int,
         base_dir: Path,
         options: Optional[Dict[str, Any]] = None,
     ) -> Optional[Dict[str, Any]]:
-        """
-        Check if a scan with the given parameters exists in the cache.
-
-        Args:
-            start_date: Start date of the scan
-            end_date: End date of the scan
-            satellite: Satellite pattern used
-            interval_minutes: Time interval in minutes
-            base_dir: Base directory that was scanned
-            options: Additional scan options as a dictionary
-
+        """Get cached scan results.
+        
         Returns:
-            A dictionary of scan results if found, None otherwise
+            Dictionary with scan results or None if not found
         """
-        if not self.conn:
-            LOGGER.error("Cannot query cache: No database connection")
+        cursor = self.conn.cursor()
+        
+        # Convert satellite to string if needed
+        sat_str = satellite.name if hasattr(satellite, 'name') else str(satellite)
+        
+        # Look for matching scan
+        cursor.execute("""
+            SELECT * FROM scan_results
+            WHERE start_date = ? AND end_date = ?
+            AND satellite = ? AND interval_minutes = ? AND base_dir = ?
+        """, (
+            start_date.isoformat(),
+            end_date.isoformat(), 
+            sat_str,
+            interval_minutes,
+            str(base_dir)
+        ))
+        
+        row = cursor.fetchone()
+        if not row:
             return None
-
-        try:
-            # Convert options to JSON if present
-            options_json = json.dumps(options) if options else "{}"
-
-            # Look for a matching scan
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                SELECT id, scan_time, total_expected, total_found
-                FROM scans
-                WHERE start_date = ?
-                AND end_date = ?
-                AND satellite = ?
-                AND interval_minutes = ?
-                AND base_dir = ?
-                AND options = ?
-                ORDER BY scan_time DESC
-                LIMIT 1
-            """,
-                (
-                    start_date.isoformat(),
-                    end_date.isoformat(),
-                    satellite.name,
-                    interval_minutes,
-                    str(base_dir),
-                    options_json,
-                ),
-            )
-
-            row = cursor.fetchone()
-            if not row:
-                return None
-
-            scan_id = row["id"]
-
-            # Get missing timestamps for this scan
-            cursor.execute(
-                """
-                SELECT timestamp, expected_filename
-                FROM missing_timestamps
-                WHERE scan_id = ?
-                ORDER BY timestamp
-            """,
-                (scan_id,),
-            )
-
-            missing = []
-            for missing_row in cursor.fetchall():
-                missing.append(
-                    {
-                        "timestamp": datetime.fromisoformat(missing_row["timestamp"]),
-                        "expected_filename": missing_row["expected_filename"],
-                    }
-                )
-
-            # Prepare result dictionary
-            result = {
-                "id": scan_id,
-                "scan_time": datetime.fromisoformat(row["scan_time"]),
-                "total_expected": row["total_expected"],
-                "total_found": row["total_found"],
-                "missing": missing,
-            }
-
-            LOGGER.info(
-                f"Found cached scan results with ID {scan_id}, {len(missing)} missing timestamps"
-            )
-            return result
-
-        except sqlite3.Error as e:
-            LOGGER.error(f"Error querying cache: {e}")
-            return None
-
+        
+        # Get missing timestamps
+        cursor.execute("""
+            SELECT timestamp FROM missing_timestamps
+            WHERE scan_id = ?
+        """, (row['id'],))
+        
+        missing_timestamps = [
+            datetime.fromisoformat(r['timestamp']) 
+            for r in cursor.fetchall()
+        ]
+        
+        return {
+            'id': row['id'],
+            'start_date': datetime.fromisoformat(row['start_date']),
+            'end_date': datetime.fromisoformat(row['end_date']),
+            'satellite': sat_str,
+            'interval_minutes': row['interval_minutes'],
+            'base_dir': Path(row['base_dir']),
+            'expected_count': row['expected_count'],
+            'found_count': row['found_count'],
+            'missing_count': row['missing_count'],
+            'missing_timestamps': missing_timestamps,
+            'scan_timestamp': row['scan_timestamp'],
+            'options': json.loads(row['options']) if row['options'] else None
+        }
+    
     def clear_cache(self) -> bool:
-        """
-        Clear all data from the cache.
-
+        """Clear all cached data.
+        
         Returns:
-            True if successful, False otherwise
+            True if successful
         """
-        if not self.conn:
-            LOGGER.error("Cannot clear cache: No database connection")
-            return False
-
         try:
-            self.conn.execute("DELETE FROM missing_timestamps")
-            self.conn.execute("DELETE FROM scans")
-            now_iso = datetime.now().isoformat()
-            self.conn.execute(
-                "INSERT OR REPLACE INTO cache_metadata (key, value) VALUES ('last_cleanup', ?)",
-                (now_iso,),
-            )
+            cursor = self.conn.cursor()
+            cursor.execute("DELETE FROM scan_results")
+            cursor.execute("DELETE FROM missing_timestamps")
+            cursor.execute("DELETE FROM timestamps")
             self.conn.commit()
             LOGGER.info("Cache cleared successfully")
             return True
-        except sqlite3.Error as e:
+        except Exception as e:
             LOGGER.error(f"Error clearing cache: {e}")
-            if self.conn:
-                self.conn.rollback()
             return False
-
+    
     async def add_timestamp(
         self,
         timestamp: datetime,
-        satellite: SatellitePattern,
+        satellite: Any,
         file_path: str,
         found: bool,
     ) -> bool:
-        """
-        Add or update a timestamp entry in the cache.
-
-        Args:
-            timestamp: The timestamp to add
-            satellite: The satellite pattern enum
-            file_path: Path to the file (or empty if not found)
-            found: True if the file was found, False otherwise
-
+        """Add or update a timestamp entry in the cache.
+        
         Returns:
-            True if successful, False otherwise
+            True if successful
         """
-        if not self.conn:
-            LOGGER.error("Cannot add timestamp: No database connection")
-            return False
-
         try:
-            now_iso = datetime.now().isoformat()
-            found_int = 1 if found else 0
-
-            self.conn.execute(
-                """
-                INSERT OR REPLACE INTO timestamps
-                (timestamp, satellite, file_path, found, last_checked)
-                VALUES (?, ?, ?, ?, ?)
-            """,
-                (timestamp.isoformat(), satellite.name, file_path, found_int, now_iso),
-            )
-
+            cursor = self.conn.cursor()
+            sat_str = satellite.name if hasattr(satellite, 'name') else str(satellite)
+            
+            cursor.execute("""
+                INSERT OR REPLACE INTO timestamps 
+                (satellite, timestamp, file_path, found, last_checked)
+                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            """, (sat_str, timestamp.isoformat(), file_path, int(found)))
+            
             self.conn.commit()
             return True
-
-        except sqlite3.Error as e:
-            LOGGER.error(f"Error adding timestamp to cache: {e}")
-            if self.conn:
-                self.conn.rollback()
+        except Exception as e:
+            LOGGER.error(f"Error adding timestamp: {e}")
             return False
-
+    
     async def timestamp_exists(
-        self, timestamp: datetime, satellite: SatellitePattern
+        self, timestamp: datetime, satellite: Any
     ) -> bool:
-        """
-        Check if a timestamp exists in the cache and was found.
-
-        Args:
-            timestamp: The timestamp to check
-            satellite: The satellite pattern enum
-
+        """Check if a timestamp exists in the cache.
+        
         Returns:
-            True if the timestamp exists and was found, False otherwise
+            True if the timestamp exists and was found
         """
-        if not self.conn:
-            LOGGER.error("Cannot check timestamp: No database connection")
-            return False
-
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                SELECT found FROM timestamps
-                WHERE timestamp = ? AND satellite = ?
-            """,
-                (timestamp.isoformat(), satellite.name),
-            )
-
-            row = cursor.fetchone()
-            if not row:
-                return False
-
-            # Explicitly cast to bool to fix mypy no-any-return error
-            return bool(row["found"] == 1)
-
-        except sqlite3.Error as e:
-            LOGGER.error(f"Error checking timestamp in cache: {e}")
-            return False
-
+        cursor = self.conn.cursor()
+        sat_str = satellite.name if hasattr(satellite, 'name') else str(satellite)
+        
+        cursor.execute("""
+            SELECT found FROM timestamps
+            WHERE satellite = ? AND timestamp = ?
+        """, (sat_str, timestamp.isoformat()))
+        
+        row = cursor.fetchone()
+        return bool(row and row['found'])
+    
     async def get_timestamps(
-        self, satellite: SatellitePattern, start_time: datetime, end_time: datetime
+        self, satellite: Any, start_time: datetime, end_time: datetime
     ) -> Set[datetime]:
-        """
-        Get all timestamps in a time range that were found.
-
-        Args:
-            satellite: The satellite pattern enum
-            start_time: Start of the time range
-            end_time: End of the time range
-
+        """Get all timestamps in a time range that were found.
+        
         Returns:
-            Set of timestamps that were found in the cache
+            Set of timestamps that exist
         """
-        if not self.conn:
-            LOGGER.error("Cannot get timestamps: No database connection")
-            return set()
-
-        try:
-            cursor = self.conn.cursor()
-            cursor.execute(
-                """
-                SELECT timestamp FROM timestamps
-                WHERE satellite = ? AND found = 1
-                AND timestamp >= ? AND timestamp <= ?
-            """,
-                (satellite.name, start_time.isoformat(), end_time.isoformat()),
-            )
-
-            timestamps = set()
-            for row in cursor.fetchall():
-                timestamps.add(datetime.fromisoformat(row["timestamp"]))
-
-            return timestamps
-
-        except sqlite3.Error as e:
-            LOGGER.error(f"Error getting timestamps from cache: {e}")
-            return set()
-
+        cursor = self.conn.cursor()
+        sat_str = satellite.name if hasattr(satellite, 'name') else str(satellite)
+        
+        cursor.execute("""
+            SELECT timestamp FROM timestamps
+            WHERE satellite = ? AND timestamp >= ? AND timestamp <= ? AND found = 1
+        """, (sat_str, start_time.isoformat(), end_time.isoformat()))
+        
+        return {
+            datetime.fromisoformat(row['timestamp'])
+            for row in cursor.fetchall()
+        }
+    
     def get_cache_stats(self) -> Dict[str, Any]:
-        """
-        Get statistics about the cache.
-
+        """Get statistics about the cache.
+        
         Returns:
-            A dictionary with cache statistics
+            Dictionary with cache statistics
         """
-        if not self.conn:
-            LOGGER.error("Cannot get cache stats: No database connection")
-            return {"error": "No database connection"}
-
-        try:
-            cursor = self.conn.cursor()
-
-            # Get scan count
-            cursor.execute("SELECT COUNT(*) as count FROM scans")
-            scan_count = cursor.fetchone()["count"]
-
-            # Get missing timestamp count
-            cursor.execute("SELECT COUNT(*) as count FROM missing_timestamps")
-            missing_count = cursor.fetchone()["count"]
-
-            # Get timestamp count
-            cursor.execute("SELECT COUNT(*) as count FROM timestamps")
-            timestamp_count = cursor.fetchone()["count"]
-
-            # Get found timestamp count
-            cursor.execute("SELECT COUNT(*) as count FROM timestamps WHERE found = 1")
-            found_count = cursor.fetchone()["count"]
-
-            # Get database file size
-            db_size = (
-                os.path.getsize(self.db_path) if os.path.exists(self.db_path) else 0
-            )
-
-            # Get last scan time
-            cursor.execute("SELECT MAX(scan_time) as last_scan FROM scans")
-            last_scan = cursor.fetchone()["last_scan"]
-            last_scan_dt = datetime.fromisoformat(last_scan) if last_scan else None
-
-            # Get schema version
-            cursor.execute(
-                "SELECT value FROM cache_metadata WHERE key = 'schema_version'"
-            )
-            schema_version = cursor.fetchone()["value"]
-
-            # Get last cleanup time
-            cursor.execute(
-                "SELECT value FROM cache_metadata WHERE key = 'last_cleanup'"
-            )
-            last_cleanup = cursor.fetchone()["value"]
-            last_cleanup_dt = (
-                datetime.fromisoformat(last_cleanup) if last_cleanup else None
-            )
-
-            # Get last checked timestamp
-            cursor.execute("SELECT MAX(last_checked) as last_checked FROM timestamps")
-            last_checked = cursor.fetchone()["last_checked"]
-            last_checked_dt = (
-                datetime.fromisoformat(last_checked) if last_checked else None
-            )
-
-            return {
-                "scan_count": scan_count,
-                "missing_count": missing_count,
-                "timestamp_count": timestamp_count,
-                "found_count": found_count,
-                "db_size_bytes": db_size,
-                "db_size_mb": round(db_size / (1024 * 1024), 2),
-                "last_scan": last_scan_dt,
-                "last_checked": last_checked_dt,
-                "schema_version": schema_version,
-                "last_cleanup": last_cleanup_dt,
-                "db_path": str(self.db_path),
-            }
-
-        except sqlite3.Error as e:
-            LOGGER.error(f"Error getting cache stats: {e}")
-            return {"error": str(e)}
-
-    def __enter__(self) -> "CacheDB":
-        """Enter context manager."""
-        return self
-
-    def __exit__(
+        cursor = self.conn.cursor()
+        
+        # Get scan count
+        cursor.execute("SELECT COUNT(*) as count FROM scan_results")
+        scan_count = cursor.fetchone()['count']
+        
+        # Get missing count
+        cursor.execute("SELECT COUNT(*) as count FROM missing_timestamps")
+        missing_count = cursor.fetchone()['count']
+        
+        # Get timestamp counts
+        cursor.execute("SELECT COUNT(*) as count FROM timestamps")
+        timestamp_count = cursor.fetchone()['count']
+        
+        cursor.execute("SELECT COUNT(*) as count FROM timestamps WHERE found = 1")
+        found_count = cursor.fetchone()['count']
+        
+        # Get last scan time
+        cursor.execute("SELECT MAX(scan_timestamp) as last FROM scan_results")
+        last_scan = cursor.fetchone()['last']
+        
+        # Get database size
+        db_size = self.db_path.stat().st_size if self.db_path.exists() else 0
+        
+        return {
+            "scan_count": scan_count,
+            "missing_count": missing_count,
+            "timestamp_count": timestamp_count,
+            "found_count": found_count,
+            "db_size_bytes": db_size,
+            "schema_version": "1",
+            "last_scan": last_scan,
+            "last_cleanup": None,
+            "last_checked": datetime.now().isoformat(),
+        }
+    
+    # Methods for ThreadLocalCacheDB compatibility
+    def set_cache_data(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        satellite: Any,
+        missing_timestamps: List[datetime],
+        remote_files: List[str],
+        local_files: Set[str]
     ) -> None:
-        """Exit context manager and close connection."""
-        self.close()
+        """Set cache data for a satellite (ThreadLocalCacheDB compatibility)."""
+        # For now, just store the missing timestamps
+        sat_str = satellite.name if hasattr(satellite, 'name') else str(satellite)
+        cursor = self.conn.cursor()
+        
+        for ts in missing_timestamps:
+            cursor.execute("""
+                INSERT OR REPLACE INTO timestamps 
+                (satellite, timestamp, found)
+                VALUES (?, ?, 0)
+            """, (sat_str, ts.isoformat()))
+        
+        self.conn.commit()
+    
+    def get_cache_data(self, satellite: Any) -> Optional[Dict[str, Any]]:
+        """Get cache data for a satellite (ThreadLocalCacheDB compatibility)."""
+        sat_str = satellite.name if hasattr(satellite, 'name') else str(satellite)
+        cursor = self.conn.cursor()
+        
+        # Get missing timestamps
+        cursor.execute("""
+            SELECT timestamp FROM timestamps
+            WHERE satellite = ? AND found = 0
+        """, (sat_str,))
+        
+        missing = [datetime.fromisoformat(row['timestamp']) for row in cursor.fetchall()]
+        
+        if not missing:
+            return None
+            
+        return {
+            "missing_timestamps": missing,
+            "last_scan": datetime.now(),
+            "metadata": {"source": "cache"}
+        }
+    
+    def reset_database(self) -> None:
+        """Reset the database by clearing all tables."""
+        self.clear_cache()
+        LOGGER.info("Database reset completed")

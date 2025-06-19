@@ -4,14 +4,16 @@ CDN Store implementation for accessing GOES imagery via NOAA STAR CDN.
 This module provides a RemoteStore implementation that fetches GOES Band 13
 imagery from the NOAA STAR CDN using asynchronous HTTP requests.
 """
-import asyncio
-import logging
+
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Type, cast
+from typing import Optional, Type
 
 import aiohttp
-from aiohttp.client_exceptions import ClientError, ClientResponseError
+from aiohttp.client_exceptions import (
+    ClientError,
+    ClientResponseError,
+)
 
 from goesvfi.integrity_check.remote.base import RemoteStore
 from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
@@ -64,6 +66,8 @@ class CDNStore(RemoteStore):
         exc_tb: Optional[object],
     ) -> None:
         """Context manager exit."""
+        _ = exc_val  # Unused but required by protocol
+        _ = exc_tb  # Unused but required by protocol
         await self.close()
 
     async def exists(self, ts: datetime, satellite: SatellitePattern) -> bool:
@@ -81,9 +85,9 @@ class CDNStore(RemoteStore):
 
         try:
             async with session.head(url, allow_redirects=True) as response:
-                return response.status == 200
+                return bool(response.status == 200)
         except ClientError as e:
-            LOGGER.debug(f"CDN check failed for {url}: {e}")
+            LOGGER.debug("CDN check failed for %s: %s", url, e)
             return False
 
     async def download(
@@ -118,7 +122,7 @@ class CDNStore(RemoteStore):
             dest_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Download the file with progress tracking
-            LOGGER.debug(f"Downloading {url} to {dest_path}")
+            LOGGER.debug("Downloading %s to %s", url, dest_path)
             async with session.get(url, allow_redirects=True) as response:
                 if response.status != 200:
                     raise FileNotFoundError(
@@ -127,7 +131,7 @@ class CDNStore(RemoteStore):
 
                 content_length = response.headers.get("Content-Length", "0")
                 total_size = int(content_length) if content_length.isdigit() else 0
-                LOGGER.debug(f"Total size: {total_size} bytes")
+                LOGGER.debug("Total size: %s bytes", total_size)
 
                 with open(dest_path, "wb") as f:
                     downloaded = 0
@@ -141,9 +145,9 @@ class CDNStore(RemoteStore):
                             and downloaded % max(1, (total_size // 10)) < 8192
                         ):
                             progress = (downloaded / total_size) * 100.0
-                            LOGGER.debug(f"Download progress: {progress:.1f}%")
+                            LOGGER.debug("Download progress: %.1f%%", progress)
 
-            LOGGER.debug(f"Download complete: {dest_path}")
+            LOGGER.debug("Download complete: %s", dest_path)
             return dest_path
 
         except ClientResponseError as e:
@@ -154,3 +158,34 @@ class CDNStore(RemoteStore):
             raise IOError(f"Failed to download {url}: {e}")
         except Exception as e:
             raise IOError(f"Unexpected error downloading {url}: {e}")
+    
+    async def check_file_exists(
+        self, timestamp: datetime, satellite: SatellitePattern
+    ) -> bool:
+        """Check if a file exists for the given timestamp and satellite.
+        
+        This method implements the abstract method from RemoteStore.
+        """
+        return await self.exists(timestamp, satellite)
+    
+    async def download_file(
+        self,
+        timestamp: datetime,
+        satellite: SatellitePattern,
+        destination: Path,
+        progress_callback: Optional[callable] = None,
+        cancel_check: Optional[callable] = None,
+    ) -> Path:
+        """Download a file for the given timestamp and satellite.
+        
+        This method implements the abstract method from RemoteStore.
+        Note: progress_callback and cancel_check are not implemented in this stub.
+        """
+        return await self.download(timestamp, satellite, destination)
+    
+    async def get_file_url(self, timestamp: datetime, satellite: SatellitePattern) -> str:
+        """Get the URL for a file.
+        
+        This method implements the abstract method from RemoteStore.
+        """
+        return TimeIndex.to_cdn_url(timestamp, satellite, self.resolution)
