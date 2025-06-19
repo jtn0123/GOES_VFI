@@ -65,9 +65,22 @@ def _build_handler() -> logging.Handler:
 
 def get_logger(name: str | None = None) -> logging.Logger:
     """Gets a logger instance. Configuration is handled by the root logger."""
-    # Simply return the logger instance. Level and handlers are managed
-    # by the root logger setup in set_global_log_level.
-    return logging.getLogger(name)
+    global _handler
+
+    logger = logging.getLogger(name)
+    logger.setLevel(_LEVEL)
+
+    # Build handler if it doesn't exist
+    if _handler is None:
+        _handler = _build_handler()
+        _handler.setLevel(_LEVEL)
+
+    # Add handler to logger if not already present
+    handler_types = [type(h) for h in logger.handlers]
+    if type(_handler) not in handler_types:
+        logger.addHandler(_handler)
+
+    return logger
 
 
 def set_global_log_level(level: int) -> None:
@@ -96,4 +109,17 @@ def set_global_log_level(level: int) -> None:
     # No need for the global _LEVEL variable anymore.
 
 
-# set_level function removed, level is now controlled by config
+# set_level function added for backward compatibility
+def set_level(debug_mode: bool) -> None:
+    """Set the global logging level based on debug mode."""
+    global _LEVEL
+    _LEVEL = logging.DEBUG if debug_mode else logging.INFO
+
+    # Update the handler level if it exists
+    if _handler:
+        _handler.setLevel(_LEVEL)
+
+    # Update all existing loggers
+    for name in logging.Logger.manager.loggerDict:
+        logger = logging.getLogger(name)
+        logger.setLevel(_LEVEL)

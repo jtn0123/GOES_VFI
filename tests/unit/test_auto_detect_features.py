@@ -130,10 +130,7 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         self.tab.end_date_edit.setDateTime = end_date_spy
 
         # Call the method
-        with patch(
-            "goesvfi.integrity_check.enhanced_gui_tab.Qt.CursorShape.WaitCursor"
-        ):
-            self.tab._auto_detect_date_range()
+        self.tab._auto_detect_date_range()
 
         # Process events
         QCoreApplication.processEvents()
@@ -197,10 +194,7 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         self.tab.end_date_edit.setDateTime = end_date_spy
 
         # Call the method
-        with patch(
-            "goesvfi.integrity_check.enhanced_gui_tab.Qt.CursorShape.WaitCursor"
-        ):
-            self.tab._auto_detect_date_range()
+        self.tab._auto_detect_date_range()
 
         # Process events
         QCoreApplication.processEvents()
@@ -260,10 +254,7 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         self.mock_view_model.base_directory = empty_dir
 
         # Call the method
-        with patch(
-            "goesvfi.integrity_check.enhanced_gui_tab.Qt.CursorShape.WaitCursor"
-        ):
-            self.tab._auto_detect_date_range()
+        self.tab._auto_detect_date_range()
 
         # Process events
         QCoreApplication.processEvents()

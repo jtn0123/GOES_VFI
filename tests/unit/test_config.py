@@ -128,14 +128,14 @@ def test_find_rife_executable_in_model_dir(mock_exists, mock_which):
     def exists_side_effect(self_path):
         if "bin/rife-cli" in str(self_path):
             return False
-        if "models/rife-v4.6/rife-ncnn-vulkan" in str(self_path):
+        if "models/rife-v4.6/rife-cli" in str(self_path):
             return True
         return False
 
     mock_exists.side_effect = exists_side_effect
 
     path = config.find_rife_executable("rife-v4.6")
-    assert "rife-ncnn-vulkan" in str(path)
+    assert "rife-cli" in str(path)
     mock_which.assert_called_once()
     assert mock_exists.call_count > 0
 

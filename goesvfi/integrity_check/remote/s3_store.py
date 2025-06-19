@@ -16,19 +16,14 @@ import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union, cast
-
-# Define a type variable for exceptions
-ExcType = TypeVar("ExcType", bound=BaseException)
+from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import aioboto3  # type: ignore
 import botocore.exceptions
 from botocore import UNSIGNED
 from botocore.config import Config
 
-# Rename our ConnectionError to avoid conflict with built-in one
 from goesvfi.integrity_check.remote.base import AuthenticationError
-from goesvfi.integrity_check.remote.base import ConnectionError
 from goesvfi.integrity_check.remote.base import ConnectionError as RemoteConnectionError
 from goesvfi.integrity_check.remote.base import (
     RemoteStore,
@@ -41,6 +36,9 @@ from goesvfi.integrity_check.time_index import (
     TimeIndex,
 )
 from goesvfi.utils.log import get_logger
+
+# Define a type variable for exceptions
+ExcType = TypeVar("ExcType", bound=BaseException)
 
 # Define a type variable for the union of all error types
 RemoteErrorType = Union[
@@ -149,9 +147,9 @@ def log_download_statistics() -> None:
             total_bytes / sum(download_times_float) if download_times_float else 0
         )
         if speed_bps > 1024 * 1024:
-            network_speed = f"{speed_bps/1024/1024:.2f} MB/s"
+            network_speed = f"{speed_bps / 1024 / 1024:.2f} MB/s"
         else:
-            network_speed = f"{speed_bps/1024:.2f} KB/s"
+            network_speed = f"{speed_bps / 1024:.2f} KB/s"
 
     # Safely extract start time
     start_time = (
@@ -176,9 +174,9 @@ def log_download_statistics() -> None:
         if download_rates_float:
             rate_bps = sum(download_rates_float) / len(download_rates_float)
             if rate_bps > 1024 * 1024:
-                avg_download_rate = f"{rate_bps/1024/1024:.2f} MB/s"
+                avg_download_rate = f"{rate_bps / 1024 / 1024:.2f} MB/s"
             else:
-                avg_download_rate = f"{rate_bps/1024:.2f} KB/s"
+                avg_download_rate = f"{rate_bps / 1024:.2f} KB/s"
 
     # Safely extract error counts
     failed = (
@@ -257,7 +255,7 @@ def log_download_statistics() -> None:
         errors_to_show = errors_value[-5:]  # Show last 5 errors
         for i, error in enumerate(errors_to_show):
             if isinstance(error, str):
-                stats_msg += f"{i+1}. {error}\n"
+                stats_msg += f"{i + 1}. {error}\n"
 
     # Add recent download attempts if any
     recent_attempts_value = DOWNLOAD_STATS.get("recent_attempts", [])
@@ -274,7 +272,7 @@ def log_download_statistics() -> None:
             file_size_val = attempt.get("file_size", 0)
             if not isinstance(file_size_val, (int, float)):
                 file_size_val = 0
-            size = f"{file_size_val/1024:.1f} KB" if file_size_val > 0 else "N/A"
+            size = f"{file_size_val / 1024:.1f} KB" if file_size_val > 0 else "N/A"
 
             download_time_val = attempt.get("download_time", 0)
             if not isinstance(download_time_val, (int, float)):
@@ -293,7 +291,7 @@ def log_download_statistics() -> None:
                 key_val = f".../{key_parts[-1]}" if key_parts else key_val
 
             timestamp_val = attempt.get("timestamp", "N/A")
-            stats_msg += f"{i+1}. [{timestamp_val}] {status} - Size: {size}, Time: {time_taken}, Key: {key_val}\n"
+            stats_msg += f"{i + 1}. [{timestamp_val}] {status} - Size: {size}, Time: {time_taken}, Key: {key_val}\n"
 
     # Add time since last successful download
     last_success_time = DOWNLOAD_STATS.get("last_success_time", 0)
@@ -354,7 +352,7 @@ def get_system_network_info() -> Dict[str, Any]:
         info["s3_host_resolution"] = error_info
 
     log_lines = [
-        f"System and Network Information:",
+        "System and Network Information:",
         f"  Timestamp: {info.get('timestamp', 'N/A')}",
         f"  Platform: {info.get('platform', 'N/A')}",
         f"  Python: {info.get('python_version', 'N/A')}",
@@ -429,7 +427,7 @@ def create_error_from_code(
                 original_exception=exception,
             )
         # Fall through to later checks if no match
-    elif error_code in ("AccessDenied", "403"):
+    elif error_code in ("AccessDenied", "403", "InvalidAccessKeyId"):
         return AuthenticationError(
             message=f"Access denied to {satellite_name} data",
             technical_details=technical_details
@@ -819,14 +817,14 @@ class S3Store(RemoteStore):
 
                 if self._s3_client is None:
                     LOGGER.debug(
-                        f"Creating new S3 client with unsigned access (attempt {retry_count+1}/{max_retries}, "
+                        f"Creating new S3 client with unsigned access (attempt {retry_count + 1}/{max_retries}, "
                         f"region: {self.aws_region}, delay: {delay:.2f}s)"
                     )
 
                     # Apply delay for retries using exponential backoff
                     if delay > 0:
                         LOGGER.info(
-                            f"Applying exponential backoff delay of {delay:.2f}s before retry {retry_count+1}"
+                            f"Applying exponential backoff delay of {delay:.2f}s before retry {retry_count + 1}"
                         )
                         await asyncio.sleep(delay)
 
@@ -1068,8 +1066,29 @@ class S3Store(RemoteStore):
                 return False
 
             # Handle other errors with user-friendly messages
-            error = self.handle_error(e, "exists check", ts, satellite)
-            error.log_error()
+            error_code = e.response.get("Error", {}).get("Code")
+            error_message = e.response.get("Error", {}).get("Message", "Unknown error")
+
+            # Create enhanced error with detailed context
+            error_msg = f"Error checking if file exists for {satellite.name} at {ts.isoformat()}"
+            technical_details = (
+                f"S3 {error_code}: {error_message}\n" f"Path: s3://{bucket}/{key}"
+            )
+
+            # Create error object using helper function
+            error = create_error_from_code(
+                error_code=error_code if error_code is not None else "UnknownError",
+                error_message=error_message,
+                technical_details=technical_details,
+                satellite_name=satellite.name,
+                exception=e,
+                error_msg=error_msg,
+            )
+
+            # Log the error details
+            LOGGER.error(f"S3 error: {error.get_user_message()}")
+            if hasattr(error, "technical_details") and error.technical_details:
+                LOGGER.error(f"S3 technical details: {error.technical_details}")
 
             # For credential or connection errors, we should raise to notify the user
             if isinstance(error, (AuthenticationError, ConnectionError)):
@@ -1140,9 +1159,7 @@ class S3Store(RemoteStore):
                 if error_code == "404":
                     # File doesn't exist with exact key, try wildcard
                     has_exact_match = False
-                    LOGGER.info(
-                        f"Exact file not found (404), will try wildcard pattern"
-                    )
+                    LOGGER.info("Exact file not found (404), will try wildcard pattern")
                     # Log more details about the 404 for debugging
                     error_message = e.response.get("Error", {}).get(
                         "Message", "Unknown error"
@@ -1221,9 +1238,9 @@ class S3Store(RemoteStore):
                         # Format download speed in appropriate units
                         speed_str = ""
                         if download_speed > 1024 * 1024:
-                            speed_str = f"{download_speed/1024/1024:.2f} MB/s"
+                            speed_str = f"{download_speed / 1024 / 1024:.2f} MB/s"
                         else:
-                            speed_str = f"{download_speed/1024:.2f} KB/s"
+                            speed_str = f"{download_speed / 1024:.2f} KB/s"
 
                         LOGGER.info(f"Verified downloaded file: {dest_path}")
                         LOGGER.info(
@@ -1276,8 +1293,7 @@ class S3Store(RemoteStore):
                     error_type = None
                     error_message = str(download_error)
 
-                    # Main error object to be populated in the handlers below
-                    download_error_obj: RemoteErrorType
+                    # Main error object will be populated in the handlers below
 
                     if isinstance(download_error, botocore.exceptions.ClientError):
                         error_code = download_error.response.get("Error", {}).get(
@@ -1499,7 +1515,7 @@ class S3Store(RemoteStore):
                             message=error_msg,
                             technical_details=technical_details,
                             original_exception=FileNotFoundError(
-                                f"No matching files found in S3"
+                                "No matching files found in S3"
                             ),
                         )
                         raise error
@@ -1551,9 +1567,9 @@ class S3Store(RemoteStore):
                             # Format download speed in appropriate units
                             speed_str = ""
                             if download_speed > 1024 * 1024:
-                                speed_str = f"{download_speed/1024/1024:.2f} MB/s"
+                                speed_str = f"{download_speed / 1024 / 1024:.2f} MB/s"
                             else:
-                                speed_str = f"{download_speed/1024:.2f} KB/s"
+                                speed_str = f"{download_speed / 1024:.2f} KB/s"
 
                             LOGGER.info(f"Verified downloaded file: {dest_path}")
                             LOGGER.info(
@@ -1745,7 +1761,7 @@ class S3Store(RemoteStore):
                         error_msg=(
                             f"No files found for {satellite.name} at {ts.isoformat()}"
                             if error_code == "404"
-                            else f"AWS S3 service is currently unavailable"
+                            else "AWS S3 service is currently unavailable"
                             if error_code in ("ServiceUnavailable", "InternalError")
                             else f"Error listing {satellite.name} data files"
                         ),

@@ -6,6 +6,7 @@ import pytest
 from PyQt6.QtWidgets import QApplication
 
 from goesvfi.pipeline import cache
+from goesvfi.utils import config
 from goesvfi.utils.log import get_logger
 
 LOGGER = get_logger(__name__)
@@ -56,12 +57,9 @@ def test_load_cached_none_for_zero_frames(mock_cache_dir, sample_paths):
     assert result is None
 
 
-@patch("goesvfi.pipeline.cache.CACHE_DIR")
-def test_load_cached_cache_miss_when_files_missing(
-    mock_cache_dir, sample_paths, tmp_path
-):
-    # Patch CACHE_DIR to tmp_path
-    mock_cache_dir.return_value = tmp_path
+def test_load_cached_cache_miss_when_files_missing(monkeypatch, sample_paths, tmp_path):
+    # Patch the config.get_cache_dir() function to return tmp_path
+    monkeypatch.setattr(config, "get_cache_dir", lambda: tmp_path)
     file1, file2 = sample_paths
     num_frames = 3
 
