@@ -37,6 +37,10 @@ class RemoteStoreError(Exception):
         self.troubleshooting_tips = troubleshooting_tips
         self.error_code = error_code
 
+    def get_user_message(self) -> str:
+        """Get a user-friendly error message."""
+        return self.message
+
 
 class ConnectionError(RemoteStoreError):
     """Error connecting to remote store."""
