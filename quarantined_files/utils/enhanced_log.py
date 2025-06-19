@@ -88,7 +88,7 @@ class PerformanceLogger:
 
             # Log the timing
             self.logger.info(
-                "Performance metric: %s", 
+                "Performance metric: %s",
                 operation,
                 extra={
                     "performance": {

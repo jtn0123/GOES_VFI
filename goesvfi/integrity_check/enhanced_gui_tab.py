@@ -135,11 +135,8 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         parent: Optional[QWidget] = None,
     ):
         """Initialize the enhanced integrity check tab."""
-        # Initialize parent class with parent widget
-        super().__init__(parent)
-
-        # Store the view model
-        self.view_model = view_model
+        # Initialize parent class with view_model and parent widget
+        super().__init__(view_model, parent)
 
         # Additional state for enhanced features
         self.cdn_store = CDNStore()
