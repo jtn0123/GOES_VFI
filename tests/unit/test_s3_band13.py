@@ -191,7 +191,7 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
                 LOGGER.info("Extracted timestamp: %s", file_ts.isoformat())
 
                 # Now try to download using the S3Store's band support
-                result = await s3_store.download(
+                result = await s3_store.download_file(
                     file_ts,
                     satellite_pattern,
                     dest_path,

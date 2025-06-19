@@ -91,7 +91,7 @@ class TestGOESImagery(unittest.TestCase):
 
         # Verify result
         self.assertIsNotNone(result)
-        self.assertTrue(result.exists())
+        self.assertTrue(result.check_file_exists())
 
         # Verify mock was called with correct URL
         expected_url = (

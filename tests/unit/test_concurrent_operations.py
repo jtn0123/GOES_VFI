@@ -210,7 +210,7 @@ class TestConcurrentOperations:
                     # Launch multiple concurrent downloads of same file
                     tasks = []
                     for _ in range(5):
-                        task = store.download(
+                        task = store.download_file(
                             ts=timestamp,
                             satellite=SatellitePattern.GOES_16,
                             dest_path=dest_path,
@@ -387,7 +387,7 @@ class TestConcurrentOperations:
         # These should not deadlock
         tasks = []
         for i in range(5):
-            task = composite.download(
+            task = composite.download_file(
                 ts=timestamp,
                 satellite=SatellitePattern.GOES_16,
                 dest_path=Path(f"/tmp/test_{i}.nc"),

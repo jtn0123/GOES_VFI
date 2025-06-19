@@ -90,7 +90,7 @@ async def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
                     )
 
                     # Check if file exists
-                    exists = await s3_store.exists(
+                    exists = await s3_store.check_file_exists(
                         ts, satellite_pattern, product_type=product_type, band=band
                     )
                     attempt["exists"] = exists
@@ -98,7 +98,7 @@ async def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
                     if exists:
                         # Download the file
                         LOGGER.info("File exists! Downloading...")
-                        result_path = await s3_store.download(
+                        result_path = await s3_store.download_file(
                             ts,
                             satellite_pattern,
                             dest_path,

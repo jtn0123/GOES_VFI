@@ -144,7 +144,9 @@ class TestNetworkFailureSimulation:
             timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
             with pytest.raises(NetworkError) as exc_info:
-                await store.exists(ts=timestamp, satellite=SatellitePattern.GOES_16)
+                await store.check_file_exists(
+                    ts=timestamp, satellite=SatellitePattern.GOES_16
+                )
 
             assert "Connection timeout" in str(exc_info.value)
 
@@ -165,7 +167,9 @@ class TestNetworkFailureSimulation:
             timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
             with pytest.raises(NetworkError) as exc_info:
-                await store.exists(ts=timestamp, satellite=SatellitePattern.GOES_16)
+                await store.check_file_exists(
+                    ts=timestamp, satellite=SatellitePattern.GOES_16
+                )
 
             # Error should mention DNS
             assert "DNS" in str(exc_info.value) or "Name or service not known" in str(
@@ -199,7 +203,7 @@ class TestNetworkFailureSimulation:
             timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
             # Should retry and succeed
-            result = await store.exists(
+            result = await store.check_file_exists(
                 ts=timestamp, satellite=SatellitePattern.GOES_16
             )
 
@@ -240,7 +244,7 @@ class TestNetworkFailureSimulation:
         timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
         # Download should succeed via CDN
-        result = await composite.download(
+        result = await composite.download_file(
             ts=timestamp, satellite=SatellitePattern.GOES_16, dest_path=test_path
         )
 
@@ -292,7 +296,9 @@ class TestNetworkFailureSimulation:
 
             # Should raise NetworkError
             with pytest.raises(NetworkError) as exc_info:
-                await store.exists(ts=timestamp, satellite=SatellitePattern.GOES_16)
+                await store.check_file_exists(
+                    ts=timestamp, satellite=SatellitePattern.GOES_16
+                )
 
             assert "Connection pool" in str(exc_info.value)
 
@@ -333,7 +339,7 @@ class TestNetworkFailureSimulation:
                     with patch("pathlib.Path.stat") as mock_stat:
                         mock_stat.return_value.st_size = len(b"complete data file")
 
-                        result = await store.download(
+                        result = await store.download_file(
                             ts=timestamp,
                             satellite=SatellitePattern.GOES_16,
                             dest_path=download_path,

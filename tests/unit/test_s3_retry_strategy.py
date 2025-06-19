@@ -121,7 +121,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
         # Execute the download method
         with patch("goesvfi.integrity_check.remote.s3_store.update_download_stats"):
-            result = await self.store.download(
+            result = await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 
@@ -157,7 +157,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
         # Execute the download method
         with patch("goesvfi.integrity_check.remote.s3_store.update_download_stats"):
-            result = await self.store.download(
+            result = await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 
@@ -208,7 +208,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
                 patch("pathlib.Path.exists", return_value=True),
                 patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)),
             ):
-                result = await self.store.download(
+                result = await self.store.download_file(
                     self.test_timestamp, self.test_satellite, tmp_dest_path
                 )
 
@@ -254,7 +254,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
             side_effect=mock_update_stats,
         ):
             with self.assertRaises(ConnectionError):
-                await self.store.download(
+                await self.store.download_file(
                     self.test_timestamp, self.test_satellite, self.test_dest_path
                 )
 
@@ -344,7 +344,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         ) as mock_diagnostics:
             # Execute the download method, expect a RemoteStoreError
             with self.assertRaises(RemoteStoreError):
-                await self.store.download(
+                await self.store.download_file(
                     self.test_timestamp, self.test_satellite, self.test_dest_path
                 )
 

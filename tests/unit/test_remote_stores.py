@@ -370,7 +370,7 @@ class TestS3Store(unittest.TestCase):
 
         # Add async methods
         self.s3_client_mock.head_object = AsyncMock()
-        self.s3_client_mock.download_file = AsyncMock()
+        self.s3_client_mock.download_file_file = AsyncMock()
 
         # Mock aioboto3 session
         self.session_mock = MagicMock()
@@ -390,7 +390,7 @@ class TestS3Store(unittest.TestCase):
             if hasattr(self.s3_client_mock, "head_object"):
                 self.s3_client_mock.head_object.reset_mock()
             if hasattr(self.s3_client_mock, "download_file"):
-                self.s3_client_mock.download_file.reset_mock()
+                self.s3_client_mock.download_file_file.reset_mock()
 
         # Clean up references to prevent AsyncMock warnings
         if hasattr(self, "s3_store") and hasattr(self.s3_store, "_s3_client"):

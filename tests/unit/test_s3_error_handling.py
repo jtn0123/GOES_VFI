@@ -54,7 +54,9 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.get_paginator.return_value = paginator_mock
 
         # Test the exists method
-        result = await self.store.exists(self.test_timestamp, self.test_satellite)
+        result = await self.store.check_file_exists(
+            self.test_timestamp, self.test_satellite
+        )
         self.assertFalse(result)
 
         # Verify the correct calls were made
@@ -71,7 +73,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Test the download method - should raise AuthenticationError
         with self.assertRaises(AuthenticationError) as context:
-            await self.store.download(
+            await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 
@@ -92,7 +94,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Test the download method - should raise ConnectionError
         with self.assertRaises(ConnectionError) as context:
-            await self.store.download(
+            await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 
@@ -124,7 +126,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Test the download method - should raise ResourceNotFoundError
         with self.assertRaises(ResourceNotFoundError) as context:
-            await self.store.download(
+            await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 
@@ -149,7 +151,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Test the download method - should raise AuthenticationError
         with self.assertRaises(AuthenticationError) as context:
-            await self.store.download(
+            await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 
@@ -194,7 +196,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Test the download method - should raise RemoteStoreError
         with self.assertRaises(RemoteStoreError) as context:
-            await self.store.download(
+            await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 

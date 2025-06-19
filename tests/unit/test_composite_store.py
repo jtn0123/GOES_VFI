@@ -67,7 +67,7 @@ class TestCompositeStore:
 
         # Attempt download
         ts = datetime(2023, 6, 15, 12, 0)
-        result = await store.download(
+        result = await store.download_file(
             ts=ts,
             satellite=SatellitePattern.GOES_16,
             dest_path=Path("/tmp/test_download.nc"),
@@ -107,7 +107,7 @@ class TestCompositeStore:
 
         # Attempt download
         ts = datetime(2023, 6, 15, 12, 0)
-        result = await store.download(
+        result = await store.download_file(
             ts=ts,
             satellite=SatellitePattern.GOES_16,
             dest_path=Path("/tmp/test_download.nc"),
@@ -156,7 +156,7 @@ class TestCompositeStore:
         # Attempt download should raise error
         ts = datetime(2023, 6, 15, 12, 0)
         with pytest.raises(RemoteStoreError) as exc_info:
-            await store.download(
+            await store.download_file(
                 ts=ts,
                 satellite=SatellitePattern.GOES_16,
                 dest_path=Path("/tmp/test_download.nc"),
@@ -282,7 +282,7 @@ class TestCompositeStore:
 
         # Check existence
         ts = datetime(2023, 6, 15, 12, 0)
-        exists = await store.exists(
+        exists = await store.check_file_exists(
             ts=ts,
             satellite=SatellitePattern.GOES_16,
         )

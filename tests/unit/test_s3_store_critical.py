@@ -50,10 +50,10 @@ class TestS3StoreCritical:
                         ts = datetime(2023, 1, 1, 12, 0, 0)
 
                         # Test download
-                        result = await store.download(
-                            ts=ts,
-                            satellite=SatellitePattern.GOES_16,
-                            dest_path=local_path,
+                        result = await store.download_file(
+                            ts,
+                            SatellitePattern.GOES_16,
+                            local_path,
                         )
 
                         # Verify result
@@ -94,9 +94,7 @@ class TestS3StoreCritical:
 
             # Should raise ResourceNotFoundError
             with pytest.raises(ResourceNotFoundError) as exc_info:
-                await store.download(
-                    ts=ts, satellite=SatellitePattern.GOES_16, dest_path=local_path
-                )
+                await store.download_file(ts, SatellitePattern.GOES_16, local_path)
 
             # Verify it's about not finding files
             assert "No files found for GOES_16" in str(exc_info.value)
@@ -114,7 +112,7 @@ class TestS3StoreCritical:
             ts = datetime(2023, 1, 1, 12, 0, 0)
 
             # Test exists
-            result = await store.exists(ts=ts, satellite=SatellitePattern.GOES_16)
+            result = await store.check_file_exists(ts, SatellitePattern.GOES_16)
 
             assert result is True
 
@@ -141,7 +139,7 @@ class TestS3StoreCritical:
             ts = datetime(2023, 1, 1, 12, 0, 0)
 
             # Test exists
-            result = await store.exists(ts=ts, satellite=SatellitePattern.GOES_16)
+            result = await store.check_file_exists(ts, SatellitePattern.GOES_16)
 
             assert result is False
 
@@ -165,10 +163,10 @@ class TestS3StoreCritical:
                         for i in range(5):
                             local_path = Path(f"/tmp/concurrent_{i}.nc")
                             ts = datetime(2023, 1, 1, 12, i, 0)
-                            task = store.download(
-                                ts=ts,
-                                satellite=SatellitePattern.GOES_16,
-                                dest_path=local_path,
+                            task = store.download_file(
+                                ts,
+                                SatellitePattern.GOES_16,
+                                local_path,
                             )
                             tasks.append(task)
 
@@ -222,10 +220,10 @@ class TestS3StoreCritical:
                         ts = datetime(2023, 1, 1, 12, 0, 0)
 
                         # Test download
-                        result = await store.download(
-                            ts=ts,
-                            satellite=SatellitePattern.GOES_16,
-                            dest_path=local_path,
+                        result = await store.download_file(
+                            ts,
+                            SatellitePattern.GOES_16,
+                            local_path,
                         )
 
                         # Verify result

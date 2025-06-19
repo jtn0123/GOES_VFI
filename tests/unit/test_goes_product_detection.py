@@ -204,7 +204,7 @@ def find_latest_file(
 
 def download_file(s3_client, file_key):
     """Download a file from S3 to local temp directory."""
-    if not TEMP_DIR.exists():
+    if not TEMP_DIR.check_file_exists():
         TEMP_DIR.mkdir(parents=True)
 
     local_file = TEMP_DIR / Path(file_key).name

@@ -154,7 +154,7 @@ def encode_with_ffmpeg(
                 builder.set_output(str(final_output))
                 builder.set_encoder("libx265")
                 builder.set_preset("slower")
-                builder.set_pixel_format(pix_fmt)
+                builder.set_pix_fmt(pix_fmt)
                 builder.set_bitrate(bitrate_kbps)
                 builder.set_bufsize(bufsize_kb)
 
@@ -185,9 +185,9 @@ def encode_with_ffmpeg(
             builder.set_encoder("libx264")
 
         builder.set_crf(crf)
-        builder.set_pixel_format(pix_fmt)
+        builder.set_pix_fmt(pix_fmt)
 
-        cmd = builder.build_command()
+        cmd = builder.build()
         _run_ffmpeg_command(cmd, f"Encoding with {encoder}", monitor_memory)
 
     if monitor_memory:

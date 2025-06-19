@@ -37,14 +37,14 @@ class TestReconcileManager(unittest.TestCase):
 
         self.mock_cdn_store.__aenter__ = AsyncMock(return_value=self.mock_cdn_store)
         self.mock_cdn_store.__aexit__ = AsyncMock(return_value=None)
-        self.mock_cdn_store.exists = AsyncMock(return_value=True)
+        self.mock_cdn_store.check_file_exists = AsyncMock(return_value=True)
         self.mock_cdn_store.download = AsyncMock(
             return_value=self.base_dir / "test.png"
         )
 
         self.mock_s3_store.__aenter__ = AsyncMock(return_value=self.mock_s3_store)
         self.mock_s3_store.__aexit__ = AsyncMock(return_value=None)
-        self.mock_s3_store.exists = AsyncMock(return_value=True)
+        self.mock_s3_store.check_file_exists = AsyncMock(return_value=True)
         self.mock_s3_store.download = AsyncMock(return_value=self.base_dir / "test.nc")
 
         # Create the ReconcileManager under test
@@ -152,10 +152,10 @@ class TestReconcileManager(unittest.TestCase):
             self.assertIn(old_timestamp, results)
 
             # Verify the correct stores were used
-            self.mock_cdn_store.exists.assert_called_with(
+            self.mock_cdn_store.check_file_exists.assert_called_with(
                 recent_timestamp, SatellitePattern.GOES_16
             )
-            self.mock_s3_store.exists.assert_called_with(
+            self.mock_s3_store.check_file_exists.assert_called_with(
                 old_timestamp, SatellitePattern.GOES_16
             )
 

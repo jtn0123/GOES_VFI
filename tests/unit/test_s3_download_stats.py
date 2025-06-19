@@ -315,7 +315,7 @@ class TestS3DownloadStatsIntegration(unittest.IsolatedAsyncioTestCase):
         self._reset_download_stats()
 
         # Execute the download
-        await self.store.download(
+        await self.store.download_file(
             self.test_timestamp, self.test_satellite, self.test_dest_path
         )
 
@@ -340,7 +340,7 @@ class TestS3DownloadStatsIntegration(unittest.IsolatedAsyncioTestCase):
 
         # Execute the download, expect ConnectionError
         with self.assertRaises(ConnectionError):
-            await self.store.download(
+            await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 
@@ -375,7 +375,7 @@ class TestS3DownloadStatsIntegration(unittest.IsolatedAsyncioTestCase):
 
         # Execute the download, expect ResourceNotFoundError
         with self.assertRaises(ResourceNotFoundError):
-            await self.store.download(
+            await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 

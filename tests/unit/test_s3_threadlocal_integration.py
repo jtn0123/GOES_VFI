@@ -431,7 +431,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
                 )
 
                 # Directly call download to test real patterns
-                result = await self.s3_store.download(
+                result = await self.s3_store.download_file(
                     timestamp,
                     self.satellite,
                     dest_path,

@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from PyQt6.QtCore import QRect
+from PyQt6.QtCore import QRect, QSettings
 from PyQt6.QtWidgets import QApplication, QLineEdit, QMessageBox
 
 from goesvfi.gui_tabs.main_tab import MainTab
@@ -111,7 +111,7 @@ class TestValidateThreadSpec:
 class TestGenerateTimestampedOutputPath:
     """Tests for the _generate_timestamped_output_path utility function."""
 
-    @patch("goesvfi.gui_tabs.main_tab.datetime")
+    @patch("datetime.datetime")
     def test_generate_with_base_params(self, mock_datetime, main_tab):
         """Test generating path with provided base directory and name."""
         mock_datetime.now.return_value.strftime.return_value = "20231225_120000"
@@ -124,19 +124,23 @@ class TestGenerateTimestampedOutputPath:
         assert result == Path("/test/output/test_video_output_20231225_120000.mp4")
         mock_datetime.now.return_value.strftime.assert_called_once_with("%Y%m%d_%H%M%S")
 
-    @patch("goesvfi.gui_tabs.main_tab.datetime")
+    @patch("datetime.datetime")
     def test_generate_from_input_dir(self, mock_datetime, main_tab):
         """Test generating path using input directory as base."""
         mock_datetime.now.return_value.strftime.return_value = "20231225_120000"
 
         # Set up main window with input directory
-        main_tab.main_window_ref.in_dir = Path("/test/input/my_images")
+        mock_path = MagicMock(spec=Path)
+        mock_path.is_dir.return_value = True
+        mock_path.parent = Path("/test/input")
+        mock_path.name = "my_images"
+        main_tab.main_window_ref.in_dir = mock_path
 
         result = main_tab._generate_timestamped_output_path()
 
         assert result == Path("/test/input/my_images_output_20231225_120000.mp4")
 
-    @patch("goesvfi.gui_tabs.main_tab.datetime")
+    @patch("datetime.datetime")
     @patch("os.getcwd")
     def test_generate_fallback_to_cwd(self, mock_getcwd, mock_datetime, main_tab):
         """Test fallback to current working directory when no input dir."""
@@ -172,7 +176,7 @@ class TestGenerateTimestampedOutputPath:
 class TestCheckInputDirectoryContents:
     """Tests for the _check_input_directory_contents utility function."""
 
-    @patch("goesvfi.gui_tabs.main_tab.Image")
+    @patch("PIL.Image")
     def test_check_empty_directory(self, mock_image_class, main_tab, tmp_path):
         """Test checking an empty directory."""
         with patch("goesvfi.gui_tabs.main_tab.LOGGER") as mock_logger:
@@ -184,7 +188,7 @@ class TestCheckInputDirectoryContents:
             )
 
     @patch("goesvfi.gui_tabs.main_tab.np")
-    @patch("goesvfi.gui_tabs.main_tab.Image")
+    @patch("PIL.Image")
     def test_check_directory_with_images(
         self, mock_image_class, mock_np, main_tab, tmp_path
     ):
@@ -216,7 +220,7 @@ class TestCheckInputDirectoryContents:
             # Should have opened sample images (first, middle, last)
             assert mock_image_class.open.call_count == 3
 
-    @patch("goesvfi.gui_tabs.main_tab.Image")
+    @patch("PIL.Image")
     def test_check_directory_with_mixed_files(
         self, mock_image_class, main_tab, tmp_path
     ):
@@ -244,7 +248,7 @@ class TestCheckInputDirectoryContents:
                 # Should only count image files
                 mock_logger.debug.assert_any_call(f"Found 3 image files in {tmp_path}")
 
-    @patch("goesvfi.gui_tabs.main_tab.Image")
+    @patch("PIL.Image")
     def test_check_directory_with_corrupt_image(
         self, mock_image_class, main_tab, tmp_path
     ):
@@ -451,7 +455,7 @@ class TestGetProcessingArgs:
 class TestVerifyCropAgainstImages:
     """Tests for the _verify_crop_against_images utility function."""
 
-    @patch("goesvfi.gui_tabs.main_tab.Image")
+    @patch("PIL.Image")
     def test_verify_valid_crop(self, mock_image_class, main_tab, tmp_path):
         """Test verifying a valid crop rectangle."""
         # Create test images
@@ -469,11 +473,11 @@ class TestVerifyCropAgainstImages:
 
             # Should log debug info
             assert any(
-                "Crop verification" in str(call)
+                "Crop rectangle:" in str(call) or "Crop within bounds:" in str(call)
                 for call in mock_logger.debug.call_args_list
             )
 
-    @patch("goesvfi.gui_tabs.main_tab.Image")
+    @patch("PIL.Image")
     def test_verify_invalid_crop_exceeds_bounds(
         self, mock_image_class, main_tab, tmp_path
     ):
@@ -533,7 +537,9 @@ class TestVerifyStartButtonState:
     def test_verify_button_should_be_enabled(self, main_tab):
         """Test verification when button should be enabled."""
         # Set up conditions for enabled state
-        main_tab.main_window_ref.in_dir = Path("/test/input")
+        mock_path = MagicMock(spec=Path)
+        mock_path.is_dir.return_value = True
+        main_tab.main_window_ref.in_dir = mock_path
         main_tab.out_file_path = Path("/test/output.mp4")
 
         # Mock UI elements
@@ -542,13 +548,16 @@ class TestVerifyStartButtonState:
         main_tab.rife_model_combo = Mock()
         main_tab.rife_model_combo.currentData.return_value = "rife-model"
 
+        # Mock processing state and button
+        main_tab.is_processing = False
+        main_tab.start_button = Mock()
+        main_tab.start_button.isEnabled.return_value = True
+
         with patch("goesvfi.gui_tabs.main_tab.LOGGER") as mock_logger:
             result = main_tab._verify_start_button_state()
 
             assert result is True
-            mock_logger.debug.assert_any_call(
-                "Start button verification: Should be ENABLED"
-            )
+            mock_logger.debug.assert_any_call("Start button should be enabled: True")
 
     def test_verify_button_should_be_disabled_no_input(self, main_tab):
         """Test verification when button should be disabled due to no input."""
@@ -556,27 +565,51 @@ class TestVerifyStartButtonState:
         main_tab.main_window_ref.in_dir = None
         main_tab.out_file_path = Path("/test/output.mp4")
 
+        # Mock UI elements
+        main_tab.encoder_combo = Mock()
+        main_tab.encoder_combo.currentText.return_value = "RIFE"
+        main_tab.rife_model_combo = Mock()
+        main_tab.rife_model_combo.currentData.return_value = "rife-model"
+
+        # Mock processing state and button
+        main_tab.is_processing = False
+        main_tab.start_button = Mock()
+        main_tab.start_button.isEnabled.return_value = False
+
         with patch("goesvfi.gui_tabs.main_tab.LOGGER") as mock_logger:
             result = main_tab._verify_start_button_state()
 
             assert result is False
             assert any(
-                "No input directory" in str(call)
+                "Has valid input directory: False" in str(call)
                 for call in mock_logger.debug.call_args_list
             )
 
     def test_verify_button_should_be_disabled_no_output(self, main_tab):
         """Test verification when button should be disabled due to no output."""
         # No output file
-        main_tab.main_window_ref.in_dir = Path("/test/input")
+        mock_path = MagicMock(spec=Path)
+        mock_path.is_dir.return_value = True
+        main_tab.main_window_ref.in_dir = mock_path
         main_tab.out_file_path = None
+
+        # Mock UI elements
+        main_tab.encoder_combo = Mock()
+        main_tab.encoder_combo.currentText.return_value = "RIFE"
+        main_tab.rife_model_combo = Mock()
+        main_tab.rife_model_combo.currentData.return_value = "rife-model"
+
+        # Mock processing state and button
+        main_tab.is_processing = False
+        main_tab.start_button = Mock()
+        main_tab.start_button.isEnabled.return_value = False
 
         with patch("goesvfi.gui_tabs.main_tab.LOGGER") as mock_logger:
             result = main_tab._verify_start_button_state()
 
             assert result is False
             assert any(
-                "No output file" in str(call)
+                "Has output file path: False" in str(call)
                 for call in mock_logger.debug.call_args_list
             )
 

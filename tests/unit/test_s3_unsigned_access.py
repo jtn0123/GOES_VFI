@@ -110,7 +110,7 @@ class TestUnsignedS3Access(unittest.TestCase):
             mock_config_class.return_value = mock_config
 
             # Call exists method which should get the client
-            exists = await self.s3_store.exists(
+            exists = await self.s3_store.check_file_exists(
                 self.test_timestamp, self.test_satellite
             )
 
@@ -142,7 +142,9 @@ class TestUnsignedS3Access(unittest.TestCase):
         self.s3_client_mock.head_object = AsyncMock(side_effect=error)
 
         # Call the exists method
-        exists = await self.s3_store.exists(self.test_timestamp, self.test_satellite)
+        exists = await self.s3_store.check_file_exists(
+            self.test_timestamp, self.test_satellite
+        )
 
         # Verify exists returns False for 404
         self.assertFalse(exists)
@@ -162,7 +164,9 @@ class TestUnsignedS3Access(unittest.TestCase):
 
         # Call the exists method - should raise AuthenticationError
         with self.assertRaises(AuthenticationError):
-            await self.s3_store.exists(self.test_timestamp, self.test_satellite)
+            await self.s3_store.check_file_exists(
+                self.test_timestamp, self.test_satellite
+            )
 
     @patch("aioboto3.Session")
     async def test_download_with_unsigned_access(self, mock_session_class):
@@ -174,7 +178,7 @@ class TestUnsignedS3Access(unittest.TestCase):
         self.s3_client_mock.head_object = AsyncMock(
             return_value={"ContentLength": 12345}
         )
-        self.s3_client_mock.download_file = AsyncMock()
+        self.s3_client_mock.download_file_file = AsyncMock()
 
         # Setup Config spy
         config_spy = MagicMock(wraps=Config)
@@ -182,7 +186,7 @@ class TestUnsignedS3Access(unittest.TestCase):
         with patch("goesvfi.integrity_check.remote.s3_store.Config", config_spy):
             # Call download method
             dest_path = self.base_dir / "test_file.nc"
-            result = await self.s3_store.download(
+            result = await self.s3_store.download_file(
                 self.test_timestamp, self.test_satellite, dest_path
             )
 
@@ -193,7 +197,7 @@ class TestUnsignedS3Access(unittest.TestCase):
             self.assertEqual(kwargs["signature_version"], UNSIGNED)
 
             # Verify download_file was called
-            self.s3_client_mock.download_file.assert_called_once()
+            self.s3_client_mock.download_file_file.assert_called_once()
 
             # Verify the result is the destination path
             self.assertEqual(result, dest_path)
@@ -219,7 +223,7 @@ class TestUnsignedS3Access(unittest.TestCase):
             self.s3_client_mock.head_object.reset_mock()
 
             # Call exists method
-            await self.s3_store.exists(self.test_timestamp, satellite)
+            await self.s3_store.check_file_exists(self.test_timestamp, satellite)
 
             # Verify the correct bucket was accessed
             args = self.s3_client_mock.head_object.call_args

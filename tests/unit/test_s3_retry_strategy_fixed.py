@@ -158,7 +158,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
             # Create store and run download
             store = S3Store(timeout=5)
-            result = await store.download(
+            result = await store.download_file(
                 self.test_timestamp, self.test_satellite, test_dest_path
             )
 
@@ -197,7 +197,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
         # Setup mock methods
         mock_s3_store.download = mock_download
-        mock_s3_store.exists = AsyncMock(return_value=True)
+        mock_s3_store.check_file_exists = AsyncMock(return_value=True)
         mock_s3_store.__aenter__ = AsyncMock(return_value=mock_s3_store)
         mock_s3_store.__aexit__ = AsyncMock(return_value=None)
 

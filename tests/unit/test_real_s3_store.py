@@ -92,8 +92,8 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
     async def test_real_s3_exists_recent(self):
         """Test checking if a real file exists in S3 for a recent date."""
         # Try to find a RadF file from yesterday
-        exists = await self.store.exists(
-            self.radf_test_date, SatellitePattern.GOES_18, product_type="RadF", band=13
+        exists = await self.store.check_file_exists(
+            self.radf_test_date, SatellitePattern.GOES_18
         )
 
         # Generate the S3 key for logging
@@ -112,8 +112,8 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
 
             # Try 1 hour earlier
             earlier_date = self.radf_test_date - timedelta(hours=1)
-            exists = await self.store.exists(
-                earlier_date, SatellitePattern.GOES_18, product_type="RadF", band=13
+            exists = await self.store.check_file_exists(
+                earlier_date, SatellitePattern.GOES_18
             )
 
             if exists:
@@ -134,7 +134,7 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
 
         for band in bands_to_test:
             pass
-            exists = await self.store.exists(
+            exists = await self.store.check_file_exists(
                 self.radc_test_date,
                 SatellitePattern.GOES_18,
                 product_type="RadC",
@@ -174,8 +174,8 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
             else:
                 test_date = self.radm_test_date
 
-            exists = await self.store.exists(
-                test_date, SatellitePattern.GOES_18, product_type=product_type, band=13
+            exists = await self.store.check_file_exists(
+                test_date, SatellitePattern.GOES_18
             )
             exists_results[product_type] = exists
 
@@ -199,8 +199,8 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
         pass
         """Test downloading a real file from S3 if it exists."""
         # Try to find a RadC file from yesterday
-        exists = await self.store.exists(
-            self.radc_test_date, SatellitePattern.GOES_18, product_type="RadC", band=13
+        exists = await self.store.check_file_exists(
+            self.radc_test_date, SatellitePattern.GOES_18
         )
 
         if not exists:
@@ -217,7 +217,7 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
 
         try:
             pass
-            downloaded_path = await self.store.download(
+            downloaded_path = await self.store.download_file(
                 self.radc_test_date,
                 SatellitePattern.GOES_18,
                 dest_path,
@@ -282,8 +282,8 @@ class TestMockedRealS3Store(unittest.IsolatedAsyncioTestCase):
         }
 
         # Test exists method
-        exists = await self.store.exists(
-            self.test_timestamp, SatellitePattern.GOES_18, product_type="RadC", band=13
+        exists = await self.store.check_file_exists(
+            self.test_timestamp, SatellitePattern.GOES_18
         )
 
         # Verify result
@@ -312,25 +312,23 @@ class TestMockedRealS3Store(unittest.IsolatedAsyncioTestCase):
         }
 
         # Configure download_file to succeed
-        self.s3_client_mock.download_file = AsyncMock()
+        self.s3_client_mock.download_file_file = AsyncMock()
 
         # Destination path
         dest_path = self.temp_path / "test_download.nc"
 
         # Test download method
-        await self.store.download(
+        await self.store.download_file(
             self.test_timestamp,
             SatellitePattern.GOES_18,
             dest_path,
-            product_type="RadC",
-            band=13,
         )
 
         # Verify download_file was called
-        self.s3_client_mock.download_file.assert_called_once()
+        self.s3_client_mock.download_file_file.assert_called_once()
 
         # Extract the arguments
-        call_args = self.s3_client_mock.download_file.call_args
+        call_args = self.s3_client_mock.download_file_file.call_args
         bucket = call_args[1]["Bucket"]
         key = call_args[1]["Key"]
         filename = call_args[1]["Filename"]
@@ -381,26 +379,24 @@ class TestMockedRealS3Store(unittest.IsolatedAsyncioTestCase):
         self.s3_client_mock.get_paginator.return_value = paginator_mock
 
         # Configure download_file to succeed
-        self.s3_client_mock.download_file = AsyncMock()
+        self.s3_client_mock.download_file_file = AsyncMock()
 
         # Destination path
         dest_path = self.temp_path / "test_download.nc"
 
         # Test download method
-        await self.store.download(
+        await self.store.download_file(
             self.test_timestamp,
             SatellitePattern.GOES_18,
             dest_path,
-            product_type="RadC",
-            band=13,
         )
 
         # Verify get_paginator was called
         self.s3_client_mock.get_paginator.assert_called_once()
 
         # Verify download_file was called with the correct key
-        self.s3_client_mock.download_file.assert_called_once()
-        call_args = self.s3_client_mock.download_file.call_args
+        self.s3_client_mock.download_file_file.assert_called_once()
+        call_args = self.s3_client_mock.download_file_file.call_args
         self.assertEqual(call_args[1]["Key"], test_key)
 
 
