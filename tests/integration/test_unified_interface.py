@@ -36,11 +36,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import our shared components
-from goesvfi.integrity_check.shared_components import (
-    PreviewMetadata,
-    SharedPreviewPanel,
-    SidebarSettingsPanel,
-)
+from goesvfi.integrity_check.shared_components import PreviewMetadata
+
+# TODO: These components need to be implemented in shared_components
+# from goesvfi.integrity_check.shared_components import (
+#     SharedPreviewPanel,
+#     SidebarSettingsPanel,
+# )
 
 
 # Helper function to create sample images

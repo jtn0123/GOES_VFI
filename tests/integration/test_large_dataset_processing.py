@@ -49,16 +49,16 @@ class TestLargeDatasetProcessing:
         """Create mock large NetCDF data structure."""
         # Simulate GOES-16 full disk data (5424x5424 pixels)
         return {
-        'Rad': np.random.rand(5424, 5424).astype(np.float32),  # ~112 MB
-        'DQF': np.random.randint(0, 4, (5424, 5424), dtype=np.uint8),  # ~28 MB
-        't': np.array([0]),
-        'x': np.arange(5424),
-        'y': np.arange(5424),
-        'band_id': np.array([13]),
-        'kappa0': np.array([0.01]),
-        'planck_fk1': np.array([1000.0]),
-        'planck_fk2': np.array([500.0]),
-        'spatial_resolution': '2km at nadir',
+            "Rad": np.random.rand(5424, 5424).astype(np.float32),  # ~112 MB
+            "DQF": np.random.randint(0, 4, (5424, 5424), dtype=np.uint8),  # ~28 MB
+            "t": np.array([0]),
+            "x": np.arange(5424),
+            "y": np.arange(5424),
+            "band_id": np.array([13]),
+            "kappa0": np.array([0.01]),
+            "planck_fk1": np.array([1000.0]),
+            "planck_fk2": np.array([500.0]),
+            "spatial_resolution": "2km at nadir",
         }
 
     def create_large_image_sequence(self, temp_dir, count=100, size=(1920, 1080)):
@@ -67,7 +67,7 @@ class TestLargeDatasetProcessing:
         for i in range(count):
             # Create image with gradient to ensure some variation
             img_array = np.zeros((*size, 3), dtype=np.uint8)
-            img_array[:, :, 0] = (i * 255 // count)  # Red gradient
+            img_array[:, :, 0] = i * 255 // count  # Red gradient
 
             img_path = temp_dir / f"frame_{i:04d}.png"
             # Mock saving without actually creating files
@@ -82,11 +82,13 @@ class TestLargeDatasetProcessing:
         output_file = temp_dir / "processed_output.png"
 
         # Mock xarray to return large dataset
-        with patch('xarray.open_dataset') as mock_open_dataset:
+        with patch("xarray.open_dataset") as mock_open_dataset:
             mock_dataset = MagicMock()
-            mock_dataset.__getitem__.side_effect = lambda key: large_netcdf_data.get(key)
-            mock_dataset.dims = {'x': 5424, 'y': 5424}
-            mock_dataset.attrs = {'spatial_resolution': '2km at nadir'}
+            mock_dataset.__getitem__.side_effect = lambda key: large_netcdf_data.get(
+                key
+            )
+            mock_dataset.dims = {"x": 5424, "y": 5424}
+            mock_dataset.attrs = {"spatial_resolution": "2km at nadir"}
 
             # Mock chunking support
             mock_dataset.chunk = MagicMock(return_value=mock_dataset)
@@ -96,13 +98,16 @@ class TestLargeDatasetProcessing:
             # Test streaming renderer
             # Mock NetCDFRenderer since it doesn't exist
             renderer = MagicMock()
-            streaming_processor = StreamingProcessor(chunk_size=1024*1024)  # 1MB chunks
+            streaming_processor = StreamingProcessor(
+                chunk_size=1024 * 1024
+            )  # 1MB chunks
 
             # Process with memory monitoring
             memory_before = psutil.Process().memory_info().rss if psutil else 0
 
             # Simulate chunked processing
             chunks_processed = 0
+
             async def process_chunk(chunk_data):
                 pass
                 nonlocal chunks_processed
@@ -126,7 +131,10 @@ class TestLargeDatasetProcessing:
 
             # Verify chunked processing occurred
             assert chunks_processed > 1
-            assert chunks_processed == (total_pixels + pixels_per_chunk - 1) // pixels_per_chunk
+            assert (
+                chunks_processed
+                == (total_pixels + pixels_per_chunk - 1) // pixels_per_chunk
+            )
 
     @pytest.mark.asyncio
     async def test_batch_processing_with_memory_limits(self, temp_dir, memory_monitor):
@@ -136,7 +144,9 @@ class TestLargeDatasetProcessing:
         image_paths = self.create_large_image_sequence(temp_dir, count=100)
 
         # Mock pipeline components
-        with patch('goesvfi.pipeline.run_vfi.InterpolationPipeline') as mock_pipeline_class:
+        with patch(
+            "goesvfi.pipeline.run_vfi.InterpolationPipeline"
+        ) as mock_pipeline_class:
             mock_pipeline = MagicMock()
             mock_pipeline_class.return_value = mock_pipeline
 
@@ -156,8 +166,7 @@ class TestLargeDatasetProcessing:
 
             # Create pipeline with memory management
             pipeline = mock_pipeline_class(
-            max_batch_size=64,
-            enable_memory_management=True
+                max_batch_size=64, enable_memory_management=True
             )
 
             # Process with dynamic batch sizing
@@ -165,12 +174,12 @@ class TestLargeDatasetProcessing:
             current_batch_size = 64
 
             for i in range(0, len(image_paths), current_batch_size):
-                batch = image_paths[i:i + current_batch_size]
+                batch = image_paths[i : i + current_batch_size]
 
                 # Check memory before processing
                 memory_status = memory_monitor.get_memory_status()
 
-                if memory_status['percentage'] > 80:
+                if memory_status["percentage"] > 80:
                     pass
                     # Reduce batch size on high memory
                     current_batch_size = max(8, current_batch_size // 2)
@@ -197,9 +206,11 @@ class TestLargeDatasetProcessing:
         file_size = 500 * 1024 * 1024  # 500 MB
 
         # Mock memory-mapped file
-        with patch('mmap.mmap') as mock_mmap:
+        with patch("mmap.mmap") as mock_mmap:
             mock_mm = MagicMock()
-            mock_mm.__getitem__ = lambda s, k: b'\x00' * (k.stop - k.start if isinstance(k, slice) else 1)
+            mock_mm.__getitem__ = lambda s, k: b"\x00" * (
+                k.stop - k.start if isinstance(k, slice) else 1
+            )
             mock_mm.__len__ = lambda s: file_size
             mock_mmap.return_value = mock_mm
 
@@ -207,21 +218,20 @@ class TestLargeDatasetProcessing:
             chunk_size = 10 * 1024 * 1024  # 10 MB chunks
             chunks_processed = 0
 
-            with patch('builtins.open', mock_open()):
-                with open(large_file, 'r+b') as f:
+            with patch("builtins.open", mock_open()):
+                with open(large_file, "r+b") as f:
                     # Create memory map
                     mm = mock_mmap(f.fileno(), 0)
 
                     # Process chunks
                     for offset in range(0, file_size, chunk_size):
-                        chunk = mm[offset:offset + chunk_size]
+                        chunk = mm[offset : offset + chunk_size]
                         chunks_processed += 1
 
                         # Simulate processing
                         await asyncio.sleep(0.001)
 
-            assert chunks_processed == 50  # 500MB / 10
-MB = 50 chunks
+            assert chunks_processed == 50  # 500MB / 10MB = 50 chunks
 
     @pytest.mark.asyncio
     async def test_concurrent_large_file_processing(self, temp_dir, memory_monitor):
@@ -237,24 +247,24 @@ MB = 50 chunks
         # Mock file processing
         async def process_large_file(file_path, semaphore):
             async with semaphore:  # Limit concurrent processing
-            # Simulate memory-intensive processing
-            await asyncio.sleep(0.1)
+                # Simulate memory-intensive processing
+                await asyncio.sleep(0.1)
 
-            # Check memory during processing
-            memory_status = memory_monitor.get_memory_status()
+                # Check memory during processing
+                memory_status = memory_monitor.get_memory_status()
 
-            # Simulate adaptive behavior based on memory
-            if memory_status['percentage'] > 75:
+                # Simulate adaptive behavior based on memory
+                if memory_status["percentage"] > 75:
                     pass
                     # Pause to let memory free up
                     await asyncio.sleep(0.5)
                     gc.collect()
 
-            return f"Processed {file_path.name}"
+                return f"Processed {file_path.name}"
 
         # Process files with concurrency limit based on memory
         max_concurrent = 3
-        if memory_monitor.get_memory_status()['percentage'] > 50:
+        if memory_monitor.get_memory_status()["percentage"] > 50:
             pass
             max_concurrent = 2
 
@@ -271,14 +281,13 @@ MB = 50 chunks
     async def test_video_encoding_memory_management(self, temp_dir):
         """Test memory-efficient video encoding of large image sequences."""
         # Create large image sequence
-        image_paths = self.create_large_image_sequence(temp_dir,
-        count=1000,
-        size=(3840,
-        2160))  # 4K
+        image_paths = self.create_large_image_sequence(
+            temp_dir, count=1000, size=(3840, 2160)
+        )  # 4K
         output_path = temp_dir / "output_4k.mp4"
 
         # Mock video encoder with memory monitoring
-        with patch('goesvfi.pipeline.encode.VideoEncoder') as mock_encoder_class:
+        with patch("goesvfi.pipeline.encode.VideoEncoder") as mock_encoder_class:
             mock_encoder = MagicMock()
             mock_encoder_class.return_value = mock_encoder
 
@@ -294,7 +303,9 @@ MB = 50 chunks
                     pass
                     # Mock memory check
                     mock_memory = MagicMock()
-                    mock_memory.percent = 70 + (frames_encoded // 100) * 5  # Increasing memory
+                    mock_memory.percent = (
+                        70 + (frames_encoded // 100) * 5
+                    )  # Increasing memory
 
                     if mock_memory.percent > 85:
                         pass
@@ -306,10 +317,10 @@ MB = 50 chunks
 
             # Create encoder with memory management
             encoder = mock_encoder_class(
-            output_path=output_path,
-            fps=30,
-            codec='libx264',
-            enable_memory_monitoring=True
+                output_path=output_path,
+                fps=30,
+                codec="libx264",
+                enable_memory_monitoring=True,
             )
 
             # Encode frames with streaming
@@ -336,9 +347,9 @@ MB = 50 chunks
         """Test object pooling for large array allocations."""
         # Create object pool for large arrays
         array_pool = ObjectPool(
-        create_func=lambda: np.zeros((1024, 1024, 3), dtype=np.float32),
-        reset_func=lambda arr: arr.fill(0),
-        max_size=5
+            create_func=lambda: np.zeros((1024, 1024, 3), dtype=np.float32),
+            reset_func=lambda arr: arr.fill(0),
+            max_size=5,
         )
 
         arrays_acquired = []
@@ -371,9 +382,7 @@ MB = 50 chunks
 
         # Optimize to float32 (4 bytes per element)
         optimized_array = optimizer.optimize_array_dtype(
-        large_array,
-        target_dtype=np.float32,
-        preserve_range=True
+            large_array, target_dtype=np.float32, preserve_range=True
         )
 
         optimized_size = optimized_array.nbytes
@@ -394,7 +403,7 @@ MB = 50 chunks
         performance_metrics = []
 
         for memory_percent in memory_levels:
-            with patch('psutil.virtual_memory') as mock_memory:
+            with patch("psutil.virtual_memory") as mock_memory:
                 mock_memory.return_value.percent = memory_percent
 
                 # Simulate processing with current memory level
@@ -416,15 +425,21 @@ MB = 50 chunks
                 end_time = asyncio.get_event_loop().time()
 
                 throughput = batch_size / (end_time - start_time)
-                performance_metrics.append({
-                'memory_percent': memory_percent,
-                'batch_size': batch_size,
-                'throughput': throughput
-                })
+                performance_metrics.append(
+                    {
+                        "memory_percent": memory_percent,
+                        "batch_size": batch_size,
+                        "throughput": throughput,
+                    }
+                )
 
         # Verify graceful degradation
-        assert performance_metrics[0]['batch_size'] > performance_metrics[-1]['batch_size']
-        assert performance_metrics[0]['throughput'] > performance_metrics[-1]['throughput']
+        assert (
+            performance_metrics[0]["batch_size"] > performance_metrics[-1]["batch_size"]
+        )
+        assert (
+            performance_metrics[0]["throughput"] > performance_metrics[-1]["throughput"]
+        )
 
         # But system should still function at high memory
-        assert all(m['batch_size'] > 0 for m in performance_metrics)
+        assert all(m["batch_size"] > 0 for m in performance_metrics)
