@@ -132,6 +132,13 @@ class IntegrityCheckTab(QWidget):
         
         self._setup_ui()
         self._connect_signals()
+        
+        # Apply dark mode styling if available
+        try:
+            from .dark_mode_style import apply_integrity_check_dark_mode
+            apply_integrity_check_dark_mode(self)
+        except ImportError:
+            pass  # Dark mode styling is optional
 
     def _setup_ui(self) -> None:
         """Set up the user interface."""
