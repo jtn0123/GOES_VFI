@@ -51,9 +51,11 @@ def fix_auto_detection():
     if "from PyQt6.QtWidgets import" in content and "QGridLayout" not in content:
         content = re.sub(
             r"(from PyQt6\.QtWidgets import[^\n]+)",
-            lambda m: m.group(1) + ", QGridLayout"
-            if "QGridLayout" not in m.group(1)
-            else m.group(1),
+            lambda m: (
+                m.group(1) + ", QGridLayout"
+                if "QGridLayout" not in m.group(1)
+                else m.group(1)
+            ),
             content,
         )
 
@@ -71,7 +73,7 @@ def fix_auto_detection():
 
     if not import_found:
         # Add after docstring
-        for i, line in enumerate(lines):
+        for i, _line in enumerate(lines):
             if i > 0 and lines[i - 1].strip() == '"""':
                 lines.insert(i, "")
                 lines.insert(i + 1, "from typing import Any, Dict, List, Optional")
@@ -133,9 +135,9 @@ def fix_gui_backup():
         for i, line in enumerate(lines):
             if line.startswith("from typing import"):
                 needed = {"Any", "Dict", "List", "Optional"}
-                existing = set(
+                existing = {
                     imp.strip() for imp in line[len("from typing import ") :].split(",")
-                )
+                }
 
                 if not needed.issubset(existing):
                     all_imports = sorted(existing | needed)
@@ -146,7 +148,7 @@ def fix_gui_backup():
 
         if not import_found:
             # Add after docstring
-            for i, line in enumerate(lines):
+            for i, _line in enumerate(lines):
                 if i > 0 and lines[i - 1].strip() == '"""':
                     lines.insert(i, "")
                     lines.insert(i + 1, "from typing import Any, Dict, List, Optional")
@@ -219,7 +221,7 @@ def main():
     fix_remaining_callable_issues()
     fix_timeline_visualization_remaining()
 
-    print("\nAll fixes applied\!")
+    print("\nAll fixes applied!")
 
 
 if __name__ == "__main__":
