@@ -7,7 +7,6 @@ management.
 """
 
 import json
-import logging
 import threading
 import time
 from dataclasses import dataclass, field
@@ -15,7 +14,7 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from queue import PriorityQueue
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -173,7 +172,18 @@ class BatchQueue(QObject):
         with self._lock:
             self._jobs[job.id] = job
             self._queue.put(job)
-            self._save_queue()
+            # Don't call _save_queue here as we're already holding the lock
+            # Save the queue data directly
+            data = {"jobs": [j.to_dict() for j in self._jobs.values()]}
+
+        # Save outside the lock to avoid deadlock
+        queue_file = Path.home() / ".config" / "goesvfi" / "batch_queue.json"
+        queue_file.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(queue_file, "w") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            LOGGER.error("Failed to save queue: %s", e)
 
         self.job_added.emit(job.id)
         LOGGER.info("Job %s added to queue: %s", job.id, job.name)
@@ -191,7 +201,17 @@ class BatchQueue(QObject):
                 return False
 
             job.status = JobStatus.CANCELLED
-            self._save_queue()
+            # Don't call _save_queue here as we're already holding the lock
+            data = {"jobs": [j.to_dict() for j in self._jobs.values()]}
+
+        # Save outside the lock to avoid deadlock
+        queue_file = Path.home() / ".config" / "goesvfi" / "batch_queue.json"
+        queue_file.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(queue_file, "w") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            LOGGER.error("Failed to save queue: %s", e)
 
         self.job_cancelled.emit(job_id)
         LOGGER.info("Job %s cancelled", job_id)
@@ -224,7 +244,17 @@ class BatchQueue(QObject):
             for job_id in to_remove:
                 del self._jobs[job_id]
 
-            self._save_queue()
+            # Don't call _save_queue here as we're already holding the lock
+            data = {"jobs": [j.to_dict() for j in self._jobs.values()]}
+
+        # Save outside the lock to avoid deadlock
+        queue_file = Path.home() / ".config" / "goesvfi" / "batch_queue.json"
+        queue_file.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(queue_file, "w") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            LOGGER.error("Failed to save queue: %s", e)
 
         LOGGER.info("Cleared %s completed/cancelled jobs", len(to_remove))
         return len(to_remove)
@@ -241,7 +271,7 @@ class BatchQueue(QObject):
             # Get next job
             try:
                 job = self._queue.get(timeout=0.5)
-            except:
+            except Exception:
                 continue
 
             # Skip if cancelled
@@ -407,7 +437,7 @@ class BatchProcessor:
             # Create job
             job = BatchJob(
                 id=job_id,
-                name=f"{job_name_prefix} {i+1}/{len(input_paths)}: {input_path.name}",
+                name=f"{job_name_prefix} {i + 1}/{len(input_paths)}: {input_path.name}",
                 input_path=input_path,
                 output_path=output_path,
                 settings=settings.copy(),

@@ -1,5 +1,5 @@
 import subprocess  # Import subprocess for exceptions
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -91,7 +91,11 @@ def test_interpolate_pair_invokes_command_and_file_ops(tmp_path, dummy_img):
             mock_cmd_builder.build_command.assert_called_once()
             # Check subprocess.run was called with the expected command
             mock_run_patch.assert_called_once_with(
-                expected_rife_cmd, check=True, capture_output=True, text=True
+                expected_rife_cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=120,
             )
             # Check output file was checked for existence (using the dynamic path)
             assert mock_exists.called  # Path.exists should have been called
@@ -180,7 +184,7 @@ def test_interpolate_three_calls_interpolate_pair_correctly(dummy_img, dummy_bac
     np.testing.assert_array_equal(calls[0].args[1], dummy_img)
     # Check timestep within options dict (positional arg 2)
     assert calls[0].args[2]["timestep"] == 0.5
-    assert calls[0].args[2]["tile_enable"] == True  # Check other options passed
+    assert calls[0].args[2]["tile_enable"] is True  # Check other options passed
     assert calls[0].kwargs == {}  # Should be no kwargs
 
     # 2nd: img1, img_mid, timestep=0.5 (left)

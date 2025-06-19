@@ -4,10 +4,14 @@ import logging
 import pathlib
 import shutil
 import subprocess
+import tempfile
 from typing import Any, Dict, List, Optional
 
 import numpy as np
+from numpy.typing import NDArray
 from PIL import Image
+
+from goesvfi.utils.rife_analyzer import RifeCommandBuilder
 
 # Set up logging
 logger = logging.getLogger(__name__)

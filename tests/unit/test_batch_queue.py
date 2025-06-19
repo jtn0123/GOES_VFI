@@ -2,13 +2,10 @@
 Unit tests for batch processing queue functionality.
 """
 
-import time
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PyQt6.QtCore import QObject
 
 from goesvfi.pipeline.batch_queue import (
     BatchJob,
@@ -99,13 +96,20 @@ class TestBatchQueue:
         """Create a batch queue for testing."""
         with patch("goesvfi.pipeline.batch_queue.Path.home") as mock_home:
             mock_home.return_value = Path("/tmp")
-            queue = BatchQueue(
-                process_function=mock_process_function, max_concurrent_jobs=1
-            )
-            yield queue
-            # Clean up
-            if queue._running:
-                queue.stop()
+            # Also patch file operations to avoid actual file I/O
+            with patch("goesvfi.pipeline.batch_queue.open", create=True):
+                with patch(
+                    "goesvfi.pipeline.batch_queue.json.load", return_value={"jobs": []}
+                ):
+                    with patch("goesvfi.pipeline.batch_queue.json.dump"):
+                        queue = BatchQueue(
+                            process_function=mock_process_function,
+                            max_concurrent_jobs=1,
+                        )
+                        yield queue
+                        # Clean up
+                        if queue._running:
+                            queue.stop()
 
     def test_queue_creation(self, batch_queue):
         """Test creating a batch queue."""

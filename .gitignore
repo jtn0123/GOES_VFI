@@ -165,3 +165,50 @@ logs/
 
 # Keep basic test fixture files
 !tests/data/test_input/fixture_*.png
+
+
+# Temporary files and tracking docs
+repair.md
+TEST_*.md
+AUTOMATED_*.md
+CRITICAL_*.md
+PRODUCTION_*.md
+lint_fix_plan.md
+LINTING_PROGRESS.md
+*_SUMMARY.md
+*_PROGRESS.md
+*_REPORT.md
+*_PLAN.md
+qt_translation_*.md
+integrity_tab_design.md
+
+# Fix scripts
+fix_*.py
+repair_*.py
+*_report.py
+diagnose_*.py
+find_*.py
+replace_*.py
+cleanup_documentation.py
+cleanup_documentation_auto.py
+
+# Test artifacts
+MagicMock/
+test_results*.txt
+linting_*.txt
+linter_output.txt
+s3_test_results.log
+
+# Temporary directories
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+
+# Test outputs
+tests/unit/test_output/
+tests/**/test_output/
+*.test.png
+*.test.jpg
+test_output_*.png
+test_output_*.jpg
