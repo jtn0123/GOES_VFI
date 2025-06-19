@@ -400,12 +400,17 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
             )
 
         # Check no SQLite thread errors occurred by verifying the cache contains entries
-        all_timestamps = await self._get_all_cache_entries()
-        self.assertGreaterEqual(
-            len(all_timestamps),
-            50,
-            f"Expected at least 50 timestamps in cache, got {len(all_timestamps)}",
-        )
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            all_timestamps = loop.run_until_complete(self._get_all_cache_entries())
+            self.assertGreaterEqual(
+                len(all_timestamps),
+                50,
+                f"Expected at least 50 timestamps in cache, got {len(all_timestamps)}",
+            )
+        finally:
+            loop.close()
 
     def test_real_s3_patterns(self):
         """Test with real S3 file patterns for different product types."""

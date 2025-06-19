@@ -80,7 +80,7 @@ class ModelLibraryTab(QWidget):
                     row, 1, QTableWidgetItem(str(model_dir_path))
                 )  # Use constructed path
 
-            LOGGER.debug(f"Populated model table with {len(available_models)} models.")
+            LOGGER.debug("Populated model table with %s models.", len(available_models))
         except Exception as e:
             LOGGER.error(f"Failed to populate model table: {e}", exc_info=True)
             # Optionally, display an error message in the UI

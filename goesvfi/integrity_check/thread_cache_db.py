@@ -87,7 +87,7 @@ class ThreadLocalCacheDB:
                 except Exception as e:
                     LOGGER.error("Error closing connection: %s", e)
             self._connections.clear()
-        
+
         # Also clear thread-local storage if present
         if hasattr(self._local, "db"):
             del self._local.db

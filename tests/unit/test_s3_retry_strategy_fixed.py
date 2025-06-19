@@ -141,15 +141,18 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         test_dest_path = Path(f"/tmp/test_{time.time()}.nc")
 
         # Mock Path.exists and Path.stat for success verification
-        with patch("pathlib.Path.exists", return_value=True), patch(
-            "pathlib.Path.stat", return_value=MagicMock(st_size=1024)
-        ), patch(
-            "goesvfi.integrity_check.remote.s3_store.update_download_stats",
-            new_callable=AsyncMock,
-        ) as mock_stats, patch(
-            "goesvfi.integrity_check.remote.s3_store.S3Store._get_s3_client",
-            new_callable=AsyncMock,
-        ) as mock_get_s3_client:
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)),
+            patch(
+                "goesvfi.integrity_check.remote.s3_store.update_download_stats",
+                new_callable=AsyncMock,
+            ) as mock_stats,
+            patch(
+                "goesvfi.integrity_check.remote.s3_store.S3Store._get_s3_client",
+                new_callable=AsyncMock,
+            ) as mock_get_s3_client,
+        ):
             # Configure _get_s3_client to return our mock
             mock_get_s3_client.return_value = mock_s3_client
 
@@ -227,11 +230,14 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
     async def test_network_diagnostics_collection(self):
         """Test that network diagnostics are collected on repeated failures."""
         # Mock get_system_network_info
-        with patch(
-            "goesvfi.integrity_check.remote.s3_store.get_system_network_info"
-        ) as mock_info, patch(
-            "goesvfi.integrity_check.remote.s3_store.DOWNLOAD_STATS"
-        ) as mock_stats:
+        with (
+            patch(
+                "goesvfi.integrity_check.remote.s3_store.get_system_network_info"
+            ) as mock_info,
+            patch(
+                "goesvfi.integrity_check.remote.s3_store.DOWNLOAD_STATS"
+            ) as mock_stats,
+        ):
             # Setup mock stats
             mock_stats.get.return_value = 0  # Return 0 for any key for simplicity
             mock_stats.__getitem__.return_value = 4  # Return 4 for failed count

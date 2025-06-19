@@ -1,5 +1,6 @@
-# TODO: colorlog wrapper
 from __future__ import annotations
+
+# TODO: colorlog wrapper
 
 """goesvfi.utils.log – colourised logger helper"""
 
@@ -89,7 +90,7 @@ def set_global_log_level(level: int) -> None:
 
     # Log the change using the root logger itself
     # Use root_logger.info to ensure it uses the configured handler
-    root_logger.info(f"Log level set to {logging._levelToName.get(level, level)}")
+    root_logger.info("Log level set to %s", logging._levelToName.get(level, level))
 
     # No need to update existing named loggers directly, propagation handles it.
     # No need for the global _LEVEL variable anymore.

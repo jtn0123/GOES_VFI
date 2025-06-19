@@ -5,7 +5,7 @@ import re
 from datetime import datetime
 from enum import Enum, auto
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 
 class DuplicateMode(Enum):
@@ -57,11 +57,6 @@ class FileSorter:
         # os.utime expects (atime, mtime) in *epoch seconds*.
         os.utime(dest_path, (source_mtime_utc, source_mtime_utc))
 
-    # 3. Extract repeated code patterns into utility functions
-    # 2. Consider using helper classes to group related functionality
-    # 1. Extract conditional blocks into separate helper functions
-    # Consider breaking into smaller helper functions for:
-    # TODO: This function has high cyclomatic complexity (42) and should be refactored.
     def sort_files(
         self,
         source: str,
@@ -78,6 +73,32 @@ class FileSorter:
         :param should_cancel: A function that returns True if cancellation is requested.
         :return: A dictionary containing sorting statistics.
         """
+        # Initialize the sorting process
+        source_dir, destination_dir = self._initialize_directories(source, destination)
+        script_start_time = self._reset_counters_and_callbacks(
+            progress_callback, should_cancel
+        )
+
+        # Build file processing list
+        files_to_process = self._build_file_processing_list(source_dir)
+        if (
+            isinstance(files_to_process, dict)
+            and files_to_process.get("status") == "cancelled"
+        ):
+            return files_to_process
+
+        # Process all files
+        result = self._process_all_files(files_to_process, destination_dir)
+        if isinstance(result, dict) and result.get("status") == "cancelled":
+            return result
+
+        # Generate final statistics
+        return self._generate_final_statistics(script_start_time, len(files_to_process))
+
+    def _initialize_directories(
+        self, source: str, destination: str
+    ) -> Tuple[Path, Path]:
+        """Initialize and validate source and destination directories."""
         source_dir = Path(source)
         destination_dir = Path(destination)
 
@@ -88,6 +109,14 @@ class FileSorter:
         if not destination_dir.is_dir():
             raise NotADirectoryError(f"Destination is not a directory: {destination}")
 
+        return source_dir, destination_dir
+
+    def _reset_counters_and_callbacks(
+        self,
+        progress_callback: Optional[Callable[[int, int], None]],
+        should_cancel: Optional[Callable[[], bool]],
+    ) -> datetime:
+        """Reset counters and store callbacks."""
         script_start_time = datetime.now()
 
         # Reset counters
@@ -99,212 +128,249 @@ class FileSorter:
         self._progress_callback = progress_callback
         self._should_cancel = should_cancel
 
-        # --------------------------------------------------------------------------------
-        # 3. Get all date/time folders in the source directory
-        # --------------------------------------------------------------------------------
+        return script_start_time
+
+    def _get_date_folders(self, source_dir: Path) -> List[Path]:
+        """Get all date/time folders from source directory."""
         try:
-            # We now iterate directly over the source directory
             date_folders: List[Path] = [f for f in source_dir.iterdir() if f.is_dir()]
         except Exception as e:
             print(f"Error retrieving date folders from source directory: {e}")
             raise
 
-        total_folders = len(date_folders)
-        print(f"Found {total_folders} date folders in source directory.")
+        print(f"Found {len(date_folders)} date folders in source directory.")
+        return date_folders
 
-        # --------------------------------------------------------------------------------
-        # 4. Build a list of files to process along with the extracted date/time
-        # --------------------------------------------------------------------------------
-        files_to_process: List[Tuple[Path, str]] = []
-
-        folder_counter = 0
+    def _is_valid_date_folder(self, folder_name: str) -> bool:
+        """Validate if folder name contains valid date and time components."""
         folder_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$")
+        if not folder_pattern.match(folder_name):
+            return False
 
-        def is_valid_date_folder(folder_name: str) -> bool:
-            """Validate if folder name contains valid date and time components"""
-            if not folder_pattern.match(folder_name):
+        try:
+            # Extract date and time components
+            date_part, time_part = folder_name.split("_")
+            year, month, day = map(int, date_part.split("-"))
+            hour, minute, second = map(int, time_part.split("-"))
+
+            # Validate components
+            if not (
+                1 <= month <= 12
+                and 1 <= day <= 31
+                and 0 <= hour <= 23
+                and 0 <= minute <= 59
+                and 0 <= second <= 59
+            ):
                 return False
 
-            try:
-                # Extract date and time components
-                date_part, time_part = folder_name.split("_")
-                year, month, day = map(int, date_part.split("-"))
-                hour, minute, second = map(int, time_part.split("-"))
+            # Additional validation using datetime
+            datetime(year, month, day, hour, minute, second)
+            return True
+        except (ValueError, TypeError):
+            return False
 
-                # Validate components
-                if not (
-                    1 <= month <= 12
-                    and 1 <= day <= 31
-                    and 0 <= hour <= 23
-                    and 0 <= minute <= 59
-                    and 0 <= second <= 59
-                ):
-                    return False
+    def _extract_folder_datetime(self, folder_name: str) -> Optional[str]:
+        """Extract datetime string from folder name."""
+        # Remove '-' and '_' from folder name: e.g., 2023-05-01_07-32-20 -> 20230501T073220
+        folder_datetime_raw = folder_name.replace("-", "").replace("_", "")
+        if len(folder_datetime_raw) < 14:
+            return None
 
-                # Additional validation using datetime
-                datetime(year, month, day, hour, minute, second)
-                return True
-            except (ValueError, TypeError):
-                return False
+        # Insert 'T' between the date part (8 digits) and time part (6 digits)
+        return folder_datetime_raw[:8] + "T" + folder_datetime_raw[8:]
+
+    def _get_png_files_from_folder(self, folder: Path) -> List[Path]:
+        """Get all PNG files from a folder."""
+        try:
+            return list(folder.glob("*.png"))
+        except Exception as e:
+            print(f"Error retrieving files in folder {folder.name!r}: {e}")
+            return []
+
+    def _check_cancellation(self) -> bool:
+        """Check if cancellation has been requested."""
+        return self._should_cancel and self._should_cancel()
+
+    def _update_progress(self, current: int, total: int) -> None:
+        """Update progress if callback is available."""
+        if self._progress_callback:
+            self._progress_callback(current, total)
+
+    def _build_file_processing_list(
+        self, source_dir: Path
+    ) -> Union[List[Tuple[Path, str]], Dict[str, str]]:
+        """Build a list of files to process with their datetime information."""
+        date_folders = self._get_date_folders(source_dir)
+        files_to_process: List[Tuple[Path, str]] = []
+        folder_counter = 0
+        total_folders = len(date_folders)
 
         for folder in date_folders:
-            if self._should_cancel and self._should_cancel():
+            if self._check_cancellation():
                 print("Cancellation requested during file collection.")
-                return {"status": "cancelled"}  # Indicate cancellation
+                return {"status": "cancelled"}
 
             folder_counter += 1
-            # Progress update during file collection (optional, but good for long lists)
-            if self._progress_callback:
-                self._progress_callback(folder_counter, total_folders)
+            self._update_progress(folder_counter, total_folders)
 
-            # Skip null or unexpected format
+            # Skip null or invalid folders
             if folder is None:
                 print("Encountered a null folder entry. Skipping...")
                 continue
 
-            if not is_valid_date_folder(folder.name):
-                # Not a valid date format, skip
+            if not self._is_valid_date_folder(folder.name):
                 continue
 
-            # Remove '-' and '_' from folder name: e.g., 2023-05-01_07-32-20 -> 20230501T073220
-            folder_datetime_raw = folder.name.replace("-", "").replace("_", "")
-            if len(folder_datetime_raw) < 14:
-                # Just a safety check, skip if not long enough
+            folder_datetime = self._extract_folder_datetime(folder.name)
+            if folder_datetime is None:
                 continue
 
-            # Insert 'T' between the date part (8 digits) and time part (6 digits)
-            folder_datetime = folder_datetime_raw[:8] + "T" + folder_datetime_raw[8:]
-
-            # Gather all PNG files
-            try:
-                png_files: List[Path] = list(folder.glob("*.png"))
-            except Exception as e:
-                print(f"Error retrieving files in folder {folder.name!r}: {e}")
-                continue
-
+            # Add all PNG files from this folder
+            png_files = self._get_png_files_from_folder(folder)
             for file_path in png_files:
                 files_to_process.append((file_path, folder_datetime))
 
-        total_files = len(files_to_process)
-        print(f"Total files to process: {total_files}")
+        print(f"Total files to process: {len(files_to_process)}")
+        return files_to_process
 
-        # --------------------------------------------------------------------------------
-        # 5. Process files (copy, rename, skip if identical, track stats)
-        # --------------------------------------------------------------------------------
-        time_tolerance_seconds: float = (
-            1.0  # Tolerance for "last modified" comparison, in seconds
+    def _extract_base_name(self, file_name: str) -> str:
+        """Extract base name from file name, removing datetime suffix if present."""
+        # If it matches "_YYYYMMDDThhmmssZ.png" (20 chars from end), strip that part:
+        if re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
+            return file_name[:-20]  # remove the date/time portion + extension
+        elif file_name.endswith(".png"):
+            return file_name[:-4]
+        return file_name
+
+    def _create_target_folder(self, destination_dir: Path, base_name: str) -> Path:
+        """Create target folder for the base name if it doesn't exist."""
+        target_folder: Path = destination_dir / base_name
+        if not target_folder.exists() and not self.dry_run:
+            try:
+                target_folder.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                print(f"Error creating folder {target_folder!r}: {e}")
+                raise
+        return target_folder
+
+    def _generate_new_file_name(
+        self, file_name: str, base_name: str, folder_datetime: str
+    ) -> str:
+        """Generate new file name with datetime suffix if not already present."""
+        if not re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
+            return f"{base_name}_{folder_datetime}Z.png"
+        # Already has date/time suffix, keep it
+        return file_name
+
+    def _check_files_identical(
+        self, source_path: Path, dest_path: Path, time_tolerance: float = 1.0
+    ) -> bool:
+        """Check if source and destination files are identical."""
+        if not dest_path.exists():
+            return False
+
+        source_size = source_path.stat().st_size
+        source_mtime = source_path.stat().st_mtime
+        dest_size = dest_path.stat().st_size
+        dest_mtime = dest_path.stat().st_mtime
+
+        if source_size != dest_size:
+            return False
+
+        time_diff = abs(source_mtime - dest_mtime)
+        return time_diff <= time_tolerance
+
+    def _handle_duplicate_file(
+        self, new_file_path: Path, target_folder: Path
+    ) -> Tuple[Path, str]:
+        """Handle duplicate files based on duplicate mode."""
+        if self.duplicate_mode == DuplicateMode.SKIP:
+            self.files_skipped += 1
+            return new_file_path, "SKIPPED (Duplicate)"
+        elif self.duplicate_mode == DuplicateMode.RENAME:
+            # Generate a new unique name
+            rename_counter = 1
+            original_stem = new_file_path.stem
+            original_suffix = new_file_path.suffix
+            while new_file_path.exists():
+                new_file_name = f"{original_stem}_{rename_counter}{original_suffix}"
+                new_file_path = target_folder / new_file_name
+                rename_counter += 1
+            return new_file_path, f"RENAMED to {new_file_path.name}"
+        return new_file_path, f"OVERWRITING {new_file_path.name}"
+
+    def _copy_file_if_needed(
+        self, source_path: Path, dest_path: Path, action_msg: str
+    ) -> str:
+        """Copy file if not in dry run mode."""
+        if self.dry_run:
+            return f"DRY RUN: Would copy to {dest_path.name}"
+        source_size = source_path.stat().st_size
+        source_mtime = source_path.stat().st_mtime
+        self.copy_file_with_buffer(source_path, dest_path, source_mtime)
+        self.files_copied += 1
+        self.total_bytes_copied += source_size
+        return action_msg if action_msg else f"COPIED to {dest_path.name}"
+
+    def _process_single_file(
+        self, file_path: Path, folder_datetime: str, destination_dir: Path
+    ) -> None:
+        """Process a single file for sorting."""
+        file_name = file_path.name
+
+        # Extract base name and create target folder
+        base_name = self._extract_base_name(file_name)
+        target_folder = self._create_target_folder(destination_dir, base_name)
+
+        # Generate new file name and path
+        new_file_name = self._generate_new_file_name(
+            file_name, base_name, folder_datetime
         )
+        new_file_path = target_folder / new_file_name
 
+        # Check if files are identical
+        if self._check_files_identical(file_path, new_file_path):
+            self.files_skipped += 1
+            return
+
+        # Handle file processing based on existence and duplicate mode
+        action_msg = ""
+        if new_file_path.exists():
+            new_file_path, action_msg = self._handle_duplicate_file(
+                new_file_path, target_folder
+            )
+            if "SKIPPED" in action_msg:
+                return  # Skip to next file
+
+        # Copy the file
+        self._copy_file_if_needed(file_path, new_file_path, action_msg)
+
+    def _process_all_files(
+        self, files_to_process: List[Tuple[Path, str]], destination_dir: Path
+    ) -> Optional[Dict[str, str]]:
+        """Process all files in the processing list."""
         counter = 0
+        total_files = len(files_to_process)
 
         for file_path, folder_datetime in files_to_process:
-            if self._should_cancel and self._should_cancel():
+            if self._check_cancellation():
                 print("Cancellation requested during file processing.")
-                return {"status": "cancelled"}  # Indicate cancellation
+                return {"status": "cancelled"}
 
             counter += 1
-            file_name: str = file_path.name
-
-            # Update progress using the callback with current and total
-            if self._progress_callback:
-                self._progress_callback(counter, total_files)
+            self._update_progress(counter, total_files)
 
             try:
-                # We will check whether the file_name ends with _YYYYMMDDThhmmssZ.png or just .png
-                base_name: str = file_name
-                # If it matches "_YYYYMMDDThhmmssZ.png" (20 chars from end), strip that part:
-                if re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
-                    base_name = file_name[
-                        :-20
-                    ]  # remove the date/time portion + extension
-                elif file_name.endswith(".png"):
-                    base_name = file_name[:-4]
-
-                # Create sub-folder in 'destination' for this base_name if it doesn't exist
-                target_folder: Path = destination_dir / base_name
-                if not target_folder.exists() and not self.dry_run:
-                    try:
-                        target_folder.mkdir(parents=True, exist_ok=True)
-                    except Exception as e:
-                        print(f"Error creating folder {target_folder!r}: {e}")
-                        raise
-
-                # Construct new file name, if it doesn't already have the date/time suffix
-                if not re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
-                    new_file_name: str = f"{base_name}_{folder_datetime}Z.png"
-                else:
-                    # Already has date/time suffix, keep it
-                    new_file_name = file_name
-
-                new_file_path: Path = target_folder / new_file_name
-
-                # Check if the destination file exists and is identical in size & mtime (within tolerance)
-                source_size: int = file_path.stat().st_size
-                source_mtime_utc: float = (
-                    file_path.stat().st_mtime
-                )  # seconds since epoch (UTC-based)
-                files_are_identical: bool = False
-
-                if new_file_path.exists():
-                    dest_size: int = new_file_path.stat().st_size
-                    dest_mtime_utc: float = new_file_path.stat().st_mtime
-                    if source_size == dest_size:
-                        time_diff: float = abs(source_mtime_utc - dest_mtime_utc)
-                        if time_diff <= time_tolerance_seconds:
-                            # Consider the files identical
-                            self.files_skipped += 1
-                            files_are_identical = True
-
-                # Status information is handled by ViewModel so we don't need status messages here
-
-                # If not identical, proceed based on duplicate mode
-                if not files_are_identical:
-                    action_msg: str = ""
-                    if new_file_path.exists():
-                        if self.duplicate_mode == DuplicateMode.SKIP:
-                            self.files_skipped += 1
-                            action_msg = "SKIPPED (Duplicate)"
-                            continue  # Skip to next file
-                        elif self.duplicate_mode == DuplicateMode.RENAME:
-                            # Generate a new unique name
-                            rename_counter = 1
-                            original_stem = new_file_path.stem
-                            original_suffix = new_file_path.suffix
-                            while new_file_path.exists():
-                                new_file_name = (
-                                    f"{original_stem}_{rename_counter}{original_suffix}"
-                                )
-                                new_file_path = target_folder / new_file_name
-                                rename_counter += 1
-                            action_msg = f"RENAMED to {new_file_name}"
-                        else:  # Overwrite mode
-                            action_msg = f"OVERWRITING {new_file_name}"
-                        # If mode is 'Overwrite', no extra action needed before copy
-
-                    if self.dry_run:
-                        action_msg = f"DRY RUN: Would copy to {new_file_path.name}"
-                    else:
-                        # Perform the actual copy only if not dry run
-                        self.copy_file_with_buffer(
-                            file_path, new_file_path, source_mtime_utc
-                        )
-                        self.files_copied += 1
-                        self.total_bytes_copied += source_size
-                        # action_msg should be set above based on Rename/Overwrite or be empty
-                        if not action_msg:
-                            action_msg = f"COPIED to {new_file_path.name}"
-                else:
-                    # Files are identical, log as skipped
-                    action_msg = "SKIPPED (Identical)"
-
+                self._process_single_file(file_path, folder_datetime, destination_dir)
             except Exception as e:
-                print(
-                    f"\nError processing file {file_path.name!r}: {e}"
-                )  # Print error on new line
+                print(f"\nError processing file {file_path.name!r}: {e}")
 
-        # --------------------------------------------------------------------------------
-        # 6. Final Stats and Cleanup
-        # --------------------------------------------------------------------------------
+        return None
+
+    def _generate_final_statistics(
+        self, script_start_time: datetime, total_files: int
+    ) -> Dict[str, Any]:
+        """Generate and print final sorting statistics."""
         print()  # Move to new line after progress
 
         script_end_time = datetime.now()
@@ -325,14 +391,11 @@ class FileSorter:
             average_time_per_file = 0
         print(f"Average time per file: {average_time_per_file} seconds")
 
-        # Remove the input() call and just return stats
         final_stats = {
             "files_copied": self.files_copied,
             "files_skipped": self.files_skipped,
             "total_bytes": self.total_bytes_copied,
-            "duration": str(
-                datetime.now() - script_start_time
-            ),  # Convert timedelta to string
+            "duration": str(datetime.now() - script_start_time),
         }
 
         print("Returning stats:", final_stats)

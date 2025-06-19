@@ -3,7 +3,7 @@ Performance tests for the integrity check tabs.
 
 These tests focus on measuring and analyzing performance characteristics of
 the integrity check tabs, including:
-1. Load times for large datasets
+    1. Load times for large datasets
 2. Response times for UI interactions
 3. Memory usage patterns
 
@@ -27,7 +27,7 @@ from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QMainWindow
 
-from goesvfi.integrity_check.combined_tab import CombinedIntegrityTab
+from goesvfi.integrity_check.combined_tab import CombinedIntegrityAndImageryTab
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 from goesvfi.integrity_check.enhanced_view_model import (
     EnhancedIntegrityCheckViewModel,
@@ -166,6 +166,7 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
 
         # Generate missing items
         for i in range(missing_count):
+            pass
             ts = base_date + timedelta(minutes=i * 10)
             item = EnhancedMissingTimestamp(ts, f"missing_file_{i}.nc")
             items.append(item)
@@ -461,6 +462,7 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
 
             timer_count += 1
             if timer_count < max_timer_count:
+                pass
                 QTimer.singleShot(100, ui_interaction)
 
         # Start measuring
@@ -492,11 +494,13 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         # Print overall metrics
         print(f"Total time for loading: {metrics['elapsed_time']:.6f} seconds")
         print(
-            f"Memory usage: {metrics['memory_diff']:.2f} MB (diff), {metrics['peak_memory']:.2f} MB (peak)"
+            f"Memory usage: {metrics['memory_diff']:.2f} MB (diff),"
+            f"{metrics['peak_memory']:.2f} MB (peak)"
         )
 
         # Print UI responsiveness metrics
         if event_times:
+            pass
             avg_event_time = sum(event_times) / len(event_times)
             max_event_time = max(event_times)
             print(f"UI interaction times:")
@@ -512,4 +516,5 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
 
 
 if __name__ == "__main__":
+    pass
     unittest.main()

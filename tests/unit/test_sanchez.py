@@ -42,9 +42,11 @@ def get_sanchez_binary():
     try:
         path = lookup[key]
     except KeyError:
+        pass
         raise RuntimeError(f"Sanchez not packaged for {key}")
 
     if not path.exists():
+        pass
         raise RuntimeError(f"Binary missing: {path}")
 
     return path
@@ -72,29 +74,35 @@ def test_basic_call(input_path, res_km=4):
             cmd, check=False, capture_output=True, text=True, cwd=binary_dir
         )
 
-        logger.info(f"Return code: {result.returncode}")
+        logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            logger.info(f"Stdout: {result.stdout}")
+            pass
+            logger.info("Stdout: %s", result.stdout)
         else:
             logger.info("No stdout output")
 
         if result.stderr:
-            logger.info(f"Stderr: {result.stderr}")
+            pass
+            logger.info("Stderr: %s", result.stderr)
         else:
             logger.info("No stderr output")
 
         if temp_output.exists():
-            logger.info(f"Output file created successfully: {temp_output}")
-            logger.info(f"Output file size: {temp_output.stat().st_size} bytes")
+            pass
+            logger.info("Output file created successfully: %s", temp_output)
+            logger.info("Output file size: %s bytes", temp_output.stat().st_size)
             return True
-        else:
-            logger.error(f"Output file not created: {temp_output}")
-            return False
+        logger.error("Output file not created: %s", temp_output)
+        return False
     except Exception as e:
-        logger.error(f"Error running Sanchez: {e}")
+        pass
+    except Exception as e:
+        pass
+        logger.error("Error running Sanchez: %s", e)
         return False
     finally:
         if temp_output.exists():
+            pass
             os.remove(temp_output)
 
 
@@ -121,29 +129,35 @@ def test_with_verbose(input_path, res_km=4):
             cmd, check=False, capture_output=True, text=True, cwd=binary_dir
         )
 
-        logger.info(f"Return code: {result.returncode}")
+        logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            logger.info(f"Stdout: {result.stdout}")
+            pass
+            logger.info("Stdout: %s", result.stdout)
         else:
             logger.info("No stdout output")
 
         if result.stderr:
-            logger.info(f"Stderr: {result.stderr}")
+            pass
+            logger.info("Stderr: %s", result.stderr)
         else:
             logger.info("No stderr output")
 
         if temp_output.exists():
-            logger.info(f"Output file created successfully: {temp_output}")
-            logger.info(f"Output file size: {temp_output.stat().st_size} bytes")
+            pass
+            logger.info("Output file created successfully: %s", temp_output)
+            logger.info("Output file size: %s bytes", temp_output.stat().st_size)
             return True
-        else:
-            logger.error(f"Output file not created: {temp_output}")
-            return False
+        logger.error("Output file not created: %s", temp_output)
+        return False
     except Exception as e:
-        logger.error(f"Error running Sanchez: {e}")
+        pass
+    except Exception as e:
+        pass
+        logger.error("Error running Sanchez: %s", e)
         return False
     finally:
         if temp_output.exists():
+            pass
             os.remove(temp_output)
 
 
@@ -170,29 +184,35 @@ def test_with_v_flag(input_path, res_km=4):
             cmd, check=False, capture_output=True, text=True, cwd=binary_dir
         )
 
-        logger.info(f"Return code: {result.returncode}")
+        logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            logger.info(f"Stdout: {result.stdout}")
+            pass
+            logger.info("Stdout: %s", result.stdout)
         else:
             logger.info("No stdout output")
 
         if result.stderr:
-            logger.info(f"Stderr: {result.stderr}")
+            pass
+            logger.info("Stderr: %s", result.stderr)
         else:
             logger.info("No stderr output")
 
         if temp_output.exists():
-            logger.info(f"Output file created successfully: {temp_output}")
-            logger.info(f"Output file size: {temp_output.stat().st_size} bytes")
+            pass
+            logger.info("Output file created successfully: %s", temp_output)
+            logger.info("Output file size: %s bytes", temp_output.stat().st_size)
             return True
-        else:
-            logger.error(f"Output file not created: {temp_output}")
-            return False
+        logger.error("Output file not created: %s", temp_output)
+        return False
     except Exception as e:
-        logger.error(f"Error running Sanchez: {e}")
+        pass
+    except Exception as e:
+        pass
+        logger.error("Error running Sanchez: %s", e)
         return False
     finally:
         if temp_output.exists():
+            pass
             os.remove(temp_output)
 
 
@@ -227,31 +247,38 @@ def test_with_renamed_input(input_path, res_km=4):
             cmd, check=False, capture_output=True, text=True, cwd=binary_dir
         )
 
-        logger.info(f"Return code: {result.returncode}")
+        logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            logger.info(f"Stdout: {result.stdout}")
+            pass
+            logger.info("Stdout: %s", result.stdout)
         else:
             logger.info("No stdout output")
 
         if result.stderr:
-            logger.info(f"Stderr: {result.stderr}")
+            pass
+            logger.info("Stderr: %s", result.stderr)
         else:
             logger.info("No stderr output")
 
         if temp_output.exists():
-            logger.info(f"Output file created successfully: {temp_output}")
-            logger.info(f"Output file size: {temp_output.stat().st_size} bytes")
+            pass
+            logger.info("Output file created successfully: %s", temp_output)
+            logger.info("Output file size: %s bytes", temp_output.stat().st_size)
             return True
-        else:
-            logger.error(f"Output file not created: {temp_output}")
-            return False
+        logger.error("Output file not created: %s", temp_output)
+        return False
     except Exception as e:
-        logger.error(f"Error running Sanchez: {e}")
+        pass
+    except Exception as e:
+        pass
+        logger.error("Error running Sanchez: %s", e)
         return False
     finally:
         if temp_input.exists():
+            pass
             os.remove(temp_input)
         if temp_output.exists():
+            pass
             os.remove(temp_output)
 
 
@@ -268,20 +295,23 @@ def test_sanchez_help():
             cmd, check=False, capture_output=True, text=True, cwd=binary_dir
         )
 
-        logger.info(f"Return code: {result.returncode}")
+        logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            logger.info(f"Help output: {result.stdout}")
+            pass
+            logger.info("Help output: %s", result.stdout)
         else:
             logger.info("No stdout output from help command")
 
         if result.stderr:
-            logger.info(f"Stderr from help: {result.stderr}")
+            pass
+            logger.info("Stderr from help: %s", result.stderr)
         else:
             logger.info("No stderr output from help command")
 
         return True
     except Exception as e:
-        logger.error(f"Error running Sanchez help: {e}")
+        pass
+        logger.error("Error running Sanchez help: %s", e)
         return False
 
 
@@ -299,11 +329,12 @@ def main():
     args = parser.parse_args()
 
     if not os.path.exists(args.input_file):
-        logger.error(f"Input file does not exist: {args.input_file}")
+        pass
+        logger.error("Input file does not exist: %s", args.input_file)
         return 1
 
     logger.info("=== Testing Sanchez Binary ===")
-    logger.info(f"Input file: {args.input_file}")
+    logger.info("Input file: %s", args.input_file)
 
     # Try to get help info first
     logger.info("\n=== Testing help command ===")
@@ -336,4 +367,5 @@ def main():
 
 
 if __name__ == "__main__":
+    pass
     sys.exit(main())

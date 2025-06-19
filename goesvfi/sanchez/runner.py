@@ -1,10 +1,7 @@
 import logging
 import platform
 import subprocess
-import tarfile
-import zipfile
 from pathlib import Path
-from urllib.request import urlretrieve
 
 from goesvfi.utils import config  # Import config module
 
@@ -13,7 +10,7 @@ LOGGER = logging.getLogger(__name__)
 # SAN_VERSION removed (not configurable)
 # BIN_DIR removed (get from config)
 
-_LOOKUP = {  #  << only the two targets you need
+_LOOKUP = {  # only the two targets you need
     ("Darwin", "x86_64"): config.get_sanchez_bin_dir() / "osx-x64" / "Sanchez",
     ("Darwin", "arm64"): config.get_sanchez_bin_dir() / "osx-x64" / "Sanchez",
     ("Windows", "AMD64"): config.get_sanchez_bin_dir() / "win-x64" / "Sanchez.exe",
@@ -54,7 +51,7 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
     import os
 
     os.makedirs(out_dir, exist_ok=True)
-    LOGGER.info(f"Ensuring output directory exists: {out_dir}")
+    LOGGER.info("Ensuring output directory exists: %s", out_dir)
 
     # Add the geostationary subcommand which is required for proper operation
     cmd = [
@@ -72,7 +69,7 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
     gradient_path = binary_dir / "Resources" / "Gradients" / "Atmosphere.json"
     if gradient_path.exists():
         cmd.extend(["-c", "0.0-1.0", "-g", str(gradient_path)])
-        LOGGER.info(f"Adding false color gradient: {gradient_path}")
+        LOGGER.info("Adding false color gradient: %s", gradient_path)
     else:
         LOGGER.warning(
             f"Gradient file not found at {gradient_path}, false color may not be applied"
@@ -91,14 +88,15 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
             encoding="utf-8",  # Explicitly set encoding
             errors="replace",  # Handle potential decoding errors
             cwd=binary_dir,  # <-- Set the current working directory
+            timeout=120,
         )
         # Log stdout/stderr even on success if needed for debugging
         if result.stdout:
-            LOGGER.debug(f"Sanchez stdout:\n{result.stdout}")
+            LOGGER.debug("Sanchez stdout:\n%s", result.stdout)
         if result.stderr:
             # Treat stderr as warning/info unless check=True fails
-            LOGGER.info(f"Sanchez stderr:\n{result.stderr}")
-        LOGGER.info(f"Sanchez completed successfully for {Path(ir_png).name}")
+            LOGGER.info("Sanchez stderr:\n%s", result.stderr)
+        LOGGER.info("Sanchez completed successfully for %s", Path(ir_png).name)
 
     except subprocess.CalledProcessError as e:
         # Log detailed error information if check=True fails
@@ -106,17 +104,17 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
             f"Sanchez failed (Exit Code: {e.returncode}) for {Path(ir_png).name}"
         )
         if e.stdout:
-            LOGGER.error(f"--> Sanchez stdout:\n{e.stdout}")
+            LOGGER.error("--> Sanchez stdout:\n%s", e.stdout)
         if e.stderr:
-            LOGGER.error(f"--> Sanchez stderr:\n{e.stderr}")
+            LOGGER.error("--> Sanchez stderr:\n%s", e.stderr)
         # Re-raise the original exception or a more specific one
         raise RuntimeError(f"Sanchez execution failed: {e}") from e
     except FileNotFoundError:
-        LOGGER.error(f"Sanchez executable not found at: {bin_path}")
+        LOGGER.error("Sanchez executable not found at: %s", bin_path)
         raise  # Re-raise
-    except Exception as e:
+    except (OSError, ValueError, KeyError) as e:
         LOGGER.exception(
-            f"An unexpected error occurred while running Sanchez for {Path(ir_png).name}"
+            f"An unexpected error occurred while running Sanchez for {Path(ir_png).name}: {e}"
         )
         raise  # Re-raise unexpected errors
 

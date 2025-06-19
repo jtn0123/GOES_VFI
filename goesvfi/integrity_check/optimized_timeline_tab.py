@@ -1,32 +1,21 @@
-"""
-Optimized timeline visualization tab for GOES satellite data integrity.
+"""Optimized timeline visualization tab for GOES satellite data integrity.
 
 This module provides a streamlined interface for visualizing satellite data availability
 over time with improved organization and focus.
 """
 
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from datetime import datetime
+from typing import List, Optional, Tuple
 
-from PyQt6.QtCore import QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor, QFont, QIcon, QPainter, QPen
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QButtonGroup,
     QFrame,
-    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
-    QRadioButton,
-    QScrollArea,
     QSizePolicy,
     QSpacerItem,
-    QSplitter,
     QStackedWidget,
-    QStyle,
-    QTabWidget,
-    QToolButton,
-    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -74,15 +63,21 @@ class OptimizedTimelineTab(QWidget):
         main_layout.setSpacing(10)
 
         # Section 1: Compact Control Panel
-        self.control_panel = self._create_control_panel()
+        self.control_panel = (
+            self._create_control_panel()
+        )  # pylint: disable=attribute-defined-outside-init
         main_layout.addWidget(self.control_panel)
 
         # Section 2: View Selector and Visualizations
-        self.view_selector = self._create_view_selector()
+        self.view_selector = (
+            self._create_view_selector()
+        )  # pylint: disable=attribute-defined-outside-init
         main_layout.addWidget(self.view_selector, 1)  # Give stretch priority
 
         # Section 3: Information Panel
-        self.info_panel = self._create_info_panel()
+        self.info_panel = (
+            self._create_info_panel()
+        )  # pylint: disable=attribute-defined-outside-init
         main_layout.addWidget(self.info_panel)
 
     def _create_control_panel(self) -> QFrame:
@@ -97,7 +92,7 @@ class OptimizedTimelineTab(QWidget):
                 border: 1px solid #454545;
                 border-radius: 4px;
             }
-        """
+            """
         )
 
         layout = QHBoxLayout(panel)
@@ -118,55 +113,55 @@ class OptimizedTimelineTab(QWidget):
 
         # Create button row styling - unified style for all controls
         control_style = """
-            QFrame.ControlGroup {
-                background-color: #3a3a3a;
-                border: 1px solid #545454;
-                border-radius: 4px;
-            }
-            QLabel.ControlLabel {
-                color: #f0f0f0;
-                font-weight: bold;
-                padding-right: 4px;
-                font-size: 11px;
-            }
-            QRadioButton {
-                color: #f0f0f0;
-                spacing: 4px;
-                padding: 0px 3px;
-                font-size: 11px;
-            }
-            QRadioButton::indicator {
-                width: 12px;
-                height: 12px;
-                border-radius: 6px;
-                border: 1px solid #646464;
-            }
-            QRadioButton::indicator:unchecked {
-                background-color: #333333;
-            }
-            QRadioButton::indicator:checked {
-                background-color: #2a82da;
-                border: 1px solid #2a82da;
-            }
-            QPushButton {
-                background-color: #454545;
-                color: #f0f0f0;
-                border: 1px solid #646464;
-                border-radius: 4px;
-                padding: 1px 6px;
-                min-height: 20px;
-                max-height: 20px;
-                min-width: 24px;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #505050;
-                border-color: #787878;
-            }
-            QPushButton:pressed {
-                background-color: #2a82da;
-                border-color: #1a72ca;
-            }
+        QFrame.ControlGroup {
+        background-color: #3a3a3a;
+        border: 1px solid #545454;
+        border-radius: 4px;
+        }
+        QLabel.ControlLabel {
+        color: #f0f0f0;
+        font-weight: bold;
+        padding-right: 4px;
+        font-size: 11px;
+        }
+        QRadioButton {
+        color: #f0f0f0;
+        spacing: 4px;
+        padding: 0px 3px;
+        font-size: 11px;
+        }
+        QRadioButton::indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 6px;
+        border: 1px solid #646464;
+        }
+        QRadioButton::indicator:unchecked {
+        background-color: #333333;
+        }
+        QRadioButton::indicator:checked {
+        background-color: #2a82da;
+        border: 1px solid #2a82da;
+        }
+        QPushButton {
+        background-color: #454545;
+        color: #f0f0f0;
+        border: 1px solid #646464;
+        border-radius: 4px;
+        padding: 1px 6px;
+        min-height: 20px;
+        max-height: 20px;
+        min-width: 24px;
+        font-size: 11px;
+        }
+        QPushButton:hover {
+        background-color: #505050;
+        border-color: #787878;
+        }
+        QPushButton:pressed {
+        background-color: #2a82da;
+        border-color: #1a72ca;
+        }
         """
         panel.setStyleSheet(panel.styleSheet() + control_style)
 
@@ -205,7 +200,7 @@ class OptimizedTimelineTab(QWidget):
         filter_layout.addWidget(self.filter_available_btn)
 
         # Connect buttons to work as a group (when one is checked, others are unchecked)
-        def update_filter_buttons(btn_name):
+        def update_filter_buttons(btn_name: str) -> None:
             self.filter_all_btn.setChecked(btn_name == "all")
             self.filter_missing_btn.setChecked(btn_name == "missing")
             self.filter_available_btn.setChecked(btn_name == "available")
@@ -254,7 +249,7 @@ class OptimizedTimelineTab(QWidget):
         view_layout.addWidget(self.view_calendar_btn)
 
         # Connect buttons to work as a tab group
-        def update_view_buttons(btn_name):
+        def update_view_buttons(btn_name: str) -> None:
             self.view_timeline_btn.setChecked(btn_name == "timeline")
             self.view_calendar_btn.setChecked(btn_name == "calendar")
 
@@ -329,7 +324,7 @@ class OptimizedTimelineTab(QWidget):
                 padding: 3px 8px;
                 margin-bottom: 5px;
             }
-        """
+            """
         )
         layout.addWidget(self.view_header)
 
@@ -364,7 +359,7 @@ class OptimizedTimelineTab(QWidget):
                 border: 1px solid #454545;
                 border-radius: 4px;
             }
-        """
+            """
         )
 
         layout = QVBoxLayout(panel)
@@ -476,6 +471,7 @@ class OptimizedTimelineTab(QWidget):
 
         # Update the view header label
         if index == 0:
+            pass
             self.view_header.setText(self.tr("Timeline View"))
         else:
             self.view_header.setText(self.tr("Calendar View"))
@@ -488,6 +484,7 @@ class OptimizedTimelineTab(QWidget):
         """Zoom in on the timeline visualization."""
         # Only applies to timeline view
         if self.timeline_viz.zoom_level < 10.0:
+            pass
             self.timeline_viz.zoom_level *= 1.5
             self.timeline_viz.update()
 
@@ -499,8 +496,10 @@ class OptimizedTimelineTab(QWidget):
         """Zoom out on the timeline visualization."""
         # Only applies to timeline view
         if self.timeline_viz.zoom_level > 0.5:
+            pass
             self.timeline_viz.zoom_level /= 1.5
             if self.timeline_viz.zoom_level < 1.0:
+                pass
                 self.timeline_viz.zoom_level = 1.0
             self.timeline_viz.update()
 
@@ -564,6 +563,7 @@ class OptimizedTimelineTab(QWidget):
     def _update_info_panel(self) -> None:
         """Update the information panel with current selection details."""
         if self.selected_item:
+            pass
             # Display information about the selected item
             status = self._get_item_status(self.selected_item)
 
@@ -583,6 +583,7 @@ class OptimizedTimelineTab(QWidget):
             )
 
         elif self.selected_timestamp:
+            pass
             # Display information about the selected timestamp (no matching item)
             self.info_label.setText(
                 f"<b>Selected:</b> {self.selected_timestamp.strftime('%Y-%m-%d %H:%M:%S')}<br>"
@@ -594,6 +595,7 @@ class OptimizedTimelineTab(QWidget):
             self.action_download_btn.setEnabled(False)
 
         elif self.selected_range:
+            pass
             # Display information about the selected range
             start, end = self.selected_range
             duration = end - start
@@ -605,10 +607,13 @@ class OptimizedTimelineTab(QWidget):
 
             duration_text = ""
             if days > 0:
+                pass
                 duration_text += f"{days} day{'s' if days != 1 else ''} "
             if hours > 0:
+                pass
                 duration_text += f"{hours} hour{'s' if hours != 1 else ''} "
             if minutes > 0:
+                pass
                 duration_text += f"{minutes} minute{'s' if minutes != 1 else ''}"
 
             self.info_label.setText(
@@ -639,19 +644,22 @@ class OptimizedTimelineTab(QWidget):
             HTML-formatted status string with appropriate styling
         """
         if getattr(item, "is_downloaded", False):
+            pass
             return '<span class="StatusLabel" status="success">Downloaded</span>'
         elif getattr(item, "is_downloading", False):
+            pass
             progress = getattr(item, "progress", 0)
             return f'<span class="StatusLabel" status="processing">Downloading ({progress}%)</span>'
         elif getattr(item, "download_error", ""):
+            pass
             return f'<span class="StatusLabel" status="error">Error</span> {item.download_error}'
-        else:
-            return '<span class="StatusLabel" status="warning">Missing</span>'
+        return '<span class="StatusLabel" status="warning">Missing</span>'
 
     def _action_view_details(self) -> None:
         """Handle action to view item details."""
         # Simply a placeholder for demo purposes
         if self.selected_item and getattr(self.selected_item, "is_downloaded", False):
+            pass
             print(f"Viewing details for {self.selected_item.expected_filename}")
 
     def _action_download(self) -> None:
@@ -660,6 +668,7 @@ class OptimizedTimelineTab(QWidget):
         if self.selected_item and not getattr(
             self.selected_item, "is_downloaded", False
         ):
+            pass
             print(f"Downloading {self.selected_item.expected_filename}")
 
     def set_directory(self, directory: str) -> None:
@@ -686,7 +695,13 @@ class OptimizedTimelineTab(QWidget):
 
         # Update both visualizations with the new date range
         if hasattr(self.timeline_viz, "set_date_range"):
+            pass
             self.timeline_viz.set_date_range(start_time, end_time)
 
         if hasattr(self.calendar_view, "set_date_range"):
+            pass
             self.calendar_view.set_date_range(start_time, end_time)
+
+    def setDateRange(self, start_time: datetime, end_time: datetime) -> None:
+        """Alias for set_date_range for backward compatibility."""
+        self.set_date_range(start_time, end_time)

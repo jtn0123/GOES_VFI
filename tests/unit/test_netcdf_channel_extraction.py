@@ -51,7 +51,7 @@ def download_file_from_s3(bucket: str, key: str, local_path: Path) -> Path:
     Returns:
         Path to the downloaded file
     """
-    logger.info(f"Downloading s3://{bucket}/{key} to {local_path}")
+    logger.info("Downloading s3://%s/%s to %s", bucket, key, local_path)
 
     # Create directory if it doesn't exist
     local_path.parent.mkdir(parents=True, exist_ok=True)
@@ -64,8 +64,7 @@ def download_file_from_s3(bucket: str, key: str, local_path: Path) -> Path:
             f"Download successful: {local_path} ({local_path.stat().st_size} bytes)"
         )
         return local_path
-    else:
-        raise FileNotFoundError(f"Downloaded file not found: {local_path}")
+    raise FileNotFoundError(f"Downloaded file not found: {local_path}")
 
 
 def extract_channel_from_netcdf(
@@ -85,18 +84,18 @@ def extract_channel_from_netcdf(
 
     with xr.open_dataset(netcdf_path) as ds:
         # Log available variables for debugging
-        logger.info(f"Available variables: {list(ds.variables.keys())}")
+        logger.info("Available variables: %s", list(ds.variables.keys()))
 
         if channel_var in ds.variables:
             # Get the data
             data = ds[channel_var].values
 
             # Log data shape and type
-            logger.info(f"Data shape: {data.shape}, dtype: {data.dtype}")
+            logger.info("Data shape: %s, dtype: %s", data.shape, data.dtype)
 
             # Check for fill values or NaNs
             if np.isnan(data).any():
-                logger.info(f"Data contains NaN values: {np.isnan(data).sum()}")
+                logger.info("Data contains NaN values: %s", np.isnan(data).sum())
 
             # Extract metadata if available
             metadata = {}
@@ -109,11 +108,10 @@ def extract_channel_from_netcdf(
                 if attr in ds.attrs:
                     metadata[attr] = ds.attrs[attr]
 
-            logger.info(f"Extracted metadata: {metadata}")
+            logger.info("Extracted metadata: %s", metadata)
 
             return data
-        else:
-            raise ValueError(f"Variable '{channel_var}' not found in dataset")
+        raise ValueError(f"Variable '{channel_var}' not found in dataset")
 
 
 def process_and_save_image(
@@ -140,7 +138,7 @@ def process_and_save_image(
     Returns:
         Path to the saved image
     """
-    logger.info(f"Processing and saving image to {output_path}")
+    logger.info("Processing and saving image to %s", output_path)
 
     # Set min/max values if not provided
     if min_val is None:
@@ -148,7 +146,7 @@ def process_and_save_image(
     if max_val is None:
         max_val = np.nanmax(data)
 
-    logger.info(f"Data range: {min_val} to {max_val}")
+    logger.info("Data range: %s to %s", min_val, max_val)
 
     # Clip data to the specified range
     data_clipped = np.clip(data, min_val, max_val)
@@ -165,7 +163,7 @@ def process_and_save_image(
     if scale_factor < 1.0:
         stride = int(1 / scale_factor)
         data_small = data_norm[::stride, ::stride]
-        logger.info(f"Downsampled data from {data_norm.shape} to {data_small.shape}")
+        logger.info("Downsampled data from %s to %s", data_norm.shape, data_small.shape)
     else:
         data_small = data_norm
 
@@ -189,7 +187,7 @@ def process_and_save_image(
     plt.savefig(output_path, dpi=dpi, bbox_inches="tight", pad_inches=0)
     plt.close(fig)
 
-    logger.info(f"Image saved: {output_path}")
+    logger.info("Image saved: %s", output_path)
     return output_path
 
 
@@ -203,7 +201,7 @@ def explore_netcdf_structure(netcdf_path: Path) -> dict:
     Returns:
         Dictionary with information about the file structure
     """
-    logger.info(f"Exploring NetCDF structure: {netcdf_path}")
+    logger.info("Exploring NetCDF structure: %s", netcdf_path)
 
     try:
         with xr.open_dataset(netcdf_path) as ds:
@@ -236,7 +234,7 @@ def explore_netcdf_structure(netcdf_path: Path) -> dict:
                 "file_size": netcdf_path.stat().st_size,
             }
     except Exception as e:
-        logger.error(f"Error exploring NetCDF structure: {e}")
+        logger.error("Error exploring NetCDF structure: %s", e)
         return {"error": str(e)}
 
 
@@ -388,9 +386,9 @@ def process_channel_data(ds, channel_num, temp_dir):
             plt.savefig(comparison_path)
             plt.close()
 
-            logger.info(f"Comparison saved to {comparison_path}")
+            logger.info("Comparison saved to %s", comparison_path)
         except Exception as e:
-            logger.error(f"Error creating comparison image: {e}")
+            logger.error("Error creating comparison image: %s", e)
 
         return {
             "channel": channel_num,
@@ -402,9 +400,9 @@ def process_channel_data(ds, channel_num, temp_dir):
             "robust_max": float(robust_max),
             "output_path": str(output_path),
             "robust_output_path": str(robust_output_path),
-            "comparison_path": str(comparison_path)
-            if "comparison_path" in locals()
-            else None,
+            "comparison_path": (
+                str(comparison_path) if "comparison_path" in locals() else None
+            ),
         }
     else:
         return {
@@ -461,7 +459,7 @@ def test_download_and_process_channels():
             return None
 
         except Exception as e:
-            logger.error(f"Error searching for channel {channel_num} file: {e}")
+            logger.error("Error searching for channel %s file: %s", channel_num, e)
             return None
 
     # Try to find files for different channels
@@ -472,7 +470,7 @@ def test_download_and_process_channels():
         file_key = find_channel_file(bucket, f"ABI-L1b-RadF/2024/362/00/", channel_num)
         if file_key:
             channel_tests.append((file_key, channel_num))
-            logger.info(f"Found file for channel {channel_num}: {file_key}")
+            logger.info("Found file for channel %s: %s", channel_num, file_key)
         else:
             logger.warning(
                 f"Could not find file for channel {channel_num}, will be skipped"
@@ -508,22 +506,24 @@ def test_download_and_process_channels():
                 netcdf_path = temp_path / f"channel_{channel_num:02d}.nc"
 
                 # Step 1: Download the NetCDF file
-                logger.info(f"Downloading file for channel {channel_num}: {file_key}")
+                logger.info(
+                    "Downloading file for channel %s: %s", channel_num, file_key
+                )
                 try:
                     download_file_from_s3(bucket, file_key, netcdf_path)
                 except Exception as e:
-                    logger.error(f"Failed to download {file_key}: {e}")
+                    logger.error("Failed to download %s: %s", file_key, e)
                     continue
 
                 # Step 2: Explore the NetCDF structure
-                logger.info(f"Analyzing NetCDF structure for channel {channel_num}")
+                logger.info("Analyzing NetCDF structure for channel %s", channel_num)
                 structure = explore_netcdf_structure(netcdf_path)
 
                 # Check if this file has the band_id attribute to confirm channel
                 with xr.open_dataset(netcdf_path) as ds:
                     if "band_id" in ds.variables:
                         actual_channel = ds["band_id"].values.item()
-                        logger.info(f"File reports band_id = {actual_channel}")
+                        logger.info("File reports band_id = %s", actual_channel)
 
                         # Double-check against expected channel
                         if actual_channel != expected_channel:
@@ -532,7 +532,7 @@ def test_download_and_process_channels():
                             )
 
                     # Step 3: Process the channel data
-                    logger.info(f"Processing data for channel {channel_num}")
+                    logger.info("Processing data for channel %s", channel_num)
                     result = process_channel_data(ds, channel_num, temp_path)
                     channel_results[channel_num] = result
 
@@ -550,12 +550,12 @@ def test_download_and_process_channels():
                         plt.tight_layout(pad=0)
                         plt.savefig(dest_path)
                         plt.close()
-                        logger.info(f"Saved {dest_path}")
+                        logger.info("Saved %s", dest_path)
                     except Exception as e:
-                        logger.error(f"Error saving {img_path}: {e}")
+                        logger.error("Error saving %s: %s", img_path, e)
 
             except Exception as e:
-                logger.exception(f"Error processing channel {expected_channel}: {e}")
+                logger.exception("Error processing channel %s: %s", expected_channel, e)
                 channel_results[expected_channel] = {"error": str(e)}
 
         # Save a summary report
@@ -588,7 +588,7 @@ def test_download_and_process_channels():
                         )
                     f.write("\n")
 
-        logger.info(f"Summary saved to {summary_path}")
+        logger.info("Summary saved to %s", summary_path)
         return True
 
 

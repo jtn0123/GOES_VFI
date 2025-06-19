@@ -5,16 +5,16 @@ generating expected timestamp sequences, and detecting time intervals.
 It also provides utilities for working with GOES satellite imagery from various sources.
 """
 
-from pathlib import Path
-from typing import Dict, List, Optional, Pattern, Tuple
 import re
-
 from datetime import datetime, timedelta
 from enum import Enum, auto
+from pathlib import Path
+from typing import Dict, List, Optional, Pattern, Tuple
 
 from goesvfi.utils import date_utils, log
 
 LOGGER = log.get_logger(__name__)
+
 
 class SatellitePattern(Enum):
     """Enumeration of supported satellite name and timestamp patterns."""
@@ -24,54 +24,55 @@ class SatellitePattern(Enum):
     GOES_18 = auto()  # GOES-18 (New GOES-West)
     GENERIC = auto()  # Generic timestamp pattern
 
+
 # Mapping of satellite patterns to regex patterns for extraction
 PATTERN_MAPPING: Dict[SatellitePattern, str] = {
-SatellitePattern.GOES_16: r"(?:_G16_|G16_13_)(\d{8}T\d{6})Z\.png$",
-SatellitePattern.GOES_17: r"(?:_G17_|G17_13_)(\d{8}T\d{6})Z\.png$",
-SatellitePattern.GOES_18: r"(?:_G18_|G18_13_)(\d{8}T\d{6})Z\.png$",
-SatellitePattern.GENERIC: r"_(\d{8}T\d{6})Z\.png$",
+    SatellitePattern.GOES_16: r"(?:_G16_|G16_13_)(\d{8}T\d{6})Z\.png$",
+    SatellitePattern.GOES_17: r"(?:_G17_|G17_13_)(\d{8}T\d{6})Z\.png$",
+    SatellitePattern.GOES_18: r"(?:_G18_|G18_13_)(\d{8}T\d{6})Z\.png$",
+    SatellitePattern.GENERIC: r"_(\d{8}T\d{6})Z\.png$",
 }
 
 # Additional patterns for GOES ABI filenames (CDN/S3)
 GOES_FILENAME_PATTERNS: Dict[SatellitePattern, str] = {
-SatellitePattern.GOES_16: r"(\d{4})(\d{3})(\d{2})(\d{2})(?:\d{2})?_GOES16-ABI-FD-13",
-SatellitePattern.GOES_18: r"(\d{4})(\d{3})(\d{2})(\d{2})(?:\d{2})?_GOES18-ABI-FD-13",
+    SatellitePattern.GOES_16: r"(\d{4})(\d{3})(\d{2})(\d{2})(?:\d{2})?_GOES16-ABI-FD-13",
+    SatellitePattern.GOES_18: r"(\d{4})(\d{3})(\d{2})(\d{2})(?:\d{2})?_GOES18-ABI-FD-13",
 }
 
 # Compiled regex patterns for faster matching
 COMPILED_PATTERNS: Dict[SatellitePattern, Pattern[str]] = {
-sat: re.compile(pattern) for sat, pattern in PATTERN_MAPPING.items()
+    sat: re.compile(pattern) for sat, pattern in PATTERN_MAPPING.items()
 }
 
 COMPILED_GOES_PATTERNS: Dict[SatellitePattern, Pattern[str]] = {
-sat: re.compile(pattern) for sat, pattern in GOES_FILENAME_PATTERNS.items()
+    sat: re.compile(pattern) for sat, pattern in GOES_FILENAME_PATTERNS.items()
 }
 
 # Mapping of satellites to their friendly names for UI display
 SATELLITE_NAMES: Dict[SatellitePattern, str] = {
-SatellitePattern.GOES_16: "GOES-16 (East)",
-SatellitePattern.GOES_17: "GOES-17 (West)",
-SatellitePattern.GOES_18: "GOES-18 (West)",
-SatellitePattern.GENERIC: "Generic Pattern",
+    SatellitePattern.GOES_16: "GOES-16 (East)",
+    SatellitePattern.GOES_17: "GOES-17 (West)",
+    SatellitePattern.GOES_18: "GOES-18 (West)",
+    SatellitePattern.GENERIC: "Generic Pattern",
 }
 
 # Mapping of satellites to their short names
 SATELLITE_SHORT_NAMES: Dict[SatellitePattern, str] = {
-SatellitePattern.GOES_16: "GOES16",
-SatellitePattern.GOES_17: "GOES17",
-SatellitePattern.GOES_18: "GOES18",
+    SatellitePattern.GOES_16: "GOES16",
+    SatellitePattern.GOES_17: "GOES17",
+    SatellitePattern.GOES_18: "GOES18",
 }
 
 # Mapping of satellites to their AWS S3 bucket names
 S3_BUCKETS: Dict[SatellitePattern, str] = {
-SatellitePattern.GOES_16: "noaa-goes16",
-SatellitePattern.GOES_18: "noaa-goes18",
+    SatellitePattern.GOES_16: "noaa-goes16",
+    SatellitePattern.GOES_18: "noaa-goes18",
 }
 
 # Mapping of satellites to their S3 file pattern codes
 SATELLITE_CODES: Dict[SatellitePattern, str] = {
-SatellitePattern.GOES_16: "G16",
-SatellitePattern.GOES_18: "G18",
+    SatellitePattern.GOES_16: "G16",
+    SatellitePattern.GOES_18: "G18",
 }
 
 # Constants for GOES imagery
@@ -84,18 +85,18 @@ RECENT_WINDOW_DAYS = 7  # Window for CDN vs S3 decision
 # These are the actual scanning schedules based on NOAA documentation
 RADF_MINUTES = [0, 10, 20, 30, 40, 50]  # Full Disk scans, start sec ≈ 0.3
 RADC_MINUTES = [
-1,
-6,
-11,
-16,
-21,
-26,
-31,
-36,
-41,
-46,
-51,
-56,
+    1,
+    6,
+    11,
+    16,
+    21,
+    26,
+    31,
+    36,
+    41,
+    46,
+    51,
+    56,
 ]  # CONUS scans, start sec ≈ 19.1
 RADM_MINUTES = list(range(60))  # Mesoscale scans, every minute, start sec ≈ 24.4
 
@@ -108,6 +109,7 @@ _USE_EXACT_MATCH_IN_TEST = True
 
 # Regular expression for extracting band number from filenames
 BAND_PATTERN = re.compile(r"ABI-L1b-(?:RadF|RadC|RadM)-M\d+C(\d+)_")
+
 
 def extract_timestamp(filename: str, pattern: SatellitePattern) -> datetime:
     """
@@ -162,7 +164,9 @@ def extract_timestamp(filename: str, pattern: SatellitePattern) -> datetime:
         LOGGER.debug("Failed to parse timestamp %s: %s", repr(timestamp_str), e)
         raise ValueError(f"Failed to parse timestamp: {e}") from e
 
-def extract_timestamp_and_satellite(filename: str,
+
+def extract_timestamp_and_satellite(
+    filename: str,
 ) -> Tuple[Optional[datetime], Optional[SatellitePattern]]:
     """
     Extract a timestamp and satellite from a GOES ABI filename.
@@ -190,11 +194,11 @@ def extract_timestamp_and_satellite(filename: str,
 
                 # Create datetime with the time components
                 ts = datetime(
-                date_obj.year,
-                date_obj.month,
-                date_obj.day,
-                hour=hour,
-                minute=minute,
+                    date_obj.year,
+                    date_obj.month,
+                    date_obj.day,
+                    hour=hour,
+                    minute=minute,
                 )
 
                 return ts, satellite
@@ -204,7 +208,9 @@ def extract_timestamp_and_satellite(filename: str,
 
     return None, None
 
-def generate_timestamp_sequence(start_time: datetime, end_time: datetime, interval_minutes: int
+
+def generate_timestamp_sequence(
+    start_time: datetime, end_time: datetime, interval_minutes: int
 ) -> List[datetime]:
     """
     Generate a sequence of timestamps at regular intervals.
@@ -237,6 +243,7 @@ def generate_timestamp_sequence(start_time: datetime, end_time: datetime, interv
 
     return result
 
+
 def detect_interval(timestamps: List[datetime]) -> int:
     """
     Detect the most common interval between consecutive timestamps.
@@ -250,7 +257,7 @@ def detect_interval(timestamps: List[datetime]) -> int:
     if len(timestamps) < 2:
         pass
         LOGGER.warning(
-        "Not enough timestamps to detect interval, using default of 30 minutes"
+            "Not enough timestamps to detect interval, using default of 30 minutes"
         )
         return 30  # Default to 30 minutes if not enough data
 
@@ -284,6 +291,7 @@ def detect_interval(timestamps: List[datetime]) -> int:
 
     return int(rounded_interval)
 
+
 def get_filename_pattern(pattern: SatellitePattern, base_name: str = "image") -> str:
     """
     Get a filename pattern string for the given satellite pattern.
@@ -306,6 +314,7 @@ def get_filename_pattern(pattern: SatellitePattern, base_name: str = "image") ->
         return f"{base_name}_G18_{{timestamp}}Z.png"
     return f"{base_name}_{{timestamp}}Z.png"
 
+
 def format_timestamp(dt: datetime) -> str:
     """
     Format a datetime object as a timestamp string for filenames.
@@ -318,7 +327,9 @@ def format_timestamp(dt: datetime) -> str:
     """
     return dt.strftime("%Y%m%dT%H%M%S")
 
-def generate_expected_filename(timestamp: datetime, pattern: SatellitePattern, base_name: str = "image"
+
+def generate_expected_filename(
+    timestamp: datetime, pattern: SatellitePattern, base_name: str = "image"
 ) -> str:
     """
     Generate an expected filename for a given timestamp and pattern.
@@ -334,6 +345,7 @@ def generate_expected_filename(timestamp: datetime, pattern: SatellitePattern, b
     filename_pattern = get_filename_pattern(pattern, base_name)
     timestamp_str = format_timestamp(timestamp)
     return filename_pattern.format(timestamp=timestamp_str)
+
 
 def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
     """
@@ -375,12 +387,12 @@ def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
                     second = int(match.group(3))
 
                     return datetime(
-                    date_obj.year,
-                    date_obj.month,
-                    date_obj.day,
-                    hour,
-                    minute,
-                    second,
+                        date_obj.year,
+                        date_obj.month,
+                        date_obj.day,
+                        hour,
+                        minute,
+                        second,
                     )
                 except (ValueError, IndexError):
                     pass
@@ -490,10 +502,12 @@ def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
     # No pattern matched
     return None
 
-def scan_directory_for_timestamps(directory: Path,
-pattern: SatellitePattern,
-start_time: Optional[datetime] = None,
-end_time: Optional[datetime] = None,
+
+def scan_directory_for_timestamps(
+    directory: Path,
+    pattern: SatellitePattern,
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
 ) -> List[datetime]:
     """
     Scan a directory for files matching the timestamp pattern.
@@ -584,7 +598,9 @@ end_time: Optional[datetime] = None,
     LOGGER.info("Found %s timestamps in %s", len(timestamps), directory)
     return sorted(timestamps)
 
-def find_date_range_in_directory(directory: Path, pattern: SatellitePattern
+
+def find_date_range_in_directory(
+    directory: Path, pattern: SatellitePattern
 ) -> Tuple[Optional[datetime], Optional[datetime]]:
     """
     Find the earliest and latest timestamps in the directory.
@@ -605,9 +621,12 @@ def find_date_range_in_directory(directory: Path, pattern: SatellitePattern
 
     return timestamps[0], timestamps[-1]
 
+
 # New functions for GOES-16/18 CDN and S3 support
 
-def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None
+
+def to_cdn_url(
+    ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None
 ) -> str:
     """
     Generate a CDN URL for the given timestamp and satellite.
@@ -658,7 +677,7 @@ def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[s
         pass
         # Basic test expects: YYYY+DOY+HHMM+SS_GOESxx-ABI-FD-13-RESxRES.jpg
         filename = (
-        f"{year}{doy_str}{hour}{minute}{second}_{sat_name}-ABI-FD-13-{res}.jpg"
+            f"{year}{doy_str}{hour}{minute}{second}_{sat_name}-ABI-FD-13-{res}.jpg"
         )
         url = f"https://cdn.star.nesdis.noaa.gov/{sat_name}/ABI/FD/13/{filename}"
     else:
@@ -668,11 +687,13 @@ def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[s
 
     return url
 
-def to_s3_key(ts: datetime,
-satellite: SatellitePattern,
-product_type: str = "RadC",
-band: int = 13,
-exact_match: bool = False,
+
+def to_s3_key(
+    ts: datetime,
+    satellite: SatellitePattern,
+    product_type: str = "RadC",
+    band: int = 13,
+    exact_match: bool = False,
 ) -> str:
     """
     Generate an S3 key for the given timestamp, satellite, and product type.
@@ -708,7 +729,7 @@ exact_match: bool = False,
     if product_type not in valid_products:
         pass
         raise ValueError(
-        f"Invalid product type: {product_type}. Must be one of {valid_products}"
+            f"Invalid product type: {product_type}. Must be one of {valid_products}"
         )
 
     # Validate band number
@@ -741,7 +762,9 @@ exact_match: bool = False,
     else:
         # Only auto-detect when exact_match is not explicitly set
         use_exact_match = (
-        is_test_env and (is_remote_test or is_s3_patterns_test) and _USE_EXACT_MATCH_IN_TEST
+            is_test_env
+            and (is_remote_test or is_s3_patterns_test)
+            and _USE_EXACT_MATCH_IN_TEST
         )
 
     # Get appropriate scanning schedule for the product type
@@ -802,13 +825,15 @@ exact_match: bool = False,
         # Calculate actual second based on start time and product type
         actual_second = start_sec
         # Generate exact end time and creation time for completely concrete filename
-        end_minute = valid_minute + 4 if valid_minute + 4 < 60 else valid_minute + 4 - 60
+        end_minute = (
+            valid_minute + 4 if valid_minute + 4 < 60 else valid_minute + 4 - 60
+        )
         end_second = 59  # End seconds are typically near the end of the scan
         creation_time = f"{year}{doy_str}{hour}{valid_minute:02d}{end_second:02d}"
         pattern = (
-        f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
-        f"{year}{doy_str}{hour}{minute_str}{actual_second:02d}_e"
-        f"{creation_time}_c{creation_time}.nc"
+            f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
+            f"{year}{doy_str}{hour}{minute_str}{actual_second:02d}_e"
+            f"{creation_time}_c{creation_time}.nc"
         )
     else:
         # Use wildcard pattern for production
@@ -816,24 +841,25 @@ exact_match: bool = False,
             pass
             # Basic test expects minute precision but wildcard seconds
             pattern = (
-            f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
-            f"{year}{doy_str}{hour}{minute_str}*_e*_c*.nc"
+                f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
+                f"{year}{doy_str}{hour}{minute_str}*_e*_c*.nc"
             )
         elif is_s3_patterns_test:
             pass
             # S3 patterns test expects specific minute precision including start seconds
             pattern = (
-            f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
-            f"{year}{doy_str}{hour}{minute_str}{start_sec:02d}_e*_c*.nc"
+                f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
+                f"{year}{doy_str}{hour}{minute_str}{start_sec:02d}_e*_c*.nc"
             )
         else:
             # Production use - wildcard for the whole hour to be maximally flexible
             pattern = (
-            f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
-            f"{year}{doy_str}{hour}*_e*_c*.nc"
+                f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
+                f"{year}{doy_str}{hour}*_e*_c*.nc"
             )
 
     return base_key + pattern
+
 
 def get_s3_bucket(satellite: SatellitePattern) -> str:
     """
@@ -851,7 +877,9 @@ def get_s3_bucket(satellite: SatellitePattern) -> str:
         raise ValueError(f"Unsupported satellite pattern: {satellite}")
     return bucket
 
-def generate_local_path(ts: datetime, satellite: SatellitePattern, base_dir: Path
+
+def generate_local_path(
+    ts: datetime, satellite: SatellitePattern, base_dir: Path
 ) -> Path:
     """
     Generate a local path for storing the image.
@@ -889,6 +917,7 @@ def generate_local_path(ts: datetime, satellite: SatellitePattern, base_dir: Pat
 
     return dir_path / filename
 
+
 def to_local_path(ts: datetime, satellite: SatellitePattern) -> Path:
     """
     Generate a simplified local path for storing the image in a year/month/day hierarchy.
@@ -924,6 +953,7 @@ def to_local_path(ts: datetime, satellite: SatellitePattern) -> Path:
 
     return dir_path / filename
 
+
 def is_recent(ts: datetime) -> bool:
     """
     Check if a timestamp is within the recent window (for CDN).
@@ -944,6 +974,7 @@ def is_recent(ts: datetime) -> bool:
 
     delta = now - ts
     return delta.days < RECENT_WINDOW_DAYS
+
 
 def filter_s3_keys_by_band(keys: List[str], target_band: int) -> List[str]:
     """
@@ -967,7 +998,10 @@ def filter_s3_keys_by_band(keys: List[str], target_band: int) -> List[str]:
     # Validate band number - but just log a warning and return empty list for invalid bands
     if not 1 <= target_band <= 16:
         pass
-        LOGGER.warning("Invalid band number: %s. Must be between 1 and 16. Returning empty list.", target_band)
+        LOGGER.warning(
+            "Invalid band number: %s. Must be between 1 and 16. Returning empty list.",
+            target_band,
+        )
         return []
 
     filtered_keys = []
@@ -991,7 +1025,9 @@ def filter_s3_keys_by_band(keys: List[str], target_band: int) -> List[str]:
 
     return filtered_keys
 
-def find_nearest_goes_intervals(ts: datetime, product_type: str = "RadF"
+
+def find_nearest_goes_intervals(
+    ts: datetime, product_type: str = "RadF"
 ) -> List[datetime]:
     """Find the nearest standard GOES imagery intervals for a given timestamp and product type.
 
@@ -1014,7 +1050,7 @@ def find_nearest_goes_intervals(ts: datetime, product_type: str = "RadF"
     elif product_type == "RadC":
         pass
         standard_minutes = (
-        RADC_MINUTES  # [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56]
+            RADC_MINUTES  # [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56]
         )
     elif product_type == "RadM":
         pass
@@ -1022,12 +1058,16 @@ def find_nearest_goes_intervals(ts: datetime, product_type: str = "RadF"
     else:
         # Default to RadF if product type is not recognized
         standard_minutes = RADF_MINUTES
-        LOGGER.warning("Unknown product type: %s. Using RadF scanning schedule.", product_type)
+        LOGGER.warning(
+            "Unknown product type: %s. Using RadF scanning schedule.", product_type
+        )
 
     # If no minutes or only one minute in the scanning schedule, return empty list
     if not standard_minutes:
         pass
-        LOGGER.warning("No scanning schedule defined for product type: %s", product_type)
+        LOGGER.warning(
+            "No scanning schedule defined for product type: %s", product_type
+        )
         return []
     elif len(standard_minutes) == 1:
         pass
@@ -1083,6 +1123,7 @@ def find_nearest_goes_intervals(ts: datetime, product_type: str = "RadF"
 
     return nearest_minutes
 
+
 class TimeIndex:
     """Enhanced utilities for GOES-16/18 Band 13 timestamp management.
 
@@ -1100,13 +1141,14 @@ class TimeIndex:
 
     # Standard GOES imaging intervals (minutes past the hour) for each product type
     STANDARD_INTERVALS = {
-    "RadF": RADF_MINUTES,  # Full Disk: [0, 10, 20, 30, 40, 50]
-    "RadC": RADC_MINUTES,  # CONUS: [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56]
-    "RadM": RADM_MINUTES,  # Mesoscale: [0-59] (every minute)
+        "RadF": RADF_MINUTES,  # Full Disk: [0, 10, 20, 30, 40, 50]
+        "RadC": RADC_MINUTES,  # CONUS: [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56]
+        "RadM": RADM_MINUTES,  # Mesoscale: [0-59] (every minute)
     }
 
     @staticmethod
-    def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None
+    def to_cdn_url(
+        ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None
     ) -> str:
         """
         Generate a CDN URL for the given timestamp and satellite.
@@ -1122,11 +1164,12 @@ class TimeIndex:
         return to_cdn_url(ts, satellite, resolution or TimeIndex.CDN_RES)
 
     @staticmethod
-    def to_s3_key(ts: datetime,
-    satellite: SatellitePattern,
-    product_type: str = "RadC",
-    band: int = 13,
-    exact_match: bool = False,
+    def to_s3_key(
+        ts: datetime,
+        satellite: SatellitePattern,
+        product_type: str = "RadC",
+        band: int = 13,
+        exact_match: bool = False,
     ) -> str:
         """
         Generate an S3 key for the given timestamp, satellite, and product type.
@@ -1160,7 +1203,8 @@ class TimeIndex:
         return get_s3_bucket(satellite)
 
     @staticmethod
-    def generate_local_path(ts: datetime, satellite: SatellitePattern, base_dir: Path
+    def generate_local_path(
+        ts: datetime, satellite: SatellitePattern, base_dir: Path
     ) -> Path:
         """
         Generate a local path for storing the image.
@@ -1191,7 +1235,9 @@ class TimeIndex:
         return to_local_path(ts, satellite)
 
     @staticmethod
-    def ts_from_filename(filename: str) -> Tuple[Optional[datetime], Optional[SatellitePattern]]:
+    def ts_from_filename(
+        filename: str,
+    ) -> Tuple[Optional[datetime], Optional[SatellitePattern]]:
         """
         Extract a timestamp and satellite from a filename.
 
@@ -1231,7 +1277,8 @@ class TimeIndex:
         return is_recent(ts)
 
     @staticmethod
-    def find_nearest_intervals(ts: datetime, product_type: str = "RadF"
+    def find_nearest_intervals(
+        ts: datetime, product_type: str = "RadF"
     ) -> List[datetime]:
         """
         Find the nearest standard GOES imagery intervals for a given timestamp and product type.
@@ -1252,7 +1299,8 @@ class TimeIndex:
         return find_nearest_goes_intervals(ts, product_type)
 
     @staticmethod
-    def find_date_range_in_directory(directory: Path, satellite: SatellitePattern
+    def find_date_range_in_directory(
+        directory: Path, satellite: SatellitePattern
     ) -> Tuple[Optional[datetime], Optional[datetime]]:
         """
         Find the earliest and latest timestamps in the directory.
@@ -1267,10 +1315,11 @@ class TimeIndex:
         return find_date_range_in_directory(directory, satellite)
 
     @staticmethod
-    def scan_directory_for_timestamps(directory: Path,
-    pattern: SatellitePattern,
-    start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None,
+    def scan_directory_for_timestamps(
+        directory: Path,
+        pattern: SatellitePattern,
+        start_time: Optional[datetime] = None,
+        end_time: Optional[datetime] = None,
     ) -> List[datetime]:
         """
         Scan a directory for files matching the timestamp pattern.

@@ -14,6 +14,7 @@ mypy
 types-requests
 types-Pillow
 types-aiofiles
+types-tqdm>=4.66.0   # Type stubs for tqdm
 
 # Dev utilities
 black>=24.2.0        # Code formatter

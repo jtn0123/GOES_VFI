@@ -50,7 +50,7 @@ from pathlib import Path  # Import Path for file path handling
 
 import numpy as np
 from PIL import Image
-from PyQt6.QtCore import QCloseEvent, QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
+from PyQt6.QtCore import QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QColor, QDesktopServices, QImage, QPainter, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
@@ -79,7 +79,11 @@ from goesvfi.pipeline.run_vfi import VfiWorker  # <-- ADDED IMPORT
 from goesvfi.utils import config, log
 from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
 from goesvfi.utils.gui_helpers import ClickableLabel  # Import moved classes
-from goesvfi.utils.gui_helpers import CropDialog, RifeCapabilityManager, ZoomDialog
+from goesvfi.utils.gui_helpers import (
+    CropSelectionDialog,
+    ImageViewerDialog,
+    RifeCapabilityManager,
+)
 
 # <-- Import time for time.sleep
 

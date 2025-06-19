@@ -12,8 +12,10 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 # Patch boto3 and botocore before importing the module
-with patch("boto3.client"), patch("botocore.UNSIGNED", create=True), patch(
-    "requests.get"
+with (
+    patch("boto3.client"),
+    patch("botocore.UNSIGNED", create=True),
+    patch("requests.get"),
 ):
     from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 

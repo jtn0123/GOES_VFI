@@ -4,18 +4,19 @@ This module provides the main business logic for scanning directories,
 finding missing timestamps, and reconciling local data with expectations.
 """
 
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
 import time
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
+from goesvfi.utils import log
 
 from .cache_db import CacheDB
-from goesvfi.utils import log
 from .time_index import (
-    SatellitePattern, 
-    detect_interval, 
-    generate_expected_filename, 
-    generate_timestamp_sequence, 
+    SatellitePattern,
+    detect_interval,
+    generate_expected_filename,
+    generate_timestamp_sequence,
     scan_directory_for_timestamps,
 )
 
@@ -28,16 +29,16 @@ CancelCallback = Callable[[], bool]
 
 class Reconciler:
     """Core business logic for scanning directories and identifying missing timestamps.
-    
+
     This class handles the reconciliation between expected timestamps based on
     satellite schedules and actual files found in local directories.
     """
-    
+
     def __init__(self, cache_db_path: Optional[Path] = None):
         """Initialize the Reconciler with optional cache database."""
         self.cache = CacheDB(cache_db_path) if cache_db_path else CacheDB()
         LOGGER.info("Reconciler initialized with cache at %s", cache_db_path)
-    
+
     def scan_date_range(
         self,
         start_date: datetime,
@@ -50,7 +51,7 @@ class Reconciler:
         force_rescan: bool = False,
     ) -> Dict[str, Any]:
         """Scan for missing timestamps within the date range.
-        
+
         Args:
             start_date: Start of scan range
             end_date: End of scan range
@@ -60,70 +61,75 @@ class Reconciler:
             progress_callback: Callback for progress updates
             should_cancel: Callback to check for cancellation
             force_rescan: Force rescan even if cached
-            
+
         Returns:
             Dictionary with scan results
         """
         start_time = time.time()
-        
+
         # Check cache unless forced to rescan
         if not force_rescan:
             cached = self.cache.get_cached_scan(
-                start_date, end_date, satellite_pattern, 
-                interval_minutes, base_directory
+                start_date,
+                end_date,
+                satellite_pattern,
+                interval_minutes,
+                base_directory,
             )
             if cached:
                 LOGGER.info("Using cached scan results")
                 return {
                     "status": "completed",
                     "source": "cache",
-                    "missing": cached['missing_timestamps'],
-                    "interval": cached['interval_minutes'],
-                    "total_expected": cached['expected_count'],
-                    "total_found": cached['found_count'],
+                    "missing": cached["missing_timestamps"],
+                    "interval": cached["interval_minutes"],
+                    "total_expected": cached["expected_count"],
+                    "total_found": cached["found_count"],
                     "timestamp_details": [],
                     "execution_time": 0.0,
                 }
-        
+
         # Scan directory for existing files
         LOGGER.info(f"Scanning directory: {base_directory}")
         found_timestamps = scan_directory_for_timestamps(
             base_directory, satellite_pattern
         )
-        
+
         # Auto-detect interval if not specified
         if interval_minutes == 0:
             interval_minutes = detect_interval(found_timestamps) or 30
             LOGGER.info(f"Auto-detected interval: {interval_minutes} minutes")
-        
+
         # Generate expected timestamps
-        expected_timestamps = list(generate_timestamp_sequence(
-            start_date, end_date, interval_minutes
-        ))
-        
+        expected_timestamps = list(
+            generate_timestamp_sequence(start_date, end_date, interval_minutes)
+        )
+
         # Find missing timestamps
         found_set = set(found_timestamps)
-        missing_timestamps = [
-            ts for ts in expected_timestamps
-            if ts not in found_set
-        ]
-        
+        missing_timestamps = [ts for ts in expected_timestamps if ts not in found_set]
+
         # Update progress
         total_expected = len(expected_timestamps)
         total_found = len(found_timestamps)
-        
+
         if progress_callback:
             progress_callback(total_expected, total_found, 1.0)
-        
+
         # Store in cache
         self.cache.store_scan_results(
-            start_date, end_date, satellite_pattern,
-            interval_minutes, base_directory,
-            missing_timestamps, total_expected, total_found
+            start_date,
+            end_date,
+            satellite_pattern,
+            interval_minutes,
+            base_directory,
+            missing_timestamps,
+            total_expected,
+            total_found,
         )
-        
+
         execution_time = time.time() - start_time
-        
+
         return {
             "status": "completed",
             "source": "scan",
@@ -134,7 +140,7 @@ class Reconciler:
             "timestamp_details": [],
             "execution_time": execution_time,
         }
-    
+
     def get_missing_timestamps(
         self,
         start_date: datetime,
@@ -144,19 +150,18 @@ class Reconciler:
         interval_minutes: int = 0,
     ) -> List[datetime]:
         """Get a list of missing timestamps.
-        
+
         Args:
             start_date: Start of scan range
             end_date: End of scan range
             satellite_pattern: Satellite to scan for
             base_directory: Directory to scan
             interval_minutes: Expected interval between files (0 = auto-detect)
-            
+
         Returns:
             List of missing timestamps
         """
         scan_result = self.scan_date_range(
-            start_date, end_date, satellite_pattern, 
-            base_directory, interval_minutes
+            start_date, end_date, satellite_pattern, base_directory, interval_minutes
         )
         return scan_result.get("missing", [])

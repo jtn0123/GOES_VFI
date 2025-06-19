@@ -15,7 +15,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from PyQt6.QtCore import QCoreApplication, QDate, QDateTime, Qt, QTime
 from PyQt6.QtWidgets import QApplication, QMainWindow
 
-from goesvfi.integrity_check.combined_tab import SatelliteIntegrityTabsContainer
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 
 # Import the tab components we want to test
@@ -25,6 +24,9 @@ from goesvfi.integrity_check.enhanced_view_model import (
 )
 from goesvfi.integrity_check.optimized_timeline_tab import OptimizedTimelineTab
 from goesvfi.integrity_check.satellite_integrity_tab_group import OptimizedResultsTab
+from goesvfi.integrity_check.satellite_integrity_tab_group import (
+    SatelliteIntegrityTabGroup as SatelliteIntegrityTabsContainer,
+)
 from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
 
 # Import our test utilities

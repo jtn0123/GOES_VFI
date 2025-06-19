@@ -4,8 +4,8 @@ This module provides an enhanced date picker with visual calendar and quick pres
 for common date ranges used in satellite data processing.
 """
 
-from typing import Any, Callable, List, Optional
 from datetime import datetime, timedelta
+from typing import Any, Callable, List, Optional
 
 from PyQt6.QtCore import QDate, QPoint, Qt, QTime, pyqtSignal
 from PyQt6.QtGui import QColor, QPainter, QPen
@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+
 class VisualDateRangePicker(QDialog):
     """
     Enhanced date picker dialog with visual calendar and quick preset options.
@@ -31,10 +32,11 @@ class VisualDateRangePicker(QDialog):
 
     dateRangeSelected = pyqtSignal(datetime, datetime)
 
-    def __init__(self,
-    parent: Optional[QWidget] = None,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
+    def __init__(
+        self,
+        parent: Optional[QWidget] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
     ) -> None:
         """
         Initialize the visual date picker dialog.
@@ -82,7 +84,7 @@ class VisualDateRangePicker(QDialog):
         preset_group = QFrame()
         preset_group.setFrameShape(QFrame.Shape.StyledPanel)
         preset_group.setStyleSheet(
-        "QFrame { background-color: #353535; border-radius: 4px; border: 1px solid #454545; }"
+            "QFrame { background-color: #353535; border-radius: 4px; border: 1px solid #454545; }"
         )
 
         preset_layout = QVBoxLayout(preset_group)
@@ -91,7 +93,7 @@ class VisualDateRangePicker(QDialog):
         # Title
         preset_title = QLabel(self.tr("Quick Select"))
         preset_title.setStyleSheet(
-        "QLabel { font-weight: bold; font-size: 14px; color: #f0f0f0; }"
+            "QLabel { font-weight: bold; font-size: 14px; color: #f0f0f0; }"
         )
         preset_layout.addWidget(preset_title)
 
@@ -101,18 +103,18 @@ class VisualDateRangePicker(QDialog):
 
         # Create preset buttons
         self.preset_buttons = [
-        (self._create_preset_button("Today", self._set_today), 0, 0),
-        (self._create_preset_button("Yesterday", self._set_yesterday), 0, 1),
-        (self._create_preset_button("Last 7 Days", self._set_last_week), 0, 2),
-        (self._create_preset_button("Last 30 Days", self._set_last_month), 0, 3),
-        (self._create_preset_button("This Month", self._set_this_month), 1, 0),
-        (
-        self._create_preset_button("Last Month", self._set_last_calendar_month),
-        1,
-        1,
-        ),
-        (self._create_preset_button("This Year", self._set_this_year), 1, 2),
-        (self._create_preset_button("Custom Range", self._set_custom), 1, 3),
+            (self._create_preset_button("Today", self._set_today), 0, 0),
+            (self._create_preset_button("Yesterday", self._set_yesterday), 0, 1),
+            (self._create_preset_button("Last 7 Days", self._set_last_week), 0, 2),
+            (self._create_preset_button("Last 30 Days", self._set_last_month), 0, 3),
+            (self._create_preset_button("This Month", self._set_this_month), 1, 0),
+            (
+                self._create_preset_button("Last Month", self._set_last_calendar_month),
+                1,
+                1,
+            ),
+            (self._create_preset_button("This Year", self._set_this_year), 1, 2),
+            (self._create_preset_button("Custom Range", self._set_custom), 1, 3),
         ]
 
         # Add buttons to layout
@@ -128,7 +130,7 @@ class VisualDateRangePicker(QDialog):
         button.setMinimumHeight(40)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setStyleSheet(
-        """
+            """
         QPushButton {
         background-color: #3a3a3a;
         border: 1px solid #545454;
@@ -161,7 +163,7 @@ class VisualDateRangePicker(QDialog):
         start_group = QFrame()
         start_group.setFrameShape(QFrame.Shape.StyledPanel)
         start_group.setStyleSheet(
-        "QFrame { background-color: #2d2d2d; border-radius: 4px; border: 1px solid #454545; }"
+            "QFrame { background-color: #2d2d2d; border-radius: 4px; border: 1px solid #454545; }"
         )
         start_layout = QVBoxLayout(start_group)
 
@@ -174,16 +176,16 @@ class VisualDateRangePicker(QDialog):
         self.start_calendar = QCalendarWidget()
         self.start_calendar.setGridVisible(True)
         self.start_calendar.setVerticalHeaderFormat(
-        QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader
+            QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader
         )
         self.start_calendar.setHorizontalHeaderFormat(
-        QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames
+            QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames
         )
         self.start_calendar.selectionChanged.connect(self._update_preview)
 
         # Comprehensive dark mode calendar styling
         self.start_calendar.setStyleSheet(
-        """
+            """
         QCalendarWidget {
         background-color: #2d2d2d;
         color: #f0f0f0;
@@ -245,7 +247,7 @@ class VisualDateRangePicker(QDialog):
         self.start_time_edit.timeChanged.connect(self._update_preview)
         # Add dark styling to time edit
         self.start_time_edit.setStyleSheet(
-        """
+            """
         QTimeEdit {
         background-color: #3a3a3a;
         color: #f0f0f0;
@@ -268,7 +270,7 @@ class VisualDateRangePicker(QDialog):
         end_group = QFrame()
         end_group.setFrameShape(QFrame.Shape.StyledPanel)
         end_group.setStyleSheet(
-        "QFrame { background-color: #2d2d2d; border-radius: 4px; border: 1px solid #454545; }"
+            "QFrame { background-color: #2d2d2d; border-radius: 4px; border: 1px solid #454545; }"
         )
         end_layout = QVBoxLayout(end_group)
 
@@ -281,10 +283,10 @@ class VisualDateRangePicker(QDialog):
         self.end_calendar = QCalendarWidget()
         self.end_calendar.setGridVisible(True)
         self.end_calendar.setVerticalHeaderFormat(
-        QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader
+            QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader
         )
         self.end_calendar.setHorizontalHeaderFormat(
-        QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames
+            QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames
         )
         self.end_calendar.selectionChanged.connect(self._update_preview)
 
@@ -314,7 +316,7 @@ class VisualDateRangePicker(QDialog):
         preview_group = QFrame()
         preview_group.setFrameShape(QFrame.Shape.StyledPanel)
         preview_group.setStyleSheet(
-        """
+            """
         QFrame {
         background-color: #1e2f45;
         border-radius: 4px;
@@ -334,7 +336,7 @@ class VisualDateRangePicker(QDialog):
         # Preview text
         self.preview_text = QLabel(self.tr(""))
         self.preview_text.setStyleSheet(
-        "QLabel { font-family: 'Courier New', monospace; color: #f0f0f0; }"
+            "QLabel { font-family: 'Courier New', monospace; color: #f0f0f0; }"
         )
         preview_layout.addWidget(self.preview_text, 1)  # Give stretch priority
 
@@ -353,7 +355,7 @@ class VisualDateRangePicker(QDialog):
         self.cancel_button = QPushButton(self.tr("Cancel"))
         self.cancel_button.clicked.connect(self.reject)
         self.cancel_button.setStyleSheet(
-        """
+            """
         QPushButton {
         background-color: #3a3a3a;
         color: #f0f0f0;
@@ -378,7 +380,7 @@ class VisualDateRangePicker(QDialog):
         self.apply_button.setDefault(True)
         self.apply_button.clicked.connect(self._apply_selection)
         self.apply_button.setStyleSheet(
-        """
+            """
         QPushButton {
         background-color: #2a82da;
         color: white;
@@ -407,13 +409,13 @@ class VisualDateRangePicker(QDialog):
         """Initialize the UI with the specified dates."""
         # Set start date calendar
         self.start_calendar.setSelectedDate(
-        QDate(start_date.year, start_date.month, start_date.day)
+            QDate(start_date.year, start_date.month, start_date.day)
         )
         self.start_time_edit.setTime(QTime(start_date.hour, start_date.minute))
 
         # Set end date calendar
         self.end_calendar.setSelectedDate(
-        QDate(end_date.year, end_date.month, end_date.day)
+            QDate(end_date.year, end_date.month, end_date.day)
         )
         self.end_time_edit.setTime(QTime(end_date.hour, end_date.minute))
 
@@ -464,12 +466,12 @@ class VisualDateRangePicker(QDialog):
         selected_time = self.start_time_edit.time()
 
         return datetime(
-        selected_date.year(),
-        selected_date.month(),
-        selected_date.day(),
-        selected_time.hour(),
-        selected_time.minute(),
-        0,  # seconds
+            selected_date.year(),
+            selected_date.month(),
+            selected_date.day(),
+            selected_time.hour(),
+            selected_time.minute(),
+            0,  # seconds
         )
 
     def _get_end_datetime(self) -> datetime:
@@ -478,12 +480,12 @@ class VisualDateRangePicker(QDialog):
         selected_time = self.end_time_edit.time()
 
         return datetime(
-        selected_date.year(),
-        selected_date.month(),
-        selected_date.day(),
-        selected_time.hour(),
-        selected_time.minute(),
-        59,  # seconds (end of the minute)
+            selected_date.year(),
+            selected_date.month(),
+            selected_date.day(),
+            selected_time.hour(),
+            selected_time.minute(),
+            59,  # seconds (end of the minute)
         )
 
     def _apply_selection(self) -> None:
@@ -558,7 +560,7 @@ class VisualDateRangePicker(QDialog):
             next_month = today.replace(month=today.month + 1, day=1)
 
         month_end = (next_month - timedelta(days=1)).replace(
-        hour=23, minute=59, second=59
+            hour=23, minute=59, second=59
         )
 
         self._initialize_with_dates(month_start, month_end)
@@ -575,7 +577,7 @@ class VisualDateRangePicker(QDialog):
 
         # Get the first day of the previous month
         first_of_prev_month = last_of_prev_month.replace(
-        day=1, hour=0, minute=0, second=0
+            day=1, hour=0, minute=0, second=0
         )
 
         # End of the previous month
@@ -588,10 +590,10 @@ class VisualDateRangePicker(QDialog):
         today = datetime.now()
 
         year_start = today.replace(
-        month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
         )
         year_end = today.replace(
-        month=12, day=31, hour=23, minute=59, second=59, microsecond=0
+            month=12, day=31, hour=23, minute=59, second=59, microsecond=0
         )
 
         self._initialize_with_dates(year_start, year_end)
@@ -599,6 +601,7 @@ class VisualDateRangePicker(QDialog):
     def _set_custom(self) -> None:
         """Reset to the original dates."""
         self._initialize_with_dates(self.start_date, self.end_date)
+
 
 class TimelinePickerWidget(QWidget):
     """A widget showing a timeline with data availability indicator."""
@@ -622,7 +625,9 @@ class TimelinePickerWidget(QWidget):
         self.is_selecting = False
 
         # Mock data availability (in a real app, this would come from the model)
-        self.data_points = self._generate_mock_data()  # pylint: disable=attribute-defined-outside-init
+        self.data_points = (
+            self._generate_mock_data()
+        )  # pylint: disable=attribute-defined-outside-init
 
     def _generate_mock_data(self) -> List[Any]:
         """Generate mock data points for demonstration."""
@@ -653,7 +658,7 @@ class TimelinePickerWidget(QWidget):
 
         # Draw timeline - dark mode colors
         painter.fillRect(
-        10, timeline_y, width - 20, timeline_height, QColor(70, 70, 70)
+            10, timeline_y, width - 20, timeline_height, QColor(70, 70, 70)
         )
 
         # Draw data points
@@ -662,26 +667,26 @@ class TimelinePickerWidget(QWidget):
             total_duration = (self.end_date - self.start_date).total_seconds()
             for point in self.data_points:
                 point_offset = (
-                point - self.start_date
+                    point - self.start_date
                 ).total_seconds() / total_duration
                 point_x = 10 + point_offset * (width - 20)
                 # Convert coordinates to integers for fillRect
                 painter.fillRect(
-                int(point_x - 1),
-                timeline_y - 2,
-                2,
-                timeline_height + 4,
-                QColor(40, 167, 69),
+                    int(point_x - 1),
+                    timeline_y - 2,
+                    2,
+                    timeline_height + 4,
+                    QColor(40, 167, 69),
                 )
 
         # Draw selection if active
         if self.selection_start is not None and self.selection_end is not None:
             pass
             start_offset = (
-            self.selection_start - self.start_date
+                self.selection_start - self.start_date
             ).total_seconds() / total_duration
             end_offset = (
-            self.selection_end - self.start_date
+                self.selection_end - self.start_date
             ).total_seconds() / total_duration
 
             start_x = 10 + start_offset * (width - 20)
@@ -691,24 +696,24 @@ class TimelinePickerWidget(QWidget):
             selection_rect = QColor(42, 130, 218, 180)  # Semi-transparent blue
             # Convert coordinates to integers for fillRect
             painter.fillRect(
-            int(start_x),
-            timeline_y - 5,
-            int(end_x - start_x),
-            timeline_height + 10,
-            selection_rect,
+                int(start_x),
+                timeline_y - 5,
+                int(end_x - start_x),
+                timeline_height + 10,
+                selection_rect,
             )
 
             # Draw start and end markers - brighter for dark mode
             painter.setPen(QPen(QColor(80, 170, 255), 2))
             # Convert coordinates to integers for drawLine
             painter.drawLine(
-            int(start_x),
-            timeline_y - 5,
-            int(start_x),
-            timeline_y + timeline_height + 5,
+                int(start_x),
+                timeline_y - 5,
+                int(start_x),
+                timeline_y + timeline_height + 5,
             )
             painter.drawLine(
-            int(end_x), timeline_y - 5, int(end_x), timeline_y + timeline_height + 5
+                int(end_x), timeline_y - 5, int(end_x), timeline_y + timeline_height + 5
             )
 
     def _on_preset_clicked(self, days: int) -> None:
@@ -748,8 +753,8 @@ class TimelinePickerWidget(QWidget):
                 if self.selection_start > self.selection_end:
                     pass
                     self.selection_start, self.selection_end = (
-                    self.selection_end,
-                    self.selection_start,
+                        self.selection_end,
+                        self.selection_start,
                     )
 
             # Emit signal with selection
@@ -786,6 +791,8 @@ class TimelinePickerWidget(QWidget):
         self.selection_end = None
 
         # Regenerate mock data
-        self.data_points = self._generate_mock_data()  # pylint: disable=attribute-defined-outside-init
+        self.data_points = (
+            self._generate_mock_data()
+        )  # pylint: disable=attribute-defined-outside-init
 
         self.update()

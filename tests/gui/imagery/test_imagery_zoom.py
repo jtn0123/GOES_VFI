@@ -359,7 +359,9 @@ class ImageViewerWithZoom(QWidget):
         self.image_label.setFixedSize(scaled_pixmap.size())
 
         # Log
-        logger.info(f"Zoom updated to {value}% - Image size: {new_width}x{new_height}")
+        logger.info(
+            "Zoom updated to %s% - Image size: %sx%s", value, new_width, new_height
+        )
 
     @pyqtSlot(int)
     def changeChannel(self, index):
@@ -367,7 +369,7 @@ class ImageViewerWithZoom(QWidget):
         channel = self.channel_combo.itemData(index)
         self.current_channel = channel
         self.loadImage()
-        logger.info(f"Changed to channel {channel}")
+        logger.info("Changed to channel %s", channel)
 
     @pyqtSlot(int)
     def toggleEnhancement(self, index):
@@ -375,7 +377,7 @@ class ImageViewerWithZoom(QWidget):
         enhanced = self.enhance_check.itemData(index)
         self.enhanced = enhanced
         self.loadImage()
-        logger.info(f"Enhancement toggled: {enhanced}")
+        logger.info("Enhancement toggled: %s", enhanced)
 
     def resetView(self):
         """Reset view to original state."""

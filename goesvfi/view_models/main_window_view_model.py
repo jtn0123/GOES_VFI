@@ -7,32 +7,31 @@ and manages global application state for the main application window.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from goesvfi.date_sorter.sorter import DateSorter
 from goesvfi.date_sorter.view_model import DateSorterViewModel
-
-# Import Models
 from goesvfi.file_sorter.sorter import FileSorter
-
-# Import Child ViewModels
 from goesvfi.file_sorter.view_model import FileSorterViewModel
 from goesvfi.view_models.processing_view_model import ProcessingViewModel
 
+# Import Models
+
+# Import Child ViewModels
+
 # Import other core components if needed for ProcessingViewModel later
 # from goesvfi.pipeline import ...
-
 
 LOGGER = logging.getLogger(__name__)
 
 
 class MainWindowViewModel(QObject):
+    pass
     """
     ViewModel for the main application window (MainWindow).
 
-    This class coordinates the child ViewModels for each main tab (File Sorter,
+    This class coordinates the child ViewModels for each main tab (File Sorter,)
     Date Sorter, Processing) and manages global application state such as the
     current status message and active tab index. It provides signals and methods
     for global actions and state changes, serving as the central ViewModel for the GUI.
@@ -58,6 +57,7 @@ class MainWindowViewModel(QObject):
             parent (Optional[QObject]): The parent QObject, if any.
 
         Attributes:
+            pass
             file_sorter_vm (FileSorterViewModel): ViewModel for the File Sorter tab.
             date_sorter_vm (DateSorterViewModel): ViewModel for the Date Sorter tab.
             processing_vm (ProcessingViewModel): ViewModel for the Processing tab.
@@ -106,9 +106,10 @@ class MainWindowViewModel(QObject):
             value (str): The new status message.
         """
         if self._status != value:
-            self._status = value
+            pass
+            self._status = value  # pylint: disable=attribute-defined-outside-init
             self.status_updated.emit(self._status)
-            LOGGER.debug(f"Global status updated: {self._status}")
+            LOGGER.debug("Global status updated: %s", self._status)
 
     @property
     def active_tab_index(self) -> int:
@@ -129,9 +130,12 @@ class MainWindowViewModel(QObject):
             index (int): The new active tab index.
         """
         if self._active_tab_index != index:
-            self._active_tab_index = index
+            pass
+            self._active_tab_index = (
+                index  # pylint: disable=attribute-defined-outside-init
+            )
             self.active_tab_changed.emit(self._active_tab_index)
-            LOGGER.debug(f"Active tab changed to index: {self._active_tab_index}")
+            LOGGER.debug("Active tab changed to index: %s", self._active_tab_index)
 
     # --- Global Actions ---
 
@@ -165,7 +169,6 @@ class MainWindowViewModel(QObject):
         # Logic to show the dialog would typically be handled by the View,
         # potentially triggered by a signal from here or by the View calling this method.
         # For now, just log.
-        pass
 
     # --- Coordination Methods (Example) ---
 

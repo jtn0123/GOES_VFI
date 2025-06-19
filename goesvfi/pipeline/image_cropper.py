@@ -4,11 +4,8 @@ Provides the ImageCropper class, an ImageProcessor implementation for cropping i
 to a specified rectangular area in the GOES_VFI pipeline.
 """
 
-import abc
-import typing
 from typing import Any, Dict, Tuple, cast
 
-import numpy as np
 from numpy import ndarray
 
 from .image_processing_interfaces import ImageData, ImageProcessor
@@ -18,7 +15,6 @@ class ImageCropper(ImageProcessor):
     """ImageProcessor implementation for cropping images to a specified area.
 
     This class provides a crop method that extracts a rectangular region from an image.
-    Other ImageProcessor methods (load, process, save) are not implemented.
     """
 
     def crop(
@@ -27,9 +23,10 @@ class ImageCropper(ImageProcessor):
         """Crop the image data to the specified rectangular area.
 
         Args:
+            pass
             image_data (ImageData): The input ImageData object.
             crop_area (Tuple[int, int, int, int]): A tuple (left, top, right, bottom)
-                representing the crop area in pixel coordinates.
+            representing the crop area in pixel coordinates.
 
         Returns:
             ImageData: A new ImageData object with the cropped image data and updated metadata.
@@ -44,6 +41,7 @@ class ImageCropper(ImageProcessor):
 
         # Validate crop area
         if not (0 <= left < right <= width and 0 <= top < bottom <= height):
+            pass
             raise ValueError(
                 f"Invalid crop area: {crop_area} for image dimensions {width}x{height}"
             )
@@ -58,6 +56,7 @@ class ImageCropper(ImageProcessor):
 
         # Update processing steps
         if "processing_steps" not in new_metadata:
+            pass
             new_metadata["processing_steps"] = []
         new_metadata["processing_steps"].append(
             {"operation": "crop", "area": crop_area}

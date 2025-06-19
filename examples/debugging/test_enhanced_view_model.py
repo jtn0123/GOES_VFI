@@ -1,0 +1,904 @@
+"""Unit tests for the integrity_check enhanced view model functionality."""
+
+import asyncio
+import tempfile
+import unittest
+from datetime import datetime, timedelta
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
+
+from PyQt6.QtCore import QCoreApplication, QThreadPool
+
+from goesvfi.integrity_check.cache_db import CacheDB
+from goesvfi.integrity_check.enhanced_view_model import (
+    AsyncDownloadTask,
+    AsyncScanTask,
+    AsyncTaskSignals,
+    EnhancedIntegrityCheckViewModel,
+    EnhancedMissingTimestamp,
+    FetchSource,
+)
+from goesvfi.integrity_check.remote.cdn_store import CDNStore
+from goesvfi.integrity_check.remote.s3_store import S3Store
+from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
+from goesvfi.integrity_check.view_model import ScanStatus
+
+# Import our new test utilities
+from tests.utils.pyqt_async_test import PyQtAsyncTestCase, async_test
+
+
+class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
+    """Test cases for the EnhancedIntegrityCheckViewModel class."""
+
+def setUp(self):
+     """Set up test fixtures."""
+# Call parent setUp to initialize PyQt / asyncio properly
+super().setUp()
+
+# Create a temporary directory
+self.temp_dir = tempfile.TemporaryDirectory()
+self.base_dir = Path(self.temp_dir.name)
+
+# Mock dependencies
+self.mock_cache_db = MagicMock(spec=CacheDB)
+self.mock_cache_db.reset_database = AsyncMock()
+self.mock_cache_db.close = AsyncMock()
+
+self.mock_cdn_store = MagicMock(spec=CDNStore)
+self.mock_cdn_store.close = AsyncMock()
+
+self.mock_s3_store = MagicMock(spec=S3Store)
+self.mock_s3_store.close = AsyncMock()
+
+# Create test view model
+self.view_model = EnhancedIntegrityCheckViewModel(
+cache_db=self.mock_cache_db,
+cdn_store=self.mock_cdn_store,
+s3_store=self.mock_s3_store,
+)
+
+# Track signals for automatic cleanup
+self.track_signals(self.view_model)
+
+# Mock reconcile manager to avoid real calls
+self.mock_reconcile_manager = MagicMock()
+self.mock_reconcile_manager.scan_directory = AsyncMock(
+return_value=(set(), set())
+)
+self.mock_reconcile_manager.fetch_missing_files = AsyncMock(return_value={})
+self.view_model._reconcile_manager = self.mock_reconcile_manager
+
+# Mock thread pool to run tasks directly instead of threading
+self.mock_thread_pool = MagicMock(spec=QThreadPool)
+
+# Override the start method to run tasks directly for testing
+def direct_execute(runnable):
+     # Just run the task directly without threading
+runnable.run()
+
+self.mock_thread_pool.start.side_effect = direct_execute
+self.view_model._thread_pool = self.mock_thread_pool
+
+# Prevent real timer from running in tests
+self.mock_timer = MagicMock()
+self.mock_timer.isRunning.return_value = False
+self.view_model._disk_space_timer = self.mock_timer
+
+# Disable real disk space checking in tests
+self.view_model.get_disk_space_info = MagicMock(
+return_value=(10.0, 100.0)
+) # 10GB used, 100GB total
+
+# Dates for testing
+self.start_date = datetime(2023, 6, 15, 0, 0, 0)
+self.end_date = datetime(2023, 6, 15, 1, 0, 0)
+
+def tearDown(self):
+     """Tear down test fixtures."""
+# Call view model cleanup to ensure resources are released
+if hasattr(self, "view_model"):
+     pass
+try:
+     # Clean references to avoid AsyncMock warnings
+self.view_model._cache_db = None
+self.view_model._reconcile_manager = None
+self.view_model.cleanup()
+except Exception:
+     pass
+pass
+
+# Clean up temporary directory
+self.temp_dir.cleanup()
+
+# Reset mocks to avoid coroutine awaiting warnings
+if hasattr(self, "mock_cache_db"):
+     pass
+self.mock_cache_db.reset_database.reset_mock()
+self.mock_cache_db.close.reset_mock()
+
+if hasattr(self, "mock_cdn_store"):
+     pass
+self.mock_cdn_store.close.reset_mock()
+
+if hasattr(self, "mock_s3_store"):
+     pass
+self.mock_s3_store.close.reset_mock()
+
+if hasattr(self, "mock_reconcile_manager"):
+     pass
+self.mock_reconcile_manager.scan_directory.reset_mock()
+self.mock_reconcile_manager.fetch_missing_files.reset_mock()
+
+# Call parent tearDown to clean up signal connections and event loop
+super().tearDown()
+
+def test_init_default_values(self):
+     """Test initialization with default values."""
+# Create a fresh view model with default values
+vm = EnhancedIntegrityCheckViewModel()
+
+# Verify default values
+self.assertEqual(vm._satellite, SatellitePattern.GOES_18)
+self.assertEqual(vm._fetch_source, FetchSource.AUTO)
+self.assertEqual(vm._max_concurrent_downloads, 5)
+self.assertEqual(vm._cdn_resolution, TimeIndex.CDN_RES)
+self.assertIsNone(vm._aws_profile)
+self.assertEqual(vm._s3_region, "us - east - 1")
+self.assertEqual(vm._missing_timestamps, [])
+self.assertEqual(vm._downloaded_count, 0)
+self.assertEqual(vm._failed_count, 0)
+
+def test_property_getters_and_setters(self):
+     pass
+"""Test property getters and setters."""
+# Test satellite property
+self.assertEqual(self.view_model.satellite, SatellitePattern.GOES_18) # Default
+
+# Mock signal
+self.view_model.satellite_changed = MagicMock()
+
+# Set satellite
+self.view_model.satellite = SatellitePattern.GOES_16
+self.assertEqual(self.view_model.satellite, SatellitePattern.GOES_16)
+self.view_model.satellite_changed.emit.assert_called_once_with(
+SatellitePattern.GOES_16
+)
+
+# Setting same value should not emit signal
+self.view_model.satellite_changed.reset_mock()
+self.view_model.satellite = SatellitePattern.GOES_16
+self.view_model.satellite_changed.emit.assert_not_called()
+
+# Test fetch_source property
+self.assertEqual(self.view_model.fetch_source, FetchSource.AUTO) # Default
+
+# Mock signal
+self.view_model.fetch_source_changed = MagicMock()
+
+# Set fetch_source
+self.view_model.fetch_source = FetchSource.CDN
+self.assertEqual(self.view_model.fetch_source, FetchSource.CDN)
+self.view_model.fetch_source_changed.emit.assert_called_once_with(
+FetchSource.CDN
+)
+
+# Setting same value should not emit signal
+self.view_model.fetch_source_changed.reset_mock()
+self.view_model.fetch_source = FetchSource.CDN
+self.view_model.fetch_source_changed.emit.assert_not_called()
+
+# Test cdn_resolution property
+self.assertEqual(self.view_model.cdn_resolution, TimeIndex.CDN_RES) # Default
+
+# Set cdn_resolution
+self.view_model.cdn_resolution = "250m"
+self.assertEqual(self.view_model.cdn_resolution, "250m")
+
+# Test aws_profile property
+self.assertIsNone(self.view_model.aws_profile) # Default
+
+# Set aws_profile
+self.view_model.aws_profile = "test - profile"
+self.assertEqual(self.view_model.aws_profile, "test - profile")
+
+# Test max_concurrent_downloads property
+self.assertEqual(self.view_model.max_concurrent_downloads, 5) # Default
+
+# Set max_concurrent_downloads
+self.view_model.max_concurrent_downloads = 10
+self.assertEqual(self.view_model.max_concurrent_downloads, 10)
+
+def test_get_disk_space_info(self):
+     """Test getting disk space information."""
+# The view_model.get_disk_space_info is already mocked in setUp
+# Let's just verify it returns our expected values
+used_gb, total_gb = self.view_model.get_disk_space_info()
+self.assertEqual(used_gb, 10.0)
+self.assertEqual(total_gb, 100.0)
+
+# For real functionality testing, we'll create a new instance
+test_vm = EnhancedIntegrityCheckViewModel()
+
+# Mock os.statvfs
+with patch("os.statvfs") as mock_statvfs_fn:
+     pass
+# Create the mock result object
+mock_result = MagicMock()
+mock_result.f_blocks = 1000000
+mock_result.f_frsize = 4096
+mock_result.f_bavail = 500000
+mock_statvfs_fn.return_value = mock_result
+
+# Call the method
+used_gb, total_gb = test_vm.get_disk_space_info()
+
+# Calculate expected values
+total = 1000000 * 4096
+free = 500000 * 4096
+used = total - free
+expected_total_gb = total / (1024**3)
+expected_used_gb = used / (1024**3)
+
+# Verify values are close to expected (rounding differences)
+self.assertAlmostEqual(used_gb, expected_used_gb, places=2)
+self.assertAlmostEqual(total_gb, expected_total_gb, places=2)
+
+def test_reset_database(self):
+     pass
+"""Test resetting the database."""
+# Reset mock to ensure clean state
+self.mock_cache_db.reset_database.reset_mock()
+
+# Just verify the method is called - we can't test the actual call because it's async
+self.view_model.reset_database()
+self.mock_cache_db.reset_database.assert_called_once()
+
+# Test error handling separately with a simple mock
+error_msg = None
+
+# Create a subclass to override the method for testing
+class TestViewModel(EnhancedIntegrityCheckViewModel):
+    pass
+def reset_database(self2):
+     # Override with a synchronous version for testing
+try:
+     # This will raise the error from our mock
+self2._cache_db.reset_database()
+self2.status_message = "Database reset successfully"
+except Exception as e:
+     pass
+self2.status_message = f"Error resetting database: {e}"
+nonlocal error_msg
+error_msg = str(self2.status_message)
+
+# Create test instance with error - raising mock
+test_mock_cache_db = MagicMock(spec=CacheDB)
+test_mock_cache_db.reset_database = MagicMock(
+side_effect=Exception("Test error")
+)
+
+test_vm = TestViewModel(cache_db=test_mock_cache_db)
+test_vm.reset_database()
+
+# Verify error was handled correctly
+self.assertTrue(test_mock_cache_db.reset_database.called)
+self.assertIsNotNone(error_msg)
+self.assertIn("Error resetting database", error_msg)
+self.assertIn("Test error", error_msg)
+
+# Clean up to avoid warnings
+test_vm._cache_db = None
+
+def test_handle_enhanced_scan_progress(self):
+     pass
+"""Test handling enhanced scan progress updates."""
+# Mock signals
+self.view_model.status_updated = MagicMock()
+self.view_model.progress_updated = MagicMock()
+
+# Test progress update
+self.view_model._handle_enhanced_scan_progress(50, 100, "Testing progress")
+
+# Verify
+self.assertEqual(self.view_model._progress_current, 50)
+self.assertEqual(self.view_model._progress_total, 100)
+self.view_model.status_updated.emit.assert_called_once_with("Testing progress")
+self.view_model.progress_updated.emit.assert_called_once_with(50, 100, 0.0)
+
+def test_handle_enhanced_scan_completed(self):
+     pass
+"""Test handling enhanced scan completion."""
+# Mock signals
+self.view_model.status_updated = MagicMock()
+self.view_model.status_type_changed = MagicMock()
+self.view_model.missing_items_updated = MagicMock()
+self.view_model.scan_completed = MagicMock()
+
+# Test cancelled
+self.view_model._handle_enhanced_scan_completed({"status": "cancelled"})
+self.assertEqual(self.view_model.status, ScanStatus.CANCELLED)
+self.view_model.scan_completed.emit.assert_called_once_with(
+False, "Scan was cancelled"
+)
+
+# Reset mocks
+self.view_model.status_updated.reset_mock()
+self.view_model.status_type_changed.reset_mock()
+self.view_model.missing_items_updated.reset_mock()
+self.view_model.scan_completed.reset_mock()
+
+# Test error
+self.view_model._handle_enhanced_scan_completed(
+{"status": "error", "error": "Test error"}
+)
+self.assertEqual(self.view_model.status, ScanStatus.ERROR)
+self.view_model.scan_completed.emit.assert_called_once_with(False, "Test error")
+
+# Reset mocks
+self.view_model.status_updated.reset_mock()
+self.view_model.status_type_changed.reset_mock()
+self.view_model.missing_items_updated.reset_mock()
+self.view_model.scan_completed.reset_mock()
+
+# Test success with missing items
+now = datetime.now()
+existing = {now - timedelta(minutes=1), now - timedelta(minutes=3)}
+missing = {now - timedelta(minutes=2), now - timedelta(minutes=4)}
+
+self.view_model._handle_enhanced_scan_completed(
+{"status": "completed", "existing": existing, "missing": missing}
+)
+
+# Verify
+self.assertEqual(self.view_model._last_scan_time.date(), datetime.now().date())
+self.assertEqual(self.view_model._total_expected, 4) # 2 existing + 2 missing
+self.assertEqual(self.view_model._total_found, 2)
+self.assertEqual(len(self.view_model._missing_timestamps), 2)
+self.view_model.missing_items_updated.emit.assert_called_once()
+self.assertEqual(self.view_model.status, ScanStatus.COMPLETED)
+self.view_model.scan_completed.emit.assert_called_once()
+
+# Test success with no missing items
+# Reset mocks
+self.view_model.status_updated.reset_mock()
+self.view_model.status_type_changed.reset_mock()
+self.view_model.missing_items_updated.reset_mock()
+self.view_model.scan_completed.reset_mock()
+
+self.view_model._handle_enhanced_scan_completed(
+{
+"status": "completed",
+"existing": existing,
+"missing": set(), # No missing items
+}
+)
+
+# Verify
+self.assertEqual(len(self.view_model._missing_timestamps), 0)
+self.view_model.missing_items_updated.emit.assert_called_once_with([])
+self.assertEqual(self.view_model.status, ScanStatus.COMPLETED)
+self.view_model.scan_completed.emit.assert_called_once()
+
+def test_handle_enhanced_download_progress(self):
+     pass
+"""Test handling enhanced download progress updates."""
+# Mock signals
+self.view_model.status_updated = MagicMock()
+self.view_model.download_progress_updated = MagicMock()
+
+# Test progress update
+self.view_model._handle_enhanced_download_progress(
+3, 10, "Downloading: 3 / 10 files"
+)
+
+# Verify
+self.assertEqual(self.view_model._progress_current, 3)
+self.assertEqual(self.view_model._progress_total, 10)
+self.view_model.status_updated.emit.assert_called_once_with(
+"Downloading: 3 / 10 files"
+)
+self.view_model.download_progress_updated.emit.assert_called_once_with(3, 10)
+
+def test_handle_download_item_progress(self):
+     """Test handling download item progress updates."""
+# Setup
+timestamp = datetime.now()
+item1 = EnhancedMissingTimestamp(timestamp, "test1.png")
+item2 = EnhancedMissingTimestamp(timestamp - timedelta(minutes=1), "test2.png")
+self.view_model._missing_timestamps = [item1, item2]
+
+# Mock signals
+self.view_model.download_item_progress = MagicMock()
+
+# Test progress update for first item
+self.view_model._handle_download_item_progress(0, 50)
+
+# Verify
+self.assertEqual(item1.progress, 50)
+self.view_model.download_item_progress.emit.assert_called_once_with(0, 50)
+
+# Test progress update for second item
+self.view_model.download_item_progress.reset_mock()
+self.view_model._handle_download_item_progress(1, 75)
+
+# Verify
+self.assertEqual(item2.progress, 75)
+self.view_model.download_item_progress.emit.assert_called_once_with(1, 75)
+
+# Test with invalid index
+self.view_model.download_item_progress.reset_mock()
+self.view_model._handle_download_item_progress(5, 100) # Out of range
+
+# Verify no emissions for invalid index
+self.view_model.download_item_progress.emit.assert_not_called()
+
+def test_handle_enhanced_download_completed(self):
+     pass
+"""Test handling enhanced download completion."""
+# Setup
+timestamp1 = datetime.now()
+timestamp2 = datetime.now() - timedelta(minutes=1)
+
+item1 = EnhancedMissingTimestamp(timestamp1, "test1.png")
+item2 = EnhancedMissingTimestamp(timestamp2, "test2.png")
+self.view_model._missing_timestamps = [item1, item2]
+
+# Create signal spies
+status_updated_spy = MagicMock()
+status_type_changed_spy = MagicMock()
+download_item_updated_spy = MagicMock()
+
+# Connect spies to signals
+self.view_model.status_updated.connect(status_updated_spy)
+self.view_model.status_type_changed.connect(status_type_changed_spy)
+self.view_model.download_item_updated.connect(download_item_updated_spy)
+
+# Create results
+success_path = self.base_dir / "success.png"
+results = {
+timestamp1: success_path, # Success
+timestamp2: FileNotFoundError("Not found"), # Error
+}
+
+# Test completion
+self.view_model._handle_enhanced_download_completed(results)
+
+# Process events to ensure signals are delivered
+QCoreApplication.processEvents()
+
+# Verify
+self.assertEqual(self.view_model.status, ScanStatus.COMPLETED)
+self.assertEqual(self.view_model._downloaded_count, 1)
+self.assertEqual(self.view_model._failed_count, 1)
+
+# Check item states
+self.assertFalse(item1.is_downloading)
+self.assertTrue(item1.is_downloaded)
+self.assertEqual(item1.local_path, str(success_path))
+
+self.assertFalse(item2.is_downloading)
+self.assertFalse(item2.is_downloaded)
+self.assertEqual(item2.download_error, "Not found")
+
+# Verify signals - test each call separately
+call_count = download_item_updated_spy.call_count
+self.assertEqual(call_count, 2, "Expected 2 calls to download_item_updated")
+
+# Verify specific item updates were made
+for i, call_args in enumerate(download_item_updated_spy.call_args_list):
+     pass
+index, item = call_args[0]
+if index == 0:
+     pass
+self.assertIs(item, item1)
+elif index == 1:
+     pass
+self.assertIs(item, item2)
+
+# Verify status message
+self.assertEqual(
+self.view_model.status_message, "Downloads complete: 1 successful, 1 failed"
+)
+
+def test_cleanup(self):
+     """Test cleanup method."""
+# Create a fresh view model with mocked components
+mock_cache_db = MagicMock(spec=CacheDB)
+mock_cache_db.close = (
+MagicMock()
+) # Use MagicMock instead of AsyncMock to avoid warning
+
+mock_timer = MagicMock()
+mock_timer.isRunning = MagicMock(return_value=True)
+mock_timer.terminate = MagicMock()
+mock_timer.wait = MagicMock()
+
+vm = EnhancedIntegrityCheckViewModel(cache_db=mock_cache_db)
+vm._disk_space_timer = mock_timer
+
+# Patch the cleanup method to avoid async call
+with patch(
+"goesvfi.integrity_check.enhanced_view_model.EnhancedIntegrityCheckViewModel.cleanup",
+new=lambda self: (
+self._disk_space_timer.terminate()
+if hasattr(self, "_disk_space_timer")
+and self._disk_space_timer is not None
+and self._disk_space_timer.isRunning()
+else None,
+self._disk_space_timer.wait()
+if hasattr(self, "_disk_space_timer")
+and self._disk_space_timer is not None
+else None,
+self._cache_db.close()
+if hasattr(self, "_cache_db") and self._cache_db is not None
+else None,
+),
+):
+     pass
+# Call the cleanup method
+vm.cleanup()
+
+# Verify disk space timer stopped
+mock_timer.terminate.assert_called_once()
+mock_timer.wait.assert_called_once()
+
+# Verify cache closed
+mock_cache_db.close.assert_called_once()
+
+# Clean up reference to avoid AsyncMock warning
+vm._cache_db = None
+
+def test_start_enhanced_scan(self):
+     pass
+"""Test starting enhanced scan."""
+# Mock AsyncScanTask constructor and instance
+mock_scan_task = MagicMock()
+
+with patch(
+"goesvfi.integrity_check.enhanced_view_model.AsyncScanTask",
+return_value=mock_scan_task,
+) as mock_scan_task_class:
+     # Set view model state
+self.view_model.start_date = self.start_date
+self.view_model.end_date = self.end_date
+self.view_model.interval_minutes = 10
+self.view_model.force_rescan = True
+self.view_model.auto_download = True
+
+# Start scan
+self.view_model.start_enhanced_scan()
+
+# Verify
+self.assertEqual(self.view_model.status, ScanStatus.SCANNING)
+mock_scan_task_class.assert_called_once_with(self.view_model)
+self.mock_thread_pool.start.assert_called_once_with(mock_scan_task)
+
+def test_start_enhanced_downloads(self):
+     pass
+"""Test starting enhanced downloads."""
+# Mock AsyncDownloadTask constructor and instance
+mock_download_task = MagicMock()
+
+with patch(
+"goesvfi.integrity_check.enhanced_view_model.AsyncDownloadTask",
+return_value=mock_download_task,
+) as mock_download_task_class:
+     # Set view model state
+timestamp = datetime.now()
+self.view_model._missing_timestamps = [
+EnhancedMissingTimestamp(timestamp, "test.png")
+]
+
+# Start downloads
+self.view_model.start_enhanced_downloads()
+
+# Verify
+self.assertEqual(self.view_model.status, ScanStatus.DOWNLOADING)
+mock_download_task_class.assert_called_once_with(self.view_model)
+self.mock_thread_pool.start.assert_called_once_with(mock_download_task)
+
+# Test with no missing items
+self.mock_thread_pool.reset_mock()
+mock_download_task_class.reset_mock()
+
+self.view_model._missing_timestamps = []
+self.view_model.start_enhanced_downloads()
+
+# Verify no task created for empty list
+mock_download_task_class.assert_not_called()
+self.mock_thread_pool.start.assert_not_called()
+
+# Test with downloading already in progress
+self.mock_thread_pool.reset_mock()
+mock_download_task_class.reset_mock()
+
+self.view_model._missing_timestamps = [
+EnhancedMissingTimestamp(timestamp, "test.png")
+]
+self.view_model._status = ScanStatus.DOWNLOADING
+self.view_model.start_enhanced_downloads()
+
+# Verify no task created when download in progress
+mock_download_task_class.assert_not_called()
+self.mock_thread_pool.start.assert_not_called()
+
+
+class TestAsyncTasks(PyQtAsyncTestCase):
+    pass
+"""Test cases for the async tasks used by the enhanced view model."""
+
+def setUp(self):
+     """Set up test fixtures."""
+# Call parent setUp for PyQt / asyncio setup
+super().setUp()
+
+# Create a temporary directory
+self.temp_dir = tempfile.TemporaryDirectory()
+self.base_dir = Path(self.temp_dir.name)
+
+# Mock view model with appropriate behavior for tests
+self.mock_view_model = MagicMock(spec=EnhancedIntegrityCheckViewModel)
+self.mock_view_model._reconcile_manager = MagicMock()
+self.mock_view_model._reconcile_manager.scan_directory = AsyncMock()
+self.mock_view_model._reconcile_manager.scan_directory.return_value = (
+set(),
+set(),
+)
+self.mock_view_model._reconcile_manager.fetch_missing_files = AsyncMock(
+return_value={}
+)
+
+# Configure necessary view model attributes
+self.mock_view_model._start_date = datetime(2023, 6, 15, 0, 0, 0)
+self.mock_view_model._end_date = datetime(2023, 6, 15, 1, 0, 0)
+self.mock_view_model._satellite = SatellitePattern.GOES_16
+self.mock_view_model._interval_minutes = 10
+self.mock_view_model._base_directory = self.base_dir
+
+# Create real signals object to track properly
+self.signals = AsyncTaskSignals()
+self.track_signals(self.signals) # Track for automatic cleanup
+
+# Set up tasks under test
+self.scan_task = AsyncScanTask(self.mock_view_model)
+self.scan_task.signals = self.signals
+
+self.download_task = AsyncDownloadTask(self.mock_view_model)
+self.download_task.signals = self.signals
+
+# Patch asyncio.new_event_loop to return our test loop
+self.patch_new_event_loop = patch(
+"asyncio.new_event_loop", return_value=self._event_loop
+)
+self.mock_new_event_loop = self.patch_new_event_loop.start()
+
+def tearDown(self):
+     """Tear down test fixtures."""
+# Stop patches
+if hasattr(self, "patch_new_event_loop"):
+     pass
+self.patch_new_event_loop.stop()
+
+# Clean up AsyncMock references to avoid warnings
+if hasattr(self, "mock_view_model") and hasattr(
+self.mock_view_model, "_reconcile_manager"
+):
+     pass
+if self.mock_view_model._reconcile_manager is not None:
+     pass
+if hasattr(self.mock_view_model._reconcile_manager, "scan_directory"):
+     pass
+if hasattr(
+self.mock_view_model._reconcile_manager.scan_directory,
+"reset_mock",
+):
+     pass
+self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
+# Don't try to reset the fetch_missing_files if it's a function
+if hasattr(
+self.mock_view_model._reconcile_manager, "fetch_missing_files"
+):
+     pass
+if hasattr(
+self.mock_view_model._reconcile_manager.fetch_missing_files,
+"reset_mock",
+):
+     pass
+self.mock_view_model._reconcile_manager.fetch_missing_files.reset_mock()
+
+# Clean up signal objects to avoid warnings
+if hasattr(self, "scan_task") and hasattr(self.scan_task, "signals"):
+     pass
+self.scan_task.signals = None
+
+if hasattr(self, "download_task") and hasattr(self.download_task, "signals"):
+     pass
+self.download_task.signals = None
+
+# Clean up temporary directory
+self.temp_dir.cleanup()
+
+# Call parent tearDown
+super().tearDown()
+
+def test_scan_task_run(self):
+     """Test scanning task execution."""
+# Simply verify the run method properly calls _run_scan and emits signals
+# Create a spy for the scan_finished signal
+scan_finished_spy = MagicMock()
+error_spy = MagicMock()
+
+# Create a new task with a proper signals object
+test_task = AsyncScanTask(self.mock_view_model)
+test_task.signals = AsyncTaskSignals()
+
+# Connect our spies
+test_task.signals.scan_finished.connect(scan_finished_spy)
+test_task.signals.error.connect(error_spy)
+
+# Mock the _run_scan method
+expected_result = {"status": "completed", "existing": set(), "missing": set()}
+test_task._run_scan = AsyncMock(return_value=expected_result)
+
+# Mock the loop creation and execution
+with patch("asyncio.new_event_loop") as mock_loop_factory:
+     mock_loop = AsyncMock()
+mock_loop.run_until_complete = MagicMock(return_value=expected_result)
+mock_loop.close = MagicMock()
+mock_loop_factory.return_value = mock_loop
+
+with patch("asyncio.set_event_loop"):
+     # Run the task
+test_task.run()
+
+# Process events to make sure signals are delivered
+QCoreApplication.processEvents()
+
+# Verify the signal was called with the expected result
+scan_finished_spy.assert_called()
+self.assertEqual(scan_finished_spy.call_args[0][0], expected_result)
+
+@async_test
+async def test_run_scan(self):
+     pass
+"""Test the async scan operation."""
+# Mock scan result
+existing = {datetime(2023, 6, 15, 0, 0, 0)}
+missing = {datetime(2023, 6, 15, 0, 10, 0)}
+
+self.mock_view_model._reconcile_manager.scan_directory = AsyncMock(
+return_value=(existing, missing)
+)
+
+# Run the scan
+result = await self.scan_task._run_scan()
+
+# Verify
+self.assertEqual(result["status"], "completed")
+self.assertEqual(result["existing"], existing)
+self.assertEqual(result["missing"], missing)
+self.assertEqual(result["total"], 2)
+
+self.mock_view_model._reconcile_manager.scan_directory.assert_called_once_with(
+directory=self.mock_view_model._base_directory,
+satellite=self.mock_view_model._satellite,
+start_time=self.mock_view_model._start_date,
+end_time=self.mock_view_model._end_date,
+interval_minutes=self.mock_view_model._interval_minutes,
+progress_callback=unittest.mock.ANY,
+)
+
+# Test cancelled operation
+self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
+self.mock_view_model._reconcile_manager.scan_directory.side_effect = (
+asyncio.CancelledError()
+)
+
+result = await self.scan_task._run_scan()
+self.assertEqual(result["status"], "cancelled")
+
+# Test error case
+self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
+self.mock_view_model._reconcile_manager.scan_directory.side_effect = Exception(
+"Test error"
+)
+
+result = await self.scan_task._run_scan()
+self.assertEqual(result["status"], "error")
+self.assertEqual(result["error"], "Test error")
+
+def test_download_task_run(self):
+     pass
+"""Test download task execution."""
+# Simply verify the run method properly calls _run_downloads and emits signals
+# Create a spy for the download_finished signal
+download_finished_spy = MagicMock()
+error_spy = MagicMock()
+
+# Create a new task with a proper signals object
+test_task = AsyncDownloadTask(self.mock_view_model)
+test_task.signals = AsyncTaskSignals()
+
+# Connect our spies
+test_task.signals.download_finished.connect(download_finished_spy)
+test_task.signals.error.connect(error_spy)
+
+# Mock the _run_downloads method
+mock_timestamp = datetime(2023, 6, 15, 0, 0, 0)
+expected_result = {mock_timestamp: Path("/test_path / test.png")}
+test_task._run_downloads = AsyncMock(return_value=expected_result)
+
+# Mock the loop creation and execution
+with patch("asyncio.new_event_loop") as mock_loop_factory:
+     mock_loop = AsyncMock()
+mock_loop.run_until_complete = MagicMock(return_value=expected_result)
+mock_loop.close = MagicMock()
+mock_loop_factory.return_value = mock_loop
+
+with patch("asyncio.set_event_loop"):
+     # Run the task
+test_task.run()
+
+# Process events to make sure signals are delivered
+QCoreApplication.processEvents()
+
+# Verify the signal was called with the expected result
+download_finished_spy.assert_called()
+self.assertEqual(download_finished_spy.call_args[0][0], expected_result)
+
+@async_test
+async def test_run_downloads(self):
+     pass
+"""Test the async download operation."""
+# Setup test data
+mock_timestamp = datetime(2023, 6, 15, 0, 0, 0)
+mock_item = EnhancedMissingTimestamp(mock_timestamp, "test.png")
+self.mock_view_model._missing_timestamps = [mock_item]
+self.mock_view_model._satellite = SatellitePattern.GOES_16
+
+# Setup expected result - use MagicMock with return_value instead of AsyncMock
+mock_result = {mock_timestamp: self.base_dir / "test.png"}
+
+# Create a proper future to return instead of an AsyncMock
+async def mock_fetch_missing_files(*args, **kwargs):
+     return mock_result
+
+self.mock_view_model._reconcile_manager.fetch_missing_files = (
+mock_fetch_missing_files
+)
+
+# Run the downloads
+result = await self.download_task._run_downloads()
+
+# Verify
+self.assertEqual(result, mock_result)
+
+# We can't assert on the mock directly since we're using a function, so we'll skip that check
+
+# Test cancelled operation
+async def mock_cancelled(*args, **kwargs):
+     pass
+raise asyncio.CancelledError()
+
+self.mock_view_model._reconcile_manager.fetch_missing_files = mock_cancelled
+
+result = await self.download_task._run_downloads()
+self.assertEqual(result, {})
+
+# Test error handling
+async def mock_error(*args, **kwargs):
+     raise Exception("Test error")
+
+self.mock_view_model._reconcile_manager.fetch_missing_files = mock_error
+
+result = await self.download_task._run_downloads()
+self.assertEqual(result, {})
+
+
+# Note: We no longer need the old async_test decorator or auto - application
+# since we're now using the PyQtAsyncTestCase with its @async_test decorator
+
+
+if __name__ == "__main__":
+    pass
+unittest.main()

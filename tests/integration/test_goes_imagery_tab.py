@@ -135,10 +135,11 @@ class TestImageViewPanel(unittest.TestCase):
         test_path = Path(self.panel.image_label.objectName() or "dummy_path")
 
         # Make a mock with special behavior for exists method
-        with patch.object(Path, "exists", return_value=True), patch(
-            "os.path.getsize", return_value=1024
-        ), patch("PyQt6.QtGui.QPixmap"), patch.object(
-            self.panel.image_label, "setPixmap"
+        with (
+            patch.object(Path, "exists", return_value=True),
+            patch("os.path.getsize", return_value=1024),
+            patch("PyQt6.QtGui.QPixmap"),
+            patch.object(self.panel.image_label, "setPixmap"),
         ):
             # Test showing image
             self.panel.showImage(test_path)

@@ -4,11 +4,11 @@ Provides the ImageLoader class, an ImageProcessor implementation for loading ima
 from disk using Pillow and converting them to ImageData objects for the GOES_VFI pipeline.
 """
 
-from typing import Any, Optional, Tuple
 import os
+from typing import Any, Optional, Tuple
 
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 from goesvfi.utils.log import get_logger
 from goesvfi.utils.memory_manager import (
@@ -21,6 +21,7 @@ from .image_processing_interfaces import ImageData, ImageProcessor
 
 LOGGER = get_logger(__name__)
 
+
 class ImageLoader(ImageProcessor):
     """ImageProcessor implementation for loading images from disk using Pillow.
 
@@ -28,7 +29,8 @@ class ImageLoader(ImageProcessor):
     basic metadata. It does not implement processing, cropping, or saving.
     """
 
-    def __init__(self, optimize_memory: bool = True, max_image_size_mb: Optional[int] = None
+    def __init__(
+        self, optimize_memory: bool = True, max_image_size_mb: Optional[int] = None
     ):
         """Initialize ImageLoader with optional memory optimization.
 
@@ -76,31 +78,37 @@ class ImageLoader(ImageProcessor):
                     pass
                     # Calculate expected memory usage
                     shape = (
-                    (height, width, channels) if channels > 1 else (height, width)
+                        (height, width, channels) if channels > 1 else (height, width)
                     )
                     estimated_mb = estimate_memory_requirement(shape, np.uint8)
 
-                    LOGGER.info("Loading image %s: %sx%s %s (~%sMB)", 
-                               os.path.basename(source_path), width, height, img.mode, estimated_mb)
+                    LOGGER.info(
+                        "Loading image %s: %sx%s %s (~%sMB)",
+                        os.path.basename(source_path),
+                        width,
+                        height,
+                        img.mode,
+                        estimated_mb,
+                    )
 
                     # Check against limit
                     if self.max_image_size_mb and estimated_mb > self.max_image_size_mb:
                         pass
                         raise ValueError(
-                        f"Image too large: {estimated_mb}MB exceeds limit of "
-                        f"{self.max_image_size_mb}MB"
+                            f"Image too large: {estimated_mb}MB exceeds limit of "
+                            f"{self.max_image_size_mb}MB"
                         )
 
                     # Check available memory
                     if self.memory_optimizer:
                         pass
                         has_memory, msg = self.memory_optimizer.check_available_memory(
-                        estimated_mb + 100  # Add buffer
+                            estimated_mb + 100  # Add buffer
                         )
                         if not has_memory:
                             pass
                             raise MemoryError(
-                            f"Insufficient memory to load image: {msg}"
+                                f"Insufficient memory to load image: {msg}"
                             )
 
                 # Convert Pillow Image to NumPy array
@@ -111,23 +119,26 @@ class ImageLoader(ImageProcessor):
                     pass
                     original_dtype = image_data_array.dtype
                     image_data_array = self.memory_optimizer.optimize_array_dtype(
-                    image_data_array, preserve_range=True
+                        image_data_array, preserve_range=True
                     )
                     if image_data_array.dtype != original_dtype:
                         pass
-                        LOGGER.debug("Optimized array dtype from %s to %s", original_dtype,
-                        image_data_array.dtype)
+                        LOGGER.debug(
+                            "Optimized array dtype from %s to %s",
+                            original_dtype,
+                            image_data_array.dtype,
+                        )
 
                 # Create initial metadata
                 metadata = {
-                "format": img.format,
-                "mode": img.mode,
-                "width": img.width,
-                "height": img.height,
-                "source_path": source_path,
-                "memory_optimized": self.optimize_memory,
-                "dtype": str(image_data_array.dtype),
-                "size_mb": image_data_array.nbytes / (1024 * 1024),
+                    "format": img.format,
+                    "mode": img.mode,
+                    "width": img.width,
+                    "height": img.height,
+                    "source_path": source_path,
+                    "memory_optimized": self.optimize_memory,
+                    "dtype": str(image_data_array.dtype),
+                    "size_mb": image_data_array.nbytes / (1024 * 1024),
                 }
 
                 # Log memory after loading
@@ -136,9 +147,9 @@ class ImageLoader(ImageProcessor):
                     log_memory_usage("After loading image")
 
                 return ImageData(
-                image_data=image_data_array,
-                source_path=source_path,
-                metadata=metadata,
+                    image_data=image_data_array,
+                    source_path=source_path,
+                    metadata=metadata,
                 )
 
         except IOError as e:
@@ -162,7 +173,8 @@ class ImageLoader(ImageProcessor):
         """
         raise NotImplementedError("ImageLoader does not implement the process method.")
 
-    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]
+    def crop(
+        self, image_data: ImageData, crop_area: Tuple[int, int, int, int]
     ) -> ImageData:
         """Not implemented. ImageLoader does not perform cropping.
 

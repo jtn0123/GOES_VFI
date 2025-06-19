@@ -1,54 +1,52 @@
 """
+from pathlib import Path
+from typing import Any, Dict, Optional, Set, Tuple, Union
+
+from PyQt6.QtCore import QDate, QRect, Qt, QTime, pyqtSignal
+from PyQt6.QtGui import QColor, QFont, QIcon, QPainter, QPixmap
+from datetime import datetime
+import logging
+
 Shared UI Components for GOES Imagery and Integrity Check Tabs
 
 This module provides shared components that can be used by both the GOES Imagery
 and Integrity Check tabs for improved integration and user experience.
 """
 
-import logging
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, TypeVar, Union, cast
-
-from PyQt6.QtCore import QDate, QRect, Qt, QTime, pyqtSignal
-from PyQt6.QtGui import QColor, QFont, QIcon, QPainter, QPixmap
-from PyQt6.QtWidgets import (
-    QButtonGroup,
-    QCheckBox,
-    QComboBox,
-    QDateEdit,
-    QFrame,
-    QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QLayout,
-    QPushButton,
-    QRadioButton,
-    QScrollArea,
-    QSlider,
-    QSpinBox,
-    QTabWidget,
-    QTimeEdit,
-    QVBoxLayout,
-    QWidget,
+QButtonGroup,
+QCheckBox,
+QComboBox,
+QDateEdit,
+QFrame,
+QGridLayout,
+QGroupBox,
+QHBoxLayout,
+QLabel,
+QLayout,
+QPushButton,
+QRadioButton,
+QScrollArea,
+QSlider,
+QSpinBox,
+QTabWidget,
+QTimeEdit,
+QVBoxLayout,
+QWidget,
 )
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-
 class PreviewMetadata:
     """Class to store metadata for preview images"""
 
-    def __init__(
-        self,
-        channel: Union[int, str],
-        product_type: Any,
-        date_time: datetime,
-        source: str,
-        data_path: Optional[Path] = None,
-        processing_options: Optional[Dict[str, Any]] = None,
+    def __init__(self,
+    channel: Union[int, str],
+    product_type: Any,
+    date_time: datetime,
+    source: str,
+    data_path: Optional[Path] = None,
+    processing_options: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize preview metadata.
@@ -90,13 +88,18 @@ class PreviewMetadata:
 
         # Handle different channel types
         if isinstance(self.channel, int):
+            pass
             if self.channel <= 16:
+                pass
                 channel_name = f"Band {self.channel}"
             elif self.channel == 100:
+                pass
                 channel_name = "True Color"
             elif self.channel == 103:
+                pass
                 channel_name = "Airmass RGB"
             elif self.channel == 104:
+                pass
                 channel_name = "Fire RGB"
             else:
                 channel_name = f"Channel {self.channel}"
@@ -105,12 +108,12 @@ class PreviewMetadata:
 
         # Format product type
         if hasattr(self.product_type, "name"):
+            pass
             product_name = self.product_type.name.replace("_", " ")
         else:
             product_name = str(self.product_type)
 
         return f"{channel_name} - {product_name} - {date_str}"
-
 
 class SharedPreviewPanel(QWidget):
     """
@@ -135,9 +138,9 @@ class SharedPreviewPanel(QWidget):
             parent: Optional parent widget
         """
         super().__init__(parent)
-        self.preview_cache: Dict[
-            str, Dict[str, Any]
-        ] = {}  # Key -> {'image': QPixmap, 'metadata': PreviewMetadata}
+        self.preview_cache: Dict[str, Dict[str, Any]] = ()
+        {}
+        )  # Key -> {'image': QPixmap, 'metadata': PreviewMetadata}
         self.bookmarks: Set[str] = set()  # Set of bookmarked preview keys
         self.current_key: Optional[str] = None  # Currently displayed preview key
 
@@ -214,8 +217,7 @@ class SharedPreviewPanel(QWidget):
         layout.addWidget(info_frame)
         layout.addLayout(action_layout)
 
-    def addPreview(
-        self, key: str, image: QPixmap, metadata: PreviewMetadata, select: bool = True
+    def addPreview(self, key: str, image: QPixmap, metadata: PreviewMetadata, select: bool = True
     ) -> None:
         """
         Add a preview image to the cache.
@@ -233,19 +235,22 @@ class SharedPreviewPanel(QWidget):
 
         # Select the preview if requested
         if select:
+            pass
             self.selectPreview(key)
 
-        logger.info(f"Added preview to cache: {key}")
+        logger.info("Added preview to cache: %s", key)
 
     def selectPreview(self, key: str) -> None:
         """
         Select and display a specific preview.
 
         Args:
+            pass
             key: Key of the preview to select
         """
         if key not in self.preview_cache:
-            logger.warning(f"Cannot select preview, key not found: {key}")
+            pass
+            logger.warning("Cannot select preview, key not found: %s", key)
             return
 
         # Update current key
@@ -263,6 +268,7 @@ class SharedPreviewPanel(QWidget):
         self.info_channel.setText(f"Channel: {metadata.channel}")
 
         if hasattr(metadata.product_type, "name"):
+            pass
             product_name = metadata.product_type.name.replace("_", " ")
         else:
             product_name = str(metadata.product_type)
@@ -279,13 +285,14 @@ class SharedPreviewPanel(QWidget):
         # Emit signal
         self.previewSelected.emit(key, metadata)
 
-        logger.info(f"Selected preview: {key}")
+        logger.info("Selected preview: %s", key)
 
     def getPreview(self, key: str) -> Optional[Dict[str, Any]]:
         """
         Get a specific preview from the cache.
 
         Args:
+            pass
             key: Key of the preview to get
 
         Returns:
@@ -294,6 +301,7 @@ class SharedPreviewPanel(QWidget):
         return self.preview_cache.get(key)
 
     def getCurrentPreview(self) -> Optional[Dict[str, Any]]:
+        pass
         """
         Get the currently selected preview.
 
@@ -301,6 +309,7 @@ class SharedPreviewPanel(QWidget):
             Dictionary with 'image' and 'metadata' or None if no preview selected
         """
         if self.current_key is None:
+            pass
             return None
 
         return self.preview_cache.get(self.current_key)
@@ -309,15 +318,17 @@ class SharedPreviewPanel(QWidget):
         """Clear all non-bookmarked previews from the cache."""
         # Keep only bookmarked previews
         keys_to_remove = [
-            key for key in self.preview_cache if key not in self.bookmarks
+        key for key in self.preview_cache if key not in self.bookmarks
         ]
 
         for key in keys_to_remove:
+            pass
             del self.preview_cache[key]
             self.previewRemoved.emit(key)
 
         # Reset current preview if it was removed
         if self.current_key and self.current_key not in self.preview_cache:
+            pass
             self.current_key = None
             self.image_label.clear()
             self.image_label.setText(self.tr("No preview available"))
@@ -326,24 +337,28 @@ class SharedPreviewPanel(QWidget):
             self.info_datetime.setText(self.tr("Date/Time: -"))
             self.info_source.setText(self.tr("Source: -"))
 
-        logger.info(f"Cleared {len(keys_to_remove)} non-bookmarked previews")
+        logger.info("Cleared %s non-bookmarked previews", len(keys_to_remove))
 
     def removePreview(self, key: str) -> None:
         """
         Remove a specific preview from the cache.
 
         Args:
+            pass
             key: Key of the preview to remove
         """
         if key in self.preview_cache:
+            pass
             del self.preview_cache[key]
 
             # Remove from bookmarks if present
             if key in self.bookmarks:
+                pass
                 self.bookmarks.remove(key)
 
             # Reset current preview if it was the one removed
             if self.current_key == key:
+                pass
                 self.current_key = None
                 self.image_label.clear()
                 self.image_label.setText(self.tr("No preview available"))
@@ -355,11 +370,12 @@ class SharedPreviewPanel(QWidget):
             # Emit signal
             self.previewRemoved.emit(key)
 
-            logger.info(f"Removed preview: {key}")
+            logger.info("Removed preview: %s", key)
 
     def updateZoom(self) -> None:
         """Update the zoom level of the current preview."""
         if self.current_key is None or self.current_key not in self.preview_cache:
+            pass
             return
 
         # Get original image
@@ -369,13 +385,14 @@ class SharedPreviewPanel(QWidget):
         # Apply zoom
         zoom = self.zoom_slider.value() / 100.0
         if zoom != 1.0:
+            pass
             width = int(original.width() * zoom)
             height = int(original.height() * zoom)
-            scaled = original.scaled(
-                width,
-                height,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
+            scaled = original.scaled()
+            width,
+            height,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
             )
             self.image_label.setPixmap(scaled)
         else:
@@ -389,17 +406,20 @@ class SharedPreviewPanel(QWidget):
             checked: New bookmark state
         """
         if self.current_key is None:
+            pass
             return
 
         if checked:
+            pass
             self.bookmarks.add(self.current_key)
         elif self.current_key in self.bookmarks:
+            pass
             self.bookmarks.remove(self.current_key)
 
         # Emit signal
         self.previewBookmarked.emit(self.current_key, checked)
 
-        logger.info(f"Preview {self.current_key} bookmark set to {checked}")
+        logger.info("Preview %s bookmark set to %s", self.current_key, checked)
 
     def getBookmarkedPreviews(self) -> Dict[str, Dict[str, Any]]:
         """
@@ -409,17 +429,16 @@ class SharedPreviewPanel(QWidget):
             Dictionary of key -> preview data for all bookmarked previews
         """
         return {
-            key: self.preview_cache[key]
-            for key in self.bookmarks
-            if key in self.preview_cache
+        key: self.preview_cache[key]
+        for key in self.bookmarks
+        if key in self.preview_cache
         }
 
-    def createFallbackPreview(
-        self,
-        channel: Union[int, str],
-        product_type: Any,
-        date_time: datetime,
-        error_msg: str,
+    def createFallbackPreview(self,
+    channel: Union[int, str],
+    product_type: Any,
+    date_time: datetime,
+    error_msg: str,
     ) -> Tuple[QPixmap, PreviewMetadata]:
         """
         Create a fallback preview image with error information.
@@ -448,11 +467,15 @@ class SharedPreviewPanel(QWidget):
 
         # Determine channel info
         if isinstance(channel, int):
+            pass
             if channel <= 16:
+                pass
                 channel_name = f"Band {channel}"
             elif channel == 100:
+                pass
                 channel_name = "True Color"
             elif channel == 103:
+                pass
                 channel_name = "Airmass RGB"
             else:
                 channel_name = f"Channel {channel}"
@@ -461,6 +484,7 @@ class SharedPreviewPanel(QWidget):
 
         # Format product type
         if hasattr(product_type, "name"):
+            pass
             product_name = product_type.name.replace("_", " ")
         else:
             product_name = str(product_type)
@@ -473,21 +497,25 @@ class SharedPreviewPanel(QWidget):
         status_rect = QRect(0, 40, width, 25)
         painter.fillRect(status_rect, QColor(180, 32, 32))  # Dark red
         painter.setFont(QFont("Arial", 11, QFont.Weight.Bold))
-        painter.drawText(
-            status_rect, Qt.AlignmentFlag.AlignCenter, "STATUS: PREVIEW UNAVAILABLE"
+        painter.drawText()
+        status_rect, Qt.AlignmentFlag.AlignCenter, "STATUS: PREVIEW UNAVAILABLE"
         )
 
         # Determine error type and recommendations
         if "timeout" in error_msg.lower():
+            pass
             primary_reason = "Server connection timeout"
             suggestion = "Check your internet connection and try again later"
         elif "no data" in error_msg.lower():
+            pass
             primary_reason = "No imagery data available for the selected date/time"
             suggestion = "Try a different date/time or channel"
         elif "invalid" in error_msg.lower() or "corrupt" in error_msg.lower():
+            pass
             primary_reason = "The retrieved imagery is corrupted or invalid"
             suggestion = "Try a different channel or product type"
         else:
+            pass
             primary_reason = "Error retrieving imagery"
             suggestion = "See details below"
 
@@ -504,8 +532,8 @@ class SharedPreviewPanel(QWidget):
         painter.setFont(QFont("Arial", 10))
         painter.drawText(20, y, f"Channel: {channel_name} | Product: {product_name}")
         y += 20
-        painter.drawText(
-            20, y, f"Date/Time: {date_time.strftime('%Y-%m-%d %H:%M')} UTC"
+        painter.drawText()
+        20, y, f"Date/Time: {date_time.strftime('%Y-%m-%d %H:%M')} UTC"
         )
         y += 25
 
@@ -530,13 +558,17 @@ class SharedPreviewPanel(QWidget):
         current_line = ""
 
         for word in error_words:
+            pass
             if len(current_line + " " + word) <= max_chars:
+                pass
                 current_line += " " + word if current_line else word
             else:
+                pass
                 error_lines.append(current_line)
                 current_line = word
 
         if current_line:
+            pass
             error_lines.append(current_line)
 
         for line in error_lines:
@@ -546,26 +578,25 @@ class SharedPreviewPanel(QWidget):
         # Help text
         y += 5
         painter.setPen(QColor(100, 200, 255))
-        painter.drawText(
-            20,
-            y,
-            "You can still proceed with processing using fallback imagery samples.",
+        painter.drawText()
+        20,
+        y,
+        "You can still proceed with processing using fallback imagery samples.",
         )
 
         # Finish painting
         painter.end()
 
         # Create metadata for the fallback preview
-        metadata = PreviewMetadata(
-            channel=channel,
-            product_type=product_type,
-            date_time=date_time,
-            source="Fallback",
-            processing_options={"error": error_msg},
+        metadata = PreviewMetadata()
+        channel=channel,
+        product_type=product_type,
+        date_time=date_time,
+        source="Fallback",
+        processing_options={"error": error_msg},
         )
 
         return pix, metadata
-
 
 class CollapsibleSettingsGroup(QWidget):
     """
@@ -594,11 +625,11 @@ class CollapsibleSettingsGroup(QWidget):
         self.header = QWidget()
         self.header.setMinimumHeight(30)
         self.header.setMaximumHeight(30)
-        self.header.setStyleSheet(
-            """
-            background-color: #404040;
-            border-top: 1px solid #505050;
-            border-bottom: 1px solid #505050;
+        self.header.setStyleSheet()
+        """
+        background-color: #404040;
+        border-top: 1px solid #505050;
+        border-bottom: 1px solid #505050;
         """
         )
 
@@ -607,12 +638,12 @@ class CollapsibleSettingsGroup(QWidget):
 
         self.toggle_btn = QPushButton(self.tr("▼"))
         self.toggle_btn.setFixedWidth(20)
-        self.toggle_btn.setStyleSheet(
-            """
-            QPushButton {
-                background: transparent;
-                border: none;
-            }
+        self.toggle_btn.setStyleSheet()
+        """
+        QPushButton {
+        background: transparent;
+        border: none;
+        }
         """
         )
         self.toggle_btn.clicked.connect(self.toggle_content)
@@ -660,7 +691,6 @@ class CollapsibleSettingsGroup(QWidget):
         """
         self.content_layout.addLayout(layout)
 
-
 class SidebarSettingsPanel(QWidget):
     """
     Sidebar panel for settings with collapsible sections.
@@ -683,10 +713,10 @@ class SidebarSettingsPanel(QWidget):
         self.setMaximumWidth(300)
 
         # Set styling
-        self.setStyleSheet(
-            """
-            background-color: #2a2a2a;
-            border-left: 1px solid #404040;
+        self.setStyleSheet()
+        """
+        background-color: #2a2a2a;
+        border-left: 1px solid #404040;
         """
         )
 
@@ -846,11 +876,11 @@ class SidebarSettingsPanel(QWidget):
 
         # Channel tabs for better organization
         channel_tabs = QTabWidget()
-        channel_tabs.setStyleSheet(
-            """
-            QTabBar::tab {
-                padding: 4px 8px;
-            }
+        channel_tabs.setStyleSheet()
+        """
+        QTabBar::tab {
+        padding: 4px 8px;
+        }
         """
         )
 
@@ -1031,8 +1061,8 @@ class SidebarSettingsPanel(QWidget):
         gamma_layout.addWidget(self.gamma_label)
 
         # Connect gamma slider to label update
-        self.gamma_slider.valueChanged.connect(
-            lambda v: self.gamma_label.setText(f"{v/100:.1f}")
+        self.gamma_slider.valueChanged.connect()
+        lambda v: self.gamma_label.setText(f"{v / 100:.1f}")
         )
 
         # Data source options
@@ -1092,6 +1122,7 @@ class SidebarSettingsPanel(QWidget):
         return "G16" if idx == 0 else "G18"
 
     def get_product_type(self) -> str:
+        pass
         """
         Get the selected product type.
 
@@ -1105,17 +1136,23 @@ class SidebarSettingsPanel(QWidget):
         Show or hide a specific section.
 
         Args:
-            section_name: Name of the section to show/hide ("presets", "data",
-                         "visualization", "processing", or "advanced")
+            pass
+            section_name: Name of the section to show/hide ("presets", "data",)
+            "visualization", "processing", or "advanced")
             show: Whether to show (True) or hide (False) the section
         """
         if section_name == "presets":
+            pass
             self.presets_group.setVisible(show)
         elif section_name == "data":
+            pass
             self.data_group.setVisible(show)
         elif section_name == "visualization":
+            pass
             self.viz_group.setVisible(show)
         elif section_name == "processing":
+            pass
             self.processing_group.setVisible(show)
         elif section_name == "advanced":
+            pass
             self.advanced_group.setVisible(show)

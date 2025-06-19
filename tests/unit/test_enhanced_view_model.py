@@ -502,18 +502,24 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         with patch(
             "goesvfi.integrity_check.enhanced_view_model.EnhancedIntegrityCheckViewModel.cleanup",
             new=lambda self: (
-                self._disk_space_timer.terminate()
-                if hasattr(self, "_disk_space_timer")
-                and self._disk_space_timer is not None
-                and self._disk_space_timer.isRunning()
-                else None,
-                self._disk_space_timer.wait()
-                if hasattr(self, "_disk_space_timer")
-                and self._disk_space_timer is not None
-                else None,
-                self._cache_db.close()
-                if hasattr(self, "_cache_db") and self._cache_db is not None
-                else None,
+                (
+                    self._disk_space_timer.terminate()
+                    if hasattr(self, "_disk_space_timer")
+                    and self._disk_space_timer is not None
+                    and self._disk_space_timer.isRunning()
+                    else None
+                ),
+                (
+                    self._disk_space_timer.wait()
+                    if hasattr(self, "_disk_space_timer")
+                    and self._disk_space_timer is not None
+                    else None
+                ),
+                (
+                    self._cache_db.close()
+                    if hasattr(self, "_cache_db") and self._cache_db is not None
+                    else None
+                ),
             ),
         ):
             # Call the cleanup method

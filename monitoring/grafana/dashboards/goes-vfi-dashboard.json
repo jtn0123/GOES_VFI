@@ -1,0 +1,137 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "GOES_VFI Application Dashboard",
+    "tags": ["goes-vfi", "monitoring"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Application Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=\"goes-vfi\"}",
+            "legendFormat": "Application Status"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "thresholds": {
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            },
+            "mappings": [
+              {"type": "value", "value": "0", "text": "DOWN"},
+              {"type": "value", "value": "1", "text": "UP"}
+            ]
+          }
+        },
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Memory Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"goes-vfi\"} / 1024 / 1024",
+            "legendFormat": "Memory (MB)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "decbytes"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "CPU Usage",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total{job=\"goes-vfi\"}[5m]) * 100",
+            "legendFormat": "CPU %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 0}
+      },
+      {
+        "id": 4,
+        "title": "Processing Queue Size",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "goes_vfi_processing_queue_size",
+            "legendFormat": "Queue Size"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 4}
+      },
+      {
+        "id": 5,
+        "title": "Request Rate",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(goes_vfi_requests_total[5m])",
+            "legendFormat": "Requests/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 6, "y": 8}
+      },
+      {
+        "id": 6,
+        "title": "Error Rate",
+        "type": "timeseries",
+        "targets": [
+          {
+            "expr": "rate(goes_vfi_errors_total[5m])",
+            "legendFormat": "Errors/sec"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 18, "y": 8}
+      },
+      {
+        "id": 7,
+        "title": "Processing Time Distribution",
+        "type": "histogram",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(goes_vfi_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "95th percentile"
+          },
+          {
+            "expr": "histogram_quantile(0.50, rate(goes_vfi_processing_duration_seconds_bucket[5m]))",
+            "legendFormat": "50th percentile"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "5s"
+  }
+}

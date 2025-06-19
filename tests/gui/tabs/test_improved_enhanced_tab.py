@@ -11,8 +11,8 @@ from PyQt6.QtWidgets import QApplication, QWidget
 from goesvfi.integrity_check.enhanced_gui_tab_improved import (
     ImprovedEnhancedIntegrityCheckTab,
 )
-from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
-from goesvfi.integrity_check.time_index import Satellite, SatellitePattern
+from goesvfi.integrity_check.time_index import SatellitePattern
+from goesvfi.integrity_check.view_model import IntegrityCheckViewModel
 
 
 class TestImprovedEnhancedTab:
@@ -22,7 +22,8 @@ class TestImprovedEnhancedTab:
     def view_model(self, tmpdir):
         """Create a view model for testing."""
         # Use temp dir for testing
-        model = EnhancedIntegrityCheckViewModel(base_directory=tmpdir)
+        model = IntegrityCheckViewModel()
+        model.base_directory = str(tmpdir)
 
         # Set test data
         model.start_date = datetime.now() - timedelta(days=1)

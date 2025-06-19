@@ -4,10 +4,12 @@ NetCDF renderer for GOES satellite imagery.
 This module provides functions to render PNG images from GOES NetCDF files,
 specifically for Band 13 (Clean IR, 10.3 µm) data.
 """
+
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
+import numpy.typing as npt
 import xarray as xr
 from PIL import Image
 
@@ -64,8 +66,8 @@ def _validate_band_id(ds: xr.Dataset) -> None:
 
 
 def _convert_radiance_to_temperature(
-    data: np.ndarray, ds: xr.Dataset, min_temp_k: float, max_temp_k: float
-) -> np.ndarray:
+    data: npt.NDArray[np.float64], ds: xr.Dataset, min_temp_k: float, max_temp_k: float
+) -> npt.NDArray[np.float64]:
     """
     Convert radiance data to brightness temperature and normalize.
 
@@ -91,8 +93,7 @@ def _convert_radiance_to_temperature(
         data = (fk2 / np.log((fk1 / data) + 1) - bc1) / bc2
 
     # Mask invalid data
-    data = np.ma.masked_less_equal(data, 0)  # type: ignore
-
+    data = np.ma.masked_less_equal(data, 0)  # type: ignore[no-untyped-call]
     # Clip data to the specified temperature range
     data = np.clip(data, min_temp_k, max_temp_k)
 
@@ -105,7 +106,7 @@ def _convert_radiance_to_temperature(
     return normalized_data
 
 
-def _get_colormap(colormap_name: str):
+def _get_colormap(colormap_name: str) -> Any:
     """
     Get a matplotlib colormap based on name.
 
@@ -134,7 +135,9 @@ def _get_colormap(colormap_name: str):
         )
 
 
-def _create_figure(data: np.ndarray, colormap_name: str, output_path: Path):
+def _create_figure(
+    data: npt.NDArray[np.float64], colormap_name: str, output_path: Path
+) -> None:
     """
     Create a matplotlib figure and save it to a file.
 
@@ -168,7 +171,7 @@ def _create_figure(data: np.ndarray, colormap_name: str, output_path: Path):
     plt.close(fig)
 
 
-def _resize_image(image_path: Path, resolution: Tuple[int, int]):
+def _resize_image(image_path: Path, resolution: Tuple[int, int]) -> None:
     """
     Resize an image to the specified resolution.
 
@@ -199,10 +202,9 @@ def _prepare_output_path(
     """
     if output_path is None:
         return netcdf_path.with_suffix(".png")
-    else:
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        return output_path
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    return output_path
 
 
 def render_png(
@@ -221,7 +223,7 @@ def render_png(
         output_path: Path to save the PNG image (if None, create alongside NetCDF)
         min_temp_k: Minimum temperature in Kelvin for scaling
         max_temp_k: Maximum temperature in Kelvin for scaling
-        colormap: Colormap name (from matplotlib)
+        colormap: Colormap name (from matplotlib)  # type: ignore[import-not-found]
         satellite: Satellite pattern enum (used for metadata)
         resolution: Optional output resolution (width, height)
 
@@ -272,7 +274,10 @@ def render_png(
             LOGGER.debug("Rendered %s", final_output_path)
             return final_output_path
 
+    # TODO: Replace with specific exceptions: KeyError, RuntimeError, ValueError
+
     except Exception as e:
+        LOGGER.exception("Error occurred: %s", e)
         raise IOError(f"Error rendering NetCDF file: {e}") from e
 
 
@@ -299,15 +304,22 @@ def extract_metadata(netcdf_path: Union[str, Path]) -> Dict[str, Any]:
                 "satellite": ds.attrs.get("platform_ID", None),
                 "instrument": ds.attrs.get("instrument_type", None),
                 "timestamp": ds.attrs.get("date_created", None),
-                "band_id": ds[BAND_ID_VAR].values.item()
-                if BAND_ID_VAR in ds.variables
-                else None,
-                "band_wavelength": ds[BAND_WAVELENGTH_VAR].values.item()
-                if BAND_WAVELENGTH_VAR in ds.variables
-                else None,
+                "band_id": (
+                    ds[BAND_ID_VAR].values.item()
+                    if BAND_ID_VAR in ds.variables
+                    else None
+                ),
+                "band_wavelength": (
+                    ds[BAND_WAVELENGTH_VAR].values.item()
+                    if BAND_WAVELENGTH_VAR in ds.variables
+                    else None
+                ),
                 "resolution_x": ds[X_VAR].size if X_VAR in ds.variables else None,
                 "resolution_y": ds[Y_VAR].size if Y_VAR in ds.variables else None,
             }
             return metadata
+    # TODO: Replace with specific exceptions: KeyError, RuntimeError, ValueError
+
     except Exception as e:
+        LOGGER.exception("Error occurred: %s", e)
         raise ValueError("Error extracting metadata: %s" % e) from e

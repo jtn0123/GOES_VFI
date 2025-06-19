@@ -1906,16 +1906,16 @@ class S3Store(RemoteStore):
                 LOGGER.error(f"Technical details: {final_error.technical_details}")
 
             raise final_error
-    
+
     async def check_file_exists(
         self, timestamp: datetime, satellite: SatellitePattern
     ) -> bool:
         """Check if a file exists for the given timestamp and satellite.
-        
+
         This method implements the abstract method from RemoteStore.
         """
         return await self.exists(timestamp, satellite)
-    
+
     async def download_file(
         self,
         timestamp: datetime,
@@ -1925,15 +1925,17 @@ class S3Store(RemoteStore):
         cancel_check: Optional[callable] = None,
     ) -> Path:
         """Download a file for the given timestamp and satellite.
-        
+
         This method implements the abstract method from RemoteStore.
         Note: progress_callback and cancel_check are not implemented in this stub.
         """
         return await self.download(timestamp, satellite, destination)
-    
-    async def get_file_url(self, timestamp: datetime, satellite: SatellitePattern) -> str:
+
+    async def get_file_url(
+        self, timestamp: datetime, satellite: SatellitePattern
+    ) -> str:
         """Get the URL for a file.
-        
+
         This method implements the abstract method from RemoteStore.
         """
         bucket, key = self._get_bucket_and_key(timestamp, satellite)

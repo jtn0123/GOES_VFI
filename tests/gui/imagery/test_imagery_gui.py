@@ -499,7 +499,7 @@ def main():
 
             # Display in preview area
             fallback_preview.setPixmap(pixmap)
-            logger.info(f"Showing fallback preview for: {error_msg}")
+            logger.info("Showing fallback preview for: %s", error_msg)
 
         # Show initial fallback preview immediately
         QTimer.singleShot(

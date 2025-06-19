@@ -13,11 +13,7 @@ from unittest.mock import MagicMock, Mock, patch
 with patch("boto3.client"), patch("botocore.UNSIGNED", create=True):
     from goesvfi.integrity_check.goes_imagery import (
         ChannelType,
-        GOESImageProcessor,
-        GOESImageryDownloader,
         GOESImageryManager,
-        ImageryMode,
-        ProcessingMode,
         ProductType,
     )
 

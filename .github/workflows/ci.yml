@@ -1,48 +1,226 @@
+# Main CI Pipeline for GOES_VFI
 name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
+
+env:
+  PYTHONPATH: ${{ github.workspace }}
 
 jobs:
-  build:
+  lint:
+    name: Code Quality (Linting & Type Checks)
     runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/test-requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r test-requirements.txt
+
+    - name: Run comprehensive linting
+      run: |
+        python run_linters.py --check
+
+    - name: Run type checking
+      run: |
+        python run_mypy_checks.py
+
+    - name: Check security vulnerabilities
+      run: |
+        pip install bandit safety
+        bandit -r goesvfi/ -f json -o bandit-report.json || true
+        safety check --json --output safety-report.json || true
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  test:
+    name: Tests
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["3.13"] # Updated to Python 3.13 as required by pyproject.toml
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'pip' # Enable pip caching
 
-    - name: Install Qt dependencies
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('**/requirements.txt', '**/test-requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.python-version }}-pip-
+
+    - name: Install system dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends \
-          libgl1 libegl1 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 \
-          libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 \
-          libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 \
-          qt6-base-dev xvfb # Install Qt6 dev packages and xvfb for headless GUI tests
+        sudo apt-get install -y xvfb libegl1-mesa-dev
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[test] # Install package and test dependencies from pyproject.toml in editable mode
-        # Explicitly install mypy and all required type stubs to ensure they're available
-        pip install mypy types-requests types-Pillow types-aiofiles types-tqdm types-boto3
+        pip install -r requirements.txt
+        pip install -r test-requirements.txt
+        pip install coverage pytest-cov
 
-    - name: Install type stubs and run mypy type checking
+    - name: Run tests with coverage
       run: |
-        # Use our improved script to install stubs and run type checking
-        python ./run_mypy_checks.py --install-stubs --all --strict
+        if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+          xvfb-run -a python -m pytest --cov=goesvfi --cov-report=xml --cov-report=html tests/
+        else
+          python run_working_tests_with_mocks.py
+        fi
+      shell: bash
 
-    - name: Test with pytest (working tests only)
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.os }}-${{ matrix.python-version }}
+        path: |
+          coverage.xml
+          htmlcov/
+          test-results.xml
+
+  build:
+    name: Build Package
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install build dependencies
       run: |
-        xvfb-run python ./run_working_tests.py # Use xvfb-run for headless GUI tests with working tests only
+        python -m pip install --upgrade pip
+        pip install build twine wheel
+
+    - name: Build package
+      run: |
+        python -m build
+
+    - name: Check package
+      run: |
+        twine check dist/*
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dist-packages
+        path: dist/
+
+  docs:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r docs/requirements.txt
+
+    - name: Generate API documentation
+      run: |
+        python scripts/generate_docs.py --build --format html
+
+    - name: Upload documentation
+      uses: actions/upload-artifact@v3
+      with:
+        name: documentation
+        path: docs/_build/html/
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: docs/_build/html/
+
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v3
+      with:
+        fail-on-severity: moderate

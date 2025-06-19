@@ -1,11 +1,11 @@
-# TODO: split/merge with overlap
-
 from __future__ import annotations
 
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
+
+# TODO: split/merge with overlap
 
 
 def tile_image(

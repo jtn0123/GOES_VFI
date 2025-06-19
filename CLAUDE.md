@@ -74,6 +74,8 @@ python cleanup.py --delete-data
 
 ## Test Organization and Strategy
 
+**CRITICAL: Never skip tests. If a test is being skipped, it defeats the purpose of having it. All tests should either pass or fail - skipping tests provides no value and hides potential issues. If a test cannot run in certain environments, it should be fixed or removed, not skipped. Tests that are skipped are essentially dead code that gives a false sense of security.**
+
 The repository has a well-organized structure for tests and examples:
 
 ### Examples Directory

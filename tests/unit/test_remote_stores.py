@@ -288,8 +288,9 @@ class TestCDNStore(unittest.TestCase):
             return_value=mock_url,
         ):
             # Test file not found case
-            with patch("builtins.open", mock_open), self.assertRaises(
-                FileNotFoundError
+            with (
+                patch("builtins.open", mock_open),
+                self.assertRaises(FileNotFoundError),
             ):
                 await cdn_store.download(
                     self.test_timestamp, self.test_satellite, dest_path
@@ -394,10 +395,11 @@ class TestS3Store(unittest.TestCase):
         mock_session_class.return_value = self.session_mock
 
         # We need to patch the Config and UNSIGNED imports directly in the S3Store module
-        with patch(
-            "goesvfi.integrity_check.remote.s3_store.Config"
-        ) as mock_config_class, patch(
-            "goesvfi.integrity_check.remote.s3_store.UNSIGNED", "UNSIGNED"
+        with (
+            patch(
+                "goesvfi.integrity_check.remote.s3_store.Config"
+            ) as mock_config_class,
+            patch("goesvfi.integrity_check.remote.s3_store.UNSIGNED", "UNSIGNED"),
         ):
             # Mock for Config
             mock_config = MagicMock()

@@ -40,7 +40,7 @@ async def list_s3_objects(
     Returns:
         List of S3 object keys
     """
-    LOGGER.info(f"Listing objects in s3://{bucket}/{prefix} (limit: {limit})")
+    LOGGER.info("Listing objects in s3://%s/%s (limit: %s)", bucket, prefix, limit)
 
     # Create a session with unsigned access (no credentials needed)
     session = aioboto3.Session()
@@ -95,13 +95,13 @@ async def list_s3_objects(
 
             # If searching for bands, log band information
             if search_bands and band_counts:
-                LOGGER.info(f"Found {len(band_counts)} different bands:")
+                LOGGER.info("Found %s different bands:", len(band_counts))
                 for band, count in sorted(band_counts.items(), key=lambda x: int(x[0])):
-                    LOGGER.info(f"  Band {band}: {count} files")
+                    LOGGER.info("  Band %s: %s files", band, count)
 
             return objects
         except Exception as e:
-            LOGGER.error(f"Error listing objects: {e}")
+            LOGGER.error("Error listing objects: %s", e)
             return []
 
 
@@ -115,13 +115,12 @@ async def main():
             year, month, day = map(int, date_str.split("-"))
             test_date = datetime(year, month, day, 12, 0, 0)
         except Exception as e:
-            LOGGER.error(f"Invalid date format: {date_str} (use YYYY-MM-DD)")
+            LOGGER.error("Invalid date format: %s (use YYYY-MM-DD)", date_str)
             return
-    else:
-        # Use a recent date
-        test_date = datetime(2023, 6, 15, 12, 0, 0)
+    # Use a recent date
+    test_date = datetime(2023, 6, 15, 12, 0, 0)
 
-    LOGGER.info(f"Testing with date: {test_date.isoformat()}")
+    LOGGER.info("Testing with date: %s", test_date.isoformat())
 
     # Convert date to DOY format
     year = test_date.year
@@ -129,7 +128,7 @@ async def main():
     doy_str = f"{doy:03d}"
     hour = test_date.strftime("%H")
 
-    LOGGER.info(f"Date components: Year={year}, DOY={doy_str}, Hour={hour}")
+    LOGGER.info("Date components: Year=%s, DOY=%s, Hour=%s", year, doy_str, hour)
 
     # Test with GOES-16 and GOES-18
     satellites = [
@@ -142,13 +141,13 @@ async def main():
 
     # Search more broadly to see what bands are available
     for satellite, sat_name in satellites:
-        LOGGER.info(f"\nSearching for available bands in {sat_name}:")
+        LOGGER.info("\nSearching for available bands in %s:", sat_name)
 
         # Get bucket name
         bucket = TimeIndex.get_s3_bucket(satellite)
 
         for product_type in product_types:
-            LOGGER.info(f"\n  Searching bands for {product_type}:")
+            LOGGER.info("\n  Searching bands for %s:", product_type)
 
             # Create prefix for listing objects (scan the whole hour)
             prefix = f"ABI-L1b-{product_type}/{year}/{doy_str}/{hour}/"
@@ -158,30 +157,30 @@ async def main():
 
     # Now do the regular object listing
     for satellite, sat_name in satellites:
-        LOGGER.info(f"\nTesting {sat_name}:")
+        LOGGER.info("\nTesting %s:", sat_name)
 
         # Get bucket name
         bucket = TimeIndex.get_s3_bucket(satellite)
 
         for product_type in product_types:
-            LOGGER.info(f"\n  Testing {product_type}:")
+            LOGGER.info("\n  Testing %s:", product_type)
 
             # Create prefix for listing objects
             prefix = f"ABI-L1b-{product_type}/{year}/{doy_str}/{hour}/"
 
-            LOGGER.info(f"  Listing objects with prefix: {prefix}")
+            LOGGER.info("  Listing objects with prefix: %s", prefix)
 
             # List objects
             objects = await list_s3_objects(bucket, prefix, limit=5)
 
             if objects:
-                LOGGER.info(f"  Found {len(objects)} objects:")
+                LOGGER.info("  Found %s objects:", len(objects))
                 for i, obj in enumerate(objects):
                     LOGGER.info(
                         f"    {i+1}. {obj['key']} ({obj['size']} bytes, {obj['last_modified']})"
                     )
             else:
-                LOGGER.info(f"  No objects found with prefix: {prefix}")
+                LOGGER.info("  No objects found with prefix: %s", prefix)
 
 
 if __name__ == "__main__":

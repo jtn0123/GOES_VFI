@@ -6,6 +6,7 @@ satellite imagery from various remote sources.
 
 from .base import RemoteStore
 from .cdn_store import CDNStore
+from .composite_store import CompositeStore
 from .s3_store import S3Store
 
-__all__ = ["RemoteStore", "CDNStore", "S3Store"]
+__all__ = ["RemoteStore", "CDNStore", "S3Store", "CompositeStore"]

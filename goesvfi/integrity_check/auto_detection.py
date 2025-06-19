@@ -5,6 +5,7 @@ This module provides improved auto-detection functionality with better feedback
 and cross-tab integration for the integrity check system.
 """
 
+import json
 import logging
 import traceback
 from datetime import datetime
@@ -15,6 +16,7 @@ from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QApplication,
+    QGridLayout,
     QListWidget,
     QMessageBox,
     QProgressDialog,
@@ -26,16 +28,13 @@ from .time_index import SatellitePattern, TimeIndex
 # Configure logging
 LOGGER = logging.getLogger(__name__)
 
-
-class AutoDetectionError(Exception):
-    """Exception raised for auto-detection errors."""
-
+class AutoDetectionError(Exception):  # pylint: disable=too-few-public-methods
+"""Exception raised for auto-detection errors."""
 
 class DetectionProgressDialog(QProgressDialog):
     """Enhanced progress dialog for auto-detection operations with detailed feedback."""
 
-    def __init__(
-        self, title: str, label_text: str, parent: Optional[QWidget] = None
+    def __init__(self, title: str, label_text: str, parent: Optional[QWidget] = None
     ) -> None:
         """Initialize the detection progress dialog.
 
@@ -55,63 +54,64 @@ class DetectionProgressDialog(QProgressDialog):
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.setMinimumWidth(400)
         # Make the dialog look nicer with rounded corners and a border
-        self.setStyleSheet(
-            """
-            QProgressDialog {
-                background-color: #2d2d2d;
-                border: 1px solid #3a3a3a;
-                border-radius: 8px;
-                padding: 10px;
-            }
-            QLabel {
-                color: #e0e0e0;
-                font-size: 12px;
-            }
-            QProgressBar {
-                border: 1px solid #555;
-                border-radius: 4px;
-                background-color: #333;
-                text-align: center;
-                height: 20px;
-            }
-            QProgressBar::chunk {
-                background-color: #3498db;
-                border-radius: 3px;
-            }
-            QPushButton {
-                background-color: #3498db;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                padding: 6px 12px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #2980b9;
-            }
+        self.setStyleSheet("""
+        QProgressDialog {
+        background-color: #2d2d2d;
+        border: 1px solid #3a3a3a;
+        border-radius: 8px;
+        padding: 10px;
+        }
+        QLabel {
+        color: #e0e0e0;
+        font-size: 12px;
+        }
+        QProgressBar {
+        border: 1px solid #555;
+        border-radius: 4px;
+        background-color: #333;
+        text-align: center;
+        height: 20px;
+        }
+        QProgressBar::chunk {
+        background-color: #3498db;
+        border-radius: 3px;
+        }
+        QPushButton {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 12px;
+        font-weight: bold;
+        }
+        QPushButton:hover {
+        background-color: #2980b9;
+        }
         """
         )
 
         # Create a status log widget that will display detailed progress
         self.log_widget = QListWidget()
         self.log_widget.setMaximumHeight(150)
-        self.log_widget.setStyleSheet(
-            """
-            QListWidget {
-                background-color: #1d1d1d;
-                border: 1px solid #555;
-                border-radius: 4px;
-                color: #e0e0e0;
-                font-family: monospace;
-                font-size: 11px;
-            }
+        self.log_widget.setStyleSheet("""
+        QListWidget {
+        background-color: #1d1d1d;
+        border: 1px solid #555;
+        border-radius: 4px;
+        color: #e0e0e0;
+        font-family: monospace;
+        font-size: 11px;
+        }
         """
         )
 
         # Find the progress dialog's layout and add our log widget
         layout = self.layout()
         if layout:
-            layout.addWidget(self.log_widget, 2, 0, 1, layout.columnCount())
+            pass
+            if isinstance(layout, QGridLayout):
+                pass
+                layout.addWidget(self.log_widget, 2, 0, 1, layout.columnCount())
 
         # Adjust default size for better visibility
         self.resize(450, 350)
@@ -126,20 +126,25 @@ class DetectionProgressDialog(QProgressDialog):
         # Add styled message based on level
         color = "#e0e0e0"  # Default color
         if level == "warning":
+            pass
             color = "#f39c12"
         elif level == "error":
+            pass
             color = "#e74c3c"
         elif level == "success":
+            pass
             color = "#2ecc71"
 
         # Insert at the top for most recent messages
         self.log_widget.insertItem(0, message)
-        self.log_widget.item(0).setForeground(Qt.GlobalColor.white)
-        self.log_widget.item(0).setBackground(QColor(color))
+        item = self.log_widget.item(0)
+        if item:
+            pass
+            item.setForeground(Qt.GlobalColor.white)
+            item.setBackground(QColor(color))
 
         # Process events to ensure UI updates
         QApplication.processEvents()
-
 
 class AutoDetectionWorker(QThread):
     """Worker thread for auto-detection operations."""
@@ -149,7 +154,7 @@ class AutoDetectionWorker(QThread):
     finished = pyqtSignal(dict)  # result dictionary
     error = pyqtSignal(str, str)  # error_message, traceback
 
-    def __init__(self, operation: str, directory: Path, **kwargs) -> None:
+    def __init__(self, operation: str, directory: Path, **kwargs: Any) -> None:
         """Initialize the auto-detection worker.
 
         Args:
@@ -162,7 +167,7 @@ class AutoDetectionWorker(QThread):
         self.operation = operation
         self.directory = directory
         self.kwargs = kwargs
-        self._cancel_requested = False
+        self._cancel_requested = False  # pylint: disable=attribute-defined-outside-init
 
     def run(self) -> None:
         """Execute the auto-detection operation."""
@@ -170,15 +175,19 @@ class AutoDetectionWorker(QThread):
             self.progress.emit(0, f"Starting {self.operation} detection...", "info")
 
             if self.operation == "satellite":
+                pass
                 self._detect_satellite()
             elif self.operation == "date_range":
+                pass
                 self._detect_date_range()
             elif self.operation == "interval":
+                pass
                 self._detect_interval()
             else:
                 raise AutoDetectionError(f"Unknown operation: {self.operation}")
 
         except Exception as e:
+            pass
             error_traceback = traceback.format_exc()
             self.error.emit(str(e), error_traceback)
 
@@ -203,31 +212,36 @@ class AutoDetectionWorker(QThread):
 
             # Log a few sample filenames for debugging
             if png_files:
+                pass
                 sample_files = ", ".join([f.name for f in png_files[:3]])
                 self.progress.emit(30, f"Sample PNG files: {sample_files}", "info")
 
             if nc_files:
+                pass
                 sample_files = ", ".join([f.name for f in nc_files[:3]])
                 self.progress.emit(35, f"Sample NetCDF files: {sample_files}", "info")
             if jpg_files:
+                pass
                 sample_files = ", ".join([f.name for f in jpg_files[:3]])
                 self.progress.emit(40, f"Sample JPG files: {sample_files}", "info")
         except Exception as dir_error:
-            self.progress.emit(
-                30, f"Error listing directory contents: {dir_error}", "error"
+            pass
+            self.progress.emit()
+            30, f"Error listing directory contents: {dir_error}", "error"
             )
 
         # Look for GOES-16 files
         self.progress.emit(50, "Scanning for GOES-16 files...", "info")
         goes16_files = []
         try:
-            goes16_files = TimeIndex.scan_directory_for_timestamps(
-                self.directory, SatellitePattern.GOES_16
+            goes16_files = TimeIndex.scan_directory_for_timestamps()
+            self.directory, SatellitePattern.GOES_16
             )
             self.progress.emit(60, f"Found {len(goes16_files)} GOES-16 files", "info")
         except Exception as scan_error:
-            self.progress.emit(
-                60, f"Error scanning for GOES-16 files: {scan_error}", "error"
+            pass
+            self.progress.emit()
+            60, f"Error scanning for GOES-16 files: {scan_error}", "error"
             )
 
         # Look for GOES-18 files
@@ -235,13 +249,14 @@ class AutoDetectionWorker(QThread):
 
         goes18_files = []
         try:
-            goes18_files = TimeIndex.scan_directory_for_timestamps(
-                self.directory, SatellitePattern.GOES_18
+            goes18_files = TimeIndex.scan_directory_for_timestamps()
+            self.directory, SatellitePattern.GOES_18
             )
             self.progress.emit(80, f"Found {len(goes18_files)} GOES-18 files", "info")
         except Exception as scan_error:
-            self.progress.emit(
-                80, f"Error scanning for GOES-18 files: {scan_error}", "error"
+            pass
+            self.progress.emit()
+            80, f"Error scanning for GOES-18 files: {scan_error}", "error"
             )
 
         # Select satellite based on file count
@@ -249,33 +264,35 @@ class AutoDetectionWorker(QThread):
         goes16_count = len(goes16_files)
         goes18_count = len(goes18_files)
         if goes16_count == 0 and goes18_count == 0:
+            pass
             self.progress.emit(95, "No valid GOES files found", "warning")
             result = {"status": "no_files", "goes16_count": 0, "goes18_count": 0}
         elif goes16_count > goes18_count:
-            self.progress.emit(
-                100,
-                f"Detected GOES-16 as primary satellite ({goes16_count} files vs {goes18_count})",
-                "success",
+            pass
+            self.progress.emit()
+            100,
+            f"Detected GOES-16 as primary satellite ({goes16_count} files vs {goes18_count})",
+            "success",
             )
             result = {
-                "status": "success",
-                "satellite": SatellitePattern.GOES_16,
-                "satellite_name": "GOES-16 (East)",
-                "goes16_count": goes16_count,
-                "goes18_count": goes18_count,
+            "status": "success",
+            "satellite": SatellitePattern.GOES_16,
+            "satellite_name": "GOES-16 (East)",
+            "goes16_count": goes16_count,
+            "goes18_count": goes18_count,
             }
         else:
-            self.progress.emit(
-                100,
-                f"Detected GOES-18 as primary satellite ({goes18_count} files vs {goes16_count})",
-                "success",
+            self.progress.emit()
+            100,
+            f"Detected GOES-18 as primary satellite ({goes18_count} files vs {goes16_count})",
+            "success",
             )
             result = {
-                "status": "success",
-                "satellite": SatellitePattern.GOES_18,
-                "satellite_name": "GOES-18 (West)",
-                "goes16_count": goes16_count,
-                "goes18_count": goes18_count,
+            "status": "success",
+            "satellite": SatellitePattern.GOES_18,
+            "satellite_name": "GOES-18 (West)",
+            "goes16_count": goes16_count,
+            "goes18_count": goes18_count,
             }
 
         self.finished.emit(result)
@@ -284,38 +301,41 @@ class AutoDetectionWorker(QThread):
         """Detect date range from files in the directory."""
         satellite = self.kwargs.get("satellite", SatellitePattern.GENERIC)
 
-        self.progress.emit(
-            10, f"Checking directory for {satellite.name} files...", "info"
+        self.progress.emit()
+        10, f"Checking directory for {satellite.name} files...", "info"
         )
         # Look for timestamps in directory based on the specified satellite pattern
-        self.progress.emit(
-            30, f"Scanning directory using {satellite.name} pattern...", "info"
+        self.progress.emit()
+        30, f"Scanning directory using {satellite.name} pattern...", "info"
         )
         timestamps = []
         try:
-            timestamps = TimeIndex.scan_directory_for_timestamps(
-                self.directory, satellite
+            pass
+            timestamps = TimeIndex.scan_directory_for_timestamps()
+            self.directory, satellite
             )
             self.progress.emit(50, f"Found {len(timestamps)} valid timestamps", "info")
 
             # Log sample timestamps
             if timestamps:
-                sample_timestamps = ", ".join(
-                    [ts.strftime("%Y-%m-%d %H:%M") for ts in timestamps[:3]]
+                pass
+                sample_timestamps = ", ".join()
+                [ts.strftime("%Y-%m-%d %H:%M") for ts in timestamps[:3]]
                 )
-                self.progress.emit(
-                    60, f"Sample timestamps: {sample_timestamps}", "info"
+                self.progress.emit()
+                60, f"Sample timestamps: {sample_timestamps}", "info"
                 )
 
         except Exception as scan_error:
-            self.progress.emit(
-                50, f"Error scanning for timestamps: {scan_error}", "error"
+            pass
+            self.progress.emit()
+            50, f"Error scanning for timestamps: {scan_error}", "error"
             )
             result = {
-                "status": "error",
-                "error": str(scan_error),
-                "start": None,
-                "end": None,
+            "status": "error",
+            "error": str(scan_error),
+            "start": None,
+            "end": None,
             }
             self.finished.emit(result)
             return
@@ -323,6 +343,7 @@ class AutoDetectionWorker(QThread):
         # Process the timestamps to find the min and max dates
         self.progress.emit(70, "Analyzing timestamps...", "info")
         if not timestamps:
+            pass
             self.progress.emit(90, "No valid timestamps found", "warning")
             result = {"status": "no_timestamps", "start": None, "end": None}
         else:
@@ -334,47 +355,52 @@ class AutoDetectionWorker(QThread):
             end_date = timestamps[-1]
             # Ensure end date has time set to end of day
             end_date = end_date.replace(hour=23, minute=59, second=59)
-            self.progress.emit(
-                90,
-                (
-                    f"Detected date range: {start_date.strftime('%Y-%m-%d')} "
-                    f"to {end_date.strftime('%Y-%m-%d')}"
-                ),
-                "success",
+            self.progress.emit()
+            90,
+            ()
+            f"Detected date range: {start_date.strftime('%Y-%m-%d')} "
+            f"to {end_date.strftime('%Y-%m-%d')}"
+            ),
+            "success",
             )
 
             result = {
-                "status": "success",
-                "start": start_date,
-                "end": end_date,
-                "timestamps": timestamps,
+            "status": "success",
+            "start": str(start_date) if start_date else None,
+            "end": str(end_date) if end_date else None,
+            "timestamps": ()
+            json.dumps([str(ts) for ts in timestamps]) if timestamps else None
+            ),
             }
         self.finished.emit(result)
 
     def _detect_interval(self) -> None:
+        pass
         """Detect time interval between files in the directory."""
         timestamps = self.kwargs.get("timestamps", [])
         if not timestamps:
+            pass
             # Try to get timestamps from the directory
             satellite = self.kwargs.get("satellite", SatellitePattern.GENERIC)
-            self.progress.emit(
-                10, "No timestamps provided, scanning directory...", "info"
+            self.progress.emit()
+            10, "No timestamps provided, scanning directory...", "info"
             )
             try:
-                timestamps = TimeIndex.scan_directory_for_timestamps(
-                    self.directory, satellite
+                timestamps = TimeIndex.scan_directory_for_timestamps()
+                self.directory, satellite
                 )
-                self.progress.emit(
-                    30, f"Found {len(timestamps)} valid timestamps", "info"
+                self.progress.emit()
+                30, f"Found {len(timestamps)} valid timestamps", "info"
                 )
             except Exception as scan_error:
-                self.progress.emit(
-                    30, f"Error scanning for timestamps: {scan_error}", "error"
+                pass
+                self.progress.emit()
+                30, f"Error scanning for timestamps: {scan_error}", "error"
                 )
                 result = {
-                    "status": "error",
-                    "error": str(scan_error),
-                    "interval_minutes": 0,
+                "status": "error",
+                "error": str(scan_error),
+                "interval_minutes": 0,
                 }
                 self.finished.emit(result)
                 return
@@ -383,8 +409,9 @@ class AutoDetectionWorker(QThread):
         self.progress.emit(40, "Analyzing timestamp intervals...", "info")
 
         if not timestamps or len(timestamps) < 2:
-            self.progress.emit(
-                50, "Not enough timestamps to determine interval", "warning"
+            pass
+            self.progress.emit()
+            50, "Not enough timestamps to determine interval", "warning"
             )
             result = {"status": "insufficient_data", "interval_minutes": 0}
             self.finished.emit(result)
@@ -398,8 +425,8 @@ class AutoDetectionWorker(QThread):
 
         intervals = []
         for i in range(1, len(timestamps)):
-            interval = (
-                timestamps[i] - timestamps[i - 1]
+            interval = ()
+            timestamps[i] - timestamps[i - 1]
             ).total_seconds() / 60  # Convert to minutes
             intervals.append(interval)
 
@@ -410,12 +437,13 @@ class AutoDetectionWorker(QThread):
 
         # Filter out any intervals that are clearly too large (e.g., gaps in data)
         # Typically, GOES data is available in various standard intervals:
-        # 5-minute, 10-minute, 15-minute, or 30-minute
+            # 5-minute, 10-minute, 15-minute, or 30-minute
         valid_intervals = [
-            i for i in intervals if i <= 60
+        i for i in intervals if i <= 60
         ]  # Consider intervals up to 1 hour
 
         if not valid_intervals:
+            pass
             self.progress.emit(70, "No valid intervals found", "warning")
             result = {"status": "no_valid_intervals", "interval_minutes": 0}
         else:
@@ -427,32 +455,31 @@ class AutoDetectionWorker(QThread):
 
             # Round to nearest standard interval (5, 10, 15, 30, 60 minutes)
             standard_intervals = [5, 10, 15, 30, 60]
-            rounded_interval = min(
-                standard_intervals, key=lambda x: abs(x - most_common_interval)
+            rounded_interval = min()
+            standard_intervals, key=lambda x: abs(x - most_common_interval)
             )
 
-            self.progress.emit(
-                90,
-                (
-                    f"Detected interval: {rounded_interval} minutes "
-                    f"(raw: {most_common_interval:.1f} minutes)"
-                ),
-                "success",
+            self.progress.emit()
+            90,
+            ()
+            f"Detected interval: {rounded_interval} minutes "
+            f"(raw: {most_common_interval:.1f} minutes)"
+            ),
+            "success",
             )
 
             result = {
-                "status": "success",
-                "interval_minutes": rounded_interval,
-                "raw_interval": most_common_interval,
-                "interval_counts": dict(interval_counts),
+            "status": "success",
+            "interval_minutes": rounded_interval,
+            "raw_interval": most_common_interval,
+            "interval_counts": dict(interval_counts),
             }
 
         self.finished.emit(result)
 
     def cancel(self) -> None:
         """Request cancellation of the operation."""
-        self._cancel_requested = True
-
+        self._cancel_requested = True  # pylint: disable=attribute-defined-outside-init
 
 class EnhancedAutoDetector:
     """
@@ -485,17 +512,16 @@ class EnhancedAutoDetector:
         """
         # Validate directory
         if not directory.exists() or not directory.is_dir():
-            QMessageBox.critical(
-                self.parent,
-                "Invalid Directory",
-                f"The directory {directory} does not exist or is not accessible.",
+            pass
+            QMessageBox.critical()
+            self.parent,
+            "Invalid Directory",
+            f"The directory {directory} does not exist or is not accessible.",
             )
             return None
 
         # Create progress dialog with enhanced feedback
-        progress_dialog = DetectionProgressDialog(
-            "Detecting Satellite Type", "Analyzing directory contents...", self.parent
-        )
+        progress_dialog = DetectionProgressDialog("Detecting Satellite Type", "Analyzing directory contents...", self.parent)
         progress_dialog.setMinimumDuration(0)  # Show immediately
 
         # Create worker thread
@@ -503,18 +529,18 @@ class EnhancedAutoDetector:
         self._workers.append(worker)
 
         # Connect signals
-        worker.progress.connect(
-            lambda value, message, level: self._update_detection_progress(
-                progress_dialog, value, message, level
-            )
+        worker.progress.connect()
+        lambda value, message, level: self._update_detection_progress()
+        progress_dialog, value, message, level
         )
-        worker.finished.connect(
-            lambda result: self._finish_detection(progress_dialog, result, "satellite")
         )
-        worker.error.connect(
-            lambda error, traceback: self._handle_detection_error(
-                progress_dialog, error, traceback
-            )
+        worker.finished.connect()
+        lambda result: self._finish_detection(progress_dialog, result, "satellite")
+        )
+        worker.error.connect()
+        lambda error, traceback: self._handle_detection_error()
+        progress_dialog, error, traceback
+        )
         )
 
         # Connect dialog's canceled signal to worker
@@ -528,13 +554,13 @@ class EnhancedAutoDetector:
 
         # Check if the operation was canceled
         if progress_dialog.wasCanceled():
+            pass
             return None
 
         # Return the result
         return getattr(progress_dialog, "result", None)
 
-    def detect_date_range(
-        self, directory: Path, satellite: SatellitePattern = SatellitePattern.GENERIC
+    def detect_date_range(self, directory: Path, satellite: SatellitePattern = SatellitePattern.GENERIC
     ) -> Optional[Dict[str, Any]]:
         """
         Auto-detect date range from files in the directory.
@@ -548,17 +574,16 @@ class EnhancedAutoDetector:
         """
         # Validate directory
         if not directory.exists() or not directory.is_dir():
-            QMessageBox.critical(
-                self.parent,
-                "Invalid Directory",
-                f"The directory {directory} does not exist or is not accessible.",
+            pass
+            QMessageBox.critical()
+            self.parent,
+            "Invalid Directory",
+            f"The directory {directory} does not exist or is not accessible.",
             )
             return None
 
         # Create progress dialog with enhanced feedback
-        progress_dialog = DetectionProgressDialog(
-            "Detecting Date Range", f"Analyzing {satellite.name} files...", self.parent
-        )
+        progress_dialog = DetectionProgressDialog("Detecting Date Range", f"Analyzing {satellite.name} files...", self.parent)
         progress_dialog.setMinimumDuration(0)  # Show immediately
 
         # Create worker thread
@@ -566,18 +591,18 @@ class EnhancedAutoDetector:
         self._workers.append(worker)
 
         # Connect signals
-        worker.progress.connect(
-            lambda value, message, level: self._update_detection_progress(
-                progress_dialog, value, message, level
-            )
+        worker.progress.connect()
+        lambda value, message, level: self._update_detection_progress()
+        progress_dialog, value, message, level
         )
-        worker.finished.connect(
-            lambda result: self._finish_detection(progress_dialog, result, "date_range")
         )
-        worker.error.connect(
-            lambda error, traceback: self._handle_detection_error(
-                progress_dialog, error, traceback
-            )
+        worker.finished.connect()
+        lambda result: self._finish_detection(progress_dialog, result, "date_range")
+        )
+        worker.error.connect()
+        lambda error, traceback: self._handle_detection_error()
+        progress_dialog, error, traceback
+        )
         )
 
         # Connect dialog's canceled signal to worker
@@ -591,16 +616,16 @@ class EnhancedAutoDetector:
 
         # Check if the operation was canceled
         if progress_dialog.wasCanceled():
+            pass
             return None
 
         # Return the result
         return getattr(progress_dialog, "result", None)
 
-    def detect_interval(
-        self,
-        directory: Path,
-        timestamps: Optional[List[datetime]] = None,
-        satellite: SatellitePattern = SatellitePattern.GENERIC,
+    def detect_interval(self,
+    directory: Path,
+    timestamps: Optional[List[datetime]] = None,
+    satellite: SatellitePattern = SatellitePattern.GENERIC,
     ) -> Optional[Dict[str, Any]]:
         """
         Auto-detect time interval between files in the directory.
@@ -611,42 +636,40 @@ class EnhancedAutoDetector:
             satellite: Satellite pattern to use for detection if timestamps not provided
 
         Returns:
+            pass
             Dictionary with detection results, or None if canceled
         """
         # Validate directory
         if not directory.exists() or not directory.is_dir():
-            QMessageBox.critical(
-                self.parent,
-                "Invalid Directory",
-                f"The directory {directory} does not exist or is not accessible.",
+            pass
+            QMessageBox.critical()
+            self.parent,
+            "Invalid Directory",
+            f"The directory {directory} does not exist or is not accessible.",
             )
             return None
 
         # Create progress dialog with enhanced feedback
-        progress_dialog = DetectionProgressDialog(
-            "Detecting Time Interval", "Analyzing file timestamps...", self.parent
-        )
+        progress_dialog = DetectionProgressDialog("Detecting Time Interval", "Analyzing file timestamps...", self.parent)
         progress_dialog.setMinimumDuration(0)  # Show immediately
 
         # Create worker thread
-        worker = AutoDetectionWorker(
-            "interval", directory, timestamps=timestamps, satellite=satellite
-        )
+        worker = AutoDetectionWorker("interval", directory, timestamps=timestamps, satellite=satellite)
         self._workers.append(worker)
 
         # Connect signals
-        worker.progress.connect(
-            lambda value, message, level: self._update_detection_progress(
-                progress_dialog, value, message, level
-            )
+        worker.progress.connect()
+        lambda value, message, level: self._update_detection_progress()
+        progress_dialog, value, message, level
         )
-        worker.finished.connect(
-            lambda result: self._finish_detection(progress_dialog, result, "interval")
         )
-        worker.error.connect(
-            lambda error, traceback: self._handle_detection_error(
-                progress_dialog, error, traceback
-            )
+        worker.finished.connect()
+        lambda result: self._finish_detection(progress_dialog, result, "interval")
+        )
+        worker.error.connect()
+        lambda error, traceback: self._handle_detection_error()
+        progress_dialog, error, traceback
+        )
         )
 
         # Connect dialog's canceled signal to worker
@@ -660,13 +683,13 @@ class EnhancedAutoDetector:
 
         # Check if the operation was canceled
         if progress_dialog.wasCanceled():
+            pass
             return None
 
         # Return the result
         return getattr(progress_dialog, "result", None)
 
-    def _update_detection_progress(
-        self, dialog: DetectionProgressDialog, value: int, message: str, level: str
+    def _update_detection_progress(self, dialog: DetectionProgressDialog, value: int, message: str, level: str
     ) -> None:
         """Update the detection progress dialog.
 
@@ -679,11 +702,10 @@ class EnhancedAutoDetector:
         dialog.setValue(value)
         dialog.add_log_message(message, level)
 
-    def _finish_detection(
-        self,
-        dialog: DetectionProgressDialog,
-        result: Dict[str, Any],
-        detection_type: str,
+    def _finish_detection(self,
+    dialog: DetectionProgressDialog,
+    result: Dict[str, Any],
+    detection_type: str,
     ) -> None:
         """Handle completion of detection operation.
 
@@ -693,33 +715,41 @@ class EnhancedAutoDetector:
             detection_type: Type of detection operation
         """
         # Store the result in the dialog for retrieval
-        dialog.result = result
-
+        dialog.result = result  # type: ignore[method-assign,assignment]
         # Set the dialog's label based on the detection type and result
         if detection_type == "satellite":
+            pass
             if result.get("status") == "success":
+                pass
                 satellite_name = result["satellite_name"]
-                dialog.setLabelText(
-                    f"Detected {satellite_name} as the primary satellite."
+                dialog.setLabelText()
+                f"Detected {satellite_name} as the primary satellite."
                 )
             elif result.get("status") == "no_files":
+                pass
                 dialog.setLabelText("No valid GOES files found in the directory.")
 
         elif detection_type == "date_range":
+            pass
             if result.get("status") == "success":
+                pass
                 start = result["start"].strftime("%Y-%m-%d")
                 end = result["end"].strftime("%Y-%m-%d")
                 dialog.setLabelText(f"Detected date range: {start} to {end}.")
             elif result.get("status") == "no_timestamps":
+                pass
                 dialog.setLabelText("No valid timestamps found in the directory.")
 
         elif detection_type == "interval":
+            pass
             if result.get("status") == "success":
+                pass
                 interval = result["interval_minutes"]
-                dialog.setLabelText(
-                    f"Detected interval: {interval} minutes between files."
+                dialog.setLabelText()
+                f"Detected interval: {interval} minutes between files."
                 )
             elif result.get("status") in ("insufficient_data", "no_valid_intervals"):
+                pass
                 dialog.setLabelText("Could not determine interval - not enough data.")
 
         # Set to 100% progress
@@ -727,10 +757,10 @@ class EnhancedAutoDetector:
 
         # Auto-close after a short delay if successful
         if result.get("status") == "success":
+            pass
             QTimer.singleShot(2000, dialog.accept)
 
-    def _handle_detection_error(
-        self, dialog: DetectionProgressDialog, error: str, error_traceback: str
+    def _handle_detection_error(self, dialog: DetectionProgressDialog, error: str, error_traceback: str
     ) -> None:
         """Handle detection error.
 
@@ -750,18 +780,16 @@ class EnhancedAutoDetector:
         """Clean up worker threads when done."""
         for worker in self._workers:
             if worker.isRunning():
+                pass
                 worker.cancel()
                 worker.wait()
 
         self._workers.clear()
 
-
 # Module-level auto-detector instance for singleton usage
 auto_detector = EnhancedAutoDetector()
 
-
-def detect_satellite(
-    directory: Path, parent: Optional[QWidget] = None
+def detect_satellite(directory: Path, parent: Optional[QWidget] = None
 ) -> Optional[Dict[str, Any]]:
     """Auto-detect satellite type from files in the directory.
 
@@ -773,15 +801,14 @@ def detect_satellite(
         Dictionary with detection results, or None if canceled
     """
     if parent is not None:
+        pass
         auto_detector.parent = parent
 
     return auto_detector.detect_satellite(directory)
 
-
-def detect_date_range(
-    directory: Path,
-    satellite: SatellitePattern = SatellitePattern.GENERIC,
-    parent: Optional[QWidget] = None,
+def detect_date_range(directory: Path,
+satellite: SatellitePattern = SatellitePattern.GENERIC,
+parent: Optional[QWidget] = None,
 ) -> Optional[Dict[str, Any]]:
     """Auto-detect date range from files in the directory.
 
@@ -794,16 +821,15 @@ def detect_date_range(
         Dictionary with detection results, or None if canceled
     """
     if parent is not None:
+        pass
         auto_detector.parent = parent
 
     return auto_detector.detect_date_range(directory, satellite)
 
-
-def detect_interval(
-    directory: Path,
-    timestamps: Optional[List[datetime]] = None,
-    satellite: SatellitePattern = SatellitePattern.GENERIC,
-    parent: Optional[QWidget] = None,
+def detect_interval(directory: Path,
+timestamps: Optional[List[datetime]] = None,
+satellite: SatellitePattern = SatellitePattern.GENERIC,
+parent: Optional[QWidget] = None,
 ) -> Optional[Dict[str, Any]]:
     """Auto-detect time interval between files in the directory.
 
@@ -817,6 +843,7 @@ def detect_interval(
         Dictionary with detection results, or None if canceled
     """
     if parent is not None:
+        pass
         auto_detector.parent = parent
 
     return auto_detector.detect_interval(directory, timestamps, satellite)

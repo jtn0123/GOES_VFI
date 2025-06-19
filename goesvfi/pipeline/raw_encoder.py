@@ -3,7 +3,7 @@ from __future__ import annotations
 import pathlib
 import subprocess
 import tempfile
-from typing import Any, Iterable, List  # Adjusted imports
+from typing import Iterable
 
 import numpy as np
 from numpy.typing import NDArray
@@ -47,9 +47,10 @@ def write_raw_mp4(
         str(raw_path),  # Output raw MP4 path
     ]
     try:
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
+        subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120)
         print("Lossless encoding successful.")
     except subprocess.CalledProcessError as e:
+        pass
         print("FFmpeg (raw) error:")
         print(f"STDOUT: {e.stdout}")
         print(f"STDERR: {e.stderr}")
@@ -57,6 +58,7 @@ def write_raw_mp4(
         tmpdir.cleanup()
         raise  # Re-raise the exception
     except FileNotFoundError:
+        pass
         print("Error: ffmpeg command not found. Is ffmpeg installed and in your PATH?")
         tmpdir.cleanup()
         raise

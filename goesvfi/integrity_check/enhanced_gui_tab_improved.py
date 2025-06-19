@@ -45,6 +45,7 @@ from PyQt6.QtWidgets import (
 )
 
 from goesvfi.utils import log
+
 from .time_index import SatellitePattern
 from .view_model import MissingTimestamp, ScanStatus
 
@@ -130,6 +131,7 @@ class ImprovedEnhancedIntegrityCheckTab(QWidget):
             self.view_model = view_model
         else:
             from .view_model import IntegrityCheckViewModel
+
             self.view_model = IntegrityCheckViewModel()
         self._setup_ui()
         self._connect_signals()
@@ -146,7 +148,7 @@ class ImprovedEnhancedIntegrityCheckTab(QWidget):
         dir_layout = QHBoxLayout()
         dir_layout.addWidget(QLabel("Directory:"))
         self.directory_edit = QLineEdit()
-        if hasattr(self.view_model, 'base_directory'):
+        if hasattr(self.view_model, "base_directory"):
             self.directory_edit.setText(str(self.view_model.base_directory))
         dir_layout.addWidget(self.directory_edit)
         layout.addLayout(dir_layout)
@@ -158,7 +160,7 @@ class ImprovedEnhancedIntegrityCheckTab(QWidget):
         self.download_button.setEnabled(False)
         self.export_button = QPushButton("Export")
         self.export_button.setEnabled(False)
-        
+
         button_layout.addWidget(self.scan_button)
         button_layout.addWidget(self.download_button)
         button_layout.addWidget(self.export_button)
@@ -183,5 +185,5 @@ class ImprovedEnhancedIntegrityCheckTab(QWidget):
 
     def cleanup(self) -> None:
         """Clean up resources."""
-        if hasattr(self, 'view_model'):
+        if hasattr(self, "view_model"):
             self.view_model.cleanup()

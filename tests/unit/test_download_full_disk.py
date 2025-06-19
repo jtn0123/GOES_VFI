@@ -46,6 +46,7 @@ s3_config = Config(
 async def find_full_disk_files(bucket_name, band):
     """Find available Full Disk files for the specified band."""
     try:
+        pass
         # Connect to the S3 bucket with anonymous access
         s3 = boto3.client(
             "s3",
@@ -58,6 +59,7 @@ async def find_full_disk_files(bucket_name, band):
 
         # Try different hours to find a valid file
         for hour in TEST_HOURS:
+            pass
             # Define the prefix for the full disk
             prefix = f"ABI-L1b-{PRODUCT_TYPE}/{TEST_DATE}{hour}/"
 
@@ -73,15 +75,18 @@ async def find_full_disk_files(bucket_name, band):
             ]
 
             if hour_files:
+                pass
                 band_files.extend(hour_files[:1])  # Take the first file from each hour
 
                 # If we found a file, we can stop looking through hours
                 if len(band_files) >= 1:
+                    pass
                     break
 
         return band_files
 
     except Exception as e:
+        pass
         logger.error(
             f"Error finding Full Disk files for {bucket_name}/Band {band}: {str(e)}"
         )
@@ -100,15 +105,16 @@ async def download_file(bucket_name, s3_key, local_path):
         )
 
         # Download the file
-        logger.info(f"Downloading {s3_key} to {local_path}")
+        logger.info("Downloading %s to %s", s3_key, local_path)
         s3.download_file(bucket_name, s3_key, str(local_path))
 
         file_size = local_path.stat().st_size
-        logger.info(f"Downloaded file size: {file_size:,} bytes")
+        logger.info("Downloaded file size: %s bytes", file_size)
         return True
 
     except Exception as e:
-        logger.error(f"Error downloading {bucket_name}/{s3_key}: {str(e)}")
+        pass
+        logger.error("Error downloading %s/%s: %s", bucket_name, s3_key, str(e))
         return False
 
 
@@ -121,10 +127,12 @@ async def download_full_disk_files():
         satellite_abbr = "G16" if satellite == "noaa-goes16" else "G18"
 
         for band in BANDS:
+            pass
             # Find available Full Disk files for this band
             available_files = await find_full_disk_files(satellite, band)
 
             if available_files:
+                pass
                 # Download the first available file
                 filename = available_files[0]
 
@@ -155,7 +163,7 @@ async def download_full_disk_files():
 
 async def main():
     """Main function to run the Full Disk download test."""
-    logger.info(f"Starting GOES Full Disk (RadF) file downloads to {DOWNLOAD_DIR}")
+    logger.info("Starting GOES Full Disk (RadF) file downloads to %s", DOWNLOAD_DIR)
 
     try:
         # Download Full Disk files for all bands
@@ -166,7 +174,7 @@ async def main():
 
         for satellite, satellite_results in results.items():
             satellite_name = "GOES-16" if satellite == "noaa-goes16" else "GOES-18"
-            logger.info(f"\n{satellite_name}:")
+            logger.info("\n%s:", satellite_name)
 
             successful = sum(
                 1
@@ -181,15 +189,18 @@ async def main():
             # List successful downloads
             for band_name, band_result in satellite_results.items():
                 if band_result["success"]:
+                    pass
                     logger.info(f"    ✓ {band_name}: {band_result['file']}")
                 else:
                     reason = band_result.get("reason", "Download failed")
-                    logger.info(f"    ✗ {band_name}: {reason}")
+                    logger.info("    ✗ %s: %s", band_name, reason)
 
     except Exception as e:
-        logger.error(f"Error in main: {str(e)}")
+        pass
+        logger.error("Error in main: %s", str(e))
         raise
 
 
 if __name__ == "__main__":
+    pass
     asyncio.run(main())

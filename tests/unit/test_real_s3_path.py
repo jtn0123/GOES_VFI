@@ -55,7 +55,7 @@ async def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
         # Find the nearest valid timestamps for this product
         nearest_times = TimeIndex.find_nearest_intervals(timestamp, product_type)
         if not nearest_times:
-            LOGGER.warning(f"No valid scan times found for {product_type}")
+            LOGGER.warning("No valid scan times found for %s", product_type)
             results[product_type] = {
                 "success": False,
                 "error": "No valid scan times found",
@@ -85,7 +85,9 @@ async def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
                         ts, satellite_pattern, product_type=product_type, band=band
                     )
 
-                    LOGGER.info(f"Trying to access s3://{bucket}/{key} -> {dest_path}")
+                    LOGGER.info(
+                        "Trying to access s3://%s/%s -> %s", bucket, key, dest_path
+                    )
 
                     # Check if file exists
                     exists = await s3_store.exists(
@@ -95,7 +97,7 @@ async def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
 
                     if exists:
                         # Download the file
-                        LOGGER.info(f"File exists! Downloading...")
+                        LOGGER.info("File exists! Downloading...")
                         result_path = await s3_store.download(
                             ts,
                             satellite_pattern,
@@ -131,7 +133,7 @@ async def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
                 except Exception as e:
                     attempt["error"] = str(e)
                     attempt["exception_type"] = type(e).__name__
-                    LOGGER.error(f"✗ Error: {e}")
+                    LOGGER.error("✗ Error: %s", e)
 
                 # Add attempt to result
                 product_result["attempts"].append(attempt)
@@ -163,7 +165,7 @@ async def main():
         # June 15, 2023 at 12:00 UTC should have GOES data available
         test_time = datetime(2023, 6, 15, 12, 0, 0)
 
-        LOGGER.info(f"Testing with timestamp: {test_time.isoformat()}")
+        LOGGER.info("Testing with timestamp: %s", test_time.isoformat())
 
         # Test with GOES-16 and GOES-18
         satellites = [SatellitePattern.GOES_16, SatellitePattern.GOES_18]
@@ -171,7 +173,7 @@ async def main():
         all_results = {}
 
         for satellite in satellites:
-            LOGGER.info(f"Testing {satellite.name}...")
+            LOGGER.info("Testing %s...", satellite.name)
 
             # Run the test
             results = await test_s3_patterns(test_time, satellite, dest_dir)
@@ -182,9 +184,9 @@ async def main():
             # Quick summary
             for product_type, result in results.items():
                 if result["success"]:
-                    LOGGER.info(f"✓ {satellite.name} {product_type}: SUCCESS")
+                    LOGGER.info("✓ %s %s: SUCCESS", satellite.name, product_type)
                 else:
-                    LOGGER.info(f"✗ {satellite.name} {product_type}: FAILED")
+                    LOGGER.info("✗ %s %s: FAILED", satellite.name, product_type)
 
         # Print final summary
         LOGGER.info("\n=== TEST SUMMARY ===")

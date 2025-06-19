@@ -21,14 +21,15 @@ class FFmpegCommandBuilder:
     execution.
 
     Typical usage:
+        pass
         builder = FFmpegCommandBuilder()
-        cmd = (
-            builder.set_input(input_path)
-                   .set_output(output_path)
-                   .set_encoder("Software x265")
-                   .set_crf(20)
-                   .set_pix_fmt("yuv420p10le")
-                   .build()
+        cmd = ()
+        builder.set_input(input_path)
+        .set_output(output_path)
+        .set_encoder("Software x265")
+        .set_crf(20)
+        .set_pix_fmt("yuv420p10le")
+        .build()
         )
     """
 
@@ -62,7 +63,7 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._input_path = input_path
+        self._input_path = input_path  # pylint: disable=attribute-defined-outside-init
         self._command.extend(["-i", str(input_path)])
         return self
 
@@ -75,7 +76,9 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._output_path = output_path
+        self._output_path = (
+            output_path  # pylint: disable=attribute-defined-outside-init
+        )
         return self  # Output path is added during build based on pass
 
     def set_encoder(self, encoder: str) -> "FFmpegCommandBuilder":
@@ -87,7 +90,7 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._encoder = encoder
+        self._encoder = encoder  # pylint: disable=attribute-defined-outside-init
         # Encoder-specific args will be added in build()
         return self
 
@@ -100,7 +103,7 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._crf = crf
+        self._crf = crf  # pylint: disable=attribute-defined-outside-init
         return self
 
     def set_bitrate(self, bitrate_kbps: int) -> "FFmpegCommandBuilder":
@@ -112,7 +115,9 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._bitrate_kbps = bitrate_kbps
+        self._bitrate_kbps = (
+            bitrate_kbps  # pylint: disable=attribute-defined-outside-init
+        )
         return self
 
     def set_bufsize(self, bufsize_kb: int) -> "FFmpegCommandBuilder":
@@ -124,7 +129,7 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._bufsize_kb = bufsize_kb
+        self._bufsize_kb = bufsize_kb  # pylint: disable=attribute-defined-outside-init
         return self
 
     def set_pix_fmt(self, pix_fmt: str) -> "FFmpegCommandBuilder":
@@ -136,7 +141,7 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._pix_fmt = pix_fmt
+        self._pix_fmt = pix_fmt  # pylint: disable=attribute-defined-outside-init
         return self
 
     def set_two_pass(
@@ -152,9 +157,15 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._is_two_pass = is_two_pass
-        self._pass_log_prefix = pass_log_prefix
-        self._pass_number = pass_number
+        self._is_two_pass = (
+            is_two_pass  # pylint: disable=attribute-defined-outside-init
+        )
+        self._pass_log_prefix = (
+            pass_log_prefix  # pylint: disable=attribute-defined-outside-init
+        )
+        self._pass_number = (
+            pass_number  # pylint: disable=attribute-defined-outside-init
+        )
         return self
 
     def build(self) -> List[str]:
@@ -166,127 +177,184 @@ class FFmpegCommandBuilder:
         Raises:
             ValueError: If required parameters are missing or invalid.
         """
+        self._validate_required_parameters()
+
+        # Handle special case of copy encoder
+        if self._encoder == "None (copy original)":
+            pass
+            return self._build_copy_command()
+
+        # Build command with encoder-specific arguments
+        cmd = list(self._command)
+        self._add_encoder_specific_args(cmd)
+
+        return cmd
+
+    def _validate_required_parameters(self) -> None:
+        pass
+        """Validate that all required parameters are set."""
         if not self._input_path or not self._output_path or not self._encoder:
+            pass
             raise ValueError("Input path, output path, and encoder must be set.")
 
-        # Creating a new list to avoid modifying the original command template
-        cmd = list(self._command)  # Start with base command elements
+    def _build_copy_command(self) -> List[str]:
+        """Build command for stream copy (no re-encoding)."""
+        return [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(self._input_path),
+            "-c",
+            "copy",
+            str(self._output_path),
+        ]
 
-        # Handle "None" encoder (stream copy)
-        if self._encoder == "None (copy original)":
-            cmd = [
-                "ffmpeg",
-                "-y",
-                "-i",
-                str(self._input_path),
-                "-c",
-                "copy",
-                str(self._output_path),
-            ]
-            return cmd
-
-        # Add encoder-specific arguments
+    def _add_encoder_specific_args(self, cmd: List[str]) -> None:
+        """Add encoder-specific arguments to the command."""
         if self._encoder == "Software x265 (2-Pass)":
-            if (
-                not self._is_two_pass
-                or self._pass_log_prefix is None
-                or self._pass_number is None
-            ):
-                raise ValueError(
-                    "Two-pass encoding requires two_pass flag, log prefix, and pass number."
-                )
-
-            cmd.extend(["-c:v", "libx265", "-preset", "slower"])
-
-            if self._pass_number == 1:
-                cmd.extend(
-                    [
-                        "-b:v",
-                        f"{self._bitrate_kbps}k",
-                        "-x265-params",
-                        "pass=1",
-                        "-passlogfile",
-                        self._pass_log_prefix,
-                        "-f",
-                        "null",
-                        os.devnull,  # Use os.devnull for null output in pass 1
-                    ]
-                )
-            elif self._pass_number == 2:
-                pass2_params = (
-                    "pass=2:aq-mode=3:aq-strength=1.0:psy-rd=2.0:psy-rdoq=1.0"
-                )
-                args = [
-                    "-b:v",
-                    f"{self._bitrate_kbps}k",
-                    "-x265-params",
-                    pass2_params,
-                    "-passlogfile",
-                    self._pass_log_prefix,
-                ]
-                if self._pix_fmt is not None:
-                    args.extend(["-pix_fmt", self._pix_fmt])
-                if self._output_path is not None:
-                    args.append(str(self._output_path))
-                cmd.extend(args)
-            else:
-                raise ValueError(
-                    f"Invalid pass number for two-pass x265: {self._pass_number}"
-                )
-
+            pass
+            self._add_x265_two_pass_args(cmd)
         elif self._encoder == "Software x265":
-            if self._crf is None:
-                raise ValueError("CRF must be set for single-pass x265.")
-            x265_params = "aq-mode=3:aq-strength=1.0:psy-rd=2.0:psy-rdoq=1.0"
-            cmd.extend(["-c:v", "libx265", "-preset", "slower", "-crf", str(self._crf)])
-            cmd.extend(["-x265-params", x265_params])
-            args = []
-            if self._pix_fmt is not None:
-                args.extend(["-pix_fmt", self._pix_fmt])
-            if self._output_path is not None:
-                args.append(str(self._output_path))
-            cmd.extend(args)
-
+            pass
+            self._add_x265_single_pass_args(cmd)
         elif self._encoder == "Software x264":
-            if self._crf is None:
-                raise ValueError("CRF must be set for x264.")
-            cmd.extend(["-c:v", "libx264", "-preset", "slow", "-crf", str(self._crf)])
-            args = []
-            if self._pix_fmt is not None:
-                args.extend(["-pix_fmt", self._pix_fmt])
-            if self._output_path is not None:
-                args.append(str(self._output_path))
-            cmd.extend(args)
-
+            pass
+            self._add_x264_args(cmd)
         elif self._encoder == "Hardware HEVC (VideoToolbox)":
-            if self._bitrate_kbps is None or self._bufsize_kb is None:
-                raise ValueError("Bitrate and bufsize must be set for Hardware HEVC.")
-            safe_bitrate = max(1, self._bitrate_kbps)
-            safe_bufsize = max(1, self._bufsize_kb)
-            cmd.extend(["-c:v", "hevc_videotoolbox", "-tag:v", "hvc1"])
-            cmd.extend(["-b:v", f"{safe_bitrate}k", "-maxrate", f"{safe_bufsize}k"])
-            args = []
-            if self._pix_fmt is not None:
-                args.extend(["-pix_fmt", self._pix_fmt])
-            if self._output_path is not None:
-                args.append(str(self._output_path))
-            cmd.extend(args)
-
+            pass
+            self._add_hardware_hevc_args(cmd)
         elif self._encoder == "Hardware H.264 (VideoToolbox)":
-            if self._bitrate_kbps is None or self._bufsize_kb is None:
-                raise ValueError("Bitrate and bufsize must be set for Hardware H.264.")
-            safe_bitrate = max(1, self._bitrate_kbps)
-            safe_bufsize = max(1, self._bufsize_kb)
-            cmd.extend(["-c:v", "h264_videotoolbox"])
-            cmd.extend(["-b:v", f"{safe_bitrate}k", "-maxrate", f"{safe_bufsize}k"])
-            args = []
-            if self._pix_fmt is not None:
-                args.extend(["-pix_fmt", self._pix_fmt])
-            if self._output_path is not None:
-                args.append(str(self._output_path))
-            cmd.extend(args)
-
+            pass
+            self._add_hardware_h264_args(cmd)
         else:
             raise ValueError(f"Unsupported encoder selected: {self._encoder}")
 
-        return cmd
+    def _add_x265_two_pass_args(self, cmd: List[str]) -> None:
+        """Add arguments for x265 two-pass encoding."""
+        self._validate_two_pass_parameters()
+
+        cmd.extend(["-c:v", "libx265", "-preset", "slower"])
+
+        if self._pass_number == 1:
+            pass
+            self._add_x265_pass1_args(cmd)
+        elif self._pass_number == 2:
+            pass
+            self._add_x265_pass2_args(cmd)
+        else:
+            raise ValueError(
+                f"Invalid pass number for two-pass x265: {self._pass_number}"
+            )
+
+    def _validate_two_pass_parameters(self) -> None:
+        """Validate parameters required for two-pass encoding."""
+        if (
+            not self._is_two_pass
+            or self._pass_log_prefix is None
+            or self._pass_number is None
+        ):
+            pass
+            raise ValueError(
+                "Two-pass encoding requires two_pass flag, log prefix, and pass number."
+            )
+
+    def _add_x265_pass1_args(self, cmd: List[str]) -> None:
+        """Add arguments for x265 pass 1."""
+        cmd.extend(
+            [
+                "-b:v",
+                f"{self._bitrate_kbps}k",
+                "-x265-params",
+                "pass=1",
+                "-passlogfile",
+                self._pass_log_prefix,
+                "-f",
+                "null",
+                os.devnull,
+            ]
+        )
+
+    def _add_x265_pass2_args(self, cmd: List[str]) -> None:
+        """Add arguments for x265 pass 2."""
+        pass2_params = "pass=2:aq-mode=3:aq-strength=1.0:psy-rd=2.0:psy-rdoq=1.0"
+        args = [
+            "-b:v",
+            f"{self._bitrate_kbps}k",
+            "-x265-params",
+            pass2_params,
+            "-passlogfile",
+            self._pass_log_prefix,
+        ]
+        self._add_common_output_args(args)
+        cmd.extend(args)
+
+    def _add_x265_single_pass_args(self, cmd: List[str]) -> None:
+        """Add arguments for single-pass x265 encoding."""
+        if self._crf is None:
+            pass
+            raise ValueError("CRF must be set for single-pass x265.")
+
+        x265_params = "aq-mode=3:aq-strength=1.0:psy-rd=2.0:psy-rdoq=1.0"
+        cmd.extend(["-c:v", "libx265", "-preset", "slower", "-crf", str(self._crf)])
+        cmd.extend(["-x265-params", x265_params])
+
+        args = []
+        self._add_common_output_args(args)
+        cmd.extend(args)
+
+    def _add_x264_args(self, cmd: List[str]) -> None:
+        """Add arguments for x264 encoding."""
+        if self._crf is None:
+            pass
+            raise ValueError("CRF must be set for x264.")
+
+        cmd.extend(["-c:v", "libx264", "-preset", "slow", "-crf", str(self._crf)])
+
+        args = []
+        self._add_common_output_args(args)
+        cmd.extend(args)
+
+    def _add_hardware_hevc_args(self, cmd: List[str]) -> None:
+        """Add arguments for hardware HEVC encoding."""
+        self._validate_hardware_parameters("Hardware HEVC")
+
+        safe_bitrate, safe_bufsize = self._get_safe_hardware_rates()
+        cmd.extend(["-c:v", "hevc_videotoolbox", "-tag:v", "hvc1"])
+        cmd.extend(["-b:v", f"{safe_bitrate}k", "-maxrate", f"{safe_bufsize}k"])
+
+        args = []
+        self._add_common_output_args(args)
+        cmd.extend(args)
+
+    def _add_hardware_h264_args(self, cmd: List[str]) -> None:
+        """Add arguments for hardware H.264 encoding."""
+        self._validate_hardware_parameters("Hardware H.264")
+
+        safe_bitrate, safe_bufsize = self._get_safe_hardware_rates()
+        cmd.extend(["-c:v", "h264_videotoolbox"])
+        cmd.extend(["-b:v", f"{safe_bitrate}k", "-maxrate", f"{safe_bufsize}k"])
+
+        args = []
+        self._add_common_output_args(args)
+        cmd.extend(args)
+
+    def _validate_hardware_parameters(self, encoder_name: str) -> None:
+        """Validate parameters required for hardware encoding."""
+        if self._bitrate_kbps is None or self._bufsize_kb is None:
+            pass
+            raise ValueError(f"Bitrate and bufsize must be set for {encoder_name}.")
+
+    def _get_safe_hardware_rates(self) -> tuple[int, int]:
+        """Get safe bitrate and bufsize values for hardware encoding."""
+        safe_bitrate = max(1, self._bitrate_kbps)
+        safe_bufsize = max(1, self._bufsize_kb)
+        return safe_bitrate, safe_bufsize
+
+    def _add_common_output_args(self, args: List[str]) -> None:
+        """Add common output arguments (pixel format and output path)."""
+        if self._pix_fmt is not None:
+            pass
+            args.extend(["-pix_fmt", self._pix_fmt])
+        if self._output_path is not None:
+            pass
+            args.append(str(self._output_path))

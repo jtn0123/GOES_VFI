@@ -5,15 +5,7 @@ import os
 import re
 from enum import Enum
 from pathlib import Path
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    TypedDict,
-    cast,
-)
+from typing import Any, Callable, Dict, List, Optional, TypedDict, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -40,11 +32,16 @@ from PyQt6.QtWidgets import (
 from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
-from goesvfi.pipeline.run_vfi import VfiWorker
+
+# from goesvfi.pipeline.run_vfi import VfiWorker  # TODO: VfiWorker needs to be implemented
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
 from goesvfi.utils import config
 from goesvfi.utils.config import get_available_rife_models, get_cache_dir
-from goesvfi.utils.gui_helpers import ClickableLabel, CropSelectionDialog, ImageViewerDialog
+from goesvfi.utils.gui_helpers import (
+    ClickableLabel,
+    CropSelectionDialog,
+    ImageViewerDialog,
+)
 from goesvfi.utils.log import get_logger
 from goesvfi.utils.rife_analyzer import analyze_rife_executable
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
@@ -2415,30 +2412,40 @@ class MainTab(QWidget):
             "max_workers": self.max_workers_spinbox.value(),
             "encoder": encoder,
             "rife_model_key": rife_model_key if encoder == "RIFE" else None,
-            "rife_model_path": (config.get_project_root() / "models" / rife_model_key)
-            if encoder == "RIFE" and rife_model_key
-            else None,
-            "rife_exe_path": config.find_rife_executable(rife_model_key)
-            if encoder == "RIFE" and rife_model_key
-            else None,
-            "rife_tta_spatial": self.rife_tta_spatial_checkbox.isChecked()
-            if encoder == "RIFE"
-            else False,
-            "rife_tta_temporal": self.rife_tta_temporal_checkbox.isChecked()
-            if encoder == "RIFE"
-            else False,
-            "rife_uhd": self.rife_uhd_checkbox.isChecked()
-            if encoder == "RIFE"
-            else False,
-            "rife_tiling_enabled": self.rife_tile_checkbox.isChecked()
-            if encoder == "RIFE"
-            else False,
-            "rife_tile_size": self.rife_tile_size_spinbox.value()
-            if encoder == "RIFE"
-            else None,
-            "rife_thread_spec": self.rife_thread_spec_edit.text()
-            if encoder == "RIFE" and self.rife_thread_spec_edit.text()
-            else None,
+            "rife_model_path": (
+                (config.get_project_root() / "models" / rife_model_key)
+                if encoder == "RIFE" and rife_model_key
+                else None
+            ),
+            "rife_exe_path": (
+                config.find_rife_executable(rife_model_key)
+                if encoder == "RIFE" and rife_model_key
+                else None
+            ),
+            "rife_tta_spatial": (
+                self.rife_tta_spatial_checkbox.isChecked()
+                if encoder == "RIFE"
+                else False
+            ),
+            "rife_tta_temporal": (
+                self.rife_tta_temporal_checkbox.isChecked()
+                if encoder == "RIFE"
+                else False
+            ),
+            "rife_uhd": (
+                self.rife_uhd_checkbox.isChecked() if encoder == "RIFE" else False
+            ),
+            "rife_tiling_enabled": (
+                self.rife_tile_checkbox.isChecked() if encoder == "RIFE" else False
+            ),
+            "rife_tile_size": (
+                self.rife_tile_size_spinbox.value() if encoder == "RIFE" else None
+            ),
+            "rife_thread_spec": (
+                self.rife_thread_spec_edit.text()
+                if encoder == "RIFE" and self.rife_thread_spec_edit.text()
+                else None
+            ),
             "sanchez_enabled": self.sanchez_false_colour_checkbox.isChecked(),  # This might control post-processing or preview, not necessarily encoding
             "sanchez_resolution_km": float(self.sanchez_res_combo.currentText()),
             "crop_rect": current_crop_rect_mw,

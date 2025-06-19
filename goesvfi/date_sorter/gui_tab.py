@@ -33,6 +33,7 @@ class DateSorterTab(QWidget):
         super().__init__(parent)
 
         if not isinstance(view_model, DateSorterViewModel):
+            pass
             raise TypeError("view_model must be an instance of DateSorterViewModel")
 
         self.view_model = view_model  # Use the provided ViewModel
@@ -137,13 +138,15 @@ class DateSorterTab(QWidget):
         """Opens a dialog to select the source folder and updates the ViewModel."""
         folder_path = QFileDialog.getExistingDirectory(self, "Select Source Folder")
         if folder_path:
+            pass
             self.view_model.source_directory = folder_path
-            LOGGER.info(f"Selected source folder: {folder_path}")
+            LOGGER.info("Selected source folder: %s", folder_path)
             self.directory_selected.emit(folder_path)  # Emit signal with selected path
 
     def _start_scan(self) -> None:
         """Calls the start scan command on the ViewModel."""
         if self.view_model.can_start_sorting:
+            pass
             self.view_model.start_sorting()
         else:
             # This case should ideally be handled by the ViewModel's can_execute
@@ -164,4 +167,5 @@ class DateSorterTab(QWidget):
         # Auto-scroll status text to bottom
         v_scrollbar: Optional[QScrollBar] = self.status_text.verticalScrollBar()
         if v_scrollbar:
+            pass
             v_scrollbar.setValue(v_scrollbar.maximum())

@@ -25,7 +25,9 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from goesvfi.integrity_check.combined_tab import CombinedIntegrityTab
+from goesvfi.integrity_check.combined_tab import (
+    CombinedIntegrityAndImageryTab as CombinedIntegrityTab,
+)
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 from goesvfi.integrity_check.enhanced_view_model import (
     EnhancedIntegrityCheckViewModel,

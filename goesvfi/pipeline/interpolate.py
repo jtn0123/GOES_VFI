@@ -1,32 +1,28 @@
-# TODO: IFRNet‑S via ONNX Runtime (CoreML/DirectML)
-
 from __future__ import annotations
 
 import logging
 import pathlib
 import shutil
 import subprocess
-import tempfile
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-from numpy.typing import NDArray
 from PIL import Image
-
-# Import the new RIFE analyzer utilities
-from goesvfi.utils.rife_analyzer import RifeCapabilityDetector, RifeCommandBuilder
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 
 class RifeBackend:
+    pass
     """Wraps an external RIFE command-line executable."""
 
     def __init__(self, exe_path: pathlib.Path):
         if not exe_path.is_file():
+            pass
             raise FileNotFoundError(f"RIFE executable not found at: {exe_path}")
         if not shutil.which(str(exe_path)):
+            pass
             # Check if it's executable or just if it exists
             # On Unix-like systems, check execute permission
             # On Windows, just check existence might be enough, but shutil.which checks PATHEXT
@@ -42,11 +38,13 @@ class RifeBackend:
 
         # Log detected capabilities
         logger.info(
-            f"RIFE executable capabilities: tiling={self.capability_detector.supports_tiling()}, "
-            f"uhd={self.capability_detector.supports_uhd()}, "
-            f"tta_spatial={self.capability_detector.supports_tta_spatial()}, "
-            f"tta_temporal={self.capability_detector.supports_tta_temporal()}, "
-            f"thread_spec={self.capability_detector.supports_thread_spec()}"
+            "RIFE executable capabilities: tiling=%s, "
+            "uhd=%s, tta_spatial=%s, tta_temporal=%s, thread_spec=%s",
+            self.capability_detector.supports_tiling(),
+            self.capability_detector.supports_uhd(),
+            self.capability_detector.supports_tta_spatial(),
+            self.capability_detector.supports_tta_temporal(),
+            self.capability_detector.supports_thread_spec(),
         )
 
     def interpolate_pair(
@@ -68,6 +66,7 @@ class RifeBackend:
         """
         # Initialize options if None
         if options is None:
+            pass
             options = {}
 
         tmp = pathlib.Path(tempfile.mkdtemp())
@@ -99,16 +98,20 @@ class RifeBackend:
             }
 
             cmd = self.command_builder.build_command(f1, f2, out_f, cmd_options)
-            logger.debug(f"Running RIFE command: {' '.join(cmd)}")
+            logger.debug("Running RIFE command: %s", " ".join(cmd))
 
             # Run the command
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            result = subprocess.run(
+                cmd, check=True, capture_output=True, text=True, timeout=120
+            )
 
             # Log any output
             if result.stdout:
-                logger.debug(f"RIFE stdout: {result.stdout}")
+                pass
+                logger.debug("RIFE stdout: %s", result.stdout)
             if result.stderr:
-                logger.warning(f"RIFE stderr: {result.stderr}")
+                pass
+                logger.warning("RIFE stderr: %s", result.stderr)
 
             if not out_f.exists():
                 raise RuntimeError(
@@ -116,15 +119,17 @@ class RifeBackend:
                 )
 
             # Load the generated frame
-            frame_arr = np.array(Image.open(out_f)).astype(np.float32) / 255.0
+            with Image.open(out_f) as _img_temp:
+                frame_arr = np.array(_img_temp).astype(np.float32) / 255.0
 
         except subprocess.CalledProcessError as e:
-            logger.error(f"RIFE CLI Error Output:\n{e.stderr}")
+            logger.error("RIFE CLI Error Output:\n%s", e.stderr)
             raise RuntimeError(
                 f"RIFE executable failed (timestep {timestep}) with code {e.returncode}"
             ) from e
         except Exception as e:
-            logger.error(f"Error during RIFE CLI processing: {e}", exc_info=True)
+            pass
+            logger.error("Error during RIFE CLI processing: %s", e, exc_info=True)
             raise RuntimeError(f"Error during RIFE CLI processing: {e}") from e
         finally:
             shutil.rmtree(tmp)
@@ -152,6 +157,7 @@ def interpolate_three(
     """
     # Initialize options if None
     if options is None:
+        pass
         options = {}
 
     # Calculate the middle frame (t=0.5)

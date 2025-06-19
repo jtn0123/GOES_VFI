@@ -10,10 +10,7 @@ from pathlib import Path
 from typing import Optional, Type
 
 import aiohttp
-from aiohttp.client_exceptions import (
-    ClientError,
-    ClientResponseError,
-)
+from aiohttp.client_exceptions import ClientError, ClientResponseError
 
 from goesvfi.integrity_check.remote.base import RemoteStore
 from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
@@ -158,16 +155,16 @@ class CDNStore(RemoteStore):
             raise IOError(f"Failed to download {url}: {e}")
         except Exception as e:
             raise IOError(f"Unexpected error downloading {url}: {e}")
-    
+
     async def check_file_exists(
         self, timestamp: datetime, satellite: SatellitePattern
     ) -> bool:
         """Check if a file exists for the given timestamp and satellite.
-        
+
         This method implements the abstract method from RemoteStore.
         """
         return await self.exists(timestamp, satellite)
-    
+
     async def download_file(
         self,
         timestamp: datetime,
@@ -177,15 +174,17 @@ class CDNStore(RemoteStore):
         cancel_check: Optional[callable] = None,
     ) -> Path:
         """Download a file for the given timestamp and satellite.
-        
+
         This method implements the abstract method from RemoteStore.
         Note: progress_callback and cancel_check are not implemented in this stub.
         """
         return await self.download(timestamp, satellite, destination)
-    
-    async def get_file_url(self, timestamp: datetime, satellite: SatellitePattern) -> str:
+
+    async def get_file_url(
+        self, timestamp: datetime, satellite: SatellitePattern
+    ) -> str:
         """Get the URL for a file.
-        
+
         This method implements the abstract method from RemoteStore.
         """
         return TimeIndex.to_cdn_url(timestamp, satellite, self.resolution)

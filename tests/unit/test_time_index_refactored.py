@@ -10,7 +10,6 @@ from goesvfi.integrity_check.time_index_refactored import (
     _detect_test_environment,
     _filter_timestamp_by_range,
     _find_nearest_valid_scan_minute,
-    _get_folder_datetime,
     _get_s3_filename_pattern,
     _scan_files_for_timestamps,
     _scan_subdirectories_for_timestamps,
@@ -191,8 +190,8 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
         with patch("pathlib.Path.exists", return_value=True):
             with patch("pathlib.Path.is_dir", return_value=True):
                 with patch(
-                    "goesvfi.integrity_check.time_index_refactored.COMPILED_PATTERNS.get",
-                    return_value=None,
+                    "goesvfi.integrity_check.time_index_refactored.COMPILED_PATTERNS",
+                    {},  # Empty dict means .get() will return None for any key
                 ):
                     is_valid, compiled_pattern = _validate_directory_and_pattern(
                         Path("/valid/dir"), "UNKNOWN_PATTERN"
@@ -204,9 +203,10 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
         with patch("pathlib.Path.exists", return_value=True):
             with patch("pathlib.Path.is_dir", return_value=True):
                 mock_pattern = unittest.mock.Mock()
+                mock_compiled_patterns = {"GOES_16": mock_pattern}
                 with patch(
-                    "goesvfi.integrity_check.time_index_refactored.COMPILED_PATTERNS.get",
-                    return_value=mock_pattern,
+                    "goesvfi.integrity_check.time_index_refactored.COMPILED_PATTERNS",
+                    mock_compiled_patterns,
                 ):
                     is_valid, compiled_pattern = _validate_directory_and_pattern(
                         Path("/valid/dir"), "GOES_16"

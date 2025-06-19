@@ -110,7 +110,7 @@ def list_available_days(s3_client, product_prefix, year=None, month=None, day=No
         if day is not None:
             base_prefix += f"/{day:03d}"
 
-    logger.info(f"Searching for available data in: {base_prefix}")
+    logger.info("Searching for available data in: %s", base_prefix)
 
     try:
         # Use delimiter to list by directories
@@ -129,7 +129,7 @@ def list_available_days(s3_client, product_prefix, year=None, month=None, day=No
 
         return available_items
     except Exception as e:
-        logger.error(f"Error listing available days: {e}")
+        logger.error("Error listing available days: %s", e)
         return []
 
 
@@ -139,7 +139,7 @@ def find_latest_file(
     """Find the latest file for a specific product type and channel."""
     product_info = PRODUCTS.get(product_type)
     if not product_info:
-        logger.error(f"Unknown product type: {product_type}")
+        logger.error("Unknown product type: %s", product_type)
         return None
 
     product_prefix = product_info["prefix"]
@@ -155,7 +155,7 @@ def find_latest_file(
     if hour is not None:
         prefix += f"/{hour:02d}"
 
-    logger.info(f"Searching for {product_type} files in {prefix}")
+    logger.info("Searching for %s files in %s", product_type, prefix)
 
     try:
         # List objects with the given prefix
@@ -164,7 +164,7 @@ def find_latest_file(
         )
 
         if "Contents" not in response:
-            logger.warning(f"No files found for {prefix}")
+            logger.warning("No files found for %s", prefix)
             return None
 
         # Filter by channel if specified
@@ -194,11 +194,11 @@ def find_latest_file(
         # Sort by name (which includes timestamp) and return the latest
         matching_files.sort()
         latest_file = matching_files[-1]
-        logger.info(f"Found latest file: {latest_file}")
+        logger.info("Found latest file: %s", latest_file)
         return latest_file
 
     except Exception as e:
-        logger.error(f"Error searching for {product_type} files: {e}")
+        logger.error("Error searching for %s files: %s", product_type, e)
         return None
 
 
@@ -211,30 +211,30 @@ def download_file(s3_client, file_key):
 
     # Skip if file already exists
     if local_file.exists():
-        logger.info(f"File already exists locally: {local_file}")
+        logger.info("File already exists locally: %s", local_file)
         return local_file
 
-    logger.info(f"Downloading {file_key} to {local_file}")
+    logger.info("Downloading %s to %s", file_key, local_file)
     try:
         s3_client.download_file(
             Bucket=GOES_BUCKET, Key=file_key, Filename=str(local_file)
         )
-        logger.info(f"Download complete: {local_file}")
+        logger.info("Download complete: %s", local_file)
         return local_file
     except Exception as e:
-        logger.error(f"Error downloading file: {e}")
+        logger.error("Error downloading file: %s", e)
         return None
 
 
 def extract_netcdf_data(nc_file, product_type):
     """Extract relevant data from a NetCDF file based on product type."""
-    logger.info(f"Opening NetCDF file: {nc_file}")
+    logger.info("Opening NetCDF file: %s", nc_file)
     try:
         # Open the dataset
         ds = xr.open_dataset(nc_file)
 
         # Debug: print available variables
-        logger.info(f"Available variables: {list(ds.data_vars.keys())}")
+        logger.info("Available variables: %s", list(ds.data_vars.keys()))
 
         # Extract metadata
         metadata = {
@@ -252,7 +252,7 @@ def extract_netcdf_data(nc_file, product_type):
                 if len(channel_part) >= 2 and channel_part[:2].isdigit():
                     metadata["channel"] = int(channel_part[:2])
         except Exception as e:
-            logger.warning(f"Could not extract channel from filename: {e}")
+            logger.warning("Could not extract channel from filename: %s", e)
 
         # Extract relevant data variables based on product type
         if product_type == "rain_rate":
@@ -331,7 +331,7 @@ def extract_netcdf_data(nc_file, product_type):
         return data, metadata, ds
 
     except Exception as e:
-        logger.error(f"Error extracting data from NetCDF file: {e}")
+        logger.error("Error extracting data from NetCDF file: %s", e)
         import traceback
 
         traceback.print_exc()
@@ -347,7 +347,7 @@ def visualize_data(data, metadata, save_path=None, downsample=4):
     # Apply downsampling for large images if needed
     if downsample > 1 and hasattr(data, "shape") and len(data.shape) >= 2:
         data = data[::downsample, ::downsample]
-        logger.info(f"Downsampled data to shape: {data.shape}")
+        logger.info("Downsampled data to shape: %s", data.shape)
 
     product_type = metadata.get("product_type", "unknown")
     variable = metadata.get("variable", "unknown")
@@ -404,7 +404,7 @@ def visualize_data(data, metadata, save_path=None, downsample=4):
         if save_path:
             # First save the annotated version with timestamp
             plt.savefig(save_path, dpi=150, bbox_inches="tight", pad_inches=0)
-            logger.info(f"Saved visualization to {save_path}")
+            logger.info("Saved visualization to %s", save_path)
 
             # Create a direct image file instead of using matplotlib for raw version
             # Convert the image data to 8-bit RGB
@@ -426,12 +426,12 @@ def visualize_data(data, metadata, save_path=None, downsample=4):
             # Save directly without matplotlib
             raw_path = str(save_path).replace(".png", "_raw.png")
             iio.imwrite(raw_path, rgb)
-            logger.info(f"Saved raw visualization (no text) to {raw_path}")
+            logger.info("Saved raw visualization (no text) to %s", raw_path)
 
         return plt.gcf()
 
     except Exception as e:
-        logger.error(f"Error visualizing data: {e}")
+        logger.error("Error visualizing data: %s", e)
         import traceback
 
         traceback.print_exc()
@@ -580,18 +580,18 @@ def create_true_color(
         if save_path:
             # First save the annotated version with timestamp
             plt.savefig(save_path, dpi=150, bbox_inches="tight", pad_inches=0)
-            logger.info(f"Saved true color image to {save_path}")
+            logger.info("Saved true color image to %s", save_path)
 
             # Create a direct image file instead of using matplotlib for raw version
             # Save RGB array directly to file
             raw_path = str(save_path).replace(".png", "_raw.png")
             rgb_uint8 = (rgb * 255).astype(np.uint8)
             iio.imwrite(raw_path, rgb_uint8)
-            logger.info(f"Saved raw true color image (no text) to {raw_path}")
+            logger.info("Saved raw true color image (no text) to %s", raw_path)
         return plt.gcf()
 
     except Exception as e:
-        logger.error(f"Error creating true color image: {e}")
+        logger.error("Error creating true color image: %s", e)
         import traceback
 
         traceback.print_exc()
@@ -610,24 +610,24 @@ def process_product(
     save_plot=True,
 ):
     """Process a specific product type and channel."""
-    logger.info(f"Processing {product_type}, channel {channel}")
+    logger.info("Processing %s, channel %s", product_type, channel)
 
     # Find the latest file
     file_key = find_latest_file(s3_client, product_type, channel, year, day, hour)
     if not file_key:
-        logger.error(f"No file found for {product_type}, channel {channel}")
+        logger.error("No file found for %s, channel %s", product_type, channel)
         return None, None
 
     # Download the file
     local_file = download_file(s3_client, file_key)
     if not local_file:
-        logger.error(f"Failed to download {file_key}")
+        logger.error("Failed to download %s", file_key)
         return None, None
 
     # Extract data from NetCDF
     data, metadata, ds = extract_netcdf_data(local_file, product_type)
     if data is None:
-        logger.error(f"Failed to extract data from {local_file}")
+        logger.error("Failed to extract data from %s", local_file)
         return None, None
 
     # Visualize the data
@@ -642,7 +642,7 @@ def process_product(
                 )
                 timestamp = dt.strftime("%Y%m%d_%H%M%S")
             except Exception as e:
-                logger.warning(f"Could not parse time from metadata: {e}")
+                logger.warning("Could not parse time from metadata: %s", e)
 
         save_path = TEMP_DIR / f"{product_type}_ch{channel}_{timestamp}.png"
     else:
@@ -670,7 +670,7 @@ def process_true_color(
     save_plot=True,
 ):
     """Process and create a true color image from channels 1, 2, and 3."""
-    logger.info(f"Processing true color image for {product_type}")
+    logger.info("Processing true color image for %s", product_type)
 
     # Download channels 1, 2, and 3
     channels = {}
@@ -680,12 +680,12 @@ def process_true_color(
         # Find and download the file
         file_key = find_latest_file(s3_client, product_type, ch, year, day, hour)
         if not file_key:
-            logger.error(f"Could not find file for {product_type}, channel {ch}")
+            logger.error("Could not find file for %s, channel %s", product_type, ch)
             return None
 
         local_file = download_file(s3_client, file_key)
         if not local_file:
-            logger.error(f"Failed to download {file_key}")
+            logger.error("Failed to download %s", file_key)
             return None
 
         # Extract timestamp from file name
@@ -710,7 +710,9 @@ def process_true_color(
                 )
                 timestamps.append(date_time)
         except Exception as e:
-            logger.warning(f"Could not parse timestamp from filename {filename}: {e}")
+            logger.warning(
+                "Could not parse timestamp from filename %s: %s", filename, e
+            )
 
         channels[ch] = local_file
 

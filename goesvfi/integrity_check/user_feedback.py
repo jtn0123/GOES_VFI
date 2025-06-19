@@ -1,54 +1,43 @@
 """
+from pathlib import Path
+from typing import Callable, List, Optional, Tuple
+import json
+import os
+import time
+
+from datetime import datetime
+from enum import Enum, auto
+import logging
+
 Enhanced user feedback utilities for integrity check tabs.
 
 This module provides improved user feedback functionality, including detailed
 progress reporting, error messaging, and status updates for the integrity check system.
 """
 
-import json
-import logging
-import os
-import time
-from datetime import datetime, timedelta
-from enum import Enum, auto
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-
-from PyQt6.QtCore import (
-    QDateTime,
-    QObject,
-    QRunnable,
-    QSize,
-    Qt,
-    QThreadPool,
-    QTimer,
-    pyqtSignal,
+QObject,
+Qt,
+pyqtSignal,
 )
-from PyQt6.QtGui import QColor, QFont, QIcon, QPalette, QPixmap
-from PyQt6.QtWidgets import (
-    QDialog,
-    QDialogButtonBox,
-    QFrame,
-    QGroupBox,
-    QHBoxLayout,
-    QLabel,
-    QListWidget,
-    QMessageBox,
-    QPlainTextEdit,
-    QProgressBar,
-    QPushButton,
-    QScrollArea,
-    QSplitter,
-    QStatusBar,
-    QTabWidget,
-    QTextEdit,
-    QVBoxLayout,
-    QWidget,
+from PyQt6.QtGui import QColor
+
+QApplication,
+QDialog,
+QGroupBox,
+QHBoxLayout,
+QLabel,
+QListWidget,
+QMessageBox,
+QPlainTextEdit,
+QProgressBar,
+QPushButton,
+QStatusBar,
+QVBoxLayout,
+QWidget,
 )
 
 # Configure logging
 LOGGER = logging.getLogger(__name__)
-
 
 class MessageType(Enum):
     """Types of user messages with corresponding visual styling."""
@@ -58,7 +47,6 @@ class MessageType(Enum):
     WARNING = auto()
     ERROR = auto()
     DEBUG = auto()
-
 
 class FeedbackManager(QObject):
     """
@@ -77,6 +65,7 @@ class FeedbackManager(QObject):
     error_occurred = pyqtSignal(str, str)  # error_title, error_message
 
     def __init__(self) -> None:
+        pass
         """Initialize the feedback manager."""
         super().__init__()
 
@@ -101,19 +90,22 @@ class FeedbackManager(QObject):
         self._load_settings()
 
     def _load_settings(self) -> None:
+        pass
         """Load user feedback settings from file."""
         settings_path = Path.home() / ".config" / "goes_vfi" / "feedback_settings.json"
         if settings_path.exists():
+            pass
             try:
                 with open(settings_path, "r") as f:
                     settings = json.load(f)
-                    self._enable_desktop_notifications = settings.get(
-                        "desktop_notifications", False
+                    self._enable_desktop_notifications = settings.get()  # pylint: disable=attribute-defined-outside-init
+                    "desktop_notifications", False
                     )
-                    self._enable_sound_alerts = settings.get("sound_alerts", False)
+                    self._enable_sound_alerts = settings.get("sound_alerts", False)  # pylint: disable=attribute-defined-outside-init
                     LOGGER.debug("Loaded feedback settings")
             except Exception as e:
-                LOGGER.error(f"Error loading feedback settings: {e}")
+                pass
+                LOGGER.error("Error loading feedback settings: %s", e)
 
     def _save_settings(self) -> None:
         """Save user feedback settings to file."""
@@ -122,17 +114,17 @@ class FeedbackManager(QObject):
 
         try:
             settings = {
-                "desktop_notifications": self._enable_desktop_notifications,
-                "sound_alerts": self._enable_sound_alerts,
+            "desktop_notifications": self._enable_desktop_notifications,
+            "sound_alerts": self._enable_sound_alerts,
             }
             with open(settings_path, "w") as f:
                 json.dump(settings, f)
                 LOGGER.debug("Saved feedback settings")
         except Exception as e:
-            LOGGER.error(f"Error saving feedback settings: {e}")
+            pass
+            LOGGER.error("Error saving feedback settings: %s", e)
 
-    def add_message(
-        self, message: str, message_type: MessageType = MessageType.INFO
+    def add_message(self, message: str, message_type: MessageType = MessageType.INFO
     ) -> None:
         """
         Add a message to the feedback system.
@@ -150,16 +142,18 @@ class FeedbackManager(QObject):
 
         # Log message based on type
         if message_type == MessageType.ERROR:
+            pass
             LOGGER.error(message)
         elif message_type == MessageType.WARNING:
+            pass
             LOGGER.warning(message)
         elif message_type == MessageType.DEBUG:
+            pass
             LOGGER.debug(message)
         else:
             LOGGER.info(message)
 
-    def update_status(
-        self, status: str, message_type: MessageType = MessageType.INFO
+    def update_status(self, status: str, message_type: MessageType = MessageType.INFO
     ) -> None:
         """
         Update the current status message.
@@ -168,8 +162,8 @@ class FeedbackManager(QObject):
             status: Status message text
             message_type: Type of message for styling
         """
-        self._current_status = status
-        self._current_status_type = message_type
+        self._current_status = status  # pylint: disable=attribute-defined-outside-init
+        self._current_status_type = message_type  # pylint: disable=attribute-defined-outside-init
 
         # Emit signal
         self.status_updated.emit(status, message_type)
@@ -185,10 +179,10 @@ class FeedbackManager(QObject):
             task_name: Name of the task
             total_steps: Total number of steps in the task
         """
-        self._current_task = task_name
-        self._progress_current = 0
-        self._progress_total = total_steps
-        self._progress_start_time = time.time()
+        self._current_task = task_name  # pylint: disable=attribute-defined-outside-init
+        self._progress_current = 0  # pylint: disable=attribute-defined-outside-init
+        self._progress_total = total_steps  # pylint: disable=attribute-defined-outside-init
+        self._progress_start_time = time.time()  # pylint: disable=attribute-defined-outside-init
 
         # Emit signal
         self.task_started.emit(task_name)
@@ -197,10 +191,9 @@ class FeedbackManager(QObject):
         self.update_status(f"Starting task: {task_name}", MessageType.INFO)
 
         # Log task start
-        LOGGER.info(f"Started task: {task_name} ({total_steps} steps)")
+        LOGGER.info("Started task: %s (%s steps)", task_name, total_steps)
 
-    def update_progress(
-        self, current: int, total: Optional[int] = None, message: Optional[str] = None
+    def update_progress(self, current: int, total: Optional[int] = None, message: Optional[str] = None
     ) -> None:
         """
         Update the progress of the current task.
@@ -210,15 +203,18 @@ class FeedbackManager(QObject):
             total: Optional new total (if not provided, uses the existing total)
             message: Optional message to display with the progress update
         """
-        self._progress_current = current
+        self._progress_current = current  # pylint: disable=attribute-defined-outside-init
         if total is not None:
-            self._progress_total = total
+            pass
+            self._progress_total = total  # pylint: disable=attribute-defined-outside-init
 
         # Calculate ETA based on elapsed time and progress
         elapsed = time.time() - self._progress_start_time
         if current > 0 and self._progress_total > 0:
+            pass
             progress_fraction = current / self._progress_total
             if progress_fraction > 0:
+                pass
                 total_time = elapsed / progress_fraction
                 eta = total_time - elapsed
             else:
@@ -231,17 +227,21 @@ class FeedbackManager(QObject):
 
         # If a message was provided, add it
         if message:
+            pass
             self.add_message(message, MessageType.INFO)
 
         # Also update status with percentage
         if self._progress_total > 0:
+            pass
             percent = int((current / self._progress_total) * 100)
 
             # Format ETA nicely
             if eta > 0:
+                pass
                 minutes = int(eta / 60)
                 seconds = int(eta % 60)
                 if minutes > 0:
+                    pass
                     eta_text = f" (ETA: {minutes}m {seconds}s)"
                 else:
                     eta_text = f" (ETA: {seconds}s)"
@@ -251,8 +251,7 @@ class FeedbackManager(QObject):
             task_name = self._current_task or "Task"
             self.update_status(f"{task_name}: {percent}%{eta_text}", MessageType.INFO)
 
-    def complete_task(
-        self, success: bool = True, message: Optional[str] = None
+    def complete_task(self, success: bool = True, message: Optional[str] = None
     ) -> None:
         """
         Mark the current task as completed.
@@ -262,20 +261,23 @@ class FeedbackManager(QObject):
             message: Optional completion message
         """
         if not self._current_task:
+            pass
             return
 
         task_name = self._current_task
-        self._current_task = None
+        self._current_task = None  # pylint: disable=attribute-defined-outside-init
 
         # Emit signal
         self.task_completed.emit(task_name, success)
 
         # Update status and add message
-        message_type = MessageType.SUCCESS if success else MessageType.ERROR
+        MessageType.SUCCESS if success else MessageType.ERROR
 
         if success:
+            pass
             status = f"Completed task: {task_name}"
             if message:
+                pass
                 status = f"{status} - {message}"
             self.update_status(status, MessageType.SUCCESS)
 
@@ -284,15 +286,18 @@ class FeedbackManager(QObject):
 
             # Send desktop notification if enabled
             if self._enable_desktop_notifications:
-                self._send_desktop_notification(f"Task Completed", status)
+                pass
+                self._send_desktop_notification("Task Completed", status)
 
             # Play sound if enabled
             if self._enable_sound_alerts:
+                pass
                 self._play_success_sound()
 
         else:
             status = f"Task failed: {task_name}"
             if message:
+                pass
                 status = f"{status} - {message}"
             self.update_status(status, MessageType.ERROR)
 
@@ -301,20 +306,22 @@ class FeedbackManager(QObject):
 
             # Send desktop notification if enabled
             if self._enable_desktop_notifications:
-                self._send_desktop_notification(f"Task Failed", status)
+                pass
+                self._send_desktop_notification("Task Failed", status)
 
             # Play sound if enabled
             if self._enable_sound_alerts:
+                pass
                 self._play_error_sound()
 
         # Log completion
         if success:
-            LOGGER.info(f"Completed task: {task_name}")
+            pass
+            LOGGER.info("Completed task: %s", task_name)
         else:
-            LOGGER.error(f"Task failed: {task_name}")
+            LOGGER.error("Task failed: %s", task_name)
 
-    def show_error(
-        self, title: str, message: str, details: Optional[str] = None
+    def show_error(self, title: str, message: str, details: Optional[str] = None
     ) -> None:
         """
         Show an error message to the user.
@@ -335,12 +342,14 @@ class FeedbackManager(QObject):
 
         # Log error
         if details:
-            LOGGER.error(f"{title}: {message}\nDetails: {details}")
+            pass
+            LOGGER.error("%s: %s\nDetails: %s", title, message, details)
         else:
-            LOGGER.error(f"{title}: {message}")
+            LOGGER.error("%s: %s", title, message)
 
         # Play sound if enabled
         if self._enable_sound_alerts:
+            pass
             self._play_error_sound()
 
     def get_message_history(self) -> List[Tuple[str, MessageType, datetime]]:
@@ -357,11 +366,12 @@ class FeedbackManager(QObject):
         Enable or disable desktop notifications.
 
         Args:
+            pass
             enabled: Whether to enable desktop notifications
         """
-        self._enable_desktop_notifications = enabled
+        self._enable_desktop_notifications = enabled  # pylint: disable=attribute-defined-outside-init
         self._save_settings()
-        LOGGER.debug(f"Desktop notifications {'enabled' if enabled else 'disabled'}")
+        LOGGER.debug("Desktop notifications {"enabled' if enabled else 'disabled'}")
 
     def set_sound_alerts(self, enabled: bool) -> None:
         """
@@ -370,84 +380,95 @@ class FeedbackManager(QObject):
         Args:
             enabled: Whether to enable sound alerts
         """
-        self._enable_sound_alerts = enabled
+        self._enable_sound_alerts = enabled  # pylint: disable=attribute-defined-outside-init
         self._save_settings()
-        LOGGER.debug(f"Sound alerts {'enabled' if enabled else 'disabled'}")
+        LOGGER.debug("Sound alerts {"enabled' if enabled else 'disabled'}")
 
     def _send_desktop_notification(self, title: str, message: str) -> None:
         """
         Send a desktop notification using the platform-specific method.
 
         Args:
+            pass
             title: Notification title
             message: Notification message
         """
         # Attempt to use platform-specific notification method
         try:
+            pass
             if os.name == "nt":  # Windows
-                # Import only when needed
-                import win10toast
+            # Import only when needed
+            import win10toast  # type: ignore[import-not-found]
 
-                toaster = win10toast.ToastNotifier()
-                toaster.show_toast(title, message, duration=5)
+            toaster = win10toast.ToastNotifier()
+            toaster.show_toast(title, message, duration=5)
 
             elif os.name == "posix":  # macOS or Linux
-                if os.uname().sysname == "Darwin":  # macOS
-                    # Use AppleScript for notifications
-                    os.system(
-                        f"""
-                        osascript -e 'display notification "{message}" with title "{title}"'
-                    """
-                    )
-                else:  # Linux
-                    # Try to use notify-send
-                    os.system(f'notify-send "{title}" "{message}"')
+            if os.uname().sysname == "Darwin":  # macOS
+            # Use AppleScript for notifications
+            os.system()
+            f""""
+            osascript -e 'display notification "{message}" with title "{title}"'
+            """
+            )
+            else:  # Linux
+            # Try to use notify-send
+            os.system(f'notify-send "{title}" "{message}"')
 
         except Exception as e:
-            LOGGER.error(f"Error sending desktop notification: {e}")
+            pass
+    pass
+    LOGGER.error("Error sending desktop notification: %s", e)
 
     def _play_success_sound(self) -> None:
         """Play a success sound alert."""
         try:
             if os.name == "nt":  # Windows
-                import winsound
+            import winsound
 
-                winsound.MessageBeep(winsound.MB_OK)
+            getattr(winsound, "MessageBeep", lambda x: None)()
+            getattr(winsound, "MB_OK", 0)
+            )
 
             elif os.name == "posix":  # macOS or Linux
-                if os.uname().sysname == "Darwin":  # macOS
-                    # Use afplay for sound on macOS
-                    os.system("afplay /System/Library/Sounds/Glass.aiff")
-                else:  # Linux
-                    # Try to use paplay if available
-                    os.system(
-                        "paplay /usr/share/sounds/freedesktop/stereo/complete.oga"
-                    )
+            if os.uname().sysname == "Darwin":  # macOS
+            # Use afplay for sound on macOS
+            os.system("afplay /System/Library/Sounds/Glass.aiff")
+            else:  # Linux
+            # Try to use paplay if available
+            os.system()
+            "paplay /usr/share/sounds/freedesktop/stereo/complete.oga"
+            )
 
         except Exception as e:
-            LOGGER.error(f"Error playing success sound: {e}")
+            pass
+    pass
+    LOGGER.error("Error playing success sound: %s", e)
 
     def _play_error_sound(self) -> None:
         """Play an error sound alert."""
         try:
             if os.name == "nt":  # Windows
-                import winsound
+            import winsound
 
-                winsound.MessageBeep(winsound.MB_ICONHAND)
+            getattr(winsound, "MessageBeep", lambda x: None)()
+            getattr(winsound, "MB_ICONHAND", 0)
+            )
 
             elif os.name == "posix":  # macOS or Linux
-                if os.uname().sysname == "Darwin":  # macOS
-                    # Use afplay for sound on macOS
-                    os.system("afplay /System/Library/Sounds/Basso.aiff")
-                else:  # Linux
-                    # Try to use paplay if available
-                    os.system(
-                        "paplay /usr/share/sounds/freedesktop/stereo/dialog-error.oga"
-                    )
+            if os.uname().sysname == "Darwin":  # macOS
+            # Use afplay for sound on macOS
+            os.system("afplay /System/Library/Sounds/Basso.aiff")
+            else:  # Linux
+            # Try to use paplay if available
+            os.system()
+            "paplay /usr/share/sounds/freedesktop/stereo/dialog-error.oga"
+            )
 
         except Exception as e:
-            LOGGER.error(f"Error playing error sound: {e}")
-
+            pass
+    pass
+    LOGGER.error("Error playing error sound: %s", e)
 
 class EnhancedStatusBar(QStatusBar):
     """
@@ -473,14 +494,14 @@ class EnhancedStatusBar(QStatusBar):
         self.setFixedHeight(30)
 
         # Apply styling
-        self.setStyleSheet(
-            """
-            QStatusBar {
-                background-color: #2d2d2d;
-                color: #e0e0e0;
-                border-top: 1px solid #3a3a3a;
-                padding: 4px;
-            }
+        self.setStyleSheet()
+        """
+        QStatusBar {
+        background-color: #2d2d2d;
+        color: #e0e0e0;
+        border-top: 1px solid #3a3a3a;
+        padding: 4px;
+        }
         """
         )
 
@@ -497,19 +518,19 @@ class EnhancedStatusBar(QStatusBar):
         self.progress_bar.setMaximumWidth(150)
         self.progress_bar.setMaximumHeight(16)
         self.progress_bar.setFormat("%p%")
-        self.progress_bar.setStyleSheet(
-            """
-            QProgressBar {
-                border: 1px solid #555;
-                border-radius: 2px;
-                background-color: #333;
-                text-align: center;
-                height: 16px;
-            }
-            QProgressBar::chunk {
-                background-color: #3498db;
-                border-radius: 1px;
-            }
+        self.progress_bar.setStyleSheet()
+        """
+        QProgressBar {
+        border: 1px solid #555;
+        border-radius: 2px;
+        background-color: #333;
+        text-align: center;
+        height: 16px;
+        }
+        QProgressBar::chunk {
+        background-color: #3498db;
+        border-radius: 1px;
+        }
         """
         )
         self.addPermanentWidget(self.progress_bar)
@@ -517,8 +538,7 @@ class EnhancedStatusBar(QStatusBar):
         # Hide progress bar by default
         self.progress_bar.hide()
 
-    def update_status(
-        self, message: str, message_type: MessageType = MessageType.INFO
+    def update_status(self, message: str, message_type: MessageType = MessageType.INFO
     ) -> None:
         """
         Update the status message with appropriate styling.
@@ -531,12 +551,16 @@ class EnhancedStatusBar(QStatusBar):
         color = "#e0e0e0"  # Default color (info)
 
         if message_type == MessageType.SUCCESS:
+            pass
             color = "#2ecc71"  # Green
         elif message_type == MessageType.WARNING:
+            pass
             color = "#f39c12"  # Orange
         elif message_type == MessageType.ERROR:
+            pass
             color = "#e74c3c"  # Red
         elif message_type == MessageType.DEBUG:
+            pass
             color = "#3498db"  # Blue
 
         # Format message with color
@@ -555,10 +579,12 @@ class EnhancedStatusBar(QStatusBar):
         """
         # Show progress bar if hidden
         if not self.progress_bar.isVisible():
+            pass
             self.progress_bar.show()
 
         # Calculate percentage
         if total > 0:
+            pass
             percent = int((current / total) * 100)
         else:
             percent = 0
@@ -577,7 +603,6 @@ class EnhancedStatusBar(QStatusBar):
         self.progress_bar.setValue(0)
         self.progress_bar.setFormat("%p%")
 
-
 class MessageLogDialog(QDialog):
     """
     Dialog for displaying the message history log.
@@ -586,15 +611,13 @@ class MessageLogDialog(QDialog):
     and the ability to copy messages to the clipboard.
     """
 
-    def __init__(
-        self, feedback_manager: FeedbackManager, parent: Optional[QWidget] = None
+    def __init__(self, feedback_manager: FeedbackManager, parent: Optional[QWidget] = None
     ) -> None:
         """
         Initialize the message log dialog.
 
         Args:
             feedback_manager: FeedbackManager instance to get messages from
-            parent: Optional parent widget
         """
         super().__init__(parent)
 
@@ -614,40 +637,40 @@ class MessageLogDialog(QDialog):
         self.info_checkbox = QPushButton(self.tr("Info"))
         self.info_checkbox.setCheckable(True)
         self.info_checkbox.setChecked(True)
-        self.info_checkbox.setStyleSheet(
-            "QPushButton:checked { background-color: #3498db; }"
+        self.info_checkbox.setStyleSheet()
+        "QPushButton:checked { background-color: #3498db; }"
         )
         filter_layout.addWidget(self.info_checkbox)
 
         self.success_checkbox = QPushButton(self.tr("Success"))
         self.success_checkbox.setCheckable(True)
         self.success_checkbox.setChecked(True)
-        self.success_checkbox.setStyleSheet(
-            "QPushButton:checked { background-color: #2ecc71; }"
+        self.success_checkbox.setStyleSheet()
+        "QPushButton:checked { background-color: #2ecc71; }"
         )
         filter_layout.addWidget(self.success_checkbox)
 
         self.warning_checkbox = QPushButton(self.tr("Warnings"))
         self.warning_checkbox.setCheckable(True)
         self.warning_checkbox.setChecked(True)
-        self.warning_checkbox.setStyleSheet(
-            "QPushButton:checked { background-color: #f39c12; }"
+        self.warning_checkbox.setStyleSheet()
+        "QPushButton:checked { background-color: #f39c12; }"
         )
         filter_layout.addWidget(self.warning_checkbox)
 
         self.error_checkbox = QPushButton(self.tr("Errors"))
         self.error_checkbox.setCheckable(True)
         self.error_checkbox.setChecked(True)
-        self.error_checkbox.setStyleSheet(
-            "QPushButton:checked { background-color: #e74c3c; }"
+        self.error_checkbox.setStyleSheet()
+        "QPushButton:checked { background-color: #e74c3c; }"
         )
         filter_layout.addWidget(self.error_checkbox)
 
         self.debug_checkbox = QPushButton(self.tr("Debug"))
         self.debug_checkbox.setCheckable(True)
         self.debug_checkbox.setChecked(False)
-        self.debug_checkbox.setStyleSheet(
-            "QPushButton:checked { background-color: #9b59b6; }"
+        self.debug_checkbox.setStyleSheet()
+        "QPushButton:checked { background-color: #9b59b6; }"
         )
         filter_layout.addWidget(self.debug_checkbox)
 
@@ -657,19 +680,19 @@ class MessageLogDialog(QDialog):
         # Create message list
         self.message_list = QListWidget()
         self.message_list.setAlternatingRowColors(True)
-        self.message_list.setStyleSheet(
-            """
-            QListWidget {
-                background-color: #1d1d1d;
-                alternate-background-color: #252525;
-                color: #e0e0e0;
-                border: 1px solid #3a3a3a;
-                border-radius: 4px;
-            }
-            QListWidget::item {
-                padding: 4px;
-                border-bottom: 1px solid #333;
-            }
+        self.message_list.setStyleSheet()
+        """
+        QListWidget {
+        background-color: #1d1d1d;
+        alternate-background-color: #252525;
+        color: #e0e0e0;
+        border: 1px solid #3a3a3a;
+        border-radius: 4px;
+        }
+        QListWidget::item {
+        padding: 4px;
+        border-bottom: 1px solid #333;
+        }
         """
         )
         layout.addWidget(self.message_list, 1)  # Give stretch priority
@@ -725,18 +748,19 @@ class MessageLogDialog(QDialog):
         # Filter and display messages
         for message, message_type, timestamp in messages:
             # Apply filter
-            if (
-                message_type == MessageType.INFO
-                and not show_info
-                or message_type == MessageType.SUCCESS
-                and not show_success
-                or message_type == MessageType.WARNING
-                and not show_warning
-                or message_type == MessageType.ERROR
-                and not show_error
-                or message_type == MessageType.DEBUG
-                and not show_debug
+            if ()
+            message_type == MessageType.INFO
+            and not show_info
+            or message_type == MessageType.SUCCESS
+            and not show_success
+            or message_type == MessageType.WARNING
+            and not show_warning
+            or message_type == MessageType.ERROR
+            and not show_error
+            or message_type == MessageType.DEBUG
+            and not show_debug
             ):
+                pass
                 continue
 
             # Format timestamp
@@ -746,75 +770,104 @@ class MessageLogDialog(QDialog):
             item_text = f"[{timestamp_str}] {message}"
 
             # Add item to list
-            item = self.message_list.addItem(item_text)
+            self.message_list.addItem(item_text)
 
             # Set item color based on message type
             list_item = self.message_list.item(self.message_list.count() - 1)
 
             if message_type == MessageType.SUCCESS:
-                list_item.setForeground(QColor("#2ecc71"))  # Green
+                pass
+                if list_item is not None:
+                    pass
+                    list_item.setForeground(QColor("#2ecc71"))  # Green
             elif message_type == MessageType.WARNING:
-                list_item.setForeground(QColor("#f39c12"))  # Orange
+                pass
+                if list_item is not None:
+                    pass
+                    list_item.setForeground(QColor("#f39c12"))  # Orange
             elif message_type == MessageType.ERROR:
-                list_item.setForeground(QColor("#e74c3c"))  # Red
+                pass
+                if list_item is not None:
+                    pass
+                    list_item.setForeground(QColor("#e74c3c"))  # Red
             elif message_type == MessageType.DEBUG:
-                list_item.setForeground(QColor("#3498db"))  # Blue
+                pass
+                if list_item is not None:
+                    pass
+                    list_item.setForeground(QColor("#3498db"))  # Blue
 
     def _copy_selected(self) -> None:
         """Copy selected messages to clipboard."""
         selected_items = self.message_list.selectedItems()
         if not selected_items:
+            pass
             return
 
         # Create text from selected items
-        text = "\n".join(item.text() for item in selected_items)
+        text = "\n".join(item.text() if item else "" for item in selected_items)
 
         # Copy to clipboard
         clipboard = QApplication.clipboard()
-        clipboard.setText(text)
+        if clipboard is not None:
+            pass
+            clipboard.setText(text)
+        if clipboard:
+            pass
+            clipboard.setText(text)
 
         # Show confirmation
-        self.feedback_manager.add_message(
-            "Selected messages copied to clipboard", MessageType.INFO
+        self.feedback_manager.add_message()
+        "Selected messages copied to clipboard", MessageType.INFO
         )
 
     def _copy_all(self) -> None:
         """Copy all displayed messages to clipboard."""
         if self.message_list.count() == 0:
+            pass
             return
 
         # Create text from all items
-        text = "\n".join(
-            self.message_list.item(i).text() for i in range(self.message_list.count())
+        text = "\n".join()
+        ()
+        (item.text() if item else "")
+        if (item := self.message_list.item(i)) is not None
+        else ""
+        )
+        for i in range(self.message_list.count())
         )
 
         # Copy to clipboard
         clipboard = QApplication.clipboard()
-        clipboard.setText(text)
+        if clipboard is not None:
+            pass
+            clipboard.setText(text)
+        if clipboard:
+            pass
+            clipboard.setText(text)
 
         # Show confirmation
-        self.feedback_manager.add_message(
-            "All messages copied to clipboard", MessageType.INFO
+        self.feedback_manager.add_message()
+        "All messages copied to clipboard", MessageType.INFO
         )
 
     def _clear_history(self) -> None:
         """Clear the message history."""
         # Show confirmation dialog
-        reply = QMessageBox.question(
-            self,
-            "Clear History",
-            "Are you sure you want to clear the message history?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+        reply = QMessageBox.question()
+        self,
+        "Clear History",
+        "Are you sure you want to clear the message history?",
+        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        QMessageBox.StandardButton.No,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
+            pass
             # Clear history
             self.feedback_manager.clear_message_history()
 
             # Update display
             self.message_list.clear()
-
 
 class EnhancedProgressDialog(QDialog):
     """
@@ -866,19 +919,19 @@ class EnhancedProgressDialog(QDialog):
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setFormat("%p% (%v/%m)")
-        self.progress_bar.setStyleSheet(
-            """
-            QProgressBar {
-                border: 1px solid #555;
-                border-radius: 4px;
-                background-color: #333;
-                text-align: center;
-                height: 20px;
-            }
-            QProgressBar::chunk {
-                background-color: #3498db;
-                border-radius: 3px;
-            }
+        self.progress_bar.setStyleSheet()
+        """
+        QProgressBar {
+        border: 1px solid #555;
+        border-radius: 4px;
+        background-color: #333;
+        text-align: center;
+        height: 20px;
+        }
+        QProgressBar::chunk {
+        background-color: #3498db;
+        border-radius: 3px;
+        }
         """
         )
         layout.addWidget(self.progress_bar)
@@ -894,16 +947,16 @@ class EnhancedProgressDialog(QDialog):
         self.log_widget = QPlainTextEdit()
         self.log_widget.setReadOnly(True)
         self.log_widget.setMaximumHeight(100)
-        self.log_widget.setStyleSheet(
-            """
-            QPlainTextEdit {
-                background-color: #1d1d1d;
-                color: #e0e0e0;
-                border: 1px solid #3a3a3a;
-                border-radius: 4px;
-                font-family: monospace;
-                font-size: 11px;
-            }
+        self.log_widget.setStyleSheet()
+        """
+        QPlainTextEdit {
+        background-color: #1d1d1d;
+        color: #e0e0e0;
+        border: 1px solid #3a3a3a;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 11px;
+        }
         """
         )
         log_layout.addWidget(self.log_widget)
@@ -924,8 +977,8 @@ class EnhancedProgressDialog(QDialog):
         layout.addLayout(button_layout)
 
         # Initialize state
-        self._is_cancellable = True
-        self._is_canceled = False
+        self._is_cancellable = True  # pylint: disable=attribute-defined-outside-init
+        self._is_canceled = False  # pylint: disable=attribute-defined-outside-init
         self._cancel_callback: Optional[Callable[[], None]] = None
 
     def set_progress(self, current: int, total: int) -> None:
@@ -938,9 +991,10 @@ class EnhancedProgressDialog(QDialog):
         """
         # Calculate percentage
         if total > 0:
-            percent = int((current / total) * 100)
+            pass
+            int((current / total) * 100)
         else:
-            percent = 0
+            pass
 
         # Update progress bar
         self.progress_bar.setMaximum(total)
@@ -963,13 +1017,16 @@ class EnhancedProgressDialog(QDialog):
             seconds: Estimated time remaining in seconds
         """
         if seconds <= 0:
+            pass
             self.eta_label.setText(self.tr("Estimated time remaining: Calculating..."))
             return
 
         # Format time nicely
         if seconds < 60:
+            pass
             eta_text = f"Estimated time remaining: {int(seconds)} seconds"
         elif seconds < 3600:
+            pass
             minutes = int(seconds / 60)
             seconds_left = int(seconds % 60)
             eta_text = f"Estimated time remaining: {minutes}m {seconds_left}s"
@@ -995,12 +1052,12 @@ class EnhancedProgressDialog(QDialog):
         self.log_widget.appendPlainText(formatted_message)
 
         # Scroll to bottom
-        self.log_widget.verticalScrollBar().setValue(
-            self.log_widget.verticalScrollBar().maximum()
-        )
+        vbar = self.log_widget.verticalScrollBar()
+        if vbar:
+            pass
+            vbar.setValue(vbar.maximum())
 
-    def set_cancellable(
-        self, cancellable: bool, cancel_callback: Optional[Callable[[], None]] = None
+    def set_cancellable(self, cancellable: bool, cancel_callback: Optional[Callable[[], None]] = None
     ) -> None:
         """
         Set whether the operation can be canceled.
@@ -1009,26 +1066,29 @@ class EnhancedProgressDialog(QDialog):
             cancellable: Whether the operation can be canceled
             cancel_callback: Optional callback to call when cancel is clicked
         """
-        self._is_cancellable = cancellable
-        self._cancel_callback = cancel_callback
+        self._is_cancellable = cancellable  # pylint: disable=attribute-defined-outside-init
+        self._cancel_callback = cancel_callback  # pylint: disable=attribute-defined-outside-init
 
         # Update cancel button
         self.cancel_button.setEnabled(cancellable)
-        self.cancel_button.setText(
-            self.tr("Cancel" if cancellable else "Cannot Cancel")
+        self.cancel_button.setText()
+        self.tr("Cancel" if cancellable else "Cannot Cancel")
         )
 
     def is_canceled(self) -> bool:
+        pass
         """Check if the operation has been canceled."""
         return self._is_canceled
 
     def _cancel_clicked(self) -> None:
+        pass
         """Handle cancel button click."""
         if not self._is_cancellable:
+            pass
             return
 
         # Update state
-        self._is_canceled = True
+        self._is_canceled = True  # pylint: disable=attribute-defined-outside-init
 
         # Update UI
         self.cancel_button.setEnabled(False)
@@ -1042,12 +1102,11 @@ class EnhancedProgressDialog(QDialog):
 
         # Call callback if provided
         if self._cancel_callback:
+            pass
             self._cancel_callback()
-
 
 # Module-level feedback manager instance for singleton usage
 feedback_manager = FeedbackManager()
-
 
 def get_feedback_manager() -> FeedbackManager:
     """Get the singleton feedback manager instance."""

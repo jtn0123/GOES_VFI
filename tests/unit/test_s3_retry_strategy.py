@@ -204,8 +204,9 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
             side_effect=mock_update_stats,
         ) as mock_update:
             # Mock file existence check and size
-            with patch("pathlib.Path.exists", return_value=True), patch(
-                "pathlib.Path.stat", return_value=MagicMock(st_size=1024)
+            with (
+                patch("pathlib.Path.exists", return_value=True),
+                patch("pathlib.Path.stat", return_value=MagicMock(st_size=1024)),
             ):
                 result = await self.store.download(
                     self.test_timestamp, self.test_satellite, tmp_dest_path

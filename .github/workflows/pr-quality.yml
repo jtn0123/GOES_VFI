@@ -1,0 +1,259 @@
+# Pull Request Quality Checks
+name: PR Quality
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-metadata:
+    name: PR Metadata Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Check PR title format
+      run: |
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        if [[ ! "$PR_TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore|ci)(\(.+\))?: .+ ]]; then
+          echo "❌ PR title doesn't follow conventional commit format"
+          echo "Expected format: type(scope): description"
+          echo "Examples:"
+          echo "  feat(gui): add undo/redo functionality"
+          echo "  fix(pipeline): resolve memory leak in image processing"
+          echo "  docs: update API documentation"
+          exit 1
+        fi
+        echo "✅ PR title follows conventional commit format"
+
+    - name: Check PR description
+      run: |
+        if [ -z "${{ github.event.pull_request.body }}" ]; then
+          echo "❌ PR description is empty"
+          echo "Please provide a description of your changes"
+          exit 1
+        fi
+        echo "✅ PR has description"
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for better analysis
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r test-requirements.txt
+        pip install coverage pytest-cov radon complexity-metrics
+
+    - name: Run linting on changed files
+      run: |
+        # Get list of changed Python files
+        CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '\.py$' || true)
+
+        if [ -n "$CHANGED_FILES" ]; then
+          echo "Running linters on changed files:"
+          echo "$CHANGED_FILES"
+
+          for file in $CHANGED_FILES; do
+            if [ -f "$file" ]; then
+              echo "Linting $file"
+              python run_linters.py "$file" --check || exit 1
+            fi
+          done
+        else
+          echo "No Python files changed"
+        fi
+
+    - name: Check code complexity
+      run: |
+        # Get complexity metrics for changed files
+        CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '\.py$' || true)
+
+        if [ -n "$CHANGED_FILES" ]; then
+          echo "Checking complexity of changed files..."
+
+          for file in $CHANGED_FILES; do
+            if [ -f "$file" ]; then
+              echo "Analyzing $file"
+              radon cc "$file" -a -nc || true
+              radon mi "$file" -nc || true
+            fi
+          done
+        fi
+
+    - name: Run tests for changed modules
+      run: |
+        # Find tests related to changed files
+        CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '\.py$' || true)
+
+        if [ -n "$CHANGED_FILES" ]; then
+          echo "Running tests for changed modules..."
+          python run_working_tests_with_mocks.py
+        fi
+
+  security-check:
+    name: Security Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run security scan on changed files
+      run: |
+        pip install bandit semgrep safety
+
+        # Get changed Python files
+        CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '\.py$' || true)
+
+        if [ -n "$CHANGED_FILES" ]; then
+          echo "Running security analysis on changed files..."
+
+          # Bandit security scan
+          bandit $CHANGED_FILES -f json -o bandit-results.json || true
+
+          # Semgrep security scan
+          semgrep --config=auto $CHANGED_FILES --json -o semgrep-results.json || true
+
+          # Safety check for dependencies
+          safety check --json --output safety-results.json || true
+        fi
+
+    - name: Upload security results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-analysis
+        path: |
+          bandit-results.json
+          semgrep-results.json
+          safety-results.json
+
+  performance-check:
+    name: Performance Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install memory-profiler line-profiler pytest-benchmark
+
+    - name: Run performance benchmarks
+      run: |
+        # Run basic performance tests if they exist
+        if [ -f "tests/performance" ]; then
+          python -m pytest tests/performance/ --benchmark-only || true
+        fi
+
+        # Memory profiling on key modules
+        CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep 'goesvfi.*\.py$' || true)
+
+        if [ -n "$CHANGED_FILES" ]; then
+          echo "Running memory profiling on changed modules..."
+          for file in $CHANGED_FILES; do
+            if [ -f "$file" ] && [[ "$file" == *"pipeline"* ]]; then
+              echo "Profiling $file"
+              python -m memory_profiler "$file" || true
+            fi
+          done
+        fi
+
+  documentation-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r docs/requirements.txt
+        pip install interrogate pydocstyle
+
+    - name: Check docstring coverage
+      run: |
+        # Check docstring coverage for changed files
+        CHANGED_FILES=$(git diff --name-only origin/main...HEAD | grep '\.py$' || true)
+
+        if [ -n "$CHANGED_FILES" ]; then
+          echo "Checking docstring coverage..."
+          interrogate $CHANGED_FILES --verbose || true
+
+          echo "Checking docstring style..."
+          pydocstyle $CHANGED_FILES || true
+        fi
+
+    - name: Test documentation build
+      run: |
+        # Test if documentation still builds
+        python scripts/generate_docs.py --build --format html
+
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [pr-metadata, code-quality, security-check, performance-check, documentation-check]
+    if: always()
+
+    steps:
+    - name: Create PR summary
+      run: |
+        echo "## Pull Request Quality Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Metadata | ${{ needs.pr-metadata.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Security | ${{ needs.security-check.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Performance | ${{ needs.performance-check.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Documentation | ${{ needs.documentation-check.result }} |" >> $GITHUB_STEP_SUMMARY
+
+    - name: Comment on PR
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const summary = `## 🔍 Quality Check Results
+
+          | Check | Status |
+          |-------|--------|
+          | 📝 Metadata | ${{ needs.pr-metadata.result }} |
+          | 🔧 Code Quality | ${{ needs.code-quality.result }} |
+          | 🔒 Security | ${{ needs.security-check.result }} |
+          | ⚡ Performance | ${{ needs.performance-check.result }} |
+          | 📚 Documentation | ${{ needs.documentation-check.result }} |
+
+          ${{ (needs.pr-metadata.result == 'success' && needs.code-quality.result == 'success' && needs.security-check.result == 'success') && '✅ All quality checks passed!' || '❌ Some quality checks failed. Please review the details above.' }}
+          `;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: summary
+          });

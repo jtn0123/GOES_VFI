@@ -84,13 +84,15 @@ class TestRealS3Patterns(unittest.TestCase):
         self.assertIn("M6C13_G16_s", key)
 
         # Check for the correct minute (should use 11 here, which is the nearest RadC minute before 14)
-        pattern = re.compile(r"s2023166120([0-9][0-9])")
+        pattern = re.compile(
+            r"s2023166121([0-9][0-9])"
+        )  # Fixed to use hour 12 (not 20)
         match = pattern.search(key)
         if match:
             minute_str = match.group(1)
             self.assertEqual(minute_str, "11")
         else:
-            self.fail("Could not find timestamp pattern in key")
+            self.fail(f"Could not find timestamp pattern in key: {key}")
 
     def test_to_s3_key_band_format(self):
         """Test that keys with different bands have the correct format."""

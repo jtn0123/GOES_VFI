@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "label": "coverage",
+  "message": "80%",
+  "color": "brightgreen",
+  "cacheSeconds": 300,
+  "style": "flat-square",
+  "namedLogo": "pytest",
+  "logoColor": "white"
+}

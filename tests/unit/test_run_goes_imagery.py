@@ -44,16 +44,15 @@ def download_single_channel(
     )
 
     if image_path:
-        logger.info(f"Successfully downloaded to: {image_path}")
+        logger.info("Successfully downloaded to: %s", image_path)
         return image_path
-    else:
-        logger.error("Download failed")
-        return None
+    logger.error("Download failed")
+    return None
 
 
 def download_channel_comparison(manager, product_type=ProductType.FULL_DISK):
     """Download multiple channels for comparison."""
-    logger.info(f"Downloading channel comparison for {product_type.name}")
+    logger.info("Downloading channel comparison for %s", product_type.name)
 
     # Define channels to compare
     channels = [
@@ -66,7 +65,7 @@ def download_channel_comparison(manager, product_type=ProductType.FULL_DISK):
     # Download each channel
     results = {}
     for channel in channels:
-        logger.info(f"Downloading {channel.display_name}...")
+        logger.info("Downloading %s...", channel.display_name)
         image_path = manager.get_imagery(
             channel=channel, product_type=product_type, mode=ImageryMode.IMAGE_PRODUCT
         )
@@ -77,7 +76,7 @@ def download_channel_comparison(manager, product_type=ProductType.FULL_DISK):
             )
             results[channel.display_name] = image_path
         else:
-            logger.error(f"Failed to download {channel.display_name}")
+            logger.error("Failed to download %s", channel.display_name)
 
     return results
 
@@ -97,7 +96,7 @@ def compare_imagery_modes(
     )
 
     if product_image:
-        logger.info(f"Image Product mode result: {product_image}")
+        logger.info("Image Product mode result: %s", product_image)
     else:
         logger.error("Image Product mode failed")
 
@@ -112,7 +111,7 @@ def compare_imagery_modes(
     )
 
     if raw_image:
-        logger.info(f"Raw Data mode result: {raw_image}")
+        logger.info("Raw Data mode result: %s", raw_image)
     else:
         logger.error("Raw Data mode failed")
 

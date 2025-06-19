@@ -41,7 +41,9 @@ Usage: rife-ncnn-vulkan -0 first.png -1 second.png -o output.png [options]...
   -s time-step         time step (0.0~1.0) (default=0.5)
   -m model-path        folder path to the pre-trained models
   -g gpu-id            gpu device to use (default=auto) can be 0,1,2 for multi-gpu
-  -j load:proc:save    thread count for load/proc/save (default=1:2:2) can be 1:2,2,2:2 for multi-gpu
+  -j load:proc:save    thread count for load/proc/save (default=1:2:2) can be 1:2,
+                                                        2,
+                                                        2:2 for multi-gpu
   -f pattern-format    output image filename pattern format (default=%08d.png)
   -x                   enable tta mode (2x slower but slightly better quality)
   -z                   enable temporal tta mode
@@ -190,8 +192,7 @@ class TestRifeCapabilityDetector:
             elif cmd_list == expected_cmd_h:
                 print("Mocking -h failure")
                 return failing_mock_factory(*args, **kwargs)
-            else:
-                pytest.fail(f"Unexpected command passed to mock run: {cmd_list}")
+            pytest.fail(f"Unexpected command passed to mock run: {cmd_list}")
 
         mock_run_patch.side_effect = help_side_effect
 

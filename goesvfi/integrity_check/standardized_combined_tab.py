@@ -1,4 +1,10 @@
 """
+from typing import Any, Optional
+
+from PyQt6.QtCore import pyqtSignal
+from datetime import datetime
+import logging
+
 Standardized combined integrity check tab with improved signal connections.
 
 This module provides an improved implementation of the combined integrity check tab
@@ -6,21 +12,12 @@ with standardized signal connections using the TabSignalManager, ensuring consis
 data flow between all tab components.
 """
 
-import logging
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
-
-from PyQt6.QtCore import QSize, Qt, pyqtSignal
-from PyQt6.QtWidgets import (
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSplitter,
-    QTabWidget,
-    QVBoxLayout,
-    QWidget,
+QFrame,
+QHBoxLayout,
+QLabel,
+QTabWidget,
+QVBoxLayout,
+QWidget,
 )
 
 from .enhanced_gui_tab import EnhancedIntegrityCheckTab
@@ -33,7 +30,6 @@ from .view_model import MissingTimestamp
 
 # Configure logging
 LOGGER = logging.getLogger(__name__)
-
 
 class StandardizedCombinedTab(QWidget):
     """
@@ -49,10 +45,9 @@ class StandardizedCombinedTab(QWidget):
     itemSelected = pyqtSignal(MissingTimestamp)
     directorySelected = pyqtSignal(str)
 
-    def __init__(
-        self,
-        view_model: EnhancedIntegrityCheckViewModel,
-        parent: Optional[QWidget] = None,
+    def __init__(self,
+    view_model: EnhancedIntegrityCheckViewModel,
+    parent: Optional[QWidget] = None,
     ) -> None:
         """
         Initialize the standardized combined tab.
@@ -77,37 +72,37 @@ class StandardizedCombinedTab(QWidget):
         self.tab_widget.setTabPosition(QTabWidget.TabPosition.North)
 
         # Apply custom styling to make tabs more visible
-        self.tab_widget.setStyleSheet(
-            """
-            QTabWidget::pane {
-                border: 1px solid #3a3a3a;
-                background-color: #2d2d2d;
-            }
+        self.tab_widget.setStyleSheet()
+        """
+        QTabWidget::pane {
+        border: 1px solid #3a3a3a;
+        background-color: #2d2d2d;
+        }
 
-            QTabBar::tab {
-                background-color: #303030;
-                color: #b0b0b0;
-                min-width: 120px;
-                padding: 8px 12px;
-                border: 1px solid #444;
-                border-bottom: none;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-                margin-right: 2px;
-            }
+        QTabBar::tab {
+        background-color: #303030;
+        color: #b0b0b0;
+        min-width: 120px;
+        padding: 8px 12px;
+        border: 1px solid #444;
+        border-bottom: none;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+        margin-right: 2px;
+        }
 
-            QTabBar::tab:selected {
-                background-color: #3a3a3a;
-                color: white;
-                border-left: 2px solid #3498db;
-                border-right: 2px solid #3498db;
-                border-top: 2px solid #3498db;
-            }
+        QTabBar::tab:selected {
+        background-color: #3a3a3a;
+        color: white;
+        border-left: 2px solid #3498db;
+        border-right: 2px solid #3498db;
+        border-top: 2px solid #3498db;
+        }
 
-            QTabBar::tab:hover:!selected {
-                background-color: #353535;
-                color: white;
-            }
+        QTabBar::tab:hover:!selected {
+        background-color: #353535;
+        color: white;
+        }
         """
         )
 
@@ -124,7 +119,7 @@ class StandardizedCombinedTab(QWidget):
         self.tab_widget.addTab(self.imagery_tab, "GOES Imagery")
 
         # Create information bar for navigation guidance
-        self.info_bar = self._create_info_bar()
+        self.info_bar = self._create_info_bar()  # pylint: disable=attribute-defined-outside-init
 
         # Add components to main layout
         layout.addWidget(self.info_bar)
@@ -145,16 +140,16 @@ class StandardizedCombinedTab(QWidget):
         """Create an information bar for navigation guidance."""
         info_bar = QFrame()
         info_bar.setMaximumHeight(30)
-        info_bar.setStyleSheet(
-            """
-            QFrame {
-                background-color: #2c3e50;
-                border-bottom: 1px solid #34495e;
-            }
-            QLabel {
-                color: #ecf0f1;
-                padding: 4px;
-            }
+        info_bar.setStyleSheet()
+        """
+        QFrame {
+        background-color: #2c3e50;
+        border-bottom: 1px solid #34495e;
+        }
+        QLabel {
+        color: #ecf0f1;
+        padding: 4px;
+        }
         """
         )
 
@@ -174,11 +169,11 @@ class StandardizedCombinedTab(QWidget):
         """Connect signals between tabs using the standardized approach."""
         # Create a dictionary of tabs
         tabs = {
-            "integrity": self.integrity_tab,
-            "timeline": self.timeline_tab,
-            "results": self.results_tab,
-            "imagery": self.imagery_tab,
-            "view_model": self.view_model,
+        "integrity": self.integrity_tab,
+        "timeline": self.timeline_tab,
+        "results": self.results_tab,
+        "imagery": self.imagery_tab,
+        "view_model": self.view_model,
         }
 
         # Connect tabs using the signal manager
@@ -193,60 +188,67 @@ class StandardizedCombinedTab(QWidget):
         import os
 
         if os.environ.get("DEBUG", "").lower() in ("1", "true", "yes"):
+            pass
             diagram = create_signal_flow_diagram(tabs)
             try:
                 with open("docs/signal_flow_diagram.md", "w") as f:
                     f.write(diagram)
-                LOGGER.info(
-                    "Generated signal flow diagram in docs/signal_flow_diagram.md"
+                LOGGER.info()
+                "Generated signal flow diagram in docs/signal_flow_diagram.md"
                 )
             except Exception as e:
-                LOGGER.error(f"Error writing signal flow diagram: {e}")
+                pass
+                LOGGER.error("Error writing signal flow diagram: %s", e)
 
     def _connect_forwarding_signals(self) -> None:
         """Connect signals from child tabs to forward to parent container."""
         # Forward date range signals
         if hasattr(self.integrity_tab, "date_range_changed"):
+            pass
             self.integrity_tab.date_range_changed.connect(self.dateRangeSelected)
 
         # Forward timestamp signals
         if hasattr(self.timeline_tab, "timestampSelected"):
+            pass
             self.timeline_tab.timestampSelected.connect(self.timestampSelected)
 
         # Forward item selection signals
         if hasattr(self.results_tab, "itemSelected"):
+            pass
             self.results_tab.itemSelected.connect(self.itemSelected)
 
         # Forward directory selection signals
         if hasattr(self.integrity_tab, "directory_selected"):
+            pass
             self.integrity_tab.directory_selected.connect(self.directorySelected)
 
     def _initialize_satellite_tabs(self) -> None:
         """Initialize all satellite-related tabs with data from the view model."""
         if hasattr(self.view_model, "missing_items") and self.view_model.missing_items:
+            pass
             # Get the date range and interval from the view model
             start_date = self.view_model.start_date
             end_date = self.view_model.end_date
-            total_expected = getattr(
-                self.view_model, "total_expected", len(self.view_model.missing_items)
+            total_expected = getattr()
+            self.view_model, "total_expected", len(self.view_model.missing_items)
             )
 
             # Determine the interval (assume hourly if not specified)
             interval_minutes = 60
             if hasattr(self.view_model, "expected_interval_minutes"):
+                pass
                 interval_minutes = self.view_model.expected_interval_minutes
 
             # Set the data for each tab
             # Timeline Tab
-            self.timeline_tab.set_data(
-                self.view_model.missing_items, start_date, end_date, interval_minutes
+            self.timeline_tab.set_data()
+            self.view_model.missing_items, start_date, end_date, interval_minutes
             )
 
             # Results Tab
             self.results_tab.set_items(self.view_model.missing_items, total_expected)
 
-            LOGGER.info(
-                f"Satellite tabs initialized with {len(self.view_model.missing_items)} items"
+            LOGGER.info("Satellite tabs initialized with %s items", len(self.view_model.missing_items))
             )
 
     def _handle_tab_changed(self, index: int) -> None:
@@ -258,35 +260,39 @@ class StandardizedCombinedTab(QWidget):
         """
         # Update tab-specific UI elements or state
         tab_name = self.tab_widget.tabText(index)
-        LOGGER.debug(f"Switched to tab: {tab_name}")
+        LOGGER.debug("Switched to tab: %s", tab_name)
 
         # If switching to imagery tab, we could check for previews to show
         if index == 3:  # GOES Imagery tab
-            self._check_for_imagery_previews()
+        self._check_for_imagery_previews()
 
     def _check_for_imagery_previews(self) -> None:
         """Check for available imagery previews to display in the imagery tab."""
         # This method could look for downloaded files from the view model
         # and pass them to the imagery tab for preview generation
         if hasattr(self.view_model, "missing_items"):
+            pass
             downloaded_items = [
-                item
-                for item in self.view_model.missing_items
-                if getattr(item, "is_downloaded", False)
-                and getattr(item, "local_path", "")
+            item
+            for item in self.view_model.missing_items
+            if getattr(item, "is_downloaded", False)
+            and getattr(item, "local_path", "")
             ]
 
             if downloaded_items and hasattr(self.imagery_tab, "add_previews"):
-                LOGGER.info(
-                    f"Found {len(downloaded_items)} downloaded items for preview"
+                pass
+                LOGGER.info("Found %s downloaded items for preview", len(downloaded_items))
                 )
                 # This assumes the imagery tab has a method to add previews
                 # self.imagery_tab.add_previews(downloaded_items)
 
     # --- Public methods for external interaction ---
 
-    def update_data(
-        self, missing_items=None, start_date=None, end_date=None, total_expected=None
+    def update_data(self,
+    missing_items: Optional[Any] = None,
+    start_date: Optional[Any] = None,
+    end_date: Optional[Any] = None,
+    total_expected: Optional[Any] = None,
     ) -> None:
         """
         Update the tab with new data.
@@ -299,18 +305,24 @@ class StandardizedCombinedTab(QWidget):
         """
         # Update view model if values provided
         if missing_items is not None:
+            pass
             if hasattr(self.view_model, "_missing_items"):
+                pass
                 self.view_model._missing_items = missing_items
             elif hasattr(self.view_model, "set_missing_items"):
+                pass
                 self.view_model.set_missing_items(missing_items)
 
         if start_date is not None:
+            pass
             self.view_model.start_date = start_date
 
         if end_date is not None:
+            pass
             self.view_model.end_date = end_date
 
         if total_expected is not None and hasattr(self.view_model, "_total_expected"):
+            pass
             self.view_model._total_expected = total_expected
 
         # Update internal tabs
@@ -318,6 +330,7 @@ class StandardizedCombinedTab(QWidget):
 
         # Also update integrity tab if it has an update method
         if hasattr(self.integrity_tab, "update_data"):
+            pass
             self.integrity_tab.update_data()
 
     def show_integrity_tab(self) -> None:
@@ -340,7 +353,6 @@ class StandardizedCombinedTab(QWidget):
         """Get the name of the currently active tab."""
         index = self.tab_widget.currentIndex()
         return self.tab_widget.tabText(index)
-
 
 # Alias for backward compatibility with existing code
 CombinedIntegrityTab = StandardizedCombinedTab

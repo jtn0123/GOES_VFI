@@ -1,0 +1,120 @@
+[run]
+# Source code to measure coverage for
+source = goesvfi
+
+# Branch coverage in addition to statement coverage
+branch = True
+
+# Omit specific files or directories
+omit =
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */site-packages/*
+    */venv/*
+    */.venv/*
+    */migrations/*
+    */conftest.py
+    */setup.py
+    */gui_backup.py
+    */__init__.py
+
+# Parallel mode for concurrent test runs
+parallel = True
+
+# Data file for coverage results
+data_file = .coverage
+
+# Context for coverage data
+context = ${CONTEXT}
+
+[report]
+# Fail if coverage is below this percentage
+fail_under = 80
+
+# Number of decimal places for coverage percentages
+precision = 2
+
+# Show missing line numbers
+show_missing = True
+
+# Skip covered lines in report
+skip_covered = False
+
+# Skip empty files
+skip_empty = True
+
+# Sort report by these columns
+sort = Cover
+
+# Exclude lines from coverage
+exclude_lines =
+    # Standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug-only code
+    def __repr__
+    def __str__
+
+    # Don't complain if tests don't hit defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+
+    # Don't complain about abstract methods
+    @(abc\.)?abstractmethod
+
+    # Ignore type checking blocks
+    if typing.TYPE_CHECKING:
+
+    # Ignore protocol definitions
+    class .*\(Protocol\):
+
+    # Defensive programming
+    if False:
+    if DEBUG:
+    if debug:
+
+    # Error handling
+    except ImportError:
+    except ModuleNotFoundError:
+
+# Patterns for files to exclude
+exclude_also =
+    # Exclude test utilities
+    def test_
+    class Test
+
+    # Exclude mock objects
+    class Mock
+    def mock_
+
+[html]
+# Directory for HTML coverage reports
+directory = htmlcov
+title = GOES_VFI Coverage Report
+show_contexts = True
+
+[xml]
+# Output file for XML coverage report
+output = coverage.xml
+
+[json]
+# Output file for JSON coverage report
+output = coverage.json
+pretty_print = True
+show_contexts = True
+
+[paths]
+# Map paths for combining coverage data from different locations
+source =
+    goesvfi/
+    */site-packages/goesvfi/
+    */GOES_VFI/goesvfi/
+
+[lcov]
+# Output file for LCOV format (for integration with other tools)
+output = coverage.lcov

@@ -1,4 +1,14 @@
 """
+from pathlib import Path
+from typing import Callable, Dict, List, Tuple
+
+from PyQt6.QtCore import QObject, pyqtSignal
+from datetime import datetime
+import logging
+
+from .enhanced_view_model import EnhancedIntegrityCheckViewModel
+from .view_model import MissingTimestamp
+
 Signal management utilities for integrity check tab connections.
 
 This module provides a standardized approach for connecting signals between
@@ -6,25 +16,11 @@ different components in the integrity check system, ensuring proper data flow
 and reducing redundant code across different tab implementations.
 """
 
-import logging
-from datetime import datetime
-from pathlib import Path
-from typing import Callable, Dict, List, Tuple
-
-from PyQt6.QtCore import QObject, pyqtSignal
-
-from .enhanced_view_model import EnhancedIntegrityCheckViewModel
-from .view_model import MissingTimestamp
-
 # Configure logging
 LOGGER = logging.getLogger(__name__)
 
-
-class SignalConnectionError(Exception):
-    """Exception raised for signal connection errors."""
-
-    pass
-
+class SignalConnectionError(Exception):  # pylint: disable=too-few-public-methods
+"""Exception raised for signal connection errors."""
 
 class TabSignalManager:
     """
@@ -36,6 +32,7 @@ class TabSignalManager:
     """
 
     def __init__(self) -> None:
+        pass
         """Initialize the signal manager."""
         self._connections: Dict[str, List[Tuple[QObject, str]]] = {}
         self._signal_map: Dict[str, List[str]] = {}
@@ -46,42 +43,42 @@ class TabSignalManager:
     def _initialize_signal_map(self) -> None:
         """Initialize the signal name mapping."""
         # Map common signal names between different tabs
-        self._signal_map = {
-            # Directory selection
-            "directory_selection": [
-                "directory_selected",
-                "directorySelected",
-                "dirChanged",
-                "directoryChanged",
-            ],
-            # Date range selection
-            "date_range_selection": [
-                "date_range_changed",
-                "dateRangeSelected",
-                "dateRangeChanged",
-                "dateSelected",
-            ],
-            # Timestamp selection
-            "timestamp_selection": [
-                "timestamp_selected",
-                "timestampSelected",
-                "timeSelected",
-            ],
-            # Item selection
-            "item_selection": ["item_selected", "itemSelected", "missingItemSelected"],
-            # Download actions
-            "download_action": [
-                "download_requested",
-                "downloadRequested",
-                "downloadItem",
-                "downloadFile",
-            ],
-            # View actions
-            "view_action": ["view_requested", "viewRequested", "viewItem", "viewFile"],
-            # Scan completion
-            "scan_completion": ["scan_completed", "scanCompleted", "scanFinished"],
-            # Missing items update
-            "missing_items_update": ["missing_items_updated", "missingItemsUpdated"],
+        self._signal_map = {  # pylint: disable=attribute-defined-outside-init
+        # Directory selection
+        "directory_selection": [
+        "directory_selected",
+        "directorySelected",
+        "dirChanged",
+        "directoryChanged",
+        ],
+        # Date range selection
+        "date_range_selection": [
+        "date_range_changed",
+        "dateRangeSelected",
+        "dateRangeChanged",
+        "dateSelected",
+        ],
+        # Timestamp selection
+        "timestamp_selection": [
+        "timestamp_selected",
+        "timestampSelected",
+        "timeSelected",
+        ],
+        # Item selection
+        "item_selection": ["item_selected", "itemSelected", "missingItemSelected"],
+        # Download actions
+        "download_action": [
+        "download_requested",
+        "downloadRequested",
+        "downloadItem",
+        "downloadFile",
+        ],
+        # View actions
+        "view_action": ["view_requested", "viewRequested", "viewItem", "viewFile"],
+        # Scan completion
+        "scan_completion": ["scan_completed", "scanCompleted", "scanFinished"],
+        # Missing items update
+        "missing_items_update": ["missing_items_updated", "missingItemsUpdated"],
         }
 
     def connect_tabs(self, tabs: Dict[str, QObject]) -> None:
@@ -90,13 +87,13 @@ class TabSignalManager:
 
         Args:
             tabs: Dictionary of tabs to connect, with keys as tab names
-                 and values as tab objects.
+            and values as tab objects.
 
         Example:
-            signal_manager.connect_tabs({
-                "integrity": integrity_tab,
-                "timeline": timeline_tab,
-                "results": results_tab
+            signal_manager.connect_tabs({)
+            "integrity": integrity_tab,
+            "timeline": timeline_tab,
+            "results": results_tab
             })
         """
         LOGGER.info("Connecting signals between %d tabs", len(tabs))
@@ -105,8 +102,7 @@ class TabSignalManager:
         for tab_name, tab in tabs.items():
             self._connect_tab_signals(tab_name, tab, tabs)
 
-    def _connect_tab_signals(
-        self, tab_name: str, tab: QObject, all_tabs: Dict[str, QObject]
+    def _connect_tab_signals(self, tab_name: str, tab: QObject, all_tabs: Dict[str, QObject]
     ) -> None:
         """
         Connect a tab's signals to other tabs.
@@ -119,67 +115,72 @@ class TabSignalManager:
         LOGGER.debug("Connecting signals for tab %r", tab_name)
 
         # Connect directory selection signals
-        self._connect_signal_group(
-            tab, "directory_selection", all_tabs, self._handle_directory_signal
+        self._connect_signal_group()
+        tab, "directory_selection", all_tabs, self._handle_directory_signal
         )
 
         # Connect date range selection signals
-        self._connect_signal_group(
-            tab, "date_range_selection", all_tabs, self._handle_date_range_signal
+        self._connect_signal_group()
+        tab, "date_range_selection", all_tabs, self._handle_date_range_signal
         )
 
         # Connect timestamp selection signals
-        self._connect_signal_group(
-            tab, "timestamp_selection", all_tabs, self._handle_timestamp_signal
+        self._connect_signal_group()
+        tab, "timestamp_selection", all_tabs, self._handle_timestamp_signal
         )
 
         # Connect item selection signals
-        self._connect_signal_group(
-            tab, "item_selection", all_tabs, self._handle_item_signal
+        self._connect_signal_group()
+        tab, "item_selection", all_tabs, self._handle_item_signal
         )
 
         # Connect download action signals
-        self._connect_signal_group(
-            tab, "download_action", all_tabs, self._handle_download_signal
+        self._connect_signal_group()
+        tab, "download_action", all_tabs, self._handle_download_signal
         )
 
         # Connect view action signals
-        self._connect_signal_group(
-            tab, "view_action", all_tabs, self._handle_view_signal
+        self._connect_signal_group()
+        tab, "view_action", all_tabs, self._handle_view_signal
         )
 
         # Connect scan completion signals if this is a view model
         if isinstance(tab, EnhancedIntegrityCheckViewModel):
+            pass
             for signal_name in self._signal_map["scan_completion"]:
                 if hasattr(tab, signal_name):
+                    pass
                     signal = getattr(tab, signal_name)
                     if isinstance(signal, pyqtSignal):
+                        pass
                         # This will update all tabs when scan completes
-                        signal.connect(
-                            lambda *args: self._handle_scan_completion(all_tabs, *args)
+                        signal.connect(  # type: ignore[attr-defined])
+                        lambda *args: self._handle_scan_completion(all_tabs, *args)
                         )
                         LOGGER.debug("Connected view model %s signal", signal_name)
 
         # Connect missing items updated signals if this is a view model
         if isinstance(tab, EnhancedIntegrityCheckViewModel):
+            pass
             for signal_name in self._signal_map["missing_items_update"]:
                 if hasattr(tab, signal_name):
+                    pass
                     signal = getattr(tab, signal_name)
                     if isinstance(signal, pyqtSignal):
+                        pass
                         # This will update all tabs when missing items are updated
-                        signal.connect(
-                            lambda items: self._handle_missing_items_update(
-                                all_tabs, items
-                            )
+                        signal.connect(  # type: ignore[attr-defined])
+                        lambda items: self._handle_missing_items_update()
+                        all_tabs, items
+                        )
                         )
                         LOGGER.debug("Connected view model %s signal", signal_name)
 
-    def _connect_signal_group(
-        self,
-        tab: QObject,
-        group_key: str,
-        all_tabs: Dict[str, QObject],
-        handler: Callable,
+    def _connect_signal_group(self,
+    tab: QObject,
+    group_key: str,
+    all_tabs: Dict[str, QObject],
+    handler: Callable[..., None],
     ) -> None:
         """
         Connect a group of similar signals from a tab to appropriate handlers.
@@ -192,23 +193,25 @@ class TabSignalManager:
         """
         for signal_name in self._signal_map[group_key]:
             if hasattr(tab, signal_name):
+                pass
                 signal = getattr(tab, signal_name)
                 if isinstance(signal, pyqtSignal):
+                    pass
                     try:
-                        signal.connect(
-                            lambda *args, sender=tab, signal=signal_name: handler(
-                                all_tabs, sender, signal, *args
-                            )
+                        signal.connect(  # type: ignore[attr-defined])
+                        lambda *args, sender=tab, signal=signal_name: handler()
+                        all_tabs, sender, signal, *args
+                        )
                         )
                         LOGGER.debug("Connected %s signal", signal_name)
                     except Exception as e:
+                        pass
                         LOGGER.error("Error connecting %s signal: %s", signal_name, e)
-                        raise SignalConnectionError(
-                            "Failed to connect %s: %s" % (signal_name, e)
+                        raise SignalConnectionError()
+                        "Failed to connect %s: %s" % (signal_name, e)
                         ) from e
 
-    def _update_tab_directory_via_method(
-        self, tab: QObject, tab_name: str, directory: str
+    def _update_tab_directory_via_method(self, tab: QObject, tab_name: str, directory: str
     ) -> bool:
         """
         Update a tab's directory using the set_directory method.
@@ -222,16 +225,17 @@ class TabSignalManager:
             bool: True if successful, False otherwise
         """
         if hasattr(tab, "set_directory"):
+            pass
             try:
                 tab.set_directory(directory)
                 LOGGER.debug("Updated directory in %r using set_directory", tab_name)
                 return True
             except Exception as e:
+                pass
                 LOGGER.error("Error setting directory in %r: %s", tab_name, e)
         return False
 
-    def _update_tab_directory_via_edit(
-        self, tab: QObject, tab_name: str, directory: str
+    def _update_tab_directory_via_edit(self, tab: QObject, tab_name: str, directory: str
     ) -> bool:
         """
         Update a tab's directory using the directory_edit widget.
@@ -245,16 +249,17 @@ class TabSignalManager:
             bool: True if successful, False otherwise
         """
         if hasattr(tab, "directory_edit") and hasattr(tab.directory_edit, "setText"):
+            pass
             try:
                 tab.directory_edit.setText(directory)
                 LOGGER.debug("Updated directory in %r using directory_edit", tab_name)
                 return True
             except Exception as e:
+                pass
                 LOGGER.error("Error setting directory text in %r: %s", tab_name, e)
         return False
 
-    def _update_view_model_directory(
-        self, tab: EnhancedIntegrityCheckViewModel, directory: str
+    def _update_view_model_directory(self, tab: EnhancedIntegrityCheckViewModel, directory: str
     ) -> bool:
         """
         Update a view model's base_directory property.
@@ -267,22 +272,24 @@ class TabSignalManager:
             bool: True if successful, False otherwise
         """
         try:
+            pass
             if isinstance(tab.base_directory, Path):
+                pass
                 tab.base_directory = Path(directory)
             else:
                 tab.base_directory = directory
             LOGGER.debug("Updated directory in view model")
             return True
         except Exception as e:
+            pass
             LOGGER.error("Error setting directory in view model: %s", e)
             return False
 
-    def _handle_directory_signal(
-        self,
-        tabs: Dict[str, QObject],
-        sender: QObject,
-        signal_name: str,
-        directory: str,
+    def _handle_directory_signal(self,
+    tabs: Dict[str, QObject],
+    sender: QObject,
+    signal_name: str,
+    directory: str,
     ) -> None:
         """
         Handle directory selection signals.
@@ -299,6 +306,7 @@ class TabSignalManager:
         for tab_name, tab in tabs.items():
             # Skip the sender to avoid circular signals
             if tab is sender:
+                pass
                 continue
 
             # Try updating the directory using different methods
@@ -306,19 +314,20 @@ class TabSignalManager:
 
             # If that didn't work, try updating via directory_edit
             if not updated:
+                pass
                 updated = self._update_tab_directory_via_edit(tab, tab_name, directory)
 
             # If it's a view model, update its base_directory property
             if isinstance(tab, EnhancedIntegrityCheckViewModel):
+                pass
                 self._update_view_model_directory(tab, directory)
 
-    def _handle_date_range_signal(
-        self,
-        tabs: Dict[str, QObject],
-        sender: QObject,
-        signal_name: str,
-        start: datetime,
-        end: datetime,
+    def _handle_date_range_signal(self,
+    tabs: Dict[str, QObject],
+    sender: QObject,
+    signal_name: str,
+    start: datetime,
+    end: datetime,
     ) -> None:
         """
         Handle date range selection signals.
@@ -336,33 +345,36 @@ class TabSignalManager:
         for tab_name, tab in tabs.items():
             # Skip the sender to avoid circular signals
             if tab is sender:
+                pass
                 continue
 
             # Try to find a suitable method to set the date range
             if hasattr(tab, "set_date_range"):
+                pass
                 try:
                     tab.set_date_range(start, end)
-                    LOGGER.debug(
-                        f"Updated date range in {tab_name!r} using set_date_range"
+                    LOGGER.debug("Updated date range in %s using set_date_range", tab_name!r)
                     )
                 except Exception as e:
-                    LOGGER.error(f"Error setting date range in {tab_name!r}: {e}")
+                    pass
+                    LOGGER.error("Error setting date range in %s: %s", tab_name!r, e)
 
             # If it's a view model, update its properties
             if isinstance(tab, EnhancedIntegrityCheckViewModel):
+                pass
                 try:
                     tab.start_date = start
                     tab.end_date = end
                     LOGGER.debug("Updated date range in view model")
                 except Exception as e:
-                    LOGGER.error(f"Error setting date range in view model: {e}")
+                    pass
+                    LOGGER.error("Error setting date range in view model: %s", e)
 
-    def _handle_timestamp_signal(
-        self,
-        tabs: Dict[str, QObject],
-        sender: QObject,
-        signal_name: str,
-        timestamp: datetime,
+    def _handle_timestamp_signal(self,
+    tabs: Dict[str, QObject],
+    sender: QObject,
+    signal_name: str,
+    timestamp: datetime,
     ) -> None:
         """
         Handle timestamp selection signals.
@@ -379,24 +391,25 @@ class TabSignalManager:
         for tab_name, tab in tabs.items():
             # Skip the sender to avoid circular signals
             if tab is sender:
+                pass
                 continue
 
             # If this is the results tab, try to highlight the corresponding item
             if hasattr(tab, "highlight_item"):
+                pass
                 try:
                     tab.highlight_item(timestamp)
-                    LOGGER.debug(
-                        f"Highlighted item in {tab_name!r} at timestamp {timestamp}"
+                    LOGGER.debug("Highlighted item in %s at timestamp %s", tab_name!r, timestamp)
                     )
                 except Exception as e:
-                    LOGGER.error(f"Error highlighting item in {tab_name!r}: {e}")
+                    pass
+                    LOGGER.error("Error highlighting item in %s: %s", tab_name!r, e)
 
-    def _handle_item_signal(
-        self,
-        tabs: Dict[str, QObject],
-        sender: QObject,
-        signal_name: str,
-        item: MissingTimestamp,
+    def _handle_item_signal(self,
+    tabs: Dict[str, QObject],
+    sender: QObject,
+    signal_name: str,
+    item: MissingTimestamp,
     ) -> None:
         """
         Handle item selection signals.
@@ -413,22 +426,24 @@ class TabSignalManager:
         for tab_name, tab in tabs.items():
             # Skip the sender to avoid circular signals
             if tab is sender:
+                pass
                 continue
 
             # If this is the timeline tab, try to highlight the corresponding timestamp
             if hasattr(tab, "select_timestamp") and hasattr(item, "timestamp"):
+                pass
                 try:
                     tab.select_timestamp(item.timestamp)
-                    LOGGER.debug(f"Selected timestamp in {tab_name!r}")
+                    LOGGER.debug("Selected timestamp in %s", tab_name!r)
                 except Exception as e:
-                    LOGGER.error(f"Error selecting timestamp in {tab_name!r}: {e}")
+                    pass
+                    LOGGER.error("Error selecting timestamp in %s: %s", tab_name!r, e)
 
-    def _handle_download_signal(
-        self,
-        tabs: Dict[str, QObject],
-        sender: QObject,
-        signal_name: str,
-        item: MissingTimestamp,
+    def _handle_download_signal(self,
+    tabs: Dict[str, QObject],
+    sender: QObject,
+    signal_name: str,
+    item: MissingTimestamp,
     ) -> None:
         """
         Handle download request signals.
@@ -444,19 +459,20 @@ class TabSignalManager:
         # Find a tab that can handle downloads
         for tab_name, tab in tabs.items():
             if hasattr(tab, "download_item"):
+                pass
                 try:
                     tab.download_item(item)
-                    LOGGER.debug(f"Requested download in {tab_name!r}")
+                    LOGGER.debug("Requested download in %s", tab_name!r)
                     break  # Only need one tab to handle it
                 except Exception as e:
-                    LOGGER.error(f"Error requesting download in {tab_name!r}: {e}")
+                    pass
+                    LOGGER.error("Error requesting download in %s: %s", tab_name!r, e)
 
-    def _handle_view_signal(
-        self,
-        tabs: Dict[str, QObject],
-        sender: QObject,
-        signal_name: str,
-        item: MissingTimestamp,
+    def _handle_view_signal(self,
+    tabs: Dict[str, QObject],
+    sender: QObject,
+    signal_name: str,
+    item: MissingTimestamp,
     ) -> None:
         """
         Handle view request signals.
@@ -472,20 +488,22 @@ class TabSignalManager:
         # Find the imagery tab to handle viewing
         for tab_name, tab in tabs.items():
             if tab_name.lower() == "imagery" or "imagery" in tab_name.lower():
-                if (
-                    hasattr(tab, "load_file")
-                    and hasattr(item, "local_path")
-                    and item.local_path
+                pass
+                if ()
+                hasattr(tab, "load_file")
+                and hasattr(item, "local_path")
+                and item.local_path
                 ):
+                    pass
                     try:
                         tab.load_file(item.local_path)
-                        LOGGER.debug(f"Loaded file in {tab_name!r}")
+                        LOGGER.debug("Loaded file in %s", tab_name!r)
                         break  # Only need one tab to handle it
                     except Exception as e:
-                        LOGGER.error(f"Error loading file in {tab_name!r}: {e}")
+                        pass
+                        LOGGER.error("Error loading file in %s: %s", tab_name!r, e)
 
-    def _handle_scan_completion(
-        self, tabs: Dict[str, QObject], success: bool, message: str
+    def _handle_scan_completion(self, tabs: Dict[str, QObject], success: bool, message: str
     ) -> None:
         """
         Handle scan completion signals.
@@ -498,18 +516,20 @@ class TabSignalManager:
         LOGGER.info("Scan completed: %s, %s", success, message)
 
         if success:
+            pass
             # Find the view model to get the updated data
             view_model = None
             for tab in tabs.values():
                 if isinstance(tab, EnhancedIntegrityCheckViewModel):
+                    pass
                     view_model = tab
                     break
 
             if view_model is not None and hasattr(view_model, "missing_items"):
+                pass
                 self._update_tabs_after_scan(tabs, view_model)
 
-    def _update_date_range_tab(
-        self, tab: QObject, tab_name: str, start_date: datetime, end_date: datetime
+    def _update_date_range_tab(self, tab: QObject, tab_name: str, start_date: datetime, end_date: datetime
     ) -> bool:
         """
         Update a tab with date range information.
@@ -524,22 +544,23 @@ class TabSignalManager:
             bool: True if successful, False otherwise
         """
         if hasattr(tab, "set_date_range"):
+            pass
             try:
                 tab.set_date_range(start_date, end_date)
                 LOGGER.debug("Updated date range in %r", tab_name)
                 return True
             except Exception as e:
+                pass
                 LOGGER.error("Error updating date range in %r: %s", tab_name, e)
         return False
 
-    def _update_timeline_tab(
-        self,
-        tab: QObject,
-        tab_name: str,
-        missing_items: List[MissingTimestamp],
-        start_date: datetime,
-        end_date: datetime,
-        interval_minutes: int,
+    def _update_timeline_tab(self,
+    tab: QObject,
+    tab_name: str,
+    missing_items: List[MissingTimestamp],
+    start_date: datetime,
+    end_date: datetime,
+    interval_minutes: int,
     ) -> bool:
         """
         Update a timeline tab with data.
@@ -556,20 +577,21 @@ class TabSignalManager:
             bool: True if successful, False otherwise
         """
         if hasattr(tab, "set_data") and "timeline" in tab_name.lower():
+            pass
             try:
                 tab.set_data(missing_items, start_date, end_date, interval_minutes)
                 LOGGER.debug("Updated data in %r", tab_name)
                 return True
             except Exception as e:
+                pass
                 LOGGER.error("Error updating data in %r: %s", tab_name, e)
         return False
 
-    def _update_results_tab(
-        self,
-        tab: QObject,
-        tab_name: str,
-        missing_items: List[MissingTimestamp],
-        total_expected: int,
+    def _update_results_tab(self,
+    tab: QObject,
+    tab_name: str,
+    missing_items: List[MissingTimestamp],
+    total_expected: int,
     ) -> bool:
         """
         Update a results tab with items.
@@ -584,16 +606,17 @@ class TabSignalManager:
             bool: True if successful, False otherwise
         """
         if hasattr(tab, "set_items") and "result" in tab_name.lower():
+            pass
             try:
                 tab.set_items(missing_items, total_expected)
                 LOGGER.debug("Updated items in %r", tab_name)
                 return True
             except Exception as e:
+                pass
                 LOGGER.error("Error updating items in %r: %s", tab_name, e)
         return False
 
-    def _update_tabs_after_scan(
-        self, tabs: Dict[str, QObject], view_model: EnhancedIntegrityCheckViewModel
+    def _update_tabs_after_scan(self, tabs: Dict[str, QObject], view_model: EnhancedIntegrityCheckViewModel
     ) -> None:
         """
         Update all tabs with data after a successful scan.
@@ -617,15 +640,14 @@ class TabSignalManager:
             self._update_date_range_tab(tab, tab_name, start_date, end_date)
 
             # Update timeline tabs with missing items data
-            self._update_timeline_tab(
-                tab, tab_name, missing_items, start_date, end_date, interval_minutes
+            self._update_timeline_tab()
+            tab, tab_name, missing_items, start_date, end_date, interval_minutes
             )
 
             # Update results tabs with missing items
             self._update_results_tab(tab, tab_name, missing_items, total_expected)
 
-    def _handle_missing_items_update(
-        self, tabs: Dict[str, QObject], items: List[MissingTimestamp]
+    def _handle_missing_items_update(self, tabs: Dict[str, QObject], items: List[MissingTimestamp]
     ) -> None:
         """
         Handle missing items update signals.
@@ -640,16 +662,16 @@ class TabSignalManager:
         view_model = None
         for tab in tabs.values():
             if isinstance(tab, EnhancedIntegrityCheckViewModel):
+                pass
                 view_model = tab
                 break
 
         if view_model is not None:
+            pass
             self._update_tabs_after_scan(tabs, view_model)
-
 
 # Module-level signal manager instance for singleton usage
 signal_manager = TabSignalManager()
-
 
 def connect_integrity_check_tabs(tabs: Dict[str, QObject]) -> None:
     """
@@ -657,17 +679,16 @@ def connect_integrity_check_tabs(tabs: Dict[str, QObject]) -> None:
 
     Args:
         tabs: Dictionary of tabs to connect, with keys as tab names
-             and values as tab objects.
+        and values as tab objects.
 
     Example:
-        connect_integrity_check_tabs({
-            "integrity": integrity_tab,
-            "timeline": timeline_tab,
-            "results": results_tab
+        connect_integrity_check_tabs({)
+        "integrity": integrity_tab,
+        "timeline": timeline_tab,
+        "results": results_tab
         })
     """
     signal_manager.connect_tabs(tabs)
-
 
 def create_signal_flow_diagram(tabs: Dict[str, QObject]) -> str:
     """
@@ -684,6 +705,7 @@ def create_signal_flow_diagram(tabs: Dict[str, QObject]) -> str:
 
     # Document signal connections for each tab
     for tab_name, tab in tabs.items():
+        pass
         diagram += f"## {tab_name}\n\n"
 
         # Find signals in this tab
@@ -691,9 +713,11 @@ def create_signal_flow_diagram(tabs: Dict[str, QObject]) -> str:
         for attr in dir(tab):
             attr_value = getattr(tab, attr)
             if isinstance(attr_value, pyqtSignal):
+                pass
                 signals.append(attr)
 
         if signals:
+            pass
             diagram += "### Emitted Signals\n\n"
             for signal in signals:
                 diagram += f"- `{signal}`\n"
@@ -705,9 +729,11 @@ def create_signal_flow_diagram(tabs: Dict[str, QObject]) -> str:
 
         for method_name in dir(tab):
             if method_name.startswith("_on_") or method_name.startswith("handle_"):
+                pass
                 handler_methods.append(method_name)
 
         if handler_methods:
+            pass
             for method in handler_methods:
                 diagram += f"- `{method}`\n"
             diagram += "\n"

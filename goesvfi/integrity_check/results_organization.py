@@ -4,19 +4,11 @@ This module provides specialized widgets for better organizing and presenting
 the integrity check results, including grouping, filtering, and categorization.
 """
 
-from typing import Any, Dict, List, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from PyQt6.QtCore import (
-    QAbstractItemModel,
-    QModelIndex,
-    QObject,
-    Qt,
-    pyqtSignal,
-)
-from PyQt6.QtGui import (
-    QColor,
-)
+from PyQt6.QtCore import QAbstractItemModel, QModelIndex, QObject, Qt, pyqtSignal
+from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -35,6 +27,7 @@ from PyQt6.QtWidgets import (
 
 from goesvfi.integrity_check.view_model import MissingTimestamp
 
+
 class GroupingModel(QAbstractItemModel):
     """Model for grouped missing timestamps."""
 
@@ -44,7 +37,8 @@ class GroupingModel(QAbstractItemModel):
         self._root_item = GroupItem("Root", None)
         self._headers = ["Group", "Count", "Status"]
 
-    def index(self, row: int, column: int, parent: Optional[QModelIndex] = None
+    def index(
+        self, row: int, column: int, parent: Optional[QModelIndex] = None
     ) -> QModelIndex:
         """Create an index for the given row, column, and parent."""
         if parent is None:
@@ -161,7 +155,9 @@ class GroupingModel(QAbstractItemModel):
         self.beginResetModel()
 
         # Clear existing items
-        self._root_item = GroupItem("Root", None)  # pylint: disable=attribute-defined-outside-init
+        self._root_item = GroupItem(
+            "Root", None
+        )  # pylint: disable=attribute-defined-outside-init
 
         # Group by selected method
         if grouping == "day":
@@ -263,10 +259,10 @@ class GroupingModel(QAbstractItemModel):
         """
         # Define status groups
         status_groups: Dict[str, List[MissingTimestamp]] = {
-        "Downloaded": [],
-        "Downloading": [],
-        "Error": [],
-        "Missing": [],
+            "Downloaded": [],
+            "Downloading": [],
+            "Error": [],
+            "Missing": [],
         }
 
         # Assign items to groups
@@ -318,7 +314,7 @@ class GroupingModel(QAbstractItemModel):
             if filename:
                 pass
                 # Common pattern for GOES satellites in filenames:
-                    # OR_ABI-L1b-RadF-M6C01_G16_
+                # OR_ABI-L1b-RadF-M6C01_G16_
                 if "G16" in filename:
                     pass
                     satellite = "GOES-16"
@@ -361,10 +357,10 @@ class GroupingModel(QAbstractItemModel):
         """
         # Group by source
         source_groups: Dict[str, List[MissingTimestamp]] = {
-        "AWS S3": [],
-        "Local Storage": [],
-        "NOAA CDN": [],
-        "Other": [],
+            "AWS S3": [],
+            "Local Storage": [],
+            "NOAA CDN": [],
+            "Other": [],
         }
 
         for item in items:
@@ -422,13 +418,15 @@ class GroupingModel(QAbstractItemModel):
             return item
         return None
 
+
 class GroupItem:
     """Item in the group model."""
 
-    def __init__(self,
-    data: str,
-    parent: Optional["GroupItem"],
-    item: Optional[MissingTimestamp] = None,
+    def __init__(
+        self,
+        data: str,
+        parent: Optional["GroupItem"],
+        item: Optional[MissingTimestamp] = None,
     ) -> None:
         """
         Initialize the group item.
@@ -553,6 +551,7 @@ class GroupItem:
             return self._item.timestamp
         return None
 
+
 class MissingItemsTreeView(QWidget):
     """Tree view for grouped missing timestamps."""
 
@@ -628,7 +627,8 @@ class MissingItemsTreeView(QWidget):
 
         layout.addWidget(self.tree_view)
 
-    def set_items(self, items: List[MissingTimestamp], *args: Any, **kwargs: Any
+    def set_items(
+        self, items: List[MissingTimestamp], *args: Any, **kwargs: Any
     ) -> None:
         """
         Set the items to be displayed.
@@ -766,6 +766,7 @@ class MissingItemsTreeView(QWidget):
             # Only emit for leaf items with an associated MissingTimestamp
             self.itemSelected.emit(item._item)
 
+
 class ResultsSummaryWidget(QWidget):
     """Summary widget for integrity check results."""
 
@@ -845,7 +846,8 @@ class ResultsSummaryWidget(QWidget):
         # Add stretch to push everything to the top
         layout.addStretch()
 
-    def update_summary(self, items: List[MissingTimestamp], total_expected: int
+    def update_summary(
+        self, items: List[MissingTimestamp], total_expected: int
     ) -> None:
         """
         Update the summary with current data.
@@ -881,6 +883,7 @@ class ResultsSummaryWidget(QWidget):
         else:
             self.progress_bar.setValue(0)
             self.progress_bar.setFormat("0% Complete")
+
 
 class ItemPreviewWidget(QWidget):
     """Preview widget for showing details of a selected item."""
@@ -1034,16 +1037,19 @@ class ItemPreviewWidget(QWidget):
             self.error_text.setText(self.tr(""))
             self.error_group.setVisible(False)
 
+
 # Alias for backward compatibility
 OptimizedResultsTab = MissingItemsTreeView
 
 
-def create_missing_items_tree_view(parent: Optional[QWidget] = None) -> MissingItemsTreeView:
+def create_missing_items_tree_view(
+    parent: Optional[QWidget] = None,
+) -> MissingItemsTreeView:
     """Create and return a MissingItemsTreeView widget.
-    
+
     Args:
         parent: Optional parent widget
-        
+
     Returns:
         MissingItemsTreeView: The created tree view widget
     """

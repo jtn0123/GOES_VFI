@@ -36,7 +36,9 @@ async def list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10):
     Returns:
         List of S3 object keys for Band 13
     """
-    LOGGER.info(f"Listing Band 13 objects in s3://{bucket}/{prefix} (limit: {limit})")
+    LOGGER.info(
+        "Listing Band 13 objects in s3://%s/%s (limit: %s)", bucket, prefix, limit
+    )
 
     # Use S3Store's filter_s3_keys_by_band function
     import aioboto3
@@ -65,6 +67,7 @@ async def list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10):
 
             async for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
                 if "Contents" in page:
+                    pass
                     for obj in page["Contents"]:
                         all_objects.append(obj["Key"])
 
@@ -84,7 +87,8 @@ async def list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10):
             # Return the first 'limit' Band 13 objects
             return band13_objects[:limit]
         except Exception as e:
-            LOGGER.error(f"Error listing objects: {e}")
+            pass
+            LOGGER.error("Error listing objects: %s", e)
             return []
 
 
@@ -108,13 +112,15 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
     s3_store = S3Store(timeout=60)
 
     try:
+        pass
         # Get bucket name
         bucket = TimeIndex.get_s3_bucket(satellite_pattern)
 
         # Find the nearest valid timestamps for this product
         nearest_times = TimeIndex.find_nearest_intervals(timestamp, product_type)
         if not nearest_times:
-            LOGGER.warning(f"No valid scan times found for {product_type}")
+            pass
+            LOGGER.warning("No valid scan times found for %s", product_type)
             return False
 
         LOGGER.info(
@@ -132,12 +138,13 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
         band13_keys = await list_s3_objects_band13(bucket, prefix, limit=5)
 
         if not band13_keys:
-            LOGGER.warning(f"No Band 13 files found for s3://{bucket}/{prefix}")
+            pass
+            LOGGER.warning("No Band 13 files found for s3://%s/%s", bucket, prefix)
             return False
 
         # Try to download a single Band 13 file
         test_key = band13_keys[0]
-        LOGGER.info(f"Testing download of key: s3://{bucket}/{test_key}")
+        LOGGER.info("Testing download of key: s3://%s/%s", bucket, test_key)
 
         # Generate destination path
         filename = test_key.split("/")[-1]
@@ -159,6 +166,7 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
             match = re.search(pattern, filename)
 
             if match:
+                pass
                 # Extract components
                 file_year = int(match.group(1))
                 file_doy = int(match.group(2))
@@ -180,7 +188,7 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
                     second=0,  # Use 0 for seconds to avoid errors
                 )
 
-                LOGGER.info(f"Extracted timestamp: {file_ts.isoformat()}")
+                LOGGER.info("Extracted timestamp: %s", file_ts.isoformat())
 
                 # Now try to download using the S3Store's band support
                 result = await s3_store.download(
@@ -192,25 +200,27 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
                 )
 
                 if dest_path.exists():
+                    pass
                     file_size = dest_path.stat().st_size
                     LOGGER.info(
                         f"✓ Successfully downloaded to {dest_path} ({file_size} bytes)"
                     )
                     return True
-                else:
-                    LOGGER.error(
-                        f"✗ Download failed: File doesn't exist at {dest_path}"
-                    )
-                    return False
+                LOGGER.error(f"✗ Download failed: File doesn't exist at {dest_path}")
+                return False
             else:
-                LOGGER.error(f"✗ Failed to extract timestamp from filename: {filename}")
+                LOGGER.error(
+                    "✗ Failed to extract timestamp from filename: %s", filename
+                )
                 return False
         except Exception as e:
-            LOGGER.error(f"✗ Error during download: {e}")
+            pass
+            LOGGER.error("✗ Error during download: %s", e)
             return False
 
     except Exception as e:
-        LOGGER.error(f"✗ Error: {e}")
+        pass
+        LOGGER.error("✗ Error: %s", e)
         return False
     finally:
         # Close the S3 store
@@ -229,7 +239,7 @@ async def main():
         # June 15, 2023 at 12:00 UTC
         test_time = datetime(2023, 6, 15, 12, 0, 0)
 
-        LOGGER.info(f"Testing with timestamp: {test_time.isoformat()}")
+        LOGGER.info("Testing with timestamp: %s", test_time.isoformat())
 
         # Test with GOES-16 and GOES-18
         satellites = [
@@ -257,7 +267,9 @@ async def main():
             successful = [p for p, s in products.items() if s]
             failed = [p for p, s in products.items() if not s]
 
-            LOGGER.info(f"{satellite}: {len(successful)}/{len(products)} successful")
+            LOGGER.info(
+                "%s: %s/%s successful", satellite, len(successful), len(products)
+            )
             LOGGER.info(
                 f"  Successful: {', '.join(successful) if successful else 'None'}"
             )
@@ -265,5 +277,6 @@ async def main():
 
 
 if __name__ == "__main__":
+    pass
     # Run the async main function
     asyncio.run(main())

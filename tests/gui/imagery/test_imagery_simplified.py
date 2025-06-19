@@ -436,7 +436,7 @@ class EnhancedPreviewDialog(QWidget):
         self.image_label.setPixmap(pix)
 
         # Log the change
-        logger.info(f"Showing error preview for: {error_msg}")
+        logger.info("Showing error preview for: %s", error_msg)
 
 
 class MainWindow(QMainWindow):

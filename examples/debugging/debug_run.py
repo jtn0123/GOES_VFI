@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Debug launcher for GOES-VFI application."""
+"""Debug launcher for GOES - VFI application."""
 
 import sys
 import traceback
@@ -9,7 +9,7 @@ try:
 
     from goesvfi.gui import MainWindow
 
-    print("Starting GOES-VFI with debug tracing...")
+    print("Starting GOES - VFI with debug tracing...")
 
     app = QApplication(sys.argv)
     window = MainWindow(debug_mode=True)

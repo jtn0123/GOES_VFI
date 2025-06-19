@@ -41,6 +41,12 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         self.mock_view_model = MagicMock(spec=EnhancedIntegrityCheckViewModel)
         self.mock_view_model.base_directory = self.base_dir
         self.mock_view_model.satellite = SatellitePattern.GOES_18
+        self.mock_view_model.status_message = "Ready"
+        self.mock_view_model.start_date = datetime.now() - timedelta(days=7)
+        self.mock_view_model.end_date = datetime.now()
+        self.mock_view_model.interval_minutes = 10
+        self.mock_view_model.fetch_source = MagicMock()
+        self.mock_view_model.missing_items = []
 
         # Create the tab for testing
         self.tab = EnhancedIntegrityCheckTab(self.mock_view_model)

@@ -1,14 +1,12 @@
-"""ViewModel for the main VFI processing tab in the GOES VFI application.
-
+"""
 This module defines the ProcessingViewModel class, which is intended to manage
 the state, input parameters, and results for the core VFI processing pipeline.
 """
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -100,7 +98,9 @@ class ProcessingViewModel(QObject):
             total: Total number of frames to process
             time_elapsed: Time elapsed in seconds
         """
-        LOGGER.debug(f"Progress update: {current}/{total} frames, {time_elapsed:.2f}s")
+        LOGGER.debug(
+            "Progress update: %s/%s frames, %.2fs", current, total, time_elapsed
+        )
 
         # Update internal state
         self._current_progress = current
@@ -123,7 +123,7 @@ class ProcessingViewModel(QObject):
             success: Whether processing completed successfully
             message: Success message or error information (can be string or Path)
         """
-        LOGGER.info(f"Processing finished. Success: {success}, Message: {message}")
+        LOGGER.info("Processing finished. Success: %s, Message: %s", success, message)
 
         # Update internal state
         self._is_processing = False
@@ -158,7 +158,7 @@ class ProcessingViewModel(QObject):
         Args:
             path: The path to the generated output file
         """
-        LOGGER.info(f"Output file path set: {path}")
+        LOGGER.info("Output file path set: %s", path)
         self._output_file_path = path
 
     # Properties

@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  goes-vfi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: goes-vfi-app
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount source code for development
+      - .:/app
+      # Mount data directories
+      - ./data:/app/data
+      - ./output:/app/output
+      - ./logs:/app/logs
+      # Mount X11 socket for GUI (Linux)
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    environment:
+      - DISPLAY=${DISPLAY}
+      - GOES_VFI_ENV=development
+      - PYTHONPATH=/app
+    networks:
+      - goes-vfi-network
+    depends_on:
+      - redis
+      - postgres
+    stdin_open: true
+    tty: true
+
+  # Redis for caching and task queue
+  redis:
+    image: redis:7-alpine
+    container_name: goes-vfi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - goes-vfi-network
+    command: redis-server --appendonly yes
+
+  # PostgreSQL for metadata storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: goes-vfi-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: goes_vfi
+      POSTGRES_USER: goesvfi
+      POSTGRES_PASSWORD: goesvfi_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/sql:/docker-entrypoint-initdb.d
+    networks:
+      - goes-vfi-network
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: goes-vfi-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - goes-vfi-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: goes-vfi-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    networks:
+      - goes-vfi-network
+    depends_on:
+      - prometheus
+
+  # Jupyter notebook for development and analysis
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: goes-vfi-jupyter
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/app
+      - ./notebooks:/app/notebooks
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+    networks:
+      - goes-vfi-network
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --notebook-dir=/app
+
+networks:
+  goes-vfi-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
