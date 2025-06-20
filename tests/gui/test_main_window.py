@@ -1,22 +1,16 @@
 # tests/gui/test_main_window.py
-import logging
 import pathlib
-import sys
 import warnings
 from typing import List
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from PyQt6.QtCore import QByteArray, QRect, Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QImage, QPixmap
-from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox, QWidget
-
-import goesvfi.gui
+from PyQt6.QtCore import QByteArray, QRect, Qt
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog
 
 # Import the class to be tested and related utilities
-from goesvfi.gui import ClickableLabel, CropDialog, MainWindow, VfiWorker
-from goesvfi.utils.gui_helpers import RifeCapabilityManager
-from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
+from goesvfi.gui import ClickableLabel, MainWindow
 
 # Define a dummy worker class for mocking VfiWorker
 # class DummyWorker(QThread): # Now mocked via fixture
@@ -31,7 +25,7 @@ from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 
 
 @pytest.fixture(autouse=True)
-def mock_config_io():
+def _mock_config_io():
     """Mocks config loading and saving (using QSettings)."""
     pass  # No explicit patching for now, rely on window state.
 
@@ -106,13 +100,14 @@ def dummy_files(tmp_path: pathlib.Path) -> List[pathlib.Path]:
             f.touch()
             files.append(f)
             warnings.warn(
-                "PIL not found, creating empty files for tests. Some GUI tests might be less robust."
+                "PIL not found, creating empty files for tests. Some GUI tests might be less robust.",
+                stacklevel=2,
             )
     return files
 
 
 @pytest.fixture(autouse=True)
-def mock_preview(monkeypatch):
+def _mock_preview(monkeypatch):
     """Mocks methods related to preview generation."""
     # monkeypatch.setattr("goesvfi.gui.MainWindow._update_previews", lambda self: None)
 
@@ -135,7 +130,7 @@ def mock_preview(monkeypatch):
 
 
 @pytest.fixture  # Add mock_populate_models fixture
-def mock_populate_models(monkeypatch):
+def _mock_populate_models(monkeypatch):
     """Mocks _populate_models to provide a dummy model."""
 
     def mock_populate(self):
@@ -145,20 +140,18 @@ def mock_populate_models(monkeypatch):
         # Also update the model library tab if it exists
         if hasattr(self, "model_table"):
             self.model_table.setRowCount(1)
-            self.model_table.setItem(0, 0, goesvfi.gui.QTableWidgetItem("rife-dummy"))
-            self.model_table.setItem(
-                0, 1, goesvfi.gui.QTableWidgetItem("Dummy Description")
-            )
-            self.model_table.setItem(
-                0, 2, goesvfi.gui.QTableWidgetItem("/path/to/dummy")
-            )
+            from PyQt6.QtWidgets import QTableWidgetItem
+
+            self.model_table.setItem(0, 0, QTableWidgetItem("rife-dummy"))
+            self.model_table.setItem(0, 1, QTableWidgetItem("Dummy Description"))
+            self.model_table.setItem(0, 2, QTableWidgetItem("/path/to/dummy"))
 
     monkeypatch.setattr("goesvfi.gui.MainWindow._populate_models", mock_populate)
 
 
 @pytest.fixture
 def window(
-    qtbot, mock_preview, mock_populate_models, mocker
+    qtbot, _mock_preview, _mock_populate_models, mocker
 ):  # Add mock_populate_models, mocker
     """Creates the main window instance for testing."""
     # Mock helper classes that might cause segfaults during teardown
@@ -222,7 +215,7 @@ def window(
 def test_initial_state(qtbot, window, mocker):
     """Test the initial state of the UI components."""
     # Initial state checks...
-    assert window.main_tab.in_dir_edit.text() == ""  # Updated name  
+    assert window.main_tab.in_dir_edit.text() == ""  # Updated name
     assert window.main_tab.out_file_edit.text() == ""  # Updated name
     # ... other initial checks ...
     assert window.sanchez_res_km_combo.isEnabled()  # Enabled by default
@@ -241,9 +234,13 @@ def test_initial_state(qtbot, window, mocker):
     # Buttons - Rely on GUI logic calling state updates in init
     qtbot.wait(100)  # Allow UI to settle after init
     assert not window.main_tab.start_button.isEnabled()  # Should be disabled (no paths)
-    assert not window.open_vlc_button.isEnabled()  # Should be disabled (no output path)
-    assert not window.crop_button.isEnabled()  # Should be disabled (no input path)
-    assert not window.clear_crop_button.isEnabled()  # Disabled initially (no crop)
+    # assert not window.open_vlc_button.isEnabled()  # Button no longer exists
+    assert (
+        not window.main_tab.crop_button.isEnabled()
+    )  # Should be disabled (no input path)
+    assert (
+        not window.main_tab.clear_crop_button.isEnabled()
+    )  # Disabled initially (no crop)
     # ... rest of test ...
 
 
@@ -251,9 +248,9 @@ def test_select_input_path(qtbot, window, mock_dialogs, mocker):
     """Test selecting an input path."""
     # Remove path mocking
 
-    qtbot.mouseClick(window.in_dir_button, Qt.MouseButton.LeftButton)
+    qtbot.mouseClick(window.main_tab.in_dir_button, Qt.MouseButton.LeftButton)
     mock_dialogs["getExistingDirectory"].assert_called_once()
-    assert window.in_dir_edit.text() == "/fake/input"
+    assert window.main_tab.in_dir_edit.text() == "/fake/input"
     # qtbot.wait(100) # Allow signals
 
     # Manually trigger state updates after setting text
@@ -266,30 +263,30 @@ def test_select_input_path(qtbot, window, mock_dialogs, mocker):
     # unless we mock it for the whole test, but let's test the real logic flow.
     # The crop button requires input directory AND a loaded preview.
     # As no preview is loaded yet, the button should be disabled.
-    assert not window.crop_button.isEnabled()
+    assert not window.main_tab.crop_button.isEnabled()
 
     # Start button state still depends on output path
-    assert not window.start_button.isEnabled()  # Expect disabled
+    assert not window.main_tab.start_button.isEnabled()  # Expect disabled
 
 
 def test_select_output_path(qtbot, window, mock_dialogs, mocker):
     """Test selecting an output path."""
     # Remove path mocking
 
-    window.in_dir_edit.setText("/fake/input")
-    window.out_file_edit.setText("/fake/some.other")
+    window.main_tab.in_dir_edit.setText("/fake/input")
+    window.main_tab.out_file_edit.setText("/fake/some.other")
     window._update_start_button_state()
-    assert not window.start_button.isEnabled()
+    assert not window.main_tab.start_button.isEnabled()
 
-    qtbot.mouseClick(window.out_file_button, Qt.MouseButton.LeftButton)
+    qtbot.mouseClick(window.main_tab.out_file_button, Qt.MouseButton.LeftButton)
     mock_dialogs["getSaveFileName"].assert_called_once()
-    assert window.out_file_edit.text() == "/fake/output.mp4"
+    assert window.main_tab.out_file_edit.text() == "/fake/output.mp4"
 
     window._update_start_button_state()
 
     # Assertion relies on GUI internal state update working correctly.
     # We assume /fake/input and /fake parent don't exist/aren't dirs.
-    assert not window.start_button.isEnabled()  # Expect disabled
+    assert not window.main_tab.start_button.isEnabled()  # Expect disabled
 
 
 def test_change_settings(qtbot, window):
@@ -348,12 +345,12 @@ def test_change_settings(qtbot, window):
     # qtbot.wait(50) # Allow signals # REMOVED
 
     ffmpeg_tab_index = -1
-    for i in range(window.main_tabs.count()):  # Use main_tabs
-        if window.main_tabs.tabText(i) == "FFmpeg Settings":
+    for i in range(window.tab_widget.count()):  # Use tab_widget
+        if window.tab_widget.tabText(i) == "FFmpeg Settings":
             ffmpeg_tab_index = i
             break
     assert ffmpeg_tab_index != -1, "FFmpeg Settings tab not found"
-    window.main_tabs.setCurrentIndex(ffmpeg_tab_index)
+    window.tab_widget.setCurrentIndex(ffmpeg_tab_index)
     # qtbot.wait(50) # Allow tab switch # REMOVED
 
     # Test changing profile
@@ -514,16 +511,18 @@ def test_dynamic_ui_enable_disable(qtbot, window):
 def test_start_interpolation(qtbot, window, mock_worker, dummy_files):
     """Test clicking the 'Start VFI' button."""
     valid_input_dir = dummy_files[0].parent
-    window.in_dir_edit.setText(str(valid_input_dir))  # Updated name
-    window.out_file_edit.setText(
+    window.main_tab.in_dir_edit.setText(str(valid_input_dir))  # Updated name
+    window.main_tab.out_file_edit.setText(
         str(valid_input_dir / "fake_output.mp4")
     )  # Updated name
     # Ensure RIFE model is selected (default from fixture)
     assert window.encoder_combo.currentText() == "RIFE"
     assert window.model_combo.currentData() is not None
-    assert window.start_button.isEnabled()  # Updated name
+    assert window.main_tab.start_button.isEnabled()  # Updated name
 
-    qtbot.mouseClick(window.start_button, Qt.MouseButton.LeftButton)  # Updated name
+    qtbot.mouseClick(
+        window.main_tab.start_button, Qt.MouseButton.LeftButton
+    )  # Updated name
     # qtbot.wait(100) # Wait for UI state change # REMOVED
 
     # Assert MainWindow created a worker instance
@@ -538,16 +537,16 @@ def test_start_interpolation(qtbot, window, mock_worker, dummy_files):
     assert window.is_processing is True
 
     # Assert UI state changed to "processing"
-    assert not window.start_button.isEnabled()  # Updated name
+    assert not window.main_tab.start_button.isEnabled()  # Updated name
     assert window.status_label.text().startswith(
         "Starting VFI process..."
     )  # Updated name + message
     assert window.progress_bar.value() == 0
-    assert not window.main_tabs.isEnabled()  # Updated name
-    assert not window.in_dir_edit.isEnabled()  # Updated name
-    assert not window.out_file_edit.isEnabled()  # Updated name
-    assert not window.in_dir_button.isEnabled()  # Updated name
-    assert not window.out_file_button.isEnabled()  # Updated name
+    assert not window.tab_widget.isEnabled()  # Updated name
+    assert not window.main_tab.in_dir_edit.isEnabled()  # Updated name
+    assert not window.main_tab.out_file_edit.isEnabled()  # Updated name
+    assert not window.main_tab.in_dir_button.isEnabled()  # Updated name
+    assert not window.main_tab.out_file_button.isEnabled()  # Updated name
 
 
 def test_progress_update(qtbot, window, mock_worker, dummy_files, mocker):
@@ -579,8 +578,8 @@ def test_successful_completion(qtbot, window, mock_worker, dummy_files):
     """Test the UI updates on successful worker completion."""
     # Simulate worker being created and started
     valid_input_dir = dummy_files[0].parent
-    window.in_dir_edit.setText(str(valid_input_dir))
-    window.out_file_edit.setText(str(valid_input_dir / "fake_output.mp4"))
+    window.main_tab.in_dir_edit.setText(str(valid_input_dir))
+    window.main_tab.out_file_edit.setText(str(valid_input_dir / "fake_output.mp4"))
     window._set_processing_state(True)
 
     # Directly call the _on_finished method
@@ -591,14 +590,14 @@ def test_successful_completion(qtbot, window, mock_worker, dummy_files):
     assert "fake_output.mp4" in window.status_label.text()
     assert window.progress_bar.value() == 100
     assert not window.is_processing  # Processing state should be reset
-    assert window.start_button.isEnabled()  # Start button should be re-enabled
+    assert window.main_tab.start_button.isEnabled()  # Start button should be re-enabled
 
     # Verify other UI controls are re-enabled
-    assert window.main_tabs.isEnabled()
-    assert window.in_dir_edit.isEnabled()
-    assert window.out_file_edit.isEnabled()
-    assert window.in_dir_button.isEnabled()
-    assert window.out_file_button.isEnabled()
+    assert window.tab_widget.isEnabled()
+    assert window.main_tab.in_dir_edit.isEnabled()
+    assert window.main_tab.out_file_edit.isEnabled()
+    assert window.main_tab.in_dir_button.isEnabled()
+    assert window.main_tab.out_file_button.isEnabled()
 
     # Note: open_vlc_button is not enabled in tests because the output file doesn't actually exist
 
@@ -607,8 +606,8 @@ def test_error_handling(qtbot, window, mock_dialogs, mock_worker, dummy_files):
     """Test the UI updates on worker error."""
     # Simulate worker being created and started
     valid_input_dir = dummy_files[0].parent
-    window.in_dir_edit.setText(str(valid_input_dir))  # Updated name
-    window.out_file_edit.setText(
+    window.main_tab.in_dir_edit.setText(str(valid_input_dir))  # Updated name
+    window.main_tab.out_file_edit.setText(
         str(valid_input_dir / "fake_output.mp4")
     )  # Updated name
     window._set_processing_state(True)
@@ -624,8 +623,8 @@ def test_error_handling(qtbot, window, mock_dialogs, mock_worker, dummy_files):
 
     # Assert UI updated
     # qtbot.waitUntil(lambda: "Error: " in window.status_label.text(), timeout=1000) # Updated check # REMOVED
-    assert window.start_button.isEnabled()  # Check start button re-enabled
-    assert window.main_tabs.isEnabled()  # Check tabs re-enabled
+    assert window.main_tab.start_button.isEnabled()  # Check start button re-enabled
+    assert window.tab_widget.isEnabled()  # Check tabs re-enabled
     assert "Error: " in window.status_label.text()  # Updated check
     assert error_message in window.status_label.text()
     # REMOVED assertion for warning dialog for worker errors
@@ -644,12 +643,14 @@ def test_open_crop_dialog(MockCropDialog, qtbot, window, dummy_files):
     mock_dialog_instance.getRect.return_value = QRect(10, 20, 100, 50)
 
     valid_input_dir = dummy_files[0].parent
-    window.in_dir_edit.setText(str(valid_input_dir))  # Updated name
+    window.main_tab.in_dir_edit.setText(str(valid_input_dir))  # Updated name
     # Need to set a dummy pixmap on the preview label for the crop dialog to open
     window.preview_label_1.setPixmap(QPixmap(10, 10))  # Set a dummy pixmap
-    assert window.crop_button.isEnabled()  # Updated name
+    assert window.main_tab.crop_button.isEnabled()  # Updated name
 
-    qtbot.mouseClick(window.crop_button, Qt.MouseButton.LeftButton)  # Updated name
+    qtbot.mouseClick(
+        window.main_tab.crop_button, Qt.MouseButton.LeftButton
+    )  # Updated name
 
     MockCropDialog.assert_called_once()
     call_args, call_kwargs = MockCropDialog.call_args
@@ -657,7 +658,7 @@ def test_open_crop_dialog(MockCropDialog, qtbot, window, dummy_files):
     assert call_kwargs.get("init") is None  # Crop rect is initially None
     mock_dialog_instance.exec.assert_called_once()
     assert window.current_crop_rect == (10, 20, 100, 50)  # Updated attribute name
-    assert window.clear_crop_button.isEnabled()  # Updated name
+    assert window.main_tab.clear_crop_button.isEnabled()  # Updated name
 
     # Explicitly delete the mocked dialog instance
     mock_dialog_instance.deleteLater()
@@ -670,11 +671,11 @@ def test_open_crop_dialog(MockCropDialog, qtbot, window, dummy_files):
     # Mock getRect again for the new instance, though it shouldn't be called on reject
     mock_dialog_instance.getRect.return_value = QRect(0, 0, 0, 0)  # Dummy value
 
-    qtbot.mouseClick(window.crop_button, Qt.MouseButton.LeftButton)
+    qtbot.mouseClick(window.main_tab.crop_button, Qt.MouseButton.LeftButton)
     mock_dialog_instance.exec.assert_called_once()  # Check it was called again
     # Crop rectangle should not have changed
     assert window.current_crop_rect == (10, 20, 100, 50)  # Updated attribute name
-    assert window.clear_crop_button.isEnabled()  # Should still be enabled
+    assert window.main_tab.clear_crop_button.isEnabled()  # Should still be enabled
 
     # Explicitly delete the mocked dialog instance after the second interaction
     mock_dialog_instance.deleteLater()
@@ -685,7 +686,7 @@ def test_clear_crop(qtbot, window):
     # Simulate a crop being set - use correct attribute name
     window.current_crop_rect = QRect(10, 10, 100, 100)
     window._update_crop_buttons_state()
-    assert window.clear_crop_button.isEnabled()
+    assert window.main_tab.clear_crop_button.isEnabled()
 
     # Instead of clicking the button (which triggers a signal),
     # directly call the _on_clear_crop_clicked method
@@ -696,13 +697,13 @@ def test_clear_crop(qtbot, window):
 
     # Assert clear crop button is disabled after updating state
     window._update_crop_buttons_state()
-    assert not window.clear_crop_button.isEnabled()
+    assert not window.main_tab.clear_crop_button.isEnabled()
 
 
 def test_preview_zoom(qtbot, window):
     """Test zooming into a preview image."""
     # Simulate input directory being set to enable crop/preview
-    window.in_dir_edit.setText("/fake/input")
+    window.main_tab.in_dir_edit.setText("/fake/input")
     window._update_crop_buttons_state()  # Update button state
 
     # Get the first preview label directly
