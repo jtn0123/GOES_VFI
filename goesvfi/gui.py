@@ -78,11 +78,11 @@ from goesvfi.pipeline.run_vfi import VfiWorker  # <-- ADDED IMPORT
 # Correct import for find_rife_executable
 from goesvfi.utils import config, log
 from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
-from goesvfi.utils.gui_helpers import ClickableLabel  # Import moved classes
-from goesvfi.utils.gui_helpers import (
-    CropSelectionDialog,
-    ImageViewerDialog,
+from goesvfi.utils.gui_helpers import (  # Import moved classes
+    ClickableLabel,
+    CropDialog,
     RifeCapabilityManager,
+    ZoomDialog,
 )
 
 # <-- Import time for time.sleep
@@ -2058,10 +2058,10 @@ class MainWindow(QWidget):
         try:
             # Create VfiWorker with the exact parameter names it expects
             self.vfi_worker = VfiWorker(
-                in_dir=args["in_dir"],
-                out_file_path=args[
-                    "out_file"
-                ],  # Changed from out_file to out_file_path
+                in_dir=str(args["in_dir"]),
+                out_file_path=str(
+                    args["out_file"]
+                ),  # Changed from out_file to out_file_path
                 fps=args["fps"],
                 mid_count=args["multiplier"]
                 - 1,  # VfiWorker expects mid_count (multiplier - 1)
@@ -2077,8 +2077,8 @@ class MainWindow(QWidget):
                 me_algo=me_algo,
                 search_param=search_param,
                 scd_mode=scd_mode,
-                scd_threshold=scd_threshold,
-                minter_mb_size=minter_mb_size,
+                scd_threshold=scd_threshold if scd_threshold is not None else 10.0,
+                minter_mb_size=minter_mb_size if minter_mb_size is not None else 16,
                 minter_vsbmc=minter_vsbmc,
                 # Unsharp settings
                 apply_unsharp=apply_unsharp,
@@ -2114,7 +2114,9 @@ class MainWindow(QWidget):
                 false_colour=bool(args.get("sanchez_enabled", False)),
                 res_km=int(float(args.get("sanchez_resolution_km", 4.0))),
                 # Sanchez GUI temp dir
-                sanchez_gui_temp_dir=sanchez_gui_temp_dir,
+                sanchez_gui_temp_dir=(
+                    str(sanchez_gui_temp_dir) if sanchez_gui_temp_dir else None
+                ),
             )
         except Exception as e:
             LOGGER.exception(f"Failed to create VfiWorker: {e}")
@@ -3371,8 +3373,8 @@ class MainWindow(QWidget):
 
         # --- Instantiate and run VfiWorker ---
         self.vfi_worker = VfiWorker(
-            in_dir=in_dir,
-            out_file_path=out_file_path,
+            in_dir=str(in_dir),
+            out_file_path=str(out_file_path),
             fps=fps,
             mid_count=mid_count,
             max_workers=max_workers,
@@ -3387,8 +3389,8 @@ class MainWindow(QWidget):
             me_algo=me_algo,
             search_param=search_param,
             scd_mode=scd_mode,
-            scd_threshold=scd_threshold,
-            minter_mb_size=minter_mb_size,
+            scd_threshold=scd_threshold if scd_threshold is not None else 10.0,
+            minter_mb_size=minter_mb_size if minter_mb_size is not None else 16,
             minter_vsbmc=minter_vsbmc,
             # Unsharp settings
             apply_unsharp=apply_unsharp,
@@ -3419,7 +3421,9 @@ class MainWindow(QWidget):
             false_colour=false_colour,
             res_km=res_km,
             # Sanchez temp dir
-            sanchez_gui_temp_dir=sanchez_gui_temp_dir,
+            sanchez_gui_temp_dir=(
+                str(sanchez_gui_temp_dir) if sanchez_gui_temp_dir else None
+            ),
         )
 
         self.vfi_worker.progress.connect(self._update_progress)

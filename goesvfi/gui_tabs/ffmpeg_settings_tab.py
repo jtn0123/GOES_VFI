@@ -25,7 +25,6 @@ from goesvfi.utils import log
 # Runtime import for constants defined in gui.py
 from goesvfi.utils.config import DEFAULT_FFMPEG_PROFILE  # Import from config
 from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
-from goesvfi.utils.security import InputValidator, SecurityError
 
 LOGGER = log.get_logger(__name__)  # Use __name__ for specific logger
 
@@ -1251,7 +1250,7 @@ class FFmpegSettingsTab(QWidget):
 
     def get_selected_profile_name(self) -> str:
         """Returns the name of the currently selected profile."""
-        return self.ffmpeg_profile_combo.currentText()
+        return str(self.ffmpeg_profile_combo.currentText())
 
     def load_settings(self, settings: Dict[str, Any]) -> None:
         """Loads settings into the UI elements, typically from QSettings."""

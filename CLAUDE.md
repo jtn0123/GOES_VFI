@@ -269,3 +269,26 @@ The `examples/` directory includes several workflows demonstrating:
   - Black for code formatting
   - isort for import ordering
   - Flake8 for style checking
+
+## Pre-commit Hooks Policy
+
+**CRITICAL: NEVER EVER SKIP PRE-COMMIT HOOKS. PERIOD.**
+
+Pre-commit hooks are essential for maintaining code quality and consistency. They exist to catch issues before they enter the codebase. The whole point of pre-commit hooks is to enforce standards automatically.
+
+When pre-commit hooks fail:
+1. **DO NOT** use `--no-verify` or any flag to bypass them
+2. **DO NOT** disable the hooks temporarily
+3. **DO NOT** commit anyway and plan to fix later
+4. **ALWAYS** fix the issues that pre-commit hooks identify
+5. **ALWAYS** ensure all hooks pass before committing
+
+Common pre-commit hook failures and fixes:
+- **Flake8 violations**: Fix the code style issues identified
+- **Black formatting**: Run `black` to auto-format the code
+- **isort import ordering**: Run `isort` to fix import order
+- **Trailing whitespace**: Remove all trailing whitespace
+- **Missing newlines**: Ensure files end with a newline
+- **Large files**: Remove or gitignore large files before committing
+
+Remember: Pre-commit hooks are there to help maintain code quality. Skipping them defeats their entire purpose and introduces technical debt.

@@ -6,7 +6,7 @@ and GOES-18 Band 13 imagery.
 """
 
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
@@ -311,7 +311,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         # download method to use our configured stores
         super()._download_selected()
 
-    def get_scan_summary(self) -> Dict[str, int]:
+    def get_scan_summary(self) -> Dict[str, Any]:
         """Get a summary of the current scan results."""
         summary = {
             "total": 0,

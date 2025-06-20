@@ -4,14 +4,11 @@ This module defines interfaces and implementations for accessing remote
 satellite imagery repositories, downloading missing files, and reporting progress.
 """
 
-import os
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, Optional
 from urllib.parse import urlparse
-
-import requests
 
 from goesvfi.utils import log
 

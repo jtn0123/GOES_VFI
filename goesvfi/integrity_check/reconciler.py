@@ -15,7 +15,6 @@ from .cache_db import CacheDB
 from .time_index import (
     SatellitePattern,
     detect_interval,
-    generate_expected_filename,
     generate_timestamp_sequence,
     scan_directory_for_timestamps,
 )
@@ -164,4 +163,5 @@ class Reconciler:
         scan_result = self.scan_date_range(
             start_date, end_date, satellite_pattern, base_directory, interval_minutes
         )
-        return scan_result.get("missing", [])
+        missing = scan_result.get("missing", [])
+        return list(missing) if missing else []

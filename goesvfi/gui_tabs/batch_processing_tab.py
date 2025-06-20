@@ -7,10 +7,9 @@ with queue visualization and control.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSlot
-from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -19,7 +18,6 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QLabel,
     QListWidget,
-    QListWidgetItem,
     QMessageBox,
     QPushButton,
     QSpinBox,
@@ -30,7 +28,6 @@ from PyQt6.QtWidgets import (
 )
 
 from goesvfi.pipeline.batch_queue import (
-    BatchJob,
     BatchProcessor,
     BatchQueue,
     JobPriority,
@@ -471,7 +468,7 @@ class BatchProcessingTab(QWidget):
         if self.batch_queue:
             self.batch_queue.process_function = func
 
-    def get_current_settings(self) -> Dict[str, any]:
+    def get_current_settings(self) -> Dict[str, Any]:
         """Get current batch processing settings."""
         return {
             "max_concurrent_jobs": self.concurrent_spin.value(),

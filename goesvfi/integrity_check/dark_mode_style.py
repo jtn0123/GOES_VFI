@@ -43,9 +43,7 @@ def apply_dark_mode_palette(app: QApplication) -> None:
     # Text
     dark_palette.setColor(QPalette.ColorRole.Text, text_color)
     dark_palette.setColor(
-        QPalette.ColorGroup.Disabled, 
-        QPalette.ColorRole.Text, 
-        disabled_text_color
+        QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, disabled_text_color
     )
 
     # Button
@@ -113,12 +111,12 @@ QComboBox, QLineEdit, QSpinBox, QDateEdit, QTimeEdit, QDateTimeEdit {
     color: #f0f0f0;
 }
 
-QComboBox:hover, QLineEdit:hover, QSpinBox:hover, 
+QComboBox:hover, QLineEdit:hover, QSpinBox:hover,
 QDateEdit:hover, QTimeEdit:hover, QDateTimeEdit:hover {
     border-color: #646464;
 }
 
-QComboBox:focus, QLineEdit:focus, QSpinBox:focus, 
+QComboBox:focus, QLineEdit:focus, QSpinBox:focus,
 QDateEdit:focus, QTimeEdit:focus, QDateTimeEdit:focus {
     border-color: #2a82da;
 }
@@ -298,7 +296,7 @@ QMessageBox QPushButton {
 def apply_integrity_check_dark_mode(widget) -> None:
     """
     Apply dark mode styling to integrity check widgets.
-    
+
     Args:
         widget: The widget to apply styling to
     """

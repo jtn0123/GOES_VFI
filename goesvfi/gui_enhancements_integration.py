@@ -4,18 +4,7 @@ This module provides functions to enhance existing GUI components
 with tooltips, help buttons, progress tracking, and other improvements.
 """
 
-from pathlib import Path
-from typing import Any, Dict
-
-from PyQt6.QtCore import pyqtSlot
-from PyQt6.QtWidgets import (
-    QComboBox,
-    QGridLayout,
-    QGroupBox,
-    QMainWindow,
-    QSpinBox,
-    QWidget,
-)
+from PyQt6.QtWidgets import QMainWindow
 
 from goesvfi.utils.log import get_logger
 

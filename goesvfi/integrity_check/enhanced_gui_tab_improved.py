@@ -4,50 +4,27 @@ This module provides an improved version of the EnhancedIntegrityCheckTab with a
 more streamlined and user-friendly interface.
 """
 
-import os
-from datetime import datetime, timedelta
-from pathlib import Path
+from datetime import datetime
 from typing import Any, List, Optional, cast
 
 from PyQt6.QtCore import (
-    QDate,
     QModelIndex,
     QObject,
-    QPoint,
-    QSortFilterProxyModel,
     Qt,
-    QTime,
-    pyqtSignal,
 )
-from PyQt6.QtGui import QAction, QColor
 from PyQt6.QtWidgets import (
-    QApplication,
-    QCalendarWidget,
     QCheckBox,
-    QComboBox,
-    QDialog,
-    QDialogButtonBox,
-    QFileDialog,
-    QGridLayout,
-    QGroupBox,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QLineEdit,
-    QMenu,
-    QMessageBox,
-    QProgressBar,
     QPushButton,
-    QSpinBox,
-    QTableView,
     QVBoxLayout,
     QWidget,
 )
 
 from goesvfi.utils import log
 
-from .time_index import SatellitePattern
-from .view_model import MissingTimestamp, ScanStatus
+from .view_model import MissingTimestamp
 
 LOGGER = log.get_logger(__name__)
 

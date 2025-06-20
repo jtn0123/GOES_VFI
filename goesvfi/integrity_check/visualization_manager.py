@@ -6,7 +6,7 @@ including standard and enhanced imagery, colormaps, and comparisons.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import NDArray

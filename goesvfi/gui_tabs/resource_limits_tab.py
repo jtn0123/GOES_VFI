@@ -23,7 +23,6 @@ from goesvfi.utils import log
 from goesvfi.utils.resource_manager import (
     ResourceLimits,
     ResourceMonitor,
-    ResourceUsage,
     get_system_resource_info,
 )
 

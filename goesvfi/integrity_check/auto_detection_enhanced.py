@@ -7,7 +7,6 @@ and cross-tab integration for the integrity check system.
 
 import logging
 import traceback
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -29,13 +28,16 @@ LOGGER = logging.getLogger(__name__)
 
 class AutoDetectionError(Exception):
     """Exception raised for auto-detection errors."""
+
     pass
 
 
 class DetectionProgressDialog(QProgressDialog):
     """Enhanced progress dialog for auto-detection operations with detailed feedback."""
 
-    def __init__(self, title: str, label_text: str, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self, title: str, label_text: str, parent: Optional[QWidget] = None
+    ) -> None:
         """Initialize the detection progress dialog.
 
         Args:
@@ -53,9 +55,10 @@ class DetectionProgressDialog(QProgressDialog):
         self.setValue(0)
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.setMinimumWidth(400)
-        
+
         # Make the dialog look nicer with rounded corners and a border
-        self.setStyleSheet("""
+        self.setStyleSheet(
+            """
             QProgressDialog {
                 background-color: #2d2d2d;
                 border: 1px solid #3a3a3a;
@@ -88,12 +91,14 @@ class DetectionProgressDialog(QProgressDialog):
             QPushButton:hover {
                 background-color: #2980b9;
             }
-        """)
+        """
+        )
 
         # Create a status log widget that will display detailed progress
         self.log_widget = QListWidget()
         self.log_widget.setMaximumHeight(150)
-        self.log_widget.setStyleSheet("""
+        self.log_widget.setStyleSheet(
+            """
             QListWidget {
                 background-color: #1d1d1d;
                 border: 1px solid #555;
@@ -102,7 +107,8 @@ class DetectionProgressDialog(QProgressDialog):
                 font-family: monospace;
                 font-size: 11px;
             }
-        """)
+        """
+        )
 
         # Find the progress dialog's layout and add our log widget
         layout = self.layout()
@@ -204,11 +210,11 @@ class AutoDetectionWorker(QThread):
             if nc_files:
                 sample_files = ", ".join([f.name for f in nc_files[:3]])
                 self.progress.emit(35, f"Sample NetCDF files: {sample_files}", "info")
-            
+
             if jpg_files:
                 sample_files = ", ".join([f.name for f in jpg_files[:3]])
                 self.progress.emit(40, f"Sample JPG files: {sample_files}", "info")
-                
+
         except Exception as dir_error:
             self.progress.emit(
                 30, f"Error listing directory contents: {dir_error}", "error"
@@ -244,10 +250,15 @@ class AutoDetectionWorker(QThread):
         self.progress.emit(90, "Determining satellite type...", "info")
         goes16_count = len(goes16_files)
         goes18_count = len(goes18_files)
-        
+
+        result: Dict[str, Any]
         if goes16_count == 0 and goes18_count == 0:
             self.progress.emit(95, "No valid GOES files found", "warning")
-            result = {"status": "no_files", "goes16_count": 0, "goes18_count": 0}
+            result = {
+                "status": "no_files",
+                "goes16_count": 0,
+                "goes18_count": 0,
+            }
         elif goes16_count > goes18_count:
             self.progress.emit(
                 100,
@@ -284,12 +295,12 @@ class AutoDetectionWorker(QThread):
         self.progress.emit(
             10, f"Checking directory for {satellite.name} files...", "info"
         )
-        
+
         # Look for timestamps in directory based on the specified satellite pattern
         self.progress.emit(
             30, f"Scanning directory using {satellite.name} pattern...", "info"
         )
-        
+
         timestamps = []
         try:
             timestamps = TimeIndex.scan_directory_for_timestamps(
@@ -310,7 +321,7 @@ class AutoDetectionWorker(QThread):
             self.progress.emit(
                 50, f"Error scanning for timestamps: {scan_error}", "error"
             )
-            result = {
+            result: Dict[str, Any] = {
                 "status": "error",
                 "error": str(scan_error),
                 "start": None,
@@ -321,10 +332,14 @@ class AutoDetectionWorker(QThread):
 
         # Process the timestamps to find the min and max dates
         self.progress.emit(70, "Analyzing timestamps...", "info")
-        
+
         if not timestamps:
             self.progress.emit(90, "No valid timestamps found", "warning")
-            result = {"status": "no_timestamps", "start": None, "end": None}
+            result = {
+                "status": "no_timestamps",
+                "start": None,
+                "end": None,
+            }
         else:
             # Sort timestamps
             timestamps.sort()
@@ -366,7 +381,7 @@ class AutoDetectionWorker(QThread):
 
         if len(timestamps) < 2:
             self.progress.emit(100, "Not enough files to detect interval", "warning")
-            result = {"status": "insufficient_files", "interval": None}
+            result: Dict[str, Any] = {"status": "insufficient_files", "interval": None}
             self.finished.emit(result)
             return
 
@@ -377,11 +392,12 @@ class AutoDetectionWorker(QThread):
         self.progress.emit(50, "Calculating intervals...", "info")
         intervals = []
         for i in range(1, len(timestamps)):
-            interval = (timestamps[i] - timestamps[i-1]).total_seconds() / 60
+            interval = (timestamps[i] - timestamps[i - 1]).total_seconds() / 60
             intervals.append(interval)
 
         # Find most common interval
         from collections import Counter
+
         interval_counts = Counter(int(interval) for interval in intervals)
         most_common_interval = interval_counts.most_common(1)[0][0]
 

@@ -4,23 +4,12 @@ This module extends the Integrity Check tab with satellite imagery capabilities,
 providing UI components for selecting and viewing different GOES products.
 """
 
-import logging
-import os
-from pathlib import Path
-from typing import Any, Dict, Optional, cast
+from typing import Optional
 
-from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QMovie, QPixmap
 from PyQt6.QtWidgets import (
-    QButtonGroup,
     QComboBox,
-    QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
     QLabel,
-    QProgressBar,
     QPushButton,
-    QRadioButton,
     QVBoxLayout,
     QWidget,
 )

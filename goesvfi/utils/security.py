@@ -7,7 +7,7 @@ to prevent common vulnerabilities like command injection and path traversal.
 import os
 import pathlib
 import re
-from typing import Any, Dict, List, Union
+from typing import Any, List, Optional, Union
 
 from goesvfi.utils import log
 
@@ -52,7 +52,9 @@ class InputValidator:
 
     @staticmethod
     def validate_file_path(
-        path: str, allowed_extensions: List[str] = None, must_exist: bool = False
+        path: str,
+        allowed_extensions: Optional[List[str]] = None,
+        must_exist: bool = False,
     ) -> bool:
         """Validate file path to prevent directory traversal and ensure safety.
 

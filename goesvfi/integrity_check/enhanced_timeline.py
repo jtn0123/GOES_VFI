@@ -4,19 +4,12 @@ This module provides an improved timeline visualization with better contrast,
 interaction feedback, and visual appearance.
 """
 
-from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Optional
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import (
-    QBrush,
     QColor,
-    QLinearGradient,
-    QMouseEvent,
     QPainter,
-    QPen,
-    QRadialGradient,
-    QResizeEvent,
 )
 from PyQt6.QtWidgets import QWidget
 

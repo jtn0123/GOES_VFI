@@ -4,32 +4,18 @@ This module provides interactive visualizations of satellite data availability o
 allowing users to easily identify gaps and patterns in the data coverage.
 """
 
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, List, Optional
 
-from PyQt6.QtCore import QRect, QRectF, Qt, pyqtSignal
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import (
-    QBrush,
     QColor,
-    QLinearGradient,
     QMouseEvent,
     QPainter,
-    QPainterPath,
     QPen,
 )
 from PyQt6.QtWidgets import (
-    QButtonGroup,
-    QFrame,
-    QGridLayout,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QRadioButton,
-    QScrollArea,
     QSizePolicy,
-    QStyle,
-    QStyleOption,
-    QVBoxLayout,
     QWidget,
 )
 

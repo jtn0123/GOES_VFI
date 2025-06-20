@@ -4,7 +4,6 @@ This module provides functionality to apply Sanchez colorization to GOES infrare
 satellite imagery using the Sanchez binary.
 """
 
-import tempfile
 import time
 from pathlib import Path
 from typing import Any, Callable, Optional

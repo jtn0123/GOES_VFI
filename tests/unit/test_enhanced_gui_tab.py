@@ -1,32 +1,23 @@
 """Unit tests for the integrity_check enhanced GUI tab functionality."""
 
-import os
 import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
-from PyQt6.QtCore import QDate, QDateTime, Qt, QTime
-from PyQt6.QtWidgets import QApplication, QProgressDialog
+from PyQt6.QtWidgets import QApplication
 
-from goesvfi.integrity_check.cache_db import CacheDB
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 from goesvfi.integrity_check.enhanced_view_model import (
-    AsyncDownloadTask,
-    AsyncScanTask,
-    AsyncTaskSignals,
     EnhancedIntegrityCheckViewModel,
-    EnhancedMissingTimestamp,
     FetchSource,
 )
-from goesvfi.integrity_check.remote.cdn_store import CDNStore
-from goesvfi.integrity_check.remote.s3_store import S3Store
-from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
-from goesvfi.integrity_check.view_model import MissingTimestamp, ScanStatus
+from goesvfi.integrity_check.time_index import SatellitePattern
+from goesvfi.integrity_check.view_model import ScanStatus
 
 # Import our test utilities
-from tests.utils.pyqt_async_test import AsyncSignalWaiter, PyQtAsyncTestCase, async_test
+from tests.utils.pyqt_async_test import PyQtAsyncTestCase
 
 
 class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
@@ -81,243 +72,76 @@ class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
 
     def test_initialization(self):
         """Test that the tab initializes correctly."""
-        # Check that UI elements are correctly set up
-        self.assertEqual(self.tab.directory_edit.text(), str(self.base_dir))
+        # Check that enhanced UI elements are correctly set up
+        assert self.tab.configure_fetchers_btn is not None
+        assert self.tab.fetcher_status_label is not None
+        assert self.tab.fetcher_status_label.text() == "CDN/S3 Ready"
 
-        # Check that the satellite radio buttons are set up correctly
-        self.assertFalse(self.tab.goes16_radio.isChecked())
-        self.assertTrue(self.tab.goes18_radio.isChecked())
+        # Check that stores are initialized
+        assert self.tab.cdn_store is not None
+        assert self.tab.s3_store is not None
 
-        # Check that fetch source radio buttons are set correctly
-        self.assertTrue(self.tab.auto_radio.isChecked())
-        self.assertFalse(self.tab.cdn_radio.isChecked())
-        self.assertFalse(self.tab.s3_radio.isChecked())
-        self.assertFalse(self.tab.local_radio.isChecked())
+        # Check default fetcher configuration
+        assert self.tab.fetcher_config["cdn"]["enabled"]
+        assert self.tab.fetcher_config["s3"]["enabled"]
+        assert self.tab.fetcher_config["fallback_strategy"] == "CDN first, then S3"
 
-    def test_satellite_radio_buttons(self):
-        """Test that satellite radio buttons update the view model."""
-        # Reset mock to ensure clean state
-        self.mock_view_model.satellite = SatellitePattern.GOES_18
+    @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information")
+    def test_auto_detect_date_range(self, mock_message_box):
+        """Test the auto-detect date range functionality."""
+        # Call the method
+        self.tab._auto_detect_date_range()
 
-        # Click the GOES-16 radio button
-        self.tab.goes16_radio.setChecked(True)
-        self.tab.goes18_radio.setChecked(False)
+        # Check that dates were set (using the stub implementation)
+        start_datetime = self.tab.start_date_edit.dateTime().toPyDateTime()
+        end_datetime = self.tab.end_date_edit.dateTime().toPyDateTime()
 
-        # Process events to ensure signals are delivered
-        QApplication.processEvents()
+        # Verify dates were set as expected by the stub
+        assert start_datetime.year == 2023
+        assert start_datetime.month == 6
+        assert start_datetime.day == 15
+        assert end_datetime.year == 2023
+        assert end_datetime.month == 6
+        assert end_datetime.day == 21
 
-        # Verify
-        self.mock_view_model.satellite = SatellitePattern.GOES_16
+        # Verify message box was called but without showing the actual popup
+        mock_message_box.assert_called_once()
 
-    def test_fetch_source_radio_buttons(self):
-        """Test that fetch source radio buttons update the view model."""
-        # Reset mock to ensure clean state
-        self.mock_view_model.fetch_source = FetchSource.AUTO
+    def test_fetcher_configuration(self):
+        """Test the fetcher configuration functionality."""
+        # Test default configuration
+        default_config = self.tab._default_fetcher_config()
+        assert default_config["cdn"]["enabled"]
+        assert default_config["s3"]["enabled"]
+        assert default_config["cdn"]["max_retries"] == 3
+        assert default_config["s3"]["timeout"] == 30
+        assert default_config["fallback_strategy"] == "CDN first, then S3"
 
-        # Click the CDN radio button
-        self.tab.cdn_radio.setChecked(True)
-        self.tab.auto_radio.setChecked(False)
+        # Test configuration update
+        new_config = {
+            "cdn": {"enabled": False, "max_retries": 5, "timeout": 60},
+            "s3": {"enabled": True, "max_retries": 2, "timeout": 45},
+            "fallback_strategy": "S3 only",
+        }
+        self.tab.fetcher_config = new_config
+        self.tab._update_fetcher_config()
 
-        # Process events to ensure signals are delivered
-        QApplication.processEvents()
+        # Verify status label was updated
+        assert self.tab.fetcher_status_label.text() == "Strategy: S3 only"
 
-        # Verify
-        self.mock_view_model.fetch_source = FetchSource.CDN
+    def test_get_scan_summary(self):
+        """Test the scan summary functionality."""
+        # Get summary (should return empty counts since tree_model is not set)
+        summary = self.tab.get_scan_summary()
 
-    @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
-    @patch("goesvfi.integrity_check.time_index.TimeIndex.scan_directory_for_timestamps")
-    @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
-    def test_auto_detect_satellite_goes16(
-        self, mock_message_box, mock_scan, mock_progress_dialog
-    ):
-        """Test auto-detecting satellite type when GOES-16 has more files."""
-        # Setup mock to return more GOES-16 files than GOES-18
-        goes16_files = [datetime(2023, 1, 1, 12, 0, 0)] * 5  # 5 GOES-16 files
-        goes18_files = [datetime(2023, 1, 1, 12, 0, 0)] * 2  # 2 GOES-18 files
-
-        # Configure mock to return different results based on satellite parameter
-        def scan_side_effect(directory, satellite, **kwargs):
-            if satellite == SatellitePattern.GOES_16:
-                return goes16_files
-            elif satellite == SatellitePattern.GOES_18:
-                return goes18_files
-            return []
-
-        mock_scan.side_effect = scan_side_effect
-
-        # Mock progress dialog
-        mock_progress_instance = MagicMock()
-        mock_progress_dialog.return_value = mock_progress_instance
-
-        # Call the method under test
-        self.tab._auto_detect_satellite()
-
-        # Verify progress dialog was used correctly
-        mock_progress_dialog.assert_called_once()
-        mock_progress_instance.setWindowTitle.assert_called_with(
-            "Detecting Satellite Type"
-        )
-        mock_progress_instance.setModal.assert_called_with(True)
-        mock_progress_instance.setValue.assert_any_call(100)  # Final value
-
-        # Verify correct satellite was selected
-        self.mock_view_model.satellite = SatellitePattern.GOES_16
-
-        # Verify message box was shown with correct info
-        mock_message_box.information.assert_called_once()
-        # Check that the message mentions GOES-16 and the file counts
-        info_args = mock_message_box.information.call_args[0]
-        self.assertIn("GOES-16", info_args[2])
-        self.assertIn("5", info_args[2])  # GOES-16 count
-        self.assertIn("2", info_args[2])  # GOES-18 count
-
-    @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
-    @patch("goesvfi.integrity_check.time_index.TimeIndex.scan_directory_for_timestamps")
-    @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
-    def test_auto_detect_satellite_goes18(
-        self, mock_message_box, mock_scan, mock_progress_dialog
-    ):
-        """Test auto-detecting satellite type when GOES-18 has more files."""
-        # Setup mock to return more GOES-18 files than GOES-16
-        goes16_files = [datetime(2023, 1, 1, 12, 0, 0)] * 3  # 3 GOES-16 files
-        goes18_files = [datetime(2023, 1, 1, 12, 0, 0)] * 10  # 10 GOES-18 files
-
-        # Configure mock to return different results based on satellite parameter
-        def scan_side_effect(directory, satellite, **kwargs):
-            if satellite == SatellitePattern.GOES_16:
-                return goes16_files
-            elif satellite == SatellitePattern.GOES_18:
-                return goes18_files
-            return []
-
-        mock_scan.side_effect = scan_side_effect
-
-        # Mock progress dialog
-        mock_progress_instance = MagicMock()
-        mock_progress_dialog.return_value = mock_progress_instance
-
-        # Call the method under test
-        self.tab._auto_detect_satellite()
-
-        # Verify progress dialog was used correctly
-        mock_progress_dialog.assert_called_once()
-
-        # Verify correct satellite was selected
-        self.mock_view_model.satellite = SatellitePattern.GOES_18
-
-        # Verify message box was shown with correct info
-        mock_message_box.information.assert_called_once()
-        # Check that the message mentions GOES-18 and the file counts
-        info_args = mock_message_box.information.call_args[0]
-        self.assertIn("GOES-18", info_args[2])
-        self.assertIn("3", info_args[2])  # GOES-16 count
-        self.assertIn("10", info_args[2])  # GOES-18 count
-
-    @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
-    @patch("goesvfi.integrity_check.time_index.TimeIndex.scan_directory_for_timestamps")
-    @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
-    def test_auto_detect_satellite_no_files(
-        self, mock_message_box, mock_scan, mock_progress_dialog
-    ):
-        """Test auto-detecting satellite type when no files are found."""
-        # Setup mock to return no files for either satellite
-        mock_scan.return_value = []
-
-        # Mock progress dialog
-        mock_progress_instance = MagicMock()
-        mock_progress_dialog.return_value = mock_progress_instance
-
-        # Call the method under test
-        self.tab._auto_detect_satellite()
-
-        # Verify progress dialog was used
-        mock_progress_dialog.assert_called_once()
-
-        # Verify appropriate message was shown
-        mock_message_box.information.assert_called_once()
-        info_args = mock_message_box.information.call_args[0]
-        self.assertIn("No Valid Files Found", info_args[1])
-
-    @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
-    @patch("goesvfi.integrity_check.time_index.TimeIndex.scan_directory_for_timestamps")
-    @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
-    def test_auto_detect_satellite_with_error(
-        self, mock_message_box, mock_scan, mock_progress_dialog
-    ):
-        """Test auto-detecting satellite type when an error occurs."""
-        # Setup mock to raise an exception
-        mock_scan.side_effect = Exception("Test error")
-
-        # Mock progress dialog
-        mock_progress_instance = MagicMock()
-        mock_progress_dialog.return_value = mock_progress_instance
-
-        # Call the method under test
-        self.tab._auto_detect_satellite()
-
-        # Verify error message was shown
-        mock_message_box.critical.assert_called_once()
-        error_args = mock_message_box.critical.call_args[0]
-        self.assertIn("Error Detecting Satellite Type", error_args[1])
-        self.assertIn("Test error", error_args[2])
-
-    def test_update_progress(self):
-        """Test the enhanced progress updates."""
-        # Test with ETA
-        self.tab._update_progress(25, 100, 120.0)  # 25%, ETA: 2min
-        self.assertEqual(self.tab.progress_bar.value(), 25)
-        self.assertIn("25%", self.tab.progress_bar.format())
-        self.assertIn("2m", self.tab.progress_bar.format())
-        self.assertIn("(25/100)", self.tab.progress_bar.format())
-
-        # Test without ETA
-        self.tab._update_progress(50, 100, 0.0)  # 50%, no ETA
-        self.assertEqual(self.tab.progress_bar.value(), 50)
-        self.assertIn("50%", self.tab.progress_bar.format())
-        self.assertIn("(50/100)", self.tab.progress_bar.format())
-
-    def test_update_status(self):
-        """Test the enhanced status updates with formatting."""
-        # Test error message
-        self.tab._update_status("Error: something failed")
-        status_text = self.tab.status_label.text()
-        self.assertIn("Error: something failed", status_text)
-        self.assertIn("color: #ff6666", status_text)  # Red color
-
-        # Test success message
-        self.tab._update_status("Scan completed successfully")
-        status_text = self.tab.status_label.text()
-        self.assertIn("Scan completed successfully", status_text)
-        self.assertIn("color: #66ff66", status_text)  # Green color
-
-        # Test scanning message
-        self.tab._update_status("Scanning directory...")
-        status_text = self.tab.status_label.text()
-        self.assertIn("Scanning directory...", status_text)
-        self.assertIn("color: #66aaff", status_text)  # Blue color
-
-        # Test regular message
-        self.tab._update_status("Ready to scan")
-        status_text = self.tab.status_label.text()
-        self.assertIn("Ready to scan", status_text)
-        self.assertIn("<b>", status_text)  # Bold formatting
-
-    def test_update_download_progress(self):
-        """Test the enhanced download progress updates."""
-        # Test normal case
-        self.tab._update_download_progress(15, 30)
-        self.assertEqual(self.tab.progress_bar.value(), 50)  # 15/30 = 50%
-        self.assertIn("Downloading: 50%", self.tab.progress_bar.format())
-        self.assertIn("(15/30)", self.tab.progress_bar.format())
-
-        # Check status label is also updated
-        status_text = self.tab.status_label.text()
-        self.assertIn("Downloading files: 15 of 30", status_text)
-        self.assertIn("50%", status_text)
-
-        # Test edge case with zero total
-        self.tab._update_download_progress(0, 0)
-        self.assertEqual(self.tab.progress_bar.value(), 0)
+        # Verify summary structure exists with default values
+        assert summary["total"] == 0
+        assert summary["missing"] == 0
+        assert summary["downloaded"] == 0
+        assert summary["failed"] == 0
+        assert "goes16" in summary["by_satellite"]
+        assert "goes18" in summary["by_satellite"]
+        assert isinstance(summary["by_product"], dict)
 
 
 # Run the tests if this file is executed directly

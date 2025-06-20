@@ -4,7 +4,6 @@ This module provides SQLite-based caching for scan results to improve performanc
 """
 
 import json
-import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -33,7 +32,9 @@ class CacheDB:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Connect to database
-        self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        self.conn: Optional[sqlite3.Connection] = sqlite3.connect(
+            str(self.db_path), check_same_thread=False
+        )
         self.conn.row_factory = sqlite3.Row
 
         # Create tables
@@ -43,6 +44,10 @@ class CacheDB:
 
     def _create_schema(self) -> None:
         """Create the database schema."""
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
         cursor = self.conn.cursor()
 
         # Scan results table
@@ -102,7 +107,8 @@ class CacheDB:
             "CREATE INDEX IF NOT EXISTS idx_timestamps_satellite ON timestamps(satellite)"
         )
 
-        self.conn.commit()
+        if self.conn:
+            self.conn.commit()
 
     def close(self) -> None:
         """Close the database connection."""
@@ -127,6 +133,8 @@ class CacheDB:
         Returns:
             The scan_id of the stored result
         """
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
         cursor = self.conn.cursor()
 
         # Convert satellite to string if needed
@@ -170,6 +178,8 @@ class CacheDB:
         )
 
         scan_id = cursor.lastrowid
+        if scan_id is None:
+            raise RuntimeError("Failed to get scan_id from database insert")
 
         # Store missing timestamps
         for ts in missing_timestamps:
@@ -183,7 +193,8 @@ class CacheDB:
                 (scan_id, ts.isoformat(), expected_filename),
             )
 
-        self.conn.commit()
+        if self.conn:
+            self.conn.commit()
         LOGGER.debug(f"Stored scan results with ID {scan_id}")
         return scan_id
 
@@ -201,6 +212,8 @@ class CacheDB:
         Returns:
             Dictionary with scan results or None if not found
         """
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
         cursor = self.conn.cursor()
 
         # Convert satellite to string if needed
@@ -261,11 +274,14 @@ class CacheDB:
             True if successful
         """
         try:
+            if not self.conn:
+                raise RuntimeError("Database connection not established")
             cursor = self.conn.cursor()
             cursor.execute("DELETE FROM scan_results")
             cursor.execute("DELETE FROM missing_timestamps")
             cursor.execute("DELETE FROM timestamps")
-            self.conn.commit()
+            if self.conn:
+                self.conn.commit()
             LOGGER.info("Cache cleared successfully")
             return True
         except Exception as e:
@@ -285,6 +301,8 @@ class CacheDB:
             True if successful
         """
         try:
+            if not self.conn:
+                raise RuntimeError("Database connection not established")
             cursor = self.conn.cursor()
             sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
 
@@ -297,7 +315,8 @@ class CacheDB:
                 (sat_str, timestamp.isoformat(), file_path, int(found)),
             )
 
-            self.conn.commit()
+            if self.conn:
+                self.conn.commit()
             return True
         except Exception as e:
             LOGGER.error(f"Error adding timestamp: {e}")
@@ -309,6 +328,8 @@ class CacheDB:
         Returns:
             True if the timestamp exists and was found
         """
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
         cursor = self.conn.cursor()
         sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
 
@@ -331,6 +352,8 @@ class CacheDB:
         Returns:
             Set of timestamps that exist
         """
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
         cursor = self.conn.cursor()
         sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
 
@@ -350,6 +373,8 @@ class CacheDB:
         Returns:
             Dictionary with cache statistics
         """
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
         cursor = self.conn.cursor()
 
         # Get scan count
@@ -397,6 +422,8 @@ class CacheDB:
         """Set cache data for a satellite (ThreadLocalCacheDB compatibility)."""
         # For now, just store the missing timestamps
         sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
         cursor = self.conn.cursor()
 
         for ts in missing_timestamps:
@@ -409,11 +436,14 @@ class CacheDB:
                 (sat_str, ts.isoformat()),
             )
 
-        self.conn.commit()
+        if self.conn:
+            self.conn.commit()
 
     def get_cache_data(self, satellite: Any) -> Optional[Dict[str, Any]]:
         """Get cache data for a satellite (ThreadLocalCacheDB compatibility)."""
         sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
         cursor = self.conn.cursor()
 
         # Get missing timestamps

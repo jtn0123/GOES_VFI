@@ -5,8 +5,6 @@ This can be applied to the MainWindow class to add all the UI/UX improvements.
 
 from typing import Any, Type
 
-from PyQt6.QtWidgets import QWidget
-
 from goesvfi.gui_enhancements_integration import enhance_existing_gui
 from goesvfi.utils.log import get_logger
 

@@ -16,15 +16,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 from PyQt6.QtCore import QObject, QRunnable, QThread, QThreadPool, pyqtSignal
 
-
-# Define fetch source enum
-class FetchSource(Enum):
-    AUTO = "auto"
-    S3 = "s3"
-    CDN = "cdn"
-    LOCAL = "local"  # Local files only
-
-
 from goesvfi.utils import log
 
 from .cache_db import CacheDB
@@ -41,6 +32,15 @@ from .remote.s3_store import S3Store
 from .thread_cache_db import ThreadLocalCacheDB
 from .time_index import SatellitePattern, TimeIndex
 from .view_model import IntegrityCheckViewModel, MissingTimestamp, ScanStatus
+
+
+# Define fetch source enum
+class FetchSource(Enum):
+    AUTO = "auto"
+    S3 = "s3"
+    CDN = "cdn"
+    LOCAL = "local"  # Local files only
+
 
 LOGGER = log.get_logger(__name__)
 

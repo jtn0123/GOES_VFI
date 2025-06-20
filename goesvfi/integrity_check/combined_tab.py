@@ -8,8 +8,7 @@ and GOES imagery visualization features in a unified interface.
 
 import logging
 from datetime import datetime
-from pathlib import Path
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
