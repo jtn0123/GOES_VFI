@@ -12,6 +12,12 @@ from typing import Any, Iterator, List, Optional, Tuple, Union
 from PIL import Image
 from PyQt6.QtCore import QThread, pyqtSignal
 
+# Import image processing classes that tests expect
+from goesvfi.pipeline.image_cropper import ImageCropper  # noqa: F401
+from goesvfi.pipeline.image_loader import ImageLoader  # noqa: F401
+from goesvfi.pipeline.image_saver import ImageSaver  # noqa: F401
+from goesvfi.pipeline.sanchez_processor import SanchezProcessor  # noqa: F401
+
 # --- Add Sanchez Import ---
 from goesvfi.sanchez.runner import colourise
 

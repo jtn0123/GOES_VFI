@@ -124,22 +124,16 @@ def test_run_vfi_skip_model_writes_all_frames(tmp_path, mock_capability_detector
         res = original_wait(*wait_args, **wait_kwargs)
         if res == 0:
             try:
-                # The actual path used has a timestamp
-                from datetime import datetime
-
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                # Use output_mp4 base name, not raw_output
-                actual_path = output_mp4.parent / f"{output_mp4.stem}_{timestamp}.mp4"
-
-                actual_path.parent.mkdir(parents=True, exist_ok=True)
-                with open(actual_path, "wb") as f:
+                # Create the raw output file that the code expects
+                raw_output.parent.mkdir(parents=True, exist_ok=True)
+                with open(raw_output, "wb") as f:
                     f.write(b"dummy ffmpeg output")
-                print(f"Mock Popen created file: {actual_path}")
+                print(f"Mock Popen created file: {raw_output}")
             except Exception as e:
                 print(f"Mock Popen failed to create file: {e}")
         return res
 
-    mock_popen_instance.wait = wait_with_file_creation
+    mock_popen_instance.wait = wait_with_file_creation  # type: ignore[method-assign]
 
     with (
         patch("goesvfi.pipeline.run_vfi.subprocess.run") as mock_run_patch,
