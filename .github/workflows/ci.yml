@@ -204,6 +204,9 @@ jobs:
     permissions:
       contents: read
       security-events: write
+    # Note: CodeQL/SARIF upload requires GitHub Advanced Security to be enabled
+    # For private repos, this is a paid feature. The scan will still run and
+    # results will be available as artifacts even if upload fails.
 
     steps:
     - uses: actions/checkout@v4
@@ -219,8 +222,16 @@ jobs:
     - name: Upload Trivy scan results to GitHub Security tab
       uses: github/codeql-action/upload-sarif@v3
       if: always()
+      continue-on-error: true
       with:
         sarif_file: 'trivy-results.sarif'
+
+    - name: Upload Trivy results as artifact (fallback)
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: trivy-security-scan
+        path: trivy-results.sarif
 
   dependency-review:
     name: Dependency Review
