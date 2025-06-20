@@ -11,7 +11,7 @@ Main continuous integration pipeline that runs on every push and pull request.
 
 **Jobs:**
 - **Lint**: Code quality checks with comprehensive linting tools
-- **Test**: Multi-platform testing (Ubuntu, Windows, macOS) with Python 3.11-3.13
+- **Test**: Multi-platform testing (Ubuntu, Windows, macOS) with Python 3.13
 - **Build**: Package building and validation
 - **Docs**: Documentation generation and deployment
 - **Security Scan**: Vulnerability scanning with Trivy
@@ -240,7 +240,7 @@ All code must pass:
 
 - **Minimum Coverage**: 80% (tracked via Codecov)
 - **Platform Testing**: Ubuntu, Windows, macOS
-- **Python Versions**: 3.11, 3.12, 3.13
+- **Python Versions**: 3.13
 
 ## 🔍 Monitoring Integration
 

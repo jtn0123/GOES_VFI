@@ -5,7 +5,7 @@
 [![Coverage](https://codecov.io/gh/jtn0123/GOES_VFI/branch/main/graph/badge.svg)](https://codecov.io/gh/jtn0123/GOES_VFI)
 [![Code Quality](https://img.shields.io/badge/code%20quality-A-brightgreen)](https://github.com/jtn0123/GOES_VFI/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 
 A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the RIFE model to sequences of satellite images (like GOES) or any PNG sequence, creating smooth timelapse videos.
 
@@ -60,7 +60,7 @@ GOES-VFI is structured using modern software architecture patterns to maximize m
 
 ## Requirements
 
-* **Python:** 3.9+ recommended.
+* **Python:** 3.13+ required.
 * **Packages:** See `requirements.txt` (mainly `PyQt6`, `numpy`, `Pillow`). Install with `pip install -r requirements.txt`.
 * **FFmpeg:** Required for video processing/encoding. Must be installed and available in your system's PATH.
 * **RIFE v4.6 ncnn:** The `rife-cli` executable and associated model files (`flownet.bin`, `flownet.param`) are expected.
