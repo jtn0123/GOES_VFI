@@ -157,10 +157,14 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
     def getScanResults(self) -> List[MissingTimestamp]:
         """Get the current scan results."""
-        return self.view_model.get_missing_items()
+        if self.view_model:
+            items = self.view_model.get_missing_items()
+            return items if items is not None else []
+        return []
 
     def clearResults(self):
         """Clear all results."""
-        self.view_model.clear_results()
+        if self.view_model:
+            self.view_model.clear_results()
         self.results_tab.clearResults()
         self.timeline_tab.clearTimeline()

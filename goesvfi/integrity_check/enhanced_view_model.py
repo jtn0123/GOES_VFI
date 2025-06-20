@@ -879,13 +879,13 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             except Exception as e:
                 LOGGER.error(f"Error closing cache database: {e}")
 
-        # Close base reconciler
-        if hasattr(self, "_reconciler"):
+        # Close base reconciler's cache
+        if hasattr(self, "_reconciler") and hasattr(self._reconciler, "cache"):
             try:
-                LOGGER.debug("Closing reconciler")
-                self._reconciler.close()
+                LOGGER.debug("Closing reconciler cache")
+                self._reconciler.cache.close()
             except Exception as e:
-                LOGGER.error(f"Error closing reconciler: {e}")
+                LOGGER.error(f"Error closing reconciler cache: {e}")
 
         # Store active tasks list locally before removing reference
         active_tasks: List[QRunnable] = []
@@ -1253,11 +1253,11 @@ class AsyncDownloadTask(QRunnable):
 
             # Run the downloads
             results = await self.view_model._reconcile_manager.fetch_missing_files(
-                missing_timestamps=missing_timestamps,
+                missing_timestamps=list(missing_timestamps),  # Convert set to list
                 satellite=self.view_model._satellite,
+                destination_dir=self.view_model.base_directory,
                 progress_callback=progress_callback,
-                file_callback=file_callback,
-                error_callback=lambda path, error: None,  # Handled via results
+                item_progress_callback=file_callback,
             )
 
             # Calculate and store download rate for display

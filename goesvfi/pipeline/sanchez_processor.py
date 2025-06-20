@@ -71,9 +71,9 @@ class SanchezProcessor(ImageProcessor):
                     self._progress_callback("Saving input image", 0.2)
 
                 # Convert numpy array to PIL Image if needed
-                if isinstance(image_data.data, np.ndarray):
+                if isinstance(image_data.image_data, np.ndarray):
                     # Normalize to 0-255 range if needed
-                    img_array = image_data.data
+                    img_array = image_data.image_data
                     if img_array.dtype != np.uint8:
                         if img_array.max() <= 1.0:
                             img_array = (img_array * 255).astype(np.uint8)
@@ -88,7 +88,7 @@ class SanchezProcessor(ImageProcessor):
                         img_array, mode="L" if len(img_array.shape) == 2 else "RGB"
                     )
                 else:
-                    pil_image = image_data.data
+                    pil_image = image_data.image_data
 
                 pil_image.save(input_temp, "PNG")
 
@@ -115,18 +115,18 @@ class SanchezProcessor(ImageProcessor):
 
                 # Create new ImageData with processed result
                 processed_data = ImageData(
-                    data=processed_array,
-                    width=processed_array.shape[1],
-                    height=processed_array.shape[0],
-                    channels=(
-                        len(processed_array.shape)
-                        if len(processed_array.shape) == 2
-                        else processed_array.shape[2]
-                    ),
+                    image_data=processed_array,
                     source_path=image_data.source_path,
                     metadata={
                         **image_data.metadata,
                         "processed_by": "sanchez",
+                        "width": processed_array.shape[1],
+                        "height": processed_array.shape[0],
+                        "channels": (
+                            1
+                            if len(processed_array.shape) == 2
+                            else processed_array.shape[2]
+                        ),
                         "sanchez_res_km": res_km,
                         "processing_time": time.time() - start_time,
                     },
