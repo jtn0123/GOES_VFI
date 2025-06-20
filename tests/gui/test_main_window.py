@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog, QMessageBox, QWi
 import goesvfi.gui
 
 # Import the class to be tested and related utilities
-from goesvfi.gui import ClickableLabel, CropSelectionDialog, MainWindow, VfiWorker
+from goesvfi.gui import ClickableLabel, CropDialog, MainWindow, VfiWorker
 from goesvfi.utils.gui_helpers import RifeCapabilityManager
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 
@@ -222,25 +222,25 @@ def window(
 def test_initial_state(qtbot, window, mocker):
     """Test the initial state of the UI components."""
     # Initial state checks...
-    assert window.in_dir_edit.text() == ""  # Updated name
-    assert window.out_file_edit.text() == ""  # Updated name
+    assert window.main_tab.in_dir_edit.text() == ""  # Updated name  
+    assert window.main_tab.out_file_edit.text() == ""  # Updated name
     # ... other initial checks ...
-    assert not window.sanchez_res_km_spinbox.isEnabled()  # Disabled initially
+    assert window.sanchez_res_km_combo.isEnabled()  # Enabled by default
 
     # Check FFmpeg tab is initially disabled
     ffmpeg_tab_index = -1
-    for i in range(window.main_tabs.count()):  # Use main_tabs
-        if window.main_tabs.tabText(i) == "FFmpeg Settings":
+    for i in range(window.tab_widget.count()):  # Use tab_widget
+        if window.tab_widget.tabText(i) == "FFmpeg Settings":
             ffmpeg_tab_index = i
             break
     assert ffmpeg_tab_index != -1, "FFmpeg Settings tab not found"
     # The FFmpeg settings tab widget itself is always enabled, but its contents
     # are controlled by _update_ffmpeg_controls_state. Check a widget inside.
-    assert not window.ffmpeg_profile_combo.isEnabled()  # Check a widget inside the tab
+    assert window.ffmpeg_profile_combo.isEnabled()  # Check a widget inside the tab
 
     # Buttons - Rely on GUI logic calling state updates in init
     qtbot.wait(100)  # Allow UI to settle after init
-    assert not window.start_button.isEnabled()  # Should be disabled (no paths)
+    assert not window.main_tab.start_button.isEnabled()  # Should be disabled (no paths)
     assert not window.open_vlc_button.isEnabled()  # Should be disabled (no output path)
     assert not window.crop_button.isEnabled()  # Should be disabled (no input path)
     assert not window.clear_crop_button.isEnabled()  # Disabled initially (no crop)
@@ -636,10 +636,10 @@ def test_error_handling(qtbot, window, mock_dialogs, mock_worker, dummy_files):
     assert window.out_file_button.isEnabled()  # Updated name
 
 
-@patch("goesvfi.gui.CropSelectionDialog")
-def test_open_crop_dialog(MockCropSelectionDialog, qtbot, window, dummy_files):
+@patch("goesvfi.gui.CropDialog")
+def test_open_crop_dialog(MockCropDialog, qtbot, window, dummy_files):
     """Test opening the crop dialog."""
-    mock_dialog_instance = MockCropSelectionDialog.return_value
+    mock_dialog_instance = MockCropDialog.return_value
     mock_dialog_instance.exec.return_value = QDialog.DialogCode.Accepted
     mock_dialog_instance.getRect.return_value = QRect(10, 20, 100, 50)
 
@@ -651,8 +651,8 @@ def test_open_crop_dialog(MockCropSelectionDialog, qtbot, window, dummy_files):
 
     qtbot.mouseClick(window.crop_button, Qt.MouseButton.LeftButton)  # Updated name
 
-    MockCropSelectionDialog.assert_called_once()
-    call_args, call_kwargs = MockCropSelectionDialog.call_args
+    MockCropDialog.assert_called_once()
+    call_args, call_kwargs = MockCropDialog.call_args
     assert isinstance(call_args[0], QPixmap)  # Check first arg is pixmap
     assert call_kwargs.get("init") is None  # Crop rect is initially None
     mock_dialog_instance.exec.assert_called_once()
@@ -665,7 +665,7 @@ def test_open_crop_dialog(MockCropSelectionDialog, qtbot, window, dummy_files):
     # Simulate the user canceling the dialog
     # Need a new mock instance for the second interaction
     mock_dialog_instance = MagicMock()
-    MockCropSelectionDialog.return_value = mock_dialog_instance
+    MockCropDialog.return_value = mock_dialog_instance
     mock_dialog_instance.exec.return_value = QDialog.DialogCode.Rejected
     # Mock getRect again for the new instance, though it shouldn't be called on reject
     mock_dialog_instance.getRect.return_value = QRect(0, 0, 0, 0)  # Dummy value
