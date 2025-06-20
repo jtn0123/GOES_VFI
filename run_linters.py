@@ -278,7 +278,7 @@ def run_black(paths: List[str], check_only: bool = True) -> Tuple[int, str, int]
         return 1, "Black not installed", 1
 
     # Basic command
-    cmd = [".venv/bin/python", "-m", "black", "--line-length=88"]
+    cmd = [".venv/bin/python", "-m", "black", "--line-length=120"]
 
     # If we're only checking, add the --check flag
     if check_only:

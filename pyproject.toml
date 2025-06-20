@@ -62,10 +62,10 @@ python_files = "test_*.py"
 addopts = "-ra -q --cov=goesvfi --cov-report=term-missing"
 
 [tool.black]
-line-length = 88
+line-length = 120
 
 [tool.flake8]
-max-line-length = 88
+max-line-length = 120
 ignore = [
     "E114", "E116", "E117",  # Indentation issues
     "E501",                 # Line length

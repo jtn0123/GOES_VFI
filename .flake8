@@ -31,4 +31,4 @@ exclude =
     *.egg-info,
     .pytest_cache
 
-max-line-length = 88
+max-line-length = 120
