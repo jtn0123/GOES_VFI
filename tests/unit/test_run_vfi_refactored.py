@@ -1,17 +1,13 @@
 """Tests specifically for the refactored run_vfi function and its helper functions."""
 
 import pathlib
-import subprocess
-import tempfile
-from typing import Dict, List, Optional, Tuple, Union
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
 from PIL import Image
 
 from goesvfi.pipeline import run_vfi as run_vfi_mod
-from goesvfi.pipeline.image_processing_interfaces import ImageData
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 
 
@@ -188,8 +184,8 @@ class TestRifeHelpers:
         img2 = pathlib.Path("/test/img2.png")
         output = pathlib.Path("/test/output.png")
 
-        # Create a capability detector
-        detector = RifeCapabilityDetector(rife_exe)
+        # Use the mocked capability detector
+        detector = mock_capability_detector.return_value
 
         # Test with all features enabled
         cmd = run_vfi_mod._create_rife_command(
@@ -209,13 +205,18 @@ class TestRifeHelpers:
 
         # Check command structure
         assert cmd[0] == str(rife_exe)
-        assert "-0" in cmd and str(img1) in cmd
-        assert "-1" in cmd and str(img2) in cmd
-        assert "-o" in cmd and str(output) in cmd
-        assert "-t" in cmd and "256" in cmd  # Tiling
+        assert "-0" in cmd
+        assert str(img1) in cmd
+        assert "-1" in cmd
+        assert str(img2) in cmd
+        assert "-o" in cmd
+        assert str(output) in cmd
+        assert "-t" in cmd
+        assert "256" in cmd  # Tiling
         assert "-s" in cmd  # Spatial TTA
         assert "-T" in cmd  # Temporal TTA
-        assert "-y" in cmd and "2:4:4" in cmd  # Thread spec
+        assert "-y" in cmd
+        assert "2:4:4" in cmd  # Thread spec
 
     def test_check_rife_capability_warnings(self, caplog):
         """Test warning logs for unsupported RIFE features."""
@@ -339,8 +340,8 @@ class TestVfiWorker:
 
         # Create a VfiWorker instance with minimum required attributes
         worker = run_vfi_mod.VfiWorker(
-            in_dir=pathlib.Path("/test/input"),
-            out_file_path=pathlib.Path("/test/output.mp4"),
+            in_dir="/test/input",
+            out_file_path="/test/output.mp4",
             fps=30,
             mid_count=1,
             max_workers=1,
@@ -354,8 +355,8 @@ class TestVfiWorker:
             me_algo="",
             search_param=0,
             scd_mode="",
-            scd_threshold=None,
-            minter_mb_size=None,
+            scd_threshold=10.0,
+            minter_mb_size=16,
             minter_vsbmc=0,
             apply_unsharp=False,
             unsharp_lx=0,
@@ -380,7 +381,7 @@ class TestVfiWorker:
             model_key="rife-v4.6",
             false_colour=False,
             res_km=0,
-            sanchez_gui_temp_dir=pathlib.Path("/test/sanchez"),
+            sanchez_gui_temp_dir="/test/sanchez",
         )
 
         # Call the method
@@ -394,8 +395,8 @@ class TestVfiWorker:
         """Test preparing FFmpeg settings dictionary."""
         # Create a VfiWorker instance with test FFmpeg settings
         worker = run_vfi_mod.VfiWorker(
-            in_dir=pathlib.Path("/test/input"),
-            out_file_path=pathlib.Path("/test/output.mp4"),
+            in_dir="/test/input",
+            out_file_path="/test/output.mp4",
             fps=30,
             mid_count=1,
             max_workers=1,
@@ -435,7 +436,7 @@ class TestVfiWorker:
             model_key="rife-v4.6",
             false_colour=False,
             res_km=0,
-            sanchez_gui_temp_dir=pathlib.Path("/test/sanchez"),
+            sanchez_gui_temp_dir="/test/sanchez",
         )
 
         # Call the method
@@ -454,8 +455,8 @@ class TestVfiWorker:
         """Test processing output from run_vfi generator."""
         # Create a VfiWorker instance with minimum required attributes and mock signals
         worker = run_vfi_mod.VfiWorker(
-            in_dir=pathlib.Path("/test/input"),
-            out_file_path=pathlib.Path("/test/output.mp4"),
+            in_dir="/test/input",
+            out_file_path="/test/output.mp4",
             fps=30,
             mid_count=1,
             max_workers=1,
@@ -469,8 +470,8 @@ class TestVfiWorker:
             me_algo="",
             search_param=0,
             scd_mode="",
-            scd_threshold=None,
-            minter_mb_size=None,
+            scd_threshold=10.0,
+            minter_mb_size=16,
             minter_vsbmc=0,
             apply_unsharp=False,
             unsharp_lx=0,
@@ -495,7 +496,7 @@ class TestVfiWorker:
             model_key="rife-v4.6",
             false_colour=False,
             res_km=0,
-            sanchez_gui_temp_dir=pathlib.Path("/test/sanchez"),
+            sanchez_gui_temp_dir="/test/sanchez",
         )
 
         # Mock signals
@@ -560,11 +561,17 @@ def test_run_vfi_integration(
     mock_popen_instance.stdin = MagicMock()
     mock_popen_instance.stdout = MagicMock()
     mock_popen_instance.returncode = 0
-    mock_popen_patch.return_value = mock_popen_instance
 
-    # Create the raw output file to simulate successful FFmpeg execution
-    raw_output.parent.mkdir(parents=True, exist_ok=True)
-    raw_output.touch()
+    def mock_wait():
+        # Create the raw output file when FFmpeg "completes"
+        raw_output.parent.mkdir(parents=True, exist_ok=True)
+        raw_output.write_text(
+            "fake video content"
+        )  # Write some content to make it non-empty
+        return 0
+
+    mock_popen_instance.wait.side_effect = mock_wait
+    mock_popen_patch.return_value = mock_popen_instance
 
     # Patch glob to return our test images
     with patch.object(pathlib.Path, "glob", return_value=img_paths):

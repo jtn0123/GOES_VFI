@@ -149,6 +149,174 @@ class VfiWorker(QThread):
             LOGGER.exception("Error in VFI processing")
             self.error.emit(str(e))
 
+    def _get_rife_executable(self) -> pathlib.Path:
+        """Get the RIFE executable path based on model key."""
+        from goesvfi.utils.config import find_rife_executable
+
+        if self.model_key:
+            rife_path = find_rife_executable(self.model_key)
+            if rife_path:
+                return pathlib.Path(rife_path)
+
+        # Fallback to default RIFE executable
+        rife_path = find_rife_executable("rife-v4.6")  # Default model key
+        if rife_path:
+            return pathlib.Path(rife_path)
+
+        raise FileNotFoundError("RIFE executable not found")
+
+    def _prepare_ffmpeg_settings(self) -> dict:
+        """Prepare FFmpeg settings dictionary from instance attributes."""
+        return {
+            "use_ffmpeg_interp": self.use_ffmpeg_interp,
+            "filter_preset": self.filter_preset,
+            "mi_mode": self.mi_mode,
+            "mc_mode": self.mc_mode,
+            "me_mode": self.me_mode,
+            "me_algo": self.me_algo,
+            "search_param": self.search_param,
+            "scd_mode": self.scd_mode,
+            "scd_threshold": self.scd_threshold,
+            "minter_mb_size": self.minter_mb_size,
+            "minter_vsbmc": self.minter_vsbmc,
+            "apply_unsharp": self.apply_unsharp,
+            "unsharp_lx": self.unsharp_lx,
+            "unsharp_ly": self.unsharp_ly,
+            "unsharp_la": self.unsharp_la,
+            "unsharp_cx": self.unsharp_cx,
+            "unsharp_cy": self.unsharp_cy,
+            "unsharp_ca": self.unsharp_ca,
+            "crf": self.crf,
+            "bitrate_kbps": self.bitrate_kbps,
+            "bufsize_kb": self.bufsize_kb,
+            "pix_fmt": self.pix_fmt,
+        }
+
+    def _process_run_vfi_output(
+        self, output_lines: List[Union[str, pathlib.Path, Tuple[int, int, float]]]
+    ) -> None:
+        """Process output from run_vfi generator and emit appropriate signals."""
+        for line in output_lines:
+            if isinstance(line, tuple) and len(line) == 3:
+                # Progress update (current, total, time_elapsed)
+                current, total, time_elapsed = line
+                self.progress.emit(current, total, time_elapsed)
+            elif isinstance(line, pathlib.Path):
+                # Final output path as Path object
+                self.finished.emit(line)
+            elif isinstance(line, str):
+                if (
+                    line.startswith("Error:")
+                    or line.startswith("ERROR:")
+                    or "error" in line.lower()
+                ):
+                    # Error message - extract the actual error part
+                    if line.startswith("ERROR:"):
+                        error_msg = line[6:].strip()  # Remove "ERROR:" prefix
+                    else:
+                        error_msg = line
+                    self.error.emit(error_msg)
+                elif pathlib.Path(line).suffix in [".mp4", ".avi", ".mov"]:
+                    # Final output path as string
+                    self.finished.emit(line)
+                # Ignore other string outputs
+
+
+def _process_with_rife(
+    ffmpeg_proc: subprocess.Popen,
+    all_processed_paths: List[pathlib.Path],
+    rife_exe_path: pathlib.Path,
+    model_key: str,
+    processed_img_dir: pathlib.Path,
+    rife_tile_enable: bool = False,
+    rife_tile_size: int = 256,
+    rife_uhd_mode: bool = False,
+    rife_thread_spec: Optional[str] = None,
+    rife_tta_spatial: bool = False,
+    rife_tta_temporal: bool = False,
+) -> Iterator[Tuple[int, int, float]]:
+    """Process frames with RIFE interpolation.
+
+    This function generates interpolated frames using RIFE and yields progress updates.
+
+    Args:
+        ffmpeg_proc: FFmpeg process to write frames to
+        all_processed_paths: List of input image paths
+        rife_exe_path: Path to RIFE executable
+        model_key: RIFE model identifier
+        processed_img_dir: Directory for processed images
+        rife_tile_enable: Enable tiled processing
+        rife_tile_size: Size of tiles for processing
+        rife_uhd_mode: Enable UHD mode
+        rife_thread_spec: Thread specification string
+        rife_tta_spatial: Enable spatial TTA
+        rife_tta_temporal: Enable temporal TTA
+
+    Yields:
+        Tuple of (current_frame, total_frames, elapsed_time)
+    """
+    import time
+
+    start_time = time.time()
+    total_pairs = len(all_processed_paths) - 1
+
+    for i in range(total_pairs):
+        current_frame = all_processed_paths[i]
+        next_frame = all_processed_paths[i + 1]
+
+        # Build RIFE command
+        rife_cmd = [
+            str(rife_exe_path),
+            "-i",
+            str(current_frame),
+            "-o",
+            str(next_frame),
+            "-m",
+            model_key,
+        ]
+
+        if rife_tile_enable:
+            rife_cmd.extend(["-t", str(rife_tile_size)])
+        if rife_uhd_mode:
+            rife_cmd.append("-u")
+        if rife_thread_spec:
+            rife_cmd.extend(["-j", rife_thread_spec])
+        if rife_tta_spatial:
+            rife_cmd.append("-x")
+        if rife_tta_temporal:
+            rife_cmd.append("-z")
+
+        # Run RIFE interpolation
+        result = subprocess.run(rife_cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            LOGGER.error("RIFE failed: %s", result.stderr)
+            continue
+
+        # Yield progress after RIFE processing
+        elapsed = time.time() - start_time
+        yield (i * 2 + 1, total_pairs * 2, elapsed)
+
+        # Load interpolated frame and write to FFmpeg
+        interpolated_path = processed_img_dir / f"interpolated_{i:06d}.png"
+        try:
+            with Image.open(interpolated_path) as img:
+                png_bytes = _encode_frame_to_png_bytes(img)
+                _safe_write(ffmpeg_proc, png_bytes, f"interpolated frame {i}")
+        except Exception as e:
+            LOGGER.error("Failed to process interpolated frame %d: %s", i, e)
+
+        # Write the next original frame
+        try:
+            with Image.open(next_frame) as img:
+                png_bytes = _encode_frame_to_png_bytes(img)
+                _safe_write(ffmpeg_proc, png_bytes, f"frame {i + 1}")
+        except Exception as e:
+            LOGGER.error("Failed to process frame %s: %s", next_frame, e)
+
+        # Yield progress after writing frames
+        elapsed = time.time() - start_time
+        yield (i * 2 + 2, total_pairs * 2, elapsed)
+
 
 # --- Helper function to encode frame to PNG bytes ---
 def _encode_frame_to_png_bytes(img: Image.Image) -> bytes:
@@ -286,6 +454,237 @@ def _load_process_image(
 
 
 # --- End Sanchez/Crop Helper ---
+
+
+def _validate_and_prepare_run_vfi_parameters(
+    folder: pathlib.Path,
+    num_intermediate_frames: int,
+    encoder_type: str,
+    false_colour: bool,
+    crop_rect_xywh: Optional[Tuple[int, int, int, int]],
+    skip_model: bool,
+) -> Tuple[bool, List[pathlib.Path], Optional[Tuple[int, int, int, int]]]:
+    """Validate and prepare parameters for run_vfi.
+
+    Args:
+        folder: Directory containing PNG images
+        num_intermediate_frames: Number of frames to interpolate between each pair
+        encoder_type: Type of encoder ("RIFE", "Sanchez", etc.)
+        false_colour: Whether to apply false color processing
+        crop_rect_xywh: Crop rectangle in (x, y, width, height) format
+        skip_model: Whether to skip model-based interpolation
+
+    Returns:
+        Tuple of (updated_false_colour, paths, crop_for_pil)
+    """
+    # Find all PNG images in the folder
+    png_pattern = "*.png"
+    png_paths = list(folder.glob(png_pattern))
+    png_paths.sort()
+
+    if not png_paths:
+        raise ValueError("No PNG images found in the specified folder")
+
+    # Force false_colour to True for Sanchez encoder
+    updated_false_colour = false_colour
+    if encoder_type == "Sanchez":
+        updated_false_colour = True
+
+    # Convert crop rectangle from (x, y, width, height) to PIL format (left, top, right, bottom)
+    crop_for_pil = None
+    if crop_rect_xywh is not None:
+        x, y, w, h = crop_rect_xywh
+        if w > 0 and h > 0:
+            crop_for_pil = (x, y, x + w, y + h)
+
+    return updated_false_colour, png_paths, crop_for_pil
+
+
+def _build_ffmpeg_command(fps: int, output_path: pathlib.Path) -> List[str]:
+    """Build FFmpeg command for video creation.
+
+    Args:
+        fps: Frame rate for the output video
+        output_path: Path for the output video file
+
+    Returns:
+        List of command arguments for FFmpeg
+    """
+    return [
+        "ffmpeg",
+        "-y",  # Overwrite output file
+        "-f",
+        "image2pipe",
+        "-vcodec",
+        "png",
+        "-framerate",
+        str(fps),
+        "-i",
+        "-",  # Read from stdin
+        "-c:v",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        str(output_path),
+    ]
+
+
+def _get_unique_output_path(original_path: pathlib.Path) -> pathlib.Path:
+    """Generate a unique output path by adding timestamp.
+
+    Args:
+        original_path: Original output path
+
+    Returns:
+        Unique output path with timestamp
+    """
+    import datetime
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    stem = original_path.stem
+    suffix = original_path.suffix
+    parent = original_path.parent
+
+    unique_name = f"{stem}_{timestamp}{suffix}"
+    return parent / unique_name
+
+
+def _create_rife_command(
+    rife_exe_path: pathlib.Path,
+    temp_p1_path: pathlib.Path,
+    temp_p2_path: pathlib.Path,
+    output_path: pathlib.Path,
+    model_key: str,
+    capability_detector: RifeCapabilityDetector,
+    rife_tile_enable: bool = False,
+    rife_tile_size: int = 256,
+    rife_uhd_mode: bool = False,
+    rife_tta_spatial: bool = False,
+    rife_tta_temporal: bool = False,
+    rife_thread_spec: Optional[str] = None,
+) -> List[str]:
+    """Create RIFE command with capability checking.
+
+    Args:
+        rife_exe_path: Path to RIFE executable
+        temp_p1_path: Path to first input image
+        temp_p2_path: Path to second input image
+        output_path: Path for interpolated output
+        model_key: RIFE model identifier
+        capability_detector: Detector for RIFE capabilities
+        rife_tile_enable: Enable tiled processing
+        rife_tile_size: Size of tiles for processing
+        rife_uhd_mode: Enable UHD mode
+        rife_tta_spatial: Enable spatial TTA
+        rife_tta_temporal: Enable temporal TTA
+        rife_thread_spec: Thread specification string
+
+    Returns:
+        List of command arguments for RIFE
+    """
+    cmd = [
+        str(rife_exe_path),
+        "-0",
+        str(temp_p1_path),
+        "-1",
+        str(temp_p2_path),
+        "-o",
+        str(output_path),
+    ]
+
+    # Add model if specified
+    if model_key:
+        cmd.extend(["-m", model_key])
+
+    # Add tiling if supported and enabled
+    if rife_tile_enable and capability_detector.supports_tiling():
+        cmd.extend(["-t", str(rife_tile_size)])
+
+    # Add UHD mode if supported and enabled
+    if rife_uhd_mode and capability_detector.supports_uhd():
+        cmd.append("-u")
+
+    # Add spatial TTA if supported and enabled
+    if rife_tta_spatial and capability_detector.supports_tta_spatial():
+        cmd.append("-s")
+
+    # Add temporal TTA if supported and enabled
+    if rife_tta_temporal and capability_detector.supports_tta_temporal():
+        cmd.append("-T")
+
+    # Add thread specification if supported and provided
+    if rife_thread_spec and capability_detector.supports_thread_spec():
+        cmd.extend(["-y", rife_thread_spec])
+
+    return cmd
+
+
+def _check_rife_capability_warnings(
+    capability_detector: RifeCapabilityDetector,
+    rife_tile_enable: bool = False,
+    rife_uhd_mode: bool = False,
+    rife_tta_spatial: bool = False,
+    rife_tta_temporal: bool = False,
+    rife_thread_spec: Optional[str] = None,
+) -> None:
+    """Check RIFE capabilities and log warnings for unsupported features.
+
+    Args:
+        capability_detector: Detector for RIFE capabilities
+        rife_tile_enable: Whether tiling is requested
+        rife_uhd_mode: Whether UHD mode is requested
+        rife_tta_spatial: Whether spatial TTA is requested
+        rife_tta_temporal: Whether temporal TTA is requested
+        rife_thread_spec: Thread specification if provided
+    """
+    if rife_tile_enable and not capability_detector.supports_tiling():
+        LOGGER.warning("Tiling requested but not supported by this RIFE version")
+
+    if rife_uhd_mode and not capability_detector.supports_uhd():
+        LOGGER.warning("UHD mode requested but not supported by this RIFE version")
+
+    if rife_tta_spatial and not capability_detector.supports_tta_spatial():
+        LOGGER.warning("Spatial TTA requested but not supported by this RIFE version")
+
+    if rife_tta_temporal and not capability_detector.supports_tta_temporal():
+        LOGGER.warning("Temporal TTA requested but not supported by this RIFE version")
+
+    if rife_thread_spec and not capability_detector.supports_thread_spec():
+        LOGGER.warning(
+            "Custom thread specification requested but not supported by this RIFE version"
+        )
+
+
+def _process_in_skip_model_mode(
+    ffmpeg_proc: subprocess.Popen,
+    image_paths: List[pathlib.Path],
+) -> Iterator[Tuple[int, int, float]]:
+    """Process frames in skip_model mode (no interpolation).
+
+    Args:
+        ffmpeg_proc: FFmpeg process to write frames to
+        image_paths: List of image paths to process
+
+    Yields:
+        Tuple of (current_frame, total_frames, elapsed_time)
+    """
+    import time
+
+    start_time = time.time()
+    total_frames = len(image_paths)
+
+    # Skip the first frame as it's already processed
+    for i, img_path in enumerate(image_paths[1:], 1):
+        try:
+            with Image.open(img_path) as img:
+                png_bytes = _encode_frame_to_png_bytes(img)
+                _safe_write(ffmpeg_proc, png_bytes, f"frame {i}")
+
+            elapsed = time.time() - start_time
+            yield (i, total_frames, elapsed)
+
+        except Exception as e:
+            LOGGER.error("Failed to process frame %s: %s", img_path, e)
 
 
 # --- Worker function for parallel processing --- #
