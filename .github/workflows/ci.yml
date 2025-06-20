@@ -109,10 +109,20 @@ jobs:
       run: |
         if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
           # Full test suite with GUI tests on Linux using xvfb
-          xvfb-run -a python -m pytest --cov=goesvfi --cov-report=xml --cov-report=html --junit-xml=test-results.xml tests/
+          xvfb-run -a python -m pytest \
+            --cov=goesvfi \
+            --cov-report=xml \
+            --cov-report=html \
+            --junit-xml=test-results.xml \
+            --tb=short \
+            --quiet \
+            --no-header \
+            --disable-warnings \
+            --maxfail=10 \
+            tests/
         else
           # Non-GUI tests only on macOS and Windows
-          python run_non_gui_tests_ci.py
+          python run_non_gui_tests_ci.py --quiet --maxfail=10
         fi
       shell: bash
 

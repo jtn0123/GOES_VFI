@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import SatellitePattern
@@ -28,6 +28,8 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
 
         # Mock S3 client
         self.s3_client_mock = AsyncMock()
+        # get_paginator is a synchronous method that returns a paginator object
+        self.s3_client_mock.get_paginator = MagicMock()
 
         # Patch _get_s3_client to return our mock
         patcher = patch.object(
@@ -131,10 +133,11 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
         self.s3_client_mock.head_object.side_effect = head_error
 
         # Configure get_paginator for wildcard search
-        paginator_mock = AsyncMock()
+        paginator_mock = MagicMock()  # Use MagicMock, not AsyncMock
 
         # Create realistic response with actual file pattern
-        test_key = "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661226190_e20231661228562_c20231661229032.nc"
+        # The timestamp part needs to match: s20231661230 (year=2023, doy=166, hour=12, minute=30)
+        test_key = "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661230000_e20231661232000_c20231661232030.nc"
         test_page = {
             "Contents": [
                 {

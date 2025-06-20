@@ -45,7 +45,8 @@ class GuiError(GoesVfiError):  # pylint: disable=too-few-public-methods
 class ExternalToolError(PipelineError):  # pylint: disable=too-few-public-methods
     """Exception raised when an external tool (e.g., FFmpeg, Sanchez) fails to execute.
 
-    This error is used to wrap errors from subprocesses or third-party tools invoked by the pipeline.
+    This error is used to wrap errors from subprocesses or third-party tools
+    invoked by the pipeline.
     """
 
     def __init__(self, tool_name: str, message: str, stderr: Optional[str] = None):

@@ -29,8 +29,8 @@ class UIEnhancer:
 
     def _setup_shortcuts(self) -> None:
         """Setup keyboard shortcuts for the application."""
-        # Implementation for shortcuts
-        pass
+        # TODO: Implementation for shortcuts
+        LOGGER.debug("Setting up keyboard shortcuts")
 
 
 def enhance_existing_gui(main_window: QMainWindow) -> UIEnhancer:

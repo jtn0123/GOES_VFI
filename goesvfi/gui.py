@@ -111,7 +111,7 @@ class MainWindow(QWidget):
             org_name = "GOES_VFI"
             app_name = "GOES_VFI_App"
             LOGGER.warning(
-                f"Application organization/name not set! Using defaults: {org_name}/{app_name}"
+                "Application organization/name not set! Using defaults: %s/%s"
             )
 
         # Initialize QSettings with application-wide settings to ensure consistency
@@ -524,9 +524,7 @@ class MainWindow(QWidget):
             org_name = self.settings.organizationName()
             app_name = self.settings.applicationName()
             filename = self.settings.fileName()
-            LOGGER.debug(
-                f"QSettings details during save: org={org_name}, app={app_name}, file={filename}"
-            )
+            LOGGER.debug("QSettings details during save: org=%s, app=%s, file=%s")
 
             # Verify QSettings consistency - this will detect if we have mismatched organization/application names   # noqa: B950
             app_instance = QApplication.instance()
@@ -566,20 +564,18 @@ class MainWindow(QWidget):
 
             # Verify the saved value
             saved_dir = self.settings.value("paths/inputDirectory", "", type=str)
-            LOGGER.debug(
-                f"Verification - Input directory after direct save: {saved_dir!r}"
-            )
+            LOGGER.debug("Verification - Input directory after direct save: %s")
 
             # Check if settings file exists and has appropriate size
             try:
                 settings_file = Path(self.settings.fileName())
                 if settings_file.exists():
                     LOGGER.debug(
-                        f"Settings file exists: {settings_file} (size: {settings_file.stat().st_size} bytes)"  # noqa: B950
+                        "Settings file exists: %s (size: %s bytes)"  # noqa: B950
                     )
                 else:
                     LOGGER.warning(
-                        f"Settings file does not exist after save attempt: {settings_file}"
+                        "Settings file does not exist after save attempt: %s"
                     )
                     return False
             except Exception as file_error:
@@ -632,9 +628,7 @@ class MainWindow(QWidget):
                         saved_dir = self.settings.value(
                             "paths/inputDirectory", "", type=str
                         )
-                        LOGGER.debug(
-                            f"Final verification - Input directory: {saved_dir!r}"
-                        )
+                        LOGGER.debug("Final verification - Input directory: %s")
 
                         # If saving failed, try to revert to previous state
                         if not saved_dir and old_path:
@@ -665,7 +659,7 @@ class MainWindow(QWidget):
             app_name = self.settings.applicationName()
             filename = self.settings.fileName()
             LOGGER.debug(
-                f"QSettings details during crop save: org={org_name}, app={app_name}, file={filename}"  # noqa: B950
+                "QSettings details during crop save: org=%s, app=%s, file=%s"  # noqa: B950
             )
 
             # Verify QSettings consistency - this will detect if we have mismatched organization/application names   # noqa: B950
@@ -703,26 +697,22 @@ class MainWindow(QWidget):
 
             # Verify the saved value
             saved_rect = self.settings.value("preview/cropRectangle", "", type=str)
-            LOGGER.debug(
-                f"Verification - Crop rectangle after direct save: {saved_rect!r}"
-            )
+            LOGGER.debug("Verification - Crop rectangle after direct save: %s")
 
             # Check if settings file exists and has appropriate size
             try:
                 settings_file = Path(self.settings.fileName())
                 if settings_file.exists():
                     LOGGER.debug(
-                        f"Settings file exists after crop save: {settings_file} (size: {settings_file.stat().st_size} bytes)"  # noqa: B950
+                        "Settings file exists after crop save: %s (size: %s bytes)"  # noqa: B950
                     )
                 else:
                     LOGGER.warning(
-                        f"Settings file does not exist after crop save attempt: {settings_file}"
+                        "Settings file does not exist after crop save attempt: %s"
                     )
                     return False
             except Exception as file_error:
-                LOGGER.error(
-                    f"Error checking settings file after crop save: {file_error}"
-                )
+                LOGGER.error("Error checking settings file after crop save: %s")
 
             # Explicitly cast bool to avoid Any return type
             return bool(saved_rect == rect_str)
@@ -767,9 +757,7 @@ class MainWindow(QWidget):
                         saved_rect = self.settings.value(
                             "preview/cropRectangle", "", type=str
                         )
-                        LOGGER.debug(
-                            f"Final verification - Crop rectangle: {saved_rect!r}"
-                        )
+                        LOGGER.debug("Final verification - Crop rectangle: %s")
 
                         # If saving failed, try to revert to previous state
                         if not saved_rect and old_rect:
@@ -791,8 +779,8 @@ class MainWindow(QWidget):
         self.request_previews_update.emit()  # Request preview update
 
     def _pick_in_dir(self) -> None:
-        LOGGER.debug("Entering _pick_in_dir...")
         """Open a directory dialog to select the input image folder."""
+        LOGGER.debug("Entering _pick_in_dir...")
         dir_path = QFileDialog.getExistingDirectory(self, "Select Input Image Folder")
         if dir_path:
             LOGGER.debug("Input directory selected: %s", dir_path)
@@ -803,8 +791,8 @@ class MainWindow(QWidget):
             self.request_previews_update.emit()  # Request preview update
 
     def _pick_out_file(self) -> None:
-        LOGGER.debug("Entering _pick_out_file...")
         """Open a file dialog to select the output MP4 file path."""
+        LOGGER.debug("Entering _pick_out_file...")
         file_path, _ = QFileDialog.getSaveFileName(
             self, "Save Output Video", "", "MP4 Files (*.mp4)"
         )
@@ -815,8 +803,8 @@ class MainWindow(QWidget):
             self._update_start_button_state()
 
     def _on_crop_clicked(self) -> None:
-        LOGGER.debug("Entering _on_crop_clicked...")
         """Open the crop dialog with the first image."""
+        LOGGER.debug("Entering _on_crop_clicked...")
         if self.in_dir and self.in_dir.is_dir():
             image_files = sorted(
                 [
@@ -884,7 +872,7 @@ class MainWindow(QWidget):
                         original_image = QImage(str(first_image_path))
                         if original_image.isNull():
                             LOGGER.error(
-                                f"Failed to load original image for cropping: {first_image_path}"
+                                "Failed to load original image for cropping: %s"
                             )
                             QMessageBox.critical(
                                 self,
@@ -899,9 +887,7 @@ class MainWindow(QWidget):
 
                     # Final check if we have a valid pixmap
                     if pixmap_for_dialog is None or pixmap_for_dialog.isNull():
-                        LOGGER.error(
-                            f"Failed to prepare any pixmap for crop dialog: {first_image_path}"
-                        )
+                        LOGGER.error("Failed to prepare any pixmap for crop dialog: %s")
                         QMessageBox.critical(
                             self,
                             "Error",
@@ -924,9 +910,7 @@ class MainWindow(QWidget):
                         self._update_crop_buttons_state()
                         self.request_previews_update.emit()  # Request preview update
                 except Exception as e:
-                    LOGGER.exception(
-                        f"Error opening crop dialog for {first_image_path}:"
-                    )
+                    LOGGER.exception("Error opening crop dialog for %s:")
                     QMessageBox.critical(
                         self, "Error", f"Error opening crop dialog: {e}"
                     )
@@ -962,7 +946,7 @@ class MainWindow(QWidget):
     def _show_zoom(self, label: ClickableLabel) -> None:
         """Show a zoomed view of the processed image associated with the clicked label."""
         LOGGER.debug(
-            f"Entering _show_zoom for label: {label.objectName()}"
+            "Entering _show_zoom for label: %s"
         )  # Assuming labels have object names
 
         # Get the full resolution processed pixmap from the label
@@ -975,9 +959,7 @@ class MainWindow(QWidget):
             # QMessageBox.information(self, "Zoom", "No processed image available for this frame yet.")   # noqa: B950
             return
         if not isinstance(label.processed_image, QImage):
-            LOGGER.warning(
-                f"Label's processed_image is not a QImage: {type(label.processed_image)}"
-            )
+            LOGGER.warning("Label's processed_image is not a QImage: %s")
             return
 
         full_res_processed_pixmap = QPixmap.fromImage(label.processed_image)
@@ -998,9 +980,7 @@ class MainWindow(QWidget):
                 full_res_processed_pixmap.size().width() > max_size.width()
                 or full_res_processed_pixmap.size().height() > max_size.height()
             ):
-                LOGGER.debug(
-                    f"Scaling zoom image from {full_res_processed_pixmap.size()} to fit {max_size}"
-                )
+                LOGGER.debug("Scaling zoom image from %s to fit %s")
                 scaled_pix = full_res_processed_pixmap.scaled(
                     max_size,
                     Qt.AspectRatioMode.KeepAspectRatio,
@@ -1027,7 +1007,7 @@ class MainWindow(QWidget):
             # QMessageBox.critical(self, "Zoom Error", "Failed to prepare image for zooming.")
             return
 
-        LOGGER.debug(f"Showing ZoomDialog with pixmap size: {scaled_pix.size()}")
+        LOGGER.debug("Showing ZoomDialog with pixmap size: %s", scaled_pix.size())
         dialog = ZoomDialog(scaled_pix, self)
         dialog.exec()
 
@@ -1037,7 +1017,7 @@ class MainWindow(QWidget):
 
     def _on_tab_changed(self, index: int) -> None:
         """Handle tab changes and update the ViewModel."""
-        LOGGER.debug(f"Tab changed to index: {index}")
+        LOGGER.debug("Tab changed to index: %s", index)
         self.main_view_model.active_tab_index = index  # <-- Update ViewModel state
         # Add any other logic needed when a tab changes, e.g., triggering updates
         if self.tab_widget.widget(index) == self.main_tab:
@@ -1104,7 +1084,7 @@ class MainWindow(QWidget):
         for key in ffmpeg_profile_keys:
             # Ensure key exists in current_settings before accessing
             if key not in current_settings:
-                LOGGER.warning(f"Key {key!r} in profile but not in current settings.")
+                LOGGER.warning("Key %r in profile but not in current settings.", key)
                 return False
 
             current_value = current_settings[key]
@@ -1145,7 +1125,7 @@ class MainWindow(QWidget):
         app_name = self.settings.applicationName()
         filename = self.settings.fileName()
         LOGGER.debug(
-            f"MainWindow loadSettings - QSettings details: org={org_name}, app={app_name}, file={filename}"  # noqa: B950
+            "MainWindow loadSettings - QSettings details: org=%s, app=%s, file=%s"  # noqa: B950
         )
 
         # Verify QSettings consistency - this will detect if we have mismatched organization/application names   # noqa: B950
@@ -1175,7 +1155,7 @@ class MainWindow(QWidget):
 
         # List all keys to see what's available
         all_keys = self.settings.allKeys()
-        LOGGER.debug(f"MainWindow loadSettings - Available keys: {all_keys}")
+        LOGGER.debug("MainWindow loadSettings - Available keys: %s", all_keys)
 
         # Initialize default values
         self.in_dir = None
@@ -1200,15 +1180,11 @@ class MainWindow(QWidget):
 
                         fps_value = self.settings.value("fps", 30, type=int)
                         self.main_tab.fps_spinbox.setValue(fps_value)
-                        LOGGER.debug(
-                            f"Successfully set fps_spinbox value to {fps_value}"
-                        )
+                        LOGGER.debug("Successfully set fps_spinbox value to %s")
                     except RuntimeError as e:
-                        LOGGER.warning(f"RuntimeError setting fps_spinbox value: {e}")
+                        LOGGER.warning("RuntimeError setting fps_spinbox value: %s", e)
                 else:
-                    LOGGER.warning(
-                        f"fps_spinbox is not a QSpinBox: {type(self.main_tab.fps_spinbox)}"
-                    )
+                    LOGGER.warning("fps_spinbox is not a QSpinBox: %s")
             elif (
                 hasattr(self.main_tab, "fps_spinbox")
                 and self.main_tab.fps_spinbox is None
@@ -1217,7 +1193,7 @@ class MainWindow(QWidget):
             else:
                 LOGGER.warning("fps_spinbox attribute does not exist")
         except Exception as e:
-            LOGGER.error(f"Unhandled exception accessing fps_spinbox: {e}")
+            LOGGER.error("Unhandled exception accessing fps_spinbox: %s", e)
 
         # For each widget, use separate try blocks to ensure independent error handling
 
@@ -1238,11 +1214,11 @@ class MainWindow(QWidget):
                             # Load the multiplier value (setting value + 1)
                             self.main_tab.multiplier_spinbox.setValue(value + 1)
                             LOGGER.debug(
-                                f"Set multiplier_spinbox to {value + 1} (loaded mid_count={value})"
+                                "Set multiplier_spinbox to %s (loaded mid_count=%s)"
                             )
                         except RuntimeError as e:
                             LOGGER.warning(
-                                f"RuntimeError setting multiplier_spinbox: {e}"
+                                "RuntimeError setting multiplier_spinbox: %s"
                             )
                     else:
                         LOGGER.warning("multiplier_spinbox is not a QSpinBox")
@@ -1253,7 +1229,7 @@ class MainWindow(QWidget):
             else:
                 LOGGER.warning("multiplier_spinbox not available")
         except Exception as e:
-            LOGGER.error(f"Unhandled exception with multiplier_spinbox: {e}")
+            LOGGER.error("Unhandled exception with multiplier_spinbox: %s", e)
 
         # max_workers_spinbox (Commented out as widget doesn't exist on MainTab)
         # try:
@@ -1264,9 +1240,9 @@ class MainWindow(QWidget):
         #                 try:
         #                     value = self.settings.value("max_workers", os.cpu_count() or 1, type=int)   # noqa: B950
         #                     self.main_tab.max_workers_spinbox.setValue(value)
-        #                     LOGGER.debug(f"Set max_workers_spinbox to {value}")
+        #                     LOGGER.debug("Set max_workers_spinbox to %s", value)
         #                 except RuntimeError as e:
-        #                     LOGGER.warning(f"RuntimeError setting max_workers_spinbox: {e}")
+        #                     LOGGER.warning("RuntimeError setting max_workers_spinbox: %s", e)
         #             else:
         #                 LOGGER.warning("max_workers_spinbox is not a QSpinBox")
         #         except RuntimeError:
@@ -1274,7 +1250,7 @@ class MainWindow(QWidget):
         #     else:
         #         LOGGER.warning("max_workers_spinbox not available")
         # except Exception as e:
-        #     LOGGER.error(f"Unhandled exception with max_workers_spinbox: {e}")
+        #     LOGGER.error("Unhandled exception with max_workers_spinbox: %s", e)
 
         # encoder_combo
         try:
@@ -1288,9 +1264,9 @@ class MainWindow(QWidget):
                         value = self.settings.value("encoder", "RIFE", type=str)
                         self.main_tab.encoder_combo.setCurrentText(value)
                         self.current_encoder = self.main_tab.encoder_combo.currentText()
-                        LOGGER.debug(f"Set encoder_combo to {value}")
+                        LOGGER.debug("Set encoder_combo to %s", value)
                     except RuntimeError as e:
-                        LOGGER.warning(f"RuntimeError setting encoder_combo: {e}")
+                        LOGGER.warning("RuntimeError setting encoder_combo: %s", e)
                         # Ensure state variable is set even if widget fails
                         self.current_encoder = value
                 except RuntimeError:
@@ -1302,7 +1278,7 @@ class MainWindow(QWidget):
                 LOGGER.warning("encoder_combo not available")
                 self.current_encoder = self.settings.value("encoder", "RIFE", type=str)
         except Exception as e:
-            LOGGER.error(f"Unhandled exception with encoder_combo: {e}")
+            LOGGER.error("Unhandled exception with encoder_combo: %s", e)
             # Ensure current_encoder is always set
             self.current_encoder = "RIFE"  # Default fallback
 
@@ -1335,7 +1311,7 @@ class MainWindow(QWidget):
             )
         except RuntimeError as e:
             # Catch Qt widget access errors for RIFE settings
-            LOGGER.warning(f"Error accessing RIFE widgets during loadSettings: {e}")
+            LOGGER.warning("Error accessing RIFE widgets during loadSettings: %s", e)
 
         # Load Sanchez settings
         try:
@@ -1361,7 +1337,7 @@ class MainWindow(QWidget):
                 LOGGER.warning("sanchez_res_km_combo not found during loadSettings")
         except RuntimeError as e:
             # Catch Qt widget access errors for Sanchez settings
-            LOGGER.warning(f"Error accessing Sanchez widgets during loadSettings: {e}")
+            LOGGER.warning("Error accessing Sanchez widgets during loadSettings: %s", e)
 
         # Load crop rectangle
         crop_rect_str = self.settings.value("crop_rect", "", type=str)
@@ -1371,7 +1347,7 @@ class MainWindow(QWidget):
                 self.current_crop_rect = (x, y, w, h)
             except ValueError:
                 self.current_crop_rect = None
-                LOGGER.warning(f"Invalid crop_rect setting: {crop_rect_str}")
+                LOGGER.warning("Invalid crop_rect setting: %s", crop_rect_str)
         else:
             self.current_crop_rect = None
 
@@ -1552,7 +1528,7 @@ class MainWindow(QWidget):
                     self.main_tab.rife_tta_temporal_checkbox.isChecked(),
                 )
         except RuntimeError as e:
-            LOGGER.warning(f"Error saving widget settings: {e}")
+            LOGGER.warning("Error saving widget settings: %s", e)
             return  # Exit early to avoid further widget access causing errors
 
         # Save Sanchez settings
@@ -1575,7 +1551,7 @@ class MainWindow(QWidget):
                     "sanchez_res_km", self.sanchez_res_km_combo.currentText()
                 )
         except RuntimeError as e:
-            LOGGER.warning(f"Error saving Sanchez settings: {e}")
+            LOGGER.warning("Error saving Sanchez settings: %s", e)
 
             # Save crop rectangle
             if self.current_crop_rect:
@@ -1778,7 +1754,7 @@ class MainWindow(QWidget):
                 )
 
     def _validate_thread_spec(self, text: str) -> None:
-        LOGGER.debug(f"Entering _validate_thread_spec... text={text}")
+        LOGGER.debug("Entering _validate_thread_spec... text=%s", text)
         """Validate the RIFE thread specification format."""
         # Simple regex check for format like "1:2:2"
         if not re.fullmatch(r"\d+:\d+:\d+", text):
@@ -1786,7 +1762,7 @@ class MainWindow(QWidget):
             self.main_tab.start_button.setEnabled(
                 False
             )  # Disable start button if invalid
-            LOGGER.warning(f"Invalid RIFE thread specification format: {text}")
+            LOGGER.warning("Invalid RIFE thread specification format: %s", text)
         else:
             self.main_tab.rife_thread_spec_edit.setStyleSheet("")  # Reset style
             self._update_start_button_state()  # Re-check start button state
@@ -1873,18 +1849,14 @@ class MainWindow(QWidget):
                         "tiling", False
                     )  # Access capability from dict
                 ):
-                    LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support tiling."
-                    )
+                    LOGGER.warning("Selected model '%s' does not support tiling.")
                 if (
                     self.main_tab.rife_uhd_checkbox.isChecked()
                     and not capability_detector.capabilities.get(
                         "uhd", False
                     )  # Access capability from dict
                 ):
-                    LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support UHD mode."
-                    )
+                    LOGGER.warning("Selected model '%s' does not support UHD mode.")
                 if (
                     self.main_tab.rife_thread_spec_edit.text() != "1:2:2"
                     and not capability_detector.capabilities.get(
@@ -1892,7 +1864,7 @@ class MainWindow(QWidget):
                     )  # Access capability from dict
                 ):
                     LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support custom thread specification."  # noqa: B950
+                        "Selected model '%s' does not support custom thread specification."  # noqa: B950
                     )
                 if (
                     self.main_tab.rife_tta_spatial_checkbox.isChecked()
@@ -1900,18 +1872,14 @@ class MainWindow(QWidget):
                         "tta_spatial", False
                     )  # Access capability from dict
                 ):
-                    LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support spatial TTA."
-                    )
+                    LOGGER.warning("Selected model '%s' does not support spatial TTA.")
                 if (
                     self.main_tab.rife_tta_temporal_checkbox.isChecked()
                     and not capability_detector.capabilities.get(
                         "tta_temporal", False
                     )  # Access capability from dict
                 ):
-                    LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support temporal TTA."
-                    )
+                    LOGGER.warning("Selected model '%s' does not support temporal TTA.")
 
             except FileNotFoundError:
                 # If RIFE executable is not found for the selected model, disable all RIFE options
@@ -1922,12 +1890,10 @@ class MainWindow(QWidget):
                 self.main_tab.rife_tta_spatial_checkbox.setEnabled(False)
                 self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
                 LOGGER.warning(
-                    f"RIFE executable not found for model '{self.current_model_key}'. RIFE options disabled."  # noqa: B950
+                    "RIFE executable not found for model '%s'. RIFE options disabled."  # noqa: B950
                 )
             except Exception as e:
-                LOGGER.error(
-                    f"Error checking RIFE capabilities for model '{self.current_model_key}': {e}"
-                )
+                LOGGER.error("Error checking RIFE capabilities for model '%s': %s")
                 # Disable options on error
                 self.main_tab.rife_tile_checkbox.setEnabled(False)
                 self.main_tab.rife_tile_size_spinbox.setEnabled(False)
@@ -1937,7 +1903,7 @@ class MainWindow(QWidget):
                 self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
 
     def _on_model_changed(self, model_key: str) -> None:
-        LOGGER.debug(f"Entering _on_model_changed... model_key={model_key}")
+        LOGGER.debug("Entering _on_model_changed... model_key=%s", model_key)
         """Handle RIFE model selection change."""
         self.current_model_key = model_key
         self._update_rife_ui_elements()  # Update RIFE options based on new model
@@ -1973,7 +1939,7 @@ class MainWindow(QWidget):
             print("WARNING: Empty args dictionary received!")
             return
 
-        LOGGER.debug(f"Processing arguments: {args}")
+        LOGGER.debug("Processing arguments: %s", args)
 
         # Update UI state
         print("Updating UI state: setting is_processing = True")
@@ -1992,7 +1958,7 @@ class MainWindow(QWidget):
                         "Failed to terminate previous worker, will try to proceed anyway"
                     )
             except Exception as e:
-                LOGGER.exception(f"Error terminating previous worker: {e}")
+                LOGGER.exception("Error terminating previous worker: %s", e)
 
         # Create new worker thread with the arguments from MainTab
         # VfiWorker expects out_file_path instead of out_file and mid_count instead of multiplier
@@ -2116,7 +2082,7 @@ class MainWindow(QWidget):
                 ),
             )
         except Exception as e:
-            LOGGER.exception(f"Failed to create VfiWorker: {e}")
+            LOGGER.exception("Failed to create VfiWorker: %s", e)
             self.is_processing = False
 
             # Show error message to user
@@ -2126,7 +2092,7 @@ class MainWindow(QWidget):
                 self,
                 "Error",
                 "Failed to initialize processing pipeline.\n\n"
-                f"This appears to be an issue with the video processing module, not your settings.\n\n"  # noqa: B950
+                "This appears to be an issue with the video processing module, not your settings.\n\n"  # noqa: B950
                 f"Error details: {str(e)}",
             )
 
@@ -2156,7 +2122,7 @@ class MainWindow(QWidget):
             total: Total number of frames to process
             time_elapsed: Time elapsed in seconds
         """
-        LOGGER.debug(f"Processing progress: {current}/{total} ({time_elapsed:.2f}s)")
+        LOGGER.debug("Processing progress: %s/%s (%.2fs)", current, total, time_elapsed)
         # Update progress in view model
         self.main_view_model.processing_vm.update_progress(current, total, time_elapsed)
 
@@ -2166,7 +2132,7 @@ class MainWindow(QWidget):
         Args:
             output_path: Path to the generated output file
         """
-        LOGGER.info(f"Processing finished successfully. Output: {output_path}")
+        LOGGER.info("Processing finished successfully. Output: %s", output_path)
         self.is_processing = False
 
         # Update the view model
@@ -2188,7 +2154,7 @@ class MainWindow(QWidget):
         Args:
             error_message: Error message from the worker
         """
-        LOGGER.error(f"Processing error: {error_message}")
+        LOGGER.error("Processing error: %s", error_message)
         self.is_processing = False
 
         # Update the view model - use proper method name based on what's available
@@ -2201,13 +2167,13 @@ class MainWindow(QWidget):
                 # cancel_processing might not accept a message parameter
                 self.main_view_model.processing_vm.cancel_processing()
         except Exception as e:
-            LOGGER.exception(f"Error updating view model: {e}")
+            LOGGER.exception("Error updating view model: %s", e)
 
         # Reset UI in MainTab
         try:
             self.main_tab._reset_start_button()
         except Exception as e:
-            LOGGER.exception(f"Error resetting start button: {e}")
+            LOGGER.exception("Error resetting start button: %s", e)
 
         # Show error message to user
         try:
@@ -2216,12 +2182,12 @@ class MainWindow(QWidget):
             QMessageBox.warning(
                 self,
                 "Processing Error",
-                f"Video processing could not be completed due to an error in the processing pipeline.\n\n"  # noqa: B950
+                "Video processing could not be completed due to an error in the processing pipeline.\n\n"  # noqa: B950
                 "This is likely an issue with the image processing module, not your settings.\n\n"
                 f"The specific error was: {error_message}",
             )
         except Exception as e:
-            LOGGER.exception(f"Error showing error message: {e}")
+            LOGGER.exception("Error showing error message: %s", e)
 
     def _load_all_settings(self) -> None:
         """Load all settings from QSettings for all tabs and components."""
@@ -2236,42 +2202,38 @@ class MainWindow(QWidget):
         app_name = self.settings.applicationName()
         filename = self.settings.fileName()
         LOGGER.debug(
-            f"MainWindow _load_all_settings - QSettings: org={org_name}, app={app_name}, file={filename}"  # noqa: B950
+            "MainWindow _load_all_settings - QSettings: org=%s, app=%s, file=%s"  # noqa: B950
         )
 
         # Check if settings file exists
         settings_file = Path(filename)
         if settings_file.exists():
-            LOGGER.debug(
-                f"Settings file exists: {settings_file} (size: {settings_file.stat().st_size} bytes)"  # noqa: B950
-            )
+            LOGGER.debug("Settings file exists: %s (size: %s bytes)")  # noqa: B950
 
             # Force a sync to ensure settings are loaded from disk, not just from cache
             self.settings.sync()
 
             # Get all available keys for debugging
             all_keys = self.settings.allKeys()
-            LOGGER.debug(f"All available settings keys: {all_keys}")
+            LOGGER.debug("All available settings keys: %s", all_keys)
 
             # Try to load input directory from multiple possible keys for redundancy
             input_dir_str = ""
             for key in ["paths/inputDirectory", "inputDir"]:
                 temp_dir = self.settings.value(key, "", type=str)
                 if temp_dir:
-                    LOGGER.debug(f"Found input directory in key '{key}': {temp_dir}")
+                    LOGGER.debug("Found input directory in key '%s': %s", key, temp_dir)
                     input_dir_str = temp_dir
                     break
 
-            LOGGER.debug(f"Final input directory from settings: '{input_dir_str}'")
+            LOGGER.debug("Final input directory from settings: '%s'", input_dir_str)
 
             # Try to load input directory directly
             if input_dir_str:
                 try:
                     input_dir_path = Path(input_dir_str)
                     if input_dir_path.exists() and input_dir_path.is_dir():
-                        LOGGER.info(
-                            f"Pre-loading input directory from settings: {input_dir_path}"
-                        )
+                        LOGGER.info("Pre-loading input directory from settings: %s")
                         self.in_dir = input_dir_path
 
                         # Also update the UI text field to ensure consistency
@@ -2279,11 +2241,11 @@ class MainWindow(QWidget):
                             self.main_tab.in_dir_edit.setText(str(input_dir_path))
                     else:
                         LOGGER.warning(
-                            f"Saved input directory doesn't exist, will try to find it: {input_dir_path}"  # noqa: B950
+                            "Saved input directory doesn't exist, will try to find it: %s"  # noqa: B950
                         )
                         # Try to find directory with the same name in common locations
                         dir_name = input_dir_path.name
-                        LOGGER.debug(f"Looking for directory named: {dir_name}")
+                        LOGGER.debug("Looking for directory named: %s", dir_name)
                         potential_locations = [
                             Path.home() / "Downloads" / dir_name,
                             Path.home() / "Documents" / dir_name,
@@ -2291,10 +2253,10 @@ class MainWindow(QWidget):
                             Path.cwd() / dir_name,
                         ]
                         for potential_path in potential_locations:
-                            LOGGER.debug(f"Checking potential path: {potential_path}")
+                            LOGGER.debug("Checking potential path: %s", potential_path)
                             if potential_path.exists() and potential_path.is_dir():
                                 LOGGER.info(
-                                    f"Found input directory in alternative location: {potential_path}"  # noqa: B950
+                                    "Found input directory in alternative location: %s"  # noqa: B950
                                 )
                                 self.in_dir = potential_path
 
@@ -2308,18 +2270,18 @@ class MainWindow(QWidget):
                                 self._save_input_directory(potential_path)
                                 break
                 except Exception as e:
-                    LOGGER.error(f"Error pre-loading input directory: {e}")
+                    LOGGER.error("Error pre-loading input directory: %s", e)
 
             # Try to load crop rectangle from multiple possible keys for redundancy
             crop_rect_str = ""
             for key in ["preview/cropRectangle", "cropRect"]:
                 temp_rect = self.settings.value(key, "", type=str)
                 if temp_rect:
-                    LOGGER.debug(f"Found crop rectangle in key '{key}': {temp_rect}")
+                    LOGGER.debug("Found crop rectangle in key '%s': %s", key, temp_rect)
                     crop_rect_str = temp_rect
                     break
 
-            LOGGER.debug(f"Final crop rectangle from settings: '{crop_rect_str}'")
+            LOGGER.debug("Final crop rectangle from settings: '%s'", crop_rect_str)
 
             if crop_rect_str:
                 try:
@@ -2332,25 +2294,23 @@ class MainWindow(QWidget):
                             coords[2],
                             coords[3],
                         )
-                        LOGGER.info(
-                            f"Pre-loaded crop rectangle from settings: {self.current_crop_rect}"
-                        )
+                        LOGGER.info("Pre-loaded crop rectangle from settings: %s")
 
                         # Save this crop rectangle to ensure it's in all keys
                         if self.current_crop_rect is not None:
                             self._save_crop_rect(self.current_crop_rect)
                 except Exception as e:
-                    LOGGER.error(f"Error pre-loading crop rectangle: {e}")
+                    LOGGER.error("Error pre-loading crop rectangle: %s", e)
         else:
-            LOGGER.warning(f"Settings file does not exist: {settings_file}")
+            LOGGER.warning("Settings file does not exist: %s", settings_file)
             # Create the directory if it doesn't exist
             try:
                 settings_dir = settings_file.parent
                 if not settings_dir.exists():
                     settings_dir.mkdir(parents=True, exist_ok=True)
-                    LOGGER.info(f"Created settings directory: {settings_dir}")
+                    LOGGER.info("Created settings directory: %s", settings_dir)
             except Exception as e:
-                LOGGER.error(f"Error creating settings directory: {e}")
+                LOGGER.error("Error creating settings directory: %s", e)
 
         # Call load_settings on each tab that supports it
         if hasattr(self.main_tab, "load_settings"):
@@ -2377,7 +2337,7 @@ class MainWindow(QWidget):
         last_tab_index = self.settings.value("main/lastTabIndex", 0, type=int)
         if 0 <= last_tab_index < self.tab_widget.count():
             self.tab_widget.setCurrentIndex(last_tab_index)
-            LOGGER.debug(f"Restored last active tab: {last_tab_index}")
+            LOGGER.debug("Restored last active tab: %s", last_tab_index)
 
         self.settings_loaded = True
         LOGGER.info("All settings loaded")
@@ -2391,12 +2351,12 @@ class MainWindow(QWidget):
         app_name = self.settings.applicationName()
         filename = self.settings.fileName()
         LOGGER.debug(
-            f"MainWindow _save_all_settings - QSettings: org={org_name}, app={app_name}, file={filename}"  # noqa: B950
+            "MainWindow _save_all_settings - QSettings: org=%s, app=%s, file=%s"  # noqa: B950
         )
 
         # List current keys before saving
         current_keys = self.settings.allKeys()
-        LOGGER.debug(f"Current settings keys before save: {current_keys}")
+        LOGGER.debug("Current settings keys before save: %s", current_keys)
 
         # Call save_settings on each tab that supports it
         if hasattr(self.main_tab, "save_settings"):
@@ -2404,35 +2364,35 @@ class MainWindow(QWidget):
                 self.main_tab.save_settings()
                 LOGGER.debug("Main tab settings saved")
             except Exception as e:
-                LOGGER.error(f"Error saving main tab settings: {e}")
+                LOGGER.error("Error saving main tab settings: %s", e)
 
         if hasattr(self.ffmpeg_settings_tab, "save_settings"):
             try:
                 self.ffmpeg_settings_tab.save_settings()
                 LOGGER.debug("FFmpeg settings tab settings saved")
             except Exception as e:
-                LOGGER.error(f"Error saving FFmpeg settings tab settings: {e}")
+                LOGGER.error("Error saving FFmpeg settings tab settings: %s", e)
 
         if hasattr(self.file_sorter_tab, "save_settings"):
             try:
                 self.file_sorter_tab.save_settings()
                 LOGGER.debug("File sorter tab settings saved")
             except Exception as e:
-                LOGGER.error(f"Error saving file sorter tab settings: {e}")
+                LOGGER.error("Error saving file sorter tab settings: %s", e)
 
         if hasattr(self.date_sorter_tab, "save_settings"):
             try:
                 self.date_sorter_tab.save_settings()
                 LOGGER.debug("Date sorter tab settings saved")
             except Exception as e:
-                LOGGER.error(f"Error saving date sorter tab settings: {e}")
+                LOGGER.error("Error saving date sorter tab settings: %s", e)
 
         if hasattr(self.model_library_tab, "save_settings"):
             try:
                 self.model_library_tab.save_settings()
                 LOGGER.debug("Model library tab settings saved")
             except Exception as e:
-                LOGGER.error(f"Error saving model library tab settings: {e}")
+                LOGGER.error("Error saving model library tab settings: %s", e)
 
         # Save main window specific settings
         self.settings.setValue("main/lastTabIndex", self.tab_widget.currentIndex())
@@ -2453,25 +2413,23 @@ class MainWindow(QWidget):
             settings_file = Path(filename)
             if settings_file.exists():
                 LOGGER.debug(
-                    f"Settings file exists after save: {settings_file} (size: {settings_file.stat().st_size} bytes)"  # noqa: B950
+                    "Settings file exists after save: %s (size: %s bytes)"  # noqa: B950
                 )
             else:
-                LOGGER.warning(
-                    f"Settings file does not exist after save: {settings_file}"
-                )
+                LOGGER.warning("Settings file does not exist after save: %s")
 
             # List keys after saving to verify
             saved_keys = self.settings.allKeys()
-            LOGGER.debug(f"Settings keys after save: {saved_keys}")
+            LOGGER.debug("Settings keys after save: %s", saved_keys)
 
             # Check specific important settings
             saved_in_dir = self.settings.value("paths/inputDirectory", "", type=str)
-            LOGGER.debug(f"Verification - Saved input directory: '{saved_in_dir}'")
+            LOGGER.debug("Verification - Saved input directory: '%s'", saved_in_dir)
 
             saved_crop_rect = self.settings.value("preview/cropRectangle", "", type=str)
-            LOGGER.debug(f"Verification - Saved crop rectangle: '{saved_crop_rect}'")
+            LOGGER.debug("Verification - Saved crop rectangle: '%s'", saved_crop_rect)
         except Exception as ve:
-            LOGGER.error(f"Error verifying saved settings: {ve}")
+            LOGGER.error("Error verifying saved settings: %s", ve)
 
         LOGGER.info("All settings saved")
 
@@ -2498,12 +2456,10 @@ class MainWindow(QWidget):
                 if self._sanchez_gui_temp_dir.exists():
                     try:
                         shutil.rmtree(self._sanchez_gui_temp_dir)
-                        LOGGER.info(
-                            f"Cleaned up GUI Sanchez temp directory: {self._sanchez_gui_temp_dir}"
-                        )
+                        LOGGER.info("Cleaned up GUI Sanchez temp directory: %s")
                     except Exception as cleanup_error:
                         LOGGER.warning(
-                            f"Failed to clean up GUI Sanchez temp directory: {cleanup_error}"
+                            "Failed to clean up GUI Sanchez temp directory: %s"
                         )
 
                 # Clean up integrity check resources
@@ -2513,7 +2469,7 @@ class MainWindow(QWidget):
                         LOGGER.info("Cleaned up integrity check resources")
                     except Exception as e:
                         LOGGER.warning(
-                            f"Failed to clean up integrity check resources: {e}"
+                            "Failed to clean up integrity check resources: %s"
                         )
 
                 if event:
@@ -2526,13 +2482,9 @@ class MainWindow(QWidget):
             if self._sanchez_gui_temp_dir.exists():
                 try:
                     shutil.rmtree(self._sanchez_gui_temp_dir)
-                    LOGGER.info(
-                        f"Cleaned up GUI Sanchez temp directory: {self._sanchez_gui_temp_dir}"
-                    )
+                    LOGGER.info("Cleaned up GUI Sanchez temp directory: %s")
                 except Exception as cleanup_error:
-                    LOGGER.warning(
-                        f"Failed to clean up GUI Sanchez temp directory: {cleanup_error}"
-                    )
+                    LOGGER.warning("Failed to clean up GUI Sanchez temp directory: %s")
 
             # Clean up integrity check resources on normal exit
             if hasattr(self, "integrity_check_vm"):
@@ -2540,13 +2492,15 @@ class MainWindow(QWidget):
                     self.integrity_check_vm.cleanup()
                     LOGGER.info("Cleaned up integrity check resources")
                 except Exception as e:
-                    LOGGER.warning(f"Failed to clean up integrity check resources: {e}")
+                    LOGGER.warning(
+                        "Failed to clean up integrity check resources: %s", e
+                    )
             # Settings are saved proactively or not saved on close to avoid widget deletion errors.
             # try:
             #     self.saveSettings()   # Save settings on exit - REMOVED
             # except RuntimeError as e:
             #      # This is likely a Qt object lifetime issue in tests; log and continue
-            #     LOGGER.warning(f"Error saving settings during closeEvent: {e}")
+            #     LOGGER.warning("Error saving settings during closeEvent: %s", e)
 
             if event:
                 event.accept()
@@ -2577,7 +2531,7 @@ class MainWindow(QWidget):
             # -------------------------------------------------------
             if apply_sanchez:
                 if image_path in self.sanchez_preview_cache:
-                    LOGGER.debug(f"Using cached Sanchez result for {image_path.name}")
+                    LOGGER.debug("Using cached Sanchez result for %s", image_path.name)
                     cached_array = self.sanchez_preview_cache[image_path]
                     # Create ImageData manually from cached numpy array
                     # Assume original metadata isn't critical for preview display after Sanchez
@@ -2587,9 +2541,7 @@ class MainWindow(QWidget):
                     )
                     using_cache = True  # noqa: F841
                 else:
-                    LOGGER.debug(
-                        f"No cached Sanchez result for {image_path.name}, processing..."
-                    )
+                    LOGGER.debug("No cached Sanchez result for %s, processing...")
                     original_image_data = None
                     try:
                         # Load original first
@@ -2608,7 +2560,7 @@ class MainWindow(QWidget):
                                     res_km_str = self.sanchez_res_km_combo.currentText()
                                 except (RuntimeError, AttributeError) as e:
                                     LOGGER.warning(
-                                        f"Could not get Sanchez resolution value: {e}"
+                                        "Could not get Sanchez resolution value: %s"
                                     )
                             else:
                                 LOGGER.warning("Sanchez resolution ComboBox not found")
@@ -2618,7 +2570,7 @@ class MainWindow(QWidget):
                                 res_km_val = 4.0
 
                             LOGGER.debug(
-                                f"Applying Sanchez to preview for: {image_path.name} with res_km={res_km_val}"  # noqa: B950
+                                "Applying Sanchez to preview for: %s with res_km=%s"  # noqa: B950
                             )
                             sanchez_kwargs = {
                                 "res_km": res_km_val
@@ -2653,7 +2605,7 @@ class MainWindow(QWidget):
                                         result_array.copy()
                                     )
                                     LOGGER.debug(
-                                        f"Stored Sanchez result in cache for: {image_path.name}"
+                                        "Stored Sanchez result in cache for: %s"
                                     )
                                     image_data_to_process = (
                                         sanchez_result  # Use the successful result
@@ -2671,14 +2623,14 @@ class MainWindow(QWidget):
                                     )
                             else:
                                 LOGGER.warning(
-                                    f"Sanchez processing returned no data for {image_path.name}"
+                                    "Sanchez processing returned no data for %s"
                                 )
                                 sanchez_processing_failed = True
                                 sanchez_error_message = "Processing returned None"
                                 image_data_to_process = original_image_data  # Fallback
                         else:
                             LOGGER.warning(
-                                f"Failed to load original image for Sanchez: {image_path.name}"
+                                "Failed to load original image for Sanchez: %s"
                             )
                             sanchez_processing_failed = (
                                 True  # Treat as failure if load fails
@@ -2687,9 +2639,7 @@ class MainWindow(QWidget):
                             # image_data_to_process remains None here
 
                     except Exception as e_sanchez:
-                        LOGGER.exception(
-                            f"Error during Sanchez processing for {image_path.name}: {e_sanchez}"
-                        )
+                        LOGGER.exception("Error during Sanchez processing for %s: %s")
                         sanchez_processing_failed = True
                         sanchez_error_message = str(e_sanchez)
                         # Use original data if loaded, otherwise it remains None
@@ -2701,9 +2651,7 @@ class MainWindow(QWidget):
                 try:
                     image_data_to_process = image_loader.load(str(image_path))
                 except Exception as e_load:
-                    LOGGER.exception(
-                        f"Error loading image when Sanchez disabled: {e_load}"
-                    )
+                    LOGGER.exception("Error loading image when Sanchez disabled: %s")
                     return None  # Cannot proceed if basic load fails
 
             # Check if we have any image data at all
@@ -2711,7 +2659,7 @@ class MainWindow(QWidget):
                 image_data_to_process is None
                 or image_data_to_process.image_data is None
             ):
-                LOGGER.warning(f"Failed to load or process image: {image_path}")
+                LOGGER.warning("Failed to load or process image: %s", image_path)
                 return None
 
             # 2. Convert Initial Data to NumPy Array (for consistency)
@@ -2722,9 +2670,7 @@ class MainWindow(QWidget):
             elif isinstance(image_data_to_process.image_data, np.ndarray):
                 initial_img_array = image_data_to_process.image_data
             else:
-                LOGGER.error(
-                    f"Unsupported initial image data type: {type(image_data_to_process.image_data)}"
-                )
+                LOGGER.error("Unsupported initial image data type: %s")
                 return None
 
             # 3. Convert to QImage (Full Resolution, Uncropped) and Store for Dialogs
@@ -2752,9 +2698,7 @@ class MainWindow(QWidget):
                     "Converted initial NumPy array to QImage (full_res_qimage)."
                 )
             except Exception as conversion_err:
-                LOGGER.exception(
-                    f"Failed converting initial NumPy array to QImage: {conversion_err}"
-                )
+                LOGGER.exception("Failed converting initial NumPy array to QImage: %s")
                 return None  # Cannot proceed if initial conversion fails
 
             # 4. Crop (if requested) - Operates on the NumPy array
@@ -2763,16 +2707,16 @@ class MainWindow(QWidget):
                 initial_img_array  # Start with the potentially Sanchez'd array
             )
             LOGGER.debug(
-                f"PRE-CROP Check: crop_rect={crop_rect}, initial_img_array shape={initial_img_array.shape if initial_img_array is not None else 'None'}"  # noqa: B950
+                "PRE-CROP Check: crop_rect=%s, initial_img_array shape=%s"  # noqa: B950
             )  # DEBUG LOG
             if crop_rect:
                 LOGGER.debug(
-                    f"INSIDE CROP BLOCK: Applying crop {crop_rect} to preview for {image_path.name}"
+                    "INSIDE CROP BLOCK: Applying crop %s to preview for %s"
                 )  # DEBUG LOG
                 try:
                     # Create a temporary ImageData for cropping API
                     LOGGER.debug(
-                        f"BEFORE CROP: initial_img_array shape={initial_img_array.shape if initial_img_array is not None else 'None'}"  # noqa: B950
+                        "BEFORE CROP: initial_img_array shape=%s"  # noqa: B950
                     )  # DEBUG LOG
                     temp_image_data_for_crop = ImageData(
                         image_data=initial_img_array,
@@ -2791,21 +2735,19 @@ class MainWindow(QWidget):
                         elif isinstance(cropped_image_data.image_data, np.ndarray):
                             final_img_array = cropped_image_data.image_data
                         LOGGER.debug(
-                            f"AFTER CROP (Success): final_img_array shape={final_img_array.shape if final_img_array is not None else 'None'}"  # noqa: B950
+                            "AFTER CROP (Success): final_img_array shape=%s"  # noqa: B950
                         )  # DEBUG LOG
                     else:
                         LOGGER.warning(
                             "Cropping returned no data, using uncropped image."
                         )
                         LOGGER.debug(
-                            f"AFTER CROP (No Data): final_img_array shape={final_img_array.shape if final_img_array is not None else 'None'}"  # noqa: B950
+                            "AFTER CROP (No Data): final_img_array shape=%s"  # noqa: B950
                         )  # DEBUG LOG (still uncropped)
                 except Exception as e_crop:
-                    LOGGER.exception(
-                        f"Error during crop processing for preview {image_path.name}: {e_crop}"
-                    )
+                    LOGGER.exception("Error during crop processing for preview %s: %s")
                     LOGGER.debug(
-                        f"AFTER CROP (Exception): final_img_array shape={final_img_array.shape if final_img_array is not None else 'None'}"  # noqa: B950
+                        "AFTER CROP (Exception): final_img_array shape=%s"  # noqa: B950
                     )  # DEBUG LOG (still uncropped)
                     # If cropping fails, final_img_array remains the uncropped version
 
@@ -2834,9 +2776,7 @@ class MainWindow(QWidget):
                     "Successfully converted final NumPy array to QImage and stored in label.processed_image"  # noqa: B950
                 )
             except Exception as conversion_err:
-                LOGGER.exception(
-                    f"Failed converting final NumPy array to QImage: {conversion_err}"
-                )
+                LOGGER.exception("Failed converting final NumPy array to QImage: %s")
                 # If final conversion fails, maybe try using the uncropped full_res_qimage?
                 # For now, let's return None to indicate failure.
                 return None
@@ -2850,9 +2790,9 @@ class MainWindow(QWidget):
                     target_size = target_label.size()
                 if target_size.width() <= 0 or target_size.height() <= 0:
                     target_size = QSize(100, 100)
-                LOGGER.debug(f"Target label size: {target_size}")
+                LOGGER.debug("Target label size: %s", target_size)
             except (RuntimeError, AttributeError) as e:
-                LOGGER.warning(f"Could not get target label size: {e}, using default.")
+                LOGGER.warning("Could not get target label size: %s, using default.", e)
 
             scaled_img = final_q_image.scaled(
                 target_size,
@@ -2899,17 +2839,13 @@ class MainWindow(QWidget):
                     painter.end()
                     LOGGER.debug("Sanchez warning drawn")
                 except Exception as paint_error:
-                    LOGGER.error(f"Failed to draw Sanchez warning: {paint_error}")
+                    LOGGER.error("Failed to draw Sanchez warning: %s", paint_error)
 
-            LOGGER.debug(
-                f"Preview processing complete for {image_path}, returning pixmap."
-            )
+            LOGGER.debug("Preview processing complete for %s, returning pixmap.")
             return pixmap
 
         except Exception as e:
-            LOGGER.exception(
-                f"Unhandled error processing preview for {image_path}: {e}"
-            )
+            LOGGER.exception("Unhandled error processing preview for %s: %s")
             try:
                 # Ensure label state is cleared on error
                 if hasattr(target_label, "file_path"):
@@ -2934,7 +2870,7 @@ class MainWindow(QWidget):
                     self.main_tab.first_frame_label.file_path = None
                     self.main_tab.first_frame_label.processed_image = None
                 except (RuntimeError, AttributeError) as e:
-                    LOGGER.warning(f"Error clearing first frame label: {e}")
+                    LOGGER.warning("Error clearing first frame label: %s", e)
 
             # Clear middle frame
             if (
@@ -2947,7 +2883,7 @@ class MainWindow(QWidget):
                     self.main_tab.middle_frame_label.file_path = None
                     self.main_tab.middle_frame_label.processed_image = None
                 except (RuntimeError, AttributeError) as e:
-                    LOGGER.warning(f"Error clearing middle frame label: {e}")
+                    LOGGER.warning("Error clearing middle frame label: %s", e)
 
             # Clear last frame
             if (
@@ -2960,14 +2896,14 @@ class MainWindow(QWidget):
                     self.main_tab.last_frame_label.file_path = None
                     self.main_tab.last_frame_label.processed_image = None
                 except (RuntimeError, AttributeError) as e:
-                    LOGGER.warning(f"Error clearing last frame label: {e}")
+                    LOGGER.warning("Error clearing last frame label: %s", e)
 
         except Exception as e:
-            LOGGER.warning(f"Error in _clear_preview_labels: {e}")
+            LOGGER.warning("Error in _clear_preview_labels: %s", e)
 
     def _update_previews(self) -> None:
         LOGGER.debug(
-            f"Entering _update_previews. Current crop_rect: {self.current_crop_rect}, Sanchez enabled: {self.main_tab.sanchez_false_colour_checkbox.isChecked()}"  # noqa: B950
+            "Entering _update_previews. Current crop_rect: %s, Sanchez enabled: %s"
         )
         """Updates the preview images for first, middle, and last frames."""
         # Move log outside try block to ensure it's always printed if method is called
@@ -2982,7 +2918,7 @@ class MainWindow(QWidget):
                 self._clear_preview_labels()
                 return
 
-            LOGGER.debug(f"Input directory: {self.in_dir}")
+            LOGGER.debug("Input directory: %s", self.in_dir)
             # Get sorted list of image files
             image_files = sorted(
                 [
@@ -3007,7 +2943,7 @@ class MainWindow(QWidget):
 
             # Load, process, and scale previews using the new processors
             try:
-                LOGGER.debug(f"Loading first frame preview: {first_frame_path.name}")
+                LOGGER.debug("Loading first frame preview: %s", first_frame_path.name)
                 first_pixmap = self._load_process_scale_preview(
                     first_frame_path,
                     self.main_tab.first_frame_label,
@@ -3041,9 +2977,7 @@ class MainWindow(QWidget):
             # Handle middle frame if available
             if middle_frame_path:
                 try:
-                    LOGGER.debug(
-                        f"Loading middle frame preview: {middle_frame_path.name}"
-                    )
+                    LOGGER.debug("Loading middle frame preview: %s")
                     middle_pixmap = self._load_process_scale_preview(
                         middle_frame_path,
                         self.main_tab.middle_frame_label,
@@ -3350,7 +3284,7 @@ class MainWindow(QWidget):
                     .strip(") ")
                 )
                 LOGGER.warning(
-                    f"MainTab current_model_key was empty, using fallback from text: {model_key}"
+                    "MainTab current_model_key was empty, using fallback from text: %s"
                 )
 
             # Sanchez settings
@@ -3536,18 +3470,14 @@ class MainWindow(QWidget):
                         "tiling", False
                     )  # Access capability from dict
                 ):
-                    LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support tiling."
-                    )
+                    LOGGER.warning("Selected model '%s' does not support tiling.")
                 if (
                     self.main_tab.rife_uhd_checkbox.isChecked()
                     and not capability_detector.capabilities.get(
                         "uhd", False
                     )  # Access capability from dict
                 ):
-                    LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support UHD mode."
-                    )
+                    LOGGER.warning("Selected model '%s' does not support UHD mode.")
                 if (
                     self.main_tab.rife_thread_spec_edit.text() != "1:2:2"
                     and not capability_detector.capabilities.get(
@@ -3555,7 +3485,7 @@ class MainWindow(QWidget):
                     )  # Access capability from dict
                 ):
                     LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support custom thread specification."  # noqa: B950
+                        "Selected model '%s' does not support custom thread specification."  # noqa: B950
                     )
                 if (
                     self.main_tab.rife_tta_spatial_checkbox.isChecked()
@@ -3563,18 +3493,14 @@ class MainWindow(QWidget):
                         "tta_spatial", False
                     )  # Access capability from dict
                 ):
-                    LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support spatial TTA."
-                    )
+                    LOGGER.warning("Selected model '%s' does not support spatial TTA.")
                 if (
                     self.main_tab.rife_tta_temporal_checkbox.isChecked()
                     and not capability_detector.capabilities.get(
                         "tta_temporal", False
                     )  # Access capability from dict
                 ):
-                    LOGGER.warning(
-                        f"Selected model '{self.current_model_key}' does not support temporal TTA."
-                    )
+                    LOGGER.warning("Selected model '%s' does not support temporal TTA.")
 
             except FileNotFoundError:
                 # If RIFE executable is not found for the selected model, disable all RIFE options
@@ -3585,12 +3511,10 @@ class MainWindow(QWidget):
                 self.main_tab.rife_tta_spatial_checkbox.setEnabled(False)
                 self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
                 LOGGER.warning(
-                    f"RIFE executable not found for model '{self.current_model_key}'. RIFE options disabled."  # noqa: B950
+                    "RIFE executable not found for model '%s'. RIFE options disabled."  # noqa: B950
                 )
             except Exception as e:
-                LOGGER.error(
-                    f"Error checking RIFE capabilities for model '{self.current_model_key}': {e}"
-                )
+                LOGGER.error("Error checking RIFE capabilities for model '%s': %s")
                 # Disable options on error
                 self.main_tab.rife_tile_checkbox.setEnabled(False)
                 self.main_tab.rife_tile_size_spinbox.setEnabled(False)
@@ -3894,9 +3818,7 @@ def main() -> None:
     app.setOrganizationName("GOES_VFI")
 
     # Log QSettings details to help diagnose where settings will be stored
-    LOGGER.debug(
-        f"QSettings will be stored at: {QSettings('GOES_VFI', 'GOES_VFI_App').fileName()}"
-    )
+    LOGGER.debug("QSettings will be stored at: %s")
 
     main_window = MainWindow(debug_mode=args.debug)
     main_window.show()
