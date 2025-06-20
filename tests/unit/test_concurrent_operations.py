@@ -411,7 +411,7 @@ class TestConcurrentOperations:
     @pytest.mark.asyncio
     async def test_atomic_operations_in_cache(self, thread_safe_db):
         """Test atomic operations in cache database."""
-        thread_safe_db.initialize()
+        # Database is initialized in constructor
 
         # Test atomic increment operation
         counter_key = "download_counter"
