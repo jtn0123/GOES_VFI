@@ -4,6 +4,7 @@ Test runner for CI that excludes GUI tests on non-Linux platforms.
 This avoids Qt-related crashes on macOS and Windows in CI.
 """
 
+import argparse
 import os
 import sys
 import unittest
@@ -69,6 +70,17 @@ NON_GUI_TESTS = [
 
 def main():
     """Run non-GUI tests suitable for CI environments."""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Run non-GUI tests for CI")
+    parser.add_argument(
+        "--quiet", "-q", action="store_true", help="Quiet mode - minimal output"
+    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose mode")
+    parser.add_argument(
+        "--maxfail", type=int, default=0, help="Stop after N failures (0 = no limit)"
+    )
+    args = parser.parse_args()
+
     # Set environment variable to indicate we're in CI
     os.environ["CI"] = "true"
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
@@ -78,21 +90,84 @@ def main():
     suite = unittest.TestSuite()
 
     tests_loaded = 0
+    failed_modules = []
+
+    if not args.quiet:
+        print("Loading test modules...")
     for test_module in NON_GUI_TESTS:
         try:
             module_suite = loader.loadTestsFromName(test_module)
             if module_suite.countTestCases() > 0:
                 suite.addTest(module_suite)
                 tests_loaded += module_suite.countTestCases()
-                print(f"✅ Loaded {test_module}: {module_suite.countTestCases()} tests")
+                if not args.quiet:
+                    print(
+                        f"✅ Loaded {test_module}: {module_suite.countTestCases()} tests"
+                    )
         except Exception as e:
-            print(f"❌ Failed to load {test_module}: {e}")
+            failed_modules.append((test_module, str(e)))
+            if not args.quiet:
+                print(f"❌ Failed to load {test_module}: {e}")
 
-    print(f"\nTotal tests loaded: {tests_loaded}")
+    if not args.quiet:
+        print(f"\nTotal tests loaded: {tests_loaded}")
+        if failed_modules:
+            print(f"Failed to load {len(failed_modules)} modules")
+
+    # Determine verbosity
+    if args.quiet:
+        verbosity = 0
+    elif args.verbose:
+        verbosity = 2
+    else:
+        verbosity = 1
+
+    # Create custom test runner that can stop after N failures
+    class StoppingTextTestRunner(unittest.TextTestRunner):
+        def __init__(self, maxfail=0, **kwargs):
+            super().__init__(**kwargs)
+            self.maxfail = maxfail
+            self.failures_count = 0
+
+        def run(self, test):
+            result = super().run(test)
+            # Count failures and errors
+            self.failures_count = len(result.failures) + len(result.errors)
+            return result
 
     # Run tests
-    runner = unittest.TextTestRunner(verbosity=2)
+    runner = StoppingTextTestRunner(
+        verbosity=verbosity,
+        maxfail=args.maxfail,
+        stream=sys.stdout if not args.quiet else open(os.devnull, "w"),
+    )
+
     result = runner.run(suite)
+
+    # Print summary in quiet mode
+    if args.quiet:
+        total = result.testsRun
+        failures = len(result.failures)
+        errors = len(result.errors)
+        skipped = len(result.skipped)
+
+        if result.wasSuccessful():
+            print(f"✅ All {total} tests passed")
+        else:
+            print(
+                f"❌ Tests failed: {total} run, {failures} failures, {errors} errors, {skipped} skipped"
+            )
+
+            # Show first few failures
+            if failures > 0:
+                print("\nFirst failures:")
+                for test, traceback in result.failures[:3]:
+                    print(f"  - {test}: {traceback.split(chr(10))[-2]}")
+
+            if errors > 0:
+                print("\nFirst errors:")
+                for test, traceback in result.errors[:3]:
+                    print(f"  - {test}: {traceback.split(chr(10))[-2]}")
 
     # Exit with appropriate code
     sys.exit(0 if result.wasSuccessful() else 1)

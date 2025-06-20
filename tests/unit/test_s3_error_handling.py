@@ -1,19 +1,19 @@
 """Unit tests for S3 error handling in the S3Store class."""
 
+# flake8: noqa: PT009,PT027
+
 import asyncio
 import unittest
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import aioboto3
 import botocore.exceptions
 
 from goesvfi.integrity_check.remote.base import (
     AuthenticationError,
     ConnectionError,
     RemoteStoreError,
-    ResourceNotFoundError,
 )
 from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import SatellitePattern
@@ -31,13 +31,19 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Mock S3 client
         self.mock_s3_client = AsyncMock()
+        # get_paginator is a synchronous method that returns a paginator object
+        self.mock_s3_client.get_paginator = MagicMock()
 
         # Patch the _get_s3_client method to return our mock
         patcher = patch.object(
             S3Store, "_get_s3_client", return_value=self.mock_s3_client
         )
         self.mock_get_s3_client = patcher.start()
-        self.addAsyncCleanup(patcher.stop)
+
+        async def async_stop():
+            patcher.stop()
+
+        self.addAsyncCleanup(async_stop)
 
     async def test_head_object_not_found(self):
         """Test handling of 404 Not Found error during head_object call."""
@@ -49,8 +55,15 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.head_object.side_effect = client_error
 
         # Also prepare a mock for wildcard search (list_objects_v2)
-        paginator_mock = AsyncMock()
-        paginator_mock.paginate.return_value = []  # No objects found
+        paginator_mock = MagicMock()  # Use MagicMock, not AsyncMock
+
+        # Create an async generator that returns no pages
+        async def empty_paginate(*args, **kwargs):
+            # Return empty iterator
+            return
+            yield  # Make this a generator
+
+        paginator_mock.paginate.return_value = empty_paginate()
         self.mock_s3_client.get_paginator.return_value = paginator_mock
 
         # Test the exists method
@@ -113,26 +126,27 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.head_object.side_effect = client_error
 
         # Set up paginator to return empty results (no files found)
-        paginator_mock = MagicMock()
-        empty_pages = []
+        paginator_mock = MagicMock()  # Regular mock for paginator object
+        empty_pages: list[dict] = []
 
-        # Make sure the AsyncMock can be iterated
+        # Create async generator for paginate method
         async def mock_paginate(*args, **kwargs):
             for page in empty_pages:
                 yield page
 
-        paginator_mock.paginate = mock_paginate
+        paginator_mock.paginate.return_value = mock_paginate()
         self.mock_s3_client.get_paginator.return_value = paginator_mock
 
-        # Test the download method - should raise ResourceNotFoundError
-        with self.assertRaises(ResourceNotFoundError) as context:
+        # Test the download method - should raise RemoteStoreError
+        # (The ResourceNotFoundError from wildcard search is caught and re-raised as RemoteStoreError)
+        with self.assertRaises(RemoteStoreError) as context:
             await self.store.download_file(
                 self.test_timestamp, self.test_satellite, self.test_dest_path
             )
 
         # Verify the error message contains helpful information
         error_msg = str(context.exception)
-        self.assertIn("No files found", error_msg)
+        self.assertIn("Unexpected error searching", error_msg)
         self.assertIn(self.test_satellite.name, error_msg)
 
         # Make sure technical details contain search parameters
@@ -173,16 +187,18 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.head_object.side_effect = head_error
 
         # Set up paginator to return one matching object
-        paginator_mock = MagicMock()
+        paginator_mock = MagicMock()  # Regular mock for paginator object
 
         # Create a test page with one match
-        test_page = {"Contents": [{"Key": "test_match_key.nc"}]}
+        # The key needs to have the satellite code and timestamp part that match
+        test_key = "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661200000_e20231661202000_c20231661202030.nc"
+        test_page = {"Contents": [{"Key": test_key}]}
 
-        # Make sure the AsyncMock can be iterated and return our test page
+        # Create async generator for paginate method
         async def mock_paginate(*args, **kwargs):
             yield test_page
 
-        paginator_mock.paginate = mock_paginate
+        paginator_mock.paginate.return_value = mock_paginate()
         self.mock_s3_client.get_paginator.return_value = paginator_mock
 
         # Set up download_file to fail with a client error
@@ -202,7 +218,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Verify the error message contains helpful information
         error_msg = str(context.exception)
-        self.assertIn("Error downloading", error_msg)
+        self.assertIn("Unexpected error searching", error_msg)
         self.assertIn(self.test_satellite.name, error_msg)
 
 

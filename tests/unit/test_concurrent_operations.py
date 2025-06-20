@@ -5,13 +5,12 @@ in concurrent satellite data processing operations.
 """
 
 import asyncio
-import sqlite3
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -73,27 +72,33 @@ class TestConcurrentOperations:
     @pytest.mark.asyncio
     async def test_concurrent_cache_db_operations(self, thread_safe_db):
         """Test concurrent read/write operations on cache database."""
-        # Initialize database
-        thread_safe_db.initialize()
+        # Database is initialized in constructor
 
-        # Test data
+        # Test data - use timestamps and satellite pattern
+        from goesvfi.integrity_check.time_index import SatellitePattern
+
+        satellite = SatellitePattern.GOES_18
+        base_time = datetime.now(timezone.utc)
+
         test_entries = [
-            (f"file_{i}.nc", f"hash_{i}", i * 1000, datetime.now(timezone.utc))
+            (base_time + timedelta(minutes=i * 10), f"/path/to/file_{i}.nc", True)
             for i in range(100)
         ]
 
         # Concurrent write operations
         async def write_entries(entries):
-            for filepath, file_hash, size, timestamp in entries:
-                thread_safe_db.add_entry(filepath, file_hash, size, timestamp)
+            for timestamp, filepath, found in entries:
+                await thread_safe_db.add_timestamp(
+                    timestamp, satellite, filepath, found
+                )
                 await asyncio.sleep(0.001)  # Simulate work
 
         # Concurrent read operations
-        async def read_entries(filepaths):
+        async def read_entries(timestamps):
             results = []
-            for filepath in filepaths:
-                entry = thread_safe_db.get_entry(filepath)
-                results.append(entry)
+            for timestamp in timestamps:
+                exists = await thread_safe_db.timestamp_exists(timestamp, satellite)
+                results.append(exists)
                 await asyncio.sleep(0.001)  # Simulate work
             return results
 
@@ -108,10 +113,10 @@ class TestConcurrentOperations:
         await asyncio.gather(*write_tasks)
 
         # Now read concurrently
-        all_filepaths = [e[0] for e in test_entries]
+        all_timestamps = [e[0] for e in test_entries]
         read_tasks = [
-            read_entries(all_filepaths[:mid]),
-            read_entries(all_filepaths[mid:]),
+            read_entries(all_timestamps[:mid]),
+            read_entries(all_timestamps[mid:]),
         ]
 
         read_results = await asyncio.gather(*read_tasks)
@@ -126,24 +131,24 @@ class TestConcurrentOperations:
     def test_thread_pool_cache_operations(self, thread_safe_db):
         pass
         """Test cache operations from multiple threads."""
-        thread_safe_db.initialize()
+        # Database is initialized in constructor
 
         # Operations to run in threads
         def write_operation(thread_id, count):
-            for i in range(count):
-                filepath = f"thread_{thread_id}_file_{i}.nc"
+            for _i in range(count):
+                filepath = f"thread_{thread_id}_file_{_i}.nc"
                 thread_safe_db.add_entry(
                     filepath=filepath,
-                    file_hash=f"hash_{thread_id}_{i}",
-                    file_size=i * 1000,
+                    file_hash=f"hash_{thread_id}_{_i}",
+                    file_size=_i * 1000,
                     timestamp=datetime.now(timezone.utc),
                 )
                 time.sleep(0.001)  # Simulate work
 
         def read_operation(thread_id, count):
             results = []
-            for i in range(count):
-                filepath = f"thread_{thread_id}_file_{i}.nc"
+            for _i in range(count):
+                filepath = f"thread_{thread_id}_file_{_i}.nc"
                 entry = thread_safe_db.get_entry(filepath)
                 results.append(entry)
                 time.sleep(0.001)  # Simulate work

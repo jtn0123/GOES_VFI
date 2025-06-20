@@ -215,12 +215,11 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
                         missing_timestamps.add(ts)
                 current += timedelta(hours=1)
 
-            # Call fetch_missing_files directly with the product type
+            # Call fetch_missing_files directly (stub implementation)
             await self.manager.fetch_missing_files(
-                missing_timestamps=missing_timestamps,
+                missing_timestamps=list(missing_timestamps),
                 satellite=self.satellite,
-                product_type=product_type,
-                band=13,
+                destination_dir=self.base_dir,
             )
 
             return len(missing_timestamps)
