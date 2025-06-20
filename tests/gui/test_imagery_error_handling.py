@@ -14,8 +14,8 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from PIL import Image, ImageDraw, ImageFont
-from PyQt6.QtCore import QRect, Qt, QTimer
-from PyQt6.QtGui import QColor, QFont, QImage, QPainter, QPixmap
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QFont, QImage, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -30,15 +30,14 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+# Import the implementations
+from goesvfi.integrity_check.enhanced_imagery_tab import EnhancedGOESImageryTab
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-# Import the two implementations we want to compare
-from goesvfi.integrity_check.enhanced_imagery_tab import EnhancedGOESImageryTab
-from goesvfi.integrity_check.sample_processor import SampleProcessor
 
 
 # Create mock image for testing - improved version
@@ -338,7 +337,7 @@ class ErrorDisplayTab(QWidget):
         self.preview_label.setPixmap(pixmap)
 
 
-class TestWindow(QMainWindow):
+class MockWindow(QMainWindow):
     """Test window for GOES imagery error handling"""
 
     def __init__(self):
@@ -404,7 +403,7 @@ def main():
 
     try:
         # Create and show the window
-        window = TestWindow()
+        window = MockWindow()
         window.show()
 
         # Run the application

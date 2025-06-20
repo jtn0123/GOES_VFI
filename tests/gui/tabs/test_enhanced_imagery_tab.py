@@ -7,14 +7,9 @@ visualization features without running the full application.
 """
 
 import logging
-import os
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
-
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
 from goesvfi.integrity_check.enhanced_imagery_tab import EnhancedGOESImageryTab
@@ -25,7 +20,7 @@ logging.basicConfig(
 )
 
 
-class TestWindow(QMainWindow):
+class MockWindow(QMainWindow):
     """Test window for the enhanced GOES imagery tab."""
 
     def __init__(self):
@@ -75,7 +70,7 @@ def main():
     app.setStyle("Fusion")
 
     # Create and show the window
-    window = TestWindow()
+    window = MockWindow()
     window.show()
 
     # Run the application

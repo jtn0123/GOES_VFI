@@ -6,9 +6,7 @@ This script demonstrates the UI integration for GOES satellite imagery
 without requiring actual S3 or web requests.
 """
 
-import os
 import sys
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 # Patch boto3 and botocore before importing the module
@@ -22,7 +20,7 @@ with (
     from goesvfi.integrity_check.goes_imagery_tab import GOESImageryTab
 
 
-class TestWindow(QMainWindow):
+class MockWindow(QMainWindow):
     """Test window for the GOES Imagery Tab."""
 
     def __init__(self):
@@ -54,7 +52,7 @@ def main():
     app = QApplication(sys.argv)
 
     # Create window
-    window = TestWindow()
+    window = MockWindow()
     window.show()
 
     # Run application
