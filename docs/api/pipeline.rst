@@ -116,7 +116,7 @@ Integrates with the Sanchez tool for false-color satellite image processing.
 Image Processing Interfaces
 ---------------------------
 
-.. automodule:: image_processing_interfaces
+.. automodule:: goesvfi.pipeline.image_processing_interfaces
    :members:
    :show-inheritance:
 

@@ -1,6 +1,5 @@
 """Sphinx configuration file for GOES_VFI documentation."""
 
-import os
 import sys
 from pathlib import Path
 
@@ -146,8 +145,9 @@ todo_include_todos = True
 
 # -- Options for autosummary ------------------------------------------------
 
-autosummary_generate = True
-autosummary_imported_members = True
+# Temporarily disable autosummary until modules are fixed
+# autosummary_generate = True
+# autosummary_imported_members = True
 
 # -- Custom configuration ---------------------------------------------------
 

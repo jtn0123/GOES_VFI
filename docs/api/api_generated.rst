@@ -36,11 +36,9 @@ Integrity Check
 .. toctree::
    :maxdepth: 1
 
-   integrity_check_auto_detection
    integrity_check_background_worker
    integrity_check_cache_db
    integrity_check_combined_tab
-   integrity_check_combined_tab_refactored
    integrity_check_dark_mode_style
    integrity_check_date_range_selector
    integrity_check_enhanced_gui_tab
@@ -53,10 +51,8 @@ Integrity Check
    integrity_check_goes_imagery
    integrity_check_goes_imagery_tab
    integrity_check_gui_tab
-   integrity_check_optimized_dark_mode
    integrity_check_optimized_timeline_tab
    integrity_check_reconcile_manager
-   integrity_check_reconcile_manager_refactored
    integrity_check_reconciler
    integrity_check_remote_base
    integrity_check_remote_cdn_store
@@ -68,14 +64,10 @@ Integrity Check
    integrity_check_sample_processor
    integrity_check_satellite_integrity_tab_group
    integrity_check_shared_components
-   integrity_check_signal_manager
-   integrity_check_standardized_combined_tab
-   integrity_check_tasks
    integrity_check_thread_cache_db
    integrity_check_time_index
    integrity_check_time_index_refactored
    integrity_check_timeline_visualization
-   integrity_check_user_feedback
    integrity_check_view_model
    integrity_check_visual_date_picker
    integrity_check_visualization_manager
@@ -116,18 +108,11 @@ Utilities
 
    utils_config
    utils_date_utils
-   utils_debug_mode
-   utils_enhanced_log
    utils_gui_helpers
    utils_log
-   utils_logging_integration
    utils_memory_manager
-   utils_operation_history
-   utils_resource_manager
    utils_rife_analyzer
    utils_security
-   utils_ui_enhancements
-   utils_ui_security_indicators
 
 
 Sanchez Integration
@@ -162,7 +147,6 @@ Other
    file_sorter_sorter
    file_sorter_sorter_refactored
    file_sorter_view_model
-   run_vfi
    view_models_main_window_view_model
    view_models_processing_view_model
 

@@ -20,7 +20,7 @@ The utilities module contains essential functionality for:
 Configuration
 -------------
 
-.. automodule:: config
+.. automodule:: goesvfi.utils.config
    :members:
    :undoc-members:
    :show-inheritance:
@@ -29,10 +29,10 @@ The configuration module manages application settings and provides access to con
 
 **Key Functions:**
 
-.. autofunction:: config.get_output_dir
-.. autofunction:: config.get_cache_dir
-.. autofunction:: config.get_available_rife_models
-.. autofunction:: config.find_rife_executable
+.. autofunction:: goesvfi.utils.config.get_output_dir
+.. autofunction:: goesvfi.utils.config.get_cache_dir
+.. autofunction:: goesvfi.utils.config.get_available_rife_models
+.. autofunction:: goesvfi.utils.config.find_rife_executable
 
 **Configuration Example:**
 

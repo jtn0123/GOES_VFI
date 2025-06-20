@@ -64,27 +64,12 @@ Getting Started
 
    installation
    quickstart
-   user_guide/index
-   tutorials/index
 
 .. toctree::
    :maxdepth: 2
    :caption: API Reference
 
    api/index
-   api/pipeline
-   api/integrity_check
-   api/gui
-   api/utils
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Developer Guide
-
-   development/index
-   development/contributing
-   development/architecture
-   development/testing
 
 .. toctree::
    :maxdepth: 1
