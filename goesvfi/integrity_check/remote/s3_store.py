@@ -17,7 +17,7 @@ import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type, TypeVar, Union
 
 import aioboto3  # type: ignore
 import botocore.exceptions
@@ -894,7 +894,7 @@ class S3Store(RemoteStore):
                                 # Add network diagnostics to help troubleshoot
                                 network_info = get_system_network_info()
 
-                                raise ConnectionError(
+                                raise RemoteConnectionError(
                                     message=error_msg,
                                     technical_details=technical_details,
                                     error_code="CONN-TIMEOUT",
@@ -947,7 +947,7 @@ class S3Store(RemoteStore):
                                 # Add network diagnostics to help troubleshoot
                                 network_info = get_system_network_info()
 
-                                raise ConnectionError(
+                                raise RemoteConnectionError(
                                     message="Could not connect to AWS S3 service - check your internet connection",
                                     technical_details=f"Connection error after {retry_count} attempts with exponential backoff: {e}",
                                     original_exception=e,
@@ -1341,7 +1341,25 @@ class S3Store(RemoteStore):
                             exception=download_error,
                             error_msg=custom_msg,
                         )
-                    elif "timeout" in str(download_error).lower():
+                    elif isinstance(download_error, PermissionError):
+                        error_type = "auth"
+                        technical_details = (
+                            f"Permission denied while downloading: s3://{bucket}/{key}\n"
+                            f"Destination: {dest_path}\n"
+                            f"Download time: {download_time:.2f}s\n"
+                            f"Timestamp details: Year={ts.year}, DOY={ts.strftime('%j')}, "
+                            f"Hour={ts.strftime('%H')}, Minute={ts.strftime('%M')}\n"
+                            f"Check file system permissions at the destination.\n"
+                        )
+                        error = AuthenticationError(
+                            message=f"Permission error downloading {satellite.name} data",
+                            technical_details=technical_details,
+                            original_exception=download_error,
+                        )
+                    elif (
+                        isinstance(download_error, (asyncio.TimeoutError, TimeoutError))
+                        or "timeout" in str(download_error).lower()
+                    ):
                         error_type = "timeout"
                         technical_details = (
                             f"Timeout while downloading: s3://{bucket}/{key}\n"
@@ -1673,7 +1691,27 @@ class S3Store(RemoteStore):
                                 exception=download_error,
                                 error_msg=custom_msg,
                             )
-                        elif "timeout" in str(download_error).lower():
+                        elif isinstance(download_error, PermissionError):
+                            error_type = "auth"
+                            technical_details = (
+                                f"Permission denied while downloading: s3://{bucket}/{best_match_key}\n"
+                                f"Destination: {dest_path}\n"
+                                f"Download time: {download_time:.2f}s\n"
+                                f"Timestamp details: Year={ts.year}, DOY={ts.strftime('%j')}, "
+                                f"Hour={ts.strftime('%H')}, Minute={ts.strftime('%M')}\n"
+                                f"Check file system permissions at the destination.\n"
+                            )
+                            wildcard_error = AuthenticationError(
+                                message=f"Permission error downloading {satellite.name} data",
+                                technical_details=technical_details,
+                                original_exception=download_error,
+                            )
+                        elif (
+                            isinstance(
+                                download_error, (asyncio.TimeoutError, TimeoutError)
+                            )
+                            or "timeout" in str(download_error).lower()
+                        ):
                             error_type = "timeout"
                             technical_details = (
                                 f"Timeout while downloading: s3://{bucket}/{best_match_key}\n"
@@ -1952,8 +1990,8 @@ class S3Store(RemoteStore):
         timestamp: datetime,
         satellite: SatellitePattern,
         destination: Path,
-        progress_callback: Optional[callable] = None,
-        cancel_check: Optional[callable] = None,
+        progress_callback: Optional[Callable] = None,
+        cancel_check: Optional[Callable] = None,
     ) -> Path:
         """Download a file for the given timestamp and satellite.
 
