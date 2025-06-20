@@ -33,77 +33,68 @@ PRODUCT_TYPES = [
 
 
 async def check_hour(bucket, product_type, hour, band=13):
-    pass
+    """Check if files exist for a specific hour."""
+    # Format hour as 2 digits
+    hour_str = f"{hour:02d}"
 
+    # Generate the prefix
+    prefix = f"{product_type}/{TEST_DATE}/{hour_str}/"
 
-"""Check if files exist for a specific hour."""
-# Format hour as 2 digits
-hour_str = f"{hour:02d}"
+    # List files
+    response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
 
-# Generate the prefix
-prefix = f"{product_type}/{TEST_DATE}/{hour_str}/"
+    if "Contents" in response:
+        # Filter for the specified band
+        band_str = f"C{band:02d}"
+        band_files = [
+            obj["Key"]
+            for obj in response.get("Contents", [])
+            if band_str in obj["Key"] and obj["Key"].endswith(".nc")
+        ]
 
-# List files
-response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+        return len(band_files)
 
-if "Contents" in response:
-    pass
-# Filter for the specified band
-band_str = f"C{band:02d}"
-band_files = [
-    obj["Key"]
-    for obj in response.get("Contents", [])
-    if band_str in obj["Key"] and obj["Key"].endswith(".nc")
-]
-
-return len(band_files)
-
-return 0
+    return 0
 
 
 async def scan_hours():
-    pass
+    """Scan through multiple hours and product types."""
+    bucket = "noaa - goes18"
+    hours = range(24)  # 0 - 23
 
+    logger.info(f"Scanning through all hours for {TEST_DATE} in {bucket}")
 
-"""Scan through multiple hours and product types."""
-bucket = "noaa - goes18"
-hours = range(24)  # 0 - 23
+    # Print header
+    header = "Hour (UTC) | " + " | ".join(
+        f"{product.split('-')[-1]}" for product in PRODUCT_TYPES
+    )
+    logger.info("-" * len(header))
+    logger.info(header)
+    logger.info("-" * len(header))
 
-logger.info(f"Scanning through all hours for {TEST_DATE} in {bucket}")
+    # Check each hour
+    for hour in hours:
+        results = []
 
-# Print header
-header = "Hour (UTC) | " + " | ".join(
-    f"{product.split('-')[-1]}" for product in PRODUCT_TYPES
-)
-logger.info("-" * len(header))
-logger.info(header)
-logger.info("-" * len(header))
+        # Check each product type
+        for product_type in PRODUCT_TYPES:
+            file_count = await check_hour(bucket, product_type, hour)
+            results.append(file_count)
 
-# Check each hour
-for hour in hours:
-    results = []
+        # Print results for this hour
+        time_str = f"{hour:02d}:00 UTC"
+        local_time = f"{(hour - 7) % 24:02d}:00 PDT"  # Convert to Pacific time
 
-# Check each product type
-for product_type in PRODUCT_TYPES:
-    file_count = await check_hour(bucket, product_type, hour)
-results.append(file_count)
+        # Highlight hours with data
+        if any(count > 0 for count in results):
+            result_line = f"{hour:02d}:00 ({local_time}) | " + " | ".join(
+                f"{count:^7}" for count in results
+            )
+            logger.info(result_line)
 
-# Print results for this hour
-time_str = f"{hour:02d}:00 UTC"
-local_time = f"{(hour - 7) % 24:02d}:00 PDT"  # Convert to Pacific time
-
-# Highlight hours with data
-if any(count > 0 for count in results):
-    pass
-result_line = f"{hour:02d}:00 ({local_time}) | " + " | ".join(
-    f"{count:^7}" for count in results
-)
-logger.info(result_line)
-
-logger.info("-" * len(header))
-logger.info("Completed scan of all hours")
+    logger.info("-" * len(header))
+    logger.info("Completed scan of all hours")
 
 
 if __name__ == "__main__":
-    pass
-asyncio.run(scan_hours())
+    asyncio.run(scan_hours())

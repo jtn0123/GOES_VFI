@@ -1,52 +1,19 @@
 # TODO: PyQt6 main window implementation
-from __future__ import annotations
-
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple  # noqa: F401
-
-from goesvfi.date_sorter.gui_tab import DateSorterTab
-from goesvfi.date_sorter.sorter import DateSorter  # <-- Add Model import
-from goesvfi.file_sorter.gui_tab import FileSorterTab
-from goesvfi.file_sorter.sorter import FileSorter  # <-- Add Model import
-from goesvfi.gui_tabs.ffmpeg_settings_tab import (  # <-- Add new tab import
-    FFmpegSettingsTab,
-)
-from goesvfi.gui_tabs.main_tab import MainTab  # <-- Add new tab import
-from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab  # <-- Add new tab import
-from goesvfi.integrity_check.cache_db import CacheDB
-
-# Import the Combined tab with enhanced error handling
-from goesvfi.integrity_check.combined_tab import CombinedIntegrityAndImageryTab
-
-# Import Integrity Check components
-from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
-from goesvfi.integrity_check.reconciler import Reconciler
-from goesvfi.integrity_check.remote.cdn_store import CDNStore
-from goesvfi.integrity_check.remote.s3_store import S3Store
-from goesvfi.integrity_check.time_index import TimeIndex
-from goesvfi.pipeline.image_cropper import ImageCropper
-from goesvfi.pipeline.image_loader import ImageLoader
-from goesvfi.pipeline.image_processing_interfaces import ImageData
-from goesvfi.pipeline.sanchez_processor import SanchezProcessor
-from goesvfi.view_models.main_window_view_model import (  # <-- Add ViewModel import
-    MainWindowViewModel,
-)
-
 """
 GOES‑VFI PyQt6 GUI – v0.1
 Run with:  python -m goesvfi.gui
 """
+from __future__ import annotations
 
-import argparse  # <-- Import argparse
-
-# Import needed for pretty printing the dict
+import argparse
 import logging
-import os  # Import os for os.cpu_count()
-import re  # <-- Import re for regex
-import shutil  # Import shutil for file operations
+import os
+import re
+import shutil
 import sys
-import tempfile  # Import tempfile for temporary files handling
-from pathlib import Path  # Import Path for file path handling
+import tempfile
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple  # noqa: F401
 
 import numpy as np
 from PIL import Image
@@ -73,26 +40,34 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from goesvfi.pipeline.run_vfi import VfiWorker  # <-- ADDED IMPORT
-
-# Correct import for find_rife_executable
+from goesvfi.date_sorter.gui_tab import DateSorterTab
+from goesvfi.date_sorter.sorter import DateSorter
+from goesvfi.file_sorter.gui_tab import FileSorterTab
+from goesvfi.file_sorter.sorter import FileSorter
+from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab
+from goesvfi.gui_tabs.main_tab import MainTab
+from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab
+from goesvfi.integrity_check.cache_db import CacheDB
+from goesvfi.integrity_check.combined_tab import CombinedIntegrityAndImageryTab
+from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
+from goesvfi.integrity_check.reconciler import Reconciler
+from goesvfi.integrity_check.remote.cdn_store import CDNStore
+from goesvfi.integrity_check.remote.s3_store import S3Store
+from goesvfi.integrity_check.time_index import TimeIndex
+from goesvfi.pipeline.image_cropper import ImageCropper
+from goesvfi.pipeline.image_loader import ImageLoader
+from goesvfi.pipeline.image_processing_interfaces import ImageData
+from goesvfi.pipeline.run_vfi import VfiWorker
+from goesvfi.pipeline.sanchez_processor import SanchezProcessor
 from goesvfi.utils import config, log
 from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
-from goesvfi.utils.gui_helpers import (  # Import moved classes
+from goesvfi.utils.gui_helpers import (
     ClickableLabel,
     CropDialog,
     RifeCapabilityManager,
     ZoomDialog,
 )
-
-# <-- Import time for time.sleep
-
-
-LOGGER = log.get_logger(__name__)
-
-# from goesvfi.sanchez.runner import colourise  # Import Sanchez colourise function - REMOVED
-
-# Import the new image processor classes
+from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 
 LOGGER = log.get_logger(__name__)
 
@@ -119,7 +94,7 @@ class MainWindow(QWidget):
 
     def __init__(self, debug_mode: bool = False) -> None:
         # Removed log level setting here, it's handled in main()
-        LOGGER.debug(f"Entering MainWindow.__init__... debug_mode={debug_mode}")
+        LOGGER.debug("Entering MainWindow.__init__... debug_mode=%s", debug_mode)
         super().__init__()
         self.debug_mode = debug_mode
         self.setWindowTitle(self.tr("GOES-VFI"))
@@ -146,7 +121,7 @@ class MainWindow(QWidget):
         self.settings.setFallbacksEnabled(False)
 
         # Log where settings will be stored
-        LOGGER.debug(f"Settings will be stored at: {self.settings.fileName()}")
+        LOGGER.debug("Settings will be stored at: %s", self.settings.fileName())
         # ----------------
         # --- Models ---
         # Instantiate Models needed by ViewModels
@@ -508,7 +483,7 @@ class MainWindow(QWidget):
             self.main_tab.processing_started.connect(self._handle_processing)
             LOGGER.info("Successfully connected MainTab.processing_started signal")
         except Exception as e:
-            LOGGER.exception(f"Error connecting processing_started signal: {e}")
+            LOGGER.exception("Error connecting processing_started signal: %s", e)
 
         # Populate initial data
         self._populate_models()
@@ -543,7 +518,7 @@ class MainWindow(QWidget):
         try:
             # Always save as an absolute, resolved path for maximum compatibility
             in_dir_str = str(path.resolve())
-            LOGGER.debug(f"Saving input directory directly (absolute): {in_dir_str!r}")
+            LOGGER.debug("Saving input directory directly (absolute): %r", in_dir_str)
 
             # Log QSettings details to ensure settings are being saved to the right place
             org_name = self.settings.organizationName()
@@ -563,8 +538,12 @@ class MainWindow(QWidget):
             )
             if org_name != app_org or app_name != app_name_global:
                 LOGGER.error(
-                    f"QSettings mismatch during save! MainWindow: org={org_name}, app={app_name}, "
-                    + f"but Application: org={app_org}, app={app_name_global}"
+                    "QSettings mismatch during save! MainWindow: org=%s, app=%s, "
+                    "but Application: org=%s, app=%s",
+                    org_name,
+                    app_name,
+                    app_org,
+                    app_name_global,
                 )
                 LOGGER.error(
                     "This will cause settings to be saved in different locations!"
@@ -572,8 +551,10 @@ class MainWindow(QWidget):
                 # Force consistency by updating our settings instance to match the application
                 self.settings = QSettings(app_org, app_name_global)
                 LOGGER.info(
-                    f"Corrected QSettings to: org={app_org}, app={app_name_global}, "
-                    + f"file={self.settings.fileName()}"
+                    "Corrected QSettings to: org=%s, app=%s, file=%s",
+                    app_org,
+                    app_name_global,
+                    self.settings.fileName(),
                 )
 
             # Save to multiple keys to ensure redundancy
@@ -602,19 +583,19 @@ class MainWindow(QWidget):
                     )
                     return False
             except Exception as file_error:
-                LOGGER.error(f"Error checking settings file: {file_error}")
+                LOGGER.error("Error checking settings file: %s", file_error)
 
             # Explicitly cast bool to avoid Any return type
             return bool(saved_dir == in_dir_str)
         except Exception as e:
-            LOGGER.error(f"Error directly saving input directory: {e}")
+            LOGGER.error("Error directly saving input directory: %s", e)
             return False
 
     def set_in_dir(self, path: Path | None) -> None:
         """Set the input directory state, save settings, and clear Sanchez cache."""
-        LOGGER.debug(f"MainWindow set_in_dir called with path: {path}")
+        LOGGER.debug("MainWindow set_in_dir called with path: %s", path)
         if self.in_dir != path:
-            LOGGER.debug(f"MainWindow setting in_dir to: {path}")
+            LOGGER.debug("MainWindow setting in_dir to: %s", path)
             old_path = self.in_dir  # Store old path for fallback
             self.in_dir = path
             self.sanchez_preview_cache.clear()  # Clear cache when dir changes
@@ -662,7 +643,9 @@ class MainWindow(QWidget):
                             )
                             self._save_input_directory(old_path)
             except Exception as e:
-                LOGGER.error(f"Error saving settings after input directory change: {e}")
+                LOGGER.error(
+                    "Error saving settings after input directory change: %s", e
+                )
 
         # Always update crop buttons state
         if hasattr(self.main_tab, "_update_crop_buttons_state"):
@@ -675,7 +658,7 @@ class MainWindow(QWidget):
 
         try:
             rect_str = ",".join(map(str, rect))
-            LOGGER.debug(f"Saving crop rectangle directly: {rect_str!r}")
+            LOGGER.debug("Saving crop rectangle directly: %r", rect_str)
 
             # Log QSettings details to ensure settings are being saved to the right place
             org_name = self.settings.organizationName()
@@ -695,14 +678,20 @@ class MainWindow(QWidget):
             )
             if org_name != app_org or app_name != app_name_global:
                 LOGGER.error(
-                    f"QSettings mismatch during crop save! MainWindow: org={org_name}, app={app_name}, "  # noqa: B950
-                    + f"but Application: org={app_org}, app={app_name_global}"
+                    "QSettings mismatch during crop save! MainWindow: org=%s, app=%s, "  # noqa: B950
+                    "but Application: org=%s, app=%s",
+                    org_name,
+                    app_name,
+                    app_org,
+                    app_name_global,
                 )
                 # Force consistency by updating our settings instance to match the application
                 self.settings = QSettings(app_org, app_name_global)
                 LOGGER.info(
-                    f"Corrected QSettings to: org={app_org}, app={app_name_global}, "
-                    + f"file={self.settings.fileName()}"
+                    "Corrected QSettings to: org=%s, app=%s, file=%s",
+                    app_org,
+                    app_name_global,
+                    self.settings.fileName(),
                 )
 
             # Save to multiple keys to ensure redundancy
@@ -738,14 +727,14 @@ class MainWindow(QWidget):
             # Explicitly cast bool to avoid Any return type
             return bool(saved_rect == rect_str)
         except Exception as e:
-            LOGGER.error(f"Error directly saving crop rectangle: {e}")
+            LOGGER.error("Error directly saving crop rectangle: %s", e)
             return False
 
     def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
         """Set the current crop rectangle state."""
-        LOGGER.debug(f"MainWindow set_crop_rect called with rect: {rect}")
+        LOGGER.debug("MainWindow set_crop_rect called with rect: %s", rect)
         if self.current_crop_rect != rect:
-            LOGGER.debug(f"MainWindow setting crop_rect to: {rect}")
+            LOGGER.debug("MainWindow setting crop_rect to: %s", rect)
             old_rect = self.current_crop_rect  # Store old rect for fallback
             self.current_crop_rect = rect
 
@@ -789,12 +778,12 @@ class MainWindow(QWidget):
                             )
                             self._save_crop_rect(old_rect)
             except Exception as e:
-                LOGGER.error(f"Error saving settings after crop rectangle change: {e}")
+                LOGGER.error("Error saving settings after crop rectangle change: %s", e)
 
     # ------------------------------------
     def _set_in_dir_from_sorter(self, directory: Path) -> None:
         """Sets the input directory from a sorter tab."""
-        LOGGER.debug(f"Entering _set_in_dir_from_sorter... directory={directory}")
+        LOGGER.debug("Entering _set_in_dir_from_sorter... directory=%s", directory)
         # Use the regular set_in_dir method to ensure proper state updates and settings saving
         self.set_in_dir(directory)
         self.main_tab.in_dir_edit.setText(str(directory))
@@ -806,7 +795,7 @@ class MainWindow(QWidget):
         """Open a directory dialog to select the input image folder."""
         dir_path = QFileDialog.getExistingDirectory(self, "Select Input Image Folder")
         if dir_path:
-            LOGGER.debug(f"Input directory selected: {dir_path}")
+            LOGGER.debug("Input directory selected: %s", dir_path)
             self.in_dir = Path(dir_path)
             self.main_tab.in_dir_edit.setText(dir_path)
             self._update_start_button_state()
@@ -820,7 +809,7 @@ class MainWindow(QWidget):
             self, "Save Output Video", "", "MP4 Files (*.mp4)"
         )
         if file_path:
-            LOGGER.debug(f"Output file selected: {file_path}")
+            LOGGER.debug("Output file selected: %s", file_path)
             self.out_file_path = Path(file_path)
             self.main_tab.out_file_edit.setText(file_path)
             self._update_start_button_state()
@@ -836,11 +825,13 @@ class MainWindow(QWidget):
                     if f.suffix.lower() in [".png", ".jpg", ".jpeg"]
                 ]
             )
-            LOGGER.debug(f"Found {len(image_files)} image files in {self.in_dir}")
+            LOGGER.debug("Found %d image files in %s", len(image_files), self.in_dir)
             if image_files:
                 first_image_path = image_files[0]
                 try:
-                    LOGGER.debug(f"Preparing image for crop dialog: {first_image_path}")
+                    LOGGER.debug(
+                        "Preparing image for crop dialog: %s", first_image_path
+                    )
 
                     pixmap_for_dialog: QPixmap | None = None
                     sanchez_preview_enabled = (
@@ -929,7 +920,7 @@ class MainWindow(QWidget):
                             crop_rect.width(),
                             crop_rect.height(),
                         )
-                        LOGGER.info(f"Crop rectangle set to: {self.current_crop_rect}")
+                        LOGGER.info("Crop rectangle set to: %s", self.current_crop_rect)
                         self._update_crop_buttons_state()
                         self.request_previews_update.emit()  # Request preview update
                 except Exception as e:
@@ -1165,15 +1156,21 @@ class MainWindow(QWidget):
         )
         if org_name != app_org or app_name != app_name_global:
             LOGGER.error(
-                f"QSettings mismatch detected! MainWindow: org={org_name}, app={app_name}, "
-                + f"but Application: org={app_org}, app={app_name_global}"
+                "QSettings mismatch detected! MainWindow: org=%s, app=%s, "
+                "but Application: org=%s, app=%s",
+                org_name,
+                app_name,
+                app_org,
+                app_name_global,
             )
             LOGGER.error("This will cause settings to be saved in different locations!")
             # Force consistency by updating our settings instance to match the application
             self.settings = QSettings(app_org, app_name_global)
             LOGGER.info(
-                f"Corrected QSettings to: org={app_org}, app={app_name_global}, "
-                + f"file={self.settings.fileName()}"
+                "Corrected QSettings to: org=%s, app=%s, file=%s",
+                app_org,
+                app_name_global,
+                self.settings.fileName(),
             )
 
         # List all keys to see what's available
@@ -3026,7 +3023,7 @@ class MainWindow(QWidget):
                         self.main_tab.first_frame_label.setPixmap(first_pixmap)
                         LOGGER.debug("Successfully set first frame preview")
                     except (RuntimeError, AttributeError) as e:
-                        LOGGER.error(f"Error setting first frame pixmap: {e}")
+                        LOGGER.error("Error setting first frame pixmap: %s", e)
                 else:
                     LOGGER.warning("First frame preview generation failed")
                     try:
@@ -3037,9 +3034,9 @@ class MainWindow(QWidget):
                         self.main_tab.first_frame_label.file_path = None
                         self.main_tab.first_frame_label.processed_image = None
                     except (RuntimeError, AttributeError) as e:
-                        LOGGER.error(f"Error clearing first frame: {e}")
+                        LOGGER.error("Error clearing first frame: %s", e)
             except Exception as e:
-                LOGGER.error(f"Error processing first frame preview: {e}")
+                LOGGER.error("Error processing first frame preview: %s", e)
 
             # Handle middle frame if available
             if middle_frame_path:
@@ -3062,7 +3059,7 @@ class MainWindow(QWidget):
                             self.main_tab.middle_frame_label.setPixmap(middle_pixmap)
                             LOGGER.debug("Successfully set middle frame preview")
                         except (RuntimeError, AttributeError) as e:
-                            LOGGER.error(f"Error setting middle frame pixmap: {e}")
+                            LOGGER.error("Error setting middle frame pixmap: %s", e)
                     else:
                         LOGGER.warning("Middle frame preview generation failed")
                         try:
@@ -3073,9 +3070,9 @@ class MainWindow(QWidget):
                             self.main_tab.middle_frame_label.file_path = None
                             self.main_tab.middle_frame_label.processed_image = None
                         except (RuntimeError, AttributeError) as e:
-                            LOGGER.error(f"Error clearing middle frame: {e}")
+                            LOGGER.error("Error clearing middle frame: %s", e)
                 except Exception as e:
-                    LOGGER.error(f"Error processing middle frame preview: {e}")
+                    LOGGER.error("Error processing middle frame preview: %s", e)
             else:
                 try:
                     LOGGER.debug("No middle frame available")
@@ -3086,11 +3083,11 @@ class MainWindow(QWidget):
                     self.main_tab.middle_frame_label.file_path = None
                     self.main_tab.middle_frame_label.processed_image = None
                 except (RuntimeError, AttributeError) as e:
-                    LOGGER.error(f"Error clearing middle frame: {e}")
+                    LOGGER.error("Error clearing middle frame: %s", e)
 
             # Process last frame
             try:
-                LOGGER.debug(f"Loading last frame preview: {last_frame_path.name}")
+                LOGGER.debug("Loading last frame preview: %s", last_frame_path.name)
                 last_pixmap = self._load_process_scale_preview(
                     last_frame_path,
                     self.main_tab.last_frame_label,
@@ -3106,7 +3103,7 @@ class MainWindow(QWidget):
                         self.main_tab.last_frame_label.setPixmap(last_pixmap)
                         LOGGER.debug("Successfully set last frame preview")
                     except (RuntimeError, AttributeError) as e:
-                        LOGGER.error(f"Error setting last frame pixmap: {e}")
+                        LOGGER.error("Error setting last frame pixmap: %s", e)
                 else:
                     LOGGER.warning("Last frame preview generation failed")
                     try:
@@ -3117,14 +3114,14 @@ class MainWindow(QWidget):
                         self.main_tab.last_frame_label.file_path = None
                         self.main_tab.last_frame_label.processed_image = None
                     except (RuntimeError, AttributeError) as e:
-                        LOGGER.error(f"Error clearing last frame: {e}")
+                        LOGGER.error("Error clearing last frame: %s", e)
             except Exception as e:
-                LOGGER.error(f"Error processing last frame preview: {e}")
+                LOGGER.error("Error processing last frame preview: %s", e)
 
             # Update crop button state after previews are handled
             self.main_tab._update_crop_buttons_state()
         except Exception as e:
-            LOGGER.exception(f"Error updating previews: {e}")
+            LOGGER.exception("Error updating previews: %s", e)
 
             # Use our safer method to clear labels
             self._clear_preview_labels("Error")
@@ -3136,7 +3133,7 @@ class MainWindow(QWidget):
                 )
             except Exception as dialog_error:
                 # If even showing the dialog fails, just log it
-                LOGGER.error(f"Failed to show error dialog: {dialog_error}")
+                LOGGER.error("Failed to show error dialog: %s", dialog_error)
 
     def _update_start_button_state(self) -> None:
         """Enable or disable the start button based on input/output paths and RIFE model availability."""  # noqa: B950
@@ -3161,7 +3158,7 @@ class MainWindow(QWidget):
                     rife_model_selected = False
 
         except Exception as e:
-            LOGGER.warning(f"Error checking RIFE model selection: {e}")
+            LOGGER.warning("Error checking RIFE model selection: %s", e)
             # Assume model is not valid if we can't safely check
             if is_rife:
                 rife_model_selected = False
@@ -3182,7 +3179,7 @@ class MainWindow(QWidget):
                 if thread_spec and not re.fullmatch(r"\d+:\d+:\d+", thread_spec):
                     thread_spec_valid = False
         except Exception as e:
-            LOGGER.warning(f"Error checking thread spec: {e}")
+            LOGGER.warning("Error checking thread spec: %s", e)
             if is_rife:
                 thread_spec_valid = False
 
@@ -3216,7 +3213,7 @@ class MainWindow(QWidget):
                 except (RuntimeError, AttributeError):
                     LOGGER.warning("Could not set start button enabled state")
         except Exception as e:
-            LOGGER.warning(f"Error in final start button state calculation: {e}")
+            LOGGER.warning("Error in final start button state calculation: %s", e)
 
     def _set_processing_state(self, processing: bool) -> None:
         """Sets the processing state and updates UI elements accordingly."""
@@ -3453,13 +3450,13 @@ class MainWindow(QWidget):
                 self.status_bar.showMessage(f"Processing frame {current}...")
             QApplication.processEvents()  # Keep UI responsive
         except Exception as e:
-            LOGGER.error(f"Error updating status bar: {e}", exc_info=True)
+            LOGGER.error("Error updating status bar: %s", e, exc_info=True)
             self.status_bar.showMessage("Error updating progress...")
 
     def _handle_process_finished(self, output_path: Path) -> None:  # Changed type hint
         """Handle the process finished signal."""
         output_path_str = str(output_path)
-        LOGGER.info(f"Process finished successfully. Output: {output_path_str}")
+        LOGGER.info("Process finished successfully. Output: %s", output_path_str)
         self._set_processing_state(False)
         self.status_bar.showMessage(
             f"Finished: {output_path_str}", 10000
@@ -3481,7 +3478,7 @@ class MainWindow(QWidget):
 
     def _handle_process_error(self, error_message: str) -> None:
         """Handle the process error signal."""
-        LOGGER.error(f"Process failed: {error_message}")
+        LOGGER.error("Process failed: %s", error_message)
         self._set_processing_state(False)
         self.status_bar.showMessage(
             f"Error: {error_message}", 0
@@ -3497,7 +3494,7 @@ class MainWindow(QWidget):
         # Determine if the current encoder is RIFE
         current_encoder_text = self.main_tab.encoder_combo.currentText()
         is_rife = current_encoder_text.startswith("RIFE")
-        LOGGER.debug(f"Current encoder: {current_encoder_text}, is_rife: {is_rife}")
+        LOGGER.debug("Current encoder: %s, is_rife: %s", current_encoder_text, is_rife)
 
         # Use alias self.model_combo which points to self.main_tab.rife_model_combo
         model_combo_parent = self.model_combo.parentWidget()
