@@ -7,11 +7,10 @@ provide more reliable tests.
 
 import asyncio
 import sys
-import time
 import unittest
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Set
+from typing import List, Optional, Set
 
-from PyQt6.QtCore import QCoreApplication, QObject, QThreadPool, QTimer
+from PyQt6.QtCore import QCoreApplication, QObject
 from PyQt6.QtWidgets import QApplication
 
 
@@ -40,10 +39,23 @@ class PyQtAsyncTestCase(unittest.TestCase):
         """
         super().setUpClass()
 
+        # Check if running in CI environment
+        import os
+
+        if os.environ.get("CI") == "true":
+            # Set Qt platform to offscreen in CI
+            os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
         # Create QApplication if it doesn't exist yet
         if QApplication.instance() is None:
-            # Store as class variable to prevent garbage collection
-            cls._app_instance = QApplication(sys.argv)
+            try:
+                # Store as class variable to prevent garbage collection
+                cls._app_instance = QApplication(sys.argv)
+            except Exception as e:
+                # If QApplication creation fails, skip GUI tests
+                import pytest
+
+                pytest.skip(f"QApplication creation failed: {e}")
 
     def setUp(self):
         """Set up test fixtures.
@@ -51,6 +63,12 @@ class PyQtAsyncTestCase(unittest.TestCase):
         Creates a fresh event loop for each test.
         """
         super().setUp()
+
+        # Check if QApplication is available
+        if QApplication.instance() is None:
+            import pytest
+
+            pytest.skip("QApplication not available - skipping GUI test")
 
         # Set up a separate event loop for each test to avoid conflicts
         self._old_event_loop = asyncio.get_event_loop()

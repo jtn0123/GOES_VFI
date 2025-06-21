@@ -143,6 +143,9 @@ jobs:
         fi
       shell: bash
       env:
+        # CI environment flag for test utilities
+        CI: true
+        QT_QPA_PLATFORM: offscreen
         # Ensure UTF-8 encoding on all platforms
         PYTHONIOENCODING: utf-8
         PYTHONUTF8: 1
