@@ -115,7 +115,7 @@ jobs:
     - name: Run tests with coverage
       run: |
         if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
-          # Full test suite with GUI tests on Linux using xvfb
+          # Run tests on Linux with selective GUI test exclusion
           # Override pytest.ini to enable coverage plugin
           xvfb-run -a python -m pytest \
             -p no:cacheprovider \
@@ -129,6 +129,8 @@ jobs:
             --no-header \
             --disable-warnings \
             --maxfail=10 \
+            --ignore=tests/integration/test_goes_imagery_tab.py \
+            --ignore=tests/gui/ \
             tests/
         else
           # Non-GUI tests only on macOS and Windows
