@@ -11,6 +11,9 @@ if __name__ == "__main__":
     # Get the path to Python in the current virtual environment
     python_executable = sys.executable
 
+    # Run without a display server
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
     # Use pytest directly to exclude GUI tests
     cmd = [python_executable, "-m", "pytest", "tests", "--ignore=tests/gui"]
 
