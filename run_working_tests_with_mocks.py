@@ -15,6 +15,9 @@ from unittest.mock import MagicMock
 repo_root = Path(__file__).parent
 sys.path.insert(0, str(repo_root))
 
+# Use an offscreen Qt platform to avoid GUI dependency issues
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+
 
 class MockModule:
     """A mock module that can be imported and used like a real module."""
@@ -108,6 +111,12 @@ def setup_special_mocks():
             self._org = org or "MockOrg"
             self._app = app or "MockApp"
 
+        class Format:
+            """Mimic QSettings.Format enum with minimal values."""
+
+            NativeFormat = 0
+            IniFormat = 1
+
         def setValue(self, key, value):
             self._storage[key] = value
 
@@ -135,8 +144,10 @@ def setup_special_mocks():
         def fileName(self):
             return f"/tmp/mock_settings_{self._org}_{self._app}.conf"
 
-    # Replace QSettings in PyQt6.QtCore if it exists
-    if "PyQt6.QtCore" in sys.modules:
+    # Replace QSettings in PyQt6.QtCore only if missing (allows real Qt usage)
+    if "PyQt6.QtCore" in sys.modules and not hasattr(
+        sys.modules["PyQt6.QtCore"], "QSettings"
+    ):
         sys.modules["PyQt6.QtCore"].QSettings = MockQSettings
 
     # Create a QApplication instance mock
@@ -155,7 +166,9 @@ def setup_special_mocks():
         def applicationName(self):
             return "MockApp"
 
-    if "PyQt6.QtWidgets" in sys.modules:
+    if "PyQt6.QtWidgets" in sys.modules and not hasattr(
+        sys.modules["PyQt6.QtWidgets"], "QApplication"
+    ):
         sys.modules["PyQt6.QtWidgets"].QApplication = MockQApplication
 
 
