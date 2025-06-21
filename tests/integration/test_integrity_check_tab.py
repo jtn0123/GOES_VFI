@@ -1,15 +1,13 @@
 """Integration tests for the integrity check tab functionality."""
 
-import asyncio
-import os
 import tempfile
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from PyQt6.QtCore import QCoreApplication, QDate, QDateTime, Qt, QTime
-from PyQt6.QtWidgets import QApplication, QMainWindow, QMessageBox
+from PyQt6.QtCore import QCoreApplication, QDate, QDateTime, QTime
+from PyQt6.QtWidgets import QApplication, QMainWindow
 
 from goesvfi.integrity_check.cache_db import CacheDB
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
@@ -19,11 +17,10 @@ from goesvfi.integrity_check.enhanced_view_model import (
 )
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
-from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
-from goesvfi.integrity_check.view_model import ScanStatus
+from goesvfi.integrity_check.time_index import SatellitePattern
 
 # Import our test utilities
-from tests.utils.pyqt_async_test import AsyncSignalWaiter, PyQtAsyncTestCase, async_test
+from tests.utils.pyqt_async_test import PyQtAsyncTestCase
 
 
 class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
@@ -62,6 +59,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         self.mock_cache_db = MagicMock(spec=CacheDB)
         self.mock_cache_db.reset_database = AsyncMock()
         self.mock_cache_db.close = AsyncMock()
+        self.mock_cache_db.db_path = Path(self.temp_dir.name) / "test_cache.db"
 
         self.mock_cdn_store = MagicMock(spec=CDNStore)
         self.mock_cdn_store.download = AsyncMock()
@@ -81,7 +79,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         )
 
         # Set the base directory
-        self.view_model.base_directory = self.base_dir
+        self.view_model.base_directory = str(self.base_dir)
 
         # Create the tab widget
         self.tab = EnhancedIntegrityCheckTab(self.view_model)
@@ -130,15 +128,15 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
                 QCoreApplication.processEvents()
 
                 # Verify the correct satellite was detected (GOES-18 has more files)
-                self.assertEqual(self.view_model.satellite, SatellitePattern.GOES_18)
-                self.assertTrue(self.tab.goes18_radio.isChecked())
-                self.assertFalse(self.tab.goes16_radio.isChecked())
+                assert self.view_model.satellite == SatellitePattern.GOES_18
+                assert self.tab.goes18_radio.isChecked()
+                assert not self.tab.goes16_radio.isChecked()
 
     def test_fetch_source_radio_buttons(self):
         """Test that fetch source radio buttons correctly update the view model."""
         # Initial state should be AUTO
-        self.assertEqual(self.view_model.fetch_source, FetchSource.AUTO)
-        self.assertTrue(self.tab.auto_radio.isChecked())
+        assert self.view_model.fetch_source == FetchSource.AUTO
+        assert self.tab.auto_radio.isChecked()
 
         # Click CDN radio
         self.tab.cdn_radio.setChecked(True)
@@ -147,7 +145,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Check view model was updated
-        self.assertEqual(self.view_model.fetch_source, FetchSource.CDN)
+        assert self.view_model.fetch_source == FetchSource.CDN
 
         # Click S3 radio
         self.tab.s3_radio.setChecked(True)
@@ -156,7 +154,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Check view model was updated
-        self.assertEqual(self.view_model.fetch_source, FetchSource.S3)
+        assert self.view_model.fetch_source == FetchSource.S3
 
         # Click LOCAL radio
         self.tab.local_radio.setChecked(True)
@@ -165,7 +163,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Check view model was updated
-        self.assertEqual(self.view_model.fetch_source, FetchSource.LOCAL)
+        assert self.view_model.fetch_source == FetchSource.LOCAL
 
         # Back to AUTO
         self.tab.auto_radio.setChecked(True)
@@ -174,7 +172,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Check view model was updated
-        self.assertEqual(self.view_model.fetch_source, FetchSource.AUTO)
+        assert self.view_model.fetch_source == FetchSource.AUTO
 
     def test_enhanced_status_updates(self):
         """Test that status updates correctly format different message types."""
@@ -185,8 +183,8 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         status_text = self.tab.status_label.text()
 
         # Verify formatting
-        self.assertIn("color: #ff6666", status_text)  # Red color for errors
-        self.assertIn("Error: something went wrong", status_text)
+        assert "color: #ff6666" in status_text  # Red color for errors
+        assert "Error: something went wrong" in status_text
 
         # Test success message
         self.tab._update_status("Completed successfully")
@@ -195,8 +193,8 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         status_text = self.tab.status_label.text()
 
         # Verify formatting
-        self.assertIn("color: #66ff66", status_text)  # Green color for success
-        self.assertIn("Completed successfully", status_text)
+        assert "color: #66ff66" in status_text  # Green color for success
+        assert "Completed successfully" in status_text
 
         # Test in-progress message
         self.tab._update_status("Scanning for files...")
@@ -205,8 +203,8 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         status_text = self.tab.status_label.text()
 
         # Verify formatting
-        self.assertIn("color: #66aaff", status_text)  # Blue color for in-progress
-        self.assertIn("Scanning for files...", status_text)
+        assert "color: #66aaff" in status_text  # Blue color for in-progress
+        assert "Scanning for files..." in status_text
 
     def test_enhanced_progress_updates(self):
         """Test that progress updates include more detailed information."""
@@ -215,17 +213,17 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
 
         # Verify progress bar format
         progress_format = self.tab.progress_bar.format()
-        self.assertIn("25%", progress_format)
-        self.assertIn("ETA: 2m 0s", progress_format)
-        self.assertIn("(25/100)", progress_format)
+        assert "25%" in progress_format
+        assert "ETA: 2m 0s" in progress_format
+        assert "(25/100)" in progress_format
 
         # Test without ETA
         self.tab._update_progress(50, 100, 0.0)  # 50%, no ETA
 
         # Verify progress bar format
         progress_format = self.tab.progress_bar.format()
-        self.assertIn("50%", progress_format)
-        self.assertIn("(50/100)", progress_format)
+        assert "50%" in progress_format
+        assert "(50/100)" in progress_format
 
     def test_setting_date_range_from_ui(self):
         """Test that changes to date range widgets correctly update the view model."""
@@ -241,26 +239,26 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Now start a scan to trigger view model update from UI
-        with patch(
-            "goesvfi.integrity_check.enhanced_gui_tab.EnhancedIntegrityCheckViewModel.start_enhanced_scan"
-        ):
+        with patch.object(
+            self.view_model, "start_enhanced_scan", autospec=True
+        ) as mock_scan:
             self.tab._start_enhanced_scan()
 
             # Verify view model date range was updated
             expected_start = datetime(2023, 1, 1, 0, 0, 0)
             expected_end = datetime(2023, 1, 2, 23, 59, 0)
 
-            self.assertEqual(self.view_model.start_date.year, expected_start.year)
-            self.assertEqual(self.view_model.start_date.month, expected_start.month)
-            self.assertEqual(self.view_model.start_date.day, expected_start.day)
-            self.assertEqual(self.view_model.start_date.hour, expected_start.hour)
-            self.assertEqual(self.view_model.start_date.minute, expected_start.minute)
+            assert self.view_model.start_date.year == expected_start.year
+            assert self.view_model.start_date.month == expected_start.month
+            assert self.view_model.start_date.day == expected_start.day
+            assert self.view_model.start_date.hour == expected_start.hour
+            assert self.view_model.start_date.minute == expected_start.minute
 
-            self.assertEqual(self.view_model.end_date.year, expected_end.year)
-            self.assertEqual(self.view_model.end_date.month, expected_end.month)
-            self.assertEqual(self.view_model.end_date.day, expected_end.day)
-            self.assertEqual(self.view_model.end_date.hour, expected_end.hour)
-            self.assertEqual(self.view_model.end_date.minute, expected_end.minute)
+            assert self.view_model.end_date.year == expected_end.year
+            assert self.view_model.end_date.month == expected_end.month
+            assert self.view_model.end_date.day == expected_end.day
+            assert self.view_model.end_date.hour == expected_end.hour
+            assert self.view_model.end_date.minute == expected_end.minute
 
 
 # Run the tests if this file is executed directly
