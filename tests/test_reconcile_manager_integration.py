@@ -1,8 +1,6 @@
 """Integration tests for the ReconcileManager with real filesystem operations."""
 
 import asyncio
-import os
-import shutil
 import tempfile
 import unittest
 from datetime import datetime, timedelta
@@ -145,8 +143,8 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         }
 
         # Verify results
-        self.assertEqual(set(timestamps_to_create), existing)
-        self.assertEqual(expected_missing, missing)
+        assert set(timestamps_to_create) == existing
+        assert expected_missing == missing
 
         # Verify cache was updated
         for ts in timestamps_to_create:
@@ -155,9 +153,9 @@ class TestReconcileManagerIntegration(unittest.TestCase):
             timestamp_exists = await self.cache_db.timestamp_exists(
                 timestamp=ts, satellite=self.satellite
             )
-            self.assertTrue(timestamp_exists)
+            assert timestamp_exists
 
-    @patch("goesvfi.integrity_check.reconcile_manager.render_png", autospec=True)
+    @patch("goesvfi.integrity_check.render.netcdf.render_png", autospec=True)
     async def test_fetch_missing_files(self, mock_render_png):
         """Test fetching missing files."""
 
@@ -191,16 +189,17 @@ class TestReconcileManagerIntegration(unittest.TestCase):
 
         # Fetch missing files
         results = await self.manager.fetch_missing_files(
-            missing_timestamps=missing_timestamps,
+            missing_timestamps=list(missing_timestamps),
             satellite=self.satellite,
+            destination_dir=self.base_dir,
             progress_callback=progress_callback,
-            file_callback=file_callback,
+            item_progress_callback=file_callback,
         )
 
         # Verify results
-        self.assertEqual(len(results), 2)
-        self.assertIn(self.recent_date, results)
-        self.assertIn(self.old_date, results)
+        assert len(results) == 2
+        assert self.recent_date in results
+        assert self.old_date in results
 
         # Verify appropriate stores were used
         self.cdn_store.exists.assert_called_with(self.recent_date, self.satellite)
@@ -210,8 +209,8 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         self.s3_store.download.assert_called_once()
 
         # Verify callbacks were called
-        self.assertGreater(len(progress_updates), 0)
-        self.assertEqual(len(file_callbacks), 2)
+        assert len(progress_updates) > 0
+        assert len(file_callbacks) == 2
 
         # Verify render_png was called for S3 file
         mock_render_png.assert_called_once()
@@ -221,7 +220,7 @@ class TestReconcileManagerIntegration(unittest.TestCase):
             timestamp_exists = await self.cache_db.timestamp_exists(
                 timestamp=ts, satellite=self.satellite
             )
-            self.assertTrue(timestamp_exists)
+            assert timestamp_exists
 
     @patch("goesvfi.integrity_check.reconcile_manager.render_png", autospec=True)
     async def test_reconcile(self, mock_render_png):
@@ -282,22 +281,21 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         expected_fetched = 4  # 0:10, 0:30, 0:50, 1:00
 
         # Verify counts
-        self.assertEqual(total, expected_total)
-        self.assertEqual(existing_count, expected_existing)
-        self.assertEqual(fetched, expected_fetched)
+        assert total == expected_total
+        assert existing_count == expected_existing
+        assert fetched == expected_fetched
 
         # Verify callbacks were called
-        self.assertGreater(len(progress_updates), 0)
-        self.assertEqual(len(file_callbacks), expected_fetched)
+        assert len(progress_updates) > 0
+        assert len(file_callbacks) == expected_fetched
 
         # Check that files were created for all timestamps
         for i in range(7):
             ts = start_time + timedelta(minutes=i * 10)
             path = self.manager._get_local_path(ts, self.satellite)
-            self.assertTrue(
-                path.exists() or Path(str(path).replace(".png", ".nc")).exists(),
-                f"File doesn't exist for timestamp {ts}",
-            )
+            assert (
+                path.exists() or Path(str(path).replace(".png", ".nc")).exists()
+            ), f"File doesn't exist for timestamp {ts}"
 
 
 def async_test(coro):

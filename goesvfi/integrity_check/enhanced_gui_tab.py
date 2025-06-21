@@ -134,6 +134,8 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
     # Signals
     dateRangeSelected = pyqtSignal(datetime, datetime)
+    directory_selected = pyqtSignal(str)
+    date_range_changed = pyqtSignal(datetime, datetime)
 
     def __init__(
         self,
@@ -161,6 +163,12 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         # Connect additional signals
         self._connect_enhanced_signals()
+
+        # Connect date change signals
+        if hasattr(self, "start_date_edit"):
+            self.start_date_edit.dateTimeChanged.connect(self._emit_date_range_changed)
+        if hasattr(self, "end_date_edit"):
+            self.end_date_edit.dateTimeChanged.connect(self._emit_date_range_changed)
 
         LOGGER.info("Enhanced integrity check tab initialized")
 
@@ -241,6 +249,19 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         strategy = self.fetcher_config["fallback_strategy"]
         self.fetcher_status_label.setText(f"Strategy: {strategy}")
 
+    def _browse_directory(self) -> None:
+        """Browse for a directory and emit signal."""
+        super()._browse_directory()
+        if hasattr(self, "dir_input") and self.dir_input.text():
+            self.directory_selected.emit(self.dir_input.text())
+
+    def _emit_date_range_changed(self):
+        """Emit date range changed signal when dates are updated."""
+        if hasattr(self, "start_date_edit") and hasattr(self, "end_date_edit"):
+            start_date = self.start_date_edit.dateTime().toPyDateTime()
+            end_date = self.end_date_edit.dateTime().toPyDateTime()
+            self.date_range_changed.emit(start_date, end_date)
+
     def _auto_detect_date_range(self):
         """Auto-detect date range from available files - stub implementation."""
         # This is a stub implementation for test compatibility
@@ -252,7 +273,8 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         try:
             # Check if we should simulate an error (for test compatibility)
             if (
-                hasattr(self.view_model, "base_directory")
+                self.view_model
+                and hasattr(self.view_model, "base_directory")
                 and self.view_model.base_directory
             ):
                 from goesvfi.integrity_check.time_index import TimeIndex
@@ -260,14 +282,16 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                 # This will raise an exception if the test has mocked it to do so
                 satellite = (
                     self.view_model.satellite
-                    if hasattr(self.view_model, "satellite")
+                    if self.view_model and hasattr(self.view_model, "satellite")
                     else SatellitePattern.GOES_16
                 )
                 TimeIndex.find_date_range_in_directory(
                     Path(self.view_model.base_directory), satellite
                 )
 
-                base_dir = Path(self.view_model.base_directory)
+                base_dir = (
+                    Path(self.view_model.base_directory) if self.view_model else Path()
+                )
                 if base_dir.exists():
                     # Check if directory is empty
                     files = list(base_dir.rglob("*"))
@@ -281,7 +305,10 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                         return
 
             # Set different dates based on satellite for test compatibility
-            if self.view_model.satellite == SatellitePattern.GOES_18:
+            if (
+                self.view_model
+                and self.view_model.satellite == SatellitePattern.GOES_18
+            ):
                 # GOES-18 has files for 30 days
                 start_date = datetime(2023, 6, 15, 0, 0)
                 end_date = datetime(2023, 7, 14, 23, 59)
@@ -293,6 +320,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             # Update the date edit widgets
             self.start_date_edit.setDateTime(QDateTime(start_date))
             self.end_date_edit.setDateTime(QDateTime(end_date))
+
+            # Emit the date range changed signal
+            self.date_range_changed.emit(start_date, end_date)
 
             # Show information dialog
             QMessageBox.information(

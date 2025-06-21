@@ -8,18 +8,15 @@ different tabs in the integrity check system, including:
 3. Selection synchronization (timestamps, items) across tabs
 """
 
-import os
 import tempfile
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import MagicMock
 
-from PyQt6.QtCore import QDate, QDateTime, Qt, QTime
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
-    QSplitter,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -37,12 +34,11 @@ from goesvfi.integrity_check.enhanced_view_model import (
 from goesvfi.integrity_check.optimized_timeline_tab import OptimizedTimelineTab
 from goesvfi.integrity_check.satellite_integrity_tab_group import (
     OptimizedResultsTab,
-    SatelliteIntegrityTabGroup,
 )
 
 # Import the components to test
 from goesvfi.integrity_check.time_index import SatellitePattern
-from goesvfi.integrity_check.view_model import MissingTimestamp, ScanStatus
+from goesvfi.integrity_check.view_model import ScanStatus
 
 # Import our test utilities
 from tests.utils.pyqt_async_test import AsyncSignalWaiter, PyQtAsyncTestCase, async_test
@@ -203,16 +199,17 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
 
         # Change the directory in the integrity tab
         test_dir = "/test/directory"
-        self.integrity_tab.directory_edit.setText(test_dir)
-        self.integrity_tab._handle_directory_changed()
+        self.integrity_tab.dir_input.setText(test_dir)
+        # Manually emit the signal since setText doesn't trigger it
+        self.integrity_tab.directory_selected.emit(test_dir)
 
         # Wait for signals
         timeline_dir = await timeline_dir_waiter.wait(timeout=1.0)
         results_dir = await results_dir_waiter.wait(timeout=1.0)
 
         # Verify both tabs received the new directory
-        self.assertEqual(timeline_dir, test_dir)
-        self.assertEqual(results_dir, test_dir)
+        assert timeline_dir == test_dir
+        assert results_dir == test_dir
 
     @async_test
     async def test_date_range_propagation_to_timeline_tab(self):
@@ -225,9 +222,14 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         new_start = datetime(2023, 2, 1)
         new_end = datetime(2023, 2, 10, 23, 59, 59)
 
-        # Call the date change handlers directly
-        self.integrity_tab._handle_start_date_changed(QDate(2023, 2, 1))
-        self.integrity_tab._handle_end_date_changed(QDate(2023, 2, 10))
+        # Update the date edit widgets directly and emit the signal
+        from PyQt6.QtCore import QDateTime
+
+        self.integrity_tab.start_date_edit.setDateTime(QDateTime(new_start))
+        self.integrity_tab.end_date_edit.setDateTime(QDateTime(new_end))
+
+        # Manually emit the date range changed signal
+        self.integrity_tab.date_range_changed.emit(new_start, new_end)
 
         # Wait for events to process
         QApplication.processEvents()
@@ -238,8 +240,8 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         self.timeline_tab.set_date_range(new_start, new_end)
 
         # Check that the dates were updated correctly
-        self.assertEqual(self.timeline_tab.start_timestamp, new_start)
-        self.assertEqual(self.timeline_tab.end_timestamp, new_end)
+        assert self.timeline_tab.start_timestamp == new_start
+        assert self.timeline_tab.end_timestamp == new_end
 
     @async_test
     async def test_scan_results_propagation(self):
@@ -252,16 +254,14 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
 
         # Verify that both tabs were updated with the data
         # Timeline tab
-        self.assertEqual(self.timeline_tab.missing_items, self.mock_missing_items)
-        self.assertEqual(self.timeline_tab.start_timestamp, self.start_date)
-        self.assertEqual(self.timeline_tab.end_timestamp, self.end_date)
+        assert self.timeline_tab.missing_items == self.mock_missing_items
+        assert self.timeline_tab.start_timestamp == self.start_date
+        assert self.timeline_tab.end_timestamp == self.end_date
 
         # Results tab - checks if set_items was called with correct parameters
         # Note: In a real app, this would be verified by checking UI elements,
         # but in our test case with mock tabs, we check the properties directly
-        self.assertEqual(
-            self.results_tab.tree_view.model._items, self.mock_missing_items
-        )
+        assert self.results_tab.tree_view.model._items == self.mock_missing_items
 
     @async_test
     async def test_timestamp_selection_propagation(self):
@@ -294,15 +294,15 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
             highlight_timestamp = timestamp
             original_highlight(timestamp)
 
-        self.results_tab.highlight_item = mock_highlight
+        self.results_tab.highlight_item = mock_highlight  # type: ignore[method-assign] # noqa: B010
 
         # Call the method again to use our mock
         self.timeline_tab._handle_timestamp_selected(test_timestamp)
         QApplication.processEvents()
 
         # Verify the highlight method was called with the right timestamp
-        self.assertTrue(highlight_called)
-        self.assertEqual(highlight_timestamp, test_timestamp)
+        assert highlight_called
+        assert highlight_timestamp == test_timestamp
 
     @async_test
     async def test_combined_tab_data_flow(self):
@@ -321,8 +321,9 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
 
         # Execute a directory change
         test_dir = "/test/combined/directory"
-        integrity_tab.directory_edit.setText(test_dir)
-        integrity_tab._handle_directory_changed()
+        integrity_tab.dir_input.setText(test_dir)
+        # Manually emit the signal since setText doesn't trigger it
+        integrity_tab.directory_selected.emit(test_dir)
 
         # Process events to allow signal propagation
         QApplication.processEvents()
@@ -349,7 +350,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify timeline tab has correct data
-        self.assertEqual(self.timeline_tab.missing_items, self.mock_missing_items)
+        assert self.timeline_tab.missing_items == self.mock_missing_items
 
         # Change to results tab
         self.tab_widget.setCurrentIndex(2)
@@ -357,9 +358,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
 
         # Verify results tab has correct data
         # Again, in a real app we would check UI elements, but here we check the properties
-        self.assertEqual(
-            self.results_tab.tree_view.model._items, self.mock_missing_items
-        )
+        assert self.results_tab.tree_view.model._items == self.mock_missing_items
 
         # Change back to the integrity tab
         self.tab_widget.setCurrentIndex(0)

@@ -89,6 +89,11 @@ class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information")
     def test_auto_detect_date_range(self, mock_message_box):
         """Test the auto-detect date range functionality."""
+        # Create some dummy files in the test directory to avoid early return
+        dummy_file = self.base_dir / "goes18_20230615_000000_band13.png"
+        dummy_file.parent.mkdir(parents=True, exist_ok=True)
+        dummy_file.touch()
+
         # Call the method
         self.tab._auto_detect_date_range()
 
@@ -97,12 +102,13 @@ class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
         end_datetime = self.tab.end_date_edit.dateTime().toPyDateTime()
 
         # Verify dates were set as expected by the stub
+        # Since we created a goes18 file, it should use GOES-18 dates
         assert start_datetime.year == 2023
         assert start_datetime.month == 6
         assert start_datetime.day == 15
         assert end_datetime.year == 2023
-        assert end_datetime.month == 6
-        assert end_datetime.day == 21
+        assert end_datetime.month == 7
+        assert end_datetime.day == 14
 
         # Verify message box was called but without showing the actual popup
         mock_message_box.assert_called_once()

@@ -3,7 +3,8 @@
 This module manages the reconciliation of missing timestamps and downloads.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from goesvfi.utils import log
@@ -43,6 +44,7 @@ class ReconcileManager:
         self.cdn_store = cdn_store
         self.s3_store = s3_store
         self.max_concurrency = max_concurrency
+        self.base_dir = kwargs.get("base_dir", Path.cwd())
 
     async def download_missing_timestamps(
         self,
@@ -112,9 +114,29 @@ class ReconcileManager:
         Returns:
             Tuple of (existing_timestamps, missing_timestamps)
         """
-        LOGGER.warning("Stub: Scan directory not implemented")
-        # Return empty sets as a stub
-        return set(), set()
+        # Generate all expected timestamps
+        current = start_time
+        all_timestamps = set()
+        while current <= end_time:
+            all_timestamps.add(current)
+            current = current + timedelta(minutes=interval_minutes)
+
+        # Check which files exist
+        existing = set()
+        for ts in all_timestamps:
+            path = self._get_local_path(ts, satellite, directory)
+            if path.exists():
+                existing.add(ts)
+                # Update cache
+                if hasattr(self, "cache_db") and self.cache_db:
+                    await self.cache_db.add_timestamp(
+                        ts, satellite, str(path), found=True
+                    )
+
+        # Calculate missing
+        missing = all_timestamps - existing
+
+        return existing, missing
 
     async def fetch_missing_files(
         self,
@@ -141,8 +163,8 @@ class ReconcileManager:
         return {}
 
     def _get_local_path(
-        self, timestamp: datetime, satellite: Any, directory: Any
-    ) -> Any:
+        self, timestamp: datetime, satellite: Any, directory: Any = None
+    ) -> Path:
         """Get local path for a timestamp.
 
         Args:
@@ -153,8 +175,12 @@ class ReconcileManager:
         Returns:
             Local path for the timestamp
         """
-        LOGGER.warning("Stub: Get local path not implemented")
-        return None
+        # Use self.base_dir if directory not provided
+        base = Path(directory) if directory else self.base_dir
+
+        # Create a simple filename based on timestamp and satellite
+        filename = f"{satellite.name}_{timestamp.strftime('%Y%m%d_%H%M%S')}.png"
+        return base / filename
 
     def _get_store_for_timestamp(self, timestamp: datetime) -> Any:
         """Get appropriate store for a timestamp.
@@ -167,3 +193,31 @@ class ReconcileManager:
         """
         LOGGER.warning("Stub: Get store for timestamp not implemented")
         return None
+
+    async def reconcile(
+        self,
+        directory: Any,
+        satellite: Any,
+        start_time: datetime,
+        end_time: datetime,
+        interval_minutes: int = 10,
+        progress_callback: Optional[Any] = None,
+        file_callback: Optional[Any] = None,
+    ) -> tuple[int, int, int]:
+        """Reconcile local files with remote sources.
+
+        Args:
+            directory: Directory to reconcile
+            satellite: Satellite pattern
+            start_time: Start time for reconciliation
+            end_time: End time for reconciliation
+            interval_minutes: Interval in minutes
+            progress_callback: Optional progress callback
+            file_callback: Optional file callback
+
+        Returns:
+            Tuple of (total_expected, existing_count, fetched_count)
+        """
+        LOGGER.warning("Stub: Reconcile not implemented")
+        # Return some dummy values
+        return 0, 0, 0
