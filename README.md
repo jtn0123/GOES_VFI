@@ -137,7 +137,7 @@ GOES-VFI uses a standardized configuration mechanism for core settings:
 
 ## License
 
-This project does not currently have a license. Consider adding one (e.g., MIT License).
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Project Structure
 
