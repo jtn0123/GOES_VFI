@@ -150,7 +150,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
             minute = self.real_patterns[product_type]["minute"]  # type: ignore
 
             # Format for s3 key structure with appropriate timestamps
-            formatted_name = self.real_patterns[product_type]["filename"]
+            formatted_name = str(self.real_patterns[product_type]["filename"])
             formatted_name = formatted_name.replace("2023166", f"{year}{doy:03d}")
             formatted_name = formatted_name.replace("12", f"{hour:02d}")
             formatted_name = formatted_name.replace("00000", f"{minute:02d}000")
@@ -490,7 +490,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
                 # Create timestamps at the correct minute for this product
                 base_minute = self.real_patterns[product_type]["minute"]  # type: ignore
                 timestamp = self.old_date.replace(
-                    minute=base_minute, second=0, microsecond=0
+                    minute=int(base_minute), second=0, microsecond=0
                 )
 
                 # Create destination path

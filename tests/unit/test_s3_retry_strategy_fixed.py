@@ -213,7 +213,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         timestamps = [datetime(2023, 1, 1, 12, i * 10, 0) for i in range(5)]
 
         # Mock ReconcileManager methods that don't exist yet
-        manager._is_recent = AsyncMock(return_value=False)  # Use S3 for old files
+        setattr(manager, '_is_recent', AsyncMock(return_value=False))  # Use S3 for old files
 
         # Run fetch_missing_files
         results = await manager.fetch_missing_files(

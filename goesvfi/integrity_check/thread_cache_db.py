@@ -71,8 +71,9 @@ class ThreadLocalCacheDB:
             thread_id = threading.get_ident()
             if thread_id not in self._connections:
                 self._connections[thread_id] = CacheDB(db_path=self.db_path)
-            self._local.db = self._connections[thread_id]
-            return self._local.db
+            db_instance = self._connections[thread_id]
+            self._local.db = db_instance
+            return db_instance
 
     def _get_connection(self) -> CacheDB:
         """Alias for get_db for compatibility."""
@@ -183,7 +184,7 @@ class ThreadLocalCacheDB:
     def reset_database(self) -> None:
         """Reset the database via thread-local connection."""
         db = self.get_db()
-        if hasattr(db, 'reset_database'):
+        if hasattr(db, "reset_database"):
             db.reset_database()
         else:
             # Fallback to clear_cache if reset_database doesn't exist

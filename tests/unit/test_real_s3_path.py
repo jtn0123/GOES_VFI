@@ -7,16 +7,13 @@ real GOES satellite files in the NOAA public S3 buckets.
 """
 
 from datetime import datetime
-from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from typing import Any
 
 import pytest
 
-from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import (
     SATELLITE_CODES,
     SatellitePattern,
-    TimeIndex,
 )
 from goesvfi.utils import log
 
@@ -68,7 +65,7 @@ def _generate_s3_patterns(timestamp, satellite_pattern, dest_dir):
         key = f"ABI-L1b-{product_type}/{timestamp.year}/{timestamp.timetuple().tm_yday:03d}/{timestamp.hour:02d}/"
 
         # Try each band
-        product_result = {"success": True, "attempts": []}
+        product_result = {"success": True, "attempts": []}  # type: dict[str, Any]
 
         for band in bands:
             attempt = {
