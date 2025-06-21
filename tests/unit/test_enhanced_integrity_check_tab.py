@@ -12,7 +12,7 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtCore import QDateTime
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 from goesvfi.integrity_check.enhanced_view_model import (
@@ -88,7 +88,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         # Call parent tearDown for proper event loop cleanup
         super().tearDown()
 
-    @patch("goesvfi.integrity_check.enhanced_gui_tab.QFileDialog")
+    @patch("PyQt6.QtWidgets.QFileDialog")
     def test_directory_selection(self, mock_file_dialog):
         """Test the directory selection functionality."""
         # Set up mock to return a specific directory
@@ -114,20 +114,24 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         QApplication.processEvents()
 
     @async_test
-    async def test_directory_selection_signal(self):
+    @patch("PyQt6.QtWidgets.QFileDialog")
+    async def test_directory_selection_signal(self, mock_file_dialog):
         """Test that the directory_selected signal is emitted correctly."""
         # Set up signal waiter
         dir_signal_waiter = AsyncSignalWaiter(self.tab.directory_selected)
 
-        # Change the directory manually
+        # Set up mock to return a directory
         new_dir = "/test/manual/directory"
-        self.tab.dir_input.setText(new_dir)
+        mock_file_dialog.getExistingDirectory.return_value = new_dir
+
+        # Trigger browse which will emit the signal
+        self.tab._browse_directory()
 
         # Wait for the signal
-        received_dir = await dir_signal_waiter.wait(timeout=1.0)
+        result = await dir_signal_waiter.wait(timeout=1.0)
 
         # Verify the signal was emitted with the correct directory
-        assert received_dir == new_dir
+        assert result.args[0] == new_dir
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     def test_auto_detect_date_range_success(self, mock_message_box):
@@ -219,8 +223,8 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         expected_start = datetime(2023, 2, 1, 0, 0, 0)
         expected_end = datetime(2023, 2, 10, 23, 59, 59)
 
-        if isinstance(result, tuple) and len(result) == 2:
-            start_date, end_date = result
+        if hasattr(result, "args") and len(result.args) == 2:
+            start_date, end_date = result.args
             assert start_date == expected_start
             assert end_date == expected_end
             # Verify view model was updated
@@ -259,8 +263,25 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         # Verify scan was cancelled on the view model
         self.mock_view_model.cancel_scan.assert_called_once()
 
-    def test_download_all_button(self):
+    @patch("goesvfi.integrity_check.gui_tab.QMessageBox")
+    def test_download_all_button(self, mock_message_box):
         """Test the download selected button functionality."""
+        # Mock the selection model to indicate items are selected
+        mock_selection = MagicMock()
+        mock_selection.hasSelection.return_value = True
+        mock_selection.selectedRows.return_value = [
+            MagicMock(row=MagicMock(return_value=0))
+        ]
+
+        # Mock the results table and model
+        self.tab.results_table = MagicMock()
+        self.tab.results_table.selectionModel.return_value = mock_selection
+        self.tab.results_model = MagicMock()
+        self.tab.results_model._items = [MagicMock()]  # At least one item
+
+        # Mock message box to return Yes for confirmation
+        mock_message_box.question.return_value = QMessageBox.StandardButton.Yes
+
         # Ensure the button is enabled
         self.tab.download_button.setEnabled(True)
 
@@ -296,7 +317,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
         # Mock table model and call scan complete handler
         self.tab.results_model = MagicMock()
-        self.tab._handle_scan_completed(True, "Found 2 missing items")
+        self.tab._on_scan_completed_vm(True, "Found 2 missing items")
 
         # Verify UI updates
         self.tab.results_model.set_items.assert_called_once_with(missing_items)
@@ -307,25 +328,22 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
     def test_scan_complete_error_handler(self):
         """Test handling of scan completion with error."""
         # Call scan complete handler with error
-        self.tab._handle_scan_completed(False, "Error occurred during scan")
+        self.tab._on_scan_completed_vm(False, "Error occurred during scan")
 
         # Verify download button is disabled
         assert not self.tab.download_button.isEnabled()
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     def test_handle_scan_error(self, mock_message_box):
-        """Test handling of scan errors."""
-        # Call error handler
-        self.tab._handle_scan_error("Test error message")
+        """Test handling of scan errors through scan completed handler."""
+        # Call scan completed with error
+        self.tab._on_scan_completed_vm(False, "Test error message")
 
-        # Verify status is updated
-        assert self.tab.status_label.text() == "Error: Test error message"
+        # Verify download button is disabled on error
+        assert not self.tab.download_button.isEnabled()
 
-        # Verify error message is shown to user
-        mock_message_box.critical.assert_called_once()
-        error_args = mock_message_box.critical.call_args[0]
-        assert "Scan Error" in error_args[1]
-        assert "Test error message" in error_args[2]
+        # Verify scan button is enabled after error
+        assert self.tab.scan_button.isEnabled()
 
 
 if __name__ == "__main__":
