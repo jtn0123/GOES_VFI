@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from PyQt6.QtCore import QDate
+from PyQt6.QtCore import QDateTime
 from PyQt6.QtWidgets import QApplication
 
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
@@ -121,8 +121,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
         # Change the directory manually
         new_dir = "/test/manual/directory"
-        self.tab.directory_edit.setText(new_dir)
-        self.tab._handle_directory_changed()
+        self.tab.dir_input.setText(new_dir)
 
         # Wait for the signal
         received_dir = await dir_signal_waiter.wait(timeout=1.0)
@@ -200,17 +199,15 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         date_range_waiter = AsyncSignalWaiter(self.tab.date_range_changed)
 
         # Change the start date
-        new_start_date = QDate(2023, 2, 1)
-        self.tab.start_date_picker.setDate(new_start_date)
-        self.tab._handle_start_date_changed(new_start_date)
+        new_start_date = QDateTime(2023, 2, 1, 0, 0)
+        self.tab.start_date_edit.setDateTime(new_start_date)
 
         # Process events
         QApplication.processEvents()
 
         # Change the end date
-        new_end_date = QDate(2023, 2, 10)
-        self.tab.end_date_picker.setDate(new_end_date)
-        self.tab._handle_end_date_changed(new_end_date)
+        new_end_date = QDateTime(2023, 2, 10, 23, 59)
+        self.tab.end_date_edit.setDateTime(new_end_date)
 
         # Process events
         QApplication.processEvents()
@@ -275,6 +272,10 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
     def test_cancel_download_button(self):
         """Test the cancel download button functionality."""
+        # Set up view model state to indicate downloading
+        self.mock_view_model.is_scanning = False
+        self.mock_view_model.is_downloading = True
+
         # Ensure the button is enabled
         self.tab.cancel_button.setEnabled(True)
 
@@ -294,11 +295,11 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         self.mock_view_model.missing_items = missing_items
 
         # Mock table model and call scan complete handler
-        self.tab.missing_items_model = MagicMock()
+        self.tab.results_model = MagicMock()
         self.tab._handle_scan_completed(True, "Found 2 missing items")
 
         # Verify UI updates
-        self.tab.missing_items_model.set_items.assert_called_once_with(missing_items)
+        self.tab.results_model.set_items.assert_called_once_with(missing_items)
 
         # Verify download button is enabled
         assert self.tab.download_button.isEnabled()
