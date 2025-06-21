@@ -82,7 +82,8 @@ class TestNetworkFailureSimulation:
             yield
 
     @pytest.mark.asyncio
-    async def test_exponential_backoff_retry(self, mock_time):
+    @pytest.mark.usefixtures("_mock_time")
+    async def test_exponential_backoff_retry(self):
         """Test exponential backoff retry mechanism."""
         attempt_count = 0
         attempt_times = []

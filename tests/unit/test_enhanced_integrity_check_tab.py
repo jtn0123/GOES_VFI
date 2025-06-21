@@ -263,12 +263,12 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         self.mock_view_model.cancel_scan.assert_called_once()
 
     def test_download_all_button(self):
-        """Test the download all button functionality."""
+        """Test the download selected button functionality."""
         # Ensure the button is enabled
-        self.tab.download_all_button.setEnabled(True)
+        self.tab.download_button.setEnabled(True)
 
-        # Click the download all button
-        self.tab.download_all_button.click()
+        # Click the download button
+        self.tab.download_button.click()
 
         # Verify downloads were started on the view model
         self.mock_view_model.start_downloads.assert_called_once()
@@ -276,10 +276,10 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
     def test_cancel_download_button(self):
         """Test the cancel download button functionality."""
         # Ensure the button is enabled
-        self.tab.cancel_download_button.setEnabled(True)
+        self.tab.cancel_button.setEnabled(True)
 
         # Click the cancel download button
-        self.tab.cancel_download_button.click()
+        self.tab.cancel_button.click()
 
         # Verify downloads were cancelled on the view model
         self.mock_view_model.cancel_downloads.assert_called_once()
@@ -301,7 +301,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         self.tab.missing_items_model.set_items.assert_called_once_with(missing_items)
 
         # Verify download button is enabled
-        assert self.tab.download_all_button.isEnabled()
+        assert self.tab.download_button.isEnabled()
 
     def test_scan_complete_error_handler(self):
         """Test handling of scan completion with error."""
@@ -309,7 +309,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         self.tab._handle_scan_completed(False, "Error occurred during scan")
 
         # Verify download button is disabled
-        assert not self.tab.download_all_button.isEnabled()
+        assert not self.tab.download_button.isEnabled()
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     def test_handle_scan_error(self, mock_message_box):

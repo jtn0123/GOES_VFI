@@ -262,9 +262,11 @@ class FileSorter:
 
         # Extract base name from file name
         base_name: str = file_name
-        # If it matches "_YYYYMMDDThhmmssZ.png" (20 chars from end), strip that part:
+        # If it matches "_YYYYMMDDThhmmssZ.png" (21 chars from end including underscore), strip that part:
         if re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
-            base_name = file_name[:-20]  # remove the date/time portion + extension
+            base_name = file_name[
+                :-21
+            ]  # remove the underscore + date/time portion + extension
         elif file_name.endswith(".png"):
             base_name = file_name[:-4]
 

@@ -389,7 +389,7 @@ class CropSelectionDialog(QDialog):
         if rect and not rect.isNull() and rect.width() > 0 and rect.height() > 0:
             self._final_selected_rect_display = rect
         else:
-            self._final_selected_rect_display = QRect()  # Empty rect instead of None
+            self._final_selected_rect_display = None
 
     def store_final_selection(self):
         """Store the final selection (called before dialog closes)."""
