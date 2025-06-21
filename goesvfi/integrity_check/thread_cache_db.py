@@ -179,3 +179,12 @@ class ThreadLocalCacheDB:
         """Get a cache entry via thread-local connection."""
         db = self.get_db()
         return db.get_entry(filepath)
+
+    def reset_database(self) -> None:
+        """Reset the database via thread-local connection."""
+        db = self.get_db()
+        if hasattr(db, 'reset_database'):
+            db.reset_database()
+        else:
+            # Fallback to clear_cache if reset_database doesn't exist
+            db.clear_cache()

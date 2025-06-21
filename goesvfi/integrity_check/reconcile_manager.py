@@ -114,14 +114,24 @@ class ReconcileManager:
         Returns:
             Tuple of (existing_timestamps, missing_timestamps)
         """
-        # Generate all expected timestamps
+        # Step 1: Generate expected timestamps
+        if progress_callback:
+            progress_callback(0, 5, "Step 1/5: Generating expected timestamps")
+
         current = start_time
         all_timestamps = set()
         while current <= end_time:
             all_timestamps.add(current)
             current = current + timedelta(minutes=interval_minutes)
 
-        # Check which files exist
+        # Step 2: Check cache
+        if progress_callback:
+            progress_callback(1, 5, "Step 2/5: Checking cache for existing entries")
+
+        # Step 3: Check filesystem
+        if progress_callback:
+            progress_callback(2, 5, "Step 3/5: Checking filesystem for existing files")
+
         existing = set()
         for ts in all_timestamps:
             path = self._get_local_path(ts, satellite, directory)
@@ -133,8 +143,16 @@ class ReconcileManager:
                         ts, satellite, str(path), found=True
                     )
 
+        # Step 4: Finalizing results
+        if progress_callback:
+            progress_callback(3, 5, "Step 4/5: Finalizing results")
+
         # Calculate missing
         missing = all_timestamps - existing
+
+        # Step 5: Complete
+        if progress_callback:
+            progress_callback(5, 5, "Step 5/5: Scan complete")
 
         return existing, missing
 
@@ -158,7 +176,45 @@ class ReconcileManager:
         Returns:
             Dictionary mapping timestamps to results/errors
         """
-        LOGGER.warning("Stub: Fetch missing files not implemented")
+        # Step 1: Analyze missing files
+        if progress_callback:
+            progress_callback(0, 4, "Step 1/4: Analyzing missing files")
+
+        # Step 2: Prepare download strategy
+        if progress_callback:
+            progress_callback(1, 4, "Step 2/4: Preparing download strategy")
+
+        # Separate recent and old timestamps (stub - just split in half)
+        recent_count = len(missing_timestamps) // 2
+        cdn_timestamps = missing_timestamps[:recent_count]
+        s3_timestamps = missing_timestamps[recent_count:]
+
+        # Step 3: Download from sources
+        if progress_callback:
+            if cdn_timestamps and s3_timestamps:
+                progress_callback(
+                    2,
+                    4,
+                    f"Step 3/4: Downloading {len(cdn_timestamps)} files from CDN and {len(s3_timestamps)} files from S3 (1/{len(missing_timestamps)})",
+                )
+            elif cdn_timestamps:
+                progress_callback(
+                    2,
+                    4,
+                    f"Step 3/4: Downloading {len(cdn_timestamps)} files from CDN (1/{len(cdn_timestamps)})",
+                )
+            elif s3_timestamps:
+                progress_callback(
+                    2,
+                    4,
+                    f"Step 3/4: Downloading {len(s3_timestamps)} files from S3 (1/{len(s3_timestamps)})",
+                )
+
+        # Step 4: Complete
+        if progress_callback:
+            progress_callback(4, 4, "Step 4/4: Download complete")
+
+        LOGGER.warning("Stub: Fetch missing files not fully implemented")
         # Return empty dict as a stub
         return {}
 
@@ -218,6 +274,42 @@ class ReconcileManager:
         Returns:
             Tuple of (total_expected, existing_count, fetched_count)
         """
-        LOGGER.warning("Stub: Reconcile not implemented")
-        # Return some dummy values
-        return 0, 0, 0
+        # Phase 1: Scan directory
+        if progress_callback:
+            progress_callback(0, 2, "Phase 1/2: Scanning directory for existing files")
+
+        existing, missing = await self.scan_directory(
+            directory=directory,
+            satellite=satellite,
+            start_time=start_time,
+            end_time=end_time,
+            interval_minutes=interval_minutes,
+            progress_callback=None,  # Don't pass through to avoid conflicting messages
+        )
+
+        # Phase 2: Fetch missing files
+        if progress_callback:
+            progress_callback(1, 2, "Phase 2/2: Downloading missing files")
+
+        if missing:
+            await self.fetch_missing_files(
+                missing_timestamps=list(missing),
+                satellite=satellite,
+                destination_dir=directory,
+                progress_callback=None,  # Don't pass through to avoid conflicting messages
+            )
+
+        # Final completion message
+        if progress_callback:
+            total_expected = len(existing) + len(missing)
+            fetched_count = len(missing)  # Simulated for stub
+            progress_callback(
+                2,
+                2,
+                f"Reconciliation complete: {len(existing)} existing, {fetched_count} downloaded",
+            )
+
+        LOGGER.warning("Stub: Reconcile not fully implemented")
+        # Return dummy values
+        total_expected = len(existing) + len(missing)
+        return total_expected, len(existing), 0

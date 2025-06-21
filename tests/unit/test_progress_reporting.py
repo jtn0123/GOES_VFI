@@ -6,10 +6,9 @@ ReconcileManager, ensuring proper step-based and phase-based progress
 messages are generated.
 """
 
-import asyncio
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -172,8 +171,9 @@ class TestProgressReporting:
 
         # Execute the method
         await reconcile_manager.fetch_missing_files(
-            missing_timestamps=mock_timestamps,
+            missing_timestamps=list(mock_timestamps),
             satellite=satellite,
+            destination_dir="/fake/destination",
             progress_callback=progress_callback,
         )
 
@@ -240,8 +240,8 @@ class TestProgressReporting:
             progress_cb = kwargs.get("progress_callback")
 
             # Simulate some timestamps
-            mock_existing = set([datetime.now() - timedelta(hours=1)])
-            mock_missing = set([datetime.now() - timedelta(hours=2)])
+            mock_existing = {datetime.now() - timedelta(hours=1)}
+            mock_missing = {datetime.now() - timedelta(hours=2)}
 
             # Call original to get progress messages
             await orig_scan_directory(*args, **kwargs)

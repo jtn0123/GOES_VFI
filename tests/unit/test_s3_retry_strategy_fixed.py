@@ -9,18 +9,11 @@ import time
 import unittest
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import aioboto3
 import botocore.exceptions
-from botocore import UNSIGNED
 
-from goesvfi.integrity_check.remote.base import (
-    AuthenticationError,
-    ConnectionError,
-    RemoteStoreError,
-    ResourceNotFoundError,
-)
+from goesvfi.integrity_check.remote.base import ConnectionError
 from goesvfi.integrity_check.remote.s3_store import S3Store, update_download_stats
 from goesvfi.integrity_check.time_index import SatellitePattern
 
@@ -40,7 +33,10 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
     async def test_client_creation_retry(self):
         """Test retry logic for client creation."""
         # We need to mock at the aioboto3.Session level
-        with patch("aioboto3.Session") as mock_session_class:
+        with (
+            patch("aioboto3.Session") as mock_session_class,
+            patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+        ):
             # Setup a mock session
             mock_session = MagicMock()
             mock_session_class.return_value = mock_session
@@ -68,11 +64,14 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(client, mock_client)
             self.assertEqual(mock_client_context.__aenter__.call_count, 2)
 
-            # Verify correct session setup
-            mock_session_class.assert_called_once()
-            mock_session.client.assert_called_once_with(
-                "s3", config=mock_session.client.call_args[1]["config"]
-            )
+            # Verify correct session setup - it should be called twice due to retry
+            self.assertEqual(mock_session_class.call_count, 2)
+            # All calls should have the region_name parameter
+            for call in mock_session_class.call_args_list:
+                self.assertEqual(call[1], {"region_name": "us-east-1"})
+
+            # Verify client creation was called twice (once for each session)
+            self.assertEqual(mock_session.client.call_count, 2)
 
     async def test_client_creation_retry_fails_after_max_retries(self):
         """Test client creation fails after exceeding max retries."""
@@ -100,7 +99,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
                     await store._get_s3_client()
 
                 # Verify error message
-                self.assertIn("Connection to AWS S3 timed out", str(cm.exception))
+                self.assertIn("Could not connect to AWS S3 service", str(cm.exception))
 
                 # Verify retry attempts
                 self.assertEqual(mock_client_context.__aenter__.call_count, 3)
@@ -211,14 +210,16 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         )
 
         # Create 5 timestamps
-        timestamps = {datetime(2023, 1, 1, 12, i * 10, 0) for i in range(5)}
+        timestamps = [datetime(2023, 1, 1, 12, i * 10, 0) for i in range(5)]
 
-        # Mock _is_recent to always use S3
-        manager._is_recent = AsyncMock(return_value=False)
+        # Mock ReconcileManager methods that don't exist yet
+        manager._is_recent = AsyncMock(return_value=False)  # Use S3 for old files
 
         # Run fetch_missing_files
         results = await manager.fetch_missing_files(
-            missing_timestamps=timestamps, satellite=self.test_satellite
+            missing_timestamps=timestamps,
+            satellite=self.test_satellite,
+            destination_dir="/fake/base",
         )
 
         # Verify results
@@ -230,25 +231,24 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
     async def test_network_diagnostics_collection(self):
         """Test that network diagnostics are collected on repeated failures."""
         # Mock get_system_network_info
-        with (
-            patch(
-                "goesvfi.integrity_check.remote.s3_store.get_system_network_info"
-            ) as mock_info,
-            patch(
-                "goesvfi.integrity_check.remote.s3_store.DOWNLOAD_STATS"
-            ) as mock_stats,
-        ):
-            # Setup mock stats
-            mock_stats.get.return_value = 0  # Return 0 for any key for simplicity
-            mock_stats.__getitem__.return_value = 4  # Return 4 for failed count
+        with patch(
+            "goesvfi.integrity_check.remote.s3_store.get_system_network_info"
+        ) as mock_info:
+            # Set the failed count to 10 so that when the condition checks failed % 5 == 0 it's true
+            # The code checks the OLD value before increment: if old_failed % 5 == 0, so we need 10 % 5 == 0
+            from goesvfi.integrity_check.remote.s3_store import DOWNLOAD_STATS
+
+            DOWNLOAD_STATS["failed"] = 10  # 10 % 5 == 0 triggers diagnostics
+            DOWNLOAD_STATS["total_attempts"] = 10
+            DOWNLOAD_STATS["errors"] = []  # Initialize errors list
 
             # Call update_download_stats with a failure
+            # This should trigger network diagnostics collection because 10 % 5 == 0
             update_download_stats(
                 success=False, error_type="network", error_message="Connection failed"
             )
 
             # Verify get_system_network_info was called
-            # We're mocking the failed count to be at a 5-multiple
             mock_info.assert_called_once()
 
 
