@@ -330,9 +330,9 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         """Test concurrent downloads with different product types."""
         # Set up the mock to use our implementation
         mock_fetch.side_effect = self._mock_fetch_missing_files
-        # Create date range
-        start_date = self.old_date
-        end_date = self.old_date + timedelta(minutes=50)
+        # Create date range - use a larger window to ensure all product types have timestamps
+        start_date = self.old_date.replace(minute=0, second=0, microsecond=0)
+        end_date = start_date + timedelta(hours=2)  # 2 hours guarantees coverage
 
         # Test different product types concurrently
         product_types = ["RadF", "RadC", "RadM"]
