@@ -237,3 +237,4 @@ precommit_env/
 
 # Log directories
 logs/
+tests/unit/test_output/

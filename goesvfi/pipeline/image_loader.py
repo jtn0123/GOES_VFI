@@ -103,8 +103,8 @@ class ImageLoader(ImageProcessor):
                     if self.memory_optimizer:
                         pass
                         has_memory, msg = self.memory_optimizer.check_available_memory(
-                            estimated_mb + 100  # Add buffer
-                        )
+                            estimated_mb + 100
+                        )  # Add buffer
                         if not has_memory:
                             pass
                             raise MemoryError(

@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Union
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from PyQt6.QtCore import QCoreApplication, QThreadPool
@@ -86,9 +87,11 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model._disk_space_timer = self.mock_timer
 
         # Disable real disk space checking in tests
-        self.view_model.get_disk_space_info = MagicMock(
-            return_value=(10.0, 100.0)
-        )  # 10GB used, 100GB total
+        # Patch get_disk_space_info method
+        self.mock_get_disk_space = patch.object(
+            self.view_model, "get_disk_space_info", return_value=(10.0, 100.0)
+        )
+        self.mock_get_disk_space.start()
 
         # Dates for testing
         self.start_date = datetime(2023, 6, 15, 0, 0, 0)
@@ -96,12 +99,18 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
 
     def tearDown(self):
         """Tear down test fixtures."""
+        # Stop patches
+        if hasattr(self, "mock_get_disk_space"):
+            self.mock_get_disk_space.stop()
+
         # Call view model cleanup to ensure resources are released
         if hasattr(self, "view_model"):
             try:
                 # Clean references to avoid AsyncMock warnings
-                self.view_model._cache_db = None
-                self.view_model._reconcile_manager = None
+                if hasattr(self.view_model, "_cache_db"):
+                    delattr(self.view_model, "_cache_db")
+                if hasattr(self.view_model, "_reconcile_manager"):
+                    delattr(self.view_model, "_reconcile_manager")
                 self.view_model.cleanup()
             except Exception:
                 pass
@@ -241,14 +250,17 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         # Since the enhanced view model wraps the mock CacheDB in a ThreadLocalCacheDB,
         # we can't directly test the mock call. Instead, test that the method works
         # without throwing an exception and updates the status message appropriately.
-        
+
         initial_status = self.view_model.status_message
         self.view_model.reset_database()
-        
+
         # Verify that the status message was updated (indicating the method ran)
         # The actual implementation should set this to "Database reset successfully"
         assert self.view_model.status_message != initial_status
-        assert "reset" in self.view_model.status_message.lower() or "Database reset successfully" in self.view_model.status_message
+        assert (
+            "reset" in self.view_model.status_message.lower()
+            or "Database reset successfully" in self.view_model.status_message
+        )
 
         # Test passes if no exception was raised and status was updated
 
@@ -414,7 +426,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
 
         # Create results
         success_path = self.base_dir / "success.png"
-        results = {
+        results: dict[datetime, Union[Path, Exception]] = {
             timestamp1: success_path,  # Success
             timestamp2: FileNotFoundError("Not found"),  # Error
         }
@@ -509,7 +521,8 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
             mock_cache_db.close.assert_called_once()
 
             # Clean up reference to avoid AsyncMock warning
-            vm._cache_db = None
+            if hasattr(vm, "_cache_db"):
+                delattr(vm, "_cache_db")
 
     def test_start_enhanced_scan(self):
         """Test starting enhanced scan."""
@@ -614,6 +627,15 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         self.mock_view_model._satellite = SatellitePattern.GOES_16
         self.mock_view_model._interval_minutes = 10
         self.mock_view_model._base_directory = self.base_dir
+        self.mock_view_model.base_directory = self.base_dir  # Some code uses property
+
+        # Add download tracking attributes
+        self.mock_view_model._currently_downloading_items = []
+        self.mock_view_model._downloaded_success_count = 0
+        self.mock_view_model._downloaded_failed_count = 0
+        self.mock_view_model._download_start_time = 0
+        self.mock_view_model._last_download_rate = 0.0
+        self.mock_view_model.download_item_updated = MagicMock()
 
         # Create real signals object to track properly
         self.signals = AsyncTaskSignals()
@@ -661,10 +683,10 @@ class TestAsyncTasks(PyQtAsyncTestCase):
 
         # Clean up signal objects to avoid warnings
         if hasattr(self, "scan_task") and hasattr(self.scan_task, "signals"):
-            self.scan_task.signals = None
+            delattr(self.scan_task, "signals")
 
         if hasattr(self, "download_task") and hasattr(self.download_task, "signals"):
-            self.download_task.signals = None
+            delattr(self.download_task, "signals")
 
         # Clean up temporary directory
         self.temp_dir.cleanup()
@@ -689,25 +711,27 @@ class TestAsyncTasks(PyQtAsyncTestCase):
 
         # Mock the _run_scan method
         expected_result = {"status": "completed", "existing": set(), "missing": set()}
-        test_task._run_scan = AsyncMock(return_value=expected_result)
+        # Patch the _run_scan method instead of assigning
+        with patch.object(
+            test_task, "_run_scan", new=AsyncMock(return_value=expected_result)
+        ):
+            # Mock the loop creation and execution
+            with patch("asyncio.new_event_loop") as mock_loop_factory:
+                mock_loop = AsyncMock()
+                mock_loop.run_until_complete = MagicMock(return_value=expected_result)
+                mock_loop.close = MagicMock()
+                mock_loop_factory.return_value = mock_loop
 
-        # Mock the loop creation and execution
-        with patch("asyncio.new_event_loop") as mock_loop_factory:
-            mock_loop = AsyncMock()
-            mock_loop.run_until_complete = MagicMock(return_value=expected_result)
-            mock_loop.close = MagicMock()
-            mock_loop_factory.return_value = mock_loop
+                with patch("asyncio.set_event_loop"):
+                    # Run the task
+                    test_task.run()
 
-            with patch("asyncio.set_event_loop"):
-                # Run the task
-                test_task.run()
+                    # Process events to make sure signals are delivered
+                    QCoreApplication.processEvents()
 
-                # Process events to make sure signals are delivered
-                QCoreApplication.processEvents()
-
-                # Verify the signal was called with the expected result
-                scan_finished_spy.assert_called()
-                assert scan_finished_spy.call_args[0][0] == expected_result
+                    # Verify the signal was called with the expected result
+                    scan_finished_spy.assert_called()
+                    assert scan_finished_spy.call_args[0][0] == expected_result
 
     @async_test
     async def test_run_scan(self):
@@ -775,25 +799,27 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         # Mock the _run_downloads method
         mock_timestamp = datetime(2023, 6, 15, 0, 0, 0)
         expected_result = {mock_timestamp: Path("/test_path/test.png")}
-        test_task._run_downloads = AsyncMock(return_value=expected_result)
 
-        # Mock the loop creation and execution
-        with patch("asyncio.new_event_loop") as mock_loop_factory:
-            mock_loop = AsyncMock()
-            mock_loop.run_until_complete = MagicMock(return_value=expected_result)
-            mock_loop.close = MagicMock()
-            mock_loop_factory.return_value = mock_loop
+        with patch.object(
+            test_task, "_run_downloads", new=AsyncMock(return_value=expected_result)
+        ):
+            # Mock the loop creation and execution
+            with patch("asyncio.new_event_loop") as mock_loop_factory:
+                mock_loop = AsyncMock()
+                mock_loop.run_until_complete = MagicMock(return_value=expected_result)
+                mock_loop.close = MagicMock()
+                mock_loop_factory.return_value = mock_loop
 
-            with patch("asyncio.set_event_loop"):
-                # Run the task
-                test_task.run()
+                with patch("asyncio.set_event_loop"):
+                    # Run the task
+                    test_task.run()
 
-                # Process events to make sure signals are delivered
-                QCoreApplication.processEvents()
+                    # Process events to make sure signals are delivered
+                    QCoreApplication.processEvents()
 
-                # Verify the signal was called with the expected result
-                download_finished_spy.assert_called()
-                assert download_finished_spy.call_args[0][0] == expected_result
+                    # Verify the signal was called with the expected result
+                    download_finished_spy.assert_called()
+                    assert download_finished_spy.call_args[0][0] == expected_result
 
     @async_test
     async def test_run_downloads(self):

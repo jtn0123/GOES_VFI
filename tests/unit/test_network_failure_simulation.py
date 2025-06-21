@@ -285,7 +285,7 @@ class TestNetworkFailureSimulation:
         # Create composite store with named sources (mock implementation)
         composite = CompositeStore(False)  # Disable auto-routing for test
         # Mock the stores attribute for testing
-        setattr(composite, '_stores', [("S3", mock_s3), ("CDN", mock_cdn)])
+        composite.sources = [("S3", mock_s3), ("CDN", mock_cdn)]
 
         timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
@@ -310,7 +310,9 @@ class TestNetworkFailureSimulation:
             cdn_stats = stats.get("CDN", {})
             s3_stats = stats.get("S3", {})
             if cdn_stats and s3_stats:
-                assert cdn_stats.get("success_rate", 0) > s3_stats.get("success_rate", 0)
+                assert cdn_stats.get("success_rate", 0) > s3_stats.get(
+                    "success_rate", 0
+                )
 
     @pytest.mark.asyncio
     async def test_intermittent_network_issues(self, mock_time):

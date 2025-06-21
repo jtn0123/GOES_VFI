@@ -142,8 +142,8 @@ class TestWindow(QMainWindow):
 
         # Update tracker (simulate data transfer)
         self.progress_tracker.update_progress(
-            items=1, bytes_transferred=1024 * 1024  # 1MB
-        )
+            items=1, bytes_transferred=1024 * 1024
+        )  # 1MB
 
     def update_stats(self, stats):
         """Update status display with stats."""

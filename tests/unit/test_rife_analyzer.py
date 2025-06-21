@@ -252,7 +252,7 @@ class TestAnalyzeRifeExecutable:
     def test_analyze_successful(self, mock_exists, mock_detector_class):
         """Test successful analysis of RIFE executable."""
         exe_path = pathlib.Path("/path/to/rife")
-        
+
         # Mock the exists method to return True
         mock_exists.return_value = True
 
@@ -268,7 +268,7 @@ class TestAnalyzeRifeExecutable:
         mock_detector.supports_timestep.return_value = False
         mock_detector.supports_model_path.return_value = True
         mock_detector.supports_gpu_id.return_value = False
-        mock_detector.supported_args = set(["-t", "-u", "--threads"])
+        mock_detector.supported_args = {"-t", "-u", "--threads"}
         mock_detector.help_text = "RIFE help text"
 
         mock_detector_class.return_value = mock_detector

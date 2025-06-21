@@ -571,8 +571,8 @@ class MainWindow(QWidget):
                 settings_file = Path(self.settings.fileName())
                 if settings_file.exists():
                     LOGGER.debug(
-                        "Settings file exists: %s (size: %s bytes)"  # noqa: B950
-                    )
+                        "Settings file exists: %s (size: %s bytes)"
+                    )  # noqa: B950
                 else:
                     LOGGER.warning(
                         "Settings file does not exist after save attempt: %s"
@@ -659,8 +659,8 @@ class MainWindow(QWidget):
             app_name = self.settings.applicationName()
             filename = self.settings.fileName()
             LOGGER.debug(
-                "QSettings details during crop save: org=%s, app=%s, file=%s"  # noqa: B950
-            )
+                "QSettings details during crop save: org=%s, app=%s, file=%s"
+            )  # noqa: B950
 
             # Verify QSettings consistency - this will detect if we have mismatched organization/application names   # noqa: B950
             app_instance = QApplication.instance()
@@ -704,8 +704,8 @@ class MainWindow(QWidget):
                 settings_file = Path(self.settings.fileName())
                 if settings_file.exists():
                     LOGGER.debug(
-                        "Settings file exists after crop save: %s (size: %s bytes)"  # noqa: B950
-                    )
+                        "Settings file exists after crop save: %s (size: %s bytes)"
+                    )  # noqa: B950
                 else:
                     LOGGER.warning(
                         "Settings file does not exist after crop save attempt: %s"
@@ -1125,8 +1125,8 @@ class MainWindow(QWidget):
         app_name = self.settings.applicationName()
         filename = self.settings.fileName()
         LOGGER.debug(
-            "MainWindow loadSettings - QSettings details: org=%s, app=%s, file=%s"  # noqa: B950
-        )
+            "MainWindow loadSettings - QSettings details: org=%s, app=%s, file=%s"
+        )  # noqa: B950
 
         # Verify QSettings consistency - this will detect if we have mismatched organization/application names   # noqa: B950
         app_instance = QApplication.instance()
@@ -1845,40 +1845,30 @@ class MainWindow(QWidget):
                 # Warn if selected model doesn't support features
                 if (
                     self.main_tab.rife_tile_checkbox.isChecked()
-                    and not capability_detector.capabilities.get(
-                        "tiling", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("tiling", False)
+                ):  # Access capability from dict
                     LOGGER.warning("Selected model '%s' does not support tiling.")
                 if (
                     self.main_tab.rife_uhd_checkbox.isChecked()
-                    and not capability_detector.capabilities.get(
-                        "uhd", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("uhd", False)
+                ):  # Access capability from dict
                     LOGGER.warning("Selected model '%s' does not support UHD mode.")
                 if (
                     self.main_tab.rife_thread_spec_edit.text() != "1:2:2"
-                    and not capability_detector.capabilities.get(
-                        "thread_spec", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("thread_spec", False)
+                ):  # Access capability from dict
                     LOGGER.warning(
-                        "Selected model '%s' does not support custom thread specification."  # noqa: B950
-                    )
+                        "Selected model '%s' does not support custom thread specification."
+                    )  # noqa: B950
                 if (
                     self.main_tab.rife_tta_spatial_checkbox.isChecked()
-                    and not capability_detector.capabilities.get(
-                        "tta_spatial", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("tta_spatial", False)
+                ):  # Access capability from dict
                     LOGGER.warning("Selected model '%s' does not support spatial TTA.")
                 if (
                     self.main_tab.rife_tta_temporal_checkbox.isChecked()
-                    and not capability_detector.capabilities.get(
-                        "tta_temporal", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("tta_temporal", False)
+                ):  # Access capability from dict
                     LOGGER.warning("Selected model '%s' does not support temporal TTA.")
 
             except FileNotFoundError:
@@ -1890,8 +1880,8 @@ class MainWindow(QWidget):
                 self.main_tab.rife_tta_spatial_checkbox.setEnabled(False)
                 self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
                 LOGGER.warning(
-                    "RIFE executable not found for model '%s'. RIFE options disabled."  # noqa: B950
-                )
+                    "RIFE executable not found for model '%s'. RIFE options disabled."
+                )  # noqa: B950
             except Exception as e:
                 LOGGER.error("Error checking RIFE capabilities for model '%s': %s")
                 # Disable options on error
@@ -2202,8 +2192,8 @@ class MainWindow(QWidget):
         app_name = self.settings.applicationName()
         filename = self.settings.fileName()
         LOGGER.debug(
-            "MainWindow _load_all_settings - QSettings: org=%s, app=%s, file=%s"  # noqa: B950
-        )
+            "MainWindow _load_all_settings - QSettings: org=%s, app=%s, file=%s"
+        )  # noqa: B950
 
         # Check if settings file exists
         settings_file = Path(filename)
@@ -2241,8 +2231,8 @@ class MainWindow(QWidget):
                             self.main_tab.in_dir_edit.setText(str(input_dir_path))
                     else:
                         LOGGER.warning(
-                            "Saved input directory doesn't exist, will try to find it: %s"  # noqa: B950
-                        )
+                            "Saved input directory doesn't exist, will try to find it: %s"
+                        )  # noqa: B950
                         # Try to find directory with the same name in common locations
                         dir_name = input_dir_path.name
                         LOGGER.debug("Looking for directory named: %s", dir_name)
@@ -2256,8 +2246,8 @@ class MainWindow(QWidget):
                             LOGGER.debug("Checking potential path: %s", potential_path)
                             if potential_path.exists() and potential_path.is_dir():
                                 LOGGER.info(
-                                    "Found input directory in alternative location: %s"  # noqa: B950
-                                )
+                                    "Found input directory in alternative location: %s"
+                                )  # noqa: B950
                                 self.in_dir = potential_path
 
                                 # Also update the UI text field to ensure consistency
@@ -2351,8 +2341,8 @@ class MainWindow(QWidget):
         app_name = self.settings.applicationName()
         filename = self.settings.fileName()
         LOGGER.debug(
-            "MainWindow _save_all_settings - QSettings: org=%s, app=%s, file=%s"  # noqa: B950
-        )
+            "MainWindow _save_all_settings - QSettings: org=%s, app=%s, file=%s"
+        )  # noqa: B950
 
         # List current keys before saving
         current_keys = self.settings.allKeys()
@@ -2413,8 +2403,8 @@ class MainWindow(QWidget):
             settings_file = Path(filename)
             if settings_file.exists():
                 LOGGER.debug(
-                    "Settings file exists after save: %s (size: %s bytes)"  # noqa: B950
-                )
+                    "Settings file exists after save: %s (size: %s bytes)"
+                )  # noqa: B950
             else:
                 LOGGER.warning("Settings file does not exist after save: %s")
 
@@ -2570,8 +2560,8 @@ class MainWindow(QWidget):
                                 res_km_val = 4.0
 
                             LOGGER.debug(
-                                "Applying Sanchez to preview for: %s with res_km=%s"  # noqa: B950
-                            )
+                                "Applying Sanchez to preview for: %s with res_km=%s"
+                            )  # noqa: B950
                             sanchez_kwargs = {
                                 "res_km": res_km_val
                             }  # Don't set false_colour here
@@ -2707,8 +2697,8 @@ class MainWindow(QWidget):
                 initial_img_array  # Start with the potentially Sanchez'd array
             )
             LOGGER.debug(
-                "PRE-CROP Check: crop_rect=%s, initial_img_array shape=%s"  # noqa: B950
-            )  # DEBUG LOG
+                "PRE-CROP Check: crop_rect=%s, initial_img_array shape=%s"
+            )  # noqa: B950  # DEBUG LOG
             if crop_rect:
                 LOGGER.debug(
                     "INSIDE CROP BLOCK: Applying crop %s to preview for %s"
@@ -2716,8 +2706,8 @@ class MainWindow(QWidget):
                 try:
                     # Create a temporary ImageData for cropping API
                     LOGGER.debug(
-                        "BEFORE CROP: initial_img_array shape=%s"  # noqa: B950
-                    )  # DEBUG LOG
+                        "BEFORE CROP: initial_img_array shape=%s"
+                    )  # noqa: B950  # DEBUG LOG
                     temp_image_data_for_crop = ImageData(
                         image_data=initial_img_array,
                         metadata=image_data_to_process.metadata,
@@ -2735,8 +2725,8 @@ class MainWindow(QWidget):
                         elif isinstance(cropped_image_data.image_data, np.ndarray):
                             final_img_array = cropped_image_data.image_data
                         LOGGER.debug(
-                            "AFTER CROP (Success): final_img_array shape=%s"  # noqa: B950
-                        )  # DEBUG LOG
+                            "AFTER CROP (Success): final_img_array shape=%s"
+                        )  # noqa: B950  # DEBUG LOG
                     else:
                         LOGGER.warning(
                             "Cropping returned no data, using uncropped image."
@@ -3423,8 +3413,8 @@ class MainWindow(QWidget):
         details = f"An error occurred during video processing:\n\n{error_message}\n\n"
         # Show an error message box
         QMessageBox.critical(
-            self, "Processing Error", details  # Show the detailed message
-        )
+            self, "Processing Error", details
+        )  # Show the detailed message
         # Determine if the current encoder is RIFE
         current_encoder_text = self.main_tab.encoder_combo.currentText()
         is_rife = current_encoder_text.startswith("RIFE")
@@ -3466,40 +3456,30 @@ class MainWindow(QWidget):
                 # Warn if selected model doesn't support features
                 if (
                     self.main_tab.rife_tile_checkbox.isChecked()
-                    and not capability_detector.capabilities.get(
-                        "tiling", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("tiling", False)
+                ):  # Access capability from dict
                     LOGGER.warning("Selected model '%s' does not support tiling.")
                 if (
                     self.main_tab.rife_uhd_checkbox.isChecked()
-                    and not capability_detector.capabilities.get(
-                        "uhd", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("uhd", False)
+                ):  # Access capability from dict
                     LOGGER.warning("Selected model '%s' does not support UHD mode.")
                 if (
                     self.main_tab.rife_thread_spec_edit.text() != "1:2:2"
-                    and not capability_detector.capabilities.get(
-                        "thread_spec", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("thread_spec", False)
+                ):  # Access capability from dict
                     LOGGER.warning(
-                        "Selected model '%s' does not support custom thread specification."  # noqa: B950
-                    )
+                        "Selected model '%s' does not support custom thread specification."
+                    )  # noqa: B950
                 if (
                     self.main_tab.rife_tta_spatial_checkbox.isChecked()
-                    and not capability_detector.capabilities.get(
-                        "tta_spatial", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("tta_spatial", False)
+                ):  # Access capability from dict
                     LOGGER.warning("Selected model '%s' does not support spatial TTA.")
                 if (
                     self.main_tab.rife_tta_temporal_checkbox.isChecked()
-                    and not capability_detector.capabilities.get(
-                        "tta_temporal", False
-                    )  # Access capability from dict
-                ):
+                    and not capability_detector.capabilities.get("tta_temporal", False)
+                ):  # Access capability from dict
                     LOGGER.warning("Selected model '%s' does not support temporal TTA.")
 
             except FileNotFoundError:
@@ -3511,8 +3491,8 @@ class MainWindow(QWidget):
                 self.main_tab.rife_tta_spatial_checkbox.setEnabled(False)
                 self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
                 LOGGER.warning(
-                    "RIFE executable not found for model '%s'. RIFE options disabled."  # noqa: B950
-                )
+                    "RIFE executable not found for model '%s'. RIFE options disabled."
+                )  # noqa: B950
             except Exception as e:
                 LOGGER.error("Error checking RIFE capabilities for model '%s': %s")
                 # Disable options on error

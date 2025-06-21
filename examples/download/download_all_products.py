@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import boto3
+from botocore import UNSIGNED
 from botocore.config import Config
 
 logging.basicConfig(
@@ -33,7 +34,7 @@ DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # Configure boto3 with a lengthy timeout and anonymous access for public NOAA buckets
 s3_config = Config(
-    signature_version=boto3.UNSIGNED,  # Anonymous access
+    signature_version=UNSIGNED,  # Anonymous access
     retries={"max_attempts": 3, "mode": "standard"},
     read_timeout=300,  # 5 minutes
     connect_timeout=30,
@@ -43,6 +44,7 @@ s3_config = Config(
 async def list_available_files(bucket_name, product_type, band, hour="12"):
     """List available files in the S3 bucket for a specific product type and band."""
     try:
+        pass
         # Connect to the S3 bucket with anonymous access
         s3 = boto3.client("s3", region_name="us-east-1", config=s3_config)
 
@@ -63,6 +65,7 @@ async def list_available_files(bucket_name, product_type, band, hour="12"):
         return band_files[:3]  # Return up to 3 files for each combination
 
     except Exception as e:
+        pass
         logger.error(
             f"Error listing files for {bucket_name}/{product_type}/Band {band}: {str(e)}"
         )
@@ -76,15 +79,16 @@ async def download_file(bucket_name, s3_key, local_path):
         s3 = boto3.client("s3", region_name="us-east-1", config=s3_config)
 
         # Download the file
-        logger.info(f"Downloading {s3_key} to {local_path}")
+        logger.info("Downloading %s to %s", s3_key, local_path)
         s3.download_file(bucket_name, s3_key, str(local_path))
 
         file_size = local_path.stat().st_size
-        logger.info(f"Downloaded file size: {file_size:,} bytes")
+        logger.info("Downloaded file size: %s bytes", file_size)
         return True
 
     except Exception as e:
-        logger.error(f"Error downloading {bucket_name}/{s3_key}: {str(e)}")
+        pass
+        logger.error("Error downloading %s/%s: %s", bucket_name, s3_key, str(e))
         return False
 
 
@@ -101,6 +105,7 @@ async def sample_all_products_and_bands():
             for band in BANDS:
                 # Only attempt a few bands for each product to avoid excessive downloads
                 if product_type == "RadM" and band > 8:
+                    pass
                     # Skip some bands for RadM to keep test duration reasonable
                     continue
 
@@ -110,6 +115,7 @@ async def sample_all_products_and_bands():
                 )
 
                 if available_files:
+                    pass
                     # Download the first available file
                     filename = available_files[0]
                     satellite_abbr = "G16" if satellite == "noaa-goes16" else "G18"
@@ -143,7 +149,7 @@ async def sample_all_products_and_bands():
 
 async def main():
     """Main function to run the tests."""
-    logger.info(f"Starting GOES satellite file downloads to {DOWNLOAD_DIR}")
+    logger.info("Starting GOES satellite file downloads to %s", DOWNLOAD_DIR)
 
     try:
         # Download samples of all product types and bands
@@ -154,7 +160,7 @@ async def main():
 
         for satellite, satellite_results in results.items():
             satellite_name = "GOES-16" if satellite == "noaa-goes16" else "GOES-18"
-            logger.info(f"\n{satellite_name}:")
+            logger.info("\n%s:", satellite_name)
 
             for product_type, product_results in satellite_results.items():
                 successful = sum(
@@ -170,15 +176,18 @@ async def main():
                 # List successful downloads
                 for band_name, band_result in product_results.items():
                     if band_result["success"]:
+                        pass
                         logger.info(f"    ✓ {band_name}: {band_result['file']}")
                     else:
                         reason = band_result.get("reason", "Download failed")
-                        logger.info(f"    ✗ {band_name}: {reason}")
+                        logger.info("    ✗ %s: %s", band_name, reason)
 
     except Exception as e:
-        logger.error(f"Error in main: {str(e)}")
+        pass
+        logger.error("Error in main: %s", str(e))
         raise
 
 
 if __name__ == "__main__":
+    pass
     asyncio.run(main())
