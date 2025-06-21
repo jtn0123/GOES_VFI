@@ -1,13 +1,14 @@
 """Critical tests for S3 store functionality."""
 
 import asyncio
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from goesvfi.integrity_check.remote.base import RemoteStoreError, ResourceNotFoundError
+from goesvfi.integrity_check.remote.base import ResourceNotFoundError
 from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import SatellitePattern
 
@@ -46,21 +47,22 @@ class TestS3StoreCritical:
                 with patch("pathlib.Path.stat") as mock_stat:
                     mock_stat.return_value.st_size = 9
                     with patch("pathlib.Path.mkdir"):
-                        local_path = Path("/tmp/test_file.nc")
-                        ts = datetime(2023, 1, 1, 12, 0, 0)
+                        with tempfile.TemporaryDirectory() as temp_dir:
+                            local_path = Path(temp_dir) / "test_file.nc"
+                            ts = datetime(2023, 1, 1, 12, 0, 0)
 
-                        # Test download
-                        result = await store.download_file(
-                            ts,
-                            SatellitePattern.GOES_16,
-                            local_path,
-                        )
+                            # Test download
+                            result = await store.download_file(
+                                ts,
+                                SatellitePattern.GOES_16,
+                                local_path,
+                            )
 
-                        # Verify result
-                        assert result == local_path
+                            # Verify result
+                            assert result == local_path
 
-                        # Verify S3 client was called correctly
-                        mock_s3_client.download_file.assert_called_once()
+                            # Verify S3 client was called correctly
+                            mock_s3_client.download_file.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_download_not_found(self):
@@ -89,15 +91,16 @@ class TestS3StoreCritical:
         mock_s3_client.get_paginator = MagicMock(return_value=mock_paginator)
 
         with patch.object(store, "_get_s3_client", return_value=mock_s3_client):
-            local_path = Path("/tmp/missing_file.nc")
-            ts = datetime(2023, 1, 1, 12, 0, 0)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                local_path = Path(temp_dir) / "missing_file.nc"
+                ts = datetime(2023, 1, 1, 12, 0, 0)
 
-            # Should raise ResourceNotFoundError
-            with pytest.raises(ResourceNotFoundError) as exc_info:
-                await store.download_file(ts, SatellitePattern.GOES_16, local_path)
+                # Should raise ResourceNotFoundError
+                with pytest.raises(ResourceNotFoundError) as exc_info:
+                    await store.download_file(ts, SatellitePattern.GOES_16, local_path)
 
-            # Verify it's about not finding files
-            assert "No files found for GOES_16" in str(exc_info.value)
+                # Verify it's about not finding files
+                assert "No files found for GOES_16" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_exists_success(self):
@@ -158,23 +161,24 @@ class TestS3StoreCritical:
                 with patch("pathlib.Path.stat") as mock_stat:
                     mock_stat.return_value.st_size = 9
                     with patch("pathlib.Path.mkdir"):
-                        # Download multiple files concurrently
-                        tasks = []
-                        for i in range(5):
-                            local_path = Path(f"/tmp/concurrent_{i}.nc")
-                            ts = datetime(2023, 1, 1, 12, i, 0)
-                            task = store.download_file(
-                                ts,
-                                SatellitePattern.GOES_16,
-                                local_path,
-                            )
-                            tasks.append(task)
+                        with tempfile.TemporaryDirectory() as temp_dir:
+                            # Download multiple files concurrently
+                            tasks = []
+                            for i in range(5):
+                                local_path = Path(temp_dir) / f"concurrent_{i}.nc"
+                                ts = datetime(2023, 1, 1, 12, i, 0)
+                                task = store.download_file(
+                                    ts,
+                                    SatellitePattern.GOES_16,
+                                    local_path,
+                                )
+                                tasks.append(task)
 
-                        # Wait for all downloads
-                        await asyncio.gather(*tasks)
+                            # Wait for all downloads
+                            await asyncio.gather(*tasks)
 
-                        # Verify all files were requested
-                        assert mock_s3_client.download_file.call_count == 5
+                            # Verify all files were requested
+                            assert mock_s3_client.download_file.call_count == 5
 
     @pytest.mark.asyncio
     async def test_download_with_wildcard(self):
@@ -216,18 +220,19 @@ class TestS3StoreCritical:
                 with patch("pathlib.Path.stat") as mock_stat:
                     mock_stat.return_value.st_size = 1000
                     with patch("pathlib.Path.mkdir"):
-                        local_path = Path("/tmp/wildcard_test.nc")
-                        ts = datetime(2023, 1, 1, 12, 0, 0)
+                        with tempfile.TemporaryDirectory() as temp_dir:
+                            local_path = Path(temp_dir) / "wildcard_test.nc"
+                            ts = datetime(2023, 1, 1, 12, 0, 0)
 
-                        # Test download
-                        result = await store.download_file(
-                            ts,
-                            SatellitePattern.GOES_16,
-                            local_path,
-                        )
+                            # Test download
+                            result = await store.download_file(
+                                ts,
+                                SatellitePattern.GOES_16,
+                                local_path,
+                            )
 
-                        # Verify result
-                        assert result == local_path
+                            # Verify result
+                            assert result == local_path
 
-                        # Verify wildcard search was performed
-                        mock_s3_client.get_paginator.assert_called_once()
+                            # Verify wildcard search was performed
+                            mock_s3_client.get_paginator.assert_called_once()

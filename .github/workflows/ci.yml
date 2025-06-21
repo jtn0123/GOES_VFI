@@ -105,6 +105,13 @@ jobs:
         pip install -r test-requirements.txt
         pip install coverage pytest-cov
 
+    - name: Set Python encoding for Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        echo "PYTHONIOENCODING=utf-8" >> $GITHUB_ENV
+        echo "PYTHONUTF8=1" >> $GITHUB_ENV
+      shell: bash
+
     - name: Run tests with coverage
       run: |
         if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
@@ -122,9 +129,18 @@ jobs:
             tests/
         else
           # Non-GUI tests only on macOS and Windows
+          # Set additional environment variables for Windows
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            export PYTHONIOENCODING=utf-8
+            export PYTHONUTF8=1
+          fi
           python run_non_gui_tests_ci.py --quiet --maxfail=10
         fi
       shell: bash
+      env:
+        # Ensure UTF-8 encoding on all platforms
+        PYTHONIOENCODING: utf-8
+        PYTHONUTF8: 1
 
     - name: Upload coverage to Codecov
       if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.13'

@@ -99,12 +99,12 @@ def main():
                 tests_loaded += module_suite.countTestCases()
                 if not args.quiet:
                     print(
-                        f"✅ Loaded {test_module}: {module_suite.countTestCases()} tests"
+                        f"[OK] Loaded {test_module}: {module_suite.countTestCases()} tests"
                     )
         except Exception as e:
             failed_modules.append((test_module, str(e)))
             if not args.quiet:
-                print(f"❌ Failed to load {test_module}: {e}")
+                print(f"[FAIL] Failed to load {test_module}: {e}")
 
     if not args.quiet:
         print(f"\nTotal tests loaded: {tests_loaded}")
@@ -149,10 +149,10 @@ def main():
         skipped = len(result.skipped)
 
         if result.wasSuccessful():
-            print(f"✅ All {total} tests passed")
+            print(f"[PASS] All {total} tests passed")
         else:
             print(
-                f"❌ Tests failed: {total} run, {failures} failures, {errors} errors, {skipped} skipped"
+                f"[FAIL] Tests failed: {total} run, {failures} failures, {errors} errors, {skipped} skipped"
             )
 
             # Show first few failures

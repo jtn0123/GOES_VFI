@@ -3,6 +3,7 @@
 # flake8: noqa: PT009,PT027
 
 import asyncio
+import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -27,7 +28,10 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.store = S3Store()
         self.test_timestamp = datetime(2023, 6, 15, 12, 0, 0)
         self.test_satellite = SatellitePattern.GOES_18
-        self.test_dest_path = Path("/tmp/test_download.nc")
+
+        # Create temporary directory for tests
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.test_dest_path = Path(self.temp_dir.name) / "test_download.nc"
 
         # Mock S3 client
         self.mock_s3_client = AsyncMock()
@@ -42,6 +46,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         async def async_stop():
             patcher.stop()
+            self.temp_dir.cleanup()
 
         self.addAsyncCleanup(async_stop)
 
