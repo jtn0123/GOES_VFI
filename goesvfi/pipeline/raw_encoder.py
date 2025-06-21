@@ -9,15 +9,17 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image
 
+from goesvfi.utils import log
+
+LOGGER = log.get_logger(__name__)
+
 # Define FloatNDArray alias if needed, or import if defined elsewhere
 # Assuming FloatNDArray = NDArray[np.float32] for consistency
 FloatNDArray = NDArray[np.float32]
 
 
 # Renamed from write_mp4
-def write_raw_mp4(
-    frames: Iterable[FloatNDArray], raw_path: pathlib.Path, fps: int
-) -> pathlib.Path:
+def write_raw_mp4(frames: Iterable[FloatNDArray], raw_path: pathlib.Path, fps: int) -> pathlib.Path:
     """
     Writes intermediate MP4 with a lossless codec (FFV1).
     Returns the path to raw_path.
@@ -28,12 +30,12 @@ def write_raw_mp4(
     # Ensure directory exists
     pattern.parent.mkdir(parents=True, exist_ok=True)
 
-    print(f"Writing frames to temporary PNGs in {tmpdir.name}...")
+    LOGGER.info("Writing frames to temporary PNGs in %s...", tmpdir.name)
     for i, frm in enumerate(frames):
         img8: NDArray[np.uint8] = (np.clip(frm, 0, 1) * 255).astype(np.uint8)
         Image.fromarray(img8).save(pattern.parent / f"{i:06d}.png")
 
-    print(f"Encoding frames to lossless MP4: {raw_path}")
+    LOGGER.info("Encoding frames to lossless MP4: %s", raw_path)
     # Use subprocess for ffmpeg command
     cmd = [
         "ffmpeg",
@@ -48,22 +50,20 @@ def write_raw_mp4(
     ]
     try:
         subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120)
-        print("Lossless encoding successful.")
+        LOGGER.info("Lossless encoding successful.")
     except subprocess.CalledProcessError as e:
-        pass
-        print("FFmpeg (raw) error:")
-        print(f"STDOUT: {e.stdout}")
-        print(f"STDERR: {e.stderr}")
+        LOGGER.error("FFmpeg (raw) error:")
+        LOGGER.error("STDOUT: %s", e.stdout)
+        LOGGER.error("STDERR: %s", e.stderr)
         # Clean up temp dir even on error
         tmpdir.cleanup()
         raise  # Re-raise the exception
     except FileNotFoundError:
-        pass
-        print("Error: ffmpeg command not found. Is ffmpeg installed and in your PATH?")
+        LOGGER.error("Error: ffmpeg command not found. Is ffmpeg installed and in your PATH?")
         tmpdir.cleanup()
         raise
 
     # Clean up temporary directory
     tmpdir.cleanup()
-    print(f"Temporary PNGs cleaned up. Raw MP4 created at: {raw_path}")
+    LOGGER.info("Temporary PNGs cleaned up. Raw MP4 created at: %s", raw_path)
     return raw_path  # Return the path

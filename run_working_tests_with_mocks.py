@@ -73,7 +73,6 @@ def setup_mocks():
         "pytest_qt",
         # Utilities
         "tqdm",
-        "colorlog",
     ]
 
     for dep in missing_deps:
@@ -103,25 +102,48 @@ def setup_special_mocks():
 
     # Create a more realistic QSettings mock
     class MockQSettings:
+        class Format:
+            IniFormat = 1
+
         def __init__(self, org=None, app=None):
             self._storage = {}
             self._org = org or "MockOrg"
             self._app = app or "MockApp"
+            self._group_stack = []
+
+        def _full_key(self, key: str) -> str:
+            return "/".join(self._group_stack + [key]) if key else "/".join(self._group_stack)
 
         def setValue(self, key, value):
-            self._storage[key] = value
+            self._storage[self._full_key(key)] = value
 
         def value(self, key, default=None, type=None):
-            val = self._storage.get(key, default)
+            val = self._storage.get(self._full_key(key), default)
             if type and val is not None:
                 try:
                     return type(val)
-                except:
+                except Exception:
                     return default
             return val
 
         def allKeys(self):
             return list(self._storage.keys())
+
+        def beginGroup(self, group):
+            self._group_stack.append(group)
+
+        def endGroup(self):
+            if self._group_stack:
+                self._group_stack.pop()
+
+        def remove(self, key):
+            if key:
+                self._storage.pop(self._full_key(key), None)
+            else:
+                prefix = self._full_key("")
+                for k in list(self._storage):
+                    if k.startswith(prefix):
+                        self._storage.pop(k, None)
 
         def sync(self):
             pass
@@ -157,6 +179,72 @@ def setup_special_mocks():
 
     if "PyQt6.QtWidgets" in sys.modules:
         sys.modules["PyQt6.QtWidgets"].QApplication = MockQApplication
+
+    class MockQComboBox:
+        def __init__(self):
+            self._items = []
+
+        def addItem(self, text):
+            self._items.append(text)
+
+        def clear(self):
+            self._items.clear()
+
+        def count(self):
+            return len(self._items)
+
+        def itemText(self, index):
+            if 0 <= index < len(self._items):
+                return self._items[index]
+            return ""
+
+    if "PyQt6.QtWidgets" in sys.modules:
+        sys.modules["PyQt6.QtWidgets"].QComboBox = MockQComboBox
+
+    class MockQImage:
+        class Format:
+            Format_RGB888 = 1
+            Format_RGBA8888 = 2
+            Format_Grayscale8 = 3
+
+        def __init__(self, data, width, height, bytes_per_line=None, fmt=None):
+            self._width = width
+            self._height = height
+
+        def width(self):
+            return self._width
+
+        def height(self):
+            return self._height
+
+    class MockQPixmap:
+        def __init__(self, width=0, height=0):
+            self._width = width
+            self._height = height
+            self._null = width == 0 and height == 0
+
+        @staticmethod
+        def fromImage(img: "MockQImage") -> "MockQPixmap":
+            return MockQPixmap(img.width(), img.height())
+
+        def width(self):
+            return self._width
+
+        def height(self):
+            return self._height
+
+        def isNull(self):
+            return self._null
+
+        def fill(self):
+            self._null = False
+
+        def scaled(self, size, *args, **kwargs):
+            return MockQPixmap(size.width(), size.height())
+
+    if "PyQt6.QtGui" in sys.modules:
+        sys.modules["PyQt6.QtGui"].QImage = MockQImage
+        sys.modules["PyQt6.QtGui"].QPixmap = MockQPixmap
 
 
 def run_working_tests():
