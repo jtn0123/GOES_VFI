@@ -246,21 +246,18 @@ def test_initial_state(qtbot, window, mocker):
 
 def test_select_input_path(qtbot, window, mock_dialogs, mocker):
     """Test selecting an input path."""
-    # Remove path mocking
+    # Since the button is not exposed as instance variable,
+    # call the method directly that the button would call
+    window.main_tab._pick_in_dir()
 
-    qtbot.mouseClick(window.main_tab.in_dir_button, Qt.MouseButton.LeftButton)
     mock_dialogs["getExistingDirectory"].assert_called_once()
     assert window.main_tab.in_dir_edit.text() == "/fake/input"
-    # qtbot.wait(100) # Allow signals
 
     # Manually trigger state updates after setting text
     window._update_start_button_state()
     window._update_crop_buttons_state()
 
     # Check if crop button enabled after input path set
-    # Assertion now relies on the GUI's internal state update working correctly
-    # We assume /fake/input doesn't exist, so is_dir should be false
-    # unless we mock it for the whole test, but let's test the real logic flow.
     # The crop button requires input directory AND a loaded preview.
     # As no preview is loaded yet, the button should be disabled.
     assert not window.main_tab.crop_button.isEnabled()
@@ -271,14 +268,14 @@ def test_select_input_path(qtbot, window, mock_dialogs, mocker):
 
 def test_select_output_path(qtbot, window, mock_dialogs, mocker):
     """Test selecting an output path."""
-    # Remove path mocking
-
     window.main_tab.in_dir_edit.setText("/fake/input")
     window.main_tab.out_file_edit.setText("/fake/some.other")
     window._update_start_button_state()
     assert not window.main_tab.start_button.isEnabled()
 
-    qtbot.mouseClick(window.main_tab.out_file_button, Qt.MouseButton.LeftButton)
+    # Call the method directly since button is not exposed
+    window.main_tab._pick_out_file()
+
     mock_dialogs["getSaveFileName"].assert_called_once()
     assert window.main_tab.out_file_edit.text() == "/fake/output.mp4"
 
@@ -294,50 +291,50 @@ def test_change_settings(qtbot, window):
     # Assert against widget states, not mock_config
     # --- Main Tab Settings ---
     # FPS
-    window.fps_spinbox.setValue(30)  # Updated name
-    assert window.fps_spinbox.value() == 30  # Updated name
+    window.main_tab.fps_spinbox.setValue(30)  # Updated name
+    assert window.main_tab.fps_spinbox.value() == 30  # Updated name
     # Intermediate Frames
-    window.mid_count_spinbox.setValue(15)  # Updated name
-    assert window.mid_count_spinbox.value() == 15  # Updated name
+    window.main_tab.mid_count_spinbox.setValue(15)  # Updated name
+    assert window.main_tab.mid_count_spinbox.value() == 15  # Updated name
     # Encoder
-    window.encoder_combo.setCurrentText("FFmpeg")
-    assert window.encoder_combo.currentText() == "FFmpeg"
-    window.encoder_combo.setCurrentText("RIFE")  # Switch back for RIFE options
-    assert window.encoder_combo.currentText() == "RIFE"
+    window.main_tab.encoder_combo.setCurrentText("FFmpeg")
+    assert window.main_tab.encoder_combo.currentText() == "FFmpeg"
+    window.main_tab.encoder_combo.setCurrentText("RIFE")  # Switch back for RIFE options
+    assert window.main_tab.encoder_combo.currentText() == "RIFE"
     # RIFE Tile Enable
-    window.rife_tile_enable_checkbox.setChecked(True)  # Updated name
-    assert window.rife_tile_enable_checkbox.isChecked()  # Updated name
+    window.main_tab.rife_tile_enable_checkbox.setChecked(True)  # Updated name
+    assert window.main_tab.rife_tile_enable_checkbox.isChecked()  # Updated name
     # RIFE Tile Size
-    window.rife_tile_size_spinbox.setValue(256)  # Updated name
-    assert window.rife_tile_size_spinbox.value() == 256  # Updated name
+    window.main_tab.rife_tile_size_spinbox.setValue(256)  # Updated name
+    assert window.main_tab.rife_tile_size_spinbox.value() == 256  # Updated name
     # RIFE UHD Mode
-    window.rife_uhd_mode_checkbox.setChecked(True)  # Updated name
-    assert window.rife_uhd_mode_checkbox.isChecked()  # Updated name
+    window.main_tab.rife_uhd_mode_checkbox.setChecked(True)  # Updated name
+    assert window.main_tab.rife_uhd_mode_checkbox.isChecked()  # Updated name
     # RIFE TTA Spatial
-    window.rife_tta_spatial_checkbox.setChecked(True)  # Updated name
-    assert window.rife_tta_spatial_checkbox.isChecked()  # Updated name
+    window.main_tab.rife_tta_spatial_checkbox.setChecked(True)  # Updated name
+    assert window.main_tab.rife_tta_spatial_checkbox.isChecked()  # Updated name
     # RIFE TTA Temporal
-    window.rife_tta_temporal_checkbox.setChecked(True)  # Updated name
-    assert window.rife_tta_temporal_checkbox.isChecked()  # Updated name
+    window.main_tab.rife_tta_temporal_checkbox.setChecked(True)  # Updated name
+    assert window.main_tab.rife_tta_temporal_checkbox.isChecked()  # Updated name
     # Sanchez False Colour
-    window.sanchez_false_colour_checkbox.setChecked(True)
-    assert window.sanchez_false_colour_checkbox.isChecked()
+    window.main_tab.sanchez_false_colour_checkbox.setChecked(True)
+    assert window.main_tab.sanchez_false_colour_checkbox.isChecked()
     # Sanchez Resolution (should become enabled)
     # qtbot.wait(100) # Increased wait # REMOVED
     # Manually call slot due to potential signal timing issues in tests
-    window._toggle_sanchez_res_enabled(
-        window.sanchez_false_colour_checkbox.checkState()
+    window.main_tab._toggle_sanchez_res_enabled(
+        window.main_tab.sanchez_false_colour_checkbox.checkState()
     )
-    assert window.sanchez_res_km_spinbox.isEnabled()
-    window.sanchez_res_km_spinbox.setValue(250)
-    assert window.sanchez_res_km_spinbox.value() == 250
-    window.sanchez_false_colour_checkbox.setChecked(False)  # Disable again
+    assert window.main_tab.sanchez_res_km_spinbox.isEnabled()
+    window.main_tab.sanchez_res_km_spinbox.setValue(250)
+    assert window.main_tab.sanchez_res_km_spinbox.value() == 250
+    window.main_tab.sanchez_false_colour_checkbox.setChecked(False)  # Disable again
     # qtbot.wait(100) # Increased wait # REMOVED
     # Manually call slot again
-    window._toggle_sanchez_res_enabled(
-        window.sanchez_false_colour_checkbox.checkState()
+    window.main_tab._toggle_sanchez_res_enabled(
+        window.main_tab.sanchez_false_colour_checkbox.checkState()
     )
-    assert not window.sanchez_res_km_spinbox.isEnabled()
+    assert not window.main_tab.sanchez_res_km_spinbox.isEnabled()
 
     # --- FFmpeg Tab Settings ---
     # Switch to FFmpeg encoder first to enable the tab
