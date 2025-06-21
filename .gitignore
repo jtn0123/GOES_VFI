@@ -199,6 +199,7 @@ MagicMock/
 test_results*.txt
 linting_*.txt
 linter_output.txt
+linter_flake8_qt_output.txt
 s3_test_results.log
 
 # Temporary directories
