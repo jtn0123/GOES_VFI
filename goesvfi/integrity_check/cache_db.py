@@ -7,7 +7,8 @@ import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from types import TracebackType
+from typing import Any, Dict, List, Optional, Set, Type
 
 from goesvfi.utils import config, log
 
@@ -96,6 +97,19 @@ class CacheDB:
         """
         )
 
+        # General cache table for arbitrary key-value storage
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS cache (
+                filepath TEXT PRIMARY KEY,
+                file_hash TEXT,
+                file_size INTEGER,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                metadata TEXT
+            )
+            """
+        )
+
         # Create indexes
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_scan_results_dates ON scan_results(start_date, end_date)"
@@ -106,6 +120,9 @@ class CacheDB:
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_timestamps_satellite ON timestamps(satellite)"
         )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_cache_filepath ON cache(filepath)"
+        )
 
         if self.conn:
             self.conn.commit()
@@ -115,6 +132,19 @@ class CacheDB:
         if self.conn:
             self.conn.close()
             self.conn = None
+
+    def __enter__(self) -> "CacheDB":
+        """Enter context manager."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        """Exit context manager."""
+        self.close()
 
     def store_scan_results(
         self,
@@ -472,3 +502,75 @@ class CacheDB:
         """Reset the database by clearing all tables."""
         self.clear_cache()
         LOGGER.info("Database reset completed")
+
+    # General entry methods for thread-safe caching
+    def add_entry(
+        self,
+        filepath: str,
+        file_hash: str,
+        file_size: int,
+        timestamp: datetime,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Add a general cache entry.
+
+        Args:
+            filepath: The file path (used as key)
+            file_hash: Hash of the file
+            file_size: Size of the file in bytes
+            timestamp: Timestamp of the entry
+            metadata: Optional metadata dictionary
+        """
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
+        cursor = self.conn.cursor()
+
+        metadata_str = json.dumps(metadata) if metadata else None
+
+        cursor.execute(
+            """
+            INSERT OR REPLACE INTO cache
+            (filepath, file_hash, file_size, timestamp, metadata)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (filepath, file_hash, file_size, timestamp.isoformat(), metadata_str),
+        )
+
+        if self.conn:
+            self.conn.commit()
+
+    def get_entry(self, filepath: str) -> Optional[Dict[str, Any]]:
+        """Get a cache entry by filepath.
+
+        Args:
+            filepath: The file path to look up
+
+        Returns:
+            Dictionary with entry data or None if not found
+        """
+        if not self.conn:
+            raise RuntimeError("Database connection not established")
+        cursor = self.conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT filepath, file_hash, file_size, timestamp, metadata
+            FROM cache
+            WHERE filepath = ?
+            """,
+            (filepath,),
+        )
+
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        metadata = json.loads(row["metadata"]) if row["metadata"] else {}
+
+        return {
+            "filepath": row["filepath"],
+            "file_hash": row["file_hash"],
+            "file_size": row["file_size"],
+            "timestamp": datetime.fromisoformat(row["timestamp"]),
+            "metadata": metadata,
+        }

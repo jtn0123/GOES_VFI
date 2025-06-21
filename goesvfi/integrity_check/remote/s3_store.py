@@ -1822,6 +1822,9 @@ class S3Store(RemoteStore):
                         )
 
                     raise list_error
+                except ResourceNotFoundError:
+                    # Re-raise ResourceNotFoundError without wrapping
+                    raise
                 except Exception as e:
                     # Enhanced logging for other exceptions
                     LOGGER.error(f"Unexpected error during wildcard search: {str(e)}")

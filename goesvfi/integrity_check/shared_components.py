@@ -48,10 +48,18 @@ class ItemPreviewWidget(QWidget):
     def set_item(self, item):
         """Set the current item for preview."""
         self.current_item = item
+        # Update button states based on item
+        if item:
+            # Enable download button for missing items
+            self.download_btn.setEnabled(not getattr(item, "is_downloaded", False))
+            # Enable view button for downloaded items
+            self.view_btn.setEnabled(getattr(item, "is_downloaded", False))
 
     def clear(self):
         """Clear the preview."""
         self.current_item = None
+        self.download_btn.setEnabled(False)
+        self.view_btn.setEnabled(False)
 
 
 class MissingItemsTreeView(QWidget):
@@ -62,14 +70,70 @@ class MissingItemsTreeView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._items = []
+        self._grouping = "day"  # Default grouping
+        # Create a minimal model for testing
+        from PyQt6.QtCore import QStringListModel
+
+        self.model = QStringListModel()
 
     def set_items(self, items):
         """Set items to display."""
         self._items = items
+        # Update model based on grouping
+        self._update_model()
 
     def set_grouping(self, group_by):
         """Set grouping method."""
-        pass
+        self._grouping = group_by
+        # Update model with new grouping
+        self._update_model()
+
+    def _update_model(self):
+        """Update the model based on current grouping."""
+        if not self._items:
+            self.model.setStringList([])
+            return
+
+        if self._grouping == "day":
+            # Group by day
+            days = set()
+            for item in self._items:
+                if hasattr(item, "timestamp"):
+                    days.add(item.timestamp.date())
+            self.model.setStringList([f"Day {i + 1}" for i in range(len(days))])
+        elif self._grouping == "status":
+            # Group by status (Downloaded, Downloading, Error, Missing)
+            statuses = set()
+            for item in self._items:
+                if getattr(item, "is_downloaded", False):
+                    statuses.add("Downloaded")
+                elif getattr(item, "download_error", None):
+                    statuses.add("Error")
+                elif getattr(item, "is_downloading", False):
+                    statuses.add("Downloading")
+                else:
+                    statuses.add("Missing")
+            self.model.setStringList(sorted(statuses))
+        elif self._grouping == "satellite":
+            # Group by satellite
+            satellites = set()
+            for item in self._items:
+                if hasattr(item, "expected_filename"):
+                    # Extract satellite from filename (e.g., G16, G17, G18)
+                    if "G16" in item.expected_filename:
+                        satellites.add("GOES-16")
+                    elif "G17" in item.expected_filename:
+                        satellites.add("GOES-17")
+                    elif "G18" in item.expected_filename:
+                        satellites.add("GOES-18")
+            self.model.setStringList(sorted(satellites))
+        else:
+            # Default: show all items
+            self.model.setStringList([f"Item {i}" for i in range(len(self._items))])
+
+    def rowCount(self):
+        """Get the number of rows in the model."""
+        return self.model.rowCount()
 
     def highlight_timestamp(self, timestamp):
         """Highlight item with given timestamp."""
@@ -89,10 +153,33 @@ class ResultsSummaryWidget(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        from PyQt6.QtWidgets import QLabel
+
+        # Create labels for summary display
+        self.total_expected_label = QLabel("0")
+        self.downloaded_label = QLabel("0")
+        self.missing_label = QLabel("0")
+        self.errors_label = QLabel("0")
 
     def update_summary(self, items, total_expected):
         """Update the summary display."""
-        pass
+        # Update total expected
+        self.total_expected_label.setText(str(total_expected))
+
+        # Count items by status
+        downloaded_count = sum(
+            1 for item in items if getattr(item, "is_downloaded", False)
+        )
+        error_count = sum(1 for item in items if getattr(item, "download_error", None))
+        downloading_count = sum(
+            1 for item in items if getattr(item, "is_downloading", False)
+        )
+        missing_count = len(items) - downloaded_count - error_count - downloading_count
+
+        # Update labels
+        self.downloaded_label.setText(str(downloaded_count))
+        self.missing_label.setText(str(missing_count))
+        self.errors_label.setText(str(error_count))
 
 
 class CollapsibleSettingsGroup(QWidget):

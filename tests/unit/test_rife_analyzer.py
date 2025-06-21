@@ -1,12 +1,15 @@
 """Tests for rife_analyzer utility functions."""
 
 import pathlib
-from typing import Any, Dict
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
-from goesvfi.utils.rife_analyzer import RifeCapabilityDetector, analyze_rife_executable
+from goesvfi.utils.rife_analyzer import (
+    RifeCapabilityDetector,
+    RifeCommandBuilder,
+    analyze_rife_executable,
+)
 
 
 class TestRifeCapabilityDetector:
@@ -136,25 +139,36 @@ class TestRifeCapabilityDetector:
         """Test building basic command without optional features."""
         exe_path = pathlib.Path("/path/to/rife")
 
+        # Mock the detector to return no capabilities
         with patch("pathlib.Path.exists", return_value=True):
             with patch.object(RifeCapabilityDetector, "_detect_capabilities"):
-                detector = RifeCapabilityDetector(exe_path)
-                detector._capabilities = {}  # No capabilities
-                detector._supported_args = {"input", "output", "model"}
+                # Create command builder
+                builder = RifeCommandBuilder(exe_path)
+                # Mock the detector inside builder
+                builder.detector._capabilities = {}  # No capabilities
+                builder.detector._supported_args = {"input", "output", "model"}
 
-        cmd = detector.build_command(
-            input_dir=pathlib.Path("/input"),
-            output_file=pathlib.Path("/output.mp4"),
-            model_path=pathlib.Path("/model"),
+        # Build command with frame interpolation parameters
+        cmd = builder.build_command(
+            input_frame1=pathlib.Path("/frame1.png"),
+            input_frame2=pathlib.Path("/frame2.png"),
+            output_path=pathlib.Path("/output.png"),
+            options={
+                "model_path": pathlib.Path("/model"),
+                "num_frames": 1,
+            },
         )
 
+        # Check basic command structure
         assert str(exe_path) in cmd
-        assert "-i" in cmd or "--input" in cmd
-        assert "/input" in cmd
-        assert "-o" in cmd or "--output" in cmd
-        assert "/output.mp4" in cmd
-        assert "-m" in cmd or "--model" in cmd
-        assert "/model" in cmd
+        assert "-0" in cmd
+        assert "/frame1.png" in cmd
+        assert "-1" in cmd
+        assert "/frame2.png" in cmd
+        assert "-o" in cmd
+        assert "/output.png" in cmd
+        # Model path is not added because model_path capability is False
+        assert "-m" not in cmd
 
     def test_build_command_with_capabilities(self):
         """Test building command with optional features enabled."""
@@ -162,14 +176,15 @@ class TestRifeCapabilityDetector:
 
         with patch("pathlib.Path.exists", return_value=True):
             with patch.object(RifeCapabilityDetector, "_detect_capabilities"):
-                detector = RifeCapabilityDetector(exe_path)
-                detector._capabilities = {
+                builder = RifeCommandBuilder(exe_path)
+                builder.detector._capabilities = {
                     "uhd": True,
                     "tiling": True,
                     "tta_spatial": True,
                     "thread_spec": True,
+                    "model_path": True,
                 }
-                detector._supported_args = {
+                builder.detector._supported_args = {
                     "input",
                     "output",
                     "model",
@@ -180,24 +195,28 @@ class TestRifeCapabilityDetector:
                     "thread-spec",
                 }
 
-        cmd = detector.build_command(
-            input_dir=pathlib.Path("/input"),
-            output_file=pathlib.Path("/output.mp4"),
-            model_path=pathlib.Path("/model"),
-            uhd=True,
-            tiling=True,
-            tile_size=512,
-            tta_spatial=True,
-            thread_spec="2:4:2",
+        cmd = builder.build_command(
+            input_frame1=pathlib.Path("/frame1.png"),
+            input_frame2=pathlib.Path("/frame2.png"),
+            output_path=pathlib.Path("/output.png"),
+            options={
+                "model_path": pathlib.Path("/model"),
+                "uhd_mode": True,
+                "tile_enable": True,
+                "tile_size": 512,
+                "tta_spatial": True,
+                "thread_spec": "2:4:2",
+            },
         )
 
-        assert "--uhd" in cmd
-        assert "--tile" in cmd
-        assert "--tile-size" in cmd
-        assert "512" in cmd
-        assert "--tta-spatial" in cmd
-        assert "--thread-spec" in cmd
+        assert "-u" in cmd  # UHD mode
+        assert "-t" in cmd  # Tiling
+        assert "512" in cmd  # Tile size
+        assert "-x" in cmd  # TTA spatial
+        assert "-j" in cmd  # Thread spec
         assert "2:4:2" in cmd
+        assert "-m" in cmd  # Model path
+        assert "/model" in cmd
 
     def test_build_command_ignores_unsupported(self):
         """Test that unsupported options are ignored in command."""
@@ -205,22 +224,24 @@ class TestRifeCapabilityDetector:
 
         with patch("pathlib.Path.exists", return_value=True):
             with patch.object(RifeCapabilityDetector, "_detect_capabilities"):
-                detector = RifeCapabilityDetector(exe_path)
-                detector._capabilities = {"uhd": True}
-                detector._supported_args = {"input", "output", "model", "uhd"}
+                builder = RifeCommandBuilder(exe_path)
+                builder.detector._capabilities = {"uhd": True}
+                builder.detector._supported_args = {"input", "output", "model", "uhd"}
 
-        cmd = detector.build_command(
-            input_dir=pathlib.Path("/input"),
-            output_file=pathlib.Path("/output.mp4"),
-            model_path=pathlib.Path("/model"),
-            uhd=True,
-            tiling=True,  # Not supported
-            tta_spatial=True,  # Not supported
+        cmd = builder.build_command(
+            input_frame1=pathlib.Path("/frame1.png"),
+            input_frame2=pathlib.Path("/frame2.png"),
+            output_path=pathlib.Path("/output.png"),
+            options={
+                "uhd_mode": True,
+                "tile_enable": True,  # Not supported
+                "tta_spatial": True,  # Not supported
+            },
         )
 
-        assert "--uhd" in cmd
-        assert "--tile" not in cmd
-        assert "--tta-spatial" not in cmd
+        assert "-u" in cmd  # UHD is supported
+        assert "-t" not in cmd  # Tiling not supported
+        assert "-x" not in cmd  # TTA spatial not supported
 
 
 class TestAnalyzeRifeExecutable:

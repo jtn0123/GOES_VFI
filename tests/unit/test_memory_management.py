@@ -1,6 +1,5 @@
 """Unit tests for memory management functionality."""
 
-from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
@@ -12,7 +11,6 @@ from goesvfi.utils.memory_manager import (
     MemoryOptimizer,
     MemoryStats,
     ObjectPool,
-    StreamingProcessor,
     estimate_memory_requirement,
     get_memory_monitor,
 )
@@ -184,7 +182,7 @@ class TestObjectPool:
             pool.release(obj)
 
         # Pool should only keep max_size objects
-        assert len(pool._pool) == 2
+        assert len(pool.pool) == 2
 
 
 class TestImageLoaderMemoryIntegration:
@@ -212,7 +210,8 @@ class TestImageLoaderMemoryIntegration:
 
         # Load image
         with patch("numpy.array", return_value=mock_array):
-            result = loader.load("test.png")
+            with patch("os.path.exists", return_value=True):
+                result = loader.load("test.png")
 
         assert result is not None
         assert result.metadata["memory_optimized"]
@@ -234,14 +233,15 @@ class TestImageLoaderMemoryIntegration:
 
         # Should raise ValueError for oversized image
         with pytest.raises(ValueError, match="Image too large"):
-            loader.load("huge.png")
+            with patch("os.path.exists", return_value=True):
+                loader.load("huge.png")
 
 
 def test_estimate_memory_requirement():
     """Test memory requirement estimation."""
     # Test 1000x1000 RGB image
     mb = estimate_memory_requirement((1000, 1000, 3), np.uint8)
-    assert mb == 2  # ~3MB, rounded down to 2MB
+    assert mb == 3  # ~2.86MB, rounded up to 3MB
 
     # Test 4K image
     mb = estimate_memory_requirement((3840, 2160, 3), np.float32)

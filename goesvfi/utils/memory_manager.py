@@ -323,7 +323,7 @@ class MemoryOptimizer:
                 required_mb,
             )
 
-        return True, f"Memory available: {stats.available_mb}MB"
+        return True, "OK"
 
 
 def estimate_memory_requirement(shape: tuple, dtype: np.dtype) -> int:

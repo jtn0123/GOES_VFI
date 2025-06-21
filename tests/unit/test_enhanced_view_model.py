@@ -5,9 +5,9 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, call, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from PyQt6.QtCore import QCoreApplication, QObject, QThreadPool, pyqtSignal
+from PyQt6.QtCore import QCoreApplication, QThreadPool
 
 from goesvfi.integrity_check.cache_db import CacheDB
 from goesvfi.integrity_check.enhanced_view_model import (
@@ -21,10 +21,10 @@ from goesvfi.integrity_check.enhanced_view_model import (
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
-from goesvfi.integrity_check.view_model import MissingTimestamp, ScanStatus
+from goesvfi.integrity_check.view_model import ScanStatus
 
 # Import our new test utilities
-from tests.utils.pyqt_async_test import AsyncSignalWaiter, PyQtAsyncTestCase, async_test
+from tests.utils.pyqt_async_test import PyQtAsyncTestCase, async_test
 
 
 class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
@@ -43,6 +43,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.mock_cache_db = MagicMock(spec=CacheDB)
         self.mock_cache_db.reset_database = AsyncMock()
         self.mock_cache_db.close = AsyncMock()
+        self.mock_cache_db.db_path = str(self.base_dir / "test_cache.db")
 
         self.mock_cdn_store = MagicMock(spec=CDNStore)
         self.mock_cdn_store.close = AsyncMock()
@@ -132,27 +133,27 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         vm = EnhancedIntegrityCheckViewModel()
 
         # Verify default values
-        self.assertEqual(vm._satellite, SatellitePattern.GOES_18)
-        self.assertEqual(vm._fetch_source, FetchSource.AUTO)
-        self.assertEqual(vm._max_concurrent_downloads, 5)
-        self.assertEqual(vm._cdn_resolution, TimeIndex.CDN_RES)
-        self.assertIsNone(vm._aws_profile)
-        self.assertEqual(vm._s3_region, "us-east-1")
-        self.assertEqual(vm._missing_timestamps, [])
-        self.assertEqual(vm._downloaded_count, 0)
-        self.assertEqual(vm._failed_count, 0)
+        assert vm._satellite == SatellitePattern.GOES_18
+        assert vm._fetch_source == FetchSource.AUTO
+        assert vm._max_concurrent_downloads == 5
+        assert vm._cdn_resolution == TimeIndex.CDN_RES
+        assert vm._aws_profile is None
+        assert vm._s3_region == "us-east-1"
+        assert vm._missing_timestamps == []
+        assert vm._downloaded_count == 0
+        assert vm._failed_count == 0
 
     def test_property_getters_and_setters(self):
         """Test property getters and setters."""
         # Test satellite property
-        self.assertEqual(self.view_model.satellite, SatellitePattern.GOES_18)  # Default
+        assert self.view_model.satellite == SatellitePattern.GOES_18  # Default
 
         # Mock signal
         self.view_model.satellite_changed = MagicMock()
 
         # Set satellite
         self.view_model.satellite = SatellitePattern.GOES_16
-        self.assertEqual(self.view_model.satellite, SatellitePattern.GOES_16)
+        assert self.view_model.satellite == SatellitePattern.GOES_16
         self.view_model.satellite_changed.emit.assert_called_once_with(
             SatellitePattern.GOES_16
         )
@@ -163,14 +164,14 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model.satellite_changed.emit.assert_not_called()
 
         # Test fetch_source property
-        self.assertEqual(self.view_model.fetch_source, FetchSource.AUTO)  # Default
+        assert self.view_model.fetch_source == FetchSource.AUTO  # Default
 
         # Mock signal
         self.view_model.fetch_source_changed = MagicMock()
 
         # Set fetch_source
         self.view_model.fetch_source = FetchSource.CDN
-        self.assertEqual(self.view_model.fetch_source, FetchSource.CDN)
+        assert self.view_model.fetch_source == FetchSource.CDN
         self.view_model.fetch_source_changed.emit.assert_called_once_with(
             FetchSource.CDN
         )
@@ -181,33 +182,33 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model.fetch_source_changed.emit.assert_not_called()
 
         # Test cdn_resolution property
-        self.assertEqual(self.view_model.cdn_resolution, TimeIndex.CDN_RES)  # Default
+        assert self.view_model.cdn_resolution == TimeIndex.CDN_RES  # Default
 
         # Set cdn_resolution
         self.view_model.cdn_resolution = "250m"
-        self.assertEqual(self.view_model.cdn_resolution, "250m")
+        assert self.view_model.cdn_resolution == "250m"
 
         # Test aws_profile property
-        self.assertIsNone(self.view_model.aws_profile)  # Default
+        assert self.view_model.aws_profile is None  # Default
 
         # Set aws_profile
         self.view_model.aws_profile = "test-profile"
-        self.assertEqual(self.view_model.aws_profile, "test-profile")
+        assert self.view_model.aws_profile == "test-profile"
 
         # Test max_concurrent_downloads property
-        self.assertEqual(self.view_model.max_concurrent_downloads, 5)  # Default
+        assert self.view_model.max_concurrent_downloads == 5  # Default
 
         # Set max_concurrent_downloads
         self.view_model.max_concurrent_downloads = 10
-        self.assertEqual(self.view_model.max_concurrent_downloads, 10)
+        assert self.view_model.max_concurrent_downloads == 10
 
     def test_get_disk_space_info(self):
         """Test getting disk space information."""
         # The view_model.get_disk_space_info is already mocked in setUp
         # Let's just verify it returns our expected values
         used_gb, total_gb = self.view_model.get_disk_space_info()
-        self.assertEqual(used_gb, 10.0)
-        self.assertEqual(total_gb, 100.0)
+        assert used_gb == 10.0
+        assert total_gb == 100.0
 
         # For real functionality testing, we'll create a new instance
         test_vm = EnhancedIntegrityCheckViewModel()
@@ -232,8 +233,8 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
             expected_used_gb = used / (1024**3)
 
             # Verify values are close to expected (rounding differences)
-            self.assertAlmostEqual(used_gb, expected_used_gb, places=2)
-            self.assertAlmostEqual(total_gb, expected_total_gb, places=2)
+            assert round(used_gb - expected_used_gb, 2) == 0
+            assert round(total_gb - expected_total_gb, 2) == 0
 
     def test_reset_database(self):
         """Test resetting the database."""
@@ -270,10 +271,10 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         test_vm.reset_database()
 
         # Verify error was handled correctly
-        self.assertTrue(test_mock_cache_db.reset_database.called)
-        self.assertIsNotNone(error_msg)
-        self.assertIn("Error resetting database", error_msg)
-        self.assertIn("Test error", error_msg)
+        assert test_mock_cache_db.reset_database.called
+        assert error_msg is not None
+        assert "Error resetting database" in error_msg
+        assert "Test error" in error_msg
 
         # Clean up to avoid warnings
         test_vm._cache_db = None
@@ -288,8 +289,8 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model._handle_enhanced_scan_progress(50, 100, "Testing progress")
 
         # Verify
-        self.assertEqual(self.view_model._progress_current, 50)
-        self.assertEqual(self.view_model._progress_total, 100)
+        assert self.view_model._progress_current == 50
+        assert self.view_model._progress_total == 100
         self.view_model.status_updated.emit.assert_called_once_with("Testing progress")
         self.view_model.progress_updated.emit.assert_called_once_with(50, 100, 0.0)
 
@@ -303,7 +304,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
 
         # Test cancelled
         self.view_model._handle_enhanced_scan_completed({"status": "cancelled"})
-        self.assertEqual(self.view_model.status, ScanStatus.CANCELLED)
+        assert self.view_model.status == ScanStatus.CANCELLED
         self.view_model.scan_completed.emit.assert_called_once_with(
             False, "Scan was cancelled"
         )
@@ -318,7 +319,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model._handle_enhanced_scan_completed(
             {"status": "error", "error": "Test error"}
         )
-        self.assertEqual(self.view_model.status, ScanStatus.ERROR)
+        assert self.view_model.status == ScanStatus.ERROR
         self.view_model.scan_completed.emit.assert_called_once_with(False, "Test error")
 
         # Reset mocks
@@ -337,12 +338,12 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         )
 
         # Verify
-        self.assertEqual(self.view_model._last_scan_time.date(), datetime.now().date())
-        self.assertEqual(self.view_model._total_expected, 4)  # 2 existing + 2 missing
-        self.assertEqual(self.view_model._total_found, 2)
-        self.assertEqual(len(self.view_model._missing_timestamps), 2)
+        assert self.view_model._last_scan_time.date() == datetime.now().date()
+        assert self.view_model._total_expected == 4  # 2 existing + 2 missing
+        assert self.view_model._total_found == 2
+        assert len(self.view_model._missing_timestamps) == 2
         self.view_model.missing_items_updated.emit.assert_called_once()
-        self.assertEqual(self.view_model.status, ScanStatus.COMPLETED)
+        assert self.view_model.status == ScanStatus.COMPLETED
         self.view_model.scan_completed.emit.assert_called_once()
 
         # Test success with no missing items
@@ -361,9 +362,9 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         )
 
         # Verify
-        self.assertEqual(len(self.view_model._missing_timestamps), 0)
+        assert len(self.view_model._missing_timestamps) == 0
         self.view_model.missing_items_updated.emit.assert_called_once_with([])
-        self.assertEqual(self.view_model.status, ScanStatus.COMPLETED)
+        assert self.view_model.status == ScanStatus.COMPLETED
         self.view_model.scan_completed.emit.assert_called_once()
 
     def test_handle_enhanced_download_progress(self):
@@ -378,8 +379,8 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         )
 
         # Verify
-        self.assertEqual(self.view_model._progress_current, 3)
-        self.assertEqual(self.view_model._progress_total, 10)
+        assert self.view_model._progress_current == 3
+        assert self.view_model._progress_total == 10
         self.view_model.status_updated.emit.assert_called_once_with(
             "Downloading: 3/10 files"
         )
@@ -400,7 +401,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model._handle_download_item_progress(0, 50)
 
         # Verify
-        self.assertEqual(item1.progress, 50)
+        assert item1.progress == 50
         self.view_model.download_item_progress.emit.assert_called_once_with(0, 50)
 
         # Test progress update for second item
@@ -408,7 +409,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model._handle_download_item_progress(1, 75)
 
         # Verify
-        self.assertEqual(item2.progress, 75)
+        assert item2.progress == 75
         self.view_model.download_item_progress.emit.assert_called_once_with(1, 75)
 
         # Test with invalid index
@@ -452,34 +453,35 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Verify
-        self.assertEqual(self.view_model.status, ScanStatus.COMPLETED)
-        self.assertEqual(self.view_model._downloaded_count, 1)
-        self.assertEqual(self.view_model._failed_count, 1)
+        assert self.view_model.status == ScanStatus.COMPLETED
+        assert self.view_model._downloaded_count == 1
+        assert self.view_model._failed_count == 1
 
         # Check item states
-        self.assertFalse(item1.is_downloading)
-        self.assertTrue(item1.is_downloaded)
-        self.assertEqual(item1.local_path, str(success_path))
+        assert not item1.is_downloading
+        assert item1.is_downloaded
+        assert item1.local_path == str(success_path)
 
-        self.assertFalse(item2.is_downloading)
-        self.assertFalse(item2.is_downloaded)
-        self.assertEqual(item2.download_error, "Not found")
+        assert not item2.is_downloading
+        assert not item2.is_downloaded
+        assert item2.download_error == "Not found"
 
         # Verify signals - test each call separately
         call_count = download_item_updated_spy.call_count
-        self.assertEqual(call_count, 2, "Expected 2 calls to download_item_updated")
+        assert call_count, 2 == "Expected 2 calls to download_item_updated"
 
         # Verify specific item updates were made
-        for i, call_args in enumerate(download_item_updated_spy.call_args_list):
+        for _, call_args in enumerate(download_item_updated_spy.call_args_list):
             index, item = call_args[0]
             if index == 0:
-                self.assertIs(item, item1)
+                assert item is item1
             elif index == 1:
-                self.assertIs(item, item2)
+                assert item is item2
 
         # Verify status message
-        self.assertEqual(
-            self.view_model.status_message, "Downloads complete: 1 successful, 1 failed"
+        assert (
+            self.view_model.status_message
+            == "Downloads complete: 1 successful, 1 failed"
         )
 
     def test_cleanup(self):
@@ -489,6 +491,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         mock_cache_db.close = (
             MagicMock()
         )  # Use MagicMock instead of AsyncMock to avoid warning
+        mock_cache_db.db_path = str(self.base_dir / "test_cache2.db")
 
         mock_timer = MagicMock()
         mock_timer.isRunning = MagicMock(return_value=True)
@@ -555,7 +558,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
             self.view_model.start_enhanced_scan()
 
             # Verify
-            self.assertEqual(self.view_model.status, ScanStatus.SCANNING)
+            assert self.view_model.status == ScanStatus.SCANNING
             mock_scan_task_class.assert_called_once_with(self.view_model)
             self.mock_thread_pool.start.assert_called_once_with(mock_scan_task)
 
@@ -578,7 +581,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
             self.view_model.start_enhanced_downloads()
 
             # Verify
-            self.assertEqual(self.view_model.status, ScanStatus.DOWNLOADING)
+            assert self.view_model.status == ScanStatus.DOWNLOADING
             mock_download_task_class.assert_called_once_with(self.view_model)
             self.mock_thread_pool.start.assert_called_once_with(mock_download_task)
 
@@ -731,7 +734,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
 
                 # Verify the signal was called with the expected result
                 scan_finished_spy.assert_called()
-                self.assertEqual(scan_finished_spy.call_args[0][0], expected_result)
+                assert scan_finished_spy.call_args[0][0] == expected_result
 
     @async_test
     async def test_run_scan(self):
@@ -748,10 +751,10 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         result = await self.scan_task._run_scan()
 
         # Verify
-        self.assertEqual(result["status"], "completed")
-        self.assertEqual(result["existing"], existing)
-        self.assertEqual(result["missing"], missing)
-        self.assertEqual(result["total"], 2)
+        assert result["status"] == "completed"
+        assert result["existing"] == existing
+        assert result["missing"] == missing
+        assert result["total"] == 2
 
         self.mock_view_model._reconcile_manager.scan_directory.assert_called_once_with(
             directory=self.mock_view_model._base_directory,
@@ -769,7 +772,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         )
 
         result = await self.scan_task._run_scan()
-        self.assertEqual(result["status"], "cancelled")
+        assert result["status"] == "cancelled"
 
         # Test error case
         self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
@@ -778,8 +781,8 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         )
 
         result = await self.scan_task._run_scan()
-        self.assertEqual(result["status"], "error")
-        self.assertEqual(result["error"], "Test error")
+        assert result["status"] == "error"
+        assert result["error"] == "Test error"
 
     def test_download_task_run(self):
         """Test download task execution."""
@@ -817,7 +820,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
 
                 # Verify the signal was called with the expected result
                 download_finished_spy.assert_called()
-                self.assertEqual(download_finished_spy.call_args[0][0], expected_result)
+                assert download_finished_spy.call_args[0][0] == expected_result
 
     @async_test
     async def test_run_downloads(self):
@@ -843,7 +846,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         result = await self.download_task._run_downloads()
 
         # Verify
-        self.assertEqual(result, mock_result)
+        assert result == mock_result
 
         # We can't assert on the mock directly since we're using a function, so we'll skip that check
 
@@ -854,7 +857,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         self.mock_view_model._reconcile_manager.fetch_missing_files = mock_cancelled
 
         result = await self.download_task._run_downloads()
-        self.assertEqual(result, {})
+        assert result == {}
 
         # Test error handling
         async def mock_error(*args, **kwargs):
@@ -863,7 +866,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         self.mock_view_model._reconcile_manager.fetch_missing_files = mock_error
 
         result = await self.download_task._run_downloads()
-        self.assertEqual(result, {})
+        assert result == {}
 
 
 # Note: We no longer need the old async_test decorator or auto-application

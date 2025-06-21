@@ -153,11 +153,11 @@ class RifeCapabilityDetector:
         }
 
         # Extract version if available
+        # Look for patterns like "version 4.6", "v4.6", "Version: 4.6", etc.
         version_match = re.search(
-            r"version[:\s]+([0-9.]+)", help_text_str, re.IGNORECASE
+            r"(?:version[:\s]+|v)([0-9.]+)", help_text_str, re.IGNORECASE
         )
         if version_match:
-            pass
             self._version = version_match.group(
                 1
             )  # pylint: disable=attribute-defined-outside-init
@@ -381,24 +381,44 @@ def analyze_rife_executable(exe_path: pathlib.Path) -> Dict[str, Any]:
     Returns:
         Dictionary with capability information
     """
-    detector = RifeCapabilityDetector(exe_path)
+    try:
+        if not exe_path.exists():
+            return {
+                "success": False,
+                "exe_path": str(exe_path),
+                "error": f"Executable not found: {exe_path}",
+                "version": None,
+                "capabilities": {},
+            }
 
-    return {
-        "version": detector.version,
-        "capabilities": {
-            "tiling": detector.supports_tiling(),
-            "uhd": detector.supports_uhd(),
-            "tta_spatial": detector.supports_tta_spatial(),
-            "tta_temporal": detector.supports_tta_temporal(),
-            "thread_spec": detector.supports_thread_spec(),
-            "batch_processing": detector.supports_batch_processing(),
-            "timestep": detector.supports_timestep(),
-            "model_path": detector.supports_model_path(),
-            "gpu_id": detector.supports_gpu_id(),
-        },
-        "supported_args": list(detector.supported_args),
-        "help_text": detector.help_text,
-    }
+        detector = RifeCapabilityDetector(exe_path)
+
+        return {
+            "success": True,
+            "exe_path": str(exe_path),
+            "version": detector.version,
+            "capabilities": {
+                "tiling": detector.supports_tiling(),
+                "uhd": detector.supports_uhd(),
+                "tta_spatial": detector.supports_tta_spatial(),
+                "tta_temporal": detector.supports_tta_temporal(),
+                "thread_spec": detector.supports_thread_spec(),
+                "batch_processing": detector.supports_batch_processing(),
+                "timestep": detector.supports_timestep(),
+                "model_path": detector.supports_model_path(),
+                "gpu_id": detector.supports_gpu_id(),
+            },
+            "supported_args": list(detector.supported_args),
+            "help_text": detector.help_text,
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "exe_path": str(exe_path),
+            "error": str(e),
+            "version": None,
+            "capabilities": {},
+        }
 
 
 if __name__ == "__main__":

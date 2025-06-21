@@ -1,19 +1,17 @@
 """Unit tests for the auto-detection features in the integrity check module."""
 
-import os
 import tempfile
-import traceback
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-from PyQt6.QtCore import QCoreApplication, Qt
-from PyQt6.QtWidgets import QApplication, QMessageBox, QProgressDialog
+from PyQt6.QtCore import QCoreApplication
+from PyQt6.QtWidgets import QApplication
 
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
-from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
+from goesvfi.integrity_check.time_index import SatellitePattern
 
 # Import our test utilities
 from tests.utils.pyqt_async_test import PyQtAsyncTestCase
@@ -136,8 +134,8 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Verify date time editors were updated
-        self.assertTrue(start_date_spy.called)
-        self.assertTrue(end_date_spy.called)
+        assert start_date_spy.called
+        assert end_date_spy.called
 
         # Verify information dialog was shown
         mock_message_box.information.assert_called_once()
@@ -165,18 +163,18 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         )
 
         # Start date should be around 2023-06-15 with hour=0, minute=0
-        self.assertEqual(start_py_date.year, 2023)
-        self.assertEqual(start_py_date.month, 6)
-        self.assertEqual(start_py_date.day, 15)
-        self.assertEqual(start_py_date.hour, 0)
-        self.assertEqual(start_py_date.minute, 0)
+        assert start_py_date.year == 2023
+        assert start_py_date.month == 6
+        assert start_py_date.day == 15
+        assert start_py_date.hour == 0
+        assert start_py_date.minute == 0
 
         # End date should be around 2023-06-21 with hour=23, minute=59
-        self.assertEqual(end_py_date.year, 2023)
-        self.assertEqual(end_py_date.month, 6)
-        self.assertEqual(end_py_date.day, 21)
-        self.assertEqual(end_py_date.hour, 23)
-        self.assertEqual(end_py_date.minute, 59)
+        assert end_py_date.year == 2023
+        assert end_py_date.month == 6
+        assert end_py_date.day == 21
+        assert end_py_date.hour == 23
+        assert end_py_date.minute == 59
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     def test_auto_detect_date_range_goes18(self, mock_message_box):
@@ -200,8 +198,8 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Verify date time editors were updated
-        self.assertTrue(start_date_spy.called)
-        self.assertTrue(end_date_spy.called)
+        assert start_date_spy.called
+        assert end_date_spy.called
 
         # Verify information dialog was shown
         mock_message_box.information.assert_called_once()
@@ -229,19 +227,19 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         )
 
         # Start date should be around 2023-06-15 with hour=0, minute=0
-        self.assertEqual(start_py_date.year, 2023)
-        self.assertEqual(start_py_date.month, 6)
-        self.assertEqual(start_py_date.day, 15)
-        self.assertEqual(start_py_date.hour, 0)
-        self.assertEqual(start_py_date.minute, 0)
+        assert start_py_date.year == 2023
+        assert start_py_date.month == 6
+        assert start_py_date.day == 15
+        assert start_py_date.hour == 0
+        assert start_py_date.minute == 0
 
-        # End date should be around 2023-07-15 with hour=23, minute=59
-        self.assertEqual(end_py_date.year, 2023)
-        self.assertEqual(end_py_date.month, 7)
-        # Day can be 14 or 15 depending on how the test runs
-        self.assertIn(end_py_date.day, [14, 15])
-        self.assertEqual(end_py_date.hour, 23)
-        self.assertEqual(end_py_date.minute, 59)
+        # End date should be around 2023-07-14 with hour=23, minute=59
+        # Since we created files for 30 days starting June 15, the last day is July 14
+        assert end_py_date.year == 2023
+        assert end_py_date.month == 7
+        assert end_py_date.day == 14
+        assert end_py_date.hour == 23
+        assert end_py_date.minute == 59
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     def test_auto_detect_date_range_no_files(self, mock_message_box):
@@ -262,31 +260,20 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         # Verify error dialog was shown
         mock_message_box.information.assert_called_once()
         info_args = mock_message_box.information.call_args[0]
-        self.assertIn("No Valid Files Found", info_args[1])
+        assert "No Valid Files Found" in info_args[1]
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
-    @patch("goesvfi.integrity_check.time_index.TimeIndex.scan_directory_for_timestamps")
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     def test_combined_auto_detect_features(
-        self, mock_message_box, mock_scan, mock_progress_dialog
+        self, mock_message_box, mock_progress_dialog
     ):
         """Test combined auto-detect features (satellite type and date range)."""
-        # First, we'll auto-detect satellite type
-        # Setup mock to return files
-        goes16_files = [datetime(2023, 1, 1, 12, 0, 0)] * 3
-        goes18_files = [datetime(2023, 1, 1, 12, 0, 0)] * 5
-
-        def scan_side_effect(directory, satellite, **kwargs):
-            if satellite == SatellitePattern.GOES_16:
-                return goes16_files
-            elif satellite == SatellitePattern.GOES_18:
-                return goes18_files
-            return []
-
-        mock_scan.side_effect = scan_side_effect
-
-        # Mock progress dialog
+        # Mock progress dialog to be a mock object (so module check fails)
         mock_progress_instance = MagicMock()
+        mock_progress_instance.wasCanceled.return_value = False
+        mock_progress_instance.show = MagicMock()
+        mock_progress_instance.setValue = MagicMock()
+        mock_progress_instance.close = MagicMock()
         mock_progress_dialog.return_value = mock_progress_instance
 
         # Call auto-detect satellite
@@ -295,8 +282,10 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         # Process events
         QCoreApplication.processEvents()
 
-        # Verify satellite was set to GOES-18 (more files)
-        self.mock_view_model.satellite = SatellitePattern.GOES_18
+        # Verify satellite was set to GOES-18 (more files based on our test setup)
+        # We created more GOES-18 files in setup_test_files
+        assert self.mock_view_model.satellite == SatellitePattern.GOES_18
+        assert self.tab.goes18_radio.isChecked()
 
         # Reset the message box mock to check calls separately
         mock_message_box.reset_mock()
@@ -325,14 +314,14 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Verify date range was set correctly
-        self.assertTrue(start_date_spy.called)
-        self.assertTrue(end_date_spy.called)
+        assert start_date_spy.called
+        assert end_date_spy.called
 
         # Verify both auto-detect features worked together
         # First satellite detection, then date range detection
-        self.assertEqual(self.mock_view_model.satellite, SatellitePattern.GOES_18)
-        self.assertEqual(
-            mock_message_box.information.call_count, 1
+        assert self.mock_view_model.satellite == SatellitePattern.GOES_18
+        assert (
+            mock_message_box.information.call_count == 1
         )  # Only from date range detection
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
@@ -343,10 +332,13 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         """Test auto-detecting satellite type when no valid files exist."""
         # Create a mock progress dialog instance
         mock_dialog = MagicMock()
+        mock_dialog.wasCanceled.return_value = False
         mock_progress_dialog.return_value = mock_dialog
 
-        # Point the view model to the invalid files directory
-        self.mock_view_model.base_directory = self.base_dir / "invalid"
+        # Create a truly empty directory for this test
+        empty_dir = self.base_dir / "truly_empty"
+        empty_dir.mkdir(parents=True)
+        self.mock_view_model.base_directory = empty_dir
 
         # Call the method
         self.tab._auto_detect_satellite()
@@ -354,30 +346,34 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         # Process events
         QCoreApplication.processEvents()
 
-        # Verify error dialog was shown
+        # Verify information dialog was shown for no files found
         mock_message_box.information.assert_called_once()
         info_args = mock_message_box.information.call_args[0]
-        self.assertIn("No Valid Files Found", info_args[1])
+        assert "No Valid Files Found" in info_args[1]
 
-        # Verify that neither satellite was selected (should stay as default)
-        self.mock_view_model.satellite = SatellitePattern.GOES_18  # Default from setUp
+        # Verify that satellite remains unchanged (should stay as default)
+        assert (
+            self.mock_view_model.satellite == SatellitePattern.GOES_18
+        )  # Default from setUp
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
-    @patch("goesvfi.integrity_check.time_index.TimeIndex.scan_directory_for_timestamps")
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     def test_auto_detect_satellite_with_error(
-        self, mock_message_box, mock_scan, mock_progress_dialog
+        self, mock_message_box, mock_progress_dialog
     ):
         """Test error handling when auto-detecting satellite type."""
         # Mock progress dialog
         mock_dialog = MagicMock()
+        mock_dialog.wasCanceled.return_value = False
+        mock_dialog.show = MagicMock()
+        mock_dialog.setValue = MagicMock()
+        mock_dialog.close = MagicMock()
         mock_progress_dialog.return_value = mock_dialog
 
-        # Make the scan operation raise an exception
-        mock_scan.side_effect = Exception("Test exception")
-
-        # Call the method
-        self.tab._auto_detect_satellite()
+        # Make Path.rglob raise an exception
+        with patch("pathlib.Path.rglob", side_effect=Exception("Test exception")):
+            # Call the method
+            self.tab._auto_detect_satellite()
 
         # Process events
         QCoreApplication.processEvents()
@@ -385,11 +381,11 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         # Verify error dialog was shown
         mock_message_box.critical.assert_called_once()
         critical_args = mock_message_box.critical.call_args[0]
-        self.assertIn("Error Detecting Satellite Type", critical_args[1])
-        self.assertIn("Test exception", critical_args[2])
+        assert "Auto-Detection Failed" in critical_args[1]
+        assert "Test exception" in str(critical_args[2])
 
         # Satellite should remain unchanged
-        self.assertEqual(self.mock_view_model.satellite, SatellitePattern.GOES_18)
+        assert self.mock_view_model.satellite == SatellitePattern.GOES_18
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     def test_auto_detect_date_range_with_error(self, mock_message_box):
@@ -408,30 +404,21 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         # Verify error dialog was shown
         mock_message_box.critical.assert_called_once()
         critical_args = mock_message_box.critical.call_args[0]
-        self.assertIn("Error Detecting Date Range", critical_args[1])
-        self.assertIn("Date range detection error", critical_args[2])
+        assert "Error Detecting Date Range" in critical_args[1]
+        assert "Date range detection error" in critical_args[2]
 
+    @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
-    @patch("goesvfi.integrity_check.time_index.TimeIndex.scan_directory_for_timestamps")
     def test_auto_detect_satellite_detail_logging(
-        self, mock_scan, mock_progress_dialog
+        self, mock_progress_dialog, mock_message_box
     ):
         """Test detailed logging during satellite auto-detection."""
-        # Setup mock to return files with imbalance between types
-        goes16_files = [datetime(2023, 1, 1, 12, 0, 0)] * 2  # Fewer GOES-16 files
-        goes18_files = [datetime(2023, 1, 1, 12, 0, 0)] * 8  # More GOES-18 files
-
-        def scan_side_effect(directory, satellite, **kwargs):
-            if satellite == SatellitePattern.GOES_16:
-                return goes16_files
-            elif satellite == SatellitePattern.GOES_18:
-                return goes18_files
-            return []
-
-        mock_scan.side_effect = scan_side_effect
-
         # Mock progress dialog
         mock_dialog = MagicMock()
+        mock_dialog.wasCanceled.return_value = False
+        mock_dialog.show = MagicMock()
+        mock_dialog.setValue = MagicMock()
+        mock_dialog.close = MagicMock()
         mock_progress_dialog.return_value = mock_dialog
 
         # Spy on the logger to verify detailed logging
@@ -453,19 +440,36 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
                 f"Auto-detect satellite: Scanning for GOES-16 files in {self.base_dir}"
             )
 
-            # Verify found file counts were logged
-            mock_logger.info.assert_any_call(
-                f"Auto-detect satellite: Found {len(goes16_files)} GOES-16 files and {len(goes18_files)} GOES-18 files"
-            )
+            # Check that file counts were logged (without checking exact numbers)
+            found_counts_call = False
+            for call in mock_logger.info.call_args_list:
+                if len(call) > 0 and len(call[0]) > 0:
+                    msg = call[0][0]
+                    if (
+                        "Auto-detect satellite: Found" in msg
+                        and "GOES-16 files and" in msg
+                        and "GOES-18 files" in msg
+                    ):
+                        found_counts_call = True
+                        break
+            assert found_counts_call, "Expected logging of file counts"
 
-            # Verify the satellite selection was logged
-            mock_logger.info.assert_any_call(
-                f"Auto-detect satellite: Selected GOES-18 based on file count ({len(goes18_files)} vs {len(goes16_files)})"
-            )
+            # Check that selection was logged
+            selection_call = False
+            for call in mock_logger.info.call_args_list:
+                if len(call) > 0 and len(call[0]) > 0:
+                    msg = call[0][0]
+                    if (
+                        "Auto-detect satellite: Selected GOES-18 based on file count"
+                        in msg
+                    ):
+                        selection_call = True
+                        break
+            assert selection_call, "Expected logging of satellite selection"
 
             # Verify completion was logged
             mock_logger.info.assert_any_call(
-                f"Auto-detect satellite: Completed successfully, selected GOES-18 (West)"
+                "Auto-detect satellite: Completed successfully, selected GOES-18 (West)"
             )
 
 

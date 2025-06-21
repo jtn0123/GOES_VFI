@@ -149,21 +149,28 @@ def encode_with_ffmpeg(
                 pass_log_prefix = temp_file.name
 
                 # Build commands using FFmpegCommandBuilder
-                builder = FFmpegCommandBuilder()
-                builder.set_input(str(intermediate_input))
-                builder.set_output(str(final_output))
-                builder.set_encoder("libx265")
-                builder.set_preset("slower")
-                builder.set_pix_fmt(pix_fmt)
-                builder.set_bitrate(bitrate_kbps)
-                builder.set_bufsize(bufsize_kb)
-
                 # Pass 1
-                cmd_pass1 = builder.build_2pass_command(1, pass_log_prefix)
+                builder1 = FFmpegCommandBuilder()
+                builder1.set_input(pathlib.Path(intermediate_input))
+                builder1.set_output(pathlib.Path(final_output))
+                builder1.set_encoder("Software x265 (2-Pass)")
+                builder1.set_pix_fmt(pix_fmt)
+                builder1.set_bitrate(bitrate_kbps)
+                builder1.set_bufsize(bufsize_kb)
+                builder1.set_two_pass(True, pass_log_prefix, 1)
+                cmd_pass1 = builder1.build()
                 _run_ffmpeg_command(cmd_pass1, "2-Pass x265 Pass 1", monitor_memory)
 
                 # Pass 2
-                cmd_pass2 = builder.build_2pass_command(2, pass_log_prefix)
+                builder2 = FFmpegCommandBuilder()
+                builder2.set_input(pathlib.Path(intermediate_input))
+                builder2.set_output(pathlib.Path(final_output))
+                builder2.set_encoder("Software x265 (2-Pass)")
+                builder2.set_pix_fmt(pix_fmt)
+                builder2.set_bitrate(bitrate_kbps)
+                builder2.set_bufsize(bufsize_kb)
+                builder2.set_two_pass(True, pass_log_prefix, 2)
+                cmd_pass2 = builder2.build()
                 _run_ffmpeg_command(cmd_pass2, "2-Pass x265 Pass 2", monitor_memory)
 
         except Exception as e:
@@ -176,16 +183,23 @@ def encode_with_ffmpeg(
         builder.set_input(str(intermediate_input))
         builder.set_output(str(final_output))
 
+        # Map encoder names to match FFmpegCommandBuilder expectations
         if "x264" in encoder:
-            builder.set_encoder("libx264")
+            builder.set_encoder("Software x264")
         elif "x265" in encoder:
-            builder.set_encoder("libx265")
+            builder.set_encoder("Software x265")
         else:
-            # Default fallback
-            builder.set_encoder("libx264")
+            # Pass through the encoder name as-is
+            builder.set_encoder(encoder)
 
         builder.set_crf(crf)
         builder.set_pix_fmt(pix_fmt)
+
+        # Set bitrate and bufsize if provided
+        if bitrate_kbps:
+            builder.set_bitrate(bitrate_kbps)
+        if bufsize_kb:
+            builder.set_bufsize(bufsize_kb)
 
         cmd = builder.build()
         _run_ffmpeg_command(cmd, f"Encoding with {encoder}", monitor_memory)

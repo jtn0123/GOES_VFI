@@ -161,3 +161,21 @@ class ThreadLocalCacheDB:
         """Check if timestamp exists via thread-local connection."""
         db = self.get_db()
         return await db.timestamp_exists(timestamp, satellite)
+
+    # General entry methods for thread-safe caching
+    def add_entry(
+        self,
+        filepath: str,
+        file_hash: str,
+        file_size: int,
+        timestamp: datetime,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Add a general cache entry via thread-local connection."""
+        db = self.get_db()
+        db.add_entry(filepath, file_hash, file_size, timestamp, metadata)
+
+    def get_entry(self, filepath: str) -> Optional[Dict[str, Any]]:
+        """Get a cache entry via thread-local connection."""
+        db = self.get_db()
+        return db.get_entry(filepath)

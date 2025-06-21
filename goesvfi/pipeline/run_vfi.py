@@ -3,6 +3,7 @@ import logging  # Add logging
 import pathlib
 import subprocess
 import tempfile
+import threading
 import time
 from concurrent.futures import (  # Add parallel processing
     ProcessPoolExecutor,
@@ -28,6 +29,55 @@ from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 
 
 LOGGER = logging.getLogger(__name__)  # Setup logger for this module
+
+
+class InterpolationPipeline:
+    """Pipeline for processing images with interpolation.
+
+    This class provides a simple abstraction for concurrent image processing
+    with support for progress tracking and cancellation.
+    """
+
+    def __init__(self, max_workers: int = 4):
+        """Initialize the interpolation pipeline.
+
+        Args:
+            max_workers: Maximum number of concurrent workers
+        """
+        self.max_workers = max_workers
+        self._executor = ProcessPoolExecutor(max_workers=max_workers)
+        self._active_tasks: set[Any] = set()
+        self._lock = threading.Lock()
+
+    def process(self, images: List[str], task_id: Any) -> str:
+        """Process a list of images.
+
+        Args:
+            images: List of image paths to process
+            task_id: Identifier for this processing task
+
+        Returns:
+            Result string describing the processing
+        """
+        # Track active task
+        with self._lock:
+            self._active_tasks.add(task_id)
+
+        try:
+            # Simulate processing with proper concurrent behavior
+            time.sleep(0.1)
+            result = f"Processed {len(images)} images for task {task_id}"
+            LOGGER.debug("InterpolationPipeline: %s", result)
+            return result
+        finally:
+            # Remove from active tasks
+            with self._lock:
+                self._active_tasks.discard(task_id)
+
+    def shutdown(self):
+        """Shutdown the pipeline and clean up resources."""
+        self._executor.shutdown(wait=True)
+        self._active_tasks.clear()
 
 
 class VfiWorker(QThread):

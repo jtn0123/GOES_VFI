@@ -225,13 +225,21 @@ class CompositeStore(RemoteStore):
 
             try:
                 # Attempt download
-                result_path = await store.download(
-                    ts=ts,
-                    satellite=satellite,
-                    dest_path=dest_path,
-                    product_type=product_type,
-                    band=band,
-                )
+                # The stores have download_file method, not download
+                # We need to use the appropriate method based on store type
+                if hasattr(store, "download"):
+                    result_path = await store.download(
+                        ts=ts,
+                        satellite=satellite,
+                        dest_path=dest_path,
+                        product_type=product_type,
+                        band=band,
+                    )
+                else:
+                    # Fallback to download_file for basic RemoteStore interface
+                    result_path = await store.download_file(
+                        timestamp=ts, satellite=satellite, destination=dest_path
+                    )
 
                 elapsed_time = asyncio.get_event_loop().time() - start_time
 
@@ -291,6 +299,9 @@ class CompositeStore(RemoteStore):
 
         # All sources failed - create comprehensive error
         self._create_fallback_error(results, ts, satellite)
+        # This line is unreachable as _create_fallback_error always raises,
+        # but mypy needs it for type checking
+        raise RemoteStoreError("All sources failed")
 
     def _create_fallback_error(
         self,
@@ -409,12 +420,19 @@ class CompositeStore(RemoteStore):
         # Check sources in priority order
         for source_name, store in self._get_ordered_sources():
             try:
-                exists = await store.exists(
-                    ts=ts,
-                    satellite=satellite,
-                    product_type=product_type,
-                    band=band,
-                )
+                # Check if store has exists method, otherwise use check_file_exists
+                if hasattr(store, "exists"):
+                    exists = await store.exists(
+                        ts=ts,
+                        satellite=satellite,
+                        product_type=product_type,
+                        band=band,
+                    )
+                else:
+                    # Fallback to check_file_exists for basic RemoteStore interface
+                    exists = await store.check_file_exists(
+                        timestamp=ts, satellite=satellite
+                    )
 
                 if exists:
                     LOGGER.debug("File exists in %s", source_name)
@@ -426,6 +444,49 @@ class CompositeStore(RemoteStore):
                 continue
 
         return False
+
+    async def check_file_exists(self, timestamp: datetime, satellite: Any) -> bool:
+        """Check if a file exists for the given timestamp and satellite.
+
+        This wraps the exists method to match the RemoteStore interface.
+        """
+        return await self.exists(timestamp, satellite)
+
+    async def download_file(
+        self,
+        timestamp: datetime,
+        satellite: Any,
+        destination: Path,
+        progress_callback: Optional[Any] = None,
+        cancel_check: Optional[Any] = None,
+    ) -> Path:
+        """Download a file for the given timestamp and satellite.
+
+        This wraps the download method to match the RemoteStore interface.
+        """
+        return await self.download(
+            ts=timestamp,
+            satellite=satellite,
+            dest_path=destination,
+        )
+
+    async def get_file_url(self, timestamp: datetime, satellite: Any) -> str:
+        """Get the URL for a file.
+
+        Returns the URL from the first available source.
+        """
+        for source_name, store in self._get_ordered_sources():
+            try:
+                url = await store.get_file_url(timestamp, satellite)
+                return url
+            except Exception as e:
+                LOGGER.debug("Error getting URL from %s: %s", source_name, e)
+                continue
+
+        raise RemoteStoreError(
+            message=f"Could not get URL for {satellite} at {timestamp}",
+            troubleshooting_tips="All sources failed to provide a URL",
+        )
 
     async def close(self) -> None:
         """Close all data source connections."""

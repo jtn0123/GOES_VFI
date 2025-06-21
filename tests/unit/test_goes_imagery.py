@@ -2,18 +2,19 @@
 Tests for GOES Satellite Imagery functionality
 """
 
-import os
 import shutil
 import unittest
-from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 # Mock boto3 and botocore before importing the module
 with patch("boto3.client"), patch("botocore.UNSIGNED", create=True):
     from goesvfi.integrity_check.goes_imagery import (
         ChannelType,
+        GOESImageProcessor,
+        GOESImageryDownloader,
         GOESImageryManager,
+        ImageryMode,
         ProductType,
     )
 
@@ -36,37 +37,35 @@ class TestGOESImagery(unittest.TestCase):
     def test_channel_type_enum(self):
         """Test ChannelType enum."""
         # Test channel attributes
-        self.assertEqual(ChannelType.CH13.number, 13)
-        self.assertEqual(ChannelType.CH13.display_name, "Clean Longwave Window IR")
-        self.assertEqual(ChannelType.CH13.wavelength, "10.3 μm")
-        self.assertTrue("Surface temp" in ChannelType.CH13.description)
+        assert ChannelType.CH13.number == 13
+        assert ChannelType.CH13.display_name == "Clean Longwave Window IR"
+        assert ChannelType.CH13.wavelength == "10.3 μm"
+        assert "Surface temp" in ChannelType.CH13.description
 
         # Test channel properties
-        self.assertTrue(ChannelType.CH02.is_visible)
-        self.assertFalse(ChannelType.CH02.is_infrared)
+        assert ChannelType.CH02.is_visible
+        assert not ChannelType.CH02.is_infrared
 
-        self.assertTrue(ChannelType.CH13.is_infrared)
-        self.assertFalse(ChannelType.CH13.is_visible)
+        assert ChannelType.CH13.is_infrared
+        assert not ChannelType.CH13.is_visible
 
-        self.assertTrue(ChannelType.CH05.is_near_ir)
+        assert ChannelType.CH05.is_near_ir
 
-        self.assertTrue(ChannelType.CH08.is_water_vapor)
+        assert ChannelType.CH08.is_water_vapor
 
         # Test from_number
-        self.assertEqual(ChannelType.from_number(13), ChannelType.CH13)
-        self.assertIsNone(ChannelType.from_number(999))
+        assert ChannelType.from_number(13) == ChannelType.CH13
+        assert ChannelType.from_number(999) is None
 
         # Test composite channels
-        self.assertTrue(ChannelType.TRUE_COLOR.is_composite)
-        self.assertFalse(ChannelType.CH01.is_composite)
+        assert ChannelType.TRUE_COLOR.is_composite
+        assert not ChannelType.CH01.is_composite
 
     def test_product_type_mapping(self):
         """Test ProductType mapping functions."""
-        self.assertEqual(
-            ProductType.to_s3_prefix(ProductType.FULL_DISK), "ABI-L1b-RadF"
-        )
+        assert ProductType.to_s3_prefix(ProductType.FULL_DISK) == "ABI-L1b-RadF"
 
-        self.assertEqual(ProductType.to_web_path(ProductType.FULL_DISK), "FD")
+        assert ProductType.to_web_path(ProductType.FULL_DISK) == "FD"
 
     @patch("goesvfi.integrity_check.goes_imagery.requests.get")
     def test_download_precolorized_image(self, mock_get):
@@ -90,8 +89,8 @@ class TestGOESImagery(unittest.TestCase):
         )
 
         # Verify result
-        self.assertIsNotNone(result)
-        self.assertTrue(result.check_file_exists())
+        assert result is not None
+        assert result.check_file_exists()
 
         # Verify mock was called with correct URL
         expected_url = (
@@ -108,7 +107,7 @@ class TestGOESImagery(unittest.TestCase):
         result = processor._extract_timestamp_from_filename(filename)
 
         # Verify result (day 300 of 2023 = Oct 27, 2023)
-        self.assertEqual(result, "20231027_155021")
+        assert result == "20231027_155021"
 
     @patch(
         "goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_precolorized_image"
@@ -117,7 +116,10 @@ class TestGOESImagery(unittest.TestCase):
         """Test getting imagery in product mode."""
         # Setup mock
         expected_path = self.test_dir / "test_image.jpg"
-        mock_download.return_value = expected_path
+        # Create a mock DownloadResult
+        mock_result = MagicMock()
+        mock_result.file_path = expected_path
+        mock_download.return_value = mock_result
 
         # Create manager with mocked downloader
         manager = GOESImageryManager(output_dir=self.test_dir)
@@ -131,7 +133,7 @@ class TestGOESImagery(unittest.TestCase):
         )
 
         # Verify result
-        self.assertEqual(result, expected_path)
+        assert result == expected_path
 
         # Verify mock was called with correct arguments
         mock_download.assert_called_once_with(
@@ -166,7 +168,7 @@ class TestGOESImagery(unittest.TestCase):
         )
 
         # Verify result
-        self.assertEqual(result, expected_path)
+        assert result == expected_path
 
         # Verify mocks were called correctly
         mock_find.assert_called_once()

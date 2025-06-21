@@ -20,14 +20,13 @@ import tracemalloc
 import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import psutil
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QTimer
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication, QMainWindow
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTabWidget
 
-from goesvfi.integrity_check.combined_tab import CombinedIntegrityAndImageryTab
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 from goesvfi.integrity_check.enhanced_view_model import (
     EnhancedIntegrityCheckViewModel,
@@ -39,10 +38,10 @@ from goesvfi.integrity_check.satellite_integrity_tab_group import OptimizedResul
 
 # Import the components to test
 from goesvfi.integrity_check.time_index import SatellitePattern
-from goesvfi.integrity_check.view_model import MissingTimestamp, ScanStatus
+from goesvfi.integrity_check.view_model import ScanStatus
 
 # Import our test utilities
-from tests.utils.pyqt_async_test import AsyncSignalWaiter, PyQtAsyncTestCase, async_test
+from tests.utils.pyqt_async_test import PyQtAsyncTestCase
 
 
 class PerformanceMetrics:
@@ -503,7 +502,7 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
             pass
             avg_event_time = sum(event_times) / len(event_times)
             max_event_time = max(event_times)
-            print(f"UI interaction times:")
+            print("UI interaction times:")
             print(f"  Average: {avg_event_time:.6f} seconds")
             print(f"  Maximum: {max_event_time:.6f} seconds")
             print(f"  Events recorded: {len(event_times)}")

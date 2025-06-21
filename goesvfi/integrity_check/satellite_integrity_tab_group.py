@@ -366,7 +366,6 @@ class OptimizedResultsTab(QWidget):
 
         # Clear preview if no items
         if not items:
-            pass
             self.preview_widget.clear()
 
     def highlight_item(self, timestamp: datetime) -> None:
@@ -395,14 +394,12 @@ class OptimizedResultsTab(QWidget):
         """Handle download button click in preview widget."""
         item = self.preview_widget.current_item
         if item:
-            pass
             self.downloadRequested.emit(item)
 
     def _handle_view_clicked(self) -> None:
         """Handle view button click in preview widget."""
         item = self.preview_widget.current_item
         if item:
-            pass
             self.viewRequested.emit(item)
 
     def _handle_group_changed(self, group_by: str) -> None:
@@ -510,7 +507,6 @@ class SatelliteIntegrityTabGroup(QWidget):
         # Note: This doesn't update the data, just the displayed range
         # The actual data update needs to come from the view model
         if hasattr(self.timeline_tab, "set_date_range"):
-            pass
             self.timeline_tab.set_date_range(start, end)
 
         # Emit signal for external connections
@@ -556,14 +552,11 @@ class SatelliteIntegrityTabGroup(QWidget):
         try:
             # Example connections (adjust based on actual interfaces)
             if hasattr(tab, "dateRangeSelected"):
-                pass
                 tab.dateRangeSelected.connect(self._handle_date_range_selected)
 
             if hasattr(tab, "satelliteSelected"):
-                pass
                 tab.satelliteSelected.connect(self._handle_satellite_selected)
         except Exception as e:
-            pass
             import traceback
 
             print(f"Error connecting to GOES imagery tab: {e}")
@@ -586,7 +579,6 @@ class SatelliteIntegrityTabGroup(QWidget):
             # Example: Pass download requests to integrity tab
             self.downloadRequested.connect(tab.download_item)
         except Exception as e:
-            pass
             import traceback
 
             print(f"Error connecting to integrity tab: {e}")

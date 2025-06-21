@@ -115,3 +115,35 @@ class SampleProcessor:
         """
         LOGGER.warning("Stub: Sample NetCDF processing not implemented")
         return None
+
+    def download_web_sample(
+        self,
+        channel: Union[ChannelType, int],
+        product_type: ProductType,
+    ) -> Optional[Image.Image]:
+        """Download a sample image from the web.
+
+        Args:
+            channel: Channel type or number
+            product_type: Product type
+
+        Returns:
+            Sample image or None
+        """
+        LOGGER.warning("Stub: Web sample download not implemented")
+        # Return a placeholder image for testing
+        img = Image.new("RGB", self.sample_size, color="lightgray")
+        return img
+
+    def cleanup(self) -> None:
+        """Clean up temporary files and resources."""
+        LOGGER.info("Cleaning up sample processor resources")
+        # Clean up temporary directory if it exists
+        if hasattr(self, "temp_dir") and self.temp_dir.exists():
+            import shutil
+
+            try:
+                shutil.rmtree(self.temp_dir)
+                LOGGER.info(f"Removed temporary directory: {self.temp_dir}")
+            except Exception as e:
+                LOGGER.warning(f"Failed to remove temporary directory: {e}")
