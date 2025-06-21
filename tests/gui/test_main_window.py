@@ -536,22 +536,22 @@ def test_start_interpolation(qtbot, window, mock_worker, dummy_files):
     # qtbot.wait(100) # Wait for UI state change # REMOVED
 
     # Assert MainWindow created a worker instance
-    assert window.worker is not None
+    assert window.vfi_worker is not None
     # Check for MagicMock due to mock_worker fixture
-    assert isinstance(window.worker, MagicMock)
+    assert isinstance(window.vfi_worker, MagicMock)
 
     # Assert the worker instance's mocked run method was called via start()
-    assert hasattr(window.worker, "start")
+    assert hasattr(window.vfi_worker, "start")
     # To verify run was called, we rely on the mock_worker fixture patching 'run'
     # We can check the state change that happens when worker starts
     assert window.is_processing is True
 
     # Assert UI state changed to "processing"
     assert not window.main_tab.start_button.isEnabled()  # Updated name
-    assert window.status_label.text().startswith(
+    assert window.status_bar.currentMessage().startswith(
         "Starting VFI process..."
     )  # Updated name + message
-    assert window.progress_bar.value() == 0
+    assert window.main_view_model.processing_vm.current_progress == 0
     assert not window.tab_widget.isEnabled()  # Updated name
     assert not window.main_tab.in_dir_edit.isEnabled()  # Updated name
     assert not window.main_tab.out_file_edit.isEnabled()  # Updated name
@@ -564,24 +564,24 @@ def test_progress_update(qtbot, window, mock_worker, dummy_files, mocker):
     # --- Manually set state to processing ---
     window._set_processing_state(True)
 
-    # Directly call the _on_progress method instead of trying to emit signals
-    window._on_progress(10, 100, 5.0)
+    # Directly call the _on_processing_progress method instead of trying to emit signals
+    window._on_processing_progress(10, 100, 5.0)
 
     # Check the effects of the method call
-    assert window.progress_bar.value() == 10
-    assert "Processing frame 10/100" in window.status_label.text()
-    assert "ETA: 5.0s" in window.status_label.text()
+    assert window.main_view_model.processing_vm.current_progress == 10
+    assert "Processing frame 10/100" in window.status_bar.currentMessage()
+    assert "ETA: 5.0s" in window.status_bar.currentMessage()
 
     # Test with another progress value
-    window._on_progress(50, 100, 2.5)
-    assert window.progress_bar.value() == 50
-    assert "Processing frame 50/100" in window.status_label.text()
+    window._on_processing_progress(50, 100, 2.5)
+    assert window.main_view_model.processing_vm.current_progress == 50
+    assert "Processing frame 50/100" in window.status_bar.currentMessage()
 
     # Test completion
-    window._on_progress(100, 100, 0.0)
-    assert window.progress_bar.value() == 100
-    assert "Processing frame 100/100" in window.status_label.text()
-    assert "ETA: N/A" in window.status_label.text()
+    window._on_processing_progress(100, 100, 0.0)
+    assert window.main_view_model.processing_vm.current_progress == 100
+    assert "Processing frame 100/100" in window.status_bar.currentMessage()
+    assert "ETA: N/A" in window.status_bar.currentMessage()
 
 
 def test_successful_completion(qtbot, window, mock_worker, dummy_files):
@@ -592,13 +592,13 @@ def test_successful_completion(qtbot, window, mock_worker, dummy_files):
     window.main_tab.out_file_edit.setText(str(valid_input_dir / "fake_output.mp4"))
     window._set_processing_state(True)
 
-    # Directly call the _on_finished method
-    window._on_finished(valid_input_dir / "fake_output.mp4")
+    # Directly call the _on_processing_finished method
+    window._on_processing_finished(str(valid_input_dir / "fake_output.mp4"))
 
     # Verify the UI was updated correctly - update assertion to match actual output
-    assert "Finished! Output saved to:" in window.status_label.text()
-    assert "fake_output.mp4" in window.status_label.text()
-    assert window.progress_bar.value() == 100
+    assert "Finished! Output saved to:" in window.status_bar.currentMessage()
+    assert "fake_output.mp4" in window.status_bar.currentMessage()
+    assert window.main_view_model.processing_vm.current_progress == 100
     assert not window.is_processing  # Processing state should be reset
     assert window.main_tab.start_button.isEnabled()  # Start button should be re-enabled
 
@@ -622,21 +622,21 @@ def test_error_handling(qtbot, window, mock_dialogs, mock_worker, dummy_files):
     )  # Updated name
     window._set_processing_state(True)
     MockVfiWorker = mock_worker
-    window.worker = MockVfiWorker()
+    window.vfi_worker = MockVfiWorker()
 
     # Simulate worker error
     error_message = "Something went wrong!"
     # with qtbot.waitSignal(worker_instance.error, timeout=500) as blocker:
     #     worker_instance.error.emit(error_message)
     # assert blocker.args == [error_message]
-    window._show_error(error_message, stage="Test Error")  # Call correct slot directly
+    window._on_processing_error(error_message)  # Call correct slot directly
 
     # Assert UI updated
     # qtbot.waitUntil(lambda: "Error: " in window.status_label.text(), timeout=1000) # Updated check # REMOVED
     assert window.main_tab.start_button.isEnabled()  # Check start button re-enabled
     assert window.tab_widget.isEnabled()  # Check tabs re-enabled
-    assert "Error: " in window.status_label.text()  # Updated check
-    assert error_message in window.status_label.text()
+    assert "Error: " in window.status_bar.currentMessage()  # Updated check
+    assert error_message in window.status_bar.currentMessage()
     # REMOVED assertion for warning dialog for worker errors
     # mock_dialogs['warning'].assert_called_once()
     assert window.main_tab.in_dir_edit.isEnabled()  # Updated name
@@ -655,7 +655,7 @@ def test_open_crop_dialog(MockCropDialog, qtbot, window, dummy_files):
     valid_input_dir = dummy_files[0].parent
     window.main_tab.in_dir_edit.setText(str(valid_input_dir))  # Updated name
     # Need to set a dummy pixmap on the preview label for the crop dialog to open
-    window.preview_label_1.setPixmap(QPixmap(10, 10))  # Set a dummy pixmap
+    window.main_tab.first_frame_label.setPixmap(QPixmap(10, 10))  # Set a dummy pixmap
     assert window.main_tab.crop_button.isEnabled()  # Updated name
 
     qtbot.mouseClick(
@@ -717,7 +717,7 @@ def test_preview_zoom(qtbot, window):
     window._update_crop_buttons_state()  # Update button state
 
     # Get the first preview label directly
-    test_label = window.preview_label_1
+    test_label = window.main_tab.first_frame_label
 
     # Set up a dummy file_path and pixmap on the label
     dummy_path = "/fake/path/image.png"
@@ -728,7 +728,7 @@ def test_preview_zoom(qtbot, window):
     test_label.setPixmap(dummy_pixmap)
 
     # Mock the _show_zoom method to check if it's called
-    with patch.object(window, "_show_zoom") as mock_show_zoom:
+    with patch.object(window.main_tab, "_show_zoom") as mock_show_zoom:
         # Directly emit the clicked signal instead of using qtbot.mouseClick
         # This avoids potential segfaults from Qt event processing
         test_label.clicked.emit()
