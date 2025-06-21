@@ -3,6 +3,7 @@ pytest>=8.3.0
 pytest-qt>=4.4.0     # For GUI testing
 pytest-mock>=3.14.0  # For mocking in tests
 pytest-cov>=4.1.0    # For test coverage reports
+pytest-asyncio>=1.0.0  # For async test support
 
 # Mock library for tests
 mock>=5.2.0
