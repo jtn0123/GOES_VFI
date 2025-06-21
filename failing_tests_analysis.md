@@ -8,6 +8,35 @@
 - **Errors**: 2
 - **Success Rate**: ~85.8%
 
+## Update: Additional Failing Tests from GitHub Actions
+
+### New Test Failures Identified:
+
+1. **test_stats_updated_on_download_failure** (test_s3_download_stats.py:324)
+   - **Error**: `AssertionError: 0 != 1`
+   - **Issue**: The test expects download stats to be updated when a download fails, but the statistics show 0 failed attempts instead of 1
+   - **Root Cause**: In the current implementation, when a `ResourceNotFoundError` occurs during wildcard search (line 1825-1827 in s3_store.py), the error is re-raised without updating download statistics
+   - **Fix**: Update download stats before re-raising ResourceNotFoundError
+
+2. **test_download_wildcard_not_found** (test_s3_error_handling.py:119)
+   - **Error**: `AssertionError: 'Unexpected error searching' not found in 'No files found for GOES_18 at 2023-06-15T12:00:00'`
+   - **Issue**: The test expects the error message to contain "Unexpected error searching", but it's getting "No files found for..."
+   - **Root Cause**: When no matching objects are found during wildcard search, a `ResourceNotFoundError` is raised with the message "No files found for..." (line 1517), not "Unexpected error searching"
+   - **Fix**: Update test expectation to match actual error message
+
+3. **test_download_with_unsigned_access** (test_s3_unsigned_access.py:172)
+   - **Error**: `AssertionError: Expected 'download_file_file' to have been called once. Called 0 times.`
+   - **Issue**: The test is checking for `download_file_file` but should be checking for `download_file`
+   - **Root Cause**: Typo in the test - the mock is set up as `self.s3_client_mock.download_file_file` (line 181) but the actual method is `download_file`
+   - **Fix**: Correct the typo in the mock method name
+
+4. **test_run_goes_imagery** (unittest.loader._FailedTest)
+5. **test_s3_list** (unittest.loader._FailedTest)
+6. **test_timestamp** (unittest.loader._FailedTest)
+   - **Issue**: These test files don't exist but are referenced in reorganize_tests.py
+   - **Root Cause**: The files `/tests/unit/test_run_goes_imagery.py`, `/tests/unit/test_s3_list.py`, and `/tests/unit/test_timestamp.py` were likely removed or renamed but are still referenced in the test discovery
+   - **Fix**: Remove references to non-existent test files from reorganize_tests.py
+
 ## Detailed Analysis of Failing Tests
 
 ### 1. test_goes_imagery.py (6 failures)
@@ -116,3 +145,49 @@
 3. **Priority 3**: Fix memory management test expectations and missing test fixtures
 4. **Priority 4**: Review error handling patterns for consistency
 5. **Priority 5**: Investigate hanging tests (may be GUI-related)
+
+## Quick Fixes for GitHub Actions Failures
+
+### 1. Fix test_stats_updated_on_download_failure
+In `goesvfi/integrity_check/remote/s3_store.py` around line 1825-1827:
+```python
+except ResourceNotFoundError as e:
+    # Update stats before re-raising
+    update_download_stats(
+        success=False,
+        error_type="not_found",
+        error_message=str(e)
+    )
+    raise
+```
+
+### 2. Fix test_download_wildcard_not_found
+In `tests/unit/test_s3_error_handling.py` line 149:
+```python
+# Change from:
+self.assertIn("Unexpected error searching", error_msg)
+# To:
+self.assertIn("No files found for", error_msg)
+```
+
+### 3. Fix test_download_with_unsigned_access
+In `tests/unit/test_s3_unsigned_access.py`:
+```python
+# Line 181 - change from:
+self.s3_client_mock.download_file_file = AsyncMock()
+# To:
+self.s3_client_mock.download_file = AsyncMock()
+
+# Line 200 - change from:
+self.s3_client_mock.download_file_file.assert_called_once()
+# To:
+self.s3_client_mock.download_file.assert_called_once()
+```
+
+### 4. Remove non-existent test references
+Remove or update references to:
+- `/tests/unit/test_run_goes_imagery.py`
+- `/tests/unit/test_s3_list.py`
+- `/tests/unit/test_timestamp.py`
+
+These files should be removed from `examples/utilities/reorganize_tests.py` or any other test discovery mechanisms.

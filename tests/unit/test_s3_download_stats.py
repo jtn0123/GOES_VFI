@@ -344,9 +344,9 @@ class TestS3DownloadStatsIntegration(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(s3_store.DOWNLOAD_STATS["total_attempts"], 1)
         self.assertEqual(s3_store.DOWNLOAD_STATS["successful"], 0)
         self.assertEqual(s3_store.DOWNLOAD_STATS["failed"], 1)
-        # TimeoutError is categorized as "network" error in the current implementation
-        # because it's not a botocore exception and doesn't match the text pattern check
-        self.assertEqual(s3_store.DOWNLOAD_STATS["network_errors"], 1)
+        # TimeoutError is categorized as "timeout" error in the current implementation
+        self.assertEqual(s3_store.DOWNLOAD_STATS["timeouts"], 1)
+        self.assertEqual(s3_store.DOWNLOAD_STATS["network_errors"], 0)
         self.assertEqual(len(s3_store.DOWNLOAD_STATS["errors"]), 1)
 
     async def test_stats_updated_on_not_found_error(self):

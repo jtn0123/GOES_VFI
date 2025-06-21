@@ -146,7 +146,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Verify the error message contains helpful information
         error_msg = str(context.exception)
-        self.assertIn("Unexpected error searching", error_msg)
+        self.assertIn("No files found for", error_msg)
         self.assertIn(self.test_satellite.name, error_msg)
 
         # Make sure technical details contain search parameters

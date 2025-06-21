@@ -178,7 +178,7 @@ class TestUnsignedS3Access(unittest.TestCase):
         self.s3_client_mock.head_object = AsyncMock(
             return_value={"ContentLength": 12345}
         )
-        self.s3_client_mock.download_file_file = AsyncMock()
+        self.s3_client_mock.download_file = AsyncMock()
 
         # Setup Config spy
         config_spy = MagicMock(wraps=Config)
@@ -197,7 +197,7 @@ class TestUnsignedS3Access(unittest.TestCase):
             self.assertEqual(kwargs["signature_version"], UNSIGNED)
 
             # Verify download_file was called
-            self.s3_client_mock.download_file_file.assert_called_once()
+            self.s3_client_mock.download_file.assert_called_once()
 
             # Verify the result is the destination path
             self.assertEqual(result, dest_path)

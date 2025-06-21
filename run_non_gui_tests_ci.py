@@ -44,7 +44,6 @@ NON_GUI_TESTS = [
     "tests.unit.test_real_s3_patterns",
     "tests.unit.test_real_s3_store_fixed",
     "tests.unit.test_rife_analyzer",
-    "tests.unit.test_run_goes_imagery",
     "tests.unit.test_run_vfi",
     "tests.unit.test_run_vfi_fixed",
     "tests.unit.test_run_vfi_refactored",
@@ -53,7 +52,6 @@ NON_GUI_TESTS = [
     "tests.unit.test_s3_download_stats",
     "tests.unit.test_s3_download_stats_fixed",
     "tests.unit.test_s3_error_handling",
-    "tests.unit.test_s3_list",
     "tests.unit.test_s3_retry_strategy",
     "tests.unit.test_s3_retry_strategy_fixed",
     "tests.unit.test_s3_store_critical",
@@ -64,7 +62,6 @@ NON_GUI_TESTS = [
     "tests.unit.test_tiler",
     "tests.unit.test_time_index",
     "tests.unit.test_time_index_refactored",
-    "tests.unit.test_timestamp",
 ]
 
 
