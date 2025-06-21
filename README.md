@@ -214,7 +214,16 @@ The project uses pytest for unit testing, integration testing, and GUI testing. 
   * **Imagery Tests:** Tests for imagery-related GUI components
   * **Tab Tests:** Tests for various tab components
 
-To run the tests, use one of the test runner scripts:
+Before running the tests, make sure your virtual environment is activated and all
+dependencies are installed:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Then use one of the test runner scripts:
 
 ```bash
 # Run all working tests with mocks
