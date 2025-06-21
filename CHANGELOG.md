@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **UI Enhancement:** Added more robust button handling to ensure Start button click events are properly processed
 - **Diagnostic:** Added extensive debug logging throughout the application for better troubleshooting
-- **GUI:** Created new test helper scripts for more reliable testing (`run_fixed_gui_tests.py`, `run_fixed_integration_tests.py`, `run_non_gui_tests.py`, `run_working_tests.py`)
+- **GUI:** Created new test helper scripts for more reliable testing (`run_working_tests_with_mocks.py`, `run_non_gui_tests.py`)
 - **Processing:** Added `ImageSaver` class to properly implement saving functionality for processed images
 - **Documentation:** Added detailed documentation of settings persistence issues and potential fixes (`docs/settings_persistence_issues.md`)
 
