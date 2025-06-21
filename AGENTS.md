@@ -32,6 +32,8 @@ The following guidance applies when using Codex (and other automated tools) with
 - Reliable tests with mocks: `./run_working_tests_with_mocks.py`
 - Non‑GUI tests (avoid PyQt segmentation faults): `./run_non_gui_tests.py`
 - Full test suite (may be unstable due to GUI tests): `./run_all_tests.py`
+- Always activate your virtual environment and run `pip install -r requirements.txt`
+  before executing these scripts to avoid ImportError issues (e.g. missing PyQt6).
 
 ## Repository Guidelines
 - Follow the project structure described in `DIRECTORY_STRUCTURE.md` and the
