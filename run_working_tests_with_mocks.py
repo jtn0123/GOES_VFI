@@ -144,11 +144,12 @@ def setup_special_mocks():
         def fileName(self):
             return f"/tmp/mock_settings_{self._org}_{self._app}.conf"
 
-    # Replace QSettings in PyQt6.QtCore only if missing (allows real Qt usage)
-    if "PyQt6.QtCore" in sys.modules and not hasattr(
-        sys.modules["PyQt6.QtCore"], "QSettings"
-    ):
-        sys.modules["PyQt6.QtCore"].QSettings = MockQSettings
+    # Replace QSettings in PyQt6.QtCore when running with mocked Qt modules.
+    core_mod = sys.modules.get("PyQt6.QtCore")
+    if core_mod is not None:
+        existing = getattr(core_mod, "QSettings", None)
+        if existing is None or isinstance(core_mod, MockModule):
+            core_mod.QSettings = MockQSettings
 
     # Create a QApplication instance mock
     class MockQApplication:
