@@ -1913,26 +1913,24 @@ class MainWindow(QWidget):
             return
 
         # Enhanced debugging output
-        print("\n========== MAIN WINDOW HANDLER CALLED ==========")
-        print("MainWindow._handle_processing received the signal")
-        LOGGER.info(
-            "MainWindow: _handle_processing called - Starting video interpolation processing"
-        )
+        LOGGER.debug("========== MAIN WINDOW HANDLER CALLED ==========")
+        LOGGER.debug("MainWindow._handle_processing received the signal")
+        LOGGER.info("MainWindow: _handle_processing called - Starting video interpolation processing")
 
-        # Print detailed argument info
-        print(f"Received args dictionary with {len(args) if args else 0} keys")
+        # Log detailed argument info
+        LOGGER.debug("Received args dictionary with %s keys", len(args) if args else 0)
         if args:
-            print(f"Args keys: {list(args.keys())}")
-            print(f"In directory: {args.get('in_dir')}")
-            print(f"Out file: {args.get('out_file')}")
+            LOGGER.debug("Args keys: %s", list(args.keys()))
+            LOGGER.debug("In directory: %s", args.get("in_dir"))
+            LOGGER.debug("Out file: %s", args.get("out_file"))
         else:
-            print("WARNING: Empty args dictionary received!")
+            LOGGER.warning("Empty args dictionary received!")
             return
 
         LOGGER.debug("Processing arguments: %s", args)
 
         # Update UI state
-        print("Updating UI state: setting is_processing = True")
+        LOGGER.debug("Updating UI state: setting is_processing = True")
         self.is_processing = True
 
         # If a previous worker is still running, terminate it

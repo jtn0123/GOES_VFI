@@ -392,7 +392,6 @@ def _encode_frame_to_png_bytes(img: Image.Image) -> bytes:
 # Helper function for safe writing to ffmpeg stdin with detailed error logging
 def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> None:
     """Writes data to process stdin, handles BrokenPipeError with stderr logging."""
-    # print(f"DEBUG _safe_write: Called for '{frame_desc}', data length: {len(data)}, proc.stdin id: {id(proc.stdin) if proc.stdin else 'None'}") # DEBUG
     if proc.stdin is None:
         LOGGER.error(f"Cannot write {frame_desc}: ffmpeg stdin is None.")
         stderr_bytes = b""
