@@ -52,6 +52,11 @@ class EnhancedTimeline(TimelineVisualization):
         self.selection_start = None
         self.selection_end = None
 
+        # Missing attributes that other components expect
+        self.zoom_level = 1.0
+        self.view_mode = "timeline"
+        self.viewport_start = 0
+
     def _update_animation(self) -> None:
         """Update animation state."""
         # Stub implementation

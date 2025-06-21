@@ -444,7 +444,5 @@ if __name__ == "__main__":
         result = analyze_rife_executable(exe_path)
         print(json.dumps(result, indent=2))
     except Exception as e:
-        pass
-    pass
-    print(f"Error analyzing RIFE executable: {e}")
-    sys.exit(1)
+        print(f"Error analyzing RIFE executable: {e}")
+        sys.exit(1)

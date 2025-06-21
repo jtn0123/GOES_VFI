@@ -429,12 +429,12 @@ class OptimizedTimelineTab(QWidget):
 
         # Update timeline visualization
         self.timeline_viz.set_data(
-            missing_items, start_time, end_time, interval_minutes
+            missing_items, start_time, end_time, interval_minutes or 60
         )
 
         # Update calendar visualization
         self.calendar_view.set_data(
-            missing_items, start_time, end_time, interval_minutes
+            missing_items, start_time, end_time, interval_minutes or 60
         )
 
         # Reset selection state
@@ -511,7 +511,7 @@ class OptimizedTimelineTab(QWidget):
         """Reset zoom level on the timeline visualization."""
         # Only applies to timeline view
         self.timeline_viz.zoom_level = 1.0
-        self.timeline_viz.viewport_start = 0.0
+        self.timeline_viz.viewport_start = 0
         self.timeline_viz.update()
 
         # Update zoom level label

@@ -1,6 +1,6 @@
 """Model classes for the enhanced integrity check GUI tab."""
 
-from typing import Any, Optional, cast
+from typing import Any, List, Optional, cast
 
 from PyQt6.QtCore import QModelIndex, QObject, Qt
 from PyQt6.QtGui import QColor
@@ -15,7 +15,8 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
     """Enhanced model for displaying missing timestamps with source information."""
 
     def __init__(self, parent: Optional[QObject] = None) -> None:
-        super().__init__(parent)
+        super().__init__()
+        self._items: List[Any] = []  # Initialize _items
         self._headers = [
             "Timestamp",
             "Satellite",

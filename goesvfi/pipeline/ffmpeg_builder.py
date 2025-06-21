@@ -260,6 +260,8 @@ class FFmpegCommandBuilder:
 
     def _add_x265_pass1_args(self, cmd: List[str]) -> None:
         """Add arguments for x265 pass 1."""
+        # Type narrowing: we know _pass_log_prefix is not None here due to validation
+        assert self._pass_log_prefix is not None
         cmd.extend(
             [
                 "-b:v",
@@ -276,6 +278,8 @@ class FFmpegCommandBuilder:
 
     def _add_x265_pass2_args(self, cmd: List[str]) -> None:
         """Add arguments for x265 pass 2."""
+        # Type narrowing: we know _pass_log_prefix is not None here due to validation
+        assert self._pass_log_prefix is not None
         pass2_params = "pass=2:aq-mode=3:aq-strength=1.0:psy-rd=2.0:psy-rdoq=1.0"
         args = [
             "-b:v",
@@ -298,7 +302,7 @@ class FFmpegCommandBuilder:
         cmd.extend(["-c:v", "libx265", "-preset", "slower", "-crf", str(self._crf)])
         cmd.extend(["-x265-params", x265_params])
 
-        args = []
+        args: List[str] = []
         self._add_common_output_args(args)
         cmd.extend(args)
 
@@ -310,7 +314,7 @@ class FFmpegCommandBuilder:
 
         cmd.extend(["-c:v", "libx264", "-preset", "slow", "-crf", str(self._crf)])
 
-        args = []
+        args: List[str] = []
         self._add_common_output_args(args)
         cmd.extend(args)
 
@@ -322,7 +326,7 @@ class FFmpegCommandBuilder:
         cmd.extend(["-c:v", "hevc_videotoolbox", "-tag:v", "hvc1"])
         cmd.extend(["-b:v", f"{safe_bitrate}k", "-maxrate", f"{safe_bufsize}k"])
 
-        args = []
+        args: List[str] = []
         self._add_common_output_args(args)
         cmd.extend(args)
 
@@ -334,7 +338,7 @@ class FFmpegCommandBuilder:
         cmd.extend(["-c:v", "h264_videotoolbox"])
         cmd.extend(["-b:v", f"{safe_bitrate}k", "-maxrate", f"{safe_bufsize}k"])
 
-        args = []
+        args: List[str] = []
         self._add_common_output_args(args)
         cmd.extend(args)
 
@@ -346,6 +350,9 @@ class FFmpegCommandBuilder:
 
     def _get_safe_hardware_rates(self) -> tuple[int, int]:
         """Get safe bitrate and bufsize values for hardware encoding."""
+        # These should have been validated before calling this method
+        assert self._bitrate_kbps is not None
+        assert self._bufsize_kb is not None
         safe_bitrate = max(1, self._bitrate_kbps)
         safe_bufsize = max(1, self._bufsize_kb)
         return safe_bitrate, safe_bufsize

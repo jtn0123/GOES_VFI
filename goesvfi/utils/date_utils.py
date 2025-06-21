@@ -460,8 +460,8 @@ def _try_calendar_pattern(
             if pattern_name == "YYYYMMDD":
                 # Store the failed pattern to prevent YYYYDDD from trying it
                 if not hasattr(_try_calendar_pattern, "_failed_yyyymmdd"):
-                    _try_calendar_pattern._failed_yyyymmdd = set()
-                _try_calendar_pattern._failed_yyyymmdd.add(path_str)
+                    _try_calendar_pattern._failed_yyyymmdd = set()  # type: ignore
+                _try_calendar_pattern._failed_yyyymmdd.add(path_str)  # type: ignore
     return None
 
 

@@ -180,8 +180,8 @@ def encode_with_ffmpeg(
     else:
         # Single-pass encoding for other encoders
         builder = FFmpegCommandBuilder()
-        builder.set_input(str(intermediate_input))
-        builder.set_output(str(final_output))
+        builder.set_input(pathlib.Path(intermediate_input))
+        builder.set_output(pathlib.Path(final_output))
 
         # Map encoder names to match FFmpegCommandBuilder expectations
         if "x264" in encoder:

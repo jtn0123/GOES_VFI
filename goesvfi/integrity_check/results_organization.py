@@ -61,7 +61,7 @@ class GroupingModel(QAbstractItemModel):
         return QModelIndex()
 
     # Override QAbstractItemModel.parent(QModelIndex) -> QModelIndex
-    def parent(self, index: QModelIndex) -> QModelIndex:  # type: ignore[override]:
+    def parent(self, index: QModelIndex) -> QModelIndex:  # type: ignore[override]
         """Return the parent index for the given index."""
         if not index.isValid():
             pass

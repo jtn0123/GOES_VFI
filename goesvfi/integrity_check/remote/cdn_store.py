@@ -7,7 +7,7 @@ imagery from the NOAA STAR CDN using asynchronous HTTP requests.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Type
+from typing import Callable, Optional, Type
 
 import aiohttp
 from aiohttp.client_exceptions import ClientError, ClientResponseError
@@ -170,8 +170,8 @@ class CDNStore(RemoteStore):
         timestamp: datetime,
         satellite: SatellitePattern,
         destination: Path,
-        progress_callback: Optional[callable] = None,
-        cancel_check: Optional[callable] = None,
+        progress_callback: Optional[Callable[..., None]] = None,
+        cancel_check: Optional[Callable[[], bool]] = None,
     ) -> Path:
         """Download a file for the given timestamp and satellite.
 

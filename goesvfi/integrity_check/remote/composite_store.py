@@ -260,7 +260,7 @@ class CompositeStore(RemoteStore):
                     )
                 )
 
-                return result_path
+                return result_path  # type: ignore
 
             except (RemoteStoreError, Exception) as e:
                 elapsed_time = asyncio.get_event_loop().time() - start_time
@@ -363,13 +363,13 @@ class CompositeStore(RemoteStore):
         )
 
         # Determine primary error type from results
-        primary_error = None
+        primary_error: Optional[RemoteStoreError] = None
         for result in results:
             if result.error:
                 if isinstance(result.error, ResourceNotFoundError):
                     primary_error = result.error
                     break
-                elif primary_error is None:
+                elif primary_error is None and result.error is not None:
                     primary_error = result.error
 
         # Find where troubleshooting tips start

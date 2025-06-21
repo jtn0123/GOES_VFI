@@ -16,7 +16,18 @@ from PyQt6.QtWidgets import (
 
 from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab
 from goesvfi.utils.log import get_logger
-from goesvfi.utils.ui_enhancements import FadeInNotification, HelpButton, TooltipHelper
+
+try:
+    from goesvfi.utils.ui_enhancements import (
+        FadeInNotification,
+        HelpButton,
+        TooltipHelper,
+    )
+except ImportError:
+    # Provide dummy implementations if module is missing
+    FadeInNotification = None  # type: ignore
+    HelpButton = None  # type: ignore
+    TooltipHelper = None  # type: ignore
 
 LOGGER = get_logger(__name__)
 
@@ -115,14 +126,15 @@ class EnhancedFFmpegSettingsTab(FFmpegSettingsTab):
                 row, col, _, _ = layout.getItemPosition(index)
 
                 # Check if there's already something in the next column
-                item = layout.itemAtPosition(row, col + 2)
+                item = layout.itemAtPosition(row, col + 2) if row is not None else None
                 if not item:
                     # Create help button
                     help_btn = HelpButton(topic, parent)
                     help_btn.help_requested.connect(self._show_detailed_help)
 
                     # Add to layout
-                    layout.addWidget(help_btn, row, col + 2)
+                    if row is not None:
+                        layout.addWidget(help_btn, row, col + 2)
 
         elif isinstance(layout, QHBoxLayout):
             index = layout.indexOf(widget)
@@ -151,8 +163,11 @@ class EnhancedFFmpegSettingsTab(FFmpegSettingsTab):
 
     def on_profile_changed(self, profile_name: str) -> None:
         """Override to add notification."""
-        super().on_profile_changed(profile_name)
-        self._notification.show_message(f"Profile changed to: {profile_name}")
+        # Call parent method if it exists
+        if hasattr(super(), "on_profile_changed"):
+            super().on_profile_changed(profile_name)  # type: ignore
+        if self._notification and hasattr(self._notification, "show_message"):
+            self._notification.show_message(f"Profile changed to: {profile_name}")
 
     def on_setting_changed(self) -> None:
         """Called when any setting changes."""

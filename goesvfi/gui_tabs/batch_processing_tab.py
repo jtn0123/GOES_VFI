@@ -157,10 +157,10 @@ class BatchProcessingTab(QWidget):
         self.queue_table.setHorizontalHeaderLabels(
             ["Name", "Status", "Priority", "Progress", "Created", "Duration", "Actions"]
         )
-        self.queue_table.horizontalHeader().setStretchLastSection(False)
-        self.queue_table.horizontalHeader().setSectionResizeMode(
-            0, QHeaderView.ResizeMode.Stretch
-        )
+        header = self.queue_table.horizontalHeader()
+        if header:
+            header.setStretchLastSection(False)
+            header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.queue_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         queue_layout.addWidget(self.queue_table)
 
@@ -265,7 +265,10 @@ class BatchProcessingTab(QWidget):
 
         # Process each input
         for i in range(self.input_paths_list.count()):
-            item_text = self.input_paths_list.item(i).text()
+            item = self.input_paths_list.item(i)
+            if not item:
+                continue
+            item_text = item.text()
 
             if item_text.startswith("[FOLDER] "):
                 # Process folder

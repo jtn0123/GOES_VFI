@@ -80,7 +80,9 @@ class ImageLoader(ImageProcessor):
                     shape = (
                         (height, width, channels) if channels > 1 else (height, width)
                     )
-                    estimated_mb = estimate_memory_requirement(shape, np.uint8)
+                    estimated_mb = estimate_memory_requirement(
+                        shape, np.dtype(np.uint8)
+                    )
 
                     LOGGER.info(
                         "Loading image %s: %sx%s %s (~%sMB)",

@@ -110,17 +110,17 @@ class TimelineVisualization(QWidget):
             y = self.height() // 2
             painter.drawLine(10, y, self.width() - 10, y)
 
-    def mousePressEvent(self, event: QMouseEvent) -> None:
+    def mousePressEvent(self, event: QMouseEvent | None) -> None:
         """Handle mouse press events."""
         # Stub implementation
         pass
 
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+    def mouseMoveEvent(self, event: QMouseEvent | None) -> None:
         """Handle mouse move events."""
         # Stub implementation
         pass
 
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent | None) -> None:
         """Handle mouse release events."""
         # Stub implementation
         pass

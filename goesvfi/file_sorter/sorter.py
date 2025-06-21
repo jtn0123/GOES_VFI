@@ -88,7 +88,7 @@ class FileSorter:
             return files_to_process
 
         # Process all files
-        result = self._process_all_files(files_to_process, destination_dir)
+        result = self._process_all_files(files_to_process, destination_dir)  # type: ignore
         if isinstance(result, dict) and result.get("status") == "cancelled":
             return result
 
@@ -189,7 +189,7 @@ class FileSorter:
 
     def _check_cancellation(self) -> bool:
         """Check if cancellation has been requested."""
-        return self._should_cancel and self._should_cancel()
+        return bool(self._should_cancel and self._should_cancel())
 
     def _update_progress(self, current: int, total: int) -> None:
         """Update progress if callback is available."""

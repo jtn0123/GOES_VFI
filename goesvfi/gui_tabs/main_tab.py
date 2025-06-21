@@ -209,7 +209,7 @@ class MainTab(QWidget):
         # --- State Variables ---
         # self.in_dir and self.current_crop_rect removed, managed by MainWindow
         self.out_file_path: Path | None = None  # Keep output path state local
-        self.vfi_worker: VfiWorker | None = None
+        self.vfi_worker: "VfiWorker | None" = None  # type: ignore
         self.is_processing = False
         self.current_encoder = "RIFE"  # Default encoder
         self.current_model_key: str | None = "rife-v4.6"  # Default RIFE model key

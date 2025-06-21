@@ -192,8 +192,11 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         """Add enhanced UI elements to the existing tab."""
         # Find the control buttons layout (first horizontal layout)
         control_layout = None
-        for i in range(self.layout().count()):
-            item = self.layout().itemAt(i)
+        layout = self.layout()
+        if not layout:
+            return
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
             if item and isinstance(item.layout(), QHBoxLayout):
                 control_layout = item.layout()
                 break
@@ -218,12 +221,14 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         if not hasattr(self, "progress_bar"):
             self.progress_bar = QProgressBar()
             self.progress_bar.setTextVisible(True)
-            self.layout().addWidget(self.progress_bar)
+            if layout:
+                layout.addWidget(self.progress_bar)
 
         # Ensure status label exists
         if not hasattr(self, "status_label"):
             self.status_label = QLabel("Ready")
-            self.layout().addWidget(self.status_label)
+            if layout:
+                layout.addWidget(self.status_label)
 
     def _connect_enhanced_signals(self):
         """Connect additional signals for enhanced functionality."""
@@ -307,6 +312,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             # Set different dates based on satellite for test compatibility
             if (
                 self.view_model
+                and hasattr(self.view_model, "satellite")
                 and self.view_model.satellite == SatellitePattern.GOES_18
             ):
                 # GOES-18 has files for 30 days
@@ -422,7 +428,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         if hasattr(self, "tree_model") and self.tree_model and self.view_model:
             # Count items by status
-            for item in self.view_model.get_missing_items():
+            # Use a method that exists
+            missing_items = getattr(self.view_model, "missing_items", [])
+            for item in missing_items:
                 summary["total"] += 1
                 if item.status == "missing":
                     summary["missing"] += 1
@@ -475,7 +483,13 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         radio_layout.addStretch()
 
         # Add to main layout
-        self.layout().addLayout(radio_layout)
+        layout = self.layout()
+        if layout and hasattr(layout, "addLayout"):
+            layout.addLayout(radio_layout)
+        elif layout:
+            widget = QWidget()
+            widget.setLayout(radio_layout)
+            layout.addWidget(widget)
 
         # Connect signals - use toggled instead of buttonClicked for programmatic changes
         self.auto_radio.toggled.connect(
@@ -529,7 +543,13 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         radio_layout.addStretch()
 
         # Add to main layout
-        self.layout().addLayout(radio_layout)
+        layout = self.layout()
+        if layout and hasattr(layout, "addLayout"):
+            layout.addLayout(radio_layout)
+        elif layout:
+            widget = QWidget()
+            widget.setLayout(radio_layout)
+            layout.addWidget(widget)
 
         # Connect signals - use toggled instead of buttonClicked for programmatic changes
         self.goes16_radio.toggled.connect(

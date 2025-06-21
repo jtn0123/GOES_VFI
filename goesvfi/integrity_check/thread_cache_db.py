@@ -64,7 +64,7 @@ class ThreadLocalCacheDB:
         """
         # Fast path: check if we already have a connection for this thread
         if hasattr(self._local, "db"):
-            return self._local.db
+            return self._local.db  # type: ignore
 
         # Slow path: create a new connection
         with self._lock:

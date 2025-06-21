@@ -98,7 +98,7 @@ class MissingTimestampsModel(QAbstractTableModel):
 
         return None
 
-    def headerData(self, section: int, orientation: Qt.Orientation, role: int) -> Any:
+    def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> Any:  # type: ignore[override]
         """Return header data."""
         if (
             orientation == Qt.Orientation.Horizontal
@@ -364,14 +364,14 @@ class IntegrityCheckTab(QWidget):
         """Download selected missing files."""
         # Get selected rows
         selection = self.results_table.selectionModel()
-        if not selection.hasSelection():
+        if not selection or not selection.hasSelection():
             QMessageBox.warning(
                 self, "No Selection", "Please select files to download."
             )
             return
 
         # Get selected items
-        selected_rows = selection.selectedRows()
+        selected_rows = selection.selectedRows() if selection else []
         selected_items = [
             self.results_model._items[index.row()] for index in selected_rows
         ]
@@ -519,10 +519,10 @@ class IntegrityCheckTab(QWidget):
     def _get_selected_items(self) -> List[MissingTimestamp]:
         """Get selected items from the table."""
         selection = self.results_table.selectionModel()
-        if not selection.hasSelection():
+        if not selection or not selection.hasSelection():
             return []
 
-        selected_rows = selection.selectedRows()
+        selected_rows = selection.selectedRows() if selection else []
         return [self.results_model._items[index.row()] for index in selected_rows]
 
     def _auto_detect_date_range(self) -> None:

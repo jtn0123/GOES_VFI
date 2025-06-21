@@ -10,16 +10,28 @@ from PyQt6.QtWidgets import QGridLayout, QVBoxLayout, QWidget
 
 from goesvfi.gui_tabs.main_tab import MainTab
 from goesvfi.utils.log import get_logger
-from goesvfi.utils.ui_enhancements import (
-    DragDropWidget,
-    FadeInNotification,
-    HelpButton,
-    LoadingSpinner,
-    ProgressTracker,
-    ShortcutManager,
-    TooltipHelper,
-    create_status_widget,
-)
+
+try:
+    from goesvfi.utils.ui_enhancements import (
+        DragDropWidget,
+        FadeInNotification,
+        HelpButton,
+        LoadingSpinner,
+        ProgressTracker,
+        ShortcutManager,
+        TooltipHelper,
+        create_status_widget,
+    )
+except ImportError:
+    # Provide dummy implementations if module is missing
+    DragDropWidget = None  # type: ignore
+    FadeInNotification = None  # type: ignore
+    HelpButton = None  # type: ignore
+    LoadingSpinner = None  # type: ignore
+    ProgressTracker = None  # type: ignore
+    ShortcutManager = None  # type: ignore
+    TooltipHelper = None  # type: ignore
+    create_status_widget = None  # type: ignore
 
 LOGGER = get_logger(__name__)
 

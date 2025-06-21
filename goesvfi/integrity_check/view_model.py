@@ -771,7 +771,7 @@ class DownloadTask(QRunnable):
             self.item.local_path = str(local_path)
 
             # Check if file exists remotely
-            if not self.remote_store.check_file_exists(url):
+            if not self.remote_store.check_exists(url):
                 pass
                 self.signals.finished.emit(False, f"File not found at {url}")
                 return

@@ -153,18 +153,22 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
         # Switch to imagery tab and load the item
         self.switchTab(3)
-        self.imagery_tab.loadMissingItem(item)
+        if hasattr(self.imagery_tab, "loadMissingItem"):
+            self.imagery_tab.loadMissingItem(item)
 
     def getScanResults(self) -> List[MissingTimestamp]:
         """Get the current scan results."""
         if self.view_model:
-            items = self.view_model.get_missing_items()
+            items = getattr(self.view_model, "missing_items", [])
             return items if items is not None else []
         return []
 
     def clearResults(self):
         """Clear all results."""
         if self.view_model:
-            self.view_model.clear_results()
-        self.results_tab.clearResults()
-        self.timeline_tab.clearTimeline()
+            if hasattr(self.view_model, "clear_results"):
+                self.view_model.clear_results()
+        if hasattr(self.results_tab, "clearResults"):
+            self.results_tab.clearResults()
+        if hasattr(self.timeline_tab, "clearTimeline"):
+            self.timeline_tab.clearTimeline()

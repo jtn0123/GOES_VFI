@@ -440,7 +440,10 @@ class StreamingProcessor:
         Returns:
             Processed array
         """
-        chunks = self.optimizer.optimize_array_chunks(array, self.chunk_size_mb)
+        # Use a simple chunking approach for now
+        # TODO: Add optimize_array_chunks method to MemoryOptimizer
+        chunk_size = self.chunk_size_mb * 1024 * 1024 // array.itemsize
+        chunks = [array[i : i + chunk_size] for i in range(0, len(array), chunk_size)]
         results = []
 
         for chunk in chunks:
