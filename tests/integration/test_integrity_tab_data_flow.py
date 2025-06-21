@@ -346,6 +346,10 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
             == self.mock_view_model.total_expected
         )
 
+        # Clean up patches
+        self.patch_timeline_set_data.stop()
+        self.patch_results_set_items.stop()
+
     def test_timestamp_selection_propagation(self):
         """Test that timestamp selection propagates from timeline to results tab."""
         # Track whether highlight_item was called
@@ -382,10 +386,6 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
             len(highlight_calls) > 0
         ), "Results tab should have received highlight_item call"
         assert highlight_calls[0] == test_timestamp
-
-        # Stop patches
-        self.patch_timeline_set_data.stop()
-        self.patch_results_set_items.stop()
 
     @async_test
     async def test_combined_tab_data_flow(self):
