@@ -27,8 +27,8 @@ This directory contains the organized test structure for the GOES VFI project. T
 
 The project includes multiple test runner scripts for different testing scenarios:
 
-- **run_working_tests.py**: Only runs reliable, non-GUI tests
-- **run_fixed_gui_tests.py**: Runs GUI tests with extra safeguards to prevent segfaults
+- **run_working_tests_with_mocks.py**: Only runs reliable tests with missing dependencies mocked
+- **run_non_gui_tests.py**: Runs all tests except GUI tests
 - **run_all_tests.py**: Complete test suite (use with caution due to GUI test instability)
 
 ## Running Tests
@@ -60,10 +60,10 @@ python -m pytest tests/unit/test_main_tab.py::test_initial_state
 python -m pytest tests/unit/test_config.py -v
 ```
 
-### Running Only Fixed GUI Tests
+### Running Non-GUI Tests
 ```bash
-# Run only GUI tests that have been fixed and don't cause segmentation faults
-./run_fixed_gui_tests.py
+# Run tests excluding the GUI suite
+./run_non_gui_tests.py
 ```
 
 ## GUI Testing Issues

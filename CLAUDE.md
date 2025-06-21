@@ -16,9 +16,9 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Build, Lint & Test Commands
-- Run working tests only: `./run_working_tests.py`
-- Run fixed GUI tests only: `./run_fixed_gui_tests.py`
+-## Build, Lint & Test Commands
+- Run working tests only: `./run_working_tests_with_mocks.py`
+- Run non-GUI tests only: `./run_non_gui_tests.py`
 - Run all tests: `./run_all_tests.py`
 - Run a single test: `python -m pytest tests/path/to/test_file.py`
 - Run a specific test function: `python -m pytest tests/path/to/test_file.py::test_function_name`
@@ -44,8 +44,8 @@ The project uses a comprehensive linting setup with multiple tools:
 - MyPy strict mode: `python run_linters.py --mypy-only --strict`
 
 Note: Some tests may fail due to recent refactoring. When testing new changes:
-- Use `run_working_tests.py` for non-GUI tests
-- Use `run_fixed_gui_tests.py` for GUI tests (avoids segmentation faults)
+- Use `run_working_tests_with_mocks.py` for reliable tests
+- Use `run_non_gui_tests.py` to avoid segmentation faults
 - PyQt GUI tests are prone to segmentation faults - be careful when running all GUI tests at once
 
 ## Project Structure and Organization
@@ -122,8 +122,8 @@ This ensures examples can be run from any directory while properly accessing the
 
 ### Test Runner Scripts
 Multiple test runners are provided for different testing scenarios:
-- `run_working_tests.py`: Only runs reliable non-GUI tests
-- `run_fixed_gui_tests.py`: Runs GUI tests with extra safeguards to prevent segfaults
+- `run_working_tests_with_mocks.py`: Runs reliable tests with missing dependencies mocked
+- `run_non_gui_tests.py`: Executes all tests except the GUI suite
 - `run_all_tests.py`: Complete test suite (use with caution due to GUI test instability)
 
 ## Known Test Issues

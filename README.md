@@ -181,7 +181,7 @@ The GOES-VFI project is organized with a clean directory structure to make the c
 
 ### Development Tools
 - `scripts/`: Development and utility scripts
-- `run_all_tests.py`, `run_working_tests.py`, etc.: Test runner scripts
+- `run_all_tests.py`, `run_working_tests_with_mocks.py`, `run_non_gui_tests.py`, etc.: Test runner scripts
 - `cleanup.py`: Script to clean up temporary and cache files
 
 ## Examples and Testing
@@ -217,11 +217,11 @@ The project uses pytest for unit testing, integration testing, and GUI testing. 
 To run the tests, use one of the test runner scripts:
 
 ```bash
-# Run all working tests
-./run_working_tests.py
+# Run all working tests with mocks
+./run_working_tests_with_mocks.py
 
-# Run fixed GUI tests
-./run_fixed_gui_tests.py
+# Run non-GUI tests
+./run_non_gui_tests.py
 
 # Run all tests
 ./run_all_tests.py
