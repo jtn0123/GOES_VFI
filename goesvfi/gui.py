@@ -452,10 +452,10 @@ class MainWindow(QWidget):
         # They will be called in _post_init_setup instead - see below
 
         # --- Moved Preview Update Setup from _post_init_setup ---
-        logging.debug("Setting up preview update...")
+        LOGGER.debug("Setting up preview update...")
         QTimer.singleShot(100, self.request_previews_update.emit)
         self.request_previews_update.connect(self._update_previews)
-        logging.debug("request_previews_update connected to _update_previews")
+        LOGGER.debug("request_previews_update connected to _update_previews")
         # -------------------------------------------------------
 
         LOGGER.info("MainWindow initialized.")

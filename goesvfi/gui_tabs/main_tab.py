@@ -56,19 +56,22 @@ class SuperButton(QPushButton):
     def __init__(self, text: str, parent: Optional[QWidget] = None):
         super().__init__(text, parent)
         self.click_callback: Optional[Callable[[], None]] = None
-        print(f"SuperButton created with text: {text}")
+        LOGGER.debug("SuperButton created with text: %s", text)
 
     def set_click_callback(self, callback: Optional[Callable[[], None]]) -> None:
         """Set a direct callback function for click events."""
         self.click_callback = callback
-        print(f"SuperButton callback set: {callback.__name__ if callback else None!r}")
+        LOGGER.debug(
+            "SuperButton callback set: %s",
+            callback.__name__ if callback else None,
+        )
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Explicitly override mouse press event."""
         if event is None:
             return
 
-        print(f"SuperButton MOUSE PRESS: {event.button()}")
+        LOGGER.debug("SuperButton MOUSE PRESS: %s", event.button())
         # Call the parent implementation
         super().mousePressEvent(event)
 
@@ -77,19 +80,22 @@ class SuperButton(QPushButton):
         if event is None:
             return
 
-        print(f"SuperButton MOUSE RELEASE: {event.button()}")
+        LOGGER.debug("SuperButton MOUSE RELEASE: %s", event.button())
         super().mouseReleaseEvent(event)
 
         # If it's a left-click release, call our callback
         if event.button() == Qt.MouseButton.LeftButton:
-            print("SuperButton: LEFT CLICK DETECTED")
+            LOGGER.debug("SuperButton: LEFT CLICK DETECTED")
             if self.click_callback:
-                print(f"SuperButton: Calling callback {self.click_callback.__name__}")
+                LOGGER.debug(
+                    "SuperButton: Calling callback %s",
+                    self.click_callback.__name__,
+                )
                 QTimer.singleShot(
                     10, self.click_callback
                 )  # Small delay to ensure UI updates
             else:
-                print("SuperButton: No callback registered")
+                LOGGER.debug("SuperButton: No callback registered")
 
 
 # Define Enums for interpolation and raw encoding methods
@@ -1094,9 +1100,9 @@ class MainTab(QWidget):
 
     def _start(self) -> None:
         """Prepare arguments and emit the processing_started signal."""
-        # Print to stdout for immediate visibility
-        print("\n============ START METHOD CALLED ============")
-        print("Preparing to start processing with signal emission")
+        # Log start of processing attempt
+        LOGGER.info("START METHOD CALLED")
+        LOGGER.debug("Preparing to start processing with signal emission")
         LOGGER.debug("================== START BUTTON CLICKED ==================")
         LOGGER.debug("MainTab: Start button clicked.")
 
@@ -1105,15 +1111,13 @@ class MainTab(QWidget):
         if not can_start:
             error_msg = "Start button clicked but state verification shows it should be disabled!"
             LOGGER.error(error_msg)
-            print(f"ERROR: {error_msg}")
             # Continue anyway since the user managed to click it
-            print("Continuing despite verification failure...")
+            LOGGER.debug("Continuing despite verification failure...")
 
         # Get parent references through multiple approaches for debugging
         parent_obj = self.parent()
         parent_type = type(parent_obj).__name__
-        LOGGER.debug(f"Parent object type: {parent_type}")
-        print(f"Parent object type: {parent_type}")
+        LOGGER.debug("Parent object type: %s", parent_type)
 
         main_window_from_parent = cast(QObject, parent_obj)
         main_window_from_ref = self.main_window_ref
@@ -1121,17 +1125,18 @@ class MainTab(QWidget):
         # Log IDs to verify they're the same object
         mw_parent_id = id(main_window_from_parent)
         mw_ref_id = id(main_window_from_ref)
-        LOGGER.debug(f"main_window_from_parent id: {mw_parent_id}")
-        LOGGER.debug(f"main_window_from_ref id: {mw_ref_id}")
-        print(f"MainWindow from parent id: {mw_parent_id}")
-        print(f"MainWindow from ref id: {mw_ref_id}")
-        print(f"Are references to same object? {mw_parent_id == mw_ref_id}")
+        LOGGER.debug("main_window_from_parent id: %s", mw_parent_id)
+        LOGGER.debug("main_window_from_ref id: %s", mw_ref_id)
+        LOGGER.debug(
+            "Are references to same object? %s",
+            mw_parent_id == mw_ref_id,
+        )
 
         # Check input directory through multiple approaches
         in_dir_from_parent = getattr(main_window_from_parent, "in_dir", None)
         in_dir_from_ref = getattr(main_window_from_ref, "in_dir", None)
-        print(f"Input dir from parent: {in_dir_from_parent}")
-        print(f"Input dir from ref: {in_dir_from_ref}")
+        LOGGER.debug("Input dir from parent: %s", in_dir_from_parent)
+        LOGGER.debug("Input dir from ref: %s", in_dir_from_ref)
         in_dir_from_edit = self.in_dir_edit.text()
         LOGGER.debug(f"in_dir_from_parent: {in_dir_from_parent}")
         LOGGER.debug(f"in_dir_from_ref: {in_dir_from_ref}")
@@ -1211,26 +1216,18 @@ class MainTab(QWidget):
             # Try direct connections first
             try:
                 LOGGER.debug("Emitting processing_started signal with args")
-                # Print detailed info for debugging
-                print("\n===== EMITTING SIGNAL: processing_started =====")
-                print(f"Signal args size: {len(args) if args else 0}")
-                print(f"Args keys: {list(args.keys()) if args else None!r}")
-                print(f"In directory path: {args.get('in_dir')!r}")
-                print(f"Out file path: {args.get('out_file')!r}")
-                print(f"Encoder type: {args.get('encoder')!r}")
-
-                # We can't directly check receiver count in PyQt6, so we'll use a different approach
-                # to debug signal connection issues
-                print(
-                    "Emitting processing_started signal - if nothing happens, signal connections may be missing"
+                LOGGER.debug(
+                    "processing_started args: size=%d, keys=%s, in_dir=%s, out_file=%s, encoder=%s",
+                    len(args) if args else 0,
+                    list(args.keys()) if args else None,
+                    args.get("in_dir"),
+                    args.get("out_file"),
+                    args.get("encoder"),
                 )
                 LOGGER.info("Emitting processing_started signal")
 
                 # Emit the signal
-                self.processing_started.emit(
-                    args
-                )  # Emit signal with processing arguments
-                print("Signal emission attempt completed")
+                self.processing_started.emit(args)
                 LOGGER.debug("Signal emission completed")
 
                 # Wait a short time to see if the signal was processed
@@ -1661,13 +1658,13 @@ class MainTab(QWidget):
             self.processing_vm.start_processing()  # Call correct ViewModel method
 
             # Show processing confirmation
-            print("\n====== PROCESSING STARTED ======")
+            LOGGER.info("PROCESSING STARTED")
             LOGGER.info("Processing started - UI updated to processing state")
         else:
             # Cancel processing in ViewModel
             self.processing_vm.cancel_processing()  # Call correct ViewModel method
 
-            print("\n====== PROCESSING STOPPED ======")
+            LOGGER.info("PROCESSING STOPPED")
             LOGGER.info("Processing stopped - UI updated to ready state")
 
     def _reset_start_button(self) -> None:
@@ -1681,16 +1678,13 @@ class MainTab(QWidget):
         # Always call the original event handler first
         QPushButton.mousePressEvent(self.start_button, event)
 
-        print("START BUTTON MOUSE PRESS DETECTED")
         LOGGER.debug("START BUTTON MOUSE PRESS DETECTED - DIRECT EVENT HANDLER")
 
         # Manually handle the press if it's a left click
         if event.button() == Qt.MouseButton.LeftButton:
-            print(
-                f"LEFT CLICK ON START BUTTON: enabled={self.start_button.isEnabled()}"
-            )
             LOGGER.debug(
-                f"LEFT CLICK ON START BUTTON: enabled={self.start_button.isEnabled()}"
+                "LEFT CLICK ON START BUTTON: enabled=%s",
+                self.start_button.isEnabled(),
             )
 
             # Force the _start method to be called regardless of enabled state
@@ -1742,8 +1736,7 @@ class MainTab(QWidget):
         This handler is more reliable as it avoids complex signal connections and
         directly executes the processing workflow.
         """
-        # Print to stdout for immediate visibility
-        print("\n===== DIRECT START HANDLER CALLED =====")
+        LOGGER.info("DIRECT START HANDLER CALLED")
         LOGGER.info("Enhanced start button handler called")
 
         # Always generate a fresh timestamped output path for each run
@@ -1776,7 +1769,7 @@ class MainTab(QWidget):
         fresh_output_path = self._generate_timestamped_output_path(base_dir, base_name)
         self.out_file_path = fresh_output_path
         self.out_file_edit.setText(str(fresh_output_path))
-        print(f"Fresh timestamped output path: {fresh_output_path}")
+        LOGGER.debug("Fresh timestamped output path: %s", fresh_output_path)
 
         # Show notification if status bar exists
         main_window = self.main_window_ref
@@ -1787,7 +1780,7 @@ class MainTab(QWidget):
 
         # If somehow we still don't have a valid output path (very unlikely at this point)
         if not self.out_file_path:
-            print("No output file selected - auto-generating default output path")
+            LOGGER.info("No output file selected - auto-generating default output path")
 
             # Get input directory from main window
             main_window = self.main_window_ref
@@ -1804,7 +1797,7 @@ class MainTab(QWidget):
                 )
                 self.out_file_path = default_output
                 self.out_file_edit.setText(str(default_output))
-                print(f"Timestamped output file set to: {default_output}")
+                LOGGER.debug("Timestamped output file set to: %s", default_output)
 
                 # Show a small notification in the status bar (don't block with a dialog)
                 if hasattr(main_window, "status_bar"):
@@ -1812,7 +1805,7 @@ class MainTab(QWidget):
                         f"Auto-generated output file: {default_output.name}", 5000
                     )
             else:
-                print("Can't create default output - no input directory")
+                LOGGER.error("Can't create default output - no input directory")
                 QMessageBox.warning(
                     self,
                     "Input Directory Required",
@@ -1826,7 +1819,7 @@ class MainTab(QWidget):
 
         # Verify we have an input directory
         if not current_in_dir or not current_in_dir.is_dir():
-            print("No valid input directory selected")
+            LOGGER.error("No valid input directory selected")
             QMessageBox.warning(
                 self,
                 "Input Directory Required",
@@ -1845,7 +1838,7 @@ class MainTab(QWidget):
             )
 
             if not image_files:
-                print(f"No image files found in {current_in_dir}")
+                LOGGER.warning("No image files found in %s", current_in_dir)
                 QMessageBox.warning(
                     self,
                     "No Images Found",
@@ -1853,16 +1846,16 @@ class MainTab(QWidget):
                 )
                 return
 
-            print(f"Found {len(image_files)} image files in {current_in_dir}")
+            LOGGER.info("Found %d image files in %s", len(image_files), current_in_dir)
         except Exception as e:
-            print(f"Error checking for images: {e}")
+            LOGGER.exception("Error checking for images: %s", e)
             QMessageBox.critical(self, "Error", f"Error checking input directory: {e}")
             return
 
         # Gather processing arguments
         args = self.get_processing_args()
         if not args:
-            print("Failed to generate processing arguments")
+            LOGGER.error("Failed to generate processing arguments")
             return  # Error message already shown by get_processing_args
 
         # Update UI to show processing started
@@ -1879,7 +1872,7 @@ class MainTab(QWidget):
 
         # Trigger processing via direct MainWindow method call
         try:
-            print("\n===== STARTING PROCESSING =====")
+            LOGGER.info("STARTING PROCESSING")
             LOGGER.info("Starting processing via direct handler")
 
             # Attempt direct emit of signal first
@@ -1887,13 +1880,13 @@ class MainTab(QWidget):
 
             # Fallback to direct method call if needed
             if hasattr(main_window, "_handle_processing"):
-                print("Calling main_window._handle_processing directly as fallback")
+                LOGGER.debug("Calling main_window._handle_processing directly as fallback")
                 main_window._handle_processing(args)
 
-            print("Processing started successfully")
+            LOGGER.info("Processing started successfully")
 
         except Exception as e:
-            print(f"ERROR starting processing: {e}")
+            LOGGER.exception("Error starting processing: %s", e)
             LOGGER.exception("Error in direct start handler")
             self.set_processing_state(False)  # Reset UI state
 
@@ -1906,8 +1899,7 @@ class MainTab(QWidget):
 
     def _direct_start(self) -> None:
         """Original direct handler for start button click."""
-        # Print to stdout for immediate visibility
-        print("\n===== START BUTTON CLICKED - DIRECT START HANDLER =====")
+        LOGGER.debug("START BUTTON CLICKED - DIRECT START HANDLER")
         LOGGER.debug("Start button clicked - _direct_start called")
 
         # Check if conditions are met for starting processing
@@ -1920,22 +1912,20 @@ class MainTab(QWidget):
         debug_msg = (
             f"Start conditions: has_in_dir={has_in_dir}, has_out_file={has_out_file}"
         )
-        print(debug_msg)
         LOGGER.debug(debug_msg)
 
         # Debug the reference chains
-        print(f"MainWindow reference exists: {main_window is not None}")
-        print(f"Input directory from MainWindow: {current_in_dir}")
-        print(f"Output file path: {self.out_file_path}")
+        LOGGER.debug("MainWindow reference exists: %s", main_window is not None)
+        LOGGER.debug("Input directory from MainWindow: %s", current_in_dir)
+        LOGGER.debug("Output file path: %s", self.out_file_path)
 
         if has_in_dir and has_out_file:
             # Call the actual start method with trace
-            print("All conditions met - calling _start() method")
+            LOGGER.debug("All conditions met - calling _start() method")
             try:
                 self._start()
-                print("_start() method completed")
+                LOGGER.debug("_start() method completed")
             except Exception as e:
-                print(f"ERROR in _start() method: {e}")
                 LOGGER.exception("Error in _start() method")
                 # Show error to user
                 QMessageBox.critical(
@@ -1954,7 +1944,6 @@ class MainTab(QWidget):
             LOGGER.warning(
                 f"Start button clicked but missing requirements: {error_msg}"
             )
-            print(f"Missing requirements: {error_msg}")
             QMessageBox.warning(self, "Missing Requirements", error_msg)
 
     def _diagnose_start_button(self) -> None:
@@ -2011,7 +2000,7 @@ class MainTab(QWidget):
 
     def _debug_start_button_clicked(self) -> None:
         """Debug handler added directly to the start button in setup_ui."""
-        print("START BUTTON CLICKED - DEBUG HANDLER")
+        LOGGER.debug("START BUTTON CLICKED - DEBUG HANDLER")
         LOGGER.debug("START BUTTON CLICKED - DEBUG HANDLER TRIGGERED")
         # Call the actual handler directly to bypass any signal issues
         self._direct_start()
