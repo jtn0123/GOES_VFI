@@ -70,9 +70,9 @@ def _run_ffmpeg_command(
     except FileNotFoundError:
         LOGGER.error("ffmpeg command not found for %s.", desc)
         raise
-    except Exception as e:
+    except (KeyError, ValueError, RuntimeError) as e:
         LOGGER.exception("Error during FFmpeg execution (%s)", desc)
-        raise RuntimeError(f"Error during FFmpeg execution ({desc})") from e
+        raise IOError(f"Error during FFmpeg execution ({desc})") from e
 
 
 def encode_with_ffmpeg(
@@ -126,14 +126,14 @@ def encode_with_ffmpeg(
             try:
                 intermediate_input.replace(final_output)
                 LOGGER.info("Fallback rename successful.")
-            except Exception as move_e:
+            except (KeyError, ValueError, RuntimeError) as move_e:
                 LOGGER.error("Fallback rename failed: %s", move_e)
-                raise e from move_e
+                raise IOError("Stream copy fallback rename failed") from move_e
         except FileNotFoundError:
             raise
-        except Exception as e:
+        except (KeyError, ValueError, RuntimeError) as e:
             LOGGER.exception("Unexpected error during stream copy fallback.")
-            raise e
+            raise ValueError(f"Unexpected error during stream copy: {e}") from e
         return
 
     # Use FFmpegCommandBuilder for other encoders
@@ -175,9 +175,9 @@ def encode_with_ffmpeg(
                 cmd_pass2 = builder2.build()
                 _run_ffmpeg_command(cmd_pass2, "2-Pass x265 Pass 2", monitor_memory)
 
-        except Exception as e:
+        except (KeyError, ValueError, RuntimeError) as e:
             LOGGER.exception("Error during 2-pass x265 encoding")
-            raise RuntimeError("2-pass x265 encoding failed") from e
+            raise IOError("2-pass x265 encoding failed") from e
 
     else:
         # Single-pass encoding for other encoders

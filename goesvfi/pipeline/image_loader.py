@@ -155,15 +155,12 @@ class ImageLoader(ImageProcessor):
                 )
 
         except IOError as e:
-            pass
             # Re-raise other IOErrors encountered by Pillow
             raise IOError(f"Error reading image file {source_path}: {e}") from e
         except MemoryError:
-            pass
             # Re-raise memory errors
             raise
-        except Exception as e:
-            pass
+        except (KeyError, ValueError, RuntimeError) as e:
             # Catch any other unexpected errors during loading
             raise ValueError(f"Could not load image from {source_path}: {e}") from e
 
