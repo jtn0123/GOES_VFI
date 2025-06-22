@@ -14,7 +14,7 @@ LOGGER = get_logger(__name__)
 class SettingsManager:
     """Manages application settings persistence."""
 
-    def __init__(self, settings: QSettings):
+    def __init__(self, settings: QSettings) -> None:
         """Initialize the settings manager.
 
         Args:

@@ -28,7 +28,7 @@ class DateSorterViewModel:
     for user actions such as selecting directories and starting/canceling the sorting process.
     """
 
-    def __init__(self, sorter_model: DateSorter):
+    def __init__(self, sorter_model: DateSorter) -> None:
         """
         Initializes the DateSorterViewModel with default state.
 

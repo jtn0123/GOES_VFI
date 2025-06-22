@@ -14,7 +14,7 @@ LOGGER = get_logger(__name__)
 class CropManager:
     """Manages crop rectangle functionality for the main window."""
 
-    def __init__(self, settings: QSettings):
+    def __init__(self, settings: QSettings) -> None:
         """Initialize the crop manager.
 
         Args:

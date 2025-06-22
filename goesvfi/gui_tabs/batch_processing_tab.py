@@ -41,7 +41,7 @@ LOGGER = log.get_logger(__name__)
 class BatchProcessingTab(QWidget):
     """Tab for batch processing management."""
 
-    def __init__(self, process_function=None, resource_manager=None):
+    def __init__(self, process_function=None, resource_manager=None) -> None:
         """Initialize batch processing tab."""
         super().__init__()
 

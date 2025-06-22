@@ -19,7 +19,7 @@ class FileSorter:
         self,
         dry_run: bool = False,
         duplicate_mode: DuplicateMode = DuplicateMode.OVERWRITE,
-    ):
+    ) -> None:
         self.files_copied = 0
         self.files_skipped = 0
         self.total_bytes_copied = 0

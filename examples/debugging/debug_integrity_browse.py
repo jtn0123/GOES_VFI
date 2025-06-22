@@ -36,29 +36,32 @@ logger.info(f"Log file: {log_file.absolute()}")
 # Import PyQt after logging setup
 try:
     from PyQt6.QtCore import Qt, pyqtSignal
-
-from PyQt6.QtWidgets import QApplication, QFileDialog, QPushButton, QVBoxLayout, QWidget
-
-logger.info("Successfully imported PyQt6 modules")
+    from PyQt6.QtWidgets import (
+        QApplication,
+        QFileDialog,
+        QPushButton,
+        QVBoxLayout,
+        QWidget,
+    )
+    logger.info("Successfully imported PyQt6 modules")
 except ImportError as e:
     pass
-logger.critical(f"Failed to import PyQt6: {e}")
-sys.exit(1)
+    logger.critical(f"Failed to import PyQt6: {e}")
+    sys.exit(1)
 
 
 # Install exception hook to catch all unhandled exceptions
 def exception_hook(exc_type, exc_value, exc_traceback):
-    pass
-"""Global exception hook to log unhandled exceptions."""
-logger.critical(
-"Unhandled exception:", exc_info=(exc_type, exc_value, exc_traceback)
-)
-# Also print to stderr for immediate visibility
-print("CRITICAL ERROR - UNHANDLED EXCEPTION:", file=sys.stderr)
-traceback.print_exception(exc_type, exc_value, exc_traceback, file=sys.stderr)
+    """Global exception hook to log unhandled exceptions."""
+    logger.critical(
+        "Unhandled exception:", exc_info=(exc_type, exc_value, exc_traceback)
+    )
+    # Also print to stderr for immediate visibility
+    print("CRITICAL ERROR - UNHANDLED EXCEPTION:", file=sys.stderr)
+    traceback.print_exception(exc_type, exc_value, exc_traceback, file=sys.stderr)
 
-# Call the original exception hook
-sys.__excepthook__(exc_type, exc_value, exc_traceback)
+    # Call the original exception hook
+    sys.__excepthook__(exc_type, exc_value, exc_traceback)
 
 
 sys.excepthook = exception_hook
@@ -68,19 +71,18 @@ original_get_existing_directory = QFileDialog.getExistingDirectory
 
 
 def patched_get_existing_directory(
-parent, caption, directory, options=QFileDialog.Option.ShowDirsOnly
+    parent, caption, directory, options=QFileDialog.Option.ShowDirsOnly
 ):
-    pass
-"""Patched version of QFileDialog.getExistingDirectory with detailed logging."""
-logger.debug("QFileDialog.getExistingDirectory called with:")
-logger.debug(f" - parent: {parent}")
-logger.debug(f" - caption: {caption}")
-logger.debug(f" - directory: {directory}")
-logger.debug(f" - options: {options}")
+    """Patched version of QFileDialog.getExistingDirectory with detailed logging."""
+    logger.debug("QFileDialog.getExistingDirectory called with:")
+    logger.debug(f" - parent: {parent}")
+    logger.debug(f" - caption: {caption}")
+    logger.debug(f" - directory: {directory}")
+    logger.debug(f" - options: {options}")
 
-try:
-     start_time = datetime.now()
-logger.info(f"Starting directory dialog at {start_time.isoformat()}")
+    try:
+        start_time = datetime.now()
+        logger.info(f"Starting directory dialog at {start_time.isoformat()}")
 
 result = original_get_existing_directory(parent, caption, directory, options)
 

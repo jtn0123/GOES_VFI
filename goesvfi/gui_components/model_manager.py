@@ -15,7 +15,7 @@ LOGGER = get_logger(__name__)
 class ModelManager:
     """Manages RIFE model functionality for the main window."""
 
-    def __init__(self, settings: QSettings):
+    def __init__(self, settings: QSettings) -> None:
         """Initialize the model manager.
 
         Args:

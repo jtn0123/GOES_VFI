@@ -26,7 +26,7 @@ class FileSorterViewModel:
     for user actions such as selecting directories and starting/canceling the sorting process.
     """
 
-    def __init__(self, sorter_model: FileSorter):
+    def __init__(self, sorter_model: FileSorter) -> None:
         """
                 Initializes the FileSorterViewModel with default state.
 
