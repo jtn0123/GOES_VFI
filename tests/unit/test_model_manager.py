@@ -194,9 +194,7 @@ class TestModelManager(unittest.TestCase):
         combo_box = QComboBox()
 
         # Create a path that will cause an error when iterating
-        with patch.object(
-            Path, "iterdir", side_effect=PermissionError("Access denied")
-        ):
+        with patch.object(Path, "iterdir", side_effect=PermissionError("Access denied")):
             self.model_manager.populate_models(combo_box, str(self.model_dir))
 
         # Verify error dialog was shown
@@ -204,6 +202,67 @@ class TestModelManager(unittest.TestCase):
 
         # Combo box should still be empty
         self.assertEqual(combo_box.count(), 0)
+
+    @patch("goesvfi.gui_components.model_manager.RifeCapabilityDetector")
+    def test_refresh_models_detects_capabilities(self, mock_detector):
+        """refresh_models should populate capability flags from detector."""
+
+        model1 = self.model_dir / "model1"
+        model2 = self.model_dir / "model2"
+        model1.mkdir()
+        model2.mkdir()
+        (model1 / "rife-cli").touch()
+        (model2 / "rife-cli").touch()
+
+        det1 = MagicMock()
+        det1.supports_uhd.return_value = True
+        det1.supports_tta_spatial.return_value = False
+        det1.supports_tta_temporal.return_value = True
+        det1.supports_thread_spec.return_value = False
+        det1.supports_tiling.return_value = True
+
+        det2 = MagicMock()
+        det2.supports_uhd.return_value = False
+        det2.supports_tta_spatial.return_value = False
+        det2.supports_tta_temporal.return_value = False
+        det2.supports_thread_spec.return_value = True
+        det2.supports_tiling.return_value = False
+
+        mock_detector.side_effect = [det1, det2]
+
+        self.model_manager.refresh_models(str(self.model_dir))
+
+        caps1 = self.model_manager.get_model_capabilities("model1")
+        caps2 = self.model_manager.get_model_capabilities("model2")
+
+        self.assertEqual(
+            caps1,
+            {
+                "hd": True,
+                "ensemble": True,
+                "fastmode": False,
+                "tiling": True,
+            },
+        )
+        self.assertEqual(
+            caps2,
+            {
+                "hd": False,
+                "ensemble": False,
+                "fastmode": True,
+                "tiling": False,
+            },
+        )
+
+    def test_refresh_models_missing_executable(self):
+        """Models without an executable should have empty capabilities."""
+
+        model_dir = self.model_dir / "modelX"
+        model_dir.mkdir()
+
+        self.model_manager.refresh_models(str(self.model_dir))
+
+        self.assertEqual(self.model_manager.get_model_capabilities("modelX"), {})
 
 
 if __name__ == "__main__":

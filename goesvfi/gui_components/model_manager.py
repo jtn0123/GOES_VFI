@@ -6,7 +6,7 @@ from typing import Dict, Optional, Tuple
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QComboBox, QMessageBox
 
-from goesvfi.utils.gui_helpers import RifeCapabilityManager
+from goesvfi.utils.gui_helpers import RifeCapabilityDetector, RifeCapabilityManager
 from goesvfi.utils.log import get_logger
 
 LOGGER = get_logger(__name__)
@@ -27,6 +27,46 @@ class ModelManager:
         self.available_models: Dict[str, Path] = {}
         self.model_capabilities: Dict[str, Dict[str, bool]] = {}
 
+    def refresh_models(self, model_location: str) -> None:
+        """Refresh available models and detect their capabilities."""
+
+        self.available_models.clear()
+        self.model_capabilities.clear()
+
+        model_path = Path(model_location)
+        if not model_path.exists():
+            LOGGER.warning("Model location does not exist: %s", model_location)
+            return
+
+        for model_dir in sorted([d for d in model_path.iterdir() if d.is_dir()]):
+            model_name = model_dir.name
+            self.available_models[model_name] = model_dir
+
+            exe_path = model_dir / "rife-cli"
+            if exe_path.suffix == "" and exe_path.with_suffix(".exe").exists():
+                exe_path = exe_path.with_suffix(".exe")
+
+            capabilities: Dict[str, bool] = {}
+            if exe_path.exists():
+                try:
+                    detector = RifeCapabilityDetector(exe_path)
+                    capabilities = {
+                        "hd": detector.supports_uhd(),
+                        "ensemble": detector.supports_tta_spatial() or detector.supports_tta_temporal(),
+                        "fastmode": detector.supports_thread_spec(),
+                        "tiling": detector.supports_tiling(),
+                    }
+                except Exception as e:  # pylint: disable=broad-except
+                    LOGGER.error(
+                        "Failed to analyze model %s capabilities: %s",
+                        model_name,
+                        e,
+                    )
+            else:
+                LOGGER.warning("RIFE executable not found in model directory: %s", model_dir)
+
+            self.model_capabilities[model_name] = capabilities
+
     def populate_models(self, model_combo: QComboBox, model_location: str) -> None:
         """Populate the model combo box with available RIFE models.
 
@@ -37,45 +77,21 @@ class ModelManager:
         model_combo.clear()
 
         try:
-            model_path = Path(model_location)
-            if not model_path.exists():
-                LOGGER.warning("Model location does not exist: %s", model_location)
-                return
-
-            # Find all model directories
-            model_dirs = [d for d in model_path.iterdir() if d.is_dir()]
-
-            if not model_dirs:
-                LOGGER.warning("No model directories found in: %s", model_location)
-                return
-
-            # Clear and rebuild model collections
-            self.available_models.clear()
-            self.model_capabilities.clear()
-
-            for model_dir in model_dirs:
-                model_name = model_dir.name
-                self.available_models[model_name] = model_dir
-
-                # Check model capabilities
-                # For now, just set default capabilities
-                # TODO: Implement actual capability checking based on model
-                capabilities = {"ensemble": False, "fastmode": False, "hd": False}
-                self.model_capabilities[model_name] = capabilities
-
-                # Add to combo box
+            self.refresh_models(model_location)
+            for model_name in self.available_models:
                 model_combo.addItem(model_name)
 
             LOGGER.info("Found %s RIFE models", len(self.available_models))
 
-            # Select the first model by default
             if model_combo.count() > 0:
                 model_combo.setCurrentIndex(0)
 
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             LOGGER.error("Error populating models: %s", e)
             QMessageBox.critical(
-                None, "Model Loading Error", f"Failed to load RIFE models: {str(e)}"
+                None,
+                "Model Loading Error",
+                f"Failed to load RIFE models: {str(e)}",
             )
 
     def get_model_path(self, model_name: str) -> Optional[Path]:
