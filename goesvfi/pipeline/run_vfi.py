@@ -1,5 +1,4 @@
-import io  # Add io
-import logging  # Add logging
+import io
 import pathlib
 import subprocess
 import tempfile
@@ -21,6 +20,7 @@ from goesvfi.pipeline.sanchez_processor import SanchezProcessor  # noqa: F401
 
 # --- Add Sanchez Import ---
 from goesvfi.sanchez.runner import colourise
+from goesvfi.utils import log
 
 # Import the RIFE analyzer utilities
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
@@ -28,7 +28,7 @@ from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 # --------------------------
 
 
-LOGGER = logging.getLogger(__name__)  # Setup logger for this module
+LOGGER = log.get_logger(__name__)
 
 
 class InterpolationPipeline:
@@ -248,9 +248,7 @@ class VfiWorker(QThread):
             "pix_fmt": self.pix_fmt,
         }
 
-    def _process_run_vfi_output(
-        self, output_lines: List[Union[str, pathlib.Path, Tuple[int, int, float]]]
-    ) -> None:
+    def _process_run_vfi_output(self, output_lines: List[Union[str, pathlib.Path, Tuple[int, int, float]]]) -> None:
         """Process output from run_vfi generator and emit appropriate signals."""
         for line in output_lines:
             if isinstance(line, tuple) and len(line) == 3:
@@ -261,11 +259,7 @@ class VfiWorker(QThread):
                 # Final output path as Path object
                 self.finished.emit(line)
             elif isinstance(line, str):
-                if (
-                    line.startswith("Error:")
-                    or line.startswith("ERROR:")
-                    or "error" in line.lower()
-                ):
+                if line.startswith("Error:") or line.startswith("ERROR:") or "error" in line.lower():
                     # Error message - extract the actual error part
                     if line.startswith("ERROR:"):
                         error_msg = line[6:].strip()  # Remove "ERROR:" prefix
@@ -397,9 +391,7 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
         stderr_bytes = b""
         if proc.stderr:
             stderr_bytes = proc.stderr.read()
-        raise IOError(
-            f"ffmpeg stdin pipe not available. Stderr: {stderr_bytes.decode(errors='ignore')}"
-        )
+        raise IOError(f"ffmpeg stdin pipe not available. Stderr: {stderr_bytes.decode(errors='ignore')}")
 
     try:
         proc.stdin.write(data)
@@ -424,12 +416,8 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
         ffmpeg_log = stderr_output or stdout_output or "(no output captured)"
 
         # Include byte length and captured log in error message
-        LOGGER.error(
-            f"Broken pipe while writing {frame_desc} ({len(data)} bytes) — FFmpeg log:\n{ffmpeg_log}"
-        )
-        raise IOError(
-            f"Broken pipe writing {frame_desc}. FFmpeg log: {ffmpeg_log}"
-        ) from None  # Raise new exception
+        LOGGER.error(f"Broken pipe while writing {frame_desc} ({len(data)} bytes) — FFmpeg log:\n{ffmpeg_log}")
+        raise IOError(f"Broken pipe writing {frame_desc}. FFmpeg log: {ffmpeg_log}") from None  # Raise new exception
 
 
 # --- End Helper ---
@@ -464,13 +452,9 @@ def _load_process_image(
         # Keep unique name for the output file
         temp_out_path = sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
         try:
-            LOGGER.debug(
-                f"Saving original for Sanchez: {temp_in_path}"
-            )  # Log correct path
+            LOGGER.debug(f"Saving original for Sanchez: {temp_in_path}")  # Log correct path
             img.save(temp_in_path, "PNG")  # Save with correct name
-            LOGGER.info(
-                f"Running Sanchez on {temp_in_path.name} (res={res_km}km) -> {temp_out_path.name}"
-            )
+            LOGGER.info(f"Running Sanchez on {temp_in_path.name} (res={res_km}km) -> {temp_out_path.name}")
             # Ensure colourise handles Path objects and receives correct input path
             colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
             LOGGER.debug(f"Loading Sanchez output: {temp_out_path}")
@@ -478,9 +462,7 @@ def _load_process_image(
             # Replace original img object with colourised one
             img = img_colourised
         except Exception as e:
-            LOGGER.error(
-                f"Sanchez colourise failed for {path.name}: {e}", exc_info=True
-            )
+            LOGGER.error(f"Sanchez colourise failed for {path.name}: {e}", exc_info=True)
             # Keep original image if colourise fails
         finally:
             # Clean up temp files (both input and output)
@@ -492,9 +474,7 @@ def _load_process_image(
     # Apply crop *after* potential colourisation
     if crop_rect_pil:
         try:
-            LOGGER.debug(
-                f"Applying crop {crop_rect_pil} to image from {path.name} (post-Sanchez if applied)."
-            )
+            LOGGER.debug(f"Applying crop {crop_rect_pil} to image from {path.name} (post-Sanchez if applied).")
             img_cropped = img.crop(crop_rect_pil)
             img = img_cropped  # Update img reference to cropped version
         except Exception as e:
@@ -705,9 +685,7 @@ def _check_rife_capability_warnings(
         LOGGER.warning("Temporal TTA requested but not supported by this RIFE version")
 
     if rife_thread_spec and not capability_detector.supports_thread_spec():
-        LOGGER.warning(
-            "Custom thread specification requested but not supported by this RIFE version"
-        )
+        LOGGER.warning("Custom thread specification requested but not supported by this RIFE version")
 
 
 def _process_in_skip_model_mode(
@@ -773,15 +751,10 @@ def _process_single_image_worker(
         if false_colour:
             img_stem = original_path.stem
             temp_in_path = sanchez_temp_dir / f"{img_stem}.png"
-            temp_out_path = (
-                sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
-            )
+            temp_out_path = sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
             try:
-                # LOGGER.debug(f"Worker {os.getpid()} saving for Sanchez: {temp_in_path}") # Use logging carefully in workers
                 img.save(temp_in_path, "PNG")
-                # LOGGER.info(f"Worker {os.getpid()} running Sanchez on {temp_in_path.name}")
                 colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
-                # LOGGER.debug(f"Worker {os.getpid()} loading Sanchez output: {temp_out_path}")
                 img_colourised = Image.open(temp_out_path)
                 img = img_colourised
             except Exception as e:
@@ -803,7 +776,6 @@ def _process_single_image_worker(
                     f"Crop rectangle {crop_rect_pil} exceeds original dimensions ({orig_w}x{orig_h}) of image {original_path.name}"
                 )
             try:
-                # LOGGER.debug(f"Worker {os.getpid()} applying crop {crop_rect_pil} to {original_path.name}")
                 img_cropped = img.crop(crop_rect_pil)
                 img = img_cropped
             except Exception as e:
@@ -816,10 +788,7 @@ def _process_single_image_worker(
         #          raise ValueError(f"Processed {original_path.name} dimensions {img.size} != target {target_width}x{target_height}")
 
         # 5. Save processed image to unique file in output_dir
-        processed_output_path = (
-            output_dir / f"processed_{original_path.stem}_{time.monotonic_ns()}.png"
-        )
-        # LOGGER.debug(f"Worker {os.getpid()} saving processed image to {processed_output_path}")
+        processed_output_path = output_dir / f"processed_{original_path.stem}_{time.monotonic_ns()}.png"
         img.save(processed_output_path, "PNG")
 
         return processed_output_path
@@ -897,9 +866,7 @@ def run_vfi(
     # --- Input Validation ---
     if num_intermediate_frames != 1 and not skip_model:
         # TODO: Implement recursive logic for num_intermediate_frames=3
-        raise NotImplementedError(
-            "Currently only num_intermediate_frames=1 is supported when not skipping model."
-        )
+        raise NotImplementedError("Currently only num_intermediate_frames=1 is supported when not skipping model.")
 
     paths = sorted(folder.glob("*.png"))
     if not paths:
@@ -919,9 +886,7 @@ def run_vfi(
             if w <= 0 or h <= 0:
                 raise ValueError("Crop width and height must be positive.")
             crop_for_pil = (x, y, x + w, y + h)  # Convert to PIL format
-            LOGGER.info(
-                f"Applying crop rectangle (x,y,w,h): {crop_rect_xywh} -> PIL format: {crop_for_pil}"
-            )
+            LOGGER.info(f"Applying crop rectangle (x,y,w,h): {crop_rect_xywh} -> PIL format: {crop_for_pil}")
         except (TypeError, ValueError) as e:
             LOGGER.error(
                 f"Invalid crop rectangle format provided: {crop_rect_xywh}. Error: {e}. Cropping will be disabled."
@@ -936,9 +901,7 @@ def run_vfi(
     # One for Sanchez intermediates, one for final processed images
     with (
         tempfile.TemporaryDirectory(prefix="goesvfi_sanchez_") as sanchez_temp_dir_str,
-        tempfile.TemporaryDirectory(
-            prefix="goesvfi_processed_"
-        ) as processed_img_dir_str,
+        tempfile.TemporaryDirectory(prefix="goesvfi_processed_") as processed_img_dir_str,
     ):
         sanchez_temp_path = pathlib.Path(sanchez_temp_dir_str)
         processed_img_path = pathlib.Path(processed_img_dir_str)
@@ -966,20 +929,14 @@ def run_vfi(
             # Now determine actual target dimensions from the first *processed* image
             with Image.open(processed_path_0) as img0_processed_handle:
                 target_width, target_height = img0_processed_handle.size
-            LOGGER.info(
-                f"Target frame dimensions set by first processed image: {target_width}x{target_height}"
-            )
+            LOGGER.info(f"Target frame dimensions set by first processed image: {target_width}x{target_height}")
 
         except Exception as e:
-            LOGGER.exception(
-                f"Failed processing first image {paths[0]}. Cannot continue."
-            )
+            LOGGER.exception(f"Failed processing first image {paths[0]}. Cannot continue.")
             raise IOError(f"Could not process first image {paths[0]}") from e
 
         # --- Parallel Processing for Remaining Images --- #
-        LOGGER.info(
-            f"Processing remaining {len(paths) - 1} images in parallel (max_workers={max_workers})..."
-        )
+        LOGGER.info(f"Processing remaining {len(paths) - 1} images in parallel (max_workers={max_workers})...")
         processed_paths_rest: List[pathlib.Path] = []  # Initialize as empty list
         args_list = []  # Prepare list of arguments for map
         start_parallel_time = time.time()
@@ -1009,9 +966,7 @@ def run_vfi(
                 # (No code change here, assumed worker is adjusted or wrapped)
 
                 # Map the worker function over the arguments
-                results_iterator = executor.map(
-                    _process_single_image_worker_wrapper, args_list
-                )
+                results_iterator = executor.map(_process_single_image_worker_wrapper, args_list)
 
                 # Consume the iterator to get results and catch potential exceptions
                 processed_paths_rest = list(results_iterator)
@@ -1021,9 +976,7 @@ def run_vfi(
                 raise RuntimeError(f"Parallel processing failed: {e}") from e
 
         end_parallel_time = time.time()
-        LOGGER.info(
-            f"Parallel processing finished in {end_parallel_time - start_parallel_time:.2f} seconds."
-        )
+        LOGGER.info(f"Parallel processing finished in {end_parallel_time - start_parallel_time:.2f} seconds.")
 
         # Combine all processed paths
         all_processed_paths = [processed_path_0] + processed_paths_rest
@@ -1034,9 +987,7 @@ def run_vfi(
         raw_path = output_mp4_path.with_suffix(".raw.mp4")
         LOGGER.info(f"Intermediate raw video path: {raw_path}")
         # --- Determine Effective FPS for Raw Stream (moved here) ---
-        effective_input_fps = (
-            fps * (num_intermediate_frames + 1) if not skip_model else fps
-        )
+        effective_input_fps = fps * (num_intermediate_frames + 1) if not skip_model else fps
         # --- FFmpeg command (moved here) ---
         ffmpeg_cmd = [
             "ffmpeg",
@@ -1085,15 +1036,11 @@ def run_vfi(
                         f"Encoding first processed frame {processed_path_0.name} (size {im0_handle.size}) for ffmpeg."
                     )
                     png_data = _encode_frame_to_png_bytes(im0_handle)
-                _safe_write(
-                    ffmpeg_proc, png_data, f"initial frame {processed_path_0.name}"
-                )
+                _safe_write(ffmpeg_proc, png_data, f"initial frame {processed_path_0.name}")
             except IOError:
                 raise
             except Exception as e:
-                raise IOError(
-                    f"Failed encoding first processed frame {processed_path_0.name}"
-                ) from e
+                raise IOError(f"Failed encoding first processed frame {processed_path_0.name}") from e
 
             # --- Main Processing Logic (using processed paths) --- #
             if skip_model:
@@ -1114,9 +1061,7 @@ def run_vfi(
                     except IOError:
                         raise
                     except Exception as e:
-                        raise IOError(
-                            f"Failed processing frame {processed_path.name}: {e}"
-                        ) from e
+                        raise IOError(f"Failed processing frame {processed_path.name}: {e}") from e
             else:  # Perform RIFE interpolation
                 LOGGER.info("Starting AI interpolation using processed frames.")
                 total_pairs = len(all_processed_paths) - 1
@@ -1124,9 +1069,7 @@ def run_vfi(
                 last_yield_time = start_time
 
                 # RIFE needs its own temp dir for inputs/outputs
-                with tempfile.TemporaryDirectory(
-                    prefix="goesvfi_rife_inputs_"
-                ) as rife_input_temp_dir_str:
+                with tempfile.TemporaryDirectory(prefix="goesvfi_rife_inputs_") as rife_input_temp_dir_str:
                     rife_input_temp_path = pathlib.Path(rife_input_temp_dir_str)
 
                     # --- Detect RIFE Capabilities (ONCE before loop) --- #
@@ -1141,34 +1084,17 @@ def run_vfi(
 
                     # --- Warn about unsupported requested features (ONCE before loop) --- #
                     if rife_tile_enable and not capability_detector.supports_tiling():
-                        LOGGER.warning(
-                            "Tiling requested but not supported by RIFE executable"
-                        )
+                        LOGGER.warning("Tiling requested but not supported by RIFE executable")
                     if (
-                        rife_uhd_mode
-                        and not rife_tile_enable
-                        and not capability_detector.supports_uhd()
+                        rife_uhd_mode and not rife_tile_enable and not capability_detector.supports_uhd()
                     ):  # Only warn if tiling isn't overriding
-                        LOGGER.warning(
-                            "UHD mode requested but not supported by RIFE executable"
-                        )
+                        LOGGER.warning("UHD mode requested but not supported by RIFE executable")
+                    if rife_tta_spatial and not capability_detector.supports_tta_spatial():
+                        LOGGER.warning("Spatial TTA requested but not supported by RIFE executable")
+                    if rife_tta_temporal and not capability_detector.supports_tta_temporal():
+                        LOGGER.warning("Temporal TTA requested but not supported by RIFE executable")
                     if (
-                        rife_tta_spatial
-                        and not capability_detector.supports_tta_spatial()
-                    ):
-                        LOGGER.warning(
-                            "Spatial TTA requested but not supported by RIFE executable"
-                        )
-                    if (
-                        rife_tta_temporal
-                        and not capability_detector.supports_tta_temporal()
-                    ):
-                        LOGGER.warning(
-                            "Temporal TTA requested but not supported by RIFE executable"
-                        )
-                    if (
-                        rife_thread_spec != "1:2:2"
-                        and not capability_detector.supports_thread_spec()
+                        rife_thread_spec != "1:2:2" and not capability_detector.supports_thread_spec()
                     ):  # Assuming "1:2:2" is default
                         LOGGER.warning(
                             f"Custom thread specification '{rife_thread_spec}' requested but not supported by RIFE executable"
@@ -1179,9 +1105,7 @@ def run_vfi(
                     ):
                         pair_start_time = time.time()
                         # RIFE output will go to the main processed_img_path initially
-                        interpolated_frame_path = (
-                            processed_img_path / f"interp_{idx:04d}.png"
-                        )
+                        interpolated_frame_path = processed_img_path / f"interp_{idx:04d}.png"
 
                         # --- Prepare RIFE inputs (just need paths now) ---
                         # Inputs are already processed and validated
@@ -1206,9 +1130,7 @@ def run_vfi(
                             models_base_dir = rife_exe_path.parent.parent / "models"
                             full_model_path = models_base_dir / model_key
                             if not full_model_path.exists():
-                                raise FileNotFoundError(
-                                    f"Model path {full_model_path} does not exist."
-                                )
+                                raise FileNotFoundError(f"Model path {full_model_path} does not exist.")
                             rife_cmd.extend(["-m", str(model_key)])
                         else:
                             LOGGER.warning("RIFE model check skipped.")
@@ -1218,9 +1140,7 @@ def run_vfi(
 
                         # Add timestep if supported
                         if capability_detector.supports_timestep():
-                            rife_cmd.extend(
-                                ["-s", str(1 / (num_intermediate_frames + 1))]
-                            )
+                            rife_cmd.extend(["-s", str(1 / (num_intermediate_frames + 1))])
 
                         # Add GPU ID if supported
                         if capability_detector.supports_gpu_id():
@@ -1229,37 +1149,17 @@ def run_vfi(
                         # Add optional args based on capabilities AND user request
                         if rife_tile_enable and capability_detector.supports_tiling():
                             rife_cmd.extend(["-t", str(rife_tile_size)])
-                        # elif rife_tile_enable and not capability_detector.supports_tiling(): # Check moved outside loop
-                        #     LOGGER.warning("Tiling requested but not supported by RIFE executable")
 
                         # Only add -u if UHD mode is on AND tiling is off AND uhd is supported
-                        if (
-                            rife_uhd_mode
-                            and not rife_tile_enable
-                            and capability_detector.supports_uhd()
-                        ):
+                        if rife_uhd_mode and not rife_tile_enable and capability_detector.supports_uhd():
                             rife_cmd.append("-u")
-                        # elif rife_uhd_mode and rife_tile_enable: # Info log moved outside loop
-                        #     LOGGER.info("UHD mode enabled but tiling is also enabled, skipping -u flag.")
-                        # elif rife_uhd_mode and not rife_tile_enable and not capability_detector.supports_uhd(): # Check moved outside loop
-                        #     LOGGER.warning("UHD mode requested but not supported by RIFE executable")
 
                         # Add TTA options if supported
-                        if (
-                            rife_tta_spatial
-                            and capability_detector.supports_tta_spatial()
-                        ):
+                        if rife_tta_spatial and capability_detector.supports_tta_spatial():
                             rife_cmd.append("-x")
-                        # elif rife_tta_spatial and not capability_detector.supports_tta_spatial(): # Check moved outside loop
-                        #     LOGGER.warning("Spatial TTA requested but not supported by RIFE executable")
 
-                        if (
-                            rife_tta_temporal
-                            and capability_detector.supports_tta_temporal()
-                        ):
+                        if rife_tta_temporal and capability_detector.supports_tta_temporal():
                             rife_cmd.append("-z")
-                        # elif rife_tta_temporal and not capability_detector.supports_tta_temporal(): # Check moved outside loop
-                        #     LOGGER.warning("Temporal TTA requested but not supported by RIFE executable")
 
                         # Add thread specification if supported
                         if (
@@ -1268,24 +1168,15 @@ def run_vfi(
                             and len(rife_thread_spec.split(":")) == 3
                         ):
                             rife_cmd.extend(["-j", rife_thread_spec])
-                        # elif rife_thread_spec != "1:2:2" and not capability_detector.supports_thread_spec(): # Check moved outside loop
-                        #     LOGGER.warning(f"Thread specification requested but not supported by RIFE executable")
 
                         LOGGER.debug(f"Running RIFE command: {' '.join(rife_cmd)}")
 
                         # Run RIFE
                         try:
-                            rife_run = subprocess.run(
-                                rife_cmd, check=True, capture_output=True, text=True
-                            )
+                            rife_run = subprocess.run(rife_cmd, check=True, capture_output=True, text=True)
                             # FIX: Only log stderr if there was an actual error (check=True handles this)
-                            # LOGGER.debug(f"RIFE ({p1_processed_path.name} -> {p2_processed_path.name}) output: {rife_run.stdout[-200:]}") # Log last bit of stdout
-                            # if rife_run.stderr:
-                            #      LOGGER.warning(f"RIFE ({p1_processed_path.name} -> {p2_processed_path.name}) stderr: {rife_run.stderr[-200:]}")
                         except FileNotFoundError:
-                            LOGGER.error(
-                                f"RIFE executable not found at: {rife_exe_path}"
-                            )
+                            LOGGER.error(f"RIFE executable not found at: {rife_exe_path}")
                             raise
                         except subprocess.CalledProcessError as e:
                             LOGGER.error(
@@ -1296,9 +1187,7 @@ def run_vfi(
                             LOGGER.error(f"RIFE stderr: {e.stderr}")
                             raise RuntimeError(f"RIFE failed for pair {idx}") from e
                         except Exception as e:
-                            LOGGER.exception(
-                                f"An unexpected error occurred running RIFE for pair {idx}"
-                            )
+                            LOGGER.exception(f"An unexpected error occurred running RIFE for pair {idx}")
                             raise
                         finally:
                             # Clean up temporary input files - REMOVED as we now use paths directly
@@ -1322,16 +1211,12 @@ def run_vfi(
                                         Image.Resampling.LANCZOS,
                                     )
                                 png_data = _encode_frame_to_png_bytes(im_interp)
-                            _safe_write(
-                                ffmpeg_proc, png_data, f"interpolated frame {idx}"
-                            )
+                            _safe_write(ffmpeg_proc, png_data, f"interpolated frame {idx}")
                             interpolated_frame_path.unlink()  # Clean up interpolated frame
                         except IOError:
                             raise
                         except Exception as e:
-                            raise IOError(
-                                f"Failed processing interpolated frame {idx}"
-                            ) from e
+                            raise IOError(f"Failed processing interpolated frame {idx}") from e
 
                         # --- Write SECOND processed frame (p2) --- #
                         try:
@@ -1348,29 +1233,18 @@ def run_vfi(
                         except IOError:
                             raise
                         except Exception as e:
-                            raise IOError(
-                                f"Failed processing {p2_processed_path.name}"
-                            ) from e
+                            raise IOError(f"Failed processing {p2_processed_path.name}") from e
 
                         # Yield Progress
                         current_time = time.time()
                         elapsed = current_time - start_time
                         pairs_processed = idx + 1
-                        time_per_pair = (
-                            elapsed / pairs_processed if pairs_processed > 0 else 0
-                        )
+                        time_per_pair = elapsed / pairs_processed if pairs_processed > 0 else 0
                         pairs_remaining = total_pairs - pairs_processed
-                        eta = (
-                            pairs_remaining * time_per_pair
-                            if time_per_pair > 0
-                            else 0.0
-                        )
+                        eta = pairs_remaining * time_per_pair if time_per_pair > 0 else 0.0
 
                         # Yield less frequently (e.g., > 1 second or final frame)
-                        if (
-                            current_time - last_yield_time > 1.0
-                            or pairs_processed == total_pairs
-                        ):
+                        if current_time - last_yield_time > 1.0 or pairs_processed == total_pairs:
                             yield (
                                 pairs_processed,
                                 total_pairs,
@@ -1391,18 +1265,12 @@ def run_vfi(
             # Read and log combined output/error stream
             if ffmpeg_proc.stdout:
                 for line_bytes in ffmpeg_proc.stdout:
-                    LOGGER.info(
-                        f"[ffmpeg-raw] {line_bytes.decode(errors='replace').rstrip()}"
-                    )
+                    LOGGER.info(f"[ffmpeg-raw] {line_bytes.decode(errors='replace').rstrip()}")
 
             ret = ffmpeg_proc.wait()
             if ret != 0:
-                LOGGER.error(
-                    f"FFmpeg (raw video creation) failed (exit code {ret}). See logged output above."
-                )
-                raise RuntimeError(
-                    f"FFmpeg (raw video creation) failed (exit code {ret})"
-                )
+                LOGGER.error(f"FFmpeg (raw video creation) failed (exit code {ret}). See logged output above.")
+                raise RuntimeError(f"FFmpeg (raw video creation) failed (exit code {ret})")
             LOGGER.info("FFmpeg (raw video creation) completed successfully.")
 
             if not raw_path.exists() or raw_path.stat().st_size == 0:
@@ -1432,33 +1300,23 @@ def _encode_frames_for_ffmpeg(
     frame_paths: List[pathlib.Path], target_dims: Optional[Tuple[int, int]]
 ) -> Iterator[bytes]:
     """Opens, optionally resizes, and encodes frames as PNG bytes for FFmpeg stdin."""
-    LOGGER.debug(
-        f"_encode_frames_for_ffmpeg called with {len(frame_paths)} paths."
-    )  # Add entry log
+    LOGGER.debug(f"_encode_frames_for_ffmpeg called with {len(frame_paths)} paths.")  # Add entry log
     total_frames = len(frame_paths)
     for i, frame_path in enumerate(frame_paths):
-        LOGGER.debug(
-            f"Processing frame {i + 1}/{total_frames}: {frame_path}"
-        )  # Add loop iteration log
+        LOGGER.debug(f"Processing frame {i + 1}/{total_frames}: {frame_path}")  # Add loop iteration log
         try:
             with Image.open(frame_path) as img:
                 # Ensure consistent dimensions if needed
                 if target_dims and img.size != target_dims:
                     # This should ideally not happen if preprocessing worked
-                    LOGGER.warning(
-                        f"Resizing frame {frame_path.name} from {img.size} to {target_dims}"
-                    )
+                    LOGGER.warning(f"Resizing frame {frame_path.name} from {img.size} to {target_dims}")
                     img = img.resize(target_dims, Image.Resampling.LANCZOS)
 
-                LOGGER.debug(
-                    f"Encoding frame {frame_path.name} (size {img.size}) for ffmpeg ({i + 1}/{total_frames})."
-                )
+                LOGGER.debug(f"Encoding frame {frame_path.name} (size {img.size}) for ffmpeg ({i + 1}/{total_frames}).")
                 img_byte_arr = io.BytesIO()
                 img.save(img_byte_arr, format="PNG")
                 encoded_bytes = img_byte_arr.getvalue()
-                LOGGER.debug(
-                    f"Yielding {len(encoded_bytes)} bytes for {frame_path.name}"
-                )  # Log before yield
+                LOGGER.debug(f"Yielding {len(encoded_bytes)} bytes for {frame_path.name}")  # Log before yield
                 yield encoded_bytes
         except Exception as e:
             LOGGER.error(f"Error encoding frame {frame_path.name} for FFmpeg: {e}")
