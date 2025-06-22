@@ -398,7 +398,10 @@ pip install -r requirements.txt
 ./run_working_tests_with_mocks.py
 
 # Run non-GUI tests (avoids segmentation faults)
-./run_non_gui_tests.py
+./run_non_gui_tests_ci.py
+
+# Generate code coverage report
+./run_coverage.py
 
 # Run specific test file
 python -m pytest tests/unit/test_specific.py -v

@@ -110,7 +110,11 @@ When verifying all tests pass, use this systematic approach:
   - Use `--debug-mode` for verbose output
   - Use `--parallel 4` for faster execution
 - **Reliable tests with mocks:** `./run_working_tests_with_mocks.py`
-- **Non-GUI tests only:** `./run_non_gui_tests.py`
+- **Non-GUI tests only:** `./run_non_gui_tests_ci.py`
+  - Excludes GUI tests to avoid segmentation faults
+  - Supports parallel execution with `--parallel N`
+- **Code coverage:** `./run_coverage.py`
+  - Generates coverage reports in HTML/XML/JSON formats
 
 ### Common Test Issues and Solutions
 1. **Hanging tests:** Usually due to network initialization in S3Store/CDNStore
