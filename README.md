@@ -345,7 +345,7 @@ The GOES-VFI project is organized with a clean directory structure to make the c
 
 ### Development Tools
 - `scripts/`: Development and utility scripts
-- `run_all_tests.py`, `run_working_tests_with_mocks.py`, `run_non_gui_tests.py`, etc.: Test runner scripts
+- `run_all_tests.py`, `run_working_tests_with_mocks.py`, `run_non_gui_tests.py`, `run_non_gui_tests_ci.py`, etc.: Test runner scripts
 - `cleanup.py`: Script to clean up temporary and cache files
 
 ## Examples and Testing
@@ -401,6 +401,12 @@ pip install -r requirements.txt
 # Dynamically discovers all non-GUI tests and runs them
 # Options: --quiet, --verbose, --parallel N
 ./run_non_gui_tests.py
+
+# Run non-GUI tests for CI environments (with coverage)
+# Specifically designed for GitHub Actions and other CI systems
+# Includes coverage reporting and JUnit XML output
+# Options: --quiet, --verbose, --maxfail N, --parallel N
+./run_non_gui_tests_ci.py
 
 # Generate code coverage report
 # Uses coverage 7.6.0 for Python 3.13 compatibility

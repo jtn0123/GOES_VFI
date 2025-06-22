@@ -20,6 +20,7 @@ pip install -r requirements.txt
 - Run all tests: `./run_all_tests.py`
 - Run working tests only: `./run_working_tests_with_mocks.py`
 - Run non-GUI tests only: `./run_non_gui_tests.py`
+- Run non-GUI tests for CI: `./run_non_gui_tests_ci.py`
 - Run a single test: `python -m pytest tests/path/to/test_file.py`
 - Run a specific test function: `python -m pytest tests/path/to/test_file.py::test_function_name`
 - Run with debug options: `./run_all_tests.py --debug-mode`
