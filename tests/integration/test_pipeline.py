@@ -9,6 +9,10 @@ from PyQt6.QtWidgets import QComboBox
 
 # Import the main pipeline function (Corrected path)
 from goesvfi.pipeline.run_vfi import run_vfi
+from goesvfi.pipeline.image_loader import ImageLoader
+from goesvfi.pipeline.image_saver import ImageSaver
+from goesvfi.pipeline.image_processing_interfaces import ImageData
+import numpy as np
 from goesvfi.utils.rife_analyzer import (  # For mocking capabilities
     RifeCapabilityDetector,
 )
@@ -1294,3 +1298,24 @@ def test_error_sanchez_failure(
     mock_popen.assert_called_once()  # Popen should have been called
     # Check Sanchez mock was called (even though it failed)
     assert mock_sanchez.call_count > 0
+
+
+def test_image_loader_key_error(temp_dir: pathlib.Path):
+    """ImageLoader should wrap KeyError in ValueError."""
+    loader = ImageLoader()
+    img_path = temp_dir / "img.png"
+    img_path.write_bytes(b"data")
+    with patch("PIL.Image.open", side_effect=KeyError("bad key")):
+        with pytest.raises(ValueError):
+            loader.load(str(img_path))
+
+
+def test_image_saver_runtime_error(temp_dir: pathlib.Path):
+    """ImageSaver should surface runtime errors as ValueError."""
+    saver = ImageSaver()
+    out_path = temp_dir / "out.png"
+    arr = np.zeros((4, 4, 3), dtype=np.uint8)
+    img_data = ImageData(image_data=arr, metadata={})
+    with patch("PIL.Image.fromarray", side_effect=RuntimeError("boom")):
+        with pytest.raises(ValueError):
+            saver.save(img_data, str(out_path))

@@ -94,10 +94,10 @@ def load_cached(
                 loaded_frames.append(cast(NDArray[Any], np.load(npy_path)))
             LOGGER.debug("Successfully loaded all cache files")
             return loaded_frames
-        except Exception as e:
+        except (KeyError, ValueError, RuntimeError) as e:
             LOGGER.warning("Error loading cache files for key %s: %s", base_key, e)
             LOGGER.debug("Exception details:", exc_info=True)
-            return None  # Treat load error as cache miss
+            raise IOError(f"Error loading cache files for key {base_key}: {e}") from e
     else:
         LOGGER.debug("Not all cache files exist, cache miss")
         return None  # Cache miss if not all files were found
@@ -132,6 +132,7 @@ def save_cache(
             LOGGER.debug("Saving cache file: %s", npy_path)
             np.save(npy_path, frame)
         LOGGER.debug("Successfully saved all cache files")
-    except Exception as e:
+    except (KeyError, ValueError, RuntimeError) as e:
         LOGGER.warning("Error saving cache files for key %s: %s", base_key, e)
         LOGGER.debug("Exception details:", exc_info=True)
+        raise IOError(f"Error saving cache files for key {base_key}: {e}") from e

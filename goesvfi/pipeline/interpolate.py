@@ -131,10 +131,9 @@ class RifeBackend:
             raise RuntimeError(
                 f"RIFE executable failed (timestep {timestep}) with code {e.returncode}"
             ) from e
-        except Exception as e:
-            pass
+        except (KeyError, ValueError, RuntimeError) as e:
             logger.error("Error during RIFE CLI processing: %s", e, exc_info=True)
-            raise RuntimeError(f"Error during RIFE CLI processing: {e}") from e
+            raise IOError(f"Error during RIFE CLI processing: {e}") from e
         finally:
             shutil.rmtree(tmp)
 
