@@ -18,7 +18,15 @@ from typing import Any, Dict, List, Optional, Tuple  # noqa: F401
 import numpy as np
 from PIL import Image
 from PyQt6.QtCore import QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
-from PyQt6.QtGui import QCloseEvent, QColor, QDesktopServices, QImage, QPainter, QPixmap
+from PyQt6.QtGui import (
+    QCloseEvent,
+    QColor,
+    QDesktopServices,
+    QFont,
+    QImage,
+    QPainter,
+    QPixmap,
+)
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -3824,6 +3832,18 @@ def main() -> None:
     # Set application name for QSettings - MUST match the values used in MainWindow
     app.setApplicationName("GOES_VFI_App")
     app.setOrganizationName("GOES_VFI")
+
+    # Set default font to avoid Qt searching for "Sans Serif"
+    # This prevents the ~110ms delay warning
+    default_font = app.font()
+    # Use system default font family or a cross-platform font
+    if sys.platform == "darwin":  # macOS
+        default_font.setFamily("Helvetica")
+    elif sys.platform == "win32":  # Windows
+        default_font.setFamily("Segoe UI")
+    else:  # Linux/Unix
+        default_font.setFamily("Ubuntu")  # Falls back to default if not found
+    app.setFont(default_font)
 
     # Log QSettings details to help diagnose where settings will be stored
     LOGGER.debug("QSettings will be stored at: %s")

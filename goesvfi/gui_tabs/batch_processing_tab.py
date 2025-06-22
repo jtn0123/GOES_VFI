@@ -485,3 +485,16 @@ class BatchProcessingTab(QWidget):
             "max_concurrent_jobs": self.concurrent_spin.value(),
             "output_directory": self.output_dir_label.text(),
         }
+
+    def closeEvent(self, event) -> None:
+        """Handle widget close event."""
+        # Stop the update timer to prevent crashes
+        if hasattr(self, "update_timer") and self.update_timer:
+            self.update_timer.stop()
+
+        # Stop batch processing if running
+        if self.batch_queue and hasattr(self.batch_queue, "stop"):
+            self.batch_queue.stop()
+
+        # Accept the close event
+        event.accept()

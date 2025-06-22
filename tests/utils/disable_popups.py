@@ -4,7 +4,7 @@ Import this at the start of any test that uses GUI components.
 """
 
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 # Set Qt to use offscreen platform
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -13,21 +13,24 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 class NoPopupQDateTimeEdit:
     """QDateTimeEdit that never opens calendar popups."""
 
-    def __init__(self, *args, **kwargs):
-        from PyQt6.QtCore import QDateTime
+    @staticmethod
+    def __new__(cls, *args, **kwargs):
         from PyQt6.QtWidgets import QDateTimeEdit
 
-        self._real_widget = QDateTimeEdit(*args, **kwargs)
+        # Create the real widget
+        widget = QDateTimeEdit(*args, **kwargs)
         # Disable calendar popup
-        self._real_widget.setCalendarPopup(False)
+        widget.setCalendarPopup(False)
 
-    def __getattr__(self, name):
-        # Delegate all other attributes to the real widget
-        return getattr(self._real_widget, name)
+        # Override setCalendarPopup to always keep it disabled
+        original_setCalendarPopup = widget.setCalendarPopup
 
-    def setCalendarPopup(self, enabled):
-        # Always keep calendar popup disabled
-        self._real_widget.setCalendarPopup(False)
+        def no_popup_setCalendarPopup(enabled):
+            original_setCalendarPopup(False)
+
+        widget.setCalendarPopup = no_popup_setCalendarPopup
+
+        return widget
 
 
 class NoPopupQFileDialog:
@@ -99,6 +102,9 @@ def apply_gui_patches():
             ),
             patch("goesvfi.integrity_check.gui_tab.QMessageBox", NoPopupQMessageBox),
             patch("goesvfi.gui.QMessageBox", NoPopupQMessageBox),
+            patch(
+                "goesvfi.gui_tabs.batch_processing_tab.QMessageBox", NoPopupQMessageBox
+            ),
         ]
     )
 
@@ -130,13 +136,13 @@ def disable_all_gui_popups():
 def restore_gui_popups():
     """Restore normal GUI behavior."""
     global _active_patches
-    for patch in _active_patches:
+    for p in _active_patches:
         try:
-            patch.stop()
-        except:
+            p.stop()
+        except Exception:
             pass
     _active_patches = []
 
 
-# Auto-apply when imported
-disable_all_gui_popups()
+# Don't auto-apply - tests should call disable_all_gui_popups() explicitly
+# disable_all_gui_popups()

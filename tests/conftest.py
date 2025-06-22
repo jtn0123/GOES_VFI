@@ -6,7 +6,6 @@ Fixtures defined here are automatically available to all tests.
 """
 
 import pathlib
-import shutil
 import sys
 import tempfile
 
@@ -44,3 +43,47 @@ def project_root():
 
 # Add more shared fixtures here as needed, e.g., for sample data,
 # mocked objects, or application instances.
+
+
+def pytest_configure(config):
+    """Configure pytest with Qt-specific settings."""
+    # Set Qt to use a specific font to avoid "Sans Serif" search delay
+    import os
+
+    # This environment variable tells Qt to use a specific font
+    if sys.platform == "darwin":  # macOS
+        os.environ.setdefault("QT_QPA_FONTDIR", "/System/Library/Fonts")
+        os.environ.setdefault("QT_QPA_PLATFORMTHEME", "cocoa")
+
+
+# Hook into pytest-qt's qapp fixture
+@pytest.fixture(scope="session")
+def qapp_args():
+    """Arguments to pass to QApplication constructor."""
+    return []
+
+
+@pytest.fixture(scope="session")
+def qapp(qapp_args, pytestconfig):
+    """Create the QApplication instance with custom font settings."""
+    from PyQt6.QtGui import QFont
+    from PyQt6.QtWidgets import QApplication
+
+    # Create or get existing app
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(qapp_args)
+
+    # Set default font to avoid "Sans Serif" search delay
+    default_font = app.font()
+    if sys.platform == "darwin":
+        default_font.setFamily("Helvetica")
+    elif sys.platform == "win32":
+        default_font.setFamily("Segoe UI")
+    else:
+        default_font.setFamily("DejaVu Sans")
+    app.setFont(default_font)
+
+    yield app
+
+    # Cleanup handled by pytest-qt

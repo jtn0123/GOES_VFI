@@ -2,6 +2,11 @@ from unittest.mock import patch
 
 import pytest
 
+# Disable GUI popups for testing
+from tests.utils.disable_popups import disable_all_gui_popups
+
+disable_all_gui_popups()
+
 from goesvfi.gui_tabs.batch_processing_tab import BatchProcessingTab
 from goesvfi.pipeline.batch_queue import BatchJob, JobPriority
 
