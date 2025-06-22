@@ -32,8 +32,7 @@ from PyQt6.QtWidgets import (
 from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
-
-# from goesvfi.pipeline.run_vfi import VfiWorker  # TODO: VfiWorker needs to be implemented
+from goesvfi.pipeline.run_vfi import VfiWorker
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
 from goesvfi.utils import config
 from goesvfi.utils.config import get_available_rife_models, get_cache_dir
@@ -1212,51 +1211,15 @@ class MainTab(QWidget):
             has_handler = hasattr(main_window, "_handle_processing")
             LOGGER.debug(f"MainWindow has processing handler method: {has_handler}")
 
-            # Try direct connections first
             try:
-                LOGGER.debug("Emitting processing_started signal with args")
-                LOGGER.debug(
-                    "processing_started args: size=%d, keys=%s, in_dir=%s, out_file=%s, encoder=%s",
-                    len(args) if args else 0,
-                    list(args.keys()) if args else None,
-                    args.get("in_dir"),
-                    args.get("out_file"),
-                    args.get("encoder"),
-                )
-                LOGGER.info("Emitting processing_started signal")
-
-                # Emit the signal
-                self.processing_started.emit(args)
-                LOGGER.debug("Signal emission completed")
-
-                # Wait a short time to see if the signal was processed
-                LOGGER.debug("Waiting briefly to see if signal was handled...")
-                # No need for an actual delay in Python
-
-                # For visual confirmation in GUI that something is happening
-                QMessageBox.information(
-                    self,
-                    "Processing Started",
-                    "Processing has started. This dialog will close in 2 seconds...",
-                )
-                # Close the dialog automatically after 2 seconds
-                QTimer.singleShot(2000, lambda: None)
-
+                self._start_worker(args)
             except Exception as signal_error:
-                LOGGER.exception(f"Error during signal emission: {signal_error}")
-
-            # As a fallback, try direct method call if signal might not be working
-            LOGGER.debug("Trying direct method call as additional fallback...")
-            if hasattr(main_window, "_handle_processing"):
-                try:
-                    LOGGER.debug("Calling main_window._handle_processing directly")
-                    main_window._handle_processing(args)
-                except Exception as direct_call_error:
-                    LOGGER.exception(
-                        f"Error during direct method call: {direct_call_error}"
-                    )
-            else:
-                LOGGER.error("main_window does not have _handle_processing method")
+                LOGGER.exception("Error starting worker: %s", signal_error)
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"Failed to start processing:\n{signal_error}",
+                )
         else:
             # Error message already shown by get_processing_args
             LOGGER.warning("Processing not started due to invalid arguments.")
@@ -2102,6 +2065,68 @@ class MainTab(QWidget):
         self.set_processing_state(False)
         self.processing_finished.emit(False, error_message)  # Forward the signal
         QMessageBox.critical(self, "Error", f"Processing failed:\n{error_message}")
+
+    def _on_worker_progress(self, current: int, total: int, eta: float) -> None:
+        """Update progress through the view model."""
+        try:
+            self.processing_vm.update_progress(current, total, eta)
+        except Exception as e:  # pragma: no cover - UI update errors
+            LOGGER.exception("Progress update failed: %s", e)
+
+    def _start_worker(self, args: Dict[str, Any]) -> None:
+        """Create and start the VfiWorker thread using provided args."""
+        ffmpeg_args = args.get("ffmpeg_args") or {}
+
+        self.vfi_worker = VfiWorker(
+            in_dir=str(args["in_dir"]),
+            out_file_path=str(args["out_file"]),
+            fps=args.get("fps", 30),
+            mid_count=args.get("multiplier", 2) - 1,
+            max_workers=args.get("max_workers", 1),
+            encoder=args.get("encoder", "RIFE"),
+            use_ffmpeg_interp=ffmpeg_args.get("use_ffmpeg_interp", False),
+            filter_preset=ffmpeg_args.get("filter_preset", "full"),
+            mi_mode=ffmpeg_args.get("mi_mode", "bidir"),
+            mc_mode=ffmpeg_args.get("mc_mode", "aobmc"),
+            me_mode=ffmpeg_args.get("me_mode", "bidir"),
+            me_algo=ffmpeg_args.get("me_algo", "epzs"),
+            search_param=ffmpeg_args.get("search_param", 64),
+            scd_mode=ffmpeg_args.get("scd_mode", "fdiff"),
+            scd_threshold=ffmpeg_args.get("scd_threshold", 10.0),
+            minter_mb_size=ffmpeg_args.get("minter_mb_size", 16),
+            minter_vsbmc=ffmpeg_args.get("minter_vsbmc", 1),
+            apply_unsharp=ffmpeg_args.get("apply_unsharp", False),
+            unsharp_lx=ffmpeg_args.get("unsharp_lx", 5.0),
+            unsharp_ly=ffmpeg_args.get("unsharp_ly", 5.0),
+            unsharp_la=ffmpeg_args.get("unsharp_la", 1.0),
+            unsharp_cx=ffmpeg_args.get("unsharp_cx", 5.0),
+            unsharp_cy=ffmpeg_args.get("unsharp_cy", 5.0),
+            unsharp_ca=ffmpeg_args.get("unsharp_ca", 0.0),
+            crf=ffmpeg_args.get("crf", 23),
+            bitrate_kbps=ffmpeg_args.get("bitrate_kbps"),
+            bufsize_kb=ffmpeg_args.get("bufsize_kb"),
+            pix_fmt=ffmpeg_args.get("pix_fmt", "yuv420p"),
+            skip_model=False,
+            crop_rect=args.get("crop_rect"),
+            debug_mode=getattr(self.main_window_ref, "debug_mode", False),
+            rife_tile_enable=args.get("rife_tiling_enabled", False),
+            rife_tile_size=args.get("rife_tile_size", 256),
+            rife_uhd_mode=args.get("rife_uhd", False),
+            rife_thread_spec=args.get("rife_thread_spec"),
+            rife_tta_spatial=args.get("rife_tta_spatial", False),
+            rife_tta_temporal=args.get("rife_tta_temporal", False),
+            model_key=args.get("rife_model_key"),
+            false_colour=args.get("sanchez_enabled", False),
+            res_km=int(float(args.get("sanchez_resolution_km", 4))),
+            sanchez_gui_temp_dir=args.get("sanchez_gui_temp_dir"),
+        )
+
+        self.vfi_worker.progress.connect(self._on_worker_progress)
+        self.vfi_worker.finished.connect(
+            lambda p: self._on_processing_finished(True, p)
+        )
+        self.vfi_worker.error.connect(self._on_processing_error)
+        self.vfi_worker.start()
 
     # --- Methods removed as preview logic is now centralized in MainWindow ---
     # _update_previews
