@@ -38,8 +38,4 @@ def test_select_destination_directory_updates_property(view_model, tmp_path):
         view_model.select_destination_directory()
         mocked.assert_called_once()
         assert view_model.destination_directory == str(dst_dir)
-        assert (
-            f"Destination directory set to: {dst_dir}" == view_model.status_message
-        )
-
-
+        assert f"Destination directory set to: {dst_dir}" == view_model.status_message

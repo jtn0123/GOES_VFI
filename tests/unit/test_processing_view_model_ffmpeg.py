@@ -19,4 +19,3 @@ def test_build_ffmpeg_command_without_crop():
     settings = {"encoder": "Software x264"}
     cmd = vm.build_ffmpeg_command(output, 24, None, settings)
     assert "-filter:v" not in cmd
-

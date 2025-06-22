@@ -37,13 +37,16 @@ def batch_tab(qtbot):
     def provider():
         return selected_settings
 
-    with patch("goesvfi.gui_tabs.batch_processing_tab.BatchProcessor") as MockProc, patch(
-        "goesvfi.gui_tabs.batch_processing_tab.QMessageBox"
+    with (
+        patch("goesvfi.gui_tabs.batch_processing_tab.BatchProcessor") as MockProc,
+        patch("goesvfi.gui_tabs.batch_processing_tab.QMessageBox"),
     ):
         proc_instance = MockProc.return_value
         proc_instance.create_queue.return_value = dummy_queue
 
-        def fake_create_job_from_paths(input_paths, output_dir, settings, priority=JobPriority.NORMAL, **_):
+        def fake_create_job_from_paths(
+            input_paths, output_dir, settings, priority=JobPriority.NORMAL, **_
+        ):
             return [
                 BatchJob(
                     id="job1",

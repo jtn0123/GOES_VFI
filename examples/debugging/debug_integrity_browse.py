@@ -107,10 +107,10 @@ logger.info("Patched QFileDialog.getExistingDirectory for detailed logging")
 class DirectoryBrowserTester(QWidget):
     """Simple test widget for directory browsing."""
 
-directory_selected = pyqtSignal(str)
+    directory_selected = pyqtSignal(str)
 
     def __init__(self):
-     super().__init__()
+        super().__init__()
         self.setWindowTitle("Directory Browser Test")
         self.setGeometry(100, 100, 500, 200)
 
@@ -127,74 +127,70 @@ directory_selected = pyqtSignal(str)
         logger.info("DirectoryBrowserTester initialized")
 
     def browse_directory(self):
-     """Test the directory browsing functionality."""
+        """Test the directory browsing functionality."""
         logger.info("Browse button clicked")
 
         try:
-        # Set wait cursor
-        self.setCursor(Qt.CursorShape.WaitCursor)
-        QApplication.processEvents()
+            # Set wait cursor
+            self.setCursor(Qt.CursorShape.WaitCursor)
+            QApplication.processEvents()
 
-        try:
-     # Start from home directory
-        start_dir = str(Path.home())
-        logger.info(f"Starting directory dialog from: {start_dir}")
+            try:
+                # Start from home directory
+                start_dir = str(Path.home())
+                logger.info(f"Starting directory dialog from: {start_dir}")
 
-        # Open directory dialog
-        directory = QFileDialog.getExistingDirectory(
-        self,
-        "Select Test Directory",
-        start_dir,
-        QFileDialog.Option.ShowDirsOnly,
-        )
+                # Open directory dialog
+                directory = QFileDialog.getExistingDirectory(
+                    self,
+                    "Select Test Directory",
+                    start_dir,
+                    QFileDialog.Option.ShowDirsOnly,
+                )
 
-        logger.info(f"Directory dialog returned: {directory}")
+                logger.info(f"Directory dialog returned: {directory}")
 
-        if directory:
-     pass
-        # Verify the directory
-        path_obj = Path(directory)
+                if directory:
+                    # Verify the directory
+                    path_obj = Path(directory)
 
-        if not path_obj.exists():
-     pass
-        logger.error(f"Selected directory does not exist: {directory}")
-        return
+                    if not path_obj.exists():
+                        logger.error(f"Selected directory does not exist: {directory}")
+                        return
 
-        if not path_obj.is_dir():
-     pass
-        logger.error(f"Selected path is not a directory: {directory}")
-        return
+                    if not path_obj.is_dir():
+                        logger.error(f"Selected path is not a directory: {directory}")
+                        return
 
-        # Try to read the directory contents
-        try:
-     next(path_obj.iterdir(), None)
-        logger.info(
-        f"Successfully read first item in directory: {directory}"
-        )
-        except PermissionError as e:
-     pass
-        logger.error(f"Permission denied reading directory: {e}")
-        return
-        except Exception as e:
-     pass
-        logger.error(f"Error reading directory: {e}")
-        logger.exception("Exception details:")
-        return
+                    # Try to read the directory contents
+                    try:
+                        next(path_obj.iterdir(), None)
+                        logger.info(
+                            f"Successfully read first item in directory: {directory}"
+                        )
+                    except PermissionError as e:
+                        logger.error(f"Permission denied reading directory: {e}")
+                        return
+                    except Exception as e:
+                        logger.error(f"Error reading directory: {e}")
+                        logger.exception("Exception details:")
+                        return
 
-        # Emit signal
-        logger.info(f"Emitting directory_selected signal with: {directory}")
-        self.directory_selected.emit(directory)
-        except Exception as e:
-     pass
-        logger.error(f"Error in browse_directory: {e}")
-        logger.exception("Exception details:")
+                    # Emit signal
+                    logger.info(f"Emitting directory_selected signal with: {directory}")
+                    self.directory_selected.emit(directory)
+
+            except Exception as e:
+                logger.error(f"Error in browse_directory: {e}")
+                logger.exception("Exception details:")
+
         finally:
-     # Restore cursor
-        self.setCursor(Qt.CursorShape.ArrowCursor)
-        QApplication.processEvents()
+            # Restore cursor
+            self.setCursor(Qt.CursorShape.ArrowCursor)
+            QApplication.processEvents()
 
     def on_directory_selected(self, directory):
-     """Handle directory selection."""
+        """Handle directory selection."""
         logger.info(f"directory_selected signal received with: {directory}")
 
         # Try to get disk information

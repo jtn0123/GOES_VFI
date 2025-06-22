@@ -1448,9 +1448,7 @@ class FFmpegSettingsTab(QWidget):
                         "ffmpeg_filter_preset", DEFAULT_FFMPEG_PROFILE["filter_preset"]
                     )
                 )
-                self.crop_filter_edit.setText(
-                    settings.get("ffmpeg_filter_string", "")
-                )
+                self.crop_filter_edit.setText(settings.get("ffmpeg_filter_string", ""))
 
             # If a specific profile was loaded, apply it (this handles non-"Custom" cases)
             else:

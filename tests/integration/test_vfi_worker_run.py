@@ -3,15 +3,14 @@ import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-import pytest
-
 # Provide minimal PyQt6 mocks for headless test execution
 qtcore = SimpleNamespace(QThread=object, pyqtSignal=lambda *a, **k: MagicMock())
 sys.modules.setdefault("PyQt6", SimpleNamespace(QtCore=qtcore))
 sys.modules.setdefault("PyQt6.QtCore", qtcore)
 
-from goesvfi.pipeline.run_vfi import VfiWorker
 from PIL import Image
+
+from goesvfi.pipeline.run_vfi import VfiWorker
 
 
 def create_dummy_png(path: pathlib.Path, size=(10, 10)) -> None:
@@ -45,9 +44,10 @@ def test_vfi_worker_run(tmp_path, monkeypatch):
     fin = MagicMock()
     err = MagicMock()
 
-    worker.progress.emit = prog
-    worker.finished.emit = fin
-    worker.error.emit = err
+    # Connect to signals instead of trying to replace emit
+    worker.progress.connect(prog)
+    worker.finished.connect(fin)
+    worker.error.connect(err)
 
     worker.run()
 

@@ -1,18 +1,17 @@
 import pathlib
 import subprocess
-import time
 from typing import Any, Dict, List, Optional, Tuple
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, patch
 
+import numpy as np
 import pytest
-from PyQt6.QtWidgets import QComboBox
+
+from goesvfi.pipeline.image_loader import ImageLoader
+from goesvfi.pipeline.image_processing_interfaces import ImageData
+from goesvfi.pipeline.image_saver import ImageSaver
 
 # Import the main pipeline function (Corrected path)
 from goesvfi.pipeline.run_vfi import run_vfi
-from goesvfi.pipeline.image_loader import ImageLoader
-from goesvfi.pipeline.image_saver import ImageSaver
-from goesvfi.pipeline.image_processing_interfaces import ImageData
-import numpy as np
 from goesvfi.utils.rife_analyzer import (  # For mocking capabilities
     RifeCapabilityDetector,
 )

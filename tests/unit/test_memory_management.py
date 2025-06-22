@@ -1,8 +1,10 @@
 """Unit tests for memory management functionality."""
 
+import gc
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
+import psutil
 import pytest
 
 from goesvfi.pipeline.image_loader import ImageLoader
@@ -15,8 +17,6 @@ from goesvfi.utils.memory_manager import (
     estimate_memory_requirement,
     get_memory_monitor,
 )
-import gc
-import psutil
 
 
 class TestMemoryStats:

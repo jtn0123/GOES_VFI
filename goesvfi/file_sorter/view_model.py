@@ -158,9 +158,7 @@ class FileSorterViewModel:
             Notifies observers if implemented.
         """
         LOGGER.info("Command: Select Source Directory")
-        directory = QFileDialog.getExistingDirectory(
-            None, "Select Source Directory"
-        )
+        directory = QFileDialog.getExistingDirectory(None, "Select Source Directory")
         if directory:
             self.source_directory = directory
             self.status_message = f"Source directory set to: {directory}"

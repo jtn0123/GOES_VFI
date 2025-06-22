@@ -8,10 +8,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
-
 from PyQt6.QtCore import QObject, pyqtSignal
 
+from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
 from goesvfi.utils import log
 
 LOGGER = log.get_logger(__name__)
