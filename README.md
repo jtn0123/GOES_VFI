@@ -403,11 +403,13 @@ pip install -r requirements.txt
 ./run_non_gui_tests.py
 
 # Generate code coverage report
-# Note: May have issues with Python 3.13 - coverage library compatibility
+# Uses coverage 7.6.0 for Python 3.13 compatibility
 # Creates: htmlcov/ directory, coverage.xml, coverage.json
 ./run_coverage.py --clean  # Clean old data first
 ./run_coverage.py tests/unit  # Run on specific directory
 ./run_coverage.py --open  # Open HTML report in browser
+./run_coverage.py --threshold 90  # Set coverage threshold
+./run_coverage.py --no-fail  # Don't fail on low coverage
 
 # Utility: Auto-add missing docstrings
 # Adds placeholder "TODO" docstrings to satisfy pylint requirements

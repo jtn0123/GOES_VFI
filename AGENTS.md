@@ -125,8 +125,9 @@ Each test runner serves a specific purpose:
 
 - **`./run_coverage.py`** - Code coverage analysis
   - Measures test coverage and generates reports
-  - Note: May have issues with Python 3.13 due to coverage library
+  - Works with coverage 7.6.0 (fixed Python 3.13 compatibility)
   - Outputs: HTML report (htmlcov/), XML, JSON formats
+  - Options: `--clean`, `--open`, `--threshold N`, `--no-fail`
 
 ### Utility Scripts
 
