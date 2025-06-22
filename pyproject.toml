@@ -62,7 +62,7 @@ python_files = "test_*.py"
 addopts = "-ra -q --cov=goesvfi --cov-report=term-missing"
 
 [tool.black]
-line-length = 120
+line-length = 88
 
 [tool.flake8]
 max-line-length = 120
