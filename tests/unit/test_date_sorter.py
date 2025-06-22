@@ -1,13 +1,15 @@
 import os  # Needed for os.utime
-import re  # Need re for simulating file parsing
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
 # Functions to test from the sorter module
 from goesvfi.date_sorter.sorter import (  # main as date_sorter_main,  # Removed as main function no longer exists
+    compute_missing_intervals,
     detect_interval,
+    extract_timestamps_from_files,
+    find_png_files,
     format_calendar_output,
 )
 
@@ -35,7 +37,7 @@ def date_files_dir(tmp_path):
     datetimes_to_create = [dt1, dt2, dt3, dt4, dt5, dt6]
 
     # Create files with the standard name format
-    for i, dt in enumerate(datetimes_to_create):
+    for dt in datetimes_to_create:
         # Format: baseName_YYYYMMDDThhmmssZ.png
         filename = f"goes16_{dt.strftime('%Y%m%dT%H%M%S')}Z.png"
         filepath = test_dir / filename
@@ -58,22 +60,8 @@ def date_files_dir(tmp_path):
 # --- Helper Function for Testing Core Logic ---
 # This mimics the file scanning and date extraction part of the main/scan functions
 def extract_datetimes_from_dir(target_dir: Path):
-    datetime_pattern = re.compile(r"_(\d{8}T\d{6})Z\.png$")
-    datetimes = []
-    png_files = list(target_dir.rglob("*.png"))
-    for file_path in png_files:
-        match = datetime_pattern.search(file_path.name)
-        if match:
-            try:
-                dt_str = match.group(1)
-                # NOTE: The original code uses naive datetimes from strptime.
-                # For consistency in testing, we'll stick to that, although UTC is implied by 'Z'.
-                dt_obj = datetime.strptime(dt_str, "%Y%m%dT%H%M%S")
-                datetimes.append(dt_obj)
-            except ValueError:
-                pass  # Ignore files with invalid date strings
-    datetimes.sort()
-    return datetimes
+    files = find_png_files(target_dir)
+    return extract_timestamps_from_files(files)
 
 
 # --- Test Functions ---
@@ -150,9 +138,7 @@ def test_core_interval_analysis_logic(date_files_dir):
             datetime(2023, 5, 1, 10, 30, 0),
             datetime(2023, 5, 1, 11, 30, 0),
             datetime(2023, 5, 1, 12, 0, 0),
-            datetime(
-                2023, 5, 1, 12, 15, 0
-            ),  # Note: This exists but might be skipped depending on detected interval
+            datetime(2023, 5, 1, 12, 15, 0),  # Note: This exists but might be skipped depending on detected interval
             datetime(2023, 5, 2, 8, 0, 0),
         ]
     )
@@ -166,33 +152,7 @@ def test_core_interval_analysis_logic(date_files_dir):
     interval_minutes = detect_interval(datetimes)
     assert interval_minutes == 30  # Based on fixture data (10:00, 10:30, 11:30, 12:00)
 
-    datetimes.sort()
-    earliest = datetimes[0]
-    latest = datetimes[-1]
-    date_set = set(datetimes)
-
-    daily_records = {}
-    missing_intervals = []
-    current_dt = earliest
-
-    # Walk through the expected intervals
-    while current_dt <= latest:
-        day_str = current_dt.strftime("%Y-%m-%d")
-        time_str = current_dt.strftime("%H:%M")
-
-        if day_str not in daily_records:
-            daily_records[day_str] = []
-
-        # Check if this *exact* datetime exists in our set
-        found = current_dt in date_set
-        daily_records[day_str].append((time_str, found))
-
-        if not found:
-            missing_intervals.append(current_dt)
-
-        current_dt += timedelta(
-            minutes=interval_minutes
-        )  # Advance by detected interval
+    daily_records, missing_intervals = compute_missing_intervals(datetimes, interval_minutes)
 
     # --- Assertions ---
     # Expected missing intervals based on 30 min steps from 10:00 to 12:00 on day 1,
@@ -211,9 +171,7 @@ def test_core_interval_analysis_logic(date_files_dir):
 
     # Check daily_records structure (example for day 1)
     assert "2023-05-01" in daily_records
-    day1_records = dict(
-        daily_records["2023-05-01"]
-    )  # Convert list of tuples to dict for easier check
+    day1_records = dict(daily_records["2023-05-01"])  # Convert list of tuples to dict for easier check
     assert day1_records.get("10:00") is True
     assert day1_records.get("10:30") is True
     assert day1_records.get("11:00") is False  # Missing
@@ -257,9 +215,7 @@ def test_format_calendar_output():
     idx_missing2 = output.find("\nMissing times:", idx_date2)
     # Find the index of "(none)" after that "Missing times:"
     idx_none = output.find("  (none)", idx_missing2)
-    assert (
-        idx_none > idx_missing2
-    )  # Ensure "(none)" appears under the second date's missing section
+    assert idx_none > idx_missing2  # Ensure "(none)" appears under the second date's missing section
 
 
 def test_empty_directory(tmp_path):
@@ -274,8 +230,8 @@ def test_empty_directory(tmp_path):
     assert interval == 30  # Default
 
     # Analysis logic should handle empty list gracefully
-    daily_records = {}
-    missing_intervals = []
+    daily_records: dict[str, list[tuple[str, bool]]] = {}
+    missing_intervals: list[datetime] = []
     if datetimes:
         # This block shouldn't run
         pytest.fail("Analysis logic ran with empty datetimes list")
@@ -290,9 +246,7 @@ def test_empty_directory(tmp_path):
     assert "\n=== Time Interval Analysis ===" in output
     # Should not contain any date headers or time entries
     assert "202" not in output  # Check no year appears
-    assert (
-        ":" not in output.split("===")[-1]
-    )  # Check no time format appears after header
+    assert ":" not in output.split("===")[-1]  # Check no time format appears after header
 
 
 def test_no_matching_files(tmp_path):
@@ -309,8 +263,8 @@ def test_no_matching_files(tmp_path):
     # Rest of the test is similar to test_empty_directory
     interval = detect_interval(datetimes)
     assert interval == 30
-    daily_records = {}
-    missing_intervals = []
+    daily_records: dict[str, list[tuple[str, bool]]] = {}
+    missing_intervals: list[datetime] = []
     assert not daily_records
     assert not missing_intervals
     output = format_calendar_output(daily_records, missing_intervals)
