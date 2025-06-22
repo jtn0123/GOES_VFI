@@ -12,7 +12,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class CoverageRunner:
@@ -54,8 +54,8 @@ class CoverageRunner:
         print("📦 Checking coverage tools...")
 
         try:
-            import coverage
-            import pytest_cov
+            import coverage  # noqa: F401
+            import pytest_cov  # noqa: F401
 
             print("  ✓ Coverage tools already installed")
             return True
@@ -82,7 +82,10 @@ class CoverageRunner:
                 return False
 
     def run_coverage(
-        self, test_paths: List[str] = None, markers: str = None, parallel: bool = False
+        self,
+        test_paths: Optional[List[str]] = None,
+        markers: Optional[str] = None,
+        parallel: bool = False,
     ) -> bool:
         """Run tests with coverage measurement."""
         print("🧪 Running tests with coverage...")
@@ -231,8 +234,8 @@ class CoverageRunner:
 
         html_index = self.htmlcov_dir / "index.html"
         if html_index.exists():
-            print(f"\n🌐 Opening coverage report in browser...")
-            webbrowser.open(f"file://{html_index}")
+            print("\n🌐 Opening coverage report in browser...")
+            webbrowser.open(f"file://{html_index.absolute()}")
         else:
             print("\n⚠️  HTML report not found. Generate it first with --html")
 

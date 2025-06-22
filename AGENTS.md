@@ -105,16 +105,36 @@ When verifying all tests pass, use this systematic approach:
    ```
 
 ### Test Runner Scripts
-- **All tests (recommended after fixes):** `./run_all_tests.py`
-  - Runs complete test suite (827+ tests across 87+ files)
-  - Use `--debug-mode` for verbose output
-  - Use `--parallel 4` for faster execution
-- **Reliable tests with mocks:** `./run_working_tests_with_mocks.py`
-- **Non-GUI tests only:** `./run_non_gui_tests_ci.py`
-  - Excludes GUI tests to avoid segmentation faults
-  - Supports parallel execution with `--parallel N`
-- **Code coverage:** `./run_coverage.py`
-  - Generates coverage reports in HTML/XML/JSON formats
+
+Each test runner serves a specific purpose:
+
+- **`./run_all_tests.py`** - Complete test suite
+  - Runs all 827+ tests across 87+ files
+  - Options: `--debug-mode` (verbose), `--parallel 4` (faster)
+  - Use after fixing all issues to verify everything works
+
+- **`./run_working_tests_with_mocks.py`** - Stable subset
+  - Runs tests that reliably pass with mocked dependencies
+  - Good for quick verification during development
+
+- **`./run_non_gui_tests.py`** - Non-GUI tests only
+  - Dynamically discovers and runs all non-GUI tests
+  - Avoids Qt-related segmentation faults
+  - Options: `--quiet`, `--verbose`, `--parallel N`
+  - Safe to run in CI/CD environments
+
+- **`./run_coverage.py`** - Code coverage analysis
+  - Measures test coverage and generates reports
+  - Note: May have issues with Python 3.13 due to coverage library
+  - Outputs: HTML report (htmlcov/), XML, JSON formats
+
+### Utility Scripts
+
+- **`fix_pylint_docstrings.py`** - Auto-add docstrings
+  - Usage: `python fix_pylint_docstrings.py <file_or_directory>`
+  - Adds placeholder "TODO" docstrings to satisfy pylint
+  - Skips private methods and test functions
+  - Generated docstrings need manual editing to be meaningful
 
 ### Common Test Issues and Solutions
 1. **Hanging tests:** Usually due to network initialization in S3Store/CDNStore

@@ -398,10 +398,22 @@ pip install -r requirements.txt
 ./run_working_tests_with_mocks.py
 
 # Run non-GUI tests (avoids segmentation faults)
-./run_non_gui_tests_ci.py
+# Dynamically discovers all non-GUI tests and runs them
+# Options: --quiet, --verbose, --parallel N
+./run_non_gui_tests.py
 
 # Generate code coverage report
-./run_coverage.py
+# Note: May have issues with Python 3.13 - coverage library compatibility
+# Creates: htmlcov/ directory, coverage.xml, coverage.json
+./run_coverage.py --clean  # Clean old data first
+./run_coverage.py tests/unit  # Run on specific directory
+./run_coverage.py --open  # Open HTML report in browser
+
+# Utility: Auto-add missing docstrings
+# Adds placeholder "TODO" docstrings to satisfy pylint requirements
+# Skips: private methods (_method), test functions (test_*)
+python fix_pylint_docstrings.py <file_or_directory>
+# Example: python fix_pylint_docstrings.py goesvfi/utils/
 
 # Run specific test file
 python -m pytest tests/unit/test_specific.py -v
