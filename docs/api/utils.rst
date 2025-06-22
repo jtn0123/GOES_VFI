@@ -357,6 +357,10 @@ Automatic memory optimization:
        processed = optimizer.process_with_optimization(data_chunk)
        yield processed
 
+   # Process a large array in small pieces
+   for chunk in optimizer.optimize_array_chunks(large_array, max_chunk_mb=64):
+       heavy_compute(chunk)
+
 **Monitoring Functions:**
 
 .. autofunction:: memory_manager.get_memory_monitor

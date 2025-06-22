@@ -8,7 +8,7 @@ import gc
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, Iterable, List, Optional
 
 import numpy as np
 
@@ -277,6 +277,29 @@ class MemoryOptimizer:
 
         return chunks
 
+    def optimize_array_chunks(
+        self, array: np.ndarray, max_chunk_mb: int = 100
+    ) -> Iterable[np.ndarray]:
+        """Yield copies of array chunks to keep peak memory low.
+
+        This method iterates over ``array`` in pieces and yields a copy of each
+        chunk so the original array can be released after processing.  It also
+        triggers garbage collection between chunks.
+
+        Args:
+            array: Large numpy array to process in chunks.
+            max_chunk_mb: Maximum chunk size in megabytes.
+
+        Yields:
+            NumPy arrays containing contiguous chunks of ``array``.
+        """
+
+        chunk_size = max(1, max_chunk_mb * 1024 * 1024 // array.itemsize)
+        for start in range(0, len(array), chunk_size):
+            chunk = array[start : start + chunk_size].copy()
+            yield chunk
+            self.free_memory()
+
     def free_memory(self, force: bool = False) -> None:
         """Free memory by running garbage collection.
 
@@ -441,17 +464,14 @@ class StreamingProcessor:
         Returns:
             Processed array
         """
-        # Use a simple chunking approach for now
-        # TODO: Add optimize_array_chunks method to MemoryOptimizer
-        chunk_size = self.chunk_size_mb * 1024 * 1024 // array.itemsize
-        chunks = [array[i : i + chunk_size] for i in range(0, len(array), chunk_size)]
         results = []
 
-        for chunk in chunks:
+        for chunk in self.optimizer.optimize_array_chunks(array, self.chunk_size_mb):
             result = process_func(chunk)
             results.append(result)
-            # Free memory after processing each chunk
-            self.optimizer.free_memory()
+
+        del array
+        self.optimizer.free_memory(force=True)
 
         return np.concatenate(results)
 
