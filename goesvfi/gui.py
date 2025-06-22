@@ -758,6 +758,11 @@ class MainWindow(QWidget):
                 if not success:
                     LOGGER.error("Failed to save crop rectangle to settings!")
 
+            if hasattr(self, "ffmpeg_settings_tab") and hasattr(
+                self.ffmpeg_settings_tab, "set_crop_rect"
+            ):
+                self.ffmpeg_settings_tab.set_crop_rect(rect)
+
             # Save all settings immediately when crop rectangle changes
             # This ensures crop settings are preserved even if the app crashes
             try:
@@ -1432,6 +1437,9 @@ class MainWindow(QWidget):
         self.ffmpeg_pix_fmt_combo.setCurrentText(
             self.settings.value("ffmpeg_pix_fmt", "yuv444p", type=str)
         )
+        self.ffmpeg_settings_tab.crop_filter_edit.setText(
+            self.settings.value("ffmpeg_filter_string", "", type=str)
+        )
 
         # Update UI elements based on loaded settings
         if self.in_dir:
@@ -1766,6 +1774,14 @@ class MainWindow(QWidget):
                 self.settings.setValue(
                     "ffmpeg_pix_fmt",
                     self.ffmpeg_settings_tab.pix_fmt_combo.currentText(),
+                )
+            if (
+                hasattr(self.ffmpeg_settings_tab, "crop_filter_edit")
+                and self.ffmpeg_settings_tab.crop_filter_edit is not None
+            ):
+                self.settings.setValue(
+                    "ffmpeg_filter_string",
+                    self.ffmpeg_settings_tab.crop_filter_edit.text(),
                 )
 
     def _validate_thread_spec(self, text: str) -> None:
