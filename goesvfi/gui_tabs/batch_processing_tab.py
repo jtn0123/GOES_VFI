@@ -45,6 +45,7 @@ class BatchProcessingTab(QWidget):
         self,
         process_function: Optional[Callable[..., Any]] = None,
         resource_manager: Optional[Any] = None,
+        settings_provider: Optional[Callable[[], Dict[str, Any]]] = None,
     ) -> None:
         """Initialize batch processing tab."""
         super().__init__()
@@ -53,6 +54,7 @@ class BatchProcessingTab(QWidget):
         self.resource_manager = resource_manager
         self.batch_processor = BatchProcessor(resource_manager)
         self.batch_queue: Optional[BatchQueue] = None
+        self.settings_provider = settings_provider
 
         self._init_ui()
         self._init_batch_queue()
@@ -258,12 +260,14 @@ class BatchProcessingTab(QWidget):
         output_dir = Path(self.output_dir_label.text())
         priority = self.priority_combo.currentData()
 
-        # TODO: Get actual processing settings from main tab
-        settings = {
-            "target_fps": 30,
-            "skip_ai": False,
-            # Add more settings as needed
-        }
+        if self.settings_provider:
+            try:
+                settings = self.settings_provider()
+            except Exception as exc:  # pragma: no cover - defensive
+                LOGGER.exception("Failed to obtain settings: %s", exc)
+                settings = {}
+        else:
+            settings = {}
 
         job_ids = []
 
