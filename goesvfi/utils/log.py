@@ -57,27 +57,26 @@ def _build_handler() -> logging.Handler:
         )
     else:
         handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(
-            logging.Formatter("[%(levelname).1s] %(name)s: %(message)s")
-        )
+        handler.setFormatter(logging.Formatter("[%(levelname).1s] %(name)s: %(message)s"))
     return handler
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
-    """Gets a logger instance. Configuration is handled by the root logger."""
-    global _handler
+    """Return a module-specific logger with optional color formatting."""
+    global _handler, _LEVEL
+
+    # Always read the current level from config
+    _LEVEL = _get_level_from_config()
 
     logger = logging.getLogger(name)
     logger.setLevel(_LEVEL)
 
-    # Build handler if it doesn't exist
     if _handler is None:
         _handler = _build_handler()
-        _handler.setLevel(_LEVEL)
 
-    # Add handler to logger if not already present
-    handler_types = [type(h) for h in logger.handlers]
-    if type(_handler) not in handler_types:
+    _handler.setLevel(_LEVEL)
+
+    if _handler not in logger.handlers:
         logger.addHandler(_handler)
 
     return logger
