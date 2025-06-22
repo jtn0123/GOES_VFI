@@ -4,6 +4,7 @@ from __future__ import annotations
 
 """goesvfi.utils.config – user paths and TOML config loader"""
 
+import os
 import pathlib
 import shutil
 import sys
@@ -11,8 +12,22 @@ import tomllib
 from functools import lru_cache
 from typing import Any, Dict, List, TypedDict, cast
 
-CONFIG_DIR = pathlib.Path.home() / ".config/goesvfi"
-CONFIG_FILE = CONFIG_DIR / "config.toml"
+DEFAULT_CONFIG_DIR = pathlib.Path.home() / ".config" / "goesvfi"
+DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.toml"
+CONFIG_DIR = DEFAULT_CONFIG_DIR
+CONFIG_FILE = DEFAULT_CONFIG_FILE
+
+
+def get_config_path() -> pathlib.Path:
+    """Return config file path honoring environment variables."""
+    env_file = os.getenv("GOESVFI_CONFIG_FILE")
+    if env_file:
+        return pathlib.Path(env_file).expanduser()
+    env_dir = os.getenv("GOESVFI_CONFIG_DIR")
+    if env_dir:
+        return pathlib.Path(env_dir).expanduser() / "config.toml"
+    return CONFIG_FILE
+
 
 # Specify dict key/value types
 # Define default values for configuration settings
@@ -162,35 +177,71 @@ FFMPEG_PROFILES: Dict[str, FfmpegProfile] = {
     # "Custom" is handled implicitly when settings change
 }
 
+# Expected config schema for validation
+EXPECTED_SCHEMA: Dict[str, Any] = {
+    "output_dir": str,
+    "cache_dir": str,
+    "pipeline": {"default_tile_size": int, "supported_extensions": list},
+    "sanchez": {"bin_dir": str},
+    "logging": {"level": str},
+}
+
+
+def _validate_config(data: Dict[str, Any]) -> None:
+    errors: list[str] = []
+    for key, expected in EXPECTED_SCHEMA.items():
+        if key not in data:
+            data[key] = DEFAULTS[key]
+            errors.append(f"missing '{key}' section, using default")
+            continue
+        value = data[key]
+        if isinstance(expected, dict):
+            if not isinstance(value, dict):
+                errors.append(f"section '{key}' must be a table")
+                data[key] = DEFAULTS[key]
+                continue
+            for sub, exptype in expected.items():
+                if sub not in value:
+                    value[sub] = DEFAULTS[key][sub]
+                    errors.append(f"missing '{key}.{sub}' key, using default")
+                else:
+                    subval = value[sub]
+                    if exptype is list:
+                        if not isinstance(subval, list):
+                            errors.append(f"'{key}.{sub}' must be a list")
+                            value[sub] = DEFAULTS[key][sub]
+                    elif not isinstance(subval, exptype):
+                        errors.append(f"'{key}.{sub}' must be {exptype.__name__}")
+                        value[sub] = DEFAULTS[key][sub]
+        else:
+            if not isinstance(value, expected):
+                errors.append(f"'{key}' must be {expected.__name__}")
+                data[key] = DEFAULTS[key]
+    if errors:
+        raise ValueError("Invalid configuration: " + "; ".join(errors))
+
 
 @lru_cache(maxsize=1)
 # Specify dict return type
 def _load_config() -> Dict[str, Any]:
-    # Initialize data with defaults
+    """Load configuration from TOML and validate."""
     data: Dict[str, Any] = DEFAULTS.copy()
-    if CONFIG_FILE.exists():
-        with CONFIG_FILE.open("rb") as fp:
+
+    cfg_path = get_config_path()
+    if cfg_path.exists():
+        with cfg_path.open("rb") as fp:
             try:
                 loaded_data = tomllib.load(fp)
-                # Merge loaded data with defaults. Loaded data overrides defaults.
-                # This is a basic merge; for nested structures, a recursive merge would be needed.
-                # For now, we assume top-level keys in TOML override corresponding keys in DEFAULTS.
-                # A more robust approach might use Pydantic or similar for structured config.
-                for key, value in loaded_data.items():
-                    if (
-                        key in data
-                        and isinstance(data[key], dict)
-                        and isinstance(value, dict)
-                    ):
-                        # Simple recursive merge for nested dictionaries (up to one level deep for now)
-                        data[key].update(value)
-                    else:
-                        # Overwrite for non-dict values or if key not in defaults (new keys)
-                        data[key] = value
+            except tomllib.TOMLDecodeError as exc:
+                raise ValueError(f"Invalid TOML in {cfg_path}: {exc}") from exc
 
-            except tomllib.TOMLDecodeError:
-                # If TOML is invalid, just use defaults
-                pass
+            for key, value in loaded_data.items():
+                if key in data and isinstance(data[key], dict) and isinstance(value, dict):
+                    data[key].update(value)
+                else:
+                    data[key] = value
+
+    _validate_config(data)
 
     # ensure dirs exist for known path configurations
     # Use .get() with a default to avoid KeyError if config is missing
@@ -206,9 +257,7 @@ def _load_config() -> Dict[str, Any]:
     sanchez_config = data.get("sanchez", {})
     sanchez_bin_dir_str = sanchez_config.get("bin_dir")
     if isinstance(sanchez_bin_dir_str, str):
-        pathlib.Path(sanchez_bin_dir_str).expanduser().mkdir(
-            parents=True, exist_ok=True
-        )
+        pathlib.Path(sanchez_bin_dir_str).expanduser().mkdir(parents=True, exist_ok=True)
 
     return data
 
@@ -237,9 +286,7 @@ def get_cache_dir() -> pathlib.Path:
 def get_default_tile_size() -> int:
     # Access nested config using .get() for safety
     pipeline_config = _load_config().get("pipeline", {})
-    tile_size = pipeline_config.get(
-        "default_tile_size", DEFAULTS["pipeline"]["default_tile_size"]
-    )
+    tile_size = pipeline_config.get("default_tile_size", DEFAULTS["pipeline"]["default_tile_size"])
     # Ensure it's an int
     if not isinstance(tile_size, int):
         tile_size = DEFAULTS["pipeline"]["default_tile_size"]  # Fallback to default
@@ -269,13 +316,9 @@ def get_logging_level() -> str:
 def get_supported_extensions() -> List[str]:
     # Access nested config using .get() for safety
     pipeline_config = _load_config().get("pipeline", {})
-    extensions = pipeline_config.get(
-        "supported_extensions", DEFAULTS["pipeline"]["supported_extensions"]
-    )
+    extensions = pipeline_config.get("supported_extensions", DEFAULTS["pipeline"]["supported_extensions"])
     # Ensure it's a list of strings
-    if not isinstance(extensions, list) or not all(
-        isinstance(ext, str) for ext in extensions
-    ):
+    if not isinstance(extensions, list) or not all(isinstance(ext, str) for ext in extensions):
         extensions = DEFAULTS["pipeline"]["supported_extensions"]  # Fallback to default
     return cast(List[str], extensions)
 
@@ -362,6 +405,7 @@ def get_user_config_dir() -> pathlib.Path:
     Returns:
         Path to the user's configuration directory
     """
-    # Create the directory if it doesn't exist
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    return CONFIG_DIR
+    env_dir = os.getenv("GOESVFI_CONFIG_DIR")
+    path = pathlib.Path(env_dir).expanduser() if env_dir else CONFIG_DIR
+    path.mkdir(parents=True, exist_ok=True)
+    return path
