@@ -49,7 +49,9 @@ class ExternalToolError(PipelineError):  # pylint: disable=too-few-public-method
     invoked by the pipeline.
     """
 
-    def __init__(self, tool_name: str, message: str, stderr: Optional[str] = None):
+    def __init__(
+        self, tool_name: str, message: str, stderr: Optional[str] = None
+    ) -> None:
         """Initialize an ExternalToolError.
 
         Args:
