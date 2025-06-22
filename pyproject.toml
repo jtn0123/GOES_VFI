@@ -1,6 +1,6 @@
 [project]
 name = "goesvfi"
-version = "0.5.0"  # Updated version for Integrity Check feature
+version = "0.8.0"  # Updated version for Integrity Check feature
 description = "GOES satellite frame interpolation tool with integrity checking"
 dependencies = [
     "PyQt6",
