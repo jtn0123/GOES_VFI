@@ -53,18 +53,14 @@ def create_files(sorter_dirs):
         "2023-01-15_10-00-10": ["imageA"],  # Duplicate base name, different time
         "2024-05-20_12-30-00": ["imageC"],
         "invalid-date-folder": ["imageD"],  # Folder to be ignored
-        "2023-01-15_10-00-00_extra": [
-            "imageE"
-        ],  # Folder to be ignored (invalid format)
+        "2023-01-15_10-00-00_extra": ["imageE"],  # Folder to be ignored (invalid format)
     }
     expected_copied_count = 0
     for folder_name, base_names in folder_files.items():
         folder_path = source_dir / folder_name
         folder_path.mkdir(exist_ok=True)
         # Check if folder name is valid according to sorter logic
-        is_valid_folder = bool(
-            re.match(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$", folder_name)
-        )
+        is_valid_folder = bool(re.match(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$", folder_name))
         folder_datetime_str = ""
         if is_valid_folder:
             try:
@@ -79,16 +75,12 @@ def create_files(sorter_dirs):
             source_file_path = folder_path / source_file_name
             source_file_path.write_text(f"Content of {folder_name}/{source_file_name}")
             timestamp = time.time()
-            os.utime(
-                source_file_path, (timestamp - i * 10, timestamp - i * 10)
-            )  # Ensure slightly different mtimes
+            os.utime(source_file_path, (timestamp - i * 10, timestamp - i * 10))  # Ensure slightly different mtimes
 
             if is_valid_folder:
                 expected_copied_count += 1
                 expected_output_filename = f"{base_name}_{folder_datetime_str}.png"
-                files_details_by_output[expected_output_filename] = {
-                    "path": source_file_path
-                }
+                files_details_by_output[expected_output_filename] = {"path": source_file_path}
                 if base_name not in expected_structure:
                     expected_structure[base_name] = []
                 expected_structure[base_name].append(expected_output_filename)
@@ -121,9 +113,7 @@ class TestFileSorterHelpers:
         source_dir.mkdir()
         dest_dir.mkdir()
 
-        result_source, result_dest = sorter._validate_directories(
-            str(source_dir), str(dest_dir)
-        )
+        result_source, result_dest = sorter._validate_directories(str(source_dir), str(dest_dir))
 
         assert result_source == source_dir
         assert result_dest == dest_dir
@@ -143,9 +133,7 @@ class TestFileSorterHelpers:
         dest_dir = tmp_path / "dest"
         source_dir.mkdir()
 
-        result_source, result_dest = sorter._validate_directories(
-            str(source_dir), str(dest_dir)
-        )
+        result_source, result_dest = sorter._validate_directories(str(source_dir), str(dest_dir))
 
         assert result_source == source_dir
         assert result_dest == dest_dir
@@ -312,9 +300,7 @@ class TestFileSorterHelpers:
         folder_datetime = "20230115T100000"
         dest_dir = tmp_path / "dest"
 
-        target_folder, new_file_path, base_name = sorter._prepare_target_path(
-            source_file, folder_datetime, dest_dir
-        )
+        target_folder, new_file_path, base_name = sorter._prepare_target_path(source_file, folder_datetime, dest_dir)
 
         assert target_folder == dest_dir / "imageA"
         assert new_file_path == dest_dir / "imageA" / "imageA_20230115T100000Z.png"
@@ -326,9 +312,7 @@ class TestFileSorterHelpers:
         folder_datetime = "20230115T100000"
         dest_dir = tmp_path / "dest"
 
-        target_folder, new_file_path, base_name = sorter._prepare_target_path(
-            source_file, folder_datetime, dest_dir
-        )
+        target_folder, new_file_path, base_name = sorter._prepare_target_path(source_file, folder_datetime, dest_dir)
 
         assert target_folder == dest_dir / "imageA"
         assert new_file_path == dest_dir / "imageA" / "imageA_20230115T100000Z.png"
@@ -620,9 +604,7 @@ class TestFileSorterRefactored:
         source_dir, _, expected_structure, expected_copied = create_files
 
         sorter = FileSorter(dry_run=False, duplicate_mode=DuplicateMode.OVERWRITE)
-        sorter.sort_files(
-            source=str(source_dir), destination=str(source_dir / "converted")
-        )
+        sorter.sort_files(source=str(source_dir), destination=str(source_dir / "converted"))
 
         # Assertions
         converted_dir = source_dir / "converted"
@@ -645,13 +627,9 @@ class TestFileSorterRefactored:
         assert not (converted_dir / "imageD").exists()
         assert not (converted_dir / "imageE").exists()
         # Check non-png was ignored
-        assert not (
-            converted_dir / "ignored.txt"
-        ).exists()  # Ensure it's not in the root converted dir
+        assert not (converted_dir / "ignored.txt").exists()  # Ensure it's not in the root converted dir
         for base_name in expected_structure:
-            assert not (
-                converted_dir / base_name / "ignored.txt"
-            ).exists()  # Ensure it's not in any sub-dir
+            assert not (converted_dir / base_name / "ignored.txt").exists()  # Ensure it's not in any sub-dir
 
     def test_sort_with_progress_callback(self, sorter_dirs, create_files):
         """Test sort_files with progress callback."""
@@ -697,13 +675,9 @@ class TestFileSorterRefactored:
         source_dir = sorter_dirs
 
         # Create a mock to throw an exception during processing
-        with mock.patch.object(
-            FileSorter, "_collect_date_folders", side_effect=Exception("Test error")
-        ):
+        with mock.patch.object(FileSorter, "_collect_date_folders", side_effect=Exception("Test error")):
             sorter = FileSorter(dry_run=False, duplicate_mode=DuplicateMode.OVERWRITE)
-            result = sorter.sort_files(
-                source=str(source_dir), destination=str(source_dir / "converted")
-            )
+            result = sorter.sort_files(source=str(source_dir), destination=str(source_dir / "converted"))
 
             # Check result indicates error
             assert result["status"] == "error"

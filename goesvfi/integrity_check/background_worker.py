@@ -71,9 +71,7 @@ class Task[T, P](QRunnable):
     with support for progress reporting, cancellation, and error handling.
     """
 
-    def __init__(
-        self, task_id: str, func: Callable[..., Any], *args: Any, **kwargs: Any
-    ) -> None:
+    def __init__(self, task_id: str, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         """
         Initialize the task.
 
@@ -115,9 +113,7 @@ class Task[T, P](QRunnable):
                 return
 
             # Emit completed signal with result
-            task_result = TaskResult[Any](
-                task_id=self.task_id, status=TaskStatus.COMPLETED, result=result
-            )
+            task_result = TaskResult[Any](task_id=self.task_id, status=TaskStatus.COMPLETED, result=result)
             self.signals.completed.emit(self.task_id, task_result)
 
         except Exception as e:
@@ -135,9 +131,7 @@ class Task[T, P](QRunnable):
             self.signals.failed.emit(self.task_id, e, error_traceback)
 
             # Log error
-            LOGGER.error(
-                "Task[Any] %s failed: %s\n%s", self.task_id, e, error_traceback
-            )
+            LOGGER.error("Task[Any] %s failed: %s\n%s", self.task_id, e, error_traceback)
 
     def _progress_callback(self, progress_info: P) -> None:
         """
@@ -202,9 +196,7 @@ class TaskManager(QObject):
         # Configure logging
         LOGGER.info("Task[Any] manager initialized with %d threads", max_threads)
 
-    def submit_task(
-        self, task_id: str, func: Callable[..., Any], *args: Any, **kwargs: Any
-    ) -> None:
+    def submit_task(self, task_id: str, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
         """
         Submit a task for execution in the background.
 
@@ -327,9 +319,7 @@ class TaskManager(QObject):
 
         LOGGER.debug("Task[Any] %s completed", task_id)
 
-    def _on_task_failed(
-        self, task_id: str, error: Exception, error_traceback: str
-    ) -> None:
+    def _on_task_failed(self, task_id: str, error: Exception, error_traceback: str) -> None:
         """
         Handle task failed event.
 
@@ -421,9 +411,7 @@ class UIFreezeMonitor(QObject):
 
     def start_monitoring(self) -> None:
         """Start monitoring for UI freezes."""
-        self._last_check_time = (
-            time.time() * 1000
-        )  # pylint: disable=attribute-defined-outside-init
+        self._last_check_time = time.time() * 1000  # pylint: disable=attribute-defined-outside-init
         self._timer.start()
         LOGGER.debug("UI freeze monitoring started")
 
@@ -473,9 +461,7 @@ class UIFreezeMonitor(QObject):
                 pass
                 # This is a new freeze
                 self._is_frozen = True  # pylint: disable=attribute-defined-outside-init
-                self._freeze_start_time = (
-                    self._last_check_time
-                )  # pylint: disable=attribute-defined-outside-init
+                self._freeze_start_time = self._last_check_time  # pylint: disable=attribute-defined-outside-init
                 self.freeze_detected.emit(elapsed)
                 LOGGER.warning("UI freeze detected: %.1fms", elapsed)
         elif self._is_frozen:
@@ -487,9 +473,7 @@ class UIFreezeMonitor(QObject):
             LOGGER.info("UI freeze resolved after %.1fms", total_duration)
 
         # Update last check time
-        self._last_check_time = (
-            current_time  # pylint: disable=attribute-defined-outside-init
-        )
+        self._last_check_time = current_time  # pylint: disable=attribute-defined-outside-init
 
 
 class BackgroundProcessManager:
@@ -518,9 +502,7 @@ class BackgroundProcessManager:
 
         LOGGER.info("Background process manager initialized")
 
-    def run_in_background(
-        self, func: Callable[..., Any], *args: Any, **kwargs: Any
-    ) -> str:
+    def run_in_background(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> str:
         """Submit a task for execution in the background.
 
         Args:

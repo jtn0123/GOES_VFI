@@ -29,9 +29,7 @@ from PyQt6.QtWidgets import (
 )
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -73,9 +71,7 @@ def create_mock_image(width=600, height=500, channel=13, enhanced=False):
                 # Enhanced IR uses color to show temperature (orange/red for cold, blue for warm)
                 if y < height / 3:
                     # Cold cloud tops (orange/red)
-                    draw.line(
-                        [(0, y), (width, y)], fill=(220, 100 - color_value // 2, 0)
-                    )
+                    draw.line([(0, y), (width, y)], fill=(220, 100 - color_value // 2, 0))
                 else:
                     # Warm areas (blue/green)
                     draw.line(
@@ -181,9 +177,7 @@ def create_mock_image(width=600, height=500, channel=13, enhanced=False):
 
 
 # Create mock fallback preview image with error information
-def create_fallback_preview(
-    channel=13, error_msg="No data found for the selected date/time"
-):
+def create_fallback_preview(channel=13, error_msg="No data found for the selected date/time"):
     """Create a fallback preview with error information."""
     width, height = 600, 350  # Reduce height to fit in window better
 
@@ -214,9 +208,7 @@ def create_fallback_preview(
     elif channel == 100:
         channel_name = "True Color RGB"
 
-    draw.text(
-        (20, 7), f"Preview: {channel_name}", fill=(255, 255, 255), font=title_font
-    )
+    draw.text((20, 7), f"Preview: {channel_name}", fill=(255, 255, 255), font=title_font)
 
     # Draw status bar
     draw.rectangle([(0, 35), (width, 55)], fill=(180, 32, 32))  # Dark red
@@ -243,9 +235,7 @@ def create_fallback_preview(
 
     # Draw content - more compact layout
     y_pos = 70
-    draw.text(
-        (20, y_pos), f"Issue: {primary_reason}", fill=(255, 255, 255), font=header_font
-    )
+    draw.text((20, y_pos), f"Issue: {primary_reason}", fill=(255, 255, 255), font=header_font)
     y_pos += 25
 
     draw.text(
@@ -316,12 +306,8 @@ class MockImagerySamples:
         img = Image.new("RGB", (width, height), color=(40, 40, 40))
 
         # Create three sample variations
-        standard = create_mock_image(
-            width=380, height=280, channel=channel, enhanced=False
-        )
-        enhanced = create_mock_image(
-            width=380, height=280, channel=channel, enhanced=True
-        )
+        standard = create_mock_image(width=380, height=280, channel=channel, enhanced=False)
+        enhanced = create_mock_image(width=380, height=280, channel=channel, enhanced=True)
         web = create_mock_image(width=380, height=280, channel=channel, enhanced=True)
 
         # Paste them into the composite
@@ -365,9 +351,7 @@ def apply_mocks():
     mock_sample_processor.get_estimated_processing_time.return_value = 5.0
 
     # Mock download_sample_data
-    mock_sample_processor.download_sample_data.return_value = Path(
-        "/tmp/mock_sample.nc"
-    )
+    mock_sample_processor.download_sample_data.return_value = Path("/tmp/mock_sample.nc")
 
     # Mock download_web_sample to return appropriate mock imagery
     def mock_download_web_sample(*args, **kwargs):
@@ -429,9 +413,7 @@ def main():
         main_layout.addWidget(header)
 
         # Add compact description (optional - can be removed if space is tight)
-        description = QLabel(
-            "Try 'Preview' to see imagery comparisons with improved error handling"
-        )
+        description = QLabel("Try 'Preview' to see imagery comparisons with improved error handling")
         description.setStyleSheet("background-color: #f0f0f0; padding: 3px;")
         description.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(description)
@@ -452,20 +434,14 @@ def main():
         # Create buttons for different error scenarios
         timeout_btn = QPushButton("Connection Timeout")
         timeout_btn.clicked.connect(
-            lambda: show_fallback_preview(
-                "Connection timeout after 30 seconds when connecting to NOAA server"
-            )
+            lambda: show_fallback_preview("Connection timeout after 30 seconds when connecting to NOAA server")
         )
 
         nodata_btn = QPushButton("No Data Found")
-        nodata_btn.clicked.connect(
-            lambda: show_fallback_preview("No data found for the selected date/time")
-        )
+        nodata_btn.clicked.connect(lambda: show_fallback_preview("No data found for the selected date/time"))
 
         corrupt_btn = QPushButton("Invalid Data")
-        corrupt_btn.clicked.connect(
-            lambda: show_fallback_preview("Downloaded file is not a valid image format")
-        )
+        corrupt_btn.clicked.connect(lambda: show_fallback_preview("Downloaded file is not a valid image format"))
 
         # Add buttons to layout
         button_layout.addWidget(timeout_btn)

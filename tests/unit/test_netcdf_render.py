@@ -39,9 +39,7 @@ class TestNetCDFRender:
             "planck_bc2": 0.9991,
         }
 
-        temps = _convert_radiance_to_temperature(
-            radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K
-        )
+        temps = _convert_radiance_to_temperature(radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
 
         assert isinstance(temps, np.ndarray)
         assert temps.shape == radiance.shape
@@ -127,9 +125,7 @@ class TestNetCDFRender:
     @patch("xarray.open_dataset")
     @patch("goesvfi.integrity_check.render.netcdf._create_figure")
     @patch("pathlib.Path.exists", return_value=True)
-    def test_render_png_success(
-        self, mock_exists, mock_create_figure, mock_open_dataset
-    ):
+    def test_render_png_success(self, mock_exists, mock_create_figure, mock_open_dataset):
         """Test successful rendering to PNG."""
         # Create mock dataset
         mock_ds = MagicMock()

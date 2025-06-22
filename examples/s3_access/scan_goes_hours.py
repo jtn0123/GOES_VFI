@@ -11,9 +11,7 @@ from botocore import UNSIGNED
 from botocore.config import Config
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("scan_goes_hours")
 
 # Configure S3 client with anonymous access
@@ -51,9 +49,7 @@ if "Contents" in response:
 # Filter for the specified band
 band_str = f"C{band:02d}"
 band_files = [
-    obj["Key"]
-    for obj in response.get("Contents", [])
-    if band_str in obj["Key"] and obj["Key"].endswith(".nc")
+    obj["Key"] for obj in response.get("Contents", []) if band_str in obj["Key"] and obj["Key"].endswith(".nc")
 ]
 
 return len(band_files)
@@ -72,9 +68,7 @@ hours = range(24)  # 0 - 23
 logger.info(f"Scanning through all hours for {TEST_DATE} in {bucket}")
 
 # Print header
-header = "Hour (UTC) | " + " | ".join(
-    f"{product.split('-')[-1]}" for product in PRODUCT_TYPES
-)
+header = "Hour (UTC) | " + " | ".join(f"{product.split('-')[-1]}" for product in PRODUCT_TYPES)
 logger.info("-" * len(header))
 logger.info(header)
 logger.info("-" * len(header))
@@ -95,9 +89,7 @@ local_time = f"{(hour - 7) % 24:02d}:00 PDT"  # Convert to Pacific time
 # Highlight hours with data
 if any(count > 0 for count in results):
     pass
-result_line = f"{hour:02d}:00 ({local_time}) | " + " | ".join(
-    f"{count:^7}" for count in results
-)
+result_line = f"{hour:02d}:00 ({local_time}) | " + " | ".join(f"{count:^7}" for count in results)
 logger.info(result_line)
 
 logger.info("-" * len(header))

@@ -47,14 +47,14 @@ class CombinedIntegrityAndImageryTab(QWidget):
     itemSelected = pyqtSignal(MissingTimestamp)
 
     def __init__(
-        self, view_model: Optional[EnhancedIntegrityCheckViewModel] = None, parent=None
-    ):
+        self, view_model: Optional[EnhancedIntegrityCheckViewModel] = None, parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent)
         self.view_model = view_model
         self.setupUI()
         self.connectSignals()
 
-    def setupUI(self):
+    def setupUI(self) -> None:
         """Set up the user interface."""
         # Main layout
         layout = QVBoxLayout(self)
@@ -103,7 +103,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
         layout.addWidget(self.stacked_widget)
 
-    def connectSignals(self):
+    def connectSignals(self) -> None:
         """Connect signals between components."""
         # Button connections
         self.integrity_button.clicked.connect(lambda: self.switchTab(0))
@@ -116,7 +116,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
         self.timeline_tab.timestampSelected.connect(self.onTimestampSelected)
         self.results_tab.itemSelected.connect(self.onItemSelected)
 
-    def switchTab(self, index: int):
+    def switchTab(self, index: int) -> None:
         """Switch to the specified tab."""
         self.stacked_widget.setCurrentIndex(index)
 
@@ -130,7 +130,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
         for i, button in enumerate(buttons):
             button.setChecked(i == index)
 
-    def onDateRangeSelected(self, start: datetime, end: datetime):
+    def onDateRangeSelected(self, start: datetime, end: datetime) -> None:
         """Handle date range selection from integrity tab."""
         LOGGER.info(f"Date range selected: {start} to {end}")
         self.dateRangeSelected.emit(start, end)
@@ -138,7 +138,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
         # Update timeline tab
         self.timeline_tab.setDateRange(start, end)
 
-    def onTimestampSelected(self, timestamp: datetime):
+    def onTimestampSelected(self, timestamp: datetime) -> None:
         """Handle timestamp selection from timeline."""
         LOGGER.info(f"Timestamp selected: {timestamp}")
         self.timestampSelected.emit(timestamp)
@@ -146,7 +146,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
         # Update imagery tab
         self.imagery_tab.loadTimestamp(timestamp)
 
-    def onItemSelected(self, item: MissingTimestamp):
+    def onItemSelected(self, item: MissingTimestamp) -> None:
         """Handle item selection from results."""
         LOGGER.info(f"Item selected: {item}")
         self.itemSelected.emit(item)
@@ -163,7 +163,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
             return items if items is not None else []
         return []
 
-    def clearResults(self):
+    def clearResults(self) -> None:
         """Clear all results."""
         if self.view_model:
             if hasattr(self.view_model, "clear_results"):

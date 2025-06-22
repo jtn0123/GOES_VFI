@@ -168,8 +168,7 @@ class DateRangeDemoWindow(QMainWindow):
 
         # Add description
         desc = QLabel(
-            "The UnifiedDateRangeSelector can be customized with different options "
-            "to fit various UI needs."
+            "The UnifiedDateRangeSelector can be customized with different options " "to fit various UI needs."
         )
         desc.setWordWrap(True)
         layout.addWidget(desc)
@@ -178,9 +177,7 @@ class DateRangeDemoWindow(QMainWindow):
         horiz_group = QGroupBox("Horizontal Layout (default)")
         horiz_layout = QVBoxLayout(horiz_group)
 
-        selector_h = UnifiedDateRangeSelector(
-            layout_direction=Qt.Orientation.Horizontal
-        )
+        selector_h = UnifiedDateRangeSelector(layout_direction=Qt.Orientation.Horizontal)
         selector_h.dateRangeSelected.connect(self._update_date_display)
         horiz_layout.addWidget(selector_h)
 
@@ -213,16 +210,10 @@ class DateRangeDemoWindow(QMainWindow):
         # Format the date range for display
         if start.date() == end.date():
             # Same day
-            display_text = (
-                f"{start.strftime('%Y-%m-%d')}, "
-                f"{start.strftime('%H:%M')} - {end.strftime('%H:%M')}"
-            )
+            display_text = f"{start.strftime('%Y-%m-%d')}, " f"{start.strftime('%H:%M')} - {end.strftime('%H:%M')}"
         else:
             # Different days
-            display_text = (
-                f"{start.strftime('%Y-%m-%d %H:%M')} - "
-                f"{end.strftime('%Y-%m-%d %H:%M')}"
-            )
+            display_text = f"{start.strftime('%Y-%m-%d %H:%M')} - " f"{end.strftime('%Y-%m-%d %H:%M')}"
 
         self.date_display.setText(display_text)
 

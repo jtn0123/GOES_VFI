@@ -29,7 +29,7 @@ class ProcessingViewModel(QObject):
     progress_updated = pyqtSignal(int, int, float)  # current, total, eta_seconds
     processing_finished = pyqtSignal(bool, str)  # success/failure, message
 
-    def __init__(self, parent: QObject | None = None):
+    def __init__(self, parent: QObject | None = None) -> None:
         """
         Initializes the ProcessingViewModel.
 
@@ -98,9 +98,7 @@ class ProcessingViewModel(QObject):
             total: Total number of frames to process
             time_elapsed: Time elapsed in seconds
         """
-        LOGGER.debug(
-            "Progress update: %s/%s frames, %.2fs", current, total, time_elapsed
-        )
+        LOGGER.debug("Progress update: %s/%s frames, %.2fs", current, total, time_elapsed)
 
         # Update internal state
         self._current_progress = current

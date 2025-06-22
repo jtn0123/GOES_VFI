@@ -63,21 +63,15 @@ class OptimizedTimelineTab(QWidget):
         main_layout.setSpacing(10)
 
         # Section 1: Compact Control Panel
-        self.control_panel = (
-            self._create_control_panel()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.control_panel = self._create_control_panel()  # pylint: disable=attribute-defined-outside-init
         main_layout.addWidget(self.control_panel)
 
         # Section 2: View Selector and Visualizations
-        self.view_selector = (
-            self._create_view_selector()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.view_selector = self._create_view_selector()  # pylint: disable=attribute-defined-outside-init
         main_layout.addWidget(self.view_selector, 1)  # Give stretch priority
 
         # Section 3: Information Panel
-        self.info_panel = (
-            self._create_info_panel()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.info_panel = self._create_info_panel()  # pylint: disable=attribute-defined-outside-init
         main_layout.addWidget(self.info_panel)
 
     def _create_control_panel(self) -> QFrame:
@@ -100,9 +94,7 @@ class OptimizedTimelineTab(QWidget):
         layout.setSpacing(8)
 
         # Add a spacer at the beginning
-        layout.addSpacerItem(
-            QSpacerItem(10, 10, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        )
+        layout.addSpacerItem(QSpacerItem(10, 10, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
 
         # Add separator line
         separator = QFrame()
@@ -194,9 +186,7 @@ class OptimizedTimelineTab(QWidget):
         self.filter_available_btn = QPushButton(self.tr("Available"))
         self.filter_available_btn.setCheckable(True)
         self.filter_available_btn.setToolTip(self.tr("Show only available data points"))
-        self.filter_available_btn.clicked.connect(
-            lambda: self._set_view_mode("available")
-        )
+        self.filter_available_btn.clicked.connect(lambda: self._set_view_mode("available"))
         filter_layout.addWidget(self.filter_available_btn)
 
         # Connect buttons to work as a group (when one is checked, others are unchecked)
@@ -206,12 +196,8 @@ class OptimizedTimelineTab(QWidget):
             self.filter_available_btn.setChecked(btn_name == "available")
 
         self.filter_all_btn.clicked.connect(lambda: update_filter_buttons("all"))
-        self.filter_missing_btn.clicked.connect(
-            lambda: update_filter_buttons("missing")
-        )
-        self.filter_available_btn.clicked.connect(
-            lambda: update_filter_buttons("available")
-        )
+        self.filter_missing_btn.clicked.connect(lambda: update_filter_buttons("missing"))
+        self.filter_available_btn.clicked.connect(lambda: update_filter_buttons("available"))
 
         layout.addWidget(filter_group)
 
@@ -281,9 +267,7 @@ class OptimizedTimelineTab(QWidget):
         zoom_layout.addWidget(self.zoom_out_btn)
 
         self.zoom_level_label = QLabel(self.tr("100%"))
-        self.zoom_level_label.setStyleSheet(
-            "color: #f0f0f0; min-width: 36px; text-align: center; font-size: 11px;"
-        )
+        self.zoom_level_label.setStyleSheet("color: #f0f0f0; min-width: 36px; text-align: center; font-size: 11px;")
         self.zoom_level_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         zoom_layout.addWidget(self.zoom_level_label)
 
@@ -428,14 +412,10 @@ class OptimizedTimelineTab(QWidget):
         self.interval_minutes = interval_minutes
 
         # Update timeline visualization
-        self.timeline_viz.set_data(
-            missing_items, start_time, end_time, interval_minutes or 60
-        )
+        self.timeline_viz.set_data(missing_items, start_time, end_time, interval_minutes or 60)
 
         # Update calendar visualization
-        self.calendar_view.set_data(
-            missing_items, start_time, end_time, interval_minutes or 60
-        )
+        self.calendar_view.set_data(missing_items, start_time, end_time, interval_minutes or 60)
 
         # Reset selection state
         self.selected_timestamp = None
@@ -530,9 +510,7 @@ class OptimizedTimelineTab(QWidget):
         # Find the corresponding item if it exists
         self.selected_item = None
         for item in self.missing_items:
-            if (
-                abs((item.timestamp - timestamp).total_seconds()) < 60
-            ):  # Within a minute
+            if abs((item.timestamp - timestamp).total_seconds()) < 60:  # Within a minute
                 self.selected_item = item
                 break
 
@@ -574,9 +552,7 @@ class OptimizedTimelineTab(QWidget):
             )
 
             # Enable/disable action buttons based on status
-            self.action_view_btn.setEnabled(
-                getattr(self.selected_item, "is_downloaded", False)
-            )
+            self.action_view_btn.setEnabled(getattr(self.selected_item, "is_downloaded", False))
             self.action_download_btn.setEnabled(
                 not getattr(self.selected_item, "is_downloaded", False)
                 and not getattr(self.selected_item, "is_downloading", False)
@@ -665,9 +641,7 @@ class OptimizedTimelineTab(QWidget):
     def _action_download(self) -> None:
         """Handle action to download item."""
         # Simply a placeholder for demo purposes
-        if self.selected_item and not getattr(
-            self.selected_item, "is_downloaded", False
-        ):
+        if self.selected_item and not getattr(self.selected_item, "is_downloaded", False):
             pass
             print(f"Downloading {self.selected_item.expected_filename}")
 

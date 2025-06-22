@@ -31,9 +31,7 @@ from PyQt6.QtWidgets import (
 )
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -121,9 +119,7 @@ def create_mock_image(width=1024, height=1024, channel=13, enhanced=False, text=
             color = (intensity, intensity, intensity, 200)
 
         # Draw the feature (cloud/weather system)
-        draw.ellipse(
-            [(x - size, y - size), (x + size, y + size)], fill=color, outline=None
-        )
+        draw.ellipse([(x - size, y - size), (x + size, y + size)], fill=color, outline=None)
 
     # Add labels and information
     # Add channel information at the top
@@ -194,9 +190,7 @@ class EnhancedImageViewer(QWidget):
         # Create image label
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )
+        self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.image_label.setMinimumSize(600, 400)
 
         # Set label as the scroll area widget
@@ -269,9 +263,7 @@ class EnhancedImageViewer(QWidget):
         self.image_label.setPixmap(pixmap)
 
         # Log the change
-        logger.info(
-            f"Loaded image for channel {self.current_channel} (enhanced: {self.enhanced})"
-        )
+        logger.info(f"Loaded image for channel {self.current_channel} (enhanced: {self.enhanced})")
 
     @pyqtSlot(int)
     def changeChannel(self, index):
@@ -418,9 +410,7 @@ class EnhancedPreviewDialog(QWidget):
 
         # Additional help info
         painter.setPen(QColor(180, 230, 255))  # Light blue
-        painter.drawText(
-            30, y_pos, "You can still proceed with processing using fallback imagery."
-        )
+        painter.drawText(30, y_pos, "You can still proceed with processing using fallback imagery.")
         y_pos += 20
         painter.drawText(30, y_pos, "The system will use existing visualized samples.")
 

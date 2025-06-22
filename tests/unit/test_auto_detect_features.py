@@ -264,9 +264,7 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
-    def test_combined_auto_detect_features(
-        self, mock_message_box, mock_progress_dialog
-    ):
+    def test_combined_auto_detect_features(self, mock_message_box, mock_progress_dialog):
         """Test combined auto-detect features (satellite type and date range)."""
         # Mock progress dialog to be a mock object (so module check fails)
         mock_progress_instance = MagicMock()
@@ -301,9 +299,7 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         self.tab.end_date_edit.setDateTime = end_date_spy
 
         # Mock TimeIndex.find_date_range_in_directory to return fixed dates
-        with patch(
-            "goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory"
-        ) as mock_find_range:
+        with patch("goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory") as mock_find_range:
             # Return Jan 1, 2023 to Jan 31, 2023
             mock_find_range.return_value = (datetime(2023, 1, 1), datetime(2023, 1, 31))
 
@@ -320,15 +316,11 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         # Verify both auto-detect features worked together
         # First satellite detection, then date range detection
         assert self.mock_view_model.satellite == SatellitePattern.GOES_18
-        assert (
-            mock_message_box.information.call_count == 1
-        )  # Only from date range detection
+        assert mock_message_box.information.call_count == 1  # Only from date range detection
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
-    def test_auto_detect_satellite_no_valid_files(
-        self, mock_progress_dialog, mock_message_box
-    ):
+    def test_auto_detect_satellite_no_valid_files(self, mock_progress_dialog, mock_message_box):
         """Test auto-detecting satellite type when no valid files exist."""
         # Create a mock progress dialog instance
         mock_dialog = MagicMock()
@@ -352,15 +344,11 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
         assert "No Valid Files Found" in info_args[1]
 
         # Verify that satellite remains unchanged (should stay as default)
-        assert (
-            self.mock_view_model.satellite == SatellitePattern.GOES_18
-        )  # Default from setUp
+        assert self.mock_view_model.satellite == SatellitePattern.GOES_18  # Default from setUp
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
-    def test_auto_detect_satellite_with_error(
-        self, mock_message_box, mock_progress_dialog
-    ):
+    def test_auto_detect_satellite_with_error(self, mock_message_box, mock_progress_dialog):
         """Test error handling when auto-detecting satellite type."""
         # Mock progress dialog
         mock_dialog = MagicMock()
@@ -409,9 +397,7 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog")
-    def test_auto_detect_satellite_detail_logging(
-        self, mock_progress_dialog, mock_message_box
-    ):
+    def test_auto_detect_satellite_detail_logging(self, mock_progress_dialog, mock_message_box):
         """Test detailed logging during satellite auto-detection."""
         # Mock progress dialog
         mock_dialog = MagicMock()
@@ -431,25 +417,17 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
 
             # Verify detailed logging occurred
             # Verify initial scan announcement was logged
-            mock_logger.info.assert_any_call(
-                f"Auto-detect satellite: Starting scan of directory {self.base_dir}"
-            )
+            mock_logger.info.assert_any_call(f"Auto-detect satellite: Starting scan of directory {self.base_dir}")
 
             # Verify scanning for GOES-16 files was logged
-            mock_logger.info.assert_any_call(
-                f"Auto-detect satellite: Scanning for GOES-16 files in {self.base_dir}"
-            )
+            mock_logger.info.assert_any_call(f"Auto-detect satellite: Scanning for GOES-16 files in {self.base_dir}")
 
             # Check that file counts were logged (without checking exact numbers)
             found_counts_call = False
             for call in mock_logger.info.call_args_list:
                 if len(call) > 0 and len(call[0]) > 0:
                     msg = call[0][0]
-                    if (
-                        "Auto-detect satellite: Found" in msg
-                        and "GOES-16 files and" in msg
-                        and "GOES-18 files" in msg
-                    ):
+                    if "Auto-detect satellite: Found" in msg and "GOES-16 files and" in msg and "GOES-18 files" in msg:
                         found_counts_call = True
                         break
             assert found_counts_call, "Expected logging of file counts"
@@ -459,18 +437,13 @@ class TestAutoDetectFeatures(PyQtAsyncTestCase):
             for call in mock_logger.info.call_args_list:
                 if len(call) > 0 and len(call[0]) > 0:
                     msg = call[0][0]
-                    if (
-                        "Auto-detect satellite: Selected GOES-18 based on file count"
-                        in msg
-                    ):
+                    if "Auto-detect satellite: Selected GOES-18 based on file count" in msg:
                         selection_call = True
                         break
             assert selection_call, "Expected logging of satellite selection"
 
             # Verify completion was logged
-            mock_logger.info.assert_any_call(
-                "Auto-detect satellite: Completed successfully, selected GOES-18 (West)"
-            )
+            mock_logger.info.assert_any_call("Auto-detect satellite: Completed successfully, selected GOES-18 (West)")
 
 
 # Run the tests if this file is executed directly

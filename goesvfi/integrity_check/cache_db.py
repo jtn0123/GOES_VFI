@@ -25,7 +25,7 @@ class CacheDB:
     redundant scanning operations.
     """
 
-    def __init__(self, db_path: Optional[Path] = None):
+    def __init__(self, db_path: Optional[Path] = None) -> None:
         """Initialize the cache database."""
         self.db_path = Path(db_path) if db_path else DEFAULT_CACHE_PATH
 
@@ -33,9 +33,7 @@ class CacheDB:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Connect to database
-        self.conn: Optional[sqlite3.Connection] = sqlite3.connect(
-            str(self.db_path), check_same_thread=False
-        )
+        self.conn: Optional[sqlite3.Connection] = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
 
         # Create tables
@@ -111,18 +109,10 @@ class CacheDB:
         )
 
         # Create indexes
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_scan_results_dates ON scan_results(start_date, end_date)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_missing_timestamps_scan ON missing_timestamps(scan_id)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_timestamps_satellite ON timestamps(satellite)"
-        )
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_cache_filepath ON cache(filepath)"
-        )
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_scan_results_dates ON scan_results(start_date, end_date)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_missing_timestamps_scan ON missing_timestamps(scan_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_timestamps_satellite ON timestamps(satellite)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_cache_filepath ON cache(filepath)")
 
         if self.conn:
             self.conn.commit()
@@ -278,9 +268,7 @@ class CacheDB:
             (row["id"],),
         )
 
-        missing_timestamps = [
-            datetime.fromisoformat(r["timestamp"]) for r in cursor.fetchall()
-        ]
+        missing_timestamps = [datetime.fromisoformat(r["timestamp"]) for r in cursor.fetchall()]
 
         return {
             "id": row["id"],
@@ -374,9 +362,7 @@ class CacheDB:
         row = cursor.fetchone()
         return bool(row and row["found"])
 
-    async def get_timestamps(
-        self, satellite: Any, start_time: datetime, end_time: datetime
-    ) -> Set[datetime]:
+    async def get_timestamps(self, satellite: Any, start_time: datetime, end_time: datetime) -> Set[datetime]:
         """Get all timestamps in a time range that were found.
 
         Returns:
@@ -485,9 +471,7 @@ class CacheDB:
             (sat_str,),
         )
 
-        missing = [
-            datetime.fromisoformat(row["timestamp"]) for row in cursor.fetchall()
-        ]
+        missing = [datetime.fromisoformat(row["timestamp"]) for row in cursor.fetchall()]
 
         if not missing:
             return None

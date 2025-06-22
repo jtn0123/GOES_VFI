@@ -42,9 +42,7 @@ def mock_capability_detector(mocker):
     mock_detector.supports_tta_temporal.return_value = True
 
     # Patch where it's used in run_vfi
-    return mocker.patch(
-        "goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector
-    )
+    return mocker.patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector)
 
 
 # Tests for parameter validation and preparation
@@ -278,9 +276,7 @@ class TestImageProcessingHelpers:
         assert mock_proc.stdin.write.call_count == 2
 
     @patch("goesvfi.pipeline.run_vfi.subprocess.run")
-    def test_process_with_rife(
-        self, mock_subprocess_run, mock_capability_detector, tmp_path
-    ):
+    def test_process_with_rife(self, mock_subprocess_run, mock_capability_detector, tmp_path):
         """Test processing frames with RIFE interpolation."""
         # Create mock images
         img_paths = make_dummy_images(tmp_path, 3)
@@ -321,9 +317,7 @@ class TestImageProcessingHelpers:
             assert len(progress_updates) == 4  # 2 iterations x 2 yields per iteration
             assert all(isinstance(p, tuple) and len(p) == 3 for p in progress_updates)
             assert mock_subprocess_run.call_count == 2
-            assert (
-                mock_proc.stdin.write.call_count == 4
-            )  # 2 interpolated + 2 second frames
+            assert mock_proc.stdin.write.call_count == 4  # 2 interpolated + 2 second frames
 
 
 # Tests for VfiWorker refactored methods
@@ -565,9 +559,7 @@ def test_run_vfi_integration(
     def mock_wait():
         # Create the raw output file when FFmpeg "completes"
         raw_output.parent.mkdir(parents=True, exist_ok=True)
-        raw_output.write_text(
-            "fake video content"
-        )  # Write some content to make it non-empty
+        raw_output.write_text("fake video content")  # Write some content to make it non-empty
         return 0
 
     mock_popen_instance.wait.side_effect = mock_wait

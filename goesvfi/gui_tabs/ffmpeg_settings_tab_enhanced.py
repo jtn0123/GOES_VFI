@@ -35,7 +35,7 @@ LOGGER = get_logger(__name__)
 class EnhancedFFmpegSettingsTab(FFmpegSettingsTab):
     """Enhanced FFmpeg settings tab with improved UI/UX features."""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         # Initialize notification widget
@@ -56,9 +56,7 @@ class EnhancedFFmpegSettingsTab(FFmpegSettingsTab):
         # Find profile combo box
         profile_widgets = self.findChildren(QComboBox)
         for widget in profile_widgets:
-            if "profile" in widget.objectName().lower() or hasattr(
-                self, "profile_combo"
-            ):
+            if "profile" in widget.objectName().lower() or hasattr(self, "profile_combo"):
                 TooltipHelper.add_tooltip(widget, "profile")
                 self._add_help_button_next_to_widget(widget, "profile")
 

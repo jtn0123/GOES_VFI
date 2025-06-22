@@ -95,16 +95,8 @@ class ImageSelectionPanel(QWidget):
         request = {
             "channel": ChannelType.CH13,
             "product_type": self.product_combo.currentData(),
-            "mode": (
-                ImageryMode.IMAGE_PRODUCT
-                if self.image_product_btn.isChecked()
-                else ImageryMode.RAW
-            ),
-            "size": (
-                self.size_combo.currentData()
-                if self.image_product_btn.isChecked()
-                else None
-            ),
+            "mode": (ImageryMode.IMAGE_PRODUCT if self.image_product_btn.isChecked() else ImageryMode.RAW),
+            "size": (self.size_combo.currentData() if self.image_product_btn.isChecked() else None),
         }
         self.imageRequested.emit(request)
 
@@ -143,9 +135,7 @@ class ImageViewPanel(QWidget):
 
     def showImage(self, path):
         """Show an image from path."""
-        self.status_label.setText(
-            f"Loaded: {path.name if hasattr(path, 'name') else str(path)}"
-        )
+        self.status_label.setText(f"Loaded: {path.name if hasattr(path, 'name') else str(path)}")
 
 
 # Create QApplication instance for tests only when needed

@@ -31,9 +31,7 @@ from PyQt6.QtWidgets import (
 )
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Create temp directory for mock imagery
@@ -41,9 +39,7 @@ TEMP_DIR = Path(tempfile.mkdtemp(prefix="mock_goes_"))
 
 
 # Create mock image for testing
-def create_mock_image(
-    width=600, height=500, channel=13, product="FULL_DISK", is_enhanced=False
-):
+def create_mock_image(width=600, height=500, channel=13, product="FULL_DISK", is_enhanced=False):
     """Create a mock image for testing."""
     # Choose color scheme based on channel
     if channel <= 6:  # Visible
@@ -98,9 +94,7 @@ def create_mock_image(
             cx = x + np.random.randint(-size // 4, size // 4)
             cy = y + np.random.randint(-size // 4, size // 4)
             cs = size // 2 + np.random.randint(-size // 4, size // 4)
-            draw.ellipse(
-                [(cx - cs, cy - cs), (cx + cs, cy + cs)], fill=cloud_color, outline=None
-            )
+            draw.ellipse([(cx - cs, cy - cs), (cx + cs, cy + cs)], fill=cloud_color, outline=None)
 
     # Add text
     try:
@@ -131,9 +125,7 @@ def create_mock_image(
     # Draw timestamp at bottom
     timestamp = "2025-05-08 17:45:00 UTC"
     draw.rectangle([(0, height - 30), (width, height)], fill=(0, 0, 0, 180))
-    draw.text(
-        (10, height - 25), f"{product} • {timestamp}", fill=text_color, font=detail_font
-    )
+    draw.text((10, height - 25), f"{product} • {timestamp}", fill=text_color, font=detail_font)
 
     # Add some color enhancements if this is an enhanced version
     if is_enhanced and channel > 6:
@@ -143,8 +135,7 @@ def create_mock_image(
             for y in range(height):
                 for x in range(width):
                     dist = np.sqrt(
-                        ((x - earth_center[0]) / earth_radius) ** 2
-                        + ((y - earth_center[1]) / earth_radius) ** 2
+                        ((x - earth_center[0]) / earth_radius) ** 2 + ((y - earth_center[1]) / earth_radius) ** 2
                     )
                     if dist < 1.2:  # Inside and near Earth
                         # Blue-based gradient for water vapor
@@ -161,8 +152,7 @@ def create_mock_image(
             for y in range(height):
                 for x in range(width):
                     dist = np.sqrt(
-                        ((x - earth_center[0]) / earth_radius) ** 2
-                        + ((y - earth_center[1]) / earth_radius) ** 2
+                        ((x - earth_center[0]) / earth_radius) ** 2 + ((y - earth_center[1]) / earth_radius) ** 2
                     )
                     if dist < 1.2:  # Inside and near Earth
                         if dist < 0.7:  # Cold cloud tops (center)
@@ -210,9 +200,7 @@ class MockSampleProcessor:
     def __init__(self, *args, **kwargs):
         self.temp_dir = TEMP_DIR
 
-    def get_estimated_processing_time(
-        self, channel, product_type, full_resolution=False
-    ):
+    def get_estimated_processing_time(self, channel, product_type, full_resolution=False):
         """Mock estimated processing time."""
         return 5.0
 
@@ -289,12 +277,8 @@ def create_test_window():
     tab = EnhancedGOESImageryTab()
 
     # Add some explanatory text
-    info_label = QLabel(
-        "This is a demonstration of the enhanced GOES imagery UI with mocked satellite data."
-    )
-    info_label.setStyleSheet(
-        "background-color: #007ACC; color: white; padding: 8px; font-weight: bold;"
-    )
+    info_label = QLabel("This is a demonstration of the enhanced GOES imagery UI with mocked satellite data.")
+    info_label.setStyleSheet("background-color: #007ACC; color: white; padding: 8px; font-weight: bold;")
     info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     usage_text = """

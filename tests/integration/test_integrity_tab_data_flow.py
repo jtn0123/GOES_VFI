@@ -80,9 +80,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
 
         # Use real signals from the emitter
         self.mock_view_model.scan_completed = self.signal_emitter.scan_completed
-        self.mock_view_model.missing_items_updated = (
-            self.signal_emitter.missing_items_updated
-        )
+        self.mock_view_model.missing_items_updated = self.signal_emitter.missing_items_updated
 
         # Setup dates
         self.start_date = datetime(2023, 1, 1)
@@ -95,9 +93,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         for day in range(1, 4):  # 3 days: Jan 1-3, 2023
             for hour in range(0, 24, 2):  # Every 2 hours
                 ts = datetime(2023, 1, day, hour)
-                item = EnhancedMissingTimestamp(
-                    ts, f"test_file_{ts.strftime('%Y%m%d%H%M%S')}.nc"
-                )
+                item = EnhancedMissingTimestamp(ts, f"test_file_{ts.strftime('%Y%m%d%H%M%S')}.nc")
                 self.mock_missing_items.append(item)
 
         self.mock_view_model.missing_items = self.mock_missing_items
@@ -141,9 +137,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         self.integrity_tab.directory_selected.connect(self.results_tab.set_directory)
 
         # Connect date range signals
-        self.integrity_tab.date_range_changed.connect(
-            lambda start, end: self.timeline_tab.set_date_range(start, end)
-        )
+        self.integrity_tab.date_range_changed.connect(lambda start, end: self.timeline_tab.set_date_range(start, end))
 
         # Connect timestamp selection signal
         self.timeline_tab.timestampSelected.connect(self.results_tab.highlight_item)
@@ -152,9 +146,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         self.mock_view_model.scan_completed.connect(self._handle_mock_scan_completed)
 
         # Connect missing items updated signal
-        self.mock_view_model.missing_items_updated.connect(
-            self._handle_mock_missing_items_updated
-        )
+        self.mock_view_model.missing_items_updated.connect(self._handle_mock_missing_items_updated)
 
     def _handle_mock_scan_completed(self, success, message):
         """Handle the scan completed signal from the view model."""
@@ -170,9 +162,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
             )
 
             # Simulate updating the results tab
-            self.results_tab.set_items(
-                self.mock_view_model.missing_items, self.mock_view_model.total_expected
-            )
+            self.results_tab.set_items(self.mock_view_model.missing_items, self.mock_view_model.total_expected)
 
     def _handle_mock_missing_items_updated(self, items):
         """Handle the missing items updated signal from the view model."""
@@ -214,12 +204,8 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         results_dir_received = []
 
         # Connect to signals to track them
-        self.timeline_tab.directorySelected.connect(
-            lambda d: timeline_dir_received.append(d)
-        )
-        self.results_tab.directorySelected.connect(
-            lambda d: results_dir_received.append(d)
-        )
+        self.timeline_tab.directorySelected.connect(lambda d: timeline_dir_received.append(d))
+        self.results_tab.directorySelected.connect(lambda d: results_dir_received.append(d))
 
         # Change the directory in the integrity tab
         test_dir = "/test/directory"
@@ -232,18 +218,10 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify both tabs received the new directory
-        assert (
-            len(timeline_dir_received) > 0
-        ), "Timeline tab should have received directory signal"
-        assert (
-            len(results_dir_received) > 0
-        ), "Results tab should have received directory signal"
-        assert (
-            timeline_dir_received[0] == test_dir
-        ), f"Expected {test_dir}, got {timeline_dir_received[0]}"
-        assert (
-            results_dir_received[0] == test_dir
-        ), f"Expected {test_dir}, got {results_dir_received[0]}"
+        assert len(timeline_dir_received) > 0, "Timeline tab should have received directory signal"
+        assert len(results_dir_received) > 0, "Results tab should have received directory signal"
+        assert timeline_dir_received[0] == test_dir, f"Expected {test_dir}, got {timeline_dir_received[0]}"
+        assert results_dir_received[0] == test_dir, f"Expected {test_dir}, got {results_dir_received[0]}"
 
     @async_test
     async def test_date_range_propagation_to_timeline_tab(self):
@@ -286,9 +264,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Mock the timeline tab's set_data method to track calls
         original_timeline_set_data = self.timeline_tab.set_data
 
-        def mock_timeline_set_data(
-            missing_items, start_time, end_time, interval_minutes
-        ):
+        def mock_timeline_set_data(missing_items, start_time, end_time, interval_minutes):
             timeline_data_received.append(
                 {
                     "missing_items": missing_items,
@@ -298,30 +274,22 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
                 }
             )
             # Still call the original method
-            original_timeline_set_data(
-                missing_items, start_time, end_time, interval_minutes
-            )
+            original_timeline_set_data(missing_items, start_time, end_time, interval_minutes)
 
         # Use patch to mock the method
-        self.patch_timeline_set_data = patch.object(
-            self.timeline_tab, "set_data", side_effect=mock_timeline_set_data
-        )
+        self.patch_timeline_set_data = patch.object(self.timeline_tab, "set_data", side_effect=mock_timeline_set_data)
         self.patch_timeline_set_data.start()
 
         # Mock the results tab's set_items method to track calls
         original_results_set_items = self.results_tab.set_items
 
         def mock_results_set_items(items, total_expected):
-            results_data_received.append(
-                {"items": items, "total_expected": total_expected}
-            )
+            results_data_received.append({"items": items, "total_expected": total_expected})
             # Still call the original method
             original_results_set_items(items, total_expected)
 
         # Use patch to mock the method
-        self.patch_results_set_items = patch.object(
-            self.results_tab, "set_items", side_effect=mock_results_set_items
-        )
+        self.patch_results_set_items = patch.object(self.results_tab, "set_items", side_effect=mock_results_set_items)
         self.patch_results_set_items.start()
 
         # Emit a signal indicating scan completion
@@ -341,10 +309,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Results tab
         assert len(results_data_received) > 0, "Results tab should have received data"
         assert results_data_received[0]["items"] == self.mock_missing_items
-        assert (
-            results_data_received[0]["total_expected"]
-            == self.mock_view_model.total_expected
-        )
+        assert results_data_received[0]["total_expected"] == self.mock_view_model.total_expected
 
         # Clean up patches
         self.patch_timeline_set_data.stop()
@@ -382,9 +347,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify the highlight method was called with the right timestamp
-        assert (
-            len(highlight_calls) > 0
-        ), "Results tab should have received highlight_item call"
+        assert len(highlight_calls) > 0, "Results tab should have received highlight_item call"
         assert highlight_calls[0] == test_timestamp
 
     @async_test
@@ -430,20 +393,14 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Monitor timeline tab data
         original_timeline_set_data = self.timeline_tab.set_data
 
-        def check_timeline_set_data(
-            missing_items, start_time, end_time, interval_minutes
-        ):
+        def check_timeline_set_data(missing_items, start_time, end_time, interval_minutes):
             nonlocal timeline_has_data
             if missing_items == self.mock_missing_items:
                 timeline_has_data = True
-            original_timeline_set_data(
-                missing_items, start_time, end_time, interval_minutes
-            )
+            original_timeline_set_data(missing_items, start_time, end_time, interval_minutes)
 
         # Use patch to mock the method
-        self.patch_timeline_set_data2 = patch.object(
-            self.timeline_tab, "set_data", side_effect=check_timeline_set_data
-        )
+        self.patch_timeline_set_data2 = patch.object(self.timeline_tab, "set_data", side_effect=check_timeline_set_data)
         self.patch_timeline_set_data2.start()
 
         # Monitor results tab data
@@ -456,9 +413,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
             original_results_set_items(items, total_expected)
 
         # Use patch to mock the method
-        self.patch_results_set_items2 = patch.object(
-            self.results_tab, "set_items", side_effect=check_results_set_items
-        )
+        self.patch_results_set_items2 = patch.object(self.results_tab, "set_items", side_effect=check_results_set_items)
         self.patch_results_set_items2.start()
 
         # First, update the tabs with data

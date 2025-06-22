@@ -93,9 +93,7 @@ class TestS3DownloadStats(unittest.TestCase):
         # Update with a successful download
         download_time = 1.5
         file_size = 1024
-        update_download_stats(
-            success=True, download_time=download_time, file_size=file_size
-        )
+        update_download_stats(success=True, download_time=download_time, file_size=file_size)
 
         # Check updated state
         self.assertEqual(s3_store.DOWNLOAD_STATS["total_attempts"], 1)
@@ -117,9 +115,7 @@ class TestS3DownloadStats(unittest.TestCase):
         # Update with a failed download
         error_type = "timeout"
         error_message = "Connection timed out"
-        update_download_stats(
-            success=False, error_type=error_type, error_message=error_message
-        )
+        update_download_stats(success=False, error_type=error_type, error_message=error_message)
 
         # Check updated state
         self.assertEqual(s3_store.DOWNLOAD_STATS["total_attempts"], 1)
@@ -128,11 +124,7 @@ class TestS3DownloadStats(unittest.TestCase):
         self.assertEqual(s3_store.DOWNLOAD_STATS["timeouts"], 1)
         self.assertEqual(len(s3_store.DOWNLOAD_STATS["errors"]), 1)
         # Check that the error message ends with the expected text (ignoring timestamp)
-        self.assertTrue(
-            s3_store.DOWNLOAD_STATS["errors"][0].endswith(
-                "timeout: Connection timed out"
-            )
-        )
+        self.assertTrue(s3_store.DOWNLOAD_STATS["errors"][0].endswith("timeout: Connection timed out"))
 
     def test_update_download_stats_multiple_error_types(self):
         """Test updating download statistics for different error types."""
@@ -181,17 +173,14 @@ class TestS3DownloadStats(unittest.TestCase):
         """Test that error history is limited to the most recent errors."""
         # Generate more than 20 errors (the default limit)
         for i in range(25):
-            update_download_stats(
-                success=False, error_type="network", error_message=f"Error {i}"
-            )
+            update_download_stats(success=False, error_type="network", error_message=f"Error {i}")
 
         # Verify only the most recent 20 are kept
         self.assertEqual(len(s3_store.DOWNLOAD_STATS["errors"]), 20)
 
         # Check that the errors list contains the newest errors (errors 5-24)
         error_messages = [
-            error.split("] ", 1)[1] if "] " in error else error
-            for error in s3_store.DOWNLOAD_STATS["errors"]
+            error.split("] ", 1)[1] if "] " in error else error for error in s3_store.DOWNLOAD_STATS["errors"]
         ]
 
         # Verify the oldest errors were removed (errors 0-4 should be gone)
@@ -209,9 +198,7 @@ class TestS3DownloadStats(unittest.TestCase):
         # Add some test data
         update_download_stats(success=True, download_time=1.0, file_size=1024)
         update_download_stats(success=True, download_time=2.0, file_size=2048)
-        update_download_stats(
-            success=False, error_type="timeout", error_message="Timeout error"
-        )
+        update_download_stats(success=False, error_type="timeout", error_message="Timeout error")
 
         # Call the function
         log_download_statistics()
@@ -241,9 +228,7 @@ class TestS3DownloadStats(unittest.TestCase):
         failures_needed = 5 - (initial_failed % 5) if initial_failed % 5 != 0 else 5
 
         for i in range(failures_needed):
-            update_download_stats(
-                success=False, error_type="network", error_message=f"Network error {i}"
-            )
+            update_download_stats(success=False, error_type="network", error_message=f"Network error {i}")
 
         # Verify network diagnostics were collected
         self.assertTrue(mock_get_info.call_count >= 1)
@@ -278,9 +263,7 @@ class TestS3DownloadStatsIntegration(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.get_paginator = MagicMock()
 
         # Patch the _get_s3_client method to return our mock
-        patcher = patch.object(
-            S3Store, "_get_s3_client", return_value=self.mock_s3_client
-        )
+        patcher = patch.object(S3Store, "_get_s3_client", return_value=self.mock_s3_client)
         self.mock_get_s3_client = patcher.start()
         self.addAsyncCleanup(patcher.stop)
 
@@ -311,9 +294,7 @@ class TestS3DownloadStatsIntegration(unittest.IsolatedAsyncioTestCase):
         self._reset_download_stats()
 
         # Execute the download
-        await self.store.download_file(
-            self.test_timestamp, self.test_satellite, self.test_dest_path
-        )
+        await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify statistics were updated
         self.assertEqual(s3_store.DOWNLOAD_STATS["total_attempts"], 1)
@@ -327,18 +308,14 @@ class TestS3DownloadStatsIntegration(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
 
         # Configure download_file to fail with a timeout error
-        self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError(
-            "Download timed out"
-        )
+        self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError("Download timed out")
 
         # Reset statistics for clean test
         self._reset_download_stats()
 
         # Execute the download, expect RemoteStoreError
         with self.assertRaises(RemoteStoreError):
-            await self.store.download_file(
-                self.test_timestamp, self.test_satellite, self.test_dest_path
-            )
+            await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify statistics were updated
         self.assertEqual(s3_store.DOWNLOAD_STATS["total_attempts"], 1)
@@ -374,9 +351,7 @@ class TestS3DownloadStatsIntegration(unittest.IsolatedAsyncioTestCase):
         # Execute the download, expect RemoteStoreError
         # (The ResourceNotFoundError from wildcard search is caught and re-raised as RemoteStoreError)
         with self.assertRaises(RemoteStoreError):
-            await self.store.download_file(
-                self.test_timestamp, self.test_satellite, self.test_dest_path
-            )
+            await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Note: In the current implementation, stats are not updated when
         # ResourceNotFoundError occurs during wildcard search because the error
@@ -440,9 +415,7 @@ def async_test(coro):
 
 # Apply async_test decorator to async test methods
 for name in dir(TestS3DownloadStatsIntegration):
-    if name.startswith("test_") and asyncio.iscoroutinefunction(
-        getattr(TestS3DownloadStatsIntegration, name)
-    ):
+    if name.startswith("test_") and asyncio.iscoroutinefunction(getattr(TestS3DownloadStatsIntegration, name)):
         setattr(
             TestS3DownloadStatsIntegration,
             name,

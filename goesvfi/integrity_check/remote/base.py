@@ -28,7 +28,7 @@ class RemoteStoreError(Exception):
         original_exception: Optional[Exception] = None,
         troubleshooting_tips: Optional[str] = None,
         error_code: Optional[str] = None,
-    ):
+    ) -> None:
         """Initialize the error."""
         super().__init__(message)
         self.message = message

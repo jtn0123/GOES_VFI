@@ -13,9 +13,7 @@ import boto3
 import botocore.session
 from botocore.config import Config
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("test_download_full_disk")
 
 # Configuration
@@ -87,9 +85,7 @@ async def find_full_disk_files(bucket_name, band):
 
     except Exception as e:
         pass
-        logger.error(
-            f"Error finding Full Disk files for {bucket_name}/Band {band}: {str(e)}"
-        )
+        logger.error(f"Error finding Full Disk files for {bucket_name}/Band {band}: {str(e)}")
         return []
 
 
@@ -136,10 +132,7 @@ async def download_full_disk_files():
                 # Download the first available file
                 filename = available_files[0]
 
-                local_filename = (
-                    f"{satellite_abbr}_{PRODUCT_TYPE}_Band{band:02d}_"
-                    f"{os.path.basename(filename)}"
-                )
+                local_filename = f"{satellite_abbr}_{PRODUCT_TYPE}_Band{band:02d}_" f"{os.path.basename(filename)}"
                 local_path = DOWNLOAD_DIR / local_filename
 
                 success = await download_file(satellite, filename, local_path)
@@ -176,15 +169,9 @@ async def main():
             satellite_name = "GOES-16" if satellite == "noaa-goes16" else "GOES-18"
             logger.info("\n%s:", satellite_name)
 
-            successful = sum(
-                1
-                for band_result in satellite_results.values()
-                if band_result["success"]
-            )
+            successful = sum(1 for band_result in satellite_results.values() if band_result["success"])
             total = len(satellite_results)
-            logger.info(
-                f"  Full Disk (RadF): {successful}/{total} bands downloaded successfully"
-            )
+            logger.info(f"  Full Disk (RadF): {successful}/{total} bands downloaded successfully")
 
             # List successful downloads
             for band_name, band_result in satellite_results.items():

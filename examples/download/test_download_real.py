@@ -13,9 +13,7 @@ from goesvfi.integrity_check.sample_processor import SampleProcessor
 from goesvfi.integrity_check.visualization_manager import VisualizationManager
 
 # Configure logging to see detailed output
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -35,16 +33,12 @@ result_current = processor.download_sample_data(13, ProductType.FULL_DISK)
 if result_current:
     print(f"✓ Successfully downloaded current IR data to: {result_current}")
 else:
-    print(
-        "✗ Could not download current IR data - fallback system should have activated"
-    )
+    print("✗ Could not download current IR data - fallback system should have activated")
 
 # Test with a known good historical date
 print("\n2. Testing with historical date (known good data)")
 historical_date = datetime(2023, 5, 1, 19, 0)
-result_historical = processor.download_sample_data(
-    13, ProductType.FULL_DISK, historical_date
-)
+result_historical = processor.download_sample_data(13, ProductType.FULL_DISK, historical_date)
 if result_historical:
     print(f"✓ Successfully downloaded historical IR data to: {result_historical}")
 else:
@@ -54,9 +48,7 @@ else:
 print("\n3. Testing web sample download for IR band")
 web_result = processor.download_web_sample(13, ProductType.FULL_DISK)
 if web_result:
-    print(
-        f"✓ Successfully downloaded web sample - size: {web_result.width}x{web_result.height}"
-    )
+    print(f"✓ Successfully downloaded web sample - size: {web_result.width}x{web_result.height}")
 else:
     print("✗ Could not download web sample - fallback system should have activated")
 
@@ -83,9 +75,7 @@ print("\nCleaning up...")
 processor.cleanup()
 
 print("\nTest completed - check the logs above to see if downloads worked")
-print(
-    "Note: It's normal for some downloads to fail, as long as the fallback systems activate."
-)
+print("Note: It's normal for some downloads to fail, as long as the fallback systems activate.")
 
 
 if __name__ == "__main__":

@@ -24,24 +24,16 @@ from goesvfi.integrity_check.goes_imagery import (
 )
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def download_single_channel(
-    manager, channel, product_type, mode=ImageryMode.IMAGE_PRODUCT
-):
+def download_single_channel(manager, channel, product_type, mode=ImageryMode.IMAGE_PRODUCT):
     """Download a single channel of data."""
-    logger.info(
-        f"Downloading {channel.display_name} for {product_type.name} in {mode.name} mode"
-    )
+    logger.info(f"Downloading {channel.display_name} for {product_type.name} in {mode.name} mode")
 
     # Get image
-    image_path = manager.get_imagery(
-        channel=channel, product_type=product_type, mode=mode
-    )
+    image_path = manager.get_imagery(channel=channel, product_type=product_type, mode=mode)
 
     if image_path:
         logger.info("Successfully downloaded to: %s", image_path)
@@ -66,14 +58,10 @@ def download_channel_comparison(manager, product_type=ProductType.FULL_DISK):
     results = {}
     for channel in channels:
         logger.info("Downloading %s...", channel.display_name)
-        image_path = manager.get_imagery(
-            channel=channel, product_type=product_type, mode=ImageryMode.IMAGE_PRODUCT
-        )
+        image_path = manager.get_imagery(channel=channel, product_type=product_type, mode=ImageryMode.IMAGE_PRODUCT)
 
         if image_path:
-            logger.info(
-                f"Successfully downloaded {channel.display_name} to: {image_path}"
-            )
+            logger.info(f"Successfully downloaded {channel.display_name} to: {image_path}")
             results[channel.display_name] = image_path
         else:
             logger.error("Failed to download %s", channel.display_name)
@@ -81,19 +69,13 @@ def download_channel_comparison(manager, product_type=ProductType.FULL_DISK):
     return results
 
 
-def compare_imagery_modes(
-    manager, channel=ChannelType.CH13, product_type=ProductType.FULL_DISK
-):
+def compare_imagery_modes(manager, channel=ChannelType.CH13, product_type=ProductType.FULL_DISK):
     """Compare different imagery modes."""
-    logger.info(
-        f"Comparing imagery modes for {channel.display_name}, {product_type.name}"
-    )
+    logger.info(f"Comparing imagery modes for {channel.display_name}, {product_type.name}")
 
     # Download with Image Product mode
     logger.info("Downloading with Image Product mode...")
-    product_image = manager.get_imagery(
-        channel=channel, product_type=product_type, mode=ImageryMode.IMAGE_PRODUCT
-    )
+    product_image = manager.get_imagery(channel=channel, product_type=product_type, mode=ImageryMode.IMAGE_PRODUCT)
 
     if product_image:
         logger.info("Image Product mode result: %s", product_image)

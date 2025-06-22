@@ -12,9 +12,7 @@ from .ffmpeg_builder import FFmpegCommandBuilder
 LOGGER = logging.getLogger(__name__)
 
 
-def _run_ffmpeg_command(
-    cmd: List[str], desc: str, monitor_memory: bool = False
-) -> None:
+def _run_ffmpeg_command(cmd: List[str], desc: str, monitor_memory: bool = False) -> None:
     """Run an FFmpeg command with logging and error handling.
 
     Args:
@@ -29,37 +27,34 @@ def _run_ffmpeg_command(
         monitor = MemoryMonitor()
 
     try:
-        proc = subprocess.Popen(
+        with subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             stdin=subprocess.DEVNULL,
             text=True,
             errors="replace",
-        )
+        ) as proc:
+            assert proc.stdout is not None
+            line_count = 0
+            for line in proc.stdout:
+                LOGGER.info("[ffmpeg-%s] %s", desc, line.rstrip())
+                line_count += 1
 
-        assert proc.stdout is not None
-        line_count = 0
-        for line in proc.stdout:
-            LOGGER.info("[ffmpeg-%s] %s", desc, line.rstrip())
-            line_count += 1
+                # Check memory periodically
+                if monitor_memory and line_count % 100 == 0:
+                    stats = monitor.get_memory_stats()
+                    if stats.is_critical_memory:
+                        LOGGER.warning(
+                            "Critical memory during %s: %sMB available",
+                            desc,
+                            stats.available_mb,
+                        )
 
-            # Check memory periodically
-            if monitor_memory and line_count % 100 == 0:
-                stats = monitor.get_memory_stats()
-                if stats.is_critical_memory:
-                    LOGGER.warning(
-                        "Critical memory during %s: %sMB available",
-                        desc,
-                        stats.available_mb,
-                    )
-
-        ret = proc.wait()
-        if ret != 0:
-            LOGGER.error(
-                "FFmpeg (%s) failed (exit code %s). See logged output above.", desc, ret
-            )
-            raise RuntimeError(f"FFmpeg ({desc}) failed (exit code {ret})")
+            ret = proc.wait()
+            if ret != 0:
+                LOGGER.error("FFmpeg (%s) failed (exit code %s). See logged output above.", desc, ret)
+                raise RuntimeError(f"FFmpeg ({desc}) failed (exit code {ret})")
 
         if monitor_memory:
             log_memory_usage(f"After {desc}")
@@ -78,6 +73,7 @@ def encode_with_ffmpeg(
     intermediate_input: pathlib.Path,
     final_output: pathlib.Path,
     encoder: str,
+    *,
     crf: int,
     bitrate_kbps: int,
     bufsize_kb: int,
@@ -118,9 +114,7 @@ def encode_with_ffmpeg(
         try:
             _run_ffmpeg_command(cmd_copy, "Stream Copy", monitor_memory=monitor_memory)
         except RuntimeError as e:
-            LOGGER.warning(
-                "Stream copy failed (%s). Attempting simple rename as fallback...", e
-            )
+            LOGGER.warning("Stream copy failed (%s). Attempting simple rename as fallback...", e)
             try:
                 intermediate_input.replace(final_output)
                 LOGGER.info("Fallback rename successful.")
@@ -143,9 +137,7 @@ def encode_with_ffmpeg(
 
         pass_log_prefix = None
         try:
-            with tempfile.NamedTemporaryFile(
-                delete=True, suffix="_ffmpeg_passlog"
-            ) as temp_file:
+            with tempfile.NamedTemporaryFile(delete=True, suffix="_ffmpeg_passlog") as temp_file:
                 pass_log_prefix = temp_file.name
 
                 # Build commands using FFmpegCommandBuilder

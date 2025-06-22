@@ -5,7 +5,7 @@ including channel definitions, product types, and imagery management.
 """
 
 import tempfile
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -178,9 +178,7 @@ class ChannelType(Enum):
     )
     IR_COMPOSITE = (102, "IR Composite", "10.3/11.2 μm", "Enhanced infrared imagery")
 
-    def __init__(
-        self, number: int, display_name: str, wavelength: str, description: str
-    ) -> None:
+    def __init__(self, number: int, display_name: str, wavelength: str, description: str) -> None:
         """Initialize channel type."""
         self.number = number
         self.display_name = display_name
@@ -218,7 +216,7 @@ class ChannelType(Enum):
         return 8 <= self.number <= 10
 
     @classmethod
-    def from_number(cls, number: int) -> Optional["ChannelType"]:
+    def from_number(cls: type["ChannelType"], number: int) -> Optional["ChannelType"]:
         """Get channel type from number."""
         for channel in cls:
             if channel.number == number:
@@ -237,6 +235,7 @@ class GOESImageryManager:
         self,
         base_dir: Optional[Path] = None,
         output_dir: Optional[Path] = None,
+        *,
         satellite: str = "G16",
         cache_size: int = 100,
         default_mode: ImageryMode = ImageryMode.IMAGE_PRODUCT,
@@ -252,18 +251,14 @@ class GOESImageryManager:
         """
         LOGGER.warning("Using stub implementation of GOESImageryManager")
         self.satellite = satellite
-        self.base_dir = (
-            output_dir or base_dir or Path(tempfile.mkdtemp(prefix="goes_imagery_"))
-        )
+        self.base_dir = output_dir or base_dir or Path(tempfile.mkdtemp(prefix="goes_imagery_"))
         self.output_dir = self.base_dir  # Alias for compatibility
         self.cache_size = cache_size
         self.default_mode = default_mode
         self._cache: Dict[str, Any] = {}
 
         # Create downloader instance
-        self.downloader = GOESImageryDownloader(
-            satellite=satellite, output_dir=self.base_dir
-        )
+        self.downloader = GOESImageryDownloader(satellite=satellite, output_dir=self.base_dir)
 
         # Create processor instance
         self.processor = GOESImageProcessor(output_dir=self.base_dir)
@@ -273,6 +268,7 @@ class GOESImageryManager:
         data: NDArray[np.float64],
         channel: ChannelType,
         product_type: ProductType,
+        *,
         timestamp: datetime,
         output_size: Optional[Tuple[int, int]] = None,
     ) -> Optional[Image.Image]:
@@ -317,6 +313,7 @@ class GOESImageryManager:
         self,
         channel: ChannelType,
         product_type: ProductType,
+        *,
         mode: Optional[ImageryMode] = None,
         date: Optional[datetime] = None,
         size: str = "1200",
@@ -342,7 +339,7 @@ class GOESImageryManager:
             )
             return result.file_path if result else None
 
-        elif mode == ImageryMode.RAW or mode == ImageryMode.RAW_DATA:
+        if mode in (ImageryMode.RAW, ImageryMode.RAW_DATA):
             # Raw data mode - find, download, and process
             # 1. Find raw data file
             s3_key = self.downloader.find_raw_data(channel, product_type, date)
@@ -360,9 +357,8 @@ class GOESImageryManager:
             processed_file = self.processor.process_raw_data(raw_file, channel)
             return processed_file
 
-        else:
-            LOGGER.warning(f"Unsupported mode: {mode}")
-            return None
+        LOGGER.warning("Unsupported mode: %s", mode)
+        return None
 
 
 class GOESImageryDownloader:
@@ -377,7 +373,7 @@ class GOESImageryDownloader:
         satellite: str = "G16",
         output_dir: Optional[Path] = None,
         timeout: int = 60,
-    ):
+    ) -> None:
         """Initialize the downloader.
 
         Args:
@@ -389,7 +385,7 @@ class GOESImageryDownloader:
         self.output_dir = output_dir or Path(tempfile.mkdtemp())
         self.timeout = timeout
         self.s3_client = None  # Will be set externally or created as needed
-        LOGGER.info(f"Initialized GOESImageryDownloader for {satellite}")
+        LOGGER.info("Initialized GOESImageryDownloader for %s", satellite)
 
     def download(
         self,
@@ -413,12 +409,12 @@ class GOESImageryDownloader:
         return None
 
     def download_batch(
-        self, requests: List[Dict[str, Any]], max_workers: int = 5
+        self, download_requests: List[Dict[str, Any]], max_workers: int = 5
     ) -> Dict[str, Optional[Path]]:
         """Download multiple files in parallel.
 
         Args:
-            requests: List of download requests
+            download_requests: List of download requests
             max_workers: Maximum number of parallel downloads
 
         Returns:
@@ -466,7 +462,7 @@ class GOESImageryDownloader:
             return DownloadResult(output_path)
 
         except Exception as e:
-            LOGGER.error(f"Failed to download precolorized image: {e}")
+            LOGGER.error("Failed to download precolorized image: %s", e)
             return None
 
     def find_raw_data(
@@ -489,9 +485,7 @@ class GOESImageryDownloader:
         # Return a dummy key for testing
         return "test_file_key"
 
-    def download_raw_data(
-        self, s3_key: str, output_path: Optional[Path] = None
-    ) -> Optional[Path]:
+    def download_raw_data(self, s3_key: str, output_path: Optional[Path] = None) -> Optional[Path]:
         """Download raw data from S3.
 
         Args:
@@ -509,7 +503,7 @@ class GOESImageryDownloader:
 class DownloadResult:
     """Result of a download operation."""
 
-    def __init__(self, file_path: Path):
+    def __init__(self, file_path: Path) -> None:
         """Initialize download result.
 
         Args:
@@ -525,6 +519,14 @@ class DownloadResult:
         """
         return self.file_path.exists()
 
+    def get_file_size(self) -> int:
+        """Get the size of the downloaded file.
+
+        Returns:
+            File size in bytes, or 0 if file doesn't exist
+        """
+        return self.file_path.stat().st_size if self.file_path.exists() else 0
+
 
 class GOESImageProcessor:
     """Processor for GOES satellite imagery.
@@ -538,7 +540,7 @@ class GOESImageProcessor:
         calibration_type: str = "reflectance",
         enhance: bool = True,
         output_dir: Optional[Path] = None,
-    ):
+    ) -> None:
         """Initialize the processor.
 
         Args:
@@ -551,9 +553,7 @@ class GOESImageProcessor:
         self.output_dir = output_dir or Path(tempfile.mkdtemp())
         LOGGER.info("Initialized GOESImageProcessor")
 
-    def process(
-        self, file_path: Path, channel: ChannelType, output_format: str = "png"
-    ) -> Optional[Image.Image]:
+    def process(self, file_path: Path, channel: ChannelType, output_format: str = "png") -> Optional[Image.Image]:
         """Process a GOES NetCDF file.
 
         Args:
@@ -569,9 +569,7 @@ class GOESImageProcessor:
         img = Image.new("RGB", (512, 512), color="gray")
         return img
 
-    def apply_calibration(
-        self, data: NDArray[np.float64], channel: ChannelType
-    ) -> NDArray[np.float64]:
+    def apply_calibration(self, data: NDArray[np.float64], channel: ChannelType) -> NDArray[np.float64]:
         """Apply calibration to raw data.
 
         Args:
@@ -621,8 +619,6 @@ class GOESImageProcessor:
         time_str = match.group(3)
 
         # Convert day of year to month/day
-        from datetime import datetime, timedelta
-
         date = datetime(year, 1, 1) + timedelta(days=day_of_year - 1)
 
         # Format as YYYYMMDD_HHMMSS

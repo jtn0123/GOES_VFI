@@ -8,7 +8,7 @@ import gc
 import threading
 import time
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 import numpy as np
 
@@ -51,9 +51,7 @@ class MemoryStats:
 class MemoryMonitor:
     """Monitor system and process memory usage."""
 
-    def __init__(
-        self, warning_threshold_mb: int = 500, critical_threshold_mb: int = 200
-    ):
+    def __init__(self, warning_threshold_mb: int = 500, critical_threshold_mb: int = 200) -> None:
         """Initialize memory monitor.
 
         Args:
@@ -112,9 +110,7 @@ class MemoryMonitor:
             return
 
         self._monitoring = True
-        self._monitor_thread = threading.Thread(
-            target=self._monitor_loop, args=(interval,), daemon=True
-        )
+        self._monitor_thread = threading.Thread(target=self._monitor_loop, args=(interval,), daemon=True)
         self._monitor_thread.start()
         LOGGER.info("Started memory monitoring with %ss interval", interval)
 
@@ -146,7 +142,7 @@ class MemoryMonitor:
                 if stats.is_critical_memory:
                     if current_time - last_warning_time > 30:  # Warn every 30s max
                         LOGGER.critical(
-                            "CRITICAL: Low memory! Available: %sMB " "(%s%% used)",
+                            "CRITICAL: Low memory! Available: %sMB (%s%% used)",
                             stats.available_mb,
                             round(stats.percent_used, 1),
                         )
@@ -154,7 +150,7 @@ class MemoryMonitor:
                 elif stats.is_low_memory:
                     if current_time - last_warning_time > 60:  # Warn every 60s max
                         LOGGER.warning(
-                            "Low memory warning: Available: %sMB " "(%s%% used)",
+                            "Low memory warning: Available: %sMB (%s%% used)",
                             stats.available_mb,
                             round(stats.percent_used, 1),
                         )
@@ -177,16 +173,14 @@ class MemoryMonitor:
 class MemoryOptimizer:
     """Optimize memory usage for large data processing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize memory optimizer."""
         self.monitor = MemoryMonitor()
         self._gc_threshold = 80  # Trigger GC when memory > 80%
         self._last_gc_time = 0.0
         self._gc_interval = 30.0  # Minimum seconds between GC runs
 
-    def optimize_array_dtype(
-        self, array: np.ndarray, preserve_range: bool = True
-    ) -> np.ndarray:
+    def optimize_array_dtype(self, array: np.ndarray, preserve_range: bool = True) -> np.ndarray:
         """Optimize numpy array dtype to use less memory.
 
         Args:
@@ -200,47 +194,35 @@ class MemoryOptimizer:
             # Check if float32 is sufficient
             if preserve_range:
                 min_val, max_val = array.min(), array.max()
-                if (
-                    min_val >= np.finfo(np.float32).min
-                    and max_val <= np.finfo(np.float32).max
-                ):
-                    LOGGER.debug(
-                        "Converting array from float64 to float32 (saves 50%% memory)"
-                    )
+                if min_val >= np.finfo(np.float32).min and max_val <= np.finfo(np.float32).max:
+                    LOGGER.debug("Converting array from float64 to float32 (saves 50%% memory)")
                     return array.astype(np.float32)
             else:
                 return array.astype(np.float32)
-        elif array.dtype == np.int64:
+
+        if array.dtype == np.int64:
             # Check if smaller int type is sufficient
             min_val, max_val = array.min(), array.max()
 
             if min_val >= 0 and max_val <= 255:
-                LOGGER.debug(
-                    "Converting array from int64 to uint8 (saves 87.5%% memory)"
-                )
+                LOGGER.debug("Converting array from int64 to uint8 (saves 87.5%% memory)")
                 return array.astype(np.uint8)
-            elif min_val >= -128 and max_val <= 127:
-                LOGGER.debug(
-                    "Converting array from int64 to int8 (saves 87.5%% memory)"
-                )
+            if min_val >= -128 and max_val <= 127:
+                LOGGER.debug("Converting array from int64 to int8 (saves 87.5%% memory)")
                 return array.astype(np.int8)
-            elif min_val >= 0 and max_val <= 65535:
-                LOGGER.debug(
-                    "Converting array from int64 to uint16 (saves 75%% memory)"
-                )
+            if min_val >= 0 and max_val <= 65535:
+                LOGGER.debug("Converting array from int64 to uint16 (saves 75%% memory)")
                 return array.astype(np.uint16)
-            elif min_val >= -32768 and max_val <= 32767:
+            if min_val >= -32768 and max_val <= 32767:
                 LOGGER.debug("Converting array from int64 to int16 (saves 75%% memory)")
                 return array.astype(np.int16)
-            elif min_val >= -2147483648 and max_val <= 2147483647:
+            if min_val >= -2147483648 and max_val <= 2147483647:
                 LOGGER.debug("Converting array from int64 to int32 (saves 50%% memory)")
                 return array.astype(np.int32)
 
         return array
 
-    def chunk_large_array(
-        self, array: np.ndarray, max_chunk_mb: int = 100
-    ) -> List[np.ndarray]:
+    def chunk_large_array(self, array: np.ndarray, max_chunk_mb: int = 100) -> List[np.ndarray]:
         """Split large array into chunks for processing.
 
         Args:
@@ -286,9 +268,7 @@ class MemoryOptimizer:
         stats = self.monitor.get_memory_stats()
 
         should_gc = (
-            force
-            or stats.percent_used > self._gc_threshold
-            or (current_time - self._last_gc_time) > self._gc_interval
+            force or stats.percent_used > self._gc_threshold or (current_time - self._last_gc_time) > self._gc_interval
         )
 
         if should_gc:
@@ -311,10 +291,7 @@ class MemoryOptimizer:
         stats = self.monitor.get_memory_stats()
 
         if stats.available_mb < required_mb:
-            return False, (
-                f"Insufficient memory: {stats.available_mb}MB available, "
-                f"{required_mb}MB required"
-            )
+            return False, (f"Insufficient memory: {stats.available_mb}MB available, " f"{required_mb}MB required")
 
         if stats.available_mb < required_mb * 1.5:
             LOGGER.warning(
@@ -392,7 +369,7 @@ def get_memory_monitor() -> MemoryMonitor:
 class ObjectPool:
     """Object pool for reusing expensive objects."""
 
-    def __init__(self, factory: Callable, max_size: int = 10):
+    def __init__(self, factory: Callable, max_size: int = 10) -> None:
         """Initialize object pool.
 
         Args:
@@ -404,14 +381,14 @@ class ObjectPool:
         self.pool: List = []
         self._lock = threading.Lock()
 
-    def acquire(self):
+    def acquire(self) -> Any:
         """Acquire an object from the pool."""
         with self._lock:
             if self.pool:
                 return self.pool.pop()
             return self.factory()
 
-    def release(self, obj):
+    def release(self, obj: Any) -> None:
         """Release an object back to the pool."""
         with self._lock:
             if len(self.pool) < self.max_size:
@@ -421,7 +398,7 @@ class ObjectPool:
 class StreamingProcessor:
     """Process large data in streaming fashion."""
 
-    def __init__(self, chunk_size_mb: int = 100):
+    def __init__(self, chunk_size_mb: int = 100) -> None:
         """Initialize streaming processor.
 
         Args:
@@ -453,3 +430,33 @@ class StreamingProcessor:
             self.optimizer.free_memory()
 
         return np.concatenate(results)
+
+    def estimate_memory_usage(self, array_shape: tuple, dtype: np.dtype) -> MemoryStats:
+        """Estimate memory usage for processing an array.
+
+        Args:
+            array_shape: Shape of the array
+            dtype: Data type of the array
+
+        Returns:
+            MemoryStats with estimated usage
+        """
+        # Calculate array size
+        num_elements = np.prod(array_shape)
+        bytes_per_element = np.dtype(dtype).itemsize
+        array_size_mb = (num_elements * bytes_per_element) / (1024 * 1024)
+
+        # Get current memory stats
+        monitor = get_memory_monitor()
+        current_stats = monitor.get_memory_stats()
+
+        # Estimate if processing would fit in memory
+        estimated_usage_mb = current_stats.used_mb + array_size_mb
+        estimated_percent = (estimated_usage_mb / current_stats.total_mb) * 100
+
+        return MemoryStats(
+            total_mb=current_stats.total_mb,
+            available_mb=current_stats.available_mb - array_size_mb,
+            used_mb=estimated_usage_mb,
+            percent_used=estimated_percent,
+        )

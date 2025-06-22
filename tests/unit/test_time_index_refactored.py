@@ -35,19 +35,13 @@ class TestExtractTimestampFromDirectoryName(unittest.TestCase):
             unittest.mock.Mock(
                 **{  # Valid match
                     "search.return_value": unittest.mock.Mock(
-                        **{
-                            "group.side_effect": lambda i: {1: "12", 2: "30", 3: "00"}[
-                                i
-                            ]
-                        }
+                        **{"group.side_effect": lambda i: {1: "12", 2: "30", 3: "00"}[i]}
                     )
                 }
             ),
             unittest.mock.Mock(
                 **{  # Match but invalid values
-                    "search.return_value": unittest.mock.Mock(
-                        **{"group.side_effect": ValueError("Invalid value")}
-                    )
+                    "search.return_value": unittest.mock.Mock(**{"group.side_effect": ValueError("Invalid value")})
                 }
             ),
         ]
@@ -83,9 +77,7 @@ class TestExtractTimestampFromDirectoryName(unittest.TestCase):
     def test_try_satellite_specific_patterns(self):
         """Test the _try_satellite_specific_patterns helper function."""
         # Test valid GOES18/FD/13/YYYY/DDD format
-        with patch(
-            "goesvfi.integrity_check.time_index_refactored.date_utils.doy_to_date"
-        ) as mock_doy_to_date:
+        with patch("goesvfi.integrity_check.time_index_refactored.date_utils.doy_to_date") as mock_doy_to_date:
             mock_date = unittest.mock.Mock(year=2023, month=6, day=15)
             mock_doy_to_date.return_value = mock_date
 
@@ -104,9 +96,7 @@ class TestExtractTimestampFromDirectoryName(unittest.TestCase):
     def test_extract_timestamp_from_directory_name(self):
         """Test the extract_timestamp_from_directory_name function."""
         # Test with date_utils.parse_satellite_path returning a valid date
-        with patch(
-            "goesvfi.integrity_check.time_index_refactored.date_utils.parse_satellite_path"
-        ) as mock_parse:
+        with patch("goesvfi.integrity_check.time_index_refactored.date_utils.parse_satellite_path") as mock_parse:
             mock_date = datetime(2023, 6, 15).date()
             mock_parse.return_value = mock_date
 
@@ -124,9 +114,7 @@ class TestExtractTimestampFromDirectoryName(unittest.TestCase):
             return_value=None,
         ):
             # Test with valid primary datetime pattern
-            with patch(
-                "goesvfi.integrity_check.time_index_refactored._try_primary_datetime_patterns"
-            ) as mock_primary:
+            with patch("goesvfi.integrity_check.time_index_refactored._try_primary_datetime_patterns") as mock_primary:
                 mock_primary.return_value = datetime(2023, 6, 15, 12, 30, 0)
                 mock_satellite = unittest.mock.Mock(return_value=None)
 
@@ -144,9 +132,7 @@ class TestExtractTimestampFromDirectoryName(unittest.TestCase):
                 ) as mock_satellite:
                     mock_satellite.return_value = datetime(2023, 6, 15, 12, 30, 0)
 
-                    result = extract_timestamp_from_directory_name(
-                        "GOES18/FD/13/2023/166"
-                    )
+                    result = extract_timestamp_from_directory_name("GOES18/FD/13/2023/166")
                     self.assertEqual(result, datetime(2023, 6, 15, 12, 30, 0))
                     mock_satellite.assert_called_once()
 
@@ -171,18 +157,14 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
         # Test with non-existent directory
         with patch("pathlib.Path.exists", return_value=False):
             with patch("pathlib.Path.is_dir", return_value=False):
-                is_valid, compiled_pattern = _validate_directory_and_pattern(
-                    Path("/fake/dir"), "GOES_16"
-                )
+                is_valid, compiled_pattern = _validate_directory_and_pattern(Path("/fake/dir"), "GOES_16")
                 self.assertFalse(is_valid)
                 self.assertIsNone(compiled_pattern)
 
         # Test with directory that's not a directory
         with patch("pathlib.Path.exists", return_value=True):
             with patch("pathlib.Path.is_dir", return_value=False):
-                is_valid, compiled_pattern = _validate_directory_and_pattern(
-                    Path("/fake/file"), "GOES_16"
-                )
+                is_valid, compiled_pattern = _validate_directory_and_pattern(Path("/fake/file"), "GOES_16")
                 self.assertFalse(is_valid)
                 self.assertIsNone(compiled_pattern)
 
@@ -193,9 +175,7 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
                     "goesvfi.integrity_check.time_index_refactored.COMPILED_PATTERNS",
                     {},  # Empty dict means .get() will return None for any key
                 ):
-                    is_valid, compiled_pattern = _validate_directory_and_pattern(
-                        Path("/valid/dir"), "UNKNOWN_PATTERN"
-                    )
+                    is_valid, compiled_pattern = _validate_directory_and_pattern(Path("/valid/dir"), "UNKNOWN_PATTERN")
                     self.assertFalse(is_valid)
                     self.assertIsNone(compiled_pattern)
 
@@ -208,9 +188,7 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
                     "goesvfi.integrity_check.time_index_refactored.COMPILED_PATTERNS",
                     mock_compiled_patterns,
                 ):
-                    is_valid, compiled_pattern = _validate_directory_and_pattern(
-                        Path("/valid/dir"), "GOES_16"
-                    )
+                    is_valid, compiled_pattern = _validate_directory_and_pattern(Path("/valid/dir"), "GOES_16")
                     self.assertTrue(is_valid)
                     self.assertEqual(compiled_pattern, mock_pattern)
 
@@ -285,9 +263,7 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
             self.assertEqual(len(result), 2)
             self.assertEqual(result, [mock_timestamps[0], mock_timestamps[2]])
 
-    @patch(
-        "goesvfi.integrity_check.time_index_refactored.extract_timestamp_from_directory_name"
-    )
+    @patch("goesvfi.integrity_check.time_index_refactored.extract_timestamp_from_directory_name")
     @patch("goesvfi.integrity_check.time_index_refactored._filter_timestamp_by_range")
     def test_scan_subdirectories_for_timestamps(self, mock_filter, mock_extract):
         """Test the _scan_subdirectories_for_timestamps helper function."""
@@ -328,16 +304,10 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
                 self.assertEqual(len(result), 2)
                 self.assertEqual(result, [mock_timestamps[0], mock_timestamps[2]])
 
-    @patch(
-        "goesvfi.integrity_check.time_index_refactored._validate_directory_and_pattern"
-    )
+    @patch("goesvfi.integrity_check.time_index_refactored._validate_directory_and_pattern")
     @patch("goesvfi.integrity_check.time_index_refactored._scan_files_for_timestamps")
-    @patch(
-        "goesvfi.integrity_check.time_index_refactored._scan_subdirectories_for_timestamps"
-    )
-    def test_scan_directory_for_timestamps(
-        self, mock_scan_subdirs, mock_scan_files, mock_validate
-    ):
+    @patch("goesvfi.integrity_check.time_index_refactored._scan_subdirectories_for_timestamps")
+    def test_scan_directory_for_timestamps(self, mock_scan_subdirs, mock_scan_files, mock_validate):
         """Test the scan_directory_for_timestamps function."""
         # Test with invalid directory or pattern
         mock_validate.return_value = (False, None)
@@ -417,9 +387,7 @@ class TestToS3Key(unittest.TestCase):
             "goesvfi.integrity_check.time_index_refactored._find_nearest_valid_scan_minute",
             return_value=30,
         ) as mock_find:
-            with patch(
-                "goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern"
-            ) as mock_pattern:
+            with patch("goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern") as mock_pattern:
                 mock_pattern.return_value = "test_pattern.nc"
 
                 result = to_s3_key(ts, satellite)
@@ -436,9 +404,7 @@ class TestToS3Key(unittest.TestCase):
             "goesvfi.integrity_check.time_index_refactored._find_nearest_valid_scan_minute",
             return_value=30,
         ) as mock_find:
-            with patch(
-                "goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern"
-            ) as mock_pattern:
+            with patch("goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern") as mock_pattern:
                 mock_pattern.return_value = "test_pattern.nc"
 
                 result = to_s3_key(ts, satellite, product_type="RadF", band=2)
@@ -455,9 +421,7 @@ class TestToS3Key(unittest.TestCase):
             "goesvfi.integrity_check.time_index_refactored._find_nearest_valid_scan_minute",
             return_value=30,
         ) as mock_find:
-            with patch(
-                "goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern"
-            ) as mock_pattern:
+            with patch("goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern") as mock_pattern:
                 mock_pattern.return_value = "test_pattern.nc"
 
                 result = to_s3_key(ts, satellite, exact_match=True)

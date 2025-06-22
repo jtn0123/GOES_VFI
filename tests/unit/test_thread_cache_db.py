@@ -115,9 +115,7 @@ class TestThreadLocalCacheDB:
                     task = asyncio.wrap_future(
                         executor.submit(
                             asyncio.run,
-                            self.async_worker(
-                                db, satellite, timestamp, file_path, True
-                            ),
+                            self.async_worker(db, satellite, timestamp, file_path, True),
                         )
                     )
                     tasks.append(task)
@@ -144,9 +142,7 @@ class TestThreadLocalCacheDB:
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(asyncio.run, verify_timestamps())
                 thread_count = future.result()
-                assert (
-                    thread_count == 10
-                ), f"Expected 10 timestamps from thread, got {thread_count}"
+                assert thread_count == 10, f"Expected 10 timestamps from thread, got {thread_count}"
 
         finally:
             db.close()

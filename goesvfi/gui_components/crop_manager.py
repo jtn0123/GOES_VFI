@@ -53,17 +53,12 @@ class CropManager:
 
             # Verify QSettings consistency
             app_instance = QApplication.instance()
-            app_org = (
-                app_instance.organizationName() if app_instance is not None else ""
-            )
-            app_name_global = (
-                app_instance.applicationName() if app_instance is not None else ""
-            )
+            app_org = app_instance.organizationName() if app_instance is not None else ""
+            app_name_global = app_instance.applicationName() if app_instance is not None else ""
             if org_name != app_org or app_name != app_name_global:
                 pass
-                LOGGER.error(
-                    "QSettings mismatch during crop save! Settings: org=%s, app=%s, "
-                    "but Application: org=%s, app=%s",
+                LOGGER.warning(
+                    "QSettings mismatch during crop save! Settings: org=%s, app=%s, " "but Application: org=%s, app=%s",
                     org_name,
                     app_name,
                     app_org,
@@ -87,9 +82,7 @@ class CropManager:
 
             # Verify the saved value
             saved_rect = self.settings.value("preview/cropRectangle", "", type=str)
-            LOGGER.debug(
-                "Verification - Crop rectangle after direct save: %r", saved_rect
-            )
+            LOGGER.debug("Verification - Crop rectangle after direct save: %r", saved_rect)
 
             # Check if settings file exists and has appropriate size
             try:
@@ -110,9 +103,7 @@ class CropManager:
                     return False
             except Exception as file_error:
                 pass
-                LOGGER.error(
-                    "Error checking settings file after crop save: %s", file_error
-                )
+                LOGGER.error("Error checking settings file after crop save: %s", file_error)
 
             # Explicitly cast bool to avoid Any return type
             return bool(saved_rect == rect_str)
@@ -148,9 +139,7 @@ class CropManager:
                     # If saving failed, try to revert to previous state
                     if old_rect:
                         pass
-                        LOGGER.warning(
-                            "Crop rectangle not saved, attempting to revert to previous value"
-                        )
+                        LOGGER.warning("Crop rectangle not saved, attempting to revert to previous value")
                         self.save_crop_rect(old_rect)
                         self.current_crop_rect = old_rect
                     return False

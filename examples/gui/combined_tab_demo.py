@@ -25,9 +25,7 @@ from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
 class TestWindow(QMainWindow):
@@ -88,11 +86,7 @@ class TestWindow(QMainWindow):
             Path.home() / "Downloads" / "goes_imagery",
             Path.home() / "Downloads" / "goes_channels" / "visualized",
             Path.home() / "Downloads" / "goes_channels" / "rgb_composites",
-            Path.home()
-            / "Downloads"
-            / "goes_channels"
-            / "visualized"
-            / "derived_products",
+            Path.home() / "Downloads" / "goes_channels" / "visualized" / "derived_products",
         ]
 
         for d in dirs:

@@ -21,9 +21,7 @@ def mock_capability_detector(mocker):
     # mock_detector.version = "mock-4.x"
 
     # Patch where it's used in run_vfi
-    return mocker.patch(
-        "goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector
-    )
+    return mocker.patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector)
 
 
 @pytest.fixture

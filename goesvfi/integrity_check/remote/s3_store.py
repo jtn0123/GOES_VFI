@@ -44,9 +44,7 @@ from goesvfi.utils.log import get_logger
 ExcType = TypeVar("ExcType", bound=BaseException)
 
 # Define a type variable for the union of all error types
-RemoteErrorType = Union[
-    AuthenticationError, ResourceNotFoundError, RemoteConnectionError, RemoteStoreError
-]
+RemoteErrorType = Union[AuthenticationError, ResourceNotFoundError, RemoteConnectionError, RemoteStoreError]
 
 # Define a type for the S3 client
 S3ClientType = Any  # aioboto3 doesn't expose concrete types
@@ -71,9 +69,7 @@ if logging.getLogger().level <= logging.DEBUG:
     boto_retry_logger.setLevel(logging.DEBUG)
 
 # Define type for download statistics dictionary
-DownloadStatsDict = Dict[
-    str, Union[int, float, List[float], List[Dict[str, Any]], List[str], str]
-]
+DownloadStatsDict = Dict[str, Union[int, float, List[float], List[Dict[str, Any]], List[str], str]]
 
 # Dictionary to track download statistics
 DOWNLOAD_STATS: DownloadStatsDict = {
@@ -109,46 +105,26 @@ def log_download_statistics() -> None:
     """Log detailed statistics about S3 downloads."""
     # Safely extract and convert stat values
     total_attempts = (
-        int(DOWNLOAD_STATS["total_attempts"])
-        if isinstance(DOWNLOAD_STATS["total_attempts"], (int, float))
-        else 0
+        int(DOWNLOAD_STATS["total_attempts"]) if isinstance(DOWNLOAD_STATS["total_attempts"], (int, float)) else 0
     )
 
     if total_attempts == 0:
         LOGGER.info("No S3 download attempts recorded yet")
         return
 
-    successful = (
-        int(DOWNLOAD_STATS["successful"])
-        if isinstance(DOWNLOAD_STATS["successful"], (int, float))
-        else 0
-    )
+    successful = int(DOWNLOAD_STATS["successful"]) if isinstance(DOWNLOAD_STATS["successful"], (int, float)) else 0
     success_rate = (successful / total_attempts) * 100 if total_attempts > 0 else 0
 
-    download_times = (
-        DOWNLOAD_STATS["download_times"]
-        if isinstance(DOWNLOAD_STATS["download_times"], list)
-        else []
-    )
+    download_times = DOWNLOAD_STATS["download_times"] if isinstance(DOWNLOAD_STATS["download_times"], list) else []
     download_times_float = [t for t in download_times if isinstance(t, (int, float))]
-    avg_time = (
-        sum(download_times_float) / len(download_times_float)
-        if download_times_float
-        else 0
-    )
+    avg_time = sum(download_times_float) / len(download_times_float) if download_times_float else 0
 
     # Calculate network speed if we have successful downloads
     network_speed = "N/A"
-    total_bytes = (
-        int(DOWNLOAD_STATS["total_bytes"])
-        if isinstance(DOWNLOAD_STATS["total_bytes"], (int, float))
-        else 0
-    )
+    total_bytes = int(DOWNLOAD_STATS["total_bytes"]) if isinstance(DOWNLOAD_STATS["total_bytes"], (int, float)) else 0
 
     if total_bytes > 0 and avg_time > 0:
-        speed_bps = (
-            total_bytes / sum(download_times_float) if download_times_float else 0
-        )
+        speed_bps = total_bytes / sum(download_times_float) if download_times_float else 0
         if speed_bps > 1024 * 1024:
             network_speed = f"{speed_bps / 1024 / 1024:.2f} MB/s"
         else:
@@ -156,23 +132,15 @@ def log_download_statistics() -> None:
 
     # Safely extract start time
     start_time = (
-        float(DOWNLOAD_STATS["start_time"])
-        if isinstance(DOWNLOAD_STATS["start_time"], (int, float))
-        else time.time()
+        float(DOWNLOAD_STATS["start_time"]) if isinstance(DOWNLOAD_STATS["start_time"], (int, float)) else time.time()
     )
     total_time = time.time() - start_time
 
     # Calculate average download rate if available
     avg_download_rate = "N/A"
     if "download_rates" in DOWNLOAD_STATS:
-        download_rates = (
-            DOWNLOAD_STATS["download_rates"]
-            if isinstance(DOWNLOAD_STATS["download_rates"], list)
-            else []
-        )
-        download_rates_float = [
-            r for r in download_rates if isinstance(r, (int, float))
-        ]
+        download_rates = DOWNLOAD_STATS["download_rates"] if isinstance(DOWNLOAD_STATS["download_rates"], list) else []
+        download_rates_float = [r for r in download_rates if isinstance(r, (int, float))]
 
         if download_rates_float:
             rate_bps = sum(download_rates_float) / len(download_rates_float)
@@ -182,42 +150,18 @@ def log_download_statistics() -> None:
                 avg_download_rate = f"{rate_bps / 1024:.2f} KB/s"
 
     # Safely extract error counts
-    failed = (
-        int(DOWNLOAD_STATS["failed"])
-        if isinstance(DOWNLOAD_STATS["failed"], (int, float))
-        else 0
-    )
-    retry_count = (
-        int(DOWNLOAD_STATS["retry_count"])
-        if isinstance(DOWNLOAD_STATS["retry_count"], (int, float))
-        else 0
-    )
-    not_found = (
-        int(DOWNLOAD_STATS["not_found"])
-        if isinstance(DOWNLOAD_STATS["not_found"], (int, float))
-        else 0
-    )
-    auth_errors = (
-        int(DOWNLOAD_STATS["auth_errors"])
-        if isinstance(DOWNLOAD_STATS["auth_errors"], (int, float))
-        else 0
-    )
-    timeouts = (
-        int(DOWNLOAD_STATS["timeouts"])
-        if isinstance(DOWNLOAD_STATS["timeouts"], (int, float))
-        else 0
-    )
+    failed = int(DOWNLOAD_STATS["failed"]) if isinstance(DOWNLOAD_STATS["failed"], (int, float)) else 0
+    retry_count = int(DOWNLOAD_STATS["retry_count"]) if isinstance(DOWNLOAD_STATS["retry_count"], (int, float)) else 0
+    not_found = int(DOWNLOAD_STATS["not_found"]) if isinstance(DOWNLOAD_STATS["not_found"], (int, float)) else 0
+    auth_errors = int(DOWNLOAD_STATS["auth_errors"]) if isinstance(DOWNLOAD_STATS["auth_errors"], (int, float)) else 0
+    timeouts = int(DOWNLOAD_STATS["timeouts"]) if isinstance(DOWNLOAD_STATS["timeouts"], (int, float)) else 0
     network_errors = (
-        int(DOWNLOAD_STATS["network_errors"])
-        if isinstance(DOWNLOAD_STATS["network_errors"], (int, float))
-        else 0
+        int(DOWNLOAD_STATS["network_errors"]) if isinstance(DOWNLOAD_STATS["network_errors"], (int, float)) else 0
     )
 
     # Safely extract file size stats
     largest_file_size = (
-        int(DOWNLOAD_STATS["largest_file_size"])
-        if isinstance(DOWNLOAD_STATS["largest_file_size"], (int, float))
-        else 0
+        int(DOWNLOAD_STATS["largest_file_size"]) if isinstance(DOWNLOAD_STATS["largest_file_size"], (int, float)) else 0
     )
     smallest_file_size = (
         float(DOWNLOAD_STATS["smallest_file_size"])
@@ -284,12 +228,7 @@ def log_download_statistics() -> None:
 
             # Format the key for display - show just the filename part if it's too long
             key_val = attempt.get("key", "N/A")
-            if (
-                key_val != "N/A"
-                and key_val is not None
-                and isinstance(key_val, str)
-                and len(key_val) > 40
-            ):
+            if key_val != "N/A" and key_val is not None and isinstance(key_val, str) and len(key_val) > 40:
                 key_parts = key_val.split("/")
                 key_val = f".../{key_parts[-1]}" if key_parts else key_val
 
@@ -300,9 +239,7 @@ def log_download_statistics() -> None:
     last_success_time = DOWNLOAD_STATS.get("last_success_time", 0)
     if isinstance(last_success_time, (int, float)) and last_success_time > 0:
         time_since_last = time.time() - last_success_time
-        stats_msg += (
-            f"\nTime since last successful download: {time_since_last:.1f} seconds\n"
-        )
+        stats_msg += f"\nTime since last successful download: {time_since_last:.1f} seconds\n"
 
     LOGGER.info(stats_msg)
 
@@ -418,37 +355,32 @@ def create_error_from_code(
         if "access denied" in err_str or "403" in err_str:
             return AuthenticationError(
                 message=f"Access denied to {satellite_name} data",
-                technical_details=technical_details
-                + "Note: NOAA buckets should be publicly accessible.",
+                technical_details=technical_details + "Note: NOAA buckets should be publicly accessible.",
                 original_exception=exception,
             )
         elif "not found" in err_str or "404" in err_str or "no such" in err_str:
             return ResourceNotFoundError(
                 message=f"Resource not found for {satellite_name}",
-                technical_details=technical_details
-                + "This could mean the bucket or file does not exist.",
+                technical_details=technical_details + "This could mean the bucket or file does not exist.",
                 original_exception=exception,
             )
         # Fall through to later checks if no match
     elif error_code in ("AccessDenied", "403", "InvalidAccessKeyId"):
         return AuthenticationError(
             message=f"Access denied to {satellite_name} data",
-            technical_details=technical_details
-            + "Note: NOAA buckets should be publicly accessible.",
+            technical_details=technical_details + "Note: NOAA buckets should be publicly accessible.",
             original_exception=exception,
         )
     elif error_code in ("NoSuchBucket", "NoSuchKey", "404"):
         return ResourceNotFoundError(
             message=f"Resource not found for {satellite_name}",
-            technical_details=technical_details
-            + "This could mean the bucket or file does not exist.",
+            technical_details=technical_details + "This could mean the bucket or file does not exist.",
             original_exception=exception,
         )
     elif "timeout" in str(exception).lower() or "connection" in str(exception).lower():
         return RemoteConnectionError(
             message=f"Connection error accessing {satellite_name} data",
-            technical_details=technical_details
-            + "This suggests network connectivity issues.",
+            technical_details=technical_details + "This suggests network connectivity issues.",
             original_exception=exception,
         )
     else:
@@ -534,19 +466,13 @@ def update_download_stats(
 
     # Safely update total attempts counter
     total_attempts = (
-        int(DOWNLOAD_STATS["total_attempts"])
-        if isinstance(DOWNLOAD_STATS["total_attempts"], (int, float))
-        else 0
+        int(DOWNLOAD_STATS["total_attempts"]) if isinstance(DOWNLOAD_STATS["total_attempts"], (int, float)) else 0
     )
     DOWNLOAD_STATS["total_attempts"] = total_attempts + 1
 
     if success:
         # Safely update successful counter
-        successful = (
-            int(DOWNLOAD_STATS["successful"])
-            if isinstance(DOWNLOAD_STATS["successful"], (int, float))
-            else 0
-        )
+        successful = int(DOWNLOAD_STATS["successful"]) if isinstance(DOWNLOAD_STATS["successful"], (int, float)) else 0
         DOWNLOAD_STATS["successful"] = successful + 1
 
         # Safely update download times list
@@ -568,9 +494,7 @@ def update_download_stats(
 
         # Safely update total bytes counter
         total_bytes = (
-            int(DOWNLOAD_STATS["total_bytes"])
-            if isinstance(DOWNLOAD_STATS["total_bytes"], (int, float))
-            else 0
+            int(DOWNLOAD_STATS["total_bytes"]) if isinstance(DOWNLOAD_STATS["total_bytes"], (int, float)) else 0
         )
         DOWNLOAD_STATS["total_bytes"] = total_bytes + file_size
 
@@ -614,33 +538,23 @@ def update_download_stats(
             DOWNLOAD_STATS["smallest_file_size"] = file_size
     else:
         # Safely update failed counter
-        failed = (
-            int(DOWNLOAD_STATS["failed"])
-            if isinstance(DOWNLOAD_STATS["failed"], (int, float))
-            else 0
-        )
+        failed = int(DOWNLOAD_STATS["failed"]) if isinstance(DOWNLOAD_STATS["failed"], (int, float)) else 0
         DOWNLOAD_STATS["failed"] = failed + 1
 
         if error_type:
             if error_type == "not_found":
                 not_found = (
-                    int(DOWNLOAD_STATS["not_found"])
-                    if isinstance(DOWNLOAD_STATS["not_found"], (int, float))
-                    else 0
+                    int(DOWNLOAD_STATS["not_found"]) if isinstance(DOWNLOAD_STATS["not_found"], (int, float)) else 0
                 )
                 DOWNLOAD_STATS["not_found"] = not_found + 1
             elif error_type == "auth":
                 auth_errors = (
-                    int(DOWNLOAD_STATS["auth_errors"])
-                    if isinstance(DOWNLOAD_STATS["auth_errors"], (int, float))
-                    else 0
+                    int(DOWNLOAD_STATS["auth_errors"]) if isinstance(DOWNLOAD_STATS["auth_errors"], (int, float)) else 0
                 )
                 DOWNLOAD_STATS["auth_errors"] = auth_errors + 1
             elif error_type == "timeout":
                 timeouts = (
-                    int(DOWNLOAD_STATS["timeouts"])
-                    if isinstance(DOWNLOAD_STATS["timeouts"], (int, float))
-                    else 0
+                    int(DOWNLOAD_STATS["timeouts"]) if isinstance(DOWNLOAD_STATS["timeouts"], (int, float)) else 0
                 )
                 DOWNLOAD_STATS["timeouts"] = timeouts + 1
             elif error_type == "network":
@@ -653,9 +567,7 @@ def update_download_stats(
 
         if error_message:
             # Format error message consistently
-            formatted_error = format_error_message(
-                error_type or "unknown", error_message
-            )
+            formatted_error = format_error_message(error_type or "unknown", error_message)
 
             # Safely get and update errors list
             errors_value = DOWNLOAD_STATS.get("errors", [])
@@ -696,7 +608,7 @@ class S3Store(RemoteStore):
         aws_profile: Optional[str] = None,
         aws_region: str = "us-east-1",
         timeout: int = 60,
-    ):
+    ) -> None:
         """Initialize with optional AWS profile and timeout parameters.
 
         Note: AWS credentials are NOT required as this implementation uses
@@ -714,7 +626,7 @@ class S3Store(RemoteStore):
         self._s3_client: Optional[S3ClientType] = None
 
         # Log diagnostic information at startup
-        LOGGER.info(f"Initializing S3Store: region={aws_region}, timeout={timeout}s")
+        LOGGER.info("Initializing S3Store: region=%s, timeout=%ss", aws_region, timeout)
 
         # Reset download statistics - useful if multiple S3Store instances are created
         global DOWNLOAD_STATS
@@ -748,12 +660,10 @@ class S3Store(RemoteStore):
 
         # Get and log system/network info at startup
         try:
-            LOGGER.info(
-                "Collecting system and network diagnostics during S3Store initialization"
-            )
+            LOGGER.info("Collecting system and network diagnostics during S3Store initialization")
             get_system_network_info()
         except Exception as e:
-            LOGGER.error(f"Error collecting system diagnostics: {e}")
+            LOGGER.error("Error collecting system diagnostics: %s", e)
 
         # Check connectivity to AWS S3 NOAA buckets
         LOGGER.info("Testing connectivity to AWS S3 NOAA buckets...")
@@ -767,11 +677,11 @@ class S3Store(RemoteStore):
             for host in hosts_to_check:
                 try:
                     ip_addr = socket.gethostbyname(host)
-                    LOGGER.info(f"✓ Successfully resolved {host} to {ip_addr}")
+                    LOGGER.info("✓ Successfully resolved %s to %s", host, ip_addr)
                 except Exception as e:
-                    LOGGER.error(f"✗ Failed to resolve {host}: {e}")
+                    LOGGER.error("✗ Failed to resolve %s: %s", host, e)
         except Exception as e:
-            LOGGER.error(f"Error testing connectivity: {e}")
+            LOGGER.error("Error testing connectivity: %s", e)
 
     @property
     def session_kwargs(self) -> Dict[str, Any]:
@@ -800,9 +710,7 @@ class S3Store(RemoteStore):
 
         # Safely set retry count for reporting
         retry_count_value = (
-            int(DOWNLOAD_STATS["retry_count"])
-            if isinstance(DOWNLOAD_STATS["retry_count"], (int, float))
-            else 0
+            int(DOWNLOAD_STATS["retry_count"]) if isinstance(DOWNLOAD_STATS["retry_count"], (int, float)) else 0
         )
         DOWNLOAD_STATS["retry_count"] = 0
 
@@ -813,9 +721,7 @@ class S3Store(RemoteStore):
                 if retry_count > 0:
                     # Exponential backoff with jitter: 2^retry_count * (0.75 to 1.25)
                     # First retry: ~2s delay, second retry: ~4s delay
-                    jitter = 0.75 + (
-                        0.5 * random.random()
-                    )  # Random value between 0.75 and 1.25
+                    jitter = 0.75 + (0.5 * random.random())  # Random value between 0.75 and 1.25
                     delay = (2**retry_count) * jitter
 
                 if self._s3_client is None:
@@ -844,9 +750,7 @@ class S3Store(RemoteStore):
 
                     # First, create the Session
                     session = aioboto3.Session(**self.session_kwargs)
-                    LOGGER.debug(
-                        f"Created aioboto3 Session with kwargs: {self.session_kwargs}"
-                    )
+                    LOGGER.debug("Created aioboto3 Session with kwargs: %s", self.session_kwargs)
 
                     # Create client with the session and config, with overall timeout
                     try:
@@ -856,34 +760,24 @@ class S3Store(RemoteStore):
                         # Use asyncio.wait_for to add an overall timeout
                         try:
                             # Increase timeout for retries to reduce false negatives
-                            client_timeout = 15 * (
-                                1 + retry_count * 0.5
-                            )  # 15s, 22.5s, 30s
+                            client_timeout = 15 * (1 + retry_count * 0.5)  # 15s, 22.5s, 30s
 
-                            LOGGER.debug(
-                                f"Attempting to create S3 client with timeout {client_timeout:.1f}s"
-                            )
+                            LOGGER.debug("Attempting to create S3 client with timeout %.1fs", client_timeout)
                             self._s3_client = await asyncio.wait_for(
                                 client_context.__aenter__(), timeout=client_timeout
                             )
-                            LOGGER.debug(
-                                f"Entered client context, got S3 client: {self._s3_client}"
-                            )
+                            LOGGER.debug("Entered client context, got S3 client: %s", self._s3_client)
                         except asyncio.TimeoutError:
                             retry_count += 1
                             # Safely update retry counter
                             retry_count_value = (
                                 int(DOWNLOAD_STATS["retry_count"])
-                                if isinstance(
-                                    DOWNLOAD_STATS["retry_count"], (int, float)
-                                )
+                                if isinstance(DOWNLOAD_STATS["retry_count"], (int, float))
                                 else 0
                             )
                             DOWNLOAD_STATS["retry_count"] = retry_count_value + 1
 
-                            LOGGER.warning(
-                                f"Timeout creating S3 client, attempt {retry_count}/{max_retries}"
-                            )
+                            LOGGER.warning("Timeout creating S3 client, attempt %s/%s", retry_count, max_retries)
                             if retry_count >= max_retries:
                                 error_msg = "Connection to AWS S3 timed out. Please check your internet connection and try again."
                                 technical_details = (
@@ -908,14 +802,12 @@ class S3Store(RemoteStore):
                                 error_code="CLIENT-NONE",
                             )
 
-                        LOGGER.debug(
-                            "Successfully created S3 client with unsigned access configuration"
-                        )
+                        LOGGER.debug("Successfully created S3 client with unsigned access configuration")
                     except asyncio.TimeoutError:
                         # This is handled above
                         continue
                     except Exception as e:
-                        LOGGER.error(f"Error creating S3 client: {e}")
+                        LOGGER.error("Error creating S3 client: %s", e)
                         if "NoCredentialsError" in str(e) or "AccessDenied" in str(e):
                             # This shouldn't happen with UNSIGNED access
                             raise AuthenticationError(
@@ -924,24 +816,18 @@ class S3Store(RemoteStore):
                                 original_exception=e,
                                 error_code="AUTH-001",
                             )
-                        elif (
-                            "endpoint" in str(e).lower()
-                            or "connect" in str(e).lower()
-                            or "timeout" in str(e).lower()
-                        ):
+                        elif "endpoint" in str(e).lower() or "connect" in str(e).lower() or "timeout" in str(e).lower():
                             retry_count += 1
                             # Safely update retry counter
                             retry_count_value = (
                                 int(DOWNLOAD_STATS["retry_count"])
-                                if isinstance(
-                                    DOWNLOAD_STATS["retry_count"], (int, float)
-                                )
+                                if isinstance(DOWNLOAD_STATS["retry_count"], (int, float))
                                 else 0
                             )
                             DOWNLOAD_STATS["retry_count"] = retry_count_value + 1
 
                             LOGGER.warning(
-                                f"Connection error creating S3 client, attempt {retry_count}/{max_retries}"
+                                "Connection error creating S3 client, attempt %s/%s", retry_count, max_retries
                             )
                             if retry_count >= max_retries:
                                 # Add network diagnostics to help troubleshoot
@@ -970,7 +856,7 @@ class S3Store(RemoteStore):
                 # This is handled in the retry loop
                 continue
             except Exception as e:
-                LOGGER.error(f"Unexpected error in _get_s3_client: {e}")
+                LOGGER.error("Unexpected error in _get_s3_client: %s", e)
                 import traceback
 
                 LOGGER.error(traceback.format_exc())
@@ -1027,9 +913,7 @@ class S3Store(RemoteStore):
             Tuple of (bucket_name, object_key)
         """
         bucket = TimeIndex.S3_BUCKETS[satellite]
-        key = TimeIndex.to_s3_key(
-            ts, satellite, product_type=product_type, band=band, exact_match=exact_match
-        )
+        key = TimeIndex.to_s3_key(ts, satellite, product_type=product_type, band=band, exact_match=exact_match)
         return bucket, key
 
     async def exists(
@@ -1054,9 +938,7 @@ class S3Store(RemoteStore):
             RemoteStoreError: If an error occurs during the check (except for 404 Not Found)
         """
         # Use exact_match=True for head_object operations
-        bucket, key = self._get_bucket_and_key(
-            ts, satellite, product_type=product_type, band=band, exact_match=True
-        )
+        bucket, key = self._get_bucket_and_key(ts, satellite, product_type=product_type, band=band, exact_match=True)
         s3 = await self._get_s3_client()
 
         try:
@@ -1065,7 +947,7 @@ class S3Store(RemoteStore):
         except botocore.exceptions.ClientError as e:
             error_code = e.response.get("Error", {}).get("Code")
             if error_code == "404":
-                LOGGER.debug(f"S3 object not found: s3://{bucket}/{key}")
+                LOGGER.debug("S3 object not found: s3://%s/%s", bucket, key)
                 return False
 
             # Handle other errors with user-friendly messages
@@ -1074,9 +956,7 @@ class S3Store(RemoteStore):
 
             # Create enhanced error with detailed context
             error_msg = f"Error checking if file exists for {satellite.name} at {ts.isoformat()}"
-            technical_details = (
-                f"S3 {error_code}: {error_message}\n" f"Path: s3://{bucket}/{key}"
-            )
+            technical_details = f"S3 {error_code}: {error_message}\n" f"Path: s3://{bucket}/{key}"
 
             # Create error object using helper function
             error = create_error_from_code(
@@ -1089,16 +969,16 @@ class S3Store(RemoteStore):
             )
 
             # Log the error details
-            LOGGER.error(f"S3 error: {error.get_user_message()}")
+            LOGGER.error("S3 error: %s", error.get_user_message())
             if hasattr(error, "technical_details") and error.technical_details:
-                LOGGER.error(f"S3 technical details: {error.technical_details}")
+                LOGGER.error("S3 technical details: %s", error.technical_details)
 
             # For credential or connection errors, we should raise to notify the user
             if isinstance(error, (AuthenticationError, ConnectionError)):
                 raise error
 
             # For other errors, log and return False
-            LOGGER.debug(f"S3 check failed for s3://{bucket}/{key}: {e}")
+            LOGGER.debug("S3 check failed for s3://%s/%s: %s", bucket, key, e)
             return False
 
     async def download(
@@ -1132,17 +1012,13 @@ class S3Store(RemoteStore):
         """
         # Check if we should use exact match or wildcard
         # By default, use exact match for direct download
-        bucket, key = self._get_bucket_and_key(
-            ts, satellite, product_type=product_type, band=band, exact_match=True
-        )
+        bucket, key = self._get_bucket_and_key(ts, satellite, product_type=product_type, band=band, exact_match=True)
         s3 = await self._get_s3_client()
 
         # Enhanced logging for the download attempt
-        LOGGER.info(
-            f"Attempting to download S3 file for {satellite.name} at {ts.isoformat()}"
-        )
-        LOGGER.info(f"Target S3 path: s3://{bucket}/{key}")
-        LOGGER.info(f"Local destination: {dest_path}")
+        LOGGER.info("Attempting to download S3 file for %s at %s", satellite.name, ts.isoformat())
+        LOGGER.info("Target S3 path: s3://%s/%s", bucket, key)
+        LOGGER.info("Local destination: %s", dest_path)
 
         # Log timestamp information for debugging
         LOGGER.debug(
@@ -1153,10 +1029,10 @@ class S3Store(RemoteStore):
         # Check if exact file exists first
         try:
             try:
-                LOGGER.debug(f"Checking if exact file exists: s3://{bucket}/{key}")
+                LOGGER.debug("Checking if exact file exists: s3://%s/%s", bucket, key)
                 await s3.head_object(Bucket=bucket, Key=key)
                 has_exact_match = True
-                LOGGER.info(f"Found exact match for file: s3://{bucket}/{key}")
+                LOGGER.info("Found exact match for file: s3://%s/%s", bucket, key)
             except botocore.exceptions.ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code")
                 if error_code == "404":
@@ -1164,17 +1040,13 @@ class S3Store(RemoteStore):
                     has_exact_match = False
                     LOGGER.info("Exact file not found (404), will try wildcard pattern")
                     # Log more details about the 404 for debugging
-                    error_message = e.response.get("Error", {}).get(
-                        "Message", "Unknown error"
-                    )
-                    LOGGER.debug(f"S3 404 details: {error_message}")
+                    error_message = e.response.get("Error", {}).get("Message", "Unknown error")
+                    LOGGER.debug("S3 404 details: %s", error_message)
                 else:
                     # Handle other errors with user-friendly messages
-                    LOGGER.error(f"S3 error during head_object check: {error_code}")
-                    error_message = e.response.get("Error", {}).get(
-                        "Message", "Unknown error"
-                    )
-                    LOGGER.error(f"S3 error message: {error_message}")
+                    LOGGER.error("S3 error during head_object check: %s", error_code)
+                    error_message = e.response.get("Error", {}).get("Message", "Unknown error")
+                    LOGGER.error("S3 error message: %s", error_message)
 
                     # Create enhanced error with detailed context
                     error_msg = f"Error checking if file exists for {satellite.name} at {ts.isoformat()}"
@@ -1187,9 +1059,7 @@ class S3Store(RemoteStore):
 
                     # Create error object using helper function
                     error = create_error_from_code(
-                        error_code=(
-                            error_code if error_code is not None else "UnknownError"
-                        ),
+                        error_code=(error_code if error_code is not None else "UnknownError"),
                         error_message=error_message,
                         technical_details=technical_details,
                         satellite_name=satellite.name,
@@ -1198,45 +1068,37 @@ class S3Store(RemoteStore):
                     )
 
                     # Log the error details
-                    LOGGER.error(f"S3 error: {error.get_user_message()}")
-                    LOGGER.error(f"S3 technical details: {error.technical_details}")
+                    LOGGER.error("S3 error: %s", error.get_user_message())
+                    LOGGER.error("S3 technical details: %s", error.technical_details)
                     raise error
 
             # If we have an exact match, download it directly
             if has_exact_match:
                 # Create parent directory if it doesn't exist
-                LOGGER.debug(f"Creating parent directory: {dest_path.parent}")
+                LOGGER.debug("Creating parent directory: %s", dest_path.parent)
                 dest_path.parent.mkdir(parents=True, exist_ok=True)
 
                 # Download the file with timing
-                LOGGER.info(f"Downloading s3://{bucket}/{key} to {dest_path}")
+                LOGGER.info("Downloading s3://%s/%s to %s", bucket, key, dest_path)
                 download_start = time.time()
                 download_success = False
                 file_size = 0
 
                 try:
                     # Log system info and network state at download time
-                    LOGGER.debug(
-                        f"System info: Python {sys.version}, Platform: {sys.platform}"
-                    )
-                    LOGGER.debug(f"Download starting at {datetime.now().isoformat()}")
+                    LOGGER.debug("System info: Python %s, Platform: %s", sys.version, sys.platform)
+                    LOGGER.debug("Download starting at %s", datetime.now().isoformat())
 
                     # Start download with timing
-                    await s3.download_file(
-                        Bucket=bucket, Key=key, Filename=str(dest_path)
-                    )
+                    await s3.download_file(Bucket=bucket, Key=key, Filename=str(dest_path))
                     download_time = time.time() - download_start
 
-                    LOGGER.info(
-                        f"Download complete: {dest_path} in {download_time:.2f} seconds"
-                    )
+                    LOGGER.info("Download complete: %s in %.2f seconds", dest_path, download_time)
 
                     # Verify the downloaded file and capture size
                     if dest_path.exists():
                         file_size = dest_path.stat().st_size
-                        download_speed = (
-                            file_size / download_time if download_time > 0 else 0
-                        )
+                        download_speed = file_size / download_time if download_time > 0 else 0
 
                         # Format download speed in appropriate units
                         speed_str = ""
@@ -1245,15 +1107,13 @@ class S3Store(RemoteStore):
                         else:
                             speed_str = f"{download_speed / 1024:.2f} KB/s"
 
-                        LOGGER.info(f"Verified downloaded file: {dest_path}")
+                        LOGGER.info("Verified downloaded file: %s", dest_path)
                         LOGGER.info(
                             f"File details: Size: {file_size} bytes, Download time: {download_time:.2f}s, Speed: {speed_str}"
                         )
                         download_success = True
                     else:
-                        LOGGER.error(
-                            f"File download completed but file doesn't exist at {dest_path}"
-                        )
+                        LOGGER.error("File download completed but file doesn't exist at %s", dest_path)
 
                     # Update download statistics
                     update_download_stats(
@@ -1277,20 +1137,16 @@ class S3Store(RemoteStore):
                     download_time = time.time() - download_start
 
                     # Enhanced error logging for download failures
-                    LOGGER.error(
-                        f"Failed to download file after {download_time:.2f}s: {download_error}"
-                    )
-                    LOGGER.error(
-                        f"Download exception type: {type(download_error).__name__}"
-                    )
-                    LOGGER.error(f"Download path: s3://{bucket}/{key}")
-                    LOGGER.error(f"Destination: {dest_path}")
+                    LOGGER.error("Failed to download file after %.2fs: %s", download_time, download_error)
+                    LOGGER.error("Download exception type: %s", type(download_error).__name__)
+                    LOGGER.error("Download path: s3://%s/%s", bucket, key)
+                    LOGGER.error("Destination: %s", dest_path)
 
                     # Log the traceback for more detailed debugging
-                    LOGGER.error(f"Traceback: {traceback.format_exc()}")
+                    LOGGER.error("Traceback: %s", traceback.format_exc())
 
                     # Record network diagnostics
-                    LOGGER.debug(f"Download failed at {datetime.now().isoformat()}")
+                    LOGGER.debug("Download failed at %s", datetime.now().isoformat())
 
                     # Detailed error with troubleshooting information
                     error_type = None
@@ -1299,15 +1155,9 @@ class S3Store(RemoteStore):
                     # Main error object will be populated in the handlers below
 
                     if isinstance(download_error, botocore.exceptions.ClientError):
-                        error_code = download_error.response.get("Error", {}).get(
-                            "Code"
-                        )
-                        error_message = download_error.response.get("Error", {}).get(
-                            "Message", "Unknown error"
-                        )
-                        LOGGER.error(
-                            f"S3 error code: {error_code}, message: {error_message}"
-                        )
+                        error_code = download_error.response.get("Error", {}).get("Code")
+                        error_message = download_error.response.get("Error", {}).get("Message", "Unknown error")
+                        LOGGER.error("S3 error code: %s, message: %s", error_code, error_message)
 
                         # Create detailed error object to be returned to user
                         technical_details = (
@@ -1405,16 +1255,12 @@ class S3Store(RemoteStore):
                     )
 
                     # Log and raise the error
-                    LOGGER.error(f"Download error: {error.get_user_message()}")
-                    LOGGER.error(
-                        f"Download technical details: {error.technical_details}"
-                    )
+                    LOGGER.error("Download error: %s", error.get_user_message())
+                    LOGGER.error("Download technical details: %s", error.technical_details)
 
                     # If we've had many failures, log full statistics
                     failed_count = (
-                        int(DOWNLOAD_STATS["failed"])
-                        if isinstance(DOWNLOAD_STATS["failed"], (int, float))
-                        else 0
+                        int(DOWNLOAD_STATS["failed"]) if isinstance(DOWNLOAD_STATS["failed"], (int, float)) else 0
                     )
                     if failed_count % 10 == 0:
                         log_download_statistics()
@@ -1423,11 +1269,9 @@ class S3Store(RemoteStore):
             else:
                 # Try wildcard match
                 # Get wildcard key (using exact_match=False)
-                bucket, wildcard_key = self._get_bucket_and_key(
-                    ts, satellite, exact_match=False
-                )
+                bucket, wildcard_key = self._get_bucket_and_key(ts, satellite, exact_match=False)
 
-                LOGGER.info(f"Trying wildcard match: s3://{bucket}/{wildcard_key}")
+                LOGGER.info("Trying wildcard match: s3://%s/%s", bucket, wildcard_key)
 
                 # Extract the prefix from the wildcard key
                 # Wildcards are at the end of the key, so we can split on the first '*'
@@ -1436,7 +1280,7 @@ class S3Store(RemoteStore):
                 else:
                     prefix = wildcard_key
 
-                LOGGER.info(f"Searching with prefix s3://{bucket}/{prefix}")
+                LOGGER.info("Searching with prefix s3://%s/%s", bucket, prefix)
 
                 # List objects with the prefix
                 paginator = s3.get_paginator("list_objects_v2")
@@ -1473,31 +1317,27 @@ class S3Store(RemoteStore):
                     regex_pattern = filename_pattern.replace("*", ".*")
                     compiled_pattern = re.compile(regex_pattern)
 
-                    LOGGER.debug(f"Using regex pattern: {regex_pattern}")
+                    LOGGER.debug("Using regex pattern: %s", regex_pattern)
 
                     # Track how many pages we've examined
                     page_count = 0
                     total_objects = 0
 
-                    async for page in paginator.paginate(
-                        Bucket=bucket, Prefix=base_path
-                    ):
+                    async for page in paginator.paginate(Bucket=bucket, Prefix=base_path):
                         page_count += 1
 
                         if "Contents" not in page:
-                            LOGGER.info(f"Page {page_count}: No Contents found")
+                            LOGGER.info("Page %s: No Contents found", page_count)
                             continue
 
                         objects_in_page = len(page["Contents"])
                         total_objects += objects_in_page
-                        LOGGER.info(
-                            f"Page {page_count}: Found {objects_in_page} objects"
-                        )
+                        LOGGER.info("Page %s: Found %s objects", page_count, objects_in_page)
 
                         # Log a sample of keys for debugging
                         if objects_in_page > 0 and page_count == 1:
                             sample_keys = [obj["Key"] for obj in page["Contents"][:5]]
-                            LOGGER.debug(f"Sample keys from first page: {sample_keys}")
+                            LOGGER.debug("Sample keys from first page: %s", sample_keys)
 
                         for obj in page["Contents"]:
                             key = obj["Key"]
@@ -1506,16 +1346,12 @@ class S3Store(RemoteStore):
                                 if compiled_pattern.search(key):
                                     matching_objects.append(key)
 
-                    LOGGER.info(
-                        f"Search complete: Examined {page_count} pages with {total_objects} total objects"
-                    )
-                    LOGGER.info(f"Found {len(matching_objects)} matching objects")
+                    LOGGER.info("Search complete: Examined %s pages with %s total objects", page_count, total_objects)
+                    LOGGER.info("Found %s matching objects", len(matching_objects))
 
                     if not matching_objects:
                         # Detailed error message with search parameters
-                        error_msg = (
-                            f"No files found for {satellite.name} at {ts.isoformat()}"
-                        )
+                        error_msg = f"No files found for {satellite.name} at {ts.isoformat()}"
                         technical_details = (
                             f"No files found matching: s3://{bucket}/{wildcard_key}\n"
                             f"Search parameters:\n"
@@ -1537,9 +1373,7 @@ class S3Store(RemoteStore):
                         error = ResourceNotFoundError(
                             message=error_msg,
                             technical_details=technical_details,
-                            original_exception=FileNotFoundError(
-                                "No matching files found in S3"
-                            ),
+                            original_exception=FileNotFoundError("No matching files found in S3"),
                         )
                         raise error
 
@@ -1548,44 +1382,32 @@ class S3Store(RemoteStore):
                     matching_objects.sort()
                     best_match_key = matching_objects[-1]
 
-                    LOGGER.info(f"Selected best match: s3://{bucket}/{best_match_key}")
+                    LOGGER.info("Selected best match: s3://%s/%s", bucket, best_match_key)
 
                     # Create parent directory if it doesn't exist
-                    LOGGER.debug(f"Creating parent directory: {dest_path.parent}")
+                    LOGGER.debug("Creating parent directory: %s", dest_path.parent)
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
 
                     # Download the best match with timing
-                    LOGGER.info(
-                        f"Downloading best match s3://{bucket}/{best_match_key} to {dest_path}"
-                    )
+                    LOGGER.info("Downloading best match s3://%s/%s to %s", bucket, best_match_key, dest_path)
                     download_start = time.time()
                     download_success = False
                     file_size = 0
 
                     try:
                         # Log system info and network state at download time
-                        LOGGER.debug(
-                            f"System info: Python {sys.version}, Platform: {sys.platform}"
-                        )
-                        LOGGER.debug(
-                            f"Wildcard download starting at {datetime.now().isoformat()}"
-                        )
+                        LOGGER.debug("System info: Python %s, Platform: %s", sys.version, sys.platform)
+                        LOGGER.debug("Wildcard download starting at %s", datetime.now().isoformat())
 
-                        await s3.download_file(
-                            Bucket=bucket, Key=best_match_key, Filename=str(dest_path)
-                        )
+                        await s3.download_file(Bucket=bucket, Key=best_match_key, Filename=str(dest_path))
                         download_time = time.time() - download_start
 
-                        LOGGER.info(
-                            f"Wildcard download complete: {dest_path} in {download_time:.2f} seconds"
-                        )
+                        LOGGER.info("Wildcard download complete: %s in %.2f seconds", dest_path, download_time)
 
                         # Verify the download and calculate metrics
                         if dest_path.exists():
                             file_size = dest_path.stat().st_size
-                            download_speed = (
-                                file_size / download_time if download_time > 0 else 0
-                            )
+                            download_speed = file_size / download_time if download_time > 0 else 0
 
                             # Format download speed in appropriate units
                             speed_str = ""
@@ -1594,15 +1416,13 @@ class S3Store(RemoteStore):
                             else:
                                 speed_str = f"{download_speed / 1024:.2f} KB/s"
 
-                            LOGGER.info(f"Verified downloaded file: {dest_path}")
+                            LOGGER.info("Verified downloaded file: %s", dest_path)
                             LOGGER.info(
                                 f"File details: Size: {file_size} bytes, Download time: {download_time:.2f}s, Speed: {speed_str}"
                             )
                             download_success = True
                         else:
-                            LOGGER.error(
-                                f"Download completed but file doesn't exist at {dest_path}"
-                            )
+                            LOGGER.error("Download completed but file doesn't exist at %s", dest_path)
 
                         # Update download statistics
                         update_download_stats(
@@ -1626,20 +1446,16 @@ class S3Store(RemoteStore):
                         download_time = time.time() - download_start
 
                         # Enhanced error handling and logging for wildcard download
-                        LOGGER.error(
-                            f"Failed to download wildcard match after {download_time:.2f}s: {download_error}"
-                        )
-                        LOGGER.error(f"Exception type: {type(download_error).__name__}")
-                        LOGGER.error(f"Path: s3://{bucket}/{best_match_key}")
-                        LOGGER.error(f"Destination: {dest_path}")
+                        LOGGER.error("Failed to download wildcard match after %.2fs: %s", download_time, download_error)
+                        LOGGER.error("Exception type: %s", type(download_error).__name__)
+                        LOGGER.error("Path: s3://%s/%s", bucket, best_match_key)
+                        LOGGER.error("Destination: %s", dest_path)
 
                         # Log the traceback for more detailed debugging
-                        LOGGER.error(f"Traceback: {traceback.format_exc()}")
+                        LOGGER.error("Traceback: %s", traceback.format_exc())
 
                         # Record network diagnostics
-                        LOGGER.debug(
-                            f"Wildcard download failed at {datetime.now().isoformat()}"
-                        )
+                        LOGGER.debug("Wildcard download failed at %s", datetime.now().isoformat())
 
                         # Detailed error with troubleshooting information
                         error_type = None
@@ -1649,15 +1465,9 @@ class S3Store(RemoteStore):
                         wildcard_error: RemoteErrorType
 
                         if isinstance(download_error, botocore.exceptions.ClientError):
-                            error_code = download_error.response.get("Error", {}).get(
-                                "Code"
-                            )
-                            error_message = download_error.response.get(
-                                "Error", {}
-                            ).get("Message", "Unknown error")
-                            LOGGER.error(
-                                f"S3 error code: {error_code}, message: {error_message}"
-                            )
+                            error_code = download_error.response.get("Error", {}).get("Code")
+                            error_message = download_error.response.get("Error", {}).get("Message", "Unknown error")
+                            LOGGER.error("S3 error code: %s, message: %s", error_code, error_message)
 
                             # Create detailed error object with troubleshooting tips
                             technical_details = (
@@ -1679,9 +1489,7 @@ class S3Store(RemoteStore):
 
                             # Create error object using helper function
                             custom_msg = (
-                                "File disappeared during download"
-                                if error_code in ("NoSuchKey", "404")
-                                else None
+                                "File disappeared during download" if error_code in ("NoSuchKey", "404") else None
                             )
                             wildcard_error = create_error_from_code(
                                 error_code=error_code,
@@ -1707,9 +1515,7 @@ class S3Store(RemoteStore):
                                 original_exception=download_error,
                             )
                         elif (
-                            isinstance(
-                                download_error, (asyncio.TimeoutError, TimeoutError)
-                            )
+                            isinstance(download_error, (asyncio.TimeoutError, TimeoutError))
                             or "timeout" in str(download_error).lower()
                         ):
                             error_type = "timeout"
@@ -1757,19 +1563,13 @@ class S3Store(RemoteStore):
                         )
 
                         # Log and raise the error
-                        LOGGER.error(
-                            f"Wildcard download error: {wildcard_error.get_user_message()}"
-                        )
+                        LOGGER.error("Wildcard download error: %s", wildcard_error.get_user_message())
                         if wildcard_error.technical_details:
-                            LOGGER.error(
-                                f"Technical details: {wildcard_error.technical_details}"
-                            )
+                            LOGGER.error("Technical details: %s", wildcard_error.technical_details)
 
                         # If we've had many failures, log full statistics
                         failed_count = (
-                            int(DOWNLOAD_STATS["failed"])
-                            if isinstance(DOWNLOAD_STATS["failed"], (int, float))
-                            else 0
+                            int(DOWNLOAD_STATS["failed"]) if isinstance(DOWNLOAD_STATS["failed"], (int, float)) else 0
                         )
                         if failed_count % 10 == 0:
                             log_download_statistics()
@@ -1778,14 +1578,10 @@ class S3Store(RemoteStore):
 
                 except botocore.exceptions.ClientError as e:
                     error_code = e.response.get("Error", {}).get("Code")
-                    error_message = e.response.get("Error", {}).get(
-                        "Message", "Unknown error"
-                    )
+                    error_message = e.response.get("Error", {}).get("Message", "Unknown error")
 
-                    LOGGER.error(
-                        f"S3 error during list objects operation: {error_code} - {error_message}"
-                    )
-                    LOGGER.error(f"Bucket: {bucket}, Prefix: {base_path}")
+                    LOGGER.error("S3 error during list objects operation: %s - %s", error_code, error_message)
+                    LOGGER.error("Bucket: %s, Prefix: %s", bucket, base_path)
 
                     technical_details = (
                         f"S3 {error_code}: {error_message}\n"
@@ -1815,11 +1611,9 @@ class S3Store(RemoteStore):
                     )
 
                     # Log and raise the error
-                    LOGGER.error(f"List objects error: {list_error.get_user_message()}")
+                    LOGGER.error("List objects error: %s", list_error.get_user_message())
                     if list_error.technical_details:
-                        LOGGER.error(
-                            f"Technical details: {list_error.technical_details}"
-                        )
+                        LOGGER.error("Technical details: %s", list_error.technical_details)
 
                     raise list_error
                 except ResourceNotFoundError:
@@ -1827,9 +1621,9 @@ class S3Store(RemoteStore):
                     raise
                 except Exception as e:
                     # Enhanced logging for other exceptions
-                    LOGGER.error(f"Unexpected error during wildcard search: {str(e)}")
-                    LOGGER.error(f"Exception type: {type(e).__name__}")
-                    LOGGER.error(f"Bucket: {bucket}, Wildcard key: {wildcard_key}")
+                    LOGGER.error("Unexpected error during wildcard search: %s", str(e))
+                    LOGGER.error("Exception type: %s", type(e).__name__)
+                    LOGGER.error("Bucket: %s, Wildcard key: %s", bucket, wildcard_key)
 
                     # Create a detailed error with all search parameters
                     technical_details = (
@@ -1852,9 +1646,9 @@ class S3Store(RemoteStore):
                     )
 
                     # Log and raise the error
-                    LOGGER.error(f"Search error: {error.get_user_message()}")
+                    LOGGER.error("Search error: %s", error.get_user_message())
                     if error.technical_details:
-                        LOGGER.error(f"Technical details: {error.technical_details}")
+                        LOGGER.error("Technical details: %s", error.technical_details)
 
                     raise error
 
@@ -1863,10 +1657,8 @@ class S3Store(RemoteStore):
             error_code = e.response.get("Error", {}).get("Code")
             error_message = e.response.get("Error", {}).get("Message", "Unknown error")
 
-            LOGGER.error(
-                f"S3 client error during download: {error_code} - {error_message}"
-            )
-            LOGGER.error(f"Path: s3://{bucket}/{key}")
+            LOGGER.error("S3 client error during download: %s - %s", error_code, error_message)
+            LOGGER.error("Path: s3://%s/%s", bucket, key)
 
             # Create a detailed error with context
             technical_details = (
@@ -1887,30 +1679,28 @@ class S3Store(RemoteStore):
                     f"File not found for {satellite.name} at {ts.isoformat()}"
                     if error_code in ("NoSuchBucket", "NoSuchKey", "404")
                     else (
-                        f"Timeout accessing {satellite.name} data"
-                        if "timeout" in str(e).lower()
-                        else None
+                        f"Timeout accessing {satellite.name} data" if "timeout" in str(e).lower() else None
                     )  # Use default message
                 ),
             )
 
             # Log and raise the error
-            LOGGER.error(f"S3 client error: {client_error.get_user_message()}")
+            LOGGER.error("S3 client error: %s", client_error.get_user_message())
             if client_error.technical_details:
-                LOGGER.error(f"Technical details: {client_error.technical_details}")
+                LOGGER.error("Technical details: %s", client_error.technical_details)
 
             raise client_error
         except ResourceNotFoundError:
-            LOGGER.error(f"Resource not found error re-raised for: s3://{bucket}/{key}")
+            LOGGER.error("Resource not found error re-raised for: s3://%s/%s", bucket, key)
             raise  # Re-raise ResourceNotFoundError
         except (AuthenticationError, RemoteConnectionError, RemoteStoreError):
-            LOGGER.error(f"Custom error re-raised for: s3://{bucket}/{key}")
+            LOGGER.error("Custom error re-raised for: s3://%s/%s", bucket, key)
             raise  # Re-raise our custom errors
         except Exception as e:
             # Enhanced logging for unexpected errors
-            LOGGER.error(f"Unexpected error during download: {str(e)}")
-            LOGGER.error(f"Exception type: {type(e).__name__}")
-            LOGGER.error(f"Path: s3://{bucket}/{key}")
+            LOGGER.error("Unexpected error during download: %s", str(e))
+            LOGGER.error("Exception type: %s", type(e).__name__)
+            LOGGER.error("Path: s3://%s/%s", bucket, key)
 
             # Create a detailed error with context
             technical_details = (
@@ -1928,11 +1718,7 @@ class S3Store(RemoteStore):
                 else (
                     "access"
                     if "permission" in str(e).lower() or "access" in str(e).lower()
-                    else (
-                        "disk"
-                        if "disk" in str(e).lower() or "space" in str(e).lower()
-                        else "unknown"
-                    )
+                    else ("disk" if "disk" in str(e).lower() or "space" in str(e).lower() else "unknown")
                 )
             )
 
@@ -1947,22 +1733,19 @@ class S3Store(RemoteStore):
             if error_code == "timeout":
                 final_error = RemoteConnectionError(
                     message=f"Timeout downloading {satellite.name} data",
-                    technical_details=technical_details
-                    + "Check your internet connection speed and stability.",
+                    technical_details=technical_details + "Check your internet connection speed and stability.",
                     original_exception=e,
                 )
             elif error_code == "access":
                 final_error = AuthenticationError(
                     message=f"Permission error downloading {satellite.name} data",
-                    technical_details=technical_details
-                    + "Check file system permissions at the destination.",
+                    technical_details=technical_details + "Check file system permissions at the destination.",
                     original_exception=e,
                 )
             elif error_code == "disk":
                 final_error = RemoteStoreError(
                     message=f"Disk error downloading {satellite.name} data",
-                    technical_details=technical_details
-                    + "Check available disk space at the destination.",
+                    technical_details=technical_details + "Check available disk space at the destination.",
                     original_exception=e,
                 )
             else:
@@ -1973,15 +1756,13 @@ class S3Store(RemoteStore):
                 )
 
             # Log and raise the error
-            LOGGER.error(f"Download error: {final_error.get_user_message()}")
+            LOGGER.error("Download error: %s", final_error.get_user_message())
             if final_error.technical_details:
-                LOGGER.error(f"Technical details: {final_error.technical_details}")
+                LOGGER.error("Technical details: %s", final_error.technical_details)
 
             raise final_error
 
-    async def check_file_exists(
-        self, timestamp: datetime, satellite: SatellitePattern
-    ) -> bool:
+    async def check_file_exists(self, timestamp: datetime, satellite: SatellitePattern) -> bool:
         """Check if a file exists for the given timestamp and satellite.
 
         This method implements the abstract method from RemoteStore.
@@ -2003,9 +1784,7 @@ class S3Store(RemoteStore):
         """
         return await self.download(timestamp, satellite, destination)
 
-    async def get_file_url(
-        self, timestamp: datetime, satellite: SatellitePattern
-    ) -> str:
+    async def get_file_url(self, timestamp: datetime, satellite: SatellitePattern) -> str:
         """Get the URL for a file.
 
         This method implements the abstract method from RemoteStore.

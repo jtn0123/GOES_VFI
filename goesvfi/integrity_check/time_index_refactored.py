@@ -70,7 +70,6 @@ def extract_timestamp(filename: str, pattern: SatellitePattern) -> Optional[date
     """Extract a timestamp from a filename using a specific satellite pattern.
 
     Args:
-        pass
         filename: The filename to extract timestamp from
         pattern: The satellite pattern to use for matching
 
@@ -81,9 +80,7 @@ def extract_timestamp(filename: str, pattern: SatellitePattern) -> Optional[date
     return None
 
 
-def _try_extract_time_component(
-    dirname: str, patterns: List[Pattern[str]]
-) -> Optional[Tuple[int, int, int]]:
+def _try_extract_time_component(dirname: str, patterns: List[Pattern[str]]) -> Optional[Tuple[int, int, int]]:
     """Try to extract hour, minute, second from a directory name using multiple patterns.
 
     Args:
@@ -94,17 +91,14 @@ def _try_extract_time_component(
         Tuple of (hour, minute, second) if successful, None otherwise
     """
     for pattern in patterns:
-        pass
         match = pattern.search(dirname)
         if match:
-            pass
             try:
                 hour = int(match.group(1))
                 minute = int(match.group(2))
                 second = int(match.group(3))
                 return hour, minute, second
             except (ValueError, IndexError):
-                pass
                 continue
     return None
 
@@ -123,7 +117,6 @@ def _try_primary_datetime_patterns(dirname: str) -> Optional[datetime]:
     match = dir_pattern1.search(dirname)
 
     if match:
-        pass
         try:
             year = int(match.group(1))
             month = int(match.group(2))
@@ -134,7 +127,6 @@ def _try_primary_datetime_patterns(dirname: str) -> Optional[datetime]:
 
             return datetime(year, month, day, hour, minute, second)
         except (ValueError, IndexError):
-            pass
             pass
 
     # Pattern 2: YYYYMMDD_HHMMSS
@@ -142,7 +134,6 @@ def _try_primary_datetime_patterns(dirname: str) -> Optional[datetime]:
     match = dir_pattern2.search(dirname)
 
     if match:
-        pass
         try:
             year = int(match.group(1))
             month = int(match.group(2))
@@ -153,7 +144,6 @@ def _try_primary_datetime_patterns(dirname: str) -> Optional[datetime]:
 
             return datetime(year, month, day, hour, minute, second)
         except (ValueError, IndexError):
-            pass
             pass
 
     # Pattern 3: YYYYMMDDTHHMMSS
@@ -161,7 +151,6 @@ def _try_primary_datetime_patterns(dirname: str) -> Optional[datetime]:
     match = dir_pattern3.search(dirname)
 
     if match:
-        pass
         try:
             year = int(match.group(1))
             month = int(match.group(2))
@@ -172,7 +161,6 @@ def _try_primary_datetime_patterns(dirname: str) -> Optional[datetime]:
 
             return datetime(year, month, day, hour, minute, second)
         except (ValueError, IndexError):
-            pass
             pass
 
     return None
@@ -182,7 +170,6 @@ def _try_satellite_specific_patterns(dirname: str) -> Optional[datetime]:
     """Try to parse directory name using satellite-specific patterns.
 
     Args:
-        pass
         dirname: Directory name to parse
 
     Returns:
@@ -193,7 +180,6 @@ def _try_satellite_specific_patterns(dirname: str) -> Optional[datetime]:
     match = satday_pattern.search(dirname)
 
     if match:
-        pass
         try:
             year = int(match.group(1))
             day_of_year = int(match.group(2))
@@ -205,14 +191,12 @@ def _try_satellite_specific_patterns(dirname: str) -> Optional[datetime]:
             return datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0)
         except (ValueError, IndexError):
             pass
-            pass
 
     # Pattern 5: SATNAME_YYYYMMDD_HHMMSS (e.g. goes18_20230615_120000)
     sat_pattern = re.compile(r"goes\d+_(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})(\d{2})")
     match = sat_pattern.search(dirname)
 
     if match:
-        pass
         try:
             year = int(match.group(1))
             month = int(match.group(2))
@@ -223,7 +207,6 @@ def _try_satellite_specific_patterns(dirname: str) -> Optional[datetime]:
 
             return datetime(year, month, day, hour, minute, second)
         except (ValueError, IndexError):
-            pass
             pass
 
     return None
@@ -252,7 +235,6 @@ def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
 
     # If date_utils successfully extracted a date, try to extract time components
     if date_obj:
-        pass
         # Look for time components in various formats
         time_patterns = [
             re.compile(r"_(\d{2})-(\d{2})-(\d{2})"),  # HH-MM-SS
@@ -262,11 +244,8 @@ def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
 
         time_components = _try_extract_time_component(dirname, time_patterns)
         if time_components:
-            pass
             hour, minute, second = time_components
-            return datetime(
-                date_obj.year, date_obj.month, date_obj.day, hour, minute, second
-            )
+            return datetime(date_obj.year, date_obj.month, date_obj.day, hour, minute, second)
 
         # If we found a date but no time, return datetime at midnight
         return datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0)
@@ -276,22 +255,18 @@ def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
     # First try the primary datetime patterns
     result = _try_primary_datetime_patterns(dirname)
     if result:
-        pass
         return result
 
     # Then try satellite specific patterns
     result = _try_satellite_specific_patterns(dirname)
     if result:
-        pass
         return result
 
     # No pattern matched
     return None
 
 
-def _validate_directory_and_pattern(
-    directory: Path, pattern: SatellitePattern
-) -> Tuple[bool, Optional[Pattern[str]]]:
+def _validate_directory_and_pattern(directory: Path, pattern: SatellitePattern) -> Tuple[bool, Optional[Pattern[str]]]:
     """Validate directory exists and pattern is valid.
 
     Args:
@@ -302,23 +277,19 @@ def _validate_directory_and_pattern(
         Tuple of (is_valid, compiled_pattern)
     """
     if not directory.exists() or not directory.is_dir():
-        pass
         LOGGER.error("Directory does not exist or is not a directory: %s", directory)
         return False, None
 
     # Compile regex pattern for files
     compiled_pattern = COMPILED_PATTERNS.get(pattern)
     if not compiled_pattern:
-        pass
         LOGGER.error("Unknown satellite pattern: %s", pattern)
         return False, None
 
     return True, compiled_pattern
 
 
-def _extract_timestamp_from_file(
-    file_path: Path, pattern: SatellitePattern
-) -> Optional[datetime]:
+def _extract_timestamp_from_file(file_path: Path, pattern: SatellitePattern) -> Optional[datetime]:
     """Extract timestamp from a file using various methods.
 
     Args:
@@ -329,21 +300,17 @@ def _extract_timestamp_from_file(
         Extracted timestamp or None if not found
     """
     try:
-        pass
         # First try to extract from filename
         timestamp = extract_timestamp(file_path.name, pattern)
         if not timestamp:
-            pass
             # If that fails, try to extract from parent directory name
             parent_dir = file_path.parent.name
             extracted_ts = extract_timestamp_from_directory_name(parent_dir)
             if extracted_ts is not None:
-                pass
                 timestamp = extracted_ts
 
         return timestamp
     except ValueError:
-        pass
         # Skip files that don't match the pattern
         return None
 
@@ -354,7 +321,6 @@ def _filter_timestamp_by_range(
     """Check if timestamp is within the specified time range.
 
     Args:
-        pass
         timestamp: Timestamp to check
         start_time: Optional start of time range
         end_time: Optional end of time range
@@ -363,10 +329,8 @@ def _filter_timestamp_by_range(
         True if timestamp is within range, False otherwise
     """
     if start_time and timestamp < start_time:
-        pass
         return False
     if end_time and timestamp > end_time:
-        pass
         return False
     return True
 
@@ -397,7 +361,6 @@ def _scan_files_for_timestamps(
     for file_path in png_files:
         timestamp = _extract_timestamp_from_file(file_path, pattern)
         if timestamp and _filter_timestamp_by_range(timestamp, start_time, end_time):
-            pass
             timestamps.append(timestamp)
 
     return timestamps
@@ -423,18 +386,15 @@ def _scan_subdirectories_for_timestamps(
 
     timestamps = []
     for subdir in subdirs:
-        pass
         # Extract timestamp from directory name
         extracted_ts = extract_timestamp_from_directory_name(subdir.name)
 
         # Skip if no timestamp found
         if extracted_ts is None:
-            pass
             continue
 
         # Filter by time range if provided
         if _filter_timestamp_by_range(extracted_ts, start_time, end_time):
-            pass
             timestamps.append(extracted_ts)
 
     return timestamps
@@ -461,7 +421,6 @@ def scan_directory_for_timestamps(
     # Validate directory and pattern
     is_valid, _ = _validate_directory_and_pattern(directory, pattern)
     if not is_valid:
-        pass
         return []
 
     # First, scan files for timestamps
@@ -469,10 +428,7 @@ def scan_directory_for_timestamps(
 
     # If no timestamps found in files, try subdirectory names
     if not timestamps:
-        pass
-        timestamps = _scan_subdirectories_for_timestamps(
-            directory, start_time, end_time
-        )
+        timestamps = _scan_subdirectories_for_timestamps(directory, start_time, end_time)
 
     LOGGER.info("Found %s timestamps in %s", len(timestamps), directory)
     return sorted(timestamps)
@@ -482,7 +438,6 @@ def _detect_test_environment() -> Tuple[bool, bool, bool]:
     """Detect if code is running in a test environment and which test file is calling.
 
     Returns:
-        pass
         Tuple of (is_test_env, is_basic_test, is_remote_test)
     """
     # Check if this is a test environment
@@ -512,20 +467,14 @@ def _validate_product_type_and_band(product_type: str, band: int) -> None:
     # Validate product type
     valid_products = ["RadF", "RadC", "RadM"]
     if product_type not in valid_products:
-        pass
-        raise ValueError(
-            f"Invalid product type: {product_type}. Must be one of {valid_products}"
-        )
+        raise ValueError(f"Invalid product type: {product_type}. Must be one of {valid_products}")
 
     # Validate band number
     if not 1 <= band <= 16:
-        pass
         raise ValueError(f"Invalid band number: {band}. Must be between 1 and 16.")
 
 
-def _find_nearest_valid_scan_minute(
-    original_minute: int, scan_minutes: List[int]
-) -> int:
+def _find_nearest_valid_scan_minute(original_minute: int, scan_minutes: List[int]) -> int:
     """Find the nearest valid scan minute for the given product type.
 
     Args:
@@ -537,7 +486,6 @@ def _find_nearest_valid_scan_minute(
     """
     # Handle None or empty scan_minutes
     if not scan_minutes:
-        pass
         return original_minute
 
     valid_minute = None
@@ -545,11 +493,9 @@ def _find_nearest_valid_scan_minute(
     # Find the nearest valid scan minute for this product
     for minute in scan_minutes:
         if minute == original_minute:
-            pass
             return minute
         # If we've gone past the original minute, take the previous valid minute
         elif minute > original_minute and valid_minute is not None:
-            pass
             break
         # Keep updating valid_minute with the last valid minute we've seen
         else:
@@ -557,10 +503,8 @@ def _find_nearest_valid_scan_minute(
 
     # If we never found a match and went through the whole list, wrap around
     if valid_minute is None and scan_minutes:
-        pass
         valid_minute = scan_minutes[-1]
     elif valid_minute is None:
-        pass
         # Default to the original minute if the scan_minutes list is empty
         valid_minute = original_minute
 
@@ -596,10 +540,8 @@ def _get_s3_filename_pattern(
 
     # Special handling for basic test
     if is_basic_test:
-        pass
         # Basic test expects: ABI-L1b-RadF format with a specific structure
         if use_exact_match:
-            pass
             # Use concrete filename for tests
             return (
                 f"OR_ABI-L1b-{product_type}-M6C{band_str}_{satellite_code}_s"
@@ -614,7 +556,6 @@ def _get_s3_filename_pattern(
     else:
         # Main test and production
         if use_exact_match:
-            pass
             # Use concrete filename for tests with more flexible pattern
             # to match what's actually in the S3 bucket
             # Specify the band and use exact minute with approximated start second
@@ -625,10 +566,7 @@ def _get_s3_filename_pattern(
         else:
             # Use wildcard pattern for production
             # Specify the band but use wildcard for the whole hour to be maximally flexible
-            return (
-                f"OR_ABI-L1b-{product_type}-M6C{band_str}_{satellite_code}_s"
-                f"{year}{doy_str}{hour}*_e*_c*.nc"
-            )
+            return f"OR_ABI-L1b-{product_type}-M6C{band_str}_{satellite_code}_s" f"{year}{doy_str}{hour}*_e*_c*.nc"
 
 
 def to_s3_key(
@@ -657,7 +595,6 @@ def to_s3_key(
     # 2. Get satellite code
     sat_code = SATELLITE_CODES.get(satellite)
     if not sat_code:
-        pass
         raise ValueError(f"Unsupported satellite pattern: {satellite}")
 
     # 3. Prepare timestamp components
@@ -671,20 +608,15 @@ def to_s3_key(
     is_test_env, is_basic_test, is_remote_test = _detect_test_environment()
 
     # 5. Determine if we should use exact match
-    use_exact_match = exact_match or (
-        is_test_env and is_remote_test and _USE_EXACT_MATCH_IN_TEST
-    )
+    use_exact_match = exact_match or (is_test_env and is_remote_test and _USE_EXACT_MATCH_IN_TEST)
 
     # 6. Get scan minutes for the product type
     scan_minutes = []
     if product_type == "RadF":
-        pass
         scan_minutes = RADF_MINUTES
     elif product_type == "RadC":
-        pass
         scan_minutes = RADC_MINUTES
     elif product_type == "RadM":
-        pass
         scan_minutes = RADM_MINUTES
 
     # 7. Find the nearest valid scan minute
@@ -735,7 +667,6 @@ def find_date_range_in_directory(
     timestamps = scan_directory_for_timestamps(directory, pattern)
 
     if not timestamps:
-        pass
         LOGGER.warning("No valid timestamps found in directory: %s", directory)
         return None, None
 

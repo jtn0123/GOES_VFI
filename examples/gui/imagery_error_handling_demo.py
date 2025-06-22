@@ -34,9 +34,7 @@ from PyQt6.QtWidgets import (
 from goesvfi.integrity_check.enhanced_imagery_tab import EnhancedGOESImageryTab
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -93,9 +91,7 @@ def create_mock_image(width=600, height=350, channel=13, enhanced=False):
 
 
 # Create mock fallback preview image with error information
-def create_fallback_preview(
-    channel=13, error_msg="No data found for the selected date/time"
-):
+def create_fallback_preview(channel=13, error_msg="No data found for the selected date/time"):
     """Create a fallback preview with error information."""
     width, height = 600, 350
 
@@ -125,9 +121,7 @@ def create_fallback_preview(
     elif channel == 100:
         channel_name = "True Color RGB"
 
-    draw.text(
-        (20, 7), f"Preview: {channel_name}", fill=(255, 255, 255), font=title_font
-    )
+    draw.text((20, 7), f"Preview: {channel_name}", fill=(255, 255, 255), font=title_font)
 
     # Draw status bar
     draw.rectangle([(0, 35), (width, 55)], fill=(180, 32, 32))  # Dark red
@@ -154,9 +148,7 @@ def create_fallback_preview(
 
     # Draw content - more compact layout
     y_pos = 70
-    draw.text(
-        (20, y_pos), f"Issue: {primary_reason}", fill=(255, 255, 255), font=header_font
-    )
+    draw.text((20, y_pos), f"Issue: {primary_reason}", fill=(255, 255, 255), font=header_font)
     y_pos += 25
 
     draw.text(
@@ -224,12 +216,8 @@ def apply_mocks():
     mock_sample_processor = MagicMock()
 
     # Mock download methods to cause errors
-    mock_sample_processor.download_sample_data.side_effect = Exception(
-        "No data found for current date"
-    )
-    mock_sample_processor.download_web_sample.side_effect = Exception(
-        "Connection timeout accessing NOAA server"
-    )
+    mock_sample_processor.download_sample_data.side_effect = Exception("No data found for current date")
+    mock_sample_processor.download_web_sample.side_effect = Exception("Connection timeout accessing NOAA server")
 
     # Patch SampleProcessor class to return our mock
     mock_sample_processor_class = MagicMock(return_value=mock_sample_processor)
@@ -314,9 +302,7 @@ class ErrorDisplayTab(QWidget):
     def refresh_preview(self):
         """Show a preview based on the selected error type"""
         if self.radio_timeout.isChecked():
-            error_msg = (
-                "Connection timeout after 30 seconds when connecting to NOAA server"
-            )
+            error_msg = "Connection timeout after 30 seconds when connecting to NOAA server"
         elif self.radio_no_data.isChecked():
             error_msg = "No data found for the selected date/time"
         elif self.radio_corrupt.isChecked():
@@ -378,11 +364,7 @@ class MockWindow(QMainWindow):
             Path.home() / "Downloads" / "goes_imagery",
             Path.home() / "Downloads" / "goes_channels" / "visualized",
             Path.home() / "Downloads" / "goes_channels" / "rgb_composites",
-            Path.home()
-            / "Downloads"
-            / "goes_channels"
-            / "visualized"
-            / "derived_products",
+            Path.home() / "Downloads" / "goes_channels" / "visualized" / "derived_products",
         ]
 
         for d in dirs:

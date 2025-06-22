@@ -60,7 +60,6 @@ class PreviewManager(QObject):
             True if preview images were loaded successfully
         """
         try:
-            pass
             self.current_input_dir = input_dir
             self.current_crop_rect = crop_rect
 
@@ -68,7 +67,6 @@ class PreviewManager(QObject):
             first_path, last_path = self._get_first_last_paths(input_dir)
 
             if not first_path or not last_path:
-                pass
                 self.preview_error.emit("No images found in directory")
                 return False
 
@@ -76,12 +74,9 @@ class PreviewManager(QObject):
             self.first_frame_data = self._load_and_process_image(
                 first_path, crop_rect, apply_sanchez, sanchez_resolution
             )
-            self.last_frame_data = self._load_and_process_image(
-                last_path, crop_rect, apply_sanchez, sanchez_resolution
-            )
+            self.last_frame_data = self._load_and_process_image(last_path, crop_rect, apply_sanchez, sanchez_resolution)
 
             if not self.first_frame_data or not self.last_frame_data:
-                pass
                 self.preview_error.emit("Failed to load preview images")
                 return False
 
@@ -92,10 +87,8 @@ class PreviewManager(QObject):
 
             # Convert PIL Image to numpy if needed
             if isinstance(first_array, Image.Image):
-                pass
                 first_array = np.array(first_array)
             if isinstance(last_array, Image.Image):
-                pass
                 last_array = np.array(last_array)
 
             first_pixmap = self._numpy_to_qpixmap(first_array)
@@ -107,14 +100,11 @@ class PreviewManager(QObject):
             return True
 
         except Exception as e:
-            pass
             LOGGER.error("Error loading preview images: %s", e)
             self.preview_error.emit(str(e))
             return False
 
-    def _get_first_last_paths(
-        self, input_dir: Path
-    ) -> Tuple[Optional[Path], Optional[Path]]:
+    def _get_first_last_paths(self, input_dir: Path) -> Tuple[Optional[Path], Optional[Path]]:
         """Get the first and last image paths from a directory.
 
         Args:
@@ -129,13 +119,10 @@ class PreviewManager(QObject):
             image_files = []
 
             for file in input_dir.iterdir():
-                pass
                 if file.is_file() and file.suffix.lower() in image_extensions:
-                    pass
                     image_files.append(file)
 
             if not image_files:
-                pass
                 return None, None
 
             # Sort by name
@@ -145,7 +132,6 @@ class PreviewManager(QObject):
             return image_files[0], image_files[-1]
 
         except Exception as e:
-            pass
             LOGGER.error("Error getting first/last paths: %s", e)
             return None, None
 
@@ -172,34 +158,26 @@ class PreviewManager(QObject):
             image_data = self.image_loader.load(str(path))
 
             if not image_data:
-                pass
                 return None
 
             # Apply cropping if specified
             if crop_rect:
-                pass
                 image_data = self.cropper.crop(image_data, crop_rect)
                 if not image_data:
-                    pass
                     return None
 
             # Apply Sanchez processing if specified
             if apply_sanchez:
-                pass
                 # Convert resolution to valid Sanchez format
                 # Sanchez expects km per pixel, valid values: 0.5, 1, 2, 4
                 if isinstance(sanchez_resolution, (tuple, list)):
-                    pass
                     # If tuple/list provided, use a default valid value
                     res_km = 2  # 2 km/pixel default
                 elif isinstance(sanchez_resolution, (int, float)):
-                    pass
                     # Map common pixel values to km/pixel values
                     if sanchez_resolution >= 1000:
-                        pass
                         res_km = 4  # Lower resolution for high pixel values
                     elif sanchez_resolution >= 500:
-                        pass
                         res_km = 2  # Medium resolution
                     else:
                         res_km = 1  # Higher resolution for smaller values
@@ -208,13 +186,11 @@ class PreviewManager(QObject):
 
                 image_data = self.sanchez_processor.process(image_data, res_km=res_km)
                 if not image_data:
-                    pass
                     return None
 
             return image_data
 
         except Exception as e:
-            pass
             LOGGER.error("Error loading/processing image %s: %s", path, e)
             return None
 
@@ -232,7 +208,6 @@ class PreviewManager(QObject):
 
             # Handle different channel counts
             if array.ndim == 2:
-                pass
                 # Grayscale
                 qimage = QImage(
                     array.data.tobytes(),
@@ -242,7 +217,6 @@ class PreviewManager(QObject):
                     QImage.Format.Format_Grayscale8,
                 )
             elif array.ndim == 3 and array.shape[2] == 3:
-                pass
                 # RGB
                 bytes_per_line = 3 * width
                 qimage = QImage(
@@ -253,7 +227,6 @@ class PreviewManager(QObject):
                     QImage.Format.Format_RGB888,
                 )
             elif array.ndim == 3 and array.shape[2] == 4:
-                pass
                 # RGBA
                 bytes_per_line = 4 * width
                 qimage = QImage(
@@ -269,7 +242,6 @@ class PreviewManager(QObject):
             return QPixmap.fromImage(qimage)
 
         except Exception as e:
-            pass
             LOGGER.error("Error converting numpy array to QPixmap: %s", e)
             # Return empty pixmap on error
             return QPixmap()
@@ -285,7 +257,6 @@ class PreviewManager(QObject):
             Scaled pixmap
         """
         if pixmap.isNull():
-            pass
             return pixmap
 
         return pixmap.scaled(

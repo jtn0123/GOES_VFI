@@ -49,12 +49,8 @@ self.view_model = EnhancedIntegrityCheckViewModel()
 
 # Initialize with default values
 yesterday = datetime.now() - timedelta(days=1)
-self.view_model.start_date = yesterday.replace(
-    hour=0, minute=0, second=0, microsecond=0
-)
-self.view_model.end_date = yesterday.replace(
-    hour=23, minute=59, second=59, microsecond=0
-)
+self.view_model.start_date = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
+self.view_model.end_date = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
 self.view_model.base_directory = Path.home() / "Desktop" / "GOES_Data"
 
 # Create the EnhancedIntegrityCheckTab
@@ -102,9 +98,7 @@ if view_model_range == selector_range:
     print("✅ Date range initialized correctly")
 else:
     print("❌ Date range mismatch between view model and selector")
-print(
-    f"View model: {view_model_range[0].isoformat()} to {view_model_range[1].isoformat()}"
-)
+print(f"View model: {view_model_range[0].isoformat()} to {view_model_range[1].isoformat()}")
 print(f"Selector: {selector_range[0].isoformat()} to {selector_range[1].isoformat()}")
 
 

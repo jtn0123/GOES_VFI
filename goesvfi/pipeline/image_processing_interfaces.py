@@ -14,7 +14,6 @@ from PIL import Image  # Import PIL.Image
 
 # Define ImageType as a type alias
 if TYPE_CHECKING:
-    pass
     # Use np.ndarray with type parameters for static analysis
     ImageType: TypeAlias = Union[Image.Image, np.ndarray[Any, Any]]
 else:
@@ -43,14 +42,11 @@ class ImageData:
         """Returns the height of the image if available in metadata or image_data.
 
         Returns:
-            pass
             Optional[int]: The height of the image, or None if unavailable.
         """
         if "height" in self.metadata and isinstance(self.metadata["height"], int):
-            pass
             return self.metadata["height"]
         if hasattr(self.image_data, "shape") and len(self.image_data.shape) >= 2:
-            pass
             return int(self.image_data.shape[0])
         return None
 
@@ -59,14 +55,11 @@ class ImageData:
         """Returns the width of the image if available in metadata or image_data.
 
         Returns:
-            pass
             Optional[int]: The width of the image, or None if unavailable.
         """
         if "width" in self.metadata and isinstance(self.metadata["width"], int):
-            pass
             return self.metadata["width"]
         if hasattr(self.image_data, "shape") and len(self.image_data.shape) >= 2:
-            pass
             return int(self.image_data.shape[1])
         return None
 
@@ -133,9 +126,7 @@ class ImageProcessor(abc.ABC):
         """
 
     @abc.abstractmethod
-    def crop(
-        self, image_data: ImageData, crop_area: Tuple[int, int, int, int]
-    ) -> ImageData:
+    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]) -> ImageData:
         """
         Crops the image data to the specified rectangular area.
 

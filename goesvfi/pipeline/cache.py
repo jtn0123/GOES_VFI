@@ -40,10 +40,7 @@ def _hash_pair(
 def _get_cache_filepath(base_key: str, index: int, total_frames: int) -> pathlib.Path:
     # Use zfill to ensure consistent sorting if needed, though direct indexing is used here
     max_digits = len(str(total_frames - 1))
-    return (
-        config.get_cache_dir()
-        / f"{base_key}_k{total_frames}_frame{index:0{max_digits}}.npy"
-    )
+    return config.get_cache_dir() / f"{base_key}_k{total_frames}_frame{index:0{max_digits}}.npy"
 
 
 # Load a list of frames if all exist for the given count
@@ -66,34 +63,30 @@ def load_cached(
     all_exist = True
 
     # Check if all expected frame files exist
-    LOGGER.debug(
-        f"Checking for existence of {num_intermediate_frames} cache files with base key {base_key}"
-    )
+    LOGGER.debug("Checking for existence of %s cache files with base key %s", num_intermediate_frames, base_key)
     for i in range(num_intermediate_frames):
         npy_path = _get_cache_filepath(base_key, i, num_intermediate_frames)
-        LOGGER.debug(f"Checking if {npy_path} exists")
+        LOGGER.debug("Checking if %s exists", npy_path)
         if npy_path.exists():
             frame_paths.append(npy_path)
         else:
-            LOGGER.debug(f"Cache file {npy_path} missing")
+            LOGGER.debug("Cache file %s missing", npy_path)
             all_exist = False
             break  # No need to check further if one is missing
 
     if all_exist:
         # Load all frames if they all exist
-        LOGGER.debug(
-            f"All cache files found, attempting to load {len(frame_paths)} files"
-        )
+        LOGGER.debug("All cache files found, attempting to load %s files", len(frame_paths))
         loaded_frames: List[NDArray[Any]] = []
         try:
             for npy_path in frame_paths:
-                LOGGER.debug(f"Loading cache file: {npy_path}")
+                LOGGER.debug("Loading cache file: %s", npy_path)
                 # Cast assumes loaded array is NDArray[Any]
                 loaded_frames.append(cast(NDArray[Any], np.load(npy_path)))
             LOGGER.debug("Successfully loaded all cache files")
             return loaded_frames
         except Exception as e:
-            LOGGER.warning(f"Error loading cache files for key {base_key}: {e}")
+            LOGGER.warning("Error loading cache files for key %s: %s", base_key, e)
             LOGGER.debug("Exception details:", exc_info=True)
             return None  # Treat load error as cache miss
     else:
@@ -123,13 +116,13 @@ def save_cache(
         return
 
     base_key = _hash_pair(path1, path2, model_id, num_intermediate_frames)
-    LOGGER.debug(f"Saving {len(frames)} cache files with base key {base_key}")
+    LOGGER.debug("Saving %s cache files with base key %s", len(frames), base_key)
     try:
         for i, frame in enumerate(frames):
             npy_path = _get_cache_filepath(base_key, i, num_intermediate_frames)
-            LOGGER.debug(f"Saving cache file: {npy_path}")
+            LOGGER.debug("Saving cache file: %s", npy_path)
             np.save(npy_path, frame)
         LOGGER.debug("Successfully saved all cache files")
     except Exception as e:
-        LOGGER.warning(f"Error saving cache files for key {base_key}: {e}")
+        LOGGER.warning("Error saving cache files for key %s: %s", base_key, e)
         LOGGER.debug("Exception details:", exc_info=True)

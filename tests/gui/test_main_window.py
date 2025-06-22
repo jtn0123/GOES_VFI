@@ -61,9 +61,7 @@ def mock_dialogs():
     """Mocks QFileDialog and QMessageBox."""
     with (
         # Patch QFileDialog methods in both gui.py and main_tab.py
-        patch(
-            "goesvfi.gui.QFileDialog.getExistingDirectory", return_value="/fake/input"
-        ) as mock_get_existing_dir,
+        patch("goesvfi.gui.QFileDialog.getExistingDirectory", return_value="/fake/input") as mock_get_existing_dir,
         patch(
             "goesvfi.gui_tabs.main_tab.QFileDialog.getExistingDirectory",
             return_value="/fake/input",
@@ -133,9 +131,7 @@ def _mock_preview(monkeypatch):
             return dummy_pixmap
         return None  # Fallback
 
-    monkeypatch.setattr(
-        "goesvfi.gui.MainWindow._load_process_scale_preview", mock_load_process_scale
-    )
+    monkeypatch.setattr("goesvfi.gui.MainWindow._load_process_scale_preview", mock_load_process_scale)
 
 
 @pytest.fixture  # Add mock_populate_models fixture
@@ -159,9 +155,7 @@ def _mock_populate_models(monkeypatch):
 
 
 @pytest.fixture
-def window(
-    qtbot, _mock_preview, _mock_populate_models, mocker
-):  # Add mock_populate_models, mocker
+def window(qtbot, _mock_preview, _mock_populate_models, mocker):  # Add mock_populate_models, mocker
     """Creates the main window instance for testing."""
     # Mock helper classes that might cause segfaults during teardown
     # mock_file_sorter_tab = mocker.patch(
@@ -244,12 +238,8 @@ def test_initial_state(qtbot, window, mocker):
     qtbot.wait(100)  # Allow UI to settle after init
     assert not window.main_tab.start_button.isEnabled()  # Should be disabled (no paths)
     # assert not window.open_vlc_button.isEnabled()  # Button no longer exists
-    assert (
-        not window.main_tab.crop_button.isEnabled()
-    )  # Should be disabled (no input path)
-    assert (
-        not window.main_tab.clear_crop_button.isEnabled()
-    )  # Disabled initially (no crop)
+    assert not window.main_tab.crop_button.isEnabled()  # Should be disabled (no input path)
+    assert not window.main_tab.clear_crop_button.isEnabled()  # Disabled initially (no crop)
     # ... rest of test ...
 
 
@@ -418,9 +408,7 @@ def test_dynamic_ui_enable_disable(qtbot, window):
     assert window.ffmpeg_profile_combo.isEnabled()  # Check a widget inside the tab
 
     # Switch back to RIFE
-    with qtbot.waitSignals(
-        [window.main_tab.encoder_combo.currentTextChanged], timeout=1000
-    ):
+    with qtbot.waitSignals([window.main_tab.encoder_combo.currentTextChanged], timeout=1000):
         window.main_tab.encoder_combo.setCurrentText("RIFE")
     # qtbot.wait(50) # REMOVED
     assert window.main_tab.rife_options_group.isEnabled()
@@ -428,23 +416,17 @@ def test_dynamic_ui_enable_disable(qtbot, window):
     assert window.main_tab.model_combo.isEnabled()
     assert window.main_tab.sanchez_options_group.isEnabled()
     # Check a control *inside* the tab
-    assert (
-        not window.ffmpeg_profile_combo.isEnabled()
-    )  # FFmpeg tab disabled when RIFE selected
+    assert not window.ffmpeg_profile_combo.isEnabled()  # FFmpeg tab disabled when RIFE selected
 
     # 2. RIFE Tiling affects Tile Size SpinBox (only when RIFE is selected)
     if window.main_tab.encoder_combo.currentText() != "RIFE":  # Ensure RIFE is selected
-        with qtbot.waitSignals(
-            [window.main_tab.encoder_combo.currentTextChanged], timeout=1000
-        ):
+        with qtbot.waitSignals([window.main_tab.encoder_combo.currentTextChanged], timeout=1000):
             window.main_tab.encoder_combo.setCurrentText("RIFE")
     # qtbot.wait(50) # REMOVED
 
     # Set tiling enabled (if not default) and wait for signal
     if not window.main_tab.rife_tile_checkbox.isChecked():
-        with qtbot.waitSignals(
-            [window.main_tab.rife_tile_checkbox.stateChanged], timeout=500
-        ):
+        with qtbot.waitSignals([window.main_tab.rife_tile_checkbox.stateChanged], timeout=500):
             window.main_tab.rife_tile_checkbox.setChecked(True)
         # qtbot.wait(50) # REMOVED
 
@@ -452,34 +434,26 @@ def test_dynamic_ui_enable_disable(qtbot, window):
     assert window.main_tab.rife_tile_size_spinbox.isEnabled()
 
     # Disable tiling
-    with qtbot.waitSignals(
-        [window.main_tab.rife_tile_checkbox.stateChanged], timeout=500
-    ):
+    with qtbot.waitSignals([window.main_tab.rife_tile_checkbox.stateChanged], timeout=500):
         window.main_tab.rife_tile_checkbox.setChecked(False)
     # qtbot.wait(50) # REMOVED
     assert not window.main_tab.rife_tile_size_spinbox.isEnabled()
 
     # Enable tiling again
-    with qtbot.waitSignals(
-        [window.main_tab.rife_tile_checkbox.stateChanged], timeout=500
-    ):
+    with qtbot.waitSignals([window.main_tab.rife_tile_checkbox.stateChanged], timeout=500):
         window.main_tab.rife_tile_checkbox.setChecked(True)
     # qtbot.wait(50) # REMOVED
     assert window.main_tab.rife_tile_size_spinbox.isEnabled()
 
     # 3. Sanchez Checkbox affects Resolution SpinBox (only when RIFE is selected)
     if window.main_tab.encoder_combo.currentText() != "RIFE":  # Ensure RIFE is selected
-        with qtbot.waitSignals(
-            [window.main_tab.encoder_combo.currentTextChanged], timeout=1000
-        ):
+        with qtbot.waitSignals([window.main_tab.encoder_combo.currentTextChanged], timeout=1000):
             window.main_tab.encoder_combo.setCurrentText("RIFE")
     # qtbot.wait(50) # REMOVED
 
     # Set false colour disabled (if not default) and wait
     if window.main_tab.sanchez_false_colour_checkbox.isChecked():
-        with qtbot.waitSignals(
-            [window.main_tab.sanchez_false_colour_checkbox.stateChanged], timeout=500
-        ):
+        with qtbot.waitSignals([window.main_tab.sanchez_false_colour_checkbox.stateChanged], timeout=500):
             window.main_tab.sanchez_false_colour_checkbox.setChecked(False)
         # qtbot.wait(50) # REMOVED
 
@@ -489,27 +463,21 @@ def test_dynamic_ui_enable_disable(qtbot, window):
     assert hasattr(window, "sanchez_res_km_combo")
 
     # Enable false colour
-    with qtbot.waitSignals(
-        [window.main_tab.sanchez_false_colour_checkbox.stateChanged], timeout=500
-    ):
+    with qtbot.waitSignals([window.main_tab.sanchez_false_colour_checkbox.stateChanged], timeout=500):
         window.main_tab.sanchez_false_colour_checkbox.setChecked(True)
     # Test that we can set values in the combo
     window.main_tab.sanchez_res_km_combo.setCurrentText("2")
     assert window.main_tab.sanchez_res_km_combo.currentText() == "2"
 
     # Disable false colour again
-    with qtbot.waitSignals(
-        [window.main_tab.sanchez_false_colour_checkbox.stateChanged], timeout=500
-    ):
+    with qtbot.waitSignals([window.main_tab.sanchez_false_colour_checkbox.stateChanged], timeout=500):
         window.main_tab.sanchez_false_colour_checkbox.setChecked(False)
     # The combo might still be enabled, just test it's still there
     assert hasattr(window, "sanchez_res_km_combo")
 
     # 4. FFmpeg Settings enable/disable based on encoder
     # Switch to FFmpeg
-    with qtbot.waitSignals(
-        [window.main_tab.encoder_combo.currentTextChanged], timeout=1000
-    ):
+    with qtbot.waitSignals([window.main_tab.encoder_combo.currentTextChanged], timeout=1000):
         window.main_tab.encoder_combo.setCurrentText("FFmpeg")
     # qtbot.wait(50) # REMOVED
 
@@ -517,9 +485,7 @@ def test_dynamic_ui_enable_disable(qtbot, window):
     assert window.ffmpeg_profile_combo.isEnabled()
 
     # Switch back to RIFE
-    with qtbot.waitSignals(
-        [window.main_tab.encoder_combo.currentTextChanged], timeout=1000
-    ):
+    with qtbot.waitSignals([window.main_tab.encoder_combo.currentTextChanged], timeout=1000):
         window.main_tab.encoder_combo.setCurrentText("RIFE")
     # qtbot.wait(50) # REMOVED
 
@@ -531,17 +497,13 @@ def test_start_interpolation(qtbot, window, mock_worker, dummy_files):
     """Test clicking the 'Start VFI' button."""
     valid_input_dir = dummy_files[0].parent
     window.main_tab.in_dir_edit.setText(str(valid_input_dir))  # Updated name
-    window.main_tab.out_file_edit.setText(
-        str(valid_input_dir / "fake_output.mp4")
-    )  # Updated name
+    window.main_tab.out_file_edit.setText(str(valid_input_dir / "fake_output.mp4"))  # Updated name
     # Ensure RIFE model is selected (default from fixture)
     assert window.main_tab.encoder_combo.currentText() == "RIFE"
     assert window.main_tab.model_combo.currentData() is not None
     assert window.main_tab.start_button.isEnabled()  # Updated name
 
-    qtbot.mouseClick(
-        window.main_tab.start_button, Qt.MouseButton.LeftButton
-    )  # Updated name
+    qtbot.mouseClick(window.main_tab.start_button, Qt.MouseButton.LeftButton)  # Updated name
     # qtbot.wait(100) # Wait for UI state change # REMOVED
 
     # Assert MainWindow created a worker instance
@@ -557,9 +519,7 @@ def test_start_interpolation(qtbot, window, mock_worker, dummy_files):
 
     # Assert UI state changed to "processing"
     assert not window.main_tab.start_button.isEnabled()  # Updated name
-    assert window.status_bar.currentMessage().startswith(
-        "Starting VFI process..."
-    )  # Updated name + message
+    assert window.status_bar.currentMessage().startswith("Starting VFI process...")  # Updated name + message
     assert window.main_view_model.processing_vm.current_progress == 0
     assert not window.tab_widget.isEnabled()  # Updated name
     assert not window.main_tab.in_dir_edit.isEnabled()  # Updated name
@@ -626,9 +586,7 @@ def test_error_handling(qtbot, window, mock_dialogs, mock_worker, dummy_files):
     # Simulate worker being created and started
     valid_input_dir = dummy_files[0].parent
     window.main_tab.in_dir_edit.setText(str(valid_input_dir))  # Updated name
-    window.main_tab.out_file_edit.setText(
-        str(valid_input_dir / "fake_output.mp4")
-    )  # Updated name
+    window.main_tab.out_file_edit.setText(str(valid_input_dir / "fake_output.mp4"))  # Updated name
     window._set_processing_state(True)
     MockVfiWorker = mock_worker
     window.vfi_worker = MockVfiWorker()
@@ -667,9 +625,7 @@ def test_open_crop_dialog(MockCropDialog, qtbot, window, dummy_files):
     window.main_tab.first_frame_label.setPixmap(QPixmap(10, 10))  # Set a dummy pixmap
     assert window.main_tab.crop_button.isEnabled()  # Updated name
 
-    qtbot.mouseClick(
-        window.main_tab.crop_button, Qt.MouseButton.LeftButton
-    )  # Updated name
+    qtbot.mouseClick(window.main_tab.crop_button, Qt.MouseButton.LeftButton)  # Updated name
 
     MockCropDialog.assert_called_once()
     call_args, call_kwargs = MockCropDialog.call_args

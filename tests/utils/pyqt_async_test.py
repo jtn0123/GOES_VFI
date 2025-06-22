@@ -175,9 +175,7 @@ class PyQtAsyncTestCase(unittest.TestCase):
             task.cancel()
 
         # Run the event loop once more to process cancellations
-        self._event_loop.run_until_complete(
-            asyncio.gather(*pending, return_exceptions=True)
-        )
+        self._event_loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
 
 
 class AsyncSignalWaiter:

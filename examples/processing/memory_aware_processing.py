@@ -56,12 +56,8 @@ def demonstrate_memory_optimization():
     # Optimize dtype
     print("Optimizing array dtype...")
     optimized_array = optimizer.optimize_array_dtype(large_array)
-    print(
-        f"Original dtype: {large_array.dtype}, size: {large_array.nbytes // (1024*1024)}MB"
-    )
-    print(
-        f"Optimized dtype: {optimized_array.dtype}, size: {optimized_array.nbytes // (1024*1024)}MB"
-    )
+    print(f"Original dtype: {large_array.dtype}, size: {large_array.nbytes // (1024*1024)}MB")
+    print(f"Optimized dtype: {optimized_array.dtype}, size: {optimized_array.nbytes // (1024*1024)}MB")
     log_memory_usage("After dtype optimization")
 
     # Free the original array
@@ -99,9 +95,7 @@ def demonstrate_memory_aware_image_loading():
 
         print(f"Image loaded successfully:")
         print(f"  Size: {image_data.width}x{image_data.height}")
-        print(
-            f"  Memory optimized: {image_data.metadata.get('memory_optimized', False)}"
-        )
+        print(f"  Memory optimized: {image_data.metadata.get('memory_optimized', False)}")
         print(f"  Array dtype: {image_data.metadata.get('dtype', 'unknown')}")
         print(f"  Size in MB: {image_data.metadata.get('size_mb', 0):.2f}MB")
 
@@ -122,9 +116,7 @@ def demonstrate_memory_callbacks():
     # Define a callback
     def memory_warning_callback(stats):
         if stats.is_low_memory:
-            print(
-                f"⚠️  Memory callback: Low memory detected! Available: {stats.available_mb}MB"
-            )
+            print(f"⚠️  Memory callback: Low memory detected! Available: {stats.available_mb}MB")
 
     # Add callback
     monitor.add_callback(memory_warning_callback)

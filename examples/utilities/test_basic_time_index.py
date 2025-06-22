@@ -69,37 +69,27 @@ def test_to_s3_key(self):
 key_radf_g16 = to_s3_key(self.test_date_old, self.goes16, product_type="RadF", band=13)
 # Make sure key matches expected pattern format
 self.assertTrue(
-    key_radf_g16.startswith(
-        "ABI - L1b - RadF / 2022 / 001 / 00 / OR_ABI - L1b - RadF - M6C13_G16_s20220010"
-    )
+    key_radf_g16.startswith("ABI - L1b - RadF / 2022 / 001 / 00 / OR_ABI - L1b - RadF - M6C13_G16_s20220010")
 )
 self.assertTrue(key_radf_g16.endswith("*_e * _c*.nc"))
 
 # Test GOES - 18 RadF pattern
 key_radf_g18 = to_s3_key(self.test_date_old, self.goes18, product_type="RadF", band=13)
 self.assertTrue(
-    key_radf_g18.startswith(
-        "ABI - L1b - RadF / 2022 / 001 / 00 / OR_ABI - L1b - RadF - M6C13_G18_s20220010"
-    )
+    key_radf_g18.startswith("ABI - L1b - RadF / 2022 / 001 / 00 / OR_ABI - L1b - RadF - M6C13_G18_s20220010")
 )
 self.assertTrue(key_radf_g18.endswith("*_e * _c*.nc"))
 
 # Test GOES - 16 RadC pattern
 key_radc_g16 = to_s3_key(self.test_date_old, self.goes16, product_type="RadC", band=13)
 self.assertTrue(
-    key_radc_g16.startswith(
-        "ABI - L1b - RadC / 2022 / 001 / 00 / OR_ABI - L1b - RadC - M6C13_G16_s20220010"
-    )
+    key_radc_g16.startswith("ABI - L1b - RadC / 2022 / 001 / 00 / OR_ABI - L1b - RadC - M6C13_G16_s20220010")
 )
 self.assertTrue(key_radc_g16.endswith("*_e * _c*.nc"))
 
 # Test different band
 key_band1 = to_s3_key(self.test_date_old, self.goes16, product_type="RadF", band=1)
-self.assertTrue(
-    key_band1.startswith(
-        "ABI - L1b - RadF / 2022 / 001 / 00 / OR_ABI - L1b - RadF - M6C01_G16_s20220010"
-    )
-)
+self.assertTrue(key_band1.startswith("ABI - L1b - RadF / 2022 / 001 / 00 / OR_ABI - L1b - RadF - M6C01_G16_s20220010"))
 self.assertTrue(key_band1.endswith("*_e * _c*.nc"))
 
 
@@ -132,9 +122,7 @@ border_date = now - timedelta(days=7)  # At the window edge
 old_date = now - timedelta(days=14)  # Outside window
 
 # Test with monkeypatching datetime.now
-with unittest.mock.patch(
-    "goesvfi.integrity_check.time_index.datetime"
-) as mock_datetime:
+with unittest.mock.patch("goesvfi.integrity_check.time_index.datetime") as mock_datetime:
     mock_datetime.now.return_value = now
 mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
 

@@ -37,26 +37,20 @@ class GroupingModel(QAbstractItemModel):
         self._root_item = GroupItem("Root", None)
         self._headers = ["Group", "Count", "Status"]
 
-    def index(
-        self, row: int, column: int, parent: Optional[QModelIndex] = None
-    ) -> QModelIndex:
+    def index(self, row: int, column: int, parent: Optional[QModelIndex] = None) -> QModelIndex:
         """Create an index for the given row, column, and parent."""
         if parent is None:
-            pass
             parent = QModelIndex()
         if not self.hasIndex(row, column, parent):
-            pass
             return QModelIndex()
 
         if not parent.isValid():
-            pass
             parent_item = self._root_item
         else:
             parent_item = parent.internalPointer()
 
         child_item = parent_item.child(row)
         if child_item:
-            pass
             return self.createIndex(row, column, child_item)
         return QModelIndex()
 
@@ -64,18 +58,15 @@ class GroupingModel(QAbstractItemModel):
     def parent(self, index: QModelIndex) -> QModelIndex:  # type: ignore[override]
         """Return the parent index for the given index."""
         if not index.isValid():
-            pass
             return QModelIndex()
 
         child_item: Any = index.internalPointer()
         if child_item is None:
-            pass
             return QModelIndex()
 
         parent_item = child_item.parent()
 
         if parent_item is None or parent_item == self._root_item:
-            pass
             return QModelIndex()
 
         return self.createIndex(parent_item.row(), 0, parent_item)
@@ -83,14 +74,11 @@ class GroupingModel(QAbstractItemModel):
     def rowCount(self, parent: Optional[QModelIndex] = None) -> int:
         """Return the number of rows under the given parent."""
         if parent is None:
-            pass
             parent = QModelIndex()
         if parent.column() > 0:
-            pass
             return 0
 
         if not parent.isValid():
-            pass
             parent_item = self._root_item
         else:
             parent_item = parent.internalPointer()
@@ -104,7 +92,6 @@ class GroupingModel(QAbstractItemModel):
     def data(self, index: QModelIndex, role: int = Qt.ItemDataRole.DisplayRole) -> Any:
         """Return data for the given index and role."""
         if not index.isValid():
-            pass
             return None
 
         item = index.internalPointer()
@@ -137,10 +124,7 @@ class GroupingModel(QAbstractItemModel):
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
         """Return header data for the given section, orientation, and role."""
-        if (
-            orientation == Qt.Orientation.Horizontal
-            and role == Qt.ItemDataRole.DisplayRole
-        ):
+        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
             return self._headers[section]
         return None
 
@@ -155,31 +139,23 @@ class GroupingModel(QAbstractItemModel):
         self.beginResetModel()
 
         # Clear existing items
-        self._root_item = GroupItem(
-            "Root", None
-        )  # pylint: disable=attribute-defined-outside-init
+        self._root_item = GroupItem("Root", None)  # pylint: disable=attribute-defined-outside-init
 
         # Group by selected method
         if grouping == "day":
-            pass
             self._group_by_day(items)
         elif grouping == "hour":
-            pass
             self._group_by_hour(items)
         elif grouping == "status":
-            pass
             self._group_by_status(items)
         elif grouping == "satellite":
-            pass
             self._group_by_satellite(items)
         elif grouping == "source":
             self._group_by_source(items)
         else:
             # No grouping, just add all items
             for item in items:
-                self._root_item.addChild(
-                    GroupItem(str(item.timestamp), self._root_item, item)
-                )
+                self._root_item.addChild(GroupItem(str(item.timestamp), self._root_item, item))
 
         self.endResetModel()
 
@@ -196,7 +172,6 @@ class GroupingModel(QAbstractItemModel):
         for item in items:
             day_key = item.timestamp.strftime("%Y-%m-%d")
             if day_key not in day_groups:
-                pass
                 day_groups[day_key] = []
             day_groups[day_key].append(item)
 
@@ -206,7 +181,6 @@ class GroupingModel(QAbstractItemModel):
                 date = datetime.strptime(day, "%Y-%m-%d")
                 day_text = date.strftime("%a, %b %d, %Y")
             except ValueError:
-                pass
                 day_text = day
 
             day_group = GroupItem(day_text, self._root_item)
@@ -231,7 +205,6 @@ class GroupingModel(QAbstractItemModel):
         for item in items:
             hour = item.timestamp.hour
             if hour not in hour_groups:
-                pass
                 hour_groups[hour] = []
             hour_groups[hour].append(item)
 
@@ -268,13 +241,10 @@ class GroupingModel(QAbstractItemModel):
         # Assign items to groups
         for item in items:
             if getattr(item, "is_downloaded", False):
-                pass
                 status_groups["Downloaded"].append(item)
             elif getattr(item, "is_downloading", False):
-                pass
                 status_groups["Downloading"].append(item)
             elif getattr(item, "download_error", ""):
-                pass
                 status_groups["Error"].append(item)
             else:
                 status_groups["Missing"].append(item)
@@ -299,7 +269,6 @@ class GroupingModel(QAbstractItemModel):
         Group items by satellite identifier.
 
         Args:
-            pass
             items: List of missing timestamps
         """
         # Group by satellite
@@ -312,23 +281,18 @@ class GroupingModel(QAbstractItemModel):
             # Try to extract satellite name from filename or expected_filename
             filename = getattr(item, "expected_filename", "")
             if filename:
-                pass
                 # Common pattern for GOES satellites in filenames:
                 # OR_ABI-L1b-RadF-M6C01_G16_
                 if "G16" in filename:
-                    pass
                     satellite = "GOES-16"
                 elif "G17" in filename:
-                    pass
                     satellite = "GOES-17"
                 elif "G18" in filename:
-                    pass
                     satellite = "GOES-18"
                 # Add more satellite patterns as needed
 
             # Add to appropriate group
             if satellite not in satellite_groups:
-                pass
                 satellite_groups[satellite] = []
             satellite_groups[satellite].append(item)
 
@@ -344,9 +308,7 @@ class GroupingModel(QAbstractItemModel):
             for item in satellite_items:
                 # Use timestamp as item text
                 timestamp_text = item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-                satellite_group.addChild(
-                    GroupItem(timestamp_text, satellite_group, item)
-                )
+                satellite_group.addChild(GroupItem(timestamp_text, satellite_group, item))
 
     def _group_by_source(self, items: List[MissingTimestamp]) -> None:
         """
@@ -370,11 +332,9 @@ class GroupingModel(QAbstractItemModel):
             # Check for source information
             source_info = getattr(item, "source", "")
             if source_info:
-                pass
                 if "S3" in source_info or "s3://" in source_info:
                     source = "AWS S3"
                 elif "CDN" in source_info or "cdn.star.nesdis.noaa.gov" in source_info:
-                    pass
                     source = "NOAA CDN"
                 elif "local" in source_info.lower() or "file://" in source_info:
                     source = "Local Storage"
@@ -408,13 +368,11 @@ class GroupingModel(QAbstractItemModel):
             The item at the index, or None if invalid
         """
         if not index.isValid():
-            pass
             return None
 
         # Cast the internal pointer to the correct type
         item = index.internalPointer()
         if isinstance(item, GroupItem):
-            pass
             return item
         return None
 
@@ -452,7 +410,6 @@ class GroupItem:
     def child(self, row: int) -> Optional["GroupItem"]:
         """Return the child at the given row."""
         if 0 <= row < len(self._children):
-            pass
             return self._children[row]
         return None
 
@@ -463,7 +420,6 @@ class GroupItem:
     def row(self) -> int:
         """Return the item's row number within its parent."""
         if self._parent:
-            pass
             return self._parent._children.index(self)
         return 0
 
@@ -474,7 +430,6 @@ class GroupItem:
     def itemCount(self) -> int:
         """Return the number of actual items in this group (including children)."""
         if self._item:
-            pass
             return 1
 
         count = 0
@@ -485,22 +440,17 @@ class GroupItem:
     def status(self) -> str:
         """Return the status of this group."""
         if self._item:
-            pass
             if getattr(self._item, "is_downloaded", False):
-                pass
                 return "Complete"
             elif getattr(self._item, "is_downloading", False):
-                pass
                 return "Downloading"
             elif getattr(self._item, "download_error", ""):
-                pass
                 return "Error"
             return "Missing"
 
         # For groups, calculate based on children
         total = self.itemCount()
         if total == 0:
-            pass
             return "Unknown"
 
         downloaded = 0
@@ -508,12 +458,9 @@ class GroupItem:
 
         for child in self._children:
             if child._item:
-                pass
                 if getattr(child._item, "is_downloaded", False):
-                    pass
                     downloaded += 1
                 elif getattr(child._item, "download_error", ""):
-                    pass
                     errors += 1
             else:
                 # Recursive check for group
@@ -521,33 +468,26 @@ class GroupItem:
                 child_count = child.itemCount()
 
                 if child_status == "Complete":
-                    pass
                     downloaded += child_count
                 elif child_status == "Error":
-                    pass
                     errors += child_count
                 elif child_status == "Partial":
-                    pass
                     # Calculate approximately
                     downloaded += child_count // 2
                     errors += child_count // 4
 
         # Determine status based on counts
         if downloaded == total:
-            pass
             return "Complete"
         elif downloaded == 0 and errors == 0:
-            pass
             return "Missing"
         elif errors == total:
-            pass
             return "Error"
         return "Partial"
 
     def timestamp(self) -> Optional[datetime]:
         """Return the timestamp if this is a leaf item."""
         if self._item:
-            pass
             return self._item.timestamp
         return None
 
@@ -627,9 +567,7 @@ class MissingItemsTreeView(QWidget):
 
         layout.addWidget(self.tree_view)
 
-    def set_items(
-        self, items: List[MissingTimestamp], *args: Any, **kwargs: Any
-    ) -> None:
+    def set_items(self, items: List[MissingTimestamp], *args: Any, **kwargs: Any) -> None:
         """
         Set the items to be displayed.
 
@@ -648,7 +586,6 @@ class MissingItemsTreeView(QWidget):
         """
         # Ensure valid grouping type
         if group_by not in ["day", "hour", "satellite", "status", "source"]:
-            pass
             group_by = "day"  # Default to day
 
         # Store the current grouping
@@ -657,13 +594,11 @@ class MissingItemsTreeView(QWidget):
         # Update the combo box to reflect the new grouping
         for i in range(self.group_combo.count()):
             if self.group_combo.itemData(i) == group_by:
-                pass
                 self.group_combo.setCurrentIndex(i)
                 break
 
         # Update the model with the new grouping if we have items
         if self._items:
-            pass
             self.model.setItems(self._items, group_by)
 
             # Expand top-level items after changing grouping
@@ -740,7 +675,6 @@ class MissingItemsTreeView(QWidget):
     def highlight_item(self, item: MissingTimestamp) -> None:
         """Highlight an item (alias for highlight_timestamp)."""
         if hasattr(item, "timestamp"):
-            pass
             self.highlight_timestamp(item.timestamp)
 
     def _handle_selection(self, selected: Any, deselected: Any) -> None:
@@ -754,7 +688,6 @@ class MissingItemsTreeView(QWidget):
         _ = deselected  # Currently unused
         indexes = selected.indexes()
         if not indexes:
-            pass
             return
 
         # Get the selected item
@@ -762,7 +695,6 @@ class MissingItemsTreeView(QWidget):
         item = self.model.getItem(index)
 
         if item and item._item:
-            pass
             # Only emit for leaf items with an associated MissingTimestamp
             self.itemSelected.emit(item._item)
 
@@ -846,9 +778,7 @@ class ResultsSummaryWidget(QWidget):
         # Add stretch to push everything to the top
         layout.addStretch()
 
-    def update_summary(
-        self, items: List[MissingTimestamp], total_expected: int
-    ) -> None:
+    def update_summary(self, items: List[MissingTimestamp], total_expected: int) -> None:
         """
         Update the summary with current data.
 
@@ -864,7 +794,6 @@ class ResultsSummaryWidget(QWidget):
         # Calculate found (not in the missing list)
         found = total_expected - len(items)
         if found < 0:
-            pass
             found = 0
 
         # Update labels
@@ -876,7 +805,6 @@ class ResultsSummaryWidget(QWidget):
 
         # Update progress bar
         if total_expected > 0:
-            pass
             complete_percent = int((found + downloaded) / total_expected * 100)
             self.progress_bar.setValue(complete_percent)
             self.progress_bar.setFormat(f"{complete_percent}% Complete")
@@ -908,9 +836,7 @@ class ItemPreviewWidget(QWidget):
         # Create form layout for details
         form_layout = QFormLayout()
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
-        form_layout.setFieldGrowthPolicy(
-            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
-        )
+        form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
 
         # Timestamp
         self.timestamp_label = QLabel(self.tr(""))
@@ -985,7 +911,6 @@ class ItemPreviewWidget(QWidget):
         self.current_item = item
 
         if item is None:
-            pass
             # Clear all fields
             self.clear()
             return
@@ -997,17 +922,13 @@ class ItemPreviewWidget(QWidget):
         # Set status with color
         if getattr(item, "is_downloaded", False):
             self.status_label.setText(self.tr("Downloaded"))
-            self.status_label.setStyleSheet(
-                "color: #28a745; font-weight: bold;"
-            )  # Green
+            self.status_label.setStyleSheet("color: #28a745; font-weight: bold;")  # Green
             self.download_btn.setEnabled(False)
             self.view_btn.setEnabled(True)
         elif getattr(item, "is_downloading", False):
             progress = getattr(item, "progress", 0)
             self.status_label.setText(f"Downloading ({progress}%)")
-            self.status_label.setStyleSheet(
-                "color: #007bff; font-weight: bold;"
-            )  # Blue
+            self.status_label.setStyleSheet("color: #007bff; font-weight: bold;")  # Blue
             self.download_btn.setEnabled(False)
             self.view_btn.setEnabled(False)
         elif getattr(item, "download_error", ""):
@@ -1017,9 +938,7 @@ class ItemPreviewWidget(QWidget):
             self.view_btn.setEnabled(False)
         else:
             self.status_label.setText(self.tr("Missing"))
-            self.status_label.setStyleSheet(
-                "color: #6c757d; font-weight: bold;"
-            )  # Gray
+            self.status_label.setStyleSheet("color: #6c757d; font-weight: bold;")  # Gray
             self.download_btn.setEnabled(True)
             self.view_btn.setEnabled(False)
 

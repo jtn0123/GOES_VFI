@@ -64,9 +64,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
 
         # Mock reconcile manager to avoid real calls
         self.mock_reconcile_manager = MagicMock()
-        self.mock_reconcile_manager.scan_directory = AsyncMock(
-            return_value=(set(), set())
-        )
+        self.mock_reconcile_manager.scan_directory = AsyncMock(return_value=(set(), set()))
         self.mock_reconcile_manager.fetch_missing_files = AsyncMock(return_value={})
         self.view_model._reconcile_manager = self.mock_reconcile_manager
 
@@ -88,9 +86,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
 
         # Disable real disk space checking in tests
         # Patch get_disk_space_info method
-        self.mock_get_disk_space = patch.object(
-            self.view_model, "get_disk_space_info", return_value=(10.0, 100.0)
-        )
+        self.mock_get_disk_space = patch.object(self.view_model, "get_disk_space_info", return_value=(10.0, 100.0))
         self.mock_get_disk_space.start()
 
         # Dates for testing
@@ -163,9 +159,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         # Set satellite
         self.view_model.satellite = SatellitePattern.GOES_16
         assert self.view_model.satellite == SatellitePattern.GOES_16
-        self.view_model.satellite_changed.emit.assert_called_once_with(
-            SatellitePattern.GOES_16
-        )
+        self.view_model.satellite_changed.emit.assert_called_once_with(SatellitePattern.GOES_16)
 
         # Setting same value should not emit signal
         self.view_model.satellite_changed.reset_mock()
@@ -181,9 +175,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         # Set fetch_source
         self.view_model.fetch_source = FetchSource.CDN
         assert self.view_model.fetch_source == FetchSource.CDN
-        self.view_model.fetch_source_changed.emit.assert_called_once_with(
-            FetchSource.CDN
-        )
+        self.view_model.fetch_source_changed.emit.assert_called_once_with(FetchSource.CDN)
 
         # Setting same value should not emit signal
         self.view_model.fetch_source_changed.reset_mock()
@@ -290,9 +282,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         # Test cancelled
         self.view_model._handle_enhanced_scan_completed({"status": "cancelled"})
         assert self.view_model.status == ScanStatus.CANCELLED
-        self.view_model.scan_completed.emit.assert_called_once_with(
-            False, "Scan was cancelled"
-        )
+        self.view_model.scan_completed.emit.assert_called_once_with(False, "Scan was cancelled")
 
         # Reset mocks
         self.view_model.status_updated.reset_mock()
@@ -301,9 +291,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model.scan_completed.reset_mock()
 
         # Test error
-        self.view_model._handle_enhanced_scan_completed(
-            {"status": "error", "error": "Test error"}
-        )
+        self.view_model._handle_enhanced_scan_completed({"status": "error", "error": "Test error"})
         assert self.view_model.status == ScanStatus.ERROR
         self.view_model.scan_completed.emit.assert_called_once_with(False, "Test error")
 
@@ -359,16 +347,12 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model.download_progress_updated = MagicMock()
 
         # Test progress update
-        self.view_model._handle_enhanced_download_progress(
-            3, 10, "Downloading: 3/10 files"
-        )
+        self.view_model._handle_enhanced_download_progress(3, 10, "Downloading: 3/10 files")
 
         # Verify
         assert self.view_model._progress_current == 3
         assert self.view_model._progress_total == 10
-        self.view_model.status_updated.emit.assert_called_once_with(
-            "Downloading: 3/10 files"
-        )
+        self.view_model.status_updated.emit.assert_called_once_with("Downloading: 3/10 files")
         self.view_model.download_progress_updated.emit.assert_called_once_with(3, 10)
 
     def test_handle_download_item_progress(self):
@@ -464,18 +448,13 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
                 assert item is item2
 
         # Verify status message
-        assert (
-            self.view_model.status_message
-            == "Downloads complete: 1 successful, 1 failed"
-        )
+        assert self.view_model.status_message == "Downloads complete: 1 successful, 1 failed"
 
     def test_cleanup(self):
         """Test cleanup method."""
         # Create a fresh view model with mocked components
         mock_cache_db = MagicMock(spec=CacheDB)
-        mock_cache_db.close = (
-            MagicMock()
-        )  # Use MagicMock instead of AsyncMock to avoid warning
+        mock_cache_db.close = MagicMock()  # Use MagicMock instead of AsyncMock to avoid warning
         mock_cache_db.db_path = str(self.base_dir / "test_cache2.db")
 
         mock_timer = MagicMock()
@@ -499,15 +478,10 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
                 ),
                 (
                     self._disk_space_timer.wait()
-                    if hasattr(self, "_disk_space_timer")
-                    and self._disk_space_timer is not None
+                    if hasattr(self, "_disk_space_timer") and self._disk_space_timer is not None
                     else None
                 ),
-                (
-                    self._cache_db.close()
-                    if hasattr(self, "_cache_db") and self._cache_db is not None
-                    else None
-                ),
+                (self._cache_db.close() if hasattr(self, "_cache_db") and self._cache_db is not None else None),
             ),
         ):
             # Call the cleanup method
@@ -559,9 +533,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         ) as mock_download_task_class:
             # Set view model state
             timestamp = datetime.now()
-            self.view_model._missing_timestamps = [
-                EnhancedMissingTimestamp(timestamp, "test.png")
-            ]
+            self.view_model._missing_timestamps = [EnhancedMissingTimestamp(timestamp, "test.png")]
 
             # Start downloads
             self.view_model.start_enhanced_downloads()
@@ -586,9 +558,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
             self.mock_thread_pool.reset_mock()
             mock_download_task_class.reset_mock()
 
-            self.view_model._missing_timestamps = [
-                EnhancedMissingTimestamp(timestamp, "test.png")
-            ]
+            self.view_model._missing_timestamps = [EnhancedMissingTimestamp(timestamp, "test.png")]
             self.view_model._status = ScanStatus.DOWNLOADING
             self.view_model.start_enhanced_downloads()
 
@@ -617,9 +587,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
             set(),
             set(),
         )
-        self.mock_view_model._reconcile_manager.fetch_missing_files = AsyncMock(
-            return_value={}
-        )
+        self.mock_view_model._reconcile_manager.fetch_missing_files = AsyncMock(return_value={})
 
         # Configure necessary view model attributes
         self.mock_view_model._start_date = datetime(2023, 6, 15, 0, 0, 0)
@@ -649,9 +617,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         self.download_task.signals = self.signals
 
         # Patch asyncio.new_event_loop to return our test loop
-        self.patch_new_event_loop = patch(
-            "asyncio.new_event_loop", return_value=self._event_loop
-        )
+        self.patch_new_event_loop = patch("asyncio.new_event_loop", return_value=self._event_loop)
         self.mock_new_event_loop = self.patch_new_event_loop.start()
 
     def tearDown(self):
@@ -661,9 +627,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
             self.patch_new_event_loop.stop()
 
         # Clean up AsyncMock references to avoid warnings
-        if hasattr(self, "mock_view_model") and hasattr(
-            self.mock_view_model, "_reconcile_manager"
-        ):
+        if hasattr(self, "mock_view_model") and hasattr(self.mock_view_model, "_reconcile_manager"):
             if self.mock_view_model._reconcile_manager is not None:
                 if hasattr(self.mock_view_model._reconcile_manager, "scan_directory"):
                     if hasattr(
@@ -672,9 +636,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
                     ):
                         self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
                 # Don't try to reset the fetch_missing_files if it's a function
-                if hasattr(
-                    self.mock_view_model._reconcile_manager, "fetch_missing_files"
-                ):
+                if hasattr(self.mock_view_model._reconcile_manager, "fetch_missing_files"):
                     if hasattr(
                         self.mock_view_model._reconcile_manager.fetch_missing_files,
                         "reset_mock",
@@ -712,9 +674,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         # Mock the _run_scan method
         expected_result = {"status": "completed", "existing": set(), "missing": set()}
         # Patch the _run_scan method instead of assigning
-        with patch.object(
-            test_task, "_run_scan", new=AsyncMock(return_value=expected_result)
-        ):
+        with patch.object(test_task, "_run_scan", new=AsyncMock(return_value=expected_result)):
             # Mock the loop creation and execution
             with patch("asyncio.new_event_loop") as mock_loop_factory:
                 mock_loop = AsyncMock()
@@ -740,9 +700,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         existing = {datetime(2023, 6, 15, 0, 0, 0)}
         missing = {datetime(2023, 6, 15, 0, 10, 0)}
 
-        self.mock_view_model._reconcile_manager.scan_directory = AsyncMock(
-            return_value=(existing, missing)
-        )
+        self.mock_view_model._reconcile_manager.scan_directory = AsyncMock(return_value=(existing, missing))
 
         # Run the scan
         result = await self.scan_task._run_scan()
@@ -764,18 +722,14 @@ class TestAsyncTasks(PyQtAsyncTestCase):
 
         # Test cancelled operation
         self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
-        self.mock_view_model._reconcile_manager.scan_directory.side_effect = (
-            asyncio.CancelledError()
-        )
+        self.mock_view_model._reconcile_manager.scan_directory.side_effect = asyncio.CancelledError()
 
         result = await self.scan_task._run_scan()
         assert result["status"] == "cancelled"
 
         # Test error case
         self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
-        self.mock_view_model._reconcile_manager.scan_directory.side_effect = Exception(
-            "Test error"
-        )
+        self.mock_view_model._reconcile_manager.scan_directory.side_effect = Exception("Test error")
 
         result = await self.scan_task._run_scan()
         assert result["status"] == "error"
@@ -800,9 +754,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         mock_timestamp = datetime(2023, 6, 15, 0, 0, 0)
         expected_result = {mock_timestamp: Path("/test_path/test.png")}
 
-        with patch.object(
-            test_task, "_run_downloads", new=AsyncMock(return_value=expected_result)
-        ):
+        with patch.object(test_task, "_run_downloads", new=AsyncMock(return_value=expected_result)):
             # Mock the loop creation and execution
             with patch("asyncio.new_event_loop") as mock_loop_factory:
                 mock_loop = AsyncMock()
@@ -837,9 +789,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         async def mock_fetch_missing_files(*args, **kwargs):
             return mock_result
 
-        self.mock_view_model._reconcile_manager.fetch_missing_files = (
-            mock_fetch_missing_files
-        )
+        self.mock_view_model._reconcile_manager.fetch_missing_files = mock_fetch_missing_files
 
         # Run the downloads
         result = await self.download_task._run_downloads()

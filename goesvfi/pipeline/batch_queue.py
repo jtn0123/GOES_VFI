@@ -77,15 +77,13 @@ class BatchJob:
             "status": self.status.name,
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": (
-                self.completed_at.isoformat() if self.completed_at else None
-            ),
+            "completed_at": (self.completed_at.isoformat() if self.completed_at else None),
             "error_message": self.error_message,
             "progress": self.progress,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "BatchJob":
+    def from_dict(cls: type["BatchJob"], data: Dict[str, Any]) -> "BatchJob":
         """Create job from dictionary."""
         job = cls(
             id=data["id"],
@@ -125,7 +123,7 @@ class BatchQueue(QObject):
         process_function: Callable[[BatchJob], None],
         max_concurrent_jobs: int = 1,
         resource_manager: Optional[Any] = None,
-    ):
+    ) -> None:
         """
         Initialize batch queue.
 
@@ -236,9 +234,7 @@ class BatchQueue(QObject):
         """Clear completed and cancelled jobs."""
         with self._lock:
             to_remove = [
-                job_id
-                for job_id, job in self._jobs.items()
-                if job.status in (JobStatus.COMPLETED, JobStatus.CANCELLED)
+                job_id for job_id, job in self._jobs.items() if job.status in (JobStatus.COMPLETED, JobStatus.CANCELLED)
             ]
 
             for job_id in to_remove:
@@ -279,9 +275,7 @@ class BatchQueue(QObject):
                 continue
 
             # Start processing
-            thread = threading.Thread(
-                target=self._process_job, args=(job,), daemon=True
-            )
+            thread = threading.Thread(target=self._process_job, args=(job,), daemon=True)
 
             with self._lock:
                 self._active_jobs[job.id] = thread
@@ -399,14 +393,12 @@ class BatchQueue(QObject):
 class BatchProcessor:
     """High-level batch processing manager."""
 
-    def __init__(self, resource_manager: Optional[Any] = None):
+    def __init__(self, resource_manager: Optional[Any] = None) -> None:
         """Initialize batch processor."""
         self.resource_manager = resource_manager
         self.queue: Optional[BatchQueue] = None
 
-    def create_queue(
-        self, process_function: Callable[[BatchJob], None], max_concurrent: int = 1
-    ) -> BatchQueue:
+    def create_queue(self, process_function: Callable[[BatchJob], None], max_concurrent: int = 1) -> BatchQueue:
         """Create and return a batch queue."""
         self.queue = BatchQueue(
             process_function=process_function,

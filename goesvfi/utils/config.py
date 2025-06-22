@@ -177,11 +177,7 @@ def _load_config() -> Dict[str, Any]:
                 # For now, we assume top-level keys in TOML override corresponding keys in DEFAULTS.
                 # A more robust approach might use Pydantic or similar for structured config.
                 for key, value in loaded_data.items():
-                    if (
-                        key in data
-                        and isinstance(data[key], dict)
-                        and isinstance(value, dict)
-                    ):
+                    if key in data and isinstance(data[key], dict) and isinstance(value, dict):
                         # Simple recursive merge for nested dictionaries (up to one level deep for now)
                         data[key].update(value)
                     else:
@@ -206,9 +202,7 @@ def _load_config() -> Dict[str, Any]:
     sanchez_config = data.get("sanchez", {})
     sanchez_bin_dir_str = sanchez_config.get("bin_dir")
     if isinstance(sanchez_bin_dir_str, str):
-        pathlib.Path(sanchez_bin_dir_str).expanduser().mkdir(
-            parents=True, exist_ok=True
-        )
+        pathlib.Path(sanchez_bin_dir_str).expanduser().mkdir(parents=True, exist_ok=True)
 
     return data
 
@@ -237,9 +231,7 @@ def get_cache_dir() -> pathlib.Path:
 def get_default_tile_size() -> int:
     # Access nested config using .get() for safety
     pipeline_config = _load_config().get("pipeline", {})
-    tile_size = pipeline_config.get(
-        "default_tile_size", DEFAULTS["pipeline"]["default_tile_size"]
-    )
+    tile_size = pipeline_config.get("default_tile_size", DEFAULTS["pipeline"]["default_tile_size"])
     # Ensure it's an int
     if not isinstance(tile_size, int):
         tile_size = DEFAULTS["pipeline"]["default_tile_size"]  # Fallback to default
@@ -269,13 +261,9 @@ def get_logging_level() -> str:
 def get_supported_extensions() -> List[str]:
     # Access nested config using .get() for safety
     pipeline_config = _load_config().get("pipeline", {})
-    extensions = pipeline_config.get(
-        "supported_extensions", DEFAULTS["pipeline"]["supported_extensions"]
-    )
+    extensions = pipeline_config.get("supported_extensions", DEFAULTS["pipeline"]["supported_extensions"])
     # Ensure it's a list of strings
-    if not isinstance(extensions, list) or not all(
-        isinstance(ext, str) for ext in extensions
-    ):
+    if not isinstance(extensions, list) or not all(isinstance(ext, str) for ext in extensions):
         extensions = DEFAULTS["pipeline"]["supported_extensions"]  # Fallback to default
     return cast(List[str], extensions)
 

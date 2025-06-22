@@ -38,7 +38,7 @@ class InterpolationPipeline:
     with support for progress tracking and cancellation.
     """
 
-    def __init__(self, max_workers: int = 4):
+    def __init__(self, max_workers: int = 4) -> None:
         """Initialize the interpolation pipeline.
 
         Args:
@@ -74,7 +74,7 @@ class InterpolationPipeline:
             with self._lock:
                 self._active_tasks.discard(task_id)
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shutdown the pipeline and clean up resources."""
         self._executor.shutdown(wait=True)
         self._active_tasks.clear()
@@ -131,8 +131,8 @@ class VfiWorker(QThread):
         false_colour: bool = False,
         res_km: int = 2,
         sanchez_gui_temp_dir: Optional[str] = None,
-        **kwargs,  # Catch any extra arguments
-    ):
+        **kwargs: Any,  # Catch any extra arguments
+    ) -> None:
         """Initialize the VFI worker with processing parameters."""
         super().__init__()
 
@@ -181,7 +181,7 @@ class VfiWorker(QThread):
 
         LOGGER.info("VfiWorker initialized with parameters")
 
-    def run(self):
+    def run(self) -> None:
         """Run the VFI processing in a separate thread."""
         try:
             LOGGER.info("Starting VFI processing...")
@@ -387,7 +387,7 @@ def _encode_frame_to_png_bytes(img: Image.Image) -> bytes:
 def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> None:
     """Writes data to process stdin, handles BrokenPipeError with stderr logging."""
     if proc.stdin is None:
-        LOGGER.error(f"Cannot write {frame_desc}: ffmpeg stdin is None.")
+        LOGGER.error("Cannot write %s: ffmpeg stdin is None.", frame_desc)
         stderr_bytes = b""
         if proc.stderr:
             stderr_bytes = proc.stderr.read()
@@ -416,7 +416,7 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
         ffmpeg_log = stderr_output or stdout_output or "(no output captured)"
 
         # Include byte length and captured log in error message
-        LOGGER.error(f"Broken pipe while writing {frame_desc} ({len(data)} bytes) — FFmpeg log:\n{ffmpeg_log}")
+        LOGGER.error("Broken pipe while writing %s (%s bytes) — FFmpeg log:\n%s", frame_desc, len(data), ffmpeg_log)
         raise IOError(f"Broken pipe writing {frame_desc}. FFmpeg log: {ffmpeg_log}") from None  # Raise new exception
 
 
@@ -452,17 +452,17 @@ def _load_process_image(
         # Keep unique name for the output file
         temp_out_path = sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
         try:
-            LOGGER.debug(f"Saving original for Sanchez: {temp_in_path}")  # Log correct path
+            LOGGER.debug("Saving original for Sanchez: %s", temp_in_path)  # Log correct path
             img.save(temp_in_path, "PNG")  # Save with correct name
-            LOGGER.info(f"Running Sanchez on {temp_in_path.name} (res={res_km}km) -> {temp_out_path.name}")
+            LOGGER.info("Running Sanchez on %s (res=%skm) -> %s", temp_in_path.name, res_km, temp_out_path.name)
             # Ensure colourise handles Path objects and receives correct input path
             colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
-            LOGGER.debug(f"Loading Sanchez output: {temp_out_path}")
+            LOGGER.debug("Loading Sanchez output: %s", temp_out_path)
             img_colourised = Image.open(temp_out_path)
             # Replace original img object with colourised one
             img = img_colourised
         except Exception as e:
-            LOGGER.error(f"Sanchez colourise failed for {path.name}: {e}", exc_info=True)
+            LOGGER.error("Sanchez colourise failed for %s: %s", path.name, e, exc_info=True)
             # Keep original image if colourise fails
         finally:
             # Clean up temp files (both input and output)
@@ -474,7 +474,7 @@ def _load_process_image(
     # Apply crop *after* potential colourisation
     if crop_rect_pil:
         try:
-            LOGGER.debug(f"Applying crop {crop_rect_pil} to image from {path.name} (post-Sanchez if applied).")
+            LOGGER.debug("Applying crop %s to image from %s (post-Sanchez if applied).", crop_rect_pil, path.name)
             img_cropped = img.crop(crop_rect_pil)
             img = img_cropped  # Update img reference to cropped version
         except Exception as e:
@@ -759,7 +759,7 @@ def _process_single_image_worker(
                 img = img_colourised
             except Exception as e:
                 # Log error but return original image if Sanchez fails
-                LOGGER.error(f"Worker Sanchez failed for {original_path.name}: {e}")
+                LOGGER.error("Worker Sanchez failed for %s: %s", original_path.name, e)
                 # Keep original 'img' loaded above
             finally:
                 if temp_in_path.exists():
@@ -779,7 +779,7 @@ def _process_single_image_worker(
                 img_cropped = img.crop(crop_rect_pil)
                 img = img_cropped
             except Exception as e:
-                LOGGER.error(f"Worker failed to crop image {original_path.name}: {e}")
+                LOGGER.error("Worker failed to crop image %s: %s", original_path.name, e)
                 raise  # Re-raise cropping errors
 
         # 4. Validate dimensions - REMOVED
@@ -795,7 +795,7 @@ def _process_single_image_worker(
 
     except Exception as e:
         # Log any exception from the worker and re-raise
-        LOGGER.exception(f"Worker failed processing {original_path.name}")
+        LOGGER.exception("Worker failed processing %s", original_path.name)
         raise
 
 
@@ -876,7 +876,7 @@ def run_vfi(
     if len(paths) < 1 and skip_model:
         raise ValueError("At least one PNG image is required when skipping model.")
 
-    LOGGER.info(f"Found {len(paths)} images. Skip AI model: {skip_model}")
+    LOGGER.info("Found %s images. Skip AI model: %s", len(paths), skip_model)
 
     # --- Crop Setup (Convert XYWH to PIL LURB format) ---
     crop_for_pil: Tuple[int, int, int, int] | None = None
@@ -886,7 +886,7 @@ def run_vfi(
             if w <= 0 or h <= 0:
                 raise ValueError("Crop width and height must be positive.")
             crop_for_pil = (x, y, x + w, y + h)  # Convert to PIL format
-            LOGGER.info(f"Applying crop rectangle (x,y,w,h): {crop_rect_xywh} -> PIL format: {crop_for_pil}")
+            LOGGER.info("Applying crop rectangle (x,y,w,h): %s -> PIL format: %s", crop_rect_xywh, crop_for_pil)
         except (TypeError, ValueError) as e:
             LOGGER.error(
                 f"Invalid crop rectangle format provided: {crop_rect_xywh}. Error: {e}. Cropping will be disabled."
@@ -905,15 +905,15 @@ def run_vfi(
     ):
         sanchez_temp_path = pathlib.Path(sanchez_temp_dir_str)
         processed_img_path = pathlib.Path(processed_img_dir_str)
-        LOGGER.info(f"Using Sanchez temp dir: {sanchez_temp_path}")
-        LOGGER.info(f"Using processed image temp dir: {processed_img_path}")
+        LOGGER.info("Using Sanchez temp dir: %s", sanchez_temp_path)
+        LOGGER.info("Using processed image temp dir: %s", processed_img_path)
 
         # --- Determine Target Dimensions & Process First Image --- #
         target_width: int
         target_height: int
         processed_path_0: pathlib.Path
         try:
-            LOGGER.info(f"Processing first image sequentially: {paths[0].name}")
+            LOGGER.info("Processing first image sequentially: %s", paths[0].name)
             # Process first image using worker function (sequentially)
             # Do not pass target dimensions yet
             processed_path_0 = _process_single_image_worker(
@@ -929,14 +929,14 @@ def run_vfi(
             # Now determine actual target dimensions from the first *processed* image
             with Image.open(processed_path_0) as img0_processed_handle:
                 target_width, target_height = img0_processed_handle.size
-            LOGGER.info(f"Target frame dimensions set by first processed image: {target_width}x{target_height}")
+            LOGGER.info("Target frame dimensions set by first processed image: %sx%s", target_width, target_height)
 
         except Exception as e:
-            LOGGER.exception(f"Failed processing first image {paths[0]}. Cannot continue.")
+            LOGGER.exception("Failed processing first image %s. Cannot continue.", paths[0])
             raise IOError(f"Could not process first image {paths[0]}") from e
 
         # --- Parallel Processing for Remaining Images --- #
-        LOGGER.info(f"Processing remaining {len(paths) - 1} images in parallel (max_workers={max_workers})...")
+        LOGGER.info("Processing remaining %s images in parallel (max_workers=%s)...", len(paths) - 1, max_workers)
         processed_paths_rest: List[pathlib.Path] = []  # Initialize as empty list
         args_list = []  # Prepare list of arguments for map
         start_parallel_time = time.time()
@@ -976,16 +976,16 @@ def run_vfi(
                 raise RuntimeError(f"Parallel processing failed: {e}") from e
 
         end_parallel_time = time.time()
-        LOGGER.info(f"Parallel processing finished in {end_parallel_time - start_parallel_time:.2f} seconds.")
+        LOGGER.info("Parallel processing finished in %.2f seconds.", end_parallel_time - start_parallel_time)
 
         # Combine all processed paths
         all_processed_paths = [processed_path_0] + processed_paths_rest
         # No need to check for None anymore if map completes successfully
-        LOGGER.info(f"All {len(all_processed_paths)} images processed successfully.")
+        LOGGER.info("All %s images processed successfully.", len(all_processed_paths))
 
         # --- Prepare raw output path (moved here) ---
         raw_path = output_mp4_path.with_suffix(".raw.mp4")
-        LOGGER.info(f"Intermediate raw video path: {raw_path}")
+        LOGGER.info("Intermediate raw video path: %s", raw_path)
         # --- Determine Effective FPS for Raw Stream (moved here) ---
         effective_input_fps = fps * (num_intermediate_frames + 1) if not skip_model else fps
         # --- FFmpeg command (moved here) ---
@@ -1169,25 +1169,25 @@ def run_vfi(
                         ):
                             rife_cmd.extend(["-j", rife_thread_spec])
 
-                        LOGGER.debug(f"Running RIFE command: {' '.join(rife_cmd)}")
+                        LOGGER.debug("Running RIFE command: %s", " ".join(rife_cmd))
 
                         # Run RIFE
                         try:
                             rife_run = subprocess.run(rife_cmd, check=True, capture_output=True, text=True)
                             # FIX: Only log stderr if there was an actual error (check=True handles this)
                         except FileNotFoundError:
-                            LOGGER.error(f"RIFE executable not found at: {rife_exe_path}")
+                            LOGGER.error("RIFE executable not found at: %s", rife_exe_path)
                             raise
                         except subprocess.CalledProcessError as e:
                             LOGGER.error(
                                 f"RIFE execution failed (exit code {e.returncode}) for pair {p1_processed_path.name}, {p2_processed_path.name}"
                             )
                             # Log stdout/stderr only on error
-                            LOGGER.error(f"RIFE stdout: {e.stdout}")
-                            LOGGER.error(f"RIFE stderr: {e.stderr}")
+                            LOGGER.error("RIFE stdout: %s", e.stdout)
+                            LOGGER.error("RIFE stderr: %s", e.stderr)
                             raise RuntimeError(f"RIFE failed for pair {idx}") from e
                         except Exception as e:
-                            LOGGER.exception(f"An unexpected error occurred running RIFE for pair {idx}")
+                            LOGGER.exception("An unexpected error occurred running RIFE for pair %s", idx)
                             raise
                         finally:
                             # Clean up temporary input files - REMOVED as we now use paths directly
@@ -1265,20 +1265,20 @@ def run_vfi(
             # Read and log combined output/error stream
             if ffmpeg_proc.stdout:
                 for line_bytes in ffmpeg_proc.stdout:
-                    LOGGER.info(f"[ffmpeg-raw] {line_bytes.decode(errors='replace').rstrip()}")
+                    LOGGER.info("[ffmpeg-raw] %s", line_bytes.decode(errors="replace").rstrip())
 
             ret = ffmpeg_proc.wait()
             if ret != 0:
-                LOGGER.error(f"FFmpeg (raw video creation) failed (exit code {ret}). See logged output above.")
+                LOGGER.error("FFmpeg (raw video creation) failed (exit code %s). See logged output above.", ret)
                 raise RuntimeError(f"FFmpeg (raw video creation) failed (exit code {ret})")
             LOGGER.info("FFmpeg (raw video creation) completed successfully.")
 
             if not raw_path.exists() or raw_path.stat().st_size == 0:
-                LOGGER.error(f"Raw output file {raw_path} not created or is empty.")
+                LOGGER.error("Raw output file %s not created or is empty.", raw_path)
                 raise RuntimeError("Raw video file creation failed.")
 
             # --- Yield final path --- #
-            LOGGER.info(f"Successfully created raw video: {raw_path}")
+            LOGGER.info("Successfully created raw video: %s", raw_path)
             yield raw_path
 
         except Exception as e:
@@ -1300,26 +1300,28 @@ def _encode_frames_for_ffmpeg(
     frame_paths: List[pathlib.Path], target_dims: Optional[Tuple[int, int]]
 ) -> Iterator[bytes]:
     """Opens, optionally resizes, and encodes frames as PNG bytes for FFmpeg stdin."""
-    LOGGER.debug(f"_encode_frames_for_ffmpeg called with {len(frame_paths)} paths.")  # Add entry log
+    LOGGER.debug("_encode_frames_for_ffmpeg called with %s paths.", len(frame_paths))  # Add entry log
     total_frames = len(frame_paths)
     for i, frame_path in enumerate(frame_paths):
-        LOGGER.debug(f"Processing frame {i + 1}/{total_frames}: {frame_path}")  # Add loop iteration log
+        LOGGER.debug("Processing frame %s/%s: %s", i + 1, total_frames, frame_path)  # Add loop iteration log
         try:
             with Image.open(frame_path) as img:
                 # Ensure consistent dimensions if needed
                 if target_dims and img.size != target_dims:
                     # This should ideally not happen if preprocessing worked
-                    LOGGER.warning(f"Resizing frame {frame_path.name} from {img.size} to {target_dims}")
+                    LOGGER.warning("Resizing frame %s from %s to %s", frame_path.name, img.size, target_dims)
                     img = img.resize(target_dims, Image.Resampling.LANCZOS)
 
-                LOGGER.debug(f"Encoding frame {frame_path.name} (size {img.size}) for ffmpeg ({i + 1}/{total_frames}).")
+                LOGGER.debug(
+                    "Encoding frame %s (size %s) for ffmpeg (%s/%s).", frame_path.name, img.size, i + 1, total_frames
+                )
                 img_byte_arr = io.BytesIO()
                 img.save(img_byte_arr, format="PNG")
                 encoded_bytes = img_byte_arr.getvalue()
-                LOGGER.debug(f"Yielding {len(encoded_bytes)} bytes for {frame_path.name}")  # Log before yield
+                LOGGER.debug("Yielding %s bytes for %s", len(encoded_bytes), frame_path.name)  # Log before yield
                 yield encoded_bytes
         except Exception as e:
-            LOGGER.error(f"Error encoding frame {frame_path.name} for FFmpeg: {e}")
+            LOGGER.error("Error encoding frame %s for FFmpeg: %s", frame_path.name, e)
             # Decide whether to yield empty bytes, raise, or skip
             # Yielding empty bytes might cause ffmpeg errors
             # Skipping might lead to missing frames

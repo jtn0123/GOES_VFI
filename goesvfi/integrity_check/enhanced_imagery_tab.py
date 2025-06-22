@@ -4,7 +4,7 @@ This module provides an enhanced version of the GOES Imagery Tab with additional
 features for previewing, comparing, and organizing satellite imagery.
 """
 
-from typing import Optional
+from typing import Any, Optional
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QWidget
@@ -48,7 +48,7 @@ class EnhancedGOESImageryTab(QWidget):
         LOGGER.warning("Stub: Image request not implemented")
         self.imageRequested.emit(params)
 
-    def loadTimestamp(self, timestamp) -> None:
+    def loadTimestamp(self, timestamp: Any) -> None:
         """Load imagery for a specific timestamp.
 
         Args:

@@ -58,9 +58,7 @@ class VisualizationManager:
             satellite: Satellite identifier (G16 for GOES-16, G18 for GOES-18)
         """
         LOGGER.warning("Using stub implementation of VisualizationManager")
-        self.base_dir = (
-            Path(base_dir) if base_dir else Path.home() / "Downloads" / "goes_imagery"
-        )
+        self.base_dir = Path(base_dir) if base_dir else Path.home() / "Downloads" / "goes_imagery"
         self.satellite = satellite
 
         # Create base directory if it doesn't exist

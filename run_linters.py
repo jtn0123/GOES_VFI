@@ -130,7 +130,7 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     # First run with verbose output to check for silent failures
     verbose_cmd = [
         "flake8",
-        "--select=QTR",  # Select only Qt translation errors
+        "--select=TR",  # Select only Qt translation errors (TR001-TR999)
         "--verbose",  # Get verbose output to detect silent failures
     ]
     verbose_cmd.extend(qt_paths)
@@ -154,7 +154,7 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     # Now run the standard command to get output for the user
     cmd = [
         "flake8",
-        "--select=QTR",  # Select only Qt translation errors
+        "--select=TR",  # Select only Qt translation errors (TR001-TR999)
         "--statistics",  # Show statistics
     ]
     cmd.extend(qt_paths)

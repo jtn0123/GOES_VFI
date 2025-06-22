@@ -28,7 +28,7 @@ class MissingItemsTreeModel:
     This is a placeholder to allow the app to start.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
 
@@ -46,7 +46,7 @@ class ScanStatus(Enum):
 class MissingTimestamp:
     """Class representing a missing timestamp with additional metadata."""
 
-    def __init__(self, timestamp: datetime, expected_filename: str):
+    def __init__(self, timestamp: datetime, expected_filename: str) -> None:
         self.timestamp = timestamp
         self.expected_filename = expected_filename
         self.is_downloading = False
@@ -59,13 +59,10 @@ class MissingTimestamp:
 
         # Try to extract satellite from filename
         if "G16" in expected_filename:
-            pass
             self.satellite = "GOES-16"
         elif "G17" in expected_filename:
-            pass
             self.satellite = "GOES-17"
         elif "G18" in expected_filename:
-            pass
             self.satellite = "GOES-18"
         else:
             self.satellite = "Unknown"
@@ -74,7 +71,6 @@ class MissingTimestamp:
         if self.remote_url and "s3://" in self.remote_url:
             self.source = "AWS S3"
         elif self.remote_url and "cdn.star.nesdis.noaa.gov" in self.remote_url:
-            pass
             self.source = "NOAA CDN"
         else:
             self.source = "Unknown"
@@ -111,7 +107,7 @@ class IntegrityCheckViewModel(QObject):
     download_progress_updated = pyqtSignal(int, int)  # current, total
     download_item_updated = pyqtSignal(int, MissingTimestamp)  # index, updated item
 
-    def __init__(self, reconciler: Optional[Reconciler] = None):
+    def __init__(self, reconciler: Optional[Reconciler] = None) -> None:
         """
         Initialize the IntegrityCheckViewModel.
 
@@ -122,35 +118,21 @@ class IntegrityCheckViewModel(QObject):
 
         # Initialize state properties
         self._status_message = "Ready to scan"
-        self._status = (
-            ScanStatus.READY
-        )  # pylint: disable=attribute-defined-outside-init
+        self._status = ScanStatus.READY  # pylint: disable=attribute-defined-outside-init
         self._progress_current = 0  # pylint: disable=attribute-defined-outside-init
         self._progress_total = 100  # pylint: disable=attribute-defined-outside-init
         self._progress_eta = 0.0  # pylint: disable=attribute-defined-outside-init
 
         # Scan parameters
-        self._start_date = (
-            datetime.now().replace(  # pylint: disable=attribute-defined-outside-init
-                hour=0, minute=0, second=0, microsecond=0
-            )
-            - timedelta(days=1)
-        )
-        self._end_date = (
-            datetime.now().replace(  # pylint: disable=attribute-defined-outside-init
-                hour=23, minute=59, second=59, microsecond=0
-            )
-            - timedelta(days=1)
-        )
-        self._selected_pattern = (
-            SatellitePattern.GENERIC
-        )  # pylint: disable=attribute-defined-outside-init
-        self._interval_minutes = (
-            0  # 0 = auto detect  # pylint: disable=attribute-defined-outside-init
-        )
-        self._base_directory = Path(
-            os.path.expanduser("~")
-        )  # pylint: disable=attribute-defined-outside-init
+        self._start_date = datetime.now().replace(  # pylint: disable=attribute-defined-outside-init
+            hour=0, minute=0, second=0, microsecond=0
+        ) - timedelta(days=1)
+        self._end_date = datetime.now().replace(  # pylint: disable=attribute-defined-outside-init
+            hour=23, minute=59, second=59, microsecond=0
+        ) - timedelta(days=1)
+        self._selected_pattern = SatellitePattern.GENERIC  # pylint: disable=attribute-defined-outside-init
+        self._interval_minutes = 0  # 0 = auto detect  # pylint: disable=attribute-defined-outside-init
+        self._base_directory = Path(os.path.expanduser("~"))  # pylint: disable=attribute-defined-outside-init
         self._force_rescan = False  # pylint: disable=attribute-defined-outside-init
         self._auto_download = False  # pylint: disable=attribute-defined-outside-init
 
@@ -165,15 +147,11 @@ class IntegrityCheckViewModel(QObject):
         self._remote_base_url = "https://example.com/satellite-images"  # pylint: disable=attribute-defined-outside-init
 
         # Initialize reconciler
-        self._reconciler = (
-            reconciler or Reconciler()
-        )  # pylint: disable=attribute-defined-outside-init
+        self._reconciler = reconciler or Reconciler()  # pylint: disable=attribute-defined-outside-init
 
         # Threading state
         self._cancel_requested = False  # pylint: disable=attribute-defined-outside-init
-        self._thread_pool = (
-            QThreadPool.globalInstance()
-        )  # pylint: disable=attribute-defined-outside-init
+        self._thread_pool = QThreadPool.globalInstance()  # pylint: disable=attribute-defined-outside-init
 
     # --- Property accessors ---
 
@@ -186,10 +164,7 @@ class IntegrityCheckViewModel(QObject):
     def status_message(self, value: str) -> None:
         """Set the status message and emit signal."""
         if self._status_message != value:
-            pass
-            self._status_message = (
-                value  # pylint: disable=attribute-defined-outside-init
-            )
+            self._status_message = value  # pylint: disable=attribute-defined-outside-init
             self.status_updated.emit(value)
 
     @property
@@ -201,7 +176,6 @@ class IntegrityCheckViewModel(QObject):
     def status(self, value: ScanStatus) -> None:
         """Set the status type and emit signal."""
         if self._status != value:
-            pass
             self._status = value  # pylint: disable=attribute-defined-outside-init
             self.status_type_changed.emit(value)
 
@@ -253,9 +227,7 @@ class IntegrityCheckViewModel(QObject):
     @base_directory.setter
     def base_directory(self, value: str) -> None:
         """Set the base directory from string path."""
-        self._base_directory = Path(
-            value
-        )  # pylint: disable=attribute-defined-outside-init
+        self._base_directory = Path(value)  # pylint: disable=attribute-defined-outside-init
 
     @property
     def force_rescan(self) -> bool:
@@ -294,13 +266,11 @@ class IntegrityCheckViewModel(QObject):
 
     @property
     def is_downloading(self) -> bool:
-        pass
         """Check if downloads are in progress."""
         return self._status == ScanStatus.DOWNLOADING
 
     @property
     def can_start_scan(self) -> bool:
-        pass
         """Check if a scan can be started."""
         return (
             self._status != ScanStatus.SCANNING
@@ -311,7 +281,6 @@ class IntegrityCheckViewModel(QObject):
 
     @property
     def missing_items(self) -> List[MissingTimestamp]:
-        pass
         """Get the list of missing timestamps."""
         return self._missing_timestamps
 
@@ -322,7 +291,6 @@ class IntegrityCheckViewModel(QObject):
 
     @property
     def missing_count(self) -> int:
-        pass
         """Get the count of missing timestamps."""
         return len(self._missing_timestamps)
 
@@ -346,10 +314,7 @@ class IntegrityCheckViewModel(QObject):
     def start_scan(self) -> None:
         """Start the scan operation."""
         if not self.can_start_scan:
-            pass
-            LOGGER.warning(
-                "Cannot start scan: Operation in progress or directory invalid"
-            )
+            LOGGER.warning("Cannot start scan: Operation in progress or directory invalid")
             return
 
         # Update state
@@ -377,7 +342,6 @@ class IntegrityCheckViewModel(QObject):
 
         # Start the task
         if self._thread_pool is not None:
-            pass
             self._thread_pool.start(scan_task)
             LOGGER.info("Scan task started")
         else:
@@ -386,22 +350,17 @@ class IntegrityCheckViewModel(QObject):
     def cancel_scan(self) -> None:
         """Cancel the ongoing scan operation."""
         if self._status == ScanStatus.SCANNING:
-            pass
             self.status_message = "Cancelling scan..."
-            self._cancel_requested = (
-                True  # pylint: disable=attribute-defined-outside-init
-            )
+            self._cancel_requested = True  # pylint: disable=attribute-defined-outside-init
             LOGGER.info("Scan cancellation requested")
 
     def start_downloads(self) -> None:
         """Start downloading missing files."""
         if self._status == ScanStatus.DOWNLOADING:
-            pass
             LOGGER.warning("Download already in progress")
             return
 
         if not self.has_missing_items:
-            pass
             LOGGER.warning("No missing items to download")
             return
 
@@ -418,27 +377,19 @@ class IntegrityCheckViewModel(QObject):
             for index, item in enumerate(self._missing_timestamps):
                 # Skip already downloaded items
                 if item.is_downloaded:
-                    pass
                     continue
 
                 # Create download task
-                download_task = DownloadTask(
-                    remote_store, item, index, self._base_directory
-                )
+                download_task = DownloadTask(remote_store, item, index, self._base_directory)
 
                 # Connect signals
-                download_task.signals.progress.connect(
-                    lambda c, t, i=index: self._update_download_progress(i, c, t)
-                )
+                download_task.signals.progress.connect(lambda c, t, i=index: self._update_download_progress(i, c, t))
                 download_task.signals.finished.connect(
-                    lambda success, msg, i=index, item=item: self._handle_download_completed(
-                        i, item, success, msg
-                    )
+                    lambda success, msg, i=index, item=item: self._handle_download_completed(i, item, success, msg)
                 )
 
                 # Start the task
                 if self._thread_pool is not None:
-                    pass
                     self._thread_pool.start(download_task)
                 else:
                     LOGGER.error("Thread pool is None, cannot start download task")
@@ -450,7 +401,6 @@ class IntegrityCheckViewModel(QObject):
             LOGGER.info("Started downloads for %s items", len(self._missing_timestamps))
 
         except Exception as e:
-            pass
             LOGGER.error("Error starting downloads: %s", e)
             self.status = ScanStatus.ERROR
             self.status_message = f"Error starting downloads: {e}"
@@ -458,11 +408,8 @@ class IntegrityCheckViewModel(QObject):
     def cancel_downloads(self) -> None:
         """Cancel ongoing downloads."""
         if self._status == ScanStatus.DOWNLOADING:
-            pass
             self.status_message = "Cancelling downloads..."
-            self._cancel_requested = (
-                True  # pylint: disable=attribute-defined-outside-init
-            )
+            self._cancel_requested = True  # pylint: disable=attribute-defined-outside-init
             LOGGER.info("Download cancellation requested")
 
     def clear_cache(self) -> None:
@@ -470,12 +417,10 @@ class IntegrityCheckViewModel(QObject):
         try:
             success = self._reconciler.cache.clear_cache()
             if success:
-                pass
                 self.status_message = "Cache cleared successfully"
             else:
                 self.status_message = "Error clearing cache"
         except Exception as e:
-            pass
             LOGGER.error("Error clearing cache: %s", e)
             self.status_message = f"Error clearing cache: {e}"
 
@@ -484,7 +429,6 @@ class IntegrityCheckViewModel(QObject):
         try:
             return self._reconciler.cache.get_cache_stats()
         except Exception as e:
-            pass
             LOGGER.error("Error getting cache stats: %s", e)
             return {"error": str(e)}
 
@@ -492,9 +436,7 @@ class IntegrityCheckViewModel(QObject):
 
     def _update_scan_progress(self, current: int, total: int, eta: float) -> None:
         """Update progress during scan operation."""
-        self._progress_current = (
-            current  # pylint: disable=attribute-defined-outside-init
-        )
+        self._progress_current = current  # pylint: disable=attribute-defined-outside-init
         self._progress_total = total  # pylint: disable=attribute-defined-outside-init
         self._progress_eta = eta  # pylint: disable=attribute-defined-outside-init
 
@@ -505,14 +447,12 @@ class IntegrityCheckViewModel(QObject):
     def _handle_scan_completed(self, result: Dict[str, Any]) -> None:
         """Handle scan completion."""
         if result.get("status") == "cancelled":
-            pass
             self.status = ScanStatus.CANCELLED
             self.status_message = "Scan cancelled"
             self.scan_completed.emit(False, "Scan was cancelled")
             return
 
         if result.get("status") == "error":
-            pass
             self.status = ScanStatus.ERROR
             error_msg = result.get("error", "Unknown error")
             self.status_message = f"Scan error: {error_msg}"
@@ -520,18 +460,10 @@ class IntegrityCheckViewModel(QObject):
             return
 
         # Process successful result
-        self._last_scan_time = (
-            datetime.now()
-        )  # pylint: disable=attribute-defined-outside-init
-        self._total_expected = result.get(
-            "total_expected", 0
-        )  # pylint: disable=attribute-defined-outside-init
-        self._total_found = result.get(
-            "total_found", 0
-        )  # pylint: disable=attribute-defined-outside-init
-        self._detected_interval = result.get(
-            "interval", 0
-        )  # pylint: disable=attribute-defined-outside-init
+        self._last_scan_time = datetime.now()  # pylint: disable=attribute-defined-outside-init
+        self._total_expected = result.get("total_expected", 0)  # pylint: disable=attribute-defined-outside-init
+        self._total_found = result.get("total_found", 0)  # pylint: disable=attribute-defined-outside-init
+        self._detected_interval = result.get("interval", 0)  # pylint: disable=attribute-defined-outside-init
 
         # Convert missing timestamps to objects
         missing_datetimes = result.get("missing", [])
@@ -541,11 +473,8 @@ class IntegrityCheckViewModel(QObject):
 
         # If we have details, use them; otherwise, create from basic timestamps
         if timestamp_details:
-            pass
             for detail in timestamp_details:
-                item = MissingTimestamp(
-                    detail["timestamp"], detail.get("expected_filename", "unknown.png")
-                )
+                item = MissingTimestamp(detail["timestamp"], detail.get("expected_filename", "unknown.png"))
                 self._missing_timestamps.append(item)
         else:
             for dt in missing_datetimes:
@@ -555,13 +484,11 @@ class IntegrityCheckViewModel(QObject):
         # Update UI
         missing_count = len(self._missing_timestamps)
         if missing_count > 0:
-            pass
             self.status_message = f"Scan complete: {missing_count} missing items found"
             self.missing_items_updated.emit(self._missing_timestamps)
 
             # Auto-download if enabled
             if self._auto_download and missing_count > 0:
-                pass
                 self.start_downloads()
             else:
                 self.status = ScanStatus.COMPLETED
@@ -582,9 +509,7 @@ class IntegrityCheckViewModel(QObject):
         self.status_message = f"Scan error: {error_message}"
         self.scan_completed.emit(False, error_message)
 
-    def _update_download_progress(
-        self, item_index: int, current: int, total: int
-    ) -> None:
+    def _update_download_progress(self, item_index: int, current: int, total: int) -> None:
         """Update progress during file download."""
         # Update overall progress
         total_items = len(self._missing_timestamps)
@@ -594,15 +519,12 @@ class IntegrityCheckViewModel(QObject):
         # Update status message with overall progress
         self.status_message = f"Downloading: {current_item}/{total_items} files"
 
-    def _handle_download_completed(
-        self, item_index: int, item: MissingTimestamp, success: bool, message: str
-    ) -> None:
+    def _handle_download_completed(self, item_index: int, item: MissingTimestamp, success: bool, message: str) -> None:
         """Handle completion of a file download."""
         # Update item state
         item.is_downloading = False
 
         if success:
-            pass
             item.is_downloaded = True
             item.download_error = ""
         else:
@@ -614,26 +536,19 @@ class IntegrityCheckViewModel(QObject):
         # Check if all downloads are complete
         all_complete = True
         for item in self._missing_timestamps:
-            pass
             if item.is_downloading:
-                pass
                 all_complete = False
                 break
 
         if all_complete:
-            pass
             # Count successful downloads
-            success_count = sum(
-                1 for item in self._missing_timestamps if item.is_downloaded
-            )
+            success_count = sum(1 for item in self._missing_timestamps if item.is_downloaded)
 
             self.status = ScanStatus.COMPLETED
             self.status_message = f"Downloads complete: {success_count}/{len(self._missing_timestamps)} successful"  # pylint: disable=attribute-defined-outside-init
 
             # Clear cancel flag
-            self._cancel_requested = (
-                False  # pylint: disable=attribute-defined-outside-init
-            )
+            self._cancel_requested = False  # pylint: disable=attribute-defined-outside-init
 
 
 class TaskSignals(QObject):
@@ -656,7 +571,7 @@ class ScanTask(QRunnable):
         base_directory: Path,
         interval_minutes: int = 0,
         force_rescan: bool = False,
-    ):
+    ) -> None:
         """
         Initialize the scan task.
 
@@ -701,7 +616,6 @@ class ScanTask(QRunnable):
             self.signals.finished.emit(result)
 
         except Exception as e:
-            pass
             LOGGER.error("Error in scan task: %s", e, exc_info=True)
             self.signals.error.emit(str(e))
 
@@ -714,7 +628,6 @@ class ScanTask(QRunnable):
         return self._cancel_requested
 
     def cancel(self) -> None:
-        pass
         """Request cancellation of the task."""
         self._cancel_requested = True  # pylint: disable=attribute-defined-outside-init
 
@@ -735,7 +648,7 @@ class DownloadTask(QRunnable):
         item: MissingTimestamp,
         item_index: int,
         destination_dir: Path,
-    ):
+    ) -> None:
         """
         Initialize the download task.
 
@@ -759,9 +672,7 @@ class DownloadTask(QRunnable):
         """Execute the download task."""
         try:
             # Construct URL
-            url = self.remote_store.construct_url(
-                self.item.timestamp, SatellitePattern.GENERIC
-            )
+            url = self.remote_store.construct_url(self.item.timestamp, SatellitePattern.GENERIC)
             self.item.remote_url = url
 
             # Construct local path
@@ -772,7 +683,6 @@ class DownloadTask(QRunnable):
 
             # Check if file exists remotely
             if not self.remote_store.check_exists(url):
-                pass
                 self.signals.finished.emit(False, f"File not found at {url}")
                 return
 
@@ -785,13 +695,11 @@ class DownloadTask(QRunnable):
             )
 
             if success:
-                pass
                 self.signals.finished.emit(True, f"Downloaded to {local_path}")
             else:
                 self.signals.finished.emit(False, "Download failed")
 
         except Exception as e:
-            pass
             LOGGER.error("Error in download task: %s", e, exc_info=True)
             self.signals.finished.emit(False, str(e))
 
@@ -804,6 +712,5 @@ class DownloadTask(QRunnable):
         return self._cancel_requested
 
     def cancel(self) -> None:
-        pass
         """Request cancellation of the task."""
         self._cancel_requested = True  # pylint: disable=attribute-defined-outside-init

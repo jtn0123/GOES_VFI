@@ -81,9 +81,7 @@ self.mock_s3_client.head_object.side_effect = client_error
 
 # Test the download method - should raise AuthenticationError
 with self.assertRaises(AuthenticationError) as context:
-    await self.store.download(
-        self.test_timestamp, self.test_satellite, self.test_dest_path
-    )
+    await self.store.download(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
 # Verify the error message contains helpful information
 error_msg = str(context.exception)
@@ -101,15 +99,11 @@ pass
 self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
 
 # Then make download_file fail with timeout
-self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError(
-    "Connection timed out"
-)
+self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError("Connection timed out")
 
 # Test the download method - should raise ConnectionError
 with self.assertRaises(ConnectionError) as context:
-    await self.store.download(
-        self.test_timestamp, self.test_satellite, self.test_dest_path
-    )
+    await self.store.download(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
 # Verify the error message contains helpful information
 error_msg = str(context.exception)
@@ -147,9 +141,7 @@ self.mock_s3_client.get_paginator.return_value = paginator_mock
 
 # Test the download method - should raise ResourceNotFoundError
 with self.assertRaises(ResourceNotFoundError) as context:
-    await self.store.download(
-        self.test_timestamp, self.test_satellite, self.test_dest_path
-    )
+    await self.store.download(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
 # Verify the error message contains helpful information
 error_msg = str(context.exception)
@@ -175,9 +167,7 @@ self.mock_s3_client.download_file.side_effect = PermissionError("Permission deni
 
 # Test the download method - should raise AuthenticationError
 with self.assertRaises(AuthenticationError) as context:
-    await self.store.download(
-        self.test_timestamp, self.test_satellite, self.test_dest_path
-    )
+    await self.store.download(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
 # Verify the error message contains helpful information
 error_msg = str(context.exception)
@@ -225,9 +215,7 @@ self.mock_s3_client.download_file.side_effect = download_error
 
 # Test the download method - should raise RemoteStoreError
 with self.assertRaises(RemoteStoreError) as context:
-    await self.store.download(
-        self.test_timestamp, self.test_satellite, self.test_dest_path
-    )
+    await self.store.download(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
 # Verify the error message contains helpful information
 error_msg = str(context.exception)

@@ -5,6 +5,8 @@ This module provides consistent dark mode styling that matches the main applicat
 look and feel.
 """
 
+from typing import Any
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import QApplication
@@ -42,9 +44,7 @@ def apply_dark_mode_palette(app: QApplication) -> None:
 
     # Text
     dark_palette.setColor(QPalette.ColorRole.Text, text_color)
-    dark_palette.setColor(
-        QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, disabled_text_color
-    )
+    dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, disabled_text_color)
 
     # Button
     dark_palette.setColor(QPalette.ColorRole.Button, dark_color)
@@ -293,7 +293,7 @@ QMessageBox QPushButton {
 """
 
 
-def apply_integrity_check_dark_mode(widget) -> None:
+def apply_integrity_check_dark_mode(widget: Any) -> None:
     """
     Apply dark mode styling to integrity check widgets.
 

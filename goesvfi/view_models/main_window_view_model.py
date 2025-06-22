@@ -47,7 +47,7 @@ class MainWindowViewModel(QObject):
         date_sorter_model: DateSorter,
         # Add other necessary models/services here for ProcessingViewModel
         parent: QObject | None = None,
-    ):
+    ) -> None:
         """
         Initializes the MainWindowViewModel and its child ViewModels.
 
@@ -131,9 +131,7 @@ class MainWindowViewModel(QObject):
         """
         if self._active_tab_index != index:
             pass
-            self._active_tab_index = (
-                index  # pylint: disable=attribute-defined-outside-init
-            )
+            self._active_tab_index = index  # pylint: disable=attribute-defined-outside-init
             self.active_tab_changed.emit(self._active_tab_index)
             LOGGER.debug("Active tab changed to index: %s", self._active_tab_index)
 

@@ -6,6 +6,8 @@ and Integrity Check tabs for improved integration and user experience.
 """
 
 import logging
+from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QPushButton, QVBoxLayout, QWidget
@@ -19,12 +21,12 @@ class PreviewMetadata:
 
     def __init__(
         self,
-        channel=None,
-        product_type=None,
-        date_time=None,
-        source=None,
-        processing_options=None,
-    ):
+        channel: Optional[Any] = None,
+        product_type: Optional[Any] = None,
+        date_time: Optional[datetime] = None,
+        source: Optional[str] = None,
+        processing_options: Optional[Dict[str, Any]] = None,
+    ) -> None:
         self.channel = channel
         self.product_type = product_type
         self.date_time = date_time
@@ -35,7 +37,7 @@ class PreviewMetadata:
 class ItemPreviewWidget(QWidget):
     """Widget for previewing items."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.current_item = None
         self.download_btn = QPushButton("Download")
@@ -45,7 +47,7 @@ class ItemPreviewWidget(QWidget):
         layout.addWidget(self.download_btn)
         layout.addWidget(self.view_btn)
 
-    def set_item(self, item):
+    def set_item(self, item: Any) -> None:
         """Set the current item for preview."""
         self.current_item = item
         # Update button states based on item
@@ -55,7 +57,7 @@ class ItemPreviewWidget(QWidget):
             # Enable view button for downloaded items
             self.view_btn.setEnabled(getattr(item, "is_downloaded", False))
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear the preview."""
         self.current_item = None
         self.download_btn.setEnabled(False)
@@ -67,7 +69,7 @@ class MissingItemsTreeView(QWidget):
 
     itemSelected = pyqtSignal(object)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._items = []
         self._grouping = "day"  # Default grouping
@@ -76,19 +78,19 @@ class MissingItemsTreeView(QWidget):
 
         self.model = QStringListModel()
 
-    def set_items(self, items):
+    def set_items(self, items: List[Any]) -> None:
         """Set items to display."""
         self._items = items
         # Update model based on grouping
         self._update_model()
 
-    def set_grouping(self, group_by):
+    def set_grouping(self, group_by: str) -> None:
         """Set grouping method."""
         self._grouping = group_by
         # Update model with new grouping
         self._update_model()
 
-    def _update_model(self):
+    def _update_model(self) -> None:
         """Update the model based on current grouping."""
         if not self._items:
             self.model.setStringList([])
@@ -131,19 +133,19 @@ class MissingItemsTreeView(QWidget):
             # Default: show all items
             self.model.setStringList([f"Item {i}" for i in range(len(self._items))])
 
-    def rowCount(self):
+    def rowCount(self) -> int:
         """Get the number of rows in the model."""
         return self.model.rowCount()
 
-    def highlight_timestamp(self, timestamp):
+    def highlight_timestamp(self, timestamp: datetime) -> None:
         """Highlight item with given timestamp."""
         pass
 
-    def expandAll(self):
+    def expandAll(self) -> None:
         """Expand all groups."""
         pass
 
-    def collapseAll(self):
+    def collapseAll(self) -> None:
         """Collapse all groups."""
         pass
 
@@ -151,7 +153,7 @@ class MissingItemsTreeView(QWidget):
 class ResultsSummaryWidget(QWidget):
     """Widget for displaying results summary."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         from PyQt6.QtWidgets import QLabel
 
@@ -161,19 +163,15 @@ class ResultsSummaryWidget(QWidget):
         self.missing_label = QLabel("0")
         self.errors_label = QLabel("0")
 
-    def update_summary(self, items, total_expected):
+    def update_summary(self, items: List[Any], total_expected: int) -> None:
         """Update the summary display."""
         # Update total expected
         self.total_expected_label.setText(str(total_expected))
 
         # Count items by status
-        downloaded_count = sum(
-            1 for item in items if getattr(item, "is_downloaded", False)
-        )
+        downloaded_count = sum(1 for item in items if getattr(item, "is_downloaded", False))
         error_count = sum(1 for item in items if getattr(item, "download_error", None))
-        downloading_count = sum(
-            1 for item in items if getattr(item, "is_downloading", False)
-        )
+        downloading_count = sum(1 for item in items if getattr(item, "is_downloading", False))
         missing_count = len(items) - downloaded_count - error_count - downloading_count
 
         # Update labels
@@ -185,11 +183,11 @@ class ResultsSummaryWidget(QWidget):
 class CollapsibleSettingsGroup(QWidget):
     """Collapsible settings group widget."""
 
-    def __init__(self, title="Settings", parent=None):
+    def __init__(self, title: str = "Settings", parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.title = title
         self.collapsed = False
 
-    def toggle_collapsed(self):
+    def toggle_collapsed(self) -> None:
         """Toggle collapsed state."""
         self.collapsed = not self.collapsed

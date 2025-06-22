@@ -33,9 +33,7 @@ import numpy as np
 import xarray as xr
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Constants
@@ -93,9 +91,7 @@ def create_s3_client():
     """Create an S3 client with unsigned access for public buckets."""
     return boto3.client(
         "s3",
-        config=boto3.session.Config(
-            signature_version=botocore.UNSIGNED, retries={"max_attempts": 5}
-        ),
+        config=boto3.session.Config(signature_version=botocore.UNSIGNED, retries={"max_attempts": 5}),
     )
 
 
@@ -114,9 +110,7 @@ def list_available_days(s3_client, product_prefix, year=None, month=None, day=No
 
     try:
         # Use delimiter to list by directories
-        response = s3_client.list_objects_v2(
-            Bucket=GOES_BUCKET, Prefix=base_prefix, Delimiter="/", MaxKeys=100
-        )
+        response = s3_client.list_objects_v2(Bucket=GOES_BUCKET, Prefix=base_prefix, Delimiter="/", MaxKeys=100)
 
         available_items = []
 
@@ -133,9 +127,7 @@ def list_available_days(s3_client, product_prefix, year=None, month=None, day=No
         return []
 
 
-def find_latest_file(
-    s3_client, product_type, channel_num=None, year=None, day_of_year=None, hour=None
-):
+def find_latest_file(s3_client, product_type, channel_num=None, year=None, day_of_year=None, hour=None):
     """Find the latest file for a specific product type and channel."""
     product_info = PRODUCTS.get(product_type)
     if not product_info:
@@ -159,9 +151,7 @@ def find_latest_file(
 
     try:
         # List objects with the given prefix
-        response = s3_client.list_objects_v2(
-            Bucket=GOES_BUCKET, Prefix=prefix, MaxKeys=100
-        )
+        response = s3_client.list_objects_v2(Bucket=GOES_BUCKET, Prefix=prefix, MaxKeys=100)
 
         if "Contents" not in response:
             logger.warning("No files found for %s", prefix)
@@ -186,9 +176,7 @@ def find_latest_file(
             matching_files.append(file_key)
 
         if not matching_files:
-            logger.warning(
-                f"No matching files found for {prefix} with channel {channel_num}"
-            )
+            logger.warning(f"No matching files found for {prefix} with channel {channel_num}")
             return None
 
         # Sort by name (which includes timestamp) and return the latest
@@ -216,9 +204,7 @@ def download_file(s3_client, file_key):
 
     logger.info("Downloading %s to %s", file_key, local_file)
     try:
-        s3_client.download_file(
-            Bucket=GOES_BUCKET, Key=file_key, Filename=str(local_file)
-        )
+        s3_client.download_file(Bucket=GOES_BUCKET, Key=file_key, Filename=str(local_file))
         logger.info("Download complete: %s", local_file)
         return local_file
     except Exception as e:
@@ -271,11 +257,7 @@ def extract_netcdf_data(nc_file, product_type):
             if not found:
                 # Try to find any relevant rainfall variable
                 candidates = [
-                    var
-                    for var in ds.data_vars
-                    if any(
-                        kw in var.lower() for kw in ["rain", "precip", "qpe", "rate"]
-                    )
+                    var for var in ds.data_vars if any(kw in var.lower() for kw in ["rain", "precip", "qpe", "rate"])
                 ]
                 if candidates:
                     var_name = candidates[0]
@@ -314,19 +296,13 @@ def extract_netcdf_data(nc_file, product_type):
 
         # Include channel description if available
         if "channel" in metadata:
-            metadata["channel_description"] = CHANNEL_DESCRIPTIONS.get(
-                metadata["channel"], "Unknown channel"
-            )
+            metadata["channel_description"] = CHANNEL_DESCRIPTIONS.get(metadata["channel"], "Unknown channel")
 
         # Include projection information if available
         if "goes_imager_projection" in ds:
             metadata["projection"] = "GOES Imager Projection"
-            metadata["semi_major_axis"] = ds.goes_imager_projection.attrs.get(
-                "semi_major_axis", "unknown"
-            )
-            metadata["semi_minor_axis"] = ds.goes_imager_projection.attrs.get(
-                "semi_minor_axis", "unknown"
-            )
+            metadata["semi_major_axis"] = ds.goes_imager_projection.attrs.get("semi_major_axis", "unknown")
+            metadata["semi_minor_axis"] = ds.goes_imager_projection.attrs.get("semi_minor_axis", "unknown")
 
         return data, metadata, ds
 
@@ -409,9 +385,7 @@ def visualize_data(data, metadata, save_path=None, downsample=4):
             # Create a direct image file instead of using matplotlib for raw version
             # Convert the image data to 8-bit RGB
             img_data = np.clip(data, *np.nanpercentile(data, [1, 99]))
-            img_data = (img_data - np.nanmin(img_data)) / (
-                np.nanmax(img_data) - np.nanmin(img_data)
-            )
+            img_data = (img_data - np.nanmin(img_data)) / (np.nanmax(img_data) - np.nanmin(img_data))
 
             # For IR channels, invert the colormap
             if channel in [7, 8, 9, 10, 11, 12, 13, 14, 15, 16]:
@@ -439,9 +413,7 @@ def visualize_data(data, metadata, save_path=None, downsample=4):
         return None
 
 
-def create_true_color(
-    channel1_file, channel2_file, channel3_file, save_path=None, downsample=4
-):
+def create_true_color(channel1_file, channel2_file, channel3_file, save_path=None, downsample=4):
     """Create a true color image from channels 1, 2, and 3."""
     logger.info("Creating true color image from channels 1, 2, and 3")
     try:
@@ -469,9 +441,7 @@ def create_true_color(
             red = ds2["CMI"].values
             variable = "CMI"
         else:
-            logger.error(
-                "Could not find consistent Rad or CMI variables in all three datasets"
-            )
+            logger.error("Could not find consistent Rad or CMI variables in all three datasets")
             return None
 
         # Ensure all arrays have the same dimensions by resampling to the smallest size
@@ -479,41 +449,27 @@ def create_true_color(
 
         # Resample to common shape if needed
         if blue.shape[0] != min_shape:
-            logger.info(
-                f"Resampling blue channel from {blue.shape} to ({min_shape}, {min_shape})"
-            )
+            logger.info(f"Resampling blue channel from {blue.shape} to ({min_shape}, {min_shape})")
             import skimage.transform
 
-            blue = skimage.transform.resize(
-                blue, (min_shape, min_shape), anti_aliasing=True, preserve_range=True
-            )
+            blue = skimage.transform.resize(blue, (min_shape, min_shape), anti_aliasing=True, preserve_range=True)
 
         if green.shape[0] != min_shape:
-            logger.info(
-                f"Resampling green channel from {green.shape} to ({min_shape}, {min_shape})"
-            )
+            logger.info(f"Resampling green channel from {green.shape} to ({min_shape}, {min_shape})")
             import skimage.transform
 
-            green = skimage.transform.resize(
-                green, (min_shape, min_shape), anti_aliasing=True, preserve_range=True
-            )
+            green = skimage.transform.resize(green, (min_shape, min_shape), anti_aliasing=True, preserve_range=True)
 
         if red.shape[0] != min_shape:
-            logger.info(
-                f"Resampling red channel from {red.shape} to ({min_shape}, {min_shape})"
-            )
+            logger.info(f"Resampling red channel from {red.shape} to ({min_shape}, {min_shape})")
             import skimage.transform
 
-            red = skimage.transform.resize(
-                red, (min_shape, min_shape), anti_aliasing=True, preserve_range=True
-            )
+            red = skimage.transform.resize(red, (min_shape, min_shape), anti_aliasing=True, preserve_range=True)
 
         # Apply downsampling if needed and arrays are large
         if downsample > 1 and min_shape > 1000:
             target_shape = min_shape // downsample
-            logger.info(
-                f"Downsampling all channels to shape: ({target_shape}, {target_shape})"
-            )
+            logger.info(f"Downsampling all channels to shape: ({target_shape}, {target_shape})")
 
             import skimage.transform
 
@@ -537,9 +493,7 @@ def create_true_color(
             )
 
         # Create a true color RGB array
-        logger.info(
-            f"Final array shapes - Red: {red.shape}, Green: {green.shape}, Blue: {blue.shape}"
-        )
+        logger.info(f"Final array shapes - Red: {red.shape}, Green: {green.shape}, Blue: {blue.shape}")
         rgb = np.zeros((blue.shape[0], blue.shape[1], 3), dtype=np.float32)
 
         # Scale each channel to 0-1 range using percentiles to avoid extreme values
@@ -637,9 +591,7 @@ def process_product(
         if "time_coverage_start" in metadata:
             try:
                 # Convert ISO format time to a cleaner filename format
-                dt = datetime.fromisoformat(
-                    metadata["time_coverage_start"].replace("Z", "+00:00")
-                )
+                dt = datetime.fromisoformat(metadata["time_coverage_start"].replace("Z", "+00:00"))
                 timestamp = dt.strftime("%Y%m%d_%H%M%S")
             except Exception as e:
                 logger.warning("Could not parse time from metadata: %s", e)
@@ -710,9 +662,7 @@ def process_true_color(
                 )
                 timestamps.append(date_time)
         except Exception as e:
-            logger.warning(
-                "Could not parse timestamp from filename %s: %s", filename, e
-            )
+            logger.warning("Could not parse timestamp from filename %s: %s", filename, e)
 
         channels[ch] = local_file
 
@@ -769,13 +719,9 @@ def main():
         help="Create true color image (channels 1, 2, 3)",
     )
     parser.add_argument("--year", type=int, help="Year to search for data (YYYY)")
-    parser.add_argument(
-        "--day", type=int, help="Day of year to search for data (1-366)"
-    )
+    parser.add_argument("--day", type=int, help="Day of year to search for data (1-366)")
     parser.add_argument("--hour", type=int, help="Hour to search for data (0-23)")
-    parser.add_argument(
-        "--list-days", action="store_true", help="List available days for the product"
-    )
+    parser.add_argument("--list-days", action="store_true", help="List available days for the product")
     parser.add_argument("--no-plot", action="store_true", help="Do not display plots")
     parser.add_argument("--no-save", action="store_true", help="Do not save plots")
 
@@ -786,9 +732,7 @@ def main():
 
     # List available days if requested
     if args.list_days:
-        days = list_available_days(
-            s3_client, PRODUCTS[args.product]["prefix"], args.year, args.day
-        )
+        days = list_available_days(s3_client, PRODUCTS[args.product]["prefix"], args.year, args.day)
         print(f"Available days for {args.product}:")
         for day in days:
             print(f"  {day}")
@@ -807,11 +751,7 @@ def main():
         )
     elif args.channel or args.product == "rain_rate":
         # For rain_rate products, we don't need a specific channel
-        channel = (
-            args.channel
-            if args.channel
-            else (1 if args.product == "rain_rate" else None)
-        )
+        channel = args.channel if args.channel else (1 if args.product == "rain_rate" else None)
         process_product(
             s3_client,
             args.product,

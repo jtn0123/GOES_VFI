@@ -32,9 +32,7 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
         self.s3_client_mock.get_paginator = MagicMock()
 
         # Patch _get_s3_client to return our mock
-        patcher = patch.object(
-            S3Store, "_get_s3_client", return_value=self.s3_client_mock
-        )
+        patcher = patch.object(S3Store, "_get_s3_client", return_value=self.s3_client_mock)
         self.mock_get_s3_client = patcher.start()
 
         async def _stop_patcher():
@@ -61,9 +59,7 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
         }
 
         # Test exists method
-        exists = await self.store.check_file_exists(
-            self.test_timestamp, SatellitePattern.GOES_18
-        )
+        exists = await self.store.check_file_exists(self.test_timestamp, SatellitePattern.GOES_18)
 
         # Verify result
         assert exists
@@ -137,7 +133,9 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
 
         # Create realistic response with actual file pattern
         # The timestamp part needs to match: s20231661230 (year=2023, doy=166, hour=12, minute=30)
-        test_key = "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661230000_e20231661232000_c20231661232030.nc"
+        test_key = (
+            "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661230000_e20231661232000_c20231661232030.nc"
+        )
         test_page = {
             "Contents": [
                 {

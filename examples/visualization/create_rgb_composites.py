@@ -75,9 +75,7 @@ def create_airmass_rgb(channel_dir, output_path):
         shape = band8_data.shape
         for band, data in [(10, band10_data), (12, band12_data), (13, band13_data)]:
             if data.shape != shape:
-                print(
-                    f"  Error: Band {band} has different shape {data.shape} vs {shape}"
-                )
+                print(f"  Error: Band {band} has different shape {data.shape} vs {shape}")
                 return False
 
         # Create difference products and normalize
@@ -222,9 +220,7 @@ def create_fire_temperature_rgb(channel_dir, output_path):
         shape = band7_data.shape
         for band, data in [(13, band13_data), (15, band15_data)]:
             if data.shape != shape:
-                print(
-                    f"  Error: Band {band} has different shape {data.shape} vs {shape}"
-                )
+                print(f"  Error: Band {band} has different shape {data.shape} vs {shape}")
                 return False
 
         # Normalize channels with fire-optimized ranges
@@ -286,9 +282,7 @@ def create_dust_rgb(channel_dir, output_path):
         shape = band13_data.shape
         for band, data in [(11, band11_data), (15, band15_data)]:
             if data.shape != shape:
-                print(
-                    f"  Error: Band {band} has different shape {data.shape} vs {shape}"
-                )
+                print(f"  Error: Band {band} has different shape {data.shape} vs {shape}")
                 return False
 
         # Create difference products and normalize
@@ -348,9 +342,7 @@ def create_day_cloud_phase_rgb(channel_dir, output_path):
         band13_data = load_channel(band_files[13])
 
         # We need to resize as these are different resolutions
-        print(
-            f"  Band shapes: Band 2: {band2_data.shape}, Band 5: {band5_data.shape}, Band 13: {band13_data.shape}"
-        )
+        print(f"  Band shapes: Band 2: {band2_data.shape}, Band 5: {band5_data.shape}, Band 13: {band13_data.shape}")
 
         # Resize to lowest resolution (usually Band 13)
         target_shape = band13_data.shape
@@ -412,9 +404,7 @@ def create_all_composites(channel_dir, output_dir=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Create RGB composites from GOES ABI channels"
-    )
+    parser = argparse.ArgumentParser(description="Create RGB composites from GOES ABI channels")
     parser.add_argument(
         "--input-dir",
         type=str,

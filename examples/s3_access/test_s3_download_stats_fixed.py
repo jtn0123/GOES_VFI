@@ -55,9 +55,7 @@ self.stats_data = {
     "hostname": "test - host",
     "start_timestamp": "2023 - 01 - 01T12:00:00",
 }
-self.stats_patcher = patch(
-    "goesvfi.integrity_check.remote.s3_store.DOWNLOAD_STATS", self.stats_data
-)
+self.stats_patcher = patch("goesvfi.integrity_check.remote.s3_store.DOWNLOAD_STATS", self.stats_data)
 self.mock_stats = self.stats_patcher.start()
 
 
@@ -219,9 +217,7 @@ def test_error_history_limit(self):
 with patch("goesvfi.integrity_check.remote.s3_store.log_download_statistics"):
     # Generate more than 20 errors
     for i in range(25):
-        update_download_stats(
-            success=False, error_type="network", error_message=f"Error {i}"
-        )
+        update_download_stats(success=False, error_type="network", error_message=f"Error {i}")
 
 # Verify only the most recent 20 are kept
 self.assertEqual(len(self.stats_data["errors"]), 20)

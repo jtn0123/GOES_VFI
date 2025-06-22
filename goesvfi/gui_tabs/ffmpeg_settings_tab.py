@@ -42,7 +42,7 @@ class FFmpegSettingsTab(QWidget):
     # or if MainWindow needs to connect to it later)
     # preview_settings_changed = pyqtSignal()
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the FFmpegSettingsTab."""
         super().__init__(parent)
 
@@ -165,25 +165,15 @@ class FFmpegSettingsTab(QWidget):
         # --- Profile Selection ---
         self.ffmpeg_profile_combo = QComboBox()
         self.ffmpeg_profile_combo.addItems(list(FFMPEG_PROFILES.keys()) + ["Custom"])
-        self.ffmpeg_profile_combo.setToolTip(
-            self.tr("Select a predefined FFmpeg settings profile or 'Custom'")
-        )
+        self.ffmpeg_profile_combo.setToolTip(self.tr("Select a predefined FFmpeg settings profile or 'Custom'"))
 
         # --- Interpolation Settings Group ---
-        self.ffmpeg_settings_group = QGroupBox(
-            self.tr("Interpolation (minterpolate filter)")
-        )
-        self.ffmpeg_settings_group.setCheckable(
-            True
-        )  # Corresponds to use_ffmpeg_interp
-        self.ffmpeg_settings_group.setToolTip(
-            self.tr("Enable and configure FFmpeg's motion interpolation filter")
-        )
+        self.ffmpeg_settings_group = QGroupBox(self.tr("Interpolation (minterpolate filter)"))
+        self.ffmpeg_settings_group.setCheckable(True)  # Corresponds to use_ffmpeg_interp
+        self.ffmpeg_settings_group.setToolTip(self.tr("Enable and configure FFmpeg's motion interpolation filter"))
 
         self.ffmpeg_mi_mode_combo = QComboBox()
-        self.ffmpeg_mi_mode_combo.addItems(
-            [self.tr("dup"), self.tr("blend"), self.tr("mci")]
-        )
+        self.ffmpeg_mi_mode_combo.addItems([self.tr("dup"), self.tr("blend"), self.tr("mci")])
         self.ffmpeg_mi_mode_combo.setToolTip(self.tr("Motion interpolation mode"))
 
         self.ffmpeg_mc_mode_combo = QComboBox()
@@ -195,9 +185,7 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_me_mode_combo.setToolTip(self.tr("Motion estimation mode"))
 
         self.ffmpeg_vsbmc_checkbox = QCheckBox(self.tr("VSBMC"))
-        self.ffmpeg_vsbmc_checkbox.setToolTip(
-            self.tr("Variable size block motion compensation")
-        )
+        self.ffmpeg_vsbmc_checkbox.setToolTip(self.tr("Variable size block motion compensation"))
 
         self.ffmpeg_scd_combo = QComboBox()
         self.ffmpeg_scd_combo.addItems([self.tr("none"), self.tr("fdiff")])
@@ -219,26 +207,18 @@ class FFmpegSettingsTab(QWidget):
             ]
         )
         self.ffmpeg_me_algo_combo.setToolTip(
-            self.tr(
-                "Motion estimation algorithm (leave as default unless you know why)"
-            )
+            self.tr("Motion estimation algorithm (leave as default unless you know why)")
         )
 
         self.ffmpeg_search_param_spinbox = QSpinBox()
-        self.ffmpeg_search_param_spinbox.setRange(
-            4, 2048
-        )  # Example range, adjust if needed
-        self.ffmpeg_search_param_spinbox.setToolTip(
-            self.tr("Motion estimation search parameter")
-        )
+        self.ffmpeg_search_param_spinbox.setRange(4, 2048)  # Example range, adjust if needed
+        self.ffmpeg_search_param_spinbox.setToolTip(self.tr("Motion estimation search parameter"))
 
         self.ffmpeg_scd_threshold_spinbox = QDoubleSpinBox()
         self.ffmpeg_scd_threshold_spinbox.setRange(0.0, 100.0)
         self.ffmpeg_scd_threshold_spinbox.setDecimals(1)
         self.ffmpeg_scd_threshold_spinbox.setSingleStep(0.1)
-        self.ffmpeg_scd_threshold_spinbox.setToolTip(
-            self.tr("Scene change detection threshold (0-100)")
-        )
+        self.ffmpeg_scd_threshold_spinbox.setToolTip(self.tr("Scene change detection threshold (0-100)"))
 
         self.ffmpeg_mb_size_combo = QComboBox()  # Changed from QLineEdit
         self.ffmpeg_mb_size_combo.addItems(
@@ -250,30 +230,22 @@ class FFmpegSettingsTab(QWidget):
                 self.tr("64"),
             ]
         )  # Common block sizes
-        self.ffmpeg_mb_size_combo.setToolTip(
-            self.tr("Macroblock size for motion estimation")
-        )
+        self.ffmpeg_mb_size_combo.setToolTip(self.tr("Macroblock size for motion estimation"))
 
         # --- Unsharp Mask Group ---
         self.ffmpeg_unsharp_group = QGroupBox(self.tr("Sharpening (unsharp filter)"))
         self.ffmpeg_unsharp_group.setCheckable(True)  # Corresponds to apply_unsharp
-        self.ffmpeg_unsharp_group.setToolTip(
-            self.tr("Apply unsharp mask for sharpening")
-        )
+        self.ffmpeg_unsharp_group.setToolTip(self.tr("Apply unsharp mask for sharpening"))
 
         self.ffmpeg_unsharp_lx_spinbox = QSpinBox()
         self.ffmpeg_unsharp_lx_spinbox.setRange(3, 63)
         self.ffmpeg_unsharp_lx_spinbox.setSingleStep(2)
-        self.ffmpeg_unsharp_lx_spinbox.setToolTip(
-            self.tr("Luma matrix horizontal size (odd, 3-63)")
-        )
+        self.ffmpeg_unsharp_lx_spinbox.setToolTip(self.tr("Luma matrix horizontal size (odd, 3-63)"))
 
         self.ffmpeg_unsharp_ly_spinbox = QSpinBox()
         self.ffmpeg_unsharp_ly_spinbox.setRange(3, 63)
         self.ffmpeg_unsharp_ly_spinbox.setSingleStep(2)
-        self.ffmpeg_unsharp_ly_spinbox.setToolTip(
-            self.tr("Luma matrix vertical size (odd, 3-63)")
-        )
+        self.ffmpeg_unsharp_ly_spinbox.setToolTip(self.tr("Luma matrix vertical size (odd, 3-63)"))
 
         self.ffmpeg_unsharp_la_spinbox = QDoubleSpinBox()
         self.ffmpeg_unsharp_la_spinbox.setRange(-10.0, 10.0)  # Wider range
@@ -284,16 +256,12 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_unsharp_cx_spinbox = QSpinBox()
         self.ffmpeg_unsharp_cx_spinbox.setRange(3, 63)
         self.ffmpeg_unsharp_cx_spinbox.setSingleStep(2)
-        self.ffmpeg_unsharp_cx_spinbox.setToolTip(
-            self.tr("Chroma matrix horizontal size (odd, 3-63)")
-        )
+        self.ffmpeg_unsharp_cx_spinbox.setToolTip(self.tr("Chroma matrix horizontal size (odd, 3-63)"))
 
         self.ffmpeg_unsharp_cy_spinbox = QSpinBox()
         self.ffmpeg_unsharp_cy_spinbox.setRange(3, 63)
         self.ffmpeg_unsharp_cy_spinbox.setSingleStep(2)
-        self.ffmpeg_unsharp_cy_spinbox.setToolTip(
-            self.tr("Chroma matrix vertical size (odd, 3-63)")
-        )
+        self.ffmpeg_unsharp_cy_spinbox.setToolTip(self.tr("Chroma matrix vertical size (odd, 3-63)"))
 
         self.ffmpeg_unsharp_ca_spinbox = QDoubleSpinBox()
         self.ffmpeg_unsharp_ca_spinbox.setRange(-10.0, 10.0)  # Wider range
@@ -303,9 +271,7 @@ class FFmpegSettingsTab(QWidget):
 
         # --- Quality Settings Group ---
         self.ffmpeg_quality_group = QGroupBox(self.tr("Encoding Quality (libx264)"))
-        self.ffmpeg_quality_group.setToolTip(
-            self.tr("Settings for the final video encoding")
-        )
+        self.ffmpeg_quality_group.setToolTip(self.tr("Settings for the final video encoding"))
 
         self.ffmpeg_quality_combo = QComboBox()
         # Define presets similar to gui_backup.py
@@ -344,38 +310,26 @@ class FFmpegSettingsTab(QWidget):
         }
         self.ffmpeg_quality_combo.addItems(list(self.quality_presets.keys()))
         self.ffmpeg_quality_combo.setToolTip(
-            self.tr(
-                "Select a quality preset (adjusts CRF, Bitrate, Bufsize, Pixel Format)"
-            )
+            self.tr("Select a quality preset (adjusts CRF, Bitrate, Bufsize, Pixel Format)")
         )
 
         self.ffmpeg_crf_spinbox = QSpinBox()
         self.ffmpeg_crf_spinbox.setRange(0, 51)  # x264 CRF range
-        self.ffmpeg_crf_spinbox.setToolTip(
-            self.tr("Constant Rate Factor (0=lossless, 51=worst)")
-        )
+        self.ffmpeg_crf_spinbox.setToolTip(self.tr("Constant Rate Factor (0=lossless, 51=worst)"))
 
         self.ffmpeg_bitrate_spinbox = QSpinBox()
         self.ffmpeg_bitrate_spinbox.setRange(100, 100000)  # In kbps
         self.ffmpeg_bitrate_spinbox.setSuffix(" kbps")
         self.ffmpeg_bitrate_spinbox.setToolTip(
-            self.tr(
-                "Target video bitrate (used if CRF is not the primary mode, often informational)"
-            )
+            self.tr("Target video bitrate (used if CRF is not the primary mode, often informational)")
         )
-        self.ffmpeg_bitrate_spinbox.setDisabled(
-            True
-        )  # Typically controlled by preset/CRF
+        self.ffmpeg_bitrate_spinbox.setDisabled(True)  # Typically controlled by preset/CRF
 
         self.ffmpeg_bufsize_spinbox = QSpinBox()
         self.ffmpeg_bufsize_spinbox.setRange(100, 200000)  # In kb
         self.ffmpeg_bufsize_spinbox.setSuffix(" kB")
-        self.ffmpeg_bufsize_spinbox.setToolTip(
-            self.tr("Decoder buffer size (often 1.5x-2x bitrate)")
-        )
-        self.ffmpeg_bufsize_spinbox.setDisabled(
-            True
-        )  # Typically controlled by preset/CRF
+        self.ffmpeg_bufsize_spinbox.setToolTip(self.tr("Decoder buffer size (often 1.5x-2x bitrate)"))
+        self.ffmpeg_bufsize_spinbox.setDisabled(True)  # Typically controlled by preset/CRF
 
         self.ffmpeg_pix_fmt_combo = QComboBox()
         self.ffmpeg_pix_fmt_combo.addItems(
@@ -386,9 +340,7 @@ class FFmpegSettingsTab(QWidget):
                 self.tr("rgb24"),
             ]
         )  # Common formats
-        self.ffmpeg_pix_fmt_combo.setToolTip(
-            self.tr("Pixel format for encoding (yuv444p recommended for quality)")
-        )
+        self.ffmpeg_pix_fmt_combo.setToolTip(self.tr("Pixel format for encoding (yuv444p recommended for quality)"))
 
         self.ffmpeg_filter_preset_combo = QComboBox()
         self.ffmpeg_filter_preset_combo.addItems(
@@ -474,9 +426,7 @@ class FFmpegSettingsTab(QWidget):
         # Enhance checkbox with better contrast
         self.ffmpeg_vsbmc_checkbox.setText(self.tr("Variable Size Blocks"))
         self.ffmpeg_vsbmc_checkbox.setStyleSheet("color: #e0e0e0;")
-        interp_layout.addWidget(
-            self.ffmpeg_vsbmc_checkbox, 1, 2, 1, 2
-        )  # Span 2 columns
+        interp_layout.addWidget(self.ffmpeg_vsbmc_checkbox, 1, 2, 1, 2)  # Span 2 columns
         # Scene detection row with enhanced styling
         scd_label = QLabel(self.tr("Scene Detect:"))
         scd_label.setStyleSheet("font-weight: bold; color: #88ccff;")
@@ -589,9 +539,7 @@ class FFmpegSettingsTab(QWidget):
         crf_label = QLabel(self.tr("CRF Value:"))
         crf_label.setStyleSheet("font-weight: bold; color: #88ccff;")
         quality_layout.addWidget(crf_label, 0, 2)
-        self.ffmpeg_crf_spinbox.setToolTip(
-            self.tr("Constant Rate Factor: Lower values = higher quality (0-51)")
-        )
+        self.ffmpeg_crf_spinbox.setToolTip(self.tr("Constant Rate Factor: Lower values = higher quality (0-51)"))
         quality_layout.addWidget(self.ffmpeg_crf_spinbox, 0, 3)
 
         # Bitrate section
@@ -627,9 +575,7 @@ class FFmpegSettingsTab(QWidget):
 
         # Add a note about quality
         note_label = QLabel(
-            self.tr(
-                "<i>Note: Slower encoder presets generally produce better quality at the same bitrate</i>"
-            )
+            self.tr("<i>Note: Slower encoder presets generally produce better quality at the same bitrate</i>")
         )
         note_label.setStyleSheet("color: #bbbbbb; font-size: 8pt;")
         note_label.setWordWrap(True)
@@ -649,14 +595,10 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_profile_combo.currentTextChanged.connect(self._on_profile_selected)
 
         # Controls that affect dependent control states
-        self.ffmpeg_settings_group.toggled.connect(
-            self._update_interpolation_controls_state
-        )
+        self.ffmpeg_settings_group.toggled.connect(self._update_interpolation_controls_state)
         self.ffmpeg_scd_combo.currentTextChanged.connect(self._update_scd_thresh_state)
         self.ffmpeg_unsharp_group.toggled.connect(self._update_unsharp_controls_state)
-        self.ffmpeg_quality_combo.currentTextChanged.connect(
-            self._update_quality_controls_state
-        )
+        self.ffmpeg_quality_combo.currentTextChanged.connect(self._update_quality_controls_state)
 
         # All controls that should trigger the "Custom" profile state when changed
         controls_to_monitor = [
@@ -704,9 +646,7 @@ class FFmpegSettingsTab(QWidget):
 
     def _update_all_control_states(self) -> None:
         """Update the enabled state of all dependent controls based on current selections."""
-        self._update_interpolation_controls_state(
-            self.ffmpeg_settings_group.isChecked()
-        )
+        self._update_interpolation_controls_state(self.ffmpeg_settings_group.isChecked())
         self._update_scd_thresh_state(self.ffmpeg_scd_combo.currentText())
         self._update_unsharp_controls_state(self.ffmpeg_unsharp_group.isChecked())
         self._update_quality_controls_state(self.ffmpeg_quality_combo.currentText())
@@ -764,9 +704,7 @@ class FFmpegSettingsTab(QWidget):
             LOGGER.warning("Unknown quality preset %s encountered.", preset_text)
             # Keep controls enabled if preset is unknown or "Custom"
             self.ffmpeg_crf_spinbox.setEnabled(True)
-            self.ffmpeg_bitrate_spinbox.setEnabled(
-                True
-            )  # Enable custom bitrate/bufsize
+            self.ffmpeg_bitrate_spinbox.setEnabled(True)  # Enable custom bitrate/bufsize
             self.ffmpeg_bufsize_spinbox.setEnabled(True)
             self.ffmpeg_pix_fmt_combo.setEnabled(True)
             return
@@ -799,19 +737,13 @@ class FFmpegSettingsTab(QWidget):
                 if "crf" in preset_settings and isinstance(preset_settings["crf"], int):
                     pass
                     self.ffmpeg_crf_spinbox.setValue(preset_settings["crf"])
-                if "bitrate" in preset_settings and isinstance(
-                    preset_settings["bitrate"], int
-                ):
+                if "bitrate" in preset_settings and isinstance(preset_settings["bitrate"], int):
                     pass
                     self.ffmpeg_bitrate_spinbox.setValue(preset_settings["bitrate"])
-                if "bufsize" in preset_settings and isinstance(
-                    preset_settings["bufsize"], int
-                ):
+                if "bufsize" in preset_settings and isinstance(preset_settings["bufsize"], int):
                     pass
                     self.ffmpeg_bufsize_spinbox.setValue(preset_settings["bufsize"])
-                if "pix_fmt" in preset_settings and isinstance(
-                    preset_settings["pix_fmt"], str
-                ):
+                if "pix_fmt" in preset_settings and isinstance(preset_settings["pix_fmt"], str):
                     pass
                     self.ffmpeg_pix_fmt_combo.setCurrentText(preset_settings["pix_fmt"])
             finally:
@@ -852,14 +784,10 @@ class FFmpegSettingsTab(QWidget):
             self.ffmpeg_me_mode_combo.setCurrentText(profile_dict["me_mode"])
             self.ffmpeg_vsbmc_checkbox.setChecked(profile_dict["vsbmc"])
             self.ffmpeg_scd_combo.setCurrentText(profile_dict["scd"])
-            self.ffmpeg_me_algo_combo.setCurrentText(
-                profile_dict["me_algo"]
-            )  # Use combo now
+            self.ffmpeg_me_algo_combo.setCurrentText(profile_dict["me_algo"])  # Use combo now
             self.ffmpeg_search_param_spinbox.setValue(profile_dict["search_param"])
             self.ffmpeg_scd_threshold_spinbox.setValue(profile_dict["scd_threshold"])
-            self.ffmpeg_mb_size_combo.setCurrentText(
-                profile_dict["mb_size"]
-            )  # Use combo now
+            self.ffmpeg_mb_size_combo.setCurrentText(profile_dict["mb_size"])  # Use combo now
 
             # Unsharp
             self.ffmpeg_unsharp_group.setChecked(profile_dict["apply_unsharp"])
@@ -874,9 +802,7 @@ class FFmpegSettingsTab(QWidget):
             self.ffmpeg_quality_combo.setCurrentText(profile_dict["preset_text"])
 
             # Filter Preset
-            self.ffmpeg_filter_preset_combo.setCurrentText(
-                profile_dict["filter_preset"]
-            )
+            self.ffmpeg_filter_preset_combo.setCurrentText(profile_dict["filter_preset"])
 
             # --- Update control states after applying profile ---
             self._update_all_control_states()
@@ -886,9 +812,7 @@ class FFmpegSettingsTab(QWidget):
             LOGGER.error("Profile %r is missing key: %s", profile_name, e)
         except Exception as e:
             pass
-            LOGGER.error(
-                "Error applying profile %r: %s", profile_name, e, exc_info=True
-            )
+            LOGGER.error("Error applying profile %r: %s", profile_name, e, exc_info=True)
         finally:
             # Unblock signals
             for widget in all_controls:
@@ -932,10 +856,7 @@ class FFmpegSettingsTab(QWidget):
         if self.ffmpeg_profile_combo.currentText() == "Custom":
             pass
             # If the quality preset was changed *to* "Custom", ensure controls are enabled
-            if (
-                self.sender() == self.ffmpeg_quality_combo
-                and self.ffmpeg_quality_combo.currentText() == "Custom"
-            ):
+            if self.sender() == self.ffmpeg_quality_combo and self.ffmpeg_quality_combo.currentText() == "Custom":
                 pass
                 self._update_quality_controls_state("Custom")
             return
@@ -955,9 +876,7 @@ class FFmpegSettingsTab(QWidget):
             # Check if the combo isn't already "Custom" to prevent loops
             if self.ffmpeg_profile_combo.currentText() != "Custom":
                 pass
-                LOGGER.debug(
-                    "Settings no longer match any profile, setting profile combo to 'Custom'."
-                )
+                LOGGER.debug("Settings no longer match any profile, setting profile combo to 'Custom'.")
                 self.ffmpeg_profile_combo.blockSignals(True)
                 self.ffmpeg_profile_combo.setCurrentText("Custom")
                 self.ffmpeg_profile_combo.blockSignals(False)
@@ -967,9 +886,7 @@ class FFmpegSettingsTab(QWidget):
         # but handles the case where settings change *back* to matching a profile.
         elif matching_profile_name != self.ffmpeg_profile_combo.currentText():
             pass
-            LOGGER.debug(
-                "Settings now match profile %r, updating combo.", matching_profile_name
-            )
+            LOGGER.debug("Settings now match profile %r, updating combo.", matching_profile_name)
             self.ffmpeg_profile_combo.blockSignals(True)
             self.ffmpeg_profile_combo.setCurrentText(matching_profile_name)
             self.ffmpeg_profile_combo.blockSignals(False)
@@ -1007,9 +924,7 @@ class FFmpegSettingsTab(QWidget):
             profile_scd_mode = profile_dict.get("scd")
             if current_scd_mode == "none" and profile_scd_mode == "none":
                 pass
-                return (
-                    True  # Threshold doesn't matter if both are none, consider matching
-                )
+                return True  # Threshold doesn't matter if both are none, consider matching
             # No need to handle the case where one is "none" - the main key loop will catch it
 
         # Handle potential None values and NaN
@@ -1028,9 +943,7 @@ class FFmpegSettingsTab(QWidget):
             return False
 
         # Handle type conversion if needed
-        if not isinstance(current_value, (float, int)) or not isinstance(
-            profile_value, (float, int)
-        ):
+        if not isinstance(current_value, (float, int)) or not isinstance(profile_value, (float, int)):
             pass
             LOGGER.warning(
                 "Non-numeric value for float key %r. Current: %s, Profile: %s",
@@ -1049,9 +962,7 @@ class FFmpegSettingsTab(QWidget):
         # Normal numeric comparison with tolerance
         return abs(float(current_value) - float(profile_value)) <= 1e-6
 
-    def _compare_text_values(
-        self, key: str, current_value: Any, profile_value: Any
-    ) -> bool:
+    def _compare_text_values(self, key: str, current_value: Any, profile_value: Any) -> bool:
         """
         Compare text values with handling for special cases like "(default)".
 
@@ -1064,16 +975,8 @@ class FFmpegSettingsTab(QWidget):
             bool: True if values match, False if they don't
         """
         # Handle "(default)" vs empty string equivalence
-        current_text = (
-            current_value
-            if current_value and current_value != "(default)"
-            else "(default)"
-        )
-        profile_text = (
-            profile_value
-            if profile_value and profile_value != "(default)"
-            else "(default)"
-        )
+        current_text = current_value if current_value and current_value != "(default)" else "(default)"
+        profile_text = profile_value if profile_value and profile_value != "(default)" else "(default)"
         return current_text == profile_text
 
     def _check_settings_match_profile(self, profile_dict: FfmpegProfile) -> bool:
@@ -1122,9 +1025,7 @@ class FFmpegSettingsTab(QWidget):
             # Ensure key exists in current_settings before accessing
             if key not in current_settings:
                 pass
-                LOGGER.warning(
-                    "Key %r in profile but not returned by get_current_settings().", key
-                )
+                LOGGER.warning("Key %r in profile but not returned by get_current_settings().", key)
                 return False
 
             current_value = current_settings[key]
@@ -1135,9 +1036,7 @@ class FFmpegSettingsTab(QWidget):
             # Float comparison for numeric values that need precision handling
             if key in ["scd_threshold", "unsharp_la", "unsharp_ca"]:
                 pass
-                if not self._compare_float_values(
-                    key, current_value, profile_value, current_settings, profile_dict
-                ):
+                if not self._compare_float_values(key, current_value, profile_value, current_settings, profile_dict):
                     pass
                     return False
 
@@ -1221,14 +1120,10 @@ class FFmpegSettingsTab(QWidget):
             "me_mode": self.ffmpeg_me_mode_combo.currentText(),
             "vsbmc": self.ffmpeg_vsbmc_checkbox.isChecked(),
             "scd": self.ffmpeg_scd_combo.currentText(),
-            "me_algo": (
-                me_algo if me_algo != "(default)" else ""
-            ),  # Store empty string if default
+            "me_algo": (me_algo if me_algo != "(default)" else ""),  # Store empty string if default
             "search_param": self.ffmpeg_search_param_spinbox.value(),
             "scd_threshold": self.ffmpeg_scd_threshold_spinbox.value(),
-            "mb_size": (
-                mb_size if mb_size != "(default)" else ""
-            ),  # Store empty string if default
+            "mb_size": (mb_size if mb_size != "(default)" else ""),  # Store empty string if default
             # Unsharp Group
             "apply_unsharp": self.ffmpeg_unsharp_group.isChecked(),
             "unsharp_lx": self.ffmpeg_unsharp_lx_spinbox.value(),
@@ -1263,14 +1158,9 @@ class FFmpegSettingsTab(QWidget):
 
         try:
             # Load Profile Selection First
-            profile_name = settings.get(
-                "ffmpeg_profile", "Default"
-            )  # Default to "Default"
+            profile_name = settings.get("ffmpeg_profile", "Default")  # Default to "Default"
             # Ensure the profile name exists in the combo box items
-            items = [
-                self.ffmpeg_profile_combo.itemText(i)
-                for i in range(self.ffmpeg_profile_combo.count())
-            ]
+            items = [self.ffmpeg_profile_combo.itemText(i) for i in range(self.ffmpeg_profile_combo.count())]
             if profile_name not in items:
                 pass
                 LOGGER.warning(
@@ -1286,9 +1176,7 @@ class FFmpegSettingsTab(QWidget):
                 LOGGER.debug("Loading individual custom FFmpeg settings...")
                 # Interpolation
                 self.ffmpeg_settings_group.setChecked(
-                    settings.get(
-                        "ffmpeg_use_interp", DEFAULT_FFMPEG_PROFILE["use_ffmpeg_interp"]
-                    )
+                    settings.get("ffmpeg_use_interp", DEFAULT_FFMPEG_PROFILE["use_ffmpeg_interp"])
                 )
                 self.ffmpeg_mi_mode_combo.setCurrentText(
                     settings.get("ffmpeg_mi_mode", DEFAULT_FFMPEG_PROFILE["mi_mode"])
@@ -1299,81 +1187,48 @@ class FFmpegSettingsTab(QWidget):
                 self.ffmpeg_me_mode_combo.setCurrentText(
                     settings.get("ffmpeg_me_mode", DEFAULT_FFMPEG_PROFILE["me_mode"])
                 )
-                self.ffmpeg_vsbmc_checkbox.setChecked(
-                    settings.get("ffmpeg_vsbmc", DEFAULT_FFMPEG_PROFILE["vsbmc"])
-                )
-                self.ffmpeg_scd_combo.setCurrentText(
-                    settings.get("ffmpeg_scd", DEFAULT_FFMPEG_PROFILE["scd"])
-                )
+                self.ffmpeg_vsbmc_checkbox.setChecked(settings.get("ffmpeg_vsbmc", DEFAULT_FFMPEG_PROFILE["vsbmc"]))
+                self.ffmpeg_scd_combo.setCurrentText(settings.get("ffmpeg_scd", DEFAULT_FFMPEG_PROFILE["scd"]))
                 # Handle "(default)" vs empty string for loading
-                me_algo_saved = settings.get(
-                    "ffmpeg_me_algo", DEFAULT_FFMPEG_PROFILE["me_algo"]
-                )
-                self.ffmpeg_me_algo_combo.setCurrentText(
-                    me_algo_saved if me_algo_saved else "(default)"
-                )
+                me_algo_saved = settings.get("ffmpeg_me_algo", DEFAULT_FFMPEG_PROFILE["me_algo"])
+                self.ffmpeg_me_algo_combo.setCurrentText(me_algo_saved if me_algo_saved else "(default)")
                 self.ffmpeg_search_param_spinbox.setValue(
-                    settings.get(
-                        "ffmpeg_search_param", DEFAULT_FFMPEG_PROFILE["search_param"]
-                    )
+                    settings.get("ffmpeg_search_param", DEFAULT_FFMPEG_PROFILE["search_param"])
                 )
                 self.ffmpeg_scd_threshold_spinbox.setValue(
-                    settings.get(
-                        "ffmpeg_scd_threshold", DEFAULT_FFMPEG_PROFILE["scd_threshold"]
-                    )
+                    settings.get("ffmpeg_scd_threshold", DEFAULT_FFMPEG_PROFILE["scd_threshold"])
                 )
-                mb_size_saved = settings.get(
-                    "ffmpeg_mb_size", DEFAULT_FFMPEG_PROFILE["mb_size"]
-                )
-                self.ffmpeg_mb_size_combo.setCurrentText(
-                    mb_size_saved if mb_size_saved else "(default)"
-                )
+                mb_size_saved = settings.get("ffmpeg_mb_size", DEFAULT_FFMPEG_PROFILE["mb_size"])
+                self.ffmpeg_mb_size_combo.setCurrentText(mb_size_saved if mb_size_saved else "(default)")
 
                 # Unsharp
                 self.ffmpeg_unsharp_group.setChecked(
-                    settings.get(
-                        "ffmpeg_apply_unsharp", DEFAULT_FFMPEG_PROFILE["apply_unsharp"]
-                    )
+                    settings.get("ffmpeg_apply_unsharp", DEFAULT_FFMPEG_PROFILE["apply_unsharp"])
                 )
                 self.ffmpeg_unsharp_lx_spinbox.setValue(
-                    settings.get(
-                        "ffmpeg_unsharp_lx", DEFAULT_FFMPEG_PROFILE["unsharp_lx"]
-                    )
+                    settings.get("ffmpeg_unsharp_lx", DEFAULT_FFMPEG_PROFILE["unsharp_lx"])
                 )
                 self.ffmpeg_unsharp_ly_spinbox.setValue(
-                    settings.get(
-                        "ffmpeg_unsharp_ly", DEFAULT_FFMPEG_PROFILE["unsharp_ly"]
-                    )
+                    settings.get("ffmpeg_unsharp_ly", DEFAULT_FFMPEG_PROFILE["unsharp_ly"])
                 )
                 self.ffmpeg_unsharp_la_spinbox.setValue(
-                    settings.get(
-                        "ffmpeg_unsharp_la", DEFAULT_FFMPEG_PROFILE["unsharp_la"]
-                    )
+                    settings.get("ffmpeg_unsharp_la", DEFAULT_FFMPEG_PROFILE["unsharp_la"])
                 )
                 self.ffmpeg_unsharp_cx_spinbox.setValue(
-                    settings.get(
-                        "ffmpeg_unsharp_cx", DEFAULT_FFMPEG_PROFILE["unsharp_cx"]
-                    )
+                    settings.get("ffmpeg_unsharp_cx", DEFAULT_FFMPEG_PROFILE["unsharp_cx"])
                 )
                 self.ffmpeg_unsharp_cy_spinbox.setValue(
-                    settings.get(
-                        "ffmpeg_unsharp_cy", DEFAULT_FFMPEG_PROFILE["unsharp_cy"]
-                    )
+                    settings.get("ffmpeg_unsharp_cy", DEFAULT_FFMPEG_PROFILE["unsharp_cy"])
                 )
                 self.ffmpeg_unsharp_ca_spinbox.setValue(
-                    settings.get(
-                        "ffmpeg_unsharp_ca", DEFAULT_FFMPEG_PROFILE["unsharp_ca"]
-                    )
+                    settings.get("ffmpeg_unsharp_ca", DEFAULT_FFMPEG_PROFILE["unsharp_ca"])
                 )
 
                 # Quality - Load the preset text first, then individual values if preset is "Custom"
-                quality_preset_text = settings.get(
-                    "ffmpeg_quality_preset_text", DEFAULT_FFMPEG_PROFILE["preset_text"]
-                )
+                quality_preset_text = settings.get("ffmpeg_quality_preset_text", DEFAULT_FFMPEG_PROFILE["preset_text"])
                 # Ensure preset text exists
                 quality_items = [
-                    self.ffmpeg_quality_combo.itemText(i)
-                    for i in range(self.ffmpeg_quality_combo.count())
+                    self.ffmpeg_quality_combo.itemText(i) for i in range(self.ffmpeg_quality_combo.count())
                 ]
                 if quality_preset_text not in quality_items:
                     pass
@@ -1381,40 +1236,28 @@ class FFmpegSettingsTab(QWidget):
                         "Saved quality preset %r not found, defaulting.",
                         quality_preset_text,
                     )
-                    quality_preset_text = DEFAULT_FFMPEG_PROFILE[
-                        "preset_text"
-                    ]  # Or maybe "Custom"?
+                    quality_preset_text = DEFAULT_FFMPEG_PROFILE["preset_text"]  # Or maybe "Custom"?
 
                 self.ffmpeg_quality_combo.setCurrentText(quality_preset_text)
 
                 # If the loaded quality preset is "Custom", load the specific values
                 if quality_preset_text == "Custom":
                     pass
-                    self.ffmpeg_crf_spinbox.setValue(
-                        settings.get("ffmpeg_crf", DEFAULT_FFMPEG_PROFILE["crf"])
-                    )
+                    self.ffmpeg_crf_spinbox.setValue(settings.get("ffmpeg_crf", DEFAULT_FFMPEG_PROFILE["crf"]))
                     self.ffmpeg_bitrate_spinbox.setValue(
-                        settings.get(
-                            "ffmpeg_bitrate", DEFAULT_FFMPEG_PROFILE["bitrate"]
-                        )
+                        settings.get("ffmpeg_bitrate", DEFAULT_FFMPEG_PROFILE["bitrate"])
                     )
                     self.ffmpeg_bufsize_spinbox.setValue(
-                        settings.get(
-                            "ffmpeg_bufsize", DEFAULT_FFMPEG_PROFILE["bufsize"]
-                        )
+                        settings.get("ffmpeg_bufsize", DEFAULT_FFMPEG_PROFILE["bufsize"])
                     )
                     self.ffmpeg_pix_fmt_combo.setCurrentText(
-                        settings.get(
-                            "ffmpeg_pix_fmt", DEFAULT_FFMPEG_PROFILE["pix_fmt"]
-                        )
+                        settings.get("ffmpeg_pix_fmt", DEFAULT_FFMPEG_PROFILE["pix_fmt"])
                     )
                 # Else: _update_quality_controls_state (called later) will set values from preset
 
                 # Filter Preset
                 self.ffmpeg_filter_preset_combo.setCurrentText(
-                    settings.get(
-                        "ffmpeg_filter_preset", DEFAULT_FFMPEG_PROFILE["filter_preset"]
-                    )
+                    settings.get("ffmpeg_filter_preset", DEFAULT_FFMPEG_PROFILE["filter_preset"])
                 )
 
             # If a specific profile was loaded, apply it (this handles non-"Custom" cases)
@@ -1455,9 +1298,7 @@ class FFmpegSettingsTab(QWidget):
                 self.ffmpeg_profile_combo.blockSignals(True)
                 self.ffmpeg_profile_combo.setCurrentText("Custom")
                 self.ffmpeg_profile_combo.blockSignals(False)
-                self._update_quality_controls_state(
-                    "Custom"
-                )  # Ensure custom quality enabled
+                self._update_quality_controls_state("Custom")  # Ensure custom quality enabled
             return  # Already handled or matched
 
         # If "Custom" was loaded, check if the loaded values actually match a profile
@@ -1479,6 +1320,4 @@ class FFmpegSettingsTab(QWidget):
             self.ffmpeg_profile_combo.setCurrentText(matching_profile_name)
             self.ffmpeg_profile_combo.blockSignals(False)
             # Update quality controls based on the matched profile's preset text
-            self._update_quality_controls_state(
-                FFMPEG_PROFILES[matching_profile_name]["preset_text"]
-            )
+            self._update_quality_controls_state(FFMPEG_PROFILES[matching_profile_name]["preset_text"])

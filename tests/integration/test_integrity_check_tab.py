@@ -239,9 +239,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Now start a scan to trigger view model update from UI
-        with patch.object(
-            self.view_model, "start_enhanced_scan", autospec=True
-        ) as mock_scan:
+        with patch.object(self.view_model, "start_enhanced_scan", autospec=True) as mock_scan:
             self.tab._start_enhanced_scan()
 
             # Verify view model date range was updated

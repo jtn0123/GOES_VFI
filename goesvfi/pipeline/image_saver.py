@@ -39,10 +39,8 @@ class ImageSaver(ImageProcessor):
             img = Image.fromarray(image_data.image_data)
             img.save(destination_path)
         except IOError as e:
-            pass
             raise IOError(f"Error writing image file {destination_path}: {e}") from e
         except Exception as e:
-            pass
             raise ValueError(f"Could not save image to {destination_path}: {e}") from e
 
     def load(self, source_path: str) -> ImageData:
@@ -61,9 +59,7 @@ class ImageSaver(ImageProcessor):
         """
         raise NotImplementedError("ImageSaver does not implement the process method.")
 
-    def crop(
-        self, image_data: ImageData, crop_area: Tuple[int, int, int, int]
-    ) -> ImageData:
+    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]) -> ImageData:
         """Not implemented. ImageSaver does not perform cropping.
 
         Raises:

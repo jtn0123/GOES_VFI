@@ -40,9 +40,7 @@ latest_year = max(years)
 print(f" Latest year: {latest_year}")
 
 # List days in latest year
-days_result = s3.list_objects_v2(
-    Bucket=bucket, Prefix=f"{product}/{latest_year}/", Delimiter="/"
-)
+days_result = s3.list_objects_v2(Bucket=bucket, Prefix=f"{product}/{latest_year}/", Delimiter="/")
 if "CommonPrefixes" not in days_result:
     pass
 print(" No days found")
@@ -99,9 +97,7 @@ for item in files_result.get("Contents", [])[:3]:
     filename = item["Key"].split("/")[-1]
 print(f" {filename}")
 
-print(
-    f" Sample path: {product}/{latest_year}/{latest_day}/{latest_hour}/{latest_minute}/"
-)
+print(f" Sample path: {product}/{latest_year}/{latest_day}/{latest_hour}/{latest_minute}/")
 
 
 # Main function

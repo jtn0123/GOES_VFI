@@ -131,9 +131,7 @@ self.tab.set_items(self.missing_items, self.total_expected)
 QApplication.processEvents()
 
 # Default grouping should be "day"
-self.assertEqual(
-    self.tab.tree_view._grouping, "day", "Default grouping should be by day"
-)
+self.assertEqual(self.tab.tree_view._grouping, "day", "Default grouping should be by day")
 
 # There should be 4 days in the tree (days 1 - 4)
 model = self.tab.tree_view.model
@@ -181,9 +179,7 @@ QApplication.processEvents()
 
 # There should be at least 2 satellite groups (GOES - 16, GOES - 17)
 model = self.tab.tree_view.model
-self.assertTrue(
-    model.rowCount() >= 2, "Tree view should show at least 2 satellite groups"
-)
+self.assertTrue(model.rowCount() >= 2, "Tree view should show at least 2 satellite groups")
 
 
 @async_test
@@ -274,9 +270,7 @@ self.tab._handle_download_clicked()
 received_item = await download_waiter.wait(timeout=1.0)
 
 # Verify the signal was emitted with the correct item
-self.assertEqual(
-    received_item, test_item, "Download signal not emitted with correct item"
-)
+self.assertEqual(received_item, test_item, "Download signal not emitted with correct item")
 
 
 @async_test
@@ -367,9 +361,7 @@ self.assertEqual(
     str(downloaded_count),
     "Downloaded count doesn't match expected value",
 )
-self.assertEqual(
-    errors_text, str(errors_count), "Errors count doesn't match expected value"
-)
+self.assertEqual(errors_text, str(errors_count), "Errors count doesn't match expected value")
 self.assertEqual(
     missing_text,
     str(missing_count),

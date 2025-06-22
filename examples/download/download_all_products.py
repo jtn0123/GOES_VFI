@@ -14,9 +14,7 @@ import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("test_download_all_products")
 
 # Configuration
@@ -57,18 +55,14 @@ async def list_available_files(bucket_name, product_type, band, hour="12"):
         # Filter for the specified band
         band_str = f"C{band:02d}"  # Format: C01, C02, etc.
         band_files = [
-            obj["Key"]
-            for obj in response.get("Contents", [])
-            if band_str in obj["Key"] and obj["Key"].endswith(".nc")
+            obj["Key"] for obj in response.get("Contents", []) if band_str in obj["Key"] and obj["Key"].endswith(".nc")
         ]
 
         return band_files[:3]  # Return up to 3 files for each combination
 
     except Exception as e:
         pass
-        logger.error(
-            f"Error listing files for {bucket_name}/{product_type}/Band {band}: {str(e)}"
-        )
+        logger.error(f"Error listing files for {bucket_name}/{product_type}/Band {band}: {str(e)}")
         return []
 
 
@@ -110,9 +104,7 @@ async def sample_all_products_and_bands():
                     continue
 
                 # List available files for this combination
-                available_files = await list_available_files(
-                    satellite, product_type, band
-                )
+                available_files = await list_available_files(satellite, product_type, band)
 
                 if available_files:
                     pass
@@ -120,10 +112,7 @@ async def sample_all_products_and_bands():
                     filename = available_files[0]
                     satellite_abbr = "G16" if satellite == "noaa-goes16" else "G18"
 
-                    local_filename = (
-                        f"{satellite_abbr}_{product_type}_Band{band:02d}_"
-                        f"{os.path.basename(filename)}"
-                    )
+                    local_filename = f"{satellite_abbr}_{product_type}_Band{band:02d}_" f"{os.path.basename(filename)}"
                     local_path = DOWNLOAD_DIR / local_filename
 
                     success = await download_file(satellite, filename, local_path)
@@ -163,15 +152,9 @@ async def main():
             logger.info("\n%s:", satellite_name)
 
             for product_type, product_results in satellite_results.items():
-                successful = sum(
-                    1
-                    for band_result in product_results.values()
-                    if band_result["success"]
-                )
+                successful = sum(1 for band_result in product_results.values() if band_result["success"])
                 total = len(product_results)
-                logger.info(
-                    f"  {product_type}: {successful}/{total} bands downloaded successfully"
-                )
+                logger.info(f"  {product_type}: {successful}/{total} bands downloaded successfully")
 
                 # List successful downloads
                 for band_name, band_result in product_results.items():

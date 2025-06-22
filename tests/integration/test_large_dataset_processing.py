@@ -80,9 +80,7 @@ class TestLargeDatasetProcessing:
         # Mock xarray to return large dataset
         with patch("xarray.open_dataset") as mock_open_dataset:
             mock_dataset = MagicMock()
-            mock_dataset.__getitem__.side_effect = lambda key: large_netcdf_data.get(
-                key
-            )
+            mock_dataset.__getitem__.side_effect = lambda key: large_netcdf_data.get(key)
             mock_dataset.dims = {"x": 5424, "y": 5424}
             mock_dataset.attrs = {"spatial_resolution": "2km at nadir"}
 
@@ -124,10 +122,7 @@ class TestLargeDatasetProcessing:
 
             # Verify chunked processing occurred
             assert chunks_processed > 1
-            assert (
-                chunks_processed
-                == (total_pixels + pixels_per_chunk - 1) // pixels_per_chunk
-            )
+            assert chunks_processed == (total_pixels + pixels_per_chunk - 1) // pixels_per_chunk
 
     @pytest.mark.asyncio
     async def test_batch_processing_with_memory_limits(self, temp_dir, memory_monitor):
@@ -163,9 +158,7 @@ class TestLargeDatasetProcessing:
         # Mock memory-mapped file
         with patch("mmap.mmap") as mock_mmap:
             mock_mm = MagicMock()
-            mock_mm.__getitem__ = lambda s, k: b"\x00" * (
-                k.stop - k.start if isinstance(k, slice) else 1
-            )
+            mock_mm.__getitem__ = lambda s, k: b"\x00" * (k.stop - k.start if isinstance(k, slice) else 1)
             mock_mm.__len__ = lambda s: file_size
             mock_mmap.return_value = mock_mm
 
@@ -234,9 +227,7 @@ class TestLargeDatasetProcessing:
     async def test_video_encoding_memory_management(self, temp_dir):
         """Test memory-efficient video encoding of large image sequences."""
         # Create large image sequence
-        image_paths = self.create_large_image_sequence(
-            temp_dir, count=1000, size=(3840, 2160)
-        )  # 4K
+        image_paths = self.create_large_image_sequence(temp_dir, count=1000, size=(3840, 2160))  # 4K
         output_path = temp_dir / "output_4k.mp4"
 
         # Test memory management during video encoding simulation
@@ -299,9 +290,7 @@ class TestLargeDatasetProcessing:
         original_size = large_array.nbytes
 
         # Optimize to float32 (4 bytes per element)
-        optimized_array = optimizer.optimize_array_dtype(
-            large_array, preserve_range=True
-        )
+        optimized_array = optimizer.optimize_array_dtype(large_array, preserve_range=True)
 
         optimized_size = optimized_array.nbytes
 
@@ -349,12 +338,8 @@ class TestLargeDatasetProcessing:
                 )
 
         # Verify graceful degradation
-        assert (
-            performance_metrics[0]["batch_size"] > performance_metrics[-1]["batch_size"]
-        )
-        assert (
-            performance_metrics[0]["throughput"] > performance_metrics[-1]["throughput"]
-        )
+        assert performance_metrics[0]["batch_size"] > performance_metrics[-1]["batch_size"]
+        assert performance_metrics[0]["throughput"] > performance_metrics[-1]["throughput"]
 
         # But system should still function at high memory
         assert all(m["batch_size"] > 0 for m in performance_metrics)

@@ -92,9 +92,7 @@ class VisualDateRangePicker(QDialog):
 
         # Title
         preset_title = QLabel(self.tr("Quick Select"))
-        preset_title.setStyleSheet(
-            "QLabel { font-weight: bold; font-size: 14px; color: #f0f0f0; }"
-        )
+        preset_title.setStyleSheet("QLabel { font-weight: bold; font-size: 14px; color: #f0f0f0; }")
         preset_layout.addWidget(preset_title)
 
         # Buttons grid
@@ -175,12 +173,8 @@ class VisualDateRangePicker(QDialog):
         # Start date calendar
         self.start_calendar = QCalendarWidget()
         self.start_calendar.setGridVisible(True)
-        self.start_calendar.setVerticalHeaderFormat(
-            QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader
-        )
-        self.start_calendar.setHorizontalHeaderFormat(
-            QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames
-        )
+        self.start_calendar.setVerticalHeaderFormat(QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader)
+        self.start_calendar.setHorizontalHeaderFormat(QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames)
         self.start_calendar.selectionChanged.connect(self._update_preview)
 
         # Comprehensive dark mode calendar styling
@@ -269,9 +263,7 @@ class VisualDateRangePicker(QDialog):
         # --- End Date Section ---
         end_group = QFrame()
         end_group.setFrameShape(QFrame.Shape.StyledPanel)
-        end_group.setStyleSheet(
-            "QFrame { background-color: #2d2d2d; border-radius: 4px; border: 1px solid #454545; }"
-        )
+        end_group.setStyleSheet("QFrame { background-color: #2d2d2d; border-radius: 4px; border: 1px solid #454545; }")
         end_layout = QVBoxLayout(end_group)
 
         # End date label
@@ -282,12 +274,8 @@ class VisualDateRangePicker(QDialog):
         # End date calendar
         self.end_calendar = QCalendarWidget()
         self.end_calendar.setGridVisible(True)
-        self.end_calendar.setVerticalHeaderFormat(
-            QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader
-        )
-        self.end_calendar.setHorizontalHeaderFormat(
-            QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames
-        )
+        self.end_calendar.setVerticalHeaderFormat(QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader)
+        self.end_calendar.setHorizontalHeaderFormat(QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames)
         self.end_calendar.selectionChanged.connect(self._update_preview)
 
         # Use same comprehensive dark styling as start calendar
@@ -335,9 +323,7 @@ class VisualDateRangePicker(QDialog):
 
         # Preview text
         self.preview_text = QLabel(self.tr(""))
-        self.preview_text.setStyleSheet(
-            "QLabel { font-family: 'Courier New', monospace; color: #f0f0f0; }"
-        )
+        self.preview_text.setStyleSheet("QLabel { font-family: 'Courier New', monospace; color: #f0f0f0; }")
         preview_layout.addWidget(self.preview_text, 1)  # Give stretch priority
 
         # Time span
@@ -408,15 +394,11 @@ class VisualDateRangePicker(QDialog):
     def _initialize_with_dates(self, start_date: datetime, end_date: datetime) -> None:
         """Initialize the UI with the specified dates."""
         # Set start date calendar
-        self.start_calendar.setSelectedDate(
-            QDate(start_date.year, start_date.month, start_date.day)
-        )
+        self.start_calendar.setSelectedDate(QDate(start_date.year, start_date.month, start_date.day))
         self.start_time_edit.setTime(QTime(start_date.hour, start_date.minute))
 
         # Set end date calendar
-        self.end_calendar.setSelectedDate(
-            QDate(end_date.year, end_date.month, end_date.day)
-        )
+        self.end_calendar.setSelectedDate(QDate(end_date.year, end_date.month, end_date.day))
         self.end_time_edit.setTime(QTime(end_date.hour, end_date.minute))
 
         # Update the preview
@@ -559,9 +541,7 @@ class VisualDateRangePicker(QDialog):
         else:
             next_month = today.replace(month=today.month + 1, day=1)
 
-        month_end = (next_month - timedelta(days=1)).replace(
-            hour=23, minute=59, second=59
-        )
+        month_end = (next_month - timedelta(days=1)).replace(hour=23, minute=59, second=59)
 
         self._initialize_with_dates(month_start, month_end)
 
@@ -576,9 +556,7 @@ class VisualDateRangePicker(QDialog):
         last_of_prev_month = first_of_month - timedelta(days=1)
 
         # Get the first day of the previous month
-        first_of_prev_month = last_of_prev_month.replace(
-            day=1, hour=0, minute=0, second=0
-        )
+        first_of_prev_month = last_of_prev_month.replace(day=1, hour=0, minute=0, second=0)
 
         # End of the previous month
         end_of_prev_month = last_of_prev_month.replace(hour=23, minute=59, second=59)
@@ -589,12 +567,8 @@ class VisualDateRangePicker(QDialog):
         """Set the date range to the current calendar year."""
         today = datetime.now()
 
-        year_start = today.replace(
-            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
-        )
-        year_end = today.replace(
-            month=12, day=31, hour=23, minute=59, second=59, microsecond=0
-        )
+        year_start = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        year_end = today.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=0)
 
         self._initialize_with_dates(year_start, year_end)
 
@@ -625,9 +599,7 @@ class TimelinePickerWidget(QWidget):
         self.is_selecting = False
 
         # Mock data availability (in a real app, this would come from the model)
-        self.data_points = (
-            self._generate_mock_data()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.data_points = self._generate_mock_data()  # pylint: disable=attribute-defined-outside-init
 
     def _generate_mock_data(self) -> List[Any]:
         """Generate mock data points for demonstration."""
@@ -657,18 +629,14 @@ class TimelinePickerWidget(QWidget):
         timeline_y = height // 2 - timeline_height // 2
 
         # Draw timeline - dark mode colors
-        painter.fillRect(
-            10, timeline_y, width - 20, timeline_height, QColor(70, 70, 70)
-        )
+        painter.fillRect(10, timeline_y, width - 20, timeline_height, QColor(70, 70, 70))
 
         # Draw data points
         if self.data_points:
             pass
             total_duration = (self.end_date - self.start_date).total_seconds()
             for point in self.data_points:
-                point_offset = (
-                    point - self.start_date
-                ).total_seconds() / total_duration
+                point_offset = (point - self.start_date).total_seconds() / total_duration
                 point_x = 10 + point_offset * (width - 20)
                 # Convert coordinates to integers for fillRect
                 painter.fillRect(
@@ -682,12 +650,8 @@ class TimelinePickerWidget(QWidget):
         # Draw selection if active
         if self.selection_start is not None and self.selection_end is not None:
             pass
-            start_offset = (
-                self.selection_start - self.start_date
-            ).total_seconds() / total_duration
-            end_offset = (
-                self.selection_end - self.start_date
-            ).total_seconds() / total_duration
+            start_offset = (self.selection_start - self.start_date).total_seconds() / total_duration
+            end_offset = (self.selection_end - self.start_date).total_seconds() / total_duration
 
             start_x = 10 + start_offset * (width - 20)
             end_x = 10 + end_offset * (width - 20)
@@ -712,9 +676,7 @@ class TimelinePickerWidget(QWidget):
                 int(start_x),
                 timeline_y + timeline_height + 5,
             )
-            painter.drawLine(
-                int(end_x), timeline_y - 5, int(end_x), timeline_y + timeline_height + 5
-            )
+            painter.drawLine(int(end_x), timeline_y - 5, int(end_x), timeline_y + timeline_height + 5)
 
     def _on_preset_clicked(self, days: int) -> None:
         """Handle mouse press events for selection."""
@@ -791,8 +753,6 @@ class TimelinePickerWidget(QWidget):
         self.selection_end = None
 
         # Regenerate mock data
-        self.data_points = (
-            self._generate_mock_data()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.data_points = self._generate_mock_data()  # pylint: disable=attribute-defined-outside-init
 
         self.update()
