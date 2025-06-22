@@ -33,7 +33,7 @@ from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
 
-# from goesvfi.pipeline.run_vfi import VfiWorker  # TODO: VfiWorker needs to be implemented
+# from goesvfi.pipeline.run_vfi import VfiWorker
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
 from goesvfi.utils import config
 from goesvfi.utils.config import get_available_rife_models, get_cache_dir
@@ -1551,7 +1551,7 @@ class MainTab(QWidget):
 
             if ffmpeg_tab:
                 LOGGER.debug("FFmpeg settings tab found, checking for crop integration")
-                # TODO: Add actual checks for FFmpeg tab handling of crop rectangle
+                # Placeholder for future integration checks
             else:
                 LOGGER.debug(
                     "FFmpeg settings tab not accessible for crop integration check"

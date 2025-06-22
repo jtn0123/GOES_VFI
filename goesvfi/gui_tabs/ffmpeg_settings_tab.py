@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import math  # For isnan check
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, cast
 
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QFrame  # Added QFrame for separators
@@ -29,9 +29,6 @@ from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
 LOGGER = log.get_logger(__name__)  # Use __name__ for specific logger
 
 # Type annotations for complex function arguments
-if TYPE_CHECKING:
-    pass
-    pass  # Using FfmpegProfile imported from config
 
 
 class FFmpegSettingsTab(QWidget):
@@ -688,16 +685,12 @@ class FFmpegSettingsTab(QWidget):
 
         for control in controls_to_monitor:
             if isinstance(control, (QComboBox)):
-                pass
                 control.currentTextChanged.connect(self._on_ffmpeg_setting_changed)
             elif isinstance(control, (QSpinBox, QDoubleSpinBox)):
-                pass
                 control.valueChanged.connect(self._on_ffmpeg_setting_changed)
             elif isinstance(control, QCheckBox):
-                pass
                 control.stateChanged.connect(self._on_ffmpeg_setting_changed)
             elif isinstance(control, QGroupBox) and control.isCheckable():
-                pass
                 control.toggled.connect(self._on_ffmpeg_setting_changed)
 
     # --- Control State Update Methods (from gui_backup.py, adapted) ---
@@ -728,7 +721,6 @@ class FFmpegSettingsTab(QWidget):
             widget.setEnabled(enable)
         # Special handling for SCD threshold based on SCD mode
         if enable:
-            pass
             self._update_scd_thresh_state(self.ffmpeg_scd_combo.currentText())
         else:
             self.ffmpeg_scd_threshold_spinbox.setEnabled(False)
@@ -755,7 +747,6 @@ class FFmpegSettingsTab(QWidget):
     def _update_quality_controls_state(self, preset_text: Optional[str] = None) -> None:
         """Update quality controls based on the selected preset."""
         if preset_text is None:
-            pass
             preset_text = self.ffmpeg_quality_combo.currentText()
 
         preset_settings = self.quality_presets.get(preset_text)
@@ -772,7 +763,6 @@ class FFmpegSettingsTab(QWidget):
             return
 
         if preset_text == "Custom":
-            pass
             # Enable all controls for custom configuration
             self.ffmpeg_crf_spinbox.setEnabled(True)
             self.ffmpeg_bitrate_spinbox.setEnabled(True)
@@ -797,22 +787,18 @@ class FFmpegSettingsTab(QWidget):
                 w.blockSignals(True)
             try:
                 if "crf" in preset_settings and isinstance(preset_settings["crf"], int):
-                    pass
                     self.ffmpeg_crf_spinbox.setValue(preset_settings["crf"])
                 if "bitrate" in preset_settings and isinstance(
                     preset_settings["bitrate"], int
                 ):
-                    pass
                     self.ffmpeg_bitrate_spinbox.setValue(preset_settings["bitrate"])
                 if "bufsize" in preset_settings and isinstance(
                     preset_settings["bufsize"], int
                 ):
-                    pass
                     self.ffmpeg_bufsize_spinbox.setValue(preset_settings["bufsize"])
                 if "pix_fmt" in preset_settings and isinstance(
                     preset_settings["pix_fmt"], str
                 ):
-                    pass
                     self.ffmpeg_pix_fmt_combo.setCurrentText(preset_settings["pix_fmt"])
             finally:
                 for w in widgets_to_block:
@@ -824,14 +810,12 @@ class FFmpegSettingsTab(QWidget):
         LOGGER.debug("FFmpeg profile selected: %s", profile_name)
         """Load settings from the selected FFmpeg profile."""
         if profile_name == "Custom":
-            pass
             # When user explicitly selects "Custom", enable quality controls
             self._update_quality_controls_state("Custom")
             return  # Don't load any settings
 
         profile_dict = FFMPEG_PROFILES.get(profile_name)
         if not profile_dict:
-            pass
             LOGGER.warning("Unknown FFmpeg profile selected: %s", profile_name)
             return
 
@@ -882,10 +866,8 @@ class FFmpegSettingsTab(QWidget):
             self._update_all_control_states()
 
         except KeyError as e:
-            pass
             LOGGER.error("Profile %r is missing key: %s", profile_name, e)
         except Exception as e:
-            pass
             LOGGER.error(
                 "Error applying profile %r: %s", profile_name, e, exc_info=True
             )
@@ -901,20 +883,16 @@ class FFmpegSettingsTab(QWidget):
         QTimer.singleShot(0, self._verify_profile_match)  # Check slightly later
 
     def _verify_profile_match(self) -> None:
-        pass
         """Checks if current settings match the selected profile and updates combo if not."""
         current_profile_name = self.ffmpeg_profile_combo.currentText()
         if current_profile_name == "Custom":
-            pass
             return  # Already custom
 
         profile_dict = FFMPEG_PROFILES.get(current_profile_name)
         if not profile_dict:
-            pass
             return  # Unknown profile selected
 
         if not self._check_settings_match_profile(profile_dict):
-            pass
             LOGGER.warning(
                 "Settings drifted after applying profile %r. Setting to 'Custom'.",
                 current_profile_name,
@@ -930,31 +908,25 @@ class FFmpegSettingsTab(QWidget):
         """Handle changes to FFmpeg settings to set the profile combo to 'Custom' if needed."""
         # If the current profile is already "Custom", do nothing more
         if self.ffmpeg_profile_combo.currentText() == "Custom":
-            pass
             # If the quality preset was changed *to* "Custom", ensure controls are enabled
             if (
                 self.sender() == self.ffmpeg_quality_combo
                 and self.ffmpeg_quality_combo.currentText() == "Custom"
             ):
-                pass
                 self._update_quality_controls_state("Custom")
             return
 
         # Check if the current settings match any known profile *other than* "Custom"
         matching_profile_name = None
         for name, profile_dict in FFMPEG_PROFILES.items():
-            pass
             if self._check_settings_match_profile(profile_dict):
-                pass
                 matching_profile_name = name
                 break
 
         # If settings no longer match the currently selected profile, switch to "Custom"
         if not matching_profile_name:
-            pass
             # Check if the combo isn't already "Custom" to prevent loops
             if self.ffmpeg_profile_combo.currentText() != "Custom":
-                pass
                 LOGGER.debug(
                     "Settings no longer match any profile, setting profile combo to 'Custom'."
                 )
@@ -966,7 +938,6 @@ class FFmpegSettingsTab(QWidget):
         # This case should ideally not happen if _on_profile_selected works correctly,
         # but handles the case where settings change *back* to matching a profile.
         elif matching_profile_name != self.ffmpeg_profile_combo.currentText():
-            pass
             LOGGER.debug(
                 "Settings now match profile %r, updating combo.", matching_profile_name
             )
@@ -976,7 +947,6 @@ class FFmpegSettingsTab(QWidget):
             # Update quality controls based on the matched profile's preset text
             matched_profile = FFMPEG_PROFILES.get(matching_profile_name)
             if matched_profile:
-                pass
                 self._update_quality_controls_state(matched_profile["preset_text"])
 
     def _compare_float_values(
@@ -1002,11 +972,9 @@ class FFmpegSettingsTab(QWidget):
         """
         # Special check for scd_threshold - skip comparison if both SCDs are "none"
         if key == "scd_threshold" and current_settings and profile_dict:
-            pass
             current_scd_mode = current_settings.get("scd")
             profile_scd_mode = profile_dict.get("scd")
             if current_scd_mode == "none" and profile_scd_mode == "none":
-                pass
                 return (
                     True  # Threshold doesn't matter if both are none, consider matching
                 )
@@ -1019,10 +987,8 @@ class FFmpegSettingsTab(QWidget):
             or (isinstance(current_value, float) and math.isnan(current_value))
             or (isinstance(profile_value, float) and math.isnan(profile_value))
         ):
-            pass
             # Both are None or NaN - consider matching
             if current_value == profile_value:
-                pass
                 return True
             # One is None/NaN and other isn't - not matching
             return False
@@ -1031,7 +997,6 @@ class FFmpegSettingsTab(QWidget):
         if not isinstance(current_value, (float, int)) or not isinstance(
             profile_value, (float, int)
         ):
-            pass
             LOGGER.warning(
                 "Non-numeric value for float key %r. Current: %s, Profile: %s",
                 key,
@@ -1043,7 +1008,6 @@ class FFmpegSettingsTab(QWidget):
                 float_diff = abs(float(current_value) - float(profile_value))
                 return float_diff <= 1e-6  # Within tolerance
             except (ValueError, TypeError):
-                pass
                 return False  # Can't convert, definitely not matching
 
         # Normal numeric comparison with tolerance
@@ -1079,10 +1043,8 @@ class FFmpegSettingsTab(QWidget):
     def _check_settings_match_profile(self, profile_dict: FfmpegProfile) -> bool:
         """Checks if current FFmpeg settings match a given profile dictionary."""
         try:
-            pass
             current_settings = self.get_current_settings()  # Use getter method
         except Exception as e:
-            pass
             LOGGER.error(
                 "Error getting current settings in _check_settings_match_profile: %s",
                 e,
@@ -1121,7 +1083,6 @@ class FFmpegSettingsTab(QWidget):
         for key in ffmpeg_profile_keys_to_compare:
             # Ensure key exists in current_settings before accessing
             if key not in current_settings:
-                pass
                 LOGGER.warning(
                     "Key %r in profile but not returned by get_current_settings().", key
                 )
@@ -1134,23 +1095,18 @@ class FFmpegSettingsTab(QWidget):
             # Choose appropriate comparison strategy based on key type
             # Float comparison for numeric values that need precision handling
             if key in ["scd_threshold", "unsharp_la", "unsharp_ca"]:
-                pass
                 if not self._compare_float_values(
                     key, current_value, profile_value, current_settings, profile_dict
                 ):
-                    pass
                     return False
 
             # Special handling for text fields that might be "(default)" or empty
             elif key in ["me_algo", "mb_size"]:
-                pass
                 if not self._compare_text_values(key, current_value, profile_value):
-                    pass
                     return False
 
             # General comparison for other types (bool, int, str)
             elif current_value != profile_value:
-                pass
                 return False
 
         return True
@@ -1198,7 +1154,6 @@ class FFmpegSettingsTab(QWidget):
 
         # If enabling, restore the individual control states based on selections
         if enabled:
-            pass
             self._update_all_control_states()
         else:
             # If disabling, ensure all child controls are also disabled
@@ -1272,7 +1227,6 @@ class FFmpegSettingsTab(QWidget):
                 for i in range(self.ffmpeg_profile_combo.count())
             ]
             if profile_name not in items:
-                pass
                 LOGGER.warning(
                     "Saved profile %r not found in combo box, defaulting to 'Custom'.",
                     profile_name,
@@ -1282,7 +1236,6 @@ class FFmpegSettingsTab(QWidget):
 
             # If the loaded profile is "Custom", load individual settings
             if profile_name == "Custom":
-                pass
                 LOGGER.debug("Loading individual custom FFmpeg settings...")
                 # Interpolation
                 self.ffmpeg_settings_group.setChecked(
@@ -1376,7 +1329,6 @@ class FFmpegSettingsTab(QWidget):
                     for i in range(self.ffmpeg_quality_combo.count())
                 ]
                 if quality_preset_text not in quality_items:
-                    pass
                     LOGGER.warning(
                         "Saved quality preset %r not found, defaulting.",
                         quality_preset_text,
@@ -1389,7 +1341,6 @@ class FFmpegSettingsTab(QWidget):
 
                 # If the loaded quality preset is "Custom", load the specific values
                 if quality_preset_text == "Custom":
-                    pass
                     self.ffmpeg_crf_spinbox.setValue(
                         settings.get("ffmpeg_crf", DEFAULT_FFMPEG_PROFILE["crf"])
                     )
@@ -1419,7 +1370,6 @@ class FFmpegSettingsTab(QWidget):
 
             # If a specific profile was loaded, apply it (this handles non-"Custom" cases)
             else:
-                pass
                 LOGGER.debug("Applying loaded profile: %s", profile_name)
                 self._on_profile_selected(profile_name)  # Apply the loaded profile
 
@@ -1427,7 +1377,6 @@ class FFmpegSettingsTab(QWidget):
             self._update_all_control_states()
 
         except Exception as e:
-            pass
             LOGGER.error(f"Error loading FFmpeg settings into UI: {e}", exc_info=True)
         finally:
             # Unblock signals
@@ -1439,15 +1388,12 @@ class FFmpegSettingsTab(QWidget):
             QTimer.singleShot(0, self._verify_profile_match_after_load)
 
     def _verify_profile_match_after_load(self) -> None:
-        pass
         """Checks if loaded settings match a profile and updates combo if needed."""
         current_profile_name = self.ffmpeg_profile_combo.currentText()
         if current_profile_name != "Custom":
-            pass
             # If a profile was explicitly loaded, trust it unless it drifted during load somehow
             profile_dict = FFMPEG_PROFILES.get(current_profile_name)
             if profile_dict and not self._check_settings_match_profile(profile_dict):
-                pass
                 LOGGER.warning(
                     "Settings drifted from loaded profile %r during load. Setting to 'Custom'.",
                     current_profile_name,
@@ -1463,14 +1409,11 @@ class FFmpegSettingsTab(QWidget):
         # If "Custom" was loaded, check if the loaded values actually match a profile
         matching_profile_name = None
         for name, profile_dict in FFMPEG_PROFILES.items():
-            pass
             if self._check_settings_match_profile(profile_dict):
-                pass
                 matching_profile_name = name
                 break
 
         if matching_profile_name:
-            pass
             LOGGER.info(
                 "Loaded custom settings match profile %r. Updating profile combo.",
                 matching_profile_name,

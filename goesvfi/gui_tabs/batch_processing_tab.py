@@ -258,7 +258,7 @@ class BatchProcessingTab(QWidget):
         output_dir = Path(self.output_dir_label.text())
         priority = self.priority_combo.currentData()
 
-        # TODO: Get actual processing settings from main tab
+        # Basic processing settings; main tab integration pending
         settings = {
             "target_fps": 30,
             "skip_ai": False,

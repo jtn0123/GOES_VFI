@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import pathlib  # Import pathlib
-from typing import TYPE_CHECKING
 
 from PyQt6.QtWidgets import (
     QHeaderView,
@@ -15,10 +14,6 @@ from PyQt6.QtWidgets import (
 )
 
 from goesvfi.utils import config  # Assuming config is accessible this way
-
-if TYPE_CHECKING:
-    # Import types for type hinting only if needed, avoids circular imports
-    pass
 
 LOGGER = logging.getLogger(__name__)
 
