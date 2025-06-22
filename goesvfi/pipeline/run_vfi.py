@@ -186,22 +186,39 @@ class VfiWorker(QThread):
         try:
             LOGGER.info("Starting VFI processing...")
 
-            # For now, emit a simple progress and success
-            # This is a minimal implementation to satisfy the GUI
-            self.progress.emit(0, 100, 0.0)
-            time.sleep(0.1)  # Simulate some work
+            rife_exe = self._get_rife_executable()
+            ffmpeg_args = self._prepare_ffmpeg_settings()
 
-            # Emit progress
-            self.progress.emit(50, 100, 0.0)
-            time.sleep(0.1)
+            gen = run_vfi(
+                folder=pathlib.Path(self.in_dir),
+                output_mp4_path=pathlib.Path(self.out_file_path),
+                rife_exe_path=rife_exe,
+                fps=self.fps,
+                num_intermediate_frames=self.mid_count,
+                max_workers=self.max_workers,
+                rife_tile_enable=self.rife_tile_enable,
+                rife_tile_size=self.rife_tile_size,
+                rife_uhd_mode=self.rife_uhd_mode,
+                rife_thread_spec=self.rife_thread_spec or "1:2:2",
+                rife_tta_spatial=self.rife_tta_spatial,
+                rife_tta_temporal=self.rife_tta_temporal,
+                model_key=self.model_key or "rife-v4.6",
+                false_colour=self.false_colour,
+                res_km=self.res_km,
+                crop_rect_xywh=self.crop_rect,
+                skip_model=self.skip_model,
+                **ffmpeg_args,
+            )
 
-            # Emit completion
-            self.progress.emit(100, 100, 0.0)
-            self.finished.emit(str(self.out_file_path))
+            for output in gen:
+                if isinstance(output, tuple):
+                    current, total, eta = output
+                    self.progress.emit(current, total, eta)
+                elif isinstance(output, pathlib.Path):
+                    self.finished.emit(str(output))
 
-            LOGGER.info("VFI processing completed (stub implementation)")
-
-        except Exception as e:
+            LOGGER.info("VFI processing completed")
+        except Exception as e:  # pragma: no cover - catch all to emit signal
             LOGGER.exception("Error in VFI processing")
             self.error.emit(str(e))
 
