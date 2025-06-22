@@ -106,6 +106,12 @@ When verifying all tests pass, use this systematic approach:
 
 ### Test Runner Scripts
 
+**Important**: All test runners require the virtual environment to be activated:
+```bash
+source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\activate     # Windows
+```
+
 Each test runner serves a specific purpose:
 
 - **`./run_all_tests.py`** - Complete test suite
@@ -127,7 +133,32 @@ Each test runner serves a specific purpose:
   - Measures test coverage and generates reports
   - Works with coverage 7.6.0 (fixed Python 3.13 compatibility)
   - Outputs: HTML report (htmlcov/), XML, JSON formats
-  - Options: `--clean`, `--open`, `--threshold N`, `--no-fail`
+  - Options:
+    - `--clean`: Remove existing coverage data before running
+    - `--open`: Open HTML report in browser after generation
+    - `--threshold N`: Set minimum coverage percentage (default: 80%)
+    - `--no-fail`: Don't exit with error if coverage is below threshold
+    - `--markers`: Run tests matching specific pytest markers
+    - `--parallel`: Run tests in parallel for faster execution
+  - **Important Notes:**
+    - GUI tests may cause segmentation faults during coverage runs
+    - For reliable coverage measurements, run on non-GUI tests only
+    - The script distinguishes between test failures and coverage threshold failures
+    - Coverage data is stored in `.coverage` file in repo root
+  - **Examples:**
+    ```bash
+    # Clean run on unit tests only
+    ./run_coverage.py tests/unit --clean
+
+    # Run on multiple directories with custom threshold
+    ./run_coverage.py tests/unit tests/integration --threshold 85
+
+    # Generate report and open in browser
+    ./run_coverage.py --open --no-fail
+
+    # CI/CD friendly command
+    ./run_coverage.py tests/unit tests/integration --clean --threshold 80
+    ```
 
 ### Utility Scripts
 

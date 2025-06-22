@@ -405,11 +405,19 @@ pip install -r requirements.txt
 # Generate code coverage report
 # Uses coverage 7.6.0 for Python 3.13 compatibility
 # Creates: htmlcov/ directory, coverage.xml, coverage.json
+# IMPORTANT: GUI tests may cause segfaults during coverage runs
+# For best results, run coverage on non-GUI tests only
 ./run_coverage.py --clean  # Clean old data first
 ./run_coverage.py tests/unit  # Run on specific directory
-./run_coverage.py --open  # Open HTML report in browser
-./run_coverage.py --threshold 90  # Set coverage threshold
+./run_coverage.py tests/unit tests/integration  # Multiple directories
+./run_coverage.py --open  # Open HTML report in browser after generation
+./run_coverage.py --threshold 90  # Set coverage threshold (default: 80%)
 ./run_coverage.py --no-fail  # Don't fail on low coverage
+./run_coverage.py --markers "not gui"  # Run tests matching markers
+./run_coverage.py --parallel  # Run tests in parallel for speed
+
+# Full example for CI/CD:
+./run_coverage.py tests/unit tests/integration --clean --threshold 85
 
 # Utility: Auto-add missing docstrings
 # Adds placeholder "TODO" docstrings to satisfy pylint requirements
