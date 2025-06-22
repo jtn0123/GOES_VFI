@@ -20,3 +20,4 @@ types-tqdm>=4.66.0   # Type stubs for tqdm
 # Dev utilities
 black>=24.2.0        # Code formatter
 ruff>=0.1.15         # Linter
+flake8-qt-tr>=0.2.0  # PyQt translation checking for flake8

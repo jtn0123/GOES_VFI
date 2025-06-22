@@ -6,8 +6,7 @@ This script adds comprehensive logging and exception handling to help diagnose c
 during directory browsing operations in the integrity check tab.
 
 Usage:
-    pass
-python debug_integrity_browse.py
+    python debug_integrity_browse.py
 
 The script will run the application with enhanced debugging for directory browsing
 operations and output detailed logs to both the console and a log file.
@@ -23,9 +22,9 @@ from pathlib import Path
 # Setup logging before imports
 log_file = Path("debug_integrity_browse.log")
 logging.basicConfig(
-level=logging.DEBUG,
-format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-handlers=[logging.FileHandler(log_file), logging.StreamHandler(sys.stdout)],
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.FileHandler(log_file), logging.StreamHandler(sys.stdout)],
 )
 
 logger = logging.getLogger("debug_integrity_browse")
@@ -43,9 +42,9 @@ try:
         QVBoxLayout,
         QWidget,
     )
+
     logger.info("Successfully imported PyQt6 modules")
 except ImportError as e:
-    pass
     logger.critical(f"Failed to import PyQt6: {e}")
     sys.exit(1)
 
@@ -195,134 +194,125 @@ class DirectoryBrowserTester(QWidget):
 
         # Try to get disk information
         try:
-     stats = os.statvfs(directory)
-        total = stats.f_frsize * stats.f_blocks / (1024**3) # Convert to GB
-        free = stats.f_frsize * stats.f_bfree / (1024**3)
-        used = total - free
+            stats = os.statvfs(directory)
+            total = stats.f_frsize * stats.f_blocks / (1024**3)  # Convert to GB
+            free = stats.f_frsize * stats.f_bfree / (1024**3)
+            used = total - free
 
-        logger.info("Directory disk information:")
-        logger.info(f" - Total space: {total:.2f} GB")
-        logger.info(f" - Used space: {used:.2f} GB")
-        logger.info(f" - Free space: {free:.2f} GB")
+            logger.info("Directory disk information:")
+            logger.info(f" - Total space: {total:.2f} GB")
+            logger.info(f" - Used space: {used:.2f} GB")
+            logger.info(f" - Free space: {free:.2f} GB")
         except Exception as e:
-     pass
-        logger.error(f"Error getting disk information: {e}")
-        logger.exception("Exception details:")
+            logger.error(f"Error getting disk information: {e}")
+            logger.exception("Exception details:")
 
 
-    def patch_goesvfi():
-        """Patch the GOES - VFI classes for enhanced debugging."""
-        try:
-     irst, try to import the necessary modules
+def patch_goesvfi():
+    """Patch the GOES-VFI classes for enhanced debugging."""
+    try:
+        # First, try to import the necessary modules
         from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
         from goesvfi.integrity_check.remote.s3_store import S3Store
 
-        logger.info("Successfully imported GOES - VFI modules for patching")
+        logger.info("Successfully imported GOES-VFI modules for patching")
 
         # Patch EnhancedIntegrityCheckTab._browse_directory
         original_browse_directory = EnhancedIntegrityCheckTab._browse_directory
 
-    def patched_browse_directory(self):
-     """Patched version of _browse_directory with enhanced logging."""
-        logger.info("EnhancedIntegrityCheckTab._browse_directory called")
-        logger.info(f"Current base_directory: {self.view_model.base_directory}")
+        def patched_browse_directory(self):
+            """Patched version of _browse_directory with enhanced logging."""
+            logger.info("EnhancedIntegrityCheckTab._browse_directory called")
+            logger.info(f"Current base_directory: {self.view_model.base_directory}")
 
-        try:
-     result = original_browse_directory(self)
-        logger.info("_browse_directory completed successfully")
-        return result
-        except Exception as e:
-     pass
-        logger.error(f"Error in _browse_directory: {e}")
-        logger.exception("Exception details:")
-        raise
+            try:
+                result = original_browse_directory(self)
+                logger.info("_browse_directory completed successfully")
+                return result
+            except Exception as e:
+                logger.error(f"Error in _browse_directory: {e}")
+                logger.exception("Exception details:")
+                raise
 
         EnhancedIntegrityCheckTab._browse_directory = patched_browse_directory
         logger.info(
-        "Patched EnhancedIntegrityCheckTab._browse_directory for detailed logging"
+            "Patched EnhancedIntegrityCheckTab._browse_directory for detailed logging"
         )
 
         # Patch S3Store._get_s3_client
         original_get_s3_client = S3Store._get_s3_client
 
         async def patched_get_s3_client(self):
-     """Patched version of _get_s3_client with enhanced logging."""
-        logger.info("S3Store._get_s3_client called")
-        logger.info(f"AWS region: {self.aws_region}, Profile: {self.aws_profile}")
+            """Patched version of _get_s3_client with enhanced logging."""
+            logger.info("S3Store._get_s3_client called")
+            logger.info(f"AWS region: {self.aws_region}, Profile: {self.aws_profile}")
 
-        try:
-     start_time = datetime.now()
-        logger.info(f"Starting S3 client creation at {start_time.isoformat()}")
+            try:
+                start_time = datetime.now()
+                logger.info(f"Starting S3 client creation at {start_time.isoformat()}")
 
-        result = await original_get_s3_client(self)
+                result = await original_get_s3_client(self)
 
-        end_time = datetime.now()
-        duration = (end_time - start_time).total_seconds()
-        logger.info(f"S3 client creation completed in {duration:.2f} seconds")
+                end_time = datetime.now()
+                duration = (end_time - start_time).total_seconds()
+                logger.info(f"S3 client creation completed in {duration:.2f} seconds")
 
-        return result
-        except Exception as e:
-     pass
-        logger.error(f"Error in _get_s3_client: {e}")
-        logger.exception("Exception details:")
-        raise
+                return result
+            except Exception as e:
+                logger.error(f"Error in _get_s3_client: {e}")
+                logger.exception("Exception details:")
+                raise
 
         S3Store._get_s3_client = patched_get_s3_client
         logger.info("Patched S3Store._get_s3_client for detailed logging")
 
         return True
-        except ImportError as e:
-     pass
+    except ImportError as e:
         logger.error(f"Failed to import GOES - VFI modules for patching: {e}")
         return False
-        except Exception as e:
-     pass
+    except Exception as e:
         logger.error(f"Error patching GOES - VFI classes: {e}")
         logger.exception("Exception details:")
         return False
 
 
-    def run_test_app():
-        """Run the test application."""
-        app = QApplication([])
-        tester = DirectoryBrowserTester()
-        tester.show()
-        logger.info("Test application started")
-        sys.exit(app.exec())
+def run_test_app():
+    """Run the test application."""
+    app = QApplication([])
+    tester = DirectoryBrowserTester()
+    tester.show()
+    logger.info("Test application started")
+    sys.exit(app.exec())
 
 
-    def run_patched_goesvfi():
-        """Run the actual GOES - VFI application with patches."""
-        try:
-     mport main application
+def run_patched_goesvfi():
+    """Run the actual GOES - VFI application with patches."""
+    try:
+        # Import main application
         from goesvfi import gui
 
         logger.info("Starting patched GOES - VFI application")
-        sys.argv.append("--debug") # Add debug flag
+        sys.argv.append("--debug")  # Add debug flag
         gui.main()
-        except ImportError as e:
-     pass
+    except ImportError as e:
         logger.error(f"Failed to import GOES - VFI GUI: {e}")
-        except Exception as e:
-     pass
+    except Exception as e:
         logger.error(f"Error running GOES - VFI application: {e}")
         logger.exception("Exception details:")
 
 
-        if __name__ == "__main__":
-        pass
-        logger.info("Starting debug script")
+if __name__ == "__main__":
+    logger.info("Starting debug script")
 
-        # Patch QFileDialog
-        logger.info("Applying patches...")
+    # Patch QFileDialog
+    logger.info("Applying patches...")
 
-        # Try to patch GOES - VFI classes
-        patched = patch_goesvfi()
+    # Try to patch GOES - VFI classes
+    patched = patch_goesvfi()
 
-        if patched:
-     pass
+    if patched:
         logger.info("Running patched GOES - VFI application")
         run_patched_goesvfi()
-        else:
-     logger.info("Running test directory browser application")
+    else:
+        logger.info("Running test directory browser application")
         run_test_app()
