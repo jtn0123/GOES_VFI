@@ -9,10 +9,10 @@ import re
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
-from goesvfi.utils.log import get_logger
+from goesvfi.utils import log
 
 # Set up module logger
-LOGGER = get_logger(__name__)
+LOGGER = log.get_logger(__name__)
 
 
 def date_to_doy(date: datetime.date) -> int:

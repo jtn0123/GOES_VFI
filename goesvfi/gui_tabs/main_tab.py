@@ -41,11 +41,11 @@ from goesvfi.utils.gui_helpers import (
     CropSelectionDialog,
     ImageViewerDialog,
 )
-from goesvfi.utils.log import get_logger
+from goesvfi.utils import log
 from goesvfi.utils.rife_analyzer import analyze_rife_executable
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 
-LOGGER = get_logger(__name__)
+LOGGER = log.get_logger(__name__)
 
 
 # Custom button class with enhanced event handling

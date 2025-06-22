@@ -9,7 +9,7 @@ from PyQt6.QtGui import QDragEnterEvent, QDragLeaveEvent, QDropEvent
 from PyQt6.QtWidgets import QGridLayout, QVBoxLayout, QWidget
 
 from goesvfi.gui_tabs.main_tab import MainTab
-from goesvfi.utils.log import get_logger
+from goesvfi.utils import log
 
 try:
     from goesvfi.utils.ui_enhancements import (
@@ -33,7 +33,7 @@ except ImportError:
     TooltipHelper = None  # type: ignore
     create_status_widget = None  # type: ignore
 
-LOGGER = get_logger(__name__)
+LOGGER = log.get_logger(__name__)
 
 
 class EnhancedMainTab(MainTab):

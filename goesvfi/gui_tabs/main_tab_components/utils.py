@@ -4,9 +4,9 @@ import numpy as np
 from numpy.typing import NDArray
 from PyQt6.QtGui import QImage
 
-from goesvfi.utils.log import get_logger
+from goesvfi.utils import log
 
-LOGGER = get_logger(__name__)
+LOGGER = log.get_logger(__name__)
 
 
 def numpy_to_qimage(array: NDArray[np.uint8]) -> QImage:

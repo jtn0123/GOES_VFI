@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab
-from goesvfi.utils.log import get_logger
+from goesvfi.utils import log
 
 try:
     from goesvfi.utils.ui_enhancements import (
@@ -29,7 +29,7 @@ except ImportError:
     HelpButton = None  # type: ignore
     TooltipHelper = None  # type: ignore
 
-LOGGER = get_logger(__name__)
+LOGGER = log.get_logger(__name__)
 
 
 class EnhancedFFmpegSettingsTab(FFmpegSettingsTab):
