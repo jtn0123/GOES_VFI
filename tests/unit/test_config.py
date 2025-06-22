@@ -16,6 +16,16 @@ def sample_toml_content():
     return """
 output_dir = "/tmp/goesvfi_output"
 cache_dir = "/tmp/goesvfi_cache"
+
+[pipeline]
+default_tile_size = 2048
+supported_extensions = [".png"]
+
+[sanchez]
+bin_dir = "/tmp/sanchez"
+
+[logging]
+level = "INFO"
 """
 
 
@@ -43,7 +53,7 @@ def test_load_config_from_file(monkeypatch, tmp_path, sample_toml_content):
     config_path.write_text(sample_toml_content)
 
     # Patch CONFIG_FILE to point to temp config file
-    monkeypatch.setattr(config, "CONFIG_FILE", config_path)
+    monkeypatch.setenv("GOESVFI_CONFIG_FILE", str(config_path))
     # Clear cache to reload config
     config._load_config.cache_clear()
     cfg = config._load_config()
@@ -60,13 +70,29 @@ def test_load_config_invalid_toml(monkeypatch, tmp_path):
     config_path.write_text("invalid = [this is not valid toml")
 
     # Patch CONFIG_FILE to point to temp config file
-    monkeypatch.setattr(config, "CONFIG_FILE", config_path)
+    monkeypatch.setenv("GOESVFI_CONFIG_FILE", str(config_path))
     # Clear cache to reload config
     config._load_config.cache_clear()
+    with pytest.raises(ValueError):
+        config._load_config()
+
+
+def test_env_override_config_path(monkeypatch, tmp_path, sample_toml_content):
+    cfg_path = tmp_path / "alt.toml"
+    cfg_path.write_text(sample_toml_content)
+    monkeypatch.setenv("GOESVFI_CONFIG_FILE", str(cfg_path))
+    config._load_config.cache_clear()
     cfg = config._load_config()
-    # Should fallback to defaults
+    assert cfg["output_dir"] == "/tmp/goesvfi_output"
+
+
+def test_missing_required_key(monkeypatch, tmp_path):
+    config_path = tmp_path / "broken.toml"
+    config_path.write_text("cache_dir='/tmp/cache'")
+    monkeypatch.setenv("GOESVFI_CONFIG_FILE", str(config_path))
+    config._load_config.cache_clear()
+    cfg = config._load_config()
     assert cfg["output_dir"] == str(pathlib.Path.home() / "Documents/goesvfi")
-    assert cfg["cache_dir"] == str(pathlib.Path.home() / "Documents/goesvfi/cache")
 
 
 def test_get_output_dir(monkeypatch, tmp_path, sample_toml_content):
