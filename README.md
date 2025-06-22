@@ -7,7 +7,17 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.13+](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
 
-A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the RIFE model to sequences of satellite images (like GOES) or any PNG sequence, creating smooth timelapse videos.
+A PyQt6 GUI application for creating smooth, high-quality timelapse videos from satellite imagery using AI-powered video frame interpolation.
+
+## What is GOES-VFI?
+
+GOES-VFI transforms sequences of satellite images into smooth timelapse videos by intelligently generating intermediate frames between existing images. It's particularly designed for GOES (Geostationary Operational Environmental Satellites) imagery but works with any PNG image sequence.
+
+### Key Capabilities:
+- **AI Frame Interpolation**: Uses RIFE (Real-Time Intermediate Flow Estimation) v4.6 to create smooth transitions between frames
+- **Satellite Image Enhancement**: Applies false color processing to infrared satellite data for better visualization
+- **Professional Video Output**: Produces high-quality MP4 videos with customizable encoding settings
+- **User-Friendly Interface**: Simple GUI that guides you through the entire process
 
 ## Screenshots & Demos
 
@@ -22,31 +32,49 @@ A PyQt6 GUI application for applying Video Frame Interpolation (VFI) using the R
 
 ## Features
 
-*   **RIFE Interpolation:** Uses RIFE v4.6 (ncnn build) via the included `rife-cli` executable to generate 1 intermediate frame per original pair.
-*   **RIFE Controls:** Fine-grained control over RIFE v4.6 parameters:
-    *   Model selection (if multiple model folders exist).
-    *   Tiling (enable/disable, tile size).
-    *   UHD Mode (for >4K frames).
-    *   Test-Time Augmentation (Spatial & Temporal).
-    *   Thread specification (Load:Proc:Save).
-*   **FFmpeg Integration:** Extensive options for processing and encoding:
-    *   Motion Interpolation (`minterpolate`) via FFmpeg.
-    *   Sharpening (`unsharp`) via FFmpeg.
-    *   Detailed control over `minterpolate` and `unsharp` parameters.
-    *   Software (libx265) and Hardware (VideoToolbox HEVC/H.264 on macOS) encoding.
-    *   Quality/Bitrate/Preset controls.
-    *   Pixel format selection.
-    *   Option to skip FFmpeg interpolation.
-*   **GUI:** Easy-to-use interface built with PyQt6.
-    *   Input folder / Output file selection (output path is not saved between sessions).
-    *   Image Cropping tool.
-    *   "Skip AI Interpolation" option to only use original frames (can still use FFmpeg interpolation/encoding).
-    *   Frame previews (first, middle, last) with clickable zoom (shows cropped view if active).
-    *   FFmpeg settings profiles ("Default", "Optimal", "Optimal 2", "Custom").
-    *   Progress bar and ETA display.
-    *   "Open in VLC" button.
-*   **Settings Persistence:** Saves UI state, input directory, crop selection, and FFmpeg settings between sessions (see Configuration section).
-*   **Debug Mode:** Run with `--debug` to keep intermediate files.
+### Core Processing Features
+*   **AI Frame Interpolation (RIFE v4.6):**
+    *   Generates smooth intermediate frames between your existing images
+    *   Supports various frame rates (24, 30, 60 FPS and custom)
+    *   Works with images of any resolution (HD, 4K, 8K+)
+    *   Fine control over processing parameters:
+        *   **Tiling**: Processes large images in smaller chunks to save memory
+        *   **UHD Mode**: Optimized processing for ultra-high-definition (>4K) frames
+        *   **Test-Time Augmentation**: Improves quality by processing multiple variations
+        *   **Thread Control**: Optimize performance for your specific hardware
+
+*   **Video Encoding (FFmpeg):**
+    *   Professional-grade video encoding with multiple options:
+        *   **Software Encoding**: High-quality H.265/HEVC encoding
+        *   **Hardware Encoding**: Fast encoding using GPU acceleration (macOS VideoToolbox)
+    *   Additional video enhancements:
+        *   **Motion Interpolation**: Further smoothing using FFmpeg's algorithms
+        *   **Sharpening**: Enhance detail in the final video
+        *   **Custom Bitrate/Quality**: Balance file size vs. quality
+
+*   **Satellite Image Processing:**
+    *   **Sanchez Integration**: Converts grayscale infrared satellite data to false color
+    *   **GOES Data Support**: Specifically optimized for GOES-16/18 Band 13 (10.3 μm) imagery
+    *   **Batch Processing**: Handle thousands of images efficiently
+
+### User Interface Features
+*   **Intuitive GUI Design:**
+    *   Step-by-step workflow guides you through the process
+    *   Real-time preview of first, middle, and last frames
+    *   Visual crop selection tool
+    *   Progress tracking with time estimates
+    *   One-click playback in VLC when complete
+
+*   **Advanced Options:**
+    *   Multiple processing profiles (Default, Optimal, Custom)
+    *   Skip AI interpolation for faster processing
+    *   Debug mode to inspect intermediate files
+    *   Batch processing capabilities
+
+*   **Smart Features:**
+    *   Automatic output filename generation with timestamps
+    *   Settings persistence between sessions
+    *   Intelligent default values based on your input
 
 ## Architecture Overview
 
@@ -77,48 +105,181 @@ GOES-VFI is structured using modern software architecture patterns to maximize m
 
 ## Installation
 
+### Prerequisites
+Before installing GOES-VFI, ensure you have:
+- **Python 3.13 or newer** installed on your system
+- **FFmpeg** installed and accessible from command line
+- **Git** for cloning the repository
+
+### Step-by-Step Installation
+
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/jtn0123/GOES_VFI.git
     cd GOES_VFI
     ```
-2.  **Set up a virtual environment (recommended):**
+
+2.  **Create and activate a virtual environment:**
+
+    This isolates the project dependencies from your system Python:
+
+    **On macOS/Linux:**
+    ```bash
+    python3 -m venv .venv
+    source .venv/bin/activate
+    ```
+
+    **On Windows:**
     ```bash
     python -m venv .venv
-    source .venv/bin/activate  # On Windows use `.venv\Scripts\activate`
+    .venv\Scripts\activate
     ```
-3.  **Install dependencies:**
+
+    You should see `(.venv)` in your terminal prompt when activated.
+
+3.  **Install Python dependencies:**
     ```bash
     pip install -r requirements.txt
-    # For development (optional, but recommended):
-    pip install black flake8
     ```
-4.  **Place RIFE executable:** Put your downloaded/built `rife-cli` into the `goesvfi/bin/` directory.
-5.  **Place RIFE models:** Create `goesvfi/models/rife-v4.6/` (or similar `rife-*` name) and place `flownet.bin` and `flownet.param` inside it.
+
+    This installs:
+    - PyQt6 (GUI framework)
+    - NumPy (numerical processing)
+    - Pillow (image handling)
+    - pytest (testing framework)
+    - And other required packages
+
+4.  **Download and place RIFE components:**
+
+    RIFE (Real-Time Intermediate Flow Estimation) is the AI model that performs frame interpolation.
+
+    a. **Download RIFE executable:**
+       - Get the `rife-cli` executable for your platform
+       - Place it in: `goesvfi/bin/rife-cli`
+       - Make it executable on macOS/Linux: `chmod +x goesvfi/bin/rife-cli`
+
+    b. **Download RIFE model files:**
+       - Create directory: `goesvfi/models/rife-v4.6/`
+       - Download and place these files inside:
+         - `flownet.bin` (the neural network weights)
+         - `flownet.param` (the network parameters)
+
+5.  **Verify installation:**
+    ```bash
+    python -m goesvfi.gui --help
+    ```
+
+    This should display the help message without errors.
 
 ## Usage
 
-Ensure your virtual environment is activated.
+### Quick Start Guide
 
-Run the GUI application:
+1. **Activate your virtual environment:**
+   ```bash
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
 
-```bash
-python -m goesvfi.gui [--debug]
-```
+2. **Launch the application:**
+   ```bash
+   python -m goesvfi.gui
+   ```
 
-**GUI Steps:**
+   Add `--debug` flag to keep intermediate files for troubleshooting:
+   ```bash
+   python -m goesvfi.gui --debug
+   ```
 
-1.  **Input folder:** Select the directory containing your sequence of PNG images.
-2.  **Output MP4:** Select the desired base output file path (the application will suggest a default; a timestamp will be added automatically to the actual output file).
-3.  **Crop (Optional):** Click "Crop..." to define a region on the first frame.
-4.  **Adjust Settings:**
-    *   Set Target FPS.
-    *   Configure RIFE v4.6 settings (Tiling, UHD, TTA, etc.) or check "Skip AI Interpolation".
-    *   Select Encoder.
-    *   Go to the "FFmpeg Settings" tab to choose a profile or customize FFmpeg interpolation and sharpening parameters.
-5.  **Start:** Click the "Start" button.
-6.  **Monitor:** Watch the progress bar and status messages.
-7.  **Open:** Once finished, click "Open in VLC" (if VLC is installed and in your PATH) or open the timestamped MP4 file manually.
+### Step-by-Step Workflow
+
+#### 1. Select Input Images
+- Click **"Browse"** next to "Input Directory"
+- Navigate to a folder containing your PNG images
+- Images should be:
+  - Sequential (named in order: img001.png, img002.png, etc.)
+  - Same resolution
+  - PNG format (JPEG support planned)
+
+#### 2. Choose Output Location
+- Click **"Browse"** next to "Output File"
+- Select where to save your video
+- A timestamp will be automatically added to prevent overwriting
+
+#### 3. Preview Your Images
+- The interface shows three preview frames:
+  - **First**: Beginning of your sequence
+  - **Middle**: Midpoint frame
+  - **Last**: End of sequence
+- Click any preview to see it full-size
+
+#### 4. (Optional) Crop Your Video
+- Click **"Crop..."** to select a specific region
+- Useful for:
+  - Focusing on a specific area
+  - Removing unwanted borders
+  - Creating consistent framing
+
+#### 5. Configure Processing Settings
+
+**Main Tab Settings:**
+- **Target FPS**: Choose your desired frame rate
+  - 24 FPS: Cinematic look
+  - 30 FPS: Standard video
+  - 60 FPS: Smooth motion
+  - Custom: Any value you need
+
+- **RIFE Settings** (AI Interpolation):
+  - **Enable Tiling**: For large images or limited GPU memory
+  - **UHD Mode**: Optimizes for 4K+ resolution
+  - **TTA**: Improves quality (slower processing)
+  - **Skip AI Interpolation**: Use only original frames
+
+- **Encoder Selection**:
+  - **libx265**: Best quality, slower
+  - **libx264**: Good compatibility
+  - **hevc_videotoolbox**: Fast hardware encoding (macOS)
+
+**FFmpeg Settings Tab:**
+- Choose a profile or customize:
+  - **Default**: Balanced settings
+  - **Optimal**: Higher quality
+  - **Custom**: Full control
+
+#### 6. Start Processing
+- Click **"Start"** button
+- Monitor progress:
+  - Progress bar shows completion
+  - ETA displays estimated time
+  - Status messages explain current step
+
+#### 7. View Your Video
+- When complete, click **"Open in VLC"**
+- Or navigate to the output file location
+- Video filename includes timestamp
+
+## Common Use Cases
+
+### Creating Weather Timelapses
+1. Download GOES satellite imagery for your region
+2. Use the Integrity Check tab to verify all timestamps
+3. Process with Sanchez for false color
+4. Create smooth 60 FPS video with RIFE interpolation
+
+### Processing Existing Image Sequences
+1. Place sequential PNG images in a folder
+2. Launch GOES-VFI and select the folder
+3. Choose frame rate and quality settings
+4. Generate interpolated video
+
+### Focusing on Specific Regions
+1. Load your image sequence
+2. Use the Crop tool to select your area of interest
+3. Process only the selected region for faster rendering
+
+### Batch Processing Multiple Sequences
+1. Use the examples scripts for automation
+2. Process multiple folders programmatically
+3. Apply consistent settings across all videos
 
 ## Configuration
 

@@ -1,14 +1,40 @@
-# AGENTS.md
+# AGENTS.md - AI Assistant Guidelines for GOES-VFI
 
-This repository provides a PyQt6 application named **GOES-VFI** for interpolating satellite imagery.
-The following guidance applies when using AI assistants (Claude, Codex, and other automated tools) with this repository.
+This document provides comprehensive guidance for AI assistants (Claude, Codex, GitHub Copilot, and other automated tools) working with the GOES-VFI repository.
 
-## Quick Context
-GOES-VFI processes GOES satellite imagery (Band 13, 10.3 μm infrared) to create smooth timelapse videos using:
-- **RIFE v4.6**: AI-based video frame interpolation
-- **Sanchez**: False color processing for grayscale satellite images
-- **FFmpeg**: Video encoding and additional interpolation
-- **PyQt6**: Cross-platform GUI interface
+## Understanding GOES-VFI
+
+### What is GOES-VFI?
+GOES-VFI is a desktop application that creates smooth timelapse videos from satellite imagery. Think of it as turning a flipbook of satellite photos into a smooth movie.
+
+### Core Components Explained
+
+1. **GOES Satellite Data**
+   - GOES = Geostationary Operational Environmental Satellites
+   - These satellites take pictures of Earth every 10-15 minutes
+   - Band 13 = Infrared channel (10.3 μm) that shows cloud temperatures
+   - Data comes as NetCDF files (.nc) from NOAA's AWS S3 buckets
+   - We convert these to PNG images for processing
+
+2. **RIFE v4.6 (AI Frame Interpolation)**
+   - RIFE = Real-Time Intermediate Flow Estimation
+   - It's an AI model that creates smooth frames between existing images
+   - Like creating in-between frames in animation
+   - Uses neural networks to understand motion and generate new frames
+
+3. **Sanchez (False Color Processing)**
+   - Converts grayscale infrared data to colorful images
+   - Makes cloud temperatures visible as different colors
+   - Blue = cold (high clouds), Red = warm (low clouds/ground)
+
+4. **FFmpeg (Video Encoding)**
+   - Professional video processing tool
+   - Combines frames into MP4 videos
+   - Handles compression, quality settings, and additional smoothing
+
+5. **PyQt6 (User Interface)**
+   - Python framework for creating desktop applications
+   - Provides buttons, menus, and visual elements users interact with
 
 ## Environment Setup
 - Requires **Python 3.13**.
@@ -129,23 +155,104 @@ When verifying all tests pass, use this systematic approach:
 6. **Minimize file creation** - Don't create documentation files unless explicitly requested
 
 ### Working with the Codebase
-1. **GOES Satellite Data:**
-   - GOES-16 (East) and GOES-18 (West) satellites
-   - Band 13 (10.3 μm) is the primary infrared channel used
-   - Data is stored in NetCDF (.nc) format from AWS S3
-   - Processed to PNG format for interpolation
 
-2. **Key Components:**
-   - **GUI**: PyQt6-based interface with tabs for different functions
-   - **Pipeline**: Video frame interpolation using RIFE
-   - **Integrity Check**: Verifies and downloads missing satellite imagery
-   - **Sanchez**: Colors grayscale satellite images
+#### Project Structure Understanding
+```
+goesvfi/                    # Main application package
+├── gui.py                  # Main window and application entry point
+├── gui_tabs/               # Different tabs in the interface
+│   ├── main_tab.py        # Primary processing controls
+│   ├── ffmpeg_settings_tab.py  # Video encoding settings
+│   └── ...
+├── integrity_check/        # Satellite data management
+│   ├── remote/            # S3 and CDN data fetching
+│   ├── time_index.py      # Timestamp handling for satellite data
+│   └── view_model.py      # Business logic for data checking
+├── pipeline/              # Core processing pipeline
+│   ├── run_vfi.py        # Main processing orchestrator
+│   ├── interpolate.py    # RIFE integration
+│   ├── encode.py         # FFmpeg video creation
+│   └── sanchez_processor.py  # False color processing
+├── utils/                 # Shared utilities
+│   ├── log.py            # Centralized logging
+│   ├── config.py         # Configuration management
+│   └── memory_manager.py # Memory usage monitoring
+└── view_models/          # MVVM pattern implementations
+```
 
-3. **Common Tasks:**
-   - When fixing tests: Run in batches, mock network dependencies
-   - When adding features: Create example scripts first in `/examples`
-   - When debugging: Use `--debug` flag and check logs
-   - When committing: Let pre-commit hooks run and fix issues
+#### Key File Locations
+- **Entry point**: `goesvfi/gui.py` - Start here to understand the application
+- **Main processing**: `goesvfi/pipeline/run_vfi.py` - Core video creation logic
+- **Satellite data**: `goesvfi/integrity_check/` - All GOES data handling
+- **Tests**: `tests/unit/`, `tests/integration/`, `tests/gui/`
+- **Examples**: `examples/` - Self-contained demonstration scripts
+
+#### Common Code Patterns
+
+1. **Logging Pattern**:
+   ```python
+   from goesvfi.utils import log
+   LOGGER = log.get_logger(__name__)
+
+   LOGGER.info("Processing started")
+   LOGGER.error("Failed to process: %s", error_msg)
+   ```
+
+2. **Path Handling**:
+   ```python
+   from pathlib import Path
+
+   # Always use Path objects, not strings
+   input_dir = Path("/path/to/images")
+   output_file = input_dir / "output.mp4"
+   ```
+
+3. **Error Handling for Network Operations**:
+   ```python
+   from goesvfi.integrity_check.remote.base import RemoteStoreError
+
+   try:
+       result = await s3_store.download(...)
+   except RemoteStoreError as e:
+       LOGGER.error("Download failed: %s", e)
+   ```
+
+4. **GUI Update Pattern**:
+   ```python
+   from PyQt6.QtCore import QCoreApplication
+
+   # Update UI and prevent freezing
+   self.progress_bar.setValue(50)
+   QCoreApplication.processEvents()
+   ```
+
+#### Common Tasks and How to Approach Them
+
+1. **Adding a New Feature**:
+   - First create an example in `examples/` to prototype
+   - Add unit tests in `tests/unit/`
+   - Integrate into main codebase
+   - Update GUI if needed
+   - Add integration tests
+
+2. **Fixing a Bug**:
+   - Reproduce with a minimal test case
+   - Check logs for error details
+   - Fix the issue
+   - Add regression test
+   - Verify all tests still pass
+
+3. **Working with Satellite Data**:
+   - Use `TimeIndex` class for timestamp handling
+   - Mock S3/CDN stores in tests to avoid network calls
+   - Handle missing data gracefully
+   - Consider both GOES-16 and GOES-18 satellites
+
+4. **Modifying the GUI**:
+   - Follow MVVM pattern (View → ViewModel → Model)
+   - Keep business logic in ViewModels
+   - Use signals/slots for communication
+   - Test with mock ViewModels
 
 ### Error Handling Patterns
 1. **Network Operations:**
@@ -172,10 +279,108 @@ When verifying all tests pass, use this systematic approach:
 - **Test in isolation** - Each test should be independent
 - **Use fixtures** - For common setup/teardown operations
 
-## Important Notes
-- **Never skip tests** - if a test is skipped, it provides no value
-- **Never skip pre-commit hooks** - they maintain code quality
-- **Test incrementally** - run tests in batches when debugging issues
-- **Mock external dependencies** - especially network services like S3/CDN
-- **Respect user feedback** - If user says "don't use X", follow their guidance
-- **Be concise** - Keep responses focused on the task at hand
+## Important Behavioral Notes
+
+### Do's and Don'ts for AI Agents
+
+**DO:**
+- ✅ Read files before editing them
+- ✅ Use existing patterns and conventions
+- ✅ Run tests after making changes
+- ✅ Mock external services in tests
+- ✅ Use Path objects for file paths
+- ✅ Handle errors gracefully
+- ✅ Follow MVVM pattern for GUI code
+- ✅ Create examples before implementing features
+- ✅ Be concise and direct in responses
+
+**DON'T:**
+- ❌ Skip tests or mark them as skipped
+- ❌ Use `--no-verify` to bypass pre-commit hooks
+- ❌ Create new files when you can edit existing ones
+- ❌ Assume libraries are available without checking
+- ❌ Make network calls in tests without mocking
+- ❌ Use string paths instead of Path objects
+- ❌ Put business logic in GUI view code
+- ❌ Create documentation unless explicitly asked
+- ❌ Give long explanations when action is requested
+
+### Common Pitfalls to Avoid
+
+1. **Test Hanging Issues**
+   - Problem: Tests hang due to S3Store/CDNStore initialization
+   - Solution: Mock at module level before imports
+   ```python
+   # At the top of test file, before imports
+   import unittest.mock
+   unittest.mock.patch('goesvfi.integrity_check.remote.s3_store.S3Store', MockS3Store).start()
+   ```
+
+2. **GUI Test Segfaults**
+   - Problem: PyQt tests crash with segmentation fault
+   - Solution: Run GUI tests separately, use proper cleanup
+   ```python
+   def tearDown(self):
+       QApplication.processEvents()  # Process pending events
+       self.widget.close()
+       self.widget.deleteLater()
+   ```
+
+3. **Import Errors**
+   - Problem: Module not found errors
+   - Solution: Always activate virtual environment first
+   ```bash
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+
+4. **Large File Commits**
+   - Problem: Accidentally committing .nc or large .png files
+   - Solution: Check before committing
+   ```bash
+   python cleanup.py --list-only
+   git status --porcelain | grep -E '\.(nc|png)$'
+   ```
+
+### Understanding User Intent
+
+When a user asks you to:
+- **"Fix the tests"** → Run tests, identify failures, fix them, verify all pass
+- **"Add a feature"** → Create example first, add tests, then implement
+- **"Debug this"** → Check logs, add debug prints, identify root cause
+- **"Make it work"** → Focus on functionality first, optimize later
+- **"Clean this up"** → Run linters, fix issues, improve readability
+
+### Performance Considerations
+
+1. **Memory Usage**
+   - Large satellite images can use significant memory
+   - Use tiling for images over 4K resolution
+   - Monitor with `MemoryManager` class
+
+2. **Processing Speed**
+   - RIFE interpolation is GPU-intensive
+   - FFmpeg encoding can be CPU-intensive
+   - Use hardware encoding when available
+
+3. **Network Operations**
+   - S3 downloads can be slow
+   - Use CDN for recent data (faster)
+   - Implement retry logic for failures
+
+### Security Best Practices
+
+1. **Never commit secrets**
+   - AWS credentials
+   - API keys
+   - Personal information
+
+2. **Validate user input**
+   - File paths
+   - Numeric parameters
+   - Command-line arguments
+
+3. **Use safe file operations**
+   - Check paths are within expected directories
+   - Don't overwrite without confirmation
+   - Handle permissions errors gracefully
