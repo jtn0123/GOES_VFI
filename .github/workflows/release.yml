@@ -71,7 +71,7 @@ jobs:
 
     - name: Run tests
       run: |
-        python run_working_tests_with_mocks.py
+        python run_non_gui_tests_ci.py --quiet
 
   update-version:
     name: Update Version Files

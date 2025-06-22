@@ -104,7 +104,7 @@ When verifying all tests pass, use this systematic approach:
    python -m pytest tests/unit/test_enhanced_integrity_check_tab.py -v -s --timeout=30
    ```
 
-### Test Runner Scripts
+### Test Runner Scripts (Simplified)
 
 **Important**: All test runners require the virtual environment to be activated:
 ```bash
@@ -112,22 +112,25 @@ source .venv/bin/activate  # macOS/Linux
 .venv\Scripts\activate     # Windows
 ```
 
-Each test runner serves a specific purpose:
+**We only have TWO test runners - keep it simple:**
 
-- **`./run_all_tests.py`** - Complete test suite
-  - Runs all 827+ tests across 87+ files
-  - Options: `--debug-mode` (verbose), `--parallel 4` (faster)
-  - Use after fixing all issues to verify everything works
+1. **`./run_all_tests.py`** - For local development (includes GUI tests)
+   - Runs all 827+ tests including GUI tests
+   - Handles crashes gracefully
+   - Options: `--debug-mode` (verbose), `--parallel 4` (faster)
+   - Use when: You have a display and want comprehensive testing
 
-- **`./run_working_tests_with_mocks.py`** - Stable subset
-  - Runs tests that reliably pass with mocked dependencies
-  - Good for quick verification during development
+2. **`./run_non_gui_tests_ci.py`** - For CI/headless environments
+   - Runs only non-GUI tests
+   - Includes coverage reporting
+   - Options: `--quiet`, `--verbose`, `--maxfail N`, `--parallel N`
+   - Use when: In GitHub Actions, CI, or no display available
 
-- **`./run_non_gui_tests.py`** - Non-GUI tests only
-  - Dynamically discovers and runs all non-GUI tests
-  - Avoids Qt-related segmentation faults
-  - Options: `--quiet`, `--verbose`, `--parallel N`
-  - Safe to run in CI/CD environments
+**Simple Decision Rule:**
+- Have a display? Use `./run_all_tests.py`
+- No display or in CI? Use `./run_non_gui_tests_ci.py`
+
+That's it! No need to overthink it.
 
 - **`./run_coverage.py`** - Code coverage analysis
   - Measures test coverage and generates reports

@@ -87,8 +87,6 @@ This document provides an overview of the directory structure for the GOES VFI p
 
 ## Test Runner Scripts
 
-- **[run_all_tests.py](run_all_tests.py)**: Script to run all tests
-- **[run_working_tests_with_mocks.py](run_working_tests_with_mocks.py)**: Runs reliable tests with dependencies mocked
-- **[run_non_gui_tests.py](run_non_gui_tests.py)**: Script to run tests excluding GUI
-- **[run_non_gui_tests_ci.py](run_non_gui_tests_ci.py)**: CI variant for headless environments
+- **[run_all_tests.py](run_all_tests.py)**: Script to run all tests (for local development with display)
+- **[run_non_gui_tests_ci.py](run_non_gui_tests_ci.py)**: Script to run non-GUI tests (for CI/headless environments)
 - **[run_mypy_checks.py](run_mypy_checks.py)**: Script to run mypy type checking

@@ -390,23 +390,17 @@ pip install -r requirements.txt
 #### Test Runner Scripts
 
 ```bash
-# Run all tests (recommended after fixes)
+# TWO simple options - choose based on your environment:
+
+# Option 1: Local development (with display)
 ./run_all_tests.py
 # Options: --debug-mode (verbose output), --parallel 4 (faster execution)
 
-# Run all working tests with mocks (reliable subset)
-./run_working_tests_with_mocks.py
-
-# Run non-GUI tests (avoids segmentation faults)
-# Dynamically discovers all non-GUI tests and runs them
-# Options: --quiet, --verbose, --parallel N
-./run_non_gui_tests.py
-
-# Run non-GUI tests for CI environments (with coverage)
-# Specifically designed for GitHub Actions and other CI systems
-# Includes coverage reporting and JUnit XML output
-# Options: --quiet, --verbose, --maxfail N, --parallel N
+# Option 2: CI/Headless environments (no display)
 ./run_non_gui_tests_ci.py
+# Options: --quiet, --verbose, --maxfail N, --parallel N
+
+# Simple rule: Have a display? Use run_all_tests.py. No display? Use run_non_gui_tests_ci.py
 
 # Generate code coverage report
 # Uses coverage 7.6.0 for Python 3.13 compatibility

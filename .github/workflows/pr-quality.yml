@@ -100,7 +100,7 @@ jobs:
 
         if [ -n "$CHANGED_FILES" ]; then
           echo "Running tests for changed modules..."
-          python run_working_tests_with_mocks.py
+          python run_non_gui_tests_ci.py --quiet --maxfail=5
         fi
 
   security-check:
