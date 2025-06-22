@@ -14,6 +14,8 @@ from PyQt6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
+    QMessageBox,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -640,6 +642,17 @@ class FFmpegSettingsTab(QWidget):
 
         main_layout.addWidget(self.ffmpeg_quality_group)
 
+        # --- Filters Group (Crop) ---
+        self.ffmpeg_filter_group = QGroupBox(self.tr("Filters"))
+        filter_layout = QVBoxLayout(self.ffmpeg_filter_group)
+        filter_label = QLabel(self.tr("Video Filters:"))
+        self.crop_filter_edit = QLineEdit()
+        self.crop_filter_edit.setPlaceholderText(self.tr("e.g. crop=width:height:x:y"))
+        self.crop_filter_edit.setToolTip(self.tr("Additional FFmpeg filter string"))
+        filter_layout.addWidget(filter_label)
+        filter_layout.addWidget(self.crop_filter_edit)
+        main_layout.addWidget(self.ffmpeg_filter_group)
+
         main_layout.addStretch()  # Push everything to the top
         self.setLayout(main_layout)
 
@@ -684,6 +697,7 @@ class FFmpegSettingsTab(QWidget):
             self.ffmpeg_bufsize_spinbox,
             self.ffmpeg_pix_fmt_combo,
             self.ffmpeg_filter_preset_combo,
+            self.crop_filter_edit,
         ]
 
         for control in controls_to_monitor:
@@ -1207,6 +1221,23 @@ class FFmpegSettingsTab(QWidget):
                 if control != self.ffmpeg_profile_combo:  # Already handled
                     control.setEnabled(False)
 
+    def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
+        """Update crop filter to match selected rectangle."""
+        if rect:
+            x, y, w, h = rect
+            new_filter = f"crop={w}:{h}:{x}:{y}"
+        else:
+            new_filter = ""
+
+        current = self.crop_filter_edit.text()
+        if current and current != new_filter:
+            QMessageBox.warning(
+                self,
+                self.tr("Conflicting Crop"),
+                self.tr("Crop filter differs from selection. Updating."),
+            )
+        self.crop_filter_edit.setText(new_filter)
+
     def get_current_settings(self) -> Dict[str, Any]:
         """Returns a dictionary of the current FFmpeg settings from the UI."""
         # Handle "(default)" text for combo boxes that allow it
@@ -1245,6 +1276,7 @@ class FFmpegSettingsTab(QWidget):
             "bufsize": self.ffmpeg_bufsize_spinbox.value(),
             "pix_fmt": self.ffmpeg_pix_fmt_combo.currentText(),
             "filter_preset": self.ffmpeg_filter_preset_combo.currentText(),
+            "filter_string": self.crop_filter_edit.text(),
         }
         return settings
 
@@ -1415,6 +1447,9 @@ class FFmpegSettingsTab(QWidget):
                     settings.get(
                         "ffmpeg_filter_preset", DEFAULT_FFMPEG_PROFILE["filter_preset"]
                     )
+                )
+                self.crop_filter_edit.setText(
+                    settings.get("ffmpeg_filter_string", "")
                 )
 
             # If a specific profile was loaded, apply it (this handles non-"Custom" cases)

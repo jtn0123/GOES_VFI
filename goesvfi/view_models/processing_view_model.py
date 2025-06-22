@@ -8,6 +8,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
+from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
+
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from goesvfi.utils import log
@@ -211,3 +213,35 @@ class ProcessingViewModel(QObject):
             Optional[Path]: The output file path, or None if not set
         """
         return self._output_file_path
+
+    def build_ffmpeg_command(
+        self,
+        output_path: Path,
+        fps: int,
+        crop_rect: Optional[tuple[int, int, int, int]],
+        ffmpeg_settings: dict,
+    ) -> list[str]:
+        """Build FFmpeg command incorporating crop filter."""
+        builder = FFmpegCommandBuilder()
+        builder.set_input(Path("-"))
+        builder.set_output(output_path)
+        builder.set_encoder(ffmpeg_settings.get("encoder", "Software x264"))
+        if "crf" in ffmpeg_settings:
+            builder.set_crf(int(ffmpeg_settings["crf"]))
+        if "pix_fmt" in ffmpeg_settings:
+            builder.set_pix_fmt(str(ffmpeg_settings["pix_fmt"]))
+        cmd = builder.build()
+
+        filters: list[str] = []
+        if crop_rect:
+            x, y, w, h = crop_rect
+            filters.append(f"crop={w}:{h}:{x}:{y}")
+        extra = ffmpeg_settings.get("filter_string")
+        if extra:
+            filters.append(str(extra))
+        if filters:
+            idx = cmd.index(str(output_path))
+            cmd.insert(idx, "-filter:v")
+            cmd.insert(idx + 1, ",".join(filters))
+        cmd.extend(["-framerate", str(fps)])
+        return cmd
