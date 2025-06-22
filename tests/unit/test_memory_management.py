@@ -11,9 +11,12 @@ from goesvfi.utils.memory_manager import (
     MemoryOptimizer,
     MemoryStats,
     ObjectPool,
+    StreamingProcessor,
     estimate_memory_requirement,
     get_memory_monitor,
 )
+import gc
+import psutil
 
 
 class TestMemoryStats:
@@ -254,3 +257,32 @@ def test_global_memory_monitor():
     monitor2 = get_memory_monitor()
 
     assert monitor1 is monitor2  # Should be same instance
+
+
+def test_optimize_array_chunks_no_shared_memory():
+    """Chunks returned by optimize_array_chunks should not share memory."""
+    optimizer = MemoryOptimizer()
+
+    arr = np.arange(1000, dtype=np.float32)
+    chunks = list(optimizer.optimize_array_chunks(arr, max_chunk_mb=1))
+
+    assert sum(len(c) for c in chunks) == len(arr)
+    assert all(not np.shares_memory(arr, c) for c in chunks)
+
+
+def test_streaming_processor_low_memory_usage():
+    """Processing in chunks should not drastically increase memory usage."""
+    processor = StreamingProcessor(chunk_size_mb=1)
+    arr = np.ones(2_000_000, dtype=np.float32)  # ~8MB
+
+    proc = psutil.Process()
+    gc.collect()
+    before = proc.memory_info().rss
+
+    result = processor.process_array(arr, lambda x: x + 1)
+
+    gc.collect()
+    after = proc.memory_info().rss
+
+    assert np.array_equal(result, arr + 1)
+    assert (after - before) < 10 * 1024 * 1024  # less than ~10MB increase
