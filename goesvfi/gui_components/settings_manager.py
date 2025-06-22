@@ -239,7 +239,8 @@ class SettingsManager:
             List of all keys in settings
         """
         try:
-            return self.settings.allKeys()
+            keys = self.settings.allKeys()
+            return [str(key) for key in keys]  # Convert to List[str]
         except Exception as e:
             pass
             LOGGER.error("Error getting all keys: %s", e)

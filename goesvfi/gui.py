@@ -1915,7 +1915,9 @@ class MainWindow(QWidget):
         # Enhanced debugging output
         LOGGER.debug("========== MAIN WINDOW HANDLER CALLED ==========")
         LOGGER.debug("MainWindow._handle_processing received the signal")
-        LOGGER.info("MainWindow: _handle_processing called - Starting video interpolation processing")
+        LOGGER.info(
+            "MainWindow: _handle_processing called - Starting video interpolation processing"
+        )
 
         # Log detailed argument info
         LOGGER.debug("Received args dictionary with %s keys", len(args) if args else 0)

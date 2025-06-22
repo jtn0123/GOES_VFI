@@ -97,7 +97,7 @@ class AWSConfigDialog(QDialog):
 
     def get_aws_region(self) -> str:
         """Get the AWS region."""
-        return self.region_combo.currentText()
+        return str(self.region_combo.currentText())
 
     def set_aws_profile(self, profile: Optional[str]) -> None:
         """Set the AWS profile name."""
@@ -150,7 +150,7 @@ class CDNConfigDialog(QDialog):
 
     def get_cdn_resolution(self) -> str:
         """Get the CDN resolution."""
-        return self.resolution_combo.currentText()
+        return str(self.resolution_combo.currentText())
 
     def set_cdn_resolution(self, resolution: str) -> None:
         """Set the CDN resolution."""
