@@ -84,6 +84,7 @@ def apply_gui_patches():
             patch("goesvfi.gui_tabs.main_tab.QFileDialog", NoPopupQFileDialog),
             patch("goesvfi.integrity_check.gui_tab.QFileDialog", NoPopupQFileDialog),
             patch("goesvfi.file_sorter.gui_tab.QFileDialog", NoPopupQFileDialog),
+            patch("goesvfi.file_sorter.view_model.QFileDialog", NoPopupQFileDialog),
             patch("goesvfi.date_sorter.gui_tab.QFileDialog", NoPopupQFileDialog),
         ]
     )

@@ -9,6 +9,8 @@ import os  # Added for basic path validation
 import threading
 import typing
 
+from PyQt6.QtWidgets import QFileDialog
+
 from goesvfi.utils import log
 
 from .sorter import FileSorter  # Import the FileSorter model
@@ -154,16 +156,14 @@ class FileSorterViewModel:
         Side Effects:
             Updates `source_directory` and `status_message`.
             Notifies observers if implemented.
-
-        Note:
-            This is a placeholder implementation for testing purposes.
         """
-        LOGGER.info("Command: Select Source Directory (Placeholder)")
-        # For now, setting a dummy path for testing purposes
-        self.source_directory = "/path/to/dummy/source"
-        self.status_message = f"Source directory set to: {self.source_directory}"
-        # TODO: Implement logic to open directory selection dialog and update source_directory
-        # Notify observers if needed (depends on how observer pattern is implemented)
+        LOGGER.info("Command: Select Source Directory")
+        directory = QFileDialog.getExistingDirectory(
+            None, "Select Source Directory"
+        )
+        if directory:
+            self.source_directory = directory
+            self.status_message = f"Source directory set to: {directory}"
 
     def select_destination_directory(self) -> None:
         """
@@ -176,18 +176,14 @@ class FileSorterViewModel:
         Side Effects:
             Updates `destination_directory` and `status_message`.
             Notifies observers if implemented.
-
-        Note:
-            This is a placeholder implementation for testing purposes.
         """
-        LOGGER.info("Command: Select Destination Directory (Placeholder)")
-        # For now, setting a dummy path for testing purposes
-        self.destination_directory = "/path/to/dummy/destination"
-        self.status_message = (
-            f"Destination directory set to: {self.destination_directory}"
+        LOGGER.info("Command: Select Destination Directory")
+        directory = QFileDialog.getExistingDirectory(
+            None, "Select Destination Directory"
         )
-        # TODO: Implement logic to open directory selection dialog and update destination_directory
-        # Notify observers if needed (depends on how observer pattern is implemented)
+        if directory:
+            self.destination_directory = directory
+            self.status_message = f"Destination directory set to: {directory}"
 
     def start_sorting(self) -> None:
         """
