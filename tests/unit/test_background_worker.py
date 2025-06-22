@@ -35,7 +35,9 @@ class TestTaskProgress:
 
     def test_task_progress_creation(self):
         """Test creating TaskProgress instance."""
-        progress = TaskProgress(current=5, total=10, eta_seconds=2.5, message="Processing...")
+        progress = TaskProgress(
+            current=5, total=10, eta_seconds=2.5, message="Processing..."
+        )
         assert progress.current == 5
         assert progress.total == 10
         assert progress.eta_seconds == 2.5
@@ -53,7 +55,9 @@ class TestTaskResult:
 
     def test_task_result_success(self):
         """Test creating successful TaskResult."""
-        result = TaskResult(task_id="test_task", status=TaskStatus.COMPLETED, result="Success!")
+        result = TaskResult(
+            task_id="test_task", status=TaskStatus.COMPLETED, result="Success!"
+        )
         assert result.task_id == "test_task"
         assert result.status == TaskStatus.COMPLETED
         assert result.result == "Success!"
@@ -116,9 +120,15 @@ class TestTask:
         failed_calls = []
 
         task.signals.started.connect(lambda task_id: started_calls.append(task_id))
-        task.signals.progress.connect(lambda task_id, p: progress_calls.append((task_id, p)))
-        task.signals.completed.connect(lambda task_id, r: completed_calls.append((task_id, r)))
-        task.signals.failed.connect(lambda task_id, e, t: failed_calls.append((task_id, e, t)))
+        task.signals.progress.connect(
+            lambda task_id, p: progress_calls.append((task_id, p))
+        )
+        task.signals.completed.connect(
+            lambda task_id, r: completed_calls.append((task_id, r))
+        )
+        task.signals.failed.connect(
+            lambda task_id, e, t: failed_calls.append((task_id, e, t))
+        )
 
         # Run the task
         task.run()

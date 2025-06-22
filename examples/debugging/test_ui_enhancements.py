@@ -96,7 +96,9 @@ class TestWindow(QMainWindow):
         layout.addWidget(show_shortcuts_btn)
 
         # Add F1 shortcut for help
-        self.shortcuts.add_shortcut("help", "F1", self.shortcuts.show_shortcuts, "Show keyboard shortcuts")
+        self.shortcuts.add_shortcut(
+            "help", "F1", self.shortcuts.show_shortcuts, "Show keyboard shortcuts"
+        )
 
     def start_demo(self):
         """Start the demo animations."""
@@ -139,7 +141,9 @@ class TestWindow(QMainWindow):
         self.progress_bar.setValue(self.progress_value)
 
         # Update tracker (simulate data transfer)
-        self.progress_tracker.update_progress(items=1, bytes_transferred=1024 * 1024)  # 1MB
+        self.progress_tracker.update_progress(
+            items=1, bytes_transferred=1024 * 1024
+        )  # 1MB
 
     def update_stats(self, stats):
         """Update status display with stats."""

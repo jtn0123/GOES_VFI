@@ -100,14 +100,18 @@ downloader = GOESImageryDownloader(output_dir=self.test_dir)
 downloader.s3_client = mock_s3
 
 # Test download
-result = downloader.download_precolorized_image(channel=ChannelType.CH13, product_type=ProductType.FULL_DISK)
+result = downloader.download_precolorized_image(
+    channel=ChannelType.CH13, product_type=ProductType.FULL_DISK
+)
 
 # Verify result
 self.assertIsNotNone(result)
 self.assertTrue(result.exists())
 
 # Verify mock was called with correct URL
-expected_url = "https://cdn.star.nesdis.noaa.gov / GOES16 / ABI / FD / latest / 13_1200x1200.jpg"
+expected_url = (
+    "https://cdn.star.nesdis.noaa.gov / GOES16 / ABI / FD / latest / 13_1200x1200.jpg"
+)
 mock_get.assert_called_once_with(expected_url, timeout=30)
 
 
@@ -118,14 +122,18 @@ def test_extract_timestamp_from_filename(self):
 processor = GOESImageProcessor(output_dir=self.test_dir)
 
 # Test with a typical filename
-filename = "OR_ABI - L1b - RadF - M6C13_G16_s20233001550210_e20233001559530_c20233001559577.nc"
+filename = (
+    "OR_ABI - L1b - RadF - M6C13_G16_s20233001550210_e20233001559530_c20233001559577.nc"
+)
 result = processor._extract_timestamp_from_filename(filename)
 
 # Verify result (day 300 of 2023 = Oct 27, 2023)
 self.assertEqual(result, "20231027_155021")
 
 
-@patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_precolorized_image")
+@patch(
+    "goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_precolorized_image"
+)
 def test_get_imagery_product_mode(self, mock_download):
     pass
 
@@ -173,11 +181,15 @@ expected_path = self.test_dir / "test_processed_image.png"
 mock_process.return_value = expected_path
 
 # Create manager
-manager = GOESImageryManager(output_dir=self.test_dir, default_mode=ImageryMode.RAW_DATA)
+manager = GOESImageryManager(
+    output_dir=self.test_dir, default_mode=ImageryMode.RAW_DATA
+)
 manager.downloader.s3_client = MagicMock()
 
 # Test getting imagery
-result = manager.get_imagery(channel=ChannelType.CH13, product_type=ProductType.FULL_DISK)
+result = manager.get_imagery(
+    channel=ChannelType.CH13, product_type=ProductType.FULL_DISK
+)
 
 # Verify result
 self.assertEqual(result, expected_path)

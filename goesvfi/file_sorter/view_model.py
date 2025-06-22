@@ -183,7 +183,9 @@ class FileSorterViewModel:
         LOGGER.info("Command: Select Destination Directory (Placeholder)")
         # For now, setting a dummy path for testing purposes
         self.destination_directory = "/path/to/dummy/destination"
-        self.status_message = f"Destination directory set to: {self.destination_directory}"
+        self.status_message = (
+            f"Destination directory set to: {self.destination_directory}"
+        )
         # TODO: Implement logic to open directory selection dialog and update destination_directory
         # Notify observers if needed (depends on how observer pattern is implemented)
 
@@ -202,7 +204,9 @@ class FileSorterViewModel:
         If preconditions are not met, updates `status_message` with an error.
         """
         if self.can_start_sorting:
-            LOGGER.info(f"Command: Start Sorting from {self.source_directory} to {self.destination_directory}")
+            LOGGER.info(
+                f"Command: Start Sorting from {self.source_directory} to {self.destination_directory}"
+            )
             self.is_sorting = True
             self.status_message = "Sorting started..."
             self.progress_percentage = 0.0

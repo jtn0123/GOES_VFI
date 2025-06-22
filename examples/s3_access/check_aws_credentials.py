@@ -30,7 +30,9 @@ try:
     logger.info("Checking AWS credentials configuration")
 
     # Print environment variables
-    aws_env_vars = {key: value for key, value in os.environ.items() if "AWS" in key or "aws" in key}
+    aws_env_vars = {
+        key: value for key, value in os.environ.items() if "AWS" in key or "aws" in key
+    }
 
     if aws_env_vars:
         logger.info(f"Found AWS environment variables: {aws_env_vars.keys()}")
@@ -83,7 +85,9 @@ try:
         client = session.client("s3")
         buckets = client.list_buckets()
 
-        logger.info(f"Successfully connected to AWS. Found {len(buckets.get('Buckets', []))} buckets")
+        logger.info(
+            f"Successfully connected to AWS. Found {len(buckets.get('Buckets', []))} buckets"
+        )
         logger.info(f"AWS Region: {session.region_name}")
     except botocore.exceptions.NoCredentialsError:
         logger.error("No AWS credentials found. You need to configure AWS credentials")
@@ -124,7 +128,9 @@ try:
 
 except ImportError as e:
     logger.error(f"Failed to import boto3 or aioboto3: {e}")
-    logger.error("Make sure you have installed the required dependencies with: pip install boto3 aioboto3")
+    logger.error(
+        "Make sure you have installed the required dependencies with: pip install boto3 aioboto3"
+    )
 except Exception as e:
     logger.error(f"Unexpected error: {e}")
     traceback.print_exc()

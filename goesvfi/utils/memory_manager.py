@@ -51,7 +51,9 @@ class MemoryStats:
 class MemoryMonitor:
     """Monitor system and process memory usage."""
 
-    def __init__(self, warning_threshold_mb: int = 500, critical_threshold_mb: int = 200) -> None:
+    def __init__(
+        self, warning_threshold_mb: int = 500, critical_threshold_mb: int = 200
+    ) -> None:
         """Initialize memory monitor.
 
         Args:
@@ -110,7 +112,9 @@ class MemoryMonitor:
             return
 
         self._monitoring = True
-        self._monitor_thread = threading.Thread(target=self._monitor_loop, args=(interval,), daemon=True)
+        self._monitor_thread = threading.Thread(
+            target=self._monitor_loop, args=(interval,), daemon=True
+        )
         self._monitor_thread.start()
         LOGGER.info("Started memory monitoring with %ss interval", interval)
 
@@ -180,7 +184,9 @@ class MemoryOptimizer:
         self._last_gc_time = 0.0
         self._gc_interval = 30.0  # Minimum seconds between GC runs
 
-    def optimize_array_dtype(self, array: np.ndarray, preserve_range: bool = True) -> np.ndarray:
+    def optimize_array_dtype(
+        self, array: np.ndarray, preserve_range: bool = True
+    ) -> np.ndarray:
         """Optimize numpy array dtype to use less memory.
 
         Args:
@@ -194,8 +200,13 @@ class MemoryOptimizer:
             # Check if float32 is sufficient
             if preserve_range:
                 min_val, max_val = array.min(), array.max()
-                if min_val >= np.finfo(np.float32).min and max_val <= np.finfo(np.float32).max:
-                    LOGGER.debug("Converting array from float64 to float32 (saves 50%% memory)")
+                if (
+                    min_val >= np.finfo(np.float32).min
+                    and max_val <= np.finfo(np.float32).max
+                ):
+                    LOGGER.debug(
+                        "Converting array from float64 to float32 (saves 50%% memory)"
+                    )
                     return array.astype(np.float32)
             else:
                 return array.astype(np.float32)
@@ -205,13 +216,19 @@ class MemoryOptimizer:
             min_val, max_val = array.min(), array.max()
 
             if min_val >= 0 and max_val <= 255:
-                LOGGER.debug("Converting array from int64 to uint8 (saves 87.5%% memory)")
+                LOGGER.debug(
+                    "Converting array from int64 to uint8 (saves 87.5%% memory)"
+                )
                 return array.astype(np.uint8)
             if min_val >= -128 and max_val <= 127:
-                LOGGER.debug("Converting array from int64 to int8 (saves 87.5%% memory)")
+                LOGGER.debug(
+                    "Converting array from int64 to int8 (saves 87.5%% memory)"
+                )
                 return array.astype(np.int8)
             if min_val >= 0 and max_val <= 65535:
-                LOGGER.debug("Converting array from int64 to uint16 (saves 75%% memory)")
+                LOGGER.debug(
+                    "Converting array from int64 to uint16 (saves 75%% memory)"
+                )
                 return array.astype(np.uint16)
             if min_val >= -32768 and max_val <= 32767:
                 LOGGER.debug("Converting array from int64 to int16 (saves 75%% memory)")
@@ -222,7 +239,9 @@ class MemoryOptimizer:
 
         return array
 
-    def chunk_large_array(self, array: np.ndarray, max_chunk_mb: int = 100) -> List[np.ndarray]:
+    def chunk_large_array(
+        self, array: np.ndarray, max_chunk_mb: int = 100
+    ) -> List[np.ndarray]:
         """Split large array into chunks for processing.
 
         Args:
@@ -268,7 +287,9 @@ class MemoryOptimizer:
         stats = self.monitor.get_memory_stats()
 
         should_gc = (
-            force or stats.percent_used > self._gc_threshold or (current_time - self._last_gc_time) > self._gc_interval
+            force
+            or stats.percent_used > self._gc_threshold
+            or (current_time - self._last_gc_time) > self._gc_interval
         )
 
         if should_gc:
@@ -291,7 +312,10 @@ class MemoryOptimizer:
         stats = self.monitor.get_memory_stats()
 
         if stats.available_mb < required_mb:
-            return False, (f"Insufficient memory: {stats.available_mb}MB available, " f"{required_mb}MB required")
+            return False, (
+                f"Insufficient memory: {stats.available_mb}MB available, "
+                f"{required_mb}MB required"
+            )
 
         if stats.available_mb < required_mb * 1.5:
             LOGGER.warning(

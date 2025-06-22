@@ -71,7 +71,9 @@ class FeedbackManager(QObject):
         self._current_status: str = "Ready"
         self._current_status_type: MessageType = MessageType.INFO
 
-    def add_message(self, message: str, message_type: MessageType = MessageType.INFO) -> None:
+    def add_message(
+        self, message: str, message_type: MessageType = MessageType.INFO
+    ) -> None:
         """Add a message to the history and emit signal.
 
         Args:
@@ -83,7 +85,9 @@ class FeedbackManager(QObject):
         self.message_added.emit(message, message_type)
         LOGGER.debug("Added %s message: %s", message_type.name, message)
 
-    def update_status(self, status: str, message_type: MessageType = MessageType.INFO) -> None:
+    def update_status(
+        self, status: str, message_type: MessageType = MessageType.INFO
+    ) -> None:
         """Update the current status.
 
         Args:
@@ -130,7 +134,9 @@ class FeedbackManager(QObject):
         self.task_completed.emit(task_name, success)
 
         if success:
-            self.add_message(f"Completed: {task_name} ({elapsed:.1f}s)", MessageType.SUCCESS)
+            self.add_message(
+                f"Completed: {task_name} ({elapsed:.1f}s)", MessageType.SUCCESS
+            )
         else:
             self.add_message(f"Failed: {task_name} ({elapsed:.1f}s)", MessageType.ERROR)
 
@@ -148,7 +154,9 @@ class FeedbackManager(QObject):
         self.add_message(f"{title}: {message}", MessageType.ERROR)
         LOGGER.error("%s: %s", title, message)
 
-    def get_message_history(self, limit: Optional[int] = None) -> List[Tuple[str, MessageType, datetime]]:
+    def get_message_history(
+        self, limit: Optional[int] = None
+    ) -> List[Tuple[str, MessageType, datetime]]:
         """Get message history.
 
         Args:
@@ -280,7 +288,9 @@ class FeedbackWidget(QWidget):
             if eta > 0:
                 eta_min = int(eta / 60)
                 eta_sec = int(eta % 60)
-                self.progress_bar.setFormat(f"{percentage:.1f}% - ETA: {eta_min}m {eta_sec}s")
+                self.progress_bar.setFormat(
+                    f"{percentage:.1f}% - ETA: {eta_min}m {eta_sec}s"
+                )
             else:
                 self.progress_bar.setFormat(f"{percentage:.1f}%")
         else:

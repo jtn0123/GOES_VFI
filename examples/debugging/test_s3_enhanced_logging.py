@@ -123,7 +123,9 @@ async def demonstrate_enhanced_s3():
 
             # Simulate operations for metrics
             for i in range(3):
-                with track_operation(f"simulated_download_{i}", batch_id=batch_id, file_index=i) as op:
+                with track_operation(
+                    f"simulated_download_{i}", batch_id=batch_id, file_index=i
+                ) as op:
                     import time
 
                     time.sleep(0.1 * (i + 1))

@@ -50,27 +50,41 @@ class FallbackPreviewDemo(QDialog):
         # Preview image area
         self.image_label = QLabel()
         self.image_label.setMinimumSize(600, 400)
-        self.image_label.setStyleSheet("background-color: #202020; border: 1px solid #444;")
+        self.image_label.setStyleSheet(
+            "background-color: #202020; border: 1px solid #444;"
+        )
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.image_label)
 
         # Buttons for different scenarios
         btn_timeout = QPushButton("Show Connection Timeout Error")
         btn_timeout.clicked.connect(
-            lambda: self.createFallbackPreview("Connection timed out while accessing NOAA server")
+            lambda: self.createFallbackPreview(
+                "Connection timed out while accessing NOAA server"
+            )
         )
         layout.addWidget(btn_timeout)
 
         btn_not_found = QPushButton("Show 'No Data Available' Error")
-        btn_not_found.clicked.connect(lambda: self.createFallbackPreview("No data found for selected date and time"))
+        btn_not_found.clicked.connect(
+            lambda: self.createFallbackPreview(
+                "No data found for selected date and time"
+            )
+        )
         layout.addWidget(btn_not_found)
 
         btn_corrupt = QPushButton("Show Corrupted Data Error")
-        btn_corrupt.clicked.connect(lambda: self.createFallbackPreview("Downloaded file is not a valid image format"))
+        btn_corrupt.clicked.connect(
+            lambda: self.createFallbackPreview(
+                "Downloaded file is not a valid image format"
+            )
+        )
         layout.addWidget(btn_corrupt)
 
         btn_general = QPushButton("Show General Error")
-        btn_general.clicked.connect(lambda: self.createFallbackPreview("Error processing satellite data"))
+        btn_general.clicked.connect(
+            lambda: self.createFallbackPreview("Error processing satellite data")
+        )
         layout.addWidget(btn_general)
 
         # Close button
@@ -107,7 +121,9 @@ class FallbackPreviewDemo(QDialog):
         if "timeout" in error_msg.lower():
             primary_reason = "Server connection timeout"
             suggestion = "Check your internet connection and try again later"
-        elif "no data found" in error_msg.lower() or "selected date" in error_msg.lower():
+        elif (
+            "no data found" in error_msg.lower() or "selected date" in error_msg.lower()
+        ):
             primary_reason = "No imagery data available"
             suggestion = "Try a different date/time or channel"
         elif "not a valid" in error_msg.lower() or "corrupt" in error_msg.lower():
@@ -154,7 +170,9 @@ class FallbackPreviewDemo(QDialog):
 
         # Additional help info
         painter.setPen(QColor(180, 230, 255))  # Light blue
-        painter.drawText(30, y_pos, "You can still proceed with processing using fallback imagery.")
+        painter.drawText(
+            30, y_pos, "You can still proceed with processing using fallback imagery."
+        )
         y_pos += 20
         painter.drawText(30, y_pos, "The system will use existing visualized samples.")
 

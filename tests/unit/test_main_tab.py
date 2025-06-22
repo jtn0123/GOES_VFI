@@ -91,7 +91,9 @@ def main_tab(qtbot, mock_main_window_view_model):
         "goesvfi.utils.config.get_cache_dir",
         MagicMock(return_value=pathlib.Path("/mock/cache/dir")),
     ).start()
-    patch("goesvfi.utils.config.find_rife_executable", MagicMock(return_value=None)).start()
+    patch(
+        "goesvfi.utils.config.find_rife_executable", MagicMock(return_value=None)
+    ).start()
 
     try:
         # Create the tab with mocked dependencies
@@ -213,10 +215,18 @@ def test_update_start_button_state(main_tab, mock_main_window_view_model, mocker
     assert not main_tab.start_button.isEnabled()
 
     # Mock the view model methods used for path validation
-    mocker.patch.object(mock_main_window_view_model, "get_input_directory", return_value=None)
-    mocker.patch.object(mock_main_window_view_model, "get_output_file", return_value=None)
-    mocker.patch.object(mock_main_window_view_model, "is_input_directory_valid", return_value=False)
-    mocker.patch.object(mock_main_window_view_model, "is_output_file_valid", return_value=False)
+    mocker.patch.object(
+        mock_main_window_view_model, "get_input_directory", return_value=None
+    )
+    mocker.patch.object(
+        mock_main_window_view_model, "get_output_file", return_value=None
+    )
+    mocker.patch.object(
+        mock_main_window_view_model, "is_input_directory_valid", return_value=False
+    )
+    mocker.patch.object(
+        mock_main_window_view_model, "is_output_file_valid", return_value=False
+    )
 
     # Helper function to manually enable start button if inputs look valid
     def simulate_start_button_update():
@@ -273,7 +283,9 @@ def test_update_crop_buttons_state(main_tab, mock_main_window_view_model, mocker
     assert not main_tab.clear_crop_button.isEnabled()
 
     # Mock the view model for path validation
-    mocker.patch.object(mock_main_window_view_model, "is_input_directory_valid", return_value=False)
+    mocker.patch.object(
+        mock_main_window_view_model, "is_input_directory_valid", return_value=False
+    )
     mocker.patch.object(mock_main_window_view_model, "get_crop_rect", return_value=None)
 
     # Helper function to manually set button states
@@ -466,7 +478,9 @@ def test_start_processing(main_tab, mock_main_window_view_model, mocker):
     QApplication.processEvents()
 
     # Our signal handler should have been called
-    assert start_called, "Custom start handler should be called when start button is clicked"
+    assert (
+        start_called
+    ), "Custom start handler should be called when start button is clicked"
 
 
 def test_processing_state_updates_ui(main_tab, mock_main_window_view_model):
@@ -479,7 +493,9 @@ def test_processing_state_updates_ui(main_tab, mock_main_window_view_model):
     # It could be _set_processing_state or similar
     processing_state_method = None
     for method_name in dir(main_tab):
-        if method_name.startswith("_set_processing") or method_name.startswith("_update_processing"):
+        if method_name.startswith("_set_processing") or method_name.startswith(
+            "_update_processing"
+        ):
             processing_state_method = method_name
             break
 

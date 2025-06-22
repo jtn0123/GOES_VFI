@@ -199,7 +199,9 @@ def extract_timestamp_and_satellite(
     return None, None
 
 
-def generate_timestamp_sequence(start_time: datetime, end_time: datetime, interval_minutes: int) -> List[datetime]:
+def generate_timestamp_sequence(
+    start_time: datetime, end_time: datetime, interval_minutes: int
+) -> List[datetime]:
     """
     Generate a sequence of timestamps at regular intervals.
 
@@ -241,7 +243,9 @@ def detect_interval(timestamps: List[datetime]) -> int:
         The most common interval in minutes, rounded to nearest 5 minutes
     """
     if len(timestamps) < 2:
-        LOGGER.warning("Not enough timestamps to detect interval, using default of 30 minutes")
+        LOGGER.warning(
+            "Not enough timestamps to detect interval, using default of 30 minutes"
+        )
         return 30  # Default to 30 minutes if not enough data
 
     # Sort timestamps to ensure correct interval calculation
@@ -306,7 +310,9 @@ def format_timestamp(dt: datetime) -> str:
     return dt.strftime("%Y%m%dT%H%M%S")
 
 
-def generate_expected_filename(timestamp: datetime, pattern: SatellitePattern, base_name: str = "image") -> str:
+def generate_expected_filename(
+    timestamp: datetime, pattern: SatellitePattern, base_name: str = "image"
+) -> str:
     """
     Generate an expected filename for a given timestamp and pattern.
 
@@ -573,7 +579,9 @@ def find_date_range_in_directory(
 # New functions for GOES-16/18 CDN and S3 support
 
 
-def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None) -> str:
+def to_cdn_url(
+    ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None
+) -> str:
     """
     Generate a CDN URL for the given timestamp and satellite.
 
@@ -618,7 +626,9 @@ def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[s
     # Use different URL formats based on the caller
     if "test_basic_time_index.py" in caller_filename:
         # Basic test expects: YYYY+DOY+HHMM+SS_GOESxx-ABI-FD-13-RESxRES.jpg
-        filename = f"{year}{doy_str}{hour}{minute}{second}_{sat_name}-ABI-FD-13-{res}.jpg"
+        filename = (
+            f"{year}{doy_str}{hour}{minute}{second}_{sat_name}-ABI-FD-13-{res}.jpg"
+        )
         url = f"https://cdn.star.nesdis.noaa.gov/{sat_name}/ABI/FD/13/{filename}"
     else:
         # Main test expects: YYYY+DOY+HHMM_GOESxx-ABI-CONUS-13-RESxRES.jpg
@@ -666,7 +676,9 @@ def to_s3_key(
     # Validate product type
     valid_products = ["RadF", "RadC", "RadM"]
     if product_type not in valid_products:
-        raise ValueError(f"Invalid product type: {product_type}. Must be one of {valid_products}")
+        raise ValueError(
+            f"Invalid product type: {product_type}. Must be one of {valid_products}"
+        )
 
     # Validate band number
     if not 1 <= band <= 16:
@@ -694,7 +706,11 @@ def to_s3_key(
         use_exact_match = False
     else:
         # Only auto-detect when exact_match is not explicitly set
-        use_exact_match = is_test_env and (is_remote_test or is_s3_patterns_test) and _USE_EXACT_MATCH_IN_TEST
+        use_exact_match = (
+            is_test_env
+            and (is_remote_test or is_s3_patterns_test)
+            and _USE_EXACT_MATCH_IN_TEST
+        )
 
     # Get appropriate scanning schedule for the product type
     scan_minutes = []
@@ -746,7 +762,9 @@ def to_s3_key(
         # Calculate actual second based on start time and product type
         actual_second = start_sec
         # Generate exact end time and creation time for completely concrete filename
-        end_minute = valid_minute + 4 if valid_minute + 4 < 60 else valid_minute + 4 - 60
+        end_minute = (
+            valid_minute + 4 if valid_minute + 4 < 60 else valid_minute + 4 - 60
+        )
         end_second = 59  # End seconds are typically near the end of the scan
         creation_time = f"{year}{doy_str}{hour}{valid_minute:02d}{end_second:02d}"
         pattern = (
@@ -759,7 +777,8 @@ def to_s3_key(
         if is_basic_test:
             # Basic test expects minute precision but wildcard seconds
             pattern = (
-                f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s" f"{year}{doy_str}{hour}{minute_str}*_e*_c*.nc"
+                f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
+                f"{year}{doy_str}{hour}{minute_str}*_e*_c*.nc"
             )
         elif is_s3_patterns_test:
             # S3 patterns test expects specific minute precision including start seconds
@@ -769,7 +788,10 @@ def to_s3_key(
             )
         else:
             # Production use - wildcard for the whole hour to be maximally flexible
-            pattern = f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s" f"{year}{doy_str}{hour}*_e*_c*.nc"
+            pattern = (
+                f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
+                f"{year}{doy_str}{hour}*_e*_c*.nc"
+            )
 
     return base_key + pattern
 
@@ -790,7 +812,9 @@ def get_s3_bucket(satellite: SatellitePattern) -> str:
     return bucket
 
 
-def generate_local_path(ts: datetime, satellite: SatellitePattern, base_dir: Path) -> Path:
+def generate_local_path(
+    ts: datetime, satellite: SatellitePattern, base_dir: Path
+) -> Path:
     """
     Generate a local path for storing the image.
 
@@ -925,7 +949,9 @@ def filter_s3_keys_by_band(keys: List[str], target_band: int) -> List[str]:
     return filtered_keys
 
 
-def find_nearest_goes_intervals(ts: datetime, product_type: str = "RadF") -> List[datetime]:
+def find_nearest_goes_intervals(
+    ts: datetime, product_type: str = "RadF"
+) -> List[datetime]:
     """Find the nearest standard GOES imagery intervals for a given timestamp and product type.
 
     GOES satellite imagery is typically available at fixed intervals, not at
@@ -944,17 +970,23 @@ def find_nearest_goes_intervals(ts: datetime, product_type: str = "RadF") -> Lis
     if product_type == "RadF":
         standard_minutes = RADF_MINUTES  # [0, 10, 20, 30, 40, 50]
     elif product_type == "RadC":
-        standard_minutes = RADC_MINUTES  # [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56]
+        standard_minutes = (
+            RADC_MINUTES  # [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56]
+        )
     elif product_type == "RadM":
         standard_minutes = RADM_MINUTES  # [0-59] every minute
     else:
         # Default to RadF if product type is not recognized
         standard_minutes = RADF_MINUTES
-        LOGGER.warning("Unknown product type: %s. Using RadF scanning schedule.", product_type)
+        LOGGER.warning(
+            "Unknown product type: %s. Using RadF scanning schedule.", product_type
+        )
 
     # If no minutes or only one minute in the scanning schedule, return empty list
     if not standard_minutes:
-        LOGGER.warning("No scanning schedule defined for product type: %s", product_type)
+        LOGGER.warning(
+            "No scanning schedule defined for product type: %s", product_type
+        )
         return []
     elif len(standard_minutes) == 1:
         # For a product with only one interval per hour, return that interval for this hour
@@ -1028,7 +1060,9 @@ class TimeIndex:
     }
 
     @staticmethod
-    def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None) -> str:
+    def to_cdn_url(
+        ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None
+    ) -> str:
         """
         Generate a CDN URL for the given timestamp and satellite.
 
@@ -1082,7 +1116,9 @@ class TimeIndex:
         return get_s3_bucket(satellite)
 
     @staticmethod
-    def generate_local_path(ts: datetime, satellite: SatellitePattern, base_dir: Path) -> Path:
+    def generate_local_path(
+        ts: datetime, satellite: SatellitePattern, base_dir: Path
+    ) -> Path:
         """
         Generate a local path for storing the image.
 
@@ -1152,7 +1188,9 @@ class TimeIndex:
         return is_recent(ts)
 
     @staticmethod
-    def find_nearest_intervals(ts: datetime, product_type: str = "RadF") -> List[datetime]:
+    def find_nearest_intervals(
+        ts: datetime, product_type: str = "RadF"
+    ) -> List[datetime]:
         """
         Find the nearest standard GOES imagery intervals for a given timestamp and product type.
 

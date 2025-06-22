@@ -17,7 +17,9 @@ class ImageCropper(ImageProcessor):
     This class provides a crop method that extracts a rectangular region from an image.
     """
 
-    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]) -> ImageData:
+    def crop(
+        self, image_data: ImageData, crop_area: Tuple[int, int, int, int]
+    ) -> ImageData:
         """Crop the image data to the specified rectangular area.
 
         Args:
@@ -40,7 +42,9 @@ class ImageCropper(ImageProcessor):
         # Validate crop area
         if not (0 <= left < right <= width and 0 <= top < bottom <= height):
             pass
-            raise ValueError(f"Invalid crop area: {crop_area} for image dimensions {width}x{height}")
+            raise ValueError(
+                f"Invalid crop area: {crop_area} for image dimensions {width}x{height}"
+            )
 
         # Perform crop
         cropped_array = image_array[top:bottom, left:right]
@@ -54,7 +58,9 @@ class ImageCropper(ImageProcessor):
         if "processing_steps" not in new_metadata:
             pass
             new_metadata["processing_steps"] = []
-        new_metadata["processing_steps"].append({"operation": "crop", "area": crop_area})
+        new_metadata["processing_steps"].append(
+            {"operation": "crop", "area": crop_area}
+        )
 
         return ImageData(image_data=cropped_array, metadata=new_metadata)
 

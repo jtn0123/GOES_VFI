@@ -178,7 +178,9 @@ class ChannelType(Enum):
     )
     IR_COMPOSITE = (102, "IR Composite", "10.3/11.2 μm", "Enhanced infrared imagery")
 
-    def __init__(self, number: int, display_name: str, wavelength: str, description: str) -> None:
+    def __init__(
+        self, number: int, display_name: str, wavelength: str, description: str
+    ) -> None:
         """Initialize channel type."""
         self.number = number
         self.display_name = display_name
@@ -251,14 +253,18 @@ class GOESImageryManager:
         """
         LOGGER.warning("Using stub implementation of GOESImageryManager")
         self.satellite = satellite
-        self.base_dir = output_dir or base_dir or Path(tempfile.mkdtemp(prefix="goes_imagery_"))
+        self.base_dir = (
+            output_dir or base_dir or Path(tempfile.mkdtemp(prefix="goes_imagery_"))
+        )
         self.output_dir = self.base_dir  # Alias for compatibility
         self.cache_size = cache_size
         self.default_mode = default_mode
         self._cache: Dict[str, Any] = {}
 
         # Create downloader instance
-        self.downloader = GOESImageryDownloader(satellite=satellite, output_dir=self.base_dir)
+        self.downloader = GOESImageryDownloader(
+            satellite=satellite, output_dir=self.base_dir
+        )
 
         # Create processor instance
         self.processor = GOESImageProcessor(output_dir=self.base_dir)
@@ -485,7 +491,9 @@ class GOESImageryDownloader:
         # Return a dummy key for testing
         return "test_file_key"
 
-    def download_raw_data(self, s3_key: str, output_path: Optional[Path] = None) -> Optional[Path]:
+    def download_raw_data(
+        self, s3_key: str, output_path: Optional[Path] = None
+    ) -> Optional[Path]:
         """Download raw data from S3.
 
         Args:
@@ -553,7 +561,9 @@ class GOESImageProcessor:
         self.output_dir = output_dir or Path(tempfile.mkdtemp())
         LOGGER.info("Initialized GOESImageProcessor")
 
-    def process(self, file_path: Path, channel: ChannelType, output_format: str = "png") -> Optional[Image.Image]:
+    def process(
+        self, file_path: Path, channel: ChannelType, output_format: str = "png"
+    ) -> Optional[Image.Image]:
         """Process a GOES NetCDF file.
 
         Args:
@@ -569,7 +579,9 @@ class GOESImageProcessor:
         img = Image.new("RGB", (512, 512), color="gray")
         return img
 
-    def apply_calibration(self, data: NDArray[np.float64], channel: ChannelType) -> NDArray[np.float64]:
+    def apply_calibration(
+        self, data: NDArray[np.float64], channel: ChannelType
+    ) -> NDArray[np.float64]:
         """Apply calibration to raw data.
 
         Args:

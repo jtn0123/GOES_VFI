@@ -71,7 +71,9 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
         cmd.extend(["-c", "0.0-1.0", "-g", str(gradient_path)])
         LOGGER.info("Adding false color gradient: %s", gradient_path)
     else:
-        LOGGER.warning(f"Gradient file not found at {gradient_path}, false color may not be applied")
+        LOGGER.warning(
+            f"Gradient file not found at {gradient_path}, false color may not be applied"
+        )
 
     LOGGER.info(
         f"Running Sanchez: {' '.join(map(str, cmd))} in directory {binary_dir}"
@@ -98,7 +100,9 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
 
     except subprocess.CalledProcessError as e:
         # Log detailed error information if check=True fails
-        LOGGER.error(f"Sanchez failed (Exit Code: {e.returncode}) for {Path(ir_png).name}")
+        LOGGER.error(
+            f"Sanchez failed (Exit Code: {e.returncode}) for {Path(ir_png).name}"
+        )
         if e.stdout:
             LOGGER.error("--> Sanchez stdout:\n%s", e.stdout)
         if e.stderr:
@@ -109,7 +113,9 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
         LOGGER.error("Sanchez executable not found at: %s", bin_path)
         raise  # Re-raise
     except (OSError, ValueError, KeyError) as e:
-        LOGGER.exception(f"An unexpected error occurred while running Sanchez for {Path(ir_png).name}: {e}")
+        LOGGER.exception(
+            f"An unexpected error occurred while running Sanchez for {Path(ir_png).name}: {e}"
+        )
         raise  # Re-raise unexpected errors
 
     # Return the output path as a Path object

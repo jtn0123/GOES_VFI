@@ -40,7 +40,10 @@ def _hash_pair(
 def _get_cache_filepath(base_key: str, index: int, total_frames: int) -> pathlib.Path:
     # Use zfill to ensure consistent sorting if needed, though direct indexing is used here
     max_digits = len(str(total_frames - 1))
-    return config.get_cache_dir() / f"{base_key}_k{total_frames}_frame{index:0{max_digits}}.npy"
+    return (
+        config.get_cache_dir()
+        / f"{base_key}_k{total_frames}_frame{index:0{max_digits}}.npy"
+    )
 
 
 # Load a list of frames if all exist for the given count
@@ -63,7 +66,11 @@ def load_cached(
     all_exist = True
 
     # Check if all expected frame files exist
-    LOGGER.debug("Checking for existence of %s cache files with base key %s", num_intermediate_frames, base_key)
+    LOGGER.debug(
+        "Checking for existence of %s cache files with base key %s",
+        num_intermediate_frames,
+        base_key,
+    )
     for i in range(num_intermediate_frames):
         npy_path = _get_cache_filepath(base_key, i, num_intermediate_frames)
         LOGGER.debug("Checking if %s exists", npy_path)
@@ -76,7 +83,9 @@ def load_cached(
 
     if all_exist:
         # Load all frames if they all exist
-        LOGGER.debug("All cache files found, attempting to load %s files", len(frame_paths))
+        LOGGER.debug(
+            "All cache files found, attempting to load %s files", len(frame_paths)
+        )
         loaded_frames: List[NDArray[Any]] = []
         try:
             for npy_path in frame_paths:

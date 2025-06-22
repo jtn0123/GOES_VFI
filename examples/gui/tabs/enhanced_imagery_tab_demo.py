@@ -15,7 +15,9 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 from goesvfi.integrity_check.enhanced_imagery_tab import EnhancedGOESImageryTab
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 
 class MockWindow(QMainWindow):
@@ -49,7 +51,11 @@ class MockWindow(QMainWindow):
             Path.home() / "Downloads" / "goes_imagery",
             Path.home() / "Downloads" / "goes_channels" / "visualized",
             Path.home() / "Downloads" / "goes_channels" / "rgb_composites",
-            Path.home() / "Downloads" / "goes_channels" / "visualized" / "derived_products",
+            Path.home()
+            / "Downloads"
+            / "goes_channels"
+            / "visualized"
+            / "derived_products",
         ]
 
         for d in dirs:

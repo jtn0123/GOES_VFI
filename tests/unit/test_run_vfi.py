@@ -29,7 +29,9 @@ def mock_capability_detector(mocker):
     # mock_detector.version = "mock-4.x"
 
     # Patch where it's used in run_vfi
-    return mocker.patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector)
+    return mocker.patch(
+        "goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector
+    )
 
 
 @pytest.fixture
@@ -67,7 +69,9 @@ def make_dummy_images(tmp_path, n, size=(4, 4)):
 
 
 # Use the new mock factories
-@patch("goesvfi.pipeline.run_vfi.subprocess.run")  # Still need to patch run, but won't be called
+@patch(
+    "goesvfi.pipeline.run_vfi.subprocess.run"
+)  # Still need to patch run, but won't be called
 @patch("goesvfi.pipeline.run_vfi.subprocess.Popen")
 @patch("goesvfi.pipeline.run_vfi.Image.open")  # Patch Image.open to return a mock image
 @patch("goesvfi.pipeline.run_vfi.ProcessPoolExecutor")  # Patch ProcessPoolExecutor
@@ -160,7 +164,9 @@ def test_run_vfi_skip_model_writes_all_frames(
                     f.write(b"dummy ffmpeg output")
                 print(f"Mock Popen (direct instance) created file: {raw_output}")
             except Exception as e:
-                print(f"Mock Popen (direct instance) failed to create file {raw_output}: {e}")
+                print(
+                    f"Mock Popen (direct instance) failed to create file {raw_output}: {e}"
+                )
         return res
 
     mock_popen_instance.wait = wait_with_file_creation
@@ -201,7 +207,9 @@ def test_run_vfi_skip_model_writes_all_frames(
 
     # Check results and file creation
     assert any(isinstance(r, tuple) for r in results)  # Progress updates
-    assert any(isinstance(r, pathlib.Path) and r == raw_output for r in results)  # Final path
+    assert any(
+        isinstance(r, pathlib.Path) and r == raw_output for r in results
+    )  # Final path
     assert raw_output.exists()  # Check mock file creation
 
 
@@ -209,7 +217,9 @@ def test_run_vfi_skip_model_writes_all_frames(
 @patch("goesvfi.pipeline.run_vfi.subprocess.run")
 @patch("goesvfi.pipeline.run_vfi.subprocess.Popen")
 @patch("pathlib.Path.exists", return_value=True)  # Mock model path existence
-def test_run_vfi_rife_failure_raises(mock_exists, mock_popen_patch, mock_run_patch, tmp_path, mock_capability_detector):
+def test_run_vfi_rife_failure_raises(
+    mock_exists, mock_popen_patch, mock_run_patch, tmp_path, mock_capability_detector
+):
     # Arrange: create 2 dummy images
     img_paths = make_dummy_images(tmp_path, 2)
     output_mp4 = tmp_path / "output.mp4"
@@ -269,7 +279,9 @@ def test_run_vfi_ffmpeg_failure_raises(
     mock_executor_instance = MagicMock()
     mock_executor.return_value.__enter__.return_value = mock_executor_instance
     # Simulate map calling the real worker function
-    mock_executor_instance.map = MagicMock(side_effect=lambda fn, iterables, *a, **kw: [fn(args) for args in iterables])
+    mock_executor_instance.map = MagicMock(
+        side_effect=lambda fn, iterables, *a, **kw: [fn(args) for args in iterables]
+    )
 
     # Arrange: create 2 dummy images
     img_paths = make_dummy_images(tmp_path, 2)
@@ -290,7 +302,9 @@ def test_run_vfi_ffmpeg_failure_raises(
     mock_image_open.return_value = mock_img
 
     # Configure mock run for RIFE (success)
-    mock_run_factory = create_mock_subprocess_run(output_file_to_create=rife_output_file)
+    mock_run_factory = create_mock_subprocess_run(
+        output_file_to_create=rife_output_file
+    )
     mock_run_patch.side_effect = mock_run_factory
 
     # Configure mock Popen for ffmpeg (failure)
@@ -368,7 +382,9 @@ def test_run_vfi_sanchez_invocation(
     create_test_png(processed_img1, size=img_size)
 
     # Configure worker to return the processed paths
-    mock_image_open.return_value = processed_img0  # Only the first image is directly processed
+    mock_image_open.return_value = (
+        processed_img0  # Only the first image is directly processed
+    )
 
     # Mock Image.open to return a mock image with size attribute
     mock_img = MagicMock()
@@ -456,10 +472,14 @@ def test_run_vfi_sanchez_invocation(
     assert mock_colourise_patch.called
     # Assert Image.open call count
     # Expected calls: 1 (first image dim check) + 1 (first image write) + 1 (RIFE out 1) + 1 (second image write) = 4?
-    assert mock_image_open.call_count == 4  # Check that Image.open was called expected times
+    assert (
+        mock_image_open.call_count == 4
+    )  # Check that Image.open was called expected times
     # Check args of the first call (more predictable paths)
     if mock_colourise_patch.call_args_list:
-        first_call_args = mock_colourise_patch.call_args_list[0]  # Get the first Call object
+        first_call_args = mock_colourise_patch.call_args_list[
+            0
+        ]  # Get the first Call object
         assert first_call_args.kwargs["res_km"] == res_km  # Check res_km using kwargs
 
     # Assert other mocks called and files created
@@ -513,7 +533,9 @@ def test_run_vfi_sanchez_failure_keeps_original(
     create_test_png(processed_img1, size=img_size)
 
     # Configure worker to return the processed paths
-    mock_image_open.return_value = processed_img0  # Only the first image is directly processed
+    mock_image_open.return_value = (
+        processed_img0  # Only the first image is directly processed
+    )
 
     # Mock Image.open to return a mock image with size attribute
     mock_img = MagicMock()
@@ -579,7 +601,9 @@ def test_run_vfi_sanchez_failure_keeps_original(
     # Assert Image.open call count
     # Expected calls: 1 (first image dim check) + 1 (first image write) + 1 (second image write) = 3
     # RIFE output is not read because Sanchez error prevents RIFE step in this mock setup?
-    assert mock_image_open.call_count == 3  # Check that Image.open was called expected times
+    assert (
+        mock_image_open.call_count == 3
+    )  # Check that Image.open was called expected times
     # Assert RIFE and FFmpeg were called
     # FIX: RIFE shouldn't be called in this test setup because the mock map returns []
     # mock_run_patch.assert_called_once()
@@ -597,7 +621,9 @@ def test_run_vfi_sanchez_failure_keeps_original(
 
 @patch("goesvfi.pipeline.run_vfi.subprocess.run")
 @patch("goesvfi.pipeline.run_vfi.pathlib.Path.exists", return_value=True)
-def test_rife_already_installed(mock_exists, mock_run, mock_capability_detector, tmp_path):
+def test_rife_already_installed(
+    mock_exists, mock_run, mock_capability_detector, tmp_path
+):
     """Test that RIFE is not re-installed if the executable exists."""
     # ... test body ...
 
@@ -621,6 +647,8 @@ def test_call_rife_v4_gpu_fp16(mock_run, mock_capability_detector, tmp_path):
 
 
 @patch("goesvfi.pipeline.run_vfi.subprocess.run")
-def test_call_rife_handles_nonexistent_model_path(mock_run, mock_capability_detector, tmp_path, caplog):
+def test_call_rife_handles_nonexistent_model_path(
+    mock_run, mock_capability_detector, tmp_path, caplog
+):
     """Test that a non-existent model path is handled gracefully."""
     # ... test body ...

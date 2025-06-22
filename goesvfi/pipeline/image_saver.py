@@ -59,7 +59,9 @@ class ImageSaver(ImageProcessor):
         """
         raise NotImplementedError("ImageSaver does not implement the process method.")
 
-    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]) -> ImageData:
+    def crop(
+        self, image_data: ImageData, crop_area: Tuple[int, int, int, int]
+    ) -> ImageData:
         """Not implemented. ImageSaver does not perform cropping.
 
         Raises:

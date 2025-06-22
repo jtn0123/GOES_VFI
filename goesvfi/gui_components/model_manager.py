@@ -74,7 +74,9 @@ class ModelManager:
 
         except Exception as e:
             LOGGER.error("Error populating models: %s", e)
-            QMessageBox.critical(None, "Model Loading Error", f"Failed to load RIFE models: {str(e)}")
+            QMessageBox.critical(
+                None, "Model Loading Error", f"Failed to load RIFE models: {str(e)}"
+            )
 
     def get_model_path(self, model_name: str) -> Optional[Path]:
         """Get the path for a model by name.

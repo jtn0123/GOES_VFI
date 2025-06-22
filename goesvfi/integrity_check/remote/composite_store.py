@@ -114,7 +114,9 @@ class CompositeStore(RemoteStore):
             for name, _ in self.sources
         }
 
-        LOGGER.info(f"Initialized CompositeStore with sources: {[name for name, _ in self.sources]}")
+        LOGGER.info(
+            f"Initialized CompositeStore with sources: {[name for name, _ in self.sources]}"
+        )
 
     def _get_ordered_sources(self) -> List[Tuple[str, RemoteStore]]:
         """Get sources ordered by priority based on recent performance.
@@ -152,7 +154,9 @@ class CompositeStore(RemoteStore):
 
         # Log if order changed from default
         if [name for name, _ in sorted_sources] != [name for name, _ in self.sources]:
-            LOGGER.debug(f"Source priority reordered: {[name for name, _ in sorted_sources]}")
+            LOGGER.debug(
+                f"Source priority reordered: {[name for name, _ in sorted_sources]}"
+            )
 
         return sorted_sources
 
@@ -233,7 +237,9 @@ class CompositeStore(RemoteStore):
                     )
                 else:
                     # Fallback to download_file for basic RemoteStore interface
-                    result_path = await store.download_file(timestamp=ts, satellite=satellite, destination=dest_path)
+                    result_path = await store.download_file(
+                        timestamp=ts, satellite=satellite, destination=dest_path
+                    )
 
                 elapsed_time = asyncio.get_event_loop().time() - start_time
 
@@ -241,7 +247,9 @@ class CompositeStore(RemoteStore):
                 self._update_stats(source_name, True, elapsed_time)
 
                 # Success!
-                LOGGER.info(f"Successfully downloaded from {source_name} in {elapsed_time:.2f}s")
+                LOGGER.info(
+                    f"Successfully downloaded from {source_name} in {elapsed_time:.2f}s"
+                )
 
                 results.append(
                     DataSourceResult(
@@ -280,7 +288,9 @@ class CompositeStore(RemoteStore):
                 )
 
                 # Log but continue to next source
-                LOGGER.warning(f"{source_name} failed after {elapsed_time:.2f}s: {error.message}")
+                LOGGER.warning(
+                    f"{source_name} failed after {elapsed_time:.2f}s: {error.message}"
+                )
 
                 # For auth errors, skip other sources as they'll likely fail too
                 if isinstance(error, AuthenticationError):
@@ -324,7 +334,9 @@ class CompositeStore(RemoteStore):
                 error_summary = result.error.message
                 if len(error_summary) > 60:
                     error_summary = error_summary[:57] + "..."
-                error_lines.append(f"  {status} {result.source_name} ({time_str}): {error_summary}")
+                error_lines.append(
+                    f"  {status} {result.source_name} ({time_str}): {error_summary}"
+                )
             else:
                 error_lines.append(f"  {status} {result.source_name} ({time_str})")
 
@@ -366,16 +378,24 @@ class CompositeStore(RemoteStore):
         # Create comprehensive error
         if isinstance(primary_error, ResourceNotFoundError):
             raise ResourceNotFoundError(
-                message="\n".join(error_lines[: tips_index - 1]),  # Include all source attempts
+                message="\n".join(
+                    error_lines[: tips_index - 1]
+                ),  # Include all source attempts
                 technical_details="\n".join(error_lines),
-                original_exception=(primary_error.original_exception if primary_error else None),
+                original_exception=(
+                    primary_error.original_exception if primary_error else None
+                ),
                 troubleshooting_tips="\n".join(error_lines[tips_index:]),
             )
         else:
             raise RemoteStoreError(
-                message="\n".join(error_lines[: tips_index - 1]),  # Include all source attempts
+                message="\n".join(
+                    error_lines[: tips_index - 1]
+                ),  # Include all source attempts
                 technical_details="\n".join(error_lines),
-                original_exception=(primary_error.original_exception if primary_error else None),
+                original_exception=(
+                    primary_error.original_exception if primary_error else None
+                ),
                 troubleshooting_tips="\n".join(error_lines[tips_index:]),
             )
 
@@ -410,7 +430,9 @@ class CompositeStore(RemoteStore):
                     )
                 else:
                     # Fallback to check_file_exists for basic RemoteStore interface
-                    exists = await store.check_file_exists(timestamp=ts, satellite=satellite)
+                    exists = await store.check_file_exists(
+                        timestamp=ts, satellite=satellite
+                    )
 
                 if exists:
                     LOGGER.debug("File exists in %s", source_name)
@@ -496,8 +518,16 @@ class CompositeStore(RemoteStore):
                 "success_rate": f"{success_rate:.1f}%",
                 "average_time": f"{avg_time:.2f}s",
                 "consecutive_failures": source_stats["consecutive_failures"],
-                "last_success": (source_stats["last_success"].isoformat() if source_stats["last_success"] else "Never"),
-                "last_failure": (source_stats["last_failure"].isoformat() if source_stats["last_failure"] else "Never"),
+                "last_success": (
+                    source_stats["last_success"].isoformat()
+                    if source_stats["last_success"]
+                    else "Never"
+                ),
+                "last_failure": (
+                    source_stats["last_failure"].isoformat()
+                    if source_stats["last_failure"]
+                    else "Never"
+                ),
             }
 
         return stats

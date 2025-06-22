@@ -20,11 +20,15 @@ from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
 from goesvfi.utils import date_utils, log
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 LOGGER = log.get_logger(__name__)
 
 
-async def list_s3_objects(bucket: str, prefix: str, limit: int = 10, search_bands: bool = False):
+async def list_s3_objects(
+    bucket: str, prefix: str, limit: int = 10, search_bands: bool = False
+):
     """List objects in an S3 bucket with the given prefix.
 
     Args:
@@ -78,7 +82,9 @@ async def list_s3_objects(bucket: str, prefix: str, limit: int = 10, search_band
                                 band = band_match.group(1)
                                 band_counts[band] = band_counts.get(band, 0) + 1
 
-                        objects.append({"key": key, "size": size, "last_modified": last_modified})
+                        objects.append(
+                            {"key": key, "size": size, "last_modified": last_modified}
+                        )
 
                         count += 1
                         if count >= limit and not search_bands:
@@ -170,7 +176,9 @@ async def main():
             if objects:
                 LOGGER.info("  Found %s objects:", len(objects))
                 for i, obj in enumerate(objects):
-                    LOGGER.info(f"    {i+1}. {obj['key']} ({obj['size']} bytes, {obj['last_modified']})")
+                    LOGGER.info(
+                        f"    {i+1}. {obj['key']} ({obj['size']} bytes, {obj['last_modified']})"
+                    )
             else:
                 LOGGER.info("  No objects found with prefix: %s", prefix)
 

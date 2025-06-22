@@ -97,13 +97,17 @@ class FetcherConfigDialog(QDialog):
         fallback_layout = QFormLayout()
 
         self.fallback_strategy = QComboBox()
-        self.fallback_strategy.addItems(["CDN first, then S3", "S3 first, then CDN", "CDN only", "S3 only"])
+        self.fallback_strategy.addItems(
+            ["CDN first, then S3", "S3 first, then CDN", "CDN only", "S3 only"]
+        )
         fallback_layout.addRow("Fallback Strategy:", self.fallback_strategy)
 
         layout.addLayout(fallback_layout)
 
         # Dialog buttons
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -273,7 +277,11 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         try:
             # Check if we should simulate an error (for test compatibility)
-            if self.view_model and hasattr(self.view_model, "base_directory") and self.view_model.base_directory:
+            if (
+                self.view_model
+                and hasattr(self.view_model, "base_directory")
+                and self.view_model.base_directory
+            ):
                 from goesvfi.integrity_check.time_index import TimeIndex
 
                 # This will raise an exception if the test has mocked it to do so
@@ -282,9 +290,13 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                     if self.view_model and hasattr(self.view_model, "satellite")
                     else SatellitePattern.GOES_16
                 )
-                TimeIndex.find_date_range_in_directory(Path(self.view_model.base_directory), satellite)
+                TimeIndex.find_date_range_in_directory(
+                    Path(self.view_model.base_directory), satellite
+                )
 
-                base_dir = Path(self.view_model.base_directory) if self.view_model else Path()
+                base_dir = (
+                    Path(self.view_model.base_directory) if self.view_model else Path()
+                )
                 if base_dir.exists():
                     # Check if directory is empty
                     files = list(base_dir.rglob("*"))
@@ -345,13 +357,17 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         super()._perform_scan()
 
         # Additional logging for enhanced features
-        LOGGER.info("Using fetcher strategy: %s", self.fetcher_config["fallback_strategy"])
+        LOGGER.info(
+            "Using fetcher strategy: %s", self.fetcher_config["fallback_strategy"]
+        )
 
     def _download_selected(self) -> None:
         """Override download to use enhanced fetching based on configuration."""
         selected_items = self._get_selected_items()
         if not selected_items:
-            QMessageBox.warning(self, "No Selection", "Please select items to download.")
+            QMessageBox.warning(
+                self, "No Selection", "Please select items to download."
+            )
             return
 
         LOGGER.info("Starting enhanced download for %d items", len(selected_items))
@@ -477,16 +493,24 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         # Connect signals - use toggled instead of buttonClicked for programmatic changes
         self.auto_radio.toggled.connect(
-            lambda checked: (self._on_fetch_source_changed(self.auto_radio) if checked else None)
+            lambda checked: (
+                self._on_fetch_source_changed(self.auto_radio) if checked else None
+            )
         )
         self.cdn_radio.toggled.connect(
-            lambda checked: (self._on_fetch_source_changed(self.cdn_radio) if checked else None)
+            lambda checked: (
+                self._on_fetch_source_changed(self.cdn_radio) if checked else None
+            )
         )
         self.s3_radio.toggled.connect(
-            lambda checked: (self._on_fetch_source_changed(self.s3_radio) if checked else None)
+            lambda checked: (
+                self._on_fetch_source_changed(self.s3_radio) if checked else None
+            )
         )
         self.local_radio.toggled.connect(
-            lambda checked: (self._on_fetch_source_changed(self.local_radio) if checked else None)
+            lambda checked: (
+                self._on_fetch_source_changed(self.local_radio) if checked else None
+            )
         )
 
     def _add_satellite_radios(self) -> None:
@@ -529,10 +553,14 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         # Connect signals - use toggled instead of buttonClicked for programmatic changes
         self.goes16_radio.toggled.connect(
-            lambda checked: (self._on_satellite_changed(self.goes16_radio) if checked else None)
+            lambda checked: (
+                self._on_satellite_changed(self.goes16_radio) if checked else None
+            )
         )
         self.goes18_radio.toggled.connect(
-            lambda checked: (self._on_satellite_changed(self.goes18_radio) if checked else None)
+            lambda checked: (
+                self._on_satellite_changed(self.goes18_radio) if checked else None
+            )
         )
 
     def _on_fetch_source_changed(self, button: QRadioButton) -> None:
@@ -561,7 +589,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
     def _auto_detect_satellite(self) -> None:
         """Auto-detect which satellite has more files in the directory."""
         if not self.view_model or not hasattr(self.view_model, "base_directory"):
-            QMessageBox.warning(self, "No Directory", "Please select a directory first.")
+            QMessageBox.warning(
+                self, "No Directory", "Please select a directory first."
+            )
             return
 
         # Create progress dialog but don't make it modal in test environments
@@ -570,7 +600,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             # Check if we're in a test environment by looking for mocked QProgressDialog
 
             if QProgressDialog.__module__ != "unittest.mock":
-                progress_dialog = QProgressDialog("Scanning directory...", "Cancel", 0, 0, self)
+                progress_dialog = QProgressDialog(
+                    "Scanning directory...", "Cancel", 0, 0, self
+                )
                 progress_dialog.setWindowTitle("Auto-Detecting Satellite")
                 progress_dialog.setModal(False)  # Non-modal to avoid blocking
                 progress_dialog.setMinimumDuration(0)  # Show immediately
@@ -582,7 +614,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         try:
             # Log the scan start
-            LOGGER.info(f"Auto-detect satellite: Starting scan of directory {self.view_model.base_directory}")
+            LOGGER.info(
+                f"Auto-detect satellite: Starting scan of directory {self.view_model.base_directory}"
+            )
 
             # Simple file counting approach to avoid TimeIndex complexity
             base_path = Path(self.view_model.base_directory)
@@ -592,7 +626,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             goes18_count = 0
 
             # Log scanning for each satellite
-            LOGGER.info(f"Auto-detect satellite: Scanning for GOES-16 files in {base_path}")
+            LOGGER.info(
+                f"Auto-detect satellite: Scanning for GOES-16 files in {base_path}"
+            )
 
             # Scan all PNG files in the directory and subdirectories
             for png_file in base_path.rglob("*.png"):
@@ -609,7 +645,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                     return
 
             # Log found counts
-            LOGGER.info(f"Auto-detect satellite: Found {goes16_count} GOES-16 files and {goes18_count} GOES-18 files")
+            LOGGER.info(
+                f"Auto-detect satellite: Found {goes16_count} GOES-16 files and {goes18_count} GOES-18 files"
+            )
 
             if progress_dialog:
                 progress_dialog.close()
@@ -641,7 +679,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             LOGGER.info(
                 f"Auto-detect satellite: Selected {detected} based on file count ({goes16_count if detected == 'GOES-16' else goes18_count} vs {goes18_count if detected == 'GOES-16' else goes16_count})"
             )
-            LOGGER.info(f"Auto-detect satellite: Completed successfully, selected {detected_full}")
+            LOGGER.info(
+                f"Auto-detect satellite: Completed successfully, selected {detected_full}"
+            )
 
             # Show result
             QMessageBox.information(
@@ -672,7 +712,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         formatted_message = f'<span style="color: {color};">{message}</span>'
         self.status_label.setText(formatted_message)
 
-    def _update_progress(self, current: int, total: int, eta_seconds: float = 0.0) -> None:
+    def _update_progress(
+        self, current: int, total: int, eta_seconds: float = 0.0
+    ) -> None:
         """Update the progress bar with detailed information."""
         # Update progress bar value
         if total > 0:

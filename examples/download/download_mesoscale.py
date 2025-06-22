@@ -14,7 +14,9 @@ import boto3
 from botocore import UNSIGNED
 from botocore.config import Config
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("test_download_mesoscale")
 
 # Configuration
@@ -143,7 +145,9 @@ async def find_mesoscale_files(bucket_name, band):
 
     except Exception as e:
         pass
-        logger.error(f"Error finding Mesoscale files for {bucket_name}/Band {band}: {str(e)}")
+        logger.error(
+            f"Error finding Mesoscale files for {bucket_name}/Band {band}: {str(e)}"
+        )
         return {"M1": [], "M2": []}
 
 
@@ -187,7 +191,8 @@ async def download_mesoscale_files():
                     filename = files[0]
 
                     local_filename = (
-                        f"{satellite_abbr}_{PRODUCT_TYPE}_{region}_Band{band:02d}_" f"{os.path.basename(filename)}"
+                        f"{satellite_abbr}_{PRODUCT_TYPE}_{region}_Band{band:02d}_"
+                        f"{os.path.basename(filename)}"
                     )
                     local_path = DOWNLOAD_DIR / region / local_filename
 
@@ -226,9 +231,15 @@ async def main():
             logger.info("\n%s:", satellite_name)
 
             for region, region_results in satellite_results.items():
-                successful = sum(1 for band_result in region_results.values() if band_result["success"])
+                successful = sum(
+                    1
+                    for band_result in region_results.values()
+                    if band_result["success"]
+                )
                 total = len(region_results)
-                logger.info(f"  {region} (Mesoscale): {successful}/{total} bands downloaded successfully")
+                logger.info(
+                    f"  {region} (Mesoscale): {successful}/{total} bands downloaded successfully"
+                )
 
                 # List successful downloads
                 for band_name, band_result in region_results.items():

@@ -186,7 +186,9 @@ async def demonstrate_async_tracking():
     # Set correlation ID for all async operations
     with correlation_context("async-batch-001"):
         # Run multiple async operations
-        tasks = [example_async_operation(f"task_{i}", delay=0.1 * (i + 1)) for i in range(3)]
+        tasks = [
+            example_async_operation(f"task_{i}", delay=0.1 * (i + 1)) for i in range(3)
+        ]
 
         results = await asyncio.gather(*tasks)
 
@@ -219,7 +221,9 @@ def main():
     for metric in metrics[:5]:  # Top 5 operations
         print(f"  {metric['operation_name']}:")
         print(f"    Total: {metric['total_count']}")
-        print(f"    Success rate: {metric['success_count']/metric['total_count']*100:.1f}%")
+        print(
+            f"    Success rate: {metric['success_count']/metric['total_count']*100:.1f}%"
+        )
         print(f"    Avg duration: {metric.get('avg_duration', 0)*1000:.1f}ms")
 
 

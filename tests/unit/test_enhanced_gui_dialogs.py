@@ -33,14 +33,18 @@ class TestEnhancedGUIDialogs(unittest.TestCase):
         self.parent = None  # For dialog parent
 
         # Create test data for BatchOperationsDialog
-        timestamp1 = EnhancedMissingTimestamp(timestamp=datetime(2024, 1, 1, 12, 0, 0), expected_filename="path1.nc")
+        timestamp1 = EnhancedMissingTimestamp(
+            timestamp=datetime(2024, 1, 1, 12, 0, 0), expected_filename="path1.nc"
+        )
         timestamp1.satellite = "GOES-16"
         timestamp1.source = "s3"
         timestamp1.status = "pending"
         timestamp1.progress = 0
         timestamp1.path = Path("/test/path1.nc")
 
-        timestamp2 = EnhancedMissingTimestamp(timestamp=datetime(2024, 1, 1, 12, 15, 0), expected_filename="path2.nc")
+        timestamp2 = EnhancedMissingTimestamp(
+            timestamp=datetime(2024, 1, 1, 12, 15, 0), expected_filename="path2.nc"
+        )
         timestamp2.satellite = "GOES-17"
         timestamp2.source = "cdn"
         timestamp2.status = "error"
@@ -59,7 +63,9 @@ class TestEnhancedGUIDialogs(unittest.TestCase):
         self.assertEqual(dialog.windowTitle(), "AWS S3 Configuration")
 
         # Verify initial values
-        self.assertIsNone(dialog.get_aws_profile())  # Should return None for empty profile
+        self.assertIsNone(
+            dialog.get_aws_profile()
+        )  # Should return None for empty profile
         self.assertEqual(dialog.get_aws_region(), "us-east-1")
 
     def test_aws_config_dialog_set_get_profile(self):
@@ -193,7 +199,9 @@ class TestEnhancedGUIDialogs(unittest.TestCase):
 
         # Verify all options were set correctly
         for key, expected in custom_options.items():
-            self.assertEqual(retrieved_options.get(key), expected, f"Option {key} not set correctly")
+            self.assertEqual(
+                retrieved_options.get(key), expected, f"Option {key} not set correctly"
+            )
 
     def test_advanced_options_dialog_partial_options(self):
         """Test setting partial options (should preserve others)."""
@@ -213,8 +221,12 @@ class TestEnhancedGUIDialogs(unittest.TestCase):
         self.assertTrue(new_options["auto_enhance"])
 
         # Verify unchanged options remain the same
-        self.assertEqual(new_options["max_concurrent"], initial_options["max_concurrent"])
-        self.assertEqual(new_options["retry_attempts"], initial_options["retry_attempts"])
+        self.assertEqual(
+            new_options["max_concurrent"], initial_options["max_concurrent"]
+        )
+        self.assertEqual(
+            new_options["retry_attempts"], initial_options["retry_attempts"]
+        )
 
     def test_advanced_options_dialog_invalid_options(self):
         """Test setting invalid options."""

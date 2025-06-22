@@ -237,10 +237,26 @@ class ResourceLimitsTab(QWidget):
             ResourceLimits object with current configuration
         """
         return ResourceLimits(
-            max_memory_mb=(self.memory_limit_spinbox.value() if self.memory_limit_checkbox.isChecked() else None),
-            max_cpu_percent=(self.cpu_limit_spinbox.value() if self.cpu_limit_checkbox.isChecked() else None),
-            max_processing_time_sec=(self.time_limit_spinbox.value() if self.time_limit_checkbox.isChecked() else None),
-            max_open_files=(self.files_limit_spinbox.value() if self.files_limit_checkbox.isChecked() else None),
+            max_memory_mb=(
+                self.memory_limit_spinbox.value()
+                if self.memory_limit_checkbox.isChecked()
+                else None
+            ),
+            max_cpu_percent=(
+                self.cpu_limit_spinbox.value()
+                if self.cpu_limit_checkbox.isChecked()
+                else None
+            ),
+            max_processing_time_sec=(
+                self.time_limit_spinbox.value()
+                if self.time_limit_checkbox.isChecked()
+                else None
+            ),
+            max_open_files=(
+                self.files_limit_spinbox.value()
+                if self.files_limit_checkbox.isChecked()
+                else None
+            ),
             enable_swap_limit=self.swap_limit_checkbox.isChecked(),
         )
 
@@ -314,7 +330,9 @@ class ResourceLimitsTab(QWidget):
             # Update memory display
             memory_percent = min(int(usage.memory_percent), 100)
             self.memory_progress.setValue(memory_percent)
-            self.memory_usage_label.setText(f"{usage.memory_mb:.0f} MB ({usage.memory_percent:.1f}%)")
+            self.memory_usage_label.setText(
+                f"{usage.memory_mb:.0f} MB ({usage.memory_percent:.1f}%)"
+            )
 
             # Update CPU display
             cpu_percent = min(int(usage.cpu_percent), 100)
@@ -334,7 +352,9 @@ class ResourceLimitsTab(QWidget):
         except Exception as e:
             LOGGER.error("Error updating monitoring display: %s", e)
 
-    def _update_progress_bar_colors(self, progress_bar: QProgressBar, value: int) -> None:
+    def _update_progress_bar_colors(
+        self, progress_bar: QProgressBar, value: int
+    ) -> None:
         """Update progress bar colors based on usage level.
 
         Args:

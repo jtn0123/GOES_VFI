@@ -38,7 +38,9 @@ class AWSConfigDialog(QDialog):
             "This application uses unsigned S3 access for the public NOAA buckets."
         )
         info_label.setWordWrap(True)
-        info_label.setStyleSheet("QLabel { background-color: #e5f5e5; padding: 10px; border-radius: 5px; }")
+        info_label.setStyleSheet(
+            "QLabel { background-color: #e5f5e5; padding: 10px; border-radius: 5px; }"
+        )
         layout.addWidget(info_label)
 
         form_layout = QFormLayout()
@@ -81,7 +83,9 @@ class AWSConfigDialog(QDialog):
         layout.addWidget(note_label)
 
         # Buttons
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
@@ -137,7 +141,9 @@ class CDNConfigDialog(QDialog):
         layout.addWidget(note_label)
 
         # Buttons
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
@@ -183,13 +189,17 @@ class AdvancedOptionsDialog(QDialog):
                 "Maximum number of concurrent downloads. Higher values may improve speed but increase resource usage."
             )
         )
-        connection_layout.addRow("Max Concurrent Downloads:", self.max_concurrent_spinbox)
+        connection_layout.addRow(
+            "Max Concurrent Downloads:", self.max_concurrent_spinbox
+        )
 
         # Retry attempts
         self.retry_spinbox = QSpinBox()
         self.retry_spinbox.setRange(0, 5)
         self.retry_spinbox.setValue(2)
-        self.retry_spinbox.setToolTip(self.tr("Number of times to retry failed downloads automatically"))
+        self.retry_spinbox.setToolTip(
+            self.tr("Number of times to retry failed downloads automatically")
+        )
         connection_layout.addRow("Auto-retry Attempts:", self.retry_spinbox)
 
         connection_group.setLayout(connection_layout)
@@ -201,7 +211,9 @@ class AdvancedOptionsDialog(QDialog):
 
         # Network throttling
         self.throttle_checkbox = QCheckBox()
-        self.throttle_checkbox.setToolTip(self.tr("Limit download speed to reduce impact on your network"))
+        self.throttle_checkbox.setToolTip(
+            self.tr("Limit download speed to reduce impact on your network")
+        )
         performance_layout.addRow("Enable Network Throttling:", self.throttle_checkbox)
 
         # Throttle speed
@@ -216,9 +228,13 @@ class AdvancedOptionsDialog(QDialog):
 
         # Process priority
         self.priority_combo = QComboBox()
-        self.priority_combo.addItems([self.tr("Normal"), self.tr("Low"), self.tr("High")])
+        self.priority_combo.addItems(
+            [self.tr("Normal"), self.tr("Low"), self.tr("High")]
+        )
         self.priority_combo.setCurrentText("Normal")
-        self.priority_combo.setToolTip(self.tr("Process priority for download operations"))
+        self.priority_combo.setToolTip(
+            self.tr("Process priority for download operations")
+        )
         performance_layout.addRow("Process Priority:", self.priority_combo)
 
         performance_group.setLayout(performance_layout)
@@ -230,18 +246,24 @@ class AdvancedOptionsDialog(QDialog):
 
         # Auto-enhance images
         self.auto_enhance_checkbox = QCheckBox()
-        self.auto_enhance_checkbox.setToolTip(self.tr("Automatically enhance downloaded images for better visibility"))
+        self.auto_enhance_checkbox.setToolTip(
+            self.tr("Automatically enhance downloaded images for better visibility")
+        )
         image_layout.addRow("Auto-enhance Images:", self.auto_enhance_checkbox)
 
         # Apply false color
         self.false_color_checkbox = QCheckBox()
-        self.false_color_checkbox.setToolTip(self.tr("Apply false coloring to IR images for better visualization"))
+        self.false_color_checkbox.setToolTip(
+            self.tr("Apply false coloring to IR images for better visualization")
+        )
         image_layout.addRow("Apply False Color:", self.false_color_checkbox)
 
         # Automatically convert NetCDF
         self.convert_netcdf_checkbox = QCheckBox()
         self.convert_netcdf_checkbox.setChecked(True)
-        self.convert_netcdf_checkbox.setToolTip(self.tr("Automatically convert NetCDF files to PNG after download"))
+        self.convert_netcdf_checkbox.setToolTip(
+            self.tr("Automatically convert NetCDF files to PNG after download")
+        )
         image_layout.addRow("Auto-convert NetCDF:", self.convert_netcdf_checkbox)
 
         image_group.setLayout(image_layout)
@@ -253,19 +275,27 @@ class AdvancedOptionsDialog(QDialog):
 
         # Desktop notifications
         self.desktop_notify_checkbox = QCheckBox()
-        self.desktop_notify_checkbox.setToolTip(self.tr("Show desktop notifications when operations complete"))
-        notification_layout.addRow("Desktop Notifications:", self.desktop_notify_checkbox)
+        self.desktop_notify_checkbox.setToolTip(
+            self.tr("Show desktop notifications when operations complete")
+        )
+        notification_layout.addRow(
+            "Desktop Notifications:", self.desktop_notify_checkbox
+        )
 
         # Sound alerts
         self.sound_alerts_checkbox = QCheckBox()
-        self.sound_alerts_checkbox.setToolTip(self.tr("Play sound when operations complete or errors occur"))
+        self.sound_alerts_checkbox.setToolTip(
+            self.tr("Play sound when operations complete or errors occur")
+        )
         notification_layout.addRow("Sound Alerts:", self.sound_alerts_checkbox)
 
         notification_group.setLayout(notification_layout)
         layout.addWidget(notification_group)
 
         # Buttons
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
@@ -280,7 +310,11 @@ class AdvancedOptionsDialog(QDialog):
             "max_concurrent": self.max_concurrent_spinbox.value(),
             "retry_attempts": self.retry_spinbox.value(),
             "throttle_enabled": self.throttle_checkbox.isChecked(),
-            "throttle_speed": (self.throttle_spinbox.value() if self.throttle_checkbox.isChecked() else 0),
+            "throttle_speed": (
+                self.throttle_spinbox.value()
+                if self.throttle_checkbox.isChecked()
+                else 0
+            ),
             "process_priority": self.priority_combo.currentText().lower(),
             "auto_enhance": self.auto_enhance_checkbox.isChecked(),
             "false_color": self.false_color_checkbox.isChecked(),
@@ -318,7 +352,9 @@ class AdvancedOptionsDialog(QDialog):
 class BatchOperationsDialog(QDialog):
     """Dialog for performing batch operations on integrity check results."""
 
-    def __init__(self, items: List[EnhancedMissingTimestamp], parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self, items: List[EnhancedMissingTimestamp], parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent)
 
         self.items = items
@@ -377,7 +413,9 @@ class BatchOperationsDialog(QDialog):
         layout.addWidget(self.summary_label)
 
         # Buttons
-        button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
@@ -409,13 +447,19 @@ class BatchOperationsDialog(QDialog):
         # Count items based on filter
         count = len(self.items)
         if self.filter_failed_radio.isChecked():
-            count = sum(1 for item in self.items if not item.is_downloaded and item.download_error)
+            count = sum(
+                1
+                for item in self.items
+                if not item.is_downloaded and item.download_error
+            )
         elif self.filter_missing_radio.isChecked():
             count = sum(1 for item in self.items if not item.is_downloaded)
         elif self.filter_downloaded_radio.isChecked():
             count = sum(1 for item in self.items if item.is_downloaded)
 
-        self.summary_label.setText(f"Selected operation will {operation.lower()} {count} items")
+        self.summary_label.setText(
+            f"Selected operation will {operation.lower()} {count} items"
+        )
 
     def get_options(self) -> Dict[str, Any]:
         """Get the selected options."""

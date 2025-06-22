@@ -98,7 +98,9 @@ class TestBatchQueue:
             mock_home.return_value = Path("/tmp")
             # Also patch file operations to avoid actual file I/O
             with patch("goesvfi.pipeline.batch_queue.open", create=True):
-                with patch("goesvfi.pipeline.batch_queue.json.load", return_value={"jobs": []}):
+                with patch(
+                    "goesvfi.pipeline.batch_queue.json.load", return_value={"jobs": []}
+                ):
                     with patch("goesvfi.pipeline.batch_queue.json.dump"):
                         queue = BatchQueue(
                             process_function=mock_process_function,

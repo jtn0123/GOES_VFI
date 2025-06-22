@@ -86,7 +86,10 @@ class InputValidator:
         if allowed_extensions:
             _, ext = os.path.splitext(normalized)
             if ext.lower() not in [e.lower() for e in allowed_extensions]:
-                raise SecurityError(f"File extension '{ext}' not allowed. " f"Allowed: {allowed_extensions}")
+                raise SecurityError(
+                    f"File extension '{ext}' not allowed. "
+                    f"Allowed: {allowed_extensions}"
+                )
 
         # Check if file exists if required
         if must_exist and not os.path.exists(normalized):
@@ -100,7 +103,9 @@ class InputValidator:
         return True
 
     @staticmethod
-    def validate_numeric_range(value: Union[int, float], min_val: float, max_val: float, name: str = "value") -> bool:
+    def validate_numeric_range(
+        value: Union[int, float], min_val: float, max_val: float, name: str = "value"
+    ) -> bool:
         """Validate that a numeric value is within acceptable bounds.
 
         Args:
@@ -119,7 +124,9 @@ class InputValidator:
             raise SecurityError(f"{name} must be a number")
 
         if not min_val <= value <= max_val:
-            raise SecurityError(f"{name} must be between {min_val} and {max_val}, " f"got {value}")
+            raise SecurityError(
+                f"{name} must be between {min_val} and {max_val}, " f"got {value}"
+            )
 
         return True
 
@@ -174,7 +181,8 @@ class InputValidator:
         if encoder not in InputValidator.ALLOWED_FFMPEG_ENCODERS:
             pass
             raise SecurityError(
-                f"FFmpeg encoder '{encoder}' not allowed. " f"Allowed: {InputValidator.ALLOWED_FFMPEG_ENCODERS}"
+                f"FFmpeg encoder '{encoder}' not allowed. "
+                f"Allowed: {InputValidator.ALLOWED_FFMPEG_ENCODERS}"
             )
         return True
 
@@ -247,7 +255,9 @@ class SecureFileHandler:
     """Handles file operations with security considerations."""
 
     @staticmethod
-    def create_secure_temp_file(suffix: str = "", prefix: str = "goesvfi_") -> pathlib.Path:
+    def create_secure_temp_file(
+        suffix: str = "", prefix: str = "goesvfi_"
+    ) -> pathlib.Path:
         """Create a temporary file with secure permissions.
 
         Args:
@@ -322,13 +332,17 @@ def secure_subprocess_call(command: List[str], **kwargs: Any) -> Any:
         pass
         raise SecurityError("Shell execution not allowed for security reasons")
 
-    LOGGER.info("Executing secure subprocess: %s with %s args", command[0], len(command) - 1)
+    LOGGER.info(
+        "Executing secure subprocess: %s with %s args", command[0], len(command) - 1
+    )
 
     try:
         return subprocess.run(command, **secure_kwargs)
     except subprocess.TimeoutExpired:
         pass
-        raise SecurityError(f"Command timed out after {secure_kwargs['timeout']} seconds")
+        raise SecurityError(
+            f"Command timed out after {secure_kwargs['timeout']} seconds"
+        )
     except Exception as e:
         pass
         LOGGER.error("Subprocess execution failed: %s", e)

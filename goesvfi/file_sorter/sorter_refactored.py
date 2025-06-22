@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # Constants
-DEFAULT_TIME_TOLERANCE_SECONDS = 1.0  # Tolerance for "last modified" comparison, in seconds
+DEFAULT_TIME_TOLERANCE_SECONDS = (
+    1.0  # Tolerance for "last modified" comparison, in seconds
+)
 DEFAULT_BUFFER_SIZE = 1048576  # 1MB buffer for file copying
 
 
@@ -136,7 +138,11 @@ class FileSorter:
 
             # Validate components
             if not (
-                1 <= month <= 12 and 1 <= day <= 31 and 0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59
+                1 <= month <= 12
+                and 1 <= day <= 31
+                and 0 <= hour <= 23
+                and 0 <= minute <= 59
+                and 0 <= second <= 59
             ):
                 return False
 
@@ -192,7 +198,9 @@ class FileSorter:
         folder_datetime = folder_datetime_raw[:8] + "T" + folder_datetime_raw[8:]
         return folder_datetime
 
-    def _collect_files_to_process(self, date_folders: List[Path]) -> List[Tuple[Path, str]]:
+    def _collect_files_to_process(
+        self, date_folders: List[Path]
+    ) -> List[Tuple[Path, str]]:
         """
         Collects all files to process from date folders.
 
@@ -256,7 +264,9 @@ class FileSorter:
         base_name: str = file_name
         # If it matches "_YYYYMMDDThhmmssZ.png" (21 chars from end including underscore), strip that part:
         if re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
-            base_name = file_name[:-21]  # remove the underscore + date/time portion + extension
+            base_name = file_name[
+                :-21
+            ]  # remove the underscore + date/time portion + extension
         elif file_name.endswith(".png"):
             base_name = file_name[:-4]
 
@@ -392,7 +402,9 @@ class FileSorter:
 
         return action_msg
 
-    def _process_files(self, files_to_process: List[Tuple[Path, str]], destination_dir: Path) -> None:
+    def _process_files(
+        self, files_to_process: List[Tuple[Path, str]], destination_dir: Path
+    ) -> None:
         """
         Processes all files by copying or skipping them.
 
@@ -412,7 +424,9 @@ class FileSorter:
 
             try:
                 # Prepare target path
-                _, new_file_path, _ = self._prepare_target_path(file_path, folder_datetime, destination_dir)
+                _, new_file_path, _ = self._prepare_target_path(
+                    file_path, folder_datetime, destination_dir
+                )
 
                 # Check if files are identical
                 (
@@ -431,7 +445,9 @@ class FileSorter:
                 )
 
             except Exception as e:
-                print(f"\nError processing file {file_path.name!r}: {e}")  # Print error on new line
+                print(
+                    f"\nError processing file {file_path.name!r}: {e}"
+                )  # Print error on new line
 
     def _generate_stats(self, script_start_time: datetime) -> Dict[str, Any]:
         """
@@ -456,7 +472,9 @@ class FileSorter:
 
         total_files = self.files_copied + self.files_skipped
         if total_files > 0:
-            average_time_per_file = round(total_duration.total_seconds() / total_files, 2)
+            average_time_per_file = round(
+                total_duration.total_seconds() / total_files, 2
+            )
         else:
             average_time_per_file = 0
         print(f"Average time per file: {average_time_per_file} seconds")
@@ -465,7 +483,9 @@ class FileSorter:
             "files_copied": self.files_copied,
             "files_skipped": self.files_skipped,
             "total_bytes": self.total_bytes_copied,
-            "duration": str(datetime.now() - script_start_time),  # Convert timedelta to string
+            "duration": str(
+                datetime.now() - script_start_time
+            ),  # Convert timedelta to string
             "status": "completed",
         }
 
@@ -503,7 +523,9 @@ class FileSorter:
 
         try:
             # 1. Validate directories
-            source_dir, destination_dir = self._validate_directories(source, destination)
+            source_dir, destination_dir = self._validate_directories(
+                source, destination
+            )
 
             # 2. Get all date/time folders in the source directory
             date_folders = self._collect_date_folders(source_dir)
@@ -537,7 +559,9 @@ def main() -> None:
     # The original code had an if/else for GUI vs CLI, we remove the GUI part.
     import argparse
 
-    parser = argparse.ArgumentParser(description="Sorts image files into folders based on date/time.")
+    parser = argparse.ArgumentParser(
+        description="Sorts image files into folders based on date/time."
+    )
     parser.add_argument(
         "root_dir",
         nargs="?",

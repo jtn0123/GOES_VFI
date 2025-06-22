@@ -74,7 +74,9 @@ class PreviewManager(QObject):
             self.first_frame_data = self._load_and_process_image(
                 first_path, crop_rect, apply_sanchez, sanchez_resolution
             )
-            self.last_frame_data = self._load_and_process_image(last_path, crop_rect, apply_sanchez, sanchez_resolution)
+            self.last_frame_data = self._load_and_process_image(
+                last_path, crop_rect, apply_sanchez, sanchez_resolution
+            )
 
             if not self.first_frame_data or not self.last_frame_data:
                 self.preview_error.emit("Failed to load preview images")
@@ -104,7 +106,9 @@ class PreviewManager(QObject):
             self.preview_error.emit(str(e))
             return False
 
-    def _get_first_last_paths(self, input_dir: Path) -> Tuple[Optional[Path], Optional[Path]]:
+    def _get_first_last_paths(
+        self, input_dir: Path
+    ) -> Tuple[Optional[Path], Optional[Path]]:
         """Get the first and last image paths from a directory.
 
         Args:

@@ -53,7 +53,9 @@ class TestS3DownloadStats(unittest.TestCase):
             "hostname": "test-host",
             "start_timestamp": "2023-01-01T12:00:00",
         }
-        self.stats_patcher = patch("goesvfi.integrity_check.remote.s3_store.DOWNLOAD_STATS", self.stats_data)
+        self.stats_patcher = patch(
+            "goesvfi.integrity_check.remote.s3_store.DOWNLOAD_STATS", self.stats_data
+        )
         self.mock_stats = self.stats_patcher.start()
 
     def tearDown(self):
@@ -93,7 +95,9 @@ class TestS3DownloadStats(unittest.TestCase):
         self.assertEqual(self.stats_data["recent_attempts"][0]["file_size"], 1024)
         self.assertEqual(self.stats_data["recent_attempts"][0]["satellite"], "GOES16")
         self.assertEqual(self.stats_data["recent_attempts"][0]["bucket"], "test-bucket")
-        self.assertEqual(self.stats_data["recent_attempts"][0]["key"], "test/path/file.nc")
+        self.assertEqual(
+            self.stats_data["recent_attempts"][0]["key"], "test/path/file.nc"
+        )
 
     def test_update_stats_failure(self):
         """Test updating stats for failed downloads."""
@@ -123,7 +127,9 @@ class TestS3DownloadStats(unittest.TestCase):
         self.assertEqual(self.stats_data["recent_attempts"][0]["error_type"], "timeout")
         self.assertEqual(self.stats_data["recent_attempts"][0]["satellite"], "GOES16")
         self.assertEqual(self.stats_data["recent_attempts"][0]["bucket"], "test-bucket")
-        self.assertEqual(self.stats_data["recent_attempts"][0]["key"], "test/path/file.nc")
+        self.assertEqual(
+            self.stats_data["recent_attempts"][0]["key"], "test/path/file.nc"
+        )
 
     def test_format_error_message(self):
         """Test the error message formatting with timestamps."""
@@ -133,7 +139,9 @@ class TestS3DownloadStats(unittest.TestCase):
         self.assertTrue("network: Connection timed out" in error_message)
 
         # Test when error_type is already in message
-        error_message = format_error_message("timeout", "timeout: Operation took too long")
+        error_message = format_error_message(
+            "timeout", "timeout: Operation took too long"
+        )
         self.assertTrue("[" in error_message)  # Contains timestamp
         # Should not duplicate the error type
         self.assertTrue("timeout: Operation took too long" in error_message)
@@ -189,7 +197,9 @@ class TestS3DownloadStats(unittest.TestCase):
         with patch("goesvfi.integrity_check.remote.s3_store.log_download_statistics"):
             # Generate more than 20 errors
             for i in range(25):
-                update_download_stats(success=False, error_type="network", error_message=f"Error {i}")
+                update_download_stats(
+                    success=False, error_type="network", error_message=f"Error {i}"
+                )
 
             # Verify only the most recent 20 are kept
             self.assertEqual(len(self.stats_data["errors"]), 20)
@@ -238,7 +248,9 @@ class TestS3DownloadStats(unittest.TestCase):
         ]
 
         for file_size, download_time in test_cases:
-            update_download_stats(success=True, download_time=download_time, file_size=file_size)
+            update_download_stats(
+                success=True, download_time=download_time, file_size=file_size
+            )
 
         # Verify rates were calculated correctly
         expected_rates = [1024, 2048, 1024]

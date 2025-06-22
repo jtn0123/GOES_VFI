@@ -27,7 +27,9 @@ def check_recent_data():
         print(f"\n{product}:")
 
         # List years
-        years_result = s3.list_objects_v2(Bucket=bucket, Prefix=f"{product}/", Delimiter="/")
+        years_result = s3.list_objects_v2(
+            Bucket=bucket, Prefix=f"{product}/", Delimiter="/"
+        )
         if "CommonPrefixes" not in years_result:
             print(" No years found")
             continue
@@ -37,7 +39,9 @@ def check_recent_data():
         print(f" Latest year: {latest_year}")
 
         # List days in latest year
-        days_result = s3.list_objects_v2(Bucket=bucket, Prefix=f"{product}/{latest_year}/", Delimiter="/")
+        days_result = s3.list_objects_v2(
+            Bucket=bucket, Prefix=f"{product}/{latest_year}/", Delimiter="/"
+        )
         if "CommonPrefixes" not in days_result:
             print(" No days found")
             continue
@@ -90,7 +94,9 @@ def check_recent_data():
             filename = item["Key"].split("/")[-1]
             print(f"   {filename}")
 
-        print(f" Sample path: {product}/{latest_year}/{latest_day}/{latest_hour}/{latest_minute}/")
+        print(
+            f" Sample path: {product}/{latest_year}/{latest_day}/{latest_hour}/{latest_minute}/"
+        )
 
 
 # Main function

@@ -64,7 +64,11 @@ class RifeCapabilityDetector:
 
             # Try with -h if --help fails
             proc_result = subprocess.run(
-                [str(self.exe_path), "-h"], capture_output=True, text=True, timeout=5, check=False
+                [str(self.exe_path), "-h"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
             )
             if proc_result.returncode == 0 and proc_result.stdout:
                 return proc_result.stdout, True
@@ -74,7 +78,13 @@ class RifeCapabilityDetector:
                 return proc_result.stderr, False
 
             # Last resort: just run the executable with no args
-            proc_result = subprocess.run([str(self.exe_path)], capture_output=True, text=True, timeout=5, check=False)
+            proc_result = subprocess.run(
+                [str(self.exe_path)],
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            )
             return proc_result.stdout or proc_result.stderr or "No output", False
 
         except subprocess.TimeoutExpired:
@@ -96,7 +106,9 @@ class RifeCapabilityDetector:
             try:
                 help_text_str = help_text.decode("utf-8")
             except UnicodeDecodeError:
-                logger.warning("Could not decode help text as UTF-8, attempting latin-1")
+                logger.warning(
+                    "Could not decode help text as UTF-8, attempting latin-1"
+                )
                 help_text_str = help_text.decode("latin-1", errors="ignore")
         else:
             help_text_str = help_text  # Assume it's already a string
@@ -105,7 +117,9 @@ class RifeCapabilityDetector:
         if not success:
             if not help_text_str:
                 # Use the exact message expected by the test
-                logger.debug("RIFE help command failed or produced no output (expected in tests).")
+                logger.debug(
+                    "RIFE help command failed or produced no output (expected in tests)."
+                )
             else:
                 # Log a slightly different message when *some* error text was captured
                 logger.debug(
@@ -114,7 +128,10 @@ class RifeCapabilityDetector:
                 )
         # Optional: Log a warning if command succeeded but output looks bad
         elif (
-            not help_text_str or "Error:" in help_text_str or "Timeout" in help_text_str or "No output" in help_text_str
+            not help_text_str
+            or "Error:" in help_text_str
+            or "Timeout" in help_text_str
+            or "No output" in help_text_str
         ):
             logger.warning(
                 "RIFE help command succeeded but output seems problematic: \n%s",
@@ -137,12 +154,18 @@ class RifeCapabilityDetector:
 
         # Extract version if available
         # Look for patterns like "version 4.6", "v4.6", "Version: 4.6", etc.
-        version_match = re.search(r"(?:version[:\s]+|v)([0-9.]+)", help_text_str, re.IGNORECASE)
+        version_match = re.search(
+            r"(?:version[:\s]+|v)([0-9.]+)", help_text_str, re.IGNORECASE
+        )
         if version_match:
-            self._version = version_match.group(1)  # pylint: disable=attribute-defined-outside-init
+            self._version = version_match.group(
+                1
+            )  # pylint: disable=attribute-defined-outside-init
 
         # Parse help text to find supported arguments
-        arg_matches = re.finditer(r"^\s+-([a-zA-Z0-9])\s+.*", help_text_str, re.MULTILINE)
+        arg_matches = re.finditer(
+            r"^\s+-([a-zA-Z0-9])\s+.*", help_text_str, re.MULTILINE
+        )
         for match in arg_matches:
             # Extract all possible groups and filter out None values
             arg = match.group(1)
@@ -152,29 +175,40 @@ class RifeCapabilityDetector:
         # Detect specific capabilities based on supported args and help text
         help_text_lower = help_text_str.lower()
         self._capabilities["tiling"] = (
-            any(arg in self._supported_args for arg in ["t", "tile"]) or "tile" in help_text_lower
+            any(arg in self._supported_args for arg in ["t", "tile"])
+            or "tile" in help_text_lower
         )
-        self._capabilities["uhd"] = any(arg in self._supported_args for arg in ["u", "uhd"]) or "uhd" in help_text_lower
+        self._capabilities["uhd"] = (
+            any(arg in self._supported_args for arg in ["u", "uhd"])
+            or "uhd" in help_text_lower
+        )
         self._capabilities["tta_spatial"] = (
-            any(arg in self._supported_args for arg in ["x", "tta-spatial"]) or "spatial" in help_text_lower
+            any(arg in self._supported_args for arg in ["x", "tta-spatial"])
+            or "spatial" in help_text_lower
         )
         self._capabilities["tta_temporal"] = (
-            any(arg in self._supported_args for arg in ["z", "tta-temporal"]) or "temporal" in help_text_lower
+            any(arg in self._supported_args for arg in ["z", "tta-temporal"])
+            or "temporal" in help_text_lower
         )
         self._capabilities["thread_spec"] = (
-            any(arg in self._supported_args for arg in ["j", "thread"]) or "thread" in help_text_lower
+            any(arg in self._supported_args for arg in ["j", "thread"])
+            or "thread" in help_text_lower
         )
         self._capabilities["batch_processing"] = (
-            any(arg in self._supported_args for arg in ["i", "input-pattern"]) or "batch" in help_text_lower
+            any(arg in self._supported_args for arg in ["i", "input-pattern"])
+            or "batch" in help_text_lower
         )
         self._capabilities["timestep"] = (
-            any(arg in self._supported_args for arg in ["s", "timestep"]) or "timestep" in help_text_lower
+            any(arg in self._supported_args for arg in ["s", "timestep"])
+            or "timestep" in help_text_lower
         )
         self._capabilities["model_path"] = (
-            any(arg in self._supported_args for arg in ["m", "model"]) or "model" in help_text_lower
+            any(arg in self._supported_args for arg in ["m", "model"])
+            or "model" in help_text_lower
         )
         self._capabilities["gpu_id"] = (
-            any(arg in self._supported_args for arg in ["g", "gpu"]) or "gpu" in help_text_lower
+            any(arg in self._supported_args for arg in ["g", "gpu"])
+            or "gpu" in help_text_lower
         )
 
         logger.info("RIFE capabilities detected: %s", self._capabilities)

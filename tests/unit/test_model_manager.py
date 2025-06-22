@@ -194,7 +194,9 @@ class TestModelManager(unittest.TestCase):
         combo_box = QComboBox()
 
         # Create a path that will cause an error when iterating
-        with patch.object(Path, "iterdir", side_effect=PermissionError("Access denied")):
+        with patch.object(
+            Path, "iterdir", side_effect=PermissionError("Access denied")
+        ):
             self.model_manager.populate_models(combo_box, str(self.model_dir))
 
         # Verify error dialog was shown

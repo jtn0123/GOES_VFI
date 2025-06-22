@@ -117,7 +117,9 @@ class DateSorterViewModel:
         Args:
             value (Optional[str]): The path to the destination directory.
         """
-        self._destination_directory = value  # pylint: disable=attribute-defined-outside-init
+        self._destination_directory = (
+            value  # pylint: disable=attribute-defined-outside-init
+        )
         # Notify observers if using Observable
         # self.destination_directory.set(value)
 
@@ -163,7 +165,9 @@ class DateSorterViewModel:
         Args:
             value (float): Progress percentage (0-100).
         """
-        self._progress_percentage = value  # pylint: disable=attribute-defined-outside-init
+        self._progress_percentage = (
+            value  # pylint: disable=attribute-defined-outside-init
+        )
         # Notify observers if using Observable
         # self.progress_percentage.set(value)
 
@@ -209,7 +213,9 @@ class DateSorterViewModel:
         Args:
             value (str): The date format pattern (e.g., "%Y/%m/%d").
         """
-        self._date_format_pattern = value  # pylint: disable=attribute-defined-outside-init
+        self._date_format_pattern = (
+            value  # pylint: disable=attribute-defined-outside-init
+        )
         # Notify observers if using Observable
         # self.date_format_pattern.set(value)
 
@@ -223,7 +229,11 @@ class DateSorterViewModel:
             bool: True if both source and destination directories are set and valid,
             and no sorting is currently in progress; False otherwise.
         """
-        return self.source_directory is not None and self.destination_directory is not None and not self.is_sorting
+        return (
+            self.source_directory is not None
+            and self.destination_directory is not None
+            and not self.is_sorting
+        )
 
     def select_source_directory(self) -> None:
         pass
@@ -324,7 +334,9 @@ class DateSorterViewModel:
             self.status_message = f"An error occurred: {e}"
         finally:
             self.is_sorting = False
-            self.progress_percentage = 100.0  # Ensure progress is 100% on completion/error
+            self.progress_percentage = (
+                100.0  # Ensure progress is 100% on completion/error
+            )
             self._notify_observer()  # Notify view of state change
 
     def _update_progress(self, current: int, total: int) -> None:
@@ -354,6 +366,8 @@ class DateSorterViewModel:
         """
         if self.is_sorting:
             pass
-            self._cancel_requested = True  # pylint: disable=attribute-defined-outside-init
+            self._cancel_requested = (
+                True  # pylint: disable=attribute-defined-outside-init
+            )
             self.status_message = "Cancellation requested..."
             self._notify_observer()  # Notify view of state change

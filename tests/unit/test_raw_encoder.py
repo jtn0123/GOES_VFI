@@ -44,15 +44,21 @@ def test_write_raw_mp4_success(tmp_path, dummy_frames):
     )
 
     with (
-        patch("goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory") as mock_tempdir,
+        patch(
+            "goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory"
+        ) as mock_tempdir,
         patch("goesvfi.pipeline.raw_encoder.Image.fromarray") as mock_fromarray,
-        patch("goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory) as mock_run_patch,
+        patch(
+            "goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory
+        ) as mock_run_patch,
     ):  # Apply factory
         # Setup tempdir context manager mock (still needed)
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
         mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
         mock_tempdir.return_value.__exit__.return_value = None
-        mock_tempdir.return_value.name = str(temp_dir_path)  # Ensure the mock uses the correct path
+        mock_tempdir.return_value.name = str(
+            temp_dir_path
+        )  # Ensure the mock uses the correct path
 
         # Mock save (still needed)
         mock_img = MagicMock()
@@ -63,7 +69,9 @@ def test_write_raw_mp4_success(tmp_path, dummy_frames):
 
         # Assert
         # assert mock_fromarray.call_count == len(dummy_frames) # Fails (4 == 3), reason unclear
-        assert mock_fromarray.call_count >= len(dummy_frames)  # Check it's called at least enough times
+        assert mock_fromarray.call_count >= len(
+            dummy_frames
+        )  # Check it's called at least enough times
         # FIX: Assert count is 3 again now that mock interference is fixed
         # Add debug print
         # print(f"DEBUG: mock_fromarray call count: {mock_fromarray.call_count}")
@@ -99,12 +107,18 @@ def test_write_raw_mp4_ffmpeg_error(tmp_path, dummy_frames):
 
     # Use the mock factory to raise CalledProcessError
     ffmpeg_error = subprocess.CalledProcessError(1, expected_cmd, stderr="fail")
-    mock_run_factory = create_mock_subprocess_run(expected_command=expected_cmd, side_effect=ffmpeg_error)
+    mock_run_factory = create_mock_subprocess_run(
+        expected_command=expected_cmd, side_effect=ffmpeg_error
+    )
 
     with (
-        patch("goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory") as mock_tempdir,
+        patch(
+            "goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory"
+        ) as mock_tempdir,
         patch("goesvfi.pipeline.raw_encoder.Image.fromarray") as mock_fromarray,
-        patch("goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory) as mock_run_patch,
+        patch(
+            "goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory
+        ) as mock_run_patch,
     ):
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
         mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
@@ -143,12 +157,18 @@ def test_write_raw_mp4_ffmpeg_not_found(tmp_path, dummy_frames):
 
     # Use the mock factory to raise FileNotFoundError
     not_found_error = FileNotFoundError("ffmpeg not found")
-    mock_run_factory = create_mock_subprocess_run(expected_command=expected_cmd, side_effect=not_found_error)
+    mock_run_factory = create_mock_subprocess_run(
+        expected_command=expected_cmd, side_effect=not_found_error
+    )
 
     with (
-        patch("goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory") as mock_tempdir,
+        patch(
+            "goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory"
+        ) as mock_tempdir,
         patch("goesvfi.pipeline.raw_encoder.Image.fromarray") as mock_fromarray,
-        patch("goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory) as mock_run_patch,
+        patch(
+            "goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory
+        ) as mock_run_patch,
     ):
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
         mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value

@@ -57,7 +57,8 @@ try:
         # Platform info
         platform_info = info.get("platform", {})
         print(
-            f"Platform: {platform_info.get('system', 'Unknown')} " f"({platform_info.get('architecture', 'Unknown')})"
+            f"Platform: {platform_info.get('system', 'Unknown')} "
+            f"({platform_info.get('architecture', 'Unknown')})"
         )
 
         print()
@@ -165,7 +166,9 @@ try:
         configs = [
             {
                 "name": "Basic limits",
-                "limits": ResourceLimits(max_memory_mb=1024, max_processing_time_sec=300),
+                "limits": ResourceLimits(
+                    max_memory_mb=1024, max_processing_time_sec=300
+                ),
             },
             {
                 "name": "CPU intensive",

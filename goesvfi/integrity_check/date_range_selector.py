@@ -47,8 +47,12 @@ class DateRangePreset:
         """
         self.name = name
         self.description = description
-        self._start_date_func = start_date_func  # pylint: disable=attribute-defined-outside-init
-        self._end_date_func = end_date_func  # pylint: disable=attribute-defined-outside-init
+        self._start_date_func = (
+            start_date_func  # pylint: disable=attribute-defined-outside-init
+        )
+        self._end_date_func = (
+            end_date_func  # pylint: disable=attribute-defined-outside-init
+        )
 
     def get_date_range(self) -> Tuple[datetime, datetime]:
         """Get the date range for this preset."""
@@ -85,9 +89,15 @@ class UnifiedDateRangeSelector(QWidget):
         super().__init__(parent)
 
         # Store settings
-        self._include_visual_picker = include_visual_picker  # pylint: disable=attribute-defined-outside-init
-        self._include_presets = include_presets  # pylint: disable=attribute-defined-outside-init
-        self._layout_direction = layout_direction  # pylint: disable=attribute-defined-outside-init
+        self._include_visual_picker = (
+            include_visual_picker  # pylint: disable=attribute-defined-outside-init
+        )
+        self._include_presets = (
+            include_presets  # pylint: disable=attribute-defined-outside-init
+        )
+        self._layout_direction = (
+            layout_direction  # pylint: disable=attribute-defined-outside-init
+        )
 
         # Initialize date range with defaults
         yesterday = datetime.now() - timedelta(days=1)
@@ -182,7 +192,9 @@ class UnifiedDateRangeSelector(QWidget):
             more_buttons_layout.addWidget(this_month_btn)
 
             last_cal_month_btn = QPushButton(self.tr("Last Month"))
-            last_cal_month_btn.clicked.connect(lambda: self._apply_preset("last_cal_month"))
+            last_cal_month_btn.clicked.connect(
+                lambda: self._apply_preset("last_cal_month")
+            )
             more_buttons_layout.addWidget(last_cal_month_btn)
 
             this_year_btn = QPushButton(self.tr("This Year"))
@@ -207,7 +219,9 @@ class UnifiedDateRangeSelector(QWidget):
         # Update start date
         self.start_date_edit.setDateTime(
             QDateTime(
-                QDate(self._start_date.year, self._start_date.month, self._start_date.day),
+                QDate(
+                    self._start_date.year, self._start_date.month, self._start_date.day
+                ),
                 QTime(self._start_date.hour, self._start_date.minute),
             )
         )
@@ -322,7 +336,9 @@ class UnifiedDateRangeSelector(QWidget):
             else:
                 next_month = now.replace(month=now.month + 1, day=1)
 
-            end = (next_month - timedelta(days=1)).replace(hour=23, minute=59, second=59)
+            end = (next_month - timedelta(days=1)).replace(
+                hour=23, minute=59, second=59
+            )
 
         elif preset_name == "last_cal_month":
             # Previous calendar month
@@ -340,8 +356,12 @@ class UnifiedDateRangeSelector(QWidget):
 
         elif preset_name == "this_year":
             # Current year
-            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-            end = now.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=0)
+            start = now.replace(
+                month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+            )
+            end = now.replace(
+                month=12, day=31, hour=23, minute=59, second=59, microsecond=0
+            )
 
         else:
             # Unknown preset, use last 24 hours as fallback
@@ -454,13 +474,22 @@ class CompactDateRangeSelector(QWidget):
                 # Same year
                 if self._start_date.month == self._end_date.month:
                     # Same month
-                    display_text = f"{self._start_date.strftime('%b %d')} - " f"{self._end_date.strftime('%d, %Y')}"
+                    display_text = (
+                        f"{self._start_date.strftime('%b %d')} - "
+                        f"{self._end_date.strftime('%d, %Y')}"
+                    )
                 else:
                     # Different months
-                    display_text = f"{self._start_date.strftime('%b %d')} - " f"{self._end_date.strftime('%b %d, %Y')}"
+                    display_text = (
+                        f"{self._start_date.strftime('%b %d')} - "
+                        f"{self._end_date.strftime('%b %d, %Y')}"
+                    )
             else:
                 # Different years
-                display_text = f"{self._start_date.strftime('%Y-%m-%d')} - " f"{self._end_date.strftime('%Y-%m-%d')}"
+                display_text = (
+                    f"{self._start_date.strftime('%Y-%m-%d')} - "
+                    f"{self._end_date.strftime('%Y-%m-%d')}"
+                )
 
         self.date_display.setText(display_text)
 
@@ -501,7 +530,9 @@ class CompactDateRangeSelector(QWidget):
                 next_month = now.replace(year=now.year + 1, month=1, day=1)
             else:
                 next_month = now.replace(month=now.month + 1, day=1)
-            end = (next_month - timedelta(days=1)).replace(hour=23, minute=59, second=59)
+            end = (next_month - timedelta(days=1)).replace(
+                hour=23, minute=59, second=59
+            )
 
         elif preset_text == "Last Month":
             first_of_month = now.replace(day=1)
@@ -510,8 +541,12 @@ class CompactDateRangeSelector(QWidget):
             end = last_of_prev_month.replace(hour=23, minute=59, second=59)
 
         elif preset_text == "This Year":
-            start = now.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
-            end = now.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=0)
+            start = now.replace(
+                month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+            )
+            end = now.replace(
+                month=12, day=31, hour=23, minute=59, second=59, microsecond=0
+            )
 
         elif preset_text == "Custom...":
             # Open visual date picker without changing dates

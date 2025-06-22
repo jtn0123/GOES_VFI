@@ -62,7 +62,9 @@ def mock_rife_capabilities():
         "supports_timestep": True,
         "supports_gpu_id": True,
     }
-    with patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector") as mock_detector_class:
+    with patch(
+        "goesvfi.pipeline.run_vfi.RifeCapabilityDetector"
+    ) as mock_detector_class:
         mock_instance = MagicMock(spec=RifeCapabilityDetector)
         # Configure the instance attributes based on default_caps
         for cap, value in default_caps.items():
@@ -82,7 +84,9 @@ def mock_sanchez():
         def default_colourise_factory(*args, **kwargs):
             # Extract output path from args[1]
             output_path_str = args[1]
-            factory = create_mock_colourise(output_file_to_create=pathlib.Path(output_path_str))
+            factory = create_mock_colourise(
+                output_file_to_create=pathlib.Path(output_path_str)
+            )
             return factory(*args, **kwargs)  # Call the created mock function
 
         mock_colourise_patch.side_effect = default_colourise_factory
@@ -703,7 +707,9 @@ def test_crop_and_sanchez(
 # --- Error Handling Tests ---
 
 
-def test_error_insufficient_frames(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock):
+def test_error_insufficient_frames(
+    temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock
+):
     """Test error handling for fewer than 2 input frames."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -711,7 +717,9 @@ def test_error_insufficient_frames(temp_dir: pathlib.Path, mock_popen: MagicMock
     output_dir.mkdir()
     output_mp4 = output_dir / "insufficient.mp4"
 
-    with pytest.raises(ValueError, match="At least two PNG images are required for interpolation."):
+    with pytest.raises(
+        ValueError, match="At least two PNG images are required for interpolation."
+    ):
         run_pipeline_and_collect(
             mock_popen_fixture=mock_popen,
             mock_run_fixture=mock_run,
@@ -721,7 +729,9 @@ def test_error_insufficient_frames(temp_dir: pathlib.Path, mock_popen: MagicMock
         )
 
 
-def test_error_insufficient_frames_skip_model(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock):
+def test_error_insufficient_frames_skip_model(
+    temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock
+):
     """Test error handling for < 2 frames when skipping model."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -856,7 +866,9 @@ def test_error_rife_failure(
     output_mp4 = output_dir / "rife_fail.mp4"
     num_frames = 2
     expected_raw_path = output_mp4.with_suffix(".raw.mp4")  # FFmpeg might not run
-    rife_output_file = temp_dir / "processed_temp" / "interp_0000.png"  # RIFE might not create
+    rife_output_file = (
+        temp_dir / "processed_temp" / "interp_0000.png"
+    )  # RIFE might not create
     # Define vars needed for ffmpeg cmd expectation
     num_intermediate = DEFAULT_INTERMEDIATE_FRAMES
     fps = DEFAULT_FPS
@@ -912,7 +924,9 @@ def test_error_rife_failure(
     ]
 
     # --- Configure Mocks for RIFE Failure ---
-    rife_error = subprocess.CalledProcessError(1, expected_rife_cmd, stderr="RIFE mock failure")
+    rife_error = subprocess.CalledProcessError(
+        1, expected_rife_cmd, stderr="RIFE mock failure"
+    )
 
     # --- Run Test ---
     with (
@@ -964,8 +978,12 @@ def test_error_ffmpeg_failure_exit_code(
     num_intermediate = DEFAULT_INTERMEDIATE_FRAMES
     fps = DEFAULT_FPS
     effective_fps = fps * (num_intermediate + 1)
-    expected_raw_path = output_mp4.with_suffix(".raw.mp4")  # FFmpeg should not create this
-    rife_output_file = temp_dir / "processed_temp" / "interp_0000.png"  # RIFE should create this
+    expected_raw_path = output_mp4.with_suffix(
+        ".raw.mp4"
+    )  # FFmpeg should not create this
+    rife_output_file = (
+        temp_dir / "processed_temp" / "interp_0000.png"
+    )  # RIFE should create this
 
     # --- Define side effect for mock_exists --- #
     # Return False only if the path being checked is the expected raw output path
@@ -1074,8 +1092,12 @@ def test_error_ffmpeg_pipe_error(
     num_intermediate = DEFAULT_INTERMEDIATE_FRAMES
     fps = DEFAULT_FPS
     effective_fps = fps * (num_intermediate + 1)
-    expected_raw_path = output_mp4.with_suffix(".raw.mp4")  # FFmpeg should not create this
-    rife_output_file = temp_dir / "processed_temp" / "interp_0000.png"  # RIFE should create this
+    expected_raw_path = output_mp4.with_suffix(
+        ".raw.mp4"
+    )  # FFmpeg should not create this
+    rife_output_file = (
+        temp_dir / "processed_temp" / "interp_0000.png"
+    )  # RIFE should create this
 
     # --- Define Expected Commands ---
     expected_rife_cmd = [
@@ -1178,8 +1200,12 @@ def test_error_sanchez_failure(
     num_intermediate = DEFAULT_INTERMEDIATE_FRAMES
     fps = DEFAULT_FPS
     effective_fps = fps * (num_intermediate + 1)
-    expected_raw_path = output_mp4.with_suffix(".raw.mp4")  # Should be created using originals
-    rife_output_file = temp_dir / "processed_temp" / "interp_0000.png"  # Should be created using originals
+    expected_raw_path = output_mp4.with_suffix(
+        ".raw.mp4"
+    )  # Should be created using originals
+    rife_output_file = (
+        temp_dir / "processed_temp" / "interp_0000.png"
+    )  # Should be created using originals
 
     # --- Configure Sanchez mock to fail ---
     sanchez_error = Exception("Mock Sanchez Failure")
@@ -1258,7 +1284,10 @@ def test_error_sanchez_failure(
             run_action()
 
     # --- Assert ---
-    assert "Worker Sanchez failed" in caplog.text or "Sanchez colourise failed" in caplog.text
+    assert (
+        "Worker Sanchez failed" in caplog.text
+        or "Sanchez colourise failed" in caplog.text
+    )
     # Check RIFE was called
     mock_run.assert_called_once()
     # FFmpeg might not have been called if Image.open failed first

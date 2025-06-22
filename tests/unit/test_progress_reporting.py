@@ -71,7 +71,9 @@ class TestProgressReporting:
         return start_date, end_date
 
     @pytest.mark.asyncio
-    async def test_scan_directory_progress_reporting(self, reconcile_manager, test_dates, tmp_path):
+    async def test_scan_directory_progress_reporting(
+        self, reconcile_manager, test_dates, tmp_path
+    ):
         """Test progress reporting during scan_directory method."""
         # Setup test parameters
         start_date, end_date = test_dates
@@ -98,11 +100,21 @@ class TestProgressReporting:
         )
 
         # Assertions for step-based progress reporting
-        assert any("Step 1/5" in msg for msg in progress_messages), "Step 1 message not found"
-        assert any("Step 2/5" in msg for msg in progress_messages), "Step 2 message not found"
-        assert any("Step 3/5" in msg for msg in progress_messages), "Step 3 message not found"
-        assert any("Step 4/5" in msg for msg in progress_messages), "Step 4 message not found"
-        assert any("Step 5/5" in msg for msg in progress_messages), "Step 5 message not found"
+        assert any(
+            "Step 1/5" in msg for msg in progress_messages
+        ), "Step 1 message not found"
+        assert any(
+            "Step 2/5" in msg for msg in progress_messages
+        ), "Step 2 message not found"
+        assert any(
+            "Step 3/5" in msg for msg in progress_messages
+        ), "Step 3 message not found"
+        assert any(
+            "Step 4/5" in msg for msg in progress_messages
+        ), "Step 4 message not found"
+        assert any(
+            "Step 5/5" in msg for msg in progress_messages
+        ), "Step 5 message not found"
 
         # Ensure step messages contain useful information
         assert any("Generating expected timestamps" in msg for msg in progress_messages)
@@ -119,7 +131,9 @@ class TestProgressReporting:
         assert 5 in step_values, "Progress reporting should end with step 5"
 
     @pytest.mark.asyncio
-    async def test_fetch_missing_files_progress_reporting(self, reconcile_manager, test_dates):
+    async def test_fetch_missing_files_progress_reporting(
+        self, reconcile_manager, test_dates
+    ):
         """Test progress reporting during fetch_missing_files method."""
         # Setup test parameters
         start_date, end_date = test_dates
@@ -164,10 +178,18 @@ class TestProgressReporting:
         )
 
         # Assertions for step-based progress reporting
-        assert any("Step 1/4" in msg for msg in progress_messages), "Step 1 message not found"
-        assert any("Step 2/4" in msg for msg in progress_messages), "Step 2 message not found"
-        assert any("Step 3/4" in msg for msg in progress_messages), "Step 3 message not found"
-        assert any("Step 4/4" in msg for msg in progress_messages), "Step 4 message not found"
+        assert any(
+            "Step 1/4" in msg for msg in progress_messages
+        ), "Step 1 message not found"
+        assert any(
+            "Step 2/4" in msg for msg in progress_messages
+        ), "Step 2 message not found"
+        assert any(
+            "Step 3/4" in msg for msg in progress_messages
+        ), "Step 3 message not found"
+        assert any(
+            "Step 4/4" in msg for msg in progress_messages
+        ), "Step 4 message not found"
 
         # Ensure step messages contain useful information
         assert any("Analyzing missing files" in msg for msg in progress_messages)
@@ -181,10 +203,14 @@ class TestProgressReporting:
         assert any("S3" in msg for msg in progress_messages)
 
         # Check for item counts in progress messages
-        assert any("(1/" in msg for msg in progress_messages), "Item count indicators not found"
+        assert any(
+            "(1/" in msg for msg in progress_messages
+        ), "Item count indicators not found"
 
     @pytest.mark.asyncio
-    async def test_reconcile_phase_based_progress(self, reconcile_manager, test_dates, tmp_path):
+    async def test_reconcile_phase_based_progress(
+        self, reconcile_manager, test_dates, tmp_path
+    ):
         """Test phase-based progress reporting in the reconcile method."""
         # Setup test parameters
         start_date, end_date = test_dates
@@ -202,7 +228,9 @@ class TestProgressReporting:
 
         # Configure store mocks to return True for exists (for one file)
         reconcile_manager.cdn_store.exists.return_value = True
-        reconcile_manager._is_recent = AsyncMock(return_value=True)  # All files are "recent" for CDN
+        reconcile_manager._is_recent = AsyncMock(
+            return_value=True
+        )  # All files are "recent" for CDN
 
         # Mock scan_directory to return a fixed result
         orig_scan_directory = reconcile_manager.scan_directory
@@ -234,16 +262,28 @@ class TestProgressReporting:
         )
 
         # Assertions for phase-based progress reporting
-        assert any("Phase 1/2" in msg for msg in progress_messages), "Phase 1 message not found"
-        assert any("Phase 2/2" in msg for msg in progress_messages), "Phase 2 message not found"
+        assert any(
+            "Phase 1/2" in msg for msg in progress_messages
+        ), "Phase 1 message not found"
+        assert any(
+            "Phase 2/2" in msg for msg in progress_messages
+        ), "Phase 2 message not found"
 
         # Ensure we have both scan and download phase messages
-        assert any("scan" in msg.lower() for msg in progress_messages if "Phase 1" in msg)
-        assert any("download" in msg.lower() for msg in progress_messages if "Phase 2" in msg)
+        assert any(
+            "scan" in msg.lower() for msg in progress_messages if "Phase 1" in msg
+        )
+        assert any(
+            "download" in msg.lower() for msg in progress_messages if "Phase 2" in msg
+        )
 
         # Check final completion message
         assert any("Reconciliation complete" in msg for msg in progress_messages)
-        assert any("existing" in msg and "downloaded" in msg for msg in progress_messages if "complete" in msg.lower())
+        assert any(
+            "existing" in msg and "downloaded" in msg
+            for msg in progress_messages
+            if "complete" in msg.lower()
+        )
 
         # Check progressive phase values (should go from 0 to 2)
         phase_values = [phase[0] for phase in progress_phases]

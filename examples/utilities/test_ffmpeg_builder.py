@@ -257,7 +257,12 @@ def test_stream_copy(self):
     builder = FFmpegCommandBuilder()
 
 
-cmd = builder.set_input(self.input_path).set_output(self.output_path).set_encoder("None (copy original)").build()
+cmd = (
+    builder.set_input(self.input_path)
+    .set_output(self.output_path)
+    .set_encoder("None (copy original)")
+    .build()
+)
 expected_cmd_parts = [
     "ffmpeg",
     "-y",
@@ -274,7 +279,9 @@ def test_missing_input(self):
     builder = FFmpegCommandBuilder()
 
 
-builder.set_output(self.output_path).set_encoder("Software x264").set_crf(23).set_pix_fmt("yuv420p")
+builder.set_output(self.output_path).set_encoder("Software x264").set_crf(
+    23
+).set_pix_fmt("yuv420p")
 with self.assertRaises(ValueError):
     builder.build()
 
@@ -283,7 +290,9 @@ def test_missing_output(self):
     builder = FFmpegCommandBuilder()
 
 
-builder.set_input(self.input_path).set_encoder("Software x264").set_crf(23).set_pix_fmt("yuv420p")
+builder.set_input(self.input_path).set_encoder("Software x264").set_crf(23).set_pix_fmt(
+    "yuv420p"
+)
 with self.assertRaises(ValueError):
     builder.build()
 
@@ -292,7 +301,9 @@ def test_missing_encoder(self):
     builder = FFmpegCommandBuilder()
 
 
-builder.set_input(self.input_path).set_output(self.output_path).set_crf(23).set_pix_fmt("yuv420p")
+builder.set_input(self.input_path).set_output(self.output_path).set_crf(23).set_pix_fmt(
+    "yuv420p"
+)
 with self.assertRaises(ValueError):
     builder.build()
 
@@ -301,7 +312,9 @@ def test_missing_crf_for_x264(self):
     builder = FFmpegCommandBuilder()
 
 
-builder.set_input(self.input_path).set_output(self.output_path).set_encoder("Software x264").set_pix_fmt("yuv420p")
+builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
+    "Software x264"
+).set_pix_fmt("yuv420p")
 with self.assertRaises(ValueError):
     builder.build()
 
@@ -310,9 +323,9 @@ def test_missing_bitrate_for_hardware(self):
     builder = FFmpegCommandBuilder()
 
 
-builder.set_input(self.input_path).set_output(self.output_path).set_encoder("Hardware HEVC (VideoToolbox)").set_bufsize(
-    4000
-).set_pix_fmt("yuv420p")
+builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
+    "Hardware HEVC (VideoToolbox)"
+).set_bufsize(4000).set_pix_fmt("yuv420p")
 with self.assertRaises(ValueError):
     builder.build()
 
@@ -321,9 +334,9 @@ def test_missing_bufsize_for_hardware(self):
     builder = FFmpegCommandBuilder()
 
 
-builder.set_input(self.input_path).set_output(self.output_path).set_encoder("Hardware HEVC (VideoToolbox)").set_bitrate(
-    2000
-).set_pix_fmt("yuv420p")
+builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
+    "Hardware HEVC (VideoToolbox)"
+).set_bitrate(2000).set_pix_fmt("yuv420p")
 with self.assertRaises(ValueError):
     builder.build()
 
@@ -332,26 +345,26 @@ def test_two_pass_missing_params(self):
     builder = FFmpegCommandBuilder()
 
 
-builder.set_input(self.input_path).set_output(self.output_path).set_encoder("Software x265 (2 - Pass)").set_bitrate(
-    1000
-).set_pix_fmt("yuv420p")
+builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
+    "Software x265 (2 - Pass)"
+).set_bitrate(1000).set_pix_fmt("yuv420p")
 # Missing set_two_pass call
 with self.assertRaises(ValueError):
     builder.build()
 
 builder = FFmpegCommandBuilder()
-builder.set_input(self.input_path).set_output(self.output_path).set_encoder("Software x265 (2 - Pass)").set_bitrate(
-    1000
-).set_pix_fmt("yuv420p").set_two_pass(
+builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
+    "Software x265 (2 - Pass)"
+).set_bitrate(1000).set_pix_fmt("yuv420p").set_two_pass(
     True, None, 1
 )  # Missing log prefix
 with self.assertRaises(ValueError):
     builder.build()
 
 builder = FFmpegCommandBuilder()
-builder.set_input(self.input_path).set_output(self.output_path).set_encoder("Software x265 (2 - Pass)").set_bitrate(
-    1000
-).set_pix_fmt("yuv420p").set_two_pass(
+builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
+    "Software x265 (2 - Pass)"
+).set_bitrate(1000).set_pix_fmt("yuv420p").set_two_pass(
     True, "log_prefix", None
 )  # Missing pass number
 with self.assertRaises(ValueError):
@@ -362,9 +375,9 @@ def test_two_pass_invalid_pass_number(self):
     builder = FFmpegCommandBuilder()
 
 
-builder.set_input(self.input_path).set_output(self.output_path).set_encoder("Software x265 (2 - Pass)").set_bitrate(
-    1000
-).set_pix_fmt("yuv420p").set_two_pass(
+builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
+    "Software x265 (2 - Pass)"
+).set_bitrate(1000).set_pix_fmt("yuv420p").set_two_pass(
     True, "log_prefix", 3
 )  # Invalid pass number
 with self.assertRaises(ValueError):

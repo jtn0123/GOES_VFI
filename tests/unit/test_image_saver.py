@@ -95,7 +95,9 @@ class TestImageSaver:
             # Create nested path that doesn't exist
             output_path = Path(tmpdir) / "subdir1" / "subdir2" / "image.png"
 
-            image_data = ImageData(image_data=sample_image, metadata={"width": 100, "height": 100})
+            image_data = ImageData(
+                image_data=sample_image, metadata={"width": 100, "height": 100}
+            )
 
             # Save should create directories
             saver.save(image_data, str(output_path))
@@ -111,7 +113,9 @@ class TestImageSaver:
             for fmt in formats:
                 output_path = Path(tmpdir) / f"test{fmt}"
 
-                image_data = ImageData(image_data=sample_image, metadata={"width": 100, "height": 100})
+                image_data = ImageData(
+                    image_data=sample_image, metadata={"width": 100, "height": 100}
+                )
 
                 saver.save(image_data, str(output_path))
 
@@ -122,7 +126,9 @@ class TestImageSaver:
     def test_save_error_handling(self, saver, sample_image):
         """Test error handling during save."""
         # Test with invalid path (e.g., read-only location)
-        image_data = ImageData(image_data=sample_image, metadata={"width": 100, "height": 100})
+        image_data = ImageData(
+            image_data=sample_image, metadata={"width": 100, "height": 100}
+        )
 
         # Try to save to an invalid location
         with pytest.raises(IOError):

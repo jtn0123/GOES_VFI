@@ -28,7 +28,9 @@ class FileSorterTab(QWidget):
     directory_selected = pyqtSignal(str)  # Signal emitted when a directory is selected
 
     # Modified __init__ to accept a ViewModel instance
-    def __init__(self, view_model: FileSorterViewModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self, view_model: FileSorterViewModel, parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent)
 
         if not isinstance(view_model, FileSorterViewModel):
@@ -44,7 +46,9 @@ class FileSorterTab(QWidget):
 
         # Source Group
         source_group = QGroupBox(self.tr("Source"))
-        source_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        source_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         source_layout = QGridLayout()
         source_layout.setContentsMargins(10, 15, 10, 10)
         source_layout.setSpacing(8)
@@ -62,13 +66,17 @@ class FileSorterTab(QWidget):
 
         # Destination Group
         destination_group = QGroupBox(self.tr("Destination"))
-        destination_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        destination_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         destination_layout = QGridLayout()
         destination_layout.setContentsMargins(10, 15, 10, 10)
         destination_layout.setSpacing(8)
 
         destination_label = QLabel(self.tr("Output Folder:"))
-        destination_info = QLabel(self.tr("(Files will be sorted to a 'converted' subfolder)"))
+        destination_info = QLabel(
+            self.tr("(Files will be sorted to a 'converted' subfolder)")
+        )
         destination_info.setStyleSheet("color: #666; font-style: italic;")
 
         destination_layout.addWidget(destination_label, 0, 0)
@@ -78,19 +86,25 @@ class FileSorterTab(QWidget):
 
         # Options Group
         options_group = QGroupBox(self.tr("Options"))
-        options_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        options_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         options_layout = QVBoxLayout()
         options_layout.setContentsMargins(10, 15, 10, 10)
         options_layout.setSpacing(8)
 
         # Dry Run Checkbox
-        self.dry_run_checkbox = QCheckBox(self.tr("Dry Run (Log actions without moving files)"))
+        self.dry_run_checkbox = QCheckBox(
+            self.tr("Dry Run (Log actions without moving files)")
+        )
         options_layout.addWidget(self.dry_run_checkbox)
 
         # Duplicate Handling
         duplicate_label = QLabel(self.tr("Duplicate Handling:"))
         self.duplicate_combo = QComboBox()
-        self.duplicate_combo.addItems([self.tr("Overwrite"), self.tr("Skip"), self.tr("Rename")])
+        self.duplicate_combo.addItems(
+            [self.tr("Overwrite"), self.tr("Skip"), self.tr("Rename")]
+        )
         options_layout.addWidget(duplicate_label)
         options_layout.addWidget(self.duplicate_combo)
 
@@ -99,7 +113,9 @@ class FileSorterTab(QWidget):
 
         # Actions Group
         actions_group = QGroupBox(self.tr("Actions"))
-        actions_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        actions_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         actions_layout = QVBoxLayout()
         actions_layout.setContentsMargins(10, 15, 10, 10)
         actions_layout.setSpacing(8)
@@ -175,11 +191,15 @@ class FileSorterTab(QWidget):
 
         # Handle completion/error messages from ViewModel
         if self.view_model.show_completion_message:
-            QMessageBox.information(self, "Sorting Complete", self.view_model.completion_message)
+            QMessageBox.information(
+                self, "Sorting Complete", self.view_model.completion_message
+            )
             self.view_model.show_completion_message = False  # Reset flag
         if self.view_model.show_error_message:
             QMessageBox.critical(self, "Sorting Error", self.view_model.error_message)
             self.view_model.show_error_message = False  # Reset flag
         if self.view_model.show_input_error_message:
-            QMessageBox.warning(self, "Input Error", self.view_model.input_error_message)
+            QMessageBox.warning(
+                self, "Input Error", self.view_model.input_error_message
+            )
             self.view_model.show_input_error_message = False  # Reset flag

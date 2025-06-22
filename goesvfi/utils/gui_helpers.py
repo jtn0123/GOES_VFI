@@ -134,7 +134,9 @@ class RifeCapabilityManager:
         # Update UHD mode
         if self.capabilities.get("uhd", False):
             uhd_mode_cb.setEnabled(True)
-            uhd_mode_cb.setToolTip("Enable UHD mode for 4K+ images (slower but better quality)")
+            uhd_mode_cb.setToolTip(
+                "Enable UHD mode for 4K+ images (slower but better quality)"
+            )
         else:
             uhd_mode_cb.setEnabled(False)
             uhd_mode_cb.setToolTip("UHD mode not supported by this RIFE executable")
@@ -147,23 +149,33 @@ class RifeCapabilityManager:
         else:
             thread_spec_edit.setEnabled(False)
             thread_spec_label.setEnabled(False)
-            thread_spec_edit.setToolTip("Thread specification not supported by this RIFE executable")
+            thread_spec_edit.setToolTip(
+                "Thread specification not supported by this RIFE executable"
+            )
 
         # Update TTA spatial
         if self.capabilities.get("tta_spatial", False):
             tta_spatial_cb.setEnabled(True)
-            tta_spatial_cb.setToolTip("Enable spatial test-time augmentation (slower but better quality)")
+            tta_spatial_cb.setToolTip(
+                "Enable spatial test-time augmentation (slower but better quality)"
+            )
         else:
             tta_spatial_cb.setEnabled(False)
-            tta_spatial_cb.setToolTip("Spatial TTA not supported by this RIFE executable")
+            tta_spatial_cb.setToolTip(
+                "Spatial TTA not supported by this RIFE executable"
+            )
 
         # Update TTA temporal
         if self.capabilities.get("tta_temporal", False):
             tta_temporal_cb.setEnabled(True)
-            tta_temporal_cb.setToolTip("Enable temporal test-time augmentation (slower but better quality)")
+            tta_temporal_cb.setToolTip(
+                "Enable temporal test-time augmentation (slower but better quality)"
+            )
         else:
             tta_temporal_cb.setEnabled(False)
-            tta_temporal_cb.setToolTip("Temporal TTA not supported by this RIFE executable")
+            tta_temporal_cb.setToolTip(
+                "Temporal TTA not supported by this RIFE executable"
+            )
 
     def get_capability_summary(self) -> str:
         """
@@ -181,7 +193,9 @@ class RifeCapabilityManager:
         supported_count = sum(1 for v in self.capabilities.values() if v)
         total_count = len(self.capabilities)
 
-        return f"RIFE {version_str} - {supported_count}/{total_count} features supported"
+        return (
+            f"RIFE {version_str} - {supported_count}/{total_count} features supported"
+        )
 
 
 # GUI Component classes
@@ -297,7 +311,11 @@ class CropLabel(QLabel):
         """Paint the label with selection overlay."""
         super().paintEvent(event)
 
-        if (self.selecting or self.selected_rect) and self.selection_start_point and self.selection_end_point:
+        if (
+            (self.selecting or self.selected_rect)
+            and self.selection_start_point
+            and self.selection_end_point
+        ):
             painter = QPainter(self)
             painter.setPen(Qt.GlobalColor.red)
 
@@ -330,7 +348,10 @@ class CropSelectionDialog(QDialog):
     """Dialog for selecting a crop region on an image."""
 
     def __init__(
-        self, image: Optional[QImage] = None, initial_rect: Optional[QRect] = None, parent: Optional[QWidget] = None
+        self,
+        image: Optional[QImage] = None,
+        initial_rect: Optional[QRect] = None,
+        parent: Optional[QWidget] = None,
     ) -> None:
         """Initialize the dialog with an optional image and initial rectangle."""
         super().__init__(parent)
@@ -353,7 +374,8 @@ class CropSelectionDialog(QDialog):
     def get_selected_rect(self) -> QRect:
         """Get the selected rectangle in original image coordinates."""
         if self._final_selected_rect_display is None or (
-            isinstance(self._final_selected_rect_display, QRect) and self._final_selected_rect_display.isNull()
+            isinstance(self._final_selected_rect_display, QRect)
+            and self._final_selected_rect_display.isNull()
         ):
             return QRect()
 
@@ -390,7 +412,13 @@ class CropSelectionDialog(QDialog):
 class ImageViewerDialog(QDialog):
     """Dialog for viewing an image with zoom and pan capabilities."""
 
-    def __init__(self, image: Optional[QImage] = None, title: str = "Full Resolution", info_text: str = "", parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self,
+        image: Optional[QImage] = None,
+        title: str = "Full Resolution",
+        info_text: str = "",
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """Initialize the image viewer dialog."""
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -510,7 +538,12 @@ class ZoomDialog(QDialog):
 class CropDialog(QDialog):
     """Dialog for selecting a crop region with scaling support."""
 
-    def __init__(self, pixmap: QPixmap, initial_rect: Optional[QRect] = None, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self,
+        pixmap: QPixmap,
+        initial_rect: Optional[QRect] = None,
+        parent: Optional[QWidget] = None,
+    ) -> None:
         """Initialize with a pixmap and optional initial rectangle."""
         super().__init__(parent)
         self.setWindowTitle("Select Crop Region")

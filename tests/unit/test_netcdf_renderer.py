@@ -98,15 +98,21 @@ class TestNetCDFRenderer(unittest.TestCase):
             with patch("matplotlib.pyplot.figure", return_value=mock_figure):
                 with patch("matplotlib.pyplot.savefig"):
                     with patch("matplotlib.pyplot.close"):
-                        with patch("matplotlib.pyplot.get_cmap", return_value=mock_cmap):
+                        with patch(
+                            "matplotlib.pyplot.get_cmap", return_value=mock_cmap
+                        ):
                             # Mock figure.add_axes
                             mock_figure.add_axes.return_value = mock_ax
 
                             # Configure mock dataset
-                            mock_open_dataset.return_value.__enter__.return_value = mock_ds
+                            mock_open_dataset.return_value.__enter__.return_value = (
+                                mock_ds
+                            )
 
                             # Test basic rendering
-                            result = render_png(netcdf_path=self.netcdf_path, output_path=output_path)
+                            result = render_png(
+                                netcdf_path=self.netcdf_path, output_path=output_path
+                            )
 
                             # Verify
                             self.assertEqual(result, output_path)
@@ -141,7 +147,9 @@ class TestNetCDFRenderer(unittest.TestCase):
                             mock_figure.add_axes.return_value = mock_ax
 
                             # Configure mock dataset
-                            mock_open_dataset.return_value.__enter__.return_value = mock_ds
+                            mock_open_dataset.return_value.__enter__.return_value = (
+                                mock_ds
+                            )
 
                             # Test gray colormap
                             result = render_png(
@@ -190,7 +198,9 @@ class TestNetCDFRenderer(unittest.TestCase):
         mock_ds = create_mock_dataset()
         # Remove Rad variable
         del mock_ds.variables["Rad"]
-        mock_ds.__getitem__ = lambda self, key: (mock_ds.variables[key] if key in mock_ds.variables else None)
+        mock_ds.__getitem__ = lambda self, key: (
+            mock_ds.variables[key] if key in mock_ds.variables else None
+        )
         mock_open_dataset.return_value.__enter__.return_value = mock_ds
 
         # Output path

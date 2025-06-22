@@ -65,7 +65,9 @@ def demonstrate_batch_processing():
     processor = BatchProcessor()
 
     # Create queue with mock processing function
-    queue = processor.create_queue(process_function=mock_process_function, max_concurrent=2)
+    queue = processor.create_queue(
+        process_function=mock_process_function, max_concurrent=2
+    )
 
     # Connect signal handlers
     def on_job_started(job_id: str):
@@ -180,7 +182,9 @@ def demonstrate_directory_processing():
     processor = BatchProcessor()
 
     # Create queue
-    queue = processor.create_queue(process_function=mock_process_function, max_concurrent=3)
+    queue = processor.create_queue(
+        process_function=mock_process_function, max_concurrent=3
+    )
 
     # Create test directory structure
     test_dir = Path("/tmp/goes_vfi_batch_test")

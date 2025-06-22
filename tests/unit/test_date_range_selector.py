@@ -71,7 +71,9 @@ class TestUnifiedDateRangeSelector(PyQtAsyncTestCase):
             new_start.hour,
             new_start.minute,
         )
-        q_end = QDateTime(new_end.year, new_end.month, new_end.day, new_end.hour, new_end.minute)
+        q_end = QDateTime(
+            new_end.year, new_end.month, new_end.day, new_end.hour, new_end.minute
+        )
 
         # Set dates
         self.selector.start_date_edit.setDateTime(q_start)
@@ -90,7 +92,9 @@ class TestUnifiedDateRangeSelector(PyQtAsyncTestCase):
         self.assertEqual(end.date(), new_end.date())
 
         # Verify signal was emitted
-        self.assertEqual(len(self.emitted_ranges), 2)  # Two changes should emit two signals
+        self.assertEqual(
+            len(self.emitted_ranges), 2
+        )  # Two changes should emit two signals
 
     def test_preset_applications(self) -> None:
         """Test applying date presets."""

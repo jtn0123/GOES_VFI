@@ -174,7 +174,8 @@ class OptimizedDateSelectionTab(QWidget):
 
         # Update label
         self.date_range_label.setText(
-            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - " f"{end.strftime('%Y-%m-%d %H:%M')}"
+            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - "
+            f"{end.strftime('%Y-%m-%d %H:%M')}"
         )
 
     def _open_visual_date_picker(self) -> None:
@@ -199,7 +200,8 @@ class OptimizedDateSelectionTab(QWidget):
         """
         # Update label
         self.date_range_label.setText(
-            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - " f"{end.strftime('%Y-%m-%d %H:%M')}"
+            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - "
+            f"{end.strftime('%Y-%m-%d %H:%M')}"
         )
 
         # Update timeline picker
@@ -480,7 +482,9 @@ class SatelliteIntegrityTabGroup(QWidget):
     def _connect_internal_signals(self) -> None:
         """Connect signals between internal tabs."""
         # From date selection tab to timeline tab
-        self.date_selection_tab.dateRangeSelected.connect(self._handle_date_range_selected)
+        self.date_selection_tab.dateRangeSelected.connect(
+            self._handle_date_range_selected
+        )
 
         # From timeline tab to results tab
         self.timeline_tab.timestampSelected.connect(self.results_tab.highlight_item)

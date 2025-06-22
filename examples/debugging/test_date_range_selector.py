@@ -88,7 +88,9 @@ q_start = QDateTime(
     new_start.hour,
     new_start.minute,
 )
-q_end = QDateTime(new_end.year, new_end.month, new_end.day, new_end.hour, new_end.minute)
+q_end = QDateTime(
+    new_end.year, new_end.month, new_end.day, new_end.hour, new_end.minute
+)
 
 # Set dates
 self.selector.start_date_edit.setDateTime(q_start)

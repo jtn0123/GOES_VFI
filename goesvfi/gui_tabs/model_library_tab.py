@@ -50,8 +50,12 @@ class ModelLibraryTab(QWidget):
         header = self.model_table.horizontalHeader()
         if header is not None:  # Check if header is not None
             header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-            header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # Stretch last section
-        self.model_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)  # Make table read-only
+            header.setSectionResizeMode(
+                1, QHeaderView.ResizeMode.Stretch
+            )  # Stretch last section
+        self.model_table.setEditTriggers(
+            QTableWidget.EditTrigger.NoEditTriggers
+        )  # Make table read-only
         layout.addWidget(self.model_table)
 
         layout.addStretch(1)  # Push table to the top
@@ -66,11 +70,15 @@ class ModelLibraryTab(QWidget):
             # Get the project root directory relative to the config module
             project_root = pathlib.Path(config.__file__).parent.parent
 
-            for row, model_key in enumerate(available_models):  # Iterate over list of keys
+            for row, model_key in enumerate(
+                available_models
+            ):  # Iterate over list of keys
                 # Construct the model directory path
                 model_dir_path = project_root / "models" / model_key
                 self.model_table.setItem(row, 0, QTableWidgetItem(model_key))
-                self.model_table.setItem(row, 1, QTableWidgetItem(str(model_dir_path)))  # Use constructed path
+                self.model_table.setItem(
+                    row, 1, QTableWidgetItem(str(model_dir_path))
+                )  # Use constructed path
 
             LOGGER.debug("Populated model table with %s models.", len(available_models))
         except Exception as e:

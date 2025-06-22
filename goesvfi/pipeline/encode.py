@@ -12,7 +12,9 @@ from .ffmpeg_builder import FFmpegCommandBuilder
 LOGGER = logging.getLogger(__name__)
 
 
-def _run_ffmpeg_command(cmd: List[str], desc: str, monitor_memory: bool = False) -> None:
+def _run_ffmpeg_command(
+    cmd: List[str], desc: str, monitor_memory: bool = False
+) -> None:
     """Run an FFmpeg command with logging and error handling.
 
     Args:
@@ -53,7 +55,11 @@ def _run_ffmpeg_command(cmd: List[str], desc: str, monitor_memory: bool = False)
 
             ret = proc.wait()
             if ret != 0:
-                LOGGER.error("FFmpeg (%s) failed (exit code %s). See logged output above.", desc, ret)
+                LOGGER.error(
+                    "FFmpeg (%s) failed (exit code %s). See logged output above.",
+                    desc,
+                    ret,
+                )
                 raise RuntimeError(f"FFmpeg ({desc}) failed (exit code {ret})")
 
         if monitor_memory:
@@ -114,7 +120,9 @@ def encode_with_ffmpeg(
         try:
             _run_ffmpeg_command(cmd_copy, "Stream Copy", monitor_memory=monitor_memory)
         except RuntimeError as e:
-            LOGGER.warning("Stream copy failed (%s). Attempting simple rename as fallback...", e)
+            LOGGER.warning(
+                "Stream copy failed (%s). Attempting simple rename as fallback...", e
+            )
             try:
                 intermediate_input.replace(final_output)
                 LOGGER.info("Fallback rename successful.")
@@ -137,7 +145,9 @@ def encode_with_ffmpeg(
 
         pass_log_prefix = None
         try:
-            with tempfile.NamedTemporaryFile(delete=True, suffix="_ffmpeg_passlog") as temp_file:
+            with tempfile.NamedTemporaryFile(
+                delete=True, suffix="_ffmpeg_passlog"
+            ) as temp_file:
                 pass_log_prefix = temp_file.name
 
                 # Build commands using FFmpegCommandBuilder

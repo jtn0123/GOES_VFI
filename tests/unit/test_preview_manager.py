@@ -58,7 +58,9 @@ class TestPreviewManager(unittest.TestCase):
         """Clean up test fixtures."""
         self.temp_dir.cleanup()
 
-    def _create_test_image(self, name: str, size: tuple = (100, 100), color: tuple = (255, 0, 0)):
+    def _create_test_image(
+        self, name: str, size: tuple = (100, 100), color: tuple = (255, 0, 0)
+    ):
         """Create a test image file."""
         img = Image.new("RGB", size, color)
         path = self.test_dir / name
@@ -183,7 +185,9 @@ class TestPreviewManager(unittest.TestCase):
 
             # Load with crop
             crop_rect = (50, 50, 100, 100)
-            result = self.preview_manager.load_preview_images(self.test_dir, crop_rect=crop_rect)
+            result = self.preview_manager.load_preview_images(
+                self.test_dir, crop_rect=crop_rect
+            )
 
             # Verify cropper was called
             self.assertEqual(mock_crop.call_count, 2)  # Once for each image
@@ -206,7 +210,9 @@ class TestPreviewManager(unittest.TestCase):
         self.preview_manager = PreviewManager()
 
         # Mock Sanchez processor on the new instance
-        with patch.object(self.preview_manager.sanchez_processor, "process") as mock_sanchez:
+        with patch.object(
+            self.preview_manager.sanchez_processor, "process"
+        ) as mock_sanchez:
             processed_data = ImageData(np.ones((100, 100, 3), dtype=np.uint8) * 128)
             mock_sanchez.return_value = processed_data
 
@@ -312,8 +318,12 @@ class TestPreviewManager(unittest.TestCase):
         self.assertIsNone(last)
 
         # Set some data
-        self.preview_manager.first_frame_data = ImageData(np.zeros((10, 10, 3), dtype=np.uint8))
-        self.preview_manager.last_frame_data = ImageData(np.ones((10, 10, 3), dtype=np.uint8))
+        self.preview_manager.first_frame_data = ImageData(
+            np.zeros((10, 10, 3), dtype=np.uint8)
+        )
+        self.preview_manager.last_frame_data = ImageData(
+            np.ones((10, 10, 3), dtype=np.uint8)
+        )
 
         # Get data
         first, last = self.preview_manager.get_current_frame_data()
@@ -323,8 +333,12 @@ class TestPreviewManager(unittest.TestCase):
     def test_clear_previews(self):
         """Test clearing preview data."""
         # Set some data
-        self.preview_manager.first_frame_data = ImageData(np.zeros((10, 10, 3), dtype=np.uint8))
-        self.preview_manager.last_frame_data = ImageData(np.ones((10, 10, 3), dtype=np.uint8))
+        self.preview_manager.first_frame_data = ImageData(
+            np.zeros((10, 10, 3), dtype=np.uint8)
+        )
+        self.preview_manager.last_frame_data = ImageData(
+            np.ones((10, 10, 3), dtype=np.uint8)
+        )
         self.preview_manager.current_input_dir = Path("/test")
         self.preview_manager.current_crop_rect = (0, 0, 10, 10)
 

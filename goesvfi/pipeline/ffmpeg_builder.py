@@ -76,7 +76,9 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._output_path = output_path  # pylint: disable=attribute-defined-outside-init
+        self._output_path = (
+            output_path  # pylint: disable=attribute-defined-outside-init
+        )
         return self  # Output path is added during build based on pass
 
     def set_encoder(self, encoder: str) -> "FFmpegCommandBuilder":
@@ -113,7 +115,9 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._bitrate_kbps = bitrate_kbps  # pylint: disable=attribute-defined-outside-init
+        self._bitrate_kbps = (
+            bitrate_kbps  # pylint: disable=attribute-defined-outside-init
+        )
         return self
 
     def set_bufsize(self, bufsize_kb: int) -> "FFmpegCommandBuilder":
@@ -140,7 +144,9 @@ class FFmpegCommandBuilder:
         self._pix_fmt = pix_fmt  # pylint: disable=attribute-defined-outside-init
         return self
 
-    def set_two_pass(self, is_two_pass: bool, pass_log_prefix: str, pass_number: int) -> "FFmpegCommandBuilder":
+    def set_two_pass(
+        self, is_two_pass: bool, pass_log_prefix: str, pass_number: int
+    ) -> "FFmpegCommandBuilder":
         """Configure two-pass encoding parameters.
 
         Args:
@@ -151,9 +157,15 @@ class FFmpegCommandBuilder:
         Returns:
             FFmpegCommandBuilder: The builder instance (for chaining).
         """
-        self._is_two_pass = is_two_pass  # pylint: disable=attribute-defined-outside-init
-        self._pass_log_prefix = pass_log_prefix  # pylint: disable=attribute-defined-outside-init
-        self._pass_number = pass_number  # pylint: disable=attribute-defined-outside-init
+        self._is_two_pass = (
+            is_two_pass  # pylint: disable=attribute-defined-outside-init
+        )
+        self._pass_log_prefix = (
+            pass_log_prefix  # pylint: disable=attribute-defined-outside-init
+        )
+        self._pass_number = (
+            pass_number  # pylint: disable=attribute-defined-outside-init
+        )
         return self
 
     def build(self) -> List[str]:
@@ -230,13 +242,21 @@ class FFmpegCommandBuilder:
             pass
             self._add_x265_pass2_args(cmd)
         else:
-            raise ValueError(f"Invalid pass number for two-pass x265: {self._pass_number}")
+            raise ValueError(
+                f"Invalid pass number for two-pass x265: {self._pass_number}"
+            )
 
     def _validate_two_pass_parameters(self) -> None:
         """Validate parameters required for two-pass encoding."""
-        if not self._is_two_pass or self._pass_log_prefix is None or self._pass_number is None:
+        if (
+            not self._is_two_pass
+            or self._pass_log_prefix is None
+            or self._pass_number is None
+        ):
             pass
-            raise ValueError("Two-pass encoding requires two_pass flag, log prefix, and pass number.")
+            raise ValueError(
+                "Two-pass encoding requires two_pass flag, log prefix, and pass number."
+            )
 
     def _add_x265_pass1_args(self, cmd: List[str]) -> None:
         """Add arguments for x265 pass 1."""

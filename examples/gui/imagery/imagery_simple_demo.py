@@ -28,7 +28,9 @@ from PyQt6.QtWidgets import (
 )
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -153,13 +155,19 @@ class MockPreviewDialog(QDialog):
         button_layout = QHBoxLayout()
 
         self.timeout_btn = QPushButton("Show Timeout Error")
-        self.timeout_btn.clicked.connect(lambda: self.showFallbackPreview("Connection timed out after 30 seconds"))
+        self.timeout_btn.clicked.connect(
+            lambda: self.showFallbackPreview("Connection timed out after 30 seconds")
+        )
 
         self.not_found_btn = QPushButton("Show Not Found Error")
-        self.not_found_btn.clicked.connect(lambda: self.showFallbackPreview("No data found for the selected date/time"))
+        self.not_found_btn.clicked.connect(
+            lambda: self.showFallbackPreview("No data found for the selected date/time")
+        )
 
         self.corrupted_btn = QPushButton("Show Corrupted Data Error")
-        self.corrupted_btn.clicked.connect(lambda: self.showFallbackPreview("Downloaded file is not a valid image"))
+        self.corrupted_btn.clicked.connect(
+            lambda: self.showFallbackPreview("Downloaded file is not a valid image")
+        )
 
         self.success_btn = QPushButton("Show Success")
         self.success_btn.clicked.connect(self.showSuccessPreview)
@@ -179,7 +187,9 @@ class MockPreviewDialog(QDialog):
         # Show a default error preview
         QTimer.singleShot(
             500,
-            lambda: self.showFallbackPreview("No imagery available for the selected date/time"),
+            lambda: self.showFallbackPreview(
+                "No imagery available for the selected date/time"
+            ),
         )
 
     def showFallbackPreview(self, error_msg):

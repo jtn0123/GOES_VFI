@@ -75,11 +75,16 @@ class FileSorter:
         """
         # Initialize the sorting process
         source_dir, destination_dir = self._initialize_directories(source, destination)
-        script_start_time = self._reset_counters_and_callbacks(progress_callback, should_cancel)
+        script_start_time = self._reset_counters_and_callbacks(
+            progress_callback, should_cancel
+        )
 
         # Build file processing list
         files_to_process = self._build_file_processing_list(source_dir)
-        if isinstance(files_to_process, dict) and files_to_process.get("status") == "cancelled":
+        if (
+            isinstance(files_to_process, dict)
+            and files_to_process.get("status") == "cancelled"
+        ):
             return files_to_process
 
         # Process all files
@@ -90,7 +95,9 @@ class FileSorter:
         # Generate final statistics
         return self._generate_final_statistics(script_start_time, len(files_to_process))
 
-    def _initialize_directories(self, source: str, destination: str) -> Tuple[Path, Path]:
+    def _initialize_directories(
+        self, source: str, destination: str
+    ) -> Tuple[Path, Path]:
         """Initialize and validate source and destination directories."""
         source_dir = Path(source)
         destination_dir = Path(destination)
@@ -148,7 +155,11 @@ class FileSorter:
 
             # Validate components
             if not (
-                1 <= month <= 12 and 1 <= day <= 31 and 0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59
+                1 <= month <= 12
+                and 1 <= day <= 31
+                and 0 <= hour <= 23
+                and 0 <= minute <= 59
+                and 0 <= second <= 59
             ):
                 return False
 
@@ -185,7 +196,9 @@ class FileSorter:
         if self._progress_callback:
             self._progress_callback(current, total)
 
-    def _build_file_processing_list(self, source_dir: Path) -> Union[List[Tuple[Path, str]], Dict[str, str]]:
+    def _build_file_processing_list(
+        self, source_dir: Path
+    ) -> Union[List[Tuple[Path, str]], Dict[str, str]]:
         """Build a list of files to process with their datetime information."""
         date_folders = self._get_date_folders(source_dir)
         files_to_process: List[Tuple[Path, str]] = []
@@ -240,14 +253,18 @@ class FileSorter:
                 raise
         return target_folder
 
-    def _generate_new_file_name(self, file_name: str, base_name: str, folder_datetime: str) -> str:
+    def _generate_new_file_name(
+        self, file_name: str, base_name: str, folder_datetime: str
+    ) -> str:
         """Generate new file name with datetime suffix if not already present."""
         if not re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
             return f"{base_name}_{folder_datetime}Z.png"
         # Already has date/time suffix, keep it
         return file_name
 
-    def _check_files_identical(self, source_path: Path, dest_path: Path, time_tolerance: float = 1.0) -> bool:
+    def _check_files_identical(
+        self, source_path: Path, dest_path: Path, time_tolerance: float = 1.0
+    ) -> bool:
         """Check if source and destination files are identical."""
         if not dest_path.exists():
             return False
@@ -263,7 +280,9 @@ class FileSorter:
         time_diff = abs(source_mtime - dest_mtime)
         return time_diff <= time_tolerance
 
-    def _handle_duplicate_file(self, new_file_path: Path, target_folder: Path) -> Tuple[Path, str]:
+    def _handle_duplicate_file(
+        self, new_file_path: Path, target_folder: Path
+    ) -> Tuple[Path, str]:
         """Handle duplicate files based on duplicate mode."""
         if self.duplicate_mode == DuplicateMode.SKIP:
             self.files_skipped += 1
@@ -280,7 +299,9 @@ class FileSorter:
             return new_file_path, f"RENAMED to {new_file_path.name}"
         return new_file_path, f"OVERWRITING {new_file_path.name}"
 
-    def _copy_file_if_needed(self, source_path: Path, dest_path: Path, action_msg: str) -> str:
+    def _copy_file_if_needed(
+        self, source_path: Path, dest_path: Path, action_msg: str
+    ) -> str:
         """Copy file if not in dry run mode."""
         if self.dry_run:
             return f"DRY RUN: Would copy to {dest_path.name}"
@@ -291,7 +312,9 @@ class FileSorter:
         self.total_bytes_copied += source_size
         return action_msg if action_msg else f"COPIED to {dest_path.name}"
 
-    def _process_single_file(self, file_path: Path, folder_datetime: str, destination_dir: Path) -> None:
+    def _process_single_file(
+        self, file_path: Path, folder_datetime: str, destination_dir: Path
+    ) -> None:
         """Process a single file for sorting."""
         file_name = file_path.name
 
@@ -300,7 +323,9 @@ class FileSorter:
         target_folder = self._create_target_folder(destination_dir, base_name)
 
         # Generate new file name and path
-        new_file_name = self._generate_new_file_name(file_name, base_name, folder_datetime)
+        new_file_name = self._generate_new_file_name(
+            file_name, base_name, folder_datetime
+        )
         new_file_path = target_folder / new_file_name
 
         # Check if files are identical
@@ -311,7 +336,9 @@ class FileSorter:
         # Handle file processing based on existence and duplicate mode
         action_msg = ""
         if new_file_path.exists():
-            new_file_path, action_msg = self._handle_duplicate_file(new_file_path, target_folder)
+            new_file_path, action_msg = self._handle_duplicate_file(
+                new_file_path, target_folder
+            )
             if "SKIPPED" in action_msg:
                 return  # Skip to next file
 
@@ -340,7 +367,9 @@ class FileSorter:
 
         return None
 
-    def _generate_final_statistics(self, script_start_time: datetime, total_files: int) -> Dict[str, Any]:
+    def _generate_final_statistics(
+        self, script_start_time: datetime, total_files: int
+    ) -> Dict[str, Any]:
         """Generate and print final sorting statistics."""
         print()  # Move to new line after progress
 
@@ -355,7 +384,9 @@ class FileSorter:
         print(f"Total data copied: {size_in_mb} MB")
 
         if total_files > 0:
-            average_time_per_file = round(total_duration.total_seconds() / total_files, 2)
+            average_time_per_file = round(
+                total_duration.total_seconds() / total_files, 2
+            )
         else:
             average_time_per_file = 0
         print(f"Average time per file: {average_time_per_file} seconds")
@@ -378,7 +409,9 @@ def main() -> None:
     # The original code had an if/else for GUI vs CLI, we remove the GUI part.
     import argparse
 
-    parser = argparse.ArgumentParser(description="Sorts image files into folders based on date/time.")
+    parser = argparse.ArgumentParser(
+        description="Sorts image files into folders based on date/time."
+    )
     parser.add_argument(
         "root_dir",
         nargs="?",
@@ -405,7 +438,9 @@ def main() -> None:
     sorter = FileSorter(dry_run=args.dry_run, duplicate_mode=duplicate_mode)
     # In CLI mode, we still use root_dir for simplicity, not source/destination
     # The GUI will use source/destination with the ViewModel
-    sorter.sort_files(source=args.root_dir if args.root_dir else ".", destination="./converted")
+    sorter.sort_files(
+        source=args.root_dir if args.root_dir else ".", destination="./converted"
+    )
 
 
 if __name__ == "__main__":

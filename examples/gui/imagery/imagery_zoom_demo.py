@@ -33,7 +33,9 @@ from PyQt6.QtWidgets import (
 )
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 
@@ -121,7 +123,9 @@ def create_mock_image(width=1024, height=1024, channel=13, enhanced=False, text=
             color = (intensity, intensity, intensity, 200)
 
         # Draw the feature (cloud/weather system)
-        draw.ellipse([(x - size, y - size), (x + size, y + size)], fill=color, outline=None)
+        draw.ellipse(
+            [(x - size, y - size), (x + size, y + size)], fill=color, outline=None
+        )
 
     # Add labels and information
     # Add channel information at the top
@@ -199,7 +203,9 @@ class ImageViewerWithZoom(QWidget):
         # Create image label
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.image_label.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
         self.image_label.setMinimumSize(600, 400)
 
         # Set label as the scroll area widget
@@ -353,7 +359,9 @@ class ImageViewerWithZoom(QWidget):
         self.image_label.setFixedSize(scaled_pixmap.size())
 
         # Log
-        logger.info("Zoom updated to %s% - Image size: %sx%s", value, new_width, new_height)
+        logger.info(
+            "Zoom updated to %s% - Image size: %sx%s", value, new_width, new_height
+        )
 
     @pyqtSlot(int)
     def changeChannel(self, index):

@@ -13,7 +13,9 @@ def mock_capability_detector(mocker):
     """Fixture to provide a mock RifeCapabilityDetector."""
     mock_detector = mocker.MagicMock()
     mock_detector.supports_thread_spec.return_value = True
-    return mocker.patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector)
+    return mocker.patch(
+        "goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector
+    )
 
 
 def create_test_png(path: pathlib.Path, size: tuple = (10, 10)):

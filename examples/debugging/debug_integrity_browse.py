@@ -217,7 +217,7 @@ directory_selected = pyqtSignal(str)
     def patch_goesvfi():
         """Patch the GOES - VFI classes for enhanced debugging."""
         try:
-     # First, try to import the necessary modules
+     irst, try to import the necessary modules
         from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
         from goesvfi.integrity_check.remote.s3_store import S3Store
 
@@ -298,7 +298,7 @@ directory_selected = pyqtSignal(str)
     def run_patched_goesvfi():
         """Run the actual GOES - VFI application with patches."""
         try:
-     # Import main application
+     mport main application
         from goesvfi import gui
 
         logger.info("Starting patched GOES - VFI application")

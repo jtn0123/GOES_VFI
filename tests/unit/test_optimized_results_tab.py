@@ -98,7 +98,9 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
 
         # Verify summary widget was updated
         total_expected_text = self.tab.summary_widget.total_expected_label.text()
-        assert total_expected_text == str(self.total_expected), "Total expected count not displayed correctly"
+        assert total_expected_text == str(
+            self.total_expected
+        ), "Total expected count not displayed correctly"
 
     @async_test
     async def test_group_by_day(self):
@@ -110,7 +112,9 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Default grouping should be "day"
-        assert self.tab.tree_view._grouping == "day", "Default grouping should be by day"
+        assert (
+            self.tab.tree_view._grouping == "day"
+        ), "Default grouping should be by day"
 
         # There should be 4 days in the tree (days 1-4)
         row_count = self.tab.tree_view.rowCount()
@@ -212,7 +216,9 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert result.args[0] == test_item, "Item signal not emitted with correct item"
 
         # The preview widget should be updated
-        assert self.tab.preview_widget.current_item == test_item, "Preview widget not updated with selected item"
+        assert (
+            self.tab.preview_widget.current_item == test_item
+        ), "Preview widget not updated with selected item"
 
     @async_test
     async def test_download_request(self):
@@ -244,7 +250,9 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
 
         # Verify the signal was emitted with the correct item
         assert result.received, "Signal was not received"
-        assert result.args[0] == test_item, "Download signal not emitted with correct item"
+        assert (
+            result.args[0] == test_item
+        ), "Download signal not emitted with correct item"
 
     @async_test
     async def test_view_request(self):
@@ -325,9 +333,15 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         )
 
         # Verify counts match
-        assert downloaded_text == str(downloaded_count), "Downloaded count doesn't match expected value"
-        assert errors_text == str(errors_count), "Errors count doesn't match expected value"
-        assert missing_text == str(missing_count), "Missing count doesn't match expected value"
+        assert downloaded_text == str(
+            downloaded_count
+        ), "Downloaded count doesn't match expected value"
+        assert errors_text == str(
+            errors_count
+        ), "Errors count doesn't match expected value"
+        assert missing_text == str(
+            missing_count
+        ), "Missing count doesn't match expected value"
 
     @async_test
     async def test_preview_widget_button_states(self):
@@ -343,8 +357,12 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         self.tab._handle_item_selected(missing_item)
         QApplication.processEvents()
 
-        assert self.tab.preview_widget.download_btn.isEnabled(), "Download button should be enabled for missing item"
-        assert not self.tab.preview_widget.view_btn.isEnabled(), "View button should be disabled for missing item"
+        assert (
+            self.tab.preview_widget.download_btn.isEnabled()
+        ), "Download button should be enabled for missing item"
+        assert (
+            not self.tab.preview_widget.view_btn.isEnabled()
+        ), "View button should be disabled for missing item"
 
         # Case 2: Downloaded item (download disabled, view enabled)
         downloaded_item = self.missing_items[5]  # Should be downloaded
@@ -354,7 +372,9 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert (
             not self.tab.preview_widget.download_btn.isEnabled()
         ), "Download button should be disabled for downloaded item"
-        assert self.tab.preview_widget.view_btn.isEnabled(), "View button should be enabled for downloaded item"
+        assert (
+            self.tab.preview_widget.view_btn.isEnabled()
+        ), "View button should be enabled for downloaded item"
 
     @async_test
     async def test_set_directory(self):
@@ -378,7 +398,9 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
 
         # Verify the signal was emitted with the correct directory
         assert result.received, "Signal was not received"
-        assert result.args[0] == test_dir, "Directory signal not emitted with correct directory"
+        assert (
+            result.args[0] == test_dir
+        ), "Directory signal not emitted with correct directory"
 
 
 if __name__ == "__main__":

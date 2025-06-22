@@ -103,12 +103,16 @@ class TestUnsignedS3Access(unittest.TestCase):
         self.s3_client_mock.head_object = AsyncMock(return_value=mock_head_response)
 
         # Patch Config to verify it's created with UNSIGNED
-        with patch("goesvfi.integrity_check.remote.s3_store.Config") as mock_config_class:
+        with patch(
+            "goesvfi.integrity_check.remote.s3_store.Config"
+        ) as mock_config_class:
             mock_config = MagicMock()
             mock_config_class.return_value = mock_config
 
             # Call exists method which should get the client
-            exists = await self.s3_store.check_file_exists(self.test_timestamp, self.test_satellite)
+            exists = await self.s3_store.check_file_exists(
+                self.test_timestamp, self.test_satellite
+            )
 
             # Verify Config was created with UNSIGNED
             mock_config_class.assert_called_once()
@@ -138,7 +142,9 @@ class TestUnsignedS3Access(unittest.TestCase):
         self.s3_client_mock.head_object = AsyncMock(side_effect=error)
 
         # Call the exists method
-        exists = await self.s3_store.check_file_exists(self.test_timestamp, self.test_satellite)
+        exists = await self.s3_store.check_file_exists(
+            self.test_timestamp, self.test_satellite
+        )
 
         # Verify exists returns False for 404
         self.assertFalse(exists)
@@ -150,13 +156,17 @@ class TestUnsignedS3Access(unittest.TestCase):
         mock_session_class.return_value = self.session_mock
 
         # Simulate an authentication error
-        error_response = {"Error": {"Code": "InvalidAccessKeyId", "Message": "Invalid Access Key"}}
+        error_response = {
+            "Error": {"Code": "InvalidAccessKeyId", "Message": "Invalid Access Key"}
+        }
         error = botocore.exceptions.ClientError(error_response, "HeadObject")
         self.s3_client_mock.head_object = AsyncMock(side_effect=error)
 
         # Call the exists method - should raise AuthenticationError
         with self.assertRaises(AuthenticationError):
-            await self.s3_store.check_file_exists(self.test_timestamp, self.test_satellite)
+            await self.s3_store.check_file_exists(
+                self.test_timestamp, self.test_satellite
+            )
 
     @patch("aioboto3.Session")
     async def test_download_with_unsigned_access(self, mock_session_class):
@@ -165,7 +175,9 @@ class TestUnsignedS3Access(unittest.TestCase):
         mock_session_class.return_value = self.session_mock
 
         # Mock successful head_object and download
-        self.s3_client_mock.head_object = AsyncMock(return_value={"ContentLength": 12345})
+        self.s3_client_mock.head_object = AsyncMock(
+            return_value={"ContentLength": 12345}
+        )
         self.s3_client_mock.download_file = AsyncMock()
 
         # Setup Config spy
@@ -174,7 +186,9 @@ class TestUnsignedS3Access(unittest.TestCase):
         with patch("goesvfi.integrity_check.remote.s3_store.Config", config_spy):
             # Call download method
             dest_path = self.base_dir / "test_file.nc"
-            result = await self.s3_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
+            result = await self.s3_store.download_file(
+                self.test_timestamp, self.test_satellite, dest_path
+            )
 
             # Verify Config was called with UNSIGNED
             config_spy.assert_called_once()
@@ -193,7 +207,9 @@ class TestUnsignedS3Access(unittest.TestCase):
         """Test S3Store correctly accesses NOAA buckets."""
         # Setup
         mock_session_class.return_value = self.session_mock
-        self.s3_client_mock.head_object = AsyncMock(return_value={"ContentLength": 12345})
+        self.s3_client_mock.head_object = AsyncMock(
+            return_value={"ContentLength": 12345}
+        )
 
         # Test both GOES-16 and GOES-18
         satellites = [SatellitePattern.GOES_16, SatellitePattern.GOES_18]
@@ -234,8 +250,12 @@ def async_test(coro):
 
 # Apply async_test decorator to async test methods
 for name in dir(TestUnsignedS3Access):
-    if name.startswith("test_") and asyncio.iscoroutinefunction(getattr(TestUnsignedS3Access, name)):
-        setattr(TestUnsignedS3Access, name, async_test(getattr(TestUnsignedS3Access, name)))
+    if name.startswith("test_") and asyncio.iscoroutinefunction(
+        getattr(TestUnsignedS3Access, name)
+    ):
+        setattr(
+            TestUnsignedS3Access, name, async_test(getattr(TestUnsignedS3Access, name))
+        )
 
 
 if __name__ == "__main__":

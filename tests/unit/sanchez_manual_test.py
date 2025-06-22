@@ -70,7 +70,9 @@ def test_basic_call(input_path, res_km=4):
     logger.info(f"Running basic test: {' '.join(cmd)}")
 
     try:
-        result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
+        result = subprocess.run(
+            cmd, check=False, capture_output=True, text=True, cwd=binary_dir
+        )
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
@@ -123,7 +125,9 @@ def test_with_verbose(input_path, res_km=4):
     logger.info(f"Running verbose test: {' '.join(cmd)}")
 
     try:
-        result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
+        result = subprocess.run(
+            cmd, check=False, capture_output=True, text=True, cwd=binary_dir
+        )
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
@@ -176,7 +180,9 @@ def test_with_v_flag(input_path, res_km=4):
     logger.info(f"Running -v test: {' '.join(cmd)}")
 
     try:
-        result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
+        result = subprocess.run(
+            cmd, check=False, capture_output=True, text=True, cwd=binary_dir
+        )
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
@@ -237,7 +243,9 @@ def test_with_renamed_input(input_path, res_km=4):
     logger.info(f"Running renamed input test: {' '.join(cmd)}")
 
     try:
-        result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
+        result = subprocess.run(
+            cmd, check=False, capture_output=True, text=True, cwd=binary_dir
+        )
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
@@ -283,7 +291,9 @@ def test_sanchez_help():
     logger.info(f"Running help command: {' '.join(cmd)}")
 
     try:
-        result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
+        result = subprocess.run(
+            cmd, check=False, capture_output=True, text=True, cwd=binary_dir
+        )
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
@@ -306,9 +316,15 @@ def test_sanchez_help():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Test Sanchez binary with different options")
-    parser.add_argument("input_file", help="Path to input image file to test with Sanchez")
-    parser.add_argument("--res", type=int, default=4, help="Resolution in km (default: 4)")
+    parser = argparse.ArgumentParser(
+        description="Test Sanchez binary with different options"
+    )
+    parser.add_argument(
+        "input_file", help="Path to input image file to test with Sanchez"
+    )
+    parser.add_argument(
+        "--res", type=int, default=4, help="Resolution in km (default: 4)"
+    )
 
     args = parser.parse_args()
 

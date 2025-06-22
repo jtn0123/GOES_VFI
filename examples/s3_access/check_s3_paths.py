@@ -7,7 +7,9 @@ from botocore import UNSIGNED
 from botocore.config import Config
 
 # Configure S3 client with anonymous access
-s3_config = Config(signature_version=UNSIGNED, region_name="us - east - 1", retries={"max_attempts": 3})
+s3_config = Config(
+    signature_version=UNSIGNED, region_name="us - east - 1", retries={"max_attempts": 3}
+)
 
 s3 = boto3.client("s3", config=s3_config)
 
@@ -45,7 +47,9 @@ def list_recent_dates(bucket, product, max_keys=200):
 
 print(f"Checking recent dates for {bucket}/{product}:")
 
-result = s3.list_objects_v2(Bucket=bucket, Prefix=f"{product}/", MaxKeys=max_keys, Delimiter="/")
+result = s3.list_objects_v2(
+    Bucket=bucket, Prefix=f"{product}/", MaxKeys=max_keys, Delimiter="/"
+)
 
 if "CommonPrefixes" in result:
     pass
@@ -59,7 +63,9 @@ latest_year = sorted(years)[-1]
 print(f"Latest year: {latest_year}")
 
 # Check days in the latest year
-day_result = s3.list_objects_v2(Bucket=bucket, Prefix=f"{latest_year}/", MaxKeys=max_keys, Delimiter="/")
+day_result = s3.list_objects_v2(
+    Bucket=bucket, Prefix=f"{latest_year}/", MaxKeys=max_keys, Delimiter="/"
+)
 
 if "CommonPrefixes" in day_result:
     pass

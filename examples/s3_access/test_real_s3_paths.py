@@ -129,9 +129,7 @@ def to_s3_key(
 
     if use_wildcard:
         # Use wildcard pattern for production
-        pattern = (
-            f"OR_ABI-L1b-{product_type}-M6C{band_str}_{satellite_code}_s{year}{doy_str}{hour}{minute_str}*_e*_c*.nc"
-        )
+        pattern = f"OR_ABI-L1b-{product_type}-M6C{band_str}_{satellite_code}_s{year}{doy_str}{hour}{minute_str}*_e*_c*.nc"
     else:
         # Use concrete filename with exact start second
         pattern = f"OR_ABI-L1b-{product_type}-M6C{band_str}_{satellite_code}_s{year}{doy_str}{hour}{minute_str}{start_sec:02d}_e*_c*.nc"
@@ -263,7 +261,9 @@ async def test_scan_times(
         scan_minutes = RADC_MINUTES
         logger.info("Using RadC scan minutes: %s", scan_minutes)
     elif product_type == "RadM":
-        scan_minutes = RADM_MINUTES[:10]  # Use only first 10 minutes for RadM to avoid too many tests
+        scan_minutes = RADM_MINUTES[
+            :10
+        ]  # Use only first 10 minutes for RadM to avoid too many tests
         logger.info("Using first 10 RadM scan minutes: %s", scan_minutes)
     else:
         logger.error("Invalid product type: %s", product_type)
@@ -273,8 +273,12 @@ async def test_scan_times(
     start_time = date - timedelta(hours=time_window_hours // 2)
     end_time = date + timedelta(hours=time_window_hours // 2)
 
-    logger.info(f"Testing scan times from {start_time.isoformat()} to {end_time.isoformat()}")
-    logger.info(f"Satellite: {satellite} ({satellite_code}), Product: {product_type}, Band: {band}")
+    logger.info(
+        f"Testing scan times from {start_time.isoformat()} to {end_time.isoformat()}"
+    )
+    logger.info(
+        f"Satellite: {satellite} ({satellite_code}), Product: {product_type}, Band: {band}"
+    )
 
     # Test each hour in the time range
     current_time = start_time.replace(minute=0, second=0, microsecond=0)
@@ -287,7 +291,9 @@ async def test_scan_times(
             test_time = current_time.replace(minute=minute)
 
             # Generate S3 key with wildcard
-            s3_key_prefix = to_s3_key(test_time, satellite_code, product_type, band, use_wildcard=True)
+            s3_key_prefix = to_s3_key(
+                test_time, satellite_code, product_type, band, use_wildcard=True
+            )
 
             # Split into directory prefix and filename pattern for listing
             if "*" in s3_key_prefix:
@@ -301,12 +307,16 @@ async def test_scan_times(
 
             if objects:
                 total_found += 1
-                logger.info(f"✅ Found {len(objects)} objects for {test_time.isoformat()}")
+                logger.info(
+                    f"✅ Found {len(objects)} objects for {test_time.isoformat()}"
+                )
 
                 # Print the first few object keys
                 for i, obj in enumerate(objects[:3]):
                     logger.info(f"  {i+1}. {obj['Key']}")
-                    logger.info(f"     Last modified: {obj['LastModified'].isoformat()}")
+                    logger.info(
+                        f"     Last modified: {obj['LastModified'].isoformat()}"
+                    )
                     logger.info(f"     Size: {obj['Size']} bytes")
             else:
                 logger.info("❌ No objects found for %s", test_time.isoformat())
@@ -356,7 +366,9 @@ async def test_exact_timestamps(
         scan_minutes = RADC_MINUTES
         logger.info("Using RadC scan minutes: %s", scan_minutes)
     elif product_type == "RadM":
-        scan_minutes = RADM_MINUTES[:5]  # Use only first 5 minutes for RadM to avoid too many tests
+        scan_minutes = RADM_MINUTES[
+            :5
+        ]  # Use only first 5 minutes for RadM to avoid too many tests
         logger.info("Using first 5 RadM scan minutes: %s", scan_minutes)
     else:
         logger.error("Invalid product type: %s", product_type)
@@ -366,15 +378,21 @@ async def test_exact_timestamps(
     hour = date.hour
     base_date = date.replace(minute=0, second=0, microsecond=0)
 
-    logger.info("Testing exact timestamps for %s (hour %s)", base_date.isoformat(), hour)
-    logger.info(f"Satellite: {satellite} ({satellite_code}), Product: {product_type}, Band: {band}")
+    logger.info(
+        "Testing exact timestamps for %s (hour %s)", base_date.isoformat(), hour
+    )
+    logger.info(
+        f"Satellite: {satellite} ({satellite_code}), Product: {product_type}, Band: {band}"
+    )
 
     # Test each scan minute for this hour
     for minute in scan_minutes:
         test_time = base_date.replace(minute=minute)
 
         # Generate S3 key with wildcard for listing
-        s3_key_prefix = to_s3_key(test_time, satellite_code, product_type, band, use_wildcard=True)
+        s3_key_prefix = to_s3_key(
+            test_time, satellite_code, product_type, band, use_wildcard=True
+        )
 
         # Split into directory prefix and filename pattern for listing
         if "*" in s3_key_prefix:
@@ -386,7 +404,9 @@ async def test_exact_timestamps(
         objects = await list_s3_objects(bucket, prefix, limit=5)
 
         if objects:
-            logger.info("✅ Found %s objects for %s", len(objects), test_time.isoformat())
+            logger.info(
+                "✅ Found %s objects for %s", len(objects), test_time.isoformat()
+            )
 
             # Print all object keys and download if requested
             for i, obj in enumerate(objects):
@@ -400,7 +420,12 @@ async def test_exact_timestamps(
 
                 if download:
                     # Create output directory based on date components
-                    output_dir = Path("downloaded_files") / f"{date.year}" / f"{date.month:02d}" / f"{date.day:02d}"
+                    output_dir = (
+                        Path("downloaded_files")
+                        / f"{date.year}"
+                        / f"{date.month:02d}"
+                        / f"{date.day:02d}"
+                    )
                     output_path = output_dir / Path(key).name
 
                     # Download the file
@@ -445,7 +470,9 @@ async def test_band_wildcards(
         test_date = date.replace(minute=0, second=0, microsecond=0)
 
     logger.info("Testing band wildcards for %s", test_date.isoformat())
-    logger.info("Satellite: %s (%s), Product: %s", satellite, satellite_code, product_type)
+    logger.info(
+        "Satellite: %s (%s), Product: %s", satellite, satellite_code, product_type
+    )
 
     # Get year, day of year, and hour for constructing prefix
     year = test_date.year
@@ -498,7 +525,9 @@ async def test_band_wildcards(
     all_bands = set(range(1, 17))  # Bands 1-16
     missing_bands = all_bands - set(sorted_bands)
     if missing_bands:
-        logger.info(f"Missing bands: {', '.join(str(b) for b in sorted(missing_bands))}")
+        logger.info(
+            f"Missing bands: {', '.join(str(b) for b in sorted(missing_bands))}"
+        )
     else:
         logger.info("All bands (1-16) are available for this timestamp")
 
@@ -506,7 +535,9 @@ async def test_band_wildcards(
 async def main():
     """Main entry point for the script."""
     parser = argparse.ArgumentParser(description="Test GOES S3 file access")
-    parser.add_argument("--date", type=str, help="Date to test (YYYY-MM-DD or YYYY-MM-DD HH:MM)")
+    parser.add_argument(
+        "--date", type=str, help="Date to test (YYYY-MM-DD or YYYY-MM-DD HH:MM)"
+    )
     parser.add_argument(
         "--satellite",
         choices=["GOES_16", "GOES_18"],
@@ -519,7 +550,9 @@ async def main():
         default="RadC",
         help="Product type to test",
     )
-    parser.add_argument("--band", type=int, default=13, help="Band number to test (1-16)")
+    parser.add_argument(
+        "--band", type=int, default=13, help="Band number to test (1-16)"
+    )
     parser.add_argument("--download", action="store_true", help="Download found files")
     parser.add_argument(
         "--test-type",
@@ -555,7 +588,9 @@ async def main():
         await test_scan_times(date, args.satellite, args.product, args.band)
 
     if args.test_type == "exact" or args.test_type == "all":
-        await test_exact_timestamps(date, args.satellite, args.product, args.band, args.download)
+        await test_exact_timestamps(
+            date, args.satellite, args.product, args.band, args.download
+        )
 
     if args.test_type == "bands" or args.test_type == "all":
         await test_band_wildcards(date, args.satellite, args.product)

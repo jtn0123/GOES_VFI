@@ -156,7 +156,9 @@ class ThreadLocalCacheDB:
         result = await db.get_timestamps(satellite, start_time, end_time)
         return list(result)  # Convert set to list
 
-    async def timestamp_exists(self, timestamp: datetime, satellite: SatellitePattern) -> bool:
+    async def timestamp_exists(
+        self, timestamp: datetime, satellite: SatellitePattern
+    ) -> bool:
         """Check if timestamp exists via thread-local connection."""
         db = self.get_db()
         return await db.timestamp_exists(timestamp, satellite)

@@ -27,7 +27,9 @@ class DateSorterTab(QWidget):
     directory_selected = pyqtSignal(str)  # Signal emitted when a directory is selected
 
     # Modified __init__ to accept a ViewModel instance
-    def __init__(self, view_model: DateSorterViewModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self, view_model: DateSorterViewModel, parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent)
 
         if not isinstance(view_model, DateSorterViewModel):
@@ -43,7 +45,9 @@ class DateSorterTab(QWidget):
 
         # Source Group
         source_group = QGroupBox(self.tr("Source"))
-        source_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        source_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         source_layout = QGridLayout()
         source_layout.setContentsMargins(10, 15, 10, 10)
         source_layout.setSpacing(8)
@@ -61,7 +65,9 @@ class DateSorterTab(QWidget):
 
         # Options Group
         options_group = QGroupBox(self.tr("Analysis Options"))
-        options_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        options_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         options_layout = QGridLayout()
         options_layout.setContentsMargins(10, 15, 10, 10)
         options_layout.setSpacing(8)
@@ -77,7 +83,9 @@ class DateSorterTab(QWidget):
 
         # Actions Group
         actions_group = QGroupBox(self.tr("Actions"))
-        actions_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        actions_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         actions_layout = QVBoxLayout()
         actions_layout.setContentsMargins(10, 15, 10, 10)
         actions_layout.setSpacing(8)
@@ -143,12 +151,16 @@ class DateSorterTab(QWidget):
         else:
             # This case should ideally be handled by the ViewModel's can_execute
             # but adding a fallback message here for clarity.
-            QMessageBox.warning(self, "Action Not Allowed", "Cannot start scan at this time.")
+            QMessageBox.warning(
+                self, "Action Not Allowed", "Cannot start scan at this time."
+            )
 
     def _update_ui(self) -> None:
         """Updates the UI elements based on the ViewModel's state."""
         self.source_line_edit.setText(self.view_model.source_directory)
-        self.status_text.setPlainText(self.view_model.status_message)  # Use setPlainText to replace content
+        self.status_text.setPlainText(
+            self.view_model.status_message
+        )  # Use setPlainText to replace content
         self.progress_bar.setValue(int(self.view_model.progress_percentage))
         self.scan_button.setEnabled(self.view_model.can_start_sorting)
 

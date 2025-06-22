@@ -47,7 +47,9 @@ class CombinedIntegrityAndImageryTab(QWidget):
     itemSelected = pyqtSignal(MissingTimestamp)
 
     def __init__(
-        self, view_model: Optional[EnhancedIntegrityCheckViewModel] = None, parent: Optional[QWidget] = None
+        self,
+        view_model: Optional[EnhancedIntegrityCheckViewModel] = None,
+        parent: Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
         self.view_model = view_model

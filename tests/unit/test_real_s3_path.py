@@ -52,7 +52,9 @@ def _generate_s3_patterns(timestamp, satellite_pattern, dest_dir):
     results = {}
 
     for product_type in product_types:
-        LOGGER.info(f"Testing {product_type} for {satellite_pattern.name} at {timestamp.isoformat()}")
+        LOGGER.info(
+            f"Testing {product_type} for {satellite_pattern.name} at {timestamp.isoformat()}"
+        )
 
         # Generate the S3 bucket name
         sat_code = SATELLITE_CODES.get(satellite_pattern, "G16")
@@ -81,8 +83,12 @@ def _generate_s3_patterns(timestamp, satellite_pattern, dest_dir):
             attempt["dest_path"] = str(dest_path)
 
             # Validate the pattern makes sense
-            assert bucket.startswith("noaa-goes"), f"Bucket should start with noaa-goes: {bucket}"
-            assert str(satellite_number) in bucket, f"Bucket should contain satellite number: {bucket}"
+            assert bucket.startswith(
+                "noaa-goes"
+            ), f"Bucket should start with noaa-goes: {bucket}"
+            assert (
+                str(satellite_number) in bucket
+            ), f"Bucket should contain satellite number: {bucket}"
             assert product_type in key, f"Key should contain product type: {key}"
             assert str(timestamp.year) in key, f"Key should contain year: {key}"
 
@@ -100,12 +106,18 @@ def _generate_s3_patterns(timestamp, satellite_pattern, dest_dir):
 
     for product_type, result in results.items():
         assert result["success"], f"Product type {product_type} should succeed"
-        assert len(result["attempts"]) > 0, f"Product type {product_type} should have at least one attempt"
+        assert (
+            len(result["attempts"]) > 0
+        ), f"Product type {product_type} should have at least one attempt"
 
         # Verify bucket names are correct
         for attempt in result["attempts"]:
-            assert "noaa-goes" in attempt["bucket"], f"Invalid bucket: {attempt['bucket']}"
-            assert product_type in attempt["key_pattern"], f"Product type not in key pattern: {attempt['key_pattern']}"
+            assert (
+                "noaa-goes" in attempt["bucket"]
+            ), f"Invalid bucket: {attempt['bucket']}"
+            assert (
+                product_type in attempt["key_pattern"]
+            ), f"Product type not in key pattern: {attempt['key_pattern']}"
 
     return results
 
@@ -119,7 +131,9 @@ def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
 
     for product_type, result in results.items():
         assert result["success"], f"Product type {product_type} should succeed"
-        assert len(result["attempts"]) > 0, f"Product type {product_type} should have at least one attempt"
+        assert (
+            len(result["attempts"]) > 0
+        ), f"Product type {product_type} should have at least one attempt"
 
 
 def test_multiple_satellites(tmp_path):
@@ -136,7 +150,9 @@ def test_multiple_satellites(tmp_path):
         all_results[satellite.name] = results
 
         # Verify results
-        assert len(results) == 3, f"Should test all 3 product types for {satellite.name}"
+        assert (
+            len(results) == 3
+        ), f"Should test all 3 product types for {satellite.name}"
 
         for product_type, result in results.items():
             assert result["success"], f"{satellite.name} {product_type} should succeed"
@@ -151,4 +167,6 @@ def test_multiple_satellites(tmp_path):
     goes18_bucket = all_results["GOES_18"]["RadF"]["attempts"][0]["bucket"]
     assert "16" in goes16_bucket, f"GOES-16 bucket should contain '16': {goes16_bucket}"
     assert "18" in goes18_bucket, f"GOES-18 bucket should contain '18': {goes18_bucket}"
-    assert goes16_bucket != goes18_bucket, "Different satellites should have different buckets"
+    assert (
+        goes16_bucket != goes18_bucket
+    ), "Different satellites should have different buckets"

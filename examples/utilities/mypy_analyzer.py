@@ -84,7 +84,9 @@ files_by_error_count = sorted(
 return dict(errors_by_file), dict(errors_by_category), files_by_error_count
 
 
-def create_report(errors_by_file: Dict, errors_by_category: Dict, files_by_error_count: List) -> str:
+def create_report(
+    errors_by_file: Dict, errors_by_category: Dict, files_by_error_count: List
+) -> str:
     """Create a summary report of mypy errors."""
 
 
@@ -102,7 +104,9 @@ report.append("")
 
 # Errors by category
 report.append("## Errors by Category")
-for category, errors in sorted(errors_by_category.items(), key=lambda x: len(x[1]), reverse=True):
+for category, errors in sorted(
+    errors_by_category.items(), key=lambda x: len(x[1]), reverse=True
+):
     description = ERROR_CATEGORIES.get(category, "Other issues")
 report.append(f"- {category} ({len(errors)}): {description}")
 report.append("")

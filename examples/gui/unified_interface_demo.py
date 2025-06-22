@@ -30,7 +30,9 @@ from PyQt6.QtWidgets import (
 )
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Create stub implementations for missing components
@@ -116,7 +118,9 @@ def create_sample_image(channel=13, size=(600, 400), enhance=False):
             if enhance:
                 # Enhanced IR (colorized)
                 if y < size[1] / 3:
-                    draw.line([(0, y), (size[0], y)], fill=(220, 100 - color_value // 2, 0))
+                    draw.line(
+                        [(0, y), (size[0], y)], fill=(220, 100 - color_value // 2, 0)
+                    )
                 else:
                     draw.line(
                         [(0, y), (size[0], y)],
@@ -282,10 +286,14 @@ class TestWindow(QMainWindow):
         scan_btn.clicked.connect(lambda: self.add_sample_preview(13, "Integrity Scan"))
 
         verify_btn = QPushButton("Verify Files")
-        verify_btn.clicked.connect(lambda: self.add_sample_preview(8, "File Verification"))
+        verify_btn.clicked.connect(
+            lambda: self.add_sample_preview(8, "File Verification")
+        )
 
         reconcile_btn = QPushButton("Reconcile Files")
-        reconcile_btn.clicked.connect(lambda: self.add_sample_preview(14, "File Reconciliation"))
+        reconcile_btn.clicked.connect(
+            lambda: self.add_sample_preview(14, "File Reconciliation")
+        )
 
         # Add to layout
         integrity_layout.addWidget(scan_btn)
@@ -305,13 +313,19 @@ class TestWindow(QMainWindow):
 
         # Add imagery action buttons
         preview_btn = QPushButton("Preview IR")
-        preview_btn.clicked.connect(lambda: self.add_sample_preview(13, "IR Preview", enhanced=True))
+        preview_btn.clicked.connect(
+            lambda: self.add_sample_preview(13, "IR Preview", enhanced=True)
+        )
 
         wv_btn = QPushButton("Preview Water Vapor")
-        wv_btn.clicked.connect(lambda: self.add_sample_preview(8, "Water Vapor", enhanced=True))
+        wv_btn.clicked.connect(
+            lambda: self.add_sample_preview(8, "Water Vapor", enhanced=True)
+        )
 
         true_color_btn = QPushButton("Preview True Color")
-        true_color_btn.clicked.connect(lambda: self.add_sample_preview(100, "True Color"))
+        true_color_btn.clicked.connect(
+            lambda: self.add_sample_preview(100, "True Color")
+        )
 
         # Add to layout
         imagery_layout.addWidget(preview_btn)
@@ -394,7 +408,9 @@ class TestWindow(QMainWindow):
             self.settings_panel.show_section("visualization", True)
             self.settings_panel.show_section("advanced", True)
 
-        self.statusBar().showMessage(f"Switched to {'File Integrity' if index == 0 else 'GOES Imagery'} tab")
+        self.statusBar().showMessage(
+            f"Switched to {'File Integrity' if index == 0 else 'GOES Imagery'} tab"
+        )
 
     def add_sample_preview(self, channel, source, enhanced=False):
         """Add a sample preview to the shared preview panel."""
@@ -433,7 +449,9 @@ class TestWindow(QMainWindow):
             100,
             lambda: self.add_sample_preview(8, "Water Vapor Example", enhanced=True),
         )
-        QTimer.singleShot(200, lambda: self.add_sample_preview(100, "True Color Example"))
+        QTimer.singleShot(
+            200, lambda: self.add_sample_preview(100, "True Color Example")
+        )
 
     def on_preview_selected(self, key, metadata):
         """Handle preview selection in the preview panel."""
