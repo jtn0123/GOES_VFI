@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from PyQt6.QtCore import QByteArray, QRect, Qt
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import QApplication, QDialog, QFileDialog
+from PyQt6.QtWidgets import QApplication, QDialog
 
 # Import the class to be tested and related utilities
 from goesvfi.gui import ClickableLabel, MainWindow
@@ -60,21 +60,30 @@ def mock_worker(mocker):
 def mock_dialogs():
     """Mocks QFileDialog and QMessageBox."""
     with (
+        # Patch QFileDialog methods in both gui.py and main_tab.py
         patch(
             "goesvfi.gui.QFileDialog.getExistingDirectory", return_value="/fake/input"
-        ),
+        ) as mock_get_existing_dir,
+        patch(
+            "goesvfi.gui_tabs.main_tab.QFileDialog.getExistingDirectory",
+            return_value="/fake/input",
+        ) as mock_get_existing_dir_tab,
         patch(
             "goesvfi.gui.QFileDialog.getSaveFileName",
             return_value=("/fake/output.mp4", "Video Files (*.mp4 *.mov *.mkv)"),
-        ),
+        ) as mock_get_save_file,
+        patch(
+            "goesvfi.gui_tabs.main_tab.QFileDialog.getSaveFileName",
+            return_value=("/fake/output.mp4", "Video Files (*.mp4 *.mov *.mkv)"),
+        ) as mock_get_save_file_tab,
         patch("goesvfi.gui.QMessageBox.critical") as mock_critical,
         patch("goesvfi.gui.QMessageBox.information") as mock_info,
         patch("goesvfi.gui.QMessageBox.warning") as mock_warning,
         patch("goesvfi.gui.QMessageBox.question") as mock_question,
     ):  # Mock question for closeEvent test
         yield {
-            "getExistingDirectory": QFileDialog.getExistingDirectory,
-            "getSaveFileName": QFileDialog.getSaveFileName,
+            "getExistingDirectory": mock_get_existing_dir_tab,  # Use the main_tab version since that's what tests check
+            "getSaveFileName": mock_get_save_file_tab,  # Use the main_tab version since that's what tests check
             "critical": mock_critical,
             "information": mock_info,
             "warning": mock_warning,

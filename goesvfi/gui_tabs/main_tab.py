@@ -1880,7 +1880,9 @@ class MainTab(QWidget):
 
             # Fallback to direct method call if needed
             if hasattr(main_window, "_handle_processing"):
-                LOGGER.debug("Calling main_window._handle_processing directly as fallback")
+                LOGGER.debug(
+                    "Calling main_window._handle_processing directly as fallback"
+                )
                 main_window._handle_processing(args)
 
             LOGGER.info("Processing started successfully")
