@@ -67,10 +67,13 @@ GOES-VFI is structured using modern software architecture patterns to maximize m
     * The application looks for `rife-cli` in `goesvfi/bin/rife-cli` relative to the package installation.
     * The model files (`flownet.bin`, `flownet.param`) need to be placed within a model directory (e.g., `goesvfi/models/rife-v4.6/`). The GUI auto-detects folders named `rife-*` in `goesvfi/models/`.
     * *Ensure you have obtained the RIFE v4.6 ncnn executable and model files and placed them correctly.*
-* **Development Tools:** For contributors, please install the following tools in your virtual environment:
-    * [`black`](https://black.readthedocs.io/en/stable/) (code formatter)
-    * [`flake8`](https://flake8.pycqa.org/en/latest/) (linter)
-    * Install with: `pip install black flake8`
+* **Development Tools:** For contributors, the project uses pre-commit hooks and various linters:
+    * [`black`](https://black.readthedocs.io/en/stable/) - Code formatter (line length: 88)
+    * [`flake8`](https://flake8.pycqa.org/en/latest/) - Style guide enforcement
+    * [`isort`](https://pycqa.github.io/isort/) - Import statement sorting
+    * [`mypy`](http://mypy-lang.org/) - Static type checking
+    * [`pylint`](https://pylint.org/) - Advanced code analysis
+    * Install all with: `pip install -r requirements-dev.txt` (if available) or individually
 
 ## Installation
 
@@ -206,7 +209,7 @@ python -m examples.download.download_band13
 
 ### Testing
 
-The project uses pytest for unit testing, integration testing, and GUI testing. Tests are organized in the `tests/` directory with subdirectories for different types of tests:
+The project uses pytest for unit testing, integration testing, and GUI testing. The test suite includes **827+ tests across 87+ test files**. Tests are organized in the `tests/` directory with subdirectories for different types of tests:
 
 * **Unit Tests:** Tests for individual components and modules
 * **Integration Tests:** Tests for interactions between components
@@ -223,17 +226,46 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Then use one of the test runner scripts:
+#### Test Runner Scripts
 
 ```bash
-# Run all working tests with mocks
+# Run all tests (recommended after fixes)
+./run_all_tests.py
+# Options: --debug-mode (verbose output), --parallel 4 (faster execution)
+
+# Run all working tests with mocks (reliable subset)
 ./run_working_tests_with_mocks.py
 
-# Run non-GUI tests
+# Run non-GUI tests (avoids segmentation faults)
 ./run_non_gui_tests.py
 
-# Run all tests
-./run_all_tests.py
+# Run specific test file
+python -m pytest tests/unit/test_specific.py -v
+
+# Run tests with timeout (useful for hanging tests)
+python -m pytest tests/unit/test_file.py -v --timeout=30
+```
+
+#### Linting and Code Quality
+
+The project maintains high code quality standards using multiple linters:
+
+```bash
+# Run all linters
+python run_linters.py
+
+# Run specific linters
+python run_linters.py --flake8-only    # Style checking
+python run_linters.py --black-only     # Code formatting check
+python run_linters.py --mypy-only      # Type checking
+python run_linters.py --pylint-only    # Advanced static analysis
+
+# Apply formatting automatically
+python run_linters.py --format
+
+# Type checking
+python -m run_mypy_checks         # Standard mode
+python -m run_mypy_checks --strict # Strict mode
 ```
 
 ## Contributing
@@ -255,12 +287,22 @@ Contributions are welcome! Please feel free to submit pull requests or open issu
   - Add unit tests to `tests/unit/`, integration tests to `tests/integration/`, and GUI tests to `tests/gui/`
   - Follow existing patterns for both examples and tests
   - Use the test utilities in `tests/utils/` for common testing functionality
-* **Code Style:**
-  Before submitting changes, run the following commands to ensure code quality and consistency:
+* **Code Style and Pre-commit Hooks:**
+  The project uses pre-commit hooks to maintain code quality. **Never skip pre-commit hooks with --no-verify**.
+
+  Before submitting changes:
     ```bash
-    black .
-    flake8 .
-    mypy .  # For type checking
+    # Run all linters
+    python run_linters.py
+
+    # Or run individually
+    black .           # Format code
+    isort .           # Sort imports
+    flake8 .          # Check style
+    mypy .            # Check types
+
+    # Let pre-commit hooks run on commit
+    git commit -m "Your message"  # DO NOT use --no-verify
     ```
 * **Type Safety:**
   - Include type annotations for all function parameters and return values

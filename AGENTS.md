@@ -3,6 +3,13 @@
 This repository provides a PyQt6 application named **GOES-VFI** for interpolating satellite imagery.
 The following guidance applies when using AI assistants (Claude, Codex, and other automated tools) with this repository.
 
+## Quick Context
+GOES-VFI processes GOES satellite imagery (Band 13, 10.3 μm infrared) to create smooth timelapse videos using:
+- **RIFE v4.6**: AI-based video frame interpolation
+- **Sanchez**: False color processing for grayscale satellite images
+- **FFmpeg**: Video encoding and additional interpolation
+- **PyQt6**: Cross-platform GUI interface
+
 ## Environment Setup
 - Requires **Python 3.13**.
 - Always create and activate a virtual environment before running commands:
@@ -105,8 +112,70 @@ When verifying all tests pass, use this systematic approach:
 - Use the MVVM architecture and existing logging/config utilities.
 - Follow the guidelines in `CLAUDE.md` for AI-assisted development.
 
+## AI Agent Behavioral Guidelines
+
+### Response Style
+1. **Be concise** - Provide direct answers without unnecessary preamble
+2. **Show don't tell** - When asked to do something, do it rather than explaining how you would do it
+3. **Respect user preferences** - If user says "don't use X" or gives specific instructions, follow them exactly
+4. **One task at a time** - Focus on the immediate request before suggesting next steps
+
+### Code Modification Best Practices
+1. **Always read before editing** - Use the Read tool before Edit/Write tools
+2. **Prefer Edit over Write** - Edit existing files rather than creating new ones
+3. **Check for existing patterns** - Look at neighboring files for conventions
+4. **Verify imports** - Never assume a library is available; check requirements.txt or imports
+5. **Follow existing style** - Match the code style, naming conventions, and patterns
+6. **Minimize file creation** - Don't create documentation files unless explicitly requested
+
+### Working with the Codebase
+1. **GOES Satellite Data:**
+   - GOES-16 (East) and GOES-18 (West) satellites
+   - Band 13 (10.3 μm) is the primary infrared channel used
+   - Data is stored in NetCDF (.nc) format from AWS S3
+   - Processed to PNG format for interpolation
+
+2. **Key Components:**
+   - **GUI**: PyQt6-based interface with tabs for different functions
+   - **Pipeline**: Video frame interpolation using RIFE
+   - **Integrity Check**: Verifies and downloads missing satellite imagery
+   - **Sanchez**: Colors grayscale satellite images
+
+3. **Common Tasks:**
+   - When fixing tests: Run in batches, mock network dependencies
+   - When adding features: Create example scripts first in `/examples`
+   - When debugging: Use `--debug` flag and check logs
+   - When committing: Let pre-commit hooks run and fix issues
+
+### Error Handling Patterns
+1. **Network Operations:**
+   ```python
+   from goesvfi.integrity_check.remote.base import RemoteStoreError
+   # Always handle RemoteStoreError for S3/CDN operations
+   ```
+
+2. **GUI Operations:**
+   ```python
+   from PyQt6.QtCore import QCoreApplication
+   # Use QCoreApplication.processEvents() to prevent UI freezing
+   ```
+
+3. **File Operations:**
+   ```python
+   from pathlib import Path
+   # Always use Path objects, not string paths
+   ```
+
+### Testing Philosophy
+- **Test everything** - No skipped tests, all must pass or fail
+- **Mock external services** - S3, CDN, network calls
+- **Test in isolation** - Each test should be independent
+- **Use fixtures** - For common setup/teardown operations
+
 ## Important Notes
 - **Never skip tests** - if a test is skipped, it provides no value
 - **Never skip pre-commit hooks** - they maintain code quality
 - **Test incrementally** - run tests in batches when debugging issues
 - **Mock external dependencies** - especially network services like S3/CDN
+- **Respect user feedback** - If user says "don't use X", follow their guidance
+- **Be concise** - Keep responses focused on the task at hand
