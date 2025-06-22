@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-# TODO: colorlog wrapper
-
-"""goesvfi.utils.log – colourised logger helper"""
+"""Colourised logging helper using ``colorlog`` when available."""
 
 import logging
 import sys

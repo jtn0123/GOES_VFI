@@ -12,9 +12,9 @@ from typing import Any, Callable, Iterable, List, Optional
 
 import numpy as np
 
-from goesvfi.utils.log import get_logger
+from goesvfi.utils import log
 
-LOGGER = get_logger(__name__)
+LOGGER = log.get_logger(__name__)
 
 # Try to import psutil for memory monitoring
 try:
