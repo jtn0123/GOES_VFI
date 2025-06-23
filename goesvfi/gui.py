@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Optional, Tuple  # noqa: F401
 
 import numpy as np
 from PIL import Image
-from PyQt6.QtCore import QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
+from PyQt6.QtCore import QRect, QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
 from PyQt6.QtGui import (
     QCloseEvent,
     QColor,
@@ -324,6 +324,10 @@ class MainWindow(QWidget):
         # Instantiate FFmpegSettingsTab, passing required widgets and signals
         self.ffmpeg_settings_tab: FFmpegSettingsTab  # <-- ADDED TYPE HINT
         self.ffmpeg_settings_tab = FFmpegSettingsTab(parent=self)
+        # Set initial state based on current encoder (RIFE by default)
+        # This ensures the FFmpeg tab is disabled initially when RIFE is selected
+        self.ffmpeg_settings_tab.set_enabled(self.current_encoder == "FFmpeg")
+
         # Assuming ModelLibraryTab needs main_view_model
         self.model_library_tab = ModelLibraryTab(parent=self)
         # Pass ViewModels to Existing Tabs
@@ -479,8 +483,18 @@ class MainWindow(QWidget):
         self._connect_model_combo()  # Assuming this connects main tab's model combo - verify if moved   # noqa: B950
         self.tab_widget.currentChanged.connect(self._on_tab_changed)
         self.main_view_model.status_updated.connect(self.status_bar.showMessage)
+        # Also connect the processing view model's status updates
+        self.main_view_model.processing_vm.status_updated.connect(
+            self.main_view_model.update_global_status_from_child
+        )
         self.file_sorter_tab.directory_selected.connect(self._set_in_dir_from_sorter)
         self.date_sorter_tab.directory_selected.connect(self._set_in_dir_from_sorter)
+
+        # Connect encoder combo signal here to ensure proper timing
+        # This will handle FFmpeg tab enable/disable state
+        self.main_tab.encoder_combo.currentTextChanged.connect(
+            self._update_rife_options_state
+        )
         # Connect the MainTab's processing_started signal to our handler
         try:
             LOGGER.debug(
@@ -922,9 +936,18 @@ class MainWindow(QWidget):
                         return
 
                     # Now use the prepared pixmap (original or processed from preview label)
-                    dialog = CropDialog(pixmap_for_dialog, self.current_crop_rect, self)
+                    from goesvfi.utils.gui_helpers import CropSelectionDialog
+
+                    # Convert tuple to QRect if needed
+                    initial_rect = None
+                    if self.current_crop_rect:
+                        initial_rect = QRect(*self.current_crop_rect)
+
+                    dialog = CropSelectionDialog(
+                        pixmap_for_dialog.toImage(), initial_rect, self
+                    )
                     if dialog.exec() == QDialog.DialogCode.Accepted:
-                        crop_rect = dialog.getRect()
+                        crop_rect = dialog.get_selected_rect()
                         # Store as (x, y, w, h) tuple
                         if crop_rect is not None:
                             self.current_crop_rect = (
@@ -1972,6 +1995,7 @@ class MainWindow(QWidget):
         # Update UI state
         LOGGER.debug("Updating UI state: setting is_processing = True")
         self.is_processing = True
+        self._set_processing_state(True)  # Update UI to processing state
 
         # If a previous worker is still running, terminate it
         if self.vfi_worker and self.vfi_worker.isRunning():
@@ -2109,6 +2133,7 @@ class MainWindow(QWidget):
         except Exception as e:
             LOGGER.exception("Failed to create VfiWorker: %s", e)
             self.is_processing = False
+            self._set_processing_state(False)  # Reset UI state
 
             # Show error message to user
             QMessageBox.critical(
@@ -2157,6 +2182,7 @@ class MainWindow(QWidget):
         """
         LOGGER.info("Processing finished successfully. Output: %s", output_path)
         self.is_processing = False
+        self._set_processing_state(False)  # Reset UI state
 
         # Update the view model
         self.main_view_model.processing_vm.finish_processing(
@@ -2179,6 +2205,7 @@ class MainWindow(QWidget):
         """
         LOGGER.error("Processing error: %s", error_message)
         self.is_processing = False
+        self._set_processing_state(False)  # Reset UI state
 
         # Update the view model - use proper method name based on what's available
         try:
@@ -3809,9 +3836,10 @@ class MainWindow(QWidget):
         self.main_tab.encoder_combo.setCurrentText(
             self.current_encoder
         )  # Set initial value
-        self.main_tab.encoder_combo.currentTextChanged.connect(
-            self._update_rife_options_state  # This method now accesses main_tab widgets
-        )
+        # Connect encoder change signal - moved to _post_init_setup to ensure proper timing
+        # self.main_tab.encoder_combo.currentTextChanged.connect(
+        #     self._update_rife_options_state  # This method now accesses main_tab widgets
+        # )
         processing_layout.addWidget(self.main_tab.encoder_combo, 3, 1)
 
         # Add extra columns for spacing

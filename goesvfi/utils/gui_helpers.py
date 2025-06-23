@@ -221,7 +221,7 @@ class ClickableLabel(QLabel):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize the ClickableLabel."""
         super().__init__(parent)
-        self.file_path = None
+        self.file_path: Optional[str] = None
         self.processed_image = None
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
@@ -257,6 +257,14 @@ class CropLabel(QLabel):
         self._pixmap_offset_x = 0
         self._pixmap_offset_y = 0
 
+        # Handle detection
+        self.handle_size = 12
+        self.active_handle: Optional[str] = None  # Which handle is being dragged
+        self.resizing = False
+
+        # Parent dialog reference for aspect ratio
+        self._parent_dialog: Optional[Any] = None
+
     def setPixmap(self, pixmap: QPixmap) -> None:
         """Set pixmap and calculate offsets for centering."""
         super().setPixmap(pixmap)
@@ -285,14 +293,77 @@ class CropLabel(QLabel):
 
         return QPoint(x, y)
 
+    def _get_handle_at_pos(self, pos: QPoint) -> Optional[str]:
+        """Check if position is over a selection handle."""
+        if not self.selected_rect or self.selected_rect.isNull():
+            return None
+
+        # Convert to widget coordinates
+        rect = QRect(
+            self.selected_rect.x() + self._pixmap_offset_x,
+            self.selected_rect.y() + self._pixmap_offset_y,
+            self.selected_rect.width(),
+            self.selected_rect.height(),
+        )
+
+        # Define handle regions
+        handles = {
+            "tl": QRect(
+                rect.x() - self.handle_size // 2,
+                rect.y() - self.handle_size // 2,
+                self.handle_size,
+                self.handle_size,
+            ),
+            "tr": QRect(
+                rect.x() + rect.width() - self.handle_size // 2,
+                rect.y() - self.handle_size // 2,
+                self.handle_size,
+                self.handle_size,
+            ),
+            "bl": QRect(
+                rect.x() - self.handle_size // 2,
+                rect.y() + rect.height() - self.handle_size // 2,
+                self.handle_size,
+                self.handle_size,
+            ),
+            "br": QRect(
+                rect.x() + rect.width() - self.handle_size // 2,
+                rect.y() + rect.height() - self.handle_size // 2,
+                self.handle_size,
+                self.handle_size,
+            ),
+        }
+
+        # Check which handle contains the position
+        for handle_name, handle_rect in handles.items():
+            if handle_rect.contains(pos):
+                return handle_name
+
+        return None
+
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
-        """Start selection on mouse press."""
+        """Start selection or handle resize on mouse press."""
         if event is None:
             return
         if event.button() == Qt.MouseButton.LeftButton:
-            pos = self._get_pos_on_pixmap(event.position().toPoint())
+            widget_pos = event.position().toPoint()
+
+            # Check if we're clicking on a handle
+            handle = self._get_handle_at_pos(widget_pos)
+            if handle:
+                self.resizing = True
+                self.active_handle = handle
+                self.selection_start_point = self._get_pos_on_pixmap(widget_pos)
+                self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+                self.update()
+                return
+
+            # Otherwise start new selection
+            pos = self._get_pos_on_pixmap(widget_pos)
             if pos:
                 self.selecting = True
+                self.resizing = False
+                self.active_handle = None
                 self.selection_start_point = pos
                 self.selection_end_point = pos
                 self.selected_rect = None
@@ -300,33 +371,174 @@ class CropLabel(QLabel):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:
-        """Update selection on mouse move."""
+        """Update selection or resize on mouse move."""
         if event is None:
             return
-        if self.selecting:
-            pos = self._get_pos_on_pixmap(event.position().toPoint())
-            if pos:
-                self.selection_end_point = pos
-                self.selection_changed.emit()
-                self.update()
+
+        widget_pos = event.position().toPoint()
+        pos = self._get_pos_on_pixmap(widget_pos)
+
+        if self.resizing and self.active_handle and self.selected_rect and pos:
+            self._handle_resize_move(pos)
+        elif self.selecting and pos:
+            self._handle_selection_move(pos)
+        else:
+            self._update_hover_cursor(widget_pos)
+
         super().mouseMoveEvent(event)
 
+    def _handle_resize_move(self, pos: QPoint) -> None:
+        """Handle mouse move during resize."""
+        if not self.selected_rect or not self.active_handle:
+            return
+
+        new_rect = QRect(self.selected_rect)
+
+        if "l" in self.active_handle:  # Left handles
+            new_rect.setLeft(pos.x())
+        if "r" in self.active_handle:  # Right handles
+            new_rect.setRight(pos.x())
+        if "t" in self.active_handle:  # Top handles
+            new_rect.setTop(pos.y())
+        if "b" in self.active_handle:  # Bottom handles
+            new_rect.setBottom(pos.y())
+
+        # Ensure minimum size
+        if new_rect.width() > 10 and new_rect.height() > 10:
+            # Apply aspect ratio constraint if locked
+            if self._should_constrain_aspect():
+                self._apply_aspect_ratio_constraint(new_rect, self.active_handle)
+
+            self.selected_rect = new_rect.normalized()
+            self.selection_changed.emit()
+            self.update()
+
+    def _handle_selection_move(self, pos: QPoint) -> None:
+        """Handle mouse move during selection."""
+        self.selection_end_point = pos
+
+        # Apply aspect ratio constraint while dragging if locked
+        if self._should_constrain_aspect():
+            self._constrain_end_point_to_aspect_ratio()
+
+        self.selection_changed.emit()
+        self.update()
+
+    def _update_hover_cursor(self, widget_pos: QPoint) -> None:
+        """Update cursor based on handle hover."""
+        handle = self._get_handle_at_pos(widget_pos)
+        if handle:
+            self.setCursor(Qt.CursorShape.SizeFDiagCursor)
+        else:
+            self.setCursor(Qt.CursorShape.CrossCursor)
+
+    def _should_constrain_aspect(self) -> bool:
+        """Check if aspect ratio should be constrained."""
+        return bool(
+            self._parent_dialog
+            and hasattr(self._parent_dialog, "constrain_aspect")
+            and self._parent_dialog.constrain_aspect
+            and hasattr(self._parent_dialog, "aspect_ratio")
+            and self._parent_dialog.aspect_ratio
+        )
+
+    def _constrain_end_point_to_aspect_ratio(self) -> None:
+        """Constrain the end point to maintain aspect ratio while dragging."""
+        if not self.selection_start_point or not self.selection_end_point:
+            return
+
+        if not self._parent_dialog or not self._parent_dialog.aspect_ratio:
+            return
+
+        # Calculate the dimensions
+        width = abs(self.selection_end_point.x() - self.selection_start_point.x())
+        height = abs(self.selection_end_point.y() - self.selection_start_point.y())
+
+        # Calculate what the dimensions would be for each constraint
+        # Option 1: Keep width, adjust height
+        height_from_width = width / self._parent_dialog.aspect_ratio
+        # Option 2: Keep height, adjust width
+        width_from_height = height * self._parent_dialog.aspect_ratio
+
+        # Choose the option that results in the larger area (more intuitive for users)
+        area1 = width * height_from_width
+        area2 = width_from_height * height
+
+        if area1 >= area2:
+            # Use width as base, adjust height
+            new_height = int(height_from_width)
+            if self.selection_end_point.y() > self.selection_start_point.y():
+                self.selection_end_point.setY(
+                    self.selection_start_point.y() + new_height
+                )
+            else:
+                self.selection_end_point.setY(
+                    self.selection_start_point.y() - new_height
+                )
+        else:
+            # Use height as base, adjust width
+            new_width = int(width_from_height)
+            if self.selection_end_point.x() > self.selection_start_point.x():
+                self.selection_end_point.setX(
+                    self.selection_start_point.x() + new_width
+                )
+            else:
+                self.selection_end_point.setX(
+                    self.selection_start_point.x() - new_width
+                )
+
+    def _apply_aspect_ratio_constraint(self, rect: QRect, handle: str) -> None:
+        """Apply aspect ratio constraint when resizing from a handle."""
+        if not self._parent_dialog or not self._parent_dialog.aspect_ratio:
+            return
+
+        # Determine which dimension changed more
+        if "l" in handle or "r" in handle:
+            # Width changed, adjust height
+            new_height = int(rect.width() / self._parent_dialog.aspect_ratio)
+            if "t" in handle:
+                rect.setTop(rect.bottom() - new_height)
+            else:
+                rect.setBottom(rect.top() + new_height)
+        else:
+            # Height changed, adjust width
+            new_width = int(rect.height() * self._parent_dialog.aspect_ratio)
+            if "l" in handle:
+                rect.setLeft(rect.right() - new_width)
+            else:
+                rect.setRight(rect.left() + new_width)
+
     def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
-        """Finalize selection on mouse release."""
+        """Finalize selection or resize on mouse release."""
         if event is None:
             return
-        if event.button() == Qt.MouseButton.LeftButton and self.selecting:
-            self.selecting = False
-            if self.selection_start_point and self.selection_end_point:
-                # Create normalized rectangle
-                x1 = min(self.selection_start_point.x(), self.selection_end_point.x())
-                y1 = min(self.selection_start_point.y(), self.selection_end_point.y())
-                x2 = max(self.selection_start_point.x(), self.selection_end_point.x())
-                y2 = max(self.selection_start_point.y(), self.selection_end_point.y())
-
-                self.selected_rect = QRect(x1, y1, x2 - x1, y2 - y1)
+        if event.button() == Qt.MouseButton.LeftButton:
+            if self.resizing:
+                self.resizing = False
+                self.active_handle = None
+                self.setCursor(Qt.CursorShape.CrossCursor)
                 self.selection_finished.emit()
                 self.update()
+            elif self.selecting:
+                self.selecting = False
+                if self.selection_start_point and self.selection_end_point:
+                    # Create normalized rectangle
+                    x1 = min(
+                        self.selection_start_point.x(), self.selection_end_point.x()
+                    )
+                    y1 = min(
+                        self.selection_start_point.y(), self.selection_end_point.y()
+                    )
+                    x2 = max(
+                        self.selection_start_point.x(), self.selection_end_point.x()
+                    )
+                    y2 = max(
+                        self.selection_start_point.y(), self.selection_end_point.y()
+                    )
+
+                    self.selected_rect = QRect(x1, y1, x2 - x1, y2 - y1)
+                    self.selection_finished.emit()
+                    self.update()
         super().mouseReleaseEvent(event)
 
     def paintEvent(self, event: Any) -> None:
@@ -393,36 +605,34 @@ class CropLabel(QLabel):
             painter.drawRect(rect)
 
             # Draw corner handles
-            handle_size = 8
             handle_color = QColor(255, 255, 255)
-            painter.fillRect(
-                rect.x() - handle_size // 2,
-                rect.y() - handle_size // 2,
-                handle_size,
-                handle_size,
-                handle_color,
-            )
-            painter.fillRect(
-                rect.x() + rect.width() - handle_size // 2,
-                rect.y() - handle_size // 2,
-                handle_size,
-                handle_size,
-                handle_color,
-            )
-            painter.fillRect(
-                rect.x() - handle_size // 2,
-                rect.y() + rect.height() - handle_size // 2,
-                handle_size,
-                handle_size,
-                handle_color,
-            )
-            painter.fillRect(
-                rect.x() + rect.width() - handle_size // 2,
-                rect.y() + rect.height() - handle_size // 2,
-                handle_size,
-                handle_size,
-                handle_color,
-            )
+            handle_border = QColor(0, 0, 0)
+
+            # Draw handles with border for better visibility
+            handles = [
+                (rect.x(), rect.y()),  # Top-left
+                (rect.x() + rect.width(), rect.y()),  # Top-right
+                (rect.x(), rect.y() + rect.height()),  # Bottom-left
+                (rect.x() + rect.width(), rect.y() + rect.height()),  # Bottom-right
+            ]
+
+            for x, y in handles:
+                # Draw border
+                painter.fillRect(
+                    x - self.handle_size // 2 - 1,
+                    y - self.handle_size // 2 - 1,
+                    self.handle_size + 2,
+                    self.handle_size + 2,
+                    handle_border,
+                )
+                # Draw handle
+                painter.fillRect(
+                    x - self.handle_size // 2,
+                    y - self.handle_size // 2,
+                    self.handle_size,
+                    self.handle_size,
+                    handle_color,
+                )
 
 
 class CropSelectionDialog(QDialog):
@@ -435,11 +645,17 @@ class CropSelectionDialog(QDialog):
         parent: Optional[QWidget] = None,
     ) -> None:
         """Initialize the dialog with an optional image and initial rectangle."""
-        super().__init__(parent)
+        # Create as a top-level window to avoid parent window constraints
+        super().__init__(None)  # Pass None to make it a true top-level window
 
-        # Make the dialog frameless with minimal borders
+        # Keep reference to parent for cleanup if needed
+        self._parent = parent
+
+        # Make the dialog frameless with minimal borders and ensure it's on top
         self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
+            Qt.WindowType.FramelessWindowHint
+            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.Tool  # Tool flag helps with window management
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setModal(True)
@@ -447,14 +663,23 @@ class CropSelectionDialog(QDialog):
         # Use most of screen real estate with small margin
         screen = QApplication.primaryScreen()
         if screen:
-            screen_rect = screen.geometry()
+            screen_rect = (
+                screen.availableGeometry()
+            )  # Use available geometry to respect taskbars
             margin = 40  # Small margin around edges
-            self.setGeometry(
-                screen_rect.x() + margin,
-                screen_rect.y() + margin,
-                screen_rect.width() - 2 * margin,
-                screen_rect.height() - 2 * margin,
-            )
+
+            # Calculate dialog dimensions
+            dialog_width = screen_rect.width() - 2 * margin
+            dialog_height = screen_rect.height() - 2 * margin
+
+            # Center the dialog on screen
+            x = screen_rect.x() + margin
+            y = screen_rect.y() + margin
+
+            self.setGeometry(x, y, dialog_width, dialog_height)
+
+            # Ensure the window is properly sized before showing
+            self.setMinimumSize(800, 600)  # Minimum size to ensure buttons are visible
 
         self.image = image if image and not image.isNull() else QImage()
         self.initial_rect = initial_rect
@@ -464,7 +689,7 @@ class CropSelectionDialog(QDialog):
         self.pan_offset = QPointF(0, 0)
         self.is_panning = False
         self.last_mouse_pos = QPoint()
-        self.aspect_ratio = None  # None means freeform
+        self.aspect_ratio: Optional[float] = None  # None means freeform
         self.constrain_aspect = False
 
         # Set semi-transparent dark background with border
@@ -619,6 +844,7 @@ class CropSelectionDialog(QDialog):
         self.crop_label = CropLabel()
         self.crop_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.crop_label.setMinimumSize(200, 200)
+        self.crop_label._parent_dialog = self  # type: ignore  # Set reference for aspect ratio
 
         # Set up the image if provided
         if image and isinstance(image, QImage) and not image.isNull():
@@ -700,7 +926,9 @@ class CropSelectionDialog(QDialog):
         status_layout.addWidget(self.status_label)
 
         # Add tips
-        tips_label = QLabel("Tip: Hold Shift to constrain proportions while dragging")
+        tips_label = QLabel(
+            "Tips: Use Lock for aspect ratio • Click corners to resize • Scroll to zoom"
+        )
         tips_label.setStyleSheet(
             """
             QLabel {
@@ -735,7 +963,7 @@ class CropSelectionDialog(QDialog):
         )
         preview_layout.addWidget(preview_title)
 
-        self.crop_preview_label = QLabel("Select a region")
+        self.crop_preview_label = ClickableLabel("Select a region")
         self.crop_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.crop_preview_label.setFixedSize(120, 60)
         self.crop_preview_label.setStyleSheet(
@@ -747,8 +975,14 @@ class CropSelectionDialog(QDialog):
                 font-size: 9px;
                 border-radius: 4px;
             }
+            QLabel:hover {
+                border-color: #666;
+                background-color: #333;
+            }
         """
         )
+        self.crop_preview_label.setToolTip("Click to see full preview")
+        self.crop_preview_label.clicked.connect(self._show_full_preview)
         preview_layout.addWidget(self.crop_preview_label)
 
         footer_layout.addWidget(preview_container)
@@ -848,9 +1082,15 @@ class CropSelectionDialog(QDialog):
             orig_w = int(rect.width() * self.scale_factor)
             orig_h = int(rect.height() * self.scale_factor)
 
+            # Calculate aspect ratio if selection exists
+            aspect_text = ""
+            if orig_w > 0 and orig_h > 0:
+                current_ratio = orig_w / orig_h
+                aspect_text = f" | Ratio: {current_ratio:.2f}:1"
+
             self.status_label.setText(
                 f"Selection: {orig_x}, {orig_y} → {orig_x + orig_w}, {orig_y + orig_h} "
-                f"(size: {orig_w} × {orig_h})"
+                f"(size: {orig_w} × {orig_h}){aspect_text}"
             )
 
             # Update crop preview
@@ -1010,25 +1250,39 @@ class CropSelectionDialog(QDialog):
             return
 
         # Get zoom direction
-        delta = event.angleDelta().y()
-        if delta > 0:
-            self._zoom_in()
-        else:
-            self._zoom_out()
+        delta = event.angleDelta()
+
+        # For Mac touchpad, check both Y and X deltas
+        y_delta = delta.y()
+        x_delta = delta.x()
+
+        # Use whichever delta is larger in magnitude
+        if abs(y_delta) > abs(x_delta):
+            # Vertical scrolling (normal mouse wheel or vertical touchpad)
+            if y_delta > 0:
+                self._zoom_in()
+            else:
+                self._zoom_out()
+        elif x_delta != 0:
+            # Horizontal scrolling (sometimes used on touchpads)
+            if x_delta > 0:
+                self._zoom_in()
+            else:
+                self._zoom_out()
 
         event.accept()
 
     def _zoom_in(self) -> None:
         """Zoom in on the image."""
         if hasattr(self, "zoom_level"):
-            self.zoom_level = min(self.zoom_level * 1.1, 5.0)
+            self.zoom_level = min(self.zoom_level * 1.2, 5.0)
             self._update_zoom_display()
             self._apply_zoom()
 
     def _zoom_out(self) -> None:
         """Zoom out on the image."""
         if hasattr(self, "zoom_level"):
-            self.zoom_level = max(self.zoom_level / 1.1, 0.1)
+            self.zoom_level = max(self.zoom_level / 1.2, 0.2)
             self._update_zoom_display()
             self._apply_zoom()
 
@@ -1046,9 +1300,51 @@ class CropSelectionDialog(QDialog):
 
     def _apply_zoom(self) -> None:
         """Apply the current zoom level to the image display."""
-        # This would need to be implemented to actually zoom the image
-        # For now, just update the crop label
-        self.crop_label.update()
+        if not self.image or self.image.isNull():
+            return
+
+        # Get base dimensions
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_size = screen.size()
+            available_height = screen_size.height() - 240
+            available_width = screen_size.width() - 120
+        else:
+            available_height = 800
+            available_width = 1200
+
+        # Apply zoom to available space
+        target_width = int(available_width * self.zoom_level)
+        target_height = int(available_height * self.zoom_level)
+
+        # Scale image with zoom
+        scaled_image = self.image.scaled(
+            target_width,
+            target_height,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+
+        # Update scale factor
+        self.scale_factor = max(
+            self.image.width() / scaled_image.width(),
+            self.image.height() / scaled_image.height(),
+        )
+
+        # Update the pixmap
+        pixmap = QPixmap.fromImage(scaled_image)
+        self.crop_label.setPixmap(pixmap)
+        self.crop_label.setFixedSize(pixmap.size())
+
+        # Keep selection if it exists
+        if self.initial_rect:
+            display_rect = QRect(
+                int(self.initial_rect.x() / self.scale_factor),
+                int(self.initial_rect.y() / self.scale_factor),
+                int(self.initial_rect.width() / self.scale_factor),
+                int(self.initial_rect.height() / self.scale_factor),
+            )
+            self.crop_label.selected_rect = display_rect
 
     def _on_selection_finished(self) -> None:
         """Called when selection is finished."""
@@ -1069,21 +1365,23 @@ class CropSelectionDialog(QDialog):
             self.constrain_checkbox.setChecked(False)
             self.constrain_checkbox.setEnabled(False)
         else:
-            # Parse aspect ratio from text
+            # Parse aspect ratio from text (width/height)
             if "16:9" in text:
-                self.aspect_ratio = 16 / 9
+                self.aspect_ratio = 16 / 9  # 1.778 - wider than tall
             elif "4:3" in text:
-                self.aspect_ratio = 4 / 3
+                self.aspect_ratio = 4 / 3  # 1.333 - wider than tall
             elif "1:1" in text:
-                self.aspect_ratio = 1.0
+                self.aspect_ratio = 1.0  # Square
             elif "3:2" in text:
-                self.aspect_ratio = 3 / 2
+                self.aspect_ratio = 3 / 2  # 1.5 - wider than tall
             elif "2:1" in text:
-                self.aspect_ratio = 2.0
+                self.aspect_ratio = 2.0  # 2.0 - much wider than tall
             elif "9:16" in text:
-                self.aspect_ratio = 9 / 16
+                self.aspect_ratio = 9 / 16  # 0.563 - taller than wide (portrait)
 
             self.constrain_checkbox.setEnabled(True)
+
+            # Debug log removed for production
 
             # Apply aspect ratio to current selection if locked
             if self.constrain_checkbox.isChecked() and self.crop_label.selected_rect:
@@ -1125,6 +1423,89 @@ class CropSelectionDialog(QDialog):
         self.crop_label.selected_rect = rect
         self.crop_label.update()
         self._update_status()
+
+    def exec(self) -> int:
+        """Override exec to ensure dialog is properly positioned and visible."""
+        # Ensure the dialog is on top and visible
+        self.raise_()
+        self.activateWindow()
+
+        # Force a repaint to ensure all widgets are visible
+        QApplication.processEvents()
+
+        # Call the parent exec
+        result = super().exec()
+        return int(result)
+
+    def showEvent(self, event: Any) -> None:
+        """Override showEvent to ensure proper positioning."""
+        super().showEvent(event)
+
+        # Ensure we're on top
+        self.raise_()
+        self.activateWindow()
+
+        # Force geometry update
+        self.updateGeometry()
+
+    def _show_full_preview(self) -> None:
+        """Show the full cropped preview in a dialog."""
+        if not self.crop_label.selected_rect or self.crop_label.selected_rect.isNull():
+            return
+
+        if self.image.isNull():
+            return
+
+        # Extract the crop region at full resolution
+        orig_x = int(self.crop_label.selected_rect.x() * self.scale_factor)
+        orig_y = int(self.crop_label.selected_rect.y() * self.scale_factor)
+        orig_w = int(self.crop_label.selected_rect.width() * self.scale_factor)
+        orig_h = int(self.crop_label.selected_rect.height() * self.scale_factor)
+
+        # Clamp to image bounds
+        orig_x = max(0, min(orig_x, self.image.width() - 1))
+        orig_y = max(0, min(orig_y, self.image.height() - 1))
+        orig_w = min(orig_w, self.image.width() - orig_x)
+        orig_h = min(orig_h, self.image.height() - orig_y)
+
+        if orig_w <= 0 or orig_h <= 0:
+            return
+
+        # Extract the cropped image
+        cropped_image = self.image.copy(orig_x, orig_y, orig_w, orig_h)
+
+        # Create a simple preview dialog
+        preview_dialog = QDialog(self)
+        preview_dialog.setWindowTitle("Crop Preview")
+        preview_dialog.setModal(True)
+
+        layout = QVBoxLayout(preview_dialog)
+
+        # Create a label to show the image
+        preview_label = QLabel()
+        preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Scale the preview to fit a reasonable window size
+        max_size = 800
+        if cropped_image.width() > max_size or cropped_image.height() > max_size:
+            scaled = cropped_image.scaled(
+                max_size,
+                max_size,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            preview_label.setPixmap(QPixmap.fromImage(scaled))
+        else:
+            preview_label.setPixmap(QPixmap.fromImage(cropped_image))
+
+        layout.addWidget(preview_label)
+
+        # Add size info
+        info_label = QLabel(f"Size: {orig_w} × {orig_h} pixels")
+        info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(info_label)
+
+        preview_dialog.exec()
 
 
 class ImageViewerDialog(QDialog):
