@@ -92,9 +92,15 @@ class CleanupManager:
 
         # Protected patterns - never delete these
         self.protected_patterns = {
-            ".git/**/*",
+            ".git/*",  # Direct .git files
+            ".git/**/*",  # .git subdirectory files (depth 1)
+            ".git/**/**/*",  # .git subdirectory files (depth 2+)
+            ".venv/*",
             ".venv/**/*",
+            ".venv/**/**/*",
+            "venv/*",
             "venv/**/*",
+            "venv/**/**/*",
             "*.py",  # Don't delete Python source files
             "*.md",  # Don't delete documentation
             "*.toml",  # Don't delete config files
@@ -113,17 +119,21 @@ class CleanupManager:
 
     def is_protected(self, path: Path) -> bool:
         """Check if a path is protected from deletion."""
-        path_str = str(path.relative_to(self.project_root))
+        try:
+            path_str = str(path.relative_to(self.project_root))
+        except ValueError:
+            # Path is outside project root - protect it
+            return True
 
         for pattern in self.protected_patterns:
-            if path.match(pattern):
-                return True
+            # Convert to PurePath for pattern matching
+            from pathlib import PurePosixPath
 
-        # Additional safety: Don't delete files outside project root
-        try:
-            path.relative_to(self.project_root)
-        except ValueError:
-            return True
+            path_pure = PurePosixPath(path_str)
+
+            # Use pathlib's match method which handles ** patterns correctly
+            if path_pure.match(pattern):
+                return True
 
         return False
 
@@ -227,7 +237,7 @@ class CleanupManager:
         print(f"Total directories to delete: {len(self.directories_to_delete)}")
         print(f"Total size to free: {self.format_size(self.total_size)}")
 
-    def clean(self):
+    def clean(self, force: bool = False):
         """Perform the cleanup operation."""
         if self.dry_run:
             print("\nDRY RUN - No files will be deleted.")
@@ -238,13 +248,14 @@ class CleanupManager:
             print("\nNothing to clean!")
             return
 
-        # Confirm before deletion
-        response = input(
-            f"\nDelete {len(self.files_to_delete)} files and {len(self.directories_to_delete)} directories? [y/N]: "
-        )
-        if response.lower() != "y":
-            print("Cleanup cancelled.")
-            return
+        # Confirm before deletion (unless forced)
+        if not force:
+            response = input(
+                f"\nDelete {len(self.files_to_delete)} files and {len(self.directories_to_delete)} directories? [y/N]: "
+            )
+            if response.lower() != "y":
+                print("Cleanup cancelled.")
+                return
 
         # Delete files
         deleted_files = 0
@@ -284,6 +295,11 @@ def main():
         help="Actually delete the files (use with caution!)",
     )
     parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Skip confirmation prompt when deleting files",
+    )
+    parser.add_argument(
         "--delete-data",
         action="store_true",
         help="Delete large data files (.nc, large .png files)",
@@ -321,7 +337,7 @@ def main():
     manager.analyze(categories)
 
     if not dry_run:
-        manager.clean()
+        manager.clean(force=args.force)
 
 
 if __name__ == "__main__":
