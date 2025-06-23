@@ -61,7 +61,31 @@ class FFmpegSettingsTab(QWidget):
         self._connect_signals()
 
         # --- Initialize Control States ---
-        self._update_all_control_states()
+        # Don't update control states here - let MainWindow set the initial state
+        # based on the selected encoder
+        # self._update_all_control_states()
+
+    def _create_header(self) -> None:
+        """Create the enhanced header for the FFmpeg tab."""
+        # This will be added to the layout in _setup_layout
+        self.header_widget = QLabel(
+            "⚙️ FFmpeg Settings - Video Processing Configuration"
+        )
+        self.header_widget.setStyleSheet(
+            """
+            QLabel {
+                font-size: 18px;
+                font-weight: bold;
+                color: #ffffff;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a6fa5, stop:0.5 #3a5f95, stop:1 #2a4f85);
+                padding: 12px 16px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                border: 2px solid #5a7fb5;
+            }
+            """
+        )
 
     def _apply_stylesheet(self) -> None:
         """Apply an enhanced stylesheet for better visual appearance."""
@@ -164,16 +188,20 @@ class FFmpegSettingsTab(QWidget):
 
     def _create_widgets(self) -> None:
         """Create all the widgets for the FFmpeg settings tab."""
+        # Add enhanced header first
+        self._create_header()
+
         # --- Profile Selection ---
         self.ffmpeg_profile_combo = QComboBox()
-        self.ffmpeg_profile_combo.addItems(list(FFMPEG_PROFILES.keys()) + ["Custom"])
+        profile_items = list(FFMPEG_PROFILES.keys()) + ["Custom"]
+        self.ffmpeg_profile_combo.addItems(profile_items)
         self.ffmpeg_profile_combo.setToolTip(
             self.tr("Select a predefined FFmpeg settings profile or 'Custom'")
         )
 
         # --- Interpolation Settings Group ---
         self.ffmpeg_settings_group = QGroupBox(
-            self.tr("Interpolation (minterpolate filter)")
+            self.tr("⚙️ Interpolation (minterpolate filter)")
         )
         self.ffmpeg_settings_group.setCheckable(
             True
@@ -196,7 +224,7 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_me_mode_combo.addItems([self.tr("bidir"), self.tr("bilat")])
         self.ffmpeg_me_mode_combo.setToolTip(self.tr("Motion estimation mode"))
 
-        self.ffmpeg_vsbmc_checkbox = QCheckBox(self.tr("VSBMC"))
+        self.ffmpeg_vsbmc_checkbox = QCheckBox(self.tr("⚙️ VSBMC"))
         self.ffmpeg_vsbmc_checkbox.setToolTip(
             self.tr("Variable size block motion compensation")
         )
@@ -257,7 +285,7 @@ class FFmpegSettingsTab(QWidget):
         )
 
         # --- Unsharp Mask Group ---
-        self.ffmpeg_unsharp_group = QGroupBox(self.tr("Sharpening (unsharp filter)"))
+        self.ffmpeg_unsharp_group = QGroupBox(self.tr("🔍 Sharpening (unsharp filter)"))
         self.ffmpeg_unsharp_group.setCheckable(True)  # Corresponds to apply_unsharp
         self.ffmpeg_unsharp_group.setToolTip(
             self.tr("Apply unsharp mask for sharpening")
@@ -304,7 +332,7 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_unsharp_ca_spinbox.setToolTip(self.tr("Chroma amount (-10 to 10)"))
 
         # --- Quality Settings Group ---
-        self.ffmpeg_quality_group = QGroupBox(self.tr("Encoding Quality (libx264)"))
+        self.ffmpeg_quality_group = QGroupBox(self.tr("📹 Encoding Quality (libx264)"))
         self.ffmpeg_quality_group.setToolTip(
             self.tr("Settings for the final video encoding")
         )
@@ -413,6 +441,9 @@ class FFmpegSettingsTab(QWidget):
     def _setup_layout(self) -> None:
         """Setup the layout and add widgets."""
         main_layout = QVBoxLayout(self)
+
+        # Add the header first
+        main_layout.addWidget(self.header_widget)
 
         # Profile Selection Layout with enhanced styling
         profile_container = QWidget()
@@ -918,6 +949,7 @@ class FFmpegSettingsTab(QWidget):
         pass
         """Checks if current settings match the selected profile and updates combo if not."""
         current_profile_name = self.ffmpeg_profile_combo.currentText()
+
         if current_profile_name == "Custom":
             pass
             return  # Already custom
@@ -940,11 +972,10 @@ class FFmpegSettingsTab(QWidget):
             self._update_quality_controls_state("Custom")
 
     def _on_ffmpeg_setting_changed(self, *args: Any) -> None:
-        # LOGGER.debug("FFmpeg setting changed, checking profile match...")
         """Handle changes to FFmpeg settings to set the profile combo to 'Custom' if needed."""
+        LOGGER.debug("FFmpeg setting changed, checking profile match...")
         # If the current profile is already "Custom", do nothing more
         if self.ffmpeg_profile_combo.currentText() == "Custom":
-            pass
             # If the quality preset was changed *to* "Custom", ensure controls are enabled
             if (
                 self.sender() == self.ffmpeg_quality_combo
@@ -957,10 +988,9 @@ class FFmpegSettingsTab(QWidget):
         # Check if the current settings match any known profile *other than* "Custom"
         matching_profile_name = None
         for name, profile_dict in FFMPEG_PROFILES.items():
-            pass
             if self._check_settings_match_profile(profile_dict):
-                pass
                 matching_profile_name = name
+                LOGGER.debug(f"Current settings match profile: {name}")
                 break
 
         # If settings no longer match the currently selected profile, switch to "Custom"
@@ -980,7 +1010,6 @@ class FFmpegSettingsTab(QWidget):
         # This case should ideally not happen if _on_profile_selected works correctly,
         # but handles the case where settings change *back* to matching a profile.
         elif matching_profile_name != self.ffmpeg_profile_combo.currentText():
-            pass
             LOGGER.debug(
                 "Settings now match profile %r, updating combo.", matching_profile_name
             )
@@ -990,7 +1019,6 @@ class FFmpegSettingsTab(QWidget):
             # Update quality controls based on the matched profile's preset text
             matched_profile = FFMPEG_PROFILES.get(matching_profile_name)
             if matched_profile:
-                pass
                 self._update_quality_controls_state(matched_profile["preset_text"])
 
     def _compare_float_values(
@@ -1204,15 +1232,22 @@ class FFmpegSettingsTab(QWidget):
 
     def set_enabled(self, enabled: bool) -> None:
         """Enable or disable the entire tab content."""
-        # Disable the main group boxes first
+        LOGGER.debug(f"FFmpegSettingsTab.set_enabled called with enabled={enabled}")
+
+        # Enable/disable the main group boxes first
         self.ffmpeg_settings_group.setEnabled(enabled)
         self.ffmpeg_unsharp_group.setEnabled(enabled)
         self.ffmpeg_quality_group.setEnabled(enabled)
-        self.ffmpeg_profile_combo.setEnabled(enabled)  # Also disable profile selection
+        self.ffmpeg_profile_combo.setEnabled(
+            enabled
+        )  # Also enable/disable profile selection
+
+        LOGGER.debug(
+            f"Set ffmpeg_profile_combo.isEnabled() = {self.ffmpeg_profile_combo.isEnabled()}"
+        )
 
         # If enabling, restore the individual control states based on selections
         if enabled:
-            pass
             self._update_all_control_states()
         else:
             # If disabling, ensure all child controls are also disabled
@@ -1298,13 +1333,13 @@ class FFmpegSettingsTab(QWidget):
             profile_name = settings.get(
                 "ffmpeg_profile", "Default"
             )  # Default to "Default"
+
             # Ensure the profile name exists in the combo box items
             items = [
                 self.ffmpeg_profile_combo.itemText(i)
                 for i in range(self.ffmpeg_profile_combo.count())
             ]
             if profile_name not in items:
-                pass
                 LOGGER.warning(
                     "Saved profile %r not found in combo box, defaulting to 'Custom'.",
                     profile_name,

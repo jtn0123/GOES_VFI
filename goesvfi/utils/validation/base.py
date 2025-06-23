@@ -12,13 +12,13 @@ from typing import Any, Dict, List, Optional, Union
 
 class ValidationError(Exception):
     """Base exception for validation failures."""
-    
+
     def __init__(self, message: str, field: Optional[str] = None, value: Any = None):
         self.message = message
         self.field = field
         self.value = value
         super().__init__(self._format_message())
-    
+
     def _format_message(self) -> str:
         """Format the error message with field context."""
         if self.field:
@@ -29,34 +29,35 @@ class ValidationError(Exception):
 @dataclass
 class ValidationResult:
     """Result of a validation operation."""
+
     is_valid: bool
     errors: List[ValidationError]
     warnings: List[str]
-    
+
     @classmethod
     def success(cls) -> "ValidationResult":
         """Create a successful validation result."""
         return cls(is_valid=True, errors=[], warnings=[])
-    
+
     @classmethod
     def failure(cls, error: ValidationError) -> "ValidationResult":
         """Create a failed validation result."""
         return cls(is_valid=False, errors=[error], warnings=[])
-    
+
     @classmethod
     def failures(cls, errors: List[ValidationError]) -> "ValidationResult":
         """Create a failed validation result with multiple errors."""
         return cls(is_valid=False, errors=errors, warnings=[])
-    
+
     def add_warning(self, warning: str) -> None:
         """Add a warning to the result."""
         self.warnings.append(warning)
-    
+
     def add_error(self, error: ValidationError) -> None:
         """Add an error to the result."""
         self.errors.append(error)
         self.is_valid = False
-    
+
     def merge(self, other: "ValidationResult") -> "ValidationResult":
         """Merge another validation result into this one."""
         combined_errors = self.errors + other.errors
@@ -64,30 +65,32 @@ class ValidationResult:
         return ValidationResult(
             is_valid=self.is_valid and other.is_valid,
             errors=combined_errors,
-            warnings=combined_warnings
+            warnings=combined_warnings,
         )
 
 
 class ValidatorBase(ABC):
     """Base class for all validators."""
-    
+
     def __init__(self, field_name: Optional[str] = None):
         self.field_name = field_name
-    
+
     @abstractmethod
-    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def validate(
+        self, value: Any, context: Optional[Dict[str, Any]] = None
+    ) -> ValidationResult:
         """
         Validate a value.
-        
+
         Args:
             value: The value to validate
             context: Optional context for validation (e.g., other field values)
-            
+
         Returns:
             ValidationResult indicating success or failure
         """
         pass
-    
+
     def _create_error(self, message: str, value: Any = None) -> ValidationError:
         """Create a ValidationError with proper field context."""
         return ValidationError(message, field=self.field_name, value=value)
@@ -95,36 +98,42 @@ class ValidatorBase(ABC):
 
 class CompositeValidator(ValidatorBase):
     """Validator that combines multiple validators."""
-    
-    def __init__(self, validators: List[ValidatorBase], field_name: Optional[str] = None):
+
+    def __init__(
+        self, validators: List[ValidatorBase], field_name: Optional[str] = None
+    ):
         super().__init__(field_name)
         self.validators = validators
-    
-    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+
+    def validate(
+        self, value: Any, context: Optional[Dict[str, Any]] = None
+    ) -> ValidationResult:
         """Run all validators and combine results."""
         result = ValidationResult.success()
-        
+
         for validator in self.validators:
             sub_result = validator.validate(value, context)
             result = result.merge(sub_result)
-        
+
         return result
 
 
 class ConditionalValidator(ValidatorBase):
     """Validator that only runs if a condition is met."""
-    
+
     def __init__(
-        self, 
-        validator: ValidatorBase, 
+        self,
+        validator: ValidatorBase,
         condition_func: callable,
-        field_name: Optional[str] = None
+        field_name: Optional[str] = None,
     ):
         super().__init__(field_name)
         self.validator = validator
         self.condition_func = condition_func
-    
-    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+
+    def validate(
+        self, value: Any, context: Optional[Dict[str, Any]] = None
+    ) -> ValidationResult:
         """Run validator only if condition is true."""
         if self.condition_func(value, context):
             return self.validator.validate(value, context)

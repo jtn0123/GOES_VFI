@@ -97,9 +97,7 @@ class ProcessorBase(ABC):
         """
         pass
 
-    def _create_error(
-        self, message: str, cause: Any = None
-    ) -> ImageProcessingError:
+    def _create_error(self, message: str, cause: Any = None) -> ImageProcessingError:
         """Create an ImageProcessingError with proper stage context."""
         return ImageProcessingError(message, stage=self.stage_name, cause=cause)
 
@@ -121,11 +119,11 @@ class CompositeProcessor(ProcessorBase):
 
         for processor in self.processors:
             result = processor.process(current_data, context)
-            
+
             if not result.success:
                 # If any processor fails, return the failure
                 return result
-            
+
             current_data = result.data
             combined_metadata.update(result.metadata)
             combined_warnings.extend(result.warnings)
@@ -158,7 +156,7 @@ class ConditionalProcessor(ProcessorBase):
         """Run processor only if condition is true."""
         if self.condition_func(input_data, context):
             return self.processor.process(input_data, context)
-        
+
         # If condition not met, pass through input unchanged
         return ImageProcessingResult.success_result(
             input_data, {"skipped": self.processor.stage_name}

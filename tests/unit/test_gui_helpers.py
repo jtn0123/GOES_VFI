@@ -11,7 +11,6 @@ from PyQt6.QtWidgets import QApplication, QCheckBox, QLabel, QLineEdit, QSpinBox
 
 from goesvfi.utils.gui_helpers import (
     ClickableLabel,
-    CropDialog,
     CropLabel,
     CropSelectionDialog,
     ImageViewerDialog,
@@ -133,67 +132,6 @@ class TestZoomDialog:
 
         # Verify close was called
         dialog.close.assert_called_once()
-
-
-class TestCropDialog:
-    """Tests for the CropDialog class."""
-
-    def test_init_without_initial_rect(self, app, sample_pixmap):
-        """Test CropDialog initialization without initial rectangle."""
-        dialog = CropDialog(sample_pixmap, None)
-
-        assert dialog.windowTitle() == "Select Crop Region"
-        assert dialog.original_pixmap == sample_pixmap
-        assert dialog.scale_factor > 0
-        assert dialog.crop_rect_scaled.isNull()
-
-    def test_init_with_initial_rect(self, app, sample_pixmap):
-        """Test CropDialog initialization with initial rectangle."""
-        init_rect = (100, 100, 200, 150)
-        dialog = CropDialog(sample_pixmap, init_rect)
-
-        # Verify rubber band is set with scaled rectangle
-        assert dialog.rubber.geometry().width() > 0
-        assert dialog.rubber.geometry().height() > 0
-        # Note: rubber band visibility is handled by show() call in __init__
-        # but may not be visible until the dialog itself is shown
-
-    def test_get_rect_with_scaling(self, app, sample_pixmap):
-        """Test getRect returns properly scaled coordinates."""
-        dialog = CropDialog(sample_pixmap, None)
-
-        # Set a crop rectangle on the scaled image
-        dialog.crop_rect_scaled = QRect(10, 10, 50, 50)
-        dialog.scale_factor = 2.0  # Simulate 2x scaling
-
-        result = dialog.getRect()
-
-        # Should be scaled up by factor of 2
-        assert result.x() == 20
-        assert result.y() == 20
-        assert result.width() == 100
-        assert result.height() == 100
-
-    def test_mouse_press_starts_selection(self, app, sample_pixmap):
-        """Test mouse press starts crop selection."""
-        dialog = CropDialog(sample_pixmap, None)
-
-        # Create a mouse press event within label bounds
-        event = QMouseEvent(
-            QMouseEvent.Type.MouseButtonPress,
-            QPointF(100, 100),
-            Qt.MouseButton.LeftButton,
-            Qt.MouseButton.LeftButton,
-            Qt.KeyboardModifier.NoModifier,
-        )
-
-        # Make sure event position is within label geometry
-        dialog.lbl.setGeometry(0, 0, 800, 600)
-
-        dialog.mousePressEvent(event)
-
-        assert not dialog.origin.isNull()
-        # Note: rubber band visibility is controlled by show() call in mousePressEvent
 
 
 class TestRifeCapabilityManager:
@@ -627,11 +565,11 @@ class TestCropSelectionDialog:
 
         # Test with null rectangle
         dialog._store_final_selection(QRect())
-        assert dialog._final_selected_rect_display is None
+        assert dialog._final_selected_rect_display == QRect()
 
         # Test with zero-size rectangle
         dialog._store_final_selection(QRect(10, 10, 0, 0))
-        assert dialog._final_selected_rect_display is None
+        assert dialog._final_selected_rect_display == QRect()
 
 
 if __name__ == "__main__":

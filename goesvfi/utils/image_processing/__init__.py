@@ -1,7 +1,7 @@
 """
 Image processing framework for reducing complexity in image handling functions.
 
-This module provides composable image processing pipelines that help reduce the 
+This module provides composable image processing pipelines that help reduce the
 complexity of functions with extensive image loading, processing, and display logic.
 """
 
@@ -13,7 +13,7 @@ from .preview import PreviewProcessor
 
 __all__ = [
     "ImageProcessingError",
-    "ImageProcessingResult", 
+    "ImageProcessingResult",
     "ProcessorBase",
     "CacheManager",
     "ArrayToImageConverter",

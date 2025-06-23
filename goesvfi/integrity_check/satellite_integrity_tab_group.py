@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.integrity_check.enhanced_imagery_tab import EnhancedGOESImageryTab
 from goesvfi.integrity_check.optimized_timeline_tab import OptimizedTimelineTab
 from goesvfi.integrity_check.shared_components import (
     ItemPreviewWidget,
@@ -51,13 +52,17 @@ class OptimizedDateSelectionTab(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
 
-        # Add header
-        header = QLabel(self.tr("Select Date Range for Analysis"))
+        # Add header with icon
+        header = QLabel(self.tr("📅 Select Date Range for Analysis"))
         header.setStyleSheet(
             """
-        font-size: 14px;
+        font-size: 16px;
         font-weight: bold;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
+        color: #ffffff;
+        background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #4a6fa5, stop:1 #3a5f95);
+        padding: 8px 12px;
+        border-radius: 6px;
         """
         )
         layout.addWidget(header)
@@ -136,20 +141,24 @@ class OptimizedDateSelectionTab(QWidget):
         buttons_layout = QHBoxLayout()
         buttons_layout.setSpacing(5)
 
-        # Add quick select buttons
-        today_btn = QPushButton(self.tr("Today"))
+        # Add quick select buttons with icons
+        today_btn = QPushButton(self.tr("📅 Today"))
+        today_btn.setToolTip("Select today's date range")
         today_btn.clicked.connect(self._select_today)
         buttons_layout.addWidget(today_btn)
 
-        yesterday_btn = QPushButton(self.tr("Yesterday"))
+        yesterday_btn = QPushButton(self.tr("⏪ Yesterday"))
+        yesterday_btn.setToolTip("Select yesterday's date range")
         yesterday_btn.clicked.connect(self._select_yesterday)
         buttons_layout.addWidget(yesterday_btn)
 
-        last_week_btn = QPushButton(self.tr("Last 7 Days"))
+        last_week_btn = QPushButton(self.tr("📅 Last 7 Days"))
+        last_week_btn.setToolTip("Select last 7 days")
         last_week_btn.clicked.connect(self._select_last_week)
         buttons_layout.addWidget(last_week_btn)
 
-        last_month_btn = QPushButton(self.tr("Last 30 Days"))
+        last_month_btn = QPushButton(self.tr("📅 Last 30 Days"))
+        last_month_btn.setToolTip("Select last 30 days")
         last_month_btn.clicked.connect(self._select_last_month)
         buttons_layout.addWidget(last_month_btn)
 
@@ -320,18 +329,23 @@ class OptimizedResultsTab(QWidget):
         layout.setContentsMargins(10, 5, 10, 5)
         layout.setSpacing(10)
 
-        # Group by control
-        layout.addWidget(QLabel(self.tr("Group by:")))
+        # Group by control with icon
+        group_label = QLabel(self.tr("📂 Group by:"))
+        group_label.setStyleSheet("font-weight: bold; color: #f0f0f0;")
+        layout.addWidget(group_label)
 
         self.group_combo = QComboBox()
         self.group_combo.addItems(
             [
-                self.tr("Day"),
-                self.tr("Hour"),
-                self.tr("Satellite"),
-                self.tr("Status"),
-                self.tr("Source"),
+                self.tr("📅 Day"),
+                self.tr("🕰 Hour"),
+                self.tr("🛰 Satellite"),
+                self.tr("📊 Status"),
+                self.tr("📎 Source"),
             ]
+        )
+        self.group_combo.setStyleSheet(
+            "QComboBox { padding: 4px 8px; min-width: 120px; }"
         )
         self.group_combo.currentTextChanged.connect(self._handle_group_changed)
         layout.addWidget(self.group_combo)
@@ -339,12 +353,14 @@ class OptimizedResultsTab(QWidget):
         # Spacer
         layout.addStretch(1)
 
-        # Add expand/collapse buttons
-        self.expand_btn = QPushButton(self.tr("Expand All"))
+        # Add expand/collapse buttons with icons
+        self.expand_btn = QPushButton(self.tr("🔽 Expand All"))
+        self.expand_btn.setToolTip("Expand all groups")
         self.expand_btn.clicked.connect(self._expand_all)
         layout.addWidget(self.expand_btn)
 
-        self.collapse_btn = QPushButton(self.tr("Collapse All"))
+        self.collapse_btn = QPushButton(self.tr("🔼 Collapse All"))
+        self.collapse_btn.setToolTip("Collapse all groups")
         self.collapse_btn.clicked.connect(self._collapse_all)
         layout.addWidget(self.collapse_btn)
 
@@ -467,11 +483,43 @@ class SatelliteIntegrityTabGroup(QWidget):
         self.date_selection_tab = OptimizedDateSelectionTab()
         self.timeline_tab = OptimizedTimelineTab()
         self.results_tab = OptimizedResultsTab()
+        self.imagery_tab = EnhancedGOESImageryTab()
 
-        # Add tabs to tab widget
-        self.tab_widget.addTab(self.date_selection_tab, "Date Selection")
-        self.tab_widget.addTab(self.timeline_tab, "Timeline Visualization")
-        self.tab_widget.addTab(self.results_tab, "Results Organization")
+        # Add tabs to tab widget with icons
+        self.tab_widget.addTab(self.date_selection_tab, "📅 Date Selection")
+        self.tab_widget.addTab(self.timeline_tab, "📊 Timeline")
+        self.tab_widget.addTab(self.results_tab, "📁 Results")
+        self.tab_widget.addTab(self.imagery_tab, "🛰 GOES Imagery")
+
+        # Style the tab widget
+        self.tab_widget.setStyleSheet(
+            """
+            QTabWidget::pane {
+                border: 1px solid #454545;
+                border-radius: 6px;
+                background-color: #2d2d2d;
+            }
+            QTabBar::tab {
+                background-color: #3a3a3a;
+                color: #f0f0f0;
+                border: 1px solid #454545;
+                border-bottom: none;
+                border-top-left-radius: 6px;
+                border-top-right-radius: 6px;
+                padding: 8px 16px;
+                margin-right: 2px;
+                font-weight: bold;
+            }
+            QTabBar::tab:selected {
+                background-color: #2d2d2d;
+                color: #ffffff;
+                border-bottom: 2px solid #4a6fa5;
+            }
+            QTabBar::tab:hover:!selected {
+                background-color: #4a4a4a;
+            }
+            """
+        )
 
         # Add tab widget to layout
         layout.addWidget(self.tab_widget)
@@ -494,6 +542,10 @@ class SatelliteIntegrityTabGroup(QWidget):
         self.results_tab.itemSelected.connect(self.itemSelected)
         self.results_tab.downloadRequested.connect(self.downloadRequested)
         self.results_tab.viewRequested.connect(self.viewRequested)
+
+        # Connect imagery tab
+        if hasattr(self.imagery_tab, "imageRequested"):
+            self.imagery_tab.imageRequested.connect(self._handle_image_requested)
 
     def _handle_date_range_selected(self, start: datetime, end: datetime) -> None:
         """
@@ -538,6 +590,10 @@ class SatelliteIntegrityTabGroup(QWidget):
 
         # Update results tab
         self.results_tab.set_items(items, total_expected)
+
+        # Update imagery tab if it has relevant methods
+        if hasattr(self.imagery_tab, "set_data"):
+            self.imagery_tab.set_data(items, start_date, end_date)
 
     def connect_to_goes_imagery_tab(self, tab: Any) -> None:
         """
@@ -593,3 +649,13 @@ class SatelliteIntegrityTabGroup(QWidget):
         """
         # This method would need to be customized based on how
         # satellites are represented in the application
+        pass
+
+    def _handle_image_requested(self, params: dict) -> None:
+        """Handle image request from the imagery tab.
+
+        Args:
+            params: Image request parameters
+        """
+        # This would be connected to the main application's image loading system
+        LOGGER.info(f"Image requested with parameters: {params}")

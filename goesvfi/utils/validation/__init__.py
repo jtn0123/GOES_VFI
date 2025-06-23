@@ -12,7 +12,7 @@ from .pipeline import ValidationPipeline
 
 __all__ = [
     "ValidationError",
-    "ValidationResult", 
+    "ValidationResult",
     "ValidatorBase",
     "PathValidator",
     "PermissionValidator",

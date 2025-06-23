@@ -70,7 +70,6 @@ from goesvfi.utils import config, log
 from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
 from goesvfi.utils.gui_helpers import (
     ClickableLabel,
-    CropDialog,
     RifeCapabilityManager,
     ZoomDialog,
 )
@@ -3212,6 +3211,11 @@ class MainWindow(QWidget):
         is_rife = encoder_type == "RIFE"
         is_ffmpeg = encoder_type == "FFmpeg"
 
+        LOGGER.debug(
+            f"_update_rife_options_state called with encoder_type: {encoder_type}"
+        )
+        LOGGER.debug(f"is_rife: {is_rife}, is_ffmpeg: {is_ffmpeg}")
+
         # Enable/disable RIFE specific controls on MainTab
         self.main_tab.rife_model_combo.setEnabled(is_rife)
         self.main_tab.rife_tile_checkbox.setEnabled(is_rife)
@@ -3226,6 +3230,7 @@ class MainWindow(QWidget):
 
         # Enable/disable the entire FFmpeg settings tab content
         self.ffmpeg_settings_tab.set_enabled(is_ffmpeg)
+        LOGGER.debug(f"Called ffmpeg_settings_tab.set_enabled({is_ffmpeg})")
 
     # Methods _update_scd_thresh_state, _update_unsharp_controls_state, _update_quality_controls_state removed   # noqa: B950
     # as this logic is now handled within FFmpegSettingsTab.

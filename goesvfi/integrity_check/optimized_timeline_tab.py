@@ -310,19 +310,20 @@ class OptimizedTimelineTab(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(5)
 
-        # Add a header with view name
-        self.view_header = QLabel(self.tr("Timeline View"))
+        # Add a header with view name and status indicator
+        self.view_header = QLabel(self.tr("📊 Timeline View"))
         self.view_header.setObjectName("viewHeader")
         self.view_header.setStyleSheet(
             """
             #viewHeader {
                 color: #f0f0f0;
                 font-weight: bold;
-                font-size: 13px;
-                background-color: #3a3a3a;
-                border-radius: 4px;
-                padding: 3px 8px;
-                margin-bottom: 5px;
+                font-size: 14px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #4a4a4a, stop:1 #3a3a3a);
+                border: 1px solid #555555;
+                border-radius: 6px;
+                padding: 6px 12px;
+                margin-bottom: 8px;
             }
             """
         )
@@ -365,9 +366,11 @@ class OptimizedTimelineTab(QWidget):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(15, 10, 15, 10)
 
-        # Panel title
-        title = QLabel(self.tr("Selection Details"))
-        title.setStyleSheet("color: #f0f0f0; font-weight: bold; font-size: 14px;")
+        # Panel title with icon
+        title = QLabel(self.tr("📎 Selection Details"))
+        title.setStyleSheet(
+            "color: #f0f0f0; font-weight: bold; font-size: 14px; padding-bottom: 5px;"
+        )
         layout.addWidget(title)
 
         # Content area
@@ -469,12 +472,11 @@ class OptimizedTimelineTab(QWidget):
         self.view_timeline_btn.setChecked(index == 0)
         self.view_calendar_btn.setChecked(index == 1)
 
-        # Update the view header label
+        # Update the view header label with icons
         if index == 0:
-            pass
-            self.view_header.setText(self.tr("Timeline View"))
+            self.view_header.setText(self.tr("📊 Timeline View"))
         else:
-            self.view_header.setText(self.tr("Calendar View"))
+            self.view_header.setText(self.tr("📅 Calendar View"))
 
         # Also update the zoom controls visibility - only available for timeline view
         zoom_controls_visible = index == 0

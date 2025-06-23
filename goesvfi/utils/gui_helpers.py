@@ -10,16 +10,26 @@ import pathlib
 from typing import Any, Dict, Optional
 
 from PyQt6.QtCore import QPoint, QPointF, QRect, Qt, pyqtSignal
-from PyQt6.QtGui import QImage, QMouseEvent, QPainter, QPixmap, QWheelEvent
+from PyQt6.QtGui import (
+    QColor,
+    QImage,
+    QKeyEvent,
+    QMouseEvent,
+    QPainter,
+    QPen,
+    QPixmap,
+    QWheelEvent,
+)
 from PyQt6.QtWidgets import (
+    QApplication,
     QCheckBox,
+    QComboBox,
     QDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox,
     QPushButton,
-    QScrollArea,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -320,7 +330,7 @@ class CropLabel(QLabel):
         super().mouseReleaseEvent(event)
 
     def paintEvent(self, event: Any) -> None:
-        """Paint the label with selection overlay."""
+        """Paint the label with selection overlay and darkened area."""
         super().paintEvent(event)
 
         if (
@@ -329,7 +339,6 @@ class CropLabel(QLabel):
             and self.selection_end_point
         ):
             painter = QPainter(self)
-            painter.setPen(Qt.GlobalColor.red)
 
             # Calculate rectangle to draw
             if self.selecting:
@@ -353,11 +362,71 @@ class CropLabel(QLabel):
             else:
                 return  # No selection to draw
 
+            # Draw darkened overlay outside selection
+            if self.pixmap() and not self.pixmap().isNull():
+                # Create a dark overlay for the entire widget
+                overlay_color = QColor(0, 0, 0, 128)  # Semi-transparent black
+                painter.fillRect(self.rect(), overlay_color)
+
+                # Clear the selection area (make it fully transparent)
+                painter.setCompositionMode(
+                    QPainter.CompositionMode.CompositionMode_SourceIn
+                )
+                painter.fillRect(rect, Qt.GlobalColor.transparent)
+                painter.setCompositionMode(
+                    QPainter.CompositionMode.CompositionMode_SourceOver
+                )
+
+                # Redraw just the selection area from the original pixmap
+                if rect.width() > 0 and rect.height() > 0:
+                    source_rect = QRect(
+                        rect.x() - self._pixmap_offset_x,
+                        rect.y() - self._pixmap_offset_y,
+                        rect.width(),
+                        rect.height(),
+                    )
+                    painter.drawPixmap(rect, self.pixmap(), source_rect)
+
+            # Draw selection border
+            pen = QPen(QColor(255, 255, 255), 2, Qt.PenStyle.SolidLine)
+            painter.setPen(pen)
             painter.drawRect(rect)
+
+            # Draw corner handles
+            handle_size = 8
+            handle_color = QColor(255, 255, 255)
+            painter.fillRect(
+                rect.x() - handle_size // 2,
+                rect.y() - handle_size // 2,
+                handle_size,
+                handle_size,
+                handle_color,
+            )
+            painter.fillRect(
+                rect.x() + rect.width() - handle_size // 2,
+                rect.y() - handle_size // 2,
+                handle_size,
+                handle_size,
+                handle_color,
+            )
+            painter.fillRect(
+                rect.x() - handle_size // 2,
+                rect.y() + rect.height() - handle_size // 2,
+                handle_size,
+                handle_size,
+                handle_color,
+            )
+            painter.fillRect(
+                rect.x() + rect.width() - handle_size // 2,
+                rect.y() + rect.height() - handle_size // 2,
+                handle_size,
+                handle_size,
+                handle_color,
+            )
 
 
 class CropSelectionDialog(QDialog):
-    """Dialog for selecting a crop region on an image."""
+    """Full-screen borderless dialog for selecting a crop region on an image."""
 
     def __init__(
         self,
@@ -367,31 +436,184 @@ class CropSelectionDialog(QDialog):
     ) -> None:
         """Initialize the dialog with an optional image and initial rectangle."""
         super().__init__(parent)
-        self.setWindowTitle("Select Crop Region")
+
+        # Make the dialog frameless with minimal borders
+        self.setWindowFlags(
+            Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
+        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setModal(True)
-        self.resize(800, 600)
+
+        # Use most of screen real estate with small margin
+        screen = QApplication.primaryScreen()
+        if screen:
+            screen_rect = screen.geometry()
+            margin = 40  # Small margin around edges
+            self.setGeometry(
+                screen_rect.x() + margin,
+                screen_rect.y() + margin,
+                screen_rect.width() - 2 * margin,
+                screen_rect.height() - 2 * margin,
+            )
 
         self.image = image if image and not image.isNull() else QImage()
         self.initial_rect = initial_rect
         self.scale_factor = 1.0
         self._final_selected_rect_display = QRect()
+        self.zoom_level = 1.0
+        self.pan_offset = QPointF(0, 0)
+        self.is_panning = False
+        self.last_mouse_pos = QPoint()
+        self.aspect_ratio = None  # None means freeform
+        self.constrain_aspect = False
 
-        # Create the main layout
-        main_layout = QVBoxLayout(self)
-
-        # Create instruction label
-        instruction_label = QLabel("Click and drag to select a crop region")
-        instruction_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        instruction_label.setStyleSheet(
-            "QLabel { color: #666; font-size: 12px; padding: 8px; }"
+        # Set semi-transparent dark background with border
+        self.setStyleSheet(
+            """
+            QDialog {
+                background-color: rgba(20, 20, 20, 0.95);
+                border: 2px solid #333;
+                border-radius: 8px;
+            }
+        """
         )
-        main_layout.addWidget(instruction_label)
 
-        # Create scroll area for the image
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        scroll_area.setMinimumSize(600, 400)
+        # Create the main layout with no margins for full screen
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+
+        # Create header bar with instructions and controls
+        header_widget = QWidget()
+        header_widget.setFixedHeight(60)
+        header_widget.setStyleSheet(
+            """
+            QWidget {
+                background-color: rgba(0, 0, 0, 0.8);
+                border-bottom: 1px solid #444;
+            }
+        """
+        )
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(20, 10, 20, 10)
+
+        # Instructions
+        instruction_label = QLabel("Click and drag to select region")
+        instruction_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
+        instruction_label.setStyleSheet(
+            """
+            QLabel {
+                color: #ddd;
+                font-size: 14px;
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            }
+        """
+        )
+        header_layout.addWidget(instruction_label)
+
+        # Add aspect ratio controls
+        aspect_container = QWidget()
+        aspect_layout = QHBoxLayout(aspect_container)
+        aspect_layout.setContentsMargins(0, 0, 0, 0)
+        aspect_layout.setSpacing(10)
+
+        # Aspect ratio label
+        aspect_label = QLabel("Aspect Ratio:")
+        aspect_label.setStyleSheet("QLabel { color: #aaa; font-size: 12px; }")
+        aspect_layout.addWidget(aspect_label)
+
+        # Aspect ratio combo box
+        self.aspect_combo = QComboBox()
+        self.aspect_combo.setStyleSheet(
+            """
+            QComboBox {
+                background-color: #333;
+                color: #ddd;
+                border: 1px solid #555;
+                padding: 4px 10px;
+                font-size: 12px;
+                border-radius: 4px;
+                min-width: 120px;
+            }
+            QComboBox:hover {
+                border-color: #777;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox::down-arrow {
+                image: none;
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 5px solid #888;
+                margin-right: 5px;
+            }
+        """
+        )
+        self.aspect_combo.addItems(
+            [
+                "Freeform",
+                "16:9 (HD)",
+                "4:3 (Standard)",
+                "1:1 (Square)",
+                "3:2 (Photo)",
+                "2:1 (Cinema)",
+                "9:16 (Portrait)",
+            ]
+        )
+        self.aspect_combo.currentTextChanged.connect(self._on_aspect_changed)
+        aspect_layout.addWidget(self.aspect_combo)
+
+        # Constrain checkbox
+        self.constrain_checkbox = QCheckBox("Lock")
+        self.constrain_checkbox.setStyleSheet(
+            """
+            QCheckBox {
+                color: #aaa;
+                font-size: 12px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                border: 1px solid #666;
+                border-radius: 3px;
+                background-color: #333;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #0d7377;
+                border-color: #14a085;
+            }
+        """
+        )
+        self.constrain_checkbox.toggled.connect(self._on_constrain_toggled)
+        aspect_layout.addWidget(self.constrain_checkbox)
+
+        header_layout.addWidget(aspect_container)
+        header_layout.addStretch()
+
+        # Add zoom level indicator
+        self.zoom_label = QLabel("100%")
+        self.zoom_label.setStyleSheet(
+            """
+            QLabel {
+                color: #888;
+                font-size: 12px;
+                font-family: monospace;
+                padding: 0 10px;
+            }
+        """
+        )
+        header_layout.addWidget(self.zoom_label)
+
+        main_layout.addWidget(header_widget)
+
+        # Create main content area (no scroll area needed for full screen)
+        content_widget = QWidget()
+        content_widget.setStyleSheet("QWidget { background-color: #1e1e1e; }")
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(0, 0, 0, 0)
 
         # Create the crop label
         self.crop_label = CropLabel()
@@ -400,22 +622,30 @@ class CropSelectionDialog(QDialog):
 
         # Set up the image if provided
         if image and isinstance(image, QImage) and not image.isNull():
-            # Scale image to fit dialog while maintaining aspect ratio
-            max_width, max_height = 700, 450
-            if image.width() > max_width or image.height() > max_height:
-                scaled_image = image.scaled(
-                    max_width,
-                    max_height,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
-                )
-                self.scale_factor = max(
-                    image.width() / scaled_image.width(),
-                    image.height() / scaled_image.height(),
-                )
+            # Get available space for the image
+            screen = QApplication.primaryScreen()
+            if screen:
+                screen_size = screen.size()
+                # Leave space for header (60px) and footer (100px) and margins (80px total)
+                available_height = screen_size.height() - 240
+                available_width = screen_size.width() - 120
             else:
-                scaled_image = image
-                self.scale_factor = 1.0
+                available_height = 800
+                available_width = 1200
+
+            # Scale image to fit available space while maintaining aspect ratio
+            scaled_image = image.scaled(
+                available_width,
+                available_height,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+
+            # Calculate scale factor for coordinate conversion
+            self.scale_factor = max(
+                image.width() / scaled_image.width(),
+                image.height() / scaled_image.height(),
+            )
 
             pixmap = QPixmap.fromImage(scaled_image)
             self.crop_label.setPixmap(pixmap)
@@ -432,76 +662,178 @@ class CropSelectionDialog(QDialog):
             )
             self.crop_label.selected_rect = scaled_rect
 
-        scroll_area.setWidget(self.crop_label)
-        main_layout.addWidget(scroll_area)
+        content_layout.addWidget(self.crop_label)
+        main_layout.addWidget(content_widget, 1)  # Stretch to fill available space
 
-        # Create a horizontal layout for status and preview
-        info_layout = QHBoxLayout()
-
-        # Create status label to show selection info
-        self.status_label = QLabel("No selection")
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.status_label.setStyleSheet(
-            "QLabel { color: #333; font-size: 11px; padding: 4px; }"
+        # Create footer bar with status and preview
+        footer_widget = QWidget()
+        footer_widget.setFixedHeight(100)
+        footer_widget.setStyleSheet(
+            """
+            QWidget {
+                background-color: rgba(0, 0, 0, 0.8);
+                border-top: 1px solid #444;
+            }
+        """
         )
-        info_layout.addWidget(self.status_label, 2)  # Give status more space
+        footer_layout = QHBoxLayout(footer_widget)
+        footer_layout.setContentsMargins(20, 10, 20, 10)
 
-        # Add a preview of the cropped area
-        preview_group = QWidget()
-        preview_layout = QVBoxLayout(preview_group)
-        preview_layout.setContentsMargins(5, 5, 5, 5)
+        # Status info on the left
+        status_widget = QWidget()
+        status_layout = QVBoxLayout(status_widget)
+        status_layout.setContentsMargins(0, 0, 0, 0)
 
-        preview_title = QLabel("Crop Preview")
+        self.status_label = QLabel("No selection")
+        self.status_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
+        self.status_label.setStyleSheet(
+            """
+            QLabel {
+                color: #ddd;
+                font-size: 14px;
+                font-family: monospace;
+            }
+        """
+        )
+        status_layout.addWidget(self.status_label)
+
+        # Add tips
+        tips_label = QLabel("Tip: Hold Shift to constrain proportions while dragging")
+        tips_label.setStyleSheet(
+            """
+            QLabel {
+                color: #888;
+                font-size: 12px;
+                font-style: italic;
+            }
+        """
+        )
+        status_layout.addWidget(tips_label)
+
+        footer_layout.addWidget(status_widget, 2)
+
+        # Preview in the center
+        preview_container = QWidget()
+        preview_container.setFixedSize(140, 80)
+        preview_layout = QVBoxLayout(preview_container)
+        preview_layout.setContentsMargins(10, 0, 10, 0)
+        preview_layout.setSpacing(2)
+
+        preview_title = QLabel("Preview")
         preview_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         preview_title.setStyleSheet(
-            "QLabel { font-weight: bold; font-size: 10px; color: #555; }"
+            """
+            QLabel {
+                color: #888;
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+        """
         )
         preview_layout.addWidget(preview_title)
 
         self.crop_preview_label = QLabel("Select a region")
         self.crop_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.crop_preview_label.setFixedSize(120, 120)
+        self.crop_preview_label.setFixedSize(120, 60)
         self.crop_preview_label.setStyleSheet(
             """
             QLabel {
-                border: 1px solid #ccc;
-                background-color: #f5f5f5;
+                border: 1px solid #444;
+                background-color: #2a2a2a;
                 color: #666;
                 font-size: 9px;
+                border-radius: 4px;
             }
         """
         )
         preview_layout.addWidget(self.crop_preview_label)
 
-        info_layout.addWidget(preview_group, 1)  # Give preview less space
-        main_layout.addLayout(info_layout)
+        footer_layout.addWidget(preview_container)
+        footer_layout.addStretch(1)
+
+        # Add action buttons to the footer (before adding footer to main layout)
+        button_container = QWidget()
+        button_layout = QHBoxLayout(button_container)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setSpacing(10)
+
+        # Style for buttons
+        button_style = """
+            QPushButton {
+                background-color: #333;
+                color: #ddd;
+                border: 1px solid #555;
+                padding: 8px 20px;
+                font-size: 13px;
+                border-radius: 4px;
+                font-weight: 500;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #444;
+                border-color: #666;
+            }
+            QPushButton:pressed {
+                background-color: #222;
+            }
+            QPushButton:disabled {
+                background-color: #2a2a2a;
+                color: #666;
+                border-color: #333;
+            }
+        """
+
+        # Clear button - starts disabled
+        self.clear_button = QPushButton("Clear")
+        self.clear_button.setStyleSheet(button_style)
+        self.clear_button.clicked.connect(self._clear_selection)
+        self.clear_button.setEnabled(False)
+        button_layout.addWidget(self.clear_button)
+
+        # Cancel button
+        cancel_button = QPushButton("Cancel (Esc)")
+        cancel_button.setStyleSheet(button_style)
+        cancel_button.clicked.connect(self.reject)
+        button_layout.addWidget(cancel_button)
+
+        # OK button with accent color - starts disabled
+        self.ok_button = QPushButton("Crop (Enter)")
+        self.ok_button.setStyleSheet(
+            button_style
+            + """
+            QPushButton {
+                background-color: #0d7377;
+                border-color: #14a085;
+            }
+            QPushButton:hover {
+                background-color: #14a085;
+            }
+            QPushButton:pressed {
+                background-color: #0a5d61;
+            }
+            QPushButton:disabled {
+                background-color: #2a2a2a;
+                color: #666;
+                border-color: #333;
+            }
+        """
+        )
+        self.ok_button.clicked.connect(self._accept_selection)
+        self.ok_button.setEnabled(False)
+        button_layout.addWidget(self.ok_button)
+
+        footer_layout.addWidget(button_container)
+
+        # Now add the footer to the main layout
+        main_layout.addWidget(footer_widget)
 
         # Connect signals to update status
         self.crop_label.selection_changed.connect(self._update_status)
         self.crop_label.selection_finished.connect(self._update_status)
-
-        # Create button layout
-        button_layout = QHBoxLayout()
-
-        # Clear selection button
-        clear_button = QPushButton("Clear Selection")
-        clear_button.clicked.connect(self._clear_selection)
-        button_layout.addWidget(clear_button)
-
-        button_layout.addStretch()
-
-        # Cancel button
-        cancel_button = QPushButton("Cancel")
-        cancel_button.clicked.connect(self.reject)
-        button_layout.addWidget(cancel_button)
-
-        # OK button
-        ok_button = QPushButton("OK")
-        ok_button.setDefault(True)
-        ok_button.clicked.connect(self._accept_selection)
-        button_layout.addWidget(ok_button)
-
-        main_layout.addLayout(button_layout)
+        self.crop_label.selection_finished.connect(self._on_selection_finished)
 
         # Update initial status
         self._update_status()
@@ -643,6 +975,156 @@ class CropSelectionDialog(QDialog):
     def store_final_selection(self) -> None:
         """Store the final selection (called before dialog closes)."""
         self._store_final_selection()
+
+    def keyPressEvent(self, event: Optional[QKeyEvent]) -> None:
+        """Handle keyboard shortcuts."""
+        if event is None:
+            return
+
+        key = event.key()
+
+        # ESC to cancel
+        if key == Qt.Key.Key_Escape:
+            self.reject()
+        # Enter/Return to accept
+        elif key in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self._accept_selection()
+        # Delete/Backspace to clear selection
+        elif key in (Qt.Key.Key_Delete, Qt.Key.Key_Backspace):
+            self._clear_selection()
+        # Plus/Equals to zoom in
+        elif key in (Qt.Key.Key_Plus, Qt.Key.Key_Equal):
+            self._zoom_in()
+        # Minus to zoom out
+        elif key == Qt.Key.Key_Minus:
+            self._zoom_out()
+        # R to reset zoom
+        elif key == Qt.Key.Key_R:
+            self._reset_zoom()
+        else:
+            super().keyPressEvent(event)
+
+    def wheelEvent(self, event: Optional[QWheelEvent]) -> None:
+        """Handle mouse wheel for zooming."""
+        if event is None:
+            return
+
+        # Get zoom direction
+        delta = event.angleDelta().y()
+        if delta > 0:
+            self._zoom_in()
+        else:
+            self._zoom_out()
+
+        event.accept()
+
+    def _zoom_in(self) -> None:
+        """Zoom in on the image."""
+        if hasattr(self, "zoom_level"):
+            self.zoom_level = min(self.zoom_level * 1.1, 5.0)
+            self._update_zoom_display()
+            self._apply_zoom()
+
+    def _zoom_out(self) -> None:
+        """Zoom out on the image."""
+        if hasattr(self, "zoom_level"):
+            self.zoom_level = max(self.zoom_level / 1.1, 0.1)
+            self._update_zoom_display()
+            self._apply_zoom()
+
+    def _reset_zoom(self) -> None:
+        """Reset zoom to 100%."""
+        if hasattr(self, "zoom_level"):
+            self.zoom_level = 1.0
+            self._update_zoom_display()
+            self._apply_zoom()
+
+    def _update_zoom_display(self) -> None:
+        """Update the zoom level indicator."""
+        if hasattr(self, "zoom_label"):
+            self.zoom_label.setText(f"{int(self.zoom_level * 100)}%")
+
+    def _apply_zoom(self) -> None:
+        """Apply the current zoom level to the image display."""
+        # This would need to be implemented to actually zoom the image
+        # For now, just update the crop label
+        self.crop_label.update()
+
+    def _on_selection_finished(self) -> None:
+        """Called when selection is finished."""
+        # Enable/disable buttons based on selection
+        has_selection = (
+            self.crop_label.selected_rect is not None
+            and not self.crop_label.selected_rect.isNull()
+        )
+        if hasattr(self, "clear_button"):
+            self.clear_button.setEnabled(has_selection)
+        if hasattr(self, "ok_button"):
+            self.ok_button.setEnabled(has_selection)
+
+    def _on_aspect_changed(self, text: str) -> None:
+        """Handle aspect ratio selection change."""
+        if text == "Freeform":
+            self.aspect_ratio = None
+            self.constrain_checkbox.setChecked(False)
+            self.constrain_checkbox.setEnabled(False)
+        else:
+            # Parse aspect ratio from text
+            if "16:9" in text:
+                self.aspect_ratio = 16 / 9
+            elif "4:3" in text:
+                self.aspect_ratio = 4 / 3
+            elif "1:1" in text:
+                self.aspect_ratio = 1.0
+            elif "3:2" in text:
+                self.aspect_ratio = 3 / 2
+            elif "2:1" in text:
+                self.aspect_ratio = 2.0
+            elif "9:16" in text:
+                self.aspect_ratio = 9 / 16
+
+            self.constrain_checkbox.setEnabled(True)
+
+            # Apply aspect ratio to current selection if locked
+            if self.constrain_checkbox.isChecked() and self.crop_label.selected_rect:
+                self._apply_aspect_ratio()
+
+    def _on_constrain_toggled(self, checked: bool) -> None:
+        """Handle constraint checkbox toggle."""
+        self.constrain_aspect = checked
+        if checked and self.aspect_ratio and self.crop_label.selected_rect:
+            self._apply_aspect_ratio()
+
+    def _apply_aspect_ratio(self) -> None:
+        """Apply the current aspect ratio to the selection."""
+        if not self.crop_label.selected_rect or not self.aspect_ratio:
+            return
+
+        rect = self.crop_label.selected_rect
+        current_width = rect.width()
+        current_height = rect.height()
+
+        if current_width == 0 or current_height == 0:
+            return
+
+        # Calculate new dimensions maintaining aspect ratio
+        current_ratio = current_width / current_height
+
+        if current_ratio > self.aspect_ratio:
+            # Too wide, adjust width
+            new_width = int(current_height * self.aspect_ratio)
+            new_height = current_height
+        else:
+            # Too tall, adjust height
+            new_width = current_width
+            new_height = int(current_width / self.aspect_ratio)
+
+        # Update the rectangle
+        rect.setWidth(new_width)
+        rect.setHeight(new_height)
+        self.crop_label.selected_rect = rect
+        self.crop_label.update()
+        self._update_status()
 
 
 class ImageViewerDialog(QDialog):

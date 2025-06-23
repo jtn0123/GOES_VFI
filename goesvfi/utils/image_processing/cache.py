@@ -43,7 +43,7 @@ class CacheManager:
                 # Remove least recently used item
                 oldest_key = self.access_order.pop(0)
                 del self.cache[oldest_key]
-            
+
             self.cache[key] = data
             self.access_order.append(key)
 
@@ -91,25 +91,25 @@ class CachedProcessor(ProcessorBase):
         try:
             # Generate cache key
             cache_key = self.key_generator(input_data, context)
-            
+
             # Check cache first
             cached_result = self.cache_manager.get(cache_key)
             if cached_result is not None:
                 return ImageProcessingResult.success_result(
                     cached_result, {"cache_hit": True, "cache_key": cache_key}
                 )
-            
+
             # Process normally
             result = self.processor.process(input_data, context)
-            
+
             # Cache successful results
             if result.success and result.data is not None:
                 self.cache_manager.put(cache_key, result.data)
                 result.metadata["cache_stored"] = True
                 result.metadata["cache_key"] = cache_key
-            
+
             return result
-            
+
         except Exception as e:
             return ImageProcessingResult.failure_result(
                 self._create_error(f"Cache processing failed: {e}", e)
@@ -131,25 +131,25 @@ class SanchezCacheProcessor(ProcessorBase):
             return ImageProcessingResult.failure_result(
                 self._create_error("No image_path in context for cache lookup")
             )
-        
+
         image_path = context["image_path"]
-        
+
         if image_path in self.cache_dict:
             cached_array = self.cache_dict[image_path]
-            
+
             # Import here to avoid circular imports
             from goesvfi.integrity_check.render.netcdf import ImageData
-            
+
             # Create ImageData from cached array
             image_data = ImageData(
                 image_data=cached_array,
                 metadata={"source_path": image_path, "cached": True},
             )
-            
+
             return ImageProcessingResult.success_result(
                 image_data, {"cache_hit": True, "source": "sanchez_cache"}
             )
-        
+
         return ImageProcessingResult.failure_result(
             self._create_error("No cached Sanchez result found")
         )

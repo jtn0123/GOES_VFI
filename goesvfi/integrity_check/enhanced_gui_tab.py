@@ -202,13 +202,21 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                 break
 
         if control_layout:
-            # Add fetcher configuration button
-            self.configure_fetchers_btn = QPushButton("Configure Fetchers")
+            # Add fetcher configuration button with improved styling
+            self.configure_fetchers_btn = QPushButton("⚙ Configure")
+            self.configure_fetchers_btn.setToolTip(
+                "Configure CDN and S3 fetching options"
+            )
+            self.configure_fetchers_btn.setMaximumWidth(100)
             self.configure_fetchers_btn.clicked.connect(self._show_fetcher_config)
             control_layout.addWidget(self.configure_fetchers_btn)
 
-            # Add status label for fetcher status
-            self.fetcher_status_label = QLabel("CDN/S3 Ready")
+            # Add status label for fetcher status with improved visibility
+            self.fetcher_status_label = QLabel("⚡ CDN/S3 Ready")
+            self.fetcher_status_label.setStyleSheet(
+                "QLabel { color: #66ff66; font-weight: bold; padding: 2px 8px; "
+                "background-color: #2a2a2a; border-radius: 3px; }"
+            )
             control_layout.addWidget(self.fetcher_status_label)
 
         # Add fetch source radio buttons
@@ -474,8 +482,10 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         self.fetch_source_group.addButton(self.s3_radio, 2)
         self.fetch_source_group.addButton(self.local_radio, 3)
 
-        # Add to layout
-        radio_layout.addWidget(QLabel("Fetch Source:"))
+        # Add to layout with improved spacing and grouping
+        source_label = QLabel("📡 Source:")
+        source_label.setStyleSheet("font-weight: bold; color: #f0f0f0;")
+        radio_layout.addWidget(source_label)
         radio_layout.addWidget(self.auto_radio)
         radio_layout.addWidget(self.cdn_radio)
         radio_layout.addWidget(self.s3_radio)
@@ -530,13 +540,19 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         self.satellite_group.addButton(self.goes16_radio, 0)
         self.satellite_group.addButton(self.goes18_radio, 1)
 
-        # Add to layout
-        radio_layout.addWidget(QLabel("Satellite:"))
+        # Add to layout with improved styling
+        satellite_label = QLabel("🛰 Satellite:")
+        satellite_label.setStyleSheet("font-weight: bold; color: #f0f0f0;")
+        radio_layout.addWidget(satellite_label)
         radio_layout.addWidget(self.goes16_radio)
         radio_layout.addWidget(self.goes18_radio)
 
-        # Add auto-detect button
-        self.auto_detect_btn = QPushButton("Auto-Detect")
+        # Add auto-detect button with improved styling
+        self.auto_detect_btn = QPushButton("🔍 Auto-Detect")
+        self.auto_detect_btn.setToolTip(
+            "Automatically detect which satellite has more files"
+        )
+        self.auto_detect_btn.setMaximumWidth(120)
         self.auto_detect_btn.clicked.connect(self._auto_detect_satellite)
         radio_layout.addWidget(self.auto_detect_btn)
 

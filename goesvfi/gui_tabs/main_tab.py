@@ -227,14 +227,115 @@ class MainTab(QWidget):
         self._connect_signals()
         self._post_init_setup()  # Perform initial state updates
 
+    def _create_header(self) -> QLabel:
+        """Create the enhanced header for the main tab."""
+        header = QLabel("🎬 GOES VFI - Video Frame Interpolation")
+        header.setStyleSheet(
+            """
+            QLabel {
+                font-size: 20px;
+                font-weight: bold;
+                color: #ffffff;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a6fa5, stop:0.5 #3a5f95, stop:1 #2a4f85);
+                padding: 15px 20px;
+                border-radius: 10px;
+                margin-bottom: 10px;
+                border: 2px solid #5a7fb5;
+            }
+            """
+        )
+        return header
+
     def _setup_ui(self) -> None:
         """Create the UI elements for the main tab."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(10, 10, 10, 10)  # Adjust margins
         layout.setSpacing(10)  # Adjust spacing between major groups
 
+        # Apply enhanced styling to the main tab
+        self.setStyleSheet(
+            """
+            QGroupBox {
+                background-color: #2d2d2d;
+                border: 2px solid #454545;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 12px;
+                color: #f0f0f0;
+                padding-top: 10px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 8px 0 8px;
+                color: #ffffff;
+            }
+            QLineEdit {
+                padding: 6px 10px;
+                background-color: #3a3a3a;
+                border: 2px solid #555555;
+                border-radius: 6px;
+                color: #f0f0f0;
+                font-size: 11px;
+            }
+            QLineEdit:focus {
+                border-color: #4a6fa5;
+            }
+            QPushButton {
+                background-color: #4a6fa5;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-weight: bold;
+                font-size: 11px;
+            }
+            QPushButton:hover {
+                background-color: #5a7fb5;
+            }
+            QPushButton:pressed {
+                background-color: #3a5f95;
+            }
+            QComboBox {
+                padding: 6px 10px;
+                background-color: #3a3a3a;
+                border: 2px solid #555555;
+                border-radius: 6px;
+                color: #f0f0f0;
+                font-size: 11px;
+            }
+            QComboBox:hover {
+                border-color: #4a6fa5;
+            }
+            QSpinBox {
+                padding: 6px 10px;
+                background-color: #3a3a3a;
+                border: 2px solid #555555;
+                border-radius: 6px;
+                color: #f0f0f0;
+                font-size: 11px;
+            }
+            QSpinBox:hover {
+                border-color: #4a6fa5;
+            }
+            QCheckBox {
+                color: #f0f0f0;
+                font-size: 11px;
+            }
+            QLabel {
+                color: #f0f0f0;
+                font-size: 11px;
+            }
+        """
+        )
+
+        # Add enhanced header
+        header = self._create_header()
+        layout.addWidget(header)
+
         # Input/Output Group
-        io_group = QGroupBox(self.tr("Input/Output"))
+        io_group = QGroupBox(self.tr("📁 Input/Output"))
         io_layout = QGridLayout(io_group)
         io_layout.setContentsMargins(10, 15, 10, 10)
         io_layout.setSpacing(8)
@@ -307,7 +408,7 @@ class MainTab(QWidget):
         processing_group = self._create_processing_settings_group()  # Calls helper
 
         # RIFE Options Group
-        self.rife_options_group = QGroupBox(self.tr("RIFE Options"))
+        self.rife_options_group = QGroupBox(self.tr("🤖 RIFE Options"))
         self.rife_options_group.setCheckable(False)
         rife_layout = QGridLayout(self.rife_options_group)
         rife_layout.addWidget(QLabel(self.tr("RIFE Model:")), 0, 0)
@@ -340,7 +441,7 @@ class MainTab(QWidget):
         rife_layout.addWidget(self.rife_tta_temporal_checkbox, 5, 0, 1, 2)
 
         # Sanchez Options Group
-        self.sanchez_options_group = QGroupBox(self.tr("Sanchez Options"))
+        self.sanchez_options_group = QGroupBox(self.tr("🌍 Sanchez Options"))
         self.sanchez_options_group.setCheckable(False)
         sanchez_layout = QGridLayout(self.sanchez_options_group)
         # False colour checkbox moved near previews
@@ -790,8 +891,22 @@ class MainTab(QWidget):
             LOGGER.debug(
                 f"Opening CropSelectionDialog with image size: {full_res_qimage.size()}"
             )
+
+            # Get current crop rect if it exists
+            current_crop_rect_mw = getattr(
+                self.main_window_ref, "current_crop_rect", None
+            )
+            initial_rect = None
+            if current_crop_rect_mw:
+                # Convert tuple to QRect
+                x, y, w, h = current_crop_rect_mw
+                initial_rect = QRect(x, y, w, h)
+                LOGGER.debug(f"Using existing crop rect as initial: {initial_rect}")
+
             LOGGER.debug("Instantiating CropSelectionDialog...")  # Added logging
-            dialog = CropSelectionDialog(full_res_qimage, self)  # Pass QImage
+            dialog = CropSelectionDialog(
+                full_res_qimage, initial_rect, self
+            )  # Pass QImage, initial_rect, parent
 
             LOGGER.debug("Calling dialog.exec()...")  # Added logging
             result_code = dialog.exec()  # Store result code
@@ -990,7 +1105,7 @@ class MainTab(QWidget):
 
     def _enhance_preview_area(self) -> QGroupBox:
         """Create the group box containing the preview image labels."""
-        previews_group = QGroupBox(self.tr("Previews"))
+        previews_group = QGroupBox(self.tr("🖼️ Previews"))
         previews_layout = QHBoxLayout(previews_group)
         previews_layout.setContentsMargins(10, 15, 10, 10)
         previews_layout.setSpacing(10)
@@ -1029,7 +1144,7 @@ class MainTab(QWidget):
 
     def _create_processing_settings_group(self) -> QGroupBox:
         """Create the group box for general processing settings."""
-        group = QGroupBox(self.tr("Processing Settings"))
+        group = QGroupBox(self.tr("⚙️ Processing Settings"))
         layout = QGridLayout(group)
         layout.setContentsMargins(10, 15, 10, 10)
         layout.setSpacing(8)
@@ -2199,13 +2314,9 @@ class MainTab(QWidget):
 
     def _update_sanchez_options_state(self, encoder: str) -> None:
         """Enable/disable the Sanchez options group based on the selected encoder."""
-        is_sanchez = (
-            encoder == "Sanchez"
-        )  # Assuming Sanchez might be an encoder option later
-        # For now, Sanchez options might be relevant even with RIFE/FFmpeg if used for preview/post-processing
-        # Let's keep it enabled unless explicitly tied to a "Sanchez Encoder" mode.
-        # self.sanchez_options_group.setEnabled(is_sanchez)
-        self.sanchez_options_group.setEnabled(True)  # Keep enabled for now
+        # Sanchez is used for false color preview with RIFE
+        is_rife = encoder == "RIFE"
+        self.sanchez_options_group.setEnabled(is_rife)
 
     def _on_encoder_changed(self, encoder: str) -> None:
         """Handle changes in the selected encoder."""

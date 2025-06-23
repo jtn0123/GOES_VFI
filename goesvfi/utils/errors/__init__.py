@@ -8,12 +8,12 @@ of functions with extensive error handling and recovery logic.
 from .base import ErrorCategory, ErrorContext, StructuredError
 from .classifier import ErrorClassifier
 from .handler import ErrorHandler, ErrorHandlerChain
-from .reporter import ErrorReporter
 from .recovery import RecoveryManager, RecoveryStrategy
+from .reporter import ErrorReporter
 
 __all__ = [
     "ErrorCategory",
-    "ErrorContext", 
+    "ErrorContext",
     "StructuredError",
     "ErrorClassifier",
     "ErrorHandler",

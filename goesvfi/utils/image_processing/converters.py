@@ -32,7 +32,7 @@ class ArrayToImageConverter(ProcessorBase):
                 )
 
             array = input_data
-            
+
             # Handle different array shapes and types
             if array.ndim == 2:
                 # Grayscale image
@@ -59,7 +59,8 @@ class ArrayToImageConverter(ProcessorBase):
                 )
 
             return ImageProcessingResult.success_result(
-                qimage, {"original_shape": array.shape, "original_dtype": str(array.dtype)}
+                qimage,
+                {"original_shape": array.shape, "original_dtype": str(array.dtype)},
             )
 
         except Exception as e:
@@ -71,8 +72,10 @@ class ArrayToImageConverter(ProcessorBase):
         """Convert grayscale array to QImage."""
         # Ensure 8-bit
         if array.dtype != np.uint8:
-            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
-        
+            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(
+                np.uint8
+            )
+
         height, width = array.shape
         return QImage(array.data, width, height, width, QImage.Format.Format_Grayscale8)
 
@@ -80,21 +83,29 @@ class ArrayToImageConverter(ProcessorBase):
         """Convert RGB array to QImage."""
         # Ensure 8-bit
         if array.dtype != np.uint8:
-            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
-        
+            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(
+                np.uint8
+            )
+
         height, width, channels = array.shape
         bytes_per_line = width * channels
-        return QImage(array.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
+        return QImage(
+            array.data, width, height, bytes_per_line, QImage.Format.Format_RGB888
+        )
 
     def _array_to_qimage_rgba(self, array: np.ndarray) -> QImage:
         """Convert RGBA array to QImage."""
         # Ensure 8-bit
         if array.dtype != np.uint8:
-            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
-        
+            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(
+                np.uint8
+            )
+
         height, width, channels = array.shape
         bytes_per_line = width * channels
-        return QImage(array.data, width, height, bytes_per_line, QImage.Format.Format_RGBA8888)
+        return QImage(
+            array.data, width, height, bytes_per_line, QImage.Format.Format_RGBA8888
+        )
 
 
 class ImageToPixmapConverter(ProcessorBase):
@@ -122,12 +133,12 @@ class ImageToPixmapConverter(ProcessorBase):
                 )
 
             qimage = input_data
-            
+
             # Get target size from context or instance variable
             target_size = self.target_size
             if context and "target_size" in context:
                 target_size = context["target_size"]
-            
+
             # Scale if target size is specified
             if target_size and (target_size.width() > 0 and target_size.height() > 0):
                 scaled_image = qimage.scaled(
@@ -138,7 +149,7 @@ class ImageToPixmapConverter(ProcessorBase):
 
             # Convert to pixmap
             pixmap = QPixmap.fromImage(scaled_image)
-            
+
             if pixmap.isNull():
                 return ImageProcessingResult.failure_result(
                     self._create_error("Failed to create QPixmap from QImage")
@@ -178,17 +189,19 @@ class ImageDataConverter(ProcessorBase):
                 )
 
             image_data = input_data
-            
+
             if image_data.image_data is None:
                 return ImageProcessingResult.failure_result(
                     self._create_error("ImageData contains no image data")
                 )
 
             array = image_data.image_data
-            
+
             if not isinstance(array, np.ndarray):
                 return ImageProcessingResult.failure_result(
-                    self._create_error(f"ImageData contains non-array data: {type(array)}")
+                    self._create_error(
+                        f"ImageData contains non-array data: {type(array)}"
+                    )
                 )
 
             metadata = {
@@ -222,19 +235,15 @@ class CropProcessor(ProcessorBase):
                 )
 
             array = input_data
-            
+
             if not context or "crop_rect" not in context:
                 # No crop requested, pass through
-                return ImageProcessingResult.success_result(
-                    array, {"cropped": False}
-                )
+                return ImageProcessingResult.success_result(array, {"cropped": False})
 
             crop_rect = context["crop_rect"]
             if crop_rect is None:
                 # No crop requested, pass through
-                return ImageProcessingResult.success_result(
-                    array, {"cropped": False}
-                )
+                return ImageProcessingResult.success_result(array, {"cropped": False})
 
             # Extract crop coordinates
             if isinstance(crop_rect, (tuple, list)) and len(crop_rect) == 4:
@@ -251,7 +260,9 @@ class CropProcessor(ProcessorBase):
                 img_height, img_width = array.shape[:2]
             else:
                 return ImageProcessingResult.failure_result(
-                    self._create_error(f"Unsupported array shape for cropping: {array.shape}")
+                    self._create_error(
+                        f"Unsupported array shape for cropping: {array.shape}"
+                    )
                 )
 
             # Clamp crop coordinates to image bounds
@@ -262,9 +273,9 @@ class CropProcessor(ProcessorBase):
 
             # Perform crop
             if array.ndim == 2:
-                cropped = array[y:y+height, x:x+width]
+                cropped = array[y : y + height, x : x + width]
             else:
-                cropped = array[y:y+height, x:x+width, :]
+                cropped = array[y : y + height, x : x + width, :]
 
             metadata = {
                 "cropped": True,

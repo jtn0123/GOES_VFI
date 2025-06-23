@@ -12,6 +12,7 @@ from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QPixmap
 
 from goesvfi.utils import log
+
 from .cache import SanchezCacheProcessor
 from .converters import (
     ArrayToImageConverter,
@@ -28,7 +29,7 @@ LOGGER = log.get_logger(__name__)
 class RefactoredPreviewProcessor:
     """
     Refactored version of _load_process_scale_preview using the image processing framework.
-    
+
     This class demonstrates how to reduce complexity by breaking down the monolithic
     350-line function into composable processing stages.
     """
@@ -48,37 +49,37 @@ class RefactoredPreviewProcessor:
     ) -> QPixmap | None:
         """
         Refactored preview processing function with dramatically reduced complexity.
-        
+
         Original function: F-grade complexity (54), 350 lines
         Refactored function: Expected A-B grade complexity, <50 lines
         """
         try:
             # Clear previous state
             self._clear_label_state(target_label)
-            
+
             # Build processing context
             context = self._build_processing_context(
                 image_path, target_label, apply_sanchez, crop_rect
             )
-            
+
             # Load initial image data
             initial_data = self._load_initial_data(
                 image_path, image_loader, sanchez_processor, apply_sanchez, context
             )
-            
+
             if initial_data is None:
                 return None
-            
+
             # Process through pipeline
             result = self._process_through_pipeline(initial_data, context)
-            
+
             if not result.success:
                 LOGGER.error(f"Preview processing failed: {result.errors}")
                 return None
-            
+
             # Update label state with results
             self._update_label_state(target_label, image_path, result)
-            
+
             return result.data
 
         except Exception as e:
@@ -148,7 +149,7 @@ class RefactoredPreviewProcessor:
     def _create_cached_image_data(self, image_path: Path) -> Any:
         """Create ImageData from cached Sanchez result."""
         from goesvfi.integrity_check.render.netcdf import ImageData
-        
+
         cached_array = self.sanchez_cache[image_path]
         return ImageData(
             image_data=cached_array,
@@ -172,10 +173,10 @@ class RefactoredPreviewProcessor:
 
             # Get resolution setting (simplified)
             res_km_str = "4"  # Default resolution
-            
+
             # Process with Sanchez
             processed_data = sanchez_processor.process(original_data, res_km_str)
-            
+
             if processed_data and processed_data.image_data is not None:
                 # Cache the result
                 self.sanchez_cache[image_path] = processed_data.image_data
@@ -201,21 +202,25 @@ class RefactoredPreviewProcessor:
             LOGGER.error(f"Failed to load original image {image_path}: {e}")
             return None
 
-    def _process_through_pipeline(self, input_data: Any, context: Dict[str, Any]) -> Any:
+    def _process_through_pipeline(
+        self, input_data: Any, context: Dict[str, Any]
+    ) -> Any:
         """Process data through the image processing pipeline."""
         # Build pipeline with conditional Sanchez cache checking
         pipeline_stages = [
-            ImageDataConverter(),           # Convert ImageData to numpy array
-            CropProcessor(),               # Apply crop if requested
-            ArrayToImageConverter(),       # Convert array to QImage
-            ImageToPixmapConverter(),      # Convert to scaled QPixmap
-            SanchezWarningOverlay(),       # Add warning overlay if needed
+            ImageDataConverter(),  # Convert ImageData to numpy array
+            CropProcessor(),  # Apply crop if requested
+            ArrayToImageConverter(),  # Convert array to QImage
+            ImageToPixmapConverter(),  # Convert to scaled QPixmap
+            SanchezWarningOverlay(),  # Add warning overlay if needed
         ]
 
         pipeline = ImageProcessingPipeline(pipeline_stages)
         return pipeline.process(input_data, context)
 
-    def _update_label_state(self, target_label: Any, image_path: Path, result: Any) -> None:
+    def _update_label_state(
+        self, target_label: Any, image_path: Path, result: Any
+    ) -> None:
         """Update label state with processing results."""
         try:
             target_label.file_path = str(image_path)
