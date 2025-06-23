@@ -282,12 +282,38 @@ When pre-commit hooks fail:
 4. **ALWAYS** fix the issues that pre-commit hooks identify
 5. **ALWAYS** ensure all hooks pass before committing
 
-Common pre-commit hook failures and fixes:
+### Active Pre-commit Hooks
+- **Flake8**: Style and static code analysis
+- **Black**: Code formatting (line length: 88)
+- **isort**: Import sorting
+- **MyPy**: Type checking
+- **Bandit**: Security vulnerability scanning
+- **Safety**: Dependency vulnerability checking
+- **Xenon**: Code complexity analysis (C grade or better)
+
+### Common pre-commit hook failures and fixes:
 - **Flake8 violations**: Fix the code style issues identified
 - **Black formatting**: Run `black` to auto-format the code
 - **isort import ordering**: Run `isort` to fix import order
+- **MyPy type errors**: Add proper type annotations
+- **Bandit security issues**: Fix security vulnerabilities
+- **Xenon complexity**: Refactor overly complex functions (C grade threshold)
 - **Trailing whitespace**: Remove all trailing whitespace
 - **Missing newlines**: Ensure files end with a newline
 - **Large files**: Remove or gitignore large files before committing
+
+### Code Complexity Standards
+The project enforces a **C grade or better** complexity threshold for new and modified code using Xenon. Functions with D, E, or F complexity grades will be rejected by pre-commit hooks.
+
+**Legacy files with existing complexity issues are temporarily excluded** from this check:
+- `goesvfi/gui.py` - Main GUI file with complex UI logic
+- `goesvfi/pipeline/run_vfi.py` - Core VFI processing pipeline
+- `goesvfi/integrity_check/remote/s3_store.py` - S3 download logic
+- `goesvfi/integrity_check/time_index.py` - Time indexing algorithms
+- `goesvfi/gui_tabs/main_tab.py` - Main tab UI logic
+- `goesvfi/integrity_check/enhanced_gui_tab.py` - Enhanced GUI components
+- `goesvfi/utils/rife_analyzer.py` - RIFE capability detection
+
+**Goal**: Gradually refactor these legacy files to meet the complexity standards.
 
 Remember: Pre-commit hooks are there to help maintain code quality. Skipping them defeats their entire purpose and introduces technical debt.

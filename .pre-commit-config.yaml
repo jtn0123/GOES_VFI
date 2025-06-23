@@ -55,3 +55,14 @@ repos:
     hooks:
     -   id: python-safety-dependencies-check
         files: requirements\.txt$
+
+-   repo: local
+    hooks:
+    -   id: xenon-complexity
+        name: xenon complexity check (C grade or better)
+        entry: xenon
+        language: python
+        args: [--max-absolute, C]
+        files: ^goesvfi/.*\.py$
+        exclude: ^(goesvfi/gui\.py|goesvfi/pipeline/run_vfi\.py|goesvfi/integrity_check/remote/s3_store\.py|goesvfi/integrity_check/time_index\.py|goesvfi/gui_tabs/main_tab\.py|goesvfi/integrity_check/enhanced_gui_tab\.py|goesvfi/utils/rife_analyzer\.py)$
+        additional_dependencies: [xenon>=0.9.3]
