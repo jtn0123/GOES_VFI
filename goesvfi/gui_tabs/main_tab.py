@@ -34,14 +34,13 @@ from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
 from goesvfi.pipeline.run_vfi import VfiWorker
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
-from goesvfi.utils import config
+from goesvfi.utils import config, log
 from goesvfi.utils.config import get_available_rife_models, get_cache_dir
 from goesvfi.utils.gui_helpers import (
     ClickableLabel,
     CropSelectionDialog,
     ImageViewerDialog,
 )
-from goesvfi.utils import log
 from goesvfi.utils.rife_analyzer import analyze_rife_executable
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 
@@ -283,9 +282,9 @@ class MainTab(QWidget):
         # Crop Buttons
         crop_buttons_layout = QHBoxLayout()
         crop_buttons_layout.setContentsMargins(10, 0, 10, 0)
-        self.crop_button = QPushButton(self.tr("Select Crop Region"))
+        self.crop_button = SuperButton(self.tr("Select Crop Region"))
         self.crop_button.setObjectName("crop_button")
-        self.clear_crop_button = QPushButton(self.tr("Clear Crop"))
+        self.clear_crop_button = SuperButton(self.tr("Clear Crop"))
         self.clear_crop_button.setObjectName("clear_crop_button")
         crop_buttons_layout.addWidget(self.crop_button)
         crop_buttons_layout.addWidget(self.clear_crop_button)
@@ -358,7 +357,7 @@ class MainTab(QWidget):
         self.sanchez_res_km_combo = self.sanchez_res_combo  # Alias
 
         # Create a completely redesigned start button implementation
-        self.start_button = QPushButton(self.tr("START"))
+        self.start_button = SuperButton(self.tr("START"))
         self.start_button.setObjectName("start_button")
         self.start_button.setMinimumHeight(50)
         self.start_button.setEnabled(True)  # Initially enabled for debugging
@@ -391,6 +390,8 @@ class MainTab(QWidget):
 
         # Connect standard button
         self.start_button.clicked.connect(self._direct_start_handler)
+        # Also use SuperButton's special callback for extra reliability
+        self.start_button.set_click_callback(self._direct_start_handler)
 
         # Log button creation
         LOGGER.debug("Start button created and connected")

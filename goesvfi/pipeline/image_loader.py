@@ -17,6 +17,7 @@ from goesvfi.utils.memory_manager import (
     log_memory_usage,
 )
 
+from .exceptions import InputError, ProcessingError
 from .image_processing_interfaces import ImageData, ImageProcessor
 
 LOGGER = get_logger(__name__)
@@ -59,8 +60,7 @@ class ImageLoader(ImageProcessor):
             MemoryError: If image is too large for available memory.
         """
         if not os.path.exists(source_path):
-            pass
-            raise FileNotFoundError(f"Image file not found: {source_path}")
+            raise InputError(f"Image file not found: {source_path}")
 
         # Log memory before loading
         if self.optimize_memory:
@@ -156,13 +156,15 @@ class ImageLoader(ImageProcessor):
 
         except IOError as e:
             # Re-raise other IOErrors encountered by Pillow
-            raise IOError(f"Error reading image file {source_path}: {e}") from e
+            raise InputError(f"Error reading image file {source_path}: {e}") from e
         except MemoryError:
             # Re-raise memory errors
             raise
         except (KeyError, ValueError, RuntimeError) as e:
             # Catch any other unexpected errors during loading
-            raise ValueError(f"Could not load image from {source_path}: {e}") from e
+            raise ProcessingError(
+                f"Could not load image from {source_path}: {e}"
+            ) from e
 
     def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
         """Not implemented. ImageLoader does not perform processing.

@@ -215,6 +215,8 @@ tests/**/test_output/
 *.test.jpg
 test_output_*.png
 test_output_*.jpg
+*_processing_summary.txt
+channel_processing_summary.txt
 
 # Python artifacts
 *.pyo

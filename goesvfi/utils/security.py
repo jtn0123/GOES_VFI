@@ -17,8 +17,6 @@ LOGGER = log.get_logger(__name__)
 class SecurityError(Exception):  # pylint: disable=too-few-public-methods
     """Raised when a security validation fails."""
 
-    pass
-
 
 class InputValidator:
     """Validates and sanitizes user inputs to prevent security vulnerabilities."""
@@ -141,7 +139,6 @@ class InputValidator:
             Sanitized filename safe for filesystem use
         """
         if not filename:
-            pass
             return "untitled"
 
         # Remove/replace dangerous characters
@@ -152,12 +149,10 @@ class InputValidator:
 
         # Ensure filename isn't empty after sanitization
         if not sanitized:
-            pass
             sanitized = "untitled"
 
         # Limit length
         if len(sanitized) > 255:
-            pass
             name, ext = os.path.splitext(sanitized)
             max_name_len = 255 - len(ext)
             sanitized = name[:max_name_len] + ext
@@ -175,11 +170,9 @@ class InputValidator:
             True if encoder is allowed
 
         Raises:
-            pass
             SecurityError: If encoder is not in whitelist
         """
         if encoder not in InputValidator.ALLOWED_FFMPEG_ENCODERS:
-            pass
             raise SecurityError(
                 f"FFmpeg encoder '{encoder}' not allowed. "
                 f"Allowed: {InputValidator.ALLOWED_FFMPEG_ENCODERS}"
@@ -198,16 +191,13 @@ class InputValidator:
             True if argument is valid
 
         Raises:
-            pass
             SecurityError: If argument is invalid or potentially dangerous
         """
         if key not in InputValidator.ALLOWED_SANCHEZ_ARGS:
-            pass
             raise SecurityError(f"Sanchez argument '{key}' not allowed")
 
         pattern = InputValidator.ALLOWED_SANCHEZ_ARGS[key]
         if not re.match(pattern, str(value)):
-            pass
             raise SecurityError(f"Sanchez argument '{key}' has invalid value: {value}")
 
         return True
@@ -224,11 +214,9 @@ class InputValidator:
             True if arguments are safe
 
         Raises:
-            pass
             SecurityError: If arguments contain dangerous patterns
         """
         if len(args) > max_args:
-            pass
             raise SecurityError(f"Too many command arguments: {len(args)} > {max_args}")
 
         # Check for dangerous patterns in arguments
@@ -240,12 +228,10 @@ class InputValidator:
 
         for arg in args:
             if not isinstance(arg, str):
-                pass
-                continue
+                raise SecurityError(f"Command argument must be string, got {type(arg)}")
 
             for pattern in dangerous_patterns:
                 if re.search(pattern, arg):
-                    pass
                     raise SecurityError(f"Dangerous pattern found in argument: {arg}")
 
         return True
@@ -329,7 +315,6 @@ def secure_subprocess_call(command: List[str], **kwargs: Any) -> Any:
 
     # Ensure shell is never enabled
     if secure_kwargs.get("shell", False):
-        pass
         raise SecurityError("Shell execution not allowed for security reasons")
 
     LOGGER.info(
@@ -339,11 +324,9 @@ def secure_subprocess_call(command: List[str], **kwargs: Any) -> Any:
     try:
         return subprocess.run(command, **secure_kwargs)
     except subprocess.TimeoutExpired:
-        pass
         raise SecurityError(
             f"Command timed out after {secure_kwargs['timeout']} seconds"
         )
     except Exception as e:
-        pass
         LOGGER.error("Subprocess execution failed: %s", e)
         raise

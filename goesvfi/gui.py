@@ -22,7 +22,6 @@ from PyQt6.QtGui import (
     QCloseEvent,
     QColor,
     QDesktopServices,
-    QFont,
     QImage,
     QPainter,
     QPixmap,
@@ -928,12 +927,13 @@ class MainWindow(QWidget):
                     if dialog.exec() == QDialog.DialogCode.Accepted:
                         crop_rect = dialog.getRect()
                         # Store as (x, y, w, h) tuple
-                        self.current_crop_rect = (
-                            crop_rect.x(),
-                            crop_rect.y(),
-                            crop_rect.width(),
-                            crop_rect.height(),
-                        )
+                        if crop_rect is not None:
+                            self.current_crop_rect = (
+                                crop_rect.x(),
+                                crop_rect.y(),
+                                crop_rect.width(),
+                                crop_rect.height(),
+                            )
                         LOGGER.info("Crop rectangle set to: %s", self.current_crop_rect)
                         self._update_crop_buttons_state()
                         self.request_previews_update.emit()  # Request preview update
@@ -1807,8 +1807,8 @@ class MainWindow(QWidget):
             self._update_start_button_state()  # Re-check start button state
 
     def _populate_models(self) -> None:
-        LOGGER.debug("Entering _populate_models...")
         """Populate the RIFE model combo box."""
+        LOGGER.debug("Entering _populate_models...")
         available_models = (
             config.get_available_rife_models()
         )  # Use correct function name
@@ -1837,8 +1837,8 @@ class MainWindow(QWidget):
         self.sanchez_res_km_combo.setEnabled(state == Qt.CheckState.Checked.value)
 
     def _update_rife_ui_elements(self) -> None:
-        LOGGER.debug("Entering _update_rife_ui_elements...")
         """Updates the visibility and state of RIFE-specific UI elements."""
+        LOGGER.debug("Entering _update_rife_ui_elements...")
         is_rife = self.current_encoder == "RIFE"
 
         # Toggle visibility of RIFE options group
@@ -2715,7 +2715,7 @@ class MainWindow(QWidget):
                     contiguous_img_array.data, width, height, bytes_per_line, format
                 ).copy()
                 # Store path - moved assignment to after final QImage creation
-                target_label.file_path = str(image_path)
+                target_label.file_path = str(image_path)  # type: ignore[assignment]
                 LOGGER.debug(
                     "Converted initial NumPy array to QImage (full_res_qimage)."
                 )

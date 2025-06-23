@@ -105,11 +105,31 @@ GOES-VFI is structured using modern software architecture patterns to maximize m
 
 ## Installation
 
+### System Requirements
+
+#### Minimum Requirements
+- **Operating System**: Windows 10/11, macOS 10.14+, or Linux (Ubuntu 20.04+)
+- **Python**: 3.8 or higher (3.13 recommended)
+- **RAM**: 4GB minimum, 8GB+ recommended for processing large images
+- **Storage**: 2GB free space for installation, plus space for your image sequences
+- **Display**: GUI requires display with 1280x720 minimum resolution
+
+#### Required Software
+- **FFmpeg**: Required for video encoding/decoding
+- **Git**: For cloning the repository
+
 ### Prerequisites
 Before installing GOES-VFI, ensure you have:
 - **Python 3.13 or newer** installed on your system
+  - Verify with: `python --version` or `python3 --version`
+  - Download from [python.org](https://www.python.org/downloads/) if needed
 - **FFmpeg** installed and accessible from command line
+  - **Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html) and add to PATH
+  - **macOS**: Install with Homebrew: `brew install ffmpeg`
+  - **Linux**: Install with package manager: `sudo apt install ffmpeg` (Ubuntu/Debian)
+  - Verify with: `ffmpeg -version`
 - **Git** for cloning the repository
+  - Verify with: `git --version`
 
 ### Step-by-Step Installation
 
@@ -164,12 +184,63 @@ Before installing GOES-VFI, ensure you have:
          - `flownet.bin` (the neural network weights)
          - `flownet.param` (the network parameters)
 
-5.  **Verify installation:**
+5.  **Install optional dependencies (recommended):**
+
+    For enhanced functionality:
     ```bash
+    pip install psutil         # Memory monitoring and resource management
+    pip install boto3 aioboto3 # AWS S3 access for satellite data
+    ```
+
+6.  **Verify installation:**
+    ```bash
+    # Check main module can be imported
+    python -c "import goesvfi; print('GOES-VFI imported successfully')"
+
+    # Check GUI help
     python -m goesvfi.gui --help
     ```
 
     This should display the help message without errors.
+
+### Troubleshooting Installation
+
+#### Common Issues
+
+1. **"No module named PyQt6"**
+   - Reinstall PyQt6: `pip install --force-reinstall PyQt6`
+   - Ensure you're using the virtual environment: `which python` should show `.venv/bin/python`
+
+2. **FFmpeg not found**
+   - Ensure FFmpeg is in your PATH
+   - Test with: `ffmpeg -version`
+   - On Windows, you may need to restart your terminal after adding to PATH
+
+3. **Permission errors during installation**
+   - Ensure you have write permissions to the installation directory
+   - Use virtual environment (recommended) instead of system-wide installation
+
+4. **GUI doesn't start on Linux**
+   - Install Qt dependencies: `sudo apt install libxcb-xinerama0 libxcb-cursor0`
+   - Ensure DISPLAY is set: `echo $DISPLAY`
+   - For headless systems, use: `export QT_QPA_PLATFORM=offscreen`
+
+5. **Memory errors during processing**
+   - Close other applications to free up memory
+   - Reduce max workers in settings (Main tab → Processing threads)
+   - Enable tiling for large images
+
+### Verifying Your Setup
+
+Run the installation verification tests:
+```bash
+# Basic installation check
+python -m pytest tests/unit/test_imports.py -v
+
+# Check all components are working
+python -m pytest tests/unit/test_config.py -v
+python -m pytest tests/unit/test_rife_analyzer.py -v
+```
 
 ## Usage
 

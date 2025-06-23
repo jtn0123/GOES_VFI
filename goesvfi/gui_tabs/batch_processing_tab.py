@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSlot
+from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -486,7 +487,7 @@ class BatchProcessingTab(QWidget):
             "output_directory": self.output_dir_label.text(),
         }
 
-    def closeEvent(self, event) -> None:
+    def closeEvent(self, event: QCloseEvent) -> None:
         """Handle widget close event."""
         # Stop the update timer to prevent crashes
         if hasattr(self, "update_timer") and self.update_timer:

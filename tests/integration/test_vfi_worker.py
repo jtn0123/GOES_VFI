@@ -2,10 +2,8 @@
 """Test script for VfiWorker initialization."""
 
 import os
-import pathlib
 import sys
 import tempfile
-from datetime import datetime
 from pathlib import Path
 
 # Add the project directory to the Python path
@@ -20,8 +18,8 @@ try:
 
     from goesvfi.pipeline.run_vfi import VfiWorker
 
-    class TestReceiver(QObject):
-        """Test class to receive signals from VfiWorker."""
+    class SignalReceiver(QObject):
+        """Helper class to receive signals from VfiWorker."""
 
         def __init__(self):
             super().__init__()
@@ -34,7 +32,7 @@ try:
             print(f"Progress: {current}/{total} ({elapsed:.2f}s)")
             self.progress_received = True
 
-        @pyqtSlot(pathlib.Path)
+        @pyqtSlot(str)
         def on_finished(self, output_path):
             print(f"Finished: {output_path}")
             self.finished_received = True
@@ -110,11 +108,18 @@ try:
 
         try:
             # Create VfiWorker instance
-            worker = VfiWorker(**required_args)
+            worker = VfiWorker(
+                in_dir=str(required_args["in_dir"]),
+                out_file_path=str(required_args["out_file_path"]),
+                fps=int(required_args["fps"]),  # type: ignore[call-overload]
+                mid_count=int(required_args["mid_count"]),  # type: ignore[call-overload]
+                max_workers=int(required_args["max_workers"]),  # type: ignore[call-overload]
+                encoder=str(required_args["encoder"]),
+            )
             print("VfiWorker initialized successfully.")
 
             # Connect signals to test receiver
-            receiver = TestReceiver()
+            receiver = SignalReceiver()
             worker.progress.connect(receiver.on_progress)
             worker.finished.connect(receiver.on_finished)
             worker.error.connect(receiver.on_error)
@@ -123,13 +128,19 @@ try:
             # Don't actually start the worker as it would try to process files
             # worker.start()
 
-            return True
+            # Use assertions instead of returning values
+            assert worker is not None
+            assert hasattr(worker, "progress")
+            assert hasattr(worker, "finished")
+            assert hasattr(worker, "error")
+
         except Exception as e:
             print(f"Error initializing VfiWorker: {e}")
             import traceback
 
             traceback.print_exc()
-            return False
+            # Let pytest handle the failure
+            raise
 
     if __name__ == "__main__":
         result = test_vfi_worker_init()

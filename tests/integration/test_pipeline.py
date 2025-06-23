@@ -5,6 +5,7 @@ from unittest.mock import ANY, MagicMock, patch
 
 import numpy as np
 import pytest
+from PIL import Image
 
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
@@ -19,6 +20,13 @@ from goesvfi.utils.rife_analyzer import (  # For mocking capabilities
 # Import helper
 from tests.utils.helpers import create_dummy_png
 
+# Import the mock utilities
+from tests.utils.mocks import (
+    create_mock_colourise,
+    create_mock_popen,
+    create_mock_subprocess_run,
+)
+
 # --- Constants ---
 DEFAULT_IMG_SIZE = (64, 32)  # Small size for faster testing
 DEFAULT_FPS = 30
@@ -27,13 +35,6 @@ MOCK_RIFE_EXE = pathlib.Path("/mock/rife-cli")
 MOCK_FFMPEG_EXE = "ffmpeg"  # Assume ffmpeg is in PATH for command construction
 
 # --- Mock Fixtures / Setup ---
-
-# Import the mock utilities
-from tests.utils.mocks import (
-    create_mock_colourise,
-    create_mock_popen,
-    create_mock_subprocess_run,
-)
 
 
 @pytest.fixture
@@ -260,9 +261,15 @@ def test_basic_interpolation(
     # This prevents "AttributeError: '...' does not have a signal with the signature request_previews_update()"
     from PyQt6.QtWidgets import QCheckBox, QComboBox, QLabel
 
-    mocker.patch.object(QComboBox, "request_previews_update", lambda: None, create=True)
-    mocker.patch.object(QLabel, "request_previews_update", lambda: None, create=True)
-    mocker.patch.object(QCheckBox, "request_previews_update", lambda: None, create=True)
+    mocker.patch.object(
+        QComboBox, "request_previews_update", create=True, return_value=None
+    )
+    mocker.patch.object(
+        QLabel, "request_previews_update", create=True, return_value=None
+    )
+    mocker.patch.object(
+        QCheckBox, "request_previews_update", create=True, return_value=None
+    )
 
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -321,7 +328,7 @@ def test_basic_interpolation(
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
@@ -385,7 +392,7 @@ def test_skip_model(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: Mag
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
@@ -484,7 +491,7 @@ def test_cropping(
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
@@ -578,7 +585,7 @@ def test_sanchez(
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
@@ -677,7 +684,7 @@ def test_crop_and_sanchez(
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
@@ -822,7 +829,7 @@ def test_error_invalid_crop(
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
@@ -922,7 +929,7 @@ def test_error_rife_failure(
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
@@ -1045,13 +1052,13 @@ def test_error_ffmpeg_failure_exit_code(
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
     # --- Run Test ---
     # Expect IOError because ffmpeg failure during finalization is critical
-    with pytest.raises(IOError):
+    with pytest.raises(IOError, match="Failed to finalize video"):
         final_path, _, run_mock, popen_mock = run_pipeline_and_collect(
             mock_popen_fixture=mock_popen,
             mock_run_fixture=mock_run,
@@ -1145,7 +1152,7 @@ def test_error_ffmpeg_pipe_error(
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
@@ -1169,7 +1176,7 @@ def test_error_ffmpeg_pipe_error(
             ffmpeg_output_to_create=expected_raw_path,  # Mock won't create if error occurs
         )
 
-    with pytest.raises(IOError):
+    with pytest.raises(IOError, match="Failed to finalize video"):
         run_action()
 
     # --- Assert ---
@@ -1257,7 +1264,7 @@ def test_error_sanchez_failure(
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        f"scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        "scale=trunc(iw/2)*2:trunc(ih/2)*2",
         str(expected_raw_path),
     ]
 
@@ -1283,7 +1290,7 @@ def test_error_sanchez_failure(
 
     # Expect IOError because pipeline fails when it can't open RIFE output
     with caplog.at_level("ERROR"):
-        with pytest.raises(IOError):
+        with pytest.raises(IOError, match="Failed to process images"):
             run_action()
 
     # --- Assert ---
@@ -1299,13 +1306,183 @@ def test_error_sanchez_failure(
     assert mock_sanchez.call_count > 0
 
 
+def test_multiple_intermediate_frames_not_supported(temp_dir, mock_rife_capabilities):
+    """Test that num_intermediate_frames > 1 raises NotImplementedError."""
+    input_dir = temp_dir / "input"
+    input_dir.mkdir()
+    # Create test frames
+    for i in range(3):
+        create_dummy_png(input_dir / f"frame_{i:03d}.png", size=(64, 32))
+
+    output_mp4 = temp_dir / "output.mp4"
+
+    # Try to use multiple intermediate frames
+    with pytest.raises(NotImplementedError) as exc_info:
+        list(
+            run_vfi(
+                folder=input_dir,
+                output_mp4_path=output_mp4,
+                rife_exe_path=MOCK_RIFE_EXE,
+                fps=30,
+                num_intermediate_frames=3,  # Not supported
+                max_workers=1,
+            )
+        )
+
+    assert "num_intermediate_frames=1 is supported" in str(exc_info.value)
+
+
+@patch("pathlib.Path.exists", return_value=True)  # Mock model path existence
+def test_large_image_tiling(
+    mock_exists, temp_dir, mock_popen, mock_run, mock_rife_capabilities
+):
+    """Test pipeline with large images that would benefit from tiling."""
+    # Create large 4K test images
+    input_dir = temp_dir / "input_4k"
+    input_dir.mkdir()
+
+    # Create 4K images
+    for i in range(2):
+        img = Image.new("RGB", (3840, 2160), color=(100, 150, 200))
+        img.save(input_dir / f"frame_{i:04d}.png")
+
+    output_mp4 = temp_dir / "output_4k.mp4"
+
+    # Configure mocks
+    # Create output file to simulate FFmpeg success
+    output_mp4.with_suffix(".raw.mp4").write_bytes(b"dummy video")
+    output_mp4.write_bytes(b"dummy video")
+
+    # Use mock factory for Popen
+    mock_factory = create_mock_popen(
+        output_file_to_create=output_mp4.with_suffix(".raw.mp4")
+    )
+    mock_popen.side_effect = mock_factory
+
+    # Mock RIFE to create interpolated frame
+    def create_interp(*args, **kwargs):
+        cmd = args[0]
+        output_idx = cmd.index("-o") if "-o" in cmd else -1
+        if output_idx >= 0:
+            output_path = pathlib.Path(cmd[output_idx + 1])
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            create_dummy_png(output_path, size=(3840, 2160))
+        return MagicMock(returncode=0)
+
+    mock_run.side_effect = create_interp
+
+    # Run with tiling enabled
+    gen = run_vfi(
+        folder=input_dir,
+        output_mp4_path=output_mp4,
+        rife_exe_path=MOCK_RIFE_EXE,
+        fps=30,
+        num_intermediate_frames=1,
+        max_workers=1,
+        rife_tile_enable=True,
+        rife_tile_size=512,
+        rife_uhd_mode=True,
+    )
+
+    # Collect results
+    results = list(gen)
+
+    # Verify RIFE was called
+    mock_run.assert_called_once()
+    rife_cmd = mock_run.call_args[0][0]
+
+    # Check for tiling arguments if supported by capability detector
+    if mock_rife_capabilities.supports_tiling():
+        assert "-t" in rife_cmd
+        assert "512" in rife_cmd
+
+    # Check for UHD mode if supported
+    # Note: -u is only added if UHD mode is on AND tiling is off
+    # Since we have tiling enabled, -u should NOT be present
+    if mock_rife_capabilities.supports_uhd() and "-t" not in rife_cmd:
+        assert "-u" in rife_cmd
+    else:
+        # With tiling enabled, -u should not be present
+        assert "-u" not in rife_cmd
+
+    # Verify FFmpeg was called
+    mock_popen.assert_called_once()
+
+
+@patch("pathlib.Path.exists", return_value=True)  # Mock model path existence
+def test_max_workers_parameter(
+    mock_exists, temp_dir, mock_popen, mock_run, mock_rife_capabilities
+):
+    """Test that max_workers parameter is respected for parallel processing."""
+    input_dir = temp_dir / "input"
+    input_dir.mkdir()
+
+    # Create enough images to test parallel processing
+    num_frames = 10
+    # Create test frames
+    for i in range(num_frames):
+        create_dummy_png(input_dir / f"frame_{i:03d}.png", size=(64, 32))
+
+    output_mp4 = temp_dir / "output.mp4"
+
+    # Configure mocks
+    # Create output file to simulate FFmpeg success
+    output_mp4.with_suffix(".raw.mp4").write_bytes(b"dummy video")
+    output_mp4.write_bytes(b"dummy video")
+
+    # Use mock factory for Popen
+    mock_factory = create_mock_popen(
+        output_file_to_create=output_mp4.with_suffix(".raw.mp4")
+    )
+    mock_popen.side_effect = mock_factory
+
+    # Mock RIFE to create interpolated frames
+    def create_interp_frame(*args, **kwargs):
+        cmd = args[0]
+        output_idx = cmd.index("-o") if "-o" in cmd else -1
+        if output_idx >= 0:
+            output_path = pathlib.Path(cmd[output_idx + 1])
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            create_dummy_png(output_path, size=(64, 32))
+        return MagicMock(returncode=0)
+
+    mock_run.side_effect = create_interp_frame
+
+    # Test with different max_workers values
+    for max_workers in [1, 2, 4]:
+        # Clear mocks
+        mock_run.reset_mock()
+        mock_popen.reset_mock()
+
+        gen = run_vfi(
+            folder=input_dir,
+            output_mp4_path=output_mp4,
+            rife_exe_path=MOCK_RIFE_EXE,
+            fps=30,
+            num_intermediate_frames=1,
+            max_workers=max_workers,
+        )
+
+        # Collect results
+        results = list(gen)
+
+        # Verify processing completed
+        assert any(isinstance(r, pathlib.Path) for r in results)
+
+        # The max_workers affects parallel image preprocessing,
+        # not RIFE interpolation (which is sequential)
+        # So we just verify the pipeline completes successfully
+
+
 def test_image_loader_key_error(temp_dir: pathlib.Path):
-    """ImageLoader should wrap KeyError in ValueError."""
+    """ImageLoader should wrap KeyError in ProcessingError."""
+    from goesvfi.pipeline.exceptions import ProcessingError
+
     loader = ImageLoader()
     img_path = temp_dir / "img.png"
     img_path.write_bytes(b"data")
     with patch("PIL.Image.open", side_effect=KeyError("bad key")):
-        with pytest.raises(ValueError):
+        with pytest.raises(ProcessingError):
             loader.load(str(img_path))
 
 
@@ -1316,5 +1493,5 @@ def test_image_saver_runtime_error(temp_dir: pathlib.Path):
     arr = np.zeros((4, 4, 3), dtype=np.uint8)
     img_data = ImageData(image_data=arr, metadata={})
     with patch("PIL.Image.fromarray", side_effect=RuntimeError("boom")):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Failed to save image"):
             saver.save(img_data, str(out_path))

@@ -12,10 +12,25 @@ from typing import Any, Iterator, List, Optional, Tuple, Union
 from PIL import Image
 from PyQt6.QtCore import QThread, pyqtSignal
 
+# Import custom exceptions
+from goesvfi.pipeline.exceptions import (
+    FFmpegError,
+    ProcessingError,
+    ResourceError,
+    RIFEError,
+    SanchezError,
+)
+
 # Import image processing classes that tests expect
 from goesvfi.pipeline.image_cropper import ImageCropper  # noqa: F401
 from goesvfi.pipeline.image_loader import ImageLoader  # noqa: F401
 from goesvfi.pipeline.image_saver import ImageSaver  # noqa: F401
+
+# Import resource management
+from goesvfi.pipeline.resource_manager import (
+    get_resource_manager,
+    managed_executor,
+)
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor  # noqa: F401
 
 # --- Add Sanchez Import ---
@@ -24,9 +39,6 @@ from goesvfi.utils import log
 
 # Import the RIFE analyzer utilities
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
-
-# --------------------------
-
 
 LOGGER = log.get_logger(__name__)
 
@@ -44,10 +56,22 @@ class InterpolationPipeline:
         Args:
             max_workers: Maximum number of concurrent workers
         """
-        self.max_workers = max_workers
-        self._executor = ProcessPoolExecutor(max_workers=max_workers)
+        self.resource_manager = get_resource_manager()
+        self.max_workers = min(max_workers, self.resource_manager.get_optimal_workers())
+        self._executor: Optional[ProcessPoolExecutor] = None
         self._active_tasks: set[Any] = set()
         self._lock = threading.Lock()
+
+    def __enter__(self):
+        """Enter context manager."""
+        self._executor = ProcessPoolExecutor(max_workers=self.max_workers)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit context manager."""
+        if self._executor is not None:
+            self._executor.shutdown(wait=True)
+            self._executor = None
 
     def process(self, images: List[str], task_id: Any) -> str:
         """Process a list of images.
@@ -59,6 +83,9 @@ class InterpolationPipeline:
         Returns:
             Result string describing the processing
         """
+        if self._executor is None:
+            raise RuntimeError("Pipeline must be used as context manager")
+
         # Track active task
         with self._lock:
             self._active_tasks.add(task_id)
@@ -76,7 +103,8 @@ class InterpolationPipeline:
 
     def shutdown(self) -> None:
         """Shutdown the pipeline and clean up resources."""
-        self._executor.shutdown(wait=True)
+        if self._executor is not None:
+            self._executor.shutdown(wait=True)
         self._active_tasks.clear()
 
 
@@ -186,6 +214,15 @@ class VfiWorker(QThread):
         try:
             LOGGER.info("Starting VFI processing...")
 
+            # Check resources before starting
+            resource_manager = get_resource_manager()
+            try:
+                resource_manager.check_resources()
+            except ResourceError as e:
+                LOGGER.error("Insufficient resources: %s", e)
+                self.error.emit(f"Resource check failed: {e}")
+                return
+
             rife_exe = self._get_rife_executable()
             ffmpeg_args = self._prepare_ffmpeg_settings()
 
@@ -218,9 +255,17 @@ class VfiWorker(QThread):
                     self.finished.emit(str(output))
 
             LOGGER.info("VFI processing completed")
-        except Exception as e:  # pragma: no cover - catch all to emit signal
-            LOGGER.exception("Error in VFI processing")
-            self.error.emit(str(e))
+        except (FFmpegError, RIFEError, SanchezError, ProcessingError) as e:
+            # Specific processing errors - log with context
+            LOGGER.error("Processing error: %s", e)
+            self.error.emit(f"Processing failed: {e}")
+        except OSError as e:
+            # File system errors
+            LOGGER.error("File operation error: %s", e)
+            self.error.emit(f"File error: {e}")
+        except Exception as e:  # pragma: no cover - catch unexpected errors
+            LOGGER.exception("Unexpected error in VFI processing")
+            self.error.emit(f"Unexpected error: {e}")
 
     def _get_rife_executable(self) -> pathlib.Path:
         """Get the RIFE executable path based on model key."""
@@ -375,8 +420,12 @@ def _process_with_rife(
             with Image.open(interpolated_path) as img:
                 png_bytes = _encode_frame_to_png_bytes(img)
                 _safe_write(ffmpeg_proc, png_bytes, f"interpolated frame {i}")
-        except Exception as e:
-            LOGGER.error("Failed to process interpolated frame %d: %s", i, e)
+        except OSError as e:
+            LOGGER.error("Failed to read interpolated frame %d: %s", i, e)
+            raise ProcessingError(f"Failed to read interpolated frame {i}: {e}") from e
+        except FFmpegError:
+            # Re-raise FFmpeg errors as-is
+            raise
 
         # Write the next original frame
         try:
@@ -414,8 +463,9 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
         stderr_bytes = b""
         if proc.stderr:
             stderr_bytes = proc.stderr.read()
-        raise IOError(
-            f"ffmpeg stdin pipe not available. Stderr: {stderr_bytes.decode(errors='ignore')}"
+        raise FFmpegError(
+            f"ffmpeg stdin pipe not available for {frame_desc}",
+            stderr=stderr_bytes.decode(errors="ignore"),
         )
 
     try:
@@ -447,8 +497,8 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
             len(data),
             ffmpeg_log,
         )
-        raise IOError(
-            f"Broken pipe writing {frame_desc}. FFmpeg log: {ffmpeg_log}"
+        raise FFmpegError(
+            f"Broken pipe writing {frame_desc} ({len(data)} bytes)", stderr=ffmpeg_log
         ) from None  # Raise new exception
 
 
@@ -1027,7 +1077,8 @@ def run_vfi(
                 )
             )
 
-        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        # Use resource-managed executor
+        with managed_executor("process", max_workers=max_workers) as executor:
             try:
                 # Use map to preserve order and collect results directly
                 # The _process_single_image_worker needs to accept a tuple of args now

@@ -21,15 +21,14 @@ class FFmpegCommandBuilder:
     execution.
 
     Typical usage:
-        pass
         builder = FFmpegCommandBuilder()
-        cmd = ()
-        builder.set_input(input_path)
-        .set_output(output_path)
-        .set_encoder("Software x265")
-        .set_crf(20)
-        .set_pix_fmt("yuv420p10le")
-        .build()
+        cmd = (
+            builder.set_input(input_path)
+            .set_output(output_path)
+            .set_encoder("Software x265")
+            .set_crf(20)
+            .set_pix_fmt("yuv420p10le")
+            .build()
         )
     """
 
@@ -181,7 +180,6 @@ class FFmpegCommandBuilder:
 
         # Handle special case of copy encoder
         if self._encoder == "None (copy original)":
-            pass
             return self._build_copy_command()
 
         # Build command with encoder-specific arguments
@@ -191,10 +189,8 @@ class FFmpegCommandBuilder:
         return cmd
 
     def _validate_required_parameters(self) -> None:
-        pass
         """Validate that all required parameters are set."""
         if not self._input_path or not self._output_path or not self._encoder:
-            pass
             raise ValueError("Input path, output path, and encoder must be set.")
 
     def _build_copy_command(self) -> List[str]:
@@ -212,19 +208,14 @@ class FFmpegCommandBuilder:
     def _add_encoder_specific_args(self, cmd: List[str]) -> None:
         """Add encoder-specific arguments to the command."""
         if self._encoder == "Software x265 (2-Pass)":
-            pass
             self._add_x265_two_pass_args(cmd)
         elif self._encoder == "Software x265":
-            pass
             self._add_x265_single_pass_args(cmd)
         elif self._encoder == "Software x264":
-            pass
             self._add_x264_args(cmd)
         elif self._encoder == "Hardware HEVC (VideoToolbox)":
-            pass
             self._add_hardware_hevc_args(cmd)
         elif self._encoder == "Hardware H.264 (VideoToolbox)":
-            pass
             self._add_hardware_h264_args(cmd)
         else:
             raise ValueError(f"Unsupported encoder selected: {self._encoder}")
@@ -236,10 +227,8 @@ class FFmpegCommandBuilder:
         cmd.extend(["-c:v", "libx265", "-preset", "slower"])
 
         if self._pass_number == 1:
-            pass
             self._add_x265_pass1_args(cmd)
         elif self._pass_number == 2:
-            pass
             self._add_x265_pass2_args(cmd)
         else:
             raise ValueError(
@@ -253,7 +242,6 @@ class FFmpegCommandBuilder:
             or self._pass_log_prefix is None
             or self._pass_number is None
         ):
-            pass
             raise ValueError(
                 "Two-pass encoding requires two_pass flag, log prefix, and pass number."
             )
@@ -295,7 +283,6 @@ class FFmpegCommandBuilder:
     def _add_x265_single_pass_args(self, cmd: List[str]) -> None:
         """Add arguments for single-pass x265 encoding."""
         if self._crf is None:
-            pass
             raise ValueError("CRF must be set for single-pass x265.")
 
         x265_params = "aq-mode=3:aq-strength=1.0:psy-rd=2.0:psy-rdoq=1.0"
@@ -309,7 +296,6 @@ class FFmpegCommandBuilder:
     def _add_x264_args(self, cmd: List[str]) -> None:
         """Add arguments for x264 encoding."""
         if self._crf is None:
-            pass
             raise ValueError("CRF must be set for x264.")
 
         cmd.extend(["-c:v", "libx264", "-preset", "slow", "-crf", str(self._crf)])
@@ -345,7 +331,6 @@ class FFmpegCommandBuilder:
     def _validate_hardware_parameters(self, encoder_name: str) -> None:
         """Validate parameters required for hardware encoding."""
         if self._bitrate_kbps is None or self._bufsize_kb is None:
-            pass
             raise ValueError(f"Bitrate and bufsize must be set for {encoder_name}.")
 
     def _get_safe_hardware_rates(self) -> tuple[int, int]:
@@ -360,8 +345,6 @@ class FFmpegCommandBuilder:
     def _add_common_output_args(self, args: List[str]) -> None:
         """Add common output arguments (pixel format and output path)."""
         if self._pix_fmt is not None:
-            pass
             args.extend(["-pix_fmt", self._pix_fmt])
         if self._output_path is not None:
-            pass
             args.append(str(self._output_path))
