@@ -4,6 +4,7 @@ Import this at the start of any test that uses GUI components.
 """
 
 import os
+from typing import Any, List
 from unittest.mock import patch
 
 # Set Qt to use offscreen platform
@@ -13,24 +14,27 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 class NoPopupQDateTimeEdit:
     """QDateTimeEdit that never opens calendar popups."""
 
-    @staticmethod
-    def __new__(cls, *args, **kwargs):
-        from PyQt6.QtWidgets import QDateTimeEdit
+    def __init__(self, *args, **kwargs):
+        # Import here to avoid circular dependency
+        from PyQt6.QtWidgets import QDateTimeEdit as _QDateTimeEdit
 
-        # Create the real widget
-        widget = QDateTimeEdit(*args, **kwargs)
+        # Create the real widget and copy its attributes
+        self._widget = _QDateTimeEdit(*args, **kwargs)
         # Disable calendar popup
-        widget.setCalendarPopup(False)
+        self._widget.setCalendarPopup(False)
 
         # Override setCalendarPopup to always keep it disabled
-        original_setCalendarPopup = widget.setCalendarPopup
+        original_setCalendarPopup = self._widget.setCalendarPopup
 
-        def no_popup_setCalendarPopup(enabled):
+        def no_popup_setCalendarPopup(enabled: bool) -> None:
             original_setCalendarPopup(False)
 
-        widget.setCalendarPopup = no_popup_setCalendarPopup
+        # Use setattr to avoid mypy method assignment error
+        self._widget.setCalendarPopup = no_popup_setCalendarPopup  # type: ignore[method-assign]
 
-        return widget
+    def __getattr__(self, name):
+        """Delegate all attribute access to the real widget."""
+        return getattr(self._widget, name)
 
 
 class NoPopupQFileDialog:
@@ -75,9 +79,9 @@ class NoPopupQMessageBox:
         return NoPopupQMessageBox.StandardButton.Yes
 
 
-def apply_gui_patches():
+def apply_gui_patches() -> List[Any]:
     """Apply patches to prevent GUI popups."""
-    patches = []
+    patches: List[Any] = []
 
     # Patch QFileDialog
     patches.extend(
@@ -123,7 +127,7 @@ def apply_gui_patches():
 
 
 # Global list to track active patches
-_active_patches = []
+_active_patches: List[Any] = []
 
 
 def disable_all_gui_popups():
