@@ -776,3 +776,42 @@ def test_preview_zoom(qtbot, window):
 
         # Verify _show_zoom was called with the right label
         mock_show_zoom.assert_called_once_with(test_label)
+
+
+@patch("goesvfi.gui_tabs.main_tab.CropSelectionDialog")
+def test_crop_persists_across_tabs(
+    MockCropSelectionDialog, qtbot, window, dummy_files, mock_dialogs
+):
+    """Crop settings should persist when switching tabs."""
+    mock_dialog_instance = MockCropSelectionDialog.return_value
+    mock_dialog_instance.exec.return_value = QDialog.DialogCode.Accepted
+    mock_dialog_instance.get_selected_rect.return_value = QRect(10, 20, 100, 50)
+
+    valid_input_dir = dummy_files[0].parent
+    window.main_tab.in_dir_edit.setText(str(valid_input_dir))
+    window.in_dir = valid_input_dir
+    window.main_tab.first_frame_label.setPixmap(QPixmap(10, 10))
+
+    window.main_tab._on_crop_clicked()
+    QApplication.processEvents()
+
+    expected_filter = "crop=100:50:10:20"
+
+    tab_widget = window.tab_widget
+    ffmpeg_index = None
+    for i in range(tab_widget.count()):
+        if tab_widget.tabText(i) == "FFmpeg Settings":
+            ffmpeg_index = i
+            break
+    assert ffmpeg_index is not None
+    tab_widget.setCurrentIndex(ffmpeg_index)
+    QApplication.processEvents()
+
+    assert window.ffmpeg_settings_tab.crop_filter_edit.text() == expected_filter
+
+    tab_widget.setCurrentIndex(0)
+    QApplication.processEvents()
+    tab_widget.setCurrentIndex(ffmpeg_index)
+    QApplication.processEvents()
+
+    assert window.ffmpeg_settings_tab.crop_filter_edit.text() == expected_filter

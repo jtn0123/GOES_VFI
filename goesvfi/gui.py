@@ -1401,6 +1401,9 @@ class MainWindow(QWidget):
         else:
             self.current_crop_rect = None
 
+        if hasattr(self, "ffmpeg_settings_tab"):
+            self.ffmpeg_settings_tab.set_crop_rect(self.current_crop_rect)
+
         # Load FFmpeg settings (accessing widgets directly from self)
         # Note: Assuming 'use_ffmpeg_interp_checkbox' doesn't exist, using the groupbox check state
         self.ffmpeg_settings_group.setChecked(
