@@ -15,6 +15,8 @@ from goesvfi.date_sorter.view_model import DateSorterViewModel
 from goesvfi.file_sorter.sorter import FileSorter
 from goesvfi.file_sorter.view_model import FileSorterViewModel
 from goesvfi.view_models.processing_view_model import ProcessingViewModel
+from goesvfi.gui_components.preview_manager import PreviewManager
+from goesvfi.gui_components.processing_manager import ProcessingManager
 
 # Import Models
 
@@ -27,7 +29,6 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MainWindowViewModel(QObject):
-    pass
     """
     ViewModel for the main application window (MainWindow).
 
@@ -45,16 +46,19 @@ class MainWindowViewModel(QObject):
         self,
         file_sorter_model: FileSorter,
         date_sorter_model: DateSorter,
-        # Add other necessary models/services here for ProcessingViewModel
+        preview_manager: PreviewManager,
+        processing_manager: ProcessingManager,
         parent: QObject | None = None,
     ) -> None:
         """
         Initializes the MainWindowViewModel and its child ViewModels.
 
         Args:
-            file_sorter_model (FileSorter): The model for the File Sorter tab.
-            date_sorter_model (DateSorter): The model for the Date Sorter tab.
-            parent (Optional[QObject]): The parent QObject, if any.
+            file_sorter_model: Model for the File Sorter tab.
+            date_sorter_model: Model for the Date Sorter tab.
+            preview_manager: PreviewManager instance used by ProcessingViewModel.
+            processing_manager: ProcessingManager instance used by ProcessingViewModel.
+            parent: Optional parent QObject.
 
         Attributes:
             pass
@@ -75,8 +79,15 @@ class MainWindowViewModel(QObject):
         LOGGER.info("FileSorterViewModel instantiated.")
         self.date_sorter_vm = DateSorterViewModel(date_sorter_model)
         LOGGER.info("DateSorterViewModel instantiated.")
-        # TODO: Pass necessary models/services to ProcessingViewModel when defined
-        self.processing_vm = ProcessingViewModel(parent=self)
+
+        self.preview_manager = preview_manager
+        self.processing_manager = processing_manager
+
+        self.processing_vm = ProcessingViewModel(
+            preview_manager=preview_manager,
+            processing_manager=processing_manager,
+            parent=self,
+        )
         LOGGER.info("ProcessingViewModel instantiated.")
 
         # Initialize global state properties
@@ -106,7 +117,6 @@ class MainWindowViewModel(QObject):
             value (str): The new status message.
         """
         if self._status != value:
-            pass
             self._status = value  # pylint: disable=attribute-defined-outside-init
             self.status_updated.emit(self._status)
             LOGGER.debug("Global status updated: %s", self._status)
@@ -130,7 +140,6 @@ class MainWindowViewModel(QObject):
             index (int): The new active tab index.
         """
         if self._active_tab_index != index:
-            pass
             self._active_tab_index = (
                 index  # pylint: disable=attribute-defined-outside-init
             )
