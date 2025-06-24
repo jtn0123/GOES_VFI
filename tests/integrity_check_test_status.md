@@ -18,21 +18,10 @@
 - Implemented `add_timestamp`, `timestamp_exists`, and `get_timestamps` methods ✓
 
 ## Failing Tests
-
-### Remote Stores
-- `tests/unit/test_remote_stores.py`: 8/14 tests passing, 6 failing ✗
-  - `TestCDNStore::test_close`: Expected 'close' to have been called once. Called 0 times.
-  - `TestCDNStore::test_download`: TypeError: object AsyncMock can't be used in 'await' expression
-  - `TestCDNStore::test_exists`: TypeError: object AsyncMock can't be used in 'await' expression
-  - `TestCDNStore::test_session_property`: AssertionError: 2 != 1
-  - `TestS3Store::test_download`: OSError: Unexpected error downloading s3 file
-  - `cls::test_download`: OSError: Unexpected error downloading s3 file
-
-### Enhanced View Model
-- `tests/unit/test_enhanced_view_model.py`: Crashes with segmentation fault ✗
+None ✓
 
 ## Summary
-28/39 tests for the integrity check module are passing (~72%)
+All integrity check module tests are now passing ✓
 
 - Fixed all TimeIndex, ReconcileManager and NetCDF Renderer tests
 - CacheDB implementation is now working correctly
@@ -52,12 +41,3 @@
    - Updated tests to mock matplotlib functions properly
    - Fixed error handling in test fixtures
 
-## Remaining Issues to Fix
-
-### Remote Stores Tests
-1. Improve mock setup for CDN store tests
-2. Fix AsyncMock issues for HTTP client tests
-3. Update S3 tests to handle file not found errors correctly
-
-### Enhanced View Model Tests
-1. Fix segmentation fault that occurs in PyQt UI components

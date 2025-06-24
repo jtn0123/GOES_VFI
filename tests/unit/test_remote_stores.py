@@ -3,9 +3,10 @@
 import asyncio
 import tempfile
 import unittest
+import pytest
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch, mock_open
 
 import aiohttp
 import botocore.exceptions
@@ -15,7 +16,7 @@ from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
 
 
-class TestCDNStore(unittest.TestCase):
+class TestCDNStore(unittest.IsolatedAsyncioTestCase):
     """Test cases for the CDNStore class."""
 
     def setUp(self):
@@ -104,15 +105,15 @@ class TestCDNStore(unittest.TestCase):
             session = await cdn_store.session
 
             # Verify
-            self.assertIsNotNone(session)
+            assert session is not None
             mock_client_session.assert_called_once()
 
             # Test reuse - session should be cached
             session2 = await cdn_store.session
-            self.assertEqual(session, session2)
+            assert session == session2
 
             # Verify ClientSession was only created once
-            self.assertEqual(mock_client_session.call_count, 1)
+            assert mock_client_session.call_count == 1
 
     async def test_close(self):
         """Test closing the session."""
@@ -129,7 +130,7 @@ class TestCDNStore(unittest.TestCase):
 
         # Verify
         session_mock.close.assert_awaited_once()
-        self.assertIsNone(cdn_store._session)
+        assert cdn_store._session is None
 
     async def test_exists(self):
         """Test checking if a file exists in the CDN."""
@@ -168,14 +169,14 @@ class TestCDNStore(unittest.TestCase):
                 exists = await cdn_store.check_file_exists(
                     self.test_timestamp, self.test_satellite
                 )
-                self.assertTrue(exists)
+                assert exists
 
                 # Test not found case (404)
                 response_mock.status = 404
                 exists = await cdn_store.check_file_exists(
                     self.test_timestamp, self.test_satellite
                 )
-                self.assertFalse(exists)
+                assert not exists
 
                 # Test error case
                 error_cm = MagicMock()
@@ -186,7 +187,7 @@ class TestCDNStore(unittest.TestCase):
                 exists = await cdn_store.check_file_exists(
                     self.test_timestamp, self.test_satellite
                 )
-                self.assertFalse(exists)
+                assert not exists
 
     async def test_download_success(self):
         """Test successful download from the CDN."""
@@ -232,7 +233,7 @@ class TestCDNStore(unittest.TestCase):
         dest_path = self.base_dir / "test_download.jpg"
 
         # Mock file open
-        mock_open = unittest.mock.mock_open()
+        open_patch = mock_open()
 
         # Mock the TimeIndex.to_cdn_url function to avoid real URL generation issues
         mock_url = "https://example.com/test_url.jpg"
@@ -241,15 +242,15 @@ class TestCDNStore(unittest.TestCase):
             return_value=mock_url,
         ):
             # Test successful download
-            with patch("builtins.open", mock_open):
+            with patch("builtins.open", open_patch):
                 result = await cdn_store.download_file(
                     self.test_timestamp, self.test_satellite, dest_path
                 )
 
             # Verify
-            self.assertEqual(result, dest_path)
-            mock_open.assert_called_with(dest_path, "wb")
-            mock_open().write.assert_called_with(b"test data")
+            assert result == dest_path
+            open_patch.assert_called_with(dest_path, "wb")
+            open_patch().write.assert_called_with(b"test data")
 
     async def test_download_not_found(self):
         """Test file not found case when downloading from CDN."""
@@ -279,7 +280,7 @@ class TestCDNStore(unittest.TestCase):
         dest_path = self.base_dir / "test_download.jpg"
 
         # Mock file open
-        mock_open = unittest.mock.mock_open()
+        open_patch = mock_open()
 
         # Mock the TimeIndex.to_cdn_url function
         mock_url = "https://example.com/test_url.jpg"
@@ -288,10 +289,7 @@ class TestCDNStore(unittest.TestCase):
             return_value=mock_url,
         ):
             # Test file not found case
-            with (
-                patch("builtins.open", mock_open),
-                self.assertRaises(FileNotFoundError),
-            ):
+            with patch("builtins.open", open_patch), pytest.raises(FileNotFoundError):
                 await cdn_store.download_file(
                     self.test_timestamp, self.test_satellite, dest_path
                 )
@@ -322,7 +320,7 @@ class TestCDNStore(unittest.TestCase):
         dest_path = self.base_dir / "test_download.jpg"
 
         # Mock file open
-        mock_open = unittest.mock.mock_open()
+        open_patch = mock_open()
 
         # Mock the TimeIndex.to_cdn_url function
         mock_url = "https://example.com/test_url.jpg"
@@ -331,13 +329,13 @@ class TestCDNStore(unittest.TestCase):
             return_value=mock_url,
         ):
             # Test client error case
-            with patch("builtins.open", mock_open), self.assertRaises(IOError):
+            with patch("builtins.open", open_patch), pytest.raises(IOError):
                 await cdn_store.download_file(
                     self.test_timestamp, self.test_satellite, dest_path
                 )
 
 
-class TestS3Store(unittest.TestCase):
+class TestS3Store(unittest.IsolatedAsyncioTestCase):
     """Test cases for the S3Store class."""
 
     def setUp(self):
@@ -421,21 +419,21 @@ class TestS3Store(unittest.TestCase):
             client = await self.s3_store._get_s3_client()
 
             # Verify
-            self.assertEqual(client, self.s3_client_mock)
+            assert client == self.s3_client_mock
             mock_session_class.assert_called_once_with(region_name="us-east-1")
 
             # Verify config has UNSIGNED signature_version
             mock_config_class.assert_called_once()
             config_args = mock_config_class.call_args
-            self.assertEqual(config_args[1]["signature_version"], "UNSIGNED")
+            assert config_args[1]["signature_version"] == "UNSIGNED"
 
             # Verify client created with proper config
             self.session_mock.client.assert_called_once_with("s3", config=mock_config)
 
             # Test reuse
             client2 = await self.s3_store._get_s3_client()
-            self.assertEqual(client, client2)
-            self.assertEqual(mock_session_class.call_count, 1)
+            assert client == client2
+            assert mock_session_class.call_count == 1
 
     @patch("aioboto3.Session")
     async def test_close(self, mock_session_class):
@@ -451,7 +449,7 @@ class TestS3Store(unittest.TestCase):
 
         # Verify
         self.s3_client_mock.__aexit__.assert_called_once()
-        self.assertIsNone(self.s3_store._s3_client)
+        assert self.s3_store._s3_client is None
 
     @patch.object(S3Store, "_get_s3_client", new_callable=AsyncMock)
     async def test_get_bucket_and_key(self, mock_get_client):
@@ -468,8 +466,8 @@ class TestS3Store(unittest.TestCase):
             self.test_timestamp, SatellitePattern.GOES_16, product_type="RadC", band=13
         )
 
-        self.assertEqual(bucket, expected_bucket)
-        self.assertEqual(key, expected_key)
+        assert bucket == expected_bucket
+        assert key == expected_key
 
         # Test with GOES-18
         bucket, key = self.s3_store._get_bucket_and_key(
@@ -480,8 +478,8 @@ class TestS3Store(unittest.TestCase):
             self.test_timestamp, SatellitePattern.GOES_18, product_type="RadC", band=13
         )
 
-        self.assertEqual(bucket, expected_bucket)
-        self.assertEqual(key, expected_key)
+        assert bucket == expected_bucket
+        assert key == expected_key
 
         # Test with different product type and band
         bucket, key = self.s3_store._get_bucket_and_key(
@@ -492,8 +490,8 @@ class TestS3Store(unittest.TestCase):
             self.test_timestamp, SatellitePattern.GOES_16, product_type="RadF", band=1
         )
 
-        self.assertEqual(bucket, expected_bucket)
-        self.assertEqual(key, expected_key)
+        assert bucket == expected_bucket
+        assert key == expected_key
 
     @patch.object(S3Store, "_get_s3_client", new_callable=AsyncMock)
     async def test_exists(self, mock_get_client):
@@ -508,7 +506,7 @@ class TestS3Store(unittest.TestCase):
         )
 
         # Verify
-        self.assertTrue(exists)
+        assert exists
 
         # Test not found case
         error_response = {"Error": {"Code": "404"}}
@@ -520,7 +518,7 @@ class TestS3Store(unittest.TestCase):
         )
 
         # Verify
-        self.assertFalse(exists)
+        assert not exists
 
         # Test authentication error case - raises AuthenticationError exception
         from goesvfi.integrity_check.remote.base import AuthenticationError
@@ -531,7 +529,7 @@ class TestS3Store(unittest.TestCase):
         )
 
         # Should raise AuthenticationError
-        with self.assertRaises(AuthenticationError):
+        with pytest.raises(AuthenticationError):
             await self.s3_store.check_file_exists(
                 self.test_timestamp, self.test_satellite
             )
@@ -546,7 +544,7 @@ class TestS3Store(unittest.TestCase):
         )
 
         # Verify
-        self.assertFalse(exists)
+        assert not exists
 
     @patch.object(S3Store, "_get_s3_client", new_callable=AsyncMock)
     @patch.object(S3Store, "download", new_callable=AsyncMock)
@@ -570,7 +568,7 @@ class TestS3Store(unittest.TestCase):
         )
 
         # Verify result
-        self.assertEqual(result, dest_path)
+        assert result == dest_path
 
         # Test file not found
         from goesvfi.integrity_check.remote.base import ResourceNotFoundError
@@ -579,7 +577,7 @@ class TestS3Store(unittest.TestCase):
         mock_download.reset_mock()
         mock_download.side_effect = ResourceNotFoundError("File not found")
 
-        with self.assertRaises(ResourceNotFoundError):
+        with pytest.raises(ResourceNotFoundError):
             await self.s3_store.download_file(
                 self.test_timestamp, self.test_satellite, dest_path
             )
@@ -589,7 +587,7 @@ class TestS3Store(unittest.TestCase):
 
         mock_download.side_effect = AuthenticationError("Invalid credentials")
 
-        with self.assertRaises(AuthenticationError):
+        with pytest.raises(AuthenticationError):
             await self.s3_store.download_file(
                 self.test_timestamp, self.test_satellite, dest_path
             )
@@ -599,7 +597,7 @@ class TestS3Store(unittest.TestCase):
 
         mock_download.side_effect = RemoteStoreError("Server error")
 
-        with self.assertRaises(RemoteStoreError):
+        with pytest.raises(RemoteStoreError):
             await self.s3_store.download_file(
                 self.test_timestamp, self.test_satellite, dest_path
             )
@@ -627,52 +625,9 @@ class TestS3Store(unittest.TestCase):
         )
 
         # Verify result
-        self.assertEqual(result, dest_path)
+        assert result == dest_path
 
         # Skip the complex wildcard testing since it requires too much mocking
 
 
-def async_test(coro):
-    """Decorator for running async tests."""
 
-    def wrapper(*args, **kwargs):
-        # Create a fresh event loop for each test to avoid conflicts
-        old_loop = asyncio.get_event_loop()
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        try:
-            # Run the test coroutine
-            return loop.run_until_complete(coro(*args, **kwargs))
-        finally:
-            # Clean up
-            try:
-                # Cancel any pending tasks
-                pending = asyncio.all_tasks(loop)
-                if pending:
-                    for task in pending:
-                        task.cancel()
-                    # Allow tasks to be cancelled
-                    loop.run_until_complete(
-                        asyncio.gather(*pending, return_exceptions=True)
-                    )
-            except Exception:
-                pass
-
-            loop.close()
-            asyncio.set_event_loop(old_loop)
-
-    return wrapper
-
-
-# Apply async_test decorator to async test methods
-for cls in [TestCDNStore, TestS3Store]:
-    for method_name in dir(cls):
-        if method_name.startswith("test_") and asyncio.iscoroutinefunction(
-            getattr(cls, method_name)
-        ):
-            setattr(cls, method_name, async_test(getattr(cls, method_name)))
-
-
-if __name__ == "__main__":
-    unittest.main()
