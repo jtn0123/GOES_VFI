@@ -6,13 +6,12 @@ the state, input parameters, and results for the core VFI processing pipeline.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
-
-from goesvfi.gui_components.preview_manager import PreviewManager
-from goesvfi.gui_components.processing_manager import ProcessingManager
+from typing import Optional, Tuple
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
+from goesvfi.gui_components.preview_manager import PreviewManager
+from goesvfi.gui_components.processing_manager import ProcessingManager
 from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
 from goesvfi.utils import log
 
@@ -58,6 +57,8 @@ class ProcessingViewModel(QObject):
         # Initialize properties for input parameters
         self._input_directory: Optional[Path] = None
         self._output_file: Optional[Path] = None
+        self._crop_rect: Optional[Tuple[int, int, int, int]] = None
+        self._current_encoder: str = "RIFE"  # Default encoder
 
     def start_processing(self) -> None:
         """
@@ -219,6 +220,69 @@ class ProcessingViewModel(QObject):
             Optional[Path]: The output file path, or None if not set
         """
         return self._output_file_path
+
+    @property
+    def input_directory(self) -> Optional[Path]:
+        """
+        The input directory for processing.
+
+        Returns:
+            Optional[Path]: The input directory path, or None if not set
+        """
+        return self._input_directory
+
+    @input_directory.setter
+    def input_directory(self, path: Optional[Path]) -> None:
+        """
+        Set the input directory.
+
+        Args:
+            path: The input directory path
+        """
+        self._input_directory = path
+        LOGGER.debug("Input directory set to: %s", path)
+
+    @property
+    def crop_rect(self) -> Optional[Tuple[int, int, int, int]]:
+        """
+        The current crop rectangle.
+
+        Returns:
+            Optional[Tuple[int, int, int, int]]: The crop rect as (x, y, w, h), or None
+        """
+        return self._crop_rect
+
+    @crop_rect.setter
+    def crop_rect(self, rect: Optional[Tuple[int, int, int, int]]) -> None:
+        """
+        Set the crop rectangle.
+
+        Args:
+            rect: The crop rectangle as (x, y, w, h), or None to clear
+        """
+        self._crop_rect = rect
+        LOGGER.debug("Crop rectangle set to: %s", rect)
+
+    @property
+    def current_encoder(self) -> str:
+        """
+        The currently selected encoder.
+
+        Returns:
+            str: The encoder name (e.g., "RIFE", "FFmpeg")
+        """
+        return self._current_encoder
+
+    @current_encoder.setter
+    def current_encoder(self, encoder: str) -> None:
+        """
+        Set the current encoder.
+
+        Args:
+            encoder: The encoder name
+        """
+        self._current_encoder = encoder
+        LOGGER.debug("Current encoder set to: %s", encoder)
 
     def build_ffmpeg_command(
         self,

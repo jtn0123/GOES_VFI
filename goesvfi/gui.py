@@ -4,6 +4,7 @@ Launching this module starts the application's main window with tabs for data
 integrity checks, imagery previews, and video generation.  Run
 ``python -m goesvfi.gui`` to open the interface.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,15 +30,12 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import (
     QApplication,
-    QCheckBox,
     QComboBox,
     QDialog,
-    QDoubleSpinBox,
     QFileDialog,
     QGridLayout,
     QGroupBox,
     QLabel,
-    QLineEdit,
     QMessageBox,
     QSizePolicy,
     QSpinBox,
@@ -52,6 +50,7 @@ from goesvfi.date_sorter.gui_tab import DateSorterTab
 from goesvfi.date_sorter.sorter import DateSorter
 from goesvfi.file_sorter.gui_tab import FileSorterTab
 from goesvfi.file_sorter.sorter import FileSorter
+from goesvfi.gui_components import PreviewManager, ProcessingManager
 from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab
 from goesvfi.gui_tabs.main_tab import MainTab
 from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab
@@ -68,32 +67,14 @@ from goesvfi.pipeline.image_processing_interfaces import ImageData
 from goesvfi.pipeline.run_vfi import VfiWorker
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
 from goesvfi.utils import config, log
-from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
 from goesvfi.utils.gui_helpers import (
     ClickableLabel,
     RifeCapabilityManager,
     ZoomDialog,
 )
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
-from goesvfi.gui_components import PreviewManager, ProcessingManager
 
 LOGGER = log.get_logger(__name__)
-
-# FFmpeg profile definitions moved to goesvfi.utils.config
-
-# Commented out as it seems unused and might cause type issues if FfmpegProfile changes
-#  # OPTIMAL_FFMPEG_INTERP_SETTINGS = {
-#  #     "mi_mode": OPTIMAL_FFMPEG_PROFILE["mi_mode"],
-#  #     "mc_mode": OPTIMAL_FFMPEG_PROFILE["mc_mode"],
-#  #     "me_mode": OPTIMAL_FFMPEG_PROFILE["me_mode"],
-#  # #     "vsbmc": "1" if OPTIMAL_FFMPEG_PROFILE["vsbmc"] else "0",
-#  # #     "scd": OPTIMAL_FFMPEG_PROFILE["scd"]
-#  # }
-
-# Classes ClickableLabel, ZoomDialog, CropDialog moved to goesvfi.utils.gui_helpers
-
-# ────────────────────────────── Worker thread ──────────────────────────────
-# VfiWorker class removed, now imported from goesvfi.pipeline.run_vfi
 
 
 # ────────────────────────────── Main Window ────────────────────────────────
@@ -244,92 +225,7 @@ class MainWindow(QWidget):
             main_window_ref=self,  # Pass the MainWindow instance itself
             parent=self,
         )
-        # --- Create FFmpeg Widgets (to be passed to FFmpegSettingsTab) ---
-        # These widgets are logically part of the FFmpeg settings but need to be owned by MainWindow
-        # to be passed correctly during instantiation. FFmpegSettingsTab will then manage their layout.   # noqa: B950
-        self.ffmpeg_settings_group = QGroupBox(self.tr("FFmpeg Interpolation Settings"))
-        self.ffmpeg_settings_group.setCheckable(
-            True
-        )  # Assuming it should be checkable like in profiles
-        self.ffmpeg_unsharp_group = QGroupBox(self.tr("Unsharp Mask"))
-        self.ffmpeg_unsharp_group.setCheckable(True)
-        self.ffmpeg_quality_group = QGroupBox(self.tr("Encoding Quality"))
-        # Profile Combo
-        self.ffmpeg_profile_combo = QComboBox()
-        self.ffmpeg_profile_combo.addItems(["Custom"] + list(FFMPEG_PROFILES.keys()))
-        # Interpolation Widgets
-        self.ffmpeg_mi_mode_combo = QComboBox()
-        self.ffmpeg_mi_mode_combo.addItems(
-            [self.tr("dup"), self.tr("blend"), self.tr("mci")]
-        )
-        self.ffmpeg_mc_mode_combo = QComboBox()
-        self.ffmpeg_mc_mode_combo.addItems([self.tr("obmc"), self.tr("aobmc")])
-        self.ffmpeg_me_mode_combo = QComboBox()
-        self.ffmpeg_me_mode_combo.addItems([self.tr("bidir"), self.tr("bilat")])
-        self.ffmpeg_vsbmc_checkbox = QCheckBox(self.tr("VSBMC"))
-        self.ffmpeg_scd_combo = QComboBox()
-        self.ffmpeg_scd_combo.addItems([self.tr("none"), self.tr("fdi")])
-        self.ffmpeg_me_algo_edit = QLineEdit("(default)")  # QLineEdit, not combo
-        self.ffmpeg_search_param_spinbox = QSpinBox()
-        self.ffmpeg_search_param_spinbox.setRange(4, 1024)  # Example range
-        self.ffmpeg_scd_threshold_spinbox = QDoubleSpinBox()
-        self.ffmpeg_scd_threshold_spinbox.setRange(0.0, 100.0)
-        self.ffmpeg_scd_threshold_spinbox.setDecimals(1)
-        self.ffmpeg_mb_size_edit = QLineEdit("(default)")  # QLineEdit, not combo
-        # Unsharp Widgets
-        self.ffmpeg_unsharp_lx_spinbox = QSpinBox()
-        self.ffmpeg_unsharp_lx_spinbox.setRange(3, 63)
-        self.ffmpeg_unsharp_ly_spinbox = QSpinBox()
-        self.ffmpeg_unsharp_ly_spinbox.setRange(3, 63)
-        self.ffmpeg_unsharp_la_spinbox = QDoubleSpinBox()
-        self.ffmpeg_unsharp_la_spinbox.setRange(-1.5, 1.5)
-        self.ffmpeg_unsharp_la_spinbox.setDecimals(1)
-        self.ffmpeg_unsharp_cx_spinbox = QSpinBox()
-        self.ffmpeg_unsharp_cx_spinbox.setRange(3, 63)
-        self.ffmpeg_unsharp_cy_spinbox = QSpinBox()
-        self.ffmpeg_unsharp_cy_spinbox.setRange(3, 63)
-        self.ffmpeg_unsharp_ca_spinbox = QDoubleSpinBox()
-        self.ffmpeg_unsharp_ca_spinbox.setRange(-1.5, 1.5)
-        self.ffmpeg_unsharp_ca_spinbox.setDecimals(1)
-        # Quality Widgets
-        self.ffmpeg_quality_combo = QComboBox()
-        self.ffmpeg_quality_combo.addItems(
-            [
-                self.tr("Very High (CRF 16)"),
-                self.tr("High (CRF 18)"),
-                self.tr("Medium (CRF 20)"),
-                self.tr("Low (CRF 23)"),
-                self.tr("Very Low (CRF 26)"),
-                self.tr("Custom Quality"),
-            ]
-        )
-        self.ffmpeg_crf_spinbox = QSpinBox()
-        self.ffmpeg_crf_spinbox.setRange(0, 51)
-        self.ffmpeg_bitrate_spinbox = QSpinBox()
-        self.ffmpeg_bitrate_spinbox.setRange(100, 100000)  # KBit/s
-        self.ffmpeg_bitrate_spinbox.setSuffix(" kbit/s")
-        self.ffmpeg_bufsize_spinbox = QSpinBox()
-        self.ffmpeg_bufsize_spinbox.setRange(150, 150000)  # KBit
-        self.ffmpeg_bufsize_spinbox.setSuffix(" kbit")
-        self.ffmpeg_pix_fmt_combo = QComboBox()
-        self.ffmpeg_pix_fmt_combo.addItems(
-            [self.tr("yuv420p"), self.tr("yuv444p")]
-        )  # Common options
-        self.ffmpeg_filter_preset_combo = QComboBox()
-        self.ffmpeg_filter_preset_combo.addItems(
-            [
-                self.tr("ultrafast"),
-                self.tr("superfast"),
-                self.tr("veryfast"),
-                self.tr("faster"),
-                self.tr("fast"),
-                self.tr("medium"),
-                self.tr("slow"),
-                self.tr("slower"),
-                self.tr("veryslow"),
-            ]
-        )
-        # -----------------------------------------------------------------
+        # FFmpeg widgets are now created and managed by FFmpegSettingsTab
         # Instantiate FFmpegSettingsTab, passing required widgets and signals
         self.ffmpeg_settings_tab: FFmpegSettingsTab  # <-- ADDED TYPE HINT
         self.ffmpeg_settings_tab = FFmpegSettingsTab(parent=self)
@@ -398,62 +294,19 @@ class MainWindow(QWidget):
             self.combined_tab, "Satellite Integrity"
         )  # Add our Combined tab with enhanced error handling
 
-        # self.loadSettings()  # Moved lower
-
         main_layout.addWidget(self.tab_widget)
         # Status Bar
         self.status_bar = QStatusBar()
-
-        # self.progress_label = QLabel(self.tr("Idle"))  # <-- Remove direct label
-        # self.status_bar.addWidget(self.progress_label)  # <-- Remove direct label widget
-        # self.progress_bar = QProgressBar()  # <-- Progress bar likely managed by Processing VM later   # noqa: B950
-        # self.progress_bar.setVisible(False)  # Hide initially
-        # self.status_bar.addPermanentWidget(self.progress_bar)  # <-- Remove progress bar for now
 
         # Set up aliases for compatibility with inconsistent naming in the code
         # Access main_tab widgets for aliases
         self.model_combo = (
             self.main_tab.rife_model_combo
         )  # Create alias for compatibility
-        # self.sanchez_res_km_spinbox = self.sanchez_res_spinbox  # Removed old alias
         self.sanchez_res_km_combo = (
             self.main_tab.sanchez_res_combo
         )  # Added new alias for ComboBox
-        # FFmpeg aliases point to FFmpegSettingsTab widgets (passed during init), not MainTab
-        self.ffmpeg_interp_group = self.ffmpeg_settings_group  # Alias points to self
-        self.filter_preset_combo = (
-            self.ffmpeg_filter_preset_combo
-        )  # Alias points to self
-        self.mi_mode_combo = self.ffmpeg_mi_mode_combo  # Alias points to self
-        self.mc_mode_combo = self.ffmpeg_mc_mode_combo  # Alias points to self
-        self.me_mode_combo = self.ffmpeg_me_mode_combo  # Alias points to self
-        # These need special handling as they're QLineEdit but referenced as combo boxes
-        self.me_algo_combo = self.ffmpeg_me_algo_edit  # Alias points to self
-        self.mb_size_combo = self.ffmpeg_mb_size_edit  # Alias points to self
-
-        self.search_param_spinbox = (
-            self.ffmpeg_search_param_spinbox
-        )  # Alias points to self
-        self.scd_mode_combo = self.ffmpeg_scd_combo  # Alias points to self
-        self.scd_threshold_spinbox = (
-            self.ffmpeg_scd_threshold_spinbox
-        )  # Alias points to self
-        self.vsbmc_checkbox = self.ffmpeg_vsbmc_checkbox  # Alias points to self
-        self.unsharp_group = self.ffmpeg_unsharp_group  # Alias points to self
-        self.unsharp_lx_spinbox = self.ffmpeg_unsharp_lx_spinbox  # Alias points to self
-        self.unsharp_ly_spinbox = self.ffmpeg_unsharp_ly_spinbox  # Alias points to self
-        self.unsharp_la_spinbox = self.ffmpeg_unsharp_la_spinbox  # Alias points to self
-        self.unsharp_cx_spinbox = self.ffmpeg_unsharp_cx_spinbox  # Alias points to self
-        self.unsharp_cy_spinbox = self.ffmpeg_unsharp_cy_spinbox  # Alias points to self
-        self.unsharp_ca_spinbox = self.ffmpeg_unsharp_ca_spinbox  # Alias points to self
-        self.crf_spinbox = self.ffmpeg_crf_spinbox  # Alias points to self
-        self.bitrate_spinbox = self.ffmpeg_bitrate_spinbox  # Alias points to self
-        self.bufsize_spinbox = self.ffmpeg_bufsize_spinbox  # Alias points to self
-        self.pix_fmt_combo = self.ffmpeg_pix_fmt_combo  # Alias points to self
-        self.profile_combo = self.ffmpeg_profile_combo  # Alias points to self
-
-        # Set up settings - reusing the same settings instance from line 153
-        # self.settings = QSettings("GOES_VFI", "gui")   # Commented out to use consistent QSettings
+        # FFmpeg aliases removed - FFmpegSettingsTab manages its own widgets
 
         # Apply dark theme
         self.apply_dark_theme()
@@ -1082,101 +935,6 @@ class MainWindow(QWidget):
         if self.tab_widget.widget(index) == self.main_tab:
             self.request_previews_update.emit()
 
-    def _check_settings_match_profile(self, profile_dict: FfmpegProfile) -> bool:
-        """Checks if current FFmpeg settings match a given profile dictionary."""
-        current_settings = {
-            "use_ffmpeg_interp": self.ffmpeg_interp_group.isChecked(),
-            "filter_preset": self.filter_preset_combo.currentText(),
-            "mi_mode": self.mi_mode_combo.currentText(),
-            "mc_mode": self.mc_mode_combo.currentText(),
-            "me_mode": self.me_mode_combo.currentText(),
-            "me_algo": self.me_algo_combo.text(),
-            "search_param": self.search_param_spinbox.value(),
-            "scd": self.scd_mode_combo.currentText(),
-            "scd_threshold": self.scd_threshold_spinbox.value(),
-            "mb_size": self.mb_size_combo.text(),
-            "vsbmc": self.vsbmc_checkbox.isChecked(),
-            "apply_unsharp": self.unsharp_group.isChecked(),
-            "unsharp_lx": self.unsharp_lx_spinbox.value(),
-            "unsharp_ly": self.unsharp_ly_spinbox.value(),
-            "unsharp_la": self.unsharp_la_spinbox.value(),
-            "unsharp_cx": self.unsharp_cx_spinbox.value(),
-            "unsharp_cy": self.unsharp_cy_spinbox.value(),
-            "unsharp_ca": self.unsharp_ca_spinbox.value(),
-            "preset_text": self.ffmpeg_quality_combo.currentText(),
-            "cr": self.crf_spinbox.value(),
-            "bitrate": self.bitrate_spinbox.value(),
-            "bufsize": self.bufsize_spinbox.value(),
-            "pix_fmt": self.pix_fmt_combo.currentText(),
-        }
-
-        # Compare current settings with the profile dictionary
-        # Need to handle potential differences in data types (e.g., int vs float for threshold)
-        # and optional values (like scd_threshold when scd is none)
-        # Explicitly list keys to satisfy TypedDict literal requirement
-        ffmpeg_profile_keys: List[str] = [
-            "use_ffmpeg_interp",
-            "mi_mode",
-            "mc_mode",
-            "me_mode",
-            "vsbmc",
-            "scd",
-            "me_algo",
-            "search_param",
-            "scd_threshold",
-            "mb_size",
-            "apply_unsharp",
-            "unsharp_lx",
-            "unsharp_ly",
-            "unsharp_la",
-            "unsharp_cx",
-            "unsharp_cy",
-            "unsharp_ca",
-            "preset_text",
-            "cr",
-            "bitrate",
-            "bufsize",
-            "pix_fmt",
-            "filter_preset",
-        ]
-
-        for key in ffmpeg_profile_keys:
-            # Ensure key exists in current_settings before accessing
-            if key not in current_settings:
-                LOGGER.warning("Key %r in profile but not in current settings.", key)
-                return False
-
-            current_value = current_settings[key]
-            profile_value = profile_dict[key]  # type: ignore[literal-required]  # Access using literal key   # noqa: B950
-
-            if key == "scd_threshold":
-                # Special handling for scd_threshold: compare only if scd_mode is not "none"
-                # Need to access scd_mode using literal key as well
-                current_scd_mode = current_settings.get("scd_mode")
-                profile_scd_mode = profile_dict.get("scd")  # Access using literal key
-
-                if (
-                    current_scd_mode != "none"
-                    and profile_scd_mode != "none"
-                    and current_value
-                    is not None  # Ensure values are not None before comparison
-                    and profile_value is not None
-                ):
-                    if (
-                        abs(current_value - profile_value) > 1e-9
-                    ):  # Use tolerance for float comparison
-                        return False
-                elif current_scd_mode == "none" and profile_scd_mode == "none":
-                    pass  # Both are none, consider them matching for this setting
-                else:
-                    return False  # One is none, the other is not
-            else:
-                # Direct comparison for other keys
-                if current_value != profile_value:
-                    return False
-
-        return True  # All settings match
-
     def loadSettings(self) -> None:
         """Load settings from QSettings."""
         # Debug settings information
@@ -1489,13 +1247,7 @@ class MainWindow(QWidget):
         if self.out_file_path:
             self.main_tab.out_file_edit.setText(str(self.out_file_path))
 
-        # Check if loaded settings match any predefined profile and set the combo box
-        matched_profile = "Custom"
-        for profile_name, profile_dict in FFMPEG_PROFILES.items():
-            if self._check_settings_match_profile(profile_dict):
-                matched_profile = profile_name
-                break
-        self.profile_combo.setCurrentText(matched_profile)
+        # FFmpeg profile matching is now handled by FFmpegSettingsTab
 
     def saveSettings(self) -> None:
         """Save settings to QSettings."""
@@ -3273,171 +3025,7 @@ class MainWindow(QWidget):
 
     # Methods _update_scd_thresh_state, _update_unsharp_controls_state, _update_quality_controls_state removed   # noqa: B950
     # as this logic is now handled within FFmpegSettingsTab.
-
-    def _start(self) -> None:
-        LOGGER.debug("Entering _start...")
-        if not self.in_dir or not self.out_file_path:
-            LOGGER.warning("Input directory or output file not set. Cannot start.")
-            self._set_processing_state(False)  # Ensure UI is re-enabled
-            return
-
-        # Update UI to processing state
-        self._set_processing_state(True)
-
-        # --- Gather arguments for VfiWorker ---
-        try:
-            # Basic args
-            in_dir = self.in_dir
-            out_file_path = self.out_file_path
-            fps = self.main_tab.fps_spinbox.value()
-            # VfiWorker expects num_intermediate_frames, which is multiplier - 1
-            mid_count = self.main_tab.multiplier_spinbox.value() - 1
-            max_workers = os.cpu_count() or 1
-            encoder = self.main_tab.encoder_combo.currentText()
-
-            # FFmpeg settings (Get from the dedicated tab)
-            ffmpeg_settings = self.ffmpeg_settings_tab.get_current_settings()
-            use_ffmpeg_interp = ffmpeg_settings.get("use_ffmpeg_interp", False)
-            filter_preset = ffmpeg_settings.get("filter_preset", "slow")
-            mi_mode = ffmpeg_settings.get("mi_mode", "mci")
-            mc_mode = ffmpeg_settings.get("mc_mode", "obmc")
-            me_mode = ffmpeg_settings.get("me_mode", "bidir")
-            me_algo = ffmpeg_settings.get("me_algo", "")  # Default to empty string
-            search_param = ffmpeg_settings.get("search_param", 96)
-            scd_mode = ffmpeg_settings.get("scd", "fdi")
-            scd_threshold = (
-                ffmpeg_settings.get("scd_threshold") if scd_mode != "none" else None
-            )
-            mb_size_text = ffmpeg_settings.get("mb_size", "")  # Default to empty string
-            minter_mb_size = int(mb_size_text) if mb_size_text.isdigit() else None
-            minter_vsbmc = 1 if ffmpeg_settings.get("vsbmc", False) else 0
-
-            # Unsharp settings
-            apply_unsharp = ffmpeg_settings.get("apply_unsharp", False)
-            unsharp_lx = ffmpeg_settings.get("unsharp_lx", 7)
-            unsharp_ly = ffmpeg_settings.get("unsharp_ly", 7)
-            unsharp_la = ffmpeg_settings.get("unsharp_la", 1.0)
-            unsharp_cx = ffmpeg_settings.get("unsharp_cx", 5)
-            unsharp_cy = ffmpeg_settings.get("unsharp_cy", 5)
-            unsharp_ca = ffmpeg_settings.get("unsharp_ca", 0.0)
-
-            # Quality settings
-            crf = ffmpeg_settings.get("cr", 16)
-            bitrate_kbps = ffmpeg_settings.get("bitrate", 15000)
-            bufsize_kb = ffmpeg_settings.get("bufsize", 22500)
-            pix_fmt = ffmpeg_settings.get("pix_fmt", "yuv444p")
-
-            # Other args
-            # skip_model corresponds to 'Keep Intermediate Files' checkbox in MainTab
-            # skip_model = self.main_tab.keep_temps_checkbox.isChecked()  # Removed: Checkbox doesn't exist   # noqa: B950
-            skip_model = False  # Default to not keeping intermediate files
-            crop_rect = self.current_crop_rect
-            debug_mode = self.debug_mode
-
-            # RIFE settings
-            rife_tile_enable = self.main_tab.rife_tile_checkbox.isChecked()
-            rife_tile_size = self.main_tab.rife_tile_size_spinbox.value()  # noqa: F841
-            rife_uhd_mode = self.main_tab.rife_uhd_checkbox.isChecked()
-            rife_thread_spec = self.main_tab.rife_thread_spec_edit.text()  # noqa: F841
-            rife_tta_spatial = (
-                self.main_tab.rife_tta_spatial_checkbox.isChecked()
-            )  # noqa: F841
-            rife_tta_temporal = (
-                self.main_tab.rife_tta_temporal_checkbox.isChecked()
-            )  # noqa: F841
-            # Get model key from MainTab's stored value
-            model_key = self.main_tab.current_model_key
-            if not model_key:  # Add a fallback just in case
-                model_key = (
-                    self.main_tab.rife_model_combo.currentText()
-                    .split("(")[-1]
-                    .strip(") ")
-                )
-                LOGGER.warning(
-                    "MainTab current_model_key was empty, using fallback from text: %s"
-                )
-
-            # Sanchez settings
-            false_colour = self.main_tab.sanchez_false_colour_checkbox.isChecked()
-            res_km = int(float(self.main_tab.sanchez_res_combo.currentText()))
-
-            # Sanchez temp dir
-            sanchez_gui_temp_dir = self._sanchez_gui_temp_dir
-
-        except Exception as e:
-            LOGGER.exception("Error gathering arguments for VfiWorker:")
-            QMessageBox.critical(
-                self, "Error", f"Failed to gather processing settings: {e}"
-            )
-            self._set_processing_state(False)  # Ensure UI is re-enabled on error
-            return
-
-        # --- Instantiate and run VfiWorker ---
-        self.vfi_worker = VfiWorker(
-            in_dir=str(in_dir),
-            out_file_path=str(out_file_path),
-            fps=fps,
-            mid_count=mid_count,
-            max_workers=max_workers,
-            encoder=encoder,
-            # FFmpeg settings
-            use_preset_optimal=False,  # This seems unused in VfiWorker.__init__ now
-            use_ffmpeg_interp=use_ffmpeg_interp,
-            filter_preset=filter_preset,
-            mi_mode=mi_mode,
-            mc_mode=mc_mode,
-            me_mode=me_mode,
-            me_algo=me_algo,
-            search_param=search_param,
-            scd_mode=scd_mode,
-            scd_threshold=scd_threshold if scd_threshold is not None else 10.0,
-            minter_mb_size=minter_mb_size if minter_mb_size is not None else 16,
-            minter_vsbmc=minter_vsbmc,
-            # Unsharp settings
-            apply_unsharp=apply_unsharp,
-            unsharp_lx=unsharp_lx,
-            unsharp_ly=unsharp_ly,
-            unsharp_la=unsharp_la,
-            unsharp_cx=unsharp_cx,
-            unsharp_cy=unsharp_cy,
-            unsharp_ca=unsharp_ca,
-            # Quality settings
-            crf=crf,
-            bitrate_kbps=bitrate_kbps,
-            bufsize_kb=bufsize_kb,
-            pix_fmt=pix_fmt,
-            # Other args
-            skip_model=skip_model,
-            crop_rect=crop_rect,
-            debug_mode=debug_mode,
-            # RIFE settings
-            rife_tile_enable=rife_tile_enable,
-            rife_tile_size=rife_tile_size,  # noqa: F841
-            rife_uhd_mode=rife_uhd_mode,
-            rife_thread_spec=rife_thread_spec,  # noqa: F841
-            rife_tta_spatial=rife_tta_spatial,  # noqa: F841
-            rife_tta_temporal=rife_tta_temporal,  # noqa: F841
-            model_key=model_key,
-            # Sanchez settings
-            false_colour=false_colour,
-            res_km=res_km,
-            # Sanchez temp dir
-            sanchez_gui_temp_dir=(
-                str(sanchez_gui_temp_dir) if sanchez_gui_temp_dir else None
-            ),
-        )
-
-        self.vfi_worker.progress.connect(self._update_progress)
-        self.vfi_worker.finished.connect(self._handle_process_finished)
-        self.vfi_worker.error.connect(self._handle_process_error)
-
-        # Start the worker thread
-        LOGGER.info("Starting VFI worker thread...")
-        self.vfi_worker.start()
-        LOGGER.debug("VFI worker thread started.")
-
-        # Update status bar (already done by _set_processing_state)
-        # self.status_bar.showMessage("Processing started...")
+    # Method _start removed - dead code replaced by signal/slot pattern
 
     def _update_progress(self, current: int, total: int, eta: float) -> None:
         """Update the status bar with the current progress."""

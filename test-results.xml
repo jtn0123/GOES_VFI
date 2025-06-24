@@ -1,38 +1,28 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="4" failures="0" skipped="0" tests="4" time="5.481" timestamp="2025-06-22T19:14:26.997669-07:00" hostname="Justins-MacBook-Air.local"><testcase classname="" name="tests.integration.test_all_gui_elements" time="0.000"><error message="collection failure">ImportError while importing test module '/Users/justin/Documents/Github/GOES_VFI/tests/integration/test_all_gui_elements.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-tests/integration/test_all_gui_elements.py:19: in &lt;module&gt;
-    from goesvfi.gui import MainWindow
-goesvfi/gui.py:71: in &lt;module&gt;
-    from goesvfi.utils.gui_helpers import (
-E   ImportError: cannot import name 'CropDialog' from 'goesvfi.utils.gui_helpers' (/Users/justin/Documents/Github/GOES_VFI/goesvfi/utils/gui_helpers.py)</error></testcase><testcase classname="" name="tests.integration.test_full_application_workflow" time="0.000"><error message="collection failure">ImportError while importing test module '/Users/justin/Documents/Github/GOES_VFI/tests/integration/test_full_application_workflow.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-tests/integration/test_full_application_workflow.py:16: in &lt;module&gt;
-    from goesvfi.gui import MainWindow
-goesvfi/gui.py:71: in &lt;module&gt;
-    from goesvfi.utils.gui_helpers import (
-E   ImportError: cannot import name 'CropDialog' from 'goesvfi.utils.gui_helpers' (/Users/justin/Documents/Github/GOES_VFI/goesvfi/utils/gui_helpers.py)</error></testcase><testcase classname="" name="tests.unit.test_batch_processing_tab" time="0.000"><error message="collection failure">tests/unit/test_batch_processing_tab.py:8: in &lt;module&gt;
-    disable_all_gui_popups()
-tests/utils/disable_popups.py:133: in disable_all_gui_popups
-    _active_patches = apply_gui_patches()
-tests/utils/disable_popups.py:120: in apply_gui_patches
-    p.start()
-/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1654: in start
-    result = self.__enter__()
-/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
-    self.target = self.getter()
-/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
-    result = getattr(result, p)
-E   AttributeError: module 'goesvfi' has no attribute 'gui'</error></testcase><testcase classname="" name="tests.unit.test_gui_helpers" time="0.000"><error message="collection failure">ImportError while importing test module '/Users/justin/Documents/Github/GOES_VFI/tests/unit/test_gui_helpers.py'.
-Hint: make sure your test modules/packages have valid Python names.
-Traceback:
-/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/importlib/__init__.py:88: in import_module
-    return _bootstrap._gcd_import(name[level:], package, level)
-tests/unit/test_gui_helpers.py:12: in &lt;module&gt;
-    from goesvfi.utils.gui_helpers import (
-E   ImportError: cannot import name 'CropDialog' from 'goesvfi.utils.gui_helpers' (/Users/justin/Documents/Github/GOES_VFI/goesvfi/utils/gui_helpers.py)</error></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="3" failures="0" skipped="0" tests="3" time="3.140" timestamp="2025-06-22T21:25:54.720232-07:00" hostname="Justins-MacBook-Air.local"><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_main_tab_all_buttons" time="0.001"><error message="failed on setup with &quot;AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'&quot;">.venv/lib/python3.13/site-packages/_pytest/monkeypatch.py:83: in annotated_getattr
+    obj = getattr(obj, name)
+E   AttributeError: type object 'NoPopupQMessageBox' has no attribute 'exec'
+
+The above exception was the direct cause of the following exception:
+.venv/lib/python3.13/site-packages/pytestqt/plugin.py:180: in pytest_runtest_setup
+    result = yield
+tests/integration/conftest.py:67: in _no_gui_dialogs
+    monkeypatch.setattr(
+E   AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_main_tab_all_checkboxes" time="0.000"><error message="failed on setup with &quot;AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'&quot;">.venv/lib/python3.13/site-packages/_pytest/monkeypatch.py:83: in annotated_getattr
+    obj = getattr(obj, name)
+E   AttributeError: type object 'NoPopupQMessageBox' has no attribute 'exec'
+
+The above exception was the direct cause of the following exception:
+.venv/lib/python3.13/site-packages/pytestqt/plugin.py:180: in pytest_runtest_setup
+    result = yield
+tests/integration/conftest.py:67: in _no_gui_dialogs
+    monkeypatch.setattr(
+E   AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_main_tab_all_spinboxes_and_combos" time="0.001"><error message="failed on setup with &quot;AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'&quot;">.venv/lib/python3.13/site-packages/_pytest/monkeypatch.py:83: in annotated_getattr
+    obj = getattr(obj, name)
+E   AttributeError: type object 'NoPopupQMessageBox' has no attribute 'exec'
+
+The above exception was the direct cause of the following exception:
+.venv/lib/python3.13/site-packages/pytestqt/plugin.py:180: in pytest_runtest_setup
+    result = yield
+tests/integration/conftest.py:67: in _no_gui_dialogs
+    monkeypatch.setattr(
+E   AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'</error></testcase></testsuite></testsuites>
