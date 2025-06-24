@@ -7,6 +7,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
+# Mock optional dependencies to avoid import errors during module import
+sys.modules.setdefault("aioboto3", MagicMock())
+sys.modules.setdefault("botocore", MagicMock())
+sys.modules.setdefault("botocore.config", MagicMock())
+sys.modules.setdefault("botocore.exceptions", MagicMock())
+sys.modules.setdefault("requests", MagicMock())
+
 import numpy as np
 
 from goesvfi.integrity_check.render.netcdf import extract_metadata, render_png
@@ -184,8 +191,8 @@ class TestNetCDFRenderer(unittest.TestCase):
         # Output path
         output_path = self.base_dir / "output.png"
 
-        # Test - should raise an IOError wrapping the ValueError
-        with self.assertRaises(IOError) as context:
+        # Test - should raise a ValueError for wrong band
+        with self.assertRaises(ValueError) as context:
             render_png(self.netcdf_path, output_path)
 
         # Verify the error message
@@ -206,8 +213,8 @@ class TestNetCDFRenderer(unittest.TestCase):
         # Output path
         output_path = self.base_dir / "output.png"
 
-        # Test - should raise an IOError wrapping the ValueError
-        with self.assertRaises(IOError) as context:
+        # Test - should raise a ValueError when variable missing
+        with self.assertRaises(ValueError) as context:
             render_png(self.netcdf_path, output_path)
 
         # Verify the error message
@@ -247,10 +254,10 @@ class TestNetCDFRenderer(unittest.TestCase):
     def test_extract_metadata_error(self, mock_open_dataset):
         """Test error handling during metadata extraction."""
         # Setup
-        mock_open_dataset.side_effect = Exception("Generic error")
+        mock_open_dataset.side_effect = KeyError("Generic error")
 
         # Test
-        with self.assertRaises(ValueError):
+        with self.assertRaises(KeyError):
             extract_metadata(self.netcdf_path)
 
 

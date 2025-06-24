@@ -274,11 +274,15 @@ def render_png(
             LOGGER.debug("Rendered %s", final_output_path)
             return final_output_path
 
-    # TODO: Replace with specific exceptions: KeyError, RuntimeError, ValueError
-
-    except Exception as e:
+    except KeyError as e:
         LOGGER.exception("Error occurred: %s", e)
-        raise IOError(f"Error rendering NetCDF file: {e}") from e
+        raise KeyError(f"Error rendering NetCDF file: {e}") from e
+    except RuntimeError as e:
+        LOGGER.exception("Error occurred: %s", e)
+        raise RuntimeError(f"Error rendering NetCDF file: {e}") from e
+    except ValueError as e:
+        LOGGER.exception("Error occurred: %s", e)
+        raise ValueError(f"Error rendering NetCDF file: {e}") from e
 
 
 def extract_metadata(netcdf_path: Union[str, Path]) -> Dict[str, Any]:
@@ -318,8 +322,12 @@ def extract_metadata(netcdf_path: Union[str, Path]) -> Dict[str, Any]:
                 "resolution_y": ds[Y_VAR].size if Y_VAR in ds.variables else None,
             }
             return metadata
-    # TODO: Replace with specific exceptions: KeyError, RuntimeError, ValueError
-
-    except Exception as e:
+    except KeyError as e:
+        LOGGER.exception("Error occurred: %s", e)
+        raise KeyError("Error extracting metadata: %s" % e) from e
+    except RuntimeError as e:
+        LOGGER.exception("Error occurred: %s", e)
+        raise RuntimeError("Error extracting metadata: %s" % e) from e
+    except ValueError as e:
         LOGGER.exception("Error occurred: %s", e)
         raise ValueError("Error extracting metadata: %s" % e) from e
