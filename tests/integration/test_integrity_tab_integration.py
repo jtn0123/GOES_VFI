@@ -217,8 +217,5 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
         # Process events
         QCoreApplication.processEvents()
 
-    # TODO: The following implementation was removed as it tests non-existent functionality
-
-
 if __name__ == "__main__":
     unittest.main()
