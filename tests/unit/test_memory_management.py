@@ -90,6 +90,40 @@ class TestMemoryMonitor:
 
         callback_mock.assert_called_once_with(test_stats)
 
+    def test_get_memory_stats_psutil_mock(self):
+        """Memory stats should be retrieved using psutil when available."""
+        fake_vm = Mock(total=8 * 1024**3, available=6 * 1024**3,
+                       used=2 * 1024**3, percent=25.0)
+        fake_proc = Mock()
+        fake_proc.memory_info.return_value = Mock(rss=256 * 1024**2)
+        fake_proc.memory_percent.return_value = 1.2
+
+        with patch("goesvfi.utils.memory_manager.psutil") as mock_psutil, \
+             patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", True):
+            mock_psutil.virtual_memory.return_value = fake_vm
+            mock_psutil.Process.return_value = fake_proc
+
+            monitor = MemoryMonitor()
+            stats = monitor.get_memory_stats()
+
+        assert stats.total_mb == 8192
+        assert stats.available_mb == 6144
+        assert stats.used_mb == 2048
+        assert stats.percent_used == 25.0
+        assert stats.process_mb == 256
+        assert stats.process_percent == 1.2
+
+    def test_get_memory_stats_without_psutil(self):
+        """Fallback path should work when psutil is unavailable."""
+        fake_rusage = Mock(ru_maxrss=500000)
+
+        with patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", False), \
+             patch("resource.getrusage", return_value=fake_rusage):
+            monitor = MemoryMonitor()
+            stats = monitor.get_memory_stats()
+
+        assert stats.process_mb == 488
+
 
 class TestMemoryOptimizer:
     """Test MemoryOptimizer class."""

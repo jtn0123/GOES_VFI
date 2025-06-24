@@ -1,6 +1,7 @@
 """Tests for rife_analyzer utility functions."""
 
 import pathlib
+import subprocess
 from unittest.mock import Mock, patch
 
 import pytest
@@ -134,6 +135,55 @@ class TestRifeCapabilityDetector:
         assert detector.supports_tiling() is False
         assert detector.supports_tta_spatial() is False
         assert detector.supports_thread_spec() is False
+
+    def test_detect_capabilities_with_simulated_help(self, mocker):
+        """Detect capabilities using a predefined help text."""
+        exe_path = pathlib.Path("/path/to/rife")
+        help_text = (
+            "RIFE v4.6\n"
+            "Options:\n"
+            "  -u  enable uhd\n"
+            "  -t  enable tiling\n"
+            "  -x  spatial tta\n"
+            "  -z  temporal tta\n"
+            "  -j  thread spec\n"
+            "  -g  gpu id\n"
+            "  -m  model path\n"
+        )
+
+        mocker.patch("pathlib.Path.exists", return_value=True)
+        mocker.patch.object(
+            RifeCapabilityDetector,
+            "_run_help_command",
+            return_value=(help_text, True),
+        )
+
+        detector = RifeCapabilityDetector(exe_path)
+
+        assert detector.version == "4.6"
+        assert detector.supports_uhd() is True
+        assert detector.supports_tiling() is True
+        assert detector.supports_tta_spatial() is True
+        assert detector.supports_tta_temporal() is True
+        assert detector.supports_thread_spec() is True
+        assert detector.supports_gpu_id() is True
+        assert detector.supports_model_path() is True
+
+    def test_help_command_timeout(self, mocker):
+        """_run_help_command should handle subprocess timeouts."""
+        exe_path = pathlib.Path("/path/to/rife")
+        mocker.patch("pathlib.Path.exists", return_value=True)
+        with patch.object(RifeCapabilityDetector, "_detect_capabilities"):
+            detector = RifeCapabilityDetector(exe_path)
+
+        mocker.patch(
+            "subprocess.run",
+            side_effect=subprocess.TimeoutExpired(cmd=[str(exe_path)], timeout=5),
+        )
+
+        text, success = detector._run_help_command()
+        assert success is False
+        assert "Timeout" in text
 
     def test_build_command_basic(self):
         """Test building basic command without optional features."""
