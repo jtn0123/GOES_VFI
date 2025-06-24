@@ -4,8 +4,8 @@
 import io  # Import io
 import pathlib
 import subprocess
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from unittest.mock import MagicMock, Mock
+from typing import Callable, List, Optional, Tuple
+from unittest.mock import MagicMock
 
 # Add imports for creating PNG test images
 import numpy as np
@@ -35,6 +35,7 @@ class MockSubprocessResult:
         self.returncode = returncode
         self.stdout = stdout.encode()  # Store as bytes like subprocess does
         self.stderr = stderr.encode()
+        self.args: List[str] = []
 
     def check_returncode(self):
         """Raises CalledProcessError if returncode is non-zero."""
@@ -55,11 +56,20 @@ class MockPopen:
         stdout: bytes = b"",
         stderr: bytes = b"",
         stdin_write_limit: Optional[int] = None,
+        *,
+        start_running: bool = False,
+        timeout_on_wait: bool = False,
+        timeout_on_communicate: bool = False,
     ):
         self.args = args
         self._returncode = returncode
         self._stdout_data = stdout
         self._stderr_data = stderr
+        self._running = start_running
+        self._timeout_on_wait = timeout_on_wait
+        self._timeout_on_communicate = timeout_on_communicate
+        self._terminated = False
+        self._killed = False
         # Use a plain MagicMock for stdin, allowing .write to be created
         self.stdin = MagicMock()
         # Replace MagicMock for stdout/stderr with StringIO for iteration
@@ -86,6 +96,10 @@ class MockPopen:
         self.stdin.write.side_effect = self._handle_stdin_write
         self.stdin.close = MagicMock()
 
+        # Termination helpers
+        self.terminate = MagicMock(side_effect=self._terminate)
+        self.kill = MagicMock(side_effect=self._kill)
+
     def _handle_stdin_write(self, data: bytes):
         if (
             self._stdin_write_limit is not None
@@ -98,7 +112,9 @@ class MockPopen:
 
     def wait(self, timeout: Optional[float] = None) -> int:
         """Simulates waiting for the process to terminate."""
-        # TODO: Handle timeout if needed
+        if self._timeout_on_wait and timeout is not None and self._running:
+            raise subprocess.TimeoutExpired(self.args, timeout)
+        self._running = False
         return self._returncode
 
     def communicate(
@@ -108,13 +124,22 @@ class MockPopen:
         if input:
             self.stdin.write(input)
         self.stdin.close()
-        # TODO: Handle timeout if needed
+        if self._timeout_on_communicate and timeout is not None and self._running:
+            raise subprocess.TimeoutExpired(self.args, timeout)
+        self._running = False
         return self._stdout_data, self._stderr_data
 
     def poll(self) -> Optional[int]:
         """Simulates checking if the process has terminated."""
-        # Simple mock: assume it terminates immediately for wait/communicate
-        return self._returncode
+        return None if self._running else self._returncode
+
+    def _terminate(self) -> None:
+        self._terminated = True
+        self._running = True
+
+    def _kill(self) -> None:
+        self._killed = True
+        self._running = False
 
     def __enter__(self):
         return self
@@ -194,6 +219,10 @@ def create_mock_popen(
     stdin_write_limit: Optional[int] = None,
     output_file_to_create: Optional[pathlib.Path] = None,
     side_effect: Optional[Exception] = None,
+    *,
+    start_running: bool = False,
+    timeout_on_wait: bool = False,
+    timeout_on_communicate: bool = False,
 ) -> Callable:
     """Creates a mock function that returns a MockPopen instance."""
 
@@ -219,6 +248,9 @@ def create_mock_popen(
             stdout=stdout,
             stderr=stderr,
             stdin_write_limit=stdin_write_limit,
+            start_running=start_running,
+            timeout_on_wait=timeout_on_wait,
+            timeout_on_communicate=timeout_on_communicate,
         )
 
         original_wait = mock_instance.wait
@@ -245,7 +277,7 @@ def create_mock_popen(
                     )
             return res
 
-        mock_instance.wait = wait_with_file_creation
+        mock_instance.wait = wait_with_file_creation  # type: ignore[method-assign]
 
         return mock_instance
 

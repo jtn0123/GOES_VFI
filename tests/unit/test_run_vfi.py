@@ -1,15 +1,29 @@
 import pathlib
 import subprocess
-from unittest.mock import ANY, MagicMock, call, patch
+import sys
+from types import ModuleType
+from unittest.mock import ANY, MagicMock, patch
 
 import numpy as np
 import pytest
 from PIL import Image
 
-from goesvfi.pipeline import run_vfi as run_vfi_mod
-from goesvfi.utils.gui_helpers import RifeCapabilityManager
-from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
-from tests.utils.mocks import (
+qtcore = ModuleType("PyQt6.QtCore")  # noqa: E402
+qtcore.QThread = object  # type: ignore[attr-defined]
+qtcore.pyqtSignal = lambda *a, **k: MagicMock()  # type: ignore[attr-defined]
+qtcore.QCoreApplication = object  # type: ignore[attr-defined]
+qtcore.QObject = object  # type: ignore[attr-defined]
+qtwidgets = ModuleType("PyQt6.QtWidgets")  # noqa: E402
+qtwidgets.QApplication = object  # type: ignore[attr-defined]
+sys.modules.setdefault("PyQt6.QtCore", qtcore)  # noqa: E402
+pyqt6_mod = ModuleType("PyQt6")
+pyqt6_mod.QtCore = qtcore  # type: ignore[attr-defined]
+pyqt6_mod.QtWidgets = qtwidgets  # type: ignore[attr-defined]
+sys.modules.setdefault("PyQt6", pyqt6_mod)  # noqa: E402
+sys.modules.setdefault("PyQt6.QtWidgets", qtwidgets)  # noqa: E402
+
+from goesvfi.pipeline import run_vfi as run_vfi_mod  # noqa: E402
+from tests.utils.mocks import (  # noqa: E402
     MockPopen,
     create_mock_colourise,
     create_mock_popen,
@@ -169,7 +183,7 @@ def test_run_vfi_skip_model_writes_all_frames(
                 )
         return res
 
-    mock_popen_instance.wait = wait_with_file_creation
+    mock_popen_instance.wait = wait_with_file_creation  # type: ignore[method-assign]
 
     mock_popen_patch.return_value = mock_popen_instance
 
@@ -617,6 +631,65 @@ def test_run_vfi_sanchez_failure_keeps_original(
 
     # Assert final result path is correct
     assert any(isinstance(r, pathlib.Path) and r == raw_output for r in results)
+
+
+@patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector")
+@patch("goesvfi.pipeline.run_vfi._encode_frame_to_png_bytes", return_value=b"x")
+@patch("goesvfi.pipeline.run_vfi.subprocess.run")
+@patch("goesvfi.pipeline.run_vfi.subprocess.Popen")
+@patch("goesvfi.pipeline.run_vfi.Image.open")
+@patch("goesvfi.pipeline.run_vfi.ProcessPoolExecutor")
+def test_run_vfi_ffmpeg_timeout_kills_process(
+    mock_executor,
+    mock_image_open,
+    mock_popen_patch,
+    mock_run_patch,
+    mock_encode,
+    mock_rife_detector,
+    tmp_path,
+):
+    """FFmpeg timeout should trigger kill after terminate."""
+    mock_executor_instance = MagicMock()
+    mock_executor.return_value.__enter__.return_value = mock_executor_instance
+    mock_executor_instance.map.return_value = []
+
+    img_paths = make_dummy_images(tmp_path, 2)
+    output_mp4 = tmp_path / "output.mp4"
+    rife_exe = tmp_path / "rife"
+
+    mock_img = MagicMock()
+    mock_img.__enter__.return_value = mock_img
+    mock_img.size = (4, 4)
+    mock_image_open.return_value = mock_img
+
+    mock_run_patch.side_effect = lambda *a, **k: pytest.fail("run called")
+
+    mock_rife_detector.return_value.supports_thread_spec.return_value = True
+
+    popen_instance = MockPopen(
+        args=["ffmpeg"],
+        stdin_write_limit=0,
+        start_running=True,
+        timeout_on_wait=True,
+    )
+    mock_popen_patch.return_value = popen_instance
+
+    with patch.object(pathlib.Path, "glob", return_value=img_paths):
+        with pytest.raises(OSError):  # noqa: PT011
+            list(
+                run_vfi_mod.run_vfi(
+                    folder=tmp_path,
+                    output_mp4_path=output_mp4,
+                    rife_exe_path=rife_exe,
+                    fps=10,
+                    num_intermediate_frames=1,
+                    max_workers=1,
+                    skip_model=True,
+                )
+            )
+
+    popen_instance.terminate.assert_called_once()
+    popen_instance.kill.assert_called_once()
 
 
 @patch("goesvfi.pipeline.run_vfi.subprocess.run")
