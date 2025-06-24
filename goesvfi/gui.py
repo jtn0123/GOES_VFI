@@ -75,6 +75,7 @@ from goesvfi.utils.gui_helpers import (
     ZoomDialog,
 )
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
+from goesvfi.gui_components import PreviewManager, ProcessingManager
 
 LOGGER = log.get_logger(__name__)
 
@@ -138,9 +139,16 @@ class MainWindow(QWidget):
         # --------------
 
         # --- ViewModels ---
-        # Instantiate ViewModels here, passing required models
+        # Instantiate helper managers for the ProcessingViewModel
+        preview_manager = PreviewManager()
+        processing_manager = ProcessingManager()
+
+        # Instantiate ViewModels here, passing required models and managers
         self.main_view_model = MainWindowViewModel(
-            file_sorter_model=file_sorter_model, date_sorter_model=date_sorter_model
+            file_sorter_model=file_sorter_model,
+            date_sorter_model=date_sorter_model,
+            preview_manager=preview_manager,
+            processing_manager=processing_manager,
         )  # <-- Instantiate ViewModel with models
         self.processing_view_model = (
             self.main_view_model.processing_vm

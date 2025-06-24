@@ -8,6 +8,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
+from goesvfi.gui_components.preview_manager import PreviewManager
+from goesvfi.gui_components.processing_manager import ProcessingManager
+
 from PyQt6.QtCore import QObject, pyqtSignal
 
 from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
@@ -30,14 +33,18 @@ class ProcessingViewModel(QObject):
     progress_updated = pyqtSignal(int, int, float)  # current, total, eta_seconds
     processing_finished = pyqtSignal(bool, str)  # success/failure, message
 
-    def __init__(self, parent: QObject | None = None) -> None:
-        """
-        Initializes the ProcessingViewModel.
-
-        Args:
-            parent (Optional[QObject]): The parent QObject, if any.
-        """
+    def __init__(
+        self,
+        preview_manager: PreviewManager,
+        processing_manager: ProcessingManager,
+        parent: QObject | None = None,
+    ) -> None:
+        """Initialize the ProcessingViewModel with dependencies."""
         super().__init__(parent)
+
+        self.preview_manager = preview_manager
+        self.processing_manager = processing_manager
+
         LOGGER.info("ProcessingViewModel initialized")
 
         # State tracking
