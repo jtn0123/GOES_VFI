@@ -39,6 +39,7 @@ from goesvfi.utils import log
 
 # Import the RIFE analyzer utilities
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
+from goesvfi.utils.validation import validate_path_exists, validate_positive_int
 
 LOGGER = log.get_logger(__name__)
 
@@ -607,6 +608,10 @@ def _validate_and_prepare_run_vfi_parameters(
     Returns:
         Tuple of (updated_false_colour, paths, crop_for_pil)
     """
+    folder = validate_path_exists(folder, must_be_dir=True, field_name="folder")
+
+    validate_positive_int(num_intermediate_frames, "num_intermediate_frames")
+
     # Find all PNG images in the folder
     png_pattern = "*.png"
     png_paths = list(folder.glob(png_pattern))
@@ -624,8 +629,15 @@ def _validate_and_prepare_run_vfi_parameters(
     crop_for_pil = None
     if crop_rect_xywh is not None:
         x, y, w, h = crop_rect_xywh
-        if w > 0 and h > 0:
-            crop_for_pil = (x, y, x + w, y + h)
+        try:
+            crop_for_pil = (
+                x,
+                y,
+                x + validate_positive_int(w, "crop width"),
+                y + validate_positive_int(h, "crop height"),
+            )
+        except ValueError:
+            crop_for_pil = None
 
     return updated_false_colour, png_paths, crop_for_pil
 
@@ -966,6 +978,10 @@ def run_vfi(
         f"run_vfi called with: false_colour={false_colour}, res_km={res_km}km, crop_rect={crop_rect_xywh}, skip_model={skip_model}"
     )
 
+    folder = validate_path_exists(folder, must_be_dir=True, field_name="folder")
+    validate_positive_int(fps, "fps")
+    validate_positive_int(num_intermediate_frames, "num_intermediate_frames")
+
     # --- Input Validation ---
     if num_intermediate_frames != 1 and not skip_model:
         # TODO: Implement recursive logic for num_intermediate_frames=3
@@ -988,9 +1004,12 @@ def run_vfi(
     if crop_rect_xywh:
         try:
             x, y, w, h = crop_rect_xywh  # No cast needed here
-            if w <= 0 or h <= 0:
-                raise ValueError("Crop width and height must be positive.")
-            crop_for_pil = (x, y, x + w, y + h)  # Convert to PIL format
+            crop_for_pil = (
+                x,
+                y,
+                x + validate_positive_int(w, "crop width"),
+                y + validate_positive_int(h, "crop height"),
+            )  # Convert to PIL format
             LOGGER.info(
                 "Applying crop rectangle (x,y,w,h): %s -> PIL format: %s",
                 crop_rect_xywh,

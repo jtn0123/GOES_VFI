@@ -42,6 +42,7 @@ from goesvfi.utils.gui_helpers import (
     ImageViewerDialog,
 )
 from goesvfi.utils.rife_analyzer import analyze_rife_executable
+from goesvfi.utils.validation import validate_path_exists, validate_positive_int
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 
 LOGGER = log.get_logger(__name__)
@@ -2480,16 +2481,15 @@ class MainTab(QWidget):
         LOGGER.debug(f"Crop rect from main_window: {current_crop_rect_mw}")
         LOGGER.debug(f"Output file path: {self.out_file_path}")
 
-        # Verify input directory
-        if not current_in_dir:
-            error_msg = "Input directory not selected."
-            LOGGER.error(error_msg)
-            QMessageBox.critical(self, "Error", error_msg)
-            return None
-
-        # Verify input directory exists and is valid
-        if not current_in_dir.exists() or not current_in_dir.is_dir():
-            error_msg = f"Input directory does not exist or is not a directory: {current_in_dir}"
+        # Validate input directory
+        try:
+            current_in_dir = validate_path_exists(
+                current_in_dir,
+                must_be_dir=True,
+                field_name="Input directory",
+            )
+        except (ValueError, FileNotFoundError, NotADirectoryError) as exc:
+            error_msg = str(exc)
             LOGGER.error(error_msg)
             QMessageBox.critical(self, "Error", error_msg)
             return None
@@ -2531,9 +2531,13 @@ class MainTab(QWidget):
         args = {
             "in_dir": current_in_dir,
             "out_file": self.out_file_path,
-            "fps": self.fps_spinbox.value(),
-            "multiplier": self.multiplier_spinbox.value(),
-            "max_workers": self.max_workers_spinbox.value(),
+            "fps": validate_positive_int(self.fps_spinbox.value(), "fps"),
+            "multiplier": validate_positive_int(
+                self.multiplier_spinbox.value(), "multiplier"
+            ),
+            "max_workers": validate_positive_int(
+                self.max_workers_spinbox.value(), "max_workers"
+            ),
             "encoder": encoder,
             "rife_model_key": rife_model_key if encoder == "RIFE" else None,
             "rife_model_path": (
