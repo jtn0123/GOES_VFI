@@ -43,7 +43,8 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         # Mock dependencies
         self.mock_cache_db = MagicMock(spec=CacheDB)
         self.mock_cache_db.reset_database = AsyncMock()
-        self.mock_cache_db.close = AsyncMock()
+        # Use MagicMock for close to avoid un-awaited coroutine warnings
+        self.mock_cache_db.close = MagicMock()
         self.mock_cache_db.db_path = str(self.base_dir / "test_cache.db")
 
         self.mock_cdn_store = MagicMock(spec=CDNStore)

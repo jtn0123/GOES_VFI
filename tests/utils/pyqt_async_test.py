@@ -39,12 +39,10 @@ class PyQtAsyncTestCase(unittest.TestCase):
         """
         super().setUpClass()
 
-        # Check if running in CI environment
+        # Ensure Qt uses the offscreen platform when running tests
         import os
 
-        if os.environ.get("CI") == "true":
-            # Set Qt platform to offscreen in CI
-            os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+        os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
         # Create QApplication if it doesn't exist yet
         if QApplication.instance() is None:
