@@ -431,64 +431,27 @@ class TestFileSorterHelpers:
         identical, _, _ = sorter._check_files_identical(source_file, dest_file, 10.0)
         assert identical
 
-    def test_handle_duplicate_skip(self, sorter):
-        """Test handling duplicates in SKIP mode."""
-        sorter.duplicate_mode = DuplicateMode.SKIP
-        file_path = Path("/path/to/file.png")
 
-        result_path, message = sorter._handle_duplicate(file_path)
-
+@pytest.mark.parametrize("mode,precreate,expected,expected_msg,skipped", [
+    (DuplicateMode.SKIP, [], None, "SKIPPED (Duplicate)", 1),
+    (DuplicateMode.OVERWRITE, [], "file.png", "OVERWRITING file.png", 0),
+    (DuplicateMode.RENAME, [], "file_1.png", "RENAMED to file_1.png", 0),
+    (DuplicateMode.RENAME, ["file_1.png", "file_2.png"], "file_3.png", "RENAMED to file_3.png", 0),
+])
+def test_handle_duplicate_modes(sorter, tmp_path, mode, precreate, expected, expected_msg, skipped):
+    sorter.duplicate_mode = mode
+    file_path = tmp_path / "file.png"
+    file_path.touch()
+    for name in precreate:
+        (tmp_path / name).touch()
+    result_path, message = sorter._handle_duplicate(file_path)
+    if expected is None:
         assert result_path is None
-        assert message == "SKIPPED (Duplicate)"
-        assert sorter.files_skipped == 1
+    else:
+        assert result_path == tmp_path / expected
+    assert message == expected_msg
+    assert sorter.files_skipped == skipped
 
-    def test_handle_duplicate_overwrite(self, sorter):
-        """Test handling duplicates in OVERWRITE mode."""
-        sorter.duplicate_mode = DuplicateMode.OVERWRITE
-        file_path = Path("/path/to/file.png")
-
-        result_path, message = sorter._handle_duplicate(file_path)
-
-        assert result_path == file_path
-        assert message == "OVERWRITING file.png"
-        assert sorter.files_skipped == 0
-
-    def test_handle_duplicate_rename(self, sorter, tmp_path):
-        """Test handling duplicates in RENAME mode."""
-        sorter.duplicate_mode = DuplicateMode.RENAME
-
-        # Create a file to cause renaming
-        test_dir = tmp_path / "test"
-        test_dir.mkdir()
-        file_path = test_dir / "file.png"
-        file_path.touch()
-
-        # Test renaming
-        result_path, message = sorter._handle_duplicate(file_path)
-
-        assert result_path == test_dir / "file_1.png"
-        assert message == "RENAMED to file_1.png"
-        assert sorter.files_skipped == 0
-
-    def test_handle_duplicate_rename_multiple(self, sorter, tmp_path):
-        """Test handling duplicates in RENAME mode with existing numbered files."""
-        sorter.duplicate_mode = DuplicateMode.RENAME
-
-        # Create files to cause multiple renamings
-        test_dir = tmp_path / "test"
-        test_dir.mkdir()
-        file_path = test_dir / "file.png"
-        file_path.touch()
-
-        # Create file_1.png and file_2.png
-        (test_dir / "file_1.png").touch()
-        (test_dir / "file_2.png").touch()
-
-        # Test renaming - should become file_3.png
-        result_path, message = sorter._handle_duplicate(file_path)
-
-        assert result_path == test_dir / "file_3.png"
-        assert message == "RENAMED to file_3.png"
 
     def test_process_single_file_identical(self, sorter, tmp_path):
         """Test processing a single file when files are identical."""
