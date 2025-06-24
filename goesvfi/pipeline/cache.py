@@ -1,4 +1,9 @@
-# TODO: simple SHA‑256 → .npy cache
+"""Utility helpers for caching interpolated frames on disk.
+
+Frames are saved as ``.npy`` files using a SHA-256 hash derived from the two
+input frame paths, the RIFE model identifier and the number of interpolated
+frames.  When the same inputs are processed again the cached ``.npy`` files are
+loaded instead of recomputing the interpolation."""
 
 from __future__ import annotations
 
@@ -40,10 +45,7 @@ def _hash_pair(
 def _get_cache_filepath(base_key: str, index: int, total_frames: int) -> pathlib.Path:
     # Use zfill to ensure consistent sorting if needed, though direct indexing is used here
     max_digits = len(str(total_frames - 1))
-    return (
-        config.get_cache_dir()
-        / f"{base_key}_k{total_frames}_frame{index:0{max_digits}}.npy"
-    )
+    return CACHE_DIR / f"{base_key}_k{total_frames}_frame{index:0{max_digits}}.npy"
 
 
 # Load a list of frames if all exist for the given count
@@ -53,6 +55,7 @@ def load_cached(
     model_id: str,
     num_intermediate_frames: int,
 ) -> Optional[List[NDArray[Any]]]:
+    """Load cached intermediate frames if all ``.npy`` files are present."""
     LOGGER.debug(
         f"Attempting to load cache for {path1.name}, {path2.name}, model={model_id}, "
         f"frames={num_intermediate_frames}"
@@ -90,14 +93,13 @@ def load_cached(
         try:
             for npy_path in frame_paths:
                 LOGGER.debug("Loading cache file: %s", npy_path)
-                # Cast assumes loaded array is NDArray[Any]
                 loaded_frames.append(cast(NDArray[Any], np.load(npy_path)))
             LOGGER.debug("Successfully loaded all cache files")
             return loaded_frames
-        except (KeyError, ValueError, RuntimeError) as e:
+        except (OSError, KeyError, ValueError, RuntimeError) as e:
             LOGGER.warning("Error loading cache files for key %s: %s", base_key, e)
             LOGGER.debug("Exception details:", exc_info=True)
-            raise IOError(f"Error loading cache files for key {base_key}: {e}") from e
+            return None
     else:
         LOGGER.debug("Not all cache files exist, cache miss")
         return None  # Cache miss if not all files were found
@@ -111,6 +113,7 @@ def save_cache(
     num_intermediate_frames: int,
     frames: List[NDArray[Any]],
 ) -> None:
+    """Persist interpolated frames to ``CACHE_DIR`` for later reuse."""
     LOGGER.debug(
         f"Attempting to save cache for {path1.name}, {path2.name}, model={model_id}, frames={num_intermediate_frames}"
     )

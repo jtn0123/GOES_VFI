@@ -29,6 +29,7 @@ def _expected_paths(
 def test_save_and_load_arrays(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sample_files: tuple[Path, Path]
 ) -> None:
+    monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "get_cache_dir", lambda: tmp_path)
     file1, file2 = sample_files
     model = "model"
@@ -54,6 +55,7 @@ def test_save_cache_mismatch(
     sample_files: tuple[Path, Path],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
+    monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "get_cache_dir", lambda: tmp_path)
     file1, file2 = sample_files
     arrays = [np.zeros((2, 2))]
@@ -62,3 +64,19 @@ def test_save_cache_mismatch(
 
     assert not list(tmp_path.glob("*.npy"))
     assert "Cache save called with mismatch" in caplog.text
+
+
+def test_load_cached_corrupted_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sample_files: tuple[Path, Path]
+) -> None:
+    monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(config, "get_cache_dir", lambda: tmp_path)
+    file1, file2 = sample_files
+    arrays = [np.zeros((2, 2)), np.ones((2, 2))]
+    cache.save_cache(file1, file2, "m", 2, arrays)
+
+    # Corrupt the first file
+    first_path = cache._get_cache_filepath(cache._hash_pair(file1, file2, "m", 2), 0, 2)
+    first_path.write_text("corrupt")
+
+    assert cache.load_cached(file1, file2, "m", 2) is None
