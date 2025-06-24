@@ -1261,6 +1261,14 @@ class FFmpegSettingsTab(QWidget):
         if rect:
             x, y, w, h = rect
             new_filter = f"crop={w}:{h}:{x}:{y}"
+            if w % 2 != 0 or h % 2 != 0:
+                QMessageBox.warning(
+                    self,
+                    self.tr("Odd Dimensions"),
+                    self.tr(
+                        "Cropping to odd width or height may cause encoding errors."
+                    ),
+                )
         else:
             new_filter = ""
 
