@@ -1,7 +1,4 @@
-import builtins
-import os
 import pathlib
-import sys
 
 # import toml # Removed unnecessary import for Python 3.11+
 from unittest import mock
@@ -9,6 +6,8 @@ from unittest import mock
 import pytest
 
 from goesvfi.utils import config
+
+# pylint: disable=redefined-outer-name
 
 
 @pytest.fixture
@@ -84,6 +83,44 @@ def test_env_override_config_path(monkeypatch, tmp_path, sample_toml_content):
     config._load_config.cache_clear()
     cfg = config._load_config()
     assert cfg["output_dir"] == "/tmp/goesvfi_output"
+
+
+def test_env_override_config_dir(monkeypatch, tmp_path, sample_toml_content):
+    cfg_dir = tmp_path / "conf"
+    cfg_dir.mkdir()
+    cfg_file = cfg_dir / "config.toml"
+    cfg_file.write_text(sample_toml_content)
+    monkeypatch.setenv("GOESVFI_CONFIG_DIR", str(cfg_dir))
+    config._load_config.cache_clear()
+    cfg = config._load_config()
+    assert cfg["output_dir"] == "/tmp/goesvfi_output"
+
+
+def test_partial_config_merge(monkeypatch, tmp_path):
+    cfg_file = tmp_path / "config.toml"
+    cfg_file.write_text(
+        """
+output_dir = "/tmp/out"
+[pipeline]
+default_tile_size = 512
+"""
+    )
+    monkeypatch.setenv("GOESVFI_CONFIG_FILE", str(cfg_file))
+    config._load_config.cache_clear()
+    cfg = config._load_config()
+    assert cfg["output_dir"] == "/tmp/out"
+    # missing keys filled from defaults
+    assert cfg["cache_dir"] == config.DEFAULTS["cache_dir"]
+    assert cfg["pipeline"]["supported_extensions"] == config.DEFAULTS["pipeline"]["supported_extensions"]
+
+
+def test_invalid_config_type(monkeypatch, tmp_path):
+    cfg_file = tmp_path / "bad.toml"
+    cfg_file.write_text("""output_dir = 123""")
+    monkeypatch.setenv("GOESVFI_CONFIG_FILE", str(cfg_file))
+    config._load_config.cache_clear()
+    with pytest.raises(ValueError):
+        config._load_config()
 
 
 def test_missing_required_key(monkeypatch, tmp_path):

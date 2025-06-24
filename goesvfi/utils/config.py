@@ -1,6 +1,5 @@
+# pylint: disable=wrong-import-position, pointless-string-statement, too-many-nested-blocks
 from __future__ import annotations
-
-# TODO: path + TOML config
 
 """goesvfi.utils.config – user paths and TOML config loader"""
 
@@ -13,9 +12,11 @@ from functools import lru_cache
 from typing import Any, Dict, List, TypedDict, cast
 
 DEFAULT_CONFIG_DIR = pathlib.Path.home() / ".config" / "goesvfi"
-DEFAULT_CONFIG_FILE = DEFAULT_CONFIG_DIR / "config.toml"
-CONFIG_DIR = DEFAULT_CONFIG_DIR
-CONFIG_FILE = DEFAULT_CONFIG_FILE
+# Allow overriding the config directory at import time via environment variable
+CONFIG_DIR = pathlib.Path(os.getenv("GOESVFI_CONFIG_DIR", str(DEFAULT_CONFIG_DIR))).expanduser()
+# Config file is always named "config.toml" within CONFIG_DIR unless a custom
+# file path is specified via environment variable when resolving the path.
+CONFIG_FILE = CONFIG_DIR / "config.toml"
 
 
 def get_config_path() -> pathlib.Path:
@@ -236,11 +237,7 @@ def _load_config() -> Dict[str, Any]:
                 raise ValueError(f"Invalid TOML in {cfg_path}: {exc}") from exc
 
             for key, value in loaded_data.items():
-                if (
-                    key in data
-                    and isinstance(data[key], dict)
-                    and isinstance(value, dict)
-                ):
+                if key in data and isinstance(data[key], dict) and isinstance(value, dict):
                     data[key].update(value)
                 else:
                     data[key] = value
@@ -261,9 +258,7 @@ def _load_config() -> Dict[str, Any]:
     sanchez_config = data.get("sanchez", {})
     sanchez_bin_dir_str = sanchez_config.get("bin_dir")
     if isinstance(sanchez_bin_dir_str, str):
-        pathlib.Path(sanchez_bin_dir_str).expanduser().mkdir(
-            parents=True, exist_ok=True
-        )
+        pathlib.Path(sanchez_bin_dir_str).expanduser().mkdir(parents=True, exist_ok=True)
 
     return data
 
@@ -292,9 +287,7 @@ def get_cache_dir() -> pathlib.Path:
 def get_default_tile_size() -> int:
     # Access nested config using .get() for safety
     pipeline_config = _load_config().get("pipeline", {})
-    tile_size = pipeline_config.get(
-        "default_tile_size", DEFAULTS["pipeline"]["default_tile_size"]
-    )
+    tile_size = pipeline_config.get("default_tile_size", DEFAULTS["pipeline"]["default_tile_size"])
     # Ensure it's an int
     if not isinstance(tile_size, int):
         tile_size = DEFAULTS["pipeline"]["default_tile_size"]  # Fallback to default
@@ -324,13 +317,9 @@ def get_logging_level() -> str:
 def get_supported_extensions() -> List[str]:
     # Access nested config using .get() for safety
     pipeline_config = _load_config().get("pipeline", {})
-    extensions = pipeline_config.get(
-        "supported_extensions", DEFAULTS["pipeline"]["supported_extensions"]
-    )
+    extensions = pipeline_config.get("supported_extensions", DEFAULTS["pipeline"]["supported_extensions"])
     # Ensure it's a list of strings
-    if not isinstance(extensions, list) or not all(
-        isinstance(ext, str) for ext in extensions
-    ):
+    if not isinstance(extensions, list) or not all(isinstance(ext, str) for ext in extensions):
         extensions = DEFAULTS["pipeline"]["supported_extensions"]  # Fallback to default
     return cast(List[str], extensions)
 
