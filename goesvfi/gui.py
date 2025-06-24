@@ -1,7 +1,8 @@
-# TODO: PyQt6 main window implementation
-"""
-GOES‑VFI PyQt6 GUI – v0.1
-Run with:  python -m goesvfi.gui
+"""PyQt6 GUI entry point for GOES‑VFI.
+
+Launching this module starts the application's main window with tabs for data
+integrity checks, imagery previews, and video generation.  Run
+``python -m goesvfi.gui`` to open the interface.
 """
 from __future__ import annotations
 
