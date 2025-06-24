@@ -30,16 +30,10 @@ from PyQt6.QtGui import (
 )
 from PyQt6.QtWidgets import (
     QApplication,
-    QComboBox,
     QDialog,
     QFileDialog,
-    QGridLayout,
-    QGroupBox,
-    QLabel,
     QMessageBox,
-    QSizePolicy,
     QSpinBox,
-    QSplitter,
     QStatusBar,
     QTabWidget,
     QVBoxLayout,
@@ -50,7 +44,7 @@ from goesvfi.date_sorter.gui_tab import DateSorterTab
 from goesvfi.date_sorter.sorter import DateSorter
 from goesvfi.file_sorter.gui_tab import FileSorterTab
 from goesvfi.file_sorter.sorter import FileSorter
-from goesvfi.gui_components import PreviewManager, ProcessingManager
+from goesvfi.gui_components import PreviewManager, ProcessingManager, ThemeManager
 from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab
 from goesvfi.gui_tabs.main_tab import MainTab
 from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab
@@ -309,7 +303,8 @@ class MainWindow(QWidget):
         # FFmpeg aliases removed - FFmpegSettingsTab manages its own widgets
 
         # Apply dark theme
-        self.apply_dark_theme()
+        self.theme_manager = ThemeManager()
+        self.theme_manager.apply_dark_theme(self)
 
         # Load settings after main layout is constructed
         self.loadSettings()  # Using simplified version
@@ -1047,27 +1042,6 @@ class MainWindow(QWidget):
                 LOGGER.warning("multiplier_spinbox not available")
         except Exception as e:
             LOGGER.error("Unhandled exception with multiplier_spinbox: %s", e)
-
-        # max_workers_spinbox (Commented out as widget doesn't exist on MainTab)
-        # try:
-        #     if hasattr(self.main_tab, "max_workers_spinbox") and self.main_tab.max_workers_spinbox is not None:   # noqa: B950
-        #         try:
-        #             _ = self.main_tab.max_workers_spinbox.objectName()
-        #             if isinstance(self.main_tab.max_workers_spinbox, QSpinBox):
-        #                 try:
-        #                     value = self.settings.value("max_workers", os.cpu_count() or 1, type=int)   # noqa: B950
-        #                     self.main_tab.max_workers_spinbox.setValue(value)
-        #                     LOGGER.debug("Set max_workers_spinbox to %s", value)
-        #                 except RuntimeError as e:
-        #                     LOGGER.warning("RuntimeError setting max_workers_spinbox: %s", e)
-        #             else:
-        #                 LOGGER.warning("max_workers_spinbox is not a QSpinBox")
-        #         except RuntimeError:
-        #             LOGGER.warning("max_workers_spinbox exists but appears to be invalid")
-        #     else:
-        #         LOGGER.warning("max_workers_spinbox not available")
-        # except Exception as e:
-        #     LOGGER.error("Unhandled exception with max_workers_spinbox: %s", e)
 
         # encoder_combo
         try:
@@ -3172,280 +3146,6 @@ class MainWindow(QWidget):
                 self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
 
         self._update_start_button_state()  # Update start button state based on RIFE options
-
-    def apply_dark_theme(self) -> None:
-        """Apply dark theme styling to the application."""
-        self.setStyleSheet(
-            """
-            /* Main Window and General Styling */
-            QWidget {
-                background-color:  #2D2D2D;
-                color:  #EFEFEF;
-                font-family: Arial, Helvetica, sans;
-            }
-
-            /* Tab Widget Styling */
-            QTabWidget::pane {
-                border: 1px solid  #444444;
-                background-color:  #2D2D2D;
-            }
-
-            QTabBar::tab {
-                background-color:  #3D3D3D;
-                color:  #EFEFEF;
-                padding: 8px 12px;
-                border: 1px solid  #444444;
-                border-bottom: none;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-            }
-
-            QTabBar::tab:selected {
-                background-color:  #505050;
-                border-bottom: none;
-            }
-
-            /* Group Box Styling */
-            QGroupBox {
-                border: 1px solid  #444444;
-                border-radius: 5px;
-                margin-top: 1ex;
-                padding-top: 1.5ex;
-                font-weight: bold;
-            }
-
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                subcontrol-position: top center;
-                padding: 0 5px;
-            }
-
-            /* Input Field Styling */
-            QLineEdit {
-                background-color:  #1A1A1A;
-                color:  #EFEFEF;
-                border: 1px solid  #444444;
-                padding: 5px;
-                border-radius: 3px;
-            }
-
-            /* Button Styling */
-            QPushButton {
-                background-color:  #424242;
-                color:  #EFEFEF;
-                border: 1px solid  #555555;
-                padding: 5px 10px;
-                border-radius: 3px;
-            }
-
-            QPushButton:hover {
-                background-color:  #505050;
-            }
-
-            QPushButton:pressed {
-                background-color:  #333333;
-            }
-
-            /* Browse Buttons */
-            QPushButton#browse_button {
-                background-color:  #4A4A4A;
-            }
-
-            /* Crop/Clear Buttons */
-            QPushButton#crop_button, QPushButton#clear_crop_button {
-                padding: 4px 8px;
-            }
-
-            /* Start Button - Special Styling */
-            QPushButton#start_button {
-                background-color:  #424242;
-                font-weight: bold;
-                padding: 8px 15px;
-            }
-
-            /* Combo Box Styling */
-            QComboBox {
-                background-color:  #1A1A1A;
-                color:  #EFEFEF;
-                border: 1px solid  #444444;
-                padding: 5px;
-                border-radius: 3px;
-            }
-
-            QComboBox:drop-down {
-                width: 20px;
-                border-left: 1px solid  #444444;
-            }
-
-            QComboBox QAbstractItemView {
-                background-color:  #1A1A1A;
-                color:  #EFEFEF;
-                selection-background-color:  #505050;
-            }
-
-            /* Spin Box Styling */
-            QSpinBox, QDoubleSpinBox {
-                background-color:  #1A1A1A;
-                color:  #EFEFEF;
-                border: 1px solid  #444444;
-                padding: 5px;
-                border-radius: 3px;
-            }
-
-            /* Check Box Styling */
-            QCheckBox {
-                spacing: 5px;
-            }
-
-            QCheckBox::indicator {
-                width: 15px;
-                height: 15px;
-            }
-
-            QCheckBox::indicator:unchecked {
-                background-color:  #1A1A1A;
-                border: 1px solid  #444444;
-            }
-
-            QCheckBox::indicator:checked {
-                background-color:  #505050;
-                border: 1px solid  #EFEFEF;
-            }
-
-            /* Status Bar Styling */
-            QStatusBar {
-                background-color:  #333333;
-                color:  #EFEFEF;
-            }
-
-            /* Preview Area Styling */
-            QSplitter::handle {
-                background-color:  #444444;
-            }
-
-            QLabel#preview_title {
-                color:  #CCCCCC;
-                font-weight: bold;
-                font-size: 10pt;
-                padding-bottom: 5px;
-            }
-
-            QLabel#preview_frame {
-                background-color:  #1A1A1A;
-                border: 1px solid  #444444;
-                border-radius: 3px;
-            }
-
-            QWidget#preview_container {
-                background-color:  #2D2D2D;
-                padding: 5px;
-            }
-        """
-        )
-
-    def _enhance_preview_area(self) -> QWidget:
-        """Create an enhanced preview area with better spacing and styling."""
-        # Create a container widget for previews with better styling
-        previews_group = QGroupBox(self.tr("Previews"))
-        previews_group.setObjectName("previews_group")
-        previews_layout = QVBoxLayout(previews_group)
-        previews_layout.setContentsMargins(10, 20, 10, 10)  # More top margin for title
-
-        # Use QSplitter with custom styling for equal spacing
-        preview_splitter = QSplitter(Qt.Orientation.Horizontal)
-        preview_splitter.setHandleWidth(4)  # Thinner divider between previews
-        preview_splitter.setChildrenCollapsible(False)  # Prevent collapsing
-
-        # Create containers for each preview with identical styling
-        for title, label_attr in [
-            ("First Frame", "first_frame_label"),
-            ("Middle Frame (Interpolated)", "middle_frame_label"),
-            ("Last Frame", "last_frame_label"),
-        ]:
-            container = QWidget()
-            container.setObjectName("preview_container")
-            container_layout = QVBoxLayout(container)
-            container_layout.setContentsMargins(5, 5, 5, 5)
-
-            # Create and style title label
-            title_label = QLabel(title)
-            title_label.setObjectName("preview_title")
-            title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-            # Get the frame label and set its properties
-            # Access labels via main_tab
-            frame_label = getattr(self.main_tab, label_attr)
-            frame_label.setObjectName("preview_frame")
-            frame_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            frame_label.setSizePolicy(
-                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-            )
-            frame_label.setMinimumHeight(280)  # Make preview area taller
-
-            # Add widgets to container layout
-            container_layout.addWidget(title_label)
-            container_layout.addWidget(frame_label, 1)  # Add stretch factor
-
-            # Add container to splitter
-            preview_splitter.addWidget(container)
-
-        # Set equal sizes for all preview panels
-        preview_splitter.setSizes([1, 1, 1])
-        previews_layout.addWidget(preview_splitter)
-
-        return previews_group
-
-    def _create_processing_settings_group(self) -> QWidget:
-        """Create processing settings group with improved layout."""
-        processing_group = QGroupBox(self.tr("Processing Settings"))
-        processing_layout = QGridLayout(processing_group)
-        processing_layout.setContentsMargins(10, 15, 10, 10)  # Adjust internal margins
-        processing_layout.setSpacing(8)  # Adjust spacing between elements
-
-        # FPS control
-        processing_layout.addWidget(QLabel(self.tr("Output FPS:")), 0, 0)
-        # Assign to main_tab attribute
-        self.main_tab.fps_spinbox = QSpinBox()
-        self.main_tab.fps_spinbox.setRange(1, 240)
-        self.main_tab.fps_spinbox.setValue(30)
-        processing_layout.addWidget(self.main_tab.fps_spinbox, 0, 1)
-
-        # Mid frames control
-        processing_layout.addWidget(QLabel(self.tr("Mid Frames per Pair:")), 1, 0)
-        # Assign to main_tab attribute
-        self.main_tab.mid_count_spinbox = QSpinBox()
-        self.main_tab.mid_count_spinbox.setRange(1, 10)
-        self.main_tab.mid_count_spinbox.setValue(1)
-        processing_layout.addWidget(self.main_tab.mid_count_spinbox, 1, 1)
-
-        # Max workers control
-        processing_layout.addWidget(QLabel(self.tr("Max Workers:")), 2, 0)
-        # Assign to main_tab attribute
-        self.main_tab.max_workers_spinbox = QSpinBox()
-        self.main_tab.max_workers_spinbox.setRange(1, os.cpu_count() or 1)
-        self.main_tab.max_workers_spinbox.setValue(os.cpu_count() or 1)
-        processing_layout.addWidget(self.main_tab.max_workers_spinbox, 2, 1)
-
-        # Encoder selection
-        processing_layout.addWidget(QLabel(self.tr("Encoder:")), 3, 0)
-        # Assign to main_tab attribute
-        self.main_tab.encoder_combo = QComboBox()
-        self.main_tab.encoder_combo.addItems(
-            [self.tr("RIFE"), self.tr("FFmpeg"), self.tr("Sanchez")]
-        )
-        self.main_tab.encoder_combo.setCurrentText(
-            self.current_encoder
-        )  # Set initial value
-        # Connect encoder change signal - moved to _post_init_setup to ensure proper timing
-        # self.main_tab.encoder_combo.currentTextChanged.connect(
-        #     self._update_rife_options_state  # This method now accesses main_tab widgets
-        # )
-        processing_layout.addWidget(self.main_tab.encoder_combo, 3, 1)
-
-        # Add extra columns for spacing
-        processing_layout.setColumnMinimumWidth(2, 20)  # Add spacer column
-
-        return processing_group
 
 
 def main() -> None:

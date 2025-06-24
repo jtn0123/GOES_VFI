@@ -6,6 +6,7 @@ from .model_manager import ModelManager
 from .preview_manager import PreviewManager
 from .processing_manager import ProcessingManager
 from .settings_manager import SettingsManager
+from .theme_manager import ThemeManager
 
 __all__ = [
     "CropManager",
@@ -14,4 +15,5 @@ __all__ = [
     "PreviewManager",
     "ProcessingManager",
     "SettingsManager",
+    "ThemeManager",
 ]
