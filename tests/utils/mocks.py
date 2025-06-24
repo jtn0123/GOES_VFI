@@ -4,6 +4,7 @@
 import io  # Import io
 import pathlib
 import subprocess
+import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from unittest.mock import MagicMock, Mock
 
@@ -45,9 +46,7 @@ class MockSubprocessResult:
 
 
 class MockPopen:
-    """Mimics subprocess.Popen for testing purposes."""
-
-    # TODO: Implement more realistic Popen mocking
+    """Mimics ``subprocess.Popen`` for testing purposes."""
     def __init__(
         self,
         args: List[str],
@@ -55,11 +54,16 @@ class MockPopen:
         stdout: bytes = b"",
         stderr: bytes = b"",
         stdin_write_limit: Optional[int] = None,
+        complete_after: float = 0.0,
     ):
         self.args = args
-        self._returncode = returncode
+        self._desired_returncode = returncode
+        self.returncode: Optional[int] = None
         self._stdout_data = stdout
         self._stderr_data = stderr
+        self._start_time = time.monotonic()
+        self._complete_after = float(complete_after)
+        self._terminated = False
         # Use a plain MagicMock for stdin, allowing .write to be created
         self.stdin = MagicMock()
         # Replace MagicMock for stdout/stderr with StringIO for iteration
@@ -96,10 +100,28 @@ class MockPopen:
         # In a real scenario, the process would consume this data.
         # For the mock, we just track the amount written.
 
+    def _check_completion(self) -> bool:
+        """Return True if the process has reached its completion time."""
+        if self.returncode is not None:
+            return True
+        if (time.monotonic() - self._start_time) >= self._complete_after:
+            self.returncode = self._desired_returncode
+            return True
+        return False
+
     def wait(self, timeout: Optional[float] = None) -> int:
         """Simulates waiting for the process to terminate."""
-        # TODO: Handle timeout if needed
-        return self._returncode
+        if self._check_completion():
+            return self.returncode or 0
+
+        if timeout is not None:
+            elapsed = time.monotonic() - self._start_time
+            remaining = self._complete_after - elapsed
+            if remaining > timeout:
+                raise subprocess.TimeoutExpired(self.args, timeout)
+
+        self.returncode = self._desired_returncode
+        return self.returncode
 
     def communicate(
         self, input: Optional[bytes] = None, timeout: Optional[float] = None
@@ -108,13 +130,32 @@ class MockPopen:
         if input:
             self.stdin.write(input)
         self.stdin.close()
-        # TODO: Handle timeout if needed
+        if timeout is not None:
+            try:
+                self.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                raise
+        else:
+            self.wait()
         return self._stdout_data, self._stderr_data
 
     def poll(self) -> Optional[int]:
         """Simulates checking if the process has terminated."""
-        # Simple mock: assume it terminates immediately for wait/communicate
-        return self._returncode
+        if self._check_completion():
+            return self.returncode
+        return None
+
+    def terminate(self) -> None:
+        """Simulate sending SIGTERM to the process."""
+        if self.returncode is None:
+            self.returncode = -15
+            self._terminated = True
+
+    def kill(self) -> None:
+        """Simulate forcefully killing the process."""
+        if self.returncode is None:
+            self.returncode = -9
+            self._terminated = True
 
     def __enter__(self):
         return self
@@ -194,6 +235,7 @@ def create_mock_popen(
     stdin_write_limit: Optional[int] = None,
     output_file_to_create: Optional[pathlib.Path] = None,
     side_effect: Optional[Exception] = None,
+    complete_after: float = 0.0,
 ) -> Callable:
     """Creates a mock function that returns a MockPopen instance."""
 
@@ -219,6 +261,7 @@ def create_mock_popen(
             stdout=stdout,
             stderr=stderr,
             stdin_write_limit=stdin_write_limit,
+            complete_after=complete_after,
         )
 
         original_wait = mock_instance.wait
