@@ -313,7 +313,7 @@ From `gui.py` to ViewModels:
 ### Metrics
 | Metric | Before | Current | Target |
 |--------|--------|---------|--------|
-| MainWindow Lines | 3,903 | 3,496 | <500 |
+| MainWindow Lines | 3,903 | 3,198 | <500 |
 | MainWindow Methods | 43 | 58** | <10 |
 | Complexity (highest) | F | C ✅ | C |
 | Complexity (average) | Unknown | A-B | A |
@@ -728,18 +728,29 @@ class ProcessingConfig:
 
 ### Latest Session Progress (2025-06-24)
 
+#### First Cleanup Phase:
 1. **Code cleanup achievements**:
    - Removed duplicate `_check_settings_match_profile` (94 lines)
    - Removed FFmpeg widget creation code (84 lines)
    - Removed obsolete FFmpeg aliases (30 lines)
    - Removed dead `_start` method (165 lines)
    - Removed various commented lines (36 lines)
-   - **Total removed this session**: 409 lines
+   - **Subtotal**: 409 lines removed
 
-2. **Current status**:
-   - File reduced from 3,903 → 3,496 lines (407 line reduction)
-   - Still need to remove ~3,000 more lines to reach <500 target
+#### Second Cleanup Phase:
+2. **Component extraction and dead code removal**:
+   - Created ThemeManager component (169 lines extracted)
+   - Removed dead `_enhance_preview_area` method (52 lines)
+   - Removed dead `_create_processing_settings_group` method (53 lines)
+   - Removed commented max_workers_spinbox code (20 lines)
+   - Fixed unused imports (4 imports)
+   - **Subtotal**: 298 lines removed
+
+3. **Current status**:
+   - File reduced from 3,903 → 3,198 lines (705 total lines removed)
+   - Still need to remove ~2,700 more lines to reach <500 target
    - All code compiles successfully
+   - Created 2 new components: FileOperations, ThemeManager
 
 ### Cumulative Refactoring Progress (2025-06-24)
 
