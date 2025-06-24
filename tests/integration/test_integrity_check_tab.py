@@ -6,13 +6,20 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from PyQt6.QtCore import QCoreApplication, QDate, QDateTime, QTime
+from PyQt6.QtCore import (
+    QCoreApplication,
+    QDate,
+    QDateTime,
+    QItemSelectionModel,
+    QTime,
+)
 from PyQt6.QtWidgets import QApplication, QMainWindow
 
 from goesvfi.integrity_check.cache_db import CacheDB
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 from goesvfi.integrity_check.enhanced_view_model import (
     EnhancedIntegrityCheckViewModel,
+    EnhancedMissingTimestamp,
     FetchSource,
 )
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
@@ -239,9 +246,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Now start a scan to trigger view model update from UI
-        with patch.object(
-            self.view_model, "start_enhanced_scan", autospec=True
-        ) as mock_scan:
+        with patch.object(self.view_model, "start_enhanced_scan", autospec=True) as mock_scan:
             self.tab._start_enhanced_scan()
 
             # Verify view model date range was updated
@@ -259,6 +264,36 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
             assert self.view_model.end_date.day == expected_end.day
             assert self.view_model.end_date.hour == expected_end.hour
             assert self.view_model.end_date.minute == expected_end.minute
+
+    def test_partial_download_selection(self):
+        """Test that only selected items are passed to start_downloads."""
+
+        # Prepare some missing items
+        items = [EnhancedMissingTimestamp(datetime(2023, 1, 1, 0, i * 5), f"file_{i}.nc") for i in range(3)]
+        self.tab.results_model.set_items(items)
+
+        # Select first and third rows
+        selection_model = self.tab.results_table.selectionModel()
+        idx0 = self.tab.results_model.index(0, 0)
+        idx2 = self.tab.results_model.index(2, 0)
+        selection_model.select(
+            idx0,
+            QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows,
+        )
+        selection_model.select(
+            idx2,
+            QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows,
+        )
+
+        with patch.object(self.view_model, "start_downloads", autospec=True) as mock_dl:
+            self.tab._download_selected()
+            QCoreApplication.processEvents()
+
+            assert mock_dl.call_count == 1
+            passed_items = mock_dl.call_args.args[0]
+            assert len(passed_items) == 2
+            assert passed_items[0] == items[0]
+            assert passed_items[1] == items[2]
 
 
 # Run the tests if this file is executed directly

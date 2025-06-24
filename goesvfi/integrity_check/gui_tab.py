@@ -100,10 +100,7 @@ class MissingTimestampsModel(QAbstractTableModel):
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole) -> Any:  # type: ignore[override]
         """Return header data."""
-        if (
-            orientation == Qt.Orientation.Horizontal
-            and role == Qt.ItemDataRole.DisplayRole
-        ):
+        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
             return self._headers[section]
         return None
 
@@ -167,9 +164,7 @@ class IntegrityCheckTab(QWidget):
         date_layout.addWidget(QLabel("Start:"))
         self.start_date_edit = QDateTimeEdit()
         self.start_date_edit.setCalendarPopup(True)
-        self.start_date_edit.setDateTime(
-            QDateTimeEdit.dateTime(QDateTimeEdit()).addDays(-7)
-        )
+        self.start_date_edit.setDateTime(QDateTimeEdit.dateTime(QDateTimeEdit()).addDays(-7))
         date_layout.addWidget(self.start_date_edit)
 
         date_layout.addWidget(QLabel("End:"))
@@ -179,9 +174,7 @@ class IntegrityCheckTab(QWidget):
         date_layout.addWidget(self.end_date_edit)
 
         self.auto_detect_btn = QPushButton("Auto Detect")
-        self.auto_detect_btn.setToolTip(
-            "Auto-detect date range from files in the selected directory"
-        )
+        self.auto_detect_btn.setToolTip("Auto-detect date range from files in the selected directory")
         self.auto_detect_btn.clicked.connect(self._auto_detect_date_range)
         date_layout.addWidget(self.auto_detect_btn)
 
@@ -288,22 +281,14 @@ class IntegrityCheckTab(QWidget):
             self.view_model.status_updated.connect(self._on_status_updated)
             self.view_model.status_type_changed.connect(self._on_status_type_changed)
             self.view_model.progress_updated.connect(self._on_progress_updated)
-            self.view_model.missing_items_updated.connect(
-                self._on_missing_items_updated
-            )
+            self.view_model.missing_items_updated.connect(self._on_missing_items_updated)
             self.view_model.scan_completed.connect(self._on_scan_completed_vm)
-            self.view_model.download_progress_updated.connect(
-                self._on_download_progress_vm
-            )
-            self.view_model.download_item_updated.connect(
-                self._on_download_item_updated
-            )
+            self.view_model.download_progress_updated.connect(self._on_download_progress_vm)
+            self.view_model.download_item_updated.connect(self._on_download_item_updated)
 
     def _browse_directory(self) -> None:
         """Browse for a directory."""
-        directory = QFileDialog.getExistingDirectory(
-            self, "Select Directory", self.dir_input.text()
-        )
+        directory = QFileDialog.getExistingDirectory(self, "Select Directory", self.dir_input.text())
         if directory:
             self.dir_input.setText(directory)
 
@@ -311,12 +296,8 @@ class IntegrityCheckTab(QWidget):
         """Perform a scan for missing files."""
         directory = self.dir_input.text()
         if not directory or not os.path.isdir(directory):
-            self.feedback_manager.report_error(
-                "Invalid Directory", "Please select a valid directory."
-            )
-            QMessageBox.warning(
-                self, "Invalid Directory", "Please select a valid directory."
-            )
+            self.feedback_manager.report_error("Invalid Directory", "Please select a valid directory.")
+            QMessageBox.warning(self, "Invalid Directory", "Please select a valid directory.")
             return
 
         # Get date range
@@ -338,16 +319,12 @@ class IntegrityCheckTab(QWidget):
             # Log scan parameters
             from .enhanced_feedback import MessageType
 
-            self.feedback_manager.add_message(
-                f"Directory: {directory}", MessageType.INFO
-            )
+            self.feedback_manager.add_message(f"Directory: {directory}", MessageType.INFO)
             self.feedback_manager.add_message(
                 f"Date range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
                 MessageType.INFO,
             )
-            self.feedback_manager.add_message(
-                f"Satellite: {satellite.name}", MessageType.INFO
-            )
+            self.feedback_manager.add_message(f"Satellite: {satellite.name}", MessageType.INFO)
 
             self.view_model.base_directory = directory
             self.view_model.start_date = start_date
@@ -355,49 +332,18 @@ class IntegrityCheckTab(QWidget):
             self.view_model.selected_pattern = satellite
             self.view_model.start_scan()
         else:
-            self.feedback_manager.report_error(
-                "Configuration Error", "No view model connected"
-            )
+            self.feedback_manager.report_error("Configuration Error", "No view model connected")
             self.status_label.setText("Error: No view model connected")
 
     def _download_selected(self) -> None:
         """Download selected missing files."""
-        # Get selected rows
-        selection = self.results_table.selectionModel()
-        if not selection or not selection.hasSelection():
-            QMessageBox.warning(
-                self, "No Selection", "Please select files to download."
-            )
+        selected_items = self._get_selected_items()
+        if not selected_items:
+            QMessageBox.warning(self, "No Selection", "Please select files to download.")
             return
 
-        # Get selected items
-        selected_rows = selection.selectedRows() if selection else []
-        selected_items = [
-            self.results_model._items[index.row()] for index in selected_rows
-        ]
-
-        # Start download
         if self.view_model:
-            # TODO: Implement selective download in view model
-            # For now, we download all missing items
-            # In the future, we should modify the view model to accept a list of items to download
-
-            num_selected = len(selected_items)
-            total_missing = len(self.results_model._items)
-
-            if num_selected < total_missing:
-                reply = QMessageBox.question(
-                    self,
-                    "Download Confirmation",
-                    f"You have selected {num_selected} out of {total_missing} missing files.\n"
-                    f"Currently, the system will download ALL {total_missing} missing files.\n\n"
-                    f"Do you want to continue?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                )
-                if reply != QMessageBox.StandardButton.Yes:
-                    return
-
-            self.view_model.start_downloads()
+            self.view_model.start_downloads(selected_items)
         else:
             self.status_label.setText("Error: No view model connected")
 
@@ -469,9 +415,7 @@ class IntegrityCheckTab(QWidget):
             if eta > 0:
                 eta_min = int(eta / 60)
                 eta_sec = int(eta % 60)
-                self.progress_bar.setFormat(
-                    f"{percentage:.1f}% - ETA: {eta_min}m {eta_sec}s"
-                )
+                self.progress_bar.setFormat(f"{percentage:.1f}% - ETA: {eta_min}m {eta_sec}s")
             else:
                 self.progress_bar.setFormat(f"{percentage:.1f}%")
 
@@ -479,23 +423,17 @@ class IntegrityCheckTab(QWidget):
         """Handle missing items update from view model."""
         self.results_model.set_items(items)
         self.download_button.setEnabled(len(items) > 0)
-        self.summary_label.setText(
-            f"Found {len(items)} missing files out of expected files"
-        )
+        self.summary_label.setText(f"Found {len(items)} missing files out of expected files")
 
     def _on_scan_completed_vm(self, success: bool, message: str) -> None:
         """Handle scan completion from view model."""
         if not success:
-            self.feedback_manager.complete_task(
-                "Scanning for missing files", success=False
-            )
+            self.feedback_manager.complete_task("Scanning for missing files", success=False)
             self.feedback_manager.report_error("Scan Failed", message)
             QMessageBox.critical(self, "Scan Error", message)
         else:
             missing_count = len(self.results_model._items)
-            self.feedback_manager.complete_task(
-                "Scanning for missing files", success=True
-            )
+            self.feedback_manager.complete_task("Scanning for missing files", success=True)
 
             from .enhanced_feedback import MessageType
 
@@ -529,9 +467,7 @@ class IntegrityCheckTab(QWidget):
         """Auto-detect date range from files in the selected directory."""
         directory = self.dir_input.text()
         if not directory or not os.path.isdir(directory):
-            QMessageBox.warning(
-                self, "Invalid Directory", "Please select a valid directory first."
-            )
+            QMessageBox.warning(self, "Invalid Directory", "Please select a valid directory first.")
             return
 
         # Import enhanced auto-detection
