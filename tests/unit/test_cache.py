@@ -58,7 +58,8 @@ def test_load_cached_none_for_zero_frames(mock_cache_dir, sample_paths):
 
 
 def test_load_cached_cache_miss_when_files_missing(monkeypatch, sample_paths, tmp_path):
-    # Patch the config.get_cache_dir() function to return tmp_path
+    # Patch cache directory to temporary path
+    monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "get_cache_dir", lambda: tmp_path)
     file1, file2 = sample_paths
     num_frames = 3
