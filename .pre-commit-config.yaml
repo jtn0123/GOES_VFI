@@ -8,7 +8,7 @@ repos:
     -   id: check-json
     -   id: check-added-large-files
     -   id: debug-statements
-        exclude: ^(examples/|legacy_tests/|fix_.*\.py|.*\.md)
+        exclude: ^(legacy_tests/|fix_.*\.py|.*\.md)
     -   id: check-merge-conflict
 
 -   repo: https://github.com/pycqa/flake8
@@ -21,7 +21,7 @@ repos:
           - flake8-quotes
           - flake8-comprehensions
           - flake8-pytest-style
-        exclude: ^(examples/|legacy_tests/)
+        exclude: ^(legacy_tests/)
 
 -   repo: https://github.com/pycqa/isort
     rev: 6.0.1
@@ -41,14 +41,14 @@ repos:
     -   id: mypy
         additional_dependencies: [types-requests, types-PyYAML, types-setuptools]
         args: [--ignore-missing-imports]
-        exclude: ^(examples/|legacy_tests/)
+        exclude: ^(legacy_tests/)
 
 -   repo: https://github.com/PyCQA/bandit
     rev: 1.8.5
     hooks:
     -   id: bandit
         args: [--format, json, --severity-level, medium]
-        exclude: ^(tests/|examples/|legacy_tests/)
+        exclude: ^(tests/|legacy_tests/)
 
 -   repo: https://github.com/Lucas-C/pre-commit-hooks-safety
     rev: v1.4.2
@@ -64,5 +64,4 @@ repos:
         language: python
         args: [--max-absolute, C]
         files: ^goesvfi/.*\.py$
-        exclude: ^(goesvfi/gui\.py|goesvfi/pipeline/run_vfi\.py|goesvfi/integrity_check/remote/s3_store\.py|goesvfi/integrity_check/time_index\.py|goesvfi/gui_tabs/main_tab\.py|goesvfi/integrity_check/enhanced_gui_tab\.py|goesvfi/utils/rife_analyzer\.py)$
         additional_dependencies: [xenon>=0.9.3]

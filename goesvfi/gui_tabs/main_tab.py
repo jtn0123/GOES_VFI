@@ -805,7 +805,7 @@ class MainTab(QWidget):
                         # Use MainWindow's image_loader instance
                         loader = getattr(self.main_window_ref, "image_loader", None)
                         if loader:
-                            original_image_data = loader.load_image(first_image_path)
+                            original_image_data = loader.load(str(first_image_path))
                         else:
                             LOGGER.error("Could not access MainWindow's image_loader.")
 

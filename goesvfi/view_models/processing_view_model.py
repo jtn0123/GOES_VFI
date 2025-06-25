@@ -124,7 +124,7 @@ class ProcessingViewModel(QObject):
         self.status_updated.emit(self._status_message)
         self.progress_updated.emit(current, total, time_elapsed)
 
-    def finish_processing(self, success: bool, message: str | Path = "") -> None:
+    def finish_processing(self, success: bool = True, message: str | Path = "") -> None:
         """
         Handle completion of processing.
 
@@ -159,6 +159,23 @@ class ProcessingViewModel(QObject):
         # Emit signals for view updates
         self.status_updated.emit(self._status_message)
         self.processing_finished.emit(success, message_str)
+
+    def handle_error(self, error_message: str) -> None:
+        """
+        Handle an error during processing.
+
+        Args:
+            error_message: Description of the error that occurred
+        """
+        LOGGER.error("Processing error: %s", error_message)
+
+        # Update internal state
+        self._is_processing = False
+        self._status_message = f"Error: {error_message}"
+
+        # Emit signals for view updates
+        self.status_updated.emit(self._status_message)
+        self.processing_finished.emit(False, error_message)
 
     def set_output_file_path(self, path: Path) -> None:
         """

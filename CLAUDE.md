@@ -49,13 +49,12 @@ Note: Some tests may fail due to recent refactoring. When testing new changes:
 
 ## Project Structure and Organization
 
-The repository has been reorganized to follow a clean, maintainable structure that separates core code, tests, examples, and documentation. The reorganization focuses on:
+The repository has been reorganized to follow a clean, maintainable structure that separates core code, tests, and documentation. The reorganization focuses on:
 
 1. **Proper Packaging**: Core code is in the `goesvfi` package with appropriate submodules
 2. **Test Organization**: Tests are categorized by type (unit, integration, GUI)
-3. **Example Scripts**: Examples are organized by functionality
-4. **Documentation**: Documentation files are stored in the `docs` directory
-5. **Data & Logs**: Large data files and logs are separated and excluded from Git
+3. **Documentation**: Documentation files are stored in the `docs` directory
+4. **Data & Logs**: Large data files and logs are separated and excluded from Git
 
 An overview of the directory structure can be found in [DIRECTORY_STRUCTURE.md](DIRECTORY_STRUCTURE.md).
 
@@ -75,19 +74,7 @@ python cleanup.py --delete-data
 
 **CRITICAL: Never skip tests. If a test is being skipped, it defeats the purpose of having it. All tests should either pass or fail - skipping tests provides no value and hides potential issues. If a test cannot run in certain environments, it should be fixed or removed, not skipped. Tests that are skipped are essentially dead code that gives a false sense of security.**
 
-The repository has a well-organized structure for tests and examples:
-
-### Examples Directory
-- `/examples/`: Contains example scripts demonstrating various features
-  - `/examples/download/`: Examples for downloading GOES satellite data
-  - `/examples/s3_access/`: Examples for interacting with NOAA S3 buckets
-  - `/examples/imagery/`: Examples of processing and rendering satellite imagery
-  - `/examples/processing/`: Examples of various processing techniques
-  - `/examples/visualization/`: Examples of data visualization techniques
-  - `/examples/debugging/`: Examples for debugging specific functionality
-  - `/examples/utilities/`: Utility scripts for code maintenance
-
-**IMPORTANT**: When developing a new feature, first create it as an example script in the appropriate examples directory before integrating it into the main codebase. This allows for isolated testing and easier iteration.
+The repository has a well-organized structure for tests:
 
 ### Test Directories
 - `/tests/unit/`: Unit tests for individual components
@@ -109,15 +96,6 @@ These practices should be followed for all new tests:
 5. **Error Isolation**: Each test should clearly identify what feature is being tested.
 6. **Test Naming**: Follow `test_{component}_{functionality}_{condition}` naming convention.
 
-### Python Import Path Handling
-All example scripts follow a standardized pattern for import path handling:
-```python
-# Add the repository root to the Python path
-repo_root = str(Path(__file__).parent.parent.parent)
-sys.path.insert(0, repo_root)
-```
-
-This ensures examples can be run from any directory while properly accessing the project modules.
 
 ### Test Runner Scripts
 Multiple test runners are provided for different testing scenarios:
@@ -248,12 +226,6 @@ For visualization components:
 - Apply proper contrast enhancement and normalization
 - Support multi-band composites for true color and false color
 
-### Example Processing Workflows
-The `examples/` directory includes several workflows demonstrating:
-- Downloading satellite data for specific bands and products
-- Processing NetCDF files to extract imagery
-- Creating RGB composites from multiple bands
-- Visualizing and comparing different products
 
 ## Development Best Practices
 - Always run linters on changed code before committing:
@@ -303,17 +275,6 @@ When pre-commit hooks fail:
 - **Large files**: Remove or gitignore large files before committing
 
 ### Code Complexity Standards
-The project enforces a **C grade or better** complexity threshold for new and modified code using Xenon. Functions with D, E, or F complexity grades will be rejected by pre-commit hooks.
-
-**Legacy files with existing complexity issues are temporarily excluded** from this check:
-- `goesvfi/gui.py` - Main GUI file with complex UI logic
-- `goesvfi/pipeline/run_vfi.py` - Core VFI processing pipeline
-- `goesvfi/integrity_check/remote/s3_store.py` - S3 download logic
-- `goesvfi/integrity_check/time_index.py` - Time indexing algorithms
-- `goesvfi/gui_tabs/main_tab.py` - Main tab UI logic
-- `goesvfi/integrity_check/enhanced_gui_tab.py` - Enhanced GUI components
-- `goesvfi/utils/rife_analyzer.py` - RIFE capability detection
-
-**Goal**: Gradually refactor these legacy files to meet the complexity standards.
+The project enforces a **C grade or better** complexity threshold for all code using Xenon. Functions with D, E, or F complexity grades will be rejected by pre-commit hooks.
 
 Remember: Pre-commit hooks are there to help maintain code quality. Skipping them defeats their entire purpose and introduces technical debt.

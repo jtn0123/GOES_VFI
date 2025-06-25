@@ -9,7 +9,7 @@ import logging
 import pathlib
 import re
 import subprocess
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -94,26 +94,20 @@ class RifeCapabilityDetector:
             logger.debug("Error running help command (expected in tests): %s", e)
             return f"Error: {str(e)}", False
 
-    def _detect_capabilities(self) -> None:
-        """
-        Detect the capabilities of the RIFE executable by analyzing help output.
-        """
-        help_text, success = self._run_help_command()
-        self._help_text = help_text  # pylint: disable=attribute-defined-outside-init
-
-        # Decode help_text if it's bytes
+    def _decode_help_text(self, help_text: Union[str, bytes]) -> str:
+        """Decode help text from bytes to string if needed."""
         if isinstance(help_text, bytes):
             try:
-                help_text_str = help_text.decode("utf-8")
+                return help_text.decode("utf-8")
             except UnicodeDecodeError:
                 logger.warning(
                     "Could not decode help text as UTF-8, attempting latin-1"
                 )
-                help_text_str = help_text.decode("latin-1", errors="ignore")
-        else:
-            help_text_str = help_text  # Assume it's already a string
+                return help_text.decode("latin-1", errors="ignore")
+        return help_text  # Assume it's already a string
 
-        # --- Refined Logging Logic --- #
+    def _log_help_command_status(self, success: bool, help_text_str: str) -> None:
+        """Log the status of help command execution."""
         if not success:
             if not help_text_str:
                 # Use the exact message expected by the test
@@ -137,10 +131,10 @@ class RifeCapabilityDetector:
                 "RIFE help command succeeded but output seems problematic: \n%s",
                 help_text_str,
             )
-        # --- End Refined Logging --- #
 
-        # Store default capabilities
-        self._capabilities = {  # pylint: disable=attribute-defined-outside-init
+    def _initialize_default_capabilities(self) -> Dict[str, bool]:
+        """Initialize default capabilities dictionary."""
+        return {
             "tiling": False,
             "uhd": False,
             "tta_spatial": False,
@@ -152,7 +146,8 @@ class RifeCapabilityDetector:
             "gpu_id": False,
         }
 
-        # Extract version if available
+    def _extract_version(self, help_text_str: str) -> None:
+        """Extract version from help text."""
         # Look for patterns like "version 4.6", "v4.6", "Version: 4.6", etc.
         version_match = re.search(
             r"(?:version[:\s]+|v)([0-9.]+)", help_text_str, re.IGNORECASE
@@ -162,7 +157,8 @@ class RifeCapabilityDetector:
                 1
             )  # pylint: disable=attribute-defined-outside-init
 
-        # Parse help text to find supported arguments
+    def _parse_supported_arguments(self, help_text_str: str) -> None:
+        """Parse help text to find supported arguments."""
         arg_matches = re.finditer(
             r"^\s+-([a-zA-Z0-9])\s+.*", help_text_str, re.MULTILINE
         )
@@ -172,44 +168,53 @@ class RifeCapabilityDetector:
             if arg:
                 self._supported_args.add(arg)
 
+    def _detect_specific_capabilities(self, help_text_lower: str) -> None:
+        """Detect specific capabilities based on supported args and help text."""
+        capability_mappings = [
+            ("tiling", ["t", "tile"], "tile"),
+            ("uhd", ["u", "uhd"], "uhd"),
+            ("tta_spatial", ["x", "tta-spatial"], "spatial"),
+            ("tta_temporal", ["z", "tta-temporal"], "temporal"),
+            ("thread_spec", ["j", "thread"], "thread"),
+            ("batch_processing", ["i", "input-pattern"], "batch"),
+            ("timestep", ["s", "timestep"], "timestep"),
+            ("model_path", ["m", "model"], "model"),
+            ("gpu_id", ["g", "gpu"], "gpu"),
+        ]
+
+        for capability, args, keyword in capability_mappings:
+            self._capabilities[capability] = (
+                any(arg in self._supported_args for arg in args)
+                or keyword in help_text_lower
+            )
+
+    def _detect_capabilities(self) -> None:
+        """
+        Detect the capabilities of the RIFE executable by analyzing help output.
+        """
+        help_text, success = self._run_help_command()
+        self._help_text = help_text  # pylint: disable=attribute-defined-outside-init
+
+        # Decode help_text if it's bytes
+        help_text_str = self._decode_help_text(help_text)
+
+        # Log help command status
+        self._log_help_command_status(success, help_text_str)
+
+        # Store default capabilities
+        self._capabilities = (
+            self._initialize_default_capabilities()
+        )  # pylint: disable=attribute-defined-outside-init
+
+        # Extract version if available
+        self._extract_version(help_text_str)
+
+        # Parse help text to find supported arguments
+        self._parse_supported_arguments(help_text_str)
+
         # Detect specific capabilities based on supported args and help text
         help_text_lower = help_text_str.lower()
-        self._capabilities["tiling"] = (
-            any(arg in self._supported_args for arg in ["t", "tile"])
-            or "tile" in help_text_lower
-        )
-        self._capabilities["uhd"] = (
-            any(arg in self._supported_args for arg in ["u", "uhd"])
-            or "uhd" in help_text_lower
-        )
-        self._capabilities["tta_spatial"] = (
-            any(arg in self._supported_args for arg in ["x", "tta-spatial"])
-            or "spatial" in help_text_lower
-        )
-        self._capabilities["tta_temporal"] = (
-            any(arg in self._supported_args for arg in ["z", "tta-temporal"])
-            or "temporal" in help_text_lower
-        )
-        self._capabilities["thread_spec"] = (
-            any(arg in self._supported_args for arg in ["j", "thread"])
-            or "thread" in help_text_lower
-        )
-        self._capabilities["batch_processing"] = (
-            any(arg in self._supported_args for arg in ["i", "input-pattern"])
-            or "batch" in help_text_lower
-        )
-        self._capabilities["timestep"] = (
-            any(arg in self._supported_args for arg in ["s", "timestep"])
-            or "timestep" in help_text_lower
-        )
-        self._capabilities["model_path"] = (
-            any(arg in self._supported_args for arg in ["m", "model"])
-            or "model" in help_text_lower
-        )
-        self._capabilities["gpu_id"] = (
-            any(arg in self._supported_args for arg in ["g", "gpu"])
-            or "gpu" in help_text_lower
-        )
+        self._detect_specific_capabilities(help_text_lower)
 
         logger.info("RIFE capabilities detected: %s", self._capabilities)
 

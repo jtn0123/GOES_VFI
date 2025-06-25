@@ -300,6 +300,146 @@ def log_download_statistics() -> None:
         stats_msg += f"\nTime since last successful download: {time_since_last:.1f} seconds\n"
     
     LOGGER.info(stats_msg)
+        download_rates = (
+            DOWNLOAD_STATS["download_rates"]
+            if isinstance(DOWNLOAD_STATS["download_rates"], list)
+            else []
+        )
+        download_rates_float = [
+            r for r in download_rates if isinstance(r, (int, float))
+        ]
+
+        if download_rates_float:
+            rate_bps = sum(download_rates_float) / len(download_rates_float)
+            if rate_bps > 1024 * 1024:
+                avg_download_rate = f"{rate_bps / 1024 / 1024:.2f} MB/s"
+            else:
+                avg_download_rate = f"{rate_bps / 1024:.2f} KB/s"
+
+    # Safely extract error counts
+    failed = (
+        int(DOWNLOAD_STATS["failed"])
+        if isinstance(DOWNLOAD_STATS["failed"], (int, float))
+        else 0
+    )
+    retry_count = (
+        int(DOWNLOAD_STATS["retry_count"])
+        if isinstance(DOWNLOAD_STATS["retry_count"], (int, float))
+        else 0
+    )
+    not_found = (
+        int(DOWNLOAD_STATS["not_found"])
+        if isinstance(DOWNLOAD_STATS["not_found"], (int, float))
+        else 0
+    )
+    auth_errors = (
+        int(DOWNLOAD_STATS["auth_errors"])
+        if isinstance(DOWNLOAD_STATS["auth_errors"], (int, float))
+        else 0
+    )
+    timeouts = (
+        int(DOWNLOAD_STATS["timeouts"])
+        if isinstance(DOWNLOAD_STATS["timeouts"], (int, float))
+        else 0
+    )
+    network_errors = (
+        int(DOWNLOAD_STATS["network_errors"])
+        if isinstance(DOWNLOAD_STATS["network_errors"], (int, float))
+        else 0
+    )
+
+    # Safely extract file size stats
+    largest_file_size = (
+        int(DOWNLOAD_STATS["largest_file_size"])
+        if isinstance(DOWNLOAD_STATS["largest_file_size"], (int, float))
+        else 0
+    )
+    smallest_file_size = (
+        float(DOWNLOAD_STATS["smallest_file_size"])
+        if isinstance(DOWNLOAD_STATS["smallest_file_size"], (int, float))
+        else float("inf")
+    )
+
+    # Format statistics message
+    stats_msg = (
+        f"\nS3 Download Statistics:\n"
+        f"---------------------\n"
+        f"Session ID: {DOWNLOAD_STATS.get('session_id', 'N/A')}\n"
+        f"Hostname: {DOWNLOAD_STATS.get('hostname', 'N/A')}\n"
+        f"Start time: {DOWNLOAD_STATS.get('start_timestamp', 'N/A')}\n"
+        f"\nPerformance Summary:\n"
+        f"Total attempts: {total_attempts}\n"
+        f"Successful: {successful} ({success_rate:.1f}%)\n"
+        f"Failed: {failed}\n"
+        f"Retries: {retry_count}\n"
+        f"Not found errors: {not_found}\n"
+        f"Auth errors: {auth_errors}\n"
+        f"Timeouts: {timeouts}\n"
+        f"Network errors: {network_errors}\n"
+        f"\nDownload Metrics:\n"
+        f"Average download time: {avg_time:.2f} seconds\n"
+        f"Total bytes: {total_bytes} bytes\n"
+        f"Average network speed: {network_speed}\n"
+        f"Average download rate: {avg_download_rate}\n"
+        f"Largest file: {largest_file_size} bytes\n"
+        f"Smallest file: {smallest_file_size if smallest_file_size != float('inf') else 'N/A'} bytes\n"
+        f"Total runtime: {total_time:.1f} seconds\n"
+    )
+
+    # Add recent errors if any
+    errors_value = DOWNLOAD_STATS.get("errors", [])
+    if isinstance(errors_value, list) and errors_value:
+        stats_msg += "\nRecent errors:\n"
+        errors_to_show = errors_value[-5:]  # Show last 5 errors
+        for i, error in enumerate(errors_to_show):
+            if isinstance(error, str):
+                stats_msg += f"{i + 1}. {error}\n"
+
+    # Add recent download attempts if any
+    recent_attempts_value = DOWNLOAD_STATS.get("recent_attempts", [])
+    if isinstance(recent_attempts_value, list) and recent_attempts_value:
+        stats_msg += "\nRecent download attempts:\n"
+        attempts_to_show = recent_attempts_value[-3:]  # Show last 3 attempts
+        for i, attempt in enumerate(attempts_to_show):
+            if not isinstance(attempt, dict):
+                continue
+
+            success_val = attempt.get("success", False)
+            status = "✓ Success" if success_val else "✗ Failed"
+
+            file_size_val = attempt.get("file_size", 0)
+            if not isinstance(file_size_val, (int, float)):
+                file_size_val = 0
+            size = f"{file_size_val / 1024:.1f} KB" if file_size_val > 0 else "N/A"
+
+            download_time_val = attempt.get("download_time", 0)
+            if not isinstance(download_time_val, (int, float)):
+                download_time_val = 0
+            time_taken = f"{download_time_val:.2f}s" if download_time_val > 0 else "N/A"
+
+            # Format the key for display - show just the filename part if it's too long
+            key_val = attempt.get("key", "N/A")
+            if (
+                key_val != "N/A"
+                and key_val is not None
+                and isinstance(key_val, str)
+                and len(key_val) > 40
+            ):
+                key_parts = key_val.split("/")
+                key_val = f".../{key_parts[-1]}" if key_parts else key_val
+
+            timestamp_val = attempt.get("timestamp", "N/A")
+            stats_msg += f"{i + 1}. [{timestamp_val}] {status} - Size: {size}, Time: {time_taken}, Key: {key_val}\n"
+
+    # Add time since last successful download
+    last_success_time = DOWNLOAD_STATS.get("last_success_time", 0)
+    if isinstance(last_success_time, (int, float)) and last_success_time > 0:
+        time_since_last = time.time() - last_success_time
+        stats_msg += (
+            f"\nTime since last successful download: {time_since_last:.1f} seconds\n"
+        )
+
+    LOGGER.info(stats_msg)
 
 
 def get_system_network_info() -> Dict[str, Any]:
