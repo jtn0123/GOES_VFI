@@ -3,7 +3,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Dict
+from typing import ClassVar, Dict, Optional
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QApplication
@@ -13,6 +13,8 @@ from goesvfi.gui_components.settings_manager import SettingsManager
 
 class TestSettingsManager(unittest.TestCase):
     """Test cases for SettingsManager."""
+
+    app: ClassVar[Optional[QApplication]] = None
 
     @classmethod
     def setUpClass(cls):
@@ -133,9 +135,7 @@ class TestSettingsManager(unittest.TestCase):
         paths = [Path(f"/path/to/file{i}.txt") for i in range(15)]
 
         # Save with max_items=10
-        result = self.settings_manager.save_recent_paths(
-            "recent_files", paths, max_items=10
-        )
+        result = self.settings_manager.save_recent_paths("recent_files", paths, max_items=10)
         self.assertTrue(result)
 
         # Load and verify only 10 were saved

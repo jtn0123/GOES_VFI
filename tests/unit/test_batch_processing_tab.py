@@ -49,9 +49,7 @@ def batch_tab(qtbot):
         proc_instance = MockProc.return_value
         proc_instance.create_queue.return_value = dummy_queue
 
-        def fake_create_job_from_paths(
-            input_paths, output_dir, settings, priority=JobPriority.NORMAL, **_
-        ):
+        def fake_create_job_from_paths(input_paths, output_dir, settings, priority=JobPriority.NORMAL, **_):
             return [
                 BatchJob(
                     id="job1",

@@ -260,10 +260,7 @@ class TestS3ClientConfig:
 
         # Test without unsigned
         config = create_s3_config(timeout=60, use_unsigned=False)
-        assert (
-            hasattr(config, "signature_version") is False
-            or config.signature_version != botocore.UNSIGNED
-        )
+        assert hasattr(config, "signature_version") is False or config.signature_version != botocore.UNSIGNED
 
 
 class TestNetworkDiagnostics:
@@ -349,9 +346,7 @@ class TestS3ErrorConverter:
 
         assert isinstance(result, ResourceNotFoundError)
         assert "Resource not found for GOES_16" in result.message
-        assert (
-            result.technical_details is not None and "404" in result.technical_details
-        )
+        assert result.technical_details is not None and "404" in result.technical_details
 
     def test_client_error_403(self):
         """Test converting 403 error."""
@@ -369,10 +364,7 @@ class TestS3ErrorConverter:
 
         assert isinstance(result, AuthenticationError)
         assert "Access denied to GOES_16 data" in result.message
-        assert (
-            result.technical_details is not None
-            and "publicly accessible" in result.technical_details
-        )
+        assert result.technical_details is not None and "publicly accessible" in result.technical_details
 
     def test_timeout_error(self):
         """Test converting timeout error."""
@@ -387,10 +379,7 @@ class TestS3ErrorConverter:
 
         assert isinstance(result, RemoteConnectionError)
         assert "Timeout downloading GOES_16 data" in result.message
-        assert (
-            result.technical_details is not None
-            and "internet connection speed" in result.technical_details
-        )
+        assert result.technical_details is not None and "internet connection speed" in result.technical_details
 
     def test_permission_error(self):
         """Test converting permission error."""
@@ -405,10 +394,7 @@ class TestS3ErrorConverter:
 
         assert isinstance(result, AuthenticationError)
         assert "Permission error downloading GOES_16 data" in result.message
-        assert (
-            result.technical_details is not None
-            and "file system permissions" in result.technical_details
-        )
+        assert result.technical_details is not None and "file system permissions" in result.technical_details
 
     def test_generic_error(self):
         """Test converting generic error."""
@@ -429,24 +415,14 @@ class TestS3ErrorConverter:
         # Test with our error types
         assert S3ErrorConverter.get_error_type(ResourceNotFoundError("")) == "not_found"
         assert S3ErrorConverter.get_error_type(AuthenticationError("")) == "auth"
-        assert (
-            S3ErrorConverter.get_error_type(RemoteConnectionError("timeout"))
-            == "timeout"
-        )
-        assert (
-            S3ErrorConverter.get_error_type(RemoteConnectionError("network"))
-            == "network"
-        )
+        assert S3ErrorConverter.get_error_type(RemoteConnectionError("timeout")) == "timeout"
+        assert S3ErrorConverter.get_error_type(RemoteConnectionError("network")) == "network"
 
         # Test with boto3 errors
-        error_404 = botocore.exceptions.ClientError(
-            {"Error": {"Code": "404"}}, "GetObject"
-        )
+        error_404 = botocore.exceptions.ClientError({"Error": {"Code": "404"}}, "GetObject")
         assert S3ErrorConverter.get_error_type(error_404) == "not_found"
 
-        error_403 = botocore.exceptions.ClientError(
-            {"Error": {"Code": "403"}}, "GetObject"
-        )
+        error_403 = botocore.exceptions.ClientError({"Error": {"Code": "403"}}, "GetObject")
         assert S3ErrorConverter.get_error_type(error_403) == "auth"
 
         # Test with timeout errors

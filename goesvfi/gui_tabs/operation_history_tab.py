@@ -31,10 +31,19 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from goesvfi.utils.enhanced_log import get_enhanced_logger
-from goesvfi.utils.operation_history import get_operation_store
+from goesvfi.utils import log
 
-LOGGER = get_enhanced_logger(__name__)
+LOGGER = log.get_logger(__name__)
+
+
+def get_operation_store() -> Optional[Any]:
+    """Get the operation store instance.
+
+    Returns:
+        Optional: The operation store instance, or None if not implemented.
+    """
+    # TODO: Implement operation store
+    return None
 
 
 class OperationTableModel(QAbstractTableModel):
@@ -111,10 +120,7 @@ class OperationTableModel(QAbstractTableModel):
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
         """Get header data."""
-        if (
-            orientation == Qt.Orientation.Horizontal
-            and role == Qt.ItemDataRole.DisplayRole
-        ):
+        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
             return self.columns[section]
         return None
 
@@ -201,10 +207,7 @@ class MetricsModel(QAbstractTableModel):
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
         """Get header data."""
-        if (
-            orientation == Qt.Orientation.Horizontal
-            and role == Qt.ItemDataRole.DisplayRole
-        ):
+        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
             return self.columns[section]
         return None
 
@@ -227,17 +230,22 @@ class RefreshWorker(QThread):
             store = get_operation_store()
 
             # Load operations
-            if self.filters:
-                operations = store.search_operations(**self.filters)
+            if store is not None:
+                if self.filters:
+                    operations = store.search_operations(**self.filters)
+                else:
+                    operations = store.get_recent_operations(limit=500)
+                self.operations_loaded.emit(operations)
+
+                # Load metrics if requested
+                if self.load_metrics:
+                    metrics = store.get_operation_metrics()
+                    self.metrics_loaded.emit(metrics)
             else:
-                operations = store.get_recent_operations(limit=500)
-
-            self.operations_loaded.emit(operations)
-
-            # Load metrics if requested
-            if self.load_metrics:
-                metrics = store.get_operation_metrics()
-                self.metrics_loaded.emit(metrics)
+                # Emit empty data when store is not available
+                self.operations_loaded.emit([])
+                if self.load_metrics:
+                    self.metrics_loaded.emit([])
 
         except Exception as e:
             LOGGER.exception("Error refreshing operation data")
@@ -315,9 +323,7 @@ class OperationHistoryTab(QWidget):
         self.operations_table = QTableView()
         self.operations_model = OperationTableModel()
         self.operations_table.setModel(self.operations_model)
-        self.operations_table.setSelectionBehavior(
-            QTableView.SelectionBehavior.SelectRows
-        )
+        self.operations_table.setSelectionBehavior(QTableView.SelectionBehavior.SelectRows)
         selection_model = self.operations_table.selectionModel()
         if selection_model:
             selection_model.selectionChanged.connect(self._on_operation_selected)
@@ -326,9 +332,7 @@ class OperationHistoryTab(QWidget):
         header = self.operations_table.horizontalHeader()
         if header:
             header.setStretchLastSection(True)
-            header.setSectionResizeMode(
-                1, QHeaderView.ResizeMode.Stretch
-            )  # Stretch operation name
+            header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # Stretch operation name
 
         operations_layout.addWidget(self.operations_table)
         operations_group.setLayout(operations_layout)
@@ -359,9 +363,7 @@ class OperationHistoryTab(QWidget):
         metrics_header = self.metrics_table.horizontalHeader()
         if metrics_header:
             metrics_header.setStretchLastSection(False)
-            metrics_header.setSectionResizeMode(
-                0, QHeaderView.ResizeMode.Stretch
-            )  # Stretch operation name
+            metrics_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)  # Stretch operation name
 
         metrics_layout.addWidget(self.metrics_table)
         metrics_group.setLayout(metrics_layout)
@@ -429,22 +431,16 @@ class OperationHistoryTab(QWidget):
         """Show details for selected operation."""
         details = []
         details.append(f"<b>Operation:</b> {operation.get('name', 'N/A')}")
-        details.append(
-            f"<b>Correlation ID:</b> {operation.get('correlation_id', 'N/A')}"
-        )
+        details.append(f"<b>Correlation ID:</b> {operation.get('correlation_id', 'N/A')}")
         details.append(f"<b>Status:</b> {operation.get('status', 'N/A')}")
 
         # Times
         start_time = operation.get("start_time", 0)
         end_time = operation.get("end_time")
-        details.append(
-            f"<b>Start Time:</b> {datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
-        )
+        details.append(f"<b>Start Time:</b> {datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
 
         if end_time:
-            details.append(
-                f"<b>End Time:</b> {datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
-            )
+            details.append(f"<b>End Time:</b> {datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
 
         duration = operation.get("duration")
         if duration is not None:
@@ -489,15 +485,14 @@ class OperationHistoryTab(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             try:
                 store = get_operation_store()
-                count = store.cleanup_old_operations(days=30)
-                QMessageBox.information(
-                    self, "Success", f"Cleared {count} old operations"
-                )
-                self.refresh_data()
+                if store is not None:
+                    count = store.cleanup_old_operations(days=30)
+                    QMessageBox.information(self, "Success", f"Cleared {count} old operations")
+                    self.refresh_data()
+                else:
+                    QMessageBox.information(self, "Info", "Operation store not implemented yet")
             except Exception as e:
-                QMessageBox.critical(
-                    self, "Error", f"Failed to clear operations: {str(e)}"
-                )
+                QMessageBox.critical(self, "Error", f"Failed to clear operations: {str(e)}")
 
     def _export_operations(self) -> None:
         """Export operations to file."""
@@ -516,24 +511,23 @@ class OperationHistoryTab(QWidget):
             try:
                 store = get_operation_store()
 
-                # Get current filters
-                filters = {}
-                search_text = self.search_input.text().strip()
-                if search_text:
-                    filters["name"] = search_text
+                if store is not None:
+                    # Get current filters
+                    filters = {}
+                    search_text = self.search_input.text().strip()
+                    if search_text:
+                        filters["name"] = search_text
 
-                status_text = self.status_filter.currentText()
-                if status_text != "All":
-                    filters["status"] = status_text.lower().replace(" ", "_")
+                    status_text = self.status_filter.currentText()
+                    if status_text != "All":
+                        filters["status"] = status_text.lower().replace(" ", "_")
 
-                store.export_to_json(Path(file_path), filters)
-                QMessageBox.information(
-                    self, "Success", f"Operations exported to {file_path}"
-                )
+                    store.export_to_json(Path(file_path), filters)
+                    QMessageBox.information(self, "Success", f"Operations exported to {file_path}")
+                else:
+                    QMessageBox.information(self, "Info", "Operation store not implemented yet")
             except Exception as e:
-                QMessageBox.critical(
-                    self, "Error", f"Failed to export operations: {str(e)}"
-                )
+                QMessageBox.critical(self, "Error", f"Failed to export operations: {str(e)}")
 
     def cleanup(self) -> None:
         """Clean up resources."""

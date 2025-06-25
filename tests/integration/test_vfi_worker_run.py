@@ -1,11 +1,17 @@
 import pathlib
 import sys
-from types import SimpleNamespace
+from types import ModuleType
 from unittest.mock import MagicMock
 
 # Provide minimal PyQt6 mocks for headless test execution
-qtcore = SimpleNamespace(QThread=object, pyqtSignal=lambda *a, **k: MagicMock())
-sys.modules.setdefault("PyQt6", SimpleNamespace(QtCore=qtcore))
+qtcore = ModuleType("PyQt6.QtCore")
+qtcore.QThread = object  # type: ignore
+qtcore.pyqtSignal = lambda *_a, **_k: MagicMock()  # type: ignore
+
+pyqt6 = ModuleType("PyQt6")
+pyqt6.QtCore = qtcore  # type: ignore
+
+sys.modules.setdefault("PyQt6", pyqt6)
 sys.modules.setdefault("PyQt6.QtCore", qtcore)
 
 from PIL import Image

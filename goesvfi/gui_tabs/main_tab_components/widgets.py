@@ -42,8 +42,6 @@ class SuperButton(QPushButton):
             print("SuperButton: LEFT CLICK DETECTED")
             if self.click_callback:
                 print(f"SuperButton: Calling callback {self.click_callback.__name__}")
-                QTimer.singleShot(
-                    10, self.click_callback
-                )  # Small delay to ensure UI updates
+                QTimer.singleShot(10, self.click_callback)  # Small delay to ensure UI updates
             else:
                 print("SuperButton: No callback registered")

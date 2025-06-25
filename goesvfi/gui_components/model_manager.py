@@ -1,7 +1,7 @@
 """Model management functionality for the main GUI window."""
 
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, cast
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QComboBox, QMessageBox
@@ -52,8 +52,7 @@ class ModelManager:
                     detector = RifeCapabilityDetector(exe_path)
                     capabilities = {
                         "hd": detector.supports_uhd(),
-                        "ensemble": detector.supports_tta_spatial()
-                        or detector.supports_tta_temporal(),
+                        "ensemble": detector.supports_tta_spatial() or detector.supports_tta_temporal(),
                         "fastmode": detector.supports_thread_spec(),
                         "tiling": detector.supports_tiling(),
                     }
@@ -64,9 +63,7 @@ class ModelManager:
                         e,
                     )
             else:
-                LOGGER.warning(
-                    "RIFE executable not found in model directory: %s", model_dir
-                )
+                LOGGER.warning("RIFE executable not found in model directory: %s", model_dir)
 
             self.model_capabilities[model_name] = capabilities
 
@@ -189,7 +186,7 @@ class ModelManager:
         """
         try:
             model_name = self.settings.value("selected_model", "", type=str)
-            return model_name if model_name else None
+            return cast(Optional[str], model_name if model_name else None)
         except Exception as e:
             LOGGER.error("Error loading selected model: %s", e)
             return None

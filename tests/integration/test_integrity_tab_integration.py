@@ -162,9 +162,7 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Verify directory was updated in view model
-        assert (
-            self.view_model.base_directory == test_dir
-        ), "View model base directory was not updated"
+        assert self.view_model.base_directory == test_dir, "View model base directory was not updated"
 
         # Verify the integrity tab has access to the view model
         assert (
@@ -216,6 +214,7 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
 
         # Process events
         QCoreApplication.processEvents()
+
 
 if __name__ == "__main__":
     unittest.main()

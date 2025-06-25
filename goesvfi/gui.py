@@ -8,11 +8,11 @@ integrity checks, imagery previews, and video generation.  Run
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from PyQt6.QtCore import QSettings, Qt, QTimer, pyqtSignal
-from PyQt6.QtGui import QCloseEvent, QImage, QPixmap
-from PyQt6.QtWidgets import QApplication, QStatusBar, QVBoxLayout, QWidget
+from PyQt6.QtGui import QCloseEvent, QPixmap
+from PyQt6.QtWidgets import QApplication, QStatusBar, QTabWidget, QVBoxLayout, QWidget
 
 from goesvfi.gui_components import (
     InitializationManager,
@@ -30,6 +30,23 @@ LOGGER = log.get_logger(__name__)
 # ────────────────────────────── Main Window ────────────────────────────────
 class MainWindow(QWidget):
     request_previews_update = pyqtSignal()  # Signal to trigger preview update
+
+    # Type annotations for attributes created by InitializationManager
+    main_tab: Any
+    main_view_model: Any
+    state_manager: Any
+    file_picker_manager: Any
+    crop_handler: Any
+    zoom_manager: Any
+    model_selector_manager: Any
+    tab_widget: QTabWidget
+    signal_broker: Any
+    ui_setup_manager: Any
+    rife_ui_manager: Any
+    ffmpeg_settings_tab: Any
+    in_dir: Optional[Path]
+    current_crop_rect: Optional[Any]
+    processing_callbacks: Any
 
     def __init__(self, debug_mode: bool = False) -> None:
         # Removed log level setting here, it's handled in main()
@@ -64,9 +81,7 @@ class MainWindow(QWidget):
             # Default fallback values if not set at the application level
             org_name = "GOES_VFI"
             app_name = "GOES_VFI_App"
-            LOGGER.warning(
-                "Application organization/name not set! Using defaults: %s/%s"
-            )
+            LOGGER.warning("Application organization/name not set! Using defaults: %s/%s")
 
         # Initialize QSettings with application-wide settings to ensure consistency
         self.settings = QSettings(org_name, app_name)
@@ -110,6 +125,9 @@ class MainWindow(QWidget):
         # Load settings after main layout is constructed
         self.loadSettings()
 
+        # Set up all signal connections through SignalBroker
+        self.signal_broker.setup_main_window_connections(self)
+
         # Initial preview update after a short delay
         QTimer.singleShot(100, self.request_previews_update.emit)
 
@@ -117,6 +135,19 @@ class MainWindow(QWidget):
 
     def _setup_tab_widget(self) -> None:
         """Configure the tab widget appearance and behavior."""
+        # Create tab widget
+        self.tab_widget = QTabWidget(self)
+
+        # Create UI setup manager
+        from goesvfi.gui_components.ui_setup_manager import UISetupManager
+
+        self.ui_setup_manager = UISetupManager()
+
+        # Create signal broker
+        from goesvfi.gui_components.signal_broker import SignalBroker
+
+        self.signal_broker = SignalBroker()
+
         self.ui_setup_manager.setup_tab_widget(self)
 
     def _create_all_tabs(self) -> None:
@@ -200,15 +231,18 @@ class MainWindow(QWidget):
 
     def _get_sorted_image_files(self) -> list[Path]:
         """Get sorted list of image files from input directory."""
-        return self.crop_handler.get_sorted_image_files(self)
+        return cast(List[Path], self.crop_handler.get_sorted_image_files(self))
 
     def _prepare_image_for_crop_dialog(self, image_path: Path) -> Optional[QPixmap]:
         """Prepare an image for the crop dialog, applying Sanchez if enabled."""
-        return self.crop_handler.prepare_image_for_crop_dialog(self, image_path)
+        return cast(
+            Optional[QPixmap],
+            self.crop_handler.prepare_image_for_crop_dialog(self, image_path),
+        )
 
     def _get_processed_preview_pixmap(self) -> Optional[QPixmap]:
         """Get the processed preview pixmap from the first frame label."""
-        return self.crop_handler.get_processed_preview_pixmap(self)
+        return cast(Optional[QPixmap], self.crop_handler.get_processed_preview_pixmap(self))
 
     def _show_crop_dialog(self, pixmap: QPixmap) -> None:
         """Show the crop selection dialog."""
@@ -270,20 +304,12 @@ class MainWindow(QWidget):
     @property
     def current_encoder(self) -> str:
         """Get the current encoder from the main tab."""
-        return (
-            self.main_tab.current_encoder
-            if hasattr(self.main_tab, "current_encoder")
-            else "RIFE"
-        )
+        return self.main_tab.current_encoder if hasattr(self.main_tab, "current_encoder") else "RIFE"
 
     @property
     def current_model_key(self) -> str:
         """Get the current model key from the main tab."""
-        return (
-            self.main_tab.current_model_key
-            if hasattr(self.main_tab, "current_model_key")
-            else ""
-        )
+        return self.main_tab.current_model_key if hasattr(self.main_tab, "current_model_key") else ""
 
     def _update_rife_ui_elements(self) -> None:
         """Updates the visibility and state of RIFE-specific UI elements."""
@@ -322,19 +348,12 @@ class MainWindow(QWidget):
             # Get sanchez settings from main tab
             apply_sanchez = False
             sanchez_resolution = None
-            if (
-                hasattr(self.main_tab, "sanchez_checkbox")
-                and self.main_tab.sanchez_checkbox.isChecked()
-            ):
+            if hasattr(self.main_tab, "sanchez_checkbox") and self.main_tab.sanchez_checkbox.isChecked():
                 apply_sanchez = True
                 if hasattr(self.main_tab, "sanchez_res_combo"):
-                    sanchez_resolution = int(
-                        self.main_tab.sanchez_res_combo.currentText()
-                    )
+                    sanchez_resolution = int(self.main_tab.sanchez_res_combo.currentText())
 
-            LOGGER.debug(
-                f"Loading preview images from {self.in_dir}, apply_sanchez={apply_sanchez}"
-            )
+            LOGGER.debug(f"Loading preview images from {self.in_dir}, apply_sanchez={apply_sanchez}")
 
             # Disconnect any existing connections first
             try:
@@ -347,12 +366,8 @@ class MainWindow(QWidget):
                 pass  # No connections exist
 
             # Connect signals before loading
-            self.main_view_model.preview_manager.preview_updated.connect(
-                self._on_preview_images_loaded
-            )
-            self.main_view_model.preview_manager.preview_error.connect(
-                self._on_preview_error
-            )
+            self.main_view_model.preview_manager.preview_updated.connect(self._on_preview_images_loaded)
+            self.main_view_model.preview_manager.preview_error.connect(self._on_preview_error)
 
             # Load previews through view model
             success = self.main_view_model.preview_manager.load_preview_images(
@@ -392,26 +407,26 @@ class MainWindow(QWidget):
         """Update the start button enabled state based on current inputs."""
         self.processing_callbacks.update_start_button_state(self)
 
-    def _on_preview_images_loaded(
-        self, before_pixmap: QPixmap, after_pixmap: QPixmap
-    ) -> None:
+    def _on_preview_images_loaded(self, first_pixmap: QPixmap, middle_pixmap: QPixmap, last_pixmap: QPixmap) -> None:
         """Handle loaded preview images from PreviewManager.
 
         Args:
-            before_pixmap: The first frame pixmap
-            after_pixmap: The last frame pixmap
+            first_pixmap: The first frame pixmap
+            middle_pixmap: The middle frame pixmap
+            last_pixmap: The last frame pixmap
         """
         LOGGER.debug(
-            f"_on_preview_images_loaded called with pixmaps: before={not before_pixmap.isNull()}, after={not after_pixmap.isNull()}"
+            f"_on_preview_images_loaded called with pixmaps: first={not first_pixmap.isNull()}, middle={not middle_pixmap.isNull()}, last={not last_pixmap.isNull()}"
         )
 
         try:
             # Update first frame label
-            if (
-                hasattr(self.main_tab, "first_frame_label")
-                and not before_pixmap.isNull()
-            ):
-                self.main_tab.first_frame_label.setPixmap(before_pixmap)
+            if hasattr(self.main_tab, "first_frame_label") and not first_pixmap.isNull():
+                # Scale pixmap to fit label while maintaining aspect ratio
+                scaled_first_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(
+                    first_pixmap, self.main_tab.first_frame_label.size()
+                )
+                self.main_tab.first_frame_label.setPixmap(scaled_first_pixmap)
 
                 # Set file_path attribute for display
                 if self.in_dir and self.in_dir.exists():
@@ -419,36 +434,33 @@ class MainWindow(QWidget):
                         [
                             f
                             for f in self.in_dir.iterdir()
-                            if f.suffix.lower()
-                            in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+                            if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
                         ]
                     )
                     if image_files:
                         self.main_tab.first_frame_label.file_path = str(image_files[0])
                 # Store the full resolution image data for preview
-                first_frame_data, _ = (
-                    self.main_view_model.preview_manager.get_current_frame_data()
-                )
+                first_frame_data, _, _ = self.main_view_model.preview_manager.get_current_frame_data()
                 if first_frame_data and first_frame_data.image_data is not None:
                     # Convert numpy array to QImage using PreviewManager's method
-                    full_res_pixmap = (
-                        self.main_view_model.preview_manager._numpy_to_qpixmap(
-                            first_frame_data.image_data
-                        )
+                    full_res_pixmap = self.main_view_model.preview_manager._numpy_to_qpixmap(
+                        first_frame_data.image_data
                     )
                     if not full_res_pixmap.isNull():
-                        self.main_tab.first_frame_label.processed_image = (
-                            full_res_pixmap.toImage()
-                        )
+                        self.main_tab.first_frame_label.processed_image = full_res_pixmap.toImage()
                         LOGGER.debug(
                             f"Set processed_image on first_frame_label: {self.main_tab.first_frame_label.processed_image}"
                         )
                 else:
                     LOGGER.warning("No first_frame_data available from preview manager")
 
-            # Update last frame label
-            if hasattr(self.main_tab, "last_frame_label") and not after_pixmap.isNull():
-                self.main_tab.last_frame_label.setPixmap(after_pixmap)
+            # Update middle frame label
+            if hasattr(self.main_tab, "middle_frame_label") and not middle_pixmap.isNull():
+                # Scale pixmap to fit label while maintaining aspect ratio
+                scaled_middle_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(
+                    middle_pixmap, self.main_tab.middle_frame_label.size()
+                )
+                self.main_tab.middle_frame_label.setPixmap(scaled_middle_pixmap)
 
                 # Set file_path attribute for display
                 if self.in_dir and self.in_dir.exists():
@@ -456,27 +468,48 @@ class MainWindow(QWidget):
                         [
                             f
                             for f in self.in_dir.iterdir()
-                            if f.suffix.lower()
-                            in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+                            if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+                        ]
+                    )
+                    if len(image_files) >= 3:
+                        middle_index = len(image_files) // 2
+                        self.main_tab.middle_frame_label.file_path = str(image_files[middle_index])
+                # Store the full resolution image data for preview
+                _, middle_frame_data, _ = self.main_view_model.preview_manager.get_current_frame_data()
+                if middle_frame_data and middle_frame_data.image_data is not None:
+                    # Convert numpy array to QImage using PreviewManager's method
+                    full_res_pixmap = self.main_view_model.preview_manager._numpy_to_qpixmap(
+                        middle_frame_data.image_data
+                    )
+                    if not full_res_pixmap.isNull():
+                        self.main_tab.middle_frame_label.processed_image = full_res_pixmap.toImage()
+
+            # Update last frame label
+            if hasattr(self.main_tab, "last_frame_label") and not last_pixmap.isNull():
+                # Scale pixmap to fit label while maintaining aspect ratio
+                scaled_last_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(
+                    last_pixmap, self.main_tab.last_frame_label.size()
+                )
+                self.main_tab.last_frame_label.setPixmap(scaled_last_pixmap)
+
+                # Set file_path attribute for display
+                if self.in_dir and self.in_dir.exists():
+                    image_files = sorted(
+                        [
+                            f
+                            for f in self.in_dir.iterdir()
+                            if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
                         ]
                     )
                     if image_files:
                         self.main_tab.last_frame_label.file_path = str(image_files[-1])
                 # Store the full resolution image data for preview
-                _, last_frame_data = (
-                    self.main_view_model.preview_manager.get_current_frame_data()
-                )
+                _, _, last_frame_data = self.main_view_model.preview_manager.get_current_frame_data()
                 if last_frame_data and last_frame_data.image_data is not None:
                     # Convert numpy array to QImage using PreviewManager's method
-                    full_res_pixmap = (
-                        self.main_view_model.preview_manager._numpy_to_qpixmap(
-                            last_frame_data.image_data
-                        )
-                    )
+                    full_res_pixmap = self.main_view_model.preview_manager._numpy_to_qpixmap(last_frame_data.image_data)
                     if not full_res_pixmap.isNull():
-                        self.main_tab.last_frame_label.processed_image = (
-                            full_res_pixmap.toImage()
-                        )
+                        self.main_tab.last_frame_label.processed_image = full_res_pixmap.toImage()
 
             LOGGER.debug("Preview images updated successfully")
 
@@ -497,7 +530,7 @@ class MainWindow(QWidget):
         """Update crop button states based on current state."""
         self.processing_callbacks.update_crop_buttons_state(self)
 
-    def closeEvent(self, event: QCloseEvent) -> None:
+    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
         """Handle window close event."""
         LOGGER.info("MainWindow close event triggered")
 
@@ -505,10 +538,7 @@ class MainWindow(QWidget):
         self.saveSettings()
 
         # Clean up resources
-        if (
-            hasattr(self, "_sanchez_gui_temp_dir")
-            and self._sanchez_gui_temp_dir.exists()
-        ):
+        if hasattr(self, "_sanchez_gui_temp_dir") and self._sanchez_gui_temp_dir.exists():
             try:
                 import shutil
 
@@ -518,11 +548,7 @@ class MainWindow(QWidget):
                 LOGGER.warning("Failed to clean up temp directory: %s", e)
 
         # Terminate any running worker
-        if (
-            hasattr(self, "vfi_worker")
-            and self.vfi_worker
-            and self.vfi_worker.isRunning()
-        ):
+        if hasattr(self, "vfi_worker") and self.vfi_worker and self.vfi_worker.isRunning():
             LOGGER.info("Terminating VFI worker thread")
             self.vfi_worker.terminate()
             self.vfi_worker.wait(1000)

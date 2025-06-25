@@ -55,9 +55,7 @@ def _build_handler() -> logging.Handler:
         )
     else:
         handler = logging.StreamHandler(sys.stdout)
-        handler.setFormatter(
-            logging.Formatter("[%(levelname).1s] %(name)s: %(message)s")
-        )
+        handler.setFormatter(logging.Formatter("[%(levelname).1s] %(name)s: %(message)s"))
     return handler
 
 

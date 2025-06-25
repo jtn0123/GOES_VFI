@@ -19,13 +19,13 @@ LOGGER = logging.getLogger(__name__)
 class MainTabSettings(SettingsSection):
     """Settings section for main tab widgets."""
 
-    def __init__(self, classifier: Optional[ErrorClassifier] = None):
+    def __init__(self, classifier: Optional[ErrorClassifier] = None) -> None:
         super().__init__("main_tab", classifier)
         self.accessor = SafeWidgetAccessor(classifier)
 
     def extract_values(self, source_object: Any) -> Dict[str, Any]:
         """Extract main tab settings from GUI."""
-        values = {}
+        values: Dict[str, Any] = {}
         main_tab = getattr(source_object, "main_tab", None)
 
         if main_tab is None:
@@ -34,17 +34,11 @@ class MainTabSettings(SettingsSection):
 
         # Extract basic numeric settings
         values["fps"] = self.accessor.get_spinbox_value(main_tab, "fps_spinbox", 30)
-        values["mid_count"] = self.accessor.get_spinbox_value(
-            main_tab, "mid_count_spinbox", 1
-        )
-        values["max_workers"] = self.accessor.get_spinbox_value(
-            main_tab, "max_workers_spinbox", 1
-        )
+        values["mid_count"] = self.accessor.get_spinbox_value(main_tab, "mid_count_spinbox", 1)
+        values["max_workers"] = self.accessor.get_spinbox_value(main_tab, "max_workers_spinbox", 1)
 
         # Extract combo box settings
-        values["encoder"] = self.accessor.get_combobox_text(
-            main_tab, "encoder_combo", ""
-        )
+        values["encoder"] = self.accessor.get_combobox_text(main_tab, "encoder_combo", "")
 
         # Extract RIFE model settings (might be on main window)
         model_combo = getattr(source_object, "model_combo", None)
@@ -54,24 +48,12 @@ class MainTabSettings(SettingsSection):
             )
 
         # Extract RIFE configuration settings
-        values["rife_tile_enable"] = self.accessor.get_checkbox_checked(
-            main_tab, "rife_tile_checkbox", False
-        )
-        values["rife_tile_size"] = self.accessor.get_spinbox_value(
-            main_tab, "rife_tile_size_spinbox", 256
-        )
-        values["rife_uhd_mode"] = self.accessor.get_checkbox_checked(
-            main_tab, "rife_uhd_checkbox", False
-        )
-        values["rife_thread_spec"] = self.accessor.get_lineedit_text(
-            main_tab, "rife_thread_spec_edit", ""
-        )
-        values["rife_tta_spatial"] = self.accessor.get_checkbox_checked(
-            main_tab, "rife_tta_spatial_checkbox", False
-        )
-        values["rife_tta_temporal"] = self.accessor.get_checkbox_checked(
-            main_tab, "rife_tta_temporal_checkbox", False
-        )
+        values["rife_tile_enable"] = self.accessor.get_checkbox_checked(main_tab, "rife_tile_checkbox", False)
+        values["rife_tile_size"] = self.accessor.get_spinbox_value(main_tab, "rife_tile_size_spinbox", 256)
+        values["rife_uhd_mode"] = self.accessor.get_checkbox_checked(main_tab, "rife_uhd_checkbox", False)
+        values["rife_thread_spec"] = self.accessor.get_lineedit_text(main_tab, "rife_thread_spec_edit", "")
+        values["rife_tta_spatial"] = self.accessor.get_checkbox_checked(main_tab, "rife_tta_spatial_checkbox", False)
+        values["rife_tta_temporal"] = self.accessor.get_checkbox_checked(main_tab, "rife_tta_temporal_checkbox", False)
 
         return values
 
@@ -85,17 +67,11 @@ class MainTabSettings(SettingsSection):
 
         # Apply basic numeric settings
         self.accessor.set_spinbox_value(main_tab, "fps_spinbox", values.get("fps", 30))
-        self.accessor.set_spinbox_value(
-            main_tab, "mid_count_spinbox", values.get("mid_count", 1)
-        )
-        self.accessor.set_spinbox_value(
-            main_tab, "max_workers_spinbox", values.get("max_workers", 1)
-        )
+        self.accessor.set_spinbox_value(main_tab, "mid_count_spinbox", values.get("mid_count", 1))
+        self.accessor.set_spinbox_value(main_tab, "max_workers_spinbox", values.get("max_workers", 1))
 
         # Apply combo box settings
-        self.accessor.set_combobox_text(
-            main_tab, "encoder_combo", values.get("encoder", "")
-        )
+        self.accessor.set_combobox_text(main_tab, "encoder_combo", values.get("encoder", ""))
 
         # Apply RIFE model settings
         model_combo = getattr(target_object, "model_combo", None)
@@ -108,21 +84,11 @@ class MainTabSettings(SettingsSection):
             )
 
         # Apply RIFE configuration settings
-        self.accessor.set_checkbox_checked(
-            main_tab, "rife_tile_checkbox", values.get("rife_tile_enable", False)
-        )
-        self.accessor.set_spinbox_value(
-            main_tab, "rife_tile_size_spinbox", values.get("rife_tile_size", 256)
-        )
-        self.accessor.set_checkbox_checked(
-            main_tab, "rife_uhd_checkbox", values.get("rife_uhd_mode", False)
-        )
-        self.accessor.set_lineedit_text(
-            main_tab, "rife_thread_spec_edit", values.get("rife_thread_spec", "")
-        )
-        self.accessor.set_checkbox_checked(
-            main_tab, "rife_tta_spatial_checkbox", values.get("rife_tta_spatial", False)
-        )
+        self.accessor.set_checkbox_checked(main_tab, "rife_tile_checkbox", values.get("rife_tile_enable", False))
+        self.accessor.set_spinbox_value(main_tab, "rife_tile_size_spinbox", values.get("rife_tile_size", 256))
+        self.accessor.set_checkbox_checked(main_tab, "rife_uhd_checkbox", values.get("rife_uhd_mode", False))
+        self.accessor.set_lineedit_text(main_tab, "rife_thread_spec_edit", values.get("rife_thread_spec", ""))
+        self.accessor.set_checkbox_checked(main_tab, "rife_tta_spatial_checkbox", values.get("rife_tta_spatial", False))
         self.accessor.set_checkbox_checked(
             main_tab,
             "rife_tta_temporal_checkbox",
@@ -149,13 +115,13 @@ class MainTabSettings(SettingsSection):
 class SanchezSettings(SettingsSection):
     """Settings section for Sanchez-related widgets."""
 
-    def __init__(self, classifier: Optional[ErrorClassifier] = None):
+    def __init__(self, classifier: Optional[ErrorClassifier] = None) -> None:
         super().__init__("sanchez", classifier)
         self.accessor = SafeWidgetAccessor(classifier)
 
     def extract_values(self, source_object: Any) -> Dict[str, Any]:
         """Extract Sanchez settings from GUI."""
-        values = {}
+        values: Dict[str, Any] = {}
         main_tab = getattr(source_object, "main_tab", None)
 
         if main_tab is None:
@@ -209,13 +175,13 @@ class SanchezSettings(SettingsSection):
 class FFmpegSettings(SettingsSection):
     """Settings section for FFmpeg-related widgets."""
 
-    def __init__(self, classifier: Optional[ErrorClassifier] = None):
+    def __init__(self, classifier: Optional[ErrorClassifier] = None) -> None:
         super().__init__("ffmpeg", classifier)
         self.accessor = SafeWidgetAccessor(classifier)
 
     def extract_values(self, source_object: Any) -> Dict[str, Any]:
         """Extract FFmpeg settings from GUI."""
-        values = {}
+        values: Dict[str, Any] = {}
         ffmpeg_tab = getattr(source_object, "ffmpeg_settings_tab", None)
 
         if ffmpeg_tab is None:
@@ -228,29 +194,15 @@ class FFmpegSettings(SettingsSection):
         )
 
         # Extract combo box settings
-        values["ffmpeg_filter_preset"] = self.accessor.get_combobox_text(
-            ffmpeg_tab, "ffmpeg_filter_preset_combo", ""
-        )
-        values["ffmpeg_mi_mode"] = self.accessor.get_combobox_text(
-            ffmpeg_tab, "mi_mode_combo", ""
-        )
-        values["ffmpeg_mc_mode"] = self.accessor.get_combobox_text(
-            ffmpeg_tab, "mc_mode_combo", ""
-        )
-        values["ffmpeg_me_mode"] = self.accessor.get_combobox_text(
-            ffmpeg_tab, "me_mode_combo", ""
-        )
-        values["ffmpeg_me_algo"] = self.accessor.get_combobox_text(
-            ffmpeg_tab, "me_algo_combo", ""
-        )
-        values["ffmpeg_scd_mode"] = self.accessor.get_combobox_text(
-            ffmpeg_tab, "scd_combo", ""
-        )
+        values["ffmpeg_filter_preset"] = self.accessor.get_combobox_text(ffmpeg_tab, "ffmpeg_filter_preset_combo", "")
+        values["ffmpeg_mi_mode"] = self.accessor.get_combobox_text(ffmpeg_tab, "mi_mode_combo", "")
+        values["ffmpeg_mc_mode"] = self.accessor.get_combobox_text(ffmpeg_tab, "mc_mode_combo", "")
+        values["ffmpeg_me_mode"] = self.accessor.get_combobox_text(ffmpeg_tab, "me_mode_combo", "")
+        values["ffmpeg_me_algo"] = self.accessor.get_combobox_text(ffmpeg_tab, "me_algo_combo", "")
+        values["ffmpeg_scd_mode"] = self.accessor.get_combobox_text(ffmpeg_tab, "scd_combo", "")
 
         # Extract numeric settings
-        values["ffmpeg_search_param"] = self.accessor.get_spinbox_value(
-            ffmpeg_tab, "search_param_spinbox", 0
-        )
+        values["ffmpeg_search_param"] = self.accessor.get_spinbox_value(ffmpeg_tab, "search_param_spinbox", 0)
 
         return values
 
@@ -275,26 +227,14 @@ class FFmpegSettings(SettingsSection):
             "ffmpeg_filter_preset_combo",
             values.get("ffmpeg_filter_preset", ""),
         )
-        self.accessor.set_combobox_text(
-            ffmpeg_tab, "mi_mode_combo", values.get("ffmpeg_mi_mode", "")
-        )
-        self.accessor.set_combobox_text(
-            ffmpeg_tab, "mc_mode_combo", values.get("ffmpeg_mc_mode", "")
-        )
-        self.accessor.set_combobox_text(
-            ffmpeg_tab, "me_mode_combo", values.get("ffmpeg_me_mode", "")
-        )
-        self.accessor.set_combobox_text(
-            ffmpeg_tab, "me_algo_combo", values.get("ffmpeg_me_algo", "")
-        )
-        self.accessor.set_combobox_text(
-            ffmpeg_tab, "scd_combo", values.get("ffmpeg_scd_mode", "")
-        )
+        self.accessor.set_combobox_text(ffmpeg_tab, "mi_mode_combo", values.get("ffmpeg_mi_mode", ""))
+        self.accessor.set_combobox_text(ffmpeg_tab, "mc_mode_combo", values.get("ffmpeg_mc_mode", ""))
+        self.accessor.set_combobox_text(ffmpeg_tab, "me_mode_combo", values.get("ffmpeg_me_mode", ""))
+        self.accessor.set_combobox_text(ffmpeg_tab, "me_algo_combo", values.get("ffmpeg_me_algo", ""))
+        self.accessor.set_combobox_text(ffmpeg_tab, "scd_combo", values.get("ffmpeg_scd_mode", ""))
 
         # Apply numeric settings
-        self.accessor.set_spinbox_value(
-            ffmpeg_tab, "search_param_spinbox", values.get("ffmpeg_search_param", 0)
-        )
+        self.accessor.set_spinbox_value(ffmpeg_tab, "search_param_spinbox", values.get("ffmpeg_search_param", 0))
 
     def get_setting_keys(self) -> List[str]:
         """Get list of settings keys handled by this section."""
@@ -313,7 +253,7 @@ class FFmpegSettings(SettingsSection):
 class BasicSettings(SettingsSection):
     """Settings section for basic non-widget settings."""
 
-    def __init__(self, classifier: Optional[ErrorClassifier] = None):
+    def __init__(self, classifier: Optional[ErrorClassifier] = None) -> None:
         super().__init__("basic", classifier)
 
     def extract_values(self, source_object: Any) -> Dict[str, Any]:

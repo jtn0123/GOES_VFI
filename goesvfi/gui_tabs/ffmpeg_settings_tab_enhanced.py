@@ -56,9 +56,7 @@ class EnhancedFFmpegSettingsTab(FFmpegSettingsTab):
         # Find profile combo box
         profile_widgets = self.findChildren(QComboBox)
         for widget in profile_widgets:
-            if "profile" in widget.objectName().lower() or hasattr(
-                self, "profile_combo"
-            ):
+            if "profile" in widget.objectName().lower() or hasattr(self, "profile_combo"):
                 TooltipHelper.add_tooltip(widget, "profile")
                 self._add_help_button_next_to_widget(widget, "profile")
 
@@ -74,19 +72,19 @@ class EnhancedFFmpegSettingsTab(FFmpegSettingsTab):
 
         # Preset controls
         preset_widgets = self.findChildren(QComboBox)
-        for widget in preset_widgets:
-            widget_name = widget.objectName().lower()
+        for combo_widget in preset_widgets:
+            widget_name = combo_widget.objectName().lower()
             if "preset" in widget_name:
-                TooltipHelper.add_tooltip(widget, "preset")
+                TooltipHelper.add_tooltip(combo_widget, "preset")
 
         # Bitrate controls
         bitrate_widgets = self.findChildren(QDoubleSpinBox)
-        for widget in bitrate_widgets:
-            widget_name = widget.objectName().lower()
+        for double_widget in bitrate_widgets:
+            widget_name = double_widget.objectName().lower()
             if "audio" in widget_name and "bitrate" in widget_name:
-                TooltipHelper.add_tooltip(widget, "audio_bitrate")
+                TooltipHelper.add_tooltip(double_widget, "audio_bitrate")
             elif "video" in widget_name and "bitrate" in widget_name:
-                TooltipHelper.add_tooltip(widget, "video_bitrate")
+                TooltipHelper.add_tooltip(double_widget, "video_bitrate")
 
     def _add_tooltips_to_advanced_widgets(self) -> None:
         """Add tooltips to advanced settings widgets."""
@@ -126,14 +124,14 @@ class EnhancedFFmpegSettingsTab(FFmpegSettingsTab):
                 row, col, _, _ = layout.getItemPosition(index)
 
                 # Check if there's already something in the next column
-                item = layout.itemAtPosition(row, col + 2) if row is not None else None
-                if not item:
-                    # Create help button
-                    help_btn = HelpButton(topic, parent)
-                    help_btn.help_requested.connect(self._show_detailed_help)
+                if row is not None and col is not None:
+                    item = layout.itemAtPosition(row, col + 2)
+                    if not item:
+                        # Create help button
+                        help_btn = HelpButton(topic, parent)
+                        help_btn.help_requested.connect(self._show_detailed_help)
 
-                    # Add to layout
-                    if row is not None:
+                        # Add to layout
                         layout.addWidget(help_btn, row, col + 2)
 
         elif isinstance(layout, QHBoxLayout):

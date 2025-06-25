@@ -46,4 +46,3 @@ def test_terminate_and_poll():
     proc.terminate()
     assert proc.poll() == -15
     assert proc.wait() == -15
-

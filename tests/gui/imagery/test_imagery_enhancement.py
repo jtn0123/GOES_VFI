@@ -15,9 +15,7 @@ from goesvfi.integrity_check.sample_processor import SampleProcessor
 from goesvfi.integrity_check.visualization_manager import VisualizationManager
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -41,9 +39,7 @@ def test_fallback_strategies():
         print("✓ Download sample data method completed (stub implementation)")
 
         # Expected result from stub implementation
-        assert result is None or isinstance(
-            result, (str, Path)
-        ), "Expected None or path-like result from stub"
+        assert result is None or isinstance(result, (str, Path)), "Expected None or path-like result from stub"
 
     except Exception as e:
         print(f"✗ Error calling download_sample_data: {e}")
@@ -65,21 +61,15 @@ def test_web_sample_fallbacks():
     # Since SampleProcessor is a stub implementation, test available methods
     try:
         # Test basic functionality that actually exists
-        result = processor.create_sample_comparison(
-            channel=13, product_type=ProductType.FULL_DISK
-        )
+        result = processor.create_sample_comparison(channel=13, product_type=ProductType.FULL_DISK)
 
         print("✓ Sample comparison method completed (stub implementation)")
 
         # For stub implementation, result should be an Image (stub returns a gray placeholder)
-        assert result is None or hasattr(
-            result, "save"
-        ), "Expected PIL Image or None from stub"
+        assert result is None or hasattr(result, "save"), "Expected PIL Image or None from stub"
 
         # Test another method that exists
-        time_estimate = processor.get_estimated_processing_time(
-            13, ProductType.FULL_DISK
-        )
+        time_estimate = processor.get_estimated_processing_time(13, ProductType.FULL_DISK)
         print(f"✓ Got processing time estimate: {time_estimate}")
 
         assert isinstance(time_estimate, (int, float)), "Expected numeric time estimate"
@@ -111,14 +101,10 @@ def test_error_handling():
         print("✓ Handled invalid file path gracefully")
 
         # Test with very large channel number that might not exist
-        time_estimate = processor.get_estimated_processing_time(
-            999, ProductType.FULL_DISK
-        )
+        time_estimate = processor.get_estimated_processing_time(999, ProductType.FULL_DISK)
 
         # Should still return a valid number even for invalid channel
-        assert isinstance(
-            time_estimate, (int, float)
-        ), "Expected numeric time estimate even for invalid channel"
+        assert isinstance(time_estimate, (int, float)), "Expected numeric time estimate even for invalid channel"
         print(f"✓ Handled invalid channel gracefully, got estimate: {time_estimate}")
 
     except Exception as e:

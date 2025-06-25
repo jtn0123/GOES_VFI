@@ -99,9 +99,7 @@ async def test_list_s3_objects_band13_no_objects():
 
 
 @pytest.mark.asyncio
-async def test_download_band13_mocked(
-    timestamp, satellite_pattern, product_type, dest_dir, mock_s3_objects
-):
+async def test_download_band13_mocked(timestamp, satellite_pattern, product_type, dest_dir, mock_s3_objects):
     """Test downloading a Band 13 file with mocked S3 operations."""
 
     # Mock S3Store completely
@@ -122,16 +120,12 @@ async def test_download_band13_mocked(
         with (
             patch.object(TimeIndex, "get_s3_bucket") as mock_get_bucket,
             patch.object(TimeIndex, "find_nearest_intervals") as mock_find_nearest,
-            patch(
-                "tests.unit.test_s3_band13.list_s3_objects_band13"
-            ) as mock_list_objects,
+            patch("tests.unit.test_s3_band13.list_s3_objects_band13") as mock_list_objects,
         ):
 
             mock_get_bucket.return_value = "noaa-goes16"
             mock_find_nearest.return_value = [timestamp]
-            mock_list_objects.return_value = [
-                f"ABI-L1b-{product_type}/2023/166/12/{test_filename}"
-            ]
+            mock_list_objects.return_value = [f"ABI-L1b-{product_type}/2023/166/12/{test_filename}"]
 
             # Create S3 store (will be mocked)
             s3_store = S3Store(timeout=60)
@@ -145,9 +139,7 @@ async def test_download_band13_mocked(
                 bucket = TimeIndex.get_s3_bucket(satellite_pattern)
 
                 # Find the nearest valid timestamps for this product
-                nearest_times = TimeIndex.find_nearest_intervals(
-                    timestamp, product_type
-                )
+                nearest_times = TimeIndex.find_nearest_intervals(timestamp, product_type)
                 assert nearest_times, "Should find valid scan times"
 
                 # Convert date to DOY format
@@ -173,9 +165,7 @@ async def test_download_band13_mocked(
                 pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
                 match = re.search(pattern, filename)
 
-                assert (
-                    match
-                ), f"Should be able to extract timestamp from filename: {filename}"
+                assert match, f"Should be able to extract timestamp from filename: {filename}"
 
                 # Extract components
                 file_year = int(match.group(1))
@@ -210,9 +200,7 @@ async def test_download_band13_mocked(
                 file_size = result.stat().st_size
                 assert file_size > 0, "Downloaded file should have content"
 
-                LOGGER.info(
-                    f"✓ Successfully downloaded to {result} ({file_size} bytes)"
-                )
+                LOGGER.info(f"✓ Successfully downloaded to {result} ({file_size} bytes)")
 
             finally:
                 # Close the S3 store
@@ -221,9 +209,7 @@ async def test_download_band13_mocked(
 
 def test_band13_filename_parsing():
     """Test parsing Band 13 filenames for timestamp extraction."""
-    test_filename = (
-        "OR_ABI-L1b-RadC-M6C13_G16_s20231661201176_e20231661203549_c20231661203597.nc"
-    )
+    test_filename = "OR_ABI-L1b-RadC-M6C13_G16_s20231661201176_e20231661203549_c20231661203597.nc"
 
     import re
 

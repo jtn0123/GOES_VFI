@@ -6,10 +6,9 @@ Automatically categorizes exceptions to reduce complexity in error handling code
 
 import errno
 import socket
-from pathlib import Path
 from typing import Callable, Dict, Optional, Type
 
-from .base import ErrorCategory, StructuredError
+from .base import ErrorCategory, ErrorContext, StructuredError
 
 
 class ErrorClassifier:
@@ -19,7 +18,7 @@ class ErrorClassifier:
     Reduces complexity by centralizing error classification logic.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Map exception types to categories
         self._type_mappings: Dict[Type[Exception], ErrorCategory] = {
             FileNotFoundError: ErrorCategory.FILE_NOT_FOUND,
@@ -38,19 +37,13 @@ class ErrorClassifier:
         }
 
         # Custom classification functions
-        self._custom_classifiers: list[
-            Callable[[Exception], Optional[ErrorCategory]]
-        ] = []
+        self._custom_classifiers: list[Callable[[Exception], Optional[ErrorCategory]]] = []
 
-    def add_type_mapping(
-        self, exception_type: Type[Exception], category: ErrorCategory
-    ) -> None:
+    def add_type_mapping(self, exception_type: Type[Exception], category: ErrorCategory) -> None:
         """Add a custom exception type mapping."""
         self._type_mappings[exception_type] = category
 
-    def add_custom_classifier(
-        self, classifier_func: Callable[[Exception], Optional[ErrorCategory]]
-    ) -> None:
+    def add_custom_classifier(self, classifier_func: Callable[[Exception], Optional[ErrorCategory]]) -> None:
         """Add a custom classification function."""
         self._custom_classifiers.append(classifier_func)
 
@@ -148,9 +141,7 @@ class ErrorClassifier:
             suggestions=suggestions,
         )
 
-    def _generate_user_message(
-        self, exception: Exception, category: ErrorCategory
-    ) -> str:
+    def _generate_user_message(self, exception: Exception, category: ErrorCategory) -> str:
         """Generate a user-friendly message based on exception and category."""
         if category == ErrorCategory.FILE_NOT_FOUND:
             return f"File or directory not found: {exception}"
@@ -167,9 +158,7 @@ class ErrorClassifier:
         else:
             return str(exception)
 
-    def _generate_suggestions(
-        self, exception: Exception, category: ErrorCategory
-    ) -> list[str]:
+    def _generate_suggestions(self, exception: Exception, category: ErrorCategory) -> list[str]:
         """Generate helpful suggestions based on exception and category."""
         suggestions = []
 
@@ -237,13 +226,9 @@ class ErrorClassifier:
         }
         return category in recoverable_categories
 
-    def _add_context_from_exception(
-        self, context: "ErrorContext", exception: Exception
-    ) -> None:
+    def _add_context_from_exception(self, context: ErrorContext, exception: Exception) -> None:
         """Add relevant context data from the exception."""
-        if isinstance(
-            exception, (FileNotFoundError, PermissionError, IsADirectoryError)
-        ):
+        if isinstance(exception, (FileNotFoundError, PermissionError, IsADirectoryError)):
             if hasattr(exception, "filename") and exception.filename:
                 context.add_user_data("file_path", str(exception.filename))
 

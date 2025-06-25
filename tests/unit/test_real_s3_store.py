@@ -83,14 +83,10 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
     async def test_real_s3_exists_recent(self):
         """Test checking if a real file exists in S3 for a recent date."""
         # Try to find a RadF file from yesterday
-        exists = await self.store.check_file_exists(
-            self.radf_test_date, SatellitePattern.GOES_18
-        )
+        exists = await self.store.check_file_exists(self.radf_test_date, SatellitePattern.GOES_18)
 
         # Generate the S3 key for logging
-        s3_key = to_s3_key(
-            self.radf_test_date, SatellitePattern.GOES_18, product_type="RadF", band=13
-        )
+        s3_key = to_s3_key(self.radf_test_date, SatellitePattern.GOES_18, product_type="RadF", band=13)
 
         if exists:
             pass
@@ -103,9 +99,7 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
 
             # Try 1 hour earlier
             earlier_date = self.radf_test_date - timedelta(hours=1)
-            exists = await self.store.check_file_exists(
-                earlier_date, SatellitePattern.GOES_18
-            )
+            exists = await self.store.check_file_exists(earlier_date, SatellitePattern.GOES_18)
 
             if exists:
                 pass
@@ -168,18 +162,14 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
             else:
                 test_date = self.radm_test_date
 
-            exists = await self.store.check_file_exists(
-                test_date, SatellitePattern.GOES_18
-            )
+            exists = await self.store.check_file_exists(test_date, SatellitePattern.GOES_18)
             exists_results[product_type] = exists
 
             if exists:
                 pass
                 print(f"✅ Product {product_type} exists for {test_date.isoformat()}")
             else:
-                print(
-                    f"❌ Product {product_type} not found for {test_date.isoformat()}"
-                )
+                print(f"❌ Product {product_type} not found for {test_date.isoformat()}")
 
         # Print summary
         print("Product type availability summary:")
@@ -190,9 +180,7 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
                 test_date = self.radc_test_date
             else:
                 test_date = self.radm_test_date
-            print(
-                f"{product_type}: {'✅ Available' if exists else '❌ Not found'} at {test_date.isoformat()}"
-            )
+            print(f"{product_type}: {'✅ Available' if exists else '❌ Not found'} at {test_date.isoformat()}")
 
         # Test should pass regardless of which product types exist
 
@@ -200,17 +188,12 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
         pass
         """Test downloading a real file from S3 if it exists."""
         # Try to find a RadC file from yesterday
-        exists = await self.store.check_file_exists(
-            self.radc_test_date, SatellitePattern.GOES_18
-        )
+        exists = await self.store.check_file_exists(self.radc_test_date, SatellitePattern.GOES_18)
 
         if not exists:
             pass
             # Skip test if file doesn't exist
-            print(
-                f"⚠️ No RadC file found for {self.radc_test_date.isoformat()},"
-                "skipping download test"
-            )
+            print(f"⚠️ No RadC file found for {self.radc_test_date.isoformat()}," "skipping download test")
             return
 
         # File exists, try to download it
@@ -257,9 +240,7 @@ class TestMockedRealS3Store(unittest.IsolatedAsyncioTestCase):
         self.s3_client_mock = AsyncMock()
 
         # Patch _get_s3_client to return our mock
-        patcher = patch.object(
-            S3Store, "_get_s3_client", return_value=self.s3_client_mock
-        )
+        patcher = patch.object(S3Store, "_get_s3_client", return_value=self.s3_client_mock)
         self.mock_get_s3_client = patcher.start()
 
         async def _stop_patcher():
@@ -286,9 +267,7 @@ class TestMockedRealS3Store(unittest.IsolatedAsyncioTestCase):
         }
 
         # Test exists method
-        exists = await self.store.check_file_exists(
-            self.test_timestamp, SatellitePattern.GOES_18
-        )
+        exists = await self.store.check_file_exists(self.test_timestamp, SatellitePattern.GOES_18)
 
         # Verify result
         assert exists
@@ -365,7 +344,9 @@ class TestMockedRealS3Store(unittest.IsolatedAsyncioTestCase):
         paginator_mock = AsyncMock()
 
         # Create realistic response with actual file pattern
-        test_key = "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661226190_e20231661228562_c20231661229032.nc"
+        test_key = (
+            "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661226190_e20231661228562_c20231661229032.nc"
+        )
         test_page = {
             "Contents": [
                 {

@@ -87,9 +87,7 @@ class CDNStore(RemoteStore):
             LOGGER.debug("CDN check failed for %s: %s", url, e)
             return False
 
-    async def download(
-        self, ts: datetime, satellite: SatellitePattern, dest_path: Path
-    ) -> Path:
+    async def download(self, ts: datetime, satellite: SatellitePattern, dest_path: Path) -> Path:
         """Download a file from the CDN.
 
         Args:
@@ -111,9 +109,7 @@ class CDNStore(RemoteStore):
             # First check if the file exists
             async with session.head(url, allow_redirects=True) as response:
                 if response.status != 200:
-                    raise FileNotFoundError(
-                        f"File not found at {url} (status: {response.status})"
-                    )
+                    raise FileNotFoundError(f"File not found at {url} (status: {response.status})")
 
             # Create parent directory if it doesn't exist
             dest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -122,9 +118,7 @@ class CDNStore(RemoteStore):
             LOGGER.debug("Downloading %s to %s", url, dest_path)
             async with session.get(url, allow_redirects=True) as response:
                 if response.status != 200:
-                    raise FileNotFoundError(
-                        f"File not found at {url} (status: {response.status})"
-                    )
+                    raise FileNotFoundError(f"File not found at {url} (status: {response.status})")
 
                 content_length = response.headers.get("Content-Length", "0")
                 total_size = int(content_length) if content_length.isdigit() else 0
@@ -137,10 +131,7 @@ class CDNStore(RemoteStore):
                         downloaded += len(chunk)
 
                         # Log progress every ~10% only if we have a valid size
-                        if (
-                            total_size > 0
-                            and downloaded % max(1, (total_size // 10)) < 8192
-                        ):
+                        if total_size > 0 and downloaded % max(1, (total_size // 10)) < 8192:
                             progress = (downloaded / total_size) * 100.0
                             LOGGER.debug("Download progress: %.1f%%", progress)
 
@@ -156,9 +147,7 @@ class CDNStore(RemoteStore):
         except Exception as e:
             raise IOError(f"Unexpected error downloading {url}: {e}")
 
-    async def check_file_exists(
-        self, timestamp: datetime, satellite: SatellitePattern
-    ) -> bool:
+    async def check_file_exists(self, timestamp: datetime, satellite: SatellitePattern) -> bool:
         """Check if a file exists for the given timestamp and satellite.
 
         This method implements the abstract method from RemoteStore.
@@ -180,9 +169,7 @@ class CDNStore(RemoteStore):
         """
         return await self.download(timestamp, satellite, destination)
 
-    async def get_file_url(
-        self, timestamp: datetime, satellite: SatellitePattern
-    ) -> str:
+    async def get_file_url(self, timestamp: datetime, satellite: SatellitePattern) -> str:
         """Get the URL for a file.
 
         This method implements the abstract method from RemoteStore.

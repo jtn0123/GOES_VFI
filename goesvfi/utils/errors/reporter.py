@@ -13,7 +13,7 @@ from .base import StructuredError
 class ErrorReporter:
     """Formats and reports structured errors."""
 
-    def __init__(self, output: Optional[TextIO] = None, verbose: bool = False):
+    def __init__(self, output: Optional[TextIO] = None, verbose: bool = False) -> None:
         self.output = output or sys.stderr
         self.verbose = verbose
 
@@ -35,9 +35,7 @@ class ErrorReporter:
 
     def _report_verbose(self, error: StructuredError) -> None:
         """Report detailed error information."""
-        self.output.write(
-            f"Error in {error.context.component} ({error.category.name}):\n"
-        )
+        self.output.write(f"Error in {error.context.component} ({error.category.name}):\n")
         self.output.write(f"  Message: {error.message}\n")
         self.output.write(f"  Operation: {error.context.operation}\n")
         self.output.write(f"  Recoverable: {error.recoverable}\n")

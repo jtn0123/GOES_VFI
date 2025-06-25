@@ -55,7 +55,7 @@ class VFIProcessor:
         max_workers: int,
         rife_config: dict,
         processing_config: dict,
-    ):
+    ) -> None:
         self.rife_exe_path = rife_exe_path
         self.fps = fps
         self.num_intermediate_frames = num_intermediate_frames
@@ -243,7 +243,11 @@ class VFIProcessor:
 
             # Process frames and interpolation
             yield from self._process_frames_and_interpolation(
-                ffmpeg_proc, all_processed_paths, skip_model, target_width, target_height
+                ffmpeg_proc,
+                all_processed_paths,
+                skip_model,
+                target_width,
+                target_height,
             )
 
             # Finish FFmpeg process
@@ -305,7 +309,11 @@ class VFIProcessor:
                     f"Encoding first processed frame {all_processed_paths[0].name} (size {im0_handle.size}) for ffmpeg."
                 )
                 png_data = _encode_frame_to_png_bytes(im0_handle)
-            _safe_write(ffmpeg_proc, png_data, f"first processed frame ({all_processed_paths[0].name})")
+            _safe_write(
+                ffmpeg_proc,
+                png_data,
+                f"first processed frame ({all_processed_paths[0].name})",
+            )
         except IOError:
             raise
         except Exception as e:
@@ -322,7 +330,10 @@ class VFIProcessor:
         self, ffmpeg_proc: subprocess.Popen[bytes], remaining_paths: List[pathlib.Path]
     ) -> Iterator[Tuple[int, int, float]]:
         """Process remaining frames when skipping AI model."""
-        LOGGER.info("Skip model mode: copying %s remaining frames directly.", len(remaining_paths))
+        LOGGER.info(
+            "Skip model mode: copying %s remaining frames directly.",
+            len(remaining_paths),
+        )
 
         start_time = time.time()
         last_yield_time = start_time
@@ -455,12 +466,12 @@ class InterpolationPipeline:
         self._active_tasks: set[Any] = set()
         self._lock = threading.Lock()
 
-    def __enter__(self):
+    def __enter__(self) -> "InterpolationPipeline":
         """Enter context manager."""
         self._executor = ProcessPoolExecutor(max_workers=self.max_workers)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit context manager."""
         if self._executor is not None:
             self._executor.shutdown(wait=True)
@@ -1405,7 +1416,12 @@ def run_vfi(
 
         # Process remaining images in parallel
         processed_paths_rest = processor.process_remaining_images(
-            paths, crop_for_pil, sanchez_temp_path, processed_img_path, target_width, target_height
+            paths,
+            crop_for_pil,
+            sanchez_temp_path,
+            processed_img_path,
+            target_width,
+            target_height,
         )
 
         # Combine all processed paths
@@ -1429,31 +1445,34 @@ def _run_rife_pair(
     rife_config: dict,
 ) -> pathlib.Path:
     """Run RIFE interpolation on a pair of images.
-    
+
     Args:
         p1_path: Path to first input image
         p2_path: Path to second input image
         rife_exe_path: Path to RIFE executable
         rife_config: Dictionary with RIFE configuration parameters
-        
+
     Returns:
         Path to the interpolated output image
-        
+
     Raises:
         RIFEError: If RIFE execution fails
     """
     with tempfile.TemporaryDirectory(prefix="goesvfi_rife_") as temp_dir:
         temp_path = pathlib.Path(temp_dir)
         output_path = temp_path / "interpolated.png"
-        
+
         # Build RIFE command
         cmd = [
             str(rife_exe_path),
-            "-0", str(p1_path),
-            "-1", str(p2_path),
-            "-o", str(output_path),
+            "-0",
+            str(p1_path),
+            "-1",
+            str(p2_path),
+            "-o",
+            str(output_path),
         ]
-        
+
         # Extract configuration
         model_key = rife_config.get("model_key", "rife-v4.6")
         rife_tile_enable = rife_config.get("rife_tile_enable", False)
@@ -1462,47 +1481,48 @@ def _run_rife_pair(
         rife_tta_spatial = rife_config.get("rife_tta_spatial", False)
         rife_tta_temporal = rife_config.get("rife_tta_temporal", False)
         rife_thread_spec = rife_config.get("rife_thread_spec", "1:2:2")
-        
+
         # Detect capabilities
         capability_detector = RifeCapabilityDetector(rife_exe_path)
-        
+
         # Add model if supported
         if model_key and capability_detector.supports_model_path():
             models_base_dir = rife_exe_path.parent.parent / "models"
             full_model_path = models_base_dir / model_key
             if full_model_path.exists():
                 cmd.extend(["-m", str(model_key)])
-        
+
         # Add optional parameters based on capabilities
         if rife_tile_enable and capability_detector.supports_tiling():
             cmd.extend(["-t", str(rife_tile_size)])
-            
+
         if rife_uhd_mode and not rife_tile_enable and capability_detector.supports_uhd():
             cmd.append("-u")
-            
+
         if rife_tta_spatial and capability_detector.supports_tta_spatial():
             cmd.append("-x")
-            
+
         if rife_tta_temporal and capability_detector.supports_tta_temporal():
             cmd.append("-z")
-            
+
         if capability_detector.supports_thread_spec() and rife_thread_spec:
             cmd.extend(["-j", rife_thread_spec])
-            
+
         # Run RIFE
         LOGGER.debug("Running RIFE command: %s", " ".join(cmd))
-        
+
         try:
             result = subprocess.run(cmd, check=True, capture_output=True, text=True)
             if not output_path.exists():
                 raise RIFEError(f"RIFE did not create output file at {output_path}")
-                
+
             # Move output to a persistent location
             final_output = p1_path.parent / f"interp_{time.monotonic_ns()}.png"
             import shutil
+
             shutil.copy2(output_path, final_output)
             return final_output
-            
+
         except subprocess.CalledProcessError as e:
             LOGGER.error("RIFE execution failed: stdout=%s, stderr=%s", e.stdout, e.stderr)
             raise RIFEError(f"RIFE failed with exit code {e.returncode}") from e

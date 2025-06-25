@@ -326,7 +326,7 @@ class IntegrityCheckTab(QWidget):
             )
             self.feedback_manager.add_message(f"Satellite: {satellite.name}", MessageType.INFO)
 
-            self.view_model.base_directory = directory
+            self.view_model.base_directory = Path(directory)
             self.view_model.start_date = start_date
             self.view_model.end_date = end_date
             self.view_model.selected_pattern = satellite

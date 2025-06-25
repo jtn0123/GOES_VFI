@@ -181,17 +181,13 @@ class TestStructuredError:
 
     def test_file_error_permission_detection(self):
         """Test file error detects permission issues."""
-        error = StructuredError.file_error(
-            message="Permission denied accessing file", file_path="/restricted/file.txt"
-        )
+        error = StructuredError.file_error(message="Permission denied accessing file", file_path="/restricted/file.txt")
 
         assert error.category == ErrorCategory.PERMISSION
 
     def test_network_error_classmethod(self):
         """Test network error factory method."""
-        error = StructuredError.network_error(
-            message="Connection failed", url="https://example.com", status_code=404
-        )
+        error = StructuredError.network_error(message="Connection failed", url="https://example.com", status_code=404)
 
         assert error.category == ErrorCategory.NETWORK
         assert error.recoverable is True
@@ -247,7 +243,7 @@ class TestStructuredError:
         assert error.context.user_data["tool_name"] == "ffmpeg"
         assert error.context.system_data["command"] == "ffmpeg -i input.mp4 output.mp4"
         assert error.context.system_data["exit_code"] == 1
-        assert "Check that ffmpeg is installed" in error.suggestions
+        assert "Check that ffmpeg is installed and accessible" in error.suggestions
 
     def test_add_suggestion(self):
         """Test adding suggestions to error."""

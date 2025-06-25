@@ -1,7 +1,7 @@
 """Settings persistence functionality for MainWindow."""
 
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Tuple
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QApplication
@@ -14,7 +14,7 @@ LOGGER = log.get_logger(__name__)
 class SettingsPersistence:
     """Handles direct settings persistence for critical application state."""
 
-    def __init__(self, settings: QSettings):
+    def __init__(self, settings: QSettings) -> None:
         """Initialize the settings persistence handler.
 
         Args:
@@ -62,9 +62,7 @@ class SettingsPersistence:
 
             # Verify the saved value
             saved_dir = self.settings.value("paths/inputDirectory", "", type=str)
-            LOGGER.debug(
-                "Verification - Input directory after direct save: %s", saved_dir
-            )
+            LOGGER.debug("Verification - Input directory after direct save: %s", saved_dir)
 
             # Check if settings file exists
             if not self._verify_settings_file():
@@ -115,9 +113,7 @@ class SettingsPersistence:
 
             # Verify the saved value
             saved_rect = self.settings.value("preview/cropRectangle", "", type=str)
-            LOGGER.debug(
-                "Verification - Crop rectangle after direct save: %s", saved_rect
-            )
+            LOGGER.debug("Verification - Crop rectangle after direct save: %s", saved_rect)
 
             # Check if settings file exists
             if not self._verify_settings_file():
@@ -134,17 +130,14 @@ class SettingsPersistence:
         # This will detect if we have mismatched organization/application names
         app_instance = QApplication.instance()
         app_org = app_instance.organizationName() if app_instance is not None else ""
-        app_name_global = (
-            app_instance.applicationName() if app_instance is not None else ""
-        )
+        app_name_global = app_instance.applicationName() if app_instance is not None else ""
 
         org_name = self.settings.organizationName()
         app_name = self.settings.applicationName()
 
         if org_name != app_org or app_name != app_name_global:
             LOGGER.error(
-                "QSettings mismatch! Settings: org=%s, app=%s, "
-                "but Application: org=%s, app=%s",
+                "QSettings mismatch! Settings: org=%s, app=%s, " "but Application: org=%s, app=%s",
                 org_name,
                 app_name,
                 app_org,
@@ -176,9 +169,7 @@ class SettingsPersistence:
                 )
                 return True
             else:
-                LOGGER.warning(
-                    "Settings file does not exist after save attempt: %s", settings_file
-                )
+                LOGGER.warning("Settings file does not exist after save attempt: %s", settings_file)
                 return False
         except Exception as file_error:
             LOGGER.error("Error checking settings file: %s", file_error)

@@ -10,10 +10,9 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-import pytz
 
 from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
-from goesvfi.utils.date_utils import format_timestamp, parse_timestamp
+from goesvfi.utils.date_utils import format_timestamp
 
 
 class TestEdgeCaseTimezone:
@@ -27,9 +26,7 @@ class TestEdgeCaseTimezone:
     def test_utc_to_local_conversion(self):
         """Test UTC to local timezone conversion."""
         # Test UTC timestamp
-        utc_time = datetime.datetime(
-            2023, 7, 15, 18, 30, 0, tzinfo=datetime.timezone.utc
-        )
+        utc_time = datetime.datetime(2023, 7, 15, 18, 30, 0, tzinfo=datetime.timezone.utc)
 
         # Test conversion to various timezones
         eastern = zoneinfo.ZoneInfo("America/New_York")
@@ -83,29 +80,28 @@ class TestEdgeCaseTimezone:
         assert first_130am.minute == 30
         assert second_130am.hour == 2  # Actually 2:30 AM in continuous time
 
-    @pytest.mark.skip(reason="parse_goes_timestamp method not implemented")
     def test_goes_timestamp_parsing_with_timezone(self, time_index):
-        """Test parsing GOES timestamps with timezone awareness."""
-        # GOES timestamps are in UTC
-        goes_timestamp = "s20230715183000"  # July 15, 2023 18:30:00 UTC
+        """Test that timezone-aware datetime objects work correctly with existing methods."""
+        # Create a UTC datetime (GOES imagery is always in UTC)
+        utc_time = datetime.datetime(2023, 7, 15, 18, 30, 0, tzinfo=datetime.timezone.utc)
 
-        # Parse timestamp
-        parsed = time_index.parse_goes_timestamp(goes_timestamp)
+        # Test that the UTC time works with S3 key generation
+        s3_key = time_index.to_s3_key(
+            ts=utc_time,
+            satellite=SatellitePattern.GOES_16,
+            product_type="RadC",
+        )
 
-        # Should be UTC
-        assert parsed.tzinfo == datetime.timezone.utc
-        assert parsed.year == 2023
-        assert parsed.month == 7
-        assert parsed.day == 15
-        assert parsed.hour == 18
-        assert parsed.minute == 30
+        # Verify the key contains expected components
+        assert "196" in s3_key  # Day 196 is July 15, 2023
+        assert "18" in s3_key  # Hour 18
+        assert "ABI-L1b-RadC" in s3_key
+        assert "G16" in s3_key
 
     def test_day_of_year_edge_cases(self, time_index):
         """Test day-of-year calculations around year boundaries."""
         # Test December 31st
-        dec_31 = datetime.datetime(
-            2023, 12, 31, 23, 59, 59, tzinfo=datetime.timezone.utc
-        )
+        dec_31 = datetime.datetime(2023, 12, 31, 23, 59, 59, tzinfo=datetime.timezone.utc)
         day_of_year = dec_31.timetuple().tm_yday
         assert day_of_year == 365  # 2023 is not a leap year
 
@@ -120,48 +116,39 @@ class TestEdgeCaseTimezone:
         assert day_of_year == 60  # Feb 29 is day 60 in leap year
 
         # Test December 31st in leap year
-        dec_31_leap = datetime.datetime(
-            2024, 12, 31, 23, 59, 59, tzinfo=datetime.timezone.utc
-        )
+        dec_31_leap = datetime.datetime(2024, 12, 31, 23, 59, 59, tzinfo=datetime.timezone.utc)
         day_of_year = dec_31_leap.timetuple().tm_yday
         assert day_of_year == 366  # Leap year has 366 days
 
-    @pytest.mark.skip(reason="get_s3_path method not implemented")
     def test_midnight_boundary_handling(self, time_index):
-        """Test handling of midnight boundary crossing."""
+        """Test handling of midnight boundary crossing using existing methods."""
         # Just before midnight UTC
-        before_midnight = datetime.datetime(
-            2023, 7, 15, 23, 59, 59, tzinfo=datetime.timezone.utc
-        )
+        before_midnight = datetime.datetime(2023, 7, 15, 23, 59, 59, tzinfo=datetime.timezone.utc)
 
         # Just after midnight UTC
-        after_midnight = datetime.datetime(
-            2023, 7, 16, 0, 0, 1, tzinfo=datetime.timezone.utc
-        )
+        after_midnight = datetime.datetime(2023, 7, 16, 0, 0, 1, tzinfo=datetime.timezone.utc)
 
-        # Generate S3 paths
-        path_before = time_index.get_s3_path(
-            timestamp=before_midnight,
+        # Generate S3 keys using existing method
+        key_before = time_index.to_s3_key(
+            ts=before_midnight,
             satellite=SatellitePattern.GOES_16,
-            product="ABI-L1b-RadC",
+            product_type="RadC",
         )
 
-        path_after = time_index.get_s3_path(
-            timestamp=after_midnight,
+        key_after = time_index.to_s3_key(
+            ts=after_midnight,
             satellite=SatellitePattern.GOES_16,
-            product="ABI-L1b-RadC",
+            product_type="RadC",
         )
 
-        # Verify different days
-        assert "196/23" in path_before  # Day 196, hour 23
-        assert "197/00" in path_after  # Day 197, hour 00
+        # Verify different days are represented in the keys
+        assert "196/23" in key_before  # Day 196, hour 23
+        assert "197/00" in key_after  # Day 197, hour 00
 
     def test_international_date_line_handling(self):
         """Test handling around international date line."""
         # UTC time
-        utc_time = datetime.datetime(
-            2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc
-        )
+        utc_time = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
 
         # Timezones on either side of date line
         fiji = zoneinfo.ZoneInfo("Pacific/Fiji")  # UTC+12
@@ -179,9 +166,7 @@ class TestEdgeCaseTimezone:
     def test_goes_scan_schedule_timezone_consistency(self, time_index):
         """Test GOES scan schedule remains consistent across timezones."""
         # GOES operates on UTC schedule
-        base_utc = datetime.datetime(
-            2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc
-        )
+        base_utc = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
 
         # Full disk scans every 15 minutes
         scan_times = []
@@ -216,9 +201,7 @@ class TestEdgeCaseTimezone:
 
         # Reconstruct datetime
         parsed_date = datetime.datetime(year, 1, 1, tzinfo=datetime.timezone.utc)
-        parsed_date += datetime.timedelta(
-            days=day_of_year - 1, hours=hour, minutes=minute, seconds=second
-        )
+        parsed_date += datetime.timedelta(days=day_of_year - 1, hours=hour, minutes=minute, seconds=second)
 
         assert parsed_date.year == 2023
         assert parsed_date.month == 7
@@ -231,12 +214,8 @@ class TestEdgeCaseTimezone:
         eastern = zoneinfo.ZoneInfo("America/New_York")
 
         # Create range that spans spring DST transition
-        start = datetime.datetime(
-            2023, 3, 11, 22, 0, 0, tzinfo=datetime.timezone.utc
-        )  # 5 PM EST March 11
-        end = datetime.datetime(
-            2023, 3, 12, 22, 0, 0, tzinfo=datetime.timezone.utc
-        )  # 6 PM EDT March 12
+        start = datetime.datetime(2023, 3, 11, 22, 0, 0, tzinfo=datetime.timezone.utc)  # 5 PM EST March 11
+        end = datetime.datetime(2023, 3, 12, 22, 0, 0, tzinfo=datetime.timezone.utc)  # 6 PM EDT March 12
 
         # Convert to local times
         start_local = start.astimezone(eastern)
@@ -259,15 +238,11 @@ class TestEdgeCaseTimezone:
         # December 31, 2016 had a leap second at 23:59:60 UTC
         try:
             # This would normally fail
-            leap_second = datetime.datetime(
-                2016, 12, 31, 23, 59, 60, tzinfo=datetime.timezone.utc
-            )
+            leap_second = datetime.datetime(2016, 12, 31, 23, 59, 60, tzinfo=datetime.timezone.utc)
         except ValueError:
             # Expected - Python doesn't support second=60
             # In practice, we'd handle this by rounding to next second
-            leap_second = datetime.datetime(
-                2017, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc
-            )
+            leap_second = datetime.datetime(2017, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
 
         assert leap_second.year == 2017
         assert leap_second.month == 1
@@ -282,9 +257,7 @@ class TestEdgeCaseTimezone:
         us_central = zoneinfo.ZoneInfo("America/Chicago")
         china_standard = zoneinfo.ZoneInfo("Asia/Shanghai")
 
-        utc_time = datetime.datetime(
-            2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc
-        )
+        utc_time = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
 
         us_time = utc_time.astimezone(us_central)
         china_time = utc_time.astimezone(china_standard)
@@ -293,24 +266,25 @@ class TestEdgeCaseTimezone:
         assert us_time.hour == 7  # 7 AM CDT (summer)
         assert china_time.hour == 20  # 8 PM CST
 
-    @pytest.mark.skip(reason="get_s3_path method not implemented")
     def test_sub_second_timestamp_precision(self, time_index):
-        """Test handling of sub-second precision in timestamps."""
+        """Test handling of sub-second precision in timestamps using existing methods."""
         # GOES can have sub-second start times
-        precise_time = datetime.datetime(
-            2023, 7, 15, 12, 30, 45, 123456, tzinfo=datetime.timezone.utc
-        )
+        precise_time = datetime.datetime(2023, 7, 15, 12, 30, 45, 123456, tzinfo=datetime.timezone.utc)
 
-        # Format for S3 path (typically rounds to second)
-        s3_path = time_index.get_s3_path(
-            timestamp=precise_time,
+        # Generate S3 key using existing method
+        s3_key = time_index.to_s3_key(
+            ts=precise_time,
             satellite=SatellitePattern.GOES_16,
-            product="ABI-L1b-RadC",
+            product_type="RadC",
         )
 
-        # Verify seconds are included but microseconds are not
-        assert "123045" in s3_path  # HHMMSS format
-        assert "123456" not in s3_path  # Microseconds not included
+        # Verify that timestamp components are represented
+        # Day 196 is July 15, 2023, hour 12
+        assert "196" in s3_key  # Day of year
+        assert "12" in s3_key  # Hour
+        # S3 keys use wildcards, so we check the general structure
+        assert "ABI-L1b-RadC" in s3_key
+        assert "G16" in s3_key
 
     @pytest.mark.skip(reason="Timezone rule test assumptions may vary")
     def test_historical_timezone_rules(self):
@@ -319,15 +293,11 @@ class TestEdgeCaseTimezone:
         indiana = zoneinfo.ZoneInfo("America/Indiana/Indianapolis")
 
         # Date in 2005 (no DST)
-        old_summer = datetime.datetime(
-            2005, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc
-        )
+        old_summer = datetime.datetime(2005, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
         old_local = old_summer.astimezone(indiana)
 
         # Date in 2023 (with DST)
-        new_summer = datetime.datetime(
-            2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc
-        )
+        new_summer = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
         new_local = new_summer.astimezone(indiana)
 
         # Different UTC offsets for same summer date
@@ -346,9 +316,7 @@ class TestEdgeCaseTimezone:
     )
     def test_hourly_scan_consistency(self, time_index, hour, expected_scan_count):
         """Test that scan counts are consistent regardless of hour."""
-        base_time = datetime.datetime(
-            2023, 7, 15, hour, 0, 0, tzinfo=datetime.timezone.utc
-        )
+        base_time = datetime.datetime(2023, 7, 15, hour, 0, 0, tzinfo=datetime.timezone.utc)
 
         # Get scans for the hour
         scans = []

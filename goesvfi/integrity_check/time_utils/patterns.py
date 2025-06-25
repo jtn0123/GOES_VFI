@@ -74,10 +74,10 @@ BAND_PATTERN: re.Pattern[str] = re.compile(r"ABI-L1b-(?:RadF|RadC|RadM)-M\d+C(\d
 
 def get_satellite_info(satellite: SatellitePattern) -> Dict[str, Optional[str]]:
     """Get all information for a satellite pattern.
-    
+
     Args:
         satellite: The satellite pattern
-        
+
     Returns:
         Dictionary with keys: name, short_name, s3_bucket, code
     """

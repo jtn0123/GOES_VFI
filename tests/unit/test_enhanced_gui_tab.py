@@ -75,7 +75,7 @@ class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
         # Check that enhanced UI elements are correctly set up
         assert self.tab.configure_fetchers_btn is not None
         assert self.tab.fetcher_status_label is not None
-        assert self.tab.fetcher_status_label.text() == "CDN/S3 Ready"
+        assert self.tab.fetcher_status_label.text() == "⚡ CDN/S3 Ready"
 
         # Check that stores are initialized
         assert self.tab.cdn_store is not None

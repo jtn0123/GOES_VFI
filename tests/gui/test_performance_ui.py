@@ -199,18 +199,14 @@ class TestPerformanceUI:
 
         # Connect worker
         worker = HeavyWorker()
-        worker.progress.connect(
-            lambda v, m: (progress_bar.setValue(v), status_label.setText(m))
-        )
+        worker.progress.connect(lambda v, m: (progress_bar.setValue(v), status_label.setText(m)))
 
         # Responsiveness checks during processing
         responsiveness_results = []
 
         def check_responsiveness():
             checker = ResponsivenessChecker(window)
-            checker.responsiveness_checked.connect(
-                lambda r: responsiveness_results.append(r)
-            )
+            checker.responsiveness_checked.connect(lambda r: responsiveness_results.append(r))
             checker.start()
 
         # Start worker

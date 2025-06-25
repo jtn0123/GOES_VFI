@@ -40,15 +40,9 @@ class TestPreviewCropWorkflow(unittest.TestCase):
         self.test_dir = Path(self.temp_dir.name)
 
         # Create test images with different colors for easy identification
-        self.image1_path = self._create_test_image(
-            "001_frame.png", color=(255, 0, 0)
-        )  # Red
-        self.image2_path = self._create_test_image(
-            "002_frame.png", color=(0, 255, 0)
-        )  # Green
-        self.image3_path = self._create_test_image(
-            "003_frame.png", color=(0, 0, 255)
-        )  # Blue
+        self.image1_path = self._create_test_image("001_frame.png", color=(255, 0, 0))  # Red
+        self.image2_path = self._create_test_image("002_frame.png", color=(0, 255, 0))  # Green
+        self.image3_path = self._create_test_image("003_frame.png", color=(0, 0, 255))  # Blue
 
         # Create MainWindow
         self.main_window = MainWindow(debug_mode=True)
@@ -128,15 +122,9 @@ class TestPreviewCropWorkflow(unittest.TestCase):
         assert last_pixmap.width() > 0, "Last frame should have positive width"
 
         # The images should maintain aspect ratio (square images stay square)
-        assert (
-            first_pixmap.width() == first_pixmap.height()
-        ), "First frame should maintain square aspect ratio"
-        assert (
-            middle_pixmap.width() == middle_pixmap.height()
-        ), "Middle frame should maintain square aspect ratio"
-        assert (
-            last_pixmap.width() == last_pixmap.height()
-        ), "Last frame should maintain square aspect ratio"
+        assert first_pixmap.width() == first_pixmap.height(), "First frame should maintain square aspect ratio"
+        assert middle_pixmap.width() == middle_pixmap.height(), "Middle frame should maintain square aspect ratio"
+        assert last_pixmap.width() == last_pixmap.height(), "Last frame should maintain square aspect ratio"
 
     def test_image_expansion_on_click(self) -> None:
         """Test that clicking on an image expands it to maximum resolution."""
@@ -153,9 +141,7 @@ class TestPreviewCropWorkflow(unittest.TestCase):
         initial_size = initial_pixmap.size()
 
         # Store original processed image data
-        assert hasattr(
-            first_label, "processed_image"
-        ), "Label should have processed_image attribute"
+        assert hasattr(first_label, "processed_image"), "Label should have processed_image attribute"
         processed_image = first_label.processed_image
         assert processed_image is not None
 
@@ -211,9 +197,7 @@ class TestPreviewCropWorkflow(unittest.TestCase):
 
                 # Verify the pixmap is still valid
                 current_pixmap = first_label.pixmap()
-                assert (
-                    current_pixmap is not None
-                ), "Pixmap should still exist after click"
+                assert current_pixmap is not None, "Pixmap should still exist after click"
 
         except Exception as e:
             self.fail(f"Image click handling should not raise an exception: {e}")
@@ -249,9 +233,7 @@ class TestPreviewCropWorkflow(unittest.TestCase):
         assert width > 0, "Crop width should be positive"
         assert height > 0, "Crop height should be positive"
         assert x + width == expected_coords[2], "Right coordinate should be x + width"
-        assert (
-            y + height == expected_coords[3]
-        ), "Bottom coordinate should be y + height"
+        assert y + height == expected_coords[3], "Bottom coordinate should be y + height"
 
     def test_crop_preview_dialog_functionality(self) -> None:
         """Test the crop preview functionality with crop region applied."""
@@ -357,9 +339,7 @@ class TestPreviewCropWorkflow(unittest.TestCase):
         self._process_events_with_timeout(200)
 
         # Verify images are still loaded after preview update
-        first_data_after, middle_data_after, last_data_after = (
-            preview_manager.get_current_frame_data()
-        )
+        first_data_after, middle_data_after, last_data_after = preview_manager.get_current_frame_data()
         assert first_data_after is not None, "First frame should still be loaded"
 
     def test_error_handling_invalid_crop_coordinates(self) -> None:

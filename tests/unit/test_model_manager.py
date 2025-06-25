@@ -3,6 +3,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from typing import ClassVar, Optional
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtCore import QSettings
@@ -13,6 +14,8 @@ from goesvfi.gui_components.model_manager import ModelManager
 
 class TestModelManager(unittest.TestCase):
     """Test cases for ModelManager."""
+
+    app: ClassVar[Optional[QApplication]] = None
 
     @classmethod
     def setUpClass(cls):
@@ -194,9 +197,7 @@ class TestModelManager(unittest.TestCase):
         combo_box = QComboBox()
 
         # Create a path that will cause an error when iterating
-        with patch.object(
-            Path, "iterdir", side_effect=PermissionError("Access denied")
-        ):
+        with patch.object(Path, "iterdir", side_effect=PermissionError("Access denied")):
             self.model_manager.populate_models(combo_box, str(self.model_dir))
 
         # Verify error dialog was shown

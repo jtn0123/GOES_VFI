@@ -28,9 +28,7 @@ class FileSorterTab(QWidget):
     directory_selected = pyqtSignal(str)  # Signal emitted when a directory is selected
 
     # Modified __init__ to accept a ViewModel instance
-    def __init__(
-        self, view_model: FileSorterViewModel, parent: Optional[QWidget] = None
-    ) -> None:
+    def __init__(self, view_model: FileSorterViewModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
         if not isinstance(view_model, FileSorterViewModel):
@@ -49,9 +47,7 @@ class FileSorterTab(QWidget):
 
         # Source Group with enhanced styling
         source_group = QGroupBox(self.tr("📁 Source Directory"))
-        source_group.setSizePolicy(
-            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
-        )
+        source_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         source_group.setStyleSheet(
             """
             QGroupBox {
@@ -125,9 +121,7 @@ class FileSorterTab(QWidget):
 
         # Destination Group with enhanced styling
         destination_group = QGroupBox(self.tr("💾 Destination"))
-        destination_group.setSizePolicy(
-            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
-        )
+        destination_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         destination_group.setStyleSheet(
             """
             QGroupBox {
@@ -154,12 +148,9 @@ class FileSorterTab(QWidget):
         destination_label = QLabel(self.tr("📄 Output Folder:"))
         destination_label.setStyleSheet("color: #f0f0f0; font-weight: bold;")
 
-        destination_info = QLabel(
-            self.tr("✨ Files will be sorted to a 'converted' subfolder")
-        )
+        destination_info = QLabel(self.tr("✨ Files will be sorted to a 'converted' subfolder"))
         destination_info.setStyleSheet(
-            "color: #66aaff; font-style: italic; padding: 4px 8px; "
-            "background-color: #2a2a2a; border-radius: 4px;"
+            "color: #66aaff; font-style: italic; padding: 4px 8px; " "background-color: #2a2a2a; border-radius: 4px;"
         )
 
         destination_layout.addWidget(destination_label, 0, 0)
@@ -169,9 +160,7 @@ class FileSorterTab(QWidget):
 
         # Options Group with enhanced styling
         options_group = QGroupBox(self.tr("⚙️ Options"))
-        options_group.setSizePolicy(
-            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
-        )
+        options_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         options_group.setStyleSheet(
             """
             QGroupBox {
@@ -196,9 +185,7 @@ class FileSorterTab(QWidget):
         options_layout.setSpacing(8)
 
         # Dry Run Checkbox with enhanced styling
-        self.dry_run_checkbox = QCheckBox(
-            self.tr("📋 Dry Run (Log actions without moving files)")
-        )
+        self.dry_run_checkbox = QCheckBox(self.tr("📋 Dry Run (Log actions without moving files)"))
         self.dry_run_checkbox.setStyleSheet(
             """
             QCheckBox {
@@ -226,14 +213,10 @@ class FileSorterTab(QWidget):
 
         # Duplicate Handling with enhanced styling
         duplicate_label = QLabel(self.tr("🔄 Duplicate Handling:"))
-        duplicate_label.setStyleSheet(
-            "color: #f0f0f0; font-weight: bold; margin-top: 8px;"
-        )
+        duplicate_label.setStyleSheet("color: #f0f0f0; font-weight: bold; margin-top: 8px;")
 
         self.duplicate_combo = QComboBox()
-        self.duplicate_combo.addItems(
-            [self.tr("♾️ Overwrite"), self.tr("⏭️ Skip"), self.tr("🔄 Rename")]
-        )
+        self.duplicate_combo.addItems([self.tr("♾️ Overwrite"), self.tr("⏭️ Skip"), self.tr("🔄 Rename")])
         self.duplicate_combo.setStyleSheet(
             """
             QComboBox {
@@ -262,9 +245,7 @@ class FileSorterTab(QWidget):
 
         # Actions Group with enhanced styling
         actions_group = QGroupBox(self.tr("🚀 Actions"))
-        actions_group.setSizePolicy(
-            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
-        )
+        actions_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         actions_group.setStyleSheet(
             """
             QGroupBox {
@@ -414,8 +395,6 @@ class FileSorterTab(QWidget):
 
     def _create_header(self, layout: QVBoxLayout) -> None:
         """Create the enhanced header section."""
-        from PyQt6.QtWidgets import QFrame
-
         header = QLabel("🗂️ File Sorter - Organize Files by Type")
         header.setStyleSheet(
             """
@@ -467,15 +446,11 @@ class FileSorterTab(QWidget):
 
         # Handle completion/error messages from ViewModel
         if self.view_model.show_completion_message:
-            QMessageBox.information(
-                self, "Sorting Complete", self.view_model.completion_message
-            )
+            QMessageBox.information(self, "Sorting Complete", self.view_model.completion_message)
             self.view_model.show_completion_message = False  # Reset flag
         if self.view_model.show_error_message:
             QMessageBox.critical(self, "Sorting Error", self.view_model.error_message)
             self.view_model.show_error_message = False  # Reset flag
         if self.view_model.show_input_error_message:
-            QMessageBox.warning(
-                self, "Input Error", self.view_model.input_error_message
-            )
+            QMessageBox.warning(self, "Input Error", self.view_model.input_error_message)
             self.view_model.show_input_error_message = False  # Reset flag

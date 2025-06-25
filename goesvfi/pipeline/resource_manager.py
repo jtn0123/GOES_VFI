@@ -9,7 +9,7 @@ import threading
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Generator, Optional, Union
 
 from goesvfi.pipeline.exceptions import ResourceError
 from goesvfi.utils import log
@@ -78,16 +78,14 @@ class ResourceManager:
         if required_memory_mb > 0:
             if stats.available_mb < required_memory_mb:
                 raise ResourceError(
-                    f"Insufficient memory: {stats.available_mb}MB available, "
-                    f"{required_memory_mb}MB required",
+                    f"Insufficient memory: {stats.available_mb}MB available, " f"{required_memory_mb}MB required",
                     resource_type="memory",
                 )
 
         # Check if we're over the critical threshold
         if stats.percent_used > self.limits.critical_memory_percent:
             raise ResourceError(
-                f"Memory usage too high: {stats.percent_used:.1f}% "
-                f"(limit: {self.limits.critical_memory_percent}%)",
+                f"Memory usage too high: {stats.percent_used:.1f}% " f"(limit: {self.limits.critical_memory_percent}%)",
                 resource_type="memory",
             )
 
@@ -125,7 +123,7 @@ class ResourceManager:
     @contextmanager
     def process_executor(
         self, max_workers: Optional[int] = None, executor_id: str = "default"
-    ):
+    ) -> Generator[ProcessPoolExecutor, None, None]:
         """Context manager for ProcessPoolExecutor with resource limits.
 
         Args:
@@ -160,7 +158,7 @@ class ResourceManager:
     @contextmanager
     def thread_executor(
         self, max_workers: Optional[int] = None, executor_id: str = "default"
-    ):
+    ) -> Generator[ThreadPoolExecutor, None, None]:
         """Context manager for ThreadPoolExecutor with resource limits.
 
         Args:
@@ -261,7 +259,7 @@ def managed_executor(
     executor_type: str = "process",
     max_workers: Optional[int] = None,
     check_resources: bool = True,
-):
+) -> Generator[Union[ProcessPoolExecutor, ThreadPoolExecutor], None, None]:
     """Convenience context manager for resource-managed executors.
 
     Args:

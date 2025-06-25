@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
@@ -165,8 +165,7 @@ class TestTabCoordination:
                     result = QMessageBox.question(
                         None,
                         "Confirm Deletion",
-                        f"Are you sure you want to delete {model_name}?\n"
-                        f"This action cannot be undone.",
+                        f"Are you sure you want to delete {model_name}?\n" f"This action cannot be undone.",
                     )
 
                     if result == QMessageBox.StandardButton.Yes:
@@ -276,15 +275,11 @@ class TestTabCoordination:
             for filename in results["valid_files"]:
                 valid_item.addChild(QTreeWidgetItem([filename]))
 
-            corrupted_item = QTreeWidgetItem(
-                ["Corrupted", str(len(results["corrupted_files"]))]
-            )
+            corrupted_item = QTreeWidgetItem(["Corrupted", str(len(results["corrupted_files"]))])
             for filename in results["corrupted_files"]:
                 corrupted_item.addChild(QTreeWidgetItem([filename]))
 
-            missing_item = QTreeWidgetItem(
-                ["Missing", str(len(results["missing_files"]))]
-            )
+            missing_item = QTreeWidgetItem(["Missing", str(len(results["missing_files"]))])
             for filename in results["missing_files"]:
                 missing_item.addChild(QTreeWidgetItem([filename]))
 
@@ -356,9 +351,7 @@ class TestTabCoordination:
         repair_mgr = RepairManager()
 
         # Add files to repair
-        repair_mgr.queue_repair(
-            {"name": "corrupted.nc", "path": "/data/corrupted.nc", "type": "corrupted"}
-        )
+        repair_mgr.queue_repair({"name": "corrupted.nc", "path": "/data/corrupted.nc", "type": "corrupted"})
         repair_mgr.queue_repair(
             {
                 "name": "missing.nc",
@@ -367,9 +360,7 @@ class TestTabCoordination:
                 "url": "http://example.com/missing.nc",
             }
         )
-        repair_mgr.queue_repair(
-            {"name": "unrepairable.nc", "path": "unrepairable.nc", "type": "corrupted"}
-        )
+        repair_mgr.queue_repair({"name": "unrepairable.nc", "path": "unrepairable.nc", "type": "corrupted"})
 
         # Process repairs
         repair_progress = []
@@ -377,9 +368,7 @@ class TestTabCoordination:
 
         # Verify results
         assert len(repair_mgr.repair_results) == 3
-        assert (
-            "Repaired successfully" in repair_mgr.repair_results["/data/corrupted.nc"]
-        )
+        assert "Repaired successfully" in repair_mgr.repair_results["/data/corrupted.nc"]
         assert "Downloaded from" in repair_mgr.repair_results["missing.nc"]
         assert "Repair failed" in repair_mgr.repair_results["unrepairable.nc"]
 
@@ -605,10 +594,7 @@ class TestTabCoordination:
                         return True
 
                 # Check global shortcuts
-                if (
-                    "global" in self.shortcuts
-                    and key_sequence in self.shortcuts["global"]
-                ):
+                if "global" in self.shortcuts and key_sequence in self.shortcuts["global"]:
                     self.shortcuts["global"][key_sequence]()
                     return True
 
@@ -621,15 +607,9 @@ class TestTabCoordination:
         actions_triggered = []
 
         # Register shortcuts
-        shortcut_mgr.register_shortcut(
-            "main", "Ctrl+R", lambda: actions_triggered.append("refresh_main")
-        )
-        shortcut_mgr.register_shortcut(
-            "models", "Ctrl+D", lambda: actions_triggered.append("download_model")
-        )
-        shortcut_mgr.register_shortcut(
-            "global", "F1", lambda: actions_triggered.append("show_help")
-        )
+        shortcut_mgr.register_shortcut("main", "Ctrl+R", lambda: actions_triggered.append("refresh_main"))
+        shortcut_mgr.register_shortcut("models", "Ctrl+D", lambda: actions_triggered.append("download_model"))
+        shortcut_mgr.register_shortcut("global", "F1", lambda: actions_triggered.append("show_help"))
 
         # Test tab-specific shortcut
         shortcut_mgr.set_active_tab("main")

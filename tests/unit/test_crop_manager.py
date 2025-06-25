@@ -3,7 +3,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import ClassVar, Optional, Tuple
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QApplication
@@ -13,6 +13,8 @@ from goesvfi.gui_components.crop_manager import CropManager
 
 class TestCropManager(unittest.TestCase):
     """Test cases for CropManager."""
+
+    app: ClassVar[Optional[QApplication]] = None
 
     @classmethod
     def setUpClass(cls):

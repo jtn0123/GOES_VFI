@@ -1,7 +1,6 @@
 """S3 key generation and filtering utilities."""
 
 import inspect
-import re
 import sys
 import traceback
 from datetime import datetime, timedelta
@@ -12,12 +11,10 @@ from goesvfi.utils import date_utils, log
 
 from .constants import (
     _USE_EXACT_MATCH_IN_TEST,
-    BAND,
     DEFAULT_CDN_RESOLUTION,
     RADC_MINUTES,
     RADF_MINUTES,
     RADM_MINUTES,
-    RECENT_WINDOW_DAYS,
     START_SECONDS,
 )
 from .patterns import (
@@ -35,9 +32,7 @@ class S3KeyGenerator:
     """Generate S3 keys and URLs for GOES satellite data."""
 
     @staticmethod
-    def to_cdn_url(
-        ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None
-    ) -> str:
+    def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None) -> str:
         """
         Generate a CDN URL for the given timestamp and satellite.
 
@@ -80,15 +75,11 @@ class S3KeyGenerator:
         # Use different URL formats based on the caller
         if "test_basic_time_index.py" in caller_filename:
             # Basic test expects: YYYY+DOY+HHMM+SS_GOESxx-ABI-FD-13-RESxRES.jpg
-            filename = (
-                f"{year}{doy_str}{hour}{minute}{second}_{sat_name}-ABI-FD-13-{res}.jpg"
-            )
+            filename = f"{year}{doy_str}{hour}{minute}{second}_{sat_name}-ABI-FD-13-{res}.jpg"
             url = f"https://cdn.star.nesdis.noaa.gov/{sat_name}/ABI/FD/13/{filename}"
         else:
             # Main test expects: YYYY+DOY+HHMM_GOESxx-ABI-CONUS-13-RESxRES.jpg
-            filename = (
-                f"{year}{doy_str}{hour}{minute}_{sat_name}-ABI-CONUS-13-{res}.jpg"
-            )
+            filename = f"{year}{doy_str}{hour}{minute}_{sat_name}-ABI-CONUS-13-{res}.jpg"
             url = f"https://cdn.star.nesdis.noaa.gov/{sat_name}/ABI/CONUS/13/{filename}"
 
         return url
@@ -132,9 +123,7 @@ class S3KeyGenerator:
         # Validate product type
         valid_products = ["RadF", "RadC", "RadM"]
         if product_type not in valid_products:
-            raise ValueError(
-                f"Invalid product type: {product_type}. Must be one of {valid_products}"
-            )
+            raise ValueError(f"Invalid product type: {product_type}. Must be one of {valid_products}")
 
         # Validate band number
         if not 1 <= band <= 16:
@@ -158,11 +147,7 @@ class S3KeyGenerator:
             use_exact_match = False
         else:
             # Only auto-detect when exact_match is not explicitly set
-            use_exact_match = (
-                is_test_env
-                and (is_remote_test or is_s3_patterns_test)
-                and _USE_EXACT_MATCH_IN_TEST
-            )
+            use_exact_match = is_test_env and (is_remote_test or is_s3_patterns_test) and _USE_EXACT_MATCH_IN_TEST
 
         # Get appropriate scanning schedule for the product type
         scan_minutes = []
@@ -214,9 +199,7 @@ class S3KeyGenerator:
             # Calculate actual second based on start time and product type
             actual_second = start_sec
             # Generate exact end time and creation time for completely concrete filename
-            end_minute = (
-                valid_minute + 4 if valid_minute + 4 < 60 else valid_minute + 4 - 60
-            )
+            end_minute = valid_minute + 4 if valid_minute + 4 < 60 else valid_minute + 4 - 60
             end_second = 59  # End seconds are typically near the end of the scan
             creation_time = f"{year}{doy_str}{hour}{valid_minute:02d}{end_second:02d}"
             pattern = (
@@ -240,10 +223,7 @@ class S3KeyGenerator:
                 )
             else:
                 # Production use - wildcard for the whole hour to be maximally flexible
-                pattern = (
-                    f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
-                    f"{year}{doy_str}{hour}*_e*_c*.nc"
-                )
+                pattern = f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s" f"{year}{doy_str}{hour}*_e*_c*.nc"
 
         return base_key + pattern
 
@@ -264,9 +244,7 @@ class S3KeyGenerator:
         return bucket
 
     @staticmethod
-    def generate_local_path(
-        ts: datetime, satellite: SatellitePattern, base_dir: Path
-    ) -> Path:
+    def generate_local_path(ts: datetime, satellite: SatellitePattern, base_dir: Path) -> Path:
         """
         Generate a local path for storing the image.
 
@@ -337,9 +315,7 @@ class S3KeyGenerator:
         return dir_path / filename
 
     @staticmethod
-    def find_nearest_goes_intervals(
-        ts: datetime, product_type: str = "RadF"
-    ) -> List[datetime]:
+    def find_nearest_goes_intervals(ts: datetime, product_type: str = "RadF") -> List[datetime]:
         """Find the nearest standard GOES imagery intervals for a given timestamp and product type.
 
         GOES satellite imagery is typically available at fixed intervals, not at
@@ -358,23 +334,17 @@ class S3KeyGenerator:
         if product_type == "RadF":
             standard_minutes = RADF_MINUTES  # [0, 10, 20, 30, 40, 50]
         elif product_type == "RadC":
-            standard_minutes = (
-                RADC_MINUTES  # [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56]
-            )
+            standard_minutes = RADC_MINUTES  # [1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56]
         elif product_type == "RadM":
             standard_minutes = RADM_MINUTES  # [0-59] every minute
         else:
             # Default to RadF if product type is not recognized
             standard_minutes = RADF_MINUTES
-            LOGGER.warning(
-                "Unknown product type: %s. Using RadF scanning schedule.", product_type
-            )
+            LOGGER.warning("Unknown product type: %s. Using RadF scanning schedule.", product_type)
 
         # If no minutes or only one minute in the scanning schedule, return empty list
         if not standard_minutes:
-            LOGGER.warning(
-                "No scanning schedule defined for product type: %s", product_type
-            )
+            LOGGER.warning("No scanning schedule defined for product type: %s", product_type)
             return []
         elif len(standard_minutes) == 1:
             # For a product with only one interval per hour, return that interval for this hour
@@ -420,9 +390,7 @@ class S3KeyGenerator:
             nearest_minutes.append(ts.replace(minute=next_minute))
 
         # Reset seconds and microseconds
-        nearest_minutes = [
-            dt.replace(second=0, microsecond=0) for dt in nearest_minutes
-        ]
+        nearest_minutes = [dt.replace(second=0, microsecond=0) for dt in nearest_minutes]
 
         return nearest_minutes
 

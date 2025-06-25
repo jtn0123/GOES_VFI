@@ -26,7 +26,7 @@ class NoPopupQDateTimeEdit:
         # Override setCalendarPopup to always keep it disabled
         original_setCalendarPopup = self._widget.setCalendarPopup
 
-        def no_popup_setCalendarPopup(enabled: bool) -> None:
+        def no_popup_setCalendarPopup(enable: bool) -> None:
             original_setCalendarPopup(False)
 
         # Use setattr to avoid mypy method assignment error
@@ -83,16 +83,10 @@ def apply_gui_patches() -> List[Any]:
     """Apply patches to prevent GUI popups."""
     patches: List[Any] = []
 
-    # Patch QFileDialog
+    # Patch QFileDialog - only patch PyQt6 directly to avoid import issues
     patches.extend(
         [
             patch("PyQt6.QtWidgets.QFileDialog", NoPopupQFileDialog),
-            patch("goesvfi.gui.QFileDialog", NoPopupQFileDialog),
-            patch("goesvfi.gui_tabs.main_tab.QFileDialog", NoPopupQFileDialog),
-            patch("goesvfi.integrity_check.gui_tab.QFileDialog", NoPopupQFileDialog),
-            patch("goesvfi.file_sorter.gui_tab.QFileDialog", NoPopupQFileDialog),
-            patch("goesvfi.file_sorter.view_model.QFileDialog", NoPopupQFileDialog),
-            patch("goesvfi.date_sorter.gui_tab.QFileDialog", NoPopupQFileDialog),
         ]
     )
 
@@ -105,10 +99,7 @@ def apply_gui_patches() -> List[Any]:
                 NoPopupQMessageBox,
             ),
             patch("goesvfi.integrity_check.gui_tab.QMessageBox", NoPopupQMessageBox),
-            patch("goesvfi.gui.QMessageBox", NoPopupQMessageBox),
-            patch(
-                "goesvfi.gui_tabs.batch_processing_tab.QMessageBox", NoPopupQMessageBox
-            ),
+            patch("goesvfi.gui_tabs.batch_processing_tab.QMessageBox", NoPopupQMessageBox),
         ]
     )
 

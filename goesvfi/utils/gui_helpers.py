@@ -148,9 +148,7 @@ class RifeCapabilityManager:
         # Update UHD mode
         if self.capabilities.get("uhd", False):
             uhd_mode_cb.setEnabled(True)
-            uhd_mode_cb.setToolTip(
-                "Enable UHD mode for 4K+ images (slower but better quality)"
-            )
+            uhd_mode_cb.setToolTip("Enable UHD mode for 4K+ images (slower but better quality)")
         else:
             uhd_mode_cb.setEnabled(False)
             uhd_mode_cb.setToolTip("UHD mode not supported by this RIFE executable")
@@ -163,33 +161,23 @@ class RifeCapabilityManager:
         else:
             thread_spec_edit.setEnabled(False)
             thread_spec_label.setEnabled(False)
-            thread_spec_edit.setToolTip(
-                "Thread specification not supported by this RIFE executable"
-            )
+            thread_spec_edit.setToolTip("Thread specification not supported by this RIFE executable")
 
         # Update TTA spatial
         if self.capabilities.get("tta_spatial", False):
             tta_spatial_cb.setEnabled(True)
-            tta_spatial_cb.setToolTip(
-                "Enable spatial test-time augmentation (slower but better quality)"
-            )
+            tta_spatial_cb.setToolTip("Enable spatial test-time augmentation (slower but better quality)")
         else:
             tta_spatial_cb.setEnabled(False)
-            tta_spatial_cb.setToolTip(
-                "Spatial TTA not supported by this RIFE executable"
-            )
+            tta_spatial_cb.setToolTip("Spatial TTA not supported by this RIFE executable")
 
         # Update TTA temporal
         if self.capabilities.get("tta_temporal", False):
             tta_temporal_cb.setEnabled(True)
-            tta_temporal_cb.setToolTip(
-                "Enable temporal test-time augmentation (slower but better quality)"
-            )
+            tta_temporal_cb.setToolTip("Enable temporal test-time augmentation (slower but better quality)")
         else:
             tta_temporal_cb.setEnabled(False)
-            tta_temporal_cb.setToolTip(
-                "Temporal TTA not supported by this RIFE executable"
-            )
+            tta_temporal_cb.setToolTip("Temporal TTA not supported by this RIFE executable")
 
     def get_capability_summary(self) -> str:
         """
@@ -207,9 +195,7 @@ class RifeCapabilityManager:
         supported_count = sum(1 for v in self.capabilities.values() if v)
         total_count = len(self.capabilities)
 
-        return (
-            f"RIFE {version_str} - {supported_count}/{total_count} features supported"
-        )
+        return f"RIFE {version_str} - {supported_count}/{total_count} features supported"
 
 
 # GUI Component classes
@@ -468,24 +454,16 @@ class CropLabel(QLabel):
             # Use width as base, adjust height
             new_height = int(height_from_width)
             if self.selection_end_point.y() > self.selection_start_point.y():
-                self.selection_end_point.setY(
-                    self.selection_start_point.y() + new_height
-                )
+                self.selection_end_point.setY(self.selection_start_point.y() + new_height)
             else:
-                self.selection_end_point.setY(
-                    self.selection_start_point.y() - new_height
-                )
+                self.selection_end_point.setY(self.selection_start_point.y() - new_height)
         else:
             # Use height as base, adjust width
             new_width = int(width_from_height)
             if self.selection_end_point.x() > self.selection_start_point.x():
-                self.selection_end_point.setX(
-                    self.selection_start_point.x() + new_width
-                )
+                self.selection_end_point.setX(self.selection_start_point.x() + new_width)
             else:
-                self.selection_end_point.setX(
-                    self.selection_start_point.x() - new_width
-                )
+                self.selection_end_point.setX(self.selection_start_point.x() - new_width)
 
     def _apply_aspect_ratio_constraint(self, rect: QRect, handle: str) -> None:
         """Apply aspect ratio constraint when resizing from a handle."""
@@ -523,18 +501,10 @@ class CropLabel(QLabel):
                 self.selecting = False
                 if self.selection_start_point and self.selection_end_point:
                     # Create normalized rectangle
-                    x1 = min(
-                        self.selection_start_point.x(), self.selection_end_point.x()
-                    )
-                    y1 = min(
-                        self.selection_start_point.y(), self.selection_end_point.y()
-                    )
-                    x2 = max(
-                        self.selection_start_point.x(), self.selection_end_point.x()
-                    )
-                    y2 = max(
-                        self.selection_start_point.y(), self.selection_end_point.y()
-                    )
+                    x1 = min(self.selection_start_point.x(), self.selection_end_point.x())
+                    y1 = min(self.selection_start_point.y(), self.selection_end_point.y())
+                    x2 = max(self.selection_start_point.x(), self.selection_end_point.x())
+                    y2 = max(self.selection_start_point.y(), self.selection_end_point.y())
 
                     self.selected_rect = QRect(x1, y1, x2 - x1, y2 - y1)
                     self.selection_finished.emit()
@@ -545,11 +515,7 @@ class CropLabel(QLabel):
         """Paint the label with selection overlay and darkened area."""
         super().paintEvent(event)
 
-        if (
-            (self.selecting or self.selected_rect)
-            and self.selection_start_point
-            and self.selection_end_point
-        ):
+        if (self.selecting or self.selected_rect) and self.selection_start_point and self.selection_end_point:
             painter = QPainter(self)
 
             # Calculate rectangle to draw
@@ -581,13 +547,9 @@ class CropLabel(QLabel):
                 painter.fillRect(self.rect(), overlay_color)
 
                 # Clear the selection area (make it fully transparent)
-                painter.setCompositionMode(
-                    QPainter.CompositionMode.CompositionMode_SourceIn
-                )
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
                 painter.fillRect(rect, Qt.GlobalColor.transparent)
-                painter.setCompositionMode(
-                    QPainter.CompositionMode.CompositionMode_SourceOver
-                )
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
 
                 # Redraw just the selection area from the original pixmap
                 if rect.width() > 0 and rect.height() > 0:
@@ -648,6 +610,9 @@ class CropSelectionDialog(QDialog):
         # Create as a top-level window to avoid parent window constraints
         super().__init__(None)  # Pass None to make it a true top-level window
 
+        # Set window title
+        self.setWindowTitle("Select Crop Region")
+
         # Keep reference to parent for cleanup if needed
         self._parent = parent
 
@@ -663,9 +628,7 @@ class CropSelectionDialog(QDialog):
         # Use most of screen real estate with small margin
         screen = QApplication.primaryScreen()
         if screen:
-            screen_rect = (
-                screen.availableGeometry()
-            )  # Use available geometry to respect taskbars
+            screen_rect = screen.availableGeometry()  # Use available geometry to respect taskbars
             margin = 40  # Small margin around edges
 
             # Calculate dialog dimensions
@@ -724,9 +687,7 @@ class CropSelectionDialog(QDialog):
 
         # Instructions
         instruction_label = QLabel("Click and drag to select region")
-        instruction_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        instruction_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         instruction_label.setStyleSheet(
             """
             QLabel {
@@ -911,9 +872,7 @@ class CropSelectionDialog(QDialog):
         status_layout.setContentsMargins(0, 0, 0, 0)
 
         self.status_label = QLabel("No selection")
-        self.status_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.status_label.setStyleSheet(
             """
             QLabel {
@@ -926,9 +885,7 @@ class CropSelectionDialog(QDialog):
         status_layout.addWidget(self.status_label)
 
         # Add tips
-        tips_label = QLabel(
-            "Tips: Use Lock for aspect ratio • Click corners to resize • Scroll to zoom"
-        )
+        tips_label = QLabel("Tips: Use Lock for aspect ratio • Click corners to resize • Scroll to zoom")
         tips_label.setStyleSheet(
             """
             QLabel {
@@ -963,7 +920,8 @@ class CropSelectionDialog(QDialog):
         )
         preview_layout.addWidget(preview_title)
 
-        self.crop_preview_label = ClickableLabel("Select a region")
+        self.crop_preview_label = ClickableLabel()
+        self.crop_preview_label.setText("Select a region")
         self.crop_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.crop_preview_label.setFixedSize(120, 60)
         self.crop_preview_label.setStyleSheet(
@@ -1174,16 +1132,13 @@ class CropSelectionDialog(QDialog):
             msg = QMessageBox(self)
             msg.setIcon(QMessageBox.Icon.Information)
             msg.setWindowTitle("No Selection")
-            msg.setText(
-                "Please select a crop region before clicking OK, or click Cancel to exit."
-            )
+            msg.setText("Please select a crop region before clicking OK, or click Cancel to exit.")
             msg.exec()
 
     def get_selected_rect(self) -> QRect:
         """Get the selected rectangle in original image coordinates."""
         if self._final_selected_rect_display is None or (
-            isinstance(self._final_selected_rect_display, QRect)
-            and self._final_selected_rect_display.isNull()
+            isinstance(self._final_selected_rect_display, QRect) and self._final_selected_rect_display.isNull()
         ):
             return QRect()
 
@@ -1349,10 +1304,7 @@ class CropSelectionDialog(QDialog):
     def _on_selection_finished(self) -> None:
         """Called when selection is finished."""
         # Enable/disable buttons based on selection
-        has_selection = (
-            self.crop_label.selected_rect is not None
-            and not self.crop_label.selected_rect.isNull()
-        )
+        has_selection = self.crop_label.selected_rect is not None and not self.crop_label.selected_rect.isNull()
         if hasattr(self, "clear_button"):
             self.clear_button.setEnabled(has_selection)
         if hasattr(self, "ok_button"):

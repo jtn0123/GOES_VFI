@@ -23,7 +23,7 @@ class PreviewManager(QObject):
     """Manages preview image functionality for the main window."""
 
     # Signals
-    preview_updated = pyqtSignal(QPixmap, QPixmap)  # before, after
+    preview_updated = pyqtSignal(QPixmap, QPixmap, QPixmap)  # first, middle, last
     preview_error = pyqtSignal(str)  # error message
 
     def __init__(self) -> None:
@@ -39,6 +39,7 @@ class PreviewManager(QObject):
         self.current_input_dir: Optional[Path] = None
         self.current_crop_rect: Optional[Tuple[int, int, int, int]] = None
         self.first_frame_data: Optional[ImageData] = None
+        self.middle_frame_data: Optional[ImageData] = None
         self.last_frame_data: Optional[ImageData] = None
 
     def load_preview_images(
@@ -63,8 +64,8 @@ class PreviewManager(QObject):
             self.current_input_dir = input_dir
             self.current_crop_rect = crop_rect
 
-            # Load first and last frames
-            first_path, last_path = self._get_first_last_paths(input_dir)
+            # Load first, middle, and last frames
+            first_path, middle_path, last_path = self._get_first_middle_last_paths(input_dir)
 
             if not first_path or not last_path:
                 self.preview_error.emit("No images found in directory")
@@ -74,9 +75,15 @@ class PreviewManager(QObject):
             self.first_frame_data = self._load_and_process_image(
                 first_path, crop_rect, apply_sanchez, sanchez_resolution
             )
-            self.last_frame_data = self._load_and_process_image(
-                last_path, crop_rect, apply_sanchez, sanchez_resolution
-            )
+            self.last_frame_data = self._load_and_process_image(last_path, crop_rect, apply_sanchez, sanchez_resolution)
+
+            # Load middle frame if available
+            if middle_path:
+                self.middle_frame_data = self._load_and_process_image(
+                    middle_path, crop_rect, apply_sanchez, sanchez_resolution
+                )
+            else:
+                self.middle_frame_data = None
 
             if not self.first_frame_data or not self.last_frame_data:
                 self.preview_error.emit("Failed to load preview images")
@@ -96,8 +103,18 @@ class PreviewManager(QObject):
             first_pixmap = self._numpy_to_qpixmap(first_array)
             last_pixmap = self._numpy_to_qpixmap(last_array)
 
+            # Handle middle frame
+            if self.middle_frame_data and self.middle_frame_data.image_data is not None:
+                middle_array = self.middle_frame_data.image_data
+                if isinstance(middle_array, Image.Image):
+                    middle_array = np.array(middle_array)
+                middle_pixmap = self._numpy_to_qpixmap(middle_array)
+            else:
+                # Create empty pixmap if no middle frame
+                middle_pixmap = QPixmap()
+
             # Emit update signal
-            self.preview_updated.emit(first_pixmap, last_pixmap)
+            self.preview_updated.emit(first_pixmap, middle_pixmap, last_pixmap)
 
             return True
 
@@ -106,16 +123,14 @@ class PreviewManager(QObject):
             self.preview_error.emit(str(e))
             return False
 
-    def _get_first_last_paths(
-        self, input_dir: Path
-    ) -> Tuple[Optional[Path], Optional[Path]]:
-        """Get the first and last image paths from a directory.
+    def _get_first_middle_last_paths(self, input_dir: Path) -> Tuple[Optional[Path], Optional[Path], Optional[Path]]:
+        """Get the first, middle, and last image paths from a directory.
 
         Args:
             input_dir: Directory to scan
 
         Returns:
-            Tuple of (first_path, last_path), either may be None
+            Tuple of (first_path, middle_path, last_path), any may be None
         """
         try:
             # Get all image files
@@ -127,17 +142,26 @@ class PreviewManager(QObject):
                     image_files.append(file)
 
             if not image_files:
-                return None, None
+                return None, None, None
 
             # Sort by name
             image_files.sort()
 
-            # Return first and last
-            return image_files[0], image_files[-1]
+            # Calculate middle index
+            if len(image_files) == 1:
+                # Only one image - use it for all three
+                return image_files[0], image_files[0], image_files[0]
+            elif len(image_files) == 2:
+                # Two images - no middle
+                return image_files[0], None, image_files[1]
+            else:
+                # Three or more images - calculate middle
+                middle_index = len(image_files) // 2
+                return image_files[0], image_files[middle_index], image_files[-1]
 
         except Exception as e:
-            LOGGER.error("Error getting first/last paths: %s", e)
-            return None, None
+            LOGGER.error("Error getting first/middle/last paths: %s", e)
+            return None, None, None
 
     def _load_and_process_image(
         self,
@@ -166,7 +190,16 @@ class PreviewManager(QObject):
 
             # Apply cropping if specified
             if crop_rect:
-                image_data = self.cropper.crop(image_data, crop_rect)
+                # Convert from (x, y, width, height) to (left, top, right, bottom)
+                x, y, width, height = crop_rect
+                left, top, right, bottom = x, y, x + width, y + height
+                # Validate crop coordinates
+                if width <= 0 or height <= 0:
+                    LOGGER.error("Invalid crop dimensions: width=%d, height=%d", width, height)
+                    return None
+                crop_coords = (left, top, right, bottom)
+                LOGGER.debug("Converting crop rect %s to coordinates %s", crop_rect, crop_coords)
+                image_data = self.cropper.crop(image_data, crop_coords)
                 if not image_data:
                     return None
 
@@ -247,6 +280,7 @@ class PreviewManager(QObject):
 
         except Exception as e:
             LOGGER.error("Error converting numpy array to QPixmap: %s", e)
+            LOGGER.error("Array shape: %s, dtype: %s", array.shape, array.dtype)
             # Return empty pixmap on error
             return QPixmap()
 
@@ -269,17 +303,20 @@ class PreviewManager(QObject):
             Qt.TransformationMode.SmoothTransformation,
         )
 
-    def get_current_frame_data(self) -> Tuple[Optional[ImageData], Optional[ImageData]]:
+    def get_current_frame_data(
+        self,
+    ) -> Tuple[Optional[ImageData], Optional[ImageData], Optional[ImageData]]:
         """Get the current frame data.
 
         Returns:
-            Tuple of (first_frame_data, last_frame_data)
+            Tuple of (first_frame_data, middle_frame_data, last_frame_data)
         """
-        return self.first_frame_data, self.last_frame_data
+        return self.first_frame_data, self.middle_frame_data, self.last_frame_data
 
     def clear_previews(self) -> None:
         """Clear all preview data."""
         self.first_frame_data = None
+        self.middle_frame_data = None
         self.last_frame_data = None
         self.current_input_dir = None
         self.current_crop_rect = None

@@ -307,9 +307,7 @@ class BatchProcessingTab(QWidget):
         self.input_paths_list.clear()
         self._update_add_button()
 
-        QMessageBox.information(
-            self, "Jobs Added", f"Added {len(job_ids)} jobs to the queue"
-        )
+        QMessageBox.information(self, "Jobs Added", f"Added {len(job_ids)} jobs to the queue")
 
     @pyqtSlot()
     def _start_processing(self) -> None:
@@ -339,9 +337,7 @@ class BatchProcessingTab(QWidget):
         if self.batch_queue:
             count = self.batch_queue.clear_completed()
             self._update_queue_display()
-            QMessageBox.information(
-                self, "Cleared", f"Removed {count} completed/cancelled jobs"
-            )
+            QMessageBox.information(self, "Cleared", f"Removed {count} completed/cancelled jobs")
 
     def _update_queue_display(self) -> None:
         """Update the queue table display."""
@@ -371,9 +367,7 @@ class BatchProcessingTab(QWidget):
             self.queue_table.setItem(row, 2, QTableWidgetItem(job.priority.name))
 
             # Progress
-            progress_text = (
-                f"{job.progress:.1f}%" if job.status == JobStatus.RUNNING else ""
-            )
+            progress_text = f"{job.progress:.1f}%" if job.status == JobStatus.RUNNING else ""
             self.queue_table.setItem(row, 3, QTableWidgetItem(progress_text))
 
             # Created
@@ -391,9 +385,7 @@ class BatchProcessingTab(QWidget):
             # Actions
             if job.status == JobStatus.PENDING:
                 cancel_btn = QPushButton("Cancel")
-                cancel_btn.clicked.connect(
-                    lambda checked, jid=job.id: self._cancel_job(jid)
-                )
+                cancel_btn.clicked.connect(lambda checked, jid=job.id: self._cancel_job(jid))
                 self.queue_table.setCellWidget(row, 6, cancel_btn)
             else:
                 self.queue_table.setCellWidget(row, 6, None)
@@ -460,9 +452,7 @@ class BatchProcessingTab(QWidget):
         if self.batch_queue:
             job = self.batch_queue.get_job(job_id)
             if job:
-                QMessageBox.critical(
-                    self, "Job Failed", f"Job '{job.name}' failed:\n{error}"
-                )
+                QMessageBox.critical(self, "Job Failed", f"Job '{job.name}' failed:\n{error}")
 
     @pyqtSlot(str)
     def _on_job_cancelled(self, job_id: str) -> None:
@@ -487,7 +477,7 @@ class BatchProcessingTab(QWidget):
             "output_directory": self.output_dir_label.text(),
         }
 
-    def closeEvent(self, event: QCloseEvent) -> None:
+    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
         """Handle widget close event."""
         # Stop the update timer to prevent crashes
         if hasattr(self, "update_timer") and self.update_timer:
@@ -498,4 +488,5 @@ class BatchProcessingTab(QWidget):
             self.batch_queue.stop()
 
         # Accept the close event
-        event.accept()
+        if event is not None:
+            event.accept()

@@ -51,9 +51,7 @@ class DownloadStats:
     recent_attempts: List[Dict[str, Any]] = field(default_factory=list)
 
     # Session information
-    session_id: str = field(
-        default_factory=lambda: f"{int(time.time())}-{random.randint(1000, 9999)}"
-    )
+    session_id: str = field(default_factory=lambda: f"{int(time.time())}-{random.randint(1000, 9999)}")
     hostname: str = field(default_factory=socket.gethostname)
     start_timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
@@ -61,7 +59,7 @@ class DownloadStats:
 class DownloadStatsTracker:
     """Thread-safe tracker for S3 download statistics."""
 
-    def __init__(self, max_errors: int = 20, max_attempts: int = 50):
+    def __init__(self, max_errors: int = 20, max_attempts: int = 50) -> None:
         """Initialize the statistics tracker.
 
         Args:
@@ -153,9 +151,7 @@ class DownloadStatsTracker:
             if len(self._stats.download_rates) > 100:
                 self._stats.download_rates = self._stats.download_rates[-100:]
 
-    def _update_failure_stats(
-        self, error_type: Optional[str], error_message: Optional[str]
-    ) -> None:
+    def _update_failure_stats(self, error_type: Optional[str], error_message: Optional[str]) -> None:
         """Update statistics for failed downloads."""
         self._stats.failed += 1
 
@@ -240,9 +236,7 @@ class DownloadStatsTracker:
 
             # Calculate average download time
             avg_time = (
-                sum(self._stats.download_times) / len(self._stats.download_times)
-                if self._stats.download_times
-                else 0
+                sum(self._stats.download_times) / len(self._stats.download_times) if self._stats.download_times else 0
             )
 
             # Calculate network speed
@@ -255,9 +249,7 @@ class DownloadStatsTracker:
             # Calculate average download rate
             avg_download_rate = "N/A"
             if self._stats.download_rates:
-                avg_rate_bps = sum(self._stats.download_rates) / len(
-                    self._stats.download_rates
-                )
+                avg_rate_bps = sum(self._stats.download_rates) / len(self._stats.download_rates)
                 avg_download_rate = self._format_bytes_per_second(avg_rate_bps)
 
             return {
@@ -293,9 +285,7 @@ class DownloadStatsTracker:
             True if stats should be logged (every 10 attempts)
         """
         with self._lock:
-            return (
-                self._stats.total_attempts > 0 and self._stats.total_attempts % 10 == 0
-            )
+            return self._stats.total_attempts > 0 and self._stats.total_attempts % 10 == 0
 
     def should_collect_diagnostics(self) -> bool:
         """Check if network diagnostics should be collected.

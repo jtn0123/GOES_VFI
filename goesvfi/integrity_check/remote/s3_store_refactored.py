@@ -101,9 +101,7 @@ class S3Store(RemoteStore):
 
         # Collect initial diagnostics
         try:
-            LOGGER.info(
-                "Collecting system and network diagnostics during S3Store initialization"
-            )
+            LOGGER.info("Collecting system and network diagnostics during S3Store initialization")
             self._network_diagnostics.log_system_info()
         except Exception as e:
             LOGGER.error("Error collecting system diagnostics: %s", e)
@@ -173,12 +171,10 @@ class S3Store(RemoteStore):
                 self._stats_tracker.increment_retry()
 
                 if retry_count >= max_retries:
-                    error_details = (
-                        self._network_diagnostics.create_network_error_details(
-                            asyncio.TimeoutError("Client creation timeout"),
-                            "Creating S3 client",
-                            {"attempts": retry_count, "timeouts": [15, 22.5, 30]},
-                        )
+                    error_details = self._network_diagnostics.create_network_error_details(
+                        asyncio.TimeoutError("Client creation timeout"),
+                        "Creating S3 client",
+                        {"attempts": retry_count, "timeouts": [15, 22.5, 30]},
                     )
                     raise RemoteConnectionError(
                         message="Connection to AWS S3 timed out",
@@ -278,9 +274,7 @@ class S3Store(RemoteStore):
         Returns:
             True if file exists, False otherwise
         """
-        bucket, key = self._get_bucket_and_key(
-            ts, satellite, product_type=product_type, band=band, exact_match=True
-        )
+        bucket, key = self._get_bucket_and_key(ts, satellite, product_type=product_type, band=band, exact_match=True)
         s3 = await self._get_s3_client()
 
         try:
@@ -332,9 +326,7 @@ class S3Store(RemoteStore):
         Raises:
             Various RemoteStoreError subclasses
         """
-        bucket, key = self._get_bucket_and_key(
-            ts, satellite, product_type=product_type, band=band, exact_match=True
-        )
+        bucket, key = self._get_bucket_and_key(ts, satellite, product_type=product_type, band=band, exact_match=True)
         s3 = await self._get_s3_client()
 
         LOGGER.info(
@@ -350,9 +342,7 @@ class S3Store(RemoteStore):
             has_exact_match = await self._check_exact_file(s3, bucket, key)
 
             if has_exact_match:
-                return await self._download_file(
-                    s3, bucket, key, dest_path, ts, satellite
-                )
+                return await self._download_file(s3, bucket, key, dest_path, ts, satellite)
             else:
                 # Try wildcard match
                 bucket, wildcard_key = self._get_bucket_and_key(
@@ -363,13 +353,9 @@ class S3Store(RemoteStore):
                     band=band,
                 )
 
-                best_match_key = await self._find_best_match(
-                    s3, bucket, wildcard_key, ts, satellite
-                )
+                best_match_key = await self._find_best_match(s3, bucket, wildcard_key, ts, satellite)
 
-                return await self._download_file(
-                    s3, bucket, best_match_key, dest_path, ts, satellite
-                )
+                return await self._download_file(s3, bucket, best_match_key, dest_path, ts, satellite)
 
         except Exception as e:
             # Handle all errors consistently
@@ -440,9 +426,7 @@ class S3Store(RemoteStore):
 
         # Create search parameters
         sat_code = f"_{SATELLITE_CODES.get(satellite)}_"
-        timestamp_part = (
-            f"s{ts.year}{ts.strftime('%j')}{ts.strftime('%H')}{ts.strftime('%M')}"
-        )
+        timestamp_part = f"s{ts.year}{ts.strftime('%j')}{ts.strftime('%H')}{ts.strftime('%M')}"
 
         # Create regex pattern
         filename_pattern = wildcard_key.split("/")[-1]
@@ -601,9 +585,7 @@ class S3Store(RemoteStore):
 
     # Implement abstract methods from RemoteStore
 
-    async def check_file_exists(
-        self, timestamp: datetime, satellite: SatellitePattern
-    ) -> bool:
+    async def check_file_exists(self, timestamp: datetime, satellite: SatellitePattern) -> bool:
         """Check if a file exists for the given timestamp and satellite."""
         return await self.exists(timestamp, satellite)
 
@@ -618,9 +600,7 @@ class S3Store(RemoteStore):
         """Download a file for the given timestamp and satellite."""
         return await self.download(timestamp, satellite, destination)
 
-    async def get_file_url(
-        self, timestamp: datetime, satellite: SatellitePattern
-    ) -> str:
+    async def get_file_url(self, timestamp: datetime, satellite: SatellitePattern) -> str:
         """Get the URL for a file."""
         bucket, key = self._get_bucket_and_key(timestamp, satellite)
         return f"s3://{bucket}/{key}"

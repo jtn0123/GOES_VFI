@@ -3,7 +3,8 @@
 Frames are saved as ``.npy`` files using a SHA-256 hash derived from the two
 input frame paths, the RIFE model identifier and the number of interpolated
 frames.  When the same inputs are processed again the cached ``.npy`` files are
-loaded instead of recomputing the interpolation."""
+loaded instead of recomputing the interpolation.
+"""
 
 from __future__ import annotations
 
@@ -86,9 +87,7 @@ def load_cached(
 
     if all_exist:
         # Load all frames if they all exist
-        LOGGER.debug(
-            "All cache files found, attempting to load %s files", len(frame_paths)
-        )
+        LOGGER.debug("All cache files found, attempting to load %s files", len(frame_paths))
         loaded_frames: List[NDArray[Any]] = []
         try:
             for npy_path in frame_paths:

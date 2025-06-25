@@ -19,9 +19,7 @@ class RecoveryStrategy(ABC):
         pass
 
     @abstractmethod
-    def recover(
-        self, error: StructuredError, context: Optional[Dict[str, Any]] = None
-    ) -> Any:
+    def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
         """
         Attempt to recover from the error.
 
@@ -41,9 +39,7 @@ class FileRecoveryStrategy(RecoveryStrategy):
             ErrorCategory.PERMISSION,
         ]
 
-    def recover(
-        self, error: StructuredError, context: Optional[Dict[str, Any]] = None
-    ) -> Any:
+    def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
         """Attempt file recovery."""
         # This is a placeholder - specific recovery logic would go here
         raise NotImplementedError("File recovery strategy not implemented")
@@ -52,16 +48,14 @@ class FileRecoveryStrategy(RecoveryStrategy):
 class RetryRecoveryStrategy(RecoveryStrategy):
     """Recovery strategy that retries the operation."""
 
-    def __init__(self, max_retries: int = 3):
+    def __init__(self, max_retries: int = 3) -> None:
         self.max_retries = max_retries
 
     def can_recover(self, error: StructuredError) -> bool:
         """Can retry network and external tool errors."""
         return error.category in [ErrorCategory.NETWORK, ErrorCategory.EXTERNAL_TOOL]
 
-    def recover(
-        self, error: StructuredError, context: Optional[Dict[str, Any]] = None
-    ) -> Any:
+    def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
         """Attempt retry recovery."""
         # This is a placeholder - specific retry logic would go here
         raise NotImplementedError("Retry recovery strategy not implemented")
@@ -70,7 +64,7 @@ class RetryRecoveryStrategy(RecoveryStrategy):
 class RecoveryManager:
     """Manages error recovery strategies."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.strategies: list[RecoveryStrategy] = []
 
     def add_strategy(self, strategy: RecoveryStrategy) -> "RecoveryManager":
@@ -78,9 +72,7 @@ class RecoveryManager:
         self.strategies.append(strategy)
         return self
 
-    def attempt_recovery(
-        self, error: StructuredError, context: Optional[Dict[str, Any]] = None
-    ) -> Any:
+    def attempt_recovery(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
         """
         Attempt to recover from an error using available strategies.
 

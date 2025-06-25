@@ -7,7 +7,7 @@ complexity in settings-heavy functions.
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from PyQt6.QtCore import QSettings
 
@@ -24,7 +24,7 @@ class SettingsSection(ABC):
     complexity by organizing settings into focused, manageable units.
     """
 
-    def __init__(self, name: str, classifier: Optional[ErrorClassifier] = None):
+    def __init__(self, name: str, classifier: Optional[ErrorClassifier] = None) -> None:
         self.name = name
         self.classifier = classifier or ErrorClassifier()
         self._values: Dict[str, Any] = {}
@@ -66,16 +66,12 @@ class SettingsSection(ABC):
                 qsettings.setValue(key, value)
             return True
         except Exception as e:
-            error = self.classifier.create_structured_error(
-                e, f"save_{self.name}_settings", "settings_section"
-            )
+            error = self.classifier.create_structured_error(e, f"save_{self.name}_settings", "settings_section")
             self._errors.append(error)
             LOGGER.warning(f"Failed to save {self.name} settings: {error.user_message}")
             return False
 
-    def load_from_qsettings(
-        self, qsettings: QSettings, defaults: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    def load_from_qsettings(self, qsettings: QSettings, defaults: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Load this section's values from QSettings.
 
@@ -95,9 +91,7 @@ class SettingsSection(ABC):
                 loaded_values[key] = qsettings.value(key, default_value)
             return loaded_values
         except Exception as e:
-            error = self.classifier.create_structured_error(
-                e, f"load_{self.name}_settings", "settings_section"
-            )
+            error = self.classifier.create_structured_error(e, f"load_{self.name}_settings", "settings_section")
             self._errors.append(error)
             LOGGER.warning(f"Failed to load {self.name} settings: {error.user_message}")
             return defaults
@@ -128,9 +122,7 @@ class SettingsManager:
     multiple focused sections instead of one monolithic function.
     """
 
-    def __init__(
-        self, qsettings: QSettings, classifier: Optional[ErrorClassifier] = None
-    ):
+    def __init__(self, qsettings: QSettings, classifier: Optional[ErrorClassifier] = None) -> None:
         self.qsettings = qsettings
         self.classifier = classifier or ErrorClassifier()
         self.sections: Dict[str, SettingsSection] = {}
@@ -165,20 +157,14 @@ class SettingsManager:
                     all_successful = False
 
             except Exception as e:
-                error = self.classifier.create_structured_error(
-                    e, f"save_{section_name}", "settings_manager"
-                )
+                error = self.classifier.create_structured_error(e, f"save_{section_name}", "settings_manager")
                 self._global_errors.append(error)
-                LOGGER.error(
-                    f"Failed to save section {section_name}: {error.user_message}"
-                )
+                LOGGER.error(f"Failed to save section {section_name}: {error.user_message}")
                 all_successful = False
 
         return all_successful
 
-    def load_all_settings(
-        self, target_object: Any, defaults: Optional[Dict[str, Dict[str, Any]]] = None
-    ) -> bool:
+    def load_all_settings(self, target_object: Any, defaults: Optional[Dict[str, Dict[str, Any]]] = None) -> bool:
         """
         Load all settings sections.
 
@@ -202,13 +188,9 @@ class SettingsManager:
                 section.apply_values(target_object, values)
 
             except Exception as e:
-                error = self.classifier.create_structured_error(
-                    e, f"load_{section_name}", "settings_manager"
-                )
+                error = self.classifier.create_structured_error(e, f"load_{section_name}", "settings_manager")
                 self._global_errors.append(error)
-                LOGGER.error(
-                    f"Failed to load section {section_name}: {error.user_message}"
-                )
+                LOGGER.error(f"Failed to load section {section_name}: {error.user_message}")
                 all_successful = False
 
         return all_successful

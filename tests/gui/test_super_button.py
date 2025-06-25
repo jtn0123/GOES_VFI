@@ -24,7 +24,7 @@ def app():
 
 
 @pytest.fixture
-def super_button(app):
+def super_button(app: QApplication) -> SuperButton:
     """Create a SuperButton instance for testing."""
     button = SuperButton("Test Button")
     button.show()
@@ -94,9 +94,7 @@ class TestSuperButton:
             app.processEvents()
 
             # Check that debug print was called
-            mock_print.assert_any_call(
-                f"SuperButton MOUSE PRESS: {Qt.MouseButton.LeftButton}"
-            )
+            mock_print.assert_any_call(f"SuperButton MOUSE PRESS: {Qt.MouseButton.LeftButton}")
 
     def test_mouse_press_event_none(self, super_button):
         """Test mouse press event with None event."""
@@ -104,9 +102,7 @@ class TestSuperButton:
         super_button.mousePressEvent(None)
         # No exception should be raised
 
-    def test_mouse_release_event_left_click_with_callback(
-        self, super_button, app, qtbot
-    ):
+    def test_mouse_release_event_left_click_with_callback(self, super_button, app, qtbot):
         """Test mouse release event with left click and callback."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -126,13 +122,9 @@ class TestSuperButton:
             super_button.mouseReleaseEvent(event)
 
             # Check debug prints
-            mock_print.assert_any_call(
-                f"SuperButton MOUSE RELEASE: {Qt.MouseButton.LeftButton}"
-            )
+            mock_print.assert_any_call(f"SuperButton MOUSE RELEASE: {Qt.MouseButton.LeftButton}")
             mock_print.assert_any_call("SuperButton: LEFT CLICK DETECTED")
-            mock_print.assert_any_call(
-                f"SuperButton: Calling callback {callback.__name__}"
-            )
+            mock_print.assert_any_call(f"SuperButton: Calling callback {callback.__name__}")
 
             # Wait for the timer to fire (10ms delay)
             qtbot.wait(20)
@@ -157,9 +149,7 @@ class TestSuperButton:
             app.processEvents()
 
             # Check debug prints
-            mock_print.assert_any_call(
-                f"SuperButton MOUSE RELEASE: {Qt.MouseButton.LeftButton}"
-            )
+            mock_print.assert_any_call(f"SuperButton MOUSE RELEASE: {Qt.MouseButton.LeftButton}")
             mock_print.assert_any_call("SuperButton: LEFT CLICK DETECTED")
             mock_print.assert_any_call("SuperButton: No callback registered")
 
@@ -183,9 +173,7 @@ class TestSuperButton:
             super_button.mouseReleaseEvent(event)
 
             # Check that only the release was logged, not the left click detection
-            mock_print.assert_any_call(
-                f"SuperButton MOUSE RELEASE: {Qt.MouseButton.RightButton}"
-            )
+            mock_print.assert_any_call(f"SuperButton MOUSE RELEASE: {Qt.MouseButton.RightButton}")
 
             # Ensure "LEFT CLICK DETECTED" was NOT printed
             for call in mock_print.call_args_list:
@@ -386,21 +374,13 @@ class TestSuperButton:
         pos = super_button.rect().center()
 
         # First click
-        QTest.mousePress(
-            super_button, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pos
-        )
-        QTest.mouseRelease(
-            super_button, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pos
-        )
+        QTest.mousePress(super_button, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pos)
+        QTest.mouseRelease(super_button, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pos)
         qtbot.wait(5)
 
         # Second click (quickly after first)
-        QTest.mousePress(
-            super_button, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pos
-        )
-        QTest.mouseRelease(
-            super_button, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pos
-        )
+        QTest.mousePress(super_button, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pos)
+        QTest.mouseRelease(super_button, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pos)
         qtbot.wait(20)  # Wait for timers
 
         # Both clicks should have triggered the callback
@@ -449,10 +429,7 @@ class TestSuperButton:
 
         # Set accessibility description
         super_button.setAccessibleDescription("A button with enhanced click handling")
-        assert (
-            super_button.accessibleDescription()
-            == "A button with enhanced click handling"
-        )
+        assert super_button.accessibleDescription() == "A button with enhanced click handling"
 
     def test_style_sheet_compatibility(self, super_button):
         """Test that custom stylesheets work with SuperButton."""

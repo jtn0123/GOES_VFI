@@ -7,13 +7,13 @@ in functions with extensive parameter checking.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Type
 
 
 class ValidationError(Exception):
     """Base exception for validation failures."""
 
-    def __init__(self, message: str, field: Optional[str] = None, value: Any = None):
+    def __init__(self, message: str, field: Optional[str] = None, value: Any = None) -> None:
         self.message = message
         self.field = field
         self.value = value
@@ -35,17 +35,17 @@ class ValidationResult:
     warnings: List[str]
 
     @classmethod
-    def success(cls) -> "ValidationResult":
+    def success(cls: Type["ValidationResult"]) -> "ValidationResult":
         """Create a successful validation result."""
         return cls(is_valid=True, errors=[], warnings=[])
 
     @classmethod
-    def failure(cls, error: ValidationError) -> "ValidationResult":
+    def failure(cls: Type["ValidationResult"], error: ValidationError) -> "ValidationResult":
         """Create a failed validation result."""
         return cls(is_valid=False, errors=[error], warnings=[])
 
     @classmethod
-    def failures(cls, errors: List[ValidationError]) -> "ValidationResult":
+    def failures(cls: Type["ValidationResult"], errors: List[ValidationError]) -> "ValidationResult":
         """Create a failed validation result with multiple errors."""
         return cls(is_valid=False, errors=errors, warnings=[])
 
@@ -72,13 +72,11 @@ class ValidationResult:
 class ValidatorBase(ABC):
     """Base class for all validators."""
 
-    def __init__(self, field_name: Optional[str] = None):
+    def __init__(self, field_name: Optional[str] = None) -> None:
         self.field_name = field_name
 
     @abstractmethod
-    def validate(
-        self, value: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ValidationResult:
+    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
         """
         Validate a value.
 
@@ -99,15 +97,11 @@ class ValidatorBase(ABC):
 class CompositeValidator(ValidatorBase):
     """Validator that combines multiple validators."""
 
-    def __init__(
-        self, validators: List[ValidatorBase], field_name: Optional[str] = None
-    ):
+    def __init__(self, validators: List[ValidatorBase], field_name: Optional[str] = None) -> None:
         super().__init__(field_name)
         self.validators = validators
 
-    def validate(
-        self, value: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ValidationResult:
+    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
         """Run all validators and combine results."""
         result = ValidationResult.success()
 
@@ -124,17 +118,15 @@ class ConditionalValidator(ValidatorBase):
     def __init__(
         self,
         validator: ValidatorBase,
-        condition_func: callable,
+        condition_func: Callable[..., bool],
         field_name: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__(field_name)
         self.validator = validator
         self.condition_func = condition_func
 
-    def validate(
-        self, value: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ValidationResult:
+    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
         """Run validator only if condition is true."""
-        if self.condition_func(value, context):
+        if callable(self.condition_func) and self.condition_func(value, context):
             return self.validator.validate(value, context)
         return ValidationResult.success()

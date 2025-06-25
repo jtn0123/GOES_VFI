@@ -193,9 +193,7 @@ class EnhancedMainTab(MainTab):
         if first_path.is_dir():
             # Set as input directory
             self.in_dir_edit.setText(str(first_path))
-            self._notification.show_message(
-                f"Input directory set to: {first_path.name}"
-            )
+            self._notification.show_message(f"Input directory set to: {first_path.name}")
         elif first_path.suffix.lower() in [".mp4", ".avi", ".mov", ".mkv"]:
             # Set as output file
             self.out_file_edit.setText(str(first_path))
@@ -206,9 +204,7 @@ class EnhancedMainTab(MainTab):
             if first_path.suffix.lower() in image_extensions:
                 # Set parent directory as input
                 self.in_dir_edit.setText(str(first_path.parent))
-                self._notification.show_message(
-                    f"Input directory set to: {first_path.parent.name}"
-                )
+                self._notification.show_message(f"Input directory set to: {first_path.parent.name}")
 
     @pyqtSlot(dict)
     def _update_progress_stats(self, stats: Dict[str, Any]) -> None:
@@ -241,9 +237,8 @@ class EnhancedMainTab(MainTab):
         # Start progress tracking
         self._progress_tracker.start()
 
-        # Call parent implementation if it exists
-        if hasattr(super(), "_handle_start_vfi"):
-            super()._handle_start_vfi()
+        # Parent class doesn't have _handle_start_vfi method
+        # This is an enhancement-specific method
 
         # Show notification
         self._notification.show_message("Processing started...")
@@ -254,12 +249,12 @@ class EnhancedMainTab(MainTab):
         if hasattr(self, "_loading_spinner"):
             self._loading_spinner.stop()
 
-        # Stop progress tracking
-        self._progress_tracker.stop()
+        # Reset progress tracking
+        self._progress_tracker.set_progress(0)
+        self._progress_tracker.set_status("Stopped")
 
-        # Call parent implementation if it exists
-        if hasattr(super(), "_handle_stop_vfi"):
-            super()._handle_stop_vfi()
+        # Parent class doesn't have _handle_stop_vfi method
+        # This is an enhancement-specific method
 
         # Show notification
         self._notification.show_message("Processing stopped")

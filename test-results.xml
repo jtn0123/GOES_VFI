@@ -1,13 +1,61 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="4.140" timestamp="2025-06-24T20:52:40.449602-07:00" hostname="Mac.localdomain"><testcase classname="" name="tests.unit.test_batch_processing_tab" time="0.000"><error message="collection failure">tests/unit/test_batch_processing_tab.py:8: in &lt;module&gt;
-    disable_all_gui_popups()
-tests/utils/disable_popups.py:137: in disable_all_gui_popups
-    _active_patches = apply_gui_patches()
-tests/utils/disable_popups.py:124: in apply_gui_patches
-    p.start()
-/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1654: in start
-    result = self.__enter__()
-/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1497: in __enter__
-    original, local = self.get_original()
-/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1467: in get_original
-    raise AttributeError(
-E   AttributeError: &lt;module 'goesvfi.gui' from '/Users/justin/Documents/Github/GOES_VFI/goesvfi/gui.py'&gt; does not have the attribute 'QFileDialog'</error></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="10" failures="0" skipped="0" tests="10" time="7.376" timestamp="2025-06-24T22:32:13.749095-07:00" hostname="Mac.localdomain"><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_main_tab_all_buttons" time="1.082"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_main_tab_all_checkboxes" time="0.958"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_main_tab_all_spinboxes_and_combos" time="0.063"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_ffmpeg_tab_all_controls" time="0.063"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_file_sorter_tab_all_controls" time="0.064"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_date_sorter_tab_all_controls" time="0.065"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_batch_processing_tab_controls" time="0.064"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_satellite_integrity_tab_navigation" time="0.067"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_preview_image_interactions" time="0.063"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_keyboard_shortcuts" time="0.068"><error message="failed on setup with &quot;AttributeError: module 'goesvfi.gui' has no attribute 'config'&quot;">tests/integration/test_all_gui_elements.py:39: in main_window
+    patch("goesvfi.gui.config.get_available_rife_models") as mock_models,
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1481: in __enter__
+    self.target = self.getter()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/pkgutil.py:528: in resolve_name
+    result = getattr(result, p)
+E   AttributeError: module 'goesvfi.gui' has no attribute 'config'</error></testcase></testsuite></testsuites>

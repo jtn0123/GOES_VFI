@@ -301,9 +301,7 @@ class EnhancedGOESImageryTab(QWidget):
 
         # Title
         title = QLabel("📊 Image Information")
-        title.setStyleSheet(
-            "font-size: 14px; font-weight: bold; color: #ffffff; padding: 5px;"
-        )
+        title.setStyleSheet("font-size: 14px; font-weight: bold; color: #ffffff; padding: 5px;")
         layout.addWidget(title)
 
         # Info content
@@ -365,9 +363,7 @@ class EnhancedGOESImageryTab(QWidget):
         elif "loading" in message.lower() or "processing" in message.lower():
             color = "#ffaa66"
             border_color = "#ffaa66"
-        elif any(
-            word in message.lower() for word in ["completed", "success", "loaded"]
-        ):
+        elif any(word in message.lower() for word in ["completed", "success", "loaded"]):
             color = "#66ff66"
             border_color = "#66ff66"
         else:
@@ -408,9 +404,7 @@ class EnhancedGOESImageryTab(QWidget):
         self._update_info_panel()
         self._update_status(f"🕰️ Timestamp set to: {timestamp}")
 
-    def set_data(
-        self, items: List[Any], start_date: datetime, end_date: datetime
-    ) -> None:
+    def set_data(self, items: List[Any], start_date: datetime, end_date: datetime) -> None:
         """Set data for the imagery tab.
 
         Args:

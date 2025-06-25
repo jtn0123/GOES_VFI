@@ -11,7 +11,6 @@ from .patterns import (
     COMPILED_GOES_PATTERNS,
     COMPILED_PATTERNS,
     SatellitePattern,
-    get_satellite_info,
 )
 
 LOGGER = log.get_logger(__name__)
@@ -289,9 +288,7 @@ class TimestampFormatter:
         return f"{base_name}_{{timestamp}}Z.png"
 
     @staticmethod
-    def generate_expected_filename(
-        timestamp: datetime, pattern: SatellitePattern, base_name: str = "image"
-    ) -> str:
+    def generate_expected_filename(timestamp: datetime, pattern: SatellitePattern, base_name: str = "image") -> str:
         """
         Generate an expected filename for a given timestamp and pattern.
 
@@ -312,9 +309,7 @@ class TimestampGenerator:
     """Generate timestamp sequences and detect intervals."""
 
     @staticmethod
-    def generate_timestamp_sequence(
-        start_time: datetime, end_time: datetime, interval_minutes: int
-    ) -> List[datetime]:
+    def generate_timestamp_sequence(start_time: datetime, end_time: datetime, interval_minutes: int) -> List[datetime]:
         """
         Generate a sequence of timestamps at regular intervals.
 
@@ -356,9 +351,7 @@ class TimestampGenerator:
             The most common interval in minutes, rounded to nearest 5 minutes
         """
         if len(timestamps) < 2:
-            LOGGER.warning(
-                "Not enough timestamps to detect interval, using default of 30 minutes"
-            )
+            LOGGER.warning("Not enough timestamps to detect interval, using default of 30 minutes")
             return 30  # Default to 30 minutes if not enough data
 
         # Sort timestamps to ensure correct interval calculation

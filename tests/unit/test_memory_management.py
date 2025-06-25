@@ -92,14 +92,15 @@ class TestMemoryMonitor:
 
     def test_get_memory_stats_psutil_mock(self):
         """Memory stats should be retrieved using psutil when available."""
-        fake_vm = Mock(total=8 * 1024**3, available=6 * 1024**3,
-                       used=2 * 1024**3, percent=25.0)
+        fake_vm = Mock(total=8 * 1024**3, available=6 * 1024**3, used=2 * 1024**3, percent=25.0)
         fake_proc = Mock()
         fake_proc.memory_info.return_value = Mock(rss=256 * 1024**2)
         fake_proc.memory_percent.return_value = 1.2
 
-        with patch("goesvfi.utils.memory_manager.psutil") as mock_psutil, \
-             patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", True):
+        with (
+            patch("goesvfi.utils.memory_manager.psutil") as mock_psutil,
+            patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", True),
+        ):
             mock_psutil.virtual_memory.return_value = fake_vm
             mock_psutil.Process.return_value = fake_proc
 
@@ -117,8 +118,10 @@ class TestMemoryMonitor:
         """Fallback path should work when psutil is unavailable."""
         fake_rusage = Mock(ru_maxrss=500000)
 
-        with patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", False), \
-             patch("resource.getrusage", return_value=fake_rusage):
+        with (
+            patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", False),
+            patch("resource.getrusage", return_value=fake_rusage),
+        ):
             monitor = MemoryMonitor()
             stats = monitor.get_memory_stats()
 
@@ -227,7 +230,7 @@ class TestImageLoaderMemoryIntegration:
 
     @patch("goesvfi.utils.memory_manager.MemoryOptimizer")
     @patch("PIL.Image.open")
-    def test_memory_optimized_loading(self, mock_open, mock_optimizer_class):
+    def test_memory_optimized_loading(self, mock_open, _mock_optimizer_class):
         """Test memory-optimized image loading."""
         # Setup mocks
         mock_img = MagicMock()

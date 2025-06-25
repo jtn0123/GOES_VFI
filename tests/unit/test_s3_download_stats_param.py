@@ -54,9 +54,7 @@ def test_update_download_stats_basic(success, error_type):
 
 def test_error_history_limit():
     for i in range(25):
-        update_download_stats(
-            success=False, error_type="network", error_message=f"e{i}"
-        )
+        update_download_stats(success=False, error_type="network", error_message=f"e{i}")
     assert len(s3_store.DOWNLOAD_STATS["errors"]) == 20
 
 

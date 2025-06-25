@@ -121,9 +121,7 @@ class TestCorruptFileHandling:
     @pytest.mark.asyncio
     async def test_truncated_file_handling(self, temp_dir, netcdf_renderer):
         """Test handling of truncated NetCDF files."""
-        truncated_file = self.create_corrupt_file(
-            temp_dir / "truncated.nc", "truncated"
-        )
+        truncated_file = self.create_corrupt_file(temp_dir / "truncated.nc", "truncated")
 
         with patch("xarray.open_dataset") as mock_open:
             mock_open.side_effect = OSError("Truncated file")
@@ -156,15 +154,15 @@ class TestCorruptFileHandling:
 
     def test_corrupted_image_loading(self, temp_dir, image_loader):
         """Test loading of corrupted image files."""
-        corrupted_image = self.create_corrupt_file(
-            temp_dir / "corrupted.png", "corrupted_image"
-        )
+        corrupted_image = self.create_corrupt_file(temp_dir / "corrupted.png", "corrupted_image")
 
         with patch("PIL.Image.open") as mock_open:
             mock_open.side_effect = IOError("Cannot identify image file")
 
-            # ImageLoader raises IOError, not PipelineError
-            with pytest.raises(IOError) as exc_info:
+            # ImageLoader catches IOError and re-raises as InputError
+            from goesvfi.pipeline.exceptions import InputError
+
+            with pytest.raises(InputError) as exc_info:
                 image_loader.load(str(corrupted_image))
 
             assert "Cannot identify image file" in str(exc_info.value)
@@ -184,19 +182,14 @@ class TestCorruptFileHandling:
         # In a real scenario, this would raise an error
         with pytest.raises(RemoteStoreError) as exc_info:
             if actual_checksum != expected_checksum:
-                raise RemoteStoreError(
-                    f"Checksum mismatch: expected {expected_checksum}, "
-                    f"got {actual_checksum}"
-                )
+                raise RemoteStoreError(f"Checksum mismatch: expected {expected_checksum}, " f"got {actual_checksum}")
 
         assert "Checksum mismatch" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_partial_download_detection(self, temp_dir):
         """Test detection of partially downloaded files."""
-        partial_file = self.create_corrupt_file(
-            temp_dir / "partial.nc", "partial_download"
-        )
+        partial_file = self.create_corrupt_file(temp_dir / "partial.nc", "partial_download")
 
         expected_size = 1024 * 1024  # 1MB
         actual_size = partial_file.stat().st_size
@@ -207,8 +200,7 @@ class TestCorruptFileHandling:
         with pytest.raises(RemoteStoreError) as exc_info:
             if actual_size < expected_size:
                 raise RemoteStoreError(
-                    f"Incomplete download: expected {expected_size} bytes, "
-                    f"got {actual_size} bytes"
+                    f"Incomplete download: expected {expected_size} bytes, " f"got {actual_size} bytes"
                 )
 
         assert "Incomplete download" in str(exc_info.value)
@@ -218,9 +210,7 @@ class TestCorruptFileHandling:
         if not hasattr(Path, "chmod"):
             pytest.skip("chmod not available on this platform")
 
-        restricted_file = self.create_corrupt_file(
-            temp_dir / "restricted.nc", "wrong_permissions"
-        )
+        restricted_file = self.create_corrupt_file(temp_dir / "restricted.nc", "wrong_permissions")
 
         try:
             # Attempt to read file with no permissions
@@ -234,9 +224,7 @@ class TestCorruptFileHandling:
     @pytest.mark.asyncio
     async def test_invalid_netcdf_structure(self, temp_dir, netcdf_renderer):
         """Test handling of NetCDF files with invalid internal structure."""
-        invalid_structure = self.create_corrupt_file(
-            temp_dir / "invalid_structure.nc", "invalid_structure"
-        )
+        invalid_structure = self.create_corrupt_file(temp_dir / "invalid_structure.nc", "invalid_structure")
 
         # Mock xarray to raise KeyError which should be converted to PipelineError
         with patch("xarray.open_dataset") as mock_open:
@@ -299,9 +287,7 @@ class TestCorruptFileHandling:
         """Test Sanchez processing with corrupt input files."""
         processor = SanchezProcessor(temp_dir=temp_dir)
 
-        corrupt_input = self.create_corrupt_file(
-            temp_dir / "corrupt_input.png", "corrupted_image"
-        )
+        corrupt_input = self.create_corrupt_file(temp_dir / "corrupt_input.png", "corrupted_image")
 
         # Mock the colourise function to raise an error
         with patch("goesvfi.pipeline.sanchez_processor.colourise") as mock_colourise:
@@ -346,9 +332,7 @@ class TestCorruptFileHandling:
             test_file.write_bytes(b"Writer 2")
 
         # Run concurrent writes
-        await asyncio.gather(
-            corrupt_write(), interfering_write(), return_exceptions=True
-        )
+        await asyncio.gather(corrupt_write(), interfering_write(), return_exceptions=True)
 
         # File is now corrupted with partial data
         content = test_file.read_bytes()
@@ -381,9 +365,7 @@ class TestCorruptFileHandling:
                 decompressed_size += len(chunk)
 
                 if decompressed_size > max_decompressed_size:
-                    raise ValueError(
-                        f"Decompressed size exceeds limit: {decompressed_size} > {max_decompressed_size}"
-                    )
+                    raise ValueError(f"Decompressed size exceeds limit: {decompressed_size} > {max_decompressed_size}")
 
     @pytest.mark.asyncio
     async def test_file_format_validation(self, temp_dir):
@@ -407,9 +389,7 @@ class TestCorruptFileHandling:
 
     def test_graceful_error_messages(self, temp_dir):
         """Test that error messages are helpful for corrupt files."""
-        corrupt_file = self.create_corrupt_file(
-            temp_dir / "bad_data.nc", "corrupted_data"
-        )
+        corrupt_file = self.create_corrupt_file(temp_dir / "bad_data.nc", "corrupted_data")
 
         error_messages = {
             "empty": "File is empty. Please ensure the download completed successfully.",

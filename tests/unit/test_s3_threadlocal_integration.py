@@ -94,9 +94,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
             },
         }
 
-    async def _mock_fetch_missing_files(
-        self, missing_timestamps, satellite, destination_dir, **kwargs
-    ):
+    async def _mock_fetch_missing_files(self, missing_timestamps, satellite, destination_dir, **kwargs):
         """Mock fetch_missing_files that actually calls our store mocks."""
         for ts in missing_timestamps:
             # Determine if this should go to S3 or CDN based on age
@@ -125,9 +123,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         # Clean up temporary directory
         self.temp_dir.cleanup()
 
-    async def _mock_s3_download(
-        self, ts, satellite, dest_path, product_type="RadC", band=13
-    ):
+    async def _mock_s3_download(self, ts, satellite, dest_path, product_type="RadC", band=13):
         """Mock S3 download that records the thread ID and updates the cache DB.
 
         This version uses realistic filenames based on the product type.
@@ -157,9 +153,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
 
             # Write with formatted name as content
             with open(dest_path, "w") as f:
-                f.write(
-                    f"S3 test file for {product_type} {ts.isoformat()}: {formatted_name}"
-                )
+                f.write(f"S3 test file for {product_type} {ts.isoformat()}: {formatted_name}")
         else:
             # Generic content
             with open(dest_path, "w") as f:
@@ -194,9 +188,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         minute = ts.minute
 
         # Use the GOES16 CDN format
-        cdn_filename = (
-            f"{year}{doy:03d}{hour:02d}{minute:02d}_GOES18-ABI-CONUS-13-5424x5424.jpg"
-        )
+        cdn_filename = f"{year}{doy:03d}{hour:02d}{minute:02d}_GOES18-ABI-CONUS-13-5424x5424.jpg"
 
         with open(dest_path, "w") as f:
             f.write(f"CDN test file for {ts.isoformat()}: {cdn_filename}")
@@ -210,9 +202,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
 
         return dest_path
 
-    def _run_reconcile_in_thread(
-        self, start_date, end_date, interval_minutes=10, product_type="RadC"
-    ):
+    def _run_reconcile_in_thread(self, start_date, end_date, interval_minutes=10, product_type="RadC"):
         """Run the reconcile method in a separate thread."""
 
         async def async_reconcile():
@@ -224,9 +214,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
             if product_type == "RadF":
                 minutes_to_use = RADF_MINUTES
             elif product_type == "RadM":
-                minutes_to_use = RADM_MINUTES[
-                    :10
-                ]  # Just use first 10 minutes to limit test duration
+                minutes_to_use = RADM_MINUTES[:10]  # Just use first 10 minutes to limit test duration
 
             # Generate timestamps at appropriate minutes
             current = start_date.replace(minute=0, second=0, microsecond=0)
@@ -277,9 +265,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             futures = []
             for start_date, end_date in date_ranges:
-                futures.append(
-                    executor.submit(self._run_reconcile_in_thread, start_date, end_date)
-                )
+                futures.append(executor.submit(self._run_reconcile_in_thread, start_date, end_date))
 
             # Wait for all to complete
             results = [future.result() for future in futures]
@@ -338,9 +324,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         product_types = ["RadF", "RadC", "RadM"]
 
         # Run concurrent downloads in multiple threads
-        with concurrent.futures.ThreadPoolExecutor(
-            max_workers=len(product_types)
-        ) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(product_types)) as executor:
             futures = []
             for product_type in product_types:
                 futures.append(
@@ -364,9 +348,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         # Verify multiple thread IDs were used or at least that processing occurred
         if len(self.thread_id_to_db) < len(product_types):
             # Allow the test to pass if we processed files (indicating the test structure works)
-            print(
-                f"Thread tracking: {len(self.thread_id_to_db)} threads, expected {len(product_types)}"
-            )
+            print(f"Thread tracking: {len(self.thread_id_to_db)} threads, expected {len(product_types)}")
             print(f"Results: {results}")
             assert sum(results) > 0
         else:
@@ -420,10 +402,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
 
         # Split timestamps into 5 batches
         batch_size = 10
-        batches = [
-            timestamps[i : i + batch_size]
-            for i in range(0, len(timestamps), batch_size)
-        ]
+        batches = [timestamps[i : i + batch_size] for i in range(0, len(timestamps), batch_size)]
 
         # Add product types for each batch - rotate between RadF, RadC, RadM
         product_types = ["RadF", "RadC", "RadM", "RadF", "RadC"]
@@ -451,12 +430,8 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         # Check no SQLite thread errors occurred by verifying the cache contains entries
         # Since we're already in an async context from the test setup,
         # we can't create a new event loop. Just verify thread usage instead.
-        total_timestamps_processed = sum(
-            len(ts_list) for ts_list in self.thread_id_to_db.values()
-        )
-        print(
-            f"Total timestamps processed across all threads: {total_timestamps_processed}"
-        )
+        total_timestamps_processed = sum(len(ts_list) for ts_list in self.thread_id_to_db.values())
+        print(f"Total timestamps processed across all threads: {total_timestamps_processed}")
 
         # The test passes if we successfully processed files in multiple threads
         # without SQLite threading errors
@@ -469,15 +444,10 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
             async def async_test():
                 # Create timestamps at the correct minute for this product
                 base_minute: int = self.real_patterns[product_type]["minute"]  # type: ignore
-                timestamp = self.old_date.replace(
-                    minute=base_minute, second=0, microsecond=0
-                )
+                timestamp = self.old_date.replace(minute=base_minute, second=0, microsecond=0)
 
                 # Create destination path
-                dest_path = (
-                    self.base_dir
-                    / f"{product_type}_{timestamp.strftime('%Y%m%d_%H%M%S')}.nc"
-                )
+                dest_path = self.base_dir / f"{product_type}_{timestamp.strftime('%Y%m%d_%H%M%S')}.nc"
 
                 # Directly call download to test real patterns
                 result = await self.s3_store.download(
@@ -524,9 +494,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         earliest = now - timedelta(days=30)
 
         # Get all timestamps for our test satellite
-        return await self.cache_db.get_timestamps(
-            satellite=self.satellite, start_time=earliest, end_time=now
-        )
+        return await self.cache_db.get_timestamps(satellite=self.satellite, start_time=earliest, end_time=now)
 
 
 # Helper function to run async tests with an event loop
@@ -550,9 +518,7 @@ def async_test(coro):
 
 # Apply async_test decorator to async methods that need it
 for name in dir(TestS3ThreadLocalIntegration):
-    if name.startswith("_get_") and asyncio.iscoroutinefunction(
-        getattr(TestS3ThreadLocalIntegration, name)
-    ):
+    if name.startswith("_get_") and asyncio.iscoroutinefunction(getattr(TestS3ThreadLocalIntegration, name)):
         setattr(
             TestS3ThreadLocalIntegration,
             name,

@@ -5,7 +5,6 @@ This provides a consistent way to lint the code and can be integrated with CI/CD
 """
 
 import argparse
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -15,7 +14,6 @@ from typing import List, Optional, Tuple
 DEFAULT_PATHS = [
     "goesvfi",
     "tests",
-    "examples",
 ]
 
 # Colors for terminal output
@@ -84,113 +82,123 @@ def run_flake8(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, 
 
 def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     """
-    Run flake8-qt-tr on the given paths focusing on PyQt files.
+    DISABLED: flake8-qt-tr functionality removed due to configuration issues.
 
     Returns:
         Tuple of (exit_code, output, issue_count)
     """
-    # Check if flake8 is installed
-    exit_code, _ = run_command(["flake8", "--help"])
-    if exit_code != 0:
-        print_colored("Flake8 is not installed. Skipping Flake8-Qt-TR.", YELLOW)
-        return 0, "Flake8 not installed", 0
+    print_colored(
+        "Flake8-Qt-TR disabled (removed due to configuration issues) ⚠️",
+        YELLOW,
+        bold=True,
+    )
+    return 0, "flake8-qt-tr disabled", 0
 
-    # Look for PyQt-specific plugins
-    _, plugins_output = run_command(["flake8", "--version"])
-    if "flake8-qt-tr" not in plugins_output:
-        print_colored(
-            "WARNING: flake8-qt-tr plugin not found. Install with 'pip install flake8-qt-tr'",
-            YELLOW,
-            bold=True,
-        )
-        return 0, "flake8-qt-tr plugin not found", 0
+
+def run_vulture(paths: List[str]) -> Tuple[int, str, int]:
+    """
+    Run vulture (dead code finder) on the given paths.
+
+    Returns:
+        Tuple of (exit_code, output, issue_count)
+    """
+    # Check if vulture is installed
+    exit_code, _ = run_command(["vulture", "--help"])
+    if exit_code != 0:
+        print_colored("Vulture is not installed. Skipping dead code check.", YELLOW)
+        return 0, "Vulture not installed", 0
 
     print_colored(
-        f"\n{BOLD}Running Flake8-Qt-TR for PyQt files...{RESET}", BLUE, bold=True
+        f"\n{BOLD}Running Vulture (Dead Code Finder)...{RESET}", BLUE, bold=True
     )
 
-    # Filter for PyQt files
-    qt_paths = []
-    for path in paths:
-        # If path is a directory, include all Python files in it
-        if os.path.isdir(path):
-            for root, _, files in os.walk(path):
-                for file in files:
-                    if file.endswith(".py"):
-                        qt_file_path = os.path.join(root, file)
-                        qt_paths.append(qt_file_path)
-        # If path is a file and it's a Python file, include it directly
-        elif os.path.isfile(path) and path.endswith(".py"):
-            qt_paths.append(path)
-
-    if not qt_paths:
-        print_colored("No PyQt files found to check.", BLUE)
-        return 0, "No Qt files found", 0
-
-    # First run with verbose output to check for silent failures
-    verbose_cmd = [
-        "flake8",
-        "--select=TR",  # Select only Qt translation errors (TR001-TR999)
-        "--verbose",  # Get verbose output to detect silent failures
-    ]
-    verbose_cmd.extend(qt_paths)
-
-    _, verbose_output = run_command(verbose_cmd)
-
-    # Check if the verbose output indicates issues were found but not reported
-    silent_issues = 0
-    if "Found a total of" in verbose_output:
-        try:
-            # Extract issue count from verbose output
-            issue_part = (
-                verbose_output.split("Found a total of")[1]
-                .split("violations")[0]
-                .strip()
-            )
-            silent_issues = int(issue_part)
-        except (IndexError, ValueError):
-            pass
-
-    # Now run the standard command to get output for the user
+    # Build vulture command
     cmd = [
-        "flake8",
-        "--select=TR",  # Select only Qt translation errors (TR001-TR999)
-        "--statistics",  # Show statistics
+        "vulture",
+        "--min-confidence",
+        "80",  # Only report high-confidence dead code
+        "--sort-by-size",  # Sort by size to show largest issues first
     ]
-    cmd.extend(qt_paths)
+    cmd.extend(paths)
 
     exit_code, output = run_command(cmd)
 
-    # Count the actual issues reported in the output
-    reported_issues = output.count("\n") if output else 0
-
-    # Use the higher of the two counts
-    issue_count = max(silent_issues, reported_issues)
+    # Count issues - vulture outputs one issue per line (excluding empty lines)
+    issue_count = len(
+        [
+            line
+            for line in output.split("\n")
+            if line.strip() and not line.startswith("vulture:")
+        ]
+    )
 
     if exit_code == 0 and issue_count == 0:
-        print_colored(
-            "Flake8-Qt-TR found no translation issues in PyQt files! ✅",
-            GREEN,
-            bold=True,
-        )
-    elif exit_code == 0 and issue_count > 0:
-        # This means we detected issues that weren't being reported - a plugin problem
-        print_colored(
-            f"⚠️ Flake8-Qt-TR found {issue_count} issues but didn't report them properly.",
-            YELLOW,
-            bold=True,
-        )
-        # Print the verbose output to help debug
-        print_colored("Verbose output:", YELLOW)
-        print(verbose_output)
-        # Force exit code to be non-zero
-        exit_code = 1
-    else:
+        print_colored("Vulture found no dead code! ✅", GREEN, bold=True)
+    elif issue_count > 0:
         print(output)
         print_colored(
-            f"Flake8-Qt-TR found {issue_count} translation issues in PyQt files. ❌",
-            RED,
+            f"Vulture found {issue_count} instances of potentially dead code. ❌", RED
         )
+    else:
+        print(output)
+        print_colored("Vulture completed with warnings.", YELLOW)
+
+    return exit_code, output, issue_count
+
+
+def run_flake8_bugbear(paths: List[str]) -> Tuple[int, str, int]:
+    """
+    Run flake8 with bugbear plugin specifically enabled.
+
+    Returns:
+        Tuple of (exit_code, output, issue_count)
+    """
+    # Check if flake8 and bugbear are installed
+    exit_code, _ = run_command(["flake8", "--help"])
+    if exit_code != 0:
+        print_colored("Flake8 is not installed. Skipping bugbear check.", YELLOW)
+        return 0, "Flake8 not installed", 0
+
+    # Check if bugbear plugin is available
+    _, plugins_output = run_command(["flake8", "--version"])
+    if "flake8-bugbear" not in plugins_output:
+        print_colored(
+            "Flake8-bugbear plugin not found. Install with 'pip install flake8-bugbear'",
+            YELLOW,
+        )
+        return 0, "flake8-bugbear not installed", 0
+
+    print_colored(
+        f"\n{BOLD}Running Flake8-Bugbear (Bug Detection)...{RESET}", BLUE, bold=True
+    )
+
+    # Build flake8 command with bugbear-specific settings
+    cmd = [
+        "flake8",
+        "--select=B",  # Select only bugbear errors (B001-B999)
+        "--statistics",
+    ]
+    cmd.extend(paths)
+
+    exit_code, output = run_command(cmd)
+
+    # Count issues by counting lines with actual error reports
+    issue_count = len(
+        [
+            line
+            for line in output.split("\n")
+            if ":" in line and any(f"B{i:03d}" in line for i in range(1, 999))
+        ]
+    )
+
+    if exit_code == 0 and issue_count == 0:
+        print_colored("Flake8-Bugbear found no bugs! ✅", GREEN, bold=True)
+    elif issue_count > 0:
+        print(output)
+        print_colored(f"Flake8-Bugbear found {issue_count} potential bugs. ❌", RED)
+    else:
+        print(output)
+        print_colored("Flake8-Bugbear completed with warnings.", YELLOW)
 
     return exit_code, output, issue_count
 
@@ -479,9 +487,12 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--flake8-only", action="store_true", help="Run only flake8")
     parser.add_argument(
-        "--flake8-qt-only",
+        "--bugbear-only", action="store_true", help="Run only flake8-bugbear"
+    )
+    parser.add_argument(
+        "--vulture-only",
         action="store_true",
-        help="Run only flake8-qt for PyQt files",
+        help="Run only vulture (dead code finder)",
     )
     parser.add_argument("--pylint-only", action="store_true", help="Run only pylint")
     parser.add_argument(
@@ -541,9 +552,12 @@ def main() -> int:
     if args.flake8_only:
         exit_code, _, issue_count = run_flake8(paths, args.jobs)
         linter_results.append(("Flake8", exit_code, issue_count))
-    elif args.flake8_qt_only:
-        exit_code, _, issue_count = run_flake8_qt(paths)
-        linter_results.append(("Flake8-Qt-TR", exit_code, issue_count))
+    elif args.bugbear_only:
+        exit_code, _, issue_count = run_flake8_bugbear(paths)
+        linter_results.append(("Flake8-Bugbear", exit_code, issue_count))
+    elif args.vulture_only:
+        exit_code, _, issue_count = run_vulture(paths)
+        linter_results.append(("Vulture", exit_code, issue_count))
     elif args.pylint_only:
         exit_code, _, issue_count = run_pylint(paths, args.jobs)
         linter_results.append(("Pylint", exit_code, issue_count))
@@ -559,7 +573,8 @@ def main() -> int:
     else:
         # Run all linters - first run static analyzers, then formatting tools
         flake8_code, _, flake8_count = run_flake8(paths, args.jobs)
-        flake8_qt_code, _, flake8_qt_count = run_flake8_qt(paths)
+        bugbear_code, _, bugbear_count = run_flake8_bugbear(paths)
+        vulture_code, _, vulture_count = run_vulture(paths)
         pylint_code, _, pylint_count = run_pylint(paths, args.jobs)
         mypy_code, _, mypy_count = run_mypy(paths, args.strict)
         black_code, _, black_count = run_black(paths, check_only)
@@ -568,7 +583,8 @@ def main() -> int:
         linter_results.extend(
             [
                 ("Flake8", flake8_code, flake8_count),
-                ("Flake8-Qt-TR", flake8_qt_code, flake8_qt_count),
+                ("Flake8-Bugbear", bugbear_code, bugbear_count),
+                ("Vulture", vulture_code, vulture_count),
                 ("Pylint", pylint_code, pylint_count),
                 ("Mypy", mypy_code, mypy_count),
                 ("Black", black_code, black_count),

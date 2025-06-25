@@ -32,6 +32,24 @@ class UIEnhancer:
         # TODO: Implementation for shortcuts
         LOGGER.debug("Setting up keyboard shortcuts")
 
+    def start_operation(self, operation_name: str) -> None:
+        """Start tracking an operation.
+
+        Args:
+            operation_name: Name of the operation to track
+        """
+        LOGGER.debug("Starting operation: %s", operation_name)
+        # TODO: Implementation for operation tracking
+
+    def stop_operation(self, operation_name: str) -> None:
+        """Stop tracking an operation.
+
+        Args:
+            operation_name: Name of the operation to stop tracking
+        """
+        LOGGER.debug("Stopping operation: %s", operation_name)
+        # TODO: Implementation for operation tracking
+
 
 def enhance_existing_gui(main_window: QMainWindow) -> UIEnhancer:
     """Enhance an existing GUI with improvements.

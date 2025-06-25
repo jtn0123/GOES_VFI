@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
-from goesvfi.utils.errors import ErrorClassifier, StructuredError
+from goesvfi.utils.errors import ErrorClassifier
 from goesvfi.utils.validation import ValidationPipeline
 
 LOGGER = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class DownloadStats:
 class StatsExtractor:
     """Safely extract statistics from raw dictionary with validation."""
 
-    def __init__(self, classifier: Optional[ErrorClassifier] = None):
+    def __init__(self, classifier: Optional[ErrorClassifier] = None) -> None:
         self.classifier = classifier or ErrorClassifier()
 
     def extract_safe_int(self, data: Dict[str, Any], key: str, default: int = 0) -> int:
@@ -56,15 +56,11 @@ class StatsExtractor:
                 return int(value)
             return default
         except Exception as e:
-            error = self.classifier.create_structured_error(
-                e, f"extract_{key}", "stats_extractor"
-            )
+            error = self.classifier.create_structured_error(e, f"extract_{key}", "stats_extractor")
             LOGGER.warning(f"Failed to extract {key}: {error.user_message}")
             return default
 
-    def extract_safe_float(
-        self, data: Dict[str, Any], key: str, default: float = 0.0
-    ) -> float:
+    def extract_safe_float(self, data: Dict[str, Any], key: str, default: float = 0.0) -> float:
         """Safely extract float value with validation."""
         try:
             value = data.get(key, default)
@@ -72,15 +68,11 @@ class StatsExtractor:
                 return float(value)
             return default
         except Exception as e:
-            error = self.classifier.create_structured_error(
-                e, f"extract_{key}", "stats_extractor"
-            )
+            error = self.classifier.create_structured_error(e, f"extract_{key}", "stats_extractor")
             LOGGER.warning(f"Failed to extract {key}: {error.user_message}")
             return default
 
-    def extract_safe_list(
-        self, data: Dict[str, Any], key: str, default: Optional[List] = None
-    ) -> List:
+    def extract_safe_list(self, data: Dict[str, Any], key: str, default: Optional[List] = None) -> List:
         """Safely extract list value with validation."""
         if default is None:
             default = []
@@ -90,9 +82,7 @@ class StatsExtractor:
                 return value
             return default
         except Exception as e:
-            error = self.classifier.create_structured_error(
-                e, f"extract_{key}", "stats_extractor"
-            )
+            error = self.classifier.create_structured_error(e, f"extract_{key}", "stats_extractor")
             LOGGER.warning(f"Failed to extract {key}: {error.user_message}")
             return default
 
@@ -116,18 +106,10 @@ class StatsExtractor:
             stats.timeouts = self.extract_safe_int(raw_stats, "timeouts")
             stats.network_errors = self.extract_safe_int(raw_stats, "network_errors")
             stats.total_bytes = self.extract_safe_int(raw_stats, "total_bytes")
-            stats.largest_file_size = self.extract_safe_int(
-                raw_stats, "largest_file_size"
-            )
-            stats.smallest_file_size = self.extract_safe_float(
-                raw_stats, "smallest_file_size", float("inf")
-            )
-            stats.start_time = self.extract_safe_float(
-                raw_stats, "start_time", time.time()
-            )
-            stats.last_success_time = self.extract_safe_float(
-                raw_stats, "last_success_time"
-            )
+            stats.largest_file_size = self.extract_safe_int(raw_stats, "largest_file_size")
+            stats.smallest_file_size = self.extract_safe_float(raw_stats, "smallest_file_size", float("inf"))
+            stats.start_time = self.extract_safe_float(raw_stats, "start_time", time.time())
+            stats.last_success_time = self.extract_safe_float(raw_stats, "last_success_time")
 
             # Extract list stats
             stats.download_times = self.extract_safe_list(raw_stats, "download_times")
@@ -143,9 +125,7 @@ class StatsExtractor:
             return stats
 
         except Exception as e:
-            error = self.classifier.create_structured_error(
-                e, "extract_all_stats", "stats_extractor"
-            )
+            error = self.classifier.create_structured_error(e, "extract_all_stats", "stats_extractor")
             LOGGER.error(f"Failed to extract statistics: {error.user_message}")
             return DownloadStats()
 
@@ -200,18 +180,14 @@ class StatsCalculator:
 class StatsReportBuilder:
     """Build formatted statistics reports."""
 
-    def __init__(self, calculator: Optional[StatsCalculator] = None):
+    def __init__(self, calculator: Optional[StatsCalculator] = None) -> None:
         self.calculator = calculator or StatsCalculator()
 
     def build_summary_section(self, stats: DownloadStats) -> str:
         """Build performance summary section."""
-        success_rate = self.calculator.calculate_success_rate(
-            stats.successful, stats.total_attempts
-        )
+        success_rate = self.calculator.calculate_success_rate(stats.successful, stats.total_attempts)
         avg_time = self.calculator.calculate_average_time(stats.download_times)
-        network_speed = self.calculator.calculate_network_speed(
-            stats.total_bytes, sum(stats.download_times)
-        )
+        network_speed = self.calculator.calculate_network_speed(stats.total_bytes, sum(stats.download_times))
         avg_rate = self.calculator.calculate_average_download_rate(stats.download_rates)
         total_time = time.time() - stats.start_time
 
@@ -267,17 +243,11 @@ class StatsReportBuilder:
             status = "✓ Success" if attempt.get("success", False) else "✗ Failed"
 
             file_size = attempt.get("file_size", 0)
-            size = (
-                self.calculator.format_file_size(file_size)
-                if isinstance(file_size, (int, float))
-                else "N/A"
-            )
+            size = self.calculator.format_file_size(file_size) if isinstance(file_size, (int, float)) else "N/A"
 
             download_time = attempt.get("download_time", 0)
             time_taken = (
-                f"{download_time:.2f}s"
-                if isinstance(download_time, (int, float)) and download_time > 0
-                else "N/A"
+                f"{download_time:.2f}s" if isinstance(download_time, (int, float)) and download_time > 0 else "N/A"
             )
 
             # Format key for display
@@ -311,7 +281,7 @@ class StatsReportBuilder:
 class DownloadStatsManager:
     """Main interface for statistics management."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.extractor = StatsExtractor()
         self.calculator = StatsCalculator()
         self.report_builder = StatsReportBuilder(self.calculator)
@@ -325,9 +295,7 @@ class DownloadStatsManager:
         """
         try:
             # Early exit for empty stats
-            total_attempts = self.extractor.extract_safe_int(
-                raw_stats, "total_attempts"
-            )
+            total_attempts = self.extractor.extract_safe_int(raw_stats, "total_attempts")
             if total_attempts == 0:
                 LOGGER.info("No S3 download attempts recorded yet")
                 return
@@ -340,9 +308,7 @@ class DownloadStatsManager:
             LOGGER.info(report)
 
         except Exception as e:
-            error = self.extractor.classifier.create_structured_error(
-                e, "log_statistics", "stats_manager"
-            )
+            error = self.extractor.classifier.create_structured_error(e, "log_statistics", "stats_manager")
             LOGGER.error(f"Failed to log statistics: {error.user_message}")
 
 

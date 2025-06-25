@@ -104,9 +104,7 @@ class TestLoggingErrorHandler:
         test_logger.addHandler(log_handler)
 
         # Test with WARNING level
-        warning_handler = LoggingErrorHandler(
-            logger=test_logger, log_level=logging.WARNING
-        )
+        warning_handler = LoggingErrorHandler(logger=test_logger, log_level=logging.WARNING)
         error = StructuredError("Warning test", context=ErrorContext("op", "comp"))
 
         warning_handler.handle(error)
@@ -121,9 +119,7 @@ class TestCategoryErrorHandler:
         """Test category handler with single category."""
         handler = CategoryErrorHandler(ErrorCategory.VALIDATION)
 
-        validation_error = StructuredError(
-            "Validation error", category=ErrorCategory.VALIDATION
-        )
+        validation_error = StructuredError("Validation error", category=ErrorCategory.VALIDATION)
         network_error = StructuredError("Network error", category=ErrorCategory.NETWORK)
 
         assert handler.can_handle(validation_error) is True
@@ -134,12 +130,8 @@ class TestCategoryErrorHandler:
         categories = [ErrorCategory.VALIDATION, ErrorCategory.PERMISSION]
         handler = CategoryErrorHandler(categories)
 
-        validation_error = StructuredError(
-            "Validation error", category=ErrorCategory.VALIDATION
-        )
-        permission_error = StructuredError(
-            "Permission error", category=ErrorCategory.PERMISSION
-        )
+        validation_error = StructuredError("Validation error", category=ErrorCategory.VALIDATION)
+        permission_error = StructuredError("Permission error", category=ErrorCategory.PERMISSION)
         network_error = StructuredError("Network error", category=ErrorCategory.NETWORK)
 
         assert handler.can_handle(validation_error) is True
@@ -207,17 +199,11 @@ class TestErrorHandlerChain:
     def test_chain_handles_error_successfully(self):
         """Test chain handling error with matching handler."""
         # Create handlers
-        validation_handler = CustomErrorHandler(
-            [ErrorCategory.VALIDATION], should_stop=True
-        )
+        validation_handler = CustomErrorHandler([ErrorCategory.VALIDATION], should_stop=True)
         network_handler = CustomErrorHandler([ErrorCategory.NETWORK])
 
         # Create chain
-        chain = (
-            ErrorHandlerChain()
-            .add_handler(validation_handler)
-            .add_handler(network_handler)
-        )
+        chain = ErrorHandlerChain().add_handler(validation_handler).add_handler(network_handler)
 
         # Create error
         error = StructuredError("Validation error", category=ErrorCategory.VALIDATION)
@@ -229,9 +215,7 @@ class TestErrorHandlerChain:
         assert result is True
         assert len(validation_handler.handled_errors) == 1
         assert validation_handler.handled_errors[0] == error
-        assert (
-            len(network_handler.handled_errors) == 0
-        )  # Should not reach second handler
+        assert len(network_handler.handled_errors) == 0  # Should not reach second handler
 
     def test_chain_continues_processing(self):
         """Test chain continues processing when handlers return False."""
@@ -241,12 +225,7 @@ class TestErrorHandlerChain:
         handler3 = CustomErrorHandler([ErrorCategory.VALIDATION], should_stop=True)
 
         # Create chain
-        chain = (
-            ErrorHandlerChain()
-            .add_handler(handler1)
-            .add_handler(handler2)
-            .add_handler(handler3)
-        )
+        chain = ErrorHandlerChain().add_handler(handler1).add_handler(handler2).add_handler(handler3)
 
         # Create error
         error = StructuredError("Validation error", category=ErrorCategory.VALIDATION)
@@ -268,11 +247,7 @@ class TestErrorHandlerChain:
         permission_handler = CustomErrorHandler([ErrorCategory.PERMISSION])
 
         # Create chain
-        chain = (
-            ErrorHandlerChain()
-            .add_handler(validation_handler)
-            .add_handler(permission_handler)
-        )
+        chain = ErrorHandlerChain().add_handler(validation_handler).add_handler(permission_handler)
 
         # Create error for unhandled category
         error = StructuredError("Network error", category=ErrorCategory.NETWORK)
@@ -289,14 +264,10 @@ class TestErrorHandlerChain:
         """Test that handler order affects processing."""
         # Create handlers - first one stops processing
         first_handler = CustomErrorHandler([ErrorCategory.VALIDATION], should_stop=True)
-        second_handler = CustomErrorHandler(
-            [ErrorCategory.VALIDATION], should_stop=False
-        )
+        second_handler = CustomErrorHandler([ErrorCategory.VALIDATION], should_stop=False)
 
         # Create chain
-        chain = (
-            ErrorHandlerChain().add_handler(first_handler).add_handler(second_handler)
-        )
+        chain = ErrorHandlerChain().add_handler(first_handler).add_handler(second_handler)
 
         # Create error
         error = StructuredError("Validation error", category=ErrorCategory.VALIDATION)
@@ -321,20 +292,14 @@ class TestErrorHandlerChain:
 
         # Create handlers
         logging_handler = LoggingErrorHandler(logger=test_logger)
-        custom_handler = CustomErrorHandler(
-            [ErrorCategory.VALIDATION], should_stop=True
-        )
+        custom_handler = CustomErrorHandler([ErrorCategory.VALIDATION], should_stop=True)
 
         # Create chain
-        chain = (
-            ErrorHandlerChain().add_handler(logging_handler).add_handler(custom_handler)
-        )
+        chain = ErrorHandlerChain().add_handler(logging_handler).add_handler(custom_handler)
 
         # Create error
         context = ErrorContext(operation="test", component="validator")
-        error = StructuredError(
-            "Validation failed", category=ErrorCategory.VALIDATION, context=context
-        )
+        error = StructuredError("Validation failed", category=ErrorCategory.VALIDATION, context=context)
 
         # Handle error
         result = chain.handle_error(error)
@@ -363,9 +328,7 @@ class TestErrorHandlerIntegration:
         # Create specialized handlers
         class FileErrorHandler(CategoryErrorHandler):
             def __init__(self):
-                super().__init__(
-                    [ErrorCategory.FILE_NOT_FOUND, ErrorCategory.PERMISSION]
-                )
+                super().__init__([ErrorCategory.FILE_NOT_FOUND, ErrorCategory.PERMISSION])
                 self.recovery_attempts = []
 
             def handle(self, error: StructuredError) -> bool:
@@ -393,9 +356,7 @@ class TestErrorHandlerIntegration:
         # Create handlers
         file_handler = FileErrorHandler()
         network_handler = NetworkErrorHandler()
-        logging_handler = LoggingErrorHandler(
-            logger=test_logger, log_level=logging.INFO
-        )
+        logging_handler = LoggingErrorHandler(logger=test_logger, log_level=logging.INFO)
 
         # Create chain
         chain = (

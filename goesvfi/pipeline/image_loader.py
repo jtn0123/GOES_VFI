@@ -30,9 +30,7 @@ class ImageLoader(ImageProcessor):
     basic metadata. It does not implement processing, cropping, or saving.
     """
 
-    def __init__(
-        self, optimize_memory: bool = True, max_image_size_mb: Optional[int] = None
-    ) -> None:
+    def __init__(self, optimize_memory: bool = True, max_image_size_mb: Optional[int] = None) -> None:
         """Initialize ImageLoader with optional memory optimization.
 
         Args:
@@ -77,12 +75,8 @@ class ImageLoader(ImageProcessor):
                 if self.optimize_memory:
                     pass
                     # Calculate expected memory usage
-                    shape = (
-                        (height, width, channels) if channels > 1 else (height, width)
-                    )
-                    estimated_mb = estimate_memory_requirement(
-                        shape, np.dtype(np.uint8)
-                    )
+                    shape = (height, width, channels) if channels > 1 else (height, width)
+                    estimated_mb = estimate_memory_requirement(shape, np.dtype(np.uint8))
 
                     LOGGER.info(
                         "Loading image %s: %sx%s %s (~%sMB)",
@@ -97,21 +91,16 @@ class ImageLoader(ImageProcessor):
                     if self.max_image_size_mb and estimated_mb > self.max_image_size_mb:
                         pass
                         raise ValueError(
-                            f"Image too large: {estimated_mb}MB exceeds limit of "
-                            f"{self.max_image_size_mb}MB"
+                            f"Image too large: {estimated_mb}MB exceeds limit of " f"{self.max_image_size_mb}MB"
                         )
 
                     # Check available memory
                     if self.memory_optimizer:
                         pass
-                        has_memory, msg = self.memory_optimizer.check_available_memory(
-                            estimated_mb + 100
-                        )  # Add buffer
+                        has_memory, msg = self.memory_optimizer.check_available_memory(estimated_mb + 100)  # Add buffer
                         if not has_memory:
                             pass
-                            raise MemoryError(
-                                f"Insufficient memory to load image: {msg}"
-                            )
+                            raise MemoryError(f"Insufficient memory to load image: {msg}")
 
                 # Convert Pillow Image to NumPy array
                 image_data_array = np.array(img)
@@ -120,9 +109,7 @@ class ImageLoader(ImageProcessor):
                 if self.optimize_memory and self.memory_optimizer:
                     pass
                     original_dtype = image_data_array.dtype
-                    image_data_array = self.memory_optimizer.optimize_array_dtype(
-                        image_data_array, preserve_range=True
-                    )
+                    image_data_array = self.memory_optimizer.optimize_array_dtype(image_data_array, preserve_range=True)
                     if image_data_array.dtype != original_dtype:
                         pass
                         LOGGER.debug(
@@ -162,9 +149,7 @@ class ImageLoader(ImageProcessor):
             raise
         except (KeyError, ValueError, RuntimeError) as e:
             # Catch any other unexpected errors during loading
-            raise ProcessingError(
-                f"Could not load image from {source_path}: {e}"
-            ) from e
+            raise ProcessingError(f"Could not load image from {source_path}: {e}") from e
 
     def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
         """Not implemented. ImageLoader does not perform processing.
@@ -174,9 +159,7 @@ class ImageLoader(ImageProcessor):
         """
         raise NotImplementedError("ImageLoader does not implement the process method.")
 
-    def crop(
-        self, image_data: ImageData, crop_area: Tuple[int, int, int, int]
-    ) -> ImageData:
+    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]) -> ImageData:
         """Not implemented. ImageLoader does not perform cropping.
 
         Raises:

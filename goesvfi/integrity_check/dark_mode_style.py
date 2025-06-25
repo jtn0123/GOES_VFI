@@ -44,9 +44,7 @@ def apply_dark_mode_palette(app: QApplication) -> None:
 
     # Text
     dark_palette.setColor(QPalette.ColorRole.Text, text_color)
-    dark_palette.setColor(
-        QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, disabled_text_color
-    )
+    dark_palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, disabled_text_color)
 
     # Button
     dark_palette.setColor(QPalette.ColorRole.Button, dark_color)

@@ -88,9 +88,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
     async def test_set_data(self):
         """Test that the set_data method properly sets data and updates visualization."""
         # Set the data
-        self.tab.set_data(
-            self.missing_items, self.start_date, self.end_date, self.interval_minutes
-        )
+        self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
 
         # Process events to ensure UI updates
         QApplication.processEvents()
@@ -101,9 +99,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
             self.start_date,
             "Start timestamp not set correctly",
         )
-        self.assertEqual(
-            self.tab.end_timestamp, self.end_date, "End timestamp not set correctly"
-        )
+        self.assertEqual(self.tab.end_timestamp, self.end_date, "End timestamp not set correctly")
         self.assertEqual(
             self.tab.missing_items,
             self.missing_items,
@@ -119,9 +115,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
     async def test_set_date_range(self):
         """Test that set_date_range updates the visualization without changing the data."""
         # First set initial data
-        self.tab.set_data(
-            self.missing_items, self.start_date, self.end_date, self.interval_minutes
-        )
+        self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
 
         # Process events
         QApplication.processEvents()
@@ -137,12 +131,8 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify date range was updated
-        self.assertEqual(
-            self.tab.start_timestamp, new_start, "Start timestamp not updated correctly"
-        )
-        self.assertEqual(
-            self.tab.end_timestamp, new_end, "End timestamp not updated correctly"
-        )
+        self.assertEqual(self.tab.start_timestamp, new_start, "Start timestamp not updated correctly")
+        self.assertEqual(self.tab.end_timestamp, new_end, "End timestamp not updated correctly")
 
         # The missing items should not change
         self.assertEqual(
@@ -175,9 +165,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
     async def test_timestamp_selection(self):
         """Test that selecting a timestamp emits the correct signal."""
         # Set up the data first
-        self.tab.set_data(
-            self.missing_items, self.start_date, self.end_date, self.interval_minutes
-        )
+        self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
 
         # Set up signal waiter
         timestamp_waiter = AsyncSignalWaiter(self.tab.timestampSelected)
@@ -207,17 +195,13 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
     async def test_view_switching(self):
         """Test switching between timeline and calendar views."""
         # Set some data first
-        self.tab.set_data(
-            self.missing_items, self.start_date, self.end_date, self.interval_minutes
-        )
+        self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
 
         # Process events
         QApplication.processEvents()
 
         # Initial state should be timeline view (index 0)
-        self.assertEqual(
-            self.tab.stack.currentIndex(), 0, "Initial view should be timeline"
-        )
+        self.assertEqual(self.tab.stack.currentIndex(), 0, "Initial view should be timeline")
 
         # Switch to calendar view
         self.tab._toggle_visualization(1)
@@ -226,18 +210,14 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify the view was switched
-        self.assertEqual(
-            self.tab.stack.currentIndex(), 1, "View not switched to calendar"
-        )
+        self.assertEqual(self.tab.stack.currentIndex(), 1, "View not switched to calendar")
 
         # The view buttons should reflect the current state
         self.assertFalse(
             self.tab.view_timeline_btn.isChecked(),
             "Timeline button should not be checked",
         )
-        self.assertTrue(
-            self.tab.view_calendar_btn.isChecked(), "Calendar button should be checked"
-        )
+        self.assertTrue(self.tab.view_calendar_btn.isChecked(), "Calendar button should be checked")
 
         # Switch back to timeline view
         self.tab._toggle_visualization(0)
@@ -246,14 +226,10 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify the view was switched back
-        self.assertEqual(
-            self.tab.stack.currentIndex(), 0, "View not switched back to timeline"
-        )
+        self.assertEqual(self.tab.stack.currentIndex(), 0, "View not switched back to timeline")
 
         # The view buttons should reflect the current state
-        self.assertTrue(
-            self.tab.view_timeline_btn.isChecked(), "Timeline button should be checked"
-        )
+        self.assertTrue(self.tab.view_timeline_btn.isChecked(), "Timeline button should be checked")
         self.assertFalse(
             self.tab.view_calendar_btn.isChecked(),
             "Calendar button should not be checked",
@@ -263,9 +239,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
     async def test_info_panel_update(self):
         """Test that the info panel is updated when a timestamp is selected."""
         # Set some data first
-        self.tab.set_data(
-            self.missing_items, self.start_date, self.end_date, self.interval_minutes
-        )
+        self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
 
         # Process events
         QApplication.processEvents()

@@ -6,17 +6,17 @@ in image processing pipelines.
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-from .base import ImageProcessingError, ImageProcessingResult, ProcessorBase
+from .base import ImageProcessingResult, ProcessorBase
 
 
 class CacheManager:
     """Manages caching of processed image data."""
 
-    def __init__(self, max_cache_size: int = 100):
+    def __init__(self, max_cache_size: int = 100) -> None:
         self.cache: Dict[str, Any] = {}
         self.access_order: List[str] = []
         self.max_cache_size = max_cache_size
@@ -76,17 +76,15 @@ class CachedProcessor(ProcessorBase):
         self,
         processor: ProcessorBase,
         cache_manager: CacheManager,
-        key_generator: callable,
+        key_generator: Callable[[Any, Optional[Dict[str, Any]]], str],
         stage_name: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__(stage_name or f"cached_{processor.stage_name}")
         self.processor = processor
         self.cache_manager = cache_manager
         self.key_generator = key_generator
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Process with caching."""
         try:
             # Generate cache key
@@ -95,9 +93,7 @@ class CachedProcessor(ProcessorBase):
             # Check cache first
             cached_result = self.cache_manager.get(cache_key)
             if cached_result is not None:
-                return ImageProcessingResult.success_result(
-                    cached_result, {"cache_hit": True, "cache_key": cache_key}
-                )
+                return ImageProcessingResult.success_result(cached_result, {"cache_hit": True, "cache_key": cache_key})
 
             # Process normally
             result = self.processor.process(input_data, context)
@@ -111,26 +107,20 @@ class CachedProcessor(ProcessorBase):
             return result
 
         except Exception as e:
-            return ImageProcessingResult.failure_result(
-                self._create_error(f"Cache processing failed: {e}", e)
-            )
+            return ImageProcessingResult.failure_result(self._create_error(f"Cache processing failed: {e}", e))
 
 
 class SanchezCacheProcessor(ProcessorBase):
     """Specialized cache processor for Sanchez processing results."""
 
-    def __init__(self, cache_dict: Dict[Path, np.ndarray]):
+    def __init__(self, cache_dict: Dict[Path, np.ndarray]) -> None:
         super().__init__("sanchez_cache")
         self.cache_dict = cache_dict
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Check for cached Sanchez results."""
         if not context or "image_path" not in context:
-            return ImageProcessingResult.failure_result(
-                self._create_error("No image_path in context for cache lookup")
-            )
+            return ImageProcessingResult.failure_result(self._create_error("No image_path in context for cache lookup"))
 
         image_path = context["image_path"]
 
@@ -138,7 +128,7 @@ class SanchezCacheProcessor(ProcessorBase):
             cached_array = self.cache_dict[image_path]
 
             # Import here to avoid circular imports
-            from goesvfi.integrity_check.render.netcdf import ImageData
+            from goesvfi.pipeline.image_processing_interfaces import ImageData
 
             # Create ImageData from cached array
             image_data = ImageData(
@@ -146,13 +136,9 @@ class SanchezCacheProcessor(ProcessorBase):
                 metadata={"source_path": image_path, "cached": True},
             )
 
-            return ImageProcessingResult.success_result(
-                image_data, {"cache_hit": True, "source": "sanchez_cache"}
-            )
+            return ImageProcessingResult.success_result(image_data, {"cache_hit": True, "source": "sanchez_cache"})
 
-        return ImageProcessingResult.failure_result(
-            self._create_error("No cached Sanchez result found")
-        )
+        return ImageProcessingResult.failure_result(self._create_error("No cached Sanchez result found"))
 
     def store_result(self, image_path: Path, processed_array: np.ndarray) -> None:
         """Store a processed Sanchez result in cache."""

@@ -75,9 +75,7 @@ class TestFFmpegCommandBuilder:
         builder = FFmpegCommandBuilder()
 
         # Test missing required parameters
-        with pytest.raises(
-            ValueError, match="Input path, output path, and encoder must be set"
-        ):
+        with pytest.raises(ValueError, match="Input path, output path, and encoder must be set"):
             builder.build()
 
         # Test missing encoder

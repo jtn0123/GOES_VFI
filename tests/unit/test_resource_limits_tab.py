@@ -55,9 +55,9 @@ def stub_resource_manager(monkeypatch):
             "disk": {"total_gb": 256, "free_gb": 128, "percent_used": 50.0},
         }
 
-    module.ResourceLimits = ResourceLimits
-    module.ResourceMonitor = ResourceMonitor
-    module.get_system_resource_info = get_system_resource_info
+    module.ResourceLimits = ResourceLimits  # type: ignore
+    module.ResourceMonitor = ResourceMonitor  # type: ignore
+    module.get_system_resource_info = get_system_resource_info  # type: ignore
 
     monkeypatch.setitem(sys.modules, "goesvfi.utils.resource_manager", module)
 
@@ -99,7 +99,7 @@ def test_checkboxes_toggle_spinboxes(resource_tab):
 
 def test_limits_changed_emits_expected_values(resource_tab):
     """Toggling limits should emit ResourceLimits with expected values."""
-    from goesvfi.utils.resource_manager import ResourceLimits
+    from goesvfi.utils.resource_manager import ResourceLimits  # type: ignore
 
     emitted = []
     resource_tab.limits_changed.connect(lambda limits: emitted.append(limits))

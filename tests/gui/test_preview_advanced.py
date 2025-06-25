@@ -54,9 +54,7 @@ class TestPreviewAdvanced:
                 window.middle_frame_label.setPixmap(pixmap)
 
         # Mock the preview update mechanism
-        mocker.patch.object(
-            window, "_update_preview_frame", side_effect=capture_preview_update
-        )
+        mocker.patch.object(window, "_update_preview_frame", side_effect=capture_preview_update)
 
         # Simulate processing with preview updates
         for i in range(1, 11):
@@ -302,9 +300,7 @@ class TestPreviewAdvanced:
         mock_screen2.geometry.return_value = QRect(1920, 0, 1920, 1080)
         mock_screen2.name.return_value = "Screen 2"
 
-        mocker.patch.object(
-            QApplication, "screens", return_value=[mock_screen1, mock_screen2]
-        )
+        mocker.patch.object(QApplication, "screens", return_value=[mock_screen1, mock_screen2])
 
         # Test window positioning
         screens = QApplication.screens()
@@ -425,10 +421,7 @@ class TestPreviewAdvanced:
         assert "Preview" in preview_label.toolTip()
 
         # Test with corrupted file
-        corrupted_path = (
-            window.main_tab.parent().main_view_model.preview_manager.temp_dir
-            / "corrupted.png"
-        )
+        corrupted_path = window.main_tab.parent().main_view_model.preview_manager.temp_dir / "corrupted.png"
         corrupted_path.write_bytes(b"Not a valid image")
 
         success = load_preview_with_fallback(corrupted_path)

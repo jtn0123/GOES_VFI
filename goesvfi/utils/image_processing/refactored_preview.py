@@ -6,21 +6,20 @@ can be simplified using the composable image processing framework.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, cast
 
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QPixmap
 
 from goesvfi.utils import log
 
-from .cache import SanchezCacheProcessor
 from .converters import (
     ArrayToImageConverter,
     CropProcessor,
     ImageDataConverter,
     ImageToPixmapConverter,
 )
-from .pipeline import ConditionalPipeline, ImageProcessingPipeline
+from .pipeline import ImageProcessingPipeline
 from .preview import SanchezWarningOverlay
 
 LOGGER = log.get_logger(__name__)
@@ -34,7 +33,7 @@ class RefactoredPreviewProcessor:
     350-line function into composable processing stages.
     """
 
-    def __init__(self, sanchez_cache: Dict[Path, Any]):
+    def __init__(self, sanchez_cache: Dict[Path, Any]) -> None:
         self.sanchez_cache = sanchez_cache
 
     def load_process_scale_preview(
@@ -58,14 +57,10 @@ class RefactoredPreviewProcessor:
             self._clear_label_state(target_label)
 
             # Build processing context
-            context = self._build_processing_context(
-                image_path, target_label, apply_sanchez, crop_rect
-            )
+            context = self._build_processing_context(image_path, target_label, apply_sanchez, crop_rect)
 
             # Load initial image data
-            initial_data = self._load_initial_data(
-                image_path, image_loader, sanchez_processor, apply_sanchez, context
-            )
+            initial_data = self._load_initial_data(image_path, image_loader, sanchez_processor, apply_sanchez, context)
 
             if initial_data is None:
                 return None
@@ -80,7 +75,7 @@ class RefactoredPreviewProcessor:
             # Update label state with results
             self._update_label_state(target_label, image_path, result)
 
-            return result.data
+            return cast(Optional[QPixmap], result.data)
 
         except Exception as e:
             LOGGER.exception(f"Unhandled error in preview processing for {image_path}")
@@ -139,16 +134,14 @@ class RefactoredPreviewProcessor:
                 return self._create_cached_image_data(image_path)
             else:
                 # Process with Sanchez
-                return self._process_with_sanchez(
-                    image_path, image_loader, sanchez_processor, context
-                )
+                return self._process_with_sanchez(image_path, image_loader, sanchez_processor, context)
         else:
             # Load original image
             return self._load_original_image(image_path, image_loader)
 
     def _create_cached_image_data(self, image_path: Path) -> Any:
         """Create ImageData from cached Sanchez result."""
-        from goesvfi.integrity_check.render.netcdf import ImageData
+        from goesvfi.pipeline.image_processing_interfaces import ImageData
 
         cached_array = self.sanchez_cache[image_path]
         return ImageData(
@@ -202,9 +195,7 @@ class RefactoredPreviewProcessor:
             LOGGER.error(f"Failed to load original image {image_path}: {e}")
             return None
 
-    def _process_through_pipeline(
-        self, input_data: Any, context: Dict[str, Any]
-    ) -> Any:
+    def _process_through_pipeline(self, input_data: Any, context: Dict[str, Any]) -> Any:
         """Process data through the image processing pipeline."""
         # Build pipeline with conditional Sanchez cache checking
         pipeline_stages = [
@@ -218,9 +209,7 @@ class RefactoredPreviewProcessor:
         pipeline = ImageProcessingPipeline(pipeline_stages)
         return pipeline.process(input_data, context)
 
-    def _update_label_state(
-        self, target_label: Any, image_path: Path, result: Any
-    ) -> None:
+    def _update_label_state(self, target_label: Any, image_path: Path, result: Any) -> None:
         """Update label state with processing results."""
         try:
             target_label.file_path = str(image_path)

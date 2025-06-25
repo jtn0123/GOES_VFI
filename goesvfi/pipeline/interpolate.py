@@ -42,8 +42,7 @@ class RifeBackend:
 
         # Log detected capabilities
         logger.info(
-            "RIFE executable capabilities: tiling=%s, "
-            "uhd=%s, tta_spatial=%s, tta_temporal=%s, thread_spec=%s",
+            "RIFE executable capabilities: tiling=%s, " "uhd=%s, tta_spatial=%s, tta_temporal=%s, thread_spec=%s",
             self.capability_detector.supports_tiling(),
             self.capability_detector.supports_uhd(),
             self.capability_detector.supports_tta_spatial(),
@@ -105,9 +104,7 @@ class RifeBackend:
             logger.debug("Running RIFE command: %s", " ".join(cmd))
 
             # Run the command
-            result = subprocess.run(
-                cmd, check=True, capture_output=True, text=True, timeout=120
-            )
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120)
 
             # Log any output
             if result.stdout:
@@ -118,9 +115,7 @@ class RifeBackend:
                 logger.warning("RIFE stderr: %s", result.stderr)
 
             if not out_f.exists():
-                raise RuntimeError(
-                    f"RIFE failed to generate frame at timestep {timestep}"
-                )
+                raise RuntimeError(f"RIFE failed to generate frame at timestep {timestep}")
 
             # Load the generated frame
             with Image.open(out_f) as _img_temp:
@@ -128,9 +123,7 @@ class RifeBackend:
 
         except subprocess.CalledProcessError as e:
             logger.error("RIFE CLI Error Output:\n%s", e.stderr)
-            raise RuntimeError(
-                f"RIFE executable failed (timestep {timestep}) with code {e.returncode}"
-            ) from e
+            raise RuntimeError(f"RIFE executable failed (timestep {timestep}) with code {e.returncode}") from e
         except (KeyError, ValueError, RuntimeError) as e:
             logger.error("Error during RIFE CLI processing: %s", e, exc_info=True)
             raise IOError(f"Error during RIFE CLI processing: {e}") from e
@@ -170,16 +163,12 @@ def interpolate_three(
 
     # Calculate the frame between img1 and img_mid (t=0.25)
     left_options = options.copy()
-    left_options["timestep"] = (
-        0.5  # Always 0.5 for the pair, which is effectively 0.25 overall
-    )
+    left_options["timestep"] = 0.5  # Always 0.5 for the pair, which is effectively 0.25 overall
     img_left = backend.interpolate_pair(img1, img_mid, left_options)
 
     # Calculate the frame between img_mid and img2 (t=0.75)
     right_options = options.copy()
-    right_options["timestep"] = (
-        0.5  # Always 0.5 for the pair, which is effectively 0.75 overall
-    )
+    right_options["timestep"] = 0.5  # Always 0.5 for the pair, which is effectively 0.75 overall
     img_right = backend.interpolate_pair(img_mid, img2, right_options)
 
     return [img_left, img_mid, img_right]

@@ -4,7 +4,7 @@ This module centralizes signal-slot connections to reduce coupling
 and improve maintainability.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from PyQt6.QtCore import QObject
 
@@ -16,7 +16,7 @@ LOGGER = log.get_logger(__name__)
 class SignalBroker(QObject):
     """Manages signal connections between GUI components."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the signal broker."""
         super().__init__()
 
@@ -37,21 +37,15 @@ class SignalBroker(QObject):
         LOGGER.debug("Connected tab widget currentChanged")
 
         # Connect view model signals
-        main_window.main_view_model.status_updated.connect(
-            main_window.status_bar.showMessage
-        )
+        main_window.main_view_model.status_updated.connect(main_window.status_bar.showMessage)
         main_window.main_view_model.processing_vm.status_updated.connect(
             main_window.main_view_model.update_global_status_from_child
         )
         LOGGER.debug("Connected view model status updates")
 
         # Connect sorter tab signals
-        main_window.file_sorter_tab.directory_selected.connect(
-            main_window._set_in_dir_from_sorter
-        )
-        main_window.date_sorter_tab.directory_selected.connect(
-            main_window._set_in_dir_from_sorter
-        )
+        main_window.file_sorter_tab.directory_selected.connect(main_window._set_in_dir_from_sorter)
+        main_window.date_sorter_tab.directory_selected.connect(main_window._set_in_dir_from_sorter)
         LOGGER.debug("Connected sorter tab signals")
 
         # Connect encoder combo signal
@@ -62,9 +56,7 @@ class SignalBroker(QObject):
 
         # Connect processing started signal
         try:
-            main_window.main_tab.processing_started.connect(
-                main_window._handle_processing
-            )
+            main_window.main_tab.processing_started.connect(main_window._handle_processing)
             LOGGER.info("Successfully connected MainTab.processing_started signal")
         except Exception as e:
             LOGGER.exception("Error connecting processing_started signal: %s", e)

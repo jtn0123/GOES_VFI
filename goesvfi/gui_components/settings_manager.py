@@ -44,16 +44,13 @@ class SettingsManager:
 
             if org_name != app_org or app_name != app_name_global:
                 LOGGER.error(
-                    "QSettings mismatch detected! Settings: org=%s, app=%s, "
-                    "but Application: org=%s, app=%s",
+                    "QSettings mismatch detected! Settings: org=%s, app=%s, " "but Application: org=%s, app=%s",
                     org_name,
                     app_name,
                     app_org,
                     app_name_global,
                 )
-                LOGGER.error(
-                    "This will cause settings to be saved in different locations!"
-                )
+                LOGGER.error("This will cause settings to be saved in different locations!")
 
                 # Force consistency
                 self.settings = QSettings(app_org, app_name_global)
@@ -83,9 +80,7 @@ class SettingsManager:
             LOGGER.error("Error saving setting %s: %s", key, e)
             return False
 
-    def load_value(
-        self, key: str, default: Any = None, value_type: Optional[type] = None
-    ) -> Any:
+    def load_value(self, key: str, default: Any = None, value_type: Optional[type] = None) -> Any:
         """Load a single value from settings.
 
         Args:
@@ -154,9 +149,7 @@ class SettingsManager:
             LOGGER.error("Error loading window geometry for %s: %s", window_key, e)
             return None
 
-    def save_recent_paths(
-        self, key: str, paths: List[Path], max_items: int = 10
-    ) -> bool:
+    def save_recent_paths(self, key: str, paths: List[Path], max_items: int = 10) -> bool:
         """Save a list of recent paths.
 
         Args:

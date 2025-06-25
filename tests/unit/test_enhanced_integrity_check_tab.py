@@ -21,17 +21,8 @@ import unittest.mock  # noqa: E402
 from PyQt6.QtCore import QDateTime  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QMessageBox  # noqa: E402
 
-
-# Create mock classes that don't initialize network connections
-class MockS3Store:
-    def __init__(self, *args, **kwargs):
-        pass
-
-
-class MockCDNStore:
-    def __init__(self, *args, **kwargs):
-        pass
-
+# Import comprehensive mocks from test utils
+from tests.utils.mocks import MockCDNStore, MockS3Store
 
 # Patch at the module level before any imports
 unittest.mock.patch("goesvfi.integrity_check.remote.s3_store.S3Store", MockS3Store).start()

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from PyQt6.QtCore import QEvent, Qt
-from PyQt6.QtGui import QColor, QFont, QKeyEvent, QPalette
+from PyQt6.QtGui import QColor, QKeyEvent, QPalette
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import (
     QApplication,
@@ -32,16 +32,11 @@ class AccessibilityTester:
         issues = []
 
         # Check accessible name
-        if not widget.accessibleName() and isinstance(
-            widget, (QPushButton, QLineEdit, QComboBox)
-        ):
+        if not widget.accessibleName() and isinstance(widget, (QPushButton, QLineEdit, QComboBox)):
             issues.append(f"{widget.__class__.__name__} missing accessible name")
 
         # Check accessible description
-        if (
-            isinstance(widget, (QPushButton, QLineEdit))
-            and not widget.accessibleDescription()
-        ):
+        if isinstance(widget, (QPushButton, QLineEdit)) and not widget.accessibleDescription():
             issues.append(f"{widget.__class__.__name__} missing accessible description")
 
         # Check tooltip
@@ -49,10 +44,7 @@ class AccessibilityTester:
             issues.append(f"Button '{widget.text()}' missing tooltip")
 
         # Check keyboard navigation
-        if (
-            isinstance(widget, (QPushButton, QLineEdit, QComboBox))
-            and not widget.focusPolicy()
-        ):
+        if isinstance(widget, (QPushButton, QLineEdit, QComboBox)) and not widget.focusPolicy():
             issues.append(f"{widget.__class__.__name__} cannot receive keyboard focus")
 
         return issues
@@ -91,8 +83,8 @@ class TestAccessibility:
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
-        mocker.patch("goesvfi.gui.CombinedIntegrityAndImageryTab")
-        mocker.patch("goesvfi.integrity_check.enhanced_gui_tab.EnhancedImageryTab")
+        mocker.patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab")
+        mocker.patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab")
 
         window = MainWindow(debug_mode=True)
         qtbot.addWidget(window)
@@ -193,9 +185,7 @@ class TestAccessibility:
 
         # Check group boxes have titles
         if hasattr(window.main_tab, "rife_options_group"):
-            assert (
-                window.main_tab.rife_options_group.title()
-            ), "RIFE options group missing title"
+            assert window.main_tab.rife_options_group.title(), "RIFE options group missing title"
 
         # Verify no critical issues
         assert len(all_issues) == 0, f"Accessibility issues found: {all_issues}"
@@ -208,10 +198,7 @@ class TestAccessibility:
             widgets = []
 
             def collect_focusable(widget):
-                if (
-                    widget.focusPolicy() != Qt.FocusPolicy.NoFocus
-                    and widget.isEnabled()
-                ):
+                if widget.focusPolicy() != Qt.FocusPolicy.NoFocus and widget.isEnabled():
                     widgets.append(widget)
                 for child in widget.findChildren(QWidget):
                     if child.parent() == widget:  # Direct children only
@@ -306,27 +293,21 @@ class TestAccessibility:
         contrast_ratio = tester.check_color_contrast(fg_color, bg_color)
 
         # WCAG AA requires 4.5:1 for normal text, 3:1 for large text
-        assert (
-            contrast_ratio >= 4.5
-        ), f"Text contrast ratio {contrast_ratio:.2f} below WCAG AA standard"
+        assert contrast_ratio >= 4.5, f"Text contrast ratio {contrast_ratio:.2f} below WCAG AA standard"
 
         # Check button contrast
         button_bg = high_contrast.color(QPalette.ColorRole.Button)
         button_fg = high_contrast.color(QPalette.ColorRole.ButtonText)
         button_contrast = tester.check_color_contrast(button_fg, button_bg)
 
-        assert (
-            button_contrast >= 4.5
-        ), f"Button contrast ratio {button_contrast:.2f} below standard"
+        assert button_contrast >= 4.5, f"Button contrast ratio {button_contrast:.2f} below standard"
 
         # Check selection contrast
         selection_bg = high_contrast.color(QPalette.ColorRole.Highlight)
         selection_fg = high_contrast.color(QPalette.ColorRole.HighlightedText)
         selection_contrast = tester.check_color_contrast(selection_fg, selection_bg)
 
-        assert (
-            selection_contrast >= 4.5
-        ), f"Selection contrast ratio {selection_contrast:.2f} below standard"
+        assert selection_contrast >= 4.5, f"Selection contrast ratio {selection_contrast:.2f} below standard"
 
     def test_tooltip_accuracy(self, qtbot, window):
         """Test tooltip accuracy and helpfulness."""
@@ -385,9 +366,7 @@ class TestAccessibility:
 
         # Test tooltip display
         QToolTip.showText(
-            window.main_tab.in_dir_button.mapToGlobal(
-                window.main_tab.in_dir_button.rect().center()
-            ),
+            window.main_tab.in_dir_button.mapToGlobal(window.main_tab.in_dir_button.rect().center()),
             window.main_tab.in_dir_button.toolTip(),
         )
         qtbot.wait(100)
@@ -432,9 +411,7 @@ class TestAccessibility:
         # Test various error scenarios
         error_scenarios = [
             {
-                "trigger": lambda: window._on_processing_error(
-                    "FileNotFoundError: /path/to/file"
-                ),
+                "trigger": lambda: window._on_processing_error("FileNotFoundError: /path/to/file"),
                 "expected_title": "File Not Found",
                 "expected_message": "The specified file could not be found.\n\nPlease check that the file exists and try again.",
             },
@@ -496,9 +473,7 @@ class TestAccessibility:
                 contrast = tester.check_color_contrast(focus_color, bg_color)
 
                 # Focus indicator should have at least 3:1 contrast
-                assert (
-                    contrast >= 3.0
-                ), f"Focus indicator contrast {contrast:.2f} below minimum"
+                assert contrast >= 3.0, f"Focus indicator contrast {contrast:.2f} below minimum"
 
         # Test various focusable widgets
         focusable_widgets = [
@@ -631,6 +606,4 @@ class TestAccessibility:
 
         for widget in important_widgets:
             desc = widget.accessibleDescription()
-            assert (
-                desc and len(desc) > 20
-            ), f"{widget.__class__.__name__} missing adequate description"
+            assert desc and len(desc) > 20, f"{widget.__class__.__name__} missing adequate description"

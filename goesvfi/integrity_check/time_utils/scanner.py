@@ -52,7 +52,7 @@ class DirectoryScanner:
         # Extract timestamps from filenames
         timestamps = []
         extractor = TimestampExtractor()
-        
+
         for file_path in png_files:
             try:
                 # First try to extract from filename

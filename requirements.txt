@@ -35,8 +35,8 @@ python-dateutil>=2.9.0
 flake8>=7.2.0
 flake8-bugbear      # Additional bug finding for flake8
 flake8-comprehensions  # Checks for unnecessary comprehensions
-flake8-qt-tr       # PyQt translation string linting
 pylint>=3.3.7
+vulture>=2.14       # Dead code finder
 
 # Documentation tools (optional - only needed for building docs)
 # To install: pip install -r docs/requirements.txt

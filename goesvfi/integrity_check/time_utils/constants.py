@@ -4,7 +4,13 @@ from typing import Dict, List
 
 # Constants for GOES imagery
 BAND: int = 13  # Hard-coded for Band 13 (Clean IR)
-CDN_RESOLUTIONS: List[str] = ["339x339", "678x678", "1808x1808", "5424x5424", "10848x10848"]
+CDN_RESOLUTIONS: List[str] = [
+    "339x339",
+    "678x678",
+    "1808x1808",
+    "5424x5424",
+    "10848x10848",
+]
 DEFAULT_CDN_RESOLUTION: str = "5424x5424"
 RECENT_WINDOW_DAYS: int = 7  # Window for CDN vs S3 decision
 

@@ -13,7 +13,7 @@ LOGGER = log.get_logger(__name__)
 class ThemeManager:
     """Manages application themes and styling."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the theme manager."""
         self._dark_theme_stylesheet = self._create_dark_theme_stylesheet()
 

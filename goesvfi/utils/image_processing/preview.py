@@ -5,7 +5,7 @@ Provides specialized processors for generating preview images with annotations
 and overlays.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPainter, QPixmap
@@ -16,12 +16,10 @@ from .base import ImageProcessingResult, ProcessorBase
 class SanchezWarningOverlay(ProcessorBase):
     """Adds warning overlay for Sanchez processing failures."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("sanchez_warning_overlay")
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Add Sanchez warning overlay to pixmap."""
         try:
             if not isinstance(input_data, QPixmap):
@@ -37,15 +35,11 @@ class SanchezWarningOverlay(ProcessorBase):
 
             if context:
                 should_draw = context.get("draw_sanchez_warning", False)
-                error_message = context.get(
-                    "sanchez_error_message", "Sanchez processing failed"
-                )
+                error_message = context.get("sanchez_error_message", "Sanchez processing failed")
 
             if not should_draw:
                 # No warning needed, pass through
-                return ImageProcessingResult.success_result(
-                    pixmap, {"warning_added": False}
-                )
+                return ImageProcessingResult.success_result(pixmap, {"warning_added": False})
 
             # Draw warning overlay
             try:
@@ -59,11 +53,7 @@ class SanchezWarningOverlay(ProcessorBase):
 
                 # Draw error text
                 painter.setPen(Qt.GlobalColor.red)
-                truncated_message = (
-                    error_message[:35] + "..."
-                    if len(error_message) > 35
-                    else error_message
-                )
+                truncated_message = error_message[:35] + "..." if len(error_message) > 35 else error_message
                 painter.drawText(5, 15, f"Sanchez failed: {truncated_message}")
                 painter.end()
 
@@ -73,9 +63,7 @@ class SanchezWarningOverlay(ProcessorBase):
 
             except Exception as paint_error:
                 return ImageProcessingResult.failure_result(
-                    self._create_error(
-                        f"Failed to draw warning overlay: {paint_error}", paint_error
-                    )
+                    self._create_error(f"Failed to draw warning overlay: {paint_error}", paint_error)
                 )
 
         except Exception as e:
@@ -87,12 +75,10 @@ class SanchezWarningOverlay(ProcessorBase):
 class PreviewProcessor(ProcessorBase):
     """High-level processor for creating preview images with all processing steps."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("preview_processor")
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Process input through complete preview pipeline."""
         from .cache import SanchezCacheProcessor
         from .converters import (
@@ -105,7 +91,7 @@ class PreviewProcessor(ProcessorBase):
 
         try:
             # Build processing pipeline based on context
-            pipeline_stages = []
+            pipeline_stages: List[ProcessorBase] = []
 
             # 1. Check Sanchez cache first (if applicable)
             if context and context.get("apply_sanchez", False):
@@ -135,6 +121,4 @@ class PreviewProcessor(ProcessorBase):
             return result
 
         except Exception as e:
-            return ImageProcessingResult.failure_result(
-                self._create_error(f"Preview processing failed: {e}", e)
-            )
+            return ImageProcessingResult.failure_result(self._create_error(f"Preview processing failed: {e}", e))

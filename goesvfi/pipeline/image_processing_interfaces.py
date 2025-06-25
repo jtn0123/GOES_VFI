@@ -126,9 +126,7 @@ class ImageProcessor(abc.ABC):
         """
 
     @abc.abstractmethod
-    def crop(
-        self, image_data: ImageData, crop_area: Tuple[int, int, int, int]
-    ) -> ImageData:
+    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]) -> ImageData:
         """
         Crops the image data to the specified rectangular area.
 

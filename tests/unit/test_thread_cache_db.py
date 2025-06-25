@@ -7,6 +7,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Any, Dict
 
 import pytest
 
@@ -48,7 +49,7 @@ class TestThreadLocalCacheDB:
 
         # Store references to thread IDs where each connection was created
         thread_references = {}
-        test_result = {"success": True, "errors": []}
+        test_result: Dict[str, Any] = {"success": True, "errors": []}
 
         def worker_thread():
             """Function that runs in worker threads."""
@@ -115,9 +116,7 @@ class TestThreadLocalCacheDB:
                     task = asyncio.wrap_future(
                         executor.submit(
                             asyncio.run,
-                            self.async_worker(
-                                db, satellite, timestamp, file_path, True
-                            ),
+                            self.async_worker(db, satellite, timestamp, file_path, True),
                         )
                     )
                     tasks.append(task)
@@ -144,9 +143,7 @@ class TestThreadLocalCacheDB:
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(asyncio.run, verify_timestamps())
                 thread_count = future.result()
-                assert (
-                    thread_count == 10
-                ), f"Expected 10 timestamps from thread, got {thread_count}"
+                assert thread_count == 10, f"Expected 10 timestamps from thread, got {thread_count}"
 
         finally:
             db.close()

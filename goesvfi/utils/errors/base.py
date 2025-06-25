@@ -8,7 +8,7 @@ import traceback
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type
 
 
 class ErrorCategory(Enum):
@@ -63,7 +63,7 @@ class StructuredError(Exception):
         recoverable: bool = False,
         user_message: Optional[str] = None,
         suggestions: Optional[List[str]] = None,
-    ):
+    ) -> None:
         self.message = message
         self.category = category
         self.context = context or ErrorContext(operation="unknown", component="unknown")
@@ -77,7 +77,7 @@ class StructuredError(Exception):
 
     @classmethod
     def validation_error(
-        cls,
+        cls: Type["StructuredError"],
         message: str,
         field: Optional[str] = None,
         value: Any = None,
@@ -100,7 +100,7 @@ class StructuredError(Exception):
 
     @classmethod
     def file_error(
-        cls,
+        cls: Type["StructuredError"],
         message: str,
         file_path: Optional[str] = None,
         operation: str = "file_operation",
@@ -111,11 +111,7 @@ class StructuredError(Exception):
         if file_path:
             context.add_user_data("file_path", file_path)
 
-        category = (
-            ErrorCategory.FILE_NOT_FOUND
-            if "not found" in message.lower()
-            else ErrorCategory.PERMISSION
-        )
+        category = ErrorCategory.FILE_NOT_FOUND if "not found" in message.lower() else ErrorCategory.PERMISSION
 
         return cls(
             message=message,
@@ -127,7 +123,7 @@ class StructuredError(Exception):
 
     @classmethod
     def network_error(
-        cls,
+        cls: Type["StructuredError"],
         message: str,
         url: Optional[str] = None,
         status_code: Optional[int] = None,
@@ -151,7 +147,7 @@ class StructuredError(Exception):
 
     @classmethod
     def processing_error(
-        cls,
+        cls: Type["StructuredError"],
         message: str,
         stage: Optional[str] = None,
         input_data: Optional[str] = None,
@@ -174,7 +170,7 @@ class StructuredError(Exception):
 
     @classmethod
     def configuration_error(
-        cls,
+        cls: Type["StructuredError"],
         message: str,
         config_key: Optional[str] = None,
         config_value: Any = None,
@@ -197,7 +193,7 @@ class StructuredError(Exception):
 
     @classmethod
     def external_tool_error(
-        cls,
+        cls: Type["StructuredError"],
         message: str,
         tool_name: str,
         command: Optional[str] = None,
@@ -249,9 +245,7 @@ class StructuredError(Exception):
         message = self.user_message
 
         if self.suggestions:
-            suggestions_text = "\n".join(
-                f"• {suggestion}" for suggestion in self.suggestions
-            )
+            suggestions_text = "\n".join(f"• {suggestion}" for suggestion in self.suggestions)
             message += f"\n\nSuggestions:\n{suggestions_text}"
 
         return message
@@ -260,7 +254,7 @@ class StructuredError(Exception):
 class ErrorBuilder:
     """Builder for creating structured errors with fluent interface."""
 
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         self.message = message
         self.category = ErrorCategory.UNKNOWN
         self.context = ErrorContext(operation="unknown", component="unknown")

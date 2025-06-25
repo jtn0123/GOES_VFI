@@ -40,13 +40,12 @@ class MockSubprocessResult:
     def check_returncode(self):
         """Raises CalledProcessError if returncode is non-zero."""
         if self.returncode != 0:
-            raise subprocess.CalledProcessError(
-                self.returncode, self.args, output=self.stdout, stderr=self.stderr
-            )
+            raise subprocess.CalledProcessError(self.returncode, self.args, output=self.stdout, stderr=self.stderr)
 
 
 class MockPopen:
     """Mimics ``subprocess.Popen`` for testing purposes."""
+
     def __init__(
         self,
         args: List[str],
@@ -69,14 +68,10 @@ class MockPopen:
         # Replace MagicMock for stdout/stderr with StringIO for iteration
         # Note: We use BytesIO if text=False, StringIO if text=True (default in _run_ffmpeg_command)
         self.stdout = (
-            io.BytesIO(self._stdout_data)
-            if isinstance(self._stdout_data, bytes)
-            else io.StringIO(self._stdout_data)
+            io.BytesIO(self._stdout_data) if isinstance(self._stdout_data, bytes) else io.StringIO(self._stdout_data)
         )
         self.stderr = (
-            io.BytesIO(self._stderr_data)
-            if isinstance(self._stderr_data, bytes)
-            else io.StringIO(self._stderr_data)
+            io.BytesIO(self._stderr_data) if isinstance(self._stderr_data, bytes) else io.StringIO(self._stderr_data)
         )
         self.pid = 12345
 
@@ -91,10 +86,7 @@ class MockPopen:
         self.stdin.close = MagicMock()
 
     def _handle_stdin_write(self, data: bytes):
-        if (
-            self._stdin_write_limit is not None
-            and (self._stdin_bytes_written + len(data)) > self._stdin_write_limit
-        ):
+        if self._stdin_write_limit is not None and (self._stdin_bytes_written + len(data)) > self._stdin_write_limit:
             raise BrokenPipeError("Mock Popen: stdin write limit exceeded")
         self._stdin_bytes_written += len(data)
         # In a real scenario, the process would consume this data.
@@ -123,9 +115,7 @@ class MockPopen:
         self.returncode = self._desired_returncode
         return self.returncode
 
-    def communicate(
-        self, input: Optional[bytes] = None, timeout: Optional[float] = None
-    ) -> Tuple[bytes, bytes]:
+    def communicate(self, input: Optional[bytes] = None, timeout: Optional[float] = None) -> Tuple[bytes, bytes]:
         """Simulates communicating with the process."""
         if input:
             self.stdin.write(input)
@@ -202,10 +192,10 @@ def create_mock_subprocess_run(
                     output_path = pathlib.Path(cmd_list[o_index + 1])
             except ValueError:
                 pass
-        
+
         # Use the specified output path if found, otherwise use the provided one
         file_to_create = output_path or output_file_to_create
-        
+
         if file_to_create and returncode == 0:
             try:
                 # Create a valid PNG file instead of just touching it
@@ -213,9 +203,7 @@ def create_mock_subprocess_run(
                 # FIX: Just create a dummy file to avoid calling Image.fromarray via create_test_png
                 file_to_create.parent.mkdir(parents=True, exist_ok=True)
                 file_to_create.touch()
-                print(
-                    f"Mock run created dummy file: {file_to_create}"
-                )  # Debug print
+                print(f"Mock run created dummy file: {file_to_create}")  # Debug print
             except Exception as e:
                 print(f"Mock run failed to create file {file_to_create}: {e}")
 
@@ -231,9 +219,7 @@ def create_mock_subprocess_run(
             # else: return next(side_effect)
 
         # Return a result object
-        result = MockSubprocessResult(
-            returncode=returncode, stdout=stdout, stderr=stderr
-        )
+        result = MockSubprocessResult(returncode=returncode, stdout=stdout, stderr=stderr)
         result.args = cmd_list
         return result
 
@@ -292,13 +278,9 @@ def create_mock_popen(
                         # Write dummy data instead of touch for Popen mocks (ffmpeg)
                         with open(output_file_to_create, "wb") as f:
                             f.write(b"dummy ffmpeg output")
-                    print(
-                        f"Mock Popen created file: {output_file_to_create}"
-                    )  # Debug print
+                    print(f"Mock Popen created file: {output_file_to_create}")  # Debug print
                 except Exception as e:
-                    print(
-                        f"Mock Popen failed to create file {output_file_to_create}: {e}"
-                    )
+                    print(f"Mock Popen failed to create file {output_file_to_create}: {e}")
             return res
 
         mock_instance.wait = wait_with_file_creation
@@ -320,17 +302,13 @@ def create_mock_colourise(
     def mock_colourise(input_path: str, output_path: str, res_km: int):
         # Assert arguments
         if expected_input:
-            assert (
-                input_path == expected_input
-            ), f"Mock colourise: Expected input {expected_input}, got {input_path}"
+            assert input_path == expected_input, f"Mock colourise: Expected input {expected_input}, got {input_path}"
         if expected_output:
             assert (
                 output_path == expected_output
             ), f"Mock colourise: Expected output {expected_output}, got {output_path}"
         if expected_res_km:
-            assert (
-                res_km == expected_res_km
-            ), f"Mock colourise: Expected res_km {expected_res_km}, got {res_km}"
+            assert res_km == expected_res_km, f"Mock colourise: Expected res_km {expected_res_km}, got {res_km}"
 
         # Handle side effect
         if side_effect:
@@ -338,15 +316,97 @@ def create_mock_colourise(
 
         # Simulate output file creation
         output_file = pathlib.Path(output_path)
-        if (
-            output_file_to_create
-        ):  # Allow specifying a different path if needed, otherwise use output_path
+        if output_file_to_create:  # Allow specifying a different path if needed, otherwise use output_path
             output_file = output_file_to_create
 
         # Create a valid PNG instead of just touching the file
         create_test_png(output_file)
-        print(
-            f"Mock colourise created valid PNG file: {output_file}"
-        )  # Add print for debugging tests
+        print(f"Mock colourise created valid PNG file: {output_file}")  # Add print for debugging tests
 
     return mock_colourise
+
+
+# --- S3Store Mock ---
+
+
+class MockS3Store:
+    """Comprehensive mock for S3Store that implements all required methods."""
+
+    def __init__(self, bucket_name: str = "noaa-goes", *args, **kwargs):
+        self.bucket_name = bucket_name
+        self._closed = False
+        self._client = MagicMock()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.close()
+
+    async def close(self):
+        self._closed = True
+
+    async def _get_s3_client(self):
+        """Mock S3 client creation."""
+        return self._client
+
+    def _get_bucket_and_key(self, timestamp, satellite):
+        """Mock bucket and key extraction."""
+        return self.bucket_name, f"mock/key/{timestamp}/{satellite}"
+
+    async def exists(self, timestamp, satellite=None):
+        """Mock file existence check."""
+        return True
+
+    async def download(self, timestamp, satellite, local_path):
+        """Mock file download."""
+        # Create a dummy file at the local path
+        local_path = pathlib.Path(local_path)
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path.write_bytes(b"mock s3 download content")
+        return local_path
+
+    async def check_file_exists(self, timestamp, satellite):
+        """Mock file existence check."""
+        return True
+
+    async def download_file(self, timestamp, satellite, local_path):
+        """Mock file download."""
+        return await self.download(timestamp, satellite, local_path)
+
+    async def get_file_url(self, timestamp, satellite):
+        """Mock URL generation."""
+        return f"https://s3.amazonaws.com/{self.bucket_name}/mock/key/{timestamp}/{satellite}"
+
+    def session_kwargs(self):
+        """Mock session kwargs."""
+        return {"config": MagicMock()}
+
+
+class MockCDNStore:
+    """Comprehensive mock for CDNStore."""
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    async def exists(self, timestamp, satellite=None):
+        return True
+
+    async def download(self, timestamp, satellite, local_path):
+        local_path = pathlib.Path(local_path)
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path.write_bytes(b"mock cdn download content")
+        return local_path
+
+    async def download_file(self, key, local_path):
+        """Mock download_file method for compatibility."""
+        local_path = pathlib.Path(local_path)
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        local_path.write_bytes(b"mock cdn download_file content")
+        return local_path

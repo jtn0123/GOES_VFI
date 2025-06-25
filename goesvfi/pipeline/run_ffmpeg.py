@@ -10,7 +10,7 @@ def run_ffmpeg_interpolation(
     output_mp4_path: Path,
     fps: int,
     num_intermediate_frames: int,
-    use_preset_optimal: bool,
+    _use_preset_optimal: bool,
     crop_rect: Optional[Tuple[int, int, int, int]],
     debug_mode: bool,
     use_ffmpeg_interp: bool,

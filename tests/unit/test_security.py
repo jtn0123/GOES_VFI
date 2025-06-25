@@ -54,7 +54,7 @@ class TestInputValidator:
         """Test validation rejects invalid inputs."""
         validator = InputValidator()
 
-        invalid_inputs = [
+        invalid_inputs: List[Any] = [
             "",  # Empty string
             None,  # None value
             123,  # Non-string
@@ -63,7 +63,7 @@ class TestInputValidator:
 
         for invalid_input in invalid_inputs:
             with pytest.raises(SecurityError, match="Path must be a non-empty string"):
-                validator.validate_file_path(invalid_input)
+                validator.validate_file_path(invalid_input)  # type: ignore
 
     def test_validate_file_path_directory_traversal(self):
         """Test validation rejects directory traversal attempts."""
@@ -85,24 +85,12 @@ class TestInputValidator:
         validator = InputValidator()
 
         # Valid extensions
-        assert (
-            validator.validate_file_path(
-                "image.png", allowed_extensions=[".png", ".jpg"]
-            )
-            is True
-        )
-        assert (
-            validator.validate_file_path(
-                "photo.JPG", allowed_extensions=[".png", ".jpg"]
-            )
-            is True
-        )
+        assert validator.validate_file_path("image.png", allowed_extensions=[".png", ".jpg"]) is True
+        assert validator.validate_file_path("photo.JPG", allowed_extensions=[".png", ".jpg"]) is True
 
         # Invalid extensions
         with pytest.raises(SecurityError, match="File extension '.txt' not allowed"):
-            validator.validate_file_path(
-                "document.txt", allowed_extensions=[".png", ".jpg"]
-            )
+            validator.validate_file_path("document.txt", allowed_extensions=[".png", ".jpg"])
 
     def test_validate_file_path_must_exist(self):
         """Test validation when file must exist."""
@@ -143,11 +131,11 @@ class TestInputValidator:
         """Test numeric range validation rejects non-numeric types."""
         validator = InputValidator()
 
-        invalid_values = ["5", None, [], {}]
+        invalid_values: List[Any] = ["5", None, [], {}]
 
         for invalid_value in invalid_values:
             with pytest.raises(SecurityError, match="must be a number"):
-                validator.validate_numeric_range(invalid_value, 1, 10, "test")
+                validator.validate_numeric_range(invalid_value, 1, 10, "test")  # type: ignore
 
     def test_validate_numeric_range_out_of_bounds(self):
         """Test numeric range validation rejects out-of-bounds values."""
@@ -200,7 +188,7 @@ class TestInputValidator:
 
         # Empty filename
         assert validator.sanitize_filename("") == "untitled"
-        assert validator.sanitize_filename(None) == "untitled"
+        assert validator.sanitize_filename(None) == "untitled"  # type: ignore
 
         # Only dots and spaces
         assert validator.sanitize_filename("...") == "untitled"
@@ -340,7 +328,7 @@ class TestInputValidator:
         validator = InputValidator()
 
         with pytest.raises(SecurityError, match="must be string"):
-            validator.validate_command_args(["ls", 123, "file"])
+            validator.validate_command_args(["ls", 123, "file"])  # type: ignore
 
 
 class TestSecureFileHandler:
@@ -422,9 +410,7 @@ class TestSecureSubprocessCall:
         result = secure_subprocess_call(command, timeout=60)
 
         assert result == mock_result
-        mock_run.assert_called_once_with(
-            command, shell=False, check=True, capture_output=True, text=True, timeout=60
-        )
+        mock_run.assert_called_once_with(command, shell=False, check=True, capture_output=True, text=True, timeout=60)
 
     def test_secure_subprocess_call_dangerous_command(self):
         """Test secure subprocess call rejects dangerous commands."""
@@ -481,12 +467,7 @@ class TestSecurityIntegration:
         encoder = "Software x264"
 
         # All validations should pass
-        assert (
-            validator.validate_file_path(
-                file_path, allowed_extensions=validator.ALLOWED_IMAGE_EXTENSIONS
-            )
-            is True
-        )
+        assert validator.validate_file_path(file_path, allowed_extensions=validator.ALLOWED_IMAGE_EXTENSIONS) is True
 
         assert validator.validate_numeric_range(quality, 1, 100, "quality") is True
         assert validator.validate_ffmpeg_encoder(encoder) is True
@@ -513,9 +494,7 @@ class TestSecurityIntegration:
 
         # Command injection via subprocess arguments
         with pytest.raises(SecurityError):
-            validator.validate_command_args(
-                ["convert", "image.jpg", "; rm important_file"]
-            )
+            validator.validate_command_args(["convert", "image.jpg", "; rm important_file"])
 
     def test_secure_file_operations(self):
         """Test secure file operations."""
@@ -578,38 +557,30 @@ class TestSecurityIntegration:
         validated_inputs["input_file"] = user_inputs["input_file"]
         assert (
             validator.validate_file_path(
-                validated_inputs["input_file"],
+                validated_inputs["input_file"],  # type: ignore
                 allowed_extensions=validator.ALLOWED_IMAGE_EXTENSIONS,
             )
             is True
         )
 
         # Sanitize output filename
-        validated_inputs["output_file"] = validator.sanitize_filename(
-            user_inputs["output_file"]
-        )
+        validated_inputs["output_file"] = validator.sanitize_filename(user_inputs["output_file"])  # type: ignore
         assert validated_inputs["output_file"] == "processed__image.jpg"
 
         # Validate quality parameter
-        assert (
-            validator.validate_numeric_range(user_inputs["quality"], 1, 100, "quality")
-            is True
-        )
+        assert validator.validate_numeric_range(user_inputs["quality"], 1, 100, "quality") is True  # type: ignore
         validated_inputs["quality"] = user_inputs["quality"]
 
         # Validate encoder
-        assert validator.validate_ffmpeg_encoder(user_inputs["encoder"]) is True
+        assert validator.validate_ffmpeg_encoder(user_inputs["encoder"]) is True  # type: ignore
         validated_inputs["encoder"] = user_inputs["encoder"]
 
         # Validate Sanchez parameters
-        assert (
-            validator.validate_sanchez_argument("res_km", user_inputs["sanchez_res"])
-            is True
-        )
+        assert validator.validate_sanchez_argument("res_km", user_inputs["sanchez_res"]) is True
         validated_inputs["sanchez_res"] = user_inputs["sanchez_res"]
 
         # Validate command arguments
-        assert validator.validate_command_args(user_inputs["command_args"]) is True
+        assert validator.validate_command_args(user_inputs["command_args"]) is True  # type: ignore
         validated_inputs["command_args"] = user_inputs["command_args"]
 
         # All inputs should now be safe for processing

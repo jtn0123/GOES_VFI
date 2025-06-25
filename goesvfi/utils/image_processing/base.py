@@ -7,7 +7,7 @@ in functions with extensive image manipulation logic.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 import numpy as np
 from PyQt6.QtGui import QImage, QPixmap
@@ -16,7 +16,7 @@ from PyQt6.QtGui import QImage, QPixmap
 class ImageProcessingError(Exception):
     """Base exception for image processing failures."""
 
-    def __init__(self, message: str, stage: Optional[str] = None, cause: Any = None):
+    def __init__(self, message: str, stage: Optional[str] = None, cause: Any = None) -> None:
         self.message = message
         self.stage = stage
         self.cause = cause
@@ -41,7 +41,9 @@ class ImageProcessingResult:
 
     @classmethod
     def success_result(
-        cls, data: Any, metadata: Optional[Dict[str, Any]] = None
+        cls: Type["ImageProcessingResult"],
+        data: Any,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> "ImageProcessingResult":
         """Create a successful processing result."""
         return cls(
@@ -54,7 +56,9 @@ class ImageProcessingResult:
 
     @classmethod
     def failure_result(
-        cls, error: ImageProcessingError, metadata: Optional[Dict[str, Any]] = None
+        cls: Type["ImageProcessingResult"],
+        error: ImageProcessingError,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> "ImageProcessingResult":
         """Create a failed processing result."""
         return cls(
@@ -78,13 +82,11 @@ class ImageProcessingResult:
 class ProcessorBase(ABC):
     """Base class for all image processors."""
 
-    def __init__(self, stage_name: str):
+    def __init__(self, stage_name: str) -> None:
         self.stage_name = stage_name
 
     @abstractmethod
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """
         Process input data.
 
@@ -105,13 +107,11 @@ class ProcessorBase(ABC):
 class CompositeProcessor(ProcessorBase):
     """Processor that combines multiple processors in sequence."""
 
-    def __init__(self, processors: List[ProcessorBase], stage_name: str = "composite"):
+    def __init__(self, processors: List[ProcessorBase], stage_name: str = "composite") -> None:
         super().__init__(stage_name)
         self.processors = processors
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Run all processors in sequence."""
         current_data = input_data
         combined_metadata = {}
@@ -143,21 +143,17 @@ class ConditionalProcessor(ProcessorBase):
     def __init__(
         self,
         processor: ProcessorBase,
-        condition_func: callable,
+        condition_func: Callable[[Any, Optional[Dict[str, Any]]], bool],
         stage_name: Optional[str] = None,
-    ):
+    ) -> None:
         super().__init__(stage_name or f"conditional_{processor.stage_name}")
         self.processor = processor
         self.condition_func = condition_func
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Run processor only if condition is true."""
         if self.condition_func(input_data, context):
             return self.processor.process(input_data, context)
 
         # If condition not met, pass through input unchanged
-        return ImageProcessingResult.success_result(
-            input_data, {"skipped": self.processor.stage_name}
-        )
+        return ImageProcessingResult.success_result(input_data, {"skipped": self.processor.stage_name})

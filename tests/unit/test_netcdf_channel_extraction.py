@@ -26,9 +26,7 @@ import xarray as xr
 from PIL import Image
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Configure S3 client without credentials (for public bucket access)
@@ -60,16 +58,12 @@ def download_file_from_s3(bucket: str, key: str, local_path: Path) -> Path:
     s3_client.download_file(bucket, key, str(local_path))
 
     if local_path.exists():
-        logger.info(
-            f"Download successful: {local_path} ({local_path.stat().st_size} bytes)"
-        )
+        logger.info(f"Download successful: {local_path} ({local_path.stat().st_size} bytes)")
         return local_path
     raise FileNotFoundError(f"Downloaded file not found: {local_path}")
 
 
-def extract_channel_from_netcdf(
-    netcdf_path: Path, channel_var: str = "Rad"
-) -> np.ndarray:
+def extract_channel_from_netcdf(netcdf_path: Path, channel_var: str = "Rad") -> np.ndarray:
     """
     Extract channel data from a NetCDF file.
 
@@ -296,19 +290,14 @@ def process_channel_data(ds, channel_num, temp_dir):
             invert = True  # IR channels are typically inverted (cold=bright)
 
             # Convert radiance to brightness temperature if coefficients exist
-            if all(
-                k in ds.attrs
-                for k in ["planck_fk1", "planck_fk2", "planck_bc1", "planck_bc2"]
-            ):
+            if all(k in ds.attrs for k in ["planck_fk1", "planck_fk2", "planck_bc1", "planck_bc2"]):
                 fk1 = ds.attrs["planck_fk1"]
                 fk2 = ds.attrs["planck_fk2"]
                 bc1 = ds.attrs["planck_bc1"]
                 bc2 = ds.attrs["planck_bc2"]
 
                 # Apply Planck function for brightness temperature
-                temp_data = (
-                    fk2 / np.log((fk1 / np.maximum(data, 0.0001)) + 1) - bc1
-                ) / bc2
+                temp_data = (fk2 / np.log((fk1 / np.maximum(data, 0.0001)) + 1) - bc1) / bc2
 
                 # Use temperature for IR channels, with appropriate range
                 data = temp_data
@@ -347,9 +336,7 @@ def process_channel_data(ds, channel_num, temp_dir):
         )
 
         # Also save with robust range
-        robust_output_path = (
-            output_dir / f"channel_{channel_num:02d}_{var_name.lower()}_robust.png"
-        )
+        robust_output_path = output_dir / f"channel_{channel_num:02d}_{var_name.lower()}_robust.png"
         process_and_save_image(
             data,
             robust_output_path,
@@ -377,9 +364,7 @@ def process_channel_data(ds, channel_num, temp_dir):
             plt.axis("off")
 
             # Add a main title
-            plt.suptitle(
-                f"Channel {channel_num} - Comparison of Dynamic Ranges", fontsize=16
-            )
+            plt.suptitle(f"Channel {channel_num} - Comparison of Dynamic Ranges", fontsize=16)
 
             # Save with tight layout
             plt.tight_layout()
@@ -400,9 +385,7 @@ def process_channel_data(ds, channel_num, temp_dir):
             "robust_max": float(robust_max),
             "output_path": str(output_path),
             "robust_output_path": str(robust_output_path),
-            "comparison_path": (
-                str(comparison_path) if "comparison_path" in locals() else None
-            ),
+            "comparison_path": (str(comparison_path) if "comparison_path" in locals() else None),
         }
     else:
         return {
@@ -435,27 +418,19 @@ def test_download_and_process_channels():
             channel_pattern = f"C{channel_num:02d}"
 
             # List objects with prefix
-            response = s3_client.list_objects_v2(
-                Bucket=bucket, Prefix=general_prefix, MaxKeys=100
-            )
+            response = s3_client.list_objects_v2(Bucket=bucket, Prefix=general_prefix, MaxKeys=100)
 
             # Check for matching files
             if "Contents" in response:
                 # Filter for files containing the channel pattern
-                matching_files = [
-                    obj["Key"]
-                    for obj in response["Contents"]
-                    if channel_pattern in obj["Key"]
-                ]
+                matching_files = [obj["Key"] for obj in response["Contents"] if channel_pattern in obj["Key"]]
 
                 # Sort to get the latest file (if multiple)
                 if matching_files:
                     matching_files.sort()
                     return matching_files[0]
 
-            logger.warning(
-                f"No files found for channel {channel_num} in {general_prefix}"
-            )
+            logger.warning(f"No files found for channel {channel_num} in {general_prefix}")
             return None
 
         except Exception as e:
@@ -472,9 +447,7 @@ def test_download_and_process_channels():
             channel_tests.append((file_key, channel_num))
             logger.info("Found file for channel %s: %s", channel_num, file_key)
         else:
-            logger.warning(
-                f"Could not find file for channel {channel_num}, will be skipped"
-            )
+            logger.warning(f"Could not find file for channel {channel_num}, will be skipped")
 
     # If we couldn't find any files, use the known channel 1 file as fallback
     if not channel_tests:
@@ -506,9 +479,7 @@ def test_download_and_process_channels():
                 netcdf_path = temp_path / f"channel_{channel_num:02d}.nc"
 
                 # Step 1: Download the NetCDF file
-                logger.info(
-                    "Downloading file for channel %s: %s", channel_num, file_key
-                )
+                logger.info("Downloading file for channel %s: %s", channel_num, file_key)
                 try:
                     download_file_from_s3(bucket, file_key, netcdf_path)
                 except Exception as e:
@@ -527,9 +498,7 @@ def test_download_and_process_channels():
 
                         # Double-check against expected channel
                         if actual_channel != expected_channel:
-                            logger.warning(
-                                f"Expected channel {expected_channel} but found {actual_channel}"
-                            )
+                            logger.warning(f"Expected channel {expected_channel} but found {actual_channel}")
 
                     # Step 3: Process the channel data
                     logger.info("Processing data for channel %s", channel_num)
@@ -571,21 +540,13 @@ def test_download_and_process_channels():
                 else:
                     f.write(f"- Variable: {result['variable']}\n")
                     f.write(f"- Data shape: {result['shape']}\n")
-                    f.write(
-                        f"- Value range: {result['min_val']} to {result['max_val']}\n"
-                    )
-                    f.write(
-                        f"- Robust range (1-99%): {result['robust_min']} to {result['robust_max']}\n"
-                    )
+                    f.write(f"- Value range: {result['min_val']} to {result['max_val']}\n")
+                    f.write(f"- Robust range (1-99%): {result['robust_min']} to {result['robust_max']}\n")
                     f.write(f"- Output files:\n")
                     f.write(f"  - Full range: {Path(result['output_path']).name}\n")
-                    f.write(
-                        f"  - Robust range: {Path(result['robust_output_path']).name}\n"
-                    )
+                    f.write(f"  - Robust range: {Path(result['robust_output_path']).name}\n")
                     if result["comparison_path"]:
-                        f.write(
-                            f"  - Comparison: {Path(result['comparison_path']).name}\n"
-                        )
+                        f.write(f"  - Comparison: {Path(result['comparison_path']).name}\n")
                     f.write("\n")
 
         logger.info("Summary saved to %s", summary_path)
