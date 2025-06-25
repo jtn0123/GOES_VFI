@@ -125,9 +125,9 @@ class TestBasicTimeIndex(unittest.TestCase):
         border_date = now - timedelta(days=7)  # At the window edge
         old_date = now - timedelta(days=14)  # Outside window
 
-        # Test with monkeypatching datetime.now
+        # Test with monkeypatching datetime.now in the correct module
         with unittest.mock.patch(
-            "goesvfi.integrity_check.time_index.datetime"
+            "goesvfi.integrity_check.time_utils.timestamp.datetime"
         ) as mock_datetime:
             mock_datetime.now.return_value = now
             mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)

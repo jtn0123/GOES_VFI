@@ -193,18 +193,31 @@ def create_mock_subprocess_run(
             ), f"Mock subprocess.run called with unexpected command.\nExpected: {expected_command}\nGot:      {cmd_list}"
 
         # Simulate output file creation first IF return code is 0
-        if output_file_to_create and returncode == 0:
+        # Check if this is a RIFE command by looking for -o flag
+        output_path = None
+        if "-o" in cmd_list:
+            try:
+                o_index = cmd_list.index("-o")
+                if o_index + 1 < len(cmd_list):
+                    output_path = pathlib.Path(cmd_list[o_index + 1])
+            except ValueError:
+                pass
+        
+        # Use the specified output path if found, otherwise use the provided one
+        file_to_create = output_path or output_file_to_create
+        
+        if file_to_create and returncode == 0:
             try:
                 # Create a valid PNG file instead of just touching it
-                # create_test_png(output_file_to_create)
+                # create_test_png(file_to_create)
                 # FIX: Just create a dummy file to avoid calling Image.fromarray via create_test_png
-                output_file_to_create.parent.mkdir(parents=True, exist_ok=True)
-                output_file_to_create.touch()
+                file_to_create.parent.mkdir(parents=True, exist_ok=True)
+                file_to_create.touch()
                 print(
-                    f"Mock run created dummy file: {output_file_to_create}"
+                    f"Mock run created dummy file: {file_to_create}"
                 )  # Debug print
             except Exception as e:
-                print(f"Mock run failed to create file {output_file_to_create}: {e}")
+                print(f"Mock run failed to create file {file_to_create}: {e}")
 
         # Handle side effect (e.g., raise exception)
         if side_effect:

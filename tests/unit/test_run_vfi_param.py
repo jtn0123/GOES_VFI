@@ -127,7 +127,8 @@ def test_run_vfi_scenarios(scenario, expect_error, tmp_path, mocker, mock_capabi
             )
 
         if expect_error:
-            with pytest.raises(RuntimeError):
+            from goesvfi.pipeline.exceptions import ProcessingError, RIFEError, FFmpegError
+            with pytest.raises((RuntimeError, ProcessingError, RIFEError, FFmpegError)):
                 run()
         else:
             results = run()

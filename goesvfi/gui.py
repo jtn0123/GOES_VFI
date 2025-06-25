@@ -43,7 +43,24 @@ from goesvfi.date_sorter.gui_tab import DateSorterTab
 from goesvfi.date_sorter.sorter import DateSorter
 from goesvfi.file_sorter.gui_tab import FileSorterTab
 from goesvfi.file_sorter.sorter import FileSorter
-from goesvfi.gui_components import PreviewManager, ProcessingManager, ThemeManager
+from goesvfi.gui_components import (
+    CropHandler,
+    FilePickerManager,
+    InitializationManager,
+    ModelSelectorManager,
+    PreviewManager,
+    ProcessingCallbacks,
+    ProcessingHandler,
+    ProcessingManager,
+    RifeUIManager,
+    SettingsPersistence,
+    SignalBroker,
+    StateManager,
+    ThemeManager,
+    UISetupManager,
+    WorkerFactory,
+    ZoomManager,
+)
 from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab
 from goesvfi.gui_tabs.main_tab import MainTab
 from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab
@@ -65,6 +82,7 @@ from goesvfi.utils.gui_helpers import (
     RifeCapabilityManager,
     ZoomDialog,
 )
+from goesvfi.utils.image_processing.refactored_preview import RefactoredPreviewProcessor
 from goesvfi.utils.settings.gui_settings_manager import GUISettingsManager
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 
@@ -83,11 +101,16 @@ class MainWindow(QWidget):
         self.setWindowTitle(self.tr("GOES-VFI"))
         self.setGeometry(100, 100, 800, 600)  # x, y, w, h
 
-        # Initialize components
+        # Initialize components using initialization manager
+        self.initialization_manager = InitializationManager()
         self._initialize_settings()
-        self._initialize_models()
-        self._initialize_processors()
-        self._initialize_state()
+        self.initialization_manager.initialize_models(self)
+        self.initialization_manager.initialize_processors(self)
+        self.initialization_manager.initialize_state(self)
+
+        # Create processing handler
+        self.processing_handler = ProcessingHandler()
+
         self._create_ui()
 
         LOGGER.info("MainWindow initialized.")
@@ -118,230 +141,53 @@ class MainWindow(QWidget):
 
         # Create settings manager for simplified save/load
         self.settings_manager = GUISettingsManager(self.settings)
+        # Create settings persistence handler
+        self.settings_persistence = SettingsPersistence(self.settings)
 
-    def _initialize_models(self) -> None:
-        """Initialize data models and view models."""
-        # ----------------
-        # --- Models ---
-        # Instantiate Models needed by ViewModels
-        file_sorter_model = FileSorter()
-        date_sorter_model = DateSorter()
-        LOGGER.info("Models instantiated.")
-        # --------------
-
-        # --- ViewModels ---
-        # Instantiate helper managers for the ProcessingViewModel
-        preview_manager = PreviewManager()
-        processing_manager = ProcessingManager()
-
-        # Instantiate ViewModels here, passing required models and managers
-        self.main_view_model = MainWindowViewModel(
-            file_sorter_model=file_sorter_model,
-            date_sorter_model=date_sorter_model,
-            preview_manager=preview_manager,
-            processing_manager=processing_manager,
-        )  # <-- Instantiate ViewModel with models
-        self.processing_view_model = (
-            self.main_view_model.processing_vm
-        )  # Get Processing VM from Main VM
-        LOGGER.info("ViewModels instantiated.")
-        # ------------------
-
-        # --- Image Processor Instances ---
-        # Instantiate processors here to be reused for previews
-        self.image_loader = ImageLoader()
-        # SanchezProcessor needs a temp directory, create one for the GUI lifetime
-        self._sanchez_gui_temp_dir = (
-            Path(tempfile.gettempdir()) / f"goes_vfi_sanchez_gui_{os.getpid()}"
-        )
-        os.makedirs(self._sanchez_gui_temp_dir, exist_ok=True)
-        self.sanchez_processor = SanchezProcessor(self._sanchez_gui_temp_dir)
-        self.image_cropper = ImageCropper()
-        LOGGER.info("GUI Image processors instantiated.")
-        # ---------------------------------
-
-        # --- State Variables ---
-        self.sanchez_preview_cache: dict[Path, np.ndarray[Any, Any]] = (
-            {}
-        )  # Cache for Sanchez results
-        self.in_dir: Path | None = None
-        self.out_file_path: Path | None = None
-        self.current_crop_rect: tuple[int, int, int, int] | None = (
-            None  # Store crop rect as (x, y, w, h)
-        )
-        self.vfi_worker: VfiWorker | None = None
-        self.is_processing = False
-        self.current_encoder = "RIFE"  # Default encoder
-        self.current_model_key = "rife-v4.6"  # Default RIFE model key
-        # -----------------------
-
-        # --- Layout ---
+    def _create_ui(self) -> None:
+        """Create the user interface."""
         main_layout = QVBoxLayout(self)
 
-        # Tab Widget - Using West position for more vertical space
-        self.tab_widget = QTabWidget()
-        # Set tabs to left side for better vertical space usage
-        self.tab_widget.setTabPosition(QTabWidget.TabPosition.West)
-        # Enable document mode for a more compact appearance
-        self.tab_widget.setDocumentMode(True)
-        # Set elide mode for tabs to make them more compact
-        self.tab_widget.setElideMode(Qt.TextElideMode.ElideRight)
+        # Set up tab widget
+        self._setup_tab_widget()
 
-        # Apply custom styling to make vertical tabs more distinct and readable
-        self.tab_widget.setStyleSheet(
-            """
-            QTabWidget::pane {
-                border: 1px solid  #3c3c3c;
-                background-color:  #2a2a2a;
-            }
-            QTabWidget::tab-bar {
-                alignment: left;
-            }
-            QTabBar::tab:left {
-                background-color:  #303030;
-                color:  #b0b0b0;
-                border: 1px solid  #444;
-                border-right: none;
-                border-top-left-radius: 4px;
-                border-bottom-left-radius: 4px;
-                min-height: 30px;
-                padding: 6px;
-                margin: 2px 0;
-                margin-right: -1px; /* Create slight overlap with the pane */
-            }
-            QTabBar::tab:left:selected {
-                background-color:  #2a2a2a;
-                color: white;
-                border-left: 3px solid  #3498db; /* Blue accent for selected tab */
-                padding-left: 4px; /* Compensate for thicker border */
-            }
-            QTabBar::tab:left:hover:!selected {
-                background-color:  #383838;
-                border-left: 2px solid  #666;
-                padding-left: 5px; /* Compensate for border */
-            }
-        """
-        )
+        # Create all tabs
+        self._create_all_tabs()
 
-        # Instantiate new tab classes, passing necessary arguments (e.g., view models, config)
-        # Assuming MainTab needs main_view_model and processing_view_model
-        self.main_tab = MainTab(
-            main_view_model=self.main_view_model,
-            image_loader=self.image_loader,
-            sanchez_processor=self.sanchez_processor,
-            image_cropper=self.image_cropper,
-            settings=self.settings,
-            request_previews_update_signal=self.request_previews_update,  # Pass the signal
-            main_window_ref=self,  # Pass the MainWindow instance itself
-            parent=self,
-        )
-        # FFmpeg widgets are now created and managed by FFmpegSettingsTab
-        # Instantiate FFmpegSettingsTab, passing required widgets and signals
-        self.ffmpeg_settings_tab: FFmpegSettingsTab  # <-- ADDED TYPE HINT
-        self.ffmpeg_settings_tab = FFmpegSettingsTab(parent=self)
-        # Set initial state based on current encoder (RIFE by default)
-        # This ensures the FFmpeg tab is disabled initially when RIFE is selected
-        self.ffmpeg_settings_tab.set_enabled(self.current_encoder == "FFmpeg")
-
-        # Assuming ModelLibraryTab needs main_view_model
-        self.model_library_tab = ModelLibraryTab(parent=self)
-        # Pass ViewModels to Existing Tabs
-        self.file_sorter_tab = FileSorterTab(
-            view_model=self.main_view_model.file_sorter_vm, parent=self
-        )  # <-- Pass VM
-        self.date_sorter_tab = DateSorterTab(
-            view_model=self.main_view_model.date_sorter_vm, parent=self
-        )  # <-- Pass VM
-
-        # Initialize Integrity Check components
-        # Create the database directory if it doesn't exist
-        db_dir = Path.home() / ".goes_vfi" / "integrity_check"
-        db_dir.mkdir(parents=True, exist_ok=True)
-        db_path = db_dir / "cache.db"
-
-        # Create CacheDB instance for the integrity check
-        cache_db = CacheDB(db_path=db_path)
-
-        # Initialize stores
-        cdn_store = CDNStore(resolution=TimeIndex.CDN_RES)
-        s3_store = S3Store(aws_region="us-east-1")
-
-        # Create a reconciler with the cache db path
-        reconciler = Reconciler(cache_db_path=db_path)
-
-        # Create the integrity check view model and tab with all necessary components
-        self.integrity_check_vm = EnhancedIntegrityCheckViewModel(
-            base_reconciler=reconciler,
-            cache_db=cache_db,
-            cdn_store=cdn_store,
-            s3_store=s3_store,
-        )
-
-        # Disable the disk space timer since it blocks the application
-        if hasattr(self.integrity_check_vm, "_disk_space_timer"):
-            if self.integrity_check_vm._disk_space_timer.isRunning():
-                self.integrity_check_vm._disk_space_timer.terminate()
-                self.integrity_check_vm._disk_space_timer.wait()
-        # Use the combined tab which includes both enhanced integrity check and enhanced GOES imagery   # noqa: B950
-        self.combined_tab = CombinedIntegrityAndImageryTab(
-            view_model=self.integrity_check_vm, parent=self
-        )
-        # Reference the integrity check tab from within the combined tab for backward compatibility
-        self.integrity_check_tab = self.combined_tab.integrity_tab
-
-        self.tab_widget.addTab(self.main_tab, "Main")
-        self.tab_widget.addTab(self.ffmpeg_settings_tab, "FFmpeg Settings")
-        self.tab_widget.addTab(
-            self.model_library_tab, "Model Library"
-        )  # Add Model Library tab
-        self.tab_widget.addTab(
-            self.file_sorter_tab, "File Sorter"
-        )  # Add File Sorter tab
-        self.tab_widget.addTab(
-            self.date_sorter_tab, "Date Sorter"
-        )  # Add Date Sorter tab
-        self.tab_widget.addTab(
-            self.combined_tab, "Satellite Integrity"
-        )  # Add our Combined tab with enhanced error handling
-
+        # Add tab widget to layout
         main_layout.addWidget(self.tab_widget)
-        # Status Bar
-        self.status_bar = QStatusBar()
 
-        # Set up aliases for compatibility with inconsistent naming in the code
-        # Access main_tab widgets for aliases
-        self.model_combo = (
-            self.main_tab.rife_model_combo
-        )  # Create alias for compatibility
-        self.sanchez_res_km_combo = (
-            self.main_tab.sanchez_res_combo
-        )  # Added new alias for ComboBox
-        # FFmpeg aliases removed - FFmpegSettingsTab manages its own widgets
+        # Create status bar
+        self.status_bar = QStatusBar()
+        main_layout.addWidget(self.status_bar)
+
+        # Set up aliases for compatibility
+        self.model_combo = self.main_tab.rife_model_combo
+        self.sanchez_res_km_combo = self.main_tab.sanchez_res_combo
 
         # Apply dark theme
         self.theme_manager = ThemeManager()
         self.theme_manager.apply_dark_theme(self)
 
         # Load settings after main layout is constructed
-        self.loadSettings()  # Using simplified version
-        main_layout.addWidget(self.status_bar)
+        self.loadSettings()
 
-        # --- Load Settings and UI Connections ---
-        # All settings loading, UI connections, and state updates are moved to _post_init_setup()
-        # This prevents issues with Qt object lifetimes during testing
-        # See _post_init_setup method below
-
-        # Skip initialization steps that might cause Qt object lifetime issues
-        # They will be called in _post_init_setup instead - see below
-
-        # --- Moved Preview Update Setup from _post_init_setup ---
-        LOGGER.debug("Setting up preview update...")
+        # Initial preview update after a short delay
         QTimer.singleShot(100, self.request_previews_update.emit)
-        self.request_previews_update.connect(self._update_previews)
-        LOGGER.debug("request_previews_update connected to _update_previews")
-        # -------------------------------------------------------
 
         LOGGER.info("MainWindow initialized.")
+
+    def _setup_tab_widget(self) -> None:
+        """Configure the tab widget appearance and behavior."""
+        self.ui_setup_manager.setup_tab_widget(self)
+
+    def _create_all_tabs(self) -> None:
+        """Create and configure all application tabs."""
+        self.ui_setup_manager.create_all_tabs(self)
+
+    def _create_integrity_check_tab(self) -> None:
+        """Create and configure the integrity check tab."""
+        self.ui_setup_manager.create_integrity_check_tab(self)
 
     def _post_init_setup(self) -> None:
         # LOGGER.debug("Entering _post_init_setup...")  # Removed log
@@ -350,33 +196,8 @@ class MainWindow(QWidget):
         This method should be called after the MainWindow is added to qtbot in tests,
         to ensure proper Qt object lifetime management.
         """
-        # Connect signals
-        # self.loadSettings()  # Moved to __init__
-        # self._connect_ffmpeg_settings_tab_signals()  # Removed - logic moved to FFmpegSettingsTab
-        self._connect_model_combo()  # Assuming this connects main tab's model combo - verify if moved   # noqa: B950
-        self.tab_widget.currentChanged.connect(self._on_tab_changed)
-        self.main_view_model.status_updated.connect(self.status_bar.showMessage)
-        # Also connect the processing view model's status updates
-        self.main_view_model.processing_vm.status_updated.connect(
-            self.main_view_model.update_global_status_from_child
-        )
-        self.file_sorter_tab.directory_selected.connect(self._set_in_dir_from_sorter)
-        self.date_sorter_tab.directory_selected.connect(self._set_in_dir_from_sorter)
-
-        # Connect encoder combo signal here to ensure proper timing
-        # This will handle FFmpeg tab enable/disable state
-        self.main_tab.encoder_combo.currentTextChanged.connect(
-            self._update_rife_options_state
-        )
-        # Connect the MainTab's processing_started signal to our handler
-        try:
-            LOGGER.debug(
-                "Connecting MainTab.processing_started to MainWindow._handle_processing"
-            )
-            self.main_tab.processing_started.connect(self._handle_processing)
-            LOGGER.info("Successfully connected MainTab.processing_started signal")
-        except Exception as e:
-            LOGGER.exception("Error connecting processing_started signal: %s", e)
+        # Set up all signal connections through SignalBroker
+        self.signal_broker.setup_main_window_connections(self)
 
         # Populate initial data
         self._populate_models()
@@ -390,7 +211,7 @@ class MainWindow(QWidget):
         # Removed - FFmpeg groups moved to own tab
         self._update_start_button_state()
         self._update_crop_buttons_state()
-        self._update_rife_options_state(self.current_encoder)
+        self._update_rife_ui_elements()  # Use the new method
         # Quality controls state is now handled in the FFmpeg settings tab
         # self._update_quality_controls_state(self.current_encoder)  # Method moved to FFmpeg tab
         # self._update_ffmpeg_controls_state(self.current_encoder == "FFmpeg",
@@ -408,535 +229,65 @@ class MainWindow(QWidget):
     # --- State Setters for Child Tabs ---
     def _save_input_directory(self, path: Path) -> bool:
         """Save input directory to settings persistently."""
-        if not path:
-            return False
-
-        try:
-            # Always save as an absolute, resolved path for maximum compatibility
-            in_dir_str = str(path.resolve())
-            LOGGER.debug("Saving input directory directly (absolute): %r", in_dir_str)
-
-            # Log QSettings details to ensure settings are being saved to the right place
-            org_name = self.settings.organizationName()
-            app_name = self.settings.applicationName()
-            filename = self.settings.fileName()
-            LOGGER.debug(
-                "QSettings details during save: org=%s, app=%s, file=%s",
-                org_name,
-                app_name,
-                filename,
-            )
-
-            # Verify QSettings consistency - this will detect if we have
-            # mismatched organization/application names
-            app_instance = QApplication.instance()
-            app_org = (
-                app_instance.organizationName() if app_instance is not None else ""
-            )
-            app_name_global = (
-                app_instance.applicationName() if app_instance is not None else ""
-            )
-            if org_name != app_org or app_name != app_name_global:
-                LOGGER.error(
-                    "QSettings mismatch during save! MainWindow: org=%s, app=%s, "
-                    "but Application: org=%s, app=%s",
-                    org_name,
-                    app_name,
-                    app_org,
-                    app_name_global,
-                )
-                LOGGER.error(
-                    "This will cause settings to be saved in different locations!"
-                )
-                # Force consistency by updating our settings instance to match the application
-                self.settings = QSettings(app_org, app_name_global)
-                LOGGER.info(
-                    "Corrected QSettings to: org=%s, app=%s, file=%s",
-                    app_org,
-                    app_name_global,
-                    self.settings.fileName(),
-                )
-
-            # Save to multiple keys to ensure redundancy
-            self.settings.setValue("paths/inputDirectory", in_dir_str)
-            self.settings.setValue("inputDir", in_dir_str)  # Alternate key
-
-            # Force immediate sync to disk
-            self.settings.sync()
-
-            # Verify the saved value
-            saved_dir = self.settings.value("paths/inputDirectory", "", type=str)
-            LOGGER.debug("Verification - Input directory after direct save: %s")
-
-            # Check if settings file exists and has appropriate size
-            try:
-                settings_file = Path(self.settings.fileName())
-                if settings_file.exists():
-                    LOGGER.debug(
-                        "Settings file exists: %s (size: %s bytes)"
-                    )  # noqa: B950
-                else:
-                    LOGGER.warning(
-                        "Settings file does not exist after save attempt: %s"
-                    )
-                    return False
-            except Exception as file_error:
-                LOGGER.error("Error checking settings file: %s", file_error)
-
-            # Explicitly cast bool to avoid Any return type
-            return bool(saved_dir == in_dir_str)
-        except Exception as e:
-            LOGGER.error("Error directly saving input directory: %s", e)
-            return False
+        return self.settings_persistence.save_input_directory(path)
 
     def set_in_dir(self, path: Path | None) -> None:
         """Set the input directory state, save settings, and clear Sanchez cache."""
-        LOGGER.debug("MainWindow set_in_dir called with path: %s", path)
-        if self.in_dir != path:
-            LOGGER.debug("MainWindow setting in_dir to: %s", path)
-            old_path = self.in_dir  # Store old path for fallback
-            self.in_dir = path
-            self.sanchez_preview_cache.clear()  # Clear cache when dir changes
-
-            # Update the start button state when input directory changes
-            LOGGER.debug("Updating start button state due to input directory change")
-            if hasattr(self.main_tab, "_update_start_button_state"):
-                self.main_tab._update_start_button_state()
-            else:
-                LOGGER.warning("Cannot update start button - method not found")
-
-            # Trigger preview update
-            self.request_previews_update.emit()
-
-            # Save input directory directly to settings - this is the most critical part
-            if path:
-                success = self._save_input_directory(path)
-                if not success:
-                    LOGGER.error("Failed to save input directory to settings!")
-
-                # Also update the UI text field to ensure consistency
-                if hasattr(self.main_tab, "in_dir_edit"):
-                    self.main_tab.in_dir_edit.setText(str(path))
-
-            # Save all settings immediately when input directory changes
-            # This ensures input directory is preserved even if the app crashes
-            try:
-                if hasattr(self.main_tab, "save_settings"):
-                    LOGGER.info("Saving all settings due to input directory change")
-                    self.main_tab.save_settings()
-
-                    # Final verification
-                    if path:
-                        saved_dir = self.settings.value(
-                            "paths/inputDirectory", "", type=str
-                        )
-                        LOGGER.debug("Final verification - Input directory: %s")
-
-                        # If saving failed, try to revert to previous state
-                        if not saved_dir and old_path:
-                            LOGGER.warning(
-                                "Input directory not saved, attempting to revert to previous value"
-                            )
-                            self._save_input_directory(old_path)
-            except Exception as e:
-                LOGGER.error(
-                    "Error saving settings after input directory change: %s", e
-                )
-
-        # Always update crop buttons state
-        if hasattr(self.main_tab, "_update_crop_buttons_state"):
-            self.main_tab._update_crop_buttons_state()
+        self.state_manager.set_input_directory(path)
 
     def _save_crop_rect(self, rect: tuple[int, int, int, int]) -> bool:
         """Save crop rectangle to settings persistently."""
-        if not rect:
-            return False
-
-        try:
-            rect_str = ",".join(map(str, rect))
-            LOGGER.debug("Saving crop rectangle directly: %r", rect_str)
-
-            # Log QSettings details to ensure settings are being saved to the right place
-            org_name = self.settings.organizationName()
-            app_name = self.settings.applicationName()
-            filename = self.settings.fileName()
-            LOGGER.debug(
-                "QSettings details during crop save: org=%s, app=%s, file=%s",
-                org_name,
-                app_name,
-                filename,
-            )
-
-            # Verify QSettings consistency - this will detect if we have
-            # mismatched organization/application names
-            app_instance = QApplication.instance()
-            app_org = (
-                app_instance.organizationName() if app_instance is not None else ""
-            )
-            app_name_global = (
-                app_instance.applicationName() if app_instance is not None else ""
-            )
-            if org_name != app_org or app_name != app_name_global:
-                LOGGER.error(
-                    "QSettings mismatch during crop save! MainWindow: org=%s, app=%s, "  # noqa: B950
-                    "but Application: org=%s, app=%s",
-                    org_name,
-                    app_name,
-                    app_org,
-                    app_name_global,
-                )
-                # Force consistency by updating our settings instance to match the application
-                self.settings = QSettings(app_org, app_name_global)
-                LOGGER.info(
-                    "Corrected QSettings to: org=%s, app=%s, file=%s",
-                    app_org,
-                    app_name_global,
-                    self.settings.fileName(),
-                )
-
-            # Save to multiple keys to ensure redundancy
-            self.settings.setValue("preview/cropRectangle", rect_str)
-            self.settings.setValue("cropRect", rect_str)  # Alternate key
-
-            # Force immediate sync to disk
-            self.settings.sync()
-
-            # Verify the saved value
-            saved_rect = self.settings.value("preview/cropRectangle", "", type=str)
-            LOGGER.debug("Verification - Crop rectangle after direct save: %s")
-
-            # Check if settings file exists and has appropriate size
-            try:
-                settings_file = Path(self.settings.fileName())
-                if settings_file.exists():
-                    LOGGER.debug(
-                        "Settings file exists after crop save: %s (size: %s bytes)"
-                    )  # noqa: B950
-                else:
-                    LOGGER.warning(
-                        "Settings file does not exist after crop save attempt: %s"
-                    )
-                    return False
-            except Exception as file_error:
-                LOGGER.error("Error checking settings file after crop save: %s")
-
-            # Explicitly cast bool to avoid Any return type
-            return bool(saved_rect == rect_str)
-        except Exception as e:
-            LOGGER.error("Error directly saving crop rectangle: %s", e)
-            return False
+        return self.settings_persistence.save_crop_rect(rect)
 
     def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
         """Set the current crop rectangle state."""
-        LOGGER.debug("MainWindow set_crop_rect called with rect: %s", rect)
-        if self.current_crop_rect != rect:
-            LOGGER.debug("MainWindow setting crop_rect to: %s", rect)
-            old_rect = self.current_crop_rect  # Store old rect for fallback
-            self.current_crop_rect = rect
-
-            # Explicitly trigger preview and button state updates when crop changes
-            self.request_previews_update.emit()
-            if hasattr(self, "main_tab") and hasattr(
-                self.main_tab, "_update_crop_buttons_state"
-            ):
-                self.main_tab._update_crop_buttons_state()
-            else:
-                LOGGER.warning(
-                    "Could not call main_tab._update_crop_buttons_state() from set_crop_rect"
-                )
-
-            # Save crop rectangle directly to settings - this is the most critical part
-            if rect:
-                success = self._save_crop_rect(rect)
-                if not success:
-                    LOGGER.error("Failed to save crop rectangle to settings!")
-
-            if hasattr(self, "ffmpeg_settings_tab") and hasattr(
-                self.ffmpeg_settings_tab, "set_crop_rect"
-            ):
-                self.ffmpeg_settings_tab.set_crop_rect(rect)
-
-            # Save all settings immediately when crop rectangle changes
-            # This ensures crop settings are preserved even if the app crashes
-            try:
-                if hasattr(self.main_tab, "save_settings"):
-                    LOGGER.info("Saving all settings due to crop rectangle change")
-                    self.main_tab.save_settings()
-
-                    # Final verification
-                    if rect:
-                        saved_rect = self.settings.value(
-                            "preview/cropRectangle", "", type=str
-                        )
-                        LOGGER.debug("Final verification - Crop rectangle: %s")
-
-                        # If saving failed, try to revert to previous state
-                        if not saved_rect and old_rect:
-                            LOGGER.warning(
-                                "Crop rectangle not saved, attempting to revert to previous value"
-                            )
-                            self._save_crop_rect(old_rect)
-            except Exception as e:
-                LOGGER.error("Error saving settings after crop rectangle change: %s", e)
+        self.state_manager.set_crop_rect(rect)
 
     # ------------------------------------
     def _set_in_dir_from_sorter(self, directory: Path) -> None:
         """Sets the input directory from a sorter tab."""
-        LOGGER.debug("Entering _set_in_dir_from_sorter... directory=%s", directory)
-        # Use the regular set_in_dir method to ensure proper state updates and settings saving
-        self.set_in_dir(directory)
-        self.main_tab.in_dir_edit.setText(str(directory))
-        self._update_start_button_state()
-        self.request_previews_update.emit()  # Request preview update
+        self.file_picker_manager.set_input_dir_from_sorter(self, directory)
 
     def _pick_in_dir(self) -> None:
         """Open a directory dialog to select the input image folder."""
-        LOGGER.debug("Entering _pick_in_dir...")
-        dir_path = QFileDialog.getExistingDirectory(self, "Select Input Image Folder")
-        if dir_path:
-            LOGGER.debug("Input directory selected: %s", dir_path)
-            self.in_dir = Path(dir_path)
-            self.main_tab.in_dir_edit.setText(dir_path)
-            self._update_start_button_state()
-            LOGGER.debug("Emitting request_previews_update from _pick_in_dir")
-            self.request_previews_update.emit()  # Request preview update
+        self.file_picker_manager.pick_input_directory(self)
 
     def _pick_out_file(self) -> None:
         """Open a file dialog to select the output MP4 file path."""
-        LOGGER.debug("Entering _pick_out_file...")
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Output Video", "", "MP4 Files (*.mp4)"
-        )
-        if file_path:
-            LOGGER.debug("Output file selected: %s", file_path)
-            self.out_file_path = Path(file_path)
-            self.main_tab.out_file_edit.setText(file_path)
-            self._update_start_button_state()
+        self.file_picker_manager.pick_output_file(self)
 
     def _on_crop_clicked(self) -> None:
         """Open the crop dialog with the first image."""
-        LOGGER.debug("Entering _on_crop_clicked...")
-        if self.in_dir and self.in_dir.is_dir():
-            image_files = sorted(
-                [
-                    f
-                    for f in self.in_dir.iterdir()
-                    if f.suffix.lower() in [".png", ".jpg", ".jpeg"]
-                ]
-            )
-            LOGGER.debug("Found %d image files in %s", len(image_files), self.in_dir)
-            if image_files:
-                first_image_path = image_files[0]
-                try:
-                    LOGGER.debug(
-                        "Preparing image for crop dialog: %s", first_image_path
-                    )
+        self.crop_handler.on_crop_clicked(self)
 
-                    pixmap_for_dialog: QPixmap | None = None
-                    sanchez_preview_enabled = (
-                        self.main_tab.sanchez_false_colour_checkbox.isChecked()
-                    )
+    def _get_sorted_image_files(self) -> list[Path]:
+        """Get sorted list of image files from input directory."""
+        return self.crop_handler.get_sorted_image_files(self)
 
-                    if sanchez_preview_enabled:
-                        LOGGER.debug(
-                            "Sanchez preview enabled. Attempting to get full-res "
-                            "processed_image from first_frame_label."
-                        )
-                        # Try to get the stored full-res QImage from the label's attribute
-                        full_res_image: QImage | None = None
-                        if (
-                            hasattr(self.main_tab, "first_frame_label")
-                            and self.main_tab.first_frame_label is not None
-                        ):
-                            # Retrieve the QImage stored *before* scaling in _load_process_scale_preview   # noqa: B950
-                            full_res_image = getattr(
-                                self.main_tab.first_frame_label, "processed_image", None
-                            )
+    def _prepare_image_for_crop_dialog(self, image_path: Path) -> Optional[QPixmap]:
+        """Prepare an image for the crop dialog, applying Sanchez if enabled."""
+        return self.crop_handler.prepare_image_for_crop_dialog(self, image_path)
 
-                        if (
-                            full_res_image is not None
-                            and isinstance(full_res_image, QImage)
-                            and not full_res_image.isNull()
-                        ):
-                            LOGGER.debug(
-                                "Successfully retrieved full-res processed_image "
-                                "from first_frame_label."
-                            )
-                            pixmap_for_dialog = QPixmap.fromImage(
-                                full_res_image
-                            )  # Create pixmap from the full-res QImage
-                        else:
-                            LOGGER.warning(
-                                "processed_image not found or invalid on first_frame_label. Will fall back to original image."  # noqa: B950
-                            )
-                            pixmap_for_dialog = None  # Ensure fallback
+    def _get_processed_preview_pixmap(self) -> Optional[QPixmap]:
+        """Get the processed preview pixmap from the first frame label."""
+        return self.crop_handler.get_processed_preview_pixmap(self)
 
-                    # If Sanchez wasn't enabled OR getting the preview pixmap failed, load the original   # noqa: B950
-                    if pixmap_for_dialog is None:
-                        if sanchez_preview_enabled:
-                            LOGGER.debug(
-                                "Falling back to loading original image for crop dialog."
-                            )
-                        else:
-                            LOGGER.debug(
-                                "Loading original image for crop dialog (Sanchez not enabled)."
-                            )
-
-                        original_image = QImage(str(first_image_path))
-                        if original_image.isNull():
-                            LOGGER.error(
-                                "Failed to load original image for cropping: %s"
-                            )
-                            QMessageBox.critical(
-                                self,
-                                "Error",
-                                f"Failed to load image for cropping: {first_image_path}",
-                            )
-                            return
-                        pixmap_for_dialog = QPixmap.fromImage(original_image)
-                        LOGGER.debug(
-                            "Successfully loaded original image for crop dialog."
-                        )
-
-                    # Final check if we have a valid pixmap
-                    if pixmap_for_dialog is None or pixmap_for_dialog.isNull():
-                        LOGGER.error("Failed to prepare any pixmap for crop dialog: %s")
-                        QMessageBox.critical(
-                            self,
-                            "Error",
-                            f"Could not load or process image for cropping: {first_image_path}",
-                        )
-                        return
-
-                    # Now use the prepared pixmap (original or processed from preview label)
-                    from goesvfi.utils.gui_helpers import CropSelectionDialog
-
-                    # Convert tuple to QRect if needed
-                    initial_rect = None
-                    if self.current_crop_rect:
-                        initial_rect = QRect(*self.current_crop_rect)
-
-                    dialog = CropSelectionDialog(
-                        pixmap_for_dialog.toImage(), initial_rect, self
-                    )
-                    if dialog.exec() == QDialog.DialogCode.Accepted:
-                        crop_rect = dialog.get_selected_rect()
-                        # Store as (x, y, w, h) tuple
-                        if crop_rect is not None:
-                            self.current_crop_rect = (
-                                crop_rect.x(),
-                                crop_rect.y(),
-                                crop_rect.width(),
-                                crop_rect.height(),
-                            )
-                        LOGGER.info("Crop rectangle set to: %s", self.current_crop_rect)
-                        self._update_crop_buttons_state()
-                        self.request_previews_update.emit()  # Request preview update
-                except Exception as e:
-                    LOGGER.exception("Error opening crop dialog for %s:")
-                    QMessageBox.critical(
-                        self, "Error", f"Error opening crop dialog: {e}"
-                    )
-            else:
-                LOGGER.debug("No images found in the input directory to crop.")
-                QMessageBox.warning(
-                    self, "Warning", "No images found in the input directory to crop."
-                )
-        else:
-            LOGGER.debug("No input directory selected for cropping.")
-            QMessageBox.warning(
-                self, "Warning", "Please select an input directory first."
-            )
-
-    # --- Removed methods previously here ---
-    # _makeMainTab
-    # _make_ffmpeg_settings_tab
-    # _connect_ffmpeg_settings_tab_signals
-    # _on_profile_selected
-    # _on_ffmpeg_setting_changed
-    # _makeModelLibraryTab
-    # _populate_model_table
-    # _toggle_tile_size_enabled
-    # --- Their logic is now encapsulated in the respective tab classes ---
+    def _show_crop_dialog(self, pixmap: QPixmap) -> None:
+        """Show the crop selection dialog."""
+        self.crop_handler.show_crop_dialog(self, pixmap)
 
     def _on_clear_crop_clicked(self) -> None:
         """Clear the current crop rectangle and update previews."""
-        self.current_crop_rect = None
-        LOGGER.info("Crop rectangle cleared.")
-        self._update_crop_buttons_state()
-        self.request_previews_update.emit()  # Request preview update
+        self.crop_handler.on_clear_crop_clicked(self)
 
     def _show_zoom(self, label: ClickableLabel) -> None:
         """Show a zoomed view of the processed image associated with the clicked label."""
-        LOGGER.debug(
-            "Entering _show_zoom for label: %s"
-        )  # Assuming labels have object names
-
-        # Get the full resolution processed pixmap from the label
-        # Ensure the label has the 'processed_image' attribute storing a QImage
-        if not hasattr(label, "processed_image") or label.processed_image is None:
-            LOGGER.warning(
-                "Clicked label has no processed image attribute or it is None."
-            )
-            # Optionally show a message box to the user
-            # QMessageBox.information(self, "Zoom", "No processed image available for this frame yet.")   # noqa: B950
-            return
-        if not isinstance(label.processed_image, QImage):
-            LOGGER.warning("Label's processed_image is not a QImage: %s")
-            return
-
-        full_res_processed_pixmap = QPixmap.fromImage(label.processed_image)
-        if full_res_processed_pixmap.isNull():
-            LOGGER.warning("Failed to create QPixmap from processed image for zoom.")
-            # Optionally show a message box to the user
-            # QMessageBox.warning(self, "Zoom Error", "Could not load the processed image for zooming.")   # noqa: B950
-            return
-
-        # --- Scale pixmap for display ---
-        scaled_pix: QPixmap
-        screen = QApplication.primaryScreen()
-        if screen:
-            # Use 90% of available screen size
-            max_size = screen.availableGeometry().size() * 0.9
-            # Check if scaling is needed
-            if (
-                full_res_processed_pixmap.size().width() > max_size.width()
-                or full_res_processed_pixmap.size().height() > max_size.height()
-            ):
-                LOGGER.debug("Scaling zoom image from %s to fit %s")
-                scaled_pix = full_res_processed_pixmap.scaled(
-                    max_size,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
-                )
-            else:
-                LOGGER.debug("Using original size for zoom image as it fits screen.")
-                scaled_pix = full_res_processed_pixmap  # Use original size if it fits
-        else:
-            # Fallback if screen info is not available
-            LOGGER.warning(
-                "Could not get screen geometry for zoom dialog scaling, using fallback size."
-            )
-            fallback_size = QSize(1024, 768)  # Define a reasonable fallback size
-            scaled_pix = full_res_processed_pixmap.scaled(
-                fallback_size,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-        # --- End scaling ---
-
-        if scaled_pix.isNull():
-            LOGGER.error("Failed to create scaled pixmap for zoom dialog.")
-            # QMessageBox.critical(self, "Zoom Error", "Failed to prepare image for zooming.")
-            return
-
-        LOGGER.debug("Showing ZoomDialog with pixmap size: %s", scaled_pix.size())
-        dialog = ZoomDialog(scaled_pix, self)
-        dialog.exec()
+        self.zoom_manager.show_zoom(label, self)
 
     def _connect_model_combo(self) -> None:
         """Connect the model combo box signal."""
-        self.model_combo.currentTextChanged.connect(self._on_model_changed)
+        # Disabled - MainTab already handles model selection in _on_model_selected
+        # self.model_selector_manager.connect_model_combo(self)
 
     def _on_tab_changed(self, index: int) -> None:
         """Handle tab changes and update the ViewModel."""
@@ -968,1394 +319,275 @@ class MainWindow(QWidget):
 
     def _validate_thread_spec(self, text: str) -> None:
         """Validate the RIFE thread specification format."""
-        LOGGER.debug("Entering _validate_thread_spec... text=%s", text)
-        # Simple regex check for format like "1:2:2"
-        if not re.fullmatch(r"\d+:\d+:\d+", text):
-            self.main_tab.rife_thread_spec_edit.setStyleSheet("color: red;")
-            self.main_tab.start_button.setEnabled(
-                False
-            )  # Disable start button if invalid
-            LOGGER.warning("Invalid RIFE thread specification format: %s", text)
-        else:
-            self.main_tab.rife_thread_spec_edit.setStyleSheet("")  # Reset style
-            self._update_start_button_state()  # Re-check start button state
+        self.model_selector_manager.validate_thread_spec(self, text)
 
     def _populate_models(self) -> None:
         """Populate the RIFE model combo box."""
-        LOGGER.debug("Entering _populate_models...")
-        available_models = (
-            config.get_available_rife_models()
-        )  # Use correct function name
-        # Use alias self.model_combo which points to self.main_tab.rife_model_combo
-        self.model_combo.clear()
-        if available_models:
-            self.model_combo.addItems(available_models)  # Add list items directly
-            # Set the current text to the loaded setting or default
-            loaded_model = self.settings.value("rife_model_key", "rife-v4.6", type=str)
-            if loaded_model in available_models:  # Check membership in list
-                self.model_combo.setCurrentText(loaded_model)
-            else:
-                self.model_combo.setCurrentIndex(0)  # Select the first available model
-            self.current_model_key = (
-                self.model_combo.currentText()
-            )  # Update state variable using alias
-        else:
-            self.model_combo.addItem(self.tr("No RIFE models found"))
-            self.model_combo.setEnabled(False)
-            self.current_model_key = ""  # Clear state variable
-            LOGGER.warning("No RIFE models found.")
+        self.model_selector_manager.populate_models(self)
 
     def _toggle_sanchez_res_enabled(self, state: Qt.CheckState) -> None:
         """Enables or disables the Sanchez resolution combo box based on the checkbox state."""
-        # Use the combo box alias defined in __init__
-        self.sanchez_res_km_combo.setEnabled(state == Qt.CheckState.Checked.value)
+        self.model_selector_manager.toggle_sanchez_res_enabled(self, state)
+
+    @property
+    def current_encoder(self) -> str:
+        """Get the current encoder from the main tab."""
+        return (
+            self.main_tab.current_encoder
+            if hasattr(self.main_tab, "current_encoder")
+            else "RIFE"
+        )
+
+    @property
+    def current_model_key(self) -> str:
+        """Get the current model key from the main tab."""
+        return (
+            self.main_tab.current_model_key
+            if hasattr(self.main_tab, "current_model_key")
+            else ""
+        )
 
     def _update_rife_ui_elements(self) -> None:
         """Updates the visibility and state of RIFE-specific UI elements."""
-        LOGGER.debug("Entering _update_rife_ui_elements...")
-        is_rife = self.current_encoder == "RIFE"
-
-        # Toggle visibility of RIFE options group
-        # Access group via main_tab
-        rife_options_parent = (
-            self.main_tab.rife_options_group.parentWidget()
-        )  # Use group
-        if rife_options_parent is not None:  # Check if parent exists
-            rife_options_parent.setVisible(is_rife)
-        # Use alias self.model_combo which points to self.main_tab.rife_model_combo
-        model_combo_parent = self.model_combo.parentWidget()
-        if model_combo_parent is not None:  # Check if parent exists
-            model_combo_parent.setVisible(is_rife)  # Label and combo box
-
-        # Update state of RIFE options based on capability
-        if is_rife:
-            rife_exe = None  # noqa: F841
-            try:
-                rife_exe = config.find_rife_executable(  # noqa: F841
-                    self.current_model_key
-                )  # Keep this to check for exe existence
-                capability_detector = RifeCapabilityManager(
-                    model_key=self.current_model_key
-                )  # Instantiate with model_key
-
-                self.main_tab.rife_tile_checkbox.setEnabled(
-                    capability_detector.capabilities.get("tiling", False)
-                )
-                # Tile size enabled state is handled by _toggle_tile_size_enabled signal in MainTab
-                self.main_tab.rife_uhd_checkbox.setEnabled(
-                    capability_detector.capabilities.get("uhd", False)
-                )
-                self.main_tab.rife_thread_spec_edit.setEnabled(
-                    capability_detector.capabilities.get("thread_spec", False)
-                )
-                self.main_tab.rife_tta_spatial_checkbox.setEnabled(
-                    capability_detector.capabilities.get("tta_spatial", False)
-                )
-                self.main_tab.rife_tta_temporal_checkbox.setEnabled(
-                    capability_detector.capabilities.get("tta_temporal", False)
-                )
-
-                # Warn if selected model doesn't support features
-                if (
-                    self.main_tab.rife_tile_checkbox.isChecked()
-                    and not capability_detector.capabilities.get("tiling", False)
-                ):  # Access capability from dict
-                    LOGGER.warning("Selected model '%s' does not support tiling.")
-                if (
-                    self.main_tab.rife_uhd_checkbox.isChecked()
-                    and not capability_detector.capabilities.get("uhd", False)
-                ):  # Access capability from dict
-                    LOGGER.warning("Selected model '%s' does not support UHD mode.")
-                if (
-                    self.main_tab.rife_thread_spec_edit.text() != "1:2:2"
-                    and not capability_detector.capabilities.get("thread_spec", False)
-                ):  # Access capability from dict
-                    LOGGER.warning(
-                        "Selected model '%s' does not support custom thread specification."
-                    )  # noqa: B950
-                if (
-                    self.main_tab.rife_tta_spatial_checkbox.isChecked()
-                    and not capability_detector.capabilities.get("tta_spatial", False)
-                ):  # Access capability from dict
-                    LOGGER.warning("Selected model '%s' does not support spatial TTA.")
-                if (
-                    self.main_tab.rife_tta_temporal_checkbox.isChecked()
-                    and not capability_detector.capabilities.get("tta_temporal", False)
-                ):  # Access capability from dict
-                    LOGGER.warning("Selected model '%s' does not support temporal TTA.")
-
-            except FileNotFoundError:
-                # If RIFE executable is not found for the selected model, disable all RIFE options
-                self.main_tab.rife_tile_checkbox.setEnabled(False)
-                self.main_tab.rife_tile_size_spinbox.setEnabled(False)
-                self.main_tab.rife_uhd_checkbox.setEnabled(False)
-                self.main_tab.rife_thread_spec_edit.setEnabled(False)
-                self.main_tab.rife_tta_spatial_checkbox.setEnabled(False)
-                self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
-                LOGGER.warning(
-                    "RIFE executable not found for model '%s'. RIFE options disabled."
-                )  # noqa: B950
-            except Exception as e:
-                LOGGER.error("Error checking RIFE capabilities for model '%s': %s")
-                # Disable options on error
-                self.main_tab.rife_tile_checkbox.setEnabled(False)
-                self.main_tab.rife_tile_size_spinbox.setEnabled(False)
-                self.main_tab.rife_uhd_checkbox.setEnabled(False)
-                self.main_tab.rife_thread_spec_edit.setEnabled(False)
-                self.main_tab.rife_tta_spatial_checkbox.setEnabled(False)
-                self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
+        self.rife_ui_manager.update_rife_ui_elements(
+            self.main_tab,
+            self.current_encoder,
+            self.current_model_key,
+            self.ffmpeg_settings_tab,
+        )
 
     def _on_model_changed(self, model_key: str) -> None:
         """Handle RIFE model selection change."""
-        LOGGER.debug("Entering _on_model_changed... model_key=%s", model_key)
-        self.current_model_key = model_key
-        self._update_rife_ui_elements()  # Update RIFE options based on new model
-        self._update_start_button_state()  # Re-check start button state
+        self.model_selector_manager.on_model_changed(self, model_key)
+
+    def _update_previews(self) -> None:
+        """Update preview images using the PreviewManager."""
+        LOGGER.debug("_update_previews called")
+
+        if not self.in_dir:
+            LOGGER.debug("No input directory set, skipping preview update")
+            return
+
+        # Get preview labels from main tab
+        preview_labels = []
+        if hasattr(self.main_tab, "first_frame_label"):
+            preview_labels.append(self.main_tab.first_frame_label)
+        if hasattr(self.main_tab, "last_frame_label"):
+            preview_labels.append(self.main_tab.last_frame_label)
+
+        if not preview_labels:
+            LOGGER.warning("No preview labels found in main_tab")
+            return
+
+        # Load preview images using PreviewManager
+        try:
+            # Get sanchez settings from main tab
+            apply_sanchez = False
+            sanchez_resolution = None
+            if (
+                hasattr(self.main_tab, "sanchez_checkbox")
+                and self.main_tab.sanchez_checkbox.isChecked()
+            ):
+                apply_sanchez = True
+                if hasattr(self.main_tab, "sanchez_res_combo"):
+                    sanchez_resolution = int(
+                        self.main_tab.sanchez_res_combo.currentText()
+                    )
+
+            LOGGER.debug(
+                f"Loading preview images from {self.in_dir}, apply_sanchez={apply_sanchez}"
+            )
+
+            # Disconnect any existing connections first
+            try:
+                self.main_view_model.preview_manager.preview_updated.disconnect()
+            except TypeError:
+                pass  # No connections exist
+            try:
+                self.main_view_model.preview_manager.preview_error.disconnect()
+            except TypeError:
+                pass  # No connections exist
+
+            # Connect signals before loading
+            self.main_view_model.preview_manager.preview_updated.connect(
+                self._on_preview_images_loaded
+            )
+            self.main_view_model.preview_manager.preview_error.connect(
+                self._on_preview_error
+            )
+
+            # Load previews through view model
+            success = self.main_view_model.preview_manager.load_preview_images(
+                self.in_dir,
+                crop_rect=self.current_crop_rect,
+                apply_sanchez=apply_sanchez,
+                sanchez_resolution=sanchez_resolution,
+            )
+
+            if not success:
+                LOGGER.error("Failed to load preview images")
+
+        except Exception as e:
+            LOGGER.exception(f"Error updating previews: {e}")
 
     def _handle_processing(self, args: Dict[str, Any]) -> None:
-        """Handle the processing_started signal from MainTab.
+        """Handle the processing_started signal from MainTab."""
+        self.processing_handler.handle_processing(self, args)
 
-        Creates and starts a VfiWorker with the provided arguments.
-
-        Args:
-            args: Dictionary of processing arguments from MainTab
-        """
-        # Check if already processing and avoid duplicate requests
-        if getattr(self, "is_processing", False):
-            LOGGER.warning("Processing already in progress, ignoring duplicate request")
-            return
-
-        # Enhanced debugging output
-        LOGGER.debug("========== MAIN WINDOW HANDLER CALLED ==========")
-        LOGGER.debug("MainWindow._handle_processing received the signal")
-        LOGGER.info(
-            "MainWindow: _handle_processing called - Starting video interpolation processing"
-        )
-
-        # Log detailed argument info
-        LOGGER.debug("Received args dictionary with %s keys", len(args) if args else 0)
-        if args:
-            LOGGER.debug("Args keys: %s", list(args.keys()))
-            LOGGER.debug("In directory: %s", args.get("in_dir"))
-            LOGGER.debug("Out file: %s", args.get("out_file"))
-        else:
-            LOGGER.warning("Empty args dictionary received!")
-            return
-
-        LOGGER.debug("Processing arguments: %s", args)
-
-        # Update UI state
-        LOGGER.debug("Updating UI state: setting is_processing = True")
-        self.is_processing = True
-        self._set_processing_state(True)  # Update UI to processing state
-
-        # If a previous worker is still running, terminate it
-        if self.vfi_worker and self.vfi_worker.isRunning():
-            LOGGER.warning("Terminating previous VfiWorker thread")
-            try:
-                self.vfi_worker.terminate()
-                finished = self.vfi_worker.wait(
-                    1000
-                )  # Wait up to 1 second for it to terminate
-                if not finished:
-                    LOGGER.error(
-                        "Failed to terminate previous worker, will try to proceed anyway"
-                    )
-            except Exception as e:
-                LOGGER.exception("Error terminating previous worker: %s", e)
-
-        # Create new worker thread with the arguments from MainTab
-        # VfiWorker expects out_file_path instead of out_file and mid_count instead of multiplier
-        # Also need to extract proper FFmpeg settings from the ffmpeg_args dictionary
-
-        # Default FFmpeg settings in case they're not found in args or ffmpeg_args
-        ffmpeg_settings = args.get("ffmpeg_args", {}) or {}
-
-        # Extract from ffmpeg_args if it exists as a dictionary
-        use_ffmpeg_interp = ffmpeg_settings.get("use_ffmpeg_interp", False)
-        filter_preset = ffmpeg_settings.get("filter_preset", "slow")
-        mi_mode = ffmpeg_settings.get("mi_mode", "mci")
-        mc_mode = ffmpeg_settings.get("mc_mode", "obmc")
-        me_mode = ffmpeg_settings.get("me_mode", "bidir")
-        me_algo = ffmpeg_settings.get("me_algo", "")
-        search_param = ffmpeg_settings.get("search_param", 96)
-        scd_mode = ffmpeg_settings.get("scd", "fdi")
-        scd_threshold = (
-            ffmpeg_settings.get("scd_threshold") if scd_mode != "none" else None
-        )
-        mb_size_text = ffmpeg_settings.get("mb_size", "")
-        minter_mb_size = (
-            int(mb_size_text)
-            if isinstance(mb_size_text, str) and mb_size_text.isdigit()
-            else None
-        )
-        minter_vsbmc = 1 if ffmpeg_settings.get("vsbmc", False) else 0
-
-        # Unsharp settings with defaults
-        apply_unsharp = ffmpeg_settings.get("apply_unsharp", False)
-        unsharp_lx = ffmpeg_settings.get("unsharp_lx", 3)
-        unsharp_ly = ffmpeg_settings.get("unsharp_ly", 3)
-        unsharp_la = ffmpeg_settings.get("unsharp_la", 1.0)
-        unsharp_cx = ffmpeg_settings.get("unsharp_cx", 0.5)
-        unsharp_cy = ffmpeg_settings.get("unsharp_cy", 0.5)
-        unsharp_ca = ffmpeg_settings.get("unsharp_ca", 0.0)
-
-        # Sanchez settings
-        sanchez_enabled = args.get("sanchez_enabled", False)  # noqa: F841
-        sanchez_resolution_km = args.get("sanchez_resolution_km", 4.0)  # noqa: F841
-
-        # Get a temporary directory for Sanchez processing
-        sanchez_gui_temp_dir = Path(tempfile.mkdtemp(prefix="sanchez_gui_"))
-
-        # RIFE settings
-        rife_model_path = args.get("rife_model_path", None)  # noqa: F841
-        rife_exe_path = args.get("rife_exe_path", None)  # noqa: F841
-        rife_tta_spatial = args.get("rife_tta_spatial", False)  # noqa: F841
-        rife_tta_temporal = args.get("rife_tta_temporal", False)  # noqa: F841
-        rife_uhd = args.get("rife_uhd", False)  # noqa: F841
-        rife_tiling_enabled = args.get("rife_tiling_enabled", True)  # noqa: F841
-        rife_tile_size = args.get("rife_tile_size", 384)  # noqa: F841
-        rife_thread_spec = args.get("rife_thread_spec", "0:0:0:0")  # noqa: F841
-
-        # Create worker with correct parameter names
-        # Create VfiWorker with proper error handling
-        try:
-            # Create VfiWorker with the exact parameter names it expects
-            self.vfi_worker = VfiWorker(
-                in_dir=str(args["in_dir"]),
-                out_file_path=str(
-                    args["out_file"]
-                ),  # Changed from out_file to out_file_path
-                fps=args["fps"],
-                mid_count=args["multiplier"]
-                - 1,  # VfiWorker expects mid_count (multiplier - 1)
-                max_workers=args["max_workers"],
-                encoder=args["encoder"],
-                # FFmpeg settings
-                use_preset_optimal=False,
-                use_ffmpeg_interp=use_ffmpeg_interp,
-                filter_preset=filter_preset,
-                mi_mode=mi_mode,
-                mc_mode=mc_mode,
-                me_mode=me_mode,
-                me_algo=me_algo,
-                search_param=search_param,
-                scd_mode=scd_mode,
-                scd_threshold=scd_threshold if scd_threshold is not None else 10.0,
-                minter_mb_size=minter_mb_size if minter_mb_size is not None else 16,
-                minter_vsbmc=minter_vsbmc,
-                # Unsharp settings
-                apply_unsharp=apply_unsharp,
-                unsharp_lx=unsharp_lx,
-                unsharp_ly=unsharp_ly,
-                unsharp_la=unsharp_la,
-                unsharp_cx=unsharp_cx,
-                unsharp_cy=unsharp_cy,
-                unsharp_ca=unsharp_ca,
-                # Quality settings - Use what VfiWorker expects
-                crf=ffmpeg_settings.get("cr", 18),
-                bitrate_kbps=ffmpeg_settings.get("bitrate_kbps", 7000),
-                bufsize_kb=ffmpeg_settings.get("bufsize_kb", 14000),
-                pix_fmt=ffmpeg_settings.get("pix_fmt", "yuv420p"),
-                # Model settings
-                skip_model=False,  # Don't skip the model
-                # Crop settings
-                crop_rect=args.get("crop_rect", None),
-                # Debug mode
-                debug_mode=self.debug_mode,
-                # RIFE settings with correct parameter names
-                rife_tile_enable=args.get("rife_tiling_enabled", True),
-                rife_tile_size=args.get("rife_tile_size", 384),  # noqa: F841
-                rife_uhd_mode=args.get("rife_uhd", False),
-                rife_thread_spec=args.get("rife_thread_spec", "0:0:0:0"),  # noqa: F841
-                rife_tta_spatial=args.get("rife_tta_spatial", False),  # noqa: F841
-                rife_tta_temporal=args.get("rife_tta_temporal", False),  # noqa: F841
-                model_key=args.get("rife_model_key", "rife-v4.6"),
-                # Sanchez settings (use the names expected by VfiWorker)
-                # Convert from sanchez_enabled to false_colour and
-                # from sanchez_resolution_km to res_km
-                # Make sure res_km is an integer (VfiWorker expects int, not float)
-                false_colour=bool(args.get("sanchez_enabled", False)),
-                res_km=int(float(args.get("sanchez_resolution_km", 4.0))),
-                # Sanchez GUI temp dir
-                sanchez_gui_temp_dir=(
-                    str(sanchez_gui_temp_dir) if sanchez_gui_temp_dir else None
-                ),
-            )
-        except Exception as e:
-            LOGGER.exception("Failed to create VfiWorker: %s", e)
-            self.is_processing = False
-            self._set_processing_state(False)  # Reset UI state
-
-            # Show error message to user
-            QMessageBox.critical(
-                self,
-                "Error",
-                "Failed to initialize processing pipeline.\n\n"
-                "This appears to be an issue with the video processing module, not your settings.\n\n"  # noqa: B950
-                f"Error details: {str(e)}",
-            )
-
-            # Clean up
-            self.main_tab._reset_start_button()
-            return
-
-        # Connect worker signals (make sure we use the correct signal names from VfiWorker)
-        self.vfi_worker.progress.connect(self._on_processing_progress)
-        self.vfi_worker.finished.connect(self._on_processing_finished)
-        self.vfi_worker.error.connect(self._on_processing_error)
-
-        # Start the worker thread
-        self.vfi_worker.start()
-        LOGGER.info("VfiWorker thread started")
-
-        # Update UI to reflect processing state
-        self.main_view_model.processing_vm.start_processing()
-
-    def _on_processing_progress(
-        self, current: int, total: int, time_elapsed: float
-    ) -> None:
-        """Handle progress updates from the VfiWorker.
-
-        Args:
-            current: Current frame being processed
-            total: Total number of frames to process
-            time_elapsed: Time elapsed in seconds
-        """
-        LOGGER.debug("Processing progress: %s/%s (%.2fs)", current, total, time_elapsed)
-        # Update progress in view model
-        self.main_view_model.processing_vm.update_progress(current, total, time_elapsed)
+    def _on_processing_progress(self, current: int, total: int, eta: float) -> None:
+        """Handle progress updates from the VFI worker."""
+        self.processing_callbacks.on_processing_progress(self, current, total, eta)
 
     def _on_processing_finished(self, output_path: str) -> None:
-        """Handle successful completion of processing.
+        """Handle successful completion of VFI processing."""
+        self.processing_callbacks.on_processing_finished(self, output_path)
+
+    def _on_processing_error(self, error_msg: str) -> None:
+        """Handle errors during VFI processing."""
+        self.processing_callbacks.on_processing_error(self, error_msg)
+
+    def _set_processing_state(self, is_processing: bool) -> None:
+        """Update UI elements to reflect processing state."""
+        self.processing_callbacks.set_processing_state(self, is_processing)
+
+    def _update_start_button_state(self) -> None:
+        """Update the start button enabled state based on current inputs."""
+        self.processing_callbacks.update_start_button_state(self)
+
+    def _on_preview_images_loaded(
+        self, before_pixmap: QPixmap, after_pixmap: QPixmap
+    ) -> None:
+        """Handle loaded preview images from PreviewManager.
 
         Args:
-            output_path: Path to the generated output file
+            before_pixmap: The first frame pixmap
+            after_pixmap: The last frame pixmap
         """
-        LOGGER.info("Processing finished successfully. Output: %s", output_path)
-        self.is_processing = False
-        self._set_processing_state(False)  # Reset UI state
-
-        # Update the view model
-        self.main_view_model.processing_vm.finish_processing(
-            success=True, message=output_path
+        LOGGER.debug(
+            f"_on_preview_images_loaded called with pixmaps: before={not before_pixmap.isNull()}, after={not after_pixmap.isNull()}"
         )
 
-        # Reset UI in MainTab
-        self.main_tab._reset_start_button()
-
-        # Show success message (could be handled by MainTab but keeping it here for consistency)
-        QMessageBox.information(
-            self, "Success", f"Video interpolation finished!\nOutput: {output_path}"
-        )
-
-    def _on_processing_error(self, error_message: str) -> None:
-        """Handle processing errors from the VfiWorker.
-
-        Args:
-            error_message: Error message from the worker
-        """
-        LOGGER.error("Processing error: %s", error_message)
-        self.is_processing = False
-        self._set_processing_state(False)  # Reset UI state
-
-        # Update the view model - use proper method name based on what's available
         try:
-            if hasattr(self.main_view_model.processing_vm, "finish_processing"):
-                self.main_view_model.processing_vm.finish_processing(
-                    success=False, message=error_message
+            # Update first frame label
+            if (
+                hasattr(self.main_tab, "first_frame_label")
+                and not before_pixmap.isNull()
+            ):
+                self.main_tab.first_frame_label.setPixmap(before_pixmap)
+
+                # Set file_path attribute for display
+                if self.in_dir and self.in_dir.exists():
+                    image_files = sorted(
+                        [
+                            f
+                            for f in self.in_dir.iterdir()
+                            if f.suffix.lower()
+                            in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+                        ]
+                    )
+                    if image_files:
+                        self.main_tab.first_frame_label.file_path = str(image_files[0])
+                # Store the full resolution image data for preview
+                first_frame_data, _ = (
+                    self.main_view_model.preview_manager.get_current_frame_data()
                 )
-            elif hasattr(self.main_view_model.processing_vm, "cancel_processing"):
-                # cancel_processing might not accept a message parameter
-                self.main_view_model.processing_vm.cancel_processing()
-        except Exception as e:
-            LOGGER.exception("Error updating view model: %s", e)
+                if first_frame_data and first_frame_data.image_data is not None:
+                    # Convert numpy array to QImage using PreviewManager's method
+                    full_res_pixmap = (
+                        self.main_view_model.preview_manager._numpy_to_qpixmap(
+                            first_frame_data.image_data
+                        )
+                    )
+                    if not full_res_pixmap.isNull():
+                        self.main_tab.first_frame_label.processed_image = (
+                            full_res_pixmap.toImage()
+                        )
+                        LOGGER.debug(
+                            f"Set processed_image on first_frame_label: {self.main_tab.first_frame_label.processed_image}"
+                        )
+                else:
+                    LOGGER.warning("No first_frame_data available from preview manager")
 
-        # Reset UI in MainTab
-        try:
-            self.main_tab._reset_start_button()
-        except Exception as e:
-            LOGGER.exception("Error resetting start button: %s", e)
+            # Update last frame label
+            if hasattr(self.main_tab, "last_frame_label") and not after_pixmap.isNull():
+                self.main_tab.last_frame_label.setPixmap(after_pixmap)
 
-        # Show error message to user
-        try:
-            QMessageBox.warning(
-                self,
-                "Processing Error",
-                "Video processing could not be completed due to an error in the processing pipeline.\n\n"  # noqa: B950
-                "This is likely an issue with the image processing module, not your settings.\n\n"
-                f"The specific error was: {error_message}",
-            )
-        except Exception as e:
-            LOGGER.exception("Error showing error message: %s", e)
+                # Set file_path attribute for display
+                if self.in_dir and self.in_dir.exists():
+                    image_files = sorted(
+                        [
+                            f
+                            for f in self.in_dir.iterdir()
+                            if f.suffix.lower()
+                            in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
+                        ]
+                    )
+                    if image_files:
+                        self.main_tab.last_frame_label.file_path = str(image_files[-1])
+                # Store the full resolution image data for preview
+                _, last_frame_data = (
+                    self.main_view_model.preview_manager.get_current_frame_data()
+                )
+                if last_frame_data and last_frame_data.image_data is not None:
+                    # Convert numpy array to QImage using PreviewManager's method
+                    full_res_pixmap = (
+                        self.main_view_model.preview_manager._numpy_to_qpixmap(
+                            last_frame_data.image_data
+                        )
+                    )
+                    if not full_res_pixmap.isNull():
+                        self.main_tab.last_frame_label.processed_image = (
+                            full_res_pixmap.toImage()
+                        )
 
-    def closeEvent(self, event: QCloseEvent | None) -> None:
-        """Handle the window closing event."""
-        LOGGER.debug("Entering closeEvent...")
+            LOGGER.debug("Preview images updated successfully")
+
+        except Exception as e:
+            LOGGER.exception(f"Error updating preview labels: {e}")
+
+    def _on_preview_error(self, error_message: str) -> None:
+        """Handle preview loading errors.
+
+        Args:
+            error_message: The error message from PreviewManager
+        """
+        LOGGER.error(f"Preview loading error: {error_message}")
+        # Update status bar to show error
+        self.status_bar.showMessage(f"Preview error: {error_message}", 5000)
+
+    def _update_crop_buttons_state(self) -> None:
+        """Update crop button states based on current state."""
+        self.processing_callbacks.update_crop_buttons_state(self)
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        """Handle window close event."""
+        LOGGER.info("MainWindow close event triggered")
 
         # Save settings before closing
         self.saveSettings()
 
-        if self.is_processing:
-            reply = QMessageBox.question(
-                self,
-                "Processing in Progress",
-                "Processing is still in progress. Do you want to cancel and exit?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,
-            )
-            if reply == QMessageBox.StandardButton.Yes:
-                if self.vfi_worker:
-                    self.vfi_worker.terminate()  # Attempt to terminate the worker thread
-                    self.vfi_worker.wait()  # Wait for the thread to finish
-                # Clean up the GUI Sanchez temp directory
-                if self._sanchez_gui_temp_dir.exists():
-                    try:
-                        shutil.rmtree(self._sanchez_gui_temp_dir)
-                        LOGGER.info("Cleaned up GUI Sanchez temp directory: %s")
-                    except Exception as cleanup_error:
-                        LOGGER.warning(
-                            "Failed to clean up GUI Sanchez temp directory: %s"
-                        )
-
-                # Clean up integrity check resources
-                if hasattr(self, "integrity_check_vm"):
-                    try:
-                        self.integrity_check_vm.cleanup()
-                        LOGGER.info("Cleaned up integrity check resources")
-                    except Exception as e:
-                        LOGGER.warning(
-                            "Failed to clean up integrity check resources: %s"
-                        )
-
-                if event:
-                    event.accept()
-            else:
-                if event:
-                    event.ignore()
-        else:
-            # Clean up the GUI Sanchez temp directory on normal exit
-            if self._sanchez_gui_temp_dir.exists():
-                try:
-                    shutil.rmtree(self._sanchez_gui_temp_dir)
-                    LOGGER.info("Cleaned up GUI Sanchez temp directory: %s")
-                except Exception as cleanup_error:
-                    LOGGER.warning("Failed to clean up GUI Sanchez temp directory: %s")
-
-            # Clean up integrity check resources on normal exit
-            if hasattr(self, "integrity_check_vm"):
-                try:
-                    self.integrity_check_vm.cleanup()
-                    LOGGER.info("Cleaned up integrity check resources")
-                except Exception as e:
-                    LOGGER.warning(
-                        "Failed to clean up integrity check resources: %s", e
-                    )
-            # Settings are saved proactively or not saved on close to avoid widget deletion errors.
-            # try:
-            #     self.saveSettings()   # Save settings on exit - REMOVED
-            # except RuntimeError as e:
-            #      # This is likely a Qt object lifetime issue in tests; log and continue
-            #     LOGGER.warning("Error saving settings during closeEvent: %s", e)
-
-            if event:
-                event.accept()
-
-    def _load_process_scale_preview(
-        self,
-        image_path: Path,
-        target_label: ClickableLabel,
-        image_loader: ImageLoader,
-        sanchez_processor: SanchezProcessor,
-        image_cropper: ImageCropper,
-        apply_sanchez: bool,  # Renamed from sanchez_enabled for clarity
-        crop_rect: Optional[Tuple[int, int, int, int]],
-    ) -> QPixmap | None:
-        """Loads, processes (crop/sanchez), scales, and returns a preview pixmap
-        using the provided ImageProcessor instances. Handles Sanchez caching.
-        """
-        target_label.file_path = None  # Clear previous path
-        target_label.processed_image = None  # Clear previous full-res image
-        processed_qimage: QImage | None = None  # To store the full-res processed image
-        sanchez_processing_failed = False  # Flag to indicate Sanchez processing failure
-        sanchez_error_message = ""
-        image_data_to_process: ImageData | None = None  # Store loaded/cached data
-        using_cache = False  # Flag to indicate if cache was used   # noqa: F841
-
-        try:
-            # 1. Load Original or Get from Cache (if Sanchez enabled)
-            # -------------------------------------------------------
-            if apply_sanchez:
-                if image_path in self.sanchez_preview_cache:
-                    LOGGER.debug("Using cached Sanchez result for %s", image_path.name)
-                    cached_array = self.sanchez_preview_cache[image_path]
-                    # Create ImageData manually from cached numpy array
-                    # Assume original metadata isn't critical for preview display after Sanchez
-                    image_data_to_process = ImageData(
-                        image_data=cached_array,
-                        metadata={"source_path": image_path, "cached": True},
-                    )
-                    using_cache = True  # noqa: F841
-                else:
-                    LOGGER.debug("No cached Sanchez result for %s, processing...")
-                    original_image_data = None
-                    try:
-                        # Load original first
-                        original_image_data = image_loader.load(str(image_path))
-                        if (
-                            original_image_data
-                            and original_image_data.image_data is not None
-                        ):
-                            # Read resolution from ComboBox
-                            res_km_str = "4"
-                            if (
-                                hasattr(self, "sanchez_res_km_combo")
-                                and self.sanchez_res_km_combo is not None
-                            ):
-                                try:
-                                    res_km_str = self.sanchez_res_km_combo.currentText()
-                                except (RuntimeError, AttributeError) as e:
-                                    LOGGER.warning(
-                                        "Could not get Sanchez resolution value: %s"
-                                    )
-                            else:
-                                LOGGER.warning("Sanchez resolution ComboBox not found")
-                            try:
-                                res_km_val = float(res_km_str)
-                            except ValueError:
-                                res_km_val = 4.0
-
-                            LOGGER.debug(
-                                "Applying Sanchez to preview for: %s with res_km=%s"
-                            )  # noqa: B950
-                            sanchez_kwargs = {
-                                "res_km": res_km_val
-                            }  # Don't set false_colour here
-                            if "filename" not in original_image_data.metadata:
-                                original_image_data.metadata["filename"] = (
-                                    image_path.name
-                                )
-                            if "source_path" not in original_image_data.metadata:
-                                original_image_data.metadata["source_path"] = str(
-                                    image_path
-                                )
-
-                            # Run Sanchez Processor
-                            sanchez_result = sanchez_processor.process(
-                                original_image_data, **sanchez_kwargs
-                            )
-
-                            if sanchez_result and sanchez_result.image_data is not None:
-                                LOGGER.debug("Sanchez processing completed.")
-                                # Cache the result (as NumPy array)
-                                result_array: Optional[
-                                    np.ndarray[Any, np.dtype[np.uint8]]
-                                ] = None
-                                if isinstance(sanchez_result.image_data, Image.Image):
-                                    result_array = np.array(sanchez_result.image_data)
-                                elif isinstance(sanchez_result.image_data, np.ndarray):
-                                    result_array = sanchez_result.image_data
-
-                                if result_array is not None:
-                                    self.sanchez_preview_cache[image_path] = (
-                                        result_array.copy()
-                                    )
-                                    LOGGER.debug(
-                                        "Stored Sanchez result in cache for: %s"
-                                    )
-                                    image_data_to_process = (
-                                        sanchez_result  # Use the successful result
-                                    )
-                                else:
-                                    LOGGER.warning(
-                                        "Sanchez processed data was not in expected format (PIL/NumPy) for caching."  # noqa: B950
-                                    )
-                                    sanchez_processing_failed = (
-                                        True  # Treat as failure if format wrong
-                                    )
-                                    sanchez_error_message = "Invalid output format"
-                                    image_data_to_process = (
-                                        original_image_data  # Fallback
-                                    )
-                            else:
-                                LOGGER.warning(
-                                    "Sanchez processing returned no data for %s"
-                                )
-                                sanchez_processing_failed = True
-                                sanchez_error_message = "Processing returned None"
-                                image_data_to_process = original_image_data  # Fallback
-                        else:
-                            LOGGER.warning(
-                                "Failed to load original image for Sanchez: %s"
-                            )
-                            sanchez_processing_failed = (
-                                True  # Treat as failure if load fails
-                            )
-                            sanchez_error_message = "Load failed"
-                            # image_data_to_process remains None here
-
-                    except Exception as e_sanchez:
-                        LOGGER.exception("Error during Sanchez processing for %s: %s")
-                        sanchez_processing_failed = True
-                        sanchez_error_message = str(e_sanchez)
-                        # Use original data if loaded, otherwise it remains None
-                        image_data_to_process = (
-                            original_image_data if original_image_data else None
-                        )
-
-            else:  # Sanchez not enabled
-                try:
-                    image_data_to_process = image_loader.load(str(image_path))
-                except Exception as e_load:
-                    LOGGER.exception("Error loading image when Sanchez disabled: %s")
-                    return None  # Cannot proceed if basic load fails
-
-            # Check if we have any image data at all
-            if (
-                image_data_to_process is None
-                or image_data_to_process.image_data is None
-            ):
-                LOGGER.warning("Failed to load or process image: %s", image_path)
-                return None
-
-            # 2. Convert Initial Data to NumPy Array (for consistency)
-            # -------------------------------------------------------
-            initial_img_array: Optional[np.ndarray[Any, np.dtype[np.uint8]]] = None
-            if isinstance(image_data_to_process.image_data, Image.Image):
-                initial_img_array = np.array(image_data_to_process.image_data)
-            elif isinstance(image_data_to_process.image_data, np.ndarray):
-                initial_img_array = image_data_to_process.image_data
-            else:
-                LOGGER.error("Unsupported initial image data type: %s")
-                return None
-
-            # 3. Convert to QImage (Full Resolution, Uncropped) and Store for Dialogs
-            # ----------------------------------------------------------------------
-            full_res_qimage: Optional[QImage] = None
+        # Clean up resources
+        if (
+            hasattr(self, "_sanchez_gui_temp_dir")
+            and self._sanchez_gui_temp_dir.exists()
+        ):
             try:
-                height, width, channel = initial_img_array.shape
-                bytes_per_line = channel * width
-                if channel == 4:
-                    format = QImage.Format.Format_RGBA8888
-                elif channel == 3:
-                    format = QImage.Format.Format_RGB888
-                elif channel == 1:
-                    format = QImage.Format.Format_Grayscale8
-                    bytes_per_line = width
-                else:
-                    raise ValueError(f"Unsupported number of channels: {channel}")
-                contiguous_img_array = np.ascontiguousarray(initial_img_array)
-                full_res_qimage = QImage(  # noqa: F841
-                    contiguous_img_array.data, width, height, bytes_per_line, format
-                ).copy()
-                # Store path - moved assignment to after final QImage creation
-                target_label.file_path = str(image_path)  # type: ignore[assignment]
-                LOGGER.debug(
-                    "Converted initial NumPy array to QImage (full_res_qimage)."
-                )
-            except Exception as conversion_err:
-                LOGGER.exception("Failed converting initial NumPy array to QImage: %s")
-                return None  # Cannot proceed if initial conversion fails
+                import shutil
 
-            # 4. Crop (if requested) - Operates on the NumPy array
-            # ----------------------------------------------------
-            final_img_array = (
-                initial_img_array  # Start with the potentially Sanchez'd array
-            )
-            LOGGER.debug(
-                "PRE-CROP Check: crop_rect=%s, initial_img_array shape=%s"
-            )  # noqa: B950  # DEBUG LOG
-            if crop_rect:
-                LOGGER.debug(
-                    "INSIDE CROP BLOCK: Applying crop %s to preview for %s"
-                )  # DEBUG LOG
-                try:
-                    # Create a temporary ImageData for cropping API
-                    LOGGER.debug(
-                        "BEFORE CROP: initial_img_array shape=%s"
-                    )  # noqa: B950  # DEBUG LOG
-                    temp_image_data_for_crop = ImageData(
-                        image_data=initial_img_array,
-                        metadata=image_data_to_process.metadata,
-                    )
-                    x, y, w, h = crop_rect
-                    crop_rect_pil = (x, y, x + w, y + h)
-                    cropped_image_data = image_cropper.crop(
-                        temp_image_data_for_crop, crop_rect_pil
-                    )
-
-                    # Extract NumPy array from cropped result
-                    if cropped_image_data and cropped_image_data.image_data is not None:
-                        if isinstance(cropped_image_data.image_data, Image.Image):
-                            final_img_array = np.array(cropped_image_data.image_data)
-                        elif isinstance(cropped_image_data.image_data, np.ndarray):
-                            final_img_array = cropped_image_data.image_data
-                        LOGGER.debug(
-                            "AFTER CROP (Success): final_img_array shape=%s"
-                        )  # noqa: B950  # DEBUG LOG
-                    else:
-                        LOGGER.warning(
-                            "Cropping returned no data, using uncropped image."
-                        )
-                        LOGGER.debug(
-                            "AFTER CROP (No Data): final_img_array shape=%s"  # noqa: B950
-                        )  # DEBUG LOG (still uncropped)
-                except Exception as e_crop:
-                    LOGGER.exception("Error during crop processing for preview %s: %s")
-                    LOGGER.debug(
-                        "AFTER CROP (Exception): final_img_array shape=%s"  # noqa: B950
-                    )  # DEBUG LOG (still uncropped)
-                    # If cropping fails, final_img_array remains the uncropped version
-
-            # 5. Convert Final (potentially cropped) NumPy Array to QImage
-            # ------------------------------------------------------------
-            final_q_image: Optional[QImage] = None
-            try:
-                height, width, channel = final_img_array.shape
-                bytes_per_line = channel * width
-                if channel == 4:
-                    format = QImage.Format.Format_RGBA8888
-                elif channel == 3:
-                    format = QImage.Format.Format_RGB888
-                elif channel == 1:
-                    format = QImage.Format.Format_Grayscale8
-                    bytes_per_line = width
-                else:
-                    raise ValueError(f"Unsupported number of channels: {channel}")
-                contiguous_img_array = np.ascontiguousarray(final_img_array)
-                final_q_image = QImage(
-                    contiguous_img_array.data, width, height, bytes_per_line, format
-                ).copy()
-                # Store the final, potentially cropped, full-resolution QImage
-                target_label.processed_image = final_q_image.copy()
-                LOGGER.debug(
-                    "Successfully converted final NumPy array to QImage and stored in label.processed_image"  # noqa: B950
-                )
-            except Exception as conversion_err:
-                LOGGER.exception("Failed converting final NumPy array to QImage: %s")
-                # If final conversion fails, maybe try using the uncropped full_res_qimage?
-                # For now, let's return None to indicate failure.
-                return None
-
-            # 6. Scale the Final QImage for Preview Display
-            # ---------------------------------------------
-            LOGGER.debug("Scaling final QImage for preview display")
-            target_size = QSize(100, 100)  # Default size
-            try:
-                if hasattr(target_label, "size") and target_label is not None:
-                    target_size = target_label.size()
-                if target_size.width() <= 0 or target_size.height() <= 0:
-                    target_size = QSize(100, 100)
-                LOGGER.debug("Target label size: %s", target_size)
-            except (RuntimeError, AttributeError) as e:
-                LOGGER.warning("Could not get target label size: %s, using default.", e)
-
-            scaled_img = final_q_image.scaled(
-                target_size,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-            LOGGER.debug("Image scaled successfully")
-
-            # 7. Create QPixmap and Add Sanchez Warning if Needed
-            # ---------------------------------------------------
-            pixmap = QPixmap.fromImage(scaled_img)
-            LOGGER.debug("QPixmap created successfully")
-
-            draw_sanchez_warning = False
-            # Only show warning if Sanchez was requested AND failed
-            if apply_sanchez and sanchez_processing_failed:
-                # Double-check checkbox state in case user toggled it off during processing
-                sanchez_still_checked = False
-                if (
-                    hasattr(self.main_tab, "sanchez_false_colour_checkbox")
-                    and self.main_tab.sanchez_false_colour_checkbox is not None
-                ):
-                    try:
-                        sanchez_still_checked = (
-                            self.main_tab.sanchez_false_colour_checkbox.isChecked()
-                        )
-                    except (RuntimeError, AttributeError):
-                        pass  # Ignore if checkbox gone
-                if sanchez_still_checked:
-                    draw_sanchez_warning = True
-
-            if draw_sanchez_warning:
-                LOGGER.debug("Drawing Sanchez failure warning on pixmap")
-                try:
-                    painter = QPainter(pixmap)
-                    font = painter.font()
-                    font.setBold(True)
-                    painter.setFont(font)
-                    painter.fillRect(0, 0, pixmap.width(), 20, QColor(0, 0, 0, 150))
-                    painter.setPen(Qt.GlobalColor.red)
-                    painter.drawText(
-                        5, 15, f"Sanchez failed: {sanchez_error_message[:35]}..."
-                    )
-                    painter.end()
-                    LOGGER.debug("Sanchez warning drawn")
-                except Exception as paint_error:
-                    LOGGER.error("Failed to draw Sanchez warning: %s", paint_error)
-
-            LOGGER.debug("Preview processing complete for %s, returning pixmap.")
-            return pixmap
-
-        except Exception as e:
-            LOGGER.exception("Unhandled error processing preview for %s: %s")
-            try:
-                # Ensure label state is cleared on error
-                if hasattr(target_label, "file_path"):
-                    target_label.file_path = None
-                if hasattr(target_label, "processed_image"):
-                    target_label.processed_image = None
-            except (RuntimeError, AttributeError):
-                pass
-            return None
-
-    def _clear_preview_labels(self, message: str = "First Frame") -> None:
-        """Helper method to clear all preview labels safely."""
-        try:
-            # Clear first frame
-            if (
-                hasattr(self.main_tab, "first_frame_label")
-                and self.main_tab.first_frame_label is not None
-            ):
-                try:
-                    self.main_tab.first_frame_label.clear()
-                    self.main_tab.first_frame_label.setText(message)
-                    self.main_tab.first_frame_label.file_path = None
-                    self.main_tab.first_frame_label.processed_image = None
-                except (RuntimeError, AttributeError) as e:
-                    LOGGER.warning("Error clearing first frame label: %s", e)
-
-            # Clear middle frame
-            if (
-                hasattr(self.main_tab, "middle_frame_label")
-                and self.main_tab.middle_frame_label is not None
-            ):
-                try:
-                    self.main_tab.middle_frame_label.clear()
-                    self.main_tab.middle_frame_label.setText(self.tr("Middle Frame"))
-                    self.main_tab.middle_frame_label.file_path = None
-                    self.main_tab.middle_frame_label.processed_image = None
-                except (RuntimeError, AttributeError) as e:
-                    LOGGER.warning("Error clearing middle frame label: %s", e)
-
-            # Clear last frame
-            if (
-                hasattr(self.main_tab, "last_frame_label")
-                and self.main_tab.last_frame_label is not None
-            ):
-                try:
-                    self.main_tab.last_frame_label.clear()
-                    self.main_tab.last_frame_label.setText(self.tr("Last Frame"))
-                    self.main_tab.last_frame_label.file_path = None
-                    self.main_tab.last_frame_label.processed_image = None
-                except (RuntimeError, AttributeError) as e:
-                    LOGGER.warning("Error clearing last frame label: %s", e)
-
-        except Exception as e:
-            LOGGER.warning("Error in _clear_preview_labels: %s", e)
-
-    def _update_previews(self) -> None:
-        """Updates the preview images for first, middle, and last frames."""
-        sanchez_enabled = getattr(self.main_tab, "sanchez_false_colour_checkbox", None)
-        sanchez_checked = sanchez_enabled.isChecked() if sanchez_enabled else False
-        LOGGER.debug(
-            "Entering _update_previews. Current crop_rect: %s, Sanchez enabled: %s",
-            self.current_crop_rect,
-            sanchez_checked,
-        )
-        # Move log outside try block to ensure it's always printed if method is called
-        LOGGER.debug("Entering _update_previews method")
-        # Removed extra logging
-        # NOTE: Removed self.sanchez_preview_cache.clear() - Cache should persist unless Sanchez settings change   # noqa: B950
-
-        try:
-            if not self.in_dir or not self.in_dir.is_dir():
-                # Clear previews if no valid input directory
-                LOGGER.debug("No valid input directory, clearing previews")
-                self._clear_preview_labels()
-                return
-
-            LOGGER.debug("Input directory: %s", self.in_dir)
-            # Get sorted list of image files
-            image_files = sorted(
-                [
-                    f
-                    for f in self.in_dir.iterdir()
-                    if f.is_file() and f.suffix.lower() in [".png", ".jpg", ".jpeg"]
-                ]
-            )
-
-            if not image_files:
-                # Clear previews if no images found
-                LOGGER.debug("No image files found in directory")
-                self._clear_preview_labels("No images found")
-                return
-
-            # Determine which frames to preview
-            first_frame_path = image_files[0]
-            last_frame_path = image_files[-1]
-            middle_frame_path = None
-            if len(image_files) > 2:
-                middle_frame_path = image_files[len(image_files) // 2]
-
-            # Load, process, and scale previews using the new processors
-            try:
-                LOGGER.debug("Loading first frame preview: %s", first_frame_path.name)
-                first_pixmap = self._load_process_scale_preview(
-                    first_frame_path,
-                    self.main_tab.first_frame_label,
-                    self.image_loader,
-                    self.sanchez_processor,
-                    self.image_cropper,
-                    # Pass the required arguments
-                    apply_sanchez=self.main_tab.sanchez_false_colour_checkbox.isChecked(),
-                    crop_rect=self.current_crop_rect,
-                )
-                if first_pixmap:
-                    try:
-                        self.main_tab.first_frame_label.setPixmap(first_pixmap)
-                        LOGGER.debug("Successfully set first frame preview")
-                    except (RuntimeError, AttributeError) as e:
-                        LOGGER.error("Error setting first frame pixmap: %s", e)
-                else:
-                    LOGGER.warning("First frame preview generation failed")
-                    try:
-                        self.main_tab.first_frame_label.clear()
-                        self.main_tab.first_frame_label.setText(
-                            self.tr("Error loading preview")
-                        )
-                        self.main_tab.first_frame_label.file_path = None
-                        self.main_tab.first_frame_label.processed_image = None
-                    except (RuntimeError, AttributeError) as e:
-                        LOGGER.error("Error clearing first frame: %s", e)
+                shutil.rmtree(self._sanchez_gui_temp_dir)
+                LOGGER.debug("Cleaned up temporary Sanchez directory")
             except Exception as e:
-                LOGGER.error("Error processing first frame preview: %s", e)
+                LOGGER.warning("Failed to clean up temp directory: %s", e)
 
-            # Handle middle frame if available
-            if middle_frame_path:
-                try:
-                    LOGGER.debug("Loading middle frame preview: %s")
-                    middle_pixmap = self._load_process_scale_preview(
-                        middle_frame_path,
-                        self.main_tab.middle_frame_label,
-                        self.image_loader,
-                        self.sanchez_processor,
-                        self.image_cropper,
-                        # Pass the required arguments
-                        apply_sanchez=self.main_tab.sanchez_false_colour_checkbox.isChecked(),
-                        crop_rect=self.current_crop_rect,
-                    )
-                    if middle_pixmap:
-                        try:
-                            self.main_tab.middle_frame_label.setPixmap(middle_pixmap)
-                            LOGGER.debug("Successfully set middle frame preview")
-                        except (RuntimeError, AttributeError) as e:
-                            LOGGER.error("Error setting middle frame pixmap: %s", e)
-                    else:
-                        LOGGER.warning("Middle frame preview generation failed")
-                        try:
-                            self.main_tab.middle_frame_label.clear()
-                            self.main_tab.middle_frame_label.setText(
-                                self.tr("Error loading preview")
-                            )
-                            self.main_tab.middle_frame_label.file_path = None
-                            self.main_tab.middle_frame_label.processed_image = None
-                        except (RuntimeError, AttributeError) as e:
-                            LOGGER.error("Error clearing middle frame: %s", e)
-                except Exception as e:
-                    LOGGER.error("Error processing middle frame preview: %s", e)
-            else:
-                try:
-                    LOGGER.debug("No middle frame available")
-                    self.main_tab.middle_frame_label.clear()
-                    self.main_tab.middle_frame_label.setText(
-                        self.tr("Middle Frame (N/A)")
-                    )
-                    self.main_tab.middle_frame_label.file_path = None
-                    self.main_tab.middle_frame_label.processed_image = None
-                except (RuntimeError, AttributeError) as e:
-                    LOGGER.error("Error clearing middle frame: %s", e)
+        # Terminate any running worker
+        if (
+            hasattr(self, "vfi_worker")
+            and self.vfi_worker
+            and self.vfi_worker.isRunning()
+        ):
+            LOGGER.info("Terminating VFI worker thread")
+            self.vfi_worker.terminate()
+            self.vfi_worker.wait(1000)
 
-            # Process last frame
-            try:
-                LOGGER.debug("Loading last frame preview: %s", last_frame_path.name)
-                last_pixmap = self._load_process_scale_preview(
-                    last_frame_path,
-                    self.main_tab.last_frame_label,
-                    self.image_loader,
-                    self.sanchez_processor,
-                    self.image_cropper,
-                    # Pass the required arguments
-                    apply_sanchez=self.main_tab.sanchez_false_colour_checkbox.isChecked(),
-                    crop_rect=self.current_crop_rect,
-                )
-                if last_pixmap:
-                    try:
-                        self.main_tab.last_frame_label.setPixmap(last_pixmap)
-                        LOGGER.debug("Successfully set last frame preview")
-                    except (RuntimeError, AttributeError) as e:
-                        LOGGER.error("Error setting last frame pixmap: %s", e)
-                else:
-                    LOGGER.warning("Last frame preview generation failed")
-                    try:
-                        self.main_tab.last_frame_label.clear()
-                        self.main_tab.last_frame_label.setText(
-                            self.tr("Error loading preview")
-                        )
-                        self.main_tab.last_frame_label.file_path = None
-                        self.main_tab.last_frame_label.processed_image = None
-                    except (RuntimeError, AttributeError) as e:
-                        LOGGER.error("Error clearing last frame: %s", e)
-            except Exception as e:
-                LOGGER.error("Error processing last frame preview: %s", e)
-
-            # Update crop button state after previews are handled
-            self.main_tab._update_crop_buttons_state()
-        except Exception as e:
-            LOGGER.exception("Error updating previews: %s", e)
-
-            # Use our safer method to clear labels
-            self._clear_preview_labels("Error")
-
-            # Show error message to user in a safe way
-            try:
-                QMessageBox.critical(
-                    self, "Preview Error", f"Failed to update previews: {e}"
-                )
-            except Exception as dialog_error:
-                # If even showing the dialog fails, just log it
-                LOGGER.error("Failed to show error dialog: %s", dialog_error)
-
-    def _update_start_button_state(self) -> None:
-        """Enable or disable the start button based on input/output paths and RIFE model availability."""  # noqa: B950
-        # Use extremely defensive programming here - avoid accessing widget properties
-        # that might trigger C++ object deleted errors
-
-        # Default values in case we can't safely access widgets
-        rife_model_selected = True
-        thread_spec_valid = True
-
-        try:
-            # Check if using RIFE encoder
-            is_rife = getattr(self, "current_encoder", "") == "RIFE"
-
-            if is_rife:
-                # For RIFE encoder, check if model is selected and enabled
-                # Don't access any widget methods (like isEnabled) directly
-                if not (
-                    hasattr(self, "current_model_key")
-                    and getattr(self, "current_model_key", "") != ""
-                ):
-                    rife_model_selected = False
-
-        except Exception as e:
-            LOGGER.warning("Error checking RIFE model selection: %s", e)
-            # Assume model is not valid if we can't safely check
-            if is_rife:
-                rife_model_selected = False
-        # Check thread spec validity
-        try:
-            if is_rife:
-                # Check if thread spec is valid without directly accessing widget methods
-                thread_spec = ""
-                if (
-                    hasattr(self.main_tab, "rife_thread_spec_edit")
-                    and self.main_tab.rife_thread_spec_edit is not None
-                ):
-                    try:
-                        thread_spec = self.main_tab.rife_thread_spec_edit.text()
-                    except (RuntimeError, AttributeError):
-                        LOGGER.warning("Could not access thread_spec_edit text")
-
-                if thread_spec and not re.fullmatch(r"\d+:\d+:\d+", thread_spec):
-                    thread_spec_valid = False
-        except Exception as e:
-            LOGGER.warning("Error checking thread spec: %s", e)
-            if is_rife:
-                thread_spec_valid = False
-
-        # Safely check other conditions needed for start button
-        try:
-            # Explicit boolean calculation for can_start
-            has_in_dir: bool = self.in_dir is not None and self.in_dir.is_dir()
-            has_out_file: bool = self.out_file_path is not None
-            is_idle: bool = not getattr(
-                self, "is_processing", True
-            )  # Default to True (processing) if attribute missing
-
-            # Explicitly define can_start as bool
-            # For simplicity in testing, only require input directory - output can be auto-generated
-            # Original: has_in_dir and has_out_file and rife_model_selected...
-            can_start: bool = (
-                has_in_dir  # Only require input directory
-                # and has_out_file   # Output file can be auto-generated
-                and rife_model_selected
-                and thread_spec_valid
-                and is_idle
-            )
-
-            # Safely enable/disable button
-            if (
-                hasattr(self.main_tab, "start_button")
-                and self.main_tab.start_button is not None
-            ):
-                try:
-                    self.main_tab.start_button.setEnabled(can_start)
-                except (RuntimeError, AttributeError):
-                    LOGGER.warning("Could not set start button enabled state")
-        except Exception as e:
-            LOGGER.warning("Error in final start button state calculation: %s", e)
-
-    def _set_processing_state(self, processing: bool) -> None:
-        """Sets the processing state and updates UI elements accordingly."""
-        self.is_processing = processing
-        # Only require input directory - output file can be auto-generated
-        self.main_tab.start_button.setEnabled(
-            not processing
-            and self.in_dir is not None
-            # and self.out_file_path is not None   # Output file is optional
-        )
-        self.main_tab.in_dir_edit.setEnabled(not processing)
-        self.main_tab.out_file_edit.setEnabled(not processing)
-        self.main_tab.crop_button.setEnabled(not processing)
-        self.main_tab.clear_crop_button.setEnabled(
-            not processing and self.current_crop_rect is not None
-        )
-        self.tab_widget.setEnabled(not processing)  # Disable tabs during processing
-        # self.main_tab.open_in_vlc_button.setVisible(False)   # Commented out: Attribute does not exist on MainTab   # noqa: B950
-
-        # Update progress bar visibility
-        # self.main_tab.progress_bar.setVisible(processing)  # Commented out: Attribute does not exist on MainTab   # noqa: B950
-        if not processing:
-            # self.main_tab.progress_bar.setValue(0)   # Commented out: Attribute does not exist on MainTab   # noqa: B950
-            pass  # Add pass to avoid indentation error
-
-    def _update_crop_buttons_state(self) -> None:
-        """Updates the enabled state of the crop and clear crop buttons."""
-        has_in_dir = self.in_dir is not None and self.in_dir.is_dir()
-        self.main_tab.crop_button.setEnabled(has_in_dir and not self.is_processing)
-        self.main_tab.clear_crop_button.setEnabled(
-            self.current_crop_rect is not None and not self.is_processing
-        )
-
-    def _update_rife_options_state(self, encoder_type: str) -> None:
-        """Enable/disable RIFE-specific options and the FFmpeg tab based on encoder selection."""
-        is_rife = encoder_type == "RIFE"
-        is_ffmpeg = encoder_type == "FFmpeg"
-
-        LOGGER.debug(
-            f"_update_rife_options_state called with encoder_type: {encoder_type}"
-        )
-        LOGGER.debug(f"is_rife: {is_rife}, is_ffmpeg: {is_ffmpeg}")
-
-        # Enable/disable RIFE specific controls on MainTab
-        self.main_tab.rife_model_combo.setEnabled(is_rife)
-        self.main_tab.rife_tile_checkbox.setEnabled(is_rife)
-        # Ensure tile size spinbox state depends on checkbox state *and* RIFE selection
-        self.main_tab.rife_tile_size_spinbox.setEnabled(
-            is_rife and self.main_tab.rife_tile_checkbox.isChecked()
-        )
-        self.main_tab.rife_uhd_checkbox.setEnabled(is_rife)
-        self.main_tab.rife_tta_spatial_checkbox.setEnabled(is_rife)
-        self.main_tab.rife_tta_temporal_checkbox.setEnabled(is_rife)
-        self.main_tab.rife_thread_spec_edit.setEnabled(is_rife)
-
-        # Enable/disable the entire FFmpeg settings tab content
-        self.ffmpeg_settings_tab.set_enabled(is_ffmpeg)
-        LOGGER.debug(f"Called ffmpeg_settings_tab.set_enabled({is_ffmpeg})")
-
-    # Methods _update_scd_thresh_state, _update_unsharp_controls_state, _update_quality_controls_state removed   # noqa: B950
-    # as this logic is now handled within FFmpegSettingsTab.
-    # Method _start removed - dead code replaced by signal/slot pattern
-
-    def _update_progress(self, current: int, total: int, eta: float) -> None:
-        """Update the status bar with the current progress."""
-        try:
-            if total > 0:
-                percent = int((current / total) * 100)
-                eta_str = f"{eta:.1f}s" if eta > 0 else "..."
-                status_text = (
-                    f"Processing: {current}/{total} ({percent}%) ETA: {eta_str}"
-                )
-                self.status_bar.showMessage(status_text)
-            else:
-                # Handle case where total is 0 or unknown
-                self.status_bar.showMessage(f"Processing frame {current}...")
-            QApplication.processEvents()  # Keep UI responsive
-        except Exception as e:
-            LOGGER.error("Error updating status bar: %s", e, exc_info=True)
-            self.status_bar.showMessage("Error updating progress...")
-
-    def _handle_process_finished(self, output_path: Path) -> None:  # Changed type hint
-        """Handle the process finished signal."""
-        output_path_str = str(output_path)
-        LOGGER.info("Process finished successfully. Output: %s", output_path_str)
-        self._set_processing_state(False)
-        self.status_bar.showMessage(
-            f"Finished: {output_path_str}", 10000
-        )  # Show for 10s
-        # self.main_tab.open_in_vlc_button.setVisible(False)  # Button removed/logic changed
-        self.vfi_worker = None  # Clear worker reference
-
-        # Ask user if they want to open the file location
-        reply = QMessageBox.question(
-            self,
-            "Process Finished",
-            f"Video saved to:\n{output_path_str}\n\nOpen the file location?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes,
-        )
-        if reply == QMessageBox.StandardButton.Yes:
-            # Use QUrl.fromLocalFile for cross-platform compatibility
-            QDesktopServices.openUrl(QUrl.fromLocalFile(str(output_path.parent)))
-
-    def _handle_process_error(self, error_message: str) -> None:
-        """Handle the process error signal."""
-        LOGGER.error("Process failed: %s", error_message)
-        self._set_processing_state(False)
-        self.status_bar.showMessage(
-            f"Error: {error_message}", 0
-        )  # Show indefinitely until cleared
-        self.vfi_worker = None  # Clear worker reference
-
-        # --- Detailed Error Reporting ---
-        details = f"An error occurred during video processing:\n\n{error_message}\n\n"
-        # Show an error message box
-        QMessageBox.critical(
-            self, "Processing Error", details
-        )  # Show the detailed message
-        # Determine if the current encoder is RIFE
-        current_encoder_text = self.main_tab.encoder_combo.currentText()
-        is_rife = current_encoder_text.startswith("RIFE")
-        LOGGER.debug("Current encoder: %s, is_rife: %s", current_encoder_text, is_rife)
-
-        # Use alias self.model_combo which points to self.main_tab.rife_model_combo
-        model_combo_parent = self.model_combo.parentWidget()
-        if model_combo_parent is not None:  # Check if parent exists
-            model_combo_parent.setVisible(is_rife)  # Label and combo box
-
-        # Update state of RIFE options based on capability
-        if is_rife:
-            rife_exe = None  # noqa: F841
-            try:
-                rife_exe = config.find_rife_executable(  # noqa: F841
-                    self.current_model_key
-                )  # Keep this to check for exe existence
-                capability_detector = RifeCapabilityManager(
-                    model_key=self.current_model_key
-                )  # Instantiate with model_key
-
-                self.main_tab.rife_tile_checkbox.setEnabled(
-                    capability_detector.capabilities.get("tiling", False)
-                )
-                # Tile size enabled state is handled by _toggle_tile_size_enabled signal in MainTab
-                self.main_tab.rife_uhd_checkbox.setEnabled(
-                    capability_detector.capabilities.get("uhd", False)
-                )
-                self.main_tab.rife_thread_spec_edit.setEnabled(
-                    capability_detector.capabilities.get("thread_spec", False)
-                )
-                self.main_tab.rife_tta_spatial_checkbox.setEnabled(
-                    capability_detector.capabilities.get("tta_spatial", False)
-                )
-                self.main_tab.rife_tta_temporal_checkbox.setEnabled(
-                    capability_detector.capabilities.get("tta_temporal", False)
-                )
-
-                # Warn if selected model doesn't support features
-                if (
-                    self.main_tab.rife_tile_checkbox.isChecked()
-                    and not capability_detector.capabilities.get("tiling", False)
-                ):  # Access capability from dict
-                    LOGGER.warning("Selected model '%s' does not support tiling.")
-                if (
-                    self.main_tab.rife_uhd_checkbox.isChecked()
-                    and not capability_detector.capabilities.get("uhd", False)
-                ):  # Access capability from dict
-                    LOGGER.warning("Selected model '%s' does not support UHD mode.")
-                if (
-                    self.main_tab.rife_thread_spec_edit.text() != "1:2:2"
-                    and not capability_detector.capabilities.get("thread_spec", False)
-                ):  # Access capability from dict
-                    LOGGER.warning(
-                        "Selected model '%s' does not support custom thread specification."
-                    )  # noqa: B950
-                if (
-                    self.main_tab.rife_tta_spatial_checkbox.isChecked()
-                    and not capability_detector.capabilities.get("tta_spatial", False)
-                ):  # Access capability from dict
-                    LOGGER.warning("Selected model '%s' does not support spatial TTA.")
-                if (
-                    self.main_tab.rife_tta_temporal_checkbox.isChecked()
-                    and not capability_detector.capabilities.get("tta_temporal", False)
-                ):  # Access capability from dict
-                    LOGGER.warning("Selected model '%s' does not support temporal TTA.")
-
-            except FileNotFoundError:
-                # If RIFE executable is not found for the selected model, disable all RIFE options
-                self.main_tab.rife_tile_checkbox.setEnabled(False)
-                self.main_tab.rife_tile_size_spinbox.setEnabled(False)
-                self.main_tab.rife_uhd_checkbox.setEnabled(False)
-                self.main_tab.rife_thread_spec_edit.setEnabled(False)
-                self.main_tab.rife_tta_spatial_checkbox.setEnabled(False)
-                self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
-                LOGGER.warning(
-                    "RIFE executable not found for model '%s'. RIFE options disabled."
-                )  # noqa: B950
-            except Exception as e:
-                LOGGER.error("Error checking RIFE capabilities for model '%s': %s")
-                # Disable options on error
-                self.main_tab.rife_tile_checkbox.setEnabled(False)
-                self.main_tab.rife_tile_size_spinbox.setEnabled(False)
-                self.main_tab.rife_uhd_checkbox.setEnabled(False)
-                self.main_tab.rife_thread_spec_edit.setEnabled(False)
-                self.main_tab.rife_tta_spatial_checkbox.setEnabled(False)
-                self.main_tab.rife_tta_temporal_checkbox.setEnabled(False)
-
-        self._update_start_button_state()  # Update start button state based on RIFE options
-
-
-def main() -> None:
-    """Main function to run the GOES-VFI GUI."""
-    parser = argparse.ArgumentParser(description="GOES-VFI GUI")
-    parser.add_argument(
-        "--debug", action="store_true", help="Enable verbose debug logging"
-    )
-    args = parser.parse_args()
-
-    # Initialize logging with default settings
-    if args.debug:
-        log.set_global_log_level(logging.DEBUG)
-        LOGGER.debug("Debug mode enabled via --debug flag.")
-
-    app = QApplication(sys.argv)
-    # Set application name for QSettings - MUST match the values used in MainWindow
-    app.setApplicationName("GOES_VFI_App")
-    app.setOrganizationName("GOES_VFI")
-
-    # Set default font to avoid Qt searching for "Sans Serif"
-    # This prevents the ~110ms delay warning
-    default_font = app.font()
-    # Use system default font family or a cross-platform font
-    if sys.platform == "darwin":  # macOS
-        default_font.setFamily("Helvetica")
-    elif sys.platform == "win32":  # Windows
-        default_font.setFamily("Segoe UI")
-    else:  # Linux/Unix
-        default_font.setFamily("Ubuntu")  # Falls back to default if not found
-    app.setFont(default_font)
-
-    # Log QSettings details to help diagnose where settings will be stored
-    LOGGER.debug("QSettings will be stored at: %s")
-
-    main_window = MainWindow(debug_mode=args.debug)
-    main_window.show()
-    # _post_init_setup() is primarily for test setup, not needed here now
-    sys.exit(app.exec())
-
-
-if __name__ == "__main__":
-    main()
+        # Accept the close event
+        event.accept()
