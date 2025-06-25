@@ -11,6 +11,7 @@ from typing import List, Optional
 from goesvfi.utils import date_utils, log
 
 from .constants import (
+    _USE_EXACT_MATCH_IN_TEST,
     BAND,
     DEFAULT_CDN_RESOLUTION,
     RADC_MINUTES,
@@ -18,13 +19,12 @@ from .constants import (
     RADM_MINUTES,
     RECENT_WINDOW_DAYS,
     START_SECONDS,
-    _USE_EXACT_MATCH_IN_TEST,
 )
 from .patterns import (
     BAND_PATTERN,
+    S3_BUCKETS,
     SATELLITE_CODES,
     SATELLITE_SHORT_NAMES,
-    S3_BUCKETS,
     SatellitePattern,
 )
 
@@ -86,7 +86,9 @@ class S3KeyGenerator:
             url = f"https://cdn.star.nesdis.noaa.gov/{sat_name}/ABI/FD/13/{filename}"
         else:
             # Main test expects: YYYY+DOY+HHMM_GOESxx-ABI-CONUS-13-RESxRES.jpg
-            filename = f"{year}{doy_str}{hour}{minute}_{sat_name}-ABI-CONUS-13-{res}.jpg"
+            filename = (
+                f"{year}{doy_str}{hour}{minute}_{sat_name}-ABI-CONUS-13-{res}.jpg"
+            )
             url = f"https://cdn.star.nesdis.noaa.gov/{sat_name}/ABI/CONUS/13/{filename}"
 
         return url
@@ -418,7 +420,9 @@ class S3KeyGenerator:
             nearest_minutes.append(ts.replace(minute=next_minute))
 
         # Reset seconds and microseconds
-        nearest_minutes = [dt.replace(second=0, microsecond=0) for dt in nearest_minutes]
+        nearest_minutes = [
+            dt.replace(second=0, microsecond=0) for dt in nearest_minutes
+        ]
 
         return nearest_minutes
 

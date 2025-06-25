@@ -4,8 +4,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from .constants import BAND, DEFAULT_CDN_RESOLUTION, RADC_MINUTES, RADF_MINUTES, RADM_MINUTES, RECENT_WINDOW_DAYS
-from .patterns import S3_BUCKETS, SATELLITE_CODES, SATELLITE_SHORT_NAMES, SatellitePattern
+from .constants import (
+    BAND,
+    DEFAULT_CDN_RESOLUTION,
+    RADC_MINUTES,
+    RADF_MINUTES,
+    RADM_MINUTES,
+    RECENT_WINDOW_DAYS,
+)
+from .patterns import (
+    S3_BUCKETS,
+    SATELLITE_CODES,
+    SATELLITE_SHORT_NAMES,
+    SatellitePattern,
+)
 from .s3_utils import S3KeyGenerator, filter_s3_keys_by_band
 from .scanner import DirectoryScanner
 from .timestamp import TimestampExtractor, TimestampGenerator
@@ -214,7 +226,9 @@ class TimeIndex:
         Returns:
             A list of datetime objects extracted from filenames
         """
-        return DirectoryScanner.scan_directory_for_timestamps(directory, pattern, start_time, end_time)
+        return DirectoryScanner.scan_directory_for_timestamps(
+            directory, pattern, start_time, end_time
+        )
 
     @staticmethod
     def filter_s3_keys_by_band(keys: List[str], target_band: int = 13) -> List[str]:

@@ -9,8 +9,7 @@ have been refactored into the time_utils package for better modularity.
 """
 
 # Import everything from the new modules to maintain backward compatibility
-from .time_utils import (
-    # Constants
+from .time_utils import (  # Constants; Classes and enums; Functions
     BAND,
     CDN_RESOLUTIONS,
     DEFAULT_CDN_RESOLUTION,
@@ -19,7 +18,6 @@ from .time_utils import (
     RADM_MINUTES,
     RECENT_WINDOW_DAYS,
     START_SECONDS,
-    # Classes and enums
     DirectoryScanner,
     S3KeyGenerator,
     SatellitePattern,
@@ -27,7 +25,6 @@ from .time_utils import (
     TimestampExtractor,
     TimestampFormatter,
     TimestampGenerator,
-    # Functions
     filter_s3_keys_by_band,
     get_satellite_info,
 )
@@ -50,7 +47,9 @@ from .time_utils.patterns import (
 # Timestamp extraction functions
 extract_timestamp = TimestampExtractor.extract_timestamp
 extract_timestamp_and_satellite = TimestampExtractor.extract_timestamp_and_satellite
-extract_timestamp_from_directory_name = TimestampExtractor.extract_timestamp_from_directory_name
+extract_timestamp_from_directory_name = (
+    TimestampExtractor.extract_timestamp_from_directory_name
+)
 
 # Timestamp formatting functions
 format_timestamp = TimestampFormatter.format_timestamp
