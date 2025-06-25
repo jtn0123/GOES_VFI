@@ -5,13 +5,15 @@ Tests the StructuredError, ErrorContext, ErrorBuilder, and ErrorCategory
 classes to ensure proper error handling framework functionality.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
+
 from goesvfi.utils.errors.base import (
+    ErrorBuilder,
     ErrorCategory,
     ErrorContext,
     StructuredError,
-    ErrorBuilder,
 )
 
 
@@ -21,11 +23,18 @@ class TestErrorCategory:
     def test_error_categories_exist(self):
         """Test that all expected error categories are defined."""
         expected_categories = [
-            'VALIDATION', 'PERMISSION', 'FILE_NOT_FOUND', 'NETWORK',
-            'PROCESSING', 'CONFIGURATION', 'SYSTEM', 'USER_INPUT',
-            'EXTERNAL_TOOL', 'UNKNOWN'
+            "VALIDATION",
+            "PERMISSION",
+            "FILE_NOT_FOUND",
+            "NETWORK",
+            "PROCESSING",
+            "CONFIGURATION",
+            "SYSTEM",
+            "USER_INPUT",
+            "EXTERNAL_TOOL",
+            "UNKNOWN",
         ]
-        
+
         for category_name in expected_categories:
             assert hasattr(ErrorCategory, category_name)
             assert isinstance(getattr(ErrorCategory, category_name), ErrorCategory)
@@ -43,7 +52,7 @@ class TestErrorContext:
     def test_context_creation_minimal(self):
         """Test creating context with minimal parameters."""
         context = ErrorContext(operation="test_op", component="test_comp")
-        
+
         assert context.operation == "test_op"
         assert context.component == "test_comp"
         assert isinstance(context.timestamp, datetime)
@@ -57,16 +66,16 @@ class TestErrorContext:
         user_data = {"key1": "value1"}
         system_data = {"key2": "value2"}
         trace_id = "trace123"
-        
+
         context = ErrorContext(
             operation="test_op",
             component="test_comp",
             timestamp=timestamp,
             user_data=user_data,
             system_data=system_data,
-            trace_id=trace_id
+            trace_id=trace_id,
         )
-        
+
         assert context.operation == "test_op"
         assert context.component == "test_comp"
         assert context.timestamp == timestamp
@@ -77,20 +86,20 @@ class TestErrorContext:
     def test_add_user_data(self):
         """Test adding user data to context."""
         context = ErrorContext(operation="test", component="test")
-        
+
         context.add_user_data("key1", "value1")
         context.add_user_data("key2", 42)
-        
+
         assert context.user_data["key1"] == "value1"
         assert context.user_data["key2"] == 42
 
     def test_add_system_data(self):
         """Test adding system data to context."""
         context = ErrorContext(operation="test", component="test")
-        
+
         context.add_system_data("debug_info", "test_debug")
         context.add_system_data("error_code", 123)
-        
+
         assert context.system_data["debug_info"] == "test_debug"
         assert context.system_data["error_code"] == 123
 
@@ -101,7 +110,7 @@ class TestStructuredError:
     def test_minimal_error_creation(self):
         """Test creating error with minimal parameters."""
         error = StructuredError("Test error message")
-        
+
         assert str(error) == "Test error message"
         assert error.message == "Test error message"
         assert error.category == ErrorCategory.UNKNOWN
@@ -117,7 +126,7 @@ class TestStructuredError:
         context = ErrorContext(operation="test_op", component="test_comp")
         cause = ValueError("Original error")
         suggestions = ["Try this", "Try that"]
-        
+
         error = StructuredError(
             message="Test error",
             category=ErrorCategory.VALIDATION,
@@ -125,9 +134,9 @@ class TestStructuredError:
             cause=cause,
             recoverable=True,
             user_message="User-friendly message",
-            suggestions=suggestions
+            suggestions=suggestions,
         )
-        
+
         assert error.message == "Test error"
         assert error.category == ErrorCategory.VALIDATION
         assert error.context == context
@@ -142,9 +151,9 @@ class TestStructuredError:
             message="Invalid input",
             field="username",
             value="test@",
-            suggestions=["Use alphanumeric characters"]
+            suggestions=["Use alphanumeric characters"],
         )
-        
+
         assert error.category == ErrorCategory.VALIDATION
         assert error.recoverable is True
         assert error.context.operation == "validation"
@@ -160,9 +169,9 @@ class TestStructuredError:
             message="File not found: test.txt",
             file_path="/path/to/test.txt",
             operation="read_file",
-            cause=cause
+            cause=cause,
         )
-        
+
         assert error.category == ErrorCategory.FILE_NOT_FOUND
         assert error.recoverable is True
         assert error.context.operation == "read_file"
@@ -173,20 +182,17 @@ class TestStructuredError:
     def test_file_error_permission_detection(self):
         """Test file error detects permission issues."""
         error = StructuredError.file_error(
-            message="Permission denied accessing file",
-            file_path="/restricted/file.txt"
+            message="Permission denied accessing file", file_path="/restricted/file.txt"
         )
-        
+
         assert error.category == ErrorCategory.PERMISSION
 
     def test_network_error_classmethod(self):
         """Test network error factory method."""
         error = StructuredError.network_error(
-            message="Connection failed",
-            url="https://example.com",
-            status_code=404
+            message="Connection failed", url="https://example.com", status_code=404
         )
-        
+
         assert error.category == ErrorCategory.NETWORK
         assert error.recoverable is True
         assert error.context.operation == "network_request"
@@ -198,11 +204,9 @@ class TestStructuredError:
     def test_processing_error_classmethod(self):
         """Test processing error factory method."""
         error = StructuredError.processing_error(
-            message="Processing failed",
-            stage="image_resize",
-            input_data="input.jpg"
+            message="Processing failed", stage="image_resize", input_data="input.jpg"
         )
-        
+
         assert error.category == ErrorCategory.PROCESSING
         assert error.recoverable is False
         assert error.context.operation == "data_processing"
@@ -216,9 +220,9 @@ class TestStructuredError:
             message="Invalid config value",
             config_key="max_threads",
             config_value=-1,
-            suggestions=["Use positive integer"]
+            suggestions=["Use positive integer"],
         )
-        
+
         assert error.category == ErrorCategory.CONFIGURATION
         assert error.recoverable is True
         assert error.context.operation == "configuration"
@@ -233,9 +237,9 @@ class TestStructuredError:
             message="Tool execution failed",
             tool_name="ffmpeg",
             command="ffmpeg -i input.mp4 output.mp4",
-            exit_code=1
+            exit_code=1,
         )
-        
+
         assert error.category == ErrorCategory.EXTERNAL_TOOL
         assert error.recoverable is True
         assert error.context.operation == "external_tool"
@@ -248,10 +252,10 @@ class TestStructuredError:
     def test_add_suggestion(self):
         """Test adding suggestions to error."""
         error = StructuredError("Test error")
-        
+
         error.add_suggestion("First suggestion")
         error.add_suggestion("Second suggestion")
-        
+
         assert len(error.suggestions) == 2
         assert "First suggestion" in error.suggestions
         assert "Second suggestion" in error.suggestions
@@ -260,18 +264,18 @@ class TestStructuredError:
         """Test converting error to dictionary."""
         context = ErrorContext(operation="test", component="test")
         context.add_user_data("key", "value")
-        
+
         error = StructuredError(
             message="Test error",
             category=ErrorCategory.VALIDATION,
             context=context,
             recoverable=True,
             user_message="User message",
-            suggestions=["Suggestion 1"]
+            suggestions=["Suggestion 1"],
         )
-        
+
         error_dict = error.to_dict()
-        
+
         assert error_dict["message"] == "Test error"
         assert error_dict["category"] == "VALIDATION"
         assert error_dict["user_message"] == "User message"
@@ -286,11 +290,11 @@ class TestStructuredError:
         error = StructuredError(
             "Technical error",
             user_message="User-friendly error",
-            suggestions=["Try this", "Try that"]
+            suggestions=["Try this", "Try that"],
         )
-        
+
         friendly_message = error.get_user_friendly_message()
-        
+
         assert "User-friendly error" in friendly_message
         assert "• Try this" in friendly_message
         assert "• Try that" in friendly_message
@@ -298,9 +302,9 @@ class TestStructuredError:
     def test_get_user_friendly_message_no_suggestions(self):
         """Test user-friendly message without suggestions."""
         error = StructuredError("Test error", user_message="User message")
-        
+
         friendly_message = error.get_user_friendly_message()
-        
+
         assert friendly_message == "User message"
 
 
@@ -310,24 +314,26 @@ class TestErrorBuilder:
     def test_builder_minimal(self):
         """Test builder with minimal configuration."""
         error = ErrorBuilder("Test message").build()
-        
+
         assert error.message == "Test message"
         assert error.category == ErrorCategory.UNKNOWN
         assert error.recoverable is False
 
     def test_builder_fluent_interface(self):
         """Test builder fluent interface."""
-        error = (ErrorBuilder("Test message")
-                .with_category(ErrorCategory.VALIDATION)
-                .with_operation("test_op")
-                .with_component("test_comp")
-                .as_recoverable(True)
-                .with_user_message("User message")
-                .add_suggestion("Try this")
-                .add_user_data("key", "value")
-                .add_system_data("debug", "info")
-                .build())
-        
+        error = (
+            ErrorBuilder("Test message")
+            .with_category(ErrorCategory.VALIDATION)
+            .with_operation("test_op")
+            .with_component("test_comp")
+            .as_recoverable(True)
+            .with_user_message("User message")
+            .add_suggestion("Try this")
+            .add_user_data("key", "value")
+            .add_system_data("debug", "info")
+            .build()
+        )
+
         assert error.message == "Test message"
         assert error.category == ErrorCategory.VALIDATION
         assert error.context.operation == "test_op"
@@ -342,17 +348,19 @@ class TestErrorBuilder:
         """Test builder with underlying cause."""
         cause = ValueError("Original error")
         error = ErrorBuilder("Test message").with_cause(cause).build()
-        
+
         assert error.cause == cause
 
     def test_builder_multiple_suggestions(self):
         """Test builder with multiple suggestions."""
-        error = (ErrorBuilder("Test message")
-                .add_suggestion("First")
-                .add_suggestion("Second")
-                .add_suggestion("Third")
-                .build())
-        
+        error = (
+            ErrorBuilder("Test message")
+            .add_suggestion("First")
+            .add_suggestion("Second")
+            .add_suggestion("Third")
+            .build()
+        )
+
         assert len(error.suggestions) == 3
         assert "First" in error.suggestions
         assert "Second" in error.suggestions
@@ -360,11 +368,13 @@ class TestErrorBuilder:
 
     def test_builder_context_data(self):
         """Test builder with context data."""
-        error = (ErrorBuilder("Test message")
-                .add_user_data("user_key", "user_value")
-                .add_system_data("system_key", "system_value")
-                .build())
-        
+        error = (
+            ErrorBuilder("Test message")
+            .add_user_data("user_key", "user_value")
+            .add_system_data("system_key", "system_value")
+            .build()
+        )
+
         assert error.context.user_data["user_key"] == "user_value"
         assert error.context.system_data["system_key"] == "system_value"
 
@@ -392,7 +402,7 @@ class TestErrorIntegration:
         context = ErrorContext(operation="file_processing", component="image_loader")
         context.add_user_data("file_path", "/images/test.jpg")
         context.add_system_data("file_size", 1024)
-        
+
         try:
             raise FileNotFoundError("File not found")
         except FileNotFoundError as e:
@@ -406,10 +416,10 @@ class TestErrorIntegration:
                 suggestions=[
                     "Check that the file path is correct",
                     "Verify the file exists",
-                    "Ensure you have read permissions"
-                ]
+                    "Ensure you have read permissions",
+                ],
             )
-        
+
         # Verify all aspects of the complex error
         assert error.message == "Failed to load image file"
         assert error.category == ErrorCategory.FILE_NOT_FOUND
@@ -417,12 +427,12 @@ class TestErrorIntegration:
         assert error.context.user_data["file_path"] == "/images/test.jpg"
         assert len(error.suggestions) == 3
         assert isinstance(error.cause, FileNotFoundError)
-        
+
         # Test dictionary conversion
         error_dict = error.to_dict()
         assert error_dict["category"] == "FILE_NOT_FOUND"
         assert error_dict["recoverable"] is True
-        
+
         # Test user-friendly message
         friendly_msg = error.get_user_friendly_message()
         assert "image file could not be found" in friendly_msg

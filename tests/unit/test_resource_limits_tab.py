@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import sys
-from types import ModuleType, SimpleNamespace
 from dataclasses import dataclass
+from types import ModuleType, SimpleNamespace
 from typing import Optional
 
 import pytest
@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import QApplication
 # ---------------------------------------------------------------------------
 # Fixtures to provide stub implementations for the resource manager module.
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(autouse=True)
 def stub_resource_manager(monkeypatch):
@@ -69,6 +70,7 @@ def stub_resource_manager(monkeypatch):
 def resource_tab(qtbot):
     """Create a ResourceLimitsTab instance with the stub resource manager."""
     from goesvfi.gui_tabs.resource_limits_tab import ResourceLimitsTab
+
     tab = ResourceLimitsTab()
     qtbot.addWidget(tab)
     QApplication.processEvents()
@@ -130,4 +132,3 @@ def test_limits_changed_emits_expected_values(resource_tab):
     last = emitted[-1]
     assert last.max_memory_mb is None
     assert last.max_processing_time_sec is None
-

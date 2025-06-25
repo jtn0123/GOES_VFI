@@ -1,18 +1,25 @@
-import sys
 import os
+import sys
+
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import types
 
 # Provide stub modules if missing
 if "goesvfi.utils.enhanced_log" not in sys.modules:
-    sys.modules["goesvfi.utils.enhanced_log"] = types.SimpleNamespace(get_enhanced_logger=lambda name: None)
+    sys.modules["goesvfi.utils.enhanced_log"] = types.SimpleNamespace(
+        get_enhanced_logger=lambda name: None
+    )
 if "goesvfi.utils.operation_history" not in sys.modules:
-    sys.modules["goesvfi.utils.operation_history"] = types.SimpleNamespace(get_operation_store=lambda: None)
+    sys.modules["goesvfi.utils.operation_history"] = types.SimpleNamespace(
+        get_operation_store=lambda: None
+    )
+
+from unittest.mock import patch
 
 import pytest
-from unittest.mock import patch
 from PyQt6.QtWidgets import QApplication
 
 import goesvfi.gui_tabs.operation_history_tab as oh_tab
@@ -85,6 +92,7 @@ def dummy_store():
 @pytest.fixture
 def history_tab(dummy_store):
     app = QApplication.instance() or QApplication([])
+
     def immediate_start(self):
         oh_tab.RefreshWorker.run(self)
 

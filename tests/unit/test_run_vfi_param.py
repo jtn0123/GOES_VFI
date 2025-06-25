@@ -14,8 +14,8 @@ from tests.utils.mocks import (
 
 def create_test_png(path: pathlib.Path, size: tuple = (4, 4)) -> pathlib.Path:
     """Create a tiny PNG image for testing."""
-    from PIL import Image
     import numpy as np
+    from PIL import Image
 
     img_array = np.zeros((size[1], size[0], 3), dtype=np.uint8)
     img = Image.fromarray(img_array)
@@ -54,7 +54,9 @@ def mock_capability_detector(mocker):
         ("sanchez_fail", False),
     ],
 )
-def test_run_vfi_scenarios(scenario, expect_error, tmp_path, mocker, mock_capability_detector):
+def test_run_vfi_scenarios(
+    scenario, expect_error, tmp_path, mocker, mock_capability_detector
+):
     img_paths = make_dummy_images(tmp_path, 2)
     output_mp4 = tmp_path / "out.mp4"
     raw_output = output_mp4.with_suffix(".raw.mp4")
@@ -127,7 +129,12 @@ def test_run_vfi_scenarios(scenario, expect_error, tmp_path, mocker, mock_capabi
             )
 
         if expect_error:
-            from goesvfi.pipeline.exceptions import ProcessingError, RIFEError, FFmpegError
+            from goesvfi.pipeline.exceptions import (
+                FFmpegError,
+                ProcessingError,
+                RIFEError,
+            )
+
             with pytest.raises((RuntimeError, ProcessingError, RIFEError, FFmpegError)):
                 run()
         else:

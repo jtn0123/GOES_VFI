@@ -1,28 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="3" failures="0" skipped="0" tests="3" time="3.140" timestamp="2025-06-22T21:25:54.720232-07:00" hostname="Justins-MacBook-Air.local"><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_main_tab_all_buttons" time="0.001"><error message="failed on setup with &quot;AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'&quot;">.venv/lib/python3.13/site-packages/_pytest/monkeypatch.py:83: in annotated_getattr
-    obj = getattr(obj, name)
-E   AttributeError: type object 'NoPopupQMessageBox' has no attribute 'exec'
-
-The above exception was the direct cause of the following exception:
-.venv/lib/python3.13/site-packages/pytestqt/plugin.py:180: in pytest_runtest_setup
-    result = yield
-tests/integration/conftest.py:67: in _no_gui_dialogs
-    monkeypatch.setattr(
-E   AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_main_tab_all_checkboxes" time="0.000"><error message="failed on setup with &quot;AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'&quot;">.venv/lib/python3.13/site-packages/_pytest/monkeypatch.py:83: in annotated_getattr
-    obj = getattr(obj, name)
-E   AttributeError: type object 'NoPopupQMessageBox' has no attribute 'exec'
-
-The above exception was the direct cause of the following exception:
-.venv/lib/python3.13/site-packages/pytestqt/plugin.py:180: in pytest_runtest_setup
-    result = yield
-tests/integration/conftest.py:67: in _no_gui_dialogs
-    monkeypatch.setattr(
-E   AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'</error></testcase><testcase classname="tests.integration.test_all_gui_elements.TestAllGUIElements" name="test_main_tab_all_spinboxes_and_combos" time="0.001"><error message="failed on setup with &quot;AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'&quot;">.venv/lib/python3.13/site-packages/_pytest/monkeypatch.py:83: in annotated_getattr
-    obj = getattr(obj, name)
-E   AttributeError: type object 'NoPopupQMessageBox' has no attribute 'exec'
-
-The above exception was the direct cause of the following exception:
-.venv/lib/python3.13/site-packages/pytestqt/plugin.py:180: in pytest_runtest_setup
-    result = yield
-tests/integration/conftest.py:67: in _no_gui_dialogs
-    monkeypatch.setattr(
-E   AttributeError: 'type' object at PyQt6.QtWidgets.QMessageBox has no attribute 'exec'</error></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="1" failures="0" skipped="0" tests="1" time="4.140" timestamp="2025-06-24T20:52:40.449602-07:00" hostname="Mac.localdomain"><testcase classname="" name="tests.unit.test_batch_processing_tab" time="0.000"><error message="collection failure">tests/unit/test_batch_processing_tab.py:8: in &lt;module&gt;
+    disable_all_gui_popups()
+tests/utils/disable_popups.py:137: in disable_all_gui_popups
+    _active_patches = apply_gui_patches()
+tests/utils/disable_popups.py:124: in apply_gui_patches
+    p.start()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1654: in start
+    result = self.__enter__()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1497: in __enter__
+    original, local = self.get_original()
+/opt/homebrew/Cellar/python@3.13/3.13.5/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/mock.py:1467: in get_original
+    raise AttributeError(
+E   AttributeError: &lt;module 'goesvfi.gui' from '/Users/justin/Documents/Github/GOES_VFI/goesvfi/gui.py'&gt; does not have the attribute 'QFileDialog'</error></testcase></testsuite></testsuites>

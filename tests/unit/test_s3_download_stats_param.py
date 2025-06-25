@@ -4,7 +4,10 @@ from unittest.mock import patch
 import pytest
 
 from goesvfi.integrity_check.remote import s3_store
-from goesvfi.integrity_check.remote.s3_store import update_download_stats, log_download_statistics
+from goesvfi.integrity_check.remote.s3_store import (
+    log_download_statistics,
+    update_download_stats,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -35,7 +38,13 @@ def reset_stats():
 
 @pytest.mark.parametrize("success,error_type", [(True, None), (False, "timeout")])
 def test_update_download_stats_basic(success, error_type):
-    update_download_stats(success=success, download_time=1.0, file_size=100, error_type=error_type, error_message="err" if error_type else None)
+    update_download_stats(
+        success=success,
+        download_time=1.0,
+        file_size=100,
+        error_type=error_type,
+        error_message="err" if error_type else None,
+    )
     assert s3_store.DOWNLOAD_STATS["total_attempts"] == 1
     if success:
         assert s3_store.DOWNLOAD_STATS["successful"] == 1
@@ -45,7 +54,9 @@ def test_update_download_stats_basic(success, error_type):
 
 def test_error_history_limit():
     for i in range(25):
-        update_download_stats(success=False, error_type="network", error_message=f"e{i}")
+        update_download_stats(
+            success=False, error_type="network", error_message=f"e{i}"
+        )
     assert len(s3_store.DOWNLOAD_STATS["errors"]) == 20
 
 

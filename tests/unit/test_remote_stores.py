@@ -3,13 +3,13 @@
 import asyncio
 import tempfile
 import unittest
-import pytest
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch, mock_open
+from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import aiohttp
 import botocore.exceptions
+import pytest
 
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
@@ -628,6 +628,3 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         assert result == dest_path
 
         # Skip the complex wildcard testing since it requires too much mocking
-
-
-

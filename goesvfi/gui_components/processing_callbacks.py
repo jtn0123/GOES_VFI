@@ -1,6 +1,6 @@
 """Processing callbacks and state management for MainWindow."""
 
-from typing import Any, Optional
+from typing import Any
 
 from PyQt6.QtWidgets import QMessageBox
 

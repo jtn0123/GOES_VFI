@@ -1,7 +1,7 @@
 """File and directory picker functionality for MainWindow."""
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from PyQt6.QtWidgets import QFileDialog
 

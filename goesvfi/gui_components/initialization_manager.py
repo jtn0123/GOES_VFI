@@ -22,7 +22,6 @@ from goesvfi.gui_components.ui_setup_manager import UISetupManager
 from goesvfi.gui_components.zoom_manager import ZoomManager
 from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
-from goesvfi.pipeline.run_vfi import VfiWorker
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
 from goesvfi.utils import log
 from goesvfi.utils.image_processing.refactored_preview import RefactoredPreviewProcessor

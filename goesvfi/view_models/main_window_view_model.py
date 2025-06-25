@@ -14,9 +14,9 @@ from goesvfi.date_sorter.sorter import DateSorter
 from goesvfi.date_sorter.view_model import DateSorterViewModel
 from goesvfi.file_sorter.sorter import FileSorter
 from goesvfi.file_sorter.view_model import FileSorterViewModel
-from goesvfi.view_models.processing_view_model import ProcessingViewModel
 from goesvfi.gui_components.preview_manager import PreviewManager
 from goesvfi.gui_components.processing_manager import ProcessingManager
+from goesvfi.view_models.processing_view_model import ProcessingViewModel
 
 # Import Models
 

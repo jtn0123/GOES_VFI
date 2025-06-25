@@ -7,84 +7,22 @@ integrity checks, imagery previews, and video generation.  Run
 
 from __future__ import annotations
 
-import argparse
-import logging
-import os
-import re
-import shutil
-import sys
-import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple  # noqa: F401
+from typing import Any, Dict, Optional
 
-import numpy as np
-from PIL import Image
-from PyQt6.QtCore import QRect, QSettings, QSize, Qt, QTimer, QUrl, pyqtSignal
-from PyQt6.QtGui import (
-    QCloseEvent,
-    QColor,
-    QDesktopServices,
-    QImage,
-    QPainter,
-    QPixmap,
-)
-from PyQt6.QtWidgets import (
-    QApplication,
-    QDialog,
-    QFileDialog,
-    QMessageBox,
-    QStatusBar,
-    QTabWidget,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt6.QtCore import QSettings, Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QCloseEvent, QImage, QPixmap
+from PyQt6.QtWidgets import QApplication, QStatusBar, QVBoxLayout, QWidget
 
-from goesvfi.date_sorter.gui_tab import DateSorterTab
-from goesvfi.date_sorter.sorter import DateSorter
-from goesvfi.file_sorter.gui_tab import FileSorterTab
-from goesvfi.file_sorter.sorter import FileSorter
 from goesvfi.gui_components import (
-    CropHandler,
-    FilePickerManager,
     InitializationManager,
-    ModelSelectorManager,
-    PreviewManager,
-    ProcessingCallbacks,
     ProcessingHandler,
-    ProcessingManager,
-    RifeUIManager,
     SettingsPersistence,
-    SignalBroker,
-    StateManager,
     ThemeManager,
-    UISetupManager,
-    WorkerFactory,
-    ZoomManager,
 )
-from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab
-from goesvfi.gui_tabs.main_tab import MainTab
-from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab
-from goesvfi.integrity_check.cache_db import CacheDB
-from goesvfi.integrity_check.combined_tab import CombinedIntegrityAndImageryTab
-from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
-from goesvfi.integrity_check.reconciler import Reconciler
-from goesvfi.integrity_check.remote.cdn_store import CDNStore
-from goesvfi.integrity_check.remote.s3_store import S3Store
-from goesvfi.integrity_check.time_index import TimeIndex
-from goesvfi.pipeline.image_cropper import ImageCropper
-from goesvfi.pipeline.image_loader import ImageLoader
-from goesvfi.pipeline.image_processing_interfaces import ImageData
-from goesvfi.pipeline.run_vfi import VfiWorker
-from goesvfi.pipeline.sanchez_processor import SanchezProcessor
-from goesvfi.utils import config, log
-from goesvfi.utils.gui_helpers import (
-    ClickableLabel,
-    RifeCapabilityManager,
-    ZoomDialog,
-)
-from goesvfi.utils.image_processing.refactored_preview import RefactoredPreviewProcessor
+from goesvfi.utils import log
+from goesvfi.utils.gui_helpers import ClickableLabel
 from goesvfi.utils.settings.gui_settings_manager import GUISettingsManager
-from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 
 LOGGER = log.get_logger(__name__)
 

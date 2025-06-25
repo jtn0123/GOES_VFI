@@ -1,7 +1,9 @@
 import sys
 import types
+
 import pytest
 from PyQt6.QtWidgets import QApplication, QLabel, QLineEdit, QProgressBar, QWidget
+
 
 # Fixture to mock goesvfi.utils.ui_enhancements before importing the tab
 @pytest.fixture
@@ -103,9 +105,11 @@ def mock_ui_enhancements(monkeypatch):
     monkeypatch.setitem(sys.modules, "goesvfi.utils.ui_enhancements", module)
     yield module
 
+
 @pytest.fixture
 def tab(qtbot, mock_ui_enhancements, monkeypatch):
     import importlib
+
     import goesvfi.gui_tabs.main_tab_enhanced as m
 
     importlib.reload(m)
@@ -167,4 +171,3 @@ def test_update_progress(tab):
     tab.update_progress(5, 10)
     assert tab._progress_tracker.updated[-1] == (1, 0)
     assert tab._status_widget.progress_bar.value() == 50
-
