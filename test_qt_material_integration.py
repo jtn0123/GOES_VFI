@@ -145,7 +145,7 @@ def main():
             passed += 1
 
     print(f"\n{'='*50}")
-    print(f"📊 Test Results: {passed}/{total} tests passed")
+    print(f"📊 Test Results: {passed} / {total} tests passed")
 
     if passed == total:
         print("🎉 Qt-Material integration is complete and working!")

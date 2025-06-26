@@ -38,7 +38,9 @@ class TestAllGUIElements:
         with (
             patch("goesvfi.utils.config.get_available_rife_models") as mock_models,
             patch("goesvfi.utils.config.find_rife_executable") as mock_find_rife,
-            patch("goesvfi.utils.rife_analyzer.analyze_rife_executable") as mock_analyze,
+            patch(
+                "goesvfi.utils.rife_analyzer.analyze_rife_executable"
+            ) as mock_analyze,
             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor.process_image"),
             patch("os.path.getmtime") as mock_getmtime,
             patch("os.path.exists") as mock_exists,
@@ -154,13 +156,17 @@ class TestAllGUIElements:
                     # Test unchecking
                     checkbox.setChecked(False)
                     app.processEvents()
-                    assert not checkbox.isChecked(), f"{description} should be unchecked"
+                    assert (
+                        not checkbox.isChecked()
+                    ), f"{description} should be unchecked"
 
                     # Test click
                     initial_state = checkbox.isChecked()
                     checkbox.click()
                     app.processEvents()
-                    assert checkbox.isChecked() != initial_state, f"{description} state should toggle"
+                    assert (
+                        checkbox.isChecked() != initial_state
+                    ), f"{description} state should toggle"
                 else:
                     # Just verify the checkbox exists even if disabled
                     assert checkbox is not None, f"{description} checkbox should exist"
@@ -245,7 +251,10 @@ class TestAllGUIElements:
                 assert not checkbox.isChecked()
 
         # Test quality slider - check if it exists first
-        if hasattr(ffmpeg_tab, "quality_slider") and ffmpeg_tab.quality_slider.isEnabled():
+        if (
+            hasattr(ffmpeg_tab, "quality_slider")
+            and ffmpeg_tab.quality_slider.isEnabled()
+        ):
             ffmpeg_tab.quality_slider.setValue(20)
             app.processEvents()
             assert ffmpeg_tab.quality_slider.value() == 20
@@ -481,7 +490,9 @@ class TestAllGUIElements:
             ("Batch Processing", ["add_folder_button", "process_all_button"]),
         ],
     )
-    def test_tab_specific_buttons_exist(self, main_window, app, tab_name, expected_buttons):
+    def test_tab_specific_buttons_exist(
+        self, main_window, app, tab_name, expected_buttons
+    ):
         """Verify expected buttons exist in each tab."""
         tab_widget = main_window.tab_widget
 
@@ -509,5 +520,9 @@ class TestAllGUIElements:
             if tab:
                 for button_name in expected_buttons:
                     button = getattr(tab, button_name, None)
-                    assert button is not None, f"{button_name} should exist in {tab_name}"
-                    assert isinstance(button, (QPushButton, SuperButton)), f"{button_name} should be a button"
+                    assert (
+                        button is not None
+                    ), f"{button_name} should exist in {tab_name}"
+                    assert isinstance(
+                        button, (QPushButton, SuperButton)
+                    ), f"{button_name} should be a button"

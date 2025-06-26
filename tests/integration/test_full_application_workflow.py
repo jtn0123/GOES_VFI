@@ -70,7 +70,9 @@ class TestFullApplicationWorkflow:
         with (
             patch("goesvfi.utils.config.get_available_rife_models") as mock_models,
             patch("goesvfi.utils.config.find_rife_executable") as mock_find_rife,
-            patch("goesvfi.utils.rife_analyzer.analyze_rife_executable") as mock_analyze,
+            patch(
+                "goesvfi.utils.rife_analyzer.analyze_rife_executable"
+            ) as mock_analyze,
             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor.process_image"),
             patch("os.path.getmtime") as mock_getmtime,
             patch("os.path.exists") as mock_exists,
@@ -118,7 +120,9 @@ class TestFullApplicationWorkflow:
 
         return input_dir
 
-    def test_complete_workflow_main_tab_to_video(self, main_window, app, test_images, tmp_path, mock_vfi_worker):
+    def test_complete_workflow_main_tab_to_video(
+        self, main_window, app, test_images, tmp_path, mock_vfi_worker
+    ):
         """Test complete workflow from main tab setup to video generation."""
         mock_worker_class, mock_instance = mock_vfi_worker
         output_file = tmp_path / "output.mp4"
@@ -198,7 +202,9 @@ class TestFullApplicationWorkflow:
         app.processEvents()
 
         # Verify processing completed successfully by checking the processing state
-        assert not main_window.main_tab.is_processing, "Should not be in processing state after completion"
+        assert (
+            not main_window.main_tab.is_processing
+        ), "Should not be in processing state after completion"
 
         # The test should verify that processing completed by checking the UI state
         # and that no errors occurred. Since the actual file gets cleaned up or
@@ -233,7 +239,9 @@ class TestFullApplicationWorkflow:
             main_window.current_crop_rect = None
 
             # Click crop button - this should try to open crop dialog
-            QTest.mouseClick(main_window.main_tab.crop_button, Qt.MouseButton.LeftButton)
+            QTest.mouseClick(
+                main_window.main_tab.crop_button, Qt.MouseButton.LeftButton
+            )
             app.processEvents()
             QTimer.singleShot(100, lambda: app.processEvents())  # Wait for SuperButton
 
@@ -241,7 +249,9 @@ class TestFullApplicationWorkflow:
             # (Even if it fails due to missing images, the button click should be handled)
             assert True  # Test that crop button click doesn't crash
 
-    def test_workflow_with_ffmpeg_settings(self, main_window, app, test_images, tmp_path):
+    def test_workflow_with_ffmpeg_settings(
+        self, main_window, app, test_images, tmp_path
+    ):
         """Test workflow including FFmpeg settings configuration."""
         # Switch to FFmpeg tab
         tab_widget = main_window.tab_widget
@@ -322,7 +332,9 @@ class TestFullApplicationWorkflow:
             # Verify the UI remains responsive after button click
             assert file_sorter_tab.sort_button is not None
 
-    def test_workflow_with_sanchez_processing(self, main_window, app, test_images, tmp_path):
+    def test_workflow_with_sanchez_processing(
+        self, main_window, app, test_images, tmp_path
+    ):
         """Test workflow with Sanchez false color processing enabled."""
         output_file = tmp_path / "output_sanchez.mp4"
 
@@ -351,7 +363,9 @@ class TestFullApplicationWorkflow:
 
             # Enable and click start
             main_window.main_tab.start_button.setEnabled(True)
-            QTest.mouseClick(main_window.main_tab.start_button, Qt.MouseButton.LeftButton)
+            QTest.mouseClick(
+                main_window.main_tab.start_button, Qt.MouseButton.LeftButton
+            )
             app.processEvents()
 
             # Verify Sanchez settings were passed
@@ -445,7 +459,9 @@ class TestFullApplicationWorkflow:
             with patch.object(QMessageBox, "critical"):
                 # Enable and click start
                 main_window.main_tab.start_button.setEnabled(True)
-                QTest.mouseClick(main_window.main_tab.start_button, Qt.MouseButton.LeftButton)
+                QTest.mouseClick(
+                    main_window.main_tab.start_button, Qt.MouseButton.LeftButton
+                )
                 app.processEvents()
 
                 # Verify error was handled
@@ -476,7 +492,9 @@ class TestFullApplicationWorkflow:
         assert main_window.main_tab.sanchez_false_colour_checkbox.isChecked()
 
     @pytest.mark.parametrize("encoder", ["RIFE", "FFmpeg"])
-    def test_different_encoders_workflow(self, main_window, app, test_images, tmp_path, encoder):
+    def test_different_encoders_workflow(
+        self, main_window, app, test_images, tmp_path, encoder
+    ):
         """Test workflow with different encoders."""
         output_file = tmp_path / f"output_{encoder}.mp4"
 

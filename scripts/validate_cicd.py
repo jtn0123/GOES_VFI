@@ -26,7 +26,7 @@ def simple_yaml_check(file_path: Path) -> bool:
 
         # Basic YAML syntax checks
         lines = content.split("\n")
-        for i, line in enumerate(lines):
+        for _, line in enumerate(lines):
             stripped = line.strip()
             if stripped and not stripped.startswith("#"):
                 # Check for basic YAML structure
