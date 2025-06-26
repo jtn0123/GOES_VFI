@@ -217,11 +217,11 @@ def format_satellite_path(date: datetime.date, format_type: str = "calendar") ->
     if format_type == "calendar":
         # YYYY-MM-DD format
         return date.strftime("%Y-%m-%d")
-    elif format_type == "doy":
+    if format_type == "doy":
         # YYYY/DDD format
         doy = date_to_doy(date)
         return f"{date.year}/{doy:03d}"
-    elif format_type == "compact_doy":
+    if format_type == "compact_doy":
         # YYYYDDD format (no separator)
         doy = date_to_doy(date)
         return f"{date.year}{doy:03d}"
@@ -302,8 +302,7 @@ def format_timestamp(dt: datetime.datetime, compact: bool = False) -> str:
     """
     if compact:
         return dt.strftime("%Y%m%dT%H%M%S")
-    else:
-        return dt.strftime("%Y-%m-%dT%H:%M:%S")
+    return dt.strftime("%Y-%m-%dT%H:%M:%S")
 
 
 def get_satellite_path_components(

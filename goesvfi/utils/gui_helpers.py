@@ -540,10 +540,10 @@ class CropLabel(QLabel):
             else:
                 return  # No selection to draw
 
-            # Draw darkened overlay outside selection
+            # Draw darkened overlay outside selection with gradient effect
             if self.pixmap() and not self.pixmap().isNull():
                 # Create a dark overlay for the entire widget
-                overlay_color = QColor(0, 0, 0, 128)  # Semi-transparent black
+                overlay_color = QColor(0, 0, 0, 150)  # Darker overlay
                 painter.fillRect(self.rect(), overlay_color)
 
                 # Clear the selection area (make it fully transparent)
@@ -561,14 +561,27 @@ class CropLabel(QLabel):
                     )
                     painter.drawPixmap(rect, self.pixmap(), source_rect)
 
-            # Draw selection border
-            pen = QPen(QColor(255, 255, 255), 2, Qt.PenStyle.SolidLine)
+            # Draw selection border with glow effect
+            # Outer glow
+            glow_pen = QPen(QColor(255, 255, 0, 80), 6, Qt.PenStyle.SolidLine)
+            painter.setPen(glow_pen)
+            painter.drawRect(rect)
+
+            # Main border
+            pen = QPen(QColor(255, 255, 0, 255), 3, Qt.PenStyle.SolidLine)
             painter.setPen(pen)
             painter.drawRect(rect)
 
-            # Draw corner handles
-            handle_color = QColor(255, 255, 255)
-            handle_border = QColor(0, 0, 0)
+            # Inner border for contrast
+            inner_pen = QPen(QColor(255, 255, 255, 200), 1, Qt.PenStyle.SolidLine)
+            painter.setPen(inner_pen)
+            inner_rect = rect.adjusted(1, 1, -1, -1)
+            painter.drawRect(inner_rect)
+
+            # Draw corner handles with better styling
+            handle_color = QColor(255, 255, 0, 255)
+            handle_border = QColor(0, 0, 0, 200)
+            handle_size = 10  # Slightly larger handles
 
             # Draw handles with border for better visibility
             handles = [
@@ -579,22 +592,46 @@ class CropLabel(QLabel):
             ]
 
             for x, y in handles:
+                # Draw shadow
+                painter.fillRect(
+                    x - handle_size // 2 + 1,
+                    y - handle_size // 2 + 1,
+                    handle_size,
+                    handle_size,
+                    QColor(0, 0, 0, 100),
+                )
                 # Draw border
                 painter.fillRect(
-                    x - self.handle_size // 2 - 1,
-                    y - self.handle_size // 2 - 1,
-                    self.handle_size + 2,
-                    self.handle_size + 2,
+                    x - handle_size // 2 - 1,
+                    y - handle_size // 2 - 1,
+                    handle_size + 2,
+                    handle_size + 2,
                     handle_border,
                 )
                 # Draw handle
                 painter.fillRect(
-                    x - self.handle_size // 2,
-                    y - self.handle_size // 2,
-                    self.handle_size,
-                    self.handle_size,
+                    x - handle_size // 2,
+                    y - handle_size // 2,
+                    handle_size,
+                    handle_size,
                     handle_color,
                 )
+
+            # Draw size info in the selection if it's large enough
+            if rect.width() > 100 and rect.height() > 50:
+                size_text = f"{rect.width()} × {rect.height()}"
+                font = painter.font()
+                font.setPointSize(12)
+                font.setBold(True)
+                painter.setFont(font)
+
+                # Draw text with background
+                text_rect = painter.boundingRect(rect, Qt.AlignmentFlag.AlignCenter, size_text)
+                bg_rect = text_rect.adjusted(-8, -4, 8, 4)
+                painter.fillRect(bg_rect, QColor(0, 0, 0, 180))
+
+                painter.setPen(QColor(255, 255, 255, 255))
+                painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, size_text)
 
 
 class CropSelectionDialog(QDialog):
@@ -611,7 +648,7 @@ class CropSelectionDialog(QDialog):
         super().__init__(None)  # Pass None to make it a true top-level window
 
         # Set window title
-        self.setWindowTitle("Select Crop Region")
+        self.setWindowTitle("✂️ Select Crop Region")
 
         # Keep reference to parent for cleanup if needed
         self._parent = parent
@@ -655,16 +692,8 @@ class CropSelectionDialog(QDialog):
         self.aspect_ratio: Optional[float] = None  # None means freeform
         self.constrain_aspect = False
 
-        # Set semi-transparent dark background with border
-        self.setStyleSheet(
-            """
-            QDialog {
-                background-color: rgba(20, 20, 20, 0.95);
-                border: 2px solid #333;
-                border-radius: 8px;
-            }
-        """
-        )
+        # Apply qt-material theme properties
+        self.setProperty("class", "CropSelectionDialog")
 
         # Create the main layout with no margins for full screen
         main_layout = QVBoxLayout(self)
@@ -673,30 +702,22 @@ class CropSelectionDialog(QDialog):
 
         # Create header bar with instructions and controls
         header_widget = QWidget()
-        header_widget.setFixedHeight(60)
-        header_widget.setStyleSheet(
-            """
-            QWidget {
-                background-color: rgba(0, 0, 0, 0.8);
-                border-bottom: 1px solid #444;
-            }
-        """
-        )
+        header_widget.setFixedHeight(80)
+        header_widget.setProperty("class", "ControlFrame")
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(20, 10, 20, 10)
 
+        # Add header title
+        header_title = QLabel("✂️ Crop Selection Tool")
+        header_title.setProperty("class", "AppHeader")
+        header_layout.addWidget(header_title)
+
+        header_layout.addSpacing(20)
+
         # Instructions
-        instruction_label = QLabel("Click and drag to select region")
+        instruction_label = QLabel("📍 Click and drag to select region")
         instruction_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        instruction_label.setStyleSheet(
-            """
-            QLabel {
-                color: #ddd;
-                font-size: 14px;
-                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            }
-        """
-        )
+        instruction_label.setProperty("class", "StandardLabel")
         header_layout.addWidget(instruction_label)
 
         # Add aspect ratio controls
@@ -706,38 +727,14 @@ class CropSelectionDialog(QDialog):
         aspect_layout.setSpacing(10)
 
         # Aspect ratio label
-        aspect_label = QLabel("Aspect Ratio:")
-        aspect_label.setStyleSheet("QLabel { font-size: 12px; }")
+        aspect_label = QLabel("📐 Aspect Ratio:")
+        aspect_label.setProperty("class", "StandardLabel")
         aspect_layout.addWidget(aspect_label)
 
         # Aspect ratio combo box
         self.aspect_combo = QComboBox()
-        self.aspect_combo.setStyleSheet(
-            """
-            QComboBox {
-                background-color: #333;
-                color: #ddd;
-                border: 1px solid #555;
-                padding: 4px 10px;
-                font-size: 12px;
-                border-radius: 4px;
-                min-width: 120px;
-            }
-            QComboBox:hover {
-                border-color: #777;
-            }
-            QComboBox::drop-down {
-                border: none;
-            }
-            QComboBox::down-arrow {
-                image: none;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-top: 5px solid #888;
-                margin-right: 5px;
-            }
-        """
-        )
+        self.aspect_combo.setToolTip("Select a predefined aspect ratio or use freeform")
+        # Use default qt-material styling for combo box
         self.aspect_combo.addItems(
             [
                 "Freeform",
@@ -753,26 +750,9 @@ class CropSelectionDialog(QDialog):
         aspect_layout.addWidget(self.aspect_combo)
 
         # Constrain checkbox
-        self.constrain_checkbox = QCheckBox("Lock")
-        self.constrain_checkbox.setStyleSheet(
-            """
-            QCheckBox {
-                color: #aaa;
-                font-size: 12px;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                border: 1px solid #666;
-                border-radius: 3px;
-                background-color: #333;
-            }
-            QCheckBox::indicator:checked {
-                background-color: #0d7377;
-                border-color: #14a085;
-            }
-        """
-        )
+        self.constrain_checkbox = QCheckBox("🔒 Lock")
+        self.constrain_checkbox.setToolTip("Lock aspect ratio when resizing selection")
+        # Use default qt-material styling for checkbox
         self.constrain_checkbox.toggled.connect(self._on_constrain_toggled)
         aspect_layout.addWidget(self.constrain_checkbox)
 
@@ -780,24 +760,19 @@ class CropSelectionDialog(QDialog):
         header_layout.addStretch()
 
         # Add zoom level indicator
+        zoom_prefix = QLabel("🔍 Zoom:")
+        zoom_prefix.setProperty("class", "StandardLabel")
+        header_layout.addWidget(zoom_prefix)
+
         self.zoom_label = QLabel("100%")
-        self.zoom_label.setStyleSheet(
-            """
-            QLabel {
-                color: #888;
-                font-size: 12px;
-                font-family: monospace;
-                padding: 0 10px;
-            }
-        """
-        )
+        self.zoom_label.setProperty("class", "StatusInfo")
         header_layout.addWidget(self.zoom_label)
 
         main_layout.addWidget(header_widget)
 
         # Create main content area (no scroll area needed for full screen)
         content_widget = QWidget()
-        content_widget.setStyleSheet("QWidget { }")  # Theme colors handled by qt-material
+        content_widget.setProperty("class", "CropDialogContent")  # Theme handled by qt-material
         content_layout = QVBoxLayout(content_widget)
         content_layout.setContentsMargins(0, 0, 0, 0)
 
@@ -854,15 +829,8 @@ class CropSelectionDialog(QDialog):
 
         # Create footer bar with status and preview
         footer_widget = QWidget()
-        footer_widget.setFixedHeight(100)
-        footer_widget.setStyleSheet(
-            """
-            QWidget {
-                background-color: rgba(0, 0, 0, 0.8);
-                border-top: 1px solid #444;
-            }
-        """
-        )
+        footer_widget.setFixedHeight(120)
+        footer_widget.setProperty("class", "ControlFrame")
         footer_layout = QHBoxLayout(footer_widget)
         footer_layout.setContentsMargins(20, 10, 20, 10)
 
@@ -871,30 +839,15 @@ class CropSelectionDialog(QDialog):
         status_layout = QVBoxLayout(status_widget)
         status_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.status_label = QLabel("No selection")
+        self.status_label = QLabel("📊 No selection")
         self.status_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        self.status_label.setStyleSheet(
-            """
-            QLabel {
-                color: #ddd;
-                font-size: 14px;
-                font-family: monospace;
-            }
-        """
-        )
+        self.status_label.setProperty("class", "StatusInfo")
         status_layout.addWidget(self.status_label)
 
         # Add tips
-        tips_label = QLabel("Tips: Use Lock for aspect ratio • Click corners to resize • Scroll to zoom")
-        tips_label.setStyleSheet(
-            """
-            QLabel {
-                color: #888;
-                font-size: 12px;
-                font-style: italic;
-            }
-        """
-        )
+        tips_label = QLabel("💡 Tips: Use Lock for aspect ratio • Click corners to resize • Scroll to zoom")
+        tips_label.setProperty("class", "StandardLabel")
+        tips_label.setWordWrap(True)
         status_layout.addWidget(tips_label)
 
         footer_layout.addWidget(status_widget, 2)
@@ -906,18 +859,9 @@ class CropSelectionDialog(QDialog):
         preview_layout.setContentsMargins(10, 0, 10, 0)
         preview_layout.setSpacing(2)
 
-        preview_title = QLabel("Preview")
+        preview_title = QLabel("👁️ Preview")
         preview_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        preview_title.setStyleSheet(
-            """
-            QLabel {
-                color: #888;
-                font-size: 10px;
-                text-transform: uppercase;
-                letter-spacing: 1px;
-            }
-        """
-        )
+        preview_title.setProperty("class", "StandardLabel")
         preview_layout.addWidget(preview_title)
 
         self.crop_preview_label = ClickableLabel()
@@ -927,15 +871,9 @@ class CropSelectionDialog(QDialog):
         self.crop_preview_label.setStyleSheet(
             """
             QLabel {
-                border: 1px solid #444;
-                background-color: #2a2a2a;
-                color: #666;
-                font-size: 9px;
+                border: 2px dashed rgba(255, 255, 255, 0.3);
                 border-radius: 4px;
-            }
-            QLabel:hover {
-                border-color: #666;
-                background-color: #333;
+                background-color: rgba(0, 0, 0, 0.2);
             }
         """
         )
@@ -952,67 +890,25 @@ class CropSelectionDialog(QDialog):
         button_layout.setContentsMargins(0, 0, 0, 0)
         button_layout.setSpacing(10)
 
-        # Style for buttons
-        button_style = """
-            QPushButton {
-                background-color: #333;
-                color: #ddd;
-                border: 1px solid #555;
-                padding: 8px 20px;
-                font-size: 13px;
-                border-radius: 4px;
-                font-weight: 500;
-                min-width: 100px;
-            }
-            QPushButton:hover {
-                background-color: #444;
-                border-color: #666;
-            }
-            QPushButton:pressed {
-                background-color: #222;
-            }
-            QPushButton:disabled {
-                background-color: #2a2a2a;
-                color: #666;
-                border-color: #333;
-            }
-        """
-
         # Clear button - starts disabled
-        self.clear_button = QPushButton("Clear")
-        self.clear_button.setStyleSheet(button_style)
+        self.clear_button = QPushButton("🗑️ Clear")
+        self.clear_button.setProperty("class", "DialogButton")
+        self.clear_button.setToolTip("Clear the current selection")
         self.clear_button.clicked.connect(self._clear_selection)
         self.clear_button.setEnabled(False)
         button_layout.addWidget(self.clear_button)
 
         # Cancel button
-        cancel_button = QPushButton("Cancel (Esc)")
-        cancel_button.setStyleSheet(button_style)
+        cancel_button = QPushButton("❌ Cancel (Esc)")
+        cancel_button.setProperty("class", "DialogButton")
+        cancel_button.setToolTip("Cancel and close without cropping")
         cancel_button.clicked.connect(self.reject)
         button_layout.addWidget(cancel_button)
 
         # OK button with accent color - starts disabled
-        self.ok_button = QPushButton("Crop (Enter)")
-        self.ok_button.setStyleSheet(
-            button_style
-            + """
-            QPushButton {
-                background-color: #0d7377;
-                border-color: #14a085;
-            }
-            QPushButton:hover {
-                background-color: #14a085;
-            }
-            QPushButton:pressed {
-                background-color: #0a5d61;
-            }
-            QPushButton:disabled {
-                background-color: #2a2a2a;
-                color: #666;
-                border-color: #333;
-            }
-        """
-        )
+        self.ok_button = QPushButton("✅ Crop (Enter)")
+        self.ok_button.setProperty("class", "StartButton")
+        self.ok_button.setToolTip("Apply the crop selection")
         self.ok_button.clicked.connect(self._accept_selection)
         self.ok_button.setEnabled(False)
         button_layout.addWidget(self.ok_button)
@@ -1047,14 +943,14 @@ class CropSelectionDialog(QDialog):
                 aspect_text = f" | Ratio: {current_ratio:.2f}:1"
 
             self.status_label.setText(
-                f"Selection: {orig_x}, {orig_y} → {orig_x + orig_w}, {orig_y + orig_h} "
+                f"📊 Selection: {orig_x}, {orig_y} → {orig_x + orig_w}, {orig_y + orig_h} "
                 f"(size: {orig_w} × {orig_h}){aspect_text}"
             )
 
             # Update crop preview
             self._update_crop_preview(rect)
         else:
-            self.status_label.setText("No selection")
+            self.status_label.setText("📊 No selection")
             # Clear crop preview
             self.crop_preview_label.clear()
             self.crop_preview_label.setText("Select a region")
@@ -1428,10 +1324,12 @@ class CropSelectionDialog(QDialog):
 
         # Create a simple preview dialog
         preview_dialog = QDialog(self)
-        preview_dialog.setWindowTitle("Crop Preview")
+        preview_dialog.setWindowTitle("👁️ Crop Preview")
         preview_dialog.setModal(True)
 
         layout = QVBoxLayout(preview_dialog)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(12)
 
         # Create a label to show the image
         preview_label = QLabel()
@@ -1453,9 +1351,16 @@ class CropSelectionDialog(QDialog):
         layout.addWidget(preview_label)
 
         # Add size info
-        info_label = QLabel(f"Size: {orig_w} × {orig_h} pixels")
+        info_label = QLabel(f"📊 Size: {orig_w} × {orig_h} pixels")
         info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        info_label.setProperty("class", "StatusInfo")
         layout.addWidget(info_label)
+
+        # Add close button
+        close_button = QPushButton("✅ Close")
+        close_button.setProperty("class", "DialogButton")
+        close_button.clicked.connect(preview_dialog.accept)
+        layout.addWidget(close_button)
 
         preview_dialog.exec()
 
@@ -1472,13 +1377,15 @@ class ImageViewerDialog(QDialog):
     ) -> None:
         """Initialize the image viewer dialog."""
         super().__init__(parent)
-        self.setWindowTitle(title)
+        self.setWindowTitle(f"🔍 {title}")
         self.original_qimage = image  # Store as original_qimage for compatibility
         self.image = image
         self.info_text = info_text
 
         # Zoom and pan state
         self.zoom_factor = 1.0
+        self.min_zoom_factor = 0.1
+        self.max_zoom_factor = 10.0
         self.panning = False
         self.was_dragged = False
         self.last_pan_pos = QPointF()
@@ -1487,12 +1394,118 @@ class ImageViewerDialog(QDialog):
         # Set up the dialog
         self.setModal(True)
         self.setMinimumSize(800, 600)
+        self.setProperty("class", "ImageViewerDialog")
+
+        # Create UI layout
+        self._setup_ui()
 
         if image and isinstance(image, QImage) and not image.isNull():
-            # Size the dialog to fit the image (with some limits)
-            width = min(image.width() + 50, 1200)
-            height = min(image.height() + 50, 900)
-            self.resize(width, height)
+            # Size the dialog to fill most of the screen (90% to maximize space)
+            screen = QApplication.primaryScreen()
+            if screen:
+                screen_rect = screen.availableGeometry()
+                max_width = int(screen_rect.width() * 0.9)
+                max_height = int(screen_rect.height() * 0.9)
+
+                # Calculate ideal size based on image aspect ratio
+                image_aspect = image.width() / image.height()
+                screen_aspect = max_width / max_height
+
+                # Fit image to fill as much screen as possible
+                if image_aspect > screen_aspect:
+                    # Image is wider - fit to width
+                    width = max_width
+                    height = int(width / image_aspect) + 150  # Extra for header/footer
+                    # Make sure we don't exceed max height
+                    if height > max_height:
+                        height = max_height
+                        width = int((height - 150) * image_aspect)
+                else:
+                    # Image is taller - fit to height
+                    height = max_height
+                    width = int((height - 150) * image_aspect) + 40  # Extra for margins
+                    # Make sure we don't exceed max width
+                    if width > max_width:
+                        width = max_width
+                        height = int(width / image_aspect) + 150
+
+                self.resize(width, height)
+
+                # Center on screen
+                self.move(
+                    int((screen_rect.width() - width) / 2),
+                    int((screen_rect.height() - height) / 2),
+                )
+            else:
+                # Fallback sizing
+                width = min(image.width() + 100, 1200)
+                height = min(image.height() + 200, 900)
+                self.resize(width, height)
+
+    def _setup_ui(self) -> None:
+        """Set up the user interface."""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+
+        # Add header with controls
+        header_widget = QWidget()
+        header_widget.setProperty("class", "ControlFrame")
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(10, 10, 10, 10)
+
+        # Add title
+        title_label = QLabel(f"🔍 {self.windowTitle().replace('🔍 ', '')}")
+        title_label.setProperty("class", "AppHeader")
+        header_layout.addWidget(title_label)
+
+        header_layout.addStretch()
+
+        # Add zoom indicator
+        self.zoom_label = QLabel(f"🔍 Zoom: {int(self.zoom_factor * 100)}%")
+        self.zoom_label.setProperty("class", "StatusInfo")
+        header_layout.addWidget(self.zoom_label)
+
+        # Add instructions
+        instructions = QLabel("💡 Scroll to zoom • Drag to pan • Click to close")
+        instructions.setProperty("class", "StandardLabel")
+        header_layout.addWidget(instructions)
+
+        layout.addWidget(header_widget)
+
+        # Create image display label
+        self.image_label = QLabel()
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.image_label.setStyleSheet(
+            """
+            QLabel {
+                background-color: rgba(0, 0, 0, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+        """
+        )
+
+        # Set the image if available
+        if self.image and not self.image.isNull():
+            # Don't set image here - wait for showEvent when we know the actual size
+            pass
+
+        layout.addWidget(self.image_label, 1)  # Give it stretch priority
+
+        # Add footer if info text is provided
+        if self.info_text:
+            footer_widget = QWidget()
+            footer_widget.setProperty("class", "ControlFrame")
+            footer_layout = QHBoxLayout(footer_widget)
+            footer_layout.setContentsMargins(10, 10, 10, 10)
+
+            info_label = QLabel(f"📄 {self.info_text}")
+            info_label.setProperty("class", "StatusInfo")
+            footer_layout.addWidget(info_label)
+
+            footer_layout.addStretch()
+
+            layout.addWidget(footer_widget)
 
     def wheelEvent(self, event: Optional[QWheelEvent]) -> None:
         """Handle zoom with mouse wheel."""
@@ -1502,16 +1515,45 @@ class ImageViewerDialog(QDialog):
         delta = event.angleDelta().y()
         zoom_in = delta > 0
 
-        # Update zoom factor
-        if zoom_in:
-            self.zoom_factor *= 1.1
-        else:
-            self.zoom_factor /= 1.1
+        # Calculate new zoom factor
+        new_zoom_factor = self.zoom_factor * 1.1 if zoom_in else self.zoom_factor / 1.1
 
-        # Clamp zoom factor
-        self.zoom_factor = max(0.1, min(self.zoom_factor, 10.0))
+        # Get available space for image
+        available_width = self.width() - 40
+        available_height = self.height() - 150  # Approximate header/footer height
 
-        self.update()
+        # Calculate what the image size would be with new zoom
+        if self.image and not self.image.isNull():
+            target_width = int(self.image.width() * new_zoom_factor)
+            target_height = int(self.image.height() * new_zoom_factor)
+
+            # When zooming in, stop if image would exceed window bounds
+            if zoom_in:
+                if target_width >= available_width or target_height >= available_height:
+                    # Calculate the maximum zoom that fits
+                    max_zoom_x = available_width / self.image.width()
+                    max_zoom_y = available_height / self.image.height()
+                    max_zoom = max(max_zoom_x, max_zoom_y)  # Use max to fill at least one dimension
+
+                    new_zoom_factor = min(new_zoom_factor, max_zoom)
+
+        # Apply zoom limits
+        new_zoom_factor = max(self.min_zoom_factor, min(new_zoom_factor, self.max_zoom_factor))
+
+        # Only update if zoom actually changed
+        if abs(new_zoom_factor - self.zoom_factor) > 0.001:
+            self.zoom_factor = new_zoom_factor
+
+            # Update zoom label
+            if hasattr(self, "zoom_label"):
+                self.zoom_label.setText(f"🔍 Zoom: {int(self.zoom_factor * 100)}%")
+
+            # Update image display with new zoom
+            if hasattr(self, "image_label") and self.image and not self.image.isNull():
+                self._update_image_display()
+
+            self.update()
+
         event.accept()
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
@@ -1546,23 +1588,75 @@ class ImageViewerDialog(QDialog):
             self.panning = False
         super().mouseReleaseEvent(event)
 
+    def showEvent(self, event: Any) -> None:
+        """Handle show event to properly size the image."""
+        super().showEvent(event)
+
+        if self.image and not self.image.isNull() and hasattr(self, "image_label"):
+            # Reset zoom to 1.0 to fill the window optimally on first show
+            self.zoom_factor = 1.0
+            # Now that the dialog is shown, we know the actual size
+            self._update_image_display()
+            # Update zoom label
+            if hasattr(self, "zoom_label"):
+                self.zoom_label.setText(f"🔍 Zoom: {int(self.zoom_factor * 100)}%")
+
+    def resizeEvent(self, event: Any) -> None:
+        """Handle resize event to update image display."""
+        super().resizeEvent(event)
+
+        if self.image and not self.image.isNull() and hasattr(self, "image_label"):
+            self._update_image_display()
+
+    def _update_image_display(self) -> None:
+        """Update the image display based on current dialog size and zoom."""
+        if not self.image or self.image.isNull() or not hasattr(self, "image_label"):
+            return
+
+        try:
+            # Get available space for image (accounting for header/footer)
+            available_width = max(100, self.width() - 40)
+            available_height = max(100, self.height() - 150)  # Approximate header/footer height
+
+            # Calculate the initial scale to fill as much space as possible
+            scale_x = available_width / self.image.width()
+            scale_y = available_height / self.image.height()
+
+            # Use the scale that fills the most space without exceeding bounds
+            base_scale = min(scale_x, scale_y)
+
+            # Apply zoom factor on top of base scale
+            final_scale = base_scale * self.zoom_factor
+
+            # Calculate target dimensions
+            target_width = int(self.image.width() * final_scale)
+            target_height = int(self.image.height() * final_scale)
+
+            # Ensure minimum size
+            target_width = max(50, target_width)
+            target_height = max(50, target_height)
+
+            # Scale the image
+            scaled_image = self.image.scaled(
+                target_width,
+                target_height,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+
+            self.image_label.setPixmap(QPixmap.fromImage(scaled_image))
+
+        except Exception as e:
+            logger.error("Error updating image display: %s", e)
+            # Try to at least show something
+            if self.image and not self.image.isNull():
+                self.image_label.setPixmap(QPixmap.fromImage(self.image))
+
     def paintEvent(self, event: Any) -> None:
-        """Paint the image."""
+        """Paint event - image display is now handled by image_label."""
         super().paintEvent(event)
-
-        if self.image and isinstance(self.image, QImage) and not self.image.isNull():
-            painter = QPainter(self)
-
-            # For now, just draw the image centered
-            # In a real implementation, we would apply zoom and pan transforms
-            rect = self.rect()
-            image_rect = self.image.rect()
-
-            # Center the image
-            x = (rect.width() - image_rect.width()) // 2
-            y = (rect.height() - image_rect.height()) // 2
-
-            painter.drawImage(x, y, self.image)
+        # Custom paint logic could be added here if needed
+        # Currently, image display is handled by the QLabel widget
 
 
 class ZoomDialog(QDialog):
@@ -1571,6 +1665,10 @@ class ZoomDialog(QDialog):
     def __init__(self, pixmap: QPixmap, parent: Optional[QWidget] = None) -> None:
         """Initialize the zoom dialog with a pixmap."""
         super().__init__(parent)
+
+        # Apply material theme dialog class
+        self.setProperty("class", "ImageViewerDialog")
+
         self.pixmap = pixmap
 
         # Set frameless window with translucent background

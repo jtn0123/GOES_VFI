@@ -45,6 +45,13 @@ class ResourceLimitsTab(QWidget):
     def _setup_ui(self) -> None:
         """Set up the user interface."""
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(12)
+
+        # Add header
+        header = QLabel("⚙️ Resource Limits Configuration")
+        header.setProperty("class", "AppHeader")
+        layout.addWidget(header)
 
         # System Information Group
         self._create_system_info_group(layout)
@@ -60,95 +67,123 @@ class ResourceLimitsTab(QWidget):
 
     def _create_system_info_group(self, parent_layout: QVBoxLayout) -> None:
         """Create the system information display group."""
-        group = QGroupBox("System Resources")
+        group = QGroupBox("💻 System Resources")
         layout = QFormLayout(group)
 
         # Memory information
         memory_info = self.system_info.get("memory", {})
         total_memory = memory_info.get("total_mb", 0)
         self.memory_info_label = QLabel(f"{total_memory:.0f} MB total")
-        layout.addRow("System Memory:", self.memory_info_label)
+        self.memory_info_label.setProperty("class", "StatusInfo")
+        memory_label = QLabel("System Memory:")
+        memory_label.setProperty("class", "StandardLabel")
+        layout.addRow(memory_label, self.memory_info_label)
 
         # CPU information
         cpu_info = self.system_info.get("cpu", {})
         cpu_count = cpu_info.get("count", "Unknown")
         self.cpu_info_label = QLabel(f"{cpu_count} cores")
-        layout.addRow("CPU Cores:", self.cpu_info_label)
+        self.cpu_info_label.setProperty("class", "StatusInfo")
+        cpu_label = QLabel("CPU Cores:")
+        cpu_label.setProperty("class", "StandardLabel")
+        layout.addRow(cpu_label, self.cpu_info_label)
 
         # Disk information
         disk_info = self.system_info.get("disk", {})
         total_disk = disk_info.get("total_gb", 0)
         free_disk = disk_info.get("free_gb", 0)
         self.disk_info_label = QLabel(f"{free_disk:.1f} GB free of {total_disk:.1f} GB")
-        layout.addRow("Disk Space:", self.disk_info_label)
+        self.disk_info_label.setProperty("class", "StatusInfo")
+        disk_label = QLabel("Disk Space:")
+        disk_label.setProperty("class", "StandardLabel")
+        layout.addRow(disk_label, self.disk_info_label)
 
         parent_layout.addWidget(group)
 
     def _create_limits_config_group(self, parent_layout: QVBoxLayout) -> None:
         """Create the resource limits configuration group."""
-        group = QGroupBox("Resource Limits Configuration")
+        group = QGroupBox("🎚️ Resource Limits Configuration")
         layout = QFormLayout(group)
 
         # Memory limit
         memory_layout = QHBoxLayout()
         self.memory_limit_checkbox = QCheckBox("Enable memory limit")
+        self.memory_limit_checkbox.setToolTip("Enable a maximum memory usage limit for processing")
         self.memory_limit_spinbox = QSpinBox()
         self.memory_limit_spinbox.setRange(100, 32000)  # 100 MB to 32 GB
         self.memory_limit_spinbox.setValue(2048)  # Default 2 GB
         self.memory_limit_spinbox.setSuffix(" MB")
+        self.memory_limit_spinbox.setToolTip("Maximum memory usage in megabytes")
         self.memory_limit_spinbox.setEnabled(False)
 
         memory_layout.addWidget(self.memory_limit_checkbox)
         memory_layout.addWidget(self.memory_limit_spinbox)
         memory_layout.addStretch()
-        layout.addRow("Memory Limit:", memory_layout)
+        memory_limit_label = QLabel("Memory Limit:")
+        memory_limit_label.setProperty("class", "StandardLabel")
+        layout.addRow(memory_limit_label, memory_layout)
 
         # Processing time limit
         time_layout = QHBoxLayout()
         self.time_limit_checkbox = QCheckBox("Enable processing time limit")
+        self.time_limit_checkbox.setToolTip("Enable a maximum processing time limit")
         self.time_limit_spinbox = QSpinBox()
         self.time_limit_spinbox.setRange(60, 7200)  # 1 minute to 2 hours
         self.time_limit_spinbox.setValue(1800)  # Default 30 minutes
         self.time_limit_spinbox.setSuffix(" seconds")
+        self.time_limit_spinbox.setToolTip("Maximum processing time in seconds")
         self.time_limit_spinbox.setEnabled(False)
 
         time_layout.addWidget(self.time_limit_checkbox)
         time_layout.addWidget(self.time_limit_spinbox)
         time_layout.addStretch()
-        layout.addRow("Processing Time Limit:", time_layout)
+        time_limit_label = QLabel("Processing Time Limit:")
+        time_limit_label.setProperty("class", "StandardLabel")
+        layout.addRow(time_limit_label, time_layout)
 
         # CPU usage limit
         cpu_layout = QHBoxLayout()
         self.cpu_limit_checkbox = QCheckBox("Enable CPU usage limit")
+        self.cpu_limit_checkbox.setToolTip("Enable a maximum CPU usage percentage limit")
         self.cpu_limit_spinbox = QSpinBox()
         self.cpu_limit_spinbox.setRange(10, 100)  # 10% to 100%
         self.cpu_limit_spinbox.setValue(80)  # Default 80%
         self.cpu_limit_spinbox.setSuffix(" %")
+        self.cpu_limit_spinbox.setToolTip("Maximum CPU usage percentage")
         self.cpu_limit_spinbox.setEnabled(False)
 
         cpu_layout.addWidget(self.cpu_limit_checkbox)
         cpu_layout.addWidget(self.cpu_limit_spinbox)
         cpu_layout.addStretch()
-        layout.addRow("CPU Usage Limit:", cpu_layout)
+        cpu_limit_label = QLabel("CPU Usage Limit:")
+        cpu_limit_label.setProperty("class", "StandardLabel")
+        layout.addRow(cpu_limit_label, cpu_layout)
 
         # Open files limit
         files_layout = QHBoxLayout()
         self.files_limit_checkbox = QCheckBox("Enable open files limit")
+        self.files_limit_checkbox.setToolTip("Enable a maximum open files limit")
         self.files_limit_spinbox = QSpinBox()
         self.files_limit_spinbox.setRange(10, 10000)
         self.files_limit_spinbox.setValue(1000)  # Default 1000 files
         self.files_limit_spinbox.setSuffix(" files")
+        self.files_limit_spinbox.setToolTip("Maximum number of simultaneously open files")
         self.files_limit_spinbox.setEnabled(False)
 
         files_layout.addWidget(self.files_limit_checkbox)
         files_layout.addWidget(self.files_limit_spinbox)
         files_layout.addStretch()
-        layout.addRow("Open Files Limit:", files_layout)
+        files_limit_label = QLabel("Open Files Limit:")
+        files_limit_label.setProperty("class", "StandardLabel")
+        layout.addRow(files_limit_label, files_layout)
 
         # Swap memory option
         self.swap_limit_checkbox = QCheckBox("Include swap memory in memory limit")
+        self.swap_limit_checkbox.setToolTip("Include swap memory when calculating memory limits")
         self.swap_limit_checkbox.setChecked(True)
-        layout.addRow("Swap Memory:", self.swap_limit_checkbox)
+        swap_label = QLabel("Swap Memory:")
+        swap_label.setProperty("class", "StandardLabel")
+        layout.addRow(swap_label, self.swap_limit_checkbox)
 
         # Connect signals
         self.memory_limit_checkbox.toggled.connect(self.memory_limit_spinbox.setEnabled)
@@ -171,7 +206,7 @@ class ResourceLimitsTab(QWidget):
 
     def _create_monitoring_group(self, parent_layout: QVBoxLayout) -> None:
         """Create the real-time resource monitoring group."""
-        group = QGroupBox("Current Resource Usage")
+        group = QGroupBox("📊 Current Resource Usage")
         layout = QFormLayout(group)
 
         # Memory usage bar
@@ -181,7 +216,9 @@ class ResourceLimitsTab(QWidget):
         memory_layout = QHBoxLayout()
         memory_layout.addWidget(self.memory_progress)
         memory_layout.addWidget(self.memory_usage_label)
-        layout.addRow("Memory:", memory_layout)
+        memory_usage_label = QLabel("Memory:")
+        memory_usage_label.setProperty("class", "StandardLabel")
+        layout.addRow(memory_usage_label, memory_layout)
 
         # CPU usage bar
         self.cpu_progress = QProgressBar()
@@ -190,15 +227,21 @@ class ResourceLimitsTab(QWidget):
         cpu_layout = QHBoxLayout()
         cpu_layout.addWidget(self.cpu_progress)
         cpu_layout.addWidget(self.cpu_usage_label)
-        layout.addRow("CPU:", cpu_layout)
+        cpu_usage_label = QLabel("CPU:")
+        cpu_usage_label.setProperty("class", "StandardLabel")
+        layout.addRow(cpu_usage_label, cpu_layout)
 
         # Processing time
         self.time_usage_label = QLabel("0 seconds")
-        layout.addRow("Processing Time:", self.time_usage_label)
+        time_usage_label = QLabel("Processing Time:")
+        time_usage_label.setProperty("class", "StandardLabel")
+        layout.addRow(time_usage_label, self.time_usage_label)
 
         # Open files
         self.files_usage_label = QLabel("0 files")
-        layout.addRow("Open Files:", self.files_usage_label)
+        files_usage_label = QLabel("Open Files:")
+        files_usage_label.setProperty("class", "StandardLabel")
+        layout.addRow(files_usage_label, self.files_usage_label)
 
         parent_layout.addWidget(group)
 

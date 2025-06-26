@@ -200,6 +200,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         if control_layout:
             # Add fetcher configuration button with improved styling
             self.configure_fetchers_btn = QPushButton("⚙ Configure")
+            self.configure_fetchers_btn.setProperty("class", "DialogButton")
             self.configure_fetchers_btn.setToolTip("Configure CDN and S3 fetching options")
             self.configure_fetchers_btn.setMaximumWidth(100)
             self.configure_fetchers_btn.clicked.connect(self._show_fetcher_config)
@@ -219,6 +220,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         # Add progress bar if not already present
         if not hasattr(self, "progress_bar"):
             self.progress_bar = QProgressBar()
+            self.progress_bar.setProperty("class", "DataProgress")
             self.progress_bar.setTextVisible(True)
             if layout:
                 layout.addWidget(self.progress_bar)
@@ -226,6 +228,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         # Ensure status label exists
         if not hasattr(self, "status_label"):
             self.status_label = QLabel("Ready")
+            self.status_label.setProperty("class", "StatusLabel")
             if layout:
                 layout.addWidget(self.status_label)
 
@@ -510,13 +513,14 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         # Add to layout with improved styling
         satellite_label = QLabel("🛰 Satellite:")
-        satellite_label.setStyleSheet("font-weight: bold;")
+        satellite_label.setProperty("class", "StandardLabel")
         radio_layout.addWidget(satellite_label)
         radio_layout.addWidget(self.goes16_radio)
         radio_layout.addWidget(self.goes18_radio)
 
         # Add auto-detect button with improved styling
         self.auto_detect_btn = QPushButton("🔍 Auto-Detect")
+        self.auto_detect_btn.setProperty("class", "DialogPrimaryButton")
         self.auto_detect_btn.setToolTip("Automatically detect which satellite has more files")
         self.auto_detect_btn.setMaximumWidth(120)
         self.auto_detect_btn.clicked.connect(self._auto_detect_satellite)

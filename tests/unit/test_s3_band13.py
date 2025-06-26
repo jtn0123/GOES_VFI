@@ -122,7 +122,6 @@ async def test_download_band13_mocked(timestamp, satellite_pattern, product_type
             patch.object(TimeIndex, "find_nearest_intervals") as mock_find_nearest,
             patch("tests.unit.test_s3_band13.list_s3_objects_band13") as mock_list_objects,
         ):
-
             mock_get_bucket.return_value = "noaa-goes16"
             mock_find_nearest.return_value = [timestamp]
             mock_list_objects.return_value = [f"ABI-L1b-{product_type}/2023/166/12/{test_filename}"]

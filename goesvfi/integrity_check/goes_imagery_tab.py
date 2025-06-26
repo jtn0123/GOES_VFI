@@ -52,36 +52,13 @@ class GOESImageryTab(QWidget):
         from PyQt6.QtWidgets import QFormLayout, QFrame, QHBoxLayout
 
         control_panel = QFrame()
-        control_panel.setStyleSheet(
-            """
-            QFrame {
-                background-color: #3D3D3D;
-                border: 1px solid #555555;
-                border-radius: 3px;
-                padding: 10px;
-            }
-            QLabel {
-                color: #EFEFEF;
-                font-weight: bold;
-            }
-            QComboBox {
-                background-color: #3D3D3D;
-                border: 1px solid #555555;
-                border-radius: 3px;
-                padding: 5px;
-                color: #EFEFEF;
-                min-width: 150px;
-            }
-            QComboBox:focus {
-                border: 1px solid #6C9BD1;
-            }
-            """
-        )
+        control_panel.setProperty("class", "ControlFrame")
         control_layout = QFormLayout(control_panel)
         control_layout.setSpacing(10)
 
         # Product selection
         product_label = QLabel("Product Type:")
+        product_label.setProperty("class", "StandardLabel")
         self.product_combo = QComboBox()
         self.product_combo.addItems(["Full Disk", "CONUS", "Mesoscale"])
         self.product_combo.setToolTip("Select the GOES product type to display")
@@ -89,6 +66,7 @@ class GOESImageryTab(QWidget):
 
         # Channel selection
         channel_label = QLabel("Channel/Band:")
+        channel_label.setProperty("class", "StandardLabel")
         self.channel_combo = QComboBox()
         self.channel_combo.addItems(
             [
@@ -123,17 +101,7 @@ class GOESImageryTab(QWidget):
 
         # Enhanced status label
         self.status_label = QLabel("✅ Ready - Select product and channel to load imagery")
-        self.status_label.setStyleSheet(
-            """
-            QLabel {
-                color: #66ff66;
-                background-color: #2a2a2a;
-                padding: 8px 12px;
-                border-radius: 4px;
-                border-left: 4px solid #66ff66;
-            }
-            """
-        )
+        self.status_label.setProperty("class", "StatusSuccess")
         layout.addWidget(self.status_label)
 
         # Add stretch to push everything to the top

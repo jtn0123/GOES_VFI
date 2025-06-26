@@ -74,7 +74,7 @@ class InputValidator:
         try:
             normalized = os.path.normpath(os.path.abspath(path))
         except (OSError, ValueError) as e:
-            raise SecurityError(f"Invalid path format: {e}")
+            raise SecurityError(f"Invalid path format: {e}") from e
 
         # Check for directory traversal attempts
         if ".." in path or path.startswith("/") and not os.path.isabs(path):
@@ -311,8 +311,8 @@ def secure_subprocess_call(command: List[str], **kwargs: Any) -> Any:
 
     try:
         return subprocess.run(command, **secure_kwargs)
-    except subprocess.TimeoutExpired:
-        raise SecurityError(f"Command timed out after {secure_kwargs['timeout']} seconds")
+    except subprocess.TimeoutExpired as e:
+        raise SecurityError(f"Command timed out after {secure_kwargs['timeout']} seconds") from e
     except Exception as e:
         LOGGER.error("Subprocess execution failed: %s", e)
         raise

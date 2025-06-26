@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from typing import ClassVar, Optional
 
-from PyQt6.QtCore import QSettings
+from PyQt6.QtCore import QCoreApplication, QSettings
 from PyQt6.QtWidgets import QApplication
 
 from goesvfi.gui_components.crop_manager import CropManager
@@ -14,7 +14,7 @@ from goesvfi.gui_components.crop_manager import CropManager
 class TestCropManager(unittest.TestCase):
     """Test cases for CropManager."""
 
-    app: ClassVar[Optional[QApplication]] = None
+    app: ClassVar[Optional[QCoreApplication]] = None
 
     @classmethod
     def setUpClass(cls):
@@ -22,7 +22,7 @@ class TestCropManager(unittest.TestCase):
         if not QApplication.instance():
             cls.app = QApplication([])
         else:
-            cls.app = QApplication.instance()
+            cls.app = QCoreApplication.instance()
 
     def setUp(self):
         """Set up test fixtures."""

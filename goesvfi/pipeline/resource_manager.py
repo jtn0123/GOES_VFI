@@ -248,7 +248,7 @@ def get_resource_manager(limits: Optional[ResourceLimits] = None) -> ResourceMan
     Returns:
         ResourceManager instance
     """
-    global _resource_manager
+    global _resource_manager  # pylint: disable=global-statement
     if _resource_manager is None:
         _resource_manager = ResourceManager(limits)
     return _resource_manager

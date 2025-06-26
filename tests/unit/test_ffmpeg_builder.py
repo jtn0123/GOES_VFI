@@ -298,7 +298,9 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
         builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
             "Software x265 (2-Pass)"
         ).set_bitrate(1000).set_pix_fmt("yuv420p").set_two_pass(
-            True, None, 1  # type: ignore
+            True,
+            None,  # type: ignore[arg-type]
+            1,
         )  # Missing log prefix
         with self.assertRaises(ValueError):
             builder.build()
@@ -307,7 +309,9 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
         builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
             "Software x265 (2-Pass)"
         ).set_bitrate(1000).set_pix_fmt("yuv420p").set_two_pass(
-            True, "log_prefix", None  # type: ignore
+            True,
+            "log_prefix",
+            None,  # type: ignore
         )  # Missing pass number
         with self.assertRaises(ValueError):
             builder.build()

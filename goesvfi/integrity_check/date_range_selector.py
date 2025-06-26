@@ -433,7 +433,7 @@ class CompactDateRangeSelector(QWidget):
 
         # Date display
         self.date_display = QLabel()
-        self.date_display.setStyleSheet("font-weight: bold;")
+        self.date_display.setProperty("class", "DateRangeDisplay")
         main_layout.addWidget(self.date_display)
 
         # Edit button (opens visual date picker)

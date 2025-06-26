@@ -87,18 +87,21 @@ class MissingTimestampsModel(QAbstractTableModel):
                 return item.expected_filename
 
         elif role == Qt.ItemDataRole.BackgroundRole:
-            if col == 2:  # Status column
+            if col == 2:  # Status column - use theme-based colors
                 if item.is_downloaded:
-                    return QColor(200, 255, 200)  # Light green
+                    return QColor("#ccffcc")  # Success color from theme
                 if item.is_downloading:
-                    return QColor(255, 255, 200)  # Light yellow
+                    return QColor("#ffffcc")  # Warning color from theme
                 if item.download_error:
-                    return QColor(255, 200, 200)  # Light red
+                    return QColor("#ffcccc")  # Error color from theme
 
         return None
 
     def headerData(
-        self, section: int, orientation: Qt.Orientation, role: int = Qt.ItemDataRole.DisplayRole
+        self,
+        section: int,
+        orientation: Qt.Orientation,
+        role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:  # type: ignore[override]
         """Return header data."""
         if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
@@ -131,13 +134,8 @@ class IntegrityCheckTab(QWidget):
         self._setup_ui()
         self._connect_signals()
 
-        # Apply dark mode styling if available
-        try:
-            from .dark_mode_style import apply_integrity_check_dark_mode
-
-            apply_integrity_check_dark_mode(self)
-        except ImportError:
-            pass  # Dark mode styling is optional
+        # Apply qt-material theme properties
+        self.setProperty("class", "IntegrityCheckTab")
 
     def _setup_ui(self) -> None:
         """Set up the user interface."""
@@ -148,8 +146,10 @@ class IntegrityCheckTab(QWidget):
         dir_layout = QHBoxLayout()
 
         self.dir_label = QLabel("Directory:")
+        self.dir_label.setProperty("class", "FFmpegLabel")
         self.dir_input = QLineEdit()
         self.dir_button = QPushButton("Browse...")
+        self.dir_button.setProperty("class", "DialogButton")
         self.dir_button.clicked.connect(self._browse_directory)
 
         dir_layout.addWidget(self.dir_label)
@@ -162,19 +162,24 @@ class IntegrityCheckTab(QWidget):
         date_group = QGroupBox("Date Range")
         date_layout = QHBoxLayout()
 
-        date_layout.addWidget(QLabel("Start:"))
+        start_date_label = QLabel("Start:")
+        start_date_label.setProperty("class", "FFmpegLabel")
+        date_layout.addWidget(start_date_label)
         self.start_date_edit = QDateTimeEdit()
         self.start_date_edit.setCalendarPopup(True)
         self.start_date_edit.setDateTime(QDateTimeEdit.dateTime(QDateTimeEdit()).addDays(-7))
         date_layout.addWidget(self.start_date_edit)
 
-        date_layout.addWidget(QLabel("End:"))
+        end_date_label = QLabel("End:")
+        end_date_label.setProperty("class", "FFmpegLabel")
+        date_layout.addWidget(end_date_label)
         self.end_date_edit = QDateTimeEdit()
         self.end_date_edit.setCalendarPopup(True)
         self.end_date_edit.setDateTime(QDateTimeEdit.dateTime(QDateTimeEdit()))
         date_layout.addWidget(self.end_date_edit)
 
         self.auto_detect_btn = QPushButton("Auto Detect")
+        self.auto_detect_btn.setProperty("class", "DialogPrimaryButton")
         self.auto_detect_btn.setToolTip("Auto-detect date range from files in the selected directory")
         self.auto_detect_btn.clicked.connect(self._auto_detect_date_range)
         date_layout.addWidget(self.auto_detect_btn)
@@ -186,7 +191,9 @@ class IntegrityCheckTab(QWidget):
         sat_group = QGroupBox("Satellite Selection")
         sat_layout = QHBoxLayout()
 
-        sat_layout.addWidget(QLabel("Satellite:"))
+        satellite_label = QLabel("Satellite:")
+        satellite_label.setProperty("class", "FFmpegLabel")
+        sat_layout.addWidget(satellite_label)
         self.satellite_combo = QComboBox()
         self.satellite_combo.addItems(list(SATELLITE_NAMES.values()))
         sat_layout.addWidget(self.satellite_combo)
@@ -198,15 +205,18 @@ class IntegrityCheckTab(QWidget):
         control_layout = QHBoxLayout()
 
         self.scan_button = QPushButton("Scan for Missing Files")
+        self.scan_button.setProperty("class", "StartButton")
         self.scan_button.clicked.connect(self._perform_scan)
         control_layout.addWidget(self.scan_button)
 
         self.download_button = QPushButton("Download Selected")
+        self.download_button.setProperty("class", "DialogPrimaryButton")
         self.download_button.setEnabled(False)
         self.download_button.clicked.connect(self._download_selected)
         control_layout.addWidget(self.download_button)
 
         self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setProperty("class", "CancelButton")
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self._cancel_operation)
         control_layout.addWidget(self.cancel_button)
@@ -219,17 +229,9 @@ class IntegrityCheckTab(QWidget):
         self.progress_bar.setVisible(False)
         layout.addWidget(self.progress_bar)
 
-        # Status label with better styling
+        # Status label with theme properties
         self.status_label = QLabel("Ready")
-        self.status_label.setStyleSheet(
-            """
-            QLabel {
-                padding: 5px;
-                border-radius: 3px;
-                background-color: #f0f0f0;
-            }
-        """
-        )
+        self.status_label.setProperty("class", "StatusLabel")
         layout.addWidget(self.status_label)
 
         # Results table with selection controls
@@ -239,10 +241,12 @@ class IntegrityCheckTab(QWidget):
         # Selection controls
         selection_layout = QHBoxLayout()
         self.select_all_btn = QPushButton("Select All")
+        self.select_all_btn.setProperty("class", "DialogButton")
         self.select_all_btn.clicked.connect(self._select_all_items)
         selection_layout.addWidget(self.select_all_btn)
 
         self.select_none_btn = QPushButton("Select None")
+        self.select_none_btn.setProperty("class", "DialogButton")
         self.select_none_btn.clicked.connect(self._select_no_items)
         selection_layout.addWidget(self.select_none_btn)
 
@@ -360,25 +364,15 @@ class IntegrityCheckTab(QWidget):
         """Handle status update from view model."""
         self.status_label.setText(status)
 
-        # Update status label color based on content
+        # Update status label theme class based on content
         if "error" in status.lower():
-            bg_color = "#ffcccc"  # Light red
+            self.status_label.setProperty("class", "StatusError")
         elif "complete" in status.lower() or "success" in status.lower():
-            bg_color = "#ccffcc"  # Light green
+            self.status_label.setProperty("class", "StatusSuccess")
         elif "scanning" in status.lower() or "downloading" in status.lower():
-            bg_color = "#ffffcc"  # Light yellow
+            self.status_label.setProperty("class", "StatusWarning")
         else:
-            bg_color = "#f0f0f0"  # Default gray
-
-        self.status_label.setStyleSheet(
-            f"""
-            QLabel {{
-                padding: 5px;
-                border-radius: 3px;
-                background-color: {bg_color};
-            }}
-        """
-        )
+            self.status_label.setProperty("class", "StatusLabel")
 
     def _on_status_type_changed(self, status: ScanStatus) -> None:
         """Handle status type change from view model."""

@@ -390,12 +390,6 @@ def create_error_from_code(
     Returns:
         Appropriate error type based on the error code
     """
-    # Create a fallback error for type checking
-    fallback_error = RemoteStoreError(
-        message=error_msg or f"Error accessing {satellite_name} data",
-        technical_details=technical_details,
-        original_exception=exception,
-    )
     # Handle case where error_code is None
     if error_code is None:
         # If no error code available, check exception message for clues
@@ -436,9 +430,6 @@ def create_error_from_code(
         technical_details=technical_details,
         original_exception=exception,
     )
-
-    # This should never be reached, but is needed for mypy
-    return fallback_error
 
 
 def format_error_message(error_type: str, error_message: str) -> str:

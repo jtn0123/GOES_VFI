@@ -214,17 +214,6 @@ class MainTab(QWidget):
         """Create the enhanced header for the main tab."""
         header = QLabel("🎬 GOES VFI - Video Frame Interpolation")
         header.setProperty("class", "AppHeader")
-        header.setStyleSheet(
-            """
-            QLabel {
-                font-size: 20px;
-                font-weight: bold;
-                padding: 15px 20px;
-                border-radius: 10px;
-                margin-bottom: 10px;
-            }
-            """
-        )
         return header
 
     def _setup_ui(self) -> None:
@@ -233,18 +222,8 @@ class MainTab(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)  # Adjust margins
         layout.setSpacing(10)  # Adjust spacing between major groups
 
-        # Apply enhanced styling to the main tab
-        # Minimal styling - qt-material theme handles most elements
-        self.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                margin-top: 10px;
-                padding-top: 15px;
-                border-radius: 8px;
-            }
-            """
-        )
+        # Apply qt-material theme properties to main tab
+        self.setProperty("class", "MainTab")
 
         # Add enhanced header
         header = self._create_header()
@@ -263,13 +242,16 @@ class MainTab(QWidget):
         self.in_dir_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.in_dir_button = QPushButton(self.tr("Browse..."))
         self.in_dir_button.setObjectName("browse_button")
+        self.in_dir_button.setProperty("class", "DialogButton")
         self.in_dir_button.setToolTip("Browse for input directory containing image files")
         in_dir_layout.addWidget(self.in_dir_edit)
         in_dir_layout.addWidget(self.in_dir_button)
         # Connect button click here for clarity
         self.in_dir_button.clicked.connect(self._pick_in_dir)
 
-        io_layout.addWidget(QLabel(self.tr("Input Directory:")), 0, 0)
+        in_label = QLabel(self.tr("Input Directory:"))
+        in_label.setProperty("class", "StandardLabel")
+        io_layout.addWidget(in_label, 0, 0)
         io_layout.addLayout(in_dir_layout, 0, 1, 1, 2)  # Span layout across 2 columns
 
         # Output file row (Layout for LineEdit and Button)
@@ -279,13 +261,16 @@ class MainTab(QWidget):
         self.out_file_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.out_file_button = QPushButton(self.tr("Browse..."))
         self.out_file_button.setObjectName("browse_button")
+        self.out_file_button.setProperty("class", "DialogButton")
         self.out_file_button.setToolTip("Browse for output video file location")
         out_file_layout.addWidget(self.out_file_edit)
         out_file_layout.addWidget(self.out_file_button)
         # Connect button click here
         self.out_file_button.clicked.connect(self._pick_out_file)
 
-        io_layout.addWidget(QLabel(self.tr("Output File (MP4):")), 1, 0)
+        out_label = QLabel(self.tr("Output File (MP4):"))
+        out_label.setProperty("class", "StandardLabel")
+        io_layout.addWidget(out_label, 1, 0)
         io_layout.addLayout(out_file_layout, 1, 1, 1, 2)  # Span layout across 2 columns
 
         # Preview Area
@@ -297,11 +282,13 @@ class MainTab(QWidget):
         # Crop Buttons
         crop_buttons_layout = QHBoxLayout()
         crop_buttons_layout.setContentsMargins(10, 0, 10, 0)
-        self.crop_button = SuperButton(self.tr("Select Crop Region"))
+        self.crop_button = SuperButton(self.tr("✂️ Select Crop Region"))
         self.crop_button.setObjectName("crop_button")
+        self.crop_button.setProperty("class", "DialogButton")
         self.crop_button.setToolTip("Select a region of the image to crop during processing")
-        self.clear_crop_button = SuperButton(self.tr("Clear Crop"))
+        self.clear_crop_button = SuperButton(self.tr("❌ Clear Crop"))
         self.clear_crop_button.setObjectName("clear_crop_button")
+        self.clear_crop_button.setProperty("class", "DialogButton")
         self.clear_crop_button.setToolTip("Remove the current crop selection and use full image")
         crop_buttons_layout.addWidget(self.crop_button)
         crop_buttons_layout.addWidget(self.clear_crop_button)
@@ -323,31 +310,45 @@ class MainTab(QWidget):
         self.rife_options_group = QGroupBox(self.tr("🤖 RIFE Options"))
         self.rife_options_group.setCheckable(False)
         rife_layout = QGridLayout(self.rife_options_group)
-        rife_layout.addWidget(QLabel(self.tr("RIFE Model:")), 0, 0)
+        rife_model_label = QLabel(self.tr("RIFE Model:"))
+        rife_model_label.setProperty("class", "StandardLabel")
+        rife_layout.addWidget(rife_model_label, 0, 0)
         self.rife_model_combo = QComboBox()
+        self.rife_model_combo.setToolTip("Select the RIFE model version for frame interpolation")
         rife_layout.addWidget(self.rife_model_combo, 0, 1)
         self.rife_tile_checkbox = QCheckBox(self.tr("Enable Tiling"))
         self.rife_tile_checkbox.setChecked(False)
+        self.rife_tile_checkbox.setToolTip("Process image in tiles to reduce memory usage")
         rife_layout.addWidget(self.rife_tile_checkbox, 1, 0)
         self.rife_tile_size_spinbox = QSpinBox()
         self.rife_tile_size_spinbox.setRange(32, 1024)
         self.rife_tile_size_spinbox.setValue(256)
         self.rife_tile_size_spinbox.setEnabled(False)
+        self.rife_tile_size_spinbox.setToolTip("Size of tiles in pixels when tiling is enabled")
         rife_layout.addWidget(self.rife_tile_size_spinbox, 1, 1)
         self.tile_size_spinbox = self.rife_tile_size_spinbox  # Alias
         self.rife_uhd_checkbox = QCheckBox(self.tr("UHD Mode"))
         self.rife_uhd_checkbox.setChecked(False)
+        self.rife_uhd_checkbox.setToolTip("Enable UHD mode for 4K video processing")
         rife_layout.addWidget(self.rife_uhd_checkbox, 2, 0, 1, 2)
-        rife_layout.addWidget(QLabel(self.tr("Thread Spec:")), 3, 0)
+        thread_spec_label = QLabel(self.tr("Thread Spec:"))
+        thread_spec_label.setProperty("class", "StandardLabel")
+        rife_layout.addWidget(thread_spec_label, 3, 0)
         self.rife_thread_spec_edit = QLineEdit()
         self.rife_thread_spec_edit.setPlaceholderText("e.g., 1:2:2, 2:2:1")
         self.rife_thread_spec_edit.setToolTip(self.tr("Specify thread distribution (encoder:decoder:processor)"))
         rife_layout.addWidget(self.rife_thread_spec_edit, 3, 1)
         self.rife_tta_spatial_checkbox = QCheckBox(self.tr("TTA Spatial"))
         self.rife_tta_spatial_checkbox.setChecked(False)
+        self.rife_tta_spatial_checkbox.setToolTip(
+            "Test-Time Augmentation for spatial dimensions (improves quality but slower)"
+        )
         rife_layout.addWidget(self.rife_tta_spatial_checkbox, 4, 0, 1, 2)
         self.rife_tta_temporal_checkbox = QCheckBox(self.tr("TTA Temporal"))
         self.rife_tta_temporal_checkbox.setChecked(False)
+        self.rife_tta_temporal_checkbox.setToolTip(
+            "Test-Time Augmentation for temporal dimension (improves quality but slower)"
+        )
         rife_layout.addWidget(self.rife_tta_temporal_checkbox, 5, 0, 1, 2)
 
         # Sanchez Options Group
@@ -356,7 +357,9 @@ class MainTab(QWidget):
         sanchez_layout = QGridLayout(self.sanchez_options_group)
         # False colour checkbox moved near previews
         # sanchez_layout.addWidget(self.sanchez_false_colour_checkbox, 0, 0, 1, 2) # REMOVED
-        sanchez_layout.addWidget(QLabel(self.tr("Resolution (km):")), 1, 0)  # Adjusted row index if needed (seems okay)
+        res_label = QLabel(self.tr("Resolution (km):"))
+        res_label.setProperty("class", "StandardLabel")
+        sanchez_layout.addWidget(res_label, 1, 0)  # Adjusted row index if needed (seems okay)
         self.sanchez_res_combo = QComboBox()
         self.sanchez_res_combo.addItems(
             [self.tr("0.5"), self.tr("1"), self.tr("2"), self.tr("4")]
@@ -371,17 +374,7 @@ class MainTab(QWidget):
         self.start_button.setToolTip("Start video interpolation processing")
         self.start_button.setMinimumHeight(50)
         self.start_button.setEnabled(True)  # Initially enabled for debugging
-        self.start_button.setProperty("class", "StatusSuccess")
-        self.start_button.setStyleSheet(
-            """
-            QPushButton#start_button {
-                font-weight: bold;
-                font-size: 16px;
-                border-radius: 5px;
-                padding: 8px 16px;
-            }
-        """
-        )
+        self.start_button.setProperty("class", "StartButton")
 
         # Create a button container for the start button
         button_container = QWidget()
@@ -946,10 +939,13 @@ class MainTab(QWidget):
         """Display the zoom dialog with the processed image."""
         self._close_existing_viewer()
 
-        self.image_viewer_dialog = ImageViewerDialog(image_to_show)
-        self.image_viewer_dialog.setWindowTitle(info_title)
+        # Extract title and info text
+        title = info_title.replace("🔍 ", "")
+        info_text = f"{image_to_show.width()}x{image_to_show.height()}"
 
-        LOGGER.debug(f"Opening ImageViewerDialog - Title: {info_title}")
+        self.image_viewer_dialog = ImageViewerDialog(image=image_to_show, title=title, info_text=info_text)
+
+        LOGGER.debug(f"Opening ImageViewerDialog - Title: {title}")
         LOGGER.debug(f"Image dimensions: {image_to_show.width()}x{image_to_show.height()}")
 
         self.image_viewer_dialog.show()
@@ -1010,7 +1006,7 @@ class MainTab(QWidget):
             label.setToolTip(self.tr("Click to zoom"))
             label.setMinimumSize(100, 100)  # Ensure minimum size
             label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)  # Allow shrinking/expanding
-            label.setStyleSheet("border: 1px solid gray;")  # Style
+            label.setProperty("class", "ImagePreview")  # Use theme class
 
             container_layout.addWidget(title_label)
             container_layout.addWidget(label, 1)  # Give label stretch factor
@@ -1034,13 +1030,19 @@ class MainTab(QWidget):
         self.fps_spinbox = QSpinBox()
         self.fps_spinbox.setRange(1, 120)
         self.fps_spinbox.setValue(60)
-        layout.addWidget(QLabel(self.tr("Output FPS:")), 0, 0)
+        self.fps_spinbox.setToolTip("Target frames per second for the output video")
+        fps_label = QLabel(self.tr("Output FPS:"))
+        fps_label.setProperty("class", "StandardLabel")
+        layout.addWidget(fps_label, 0, 0)
         layout.addWidget(self.fps_spinbox, 0, 1)
 
         self.multiplier_spinbox = QSpinBox()  # Renamed from mid_count_spinbox for clarity
         self.multiplier_spinbox.setRange(2, 16)  # Example range
         self.multiplier_spinbox.setValue(2)
-        layout.addWidget(QLabel(self.tr("Frame Multiplier:")), 1, 0)
+        self.multiplier_spinbox.setToolTip("Number of frames to interpolate between each pair of input frames")
+        multiplier_label = QLabel(self.tr("Frame Multiplier:"))
+        multiplier_label.setProperty("class", "StandardLabel")
+        layout.addWidget(multiplier_label, 1, 0)
         layout.addWidget(self.multiplier_spinbox, 1, 1)
         self.mid_count_spinbox = self.multiplier_spinbox  # Alias for compatibility if needed
 
@@ -1049,12 +1051,18 @@ class MainTab(QWidget):
         default_workers = max(1, cpu_cores // 2) if cpu_cores else 1
         self.max_workers_spinbox.setRange(1, os.cpu_count() or 1)
         self.max_workers_spinbox.setValue(default_workers)
-        layout.addWidget(QLabel(self.tr("Max Workers:")), 2, 0)
+        self.max_workers_spinbox.setToolTip("Number of parallel worker threads for processing")
+        workers_label = QLabel(self.tr("Max Workers:"))
+        workers_label.setProperty("class", "StandardLabel")
+        layout.addWidget(workers_label, 2, 0)
         layout.addWidget(self.max_workers_spinbox, 2, 1)
 
         self.encoder_combo = QComboBox()
         self.encoder_combo.addItems([self.tr("RIFE"), self.tr("FFmpeg")])  # Add other encoders if supported
-        layout.addWidget(QLabel(self.tr("Encoder:")), 3, 0)
+        self.encoder_combo.setToolTip("Select the video interpolation engine")
+        encoder_label = QLabel(self.tr("Encoder:"))
+        encoder_label.setProperty("class", "StandardLabel")
+        layout.addWidget(encoder_label, 3, 0)
         layout.addWidget(self.encoder_combo, 3, 1)
 
         return group
@@ -1071,14 +1079,14 @@ class MainTab(QWidget):
     def _validate_thread_spec(self, text: str) -> None:
         """Validate the RIFE thread specification format."""
         if not text:  # Allow empty
-            self.rife_thread_spec_edit.setStyleSheet("")
+            self.rife_thread_spec_edit.setProperty("class", "")
             return
 
         # Basic regex for N:N:N format (allows single digits or more)
         if re.fullmatch(r"\d+:\d+:\d+", text):
-            self.rife_thread_spec_edit.setStyleSheet("")
+            self.rife_thread_spec_edit.setProperty("class", "")
         else:
-            self.rife_thread_spec_edit.setProperty("class", "StatusError")  # Indicate error
+            self.rife_thread_spec_edit.setProperty("class", "ValidationError")  # Use theme error class
 
     def _start(self) -> None:
         """Prepare arguments and emit the processing_started signal."""
@@ -1934,43 +1942,15 @@ class MainTab(QWidget):
         if self.is_processing:
             # Processing mode
             self.start_button.setText(self.tr("Cancel"))
-            self.start_button.setProperty("class", "StatusError")
-            self.start_button.setStyleSheet(
-                """
-                QPushButton#start_button {
-                    font-weight: bold;
-                    font-size: 16px;
-                    border-radius: 5px;
-                }
-            """
-            )
+            self.start_button.setProperty("class", "CancelButton")
         else:
             # Ready or disabled mode
             if can_start:
                 self.start_button.setText(self.tr("START"))
-                self.start_button.setProperty("class", "StatusSuccess")
-                self.start_button.setStyleSheet(
-                    """
-                    QPushButton#start_button {
-                        font-weight: bold;
-                        font-size: 16px;
-                        border-radius: 5px;
-                        padding: 8px 16px;
-                    }
-                """
-                )
+                self.start_button.setProperty("class", "StartButton")
             else:
                 self.start_button.setText(self.tr("START"))
-                self.start_button.setStyleSheet(
-                    """
-                    QPushButton#start_button {
-                        font-weight: bold;
-                        font-size: 16px;
-                        border-radius: 5px;
-                        padding: 8px 16px;
-                    }
-                """
-                )
+                self.start_button.setProperty("class", "StartButtonDisabled")
 
         # Print debug info about button state
         LOGGER.debug(f"Start button enabled: {self.start_button.isEnabled()}")

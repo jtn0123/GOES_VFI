@@ -10,6 +10,12 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
+import yaml
+
+from goesvfi.utils import log
+
+LOGGER = log.get_logger(__name__)
+
 
 # Simple validation without external dependencies
 def simple_yaml_check(file_path: Path) -> bool:
@@ -107,9 +113,7 @@ class CICDValidator:
             except Exception as e:
                 self.errors.append(f"Error reading {workflow_file}: {e}")
 
-    def _validate_specific_workflow(
-        self, filename: str, config: Dict[str, Any]
-    ) -> None:
+    def _validate_specific_workflow(self, filename: str, config: Dict[str, Any]) -> None:
         """Validate specific workflow requirements."""
         if filename == "ci.yml":
             # CI workflow should have test and lint jobs
@@ -165,9 +169,7 @@ class CICDValidator:
 
             for instruction in required_instructions:
                 if instruction not in content:
-                    self.warnings.append(
-                        f"Dockerfile missing recommended instruction: {instruction}"
-                    )
+                    self.warnings.append(f"Dockerfile missing recommended instruction: {instruction}")
 
             # Check for security best practices
             if "USER root" in content and "USER " not in content.split("USER root")[1]:
@@ -198,9 +200,7 @@ class CICDValidator:
             # Check for main application service
             main_services = [name for name in services.keys() if "goes" in name.lower()]
             if not main_services:
-                self.warnings.append(
-                    "No main application service found in docker-compose.yml"
-                )
+                self.warnings.append("No main application service found in docker-compose.yml")
 
             LOGGER.info("✅ docker-compose.yml validation complete")
 
@@ -262,9 +262,7 @@ class CICDValidator:
 
             # Check basic structure
             if "dashboard" not in dashboard:
-                self.errors.append(
-                    f"Dashboard {dashboard_path.name} missing 'dashboard' key"
-                )
+                self.errors.append(f"Dashboard {dashboard_path.name} missing 'dashboard' key")
                 return
 
             dashboard_config = dashboard["dashboard"]
@@ -272,9 +270,7 @@ class CICDValidator:
             required_fields = ["title", "panels"]
             for field in required_fields:
                 if field not in dashboard_config:
-                    self.warnings.append(
-                        f"Dashboard {dashboard_path.name} missing {field}"
-                    )
+                    self.warnings.append(f"Dashboard {dashboard_path.name} missing {field}")
 
             LOGGER.info(f"✅ Dashboard {dashboard_path.name} is valid")
 
@@ -343,9 +339,7 @@ class CICDValidator:
         elif not self.errors:
             print(f"\n✅ CI/CD setup is functional with {len(self.warnings)} warnings")
         else:
-            print(
-                f"\n❌ CI/CD setup has {len(self.errors)} errors that need to be fixed"
-            )
+            print(f"\n❌ CI/CD setup has {len(self.errors)} errors that need to be fixed")
 
         print("\n" + "=" * 60)
 

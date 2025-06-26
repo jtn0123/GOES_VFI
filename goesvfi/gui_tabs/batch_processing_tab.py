@@ -68,28 +68,43 @@ class BatchProcessingTab(QWidget):
     def _init_ui(self) -> None:
         """Initialize UI components."""
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(12)
+
+        # Add header
+        header = QLabel("📦 Batch Processing")
+        header.setProperty("class", "AppHeader")
+        layout.addWidget(header)
 
         # Add Jobs section
-        add_group = QGroupBox("Add Jobs")
+        add_group = QGroupBox("➕ Add Jobs")
         add_layout = QVBoxLayout()
 
         # Input selection
         input_layout = QHBoxLayout()
-        input_layout.addWidget(QLabel("Input:"))
+        input_label = QLabel("Input:")
+        input_label.setProperty("class", "StandardLabel")
+        input_layout.addWidget(input_label)
         self.input_paths_list = QListWidget()
         self.input_paths_list.setMaximumHeight(100)
         input_layout.addWidget(self.input_paths_list)
 
         input_buttons = QVBoxLayout()
-        self.add_files_btn = QPushButton("Add Files...")
+        self.add_files_btn = QPushButton("📄 Add Files...")
+        self.add_files_btn.setProperty("class", "DialogButton")
+        self.add_files_btn.setToolTip("Add individual files to the batch queue")
         self.add_files_btn.clicked.connect(self._add_files)
         input_buttons.addWidget(self.add_files_btn)
 
-        self.add_folder_btn = QPushButton("Add Folder...")
+        self.add_folder_btn = QPushButton("📁 Add Folder...")
+        self.add_folder_btn.setProperty("class", "DialogButton")
+        self.add_folder_btn.setToolTip("Add all files from a folder to the batch queue")
         self.add_folder_btn.clicked.connect(self._add_folder)
         input_buttons.addWidget(self.add_folder_btn)
 
-        self.clear_inputs_btn = QPushButton("Clear")
+        self.clear_inputs_btn = QPushButton("🗑️ Clear")
+        self.clear_inputs_btn.setProperty("class", "DialogButton")
+        self.clear_inputs_btn.setToolTip("Clear all input files")
         self.clear_inputs_btn.clicked.connect(self._clear_inputs)
         input_buttons.addWidget(self.clear_inputs_btn)
 
@@ -98,17 +113,23 @@ class BatchProcessingTab(QWidget):
 
         # Output directory
         output_layout = QHBoxLayout()
-        output_layout.addWidget(QLabel("Output Directory:"))
+        output_label = QLabel("Output Directory:")
+        output_label.setProperty("class", "StandardLabel")
+        output_layout.addWidget(output_label)
         self.output_dir_label = QLabel("Not selected")
         output_layout.addWidget(self.output_dir_label)
-        self.select_output_btn = QPushButton("Select...")
+        self.select_output_btn = QPushButton("📁 Select...")
+        self.select_output_btn.setProperty("class", "DialogButton")
+        self.select_output_btn.setToolTip("Select output directory for processed files")
         self.select_output_btn.clicked.connect(self._select_output_dir)
         output_layout.addWidget(self.select_output_btn)
         add_layout.addLayout(output_layout)
 
         # Priority selection
         priority_layout = QHBoxLayout()
-        priority_layout.addWidget(QLabel("Priority:"))
+        priority_label = QLabel("Priority:")
+        priority_label.setProperty("class", "StandardLabel")
+        priority_layout.addWidget(priority_label)
         self.priority_combo = QComboBox()
         for priority in JobPriority:
             self.priority_combo.addItem(priority.name, priority)
@@ -118,7 +139,9 @@ class BatchProcessingTab(QWidget):
         add_layout.addLayout(priority_layout)
 
         # Add to queue button
-        self.add_to_queue_btn = QPushButton("Add to Queue")
+        self.add_to_queue_btn = QPushButton("➕ Add to Queue")
+        self.add_to_queue_btn.setProperty("class", "StartButton")
+        self.add_to_queue_btn.setToolTip("Add selected files to the processing queue")
         self.add_to_queue_btn.clicked.connect(self._add_to_queue)
         self.add_to_queue_btn.setEnabled(False)
         add_layout.addWidget(self.add_to_queue_btn)
@@ -127,22 +150,28 @@ class BatchProcessingTab(QWidget):
         layout.addWidget(add_group)
 
         # Queue Management section
-        queue_group = QGroupBox("Queue Management")
+        queue_group = QGroupBox("📋 Queue Management")
         queue_layout = QVBoxLayout()
 
         # Controls
         controls_layout = QHBoxLayout()
 
-        self.start_btn = QPushButton("Start Processing")
+        self.start_btn = QPushButton("▶️ Start Processing")
+        self.start_btn.setProperty("class", "StartButton")
+        self.start_btn.setToolTip("Start processing jobs in the queue")
         self.start_btn.clicked.connect(self._start_processing)
         controls_layout.addWidget(self.start_btn)
 
-        self.stop_btn = QPushButton("Stop Processing")
+        self.stop_btn = QPushButton("⏹️ Stop Processing")
+        self.stop_btn.setProperty("class", "StopButton")
+        self.stop_btn.setToolTip("Stop processing jobs")
         self.stop_btn.clicked.connect(self._stop_processing)
         self.stop_btn.setEnabled(False)
         controls_layout.addWidget(self.stop_btn)
 
-        controls_layout.addWidget(QLabel("Concurrent Jobs:"))
+        concurrent_label = QLabel("Concurrent Jobs:")
+        concurrent_label.setProperty("class", "StandardLabel")
+        controls_layout.addWidget(concurrent_label)
         self.concurrent_spin = QSpinBox()
         self.concurrent_spin.setMinimum(1)
         self.concurrent_spin.setMaximum(4)
@@ -152,7 +181,9 @@ class BatchProcessingTab(QWidget):
 
         controls_layout.addStretch()
 
-        self.clear_completed_btn = QPushButton("Clear Completed")
+        self.clear_completed_btn = QPushButton("🧹 Clear Completed")
+        self.clear_completed_btn.setProperty("class", "DialogButton")
+        self.clear_completed_btn.setToolTip("Remove completed jobs from the queue")
         self.clear_completed_btn.clicked.connect(self._clear_completed)
         controls_layout.addWidget(self.clear_completed_btn)
 
@@ -164,10 +195,10 @@ class BatchProcessingTab(QWidget):
         self.queue_table.setHorizontalHeaderLabels(
             ["Name", "Status", "Priority", "Progress", "Created", "Duration", "Actions"]
         )
-        header = self.queue_table.horizontalHeader()
-        if header:
-            header.setStretchLastSection(False)
-            header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        table_header = self.queue_table.horizontalHeader()
+        if table_header:
+            table_header.setStretchLastSection(False)
+            table_header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.queue_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         queue_layout.addWidget(self.queue_table)
 
@@ -177,6 +208,7 @@ class BatchProcessingTab(QWidget):
         # Statistics
         stats_layout = QHBoxLayout()
         self.stats_label = QLabel("Queue: 0 pending, 0 running, 0 completed")
+        self.stats_label.setProperty("class", "StatusInfo")
         stats_layout.addWidget(self.stats_label)
         stats_layout.addStretch()
         layout.addLayout(stats_layout)
@@ -384,7 +416,9 @@ class BatchProcessingTab(QWidget):
 
             # Actions
             if job.status == JobStatus.PENDING:
-                cancel_btn = QPushButton("Cancel")
+                cancel_btn = QPushButton("❌ Cancel")
+                cancel_btn.setProperty("class", "DialogButton")
+                cancel_btn.setToolTip("Cancel this job")
                 cancel_btn.clicked.connect(lambda checked, jid=job.id: self._cancel_job(jid))
                 self.queue_table.setCellWidget(row, 6, cancel_btn)
             else:

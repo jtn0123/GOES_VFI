@@ -7,6 +7,7 @@ real GOES satellite files in the NOAA public S3 buckets.
 """
 
 from datetime import datetime
+from typing import Any
 
 import pytest
 
@@ -62,7 +63,7 @@ def _generate_s3_patterns(timestamp, satellite_pattern, dest_dir):
         key = f"ABI-L1b-{product_type}/{timestamp.year}/{timestamp.timetuple().tm_yday:03d}/{timestamp.hour:02d}/"
 
         # Try each band
-        product_result = {"success": True, "attempts": []}  # type: dict[str, Any]
+        product_result: dict[str, Any] = {"success": True, "attempts": []}
 
         for band in bands:
             attempt = {

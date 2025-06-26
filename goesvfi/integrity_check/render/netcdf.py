@@ -304,10 +304,10 @@ def extract_metadata(netcdf_path: Union[str, Path]) -> Dict[str, Any]:
             return metadata
     except KeyError as e:
         LOGGER.exception("Error occurred: %s", e)
-        raise KeyError("Error extracting metadata: %s" % e) from e
+        raise KeyError(f"Error extracting metadata: {e}") from e
     except RuntimeError as e:
         LOGGER.exception("Error occurred: %s", e)
-        raise RuntimeError("Error extracting metadata: %s" % e) from e
+        raise RuntimeError(f"Error extracting metadata: {e}") from e
     except ValueError as e:
         LOGGER.exception("Error occurred: %s", e)
-        raise ValueError("Error extracting metadata: %s" % e) from e
+        raise ValueError(f"Error extracting metadata: {e}") from e

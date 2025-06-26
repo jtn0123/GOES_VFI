@@ -77,15 +77,9 @@ class OptimizedTimelineTab(QWidget):
     def _create_control_panel(self) -> QFrame:
         """Create the compact control panel with all controls in one row."""
         panel = QFrame()
-        panel.setObjectName("controlPanel")
-        panel.setMaximumHeight(45)  # Constrain height for compactness
-        panel.setStyleSheet(
-            """
-            #controlPanel {
-                border-radius: 3px;
-            }
-            """
-        )
+        panel.setProperty("class", "ControlFrame")
+        panel.setMaximumHeight(60)  # Slightly more height for better spacing
+        # Use default qt-material styling for panel
 
         layout = QHBoxLayout(panel)
         layout.setContentsMargins(6, 3, 6, 3)
@@ -98,40 +92,10 @@ class OptimizedTimelineTab(QWidget):
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.VLine)
         separator.setFrameShadow(QFrame.Shadow.Sunken)
-        separator.setStyleSheet("")  # Removed hardcoded color
+        # Use default qt-material styling for separator
         layout.addWidget(separator)
 
-        # Create button row styling - unified style for all controls (colors handled by theme)
-        control_style = """
-        QFrame.ControlGroup {
-        border-radius: 3px;
-        }
-        QLabel.ControlLabel {
-        font-weight: bold;
-        padding-right: 4px;
-        font-size: 11px;
-        }
-        QRadioButton {
-        spacing: 4px;
-        padding: 0px 3px;
-        font-size: 11px;
-        }
-        QRadioButton::indicator {
-        width: 13px;
-        height: 13px;
-        border-radius: 2px;
-        }
-        QPushButton {
-        border-radius: 3px;
-        padding: 1px 6px;
-        font-weight: bold;
-        min-height: 20px;
-        max-height: 20px;
-        min-width: 24px;
-        font-size: 11px;
-        }
-        """
-        panel.setStyleSheet(panel.styleSheet() + control_style)
+        # Use default qt-material styling with ControlGroup class
 
         # === Data Filter Controls ===
         filter_group = QFrame()
@@ -141,26 +105,29 @@ class OptimizedTimelineTab(QWidget):
         filter_layout.setContentsMargins(6, 2, 6, 2)
         filter_layout.setSpacing(2)
 
-        filter_label = QLabel(self.tr("Filter:"))
-        filter_label.setProperty("class", "ControlLabel")
+        filter_label = QLabel(self.tr("🔍 Filter:"))
+        filter_label.setProperty("class", "StandardLabel")
         filter_layout.addWidget(filter_label)
 
         # Data filter buttons - use material design inspired buttons with icons
-        self.filter_all_btn = QPushButton(self.tr("All"))
+        self.filter_all_btn = QPushButton(self.tr("📅 All"))
         self.filter_all_btn.setCheckable(True)
         self.filter_all_btn.setChecked(True)
+        self.filter_all_btn.setProperty("class", "TabButton")
         self.filter_all_btn.setToolTip(self.tr("Show all data points"))
         self.filter_all_btn.clicked.connect(lambda: self._set_view_mode("both"))
         filter_layout.addWidget(self.filter_all_btn)
 
-        self.filter_missing_btn = QPushButton(self.tr("Missing"))
+        self.filter_missing_btn = QPushButton(self.tr("❌ Missing"))
         self.filter_missing_btn.setCheckable(True)
+        self.filter_missing_btn.setProperty("class", "TabButton")
         self.filter_missing_btn.setToolTip(self.tr("Show only missing data points"))
         self.filter_missing_btn.clicked.connect(lambda: self._set_view_mode("missing"))
         filter_layout.addWidget(self.filter_missing_btn)
 
-        self.filter_available_btn = QPushButton(self.tr("Available"))
+        self.filter_available_btn = QPushButton(self.tr("✅ Available"))
         self.filter_available_btn.setCheckable(True)
+        self.filter_available_btn.setProperty("class", "TabButton")
         self.filter_available_btn.setToolTip(self.tr("Show only available data points"))
         self.filter_available_btn.clicked.connect(lambda: self._set_view_mode("available"))
         filter_layout.addWidget(self.filter_available_btn)
@@ -181,7 +148,7 @@ class OptimizedTimelineTab(QWidget):
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.VLine)
         separator.setFrameShadow(QFrame.Shadow.Sunken)
-        separator.setStyleSheet("")  # Removed hardcoded color
+        # Use default qt-material styling for separator
         layout.addWidget(separator)
 
         # === View Mode Controls ===
@@ -192,20 +159,22 @@ class OptimizedTimelineTab(QWidget):
         view_layout.setContentsMargins(6, 2, 6, 2)
         view_layout.setSpacing(2)
 
-        view_label = QLabel(self.tr("View:"))
-        view_label.setProperty("class", "ControlLabel")
+        view_label = QLabel(self.tr("👁️ View:"))
+        view_label.setProperty("class", "StandardLabel")
         view_layout.addWidget(view_label)
 
         # Tab-style buttons for view switching
-        self.view_timeline_btn = QPushButton(self.tr("Timeline"))
+        self.view_timeline_btn = QPushButton(self.tr("📈 Timeline"))
         self.view_timeline_btn.setCheckable(True)
         self.view_timeline_btn.setChecked(True)
+        self.view_timeline_btn.setProperty("class", "TabButton")
         self.view_timeline_btn.setToolTip(self.tr("Show timeline visualization"))
         self.view_timeline_btn.clicked.connect(lambda: self._toggle_visualization(0))
         view_layout.addWidget(self.view_timeline_btn)
 
-        self.view_calendar_btn = QPushButton(self.tr("Calendar"))
+        self.view_calendar_btn = QPushButton(self.tr("📅 Calendar"))
         self.view_calendar_btn.setCheckable(True)
+        self.view_calendar_btn.setProperty("class", "TabButton")
         self.view_calendar_btn.setToolTip(self.tr("Show calendar visualization"))
         self.view_calendar_btn.clicked.connect(lambda: self._toggle_visualization(1))
         view_layout.addWidget(self.view_calendar_btn)
@@ -231,8 +200,8 @@ class OptimizedTimelineTab(QWidget):
         zoom_layout.setContentsMargins(6, 2, 6, 2)
         zoom_layout.setSpacing(2)
 
-        zoom_label = QLabel(self.tr("Zoom:"))
-        zoom_label.setProperty("class", "ControlLabel")
+        zoom_label = QLabel(self.tr("🔍 Zoom:"))
+        zoom_label.setProperty("class", "StandardLabel")
         zoom_layout.addWidget(zoom_label)
 
         # Zoom controls with more compact styling
@@ -243,7 +212,7 @@ class OptimizedTimelineTab(QWidget):
         zoom_layout.addWidget(self.zoom_out_btn)
 
         self.zoom_level_label = QLabel(self.tr("100%"))
-        self.zoom_level_label.setStyleSheet("min-width: 36px; text-align: center; font-size: 11px;")
+        # Use default qt-material styling with minimum width
         self.zoom_level_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         zoom_layout.addWidget(self.zoom_level_label)
 
@@ -274,17 +243,7 @@ class OptimizedTimelineTab(QWidget):
         self.view_header = QLabel(self.tr("📊 Timeline View"))
         self.view_header.setObjectName("viewHeader")
         self.view_header.setProperty("class", "AppHeader")
-        self.view_header.setStyleSheet(
-            """
-            #viewHeader {
-                font-weight: bold;
-                font-size: 14px;
-                border-radius: 6px;
-                padding: 6px 12px;
-                margin-bottom: 8px;
-            }
-            """
-        )
+        # AppHeader class already set above, use default styling
         layout.addWidget(self.view_header)
 
         # Stacked widget to hold visualizations
@@ -311,20 +270,14 @@ class OptimizedTimelineTab(QWidget):
         panel = QFrame()
         panel.setObjectName("infoPanel")
         panel.setFixedHeight(100)  # Fixed height for consistency
-        panel.setStyleSheet(
-            """
-            #infoPanel {
-                border-radius: 3px;
-            }
-            """
-        )
+        # Use default qt-material styling for info panel
 
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(15, 10, 15, 10)
 
         # Panel title
         title = QLabel(self.tr("Selection Details"))
-        title.setStyleSheet("font-weight: bold; font-size: 14px; padding-bottom: 5px;")
+        title.setProperty("class", "FFmpegLabel")
         layout.addWidget(title)
 
         # Content area
@@ -332,7 +285,7 @@ class OptimizedTimelineTab(QWidget):
 
         # Info section
         self.info_label = QLabel(self.tr("No item selected"))
-        self.info_label.setStyleSheet("")  # Removed hardcoded color
+        # Use default qt-material styling
         self.info_label.setWordWrap(True)
         content_layout.addWidget(self.info_label, 3)  # Give more space to info
 

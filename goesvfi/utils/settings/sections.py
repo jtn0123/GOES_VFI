@@ -279,10 +279,27 @@ class BasicSettings(SettingsSection):
 
     def apply_values(self, target_object: Any, values: Dict[str, Any]) -> None:
         """Apply basic settings to object."""
-        # These would typically be applied during loading
-        # The actual assignment to in_dir, out_file_path etc. would happen
-        # in the main loading logic
-        pass
+        from pathlib import Path
+
+        # Apply settings with proper type conversion
+        in_dir_str = values.get("in_dir", "")
+        if in_dir_str and hasattr(target_object, "in_dir"):
+            target_object.in_dir = Path(in_dir_str)
+
+        out_file_path_str = values.get("out_file_path", "")
+        if out_file_path_str and hasattr(target_object, "out_file_path"):
+            target_object.out_file_path = Path(out_file_path_str)
+
+        # Handle crop rect
+        crop_rect_str = values.get("crop_rect", "")
+        if crop_rect_str and hasattr(target_object, "current_crop_rect"):
+            try:
+                parts = crop_rect_str.split(",")
+                if len(parts) == 4:
+                    crop_rect = tuple(int(p) for p in parts)
+                    target_object.current_crop_rect = crop_rect
+            except (ValueError, AttributeError):
+                LOGGER.warning("Failed to parse crop_rect: %s", crop_rect_str)
 
     def get_setting_keys(self) -> List[str]:
         """Get list of settings keys handled by this section."""

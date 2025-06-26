@@ -88,17 +88,17 @@ class GUISettingsManager:
             if not success:
                 errors = self.manager.get_all_errors()
                 error_count = len(errors)
-                LOGGER.warning(f"Settings load completed with {error_count} errors")
+                LOGGER.warning("Settings load completed with %d errors", error_count)
 
                 # Log first few errors for debugging
                 for error in errors[:3]:  # Show first 3 errors
-                    LOGGER.debug(f"Settings error: {error.user_message}")
+                    LOGGER.debug("Settings error: %s", error.user_message)
 
             return success
 
         except Exception as e:
             error = self.classifier.create_structured_error(e, "load_all_gui_settings", "gui_settings_manager")
-            LOGGER.error(f"Failed to load GUI settings: {error.user_message}")
+            LOGGER.error("Failed to load GUI settings: %s", error.user_message)
             return False
 
     def _organize_defaults(self, defaults: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:

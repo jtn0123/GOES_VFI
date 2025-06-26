@@ -58,7 +58,7 @@ class EnhancedGOESImageryTab(QWidget):
         self.refresh_btn: Optional[QPushButton] = None
         self.compare_btn: Optional[QPushButton] = None
         self.animate_btn: Optional[QPushButton] = None
-        self.image_area: Optional[QScrollArea] = None
+        self.image_area: Optional[QWidget] = None
         self.info_panel: Optional[QWidget] = None
         self.image_label: Optional[QLabel] = None
         self.info_content: Optional[QLabel] = None
@@ -89,67 +89,22 @@ class EnhancedGOESImageryTab(QWidget):
     def _create_header(self, layout: QVBoxLayout) -> None:
         """Create the enhanced header section."""
         header = QLabel("GOES Satellite Imagery Viewer")
-        header.setStyleSheet(
-            """
-            QLabel {
-                font-size: 20px;
-                font-weight: bold;
-                color: #EFEFEF;
-                padding: 15px;
-            }
-            """
-        )
+        header.setProperty("class", "AppHeader")
         layout.addWidget(header)
 
     def _create_control_panel(self, layout: QVBoxLayout) -> None:
         """Create the enhanced control panel."""
         control_frame = QFrame()
-        control_frame.setStyleSheet(
-            """
-            QFrame {
-                background-color: #3D3D3D;
-                border: 1px solid #555555;
-                border-radius: 3px;
-                padding: 10px;
-            }
-            QLabel {
-                color: #EFEFEF;
-                font-weight: bold;
-                font-size: 12px;
-            }
-            QComboBox {
-                background-color: #3D3D3D;
-                border: 1px solid #555555;
-                border-radius: 3px;
-                padding: 5px;
-                color: #EFEFEF;
-                min-width: 140px;
-            }
-            QComboBox:focus {
-                border: 1px solid #6C9BD1;
-            }
-            QPushButton {
-                background-color: #4A4A4A;
-                border: 1px solid #555555;
-                border-radius: 3px;
-                padding: 5px 15px;
-                color: #EFEFEF;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #5A5A5A;
-            }
-            QPushButton:pressed {
-                background-color: #3A3A3A;
-            }
-            """
-        )
+        control_frame.setProperty("class", "ControlFrame")
+        # Use default qt-material styling for control frame and nested elements
 
         control_layout = QGridLayout(control_frame)
         control_layout.setSpacing(12)
 
         # Row 1: Product and Satellite selection
-        control_layout.addWidget(QLabel("Product:"), 0, 0)
+        product_label = QLabel("Product:")
+        product_label.setProperty("class", "StandardLabel")
+        control_layout.addWidget(product_label, 0, 0)
         self.product_combo = QComboBox()
         self.product_combo.addItems(
             [
@@ -163,14 +118,18 @@ class EnhancedGOESImageryTab(QWidget):
         self.product_combo.currentTextChanged.connect(self._on_product_changed)
         control_layout.addWidget(self.product_combo, 0, 1)
 
-        control_layout.addWidget(QLabel("Satellite:"), 0, 2)
+        satellite_label = QLabel("Satellite:")
+        satellite_label.setProperty("class", "StandardLabel")
+        control_layout.addWidget(satellite_label, 0, 2)
         self.satellite_combo = QComboBox()
         self.satellite_combo.addItems(["GOES-16 (East)", "GOES-18 (West)"])
         self.satellite_combo.setToolTip("Select GOES satellite")
         control_layout.addWidget(self.satellite_combo, 0, 3)
 
         # Row 2: Band and Enhancement selection
-        control_layout.addWidget(QLabel("Band/Channel:"), 1, 0)
+        band_label = QLabel("Band/Channel:")
+        band_label.setProperty("class", "StandardLabel")
+        control_layout.addWidget(band_label, 1, 0)
         self.band_combo = QComboBox()
         self.band_combo.addItems(
             [
@@ -186,7 +145,9 @@ class EnhancedGOESImageryTab(QWidget):
         self.band_combo.currentTextChanged.connect(self._on_band_changed)
         control_layout.addWidget(self.band_combo, 1, 1)
 
-        control_layout.addWidget(QLabel("Enhancement:"), 1, 2)
+        enhancement_label = QLabel("Enhancement:")
+        enhancement_label.setProperty("class", "StandardLabel")
+        control_layout.addWidget(enhancement_label, 1, 2)
         self.enhancement_combo = QComboBox()
         self.enhancement_combo.addItems(
             [
@@ -246,34 +207,14 @@ class EnhancedGOESImageryTab(QWidget):
     def _create_image_display_area(self) -> QWidget:
         """Create the image display area."""
         container = QFrame()
-        container.setStyleSheet(
-            """
-            QFrame {
-                background-color: #1a1a1a;
-                border: 2px solid #454545;
-                border-radius: 8px;
-            }
-            """
-        )
+        container.setProperty("class", "ImageryLabel")
 
         layout = QVBoxLayout(container)
 
         # Image display label
         self.image_label = QLabel("No image loaded")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.image_label.setStyleSheet(
-            """
-            QLabel {
-                color: #888888;
-                font-size: 16px;
-                font-weight: bold;
-                min-height: 400px;
-                background-color: #222222;
-                border: 2px dashed #444444;
-                border-radius: 6px;
-            }
-            """
-        )
+        self.image_label.setProperty("class", "ImagePreview")
 
         # Wrap in scroll area
         scroll_area = QScrollArea()
@@ -287,26 +228,14 @@ class EnhancedGOESImageryTab(QWidget):
     def _create_info_panel(self) -> QWidget:
         """Create the information panel."""
         container = QFrame()
-        container.setStyleSheet(
-            """
-            QFrame {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
-                border-radius: 8px;
-            }
-            QLabel {
-                color: #f0f0f0;
-                font-size: 11px;
-            }
-            """
-        )
+        # Use default qt-material styling for QFrame
 
         layout = QVBoxLayout(container)
         layout.setSpacing(8)
 
         # Title
         title = QLabel("📊 Image Information")
-        title.setStyleSheet("font-size: 14px; font-weight: bold; padding: 5px;")
+        title.setProperty("class", "FFmpegLabel")
         layout.addWidget(title)
 
         # Info content
@@ -322,18 +251,7 @@ class EnhancedGOESImageryTab(QWidget):
     def _create_status_bar(self, layout: QVBoxLayout) -> None:
         """Create the status bar."""
         self.status_label = QLabel("✅ Ready - Select product and band to load imagery")
-        self.status_label.setStyleSheet(
-            """
-            QLabel {
-                color: #66ff66;
-                background-color: #2a2a2a;
-                padding: 8px 15px;
-                border-radius: 6px;
-                border-left: 4px solid #66ff66;
-                font-weight: bold;
-            }
-            """
-        )
+        self.status_label.setProperty("class", "StatusSuccess")
         layout.addWidget(self.status_label)
 
     def _on_product_changed(self, product: str) -> None:
@@ -349,10 +267,10 @@ class EnhancedGOESImageryTab(QWidget):
     def _load_current_image(self) -> None:
         """Load the currently selected image."""
         params = {
-            "product": self.product_combo.currentText(),
-            "satellite": self.satellite_combo.currentText(),
-            "band": self.band_combo.currentText(),
-            "enhancement": self.enhancement_combo.currentText(),
+            "product": self.product_combo.currentText() if self.product_combo else "",
+            "satellite": self.satellite_combo.currentText() if self.satellite_combo else "",
+            "band": self.band_combo.currentText() if self.band_combo else "",
+            "enhancement": self.enhancement_combo.currentText() if self.enhancement_combo else "",
             "timestamp": self.current_timestamp,
         }
 
@@ -361,33 +279,19 @@ class EnhancedGOESImageryTab(QWidget):
 
     def _update_status(self, message: str) -> None:
         """Update the status label with a new message."""
-        # Determine color based on message content
+        # Determine theme class based on message content
         if "error" in message.lower() or "failed" in message.lower():
-            color = "#ff6666"
-            border_color = "#ff6666"
+            theme_class = "StatusError"
         elif "loading" in message.lower() or "processing" in message.lower():
-            color = "#ffaa66"
-            border_color = "#ffaa66"
+            theme_class = "StatusWarning"
         elif any(word in message.lower() for word in ["completed", "success", "loaded"]):
-            color = "#66ff66"
-            border_color = "#66ff66"
+            theme_class = "StatusSuccess"
         else:
-            color = "#66aaff"
-            border_color = "#66aaff"
+            theme_class = "StatusInfo"
 
-        self.status_label.setText(message)
-        self.status_label.setStyleSheet(
-            f"""
-            QLabel {{
-                color: {color};
-                background-color: #2a2a2a;
-                padding: 8px 15px;
-                border-radius: 6px;
-                border-left: 4px solid {border_color};
-                font-weight: bold;
-            }}
-            """
-        )
+        if self.status_label:
+            self.status_label.setText(message)
+            self.status_label.setProperty("class", theme_class)
 
     def requestImage(self, params: dict) -> None:
         """Request a satellite image with given parameters.
@@ -430,16 +334,16 @@ class EnhancedGOESImageryTab(QWidget):
             {self.current_timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}<br><br>
 
             <b>Product:</b><br>
-            {self.product_combo.currentText()}<br><br>
+            {self.product_combo.currentText() if self.product_combo else "N/A"}<br><br>
 
             <b>Satellite:</b><br>
-            {self.satellite_combo.currentText()}<br><br>
+            {self.satellite_combo.currentText() if self.satellite_combo else "N/A"}<br><br>
 
             <b>Band:</b><br>
-            {self.band_combo.currentText()}<br><br>
+            {self.band_combo.currentText() if self.band_combo else "N/A"}<br><br>
 
             <b>Enhancement:</b><br>
-            {self.enhancement_combo.currentText()}<br><br>
+            {self.enhancement_combo.currentText() if self.enhancement_combo else "N/A"}<br><br>
 
             <b>📁 Available Data:</b><br>
             {len(self.current_data)} items loaded
@@ -447,4 +351,5 @@ class EnhancedGOESImageryTab(QWidget):
         else:
             info_text = "📄 Select a timestamp to view image details"
 
-        self.info_content.setText(info_text)
+        if self.info_content:
+            self.info_content.setText(info_text)

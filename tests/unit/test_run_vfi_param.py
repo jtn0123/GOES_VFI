@@ -52,7 +52,9 @@ def mock_capability_detector(mocker):
         ("sanchez_fail", False),
     ],
 )
-def test_run_vfi_scenarios(scenario, expect_error, tmp_path, mocker, mock_capability_detector):  # noqa: ARG001
+def test_run_vfi_scenarios(
+    scenario, expect_error, tmp_path, mocker, mock_capability_detector
+):  # noqa: ARG001  # vulture: ignore
     img_paths = make_dummy_images(tmp_path, 2)
     output_mp4 = tmp_path / "out.mp4"
     raw_output = output_mp4.with_suffix(".raw.mp4")

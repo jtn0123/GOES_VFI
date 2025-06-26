@@ -79,14 +79,14 @@ class StructuredError(Exception):
     def validation_error(
         cls: Type["StructuredError"],
         message: str,
-        field: Optional[str] = None,
+        field_name: Optional[str] = None,
         value: Any = None,
         suggestions: Optional[List[str]] = None,
     ) -> "StructuredError":
         """Create a validation error."""
         context = ErrorContext(operation="validation", component="input")
-        if field:
-            context.add_user_data("field", field)
+        if field_name:
+            context.add_user_data("field", field_name)
         if value is not None:
             context.add_user_data("value", str(value))
 

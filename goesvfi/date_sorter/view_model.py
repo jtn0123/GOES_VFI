@@ -70,10 +70,8 @@ class DateSorterViewModel:
         self._observer = observer  # pylint: disable=attribute-defined-outside-init
 
     def _notify_observer(self) -> None:
-        pass
         """Notifies the registered observer of state changes."""
         if self._observer:
-            pass
             self._observer()
 
     @property
@@ -100,7 +98,6 @@ class DateSorterViewModel:
 
     @property
     def destination_directory(self) -> Optional[str]:
-        pass
         """
         The currently selected destination directory for sorted files.
 
@@ -123,7 +120,6 @@ class DateSorterViewModel:
 
     @property
     def is_sorting(self) -> bool:
-        pass
         """
         Whether a sorting operation is currently in progress.
 
@@ -146,7 +142,6 @@ class DateSorterViewModel:
 
     @property
     def progress_percentage(self) -> float:
-        pass
         """
         The current progress of the sorting operation as a percentage.
 
@@ -169,7 +164,6 @@ class DateSorterViewModel:
 
     @property
     def status_message(self) -> str:
-        pass
         """
         The current status message for display in the UI.
 
@@ -192,7 +186,6 @@ class DateSorterViewModel:
 
     @property
     def date_format_pattern(self) -> str:
-        pass
         """
         The date format pattern used for sorting files.
 
@@ -215,7 +208,6 @@ class DateSorterViewModel:
 
     @property
     def can_start_sorting(self) -> bool:
-        pass
         """
         Whether the sorting process can be started.
 
@@ -226,7 +218,6 @@ class DateSorterViewModel:
         return self.source_directory is not None and self.destination_directory is not None and not self.is_sorting
 
     def select_source_directory(self) -> None:
-        pass
         """
         Command to select the source directory.
 
@@ -235,11 +226,14 @@ class DateSorterViewModel:
         directory selection dialog and update `source_directory` accordingly.
 
         Side Effects:
+
+
             Updates `source_directory`.
             Notifies observers if implemented.
 
         Note:
-            pass
+
+
             This is a placeholder implementation for testing purposes.
         """
         # This method will typically trigger a file dialog in the View
@@ -249,7 +243,6 @@ class DateSorterViewModel:
         # self._notify_observer()
 
     def select_destination_directory(self) -> None:
-        pass
         """
         Command to select the destination directory.
 
@@ -258,11 +251,14 @@ class DateSorterViewModel:
         open a directory selection dialog and update `destination_directory` accordingly.
 
         Side Effects:
+
+
             Updates `destination_directory`.
             Notifies observers if implemented.
 
         Note:
-            pass
+
+
             This is a placeholder implementation for testing purposes.
         """
         # This method will typically trigger a file dialog in the View
@@ -272,7 +268,6 @@ class DateSorterViewModel:
         # self._notify_observer()
 
     def start_sorting(self) -> None:
-        pass
         """
         Command to start the sorting process.
 
@@ -280,7 +275,8 @@ class DateSorterViewModel:
         preconditions are met (valid source/destination directories and not already sorting).
 
         Side Effects:
-            pass
+
+
             Updates `is_sorting`, `status_message`, `progress_percentage`, and `_cancel_requested`.
             Starts a new thread for the sorting operation.
             Notifies observers if implemented.
@@ -288,7 +284,6 @@ class DateSorterViewModel:
         If preconditions are not met, this method does nothing.
         """
         if self.can_start_sorting:
-            pass
             self._cancel_requested = False  # Reset cancellation flag  # pylint: disable=attribute-defined-outside-init
             self.is_sorting = True
             self.status_message = "Sorting..."
@@ -317,10 +312,8 @@ class DateSorterViewModel:
             )
             self.status_message = "Sorting complete!"
         except FileNotFoundError as e:
-            pass
             self.status_message = f"Error: {e}"
         except Exception as e:
-            pass
             self.status_message = f"An error occurred: {e}"
         finally:
             self.is_sorting = False
@@ -330,7 +323,6 @@ class DateSorterViewModel:
     def _update_progress(self, current: int, total: int) -> None:
         """Callback function to update sorting progress."""
         if total > 0:
-            pass
             self.progress_percentage = (current / total) * 100.0
             self.status_message = f"Sorting: {current}/{total} files processed"
         else:
@@ -339,7 +331,6 @@ class DateSorterViewModel:
         self._notify_observer()  # Notify view of progress update
 
     def cancel_sorting(self) -> None:
-        pass
         """
         Command to cancel the ongoing sorting process.
 
@@ -348,12 +339,12 @@ class DateSorterViewModel:
         terminate if set.
 
         Side Effects:
-            pass
+
+
             Updates `_cancel_requested` and `status_message`.
             Notifies observers if implemented.
         """
         if self.is_sorting:
-            pass
             self._cancel_requested = True  # pylint: disable=attribute-defined-outside-init
             self.status_message = "Cancellation requested..."
             self._notify_observer()  # Notify view of state change

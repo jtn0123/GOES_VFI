@@ -199,7 +199,7 @@ class TestNetCDFRender:
         png_path = Path("/tmp/test.png")
 
         with pytest.raises(
-            IOError,
+            ValueError,
             match="Error rendering NetCDF file.*Radiance variable 'Rad' not found",
         ):
             render_png(nc_path, png_path)

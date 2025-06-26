@@ -193,8 +193,7 @@ class ReconcileManager:
                 progress_callback(
                     2,
                     4,
-                    "Step 3/4: Downloading %s files from CDN and %s files from S3 (1/%s)"
-                    % (len(cdn_timestamps), len(s3_timestamps), len(missing_timestamps)),
+                    f"Step 3/4: Downloading {len(cdn_timestamps)} files from CDN and {len(s3_timestamps)} files from S3 (1/{len(missing_timestamps)})",
                 )
             elif cdn_timestamps:
                 progress_callback(

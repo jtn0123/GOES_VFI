@@ -509,13 +509,27 @@ class MissingItemsTreeView(QWidget):
     def _setup_ui(self) -> None:
         """Set up the widget UI."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
 
-        # Create controls for grouping
-        controls_layout = QHBoxLayout()
+        # Add header
+        from PyQt6.QtWidgets import QFrame
+
+        header = QLabel("📋 Results Organization")
+        header.setProperty("class", "AppHeader")
+        layout.addWidget(header)
+
+        # Create controls for grouping in a frame
+        control_frame = QFrame()
+        control_frame.setProperty("class", "ControlFrame")
+        controls_layout = QHBoxLayout(control_frame)
+        controls_layout.setContentsMargins(10, 10, 10, 10)
+        controls_layout.setSpacing(10)
 
         # Group by label
-        controls_layout.addWidget(QLabel(self.tr("Group by:")))
+        group_label = QLabel(self.tr("📊 Group by:"))
+        group_label.setProperty("class", "StandardLabel")
+        controls_layout.addWidget(group_label)
 
         # Group by combo
         self.group_combo = QComboBox()
@@ -532,17 +546,22 @@ class MissingItemsTreeView(QWidget):
         controls_layout.addStretch()
 
         # Expand/collapse all buttons
-        self.expand_all_btn = QPushButton(self.tr("Expand All"))
+        self.expand_all_btn = QPushButton(self.tr("📤 Expand All"))
+        self.expand_all_btn.setProperty("class", "DialogButton")
         self.expand_all_btn.clicked.connect(self._expand_all)
         controls_layout.addWidget(self.expand_all_btn)
 
-        self.collapse_all_btn = QPushButton(self.tr("Collapse All"))
+        self.collapse_all_btn = QPushButton(self.tr("📥 Collapse All"))
+        self.collapse_all_btn.setProperty("class", "DialogButton")
         self.collapse_all_btn.clicked.connect(self._collapse_all)
         controls_layout.addWidget(self.collapse_all_btn)
 
-        layout.addLayout(controls_layout)
+        layout.addWidget(control_frame)
 
-        # Tree view
+        # Tree view in a group box
+        tree_group = QGroupBox("🌳 Results Tree")
+        tree_layout = QVBoxLayout(tree_group)
+
         self.tree_view = QTreeView()
         self.tree_view.setAlternatingRowColors(True)
         self.tree_view.setSelectionMode(QTreeView.SelectionMode.SingleSelection)
@@ -565,7 +584,8 @@ class MissingItemsTreeView(QWidget):
         if selection_model := self.tree_view.selectionModel():
             selection_model.selectionChanged.connect(self._handle_selection)
 
-        layout.addWidget(self.tree_view)
+        tree_layout.addWidget(self.tree_view)
+        layout.addWidget(tree_group)
 
     def set_items(self, items: List[MissingTimestamp], *args: Any, **kwargs: Any) -> None:
         """
@@ -714,7 +734,7 @@ class ResultsSummaryWidget(QWidget):
 
         # Title
         title = QLabel(self.tr("Results Summary"))
-        title.setStyleSheet("font-weight: bold; font-size: 14px;")
+        title.setProperty("class", "FFmpegLabel")
         layout.addWidget(title)
 
         # Create grid for statistics
@@ -724,7 +744,7 @@ class ResultsSummaryWidget(QWidget):
         # Row 1: Total expected
         stats_grid.addWidget(QLabel(self.tr("Total Expected:")), 0, 0)
         self.total_expected_label = QLabel(self.tr("0"))
-        self.total_expected_label.setStyleSheet("font-weight: bold;")
+        self.total_expected_label.setProperty("class", "FFmpegLabel")
         stats_grid.addWidget(self.total_expected_label, 0, 1)
 
         # Row 2: Found
@@ -759,20 +779,7 @@ class ResultsSummaryWidget(QWidget):
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(True)
-        self.progress_bar.setStyleSheet(
-            """
-            QProgressBar {
-                border: 1px solid #bbb;
-                border-radius: 4px;
-                text-align: center;
-                height: 20px;
-            }
-            QProgressBar::chunk {
-                background-color: #007bff;
-                width: 20px;
-            }
-            """
-        )
+        self.progress_bar.setProperty("class", "DataProgress")
         layout.addWidget(self.progress_bar)
 
         # Add stretch to push everything to the top
@@ -830,7 +837,7 @@ class ItemPreviewWidget(QWidget):
 
         # Title
         title = QLabel(self.tr("Item Details"))
-        title.setStyleSheet("font-weight: bold; font-size: 14px;")
+        title.setProperty("class", "FFmpegLabel")
         layout.addWidget(title)
 
         # Create form layout for details

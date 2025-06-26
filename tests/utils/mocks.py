@@ -32,10 +32,17 @@ def create_test_png(path: pathlib.Path, size: Tuple[int, int] = (10, 10)):
 class MockSubprocessResult:
     """Mimics the result of subprocess.run."""
 
-    def __init__(self, returncode: int = 0, stdout: str = "", stderr: str = ""):
+    def __init__(
+        self,
+        returncode: int = 0,
+        stdout: str = "",
+        stderr: str = "",
+        args: Optional[List[str]] = None,
+    ):
         self.returncode = returncode
         self.stdout = stdout.encode()  # Store as bytes like subprocess does
         self.stderr = stderr.encode()
+        self.args = args or []
 
     def check_returncode(self):
         """Raises CalledProcessError if returncode is non-zero."""
@@ -123,8 +130,8 @@ class MockPopen:
         if timeout is not None:
             try:
                 self.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                raise  # pylint: disable=try-except-raise
+            except subprocess.TimeoutExpired:  # pylint: disable=try-except-raise
+                raise
         else:
             self.wait()
         return self._stdout_data, self._stderr_data
@@ -221,8 +228,7 @@ def create_mock_subprocess_run(
             # else: return next(side_effect)
 
         # Return a result object
-        result = MockSubprocessResult(returncode=returncode, stdout=stdout, stderr=stderr)
-        result.args = cmd_list
+        result = MockSubprocessResult(returncode=returncode, stdout=stdout, stderr=stderr, args=cmd_list)
         return result
 
     return mock_run
@@ -287,7 +293,7 @@ def create_mock_popen(
                     print(f"Mock Popen failed to create file {output_file_to_create}: {e}")
             return res
 
-        mock_instance.wait = wait_with_file_creation
+        mock_instance.wait = wait_with_file_creation  # type: ignore[method-assign]
 
         return mock_instance
 
@@ -340,8 +346,10 @@ class MockS3Store:
         self.bucket_name = bucket_name
         self._closed = False
         self._client = MagicMock()
+        self._s3_client = None  # Add this to match real S3Store interface
 
     async def __aenter__(self):
+        self._s3_client = MagicMock()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
@@ -349,10 +357,13 @@ class MockS3Store:
 
     async def close(self):
         self._closed = True
+        self._s3_client = None
 
     async def _get_s3_client(self):
         """Mock S3 client creation."""
-        return self._client
+        if self._s3_client is None:
+            self._s3_client = MagicMock()
+        return self._s3_client
 
     def _get_bucket_and_key(self, timestamp, satellite):
         """Mock bucket and key extraction."""

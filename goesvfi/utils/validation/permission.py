@@ -71,7 +71,8 @@ class PermissionValidator(ValidatorBase):
             return ValidationResult.failure(self._create_error("Path cannot be None", value))
 
         try:
-            Path(value) if isinstance(value, str) else value
+            # Validate that value can be converted to a Path
+            _path = Path(value) if isinstance(value, str) else value
             return ValidationResult.success()
         except Exception as e:
             return ValidationResult.failure(self._create_error(f"Invalid path: {e}", value))

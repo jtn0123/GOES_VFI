@@ -71,11 +71,11 @@ class ModelSelectorManager:
 
         # Simple regex check for format like "1:2:2"
         if not re.fullmatch(r"\d+:\d+:\d+", text):
-            main_window.main_tab.rife_thread_spec_edit.setStyleSheet("color: red;")
+            main_window.main_tab.rife_thread_spec_edit.setProperty("class", "ValidationError")
             main_window.main_tab.start_button.setEnabled(False)
             LOGGER.warning("Invalid RIFE thread specification format: %s", text)
         else:
-            main_window.main_tab.rife_thread_spec_edit.setStyleSheet("")
+            main_window.main_tab.rife_thread_spec_edit.setProperty("class", "")
             main_window._update_start_button_state()
 
     def toggle_sanchez_res_enabled(self, main_window: Any, state: Qt.CheckState) -> None:

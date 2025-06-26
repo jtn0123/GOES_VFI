@@ -174,35 +174,19 @@ class FeedbackWidget(QWidget):
 
         # Status label
         self.status_label = QLabel("Ready")
-        self.status_label.setStyleSheet(
-            """
-            QLabel {
-                padding: 8px;
-                border-radius: 4px;
-                background-color: #f0f0f0;
-                font-weight: bold;
-            }
-        """
-        )
+        self.status_label.setProperty("class", "FeedbackStatusLabel")
         layout.addWidget(self.status_label)
 
         # Progress bar
         self.progress_bar = QProgressBar()
+        self.progress_bar.setProperty("class", "DataProgress")
         self.progress_bar.setVisible(False)
         layout.addWidget(self.progress_bar)
 
         # Message list
         self.message_list = QListWidget()
         self.message_list.setMaximumHeight(150)
-        self.message_list.setStyleSheet(
-            """
-            QListWidget {
-                background-color: #f5f5f5;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-            }
-        """
-        )
+        self.message_list.setProperty("class", "FeedbackMessageList")
         layout.addWidget(self.message_list)
 
         # Connect to feedback manager if available
@@ -247,26 +231,17 @@ class FeedbackWidget(QWidget):
         """Handle status update from feedback manager."""
         self.status_label.setText(status)
 
-        # Update color based on type
-        color_map = {
-            MessageType.INFO: "#d4edda",
-            MessageType.SUCCESS: "#c3e6cb",
-            MessageType.WARNING: "#fff3cd",
-            MessageType.ERROR: "#f8d7da",
-            MessageType.DEBUG: "#f0f0f0",
+        # Update theme class based on message type
+        class_map = {
+            MessageType.INFO: "FeedbackStatusInfo",
+            MessageType.SUCCESS: "FeedbackStatusSuccess",
+            MessageType.WARNING: "FeedbackStatusWarning",
+            MessageType.ERROR: "FeedbackStatusError",
+            MessageType.DEBUG: "FeedbackStatusDebug",
         }
 
-        bg_color = color_map.get(message_type, "#f0f0f0")
-        self.status_label.setStyleSheet(
-            f"""
-            QLabel {{
-                padding: 8px;
-                border-radius: 4px;
-                background-color: {bg_color};
-                font-weight: bold;
-            }}
-        """
-        )
+        theme_class = class_map.get(message_type, "FeedbackStatusLabel")
+        self.status_label.setProperty("class", theme_class)
 
     def _on_progress_updated(self, current: int, total: int, eta: float) -> None:
         """Handle progress update from feedback manager."""
@@ -300,6 +275,9 @@ class ErrorDetailsDialog(QDialog):
         """Initialize the error details dialog."""
         super().__init__(parent)
 
+        # Apply material theme dialog class
+        self.setProperty("class", "CropSelectionDialog")
+
         self.setWindowTitle(error_title)
         self.setModal(True)
         self.resize(600, 400)
@@ -309,17 +287,7 @@ class ErrorDetailsDialog(QDialog):
         # Error message
         message_label = QLabel(error_message)
         message_label.setWordWrap(True)
-        message_label.setStyleSheet(
-            """
-            QLabel {
-                padding: 10px;
-                background-color: #f8d7da;
-                border: 1px solid #f5c6cb;
-                border-radius: 4px;
-                color: #721c24;
-            }
-        """
-        )
+        message_label.setProperty("class", "ErrorDialogMessage")
         layout.addWidget(message_label)
 
         # Traceback if available
@@ -330,16 +298,7 @@ class ErrorDetailsDialog(QDialog):
             traceback_text = QPlainTextEdit()
             traceback_text.setPlainText(traceback)
             traceback_text.setReadOnly(True)
-            traceback_text.setStyleSheet(
-                """
-                QPlainTextEdit {
-                    font-family: monospace;
-                    font-size: 10pt;
-                    background-color: #f5f5f5;
-                    border: 1px solid #ddd;
-                }
-            """
-            )
+            traceback_text.setProperty("class", "ErrorDialogTraceback")
             layout.addWidget(traceback_text)
 
         # Close button

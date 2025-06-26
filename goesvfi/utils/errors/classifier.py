@@ -129,9 +129,9 @@ class ErrorClassifier:
         # Determine if error is recoverable
         recoverable = self._is_recoverable(category, exception)
 
-        from .base import ErrorContext
+        from .base import ErrorContext as BaseErrorContext
 
-        context = ErrorContext(operation=operation, component=component)
+        context = BaseErrorContext(operation=operation, component=component)
         self._add_context_from_exception(context, exception)
 
         return StructuredError(

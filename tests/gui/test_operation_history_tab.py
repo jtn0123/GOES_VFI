@@ -8,12 +8,12 @@ def test_export_operations_dialog_and_filters(qtbot, monkeypatch):
     """Export uses selected path and passes current filters."""
     # Provide stub for missing enhanced_log module before import
     dummy_log = ModuleType("enhanced_log")
-    dummy_log.get_enhanced_logger = lambda *_args, **_kwargs: MagicMock()
+    dummy_log.get_enhanced_logger = lambda *_args, **_kwargs: MagicMock()  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "goesvfi.utils.enhanced_log", dummy_log)
 
     dummy_history = ModuleType("operation_history")
     store = MagicMock()
-    dummy_history.get_operation_store = lambda: store
+    dummy_history.get_operation_store = lambda: store  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "goesvfi.utils.operation_history", dummy_history)
 
     from goesvfi.gui_tabs.operation_history_tab import OperationHistoryTab

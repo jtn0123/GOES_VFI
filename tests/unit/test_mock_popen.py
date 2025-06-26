@@ -9,17 +9,17 @@ from tests.utils.mocks import MockPopen
 
 sys.modules.setdefault("PyQt6", types.ModuleType("PyQt6"))
 qtcore = types.ModuleType("QtCore")
-qtcore.QCoreApplication = type("QCoreApplication", (), {})
-qtcore.QObject = type("QObject", (), {})
+qtcore.QCoreApplication = type("QCoreApplication", (), {})  # type: ignore[attr-defined]
+qtcore.QObject = type("QObject", (), {})  # type: ignore[attr-defined]
 sys.modules.setdefault("PyQt6.QtCore", qtcore)
 qtwidgets = types.ModuleType("QtWidgets")
-qtwidgets.QApplication = type("QApplication", (), {})
+qtwidgets.QApplication = type("QApplication", (), {})  # type: ignore[attr-defined]
 sys.modules.setdefault("PyQt6.QtWidgets", qtwidgets)
 sys.modules.setdefault("PyQt6.QtGui", types.ModuleType("QtGui"))
 sys.modules.setdefault("numpy", types.ModuleType("numpy"))
 pil = types.ModuleType("PIL")
 pil_image = types.ModuleType("Image")
-pil.Image = pil_image
+pil.Image = pil_image  # type: ignore[attr-defined]
 sys.modules.setdefault("PIL", pil)
 sys.modules.setdefault("PIL.Image", pil_image)
 

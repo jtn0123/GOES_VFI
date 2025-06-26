@@ -21,7 +21,9 @@ def NoPopupQDateTimeEdit(*args, **kwargs):
     global _original_QDateTimeEdit
     if _original_QDateTimeEdit is None:
         # This should never happen if patches are applied correctly
-        from PyQt6.QtWidgets import QDateTimeEdit as _original_QDateTimeEdit
+        from PyQt6.QtWidgets import QDateTimeEdit
+
+        _original_QDateTimeEdit = QDateTimeEdit
 
     # Create the real widget
     widget = _original_QDateTimeEdit(*args, **kwargs)

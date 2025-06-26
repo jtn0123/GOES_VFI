@@ -321,11 +321,26 @@ class TestAccessibility:
                 "window.main_tab.in_dir_button",
                 "Browse and select the directory containing input image files for processing.",
             ),
-            ("window.main_tab.out_file_button", "Choose the location and filename for the output video file."),
-            ("window.main_tab.start_button", "Begin processing the input images to create an interpolated video."),
-            ("window.main_tab.crop_button", "Open a dialog to select a specific region of the images to process."),
-            ("window.main_tab.clear_crop_button", "Remove the current crop selection and process full images."),
-            ("window.main_tab.fps_spinbox", "Set the target frames per second for the output video."),
+            (
+                "window.main_tab.out_file_button",
+                "Choose the location and filename for the output video file.",
+            ),
+            (
+                "window.main_tab.start_button",
+                "Begin processing the input images to create an interpolated video.",
+            ),
+            (
+                "window.main_tab.crop_button",
+                "Open a dialog to select a specific region of the images to process.",
+            ),
+            (
+                "window.main_tab.clear_crop_button",
+                "Remove the current crop selection and process full images.",
+            ),
+            (
+                "window.main_tab.fps_spinbox",
+                "Set the target frames per second for the output video.",
+            ),
             (
                 "window.main_tab.encoder_combo",
                 "Select the encoding method: RIFE for AI interpolation or FFmpeg for standard encoding.",
@@ -591,10 +606,22 @@ class TestAccessibility:
 
         # Verify all important widgets have descriptions
         important_widgets = [
-            (window.main_tab.in_dir_button, "Browse and select input directory containing images to process"),
-            (window.main_tab.out_file_button, "Choose output file location and name for the generated video"),
-            (window.main_tab.start_button, "Start video interpolation processing using selected settings"),
-            (window.main_tab.crop_button, "Select a specific region of images to process instead of full images"),
+            (
+                window.main_tab.in_dir_button,
+                "Browse and select input directory containing images to process",
+            ),
+            (
+                window.main_tab.out_file_button,
+                "Choose output file location and name for the generated video",
+            ),
+            (
+                window.main_tab.start_button,
+                "Start video interpolation processing using selected settings",
+            ),
+            (
+                window.main_tab.crop_button,
+                "Select a specific region of images to process instead of full images",
+            ),
         ]
 
         for widget, expected_desc in important_widgets:

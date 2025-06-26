@@ -2,6 +2,7 @@
 
 import unittest
 from pathlib import Path
+from typing import Any, Dict, List, Union, cast
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import QApplication
@@ -12,20 +13,22 @@ from goesvfi.gui_components.processing_manager import ProcessingManager
 class TestProcessingManager(unittest.TestCase):
     """Test cases for ProcessingManager."""
 
+    app: QApplication
+
     @classmethod
     def setUpClass(cls):
         """Set up QApplication for all tests."""
         if not QApplication.instance():
             cls.app = QApplication([])
         else:
-            cls.app = QApplication.instance()
+            cls.app = cast(QApplication, QApplication.instance())
 
     def setUp(self):
         """Set up test fixtures."""
         self.processing_manager = ProcessingManager()
 
         # Track emitted signals
-        self.emitted_signals = {
+        self.emitted_signals: Dict[str, Union[bool, List[Any], Any]] = {
             "started": False,
             "progress": [],
             "finished": None,
@@ -40,10 +43,12 @@ class TestProcessingManager(unittest.TestCase):
         self.processing_manager.processing_error.connect(lambda e: self._signal_emitted("error", e))
         self.processing_manager.processing_state_changed.connect(lambda s: self._signal_emitted("state_changed", s))
 
-    def _signal_emitted(self, signal_name, value):
+    def _signal_emitted(self, signal_name: str, value: Any) -> None:
         """Helper to track signal emissions."""
         if signal_name in ["progress", "state_changed"]:
-            self.emitted_signals[signal_name].append(value)
+            signal_list = self.emitted_signals[signal_name]
+            if isinstance(signal_list, list):
+                signal_list.append(value)
         else:
             self.emitted_signals[signal_name] = value
 
@@ -149,7 +154,9 @@ class TestProcessingManager(unittest.TestCase):
 
         # Verify signals were emitted
         self.assertTrue(self.emitted_signals["started"])
-        self.assertIn(True, self.emitted_signals["state_changed"])
+        state_changes = cast(List[Any], self.emitted_signals["state_changed"])
+        self.assertIsInstance(state_changes, list)
+        self.assertIn(True, state_changes)
 
         # Verify thread was started
         mock_thread_instance.start.assert_called_once()
@@ -184,8 +191,10 @@ class TestProcessingManager(unittest.TestCase):
 
         # Should fail
         self.assertFalse(result)
-        self.assertIsNotNone(self.emitted_signals["error"])
-        self.assertIn("Missing required argument", self.emitted_signals["error"])
+        error_msg = self.emitted_signals["error"]
+        self.assertIsNotNone(error_msg)
+        self.assertIsInstance(error_msg, str)
+        self.assertIn("Missing required argument", error_msg)
 
     def test_handle_progress(self):
         """Test handling progress updates."""
@@ -193,8 +202,10 @@ class TestProcessingManager(unittest.TestCase):
         self.processing_manager._handle_progress(50, 100, 60.0)
 
         # Verify signal was emitted
-        self.assertEqual(len(self.emitted_signals["progress"]), 1)
-        self.assertEqual(self.emitted_signals["progress"][0], (50, 100, 60.0))
+        progress_list = cast(List[Any], self.emitted_signals["progress"])
+        self.assertIsInstance(progress_list, list)
+        self.assertEqual(len(progress_list), 1)
+        self.assertEqual(progress_list[0], (50, 100, 60.0))
 
     def test_handle_finished(self):
         """Test handling processing completion."""
@@ -207,7 +218,9 @@ class TestProcessingManager(unittest.TestCase):
         # Verify state
         self.assertFalse(self.processing_manager.is_processing)
         self.assertEqual(self.emitted_signals["finished"], "/tmp/output.mp4")
-        self.assertIn(False, self.emitted_signals["state_changed"])
+        state_changes = cast(List[Any], self.emitted_signals["state_changed"])
+        self.assertIsInstance(state_changes, list)
+        self.assertIn(False, state_changes)
 
     def test_handle_error(self):
         """Test handling processing error."""
@@ -220,7 +233,9 @@ class TestProcessingManager(unittest.TestCase):
         # Verify state
         self.assertFalse(self.processing_manager.is_processing)
         self.assertEqual(self.emitted_signals["error"], "Test error message")
-        self.assertIn(False, self.emitted_signals["state_changed"])
+        state_changes = cast(List[Any], self.emitted_signals["state_changed"])
+        self.assertIsInstance(state_changes, list)
+        self.assertIn(False, state_changes)
 
     def test_stop_processing_not_running(self):
         """Test stopping when not processing."""

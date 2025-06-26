@@ -144,19 +144,23 @@ class PyQtAsyncTestCase(unittest.TestCase):
         try:
             # Get all signals
             meta_object = obj.metaObject()
-            for i in range(meta_object.methodCount()):
-                method = meta_object.method(i)
-                if method.methodType() == method.MethodType.Signal:
-                    # Get signal name
-                    name = bytes(method.name()).decode("utf-8")
-                    if hasattr(obj, name):
-                        # Try to disconnect
-                        try:
-                            signal = getattr(obj, name)
-                            signal.disconnect()
-                        except Exception:
-                            # It's normal for this to fail if the signal wasn't connected
-                            pass
+            if meta_object:
+                for i in range(meta_object.methodCount()):
+                    method = meta_object.method(i)
+                    if method.methodType() == method.MethodType.Signal:
+                        # Get signal name
+                        method_name = method.name()
+                        if not method_name:
+                            continue
+                        name = bytes(method_name).decode("utf-8")
+                        if hasattr(obj, name):
+                            # Try to disconnect
+                            try:
+                                signal = getattr(obj, name)
+                                signal.disconnect()
+                            except Exception:
+                                # It's normal for this to fail if the signal wasn't connected
+                                pass
         except Exception as e:
             print(f"Error disconnecting signals from {obj}: {e}")
 

@@ -64,7 +64,7 @@ def qapp_args():
 
 
 @pytest.fixture(scope="session")
-def qapp(qapp_args, pytestconfig):  # noqa: ARG001
+def qapp(qapp_args, pytestconfig):  # noqa: ARG001  # vulture: ignore
     """Create the QApplication instance with custom font settings."""
     from PyQt6.QtWidgets import QApplication
 
@@ -74,14 +74,15 @@ def qapp(qapp_args, pytestconfig):  # noqa: ARG001
         app = QApplication(qapp_args)
 
     # Set default font to avoid "Sans Serif" search delay
-    default_font = app.font()
+    if isinstance(app, QApplication):
+        default_font = app.font()
     if sys.platform == "darwin":
         default_font.setFamily("Helvetica")
     elif sys.platform == "win32":
         default_font.setFamily("Segoe UI")
     else:
         default_font.setFamily("DejaVu Sans")
-    app.setFont(default_font)
+        app.setFont(default_font)
 
     yield app
 

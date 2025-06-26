@@ -267,26 +267,46 @@ class OperationHistoryTab(QWidget):
     def _init_ui(self) -> None:
         """Initialize the user interface."""
         layout = QVBoxLayout()
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(12)
 
-        # Controls
-        controls_layout = QHBoxLayout()
+        # Add header
+        header = QLabel("📃 Operation History")
+        header.setProperty("class", "AppHeader")
+        layout.addWidget(header)
+
+        # Controls in a frame
+        from PyQt6.QtWidgets import QFrame
+
+        control_frame = QFrame()
+        control_frame.setProperty("class", "ControlFrame")
+        controls_layout = QHBoxLayout(control_frame)
+        controls_layout.setContentsMargins(10, 10, 10, 10)
+        controls_layout.setSpacing(10)
 
         # Search
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search operations...")
+        self.search_input.setToolTip("Search operations by name")
         self.search_input.returnPressed.connect(self.refresh_data)
-        controls_layout.addWidget(QLabel("Search:"))
+        search_label = QLabel("Search:")
+        search_label.setProperty("class", "StandardLabel")
+        controls_layout.addWidget(search_label)
         controls_layout.addWidget(self.search_input)
 
         # Status filter
         self.status_filter = QComboBox()
         self.status_filter.addItems(["All", "Success", "Failure", "In Progress"])
+        self.status_filter.setToolTip("Filter operations by status")
         self.status_filter.currentTextChanged.connect(self.refresh_data)
-        controls_layout.addWidget(QLabel("Status:"))
+        status_label = QLabel("Status:")
+        status_label.setProperty("class", "StandardLabel")
+        controls_layout.addWidget(status_label)
         controls_layout.addWidget(self.status_filter)
 
         # Auto-refresh
         self.auto_refresh_check = QCheckBox("Auto-refresh")
+        self.auto_refresh_check.setToolTip("Automatically refresh operation history")
         self.auto_refresh_check.toggled.connect(self._toggle_auto_refresh)
         controls_layout.addWidget(self.auto_refresh_check)
 
@@ -294,30 +314,37 @@ class OperationHistoryTab(QWidget):
         self.refresh_interval.setRange(1, 60)
         self.refresh_interval.setValue(5)
         self.refresh_interval.setSuffix(" sec")
+        self.refresh_interval.setToolTip("Auto-refresh interval in seconds")
         self.refresh_interval.valueChanged.connect(self._update_refresh_interval)
         controls_layout.addWidget(self.refresh_interval)
 
         # Buttons
-        self.refresh_button = QPushButton("Refresh")
+        self.refresh_button = QPushButton("🔄 Refresh")
+        self.refresh_button.setProperty("class", "DialogButton")
+        self.refresh_button.setToolTip("Manually refresh operation history")
         self.refresh_button.clicked.connect(self.refresh_data)
         controls_layout.addWidget(self.refresh_button)
 
-        self.clear_button = QPushButton("Clear Old")
+        self.clear_button = QPushButton("🧹 Clear Old")
+        self.clear_button.setProperty("class", "DialogButton")
+        self.clear_button.setToolTip("Clear operations older than 30 days")
         self.clear_button.clicked.connect(self._clear_old_operations)
         controls_layout.addWidget(self.clear_button)
 
-        self.export_button = QPushButton("Export")
+        self.export_button = QPushButton("💾 Export")
+        self.export_button.setProperty("class", "DialogButton")
+        self.export_button.setToolTip("Export operations to JSON file")
         self.export_button.clicked.connect(self._export_operations)
         controls_layout.addWidget(self.export_button)
 
         controls_layout.addStretch()
-        layout.addLayout(controls_layout)
+        layout.addWidget(control_frame)
 
         # Main content splitter
         splitter = QSplitter(Qt.Orientation.Vertical)
 
         # Operations table
-        operations_group = QGroupBox("Operations")
+        operations_group = QGroupBox("📋 Operations")
         operations_layout = QVBoxLayout()
 
         self.operations_table = QTableView()
@@ -329,10 +356,10 @@ class OperationHistoryTab(QWidget):
             selection_model.selectionChanged.connect(self._on_operation_selected)
 
         # Configure table
-        header = self.operations_table.horizontalHeader()
-        if header:
-            header.setStretchLastSection(True)
-            header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # Stretch operation name
+        table_header = self.operations_table.horizontalHeader()
+        if table_header:
+            table_header.setStretchLastSection(True)
+            table_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)  # Stretch operation name
 
         operations_layout.addWidget(self.operations_table)
         operations_group.setLayout(operations_layout)
@@ -342,7 +369,7 @@ class OperationHistoryTab(QWidget):
         details_splitter = QSplitter(Qt.Orientation.Horizontal)
 
         # Operation details
-        details_group = QGroupBox("Operation Details")
+        details_group = QGroupBox("🔍 Operation Details")
         details_layout = QVBoxLayout()
 
         self.details_text = QTextEdit()
@@ -352,7 +379,7 @@ class OperationHistoryTab(QWidget):
         details_splitter.addWidget(details_group)
 
         # Metrics table
-        metrics_group = QGroupBox("Operation Metrics")
+        metrics_group = QGroupBox("📊 Operation Metrics")
         metrics_layout = QVBoxLayout()
 
         self.metrics_table = QTableView()

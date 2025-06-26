@@ -48,6 +48,9 @@ class VisualDateRangePicker(QDialog):
         """
         super().__init__(parent)
 
+        # Apply material theme dialog class
+        self.setProperty("class", "CropSelectionDialog")
+
         self.setWindowTitle(self.tr("Select Date Range"))
         self.setMinimumWidth(600)
         self.setMinimumHeight(500)
@@ -83,16 +86,14 @@ class VisualDateRangePicker(QDialog):
         """Set up the quick presets section."""
         preset_group = QFrame()
         preset_group.setFrameShape(QFrame.Shape.StyledPanel)
-        preset_group.setStyleSheet(
-            "QFrame { background-color: #353535; border-radius: 4px; border: 1px solid #454545; }"
-        )
+        preset_group.setProperty("class", "DatePickerGroup")
 
         preset_layout = QVBoxLayout(preset_group)
         preset_layout.setContentsMargins(10, 10, 10, 10)
 
         # Title
         preset_title = QLabel(self.tr("Quick Select"))
-        preset_title.setStyleSheet("QLabel { font-weight: bold; font-size: 14px; }")
+        preset_title.setProperty("class", "DatePickerTitle")
         preset_layout.addWidget(preset_title)
 
         # Buttons grid
@@ -127,26 +128,7 @@ class VisualDateRangePicker(QDialog):
         button = QPushButton(text)
         button.setMinimumHeight(40)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
-        button.setStyleSheet(
-            """
-        QPushButton {
-        background-color: #3a3a3a;
-        border: 1px solid #545454;
-        border-radius: 4px;
-        padding: 5px;
-        color: #f0f0f0;
-        }
-        QPushButton:hover {
-        background-color: #454545;
-        border-color: #646464;
-        }
-        QPushButton:pressed {
-        background-color: #2a82da;
-        border-color: #2a82da;
-        color: white;
-        }
-        """
-        )
+        button.setProperty("class", "DatePickerButton")
         button.clicked.connect(slot)
         return button
 
@@ -160,14 +142,12 @@ class VisualDateRangePicker(QDialog):
         # --- Start Date Section ---
         start_group = QFrame()
         start_group.setFrameShape(QFrame.Shape.StyledPanel)
-        start_group.setStyleSheet(
-            "QFrame { background-color: #2d2d2d; border-radius: 4px; border: 1px solid #454545; }"
-        )
+        start_group.setProperty("class", "DatePickerGroup")
         start_layout = QVBoxLayout(start_group)
 
         # Start date label
         start_label = QLabel(self.tr("Start Date"))
-        start_label.setStyleSheet("QLabel { font-weight: bold; }")
+        start_label.setProperty("class", "DatePickerTitle")
         start_layout.addWidget(start_label)
 
         # Start date calendar
@@ -177,84 +157,20 @@ class VisualDateRangePicker(QDialog):
         self.start_calendar.setHorizontalHeaderFormat(QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames)
         self.start_calendar.selectionChanged.connect(self._update_preview)
 
-        # Comprehensive dark mode calendar styling
-        self.start_calendar.setStyleSheet(
-            """
-        QCalendarWidget {
-        background-color: #2d2d2d;
-        color: #f0f0f0;
-        }
-        QCalendarWidget QToolButton {
-        background-color: #3a3a3a;
-        color: #f0f0f0;
-        border: 1px solid #545454;
-        border-radius: 2px;
-        padding: 2px;
-        }
-        QCalendarWidget QToolButton:hover {
-        background-color: #454545;
-        border-color: #646464;
-        }
-        QCalendarWidget QMenu {
-        background-color: #3a3a3a;
-        color: #f0f0f0;
-        border: 1px solid #545454;
-        }
-        QCalendarWidget QSpinBox {
-        background-color: #3a3a3a;
-        color: #f0f0f0;
-        selection-background-color: #2a82da;
-        selection-color: #ffffff;
-        border: 1px solid #545454;
-        border-radius: 2px;
-        }
-        QCalendarWidget QTableView {
-        alternate-background-color: #353535;
-        background-color: #2d2d2d;
-        selection-background-color: #2a82da;
-        }
-        QCalendarWidget QAbstractItemView:enabled {
-        color: #f0f0f0;
-        selection-background-color: #2a82da;
-        selection-color: #ffffff;
-        }
-        QCalendarWidget QAbstractItemView:disabled {
-        color: #777777;
-        }
-        QCalendarWidget QWidget#qt_calendar_navigationbar {
-        background-color: #3a3a3a;
-        border: 1px solid #545454;
-        border-top-left-radius: 2px;
-        border-top-right-radius: 2px;
-        }
-        """
-        )
+        # Use material theme styling
+        self.start_calendar.setProperty("class", "DatePickerCalendar")
         start_layout.addWidget(self.start_calendar)
 
         # Start time
         start_time_layout = QHBoxLayout()
         time_label = QLabel(self.tr("Time:"))
-        time_label.setStyleSheet("")  # Removed hardcoded color
+        # Use default material theme styling
         start_time_layout.addWidget(time_label)
         self.start_time_edit = QTimeEdit()
         self.start_time_edit.setDisplayFormat("HH:mm")
         self.start_time_edit.timeChanged.connect(self._update_preview)
-        # Add dark styling to time edit
-        self.start_time_edit.setStyleSheet(
-            """
-        QTimeEdit {
-        background-color: #3a3a3a;
-        color: #f0f0f0;
-        border: 1px solid #545454;
-        border-radius: 3px;
-        padding: 3px;
-        }
-        QTimeEdit::up-button, QTimeEdit::down-button {
-        background-color: #454545;
-        border: 1px solid #545454;
-        }
-        """
-        )
+        # Use material theme styling
+        self.start_time_edit.setProperty("class", "DatePickerTime")
         start_time_layout.addWidget(self.start_time_edit)
         start_layout.addLayout(start_time_layout)
 
@@ -263,12 +179,12 @@ class VisualDateRangePicker(QDialog):
         # --- End Date Section ---
         end_group = QFrame()
         end_group.setFrameShape(QFrame.Shape.StyledPanel)
-        end_group.setStyleSheet("QFrame { border-radius: 4px; }")  # Removed hardcoded colors
+        end_group.setProperty("class", "DatePickerGroup")
         end_layout = QVBoxLayout(end_group)
 
         # End date label
         end_label = QLabel(self.tr("End Date"))
-        end_label.setStyleSheet("QLabel { font-weight: bold; }")
+        end_label.setProperty("class", "DatePickerTitle")
         end_layout.addWidget(end_label)
 
         # End date calendar
@@ -278,20 +194,20 @@ class VisualDateRangePicker(QDialog):
         self.end_calendar.setHorizontalHeaderFormat(QCalendarWidget.HorizontalHeaderFormat.SingleLetterDayNames)
         self.end_calendar.selectionChanged.connect(self._update_preview)
 
-        # Use same comprehensive dark styling as start calendar
-        self.end_calendar.setStyleSheet(self.start_calendar.styleSheet())
+        # Use material theme styling
+        self.end_calendar.setProperty("class", "DatePickerCalendar")
         end_layout.addWidget(self.end_calendar)
 
         # End time
         end_time_layout = QHBoxLayout()
         end_time_label = QLabel(self.tr("Time:"))
-        end_time_label.setStyleSheet("")  # Removed hardcoded color
+        # Use default material theme styling
         end_time_layout.addWidget(end_time_label)
         self.end_time_edit = QTimeEdit()
         self.end_time_edit.setDisplayFormat("HH:mm")
         self.end_time_edit.timeChanged.connect(self._update_preview)
-        # Use same styling as start time
-        self.end_time_edit.setStyleSheet(self.start_time_edit.styleSheet())
+        # Use material theme styling
+        self.end_time_edit.setProperty("class", "DatePickerTime")
         end_time_layout.addWidget(self.end_time_edit)
         end_layout.addLayout(end_time_layout)
 
@@ -303,32 +219,24 @@ class VisualDateRangePicker(QDialog):
         """Set up the date range preview section."""
         preview_group = QFrame()
         preview_group.setFrameShape(QFrame.Shape.StyledPanel)
-        preview_group.setStyleSheet(
-            """
-        QFrame {
-        background-color: #1e2f45;
-        border-radius: 4px;
-        border: 1px solid #2a5b9e;
-        }
-        """
-        )
+        preview_group.setProperty("class", "DatePickerPreview")
 
         preview_layout = QHBoxLayout(preview_group)
         preview_layout.setContentsMargins(15, 10, 15, 10)
 
         # Preview label
         preview_label = QLabel(self.tr("Selected Range:"))
-        preview_label.setStyleSheet("QLabel { font-weight: bold; }")
+        preview_label.setProperty("class", "DatePickerTitle")
         preview_layout.addWidget(preview_label)
 
         # Preview text
         self.preview_text = QLabel(self.tr(""))
-        self.preview_text.setStyleSheet("QLabel { font-family: 'Courier New', monospace; }")
+        self.preview_text.setProperty("class", "DatePickerMonospace")
         preview_layout.addWidget(self.preview_text, 1)  # Give stretch priority
 
         # Time span
         self.timespan_label = QLabel(self.tr(""))
-        self.timespan_label.setStyleSheet("QLabel { }")  # Removed hardcoded color
+        # Use default material theme styling
         preview_layout.addWidget(self.timespan_label)
 
         parent_layout.addWidget(preview_group)
@@ -340,50 +248,13 @@ class VisualDateRangePicker(QDialog):
         # Cancel button - dark mode styling
         self.cancel_button = QPushButton(self.tr("Cancel"))
         self.cancel_button.clicked.connect(self.reject)
-        self.cancel_button.setStyleSheet(
-            """
-        QPushButton {
-        background-color: #3a3a3a;
-        color: #f0f0f0;
-        border: 1px solid #545454;
-        border-radius: 4px;
-        padding: 6px 12px;
-        min-width: 80px;
-        }
-        QPushButton:hover {
-        background-color: #454545;
-        border-color: #646464;
-        }
-        QPushButton:pressed {
-        background-color: #2a2a2a;
-        border-color: #646464;
-        }
-        """
-        )
+        self.cancel_button.setProperty("class", "DatePickerButton")
 
         # Apply button
         self.apply_button = QPushButton(self.tr("Apply"))
         self.apply_button.setDefault(True)
         self.apply_button.clicked.connect(self._apply_selection)
-        self.apply_button.setStyleSheet(
-            """
-        QPushButton {
-        background-color: #2a82da;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 6px 12px;
-        min-width: 80px;
-        font-weight: bold;
-        }
-        QPushButton:hover {
-        background-color: #3a92ea;
-        }
-        QPushButton:pressed {
-        background-color: #1a72ca;
-        }
-        """
-        )
+        self.apply_button.setProperty("class", "DatePickerPrimary")
 
         buttons_layout.addWidget(self.cancel_button)
         buttons_layout.addStretch()

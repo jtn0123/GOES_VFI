@@ -44,6 +44,15 @@ class HelpButton(QWidget):
         self.setToolTip(f"Help for {topic}")
         # Stub implementation - minimal setup
 
+    def show_help(self) -> None:
+        """Show help for the topic."""
+        self.help_requested.emit(self.topic)
+
+    def set_topic(self, topic: str) -> None:
+        """Set a new help topic."""
+        self.topic = topic
+        self.setToolTip(f"Help for {topic}")
+
 
 class FadeInNotification(QWidget):
     """A notification widget with fade-in effect."""
@@ -55,7 +64,9 @@ class FadeInNotification(QWidget):
             parent: Parent widget
         """
         super().__init__(parent)
-        # Stub implementation
+        # Initialize notification-specific attributes
+        self.fade_duration = 300  # milliseconds
+        self.auto_hide_timeout = 3000  # milliseconds
 
     def show_message(self, message: str, duration: int = 2000) -> None:
         """Show a notification message.
@@ -65,7 +76,7 @@ class FadeInNotification(QWidget):
             duration: Duration in milliseconds to show message
         """
         # Stub implementation - could print or show basic message
-        pass
+        print(f"Notification: {message}")
 
 
 class DragDropWidget(QWidget):
@@ -82,6 +93,10 @@ class DragDropWidget(QWidget):
         """Enable drag and drop functionality."""
         self.setAcceptDrops(True)
 
+    def disable_drag_drop(self) -> None:
+        """Disable drag and drop functionality."""
+        self.setAcceptDrops(False)
+
 
 class LoadingSpinner(QWidget):
     """A loading spinner widget."""
@@ -89,14 +104,17 @@ class LoadingSpinner(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Initialize loading spinner."""
         super().__init__(parent)
+        # Initialize spinner-specific attributes
+        self.animation_speed = 50  # milliseconds per frame
+        self.is_spinning = False
 
     def start(self) -> None:
         """Start the spinner animation."""
-        pass
+        self.show()
 
     def stop(self) -> None:
         """Stop the spinner animation."""
-        pass
+        self.hide()
 
 
 class ProgressTracker(QObject):
@@ -109,6 +127,10 @@ class ProgressTracker(QObject):
     def __init__(self, parent: Optional[QObject] = None) -> None:
         """Initialize progress tracker."""
         super().__init__(parent)
+        # Initialize tracker-specific attributes
+        self.current_progress = 0
+        self.current_status = "Ready"
+        self.operation_stats = {}
 
     def set_progress(self, value: int) -> None:
         """Set progress value (0-100)."""
@@ -147,13 +169,16 @@ class ShortcutManager:
 
     def setup_standard_shortcuts(self) -> None:
         """Set up standard keyboard shortcuts."""
-        # Stub implementation
-        pass
+        # Standard shortcuts registered - to be implemented
+        self.shortcuts["Ctrl+Q"] = lambda: None  # Quit
+        self.shortcuts["Ctrl+O"] = lambda: None  # Open
+        self.shortcuts["Ctrl+S"] = lambda: None  # Save
 
     def show_shortcuts(self) -> None:
         """Show available shortcuts to the user."""
-        # Stub implementation
-        pass
+        # Display shortcuts - to be implemented
+        for key, _ in self.shortcuts.items():
+            print(f"Shortcut: {key}")
 
 
 def create_status_widget(parent: Optional[QWidget] = None) -> QWidget:

@@ -70,30 +70,12 @@ class FFmpegSettingsTab(QWidget):
         # This will be added to the layout in _setup_layout
         self.header_widget = QLabel("⚙️ FFmpeg Settings - Video Processing Configuration")
         self.header_widget.setProperty("class", "AppHeader")
-        self.header_widget.setStyleSheet(
-            """
-            QLabel {
-                font-size: 18px;
-                font-weight: bold;
-                padding: 12px 16px;
-                border-radius: 8px;
-                margin-bottom: 10px;
-            }
-            """
-        )
+        # Header styling handled by AppHeader theme class
 
     def _apply_stylesheet(self) -> None:
         """Apply enhanced stylesheet - most styling now handled by qt-material theme."""
-        # Minimal custom styling - qt-material handles the rest
-        self.setStyleSheet(
-            """
-            QGroupBox {
-                font-weight: bold;
-                margin-top: 10px;
-                padding-top: 10px;
-            }
-        """
-        )
+        # Apply qt-material theme properties
+        self.setProperty("class", "FFmpegSettingsTab")
 
     def _create_widgets(self) -> None:
         """Create all the widgets for the FFmpeg settings tab."""
@@ -346,20 +328,17 @@ class FFmpegSettingsTab(QWidget):
 
         # Add styled labels with better descriptions
         mi_label = QLabel(self.tr("Motion Interp:"))
-        mi_label.setProperty("class", "StatusInfo")
-        mi_label.setStyleSheet("font-weight: bold;")
+        mi_label.setProperty("class", "FFmpegLabel")
         interp_layout.addWidget(mi_label, 0, 0)
         interp_layout.addWidget(self.ffmpeg_mi_mode_combo, 0, 1)
 
         mc_label = QLabel(self.tr("Motion Comp:"))
-        mc_label.setProperty("class", "StatusInfo")
-        mc_label.setStyleSheet("font-weight: bold;")
+        mc_label.setProperty("class", "FFmpegLabel")
         interp_layout.addWidget(mc_label, 0, 2)
         interp_layout.addWidget(self.ffmpeg_mc_mode_combo, 0, 3)
 
         me_label = QLabel(self.tr("Motion Est:"))
-        me_label.setProperty("class", "StatusInfo")
-        me_label.setStyleSheet("font-weight: bold;")
+        me_label.setProperty("class", "FFmpegLabel")
         interp_layout.addWidget(me_label, 1, 0)
         interp_layout.addWidget(self.ffmpeg_me_mode_combo, 1, 1)
 
@@ -369,30 +348,29 @@ class FFmpegSettingsTab(QWidget):
         interp_layout.addWidget(self.ffmpeg_vsbmc_checkbox, 1, 2, 1, 2)  # Span 2 columns
         # Scene detection row with enhanced styling
         scd_label = QLabel(self.tr("Scene Detect:"))
-        scd_label.setProperty("class", "StatusInfo")
-        scd_label.setStyleSheet("font-weight: bold;")
+        scd_label.setProperty("class", "FFmpegLabel")
         interp_layout.addWidget(scd_label, 2, 0)
         interp_layout.addWidget(self.ffmpeg_scd_combo, 2, 1)
 
         scd_thresh_label = QLabel(self.tr("SCD Threshold:"))
-        # Label styling handled by qt-material theme
+        scd_thresh_label.setProperty("class", "FFmpegLabel")
         interp_layout.addWidget(scd_thresh_label, 2, 2)
         interp_layout.addWidget(self.ffmpeg_scd_threshold_spinbox, 2, 3)
 
         # Advanced motion estimation row
         me_algo_label = QLabel(self.tr("ME Algorithm:"))
-        # Color styling handled by qt-material theme
+        me_algo_label.setProperty("class", "FFmpegLabel")
         interp_layout.addWidget(me_algo_label, 3, 0)
         interp_layout.addWidget(self.ffmpeg_me_algo_combo, 3, 1)
 
         search_param_label = QLabel(self.tr("Search Range:"))
-        # Color styling handled by qt-material theme
+        search_param_label.setProperty("class", "FFmpegLabel")
         interp_layout.addWidget(search_param_label, 3, 2)
         interp_layout.addWidget(self.ffmpeg_search_param_spinbox, 3, 3)
 
         # Block size row
         mb_size_label = QLabel(self.tr("Block Size:"))
-        # Color styling handled by qt-material theme
+        mb_size_label.setProperty("class", "FFmpegLabel")
         interp_layout.addWidget(mb_size_label, 4, 0)
         interp_layout.addWidget(self.ffmpeg_mb_size_combo, 4, 1)
         interp_layout.setColumnStretch(1, 1)  # Allow combos/spinners to expand
@@ -409,28 +387,26 @@ class FFmpegSettingsTab(QWidget):
 
         # Add section headers
         luma_header = QLabel(self.tr("Luma (Brightness):"))
-        luma_header.setProperty("class", "StatusInfo")
-        luma_header.setStyleSheet("font-weight: bold;")
+        luma_header.setProperty("class", "FFmpegLabel")
         unsharp_layout.addWidget(luma_header, 0, 0, 1, 2)
 
         chroma_header = QLabel(self.tr("Chroma (Color):"))
-        chroma_header.setProperty("class", "StatusInfo")
-        chroma_header.setStyleSheet("font-weight: bold;")
+        chroma_header.setProperty("class", "FFmpegLabel")
         unsharp_layout.addWidget(chroma_header, 0, 3, 1, 2)
 
         # Luma controls
         luma_x_label = QLabel(self.tr("X Size:"))
-        # Color styling handled by qt-material theme
+        luma_x_label.setProperty("class", "FFmpegLabel")
         unsharp_layout.addWidget(luma_x_label, 1, 0)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_lx_spinbox, 1, 1)
 
         luma_y_label = QLabel(self.tr("Y Size:"))
-        # Color styling handled by qt-material theme
+        luma_y_label.setProperty("class", "FFmpegLabel")
         unsharp_layout.addWidget(luma_y_label, 2, 0)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_ly_spinbox, 2, 1)
 
         luma_amt_label = QLabel(self.tr("Amount:"))
-        # Color styling handled by qt-material theme
+        luma_amt_label.setProperty("class", "FFmpegLabel")
         unsharp_layout.addWidget(luma_amt_label, 3, 0)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_la_spinbox, 3, 1)
 
@@ -444,17 +420,17 @@ class FFmpegSettingsTab(QWidget):
 
         # Chroma controls
         chroma_x_label = QLabel(self.tr("X Size:"))
-        # Color styling handled by qt-material theme
+        chroma_x_label.setProperty("class", "FFmpegLabel")
         unsharp_layout.addWidget(chroma_x_label, 1, 3)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_cx_spinbox, 1, 4)
 
         chroma_y_label = QLabel(self.tr("Y Size:"))
-        # Color styling handled by qt-material theme
+        chroma_y_label.setProperty("class", "FFmpegLabel")
         unsharp_layout.addWidget(chroma_y_label, 2, 3)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_cy_spinbox, 2, 4)
 
         chroma_amt_label = QLabel(self.tr("Amount:"))
-        # Color styling handled by qt-material theme
+        chroma_amt_label.setProperty("class", "FFmpegLabel")
         unsharp_layout.addWidget(chroma_amt_label, 3, 3)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_ca_spinbox, 3, 4)
 
@@ -474,26 +450,26 @@ class FFmpegSettingsTab(QWidget):
 
         # Quality preset with styled label
         quality_preset_label = QLabel(self.tr("Quality Preset:"))
-        # Color styling handled by qt-material theme
+        quality_preset_label.setProperty("class", "FFmpegLabel")
         quality_layout.addWidget(quality_preset_label, 0, 0)
         quality_layout.addWidget(self.ffmpeg_quality_combo, 0, 1)
 
         # CRF with emphasis
         crf_label = QLabel(self.tr("CRF Value:"))
-        # Color styling handled by qt-material theme
+        crf_label.setProperty("class", "FFmpegLabel")
         quality_layout.addWidget(crf_label, 0, 2)
         self.ffmpeg_crf_spinbox.setToolTip(self.tr("Constant Rate Factor: Lower values = higher quality (0-51)"))
         quality_layout.addWidget(self.ffmpeg_crf_spinbox, 0, 3)
 
         # Bitrate section
         bitrate_label = QLabel(self.tr("Target Bitrate:"))
-        # Color styling handled by qt-material theme
+        bitrate_label.setProperty("class", "FFmpegLabel")
         quality_layout.addWidget(bitrate_label, 1, 0)
         quality_layout.addWidget(self.ffmpeg_bitrate_spinbox, 1, 1)
 
         # Buffer size
         bufsize_label = QLabel(self.tr("Buffer Size:"))
-        # Color styling handled by qt-material theme
+        bufsize_label.setProperty("class", "FFmpegLabel")
         quality_layout.addWidget(bufsize_label, 1, 2)
         quality_layout.addWidget(self.ffmpeg_bufsize_spinbox, 1, 3)
 
@@ -507,12 +483,12 @@ class FFmpegSettingsTab(QWidget):
 
         # Format and presets section
         format_label = QLabel(self.tr("Pixel Format:"))
-        # Color styling handled by qt-material theme
+        format_label.setProperty("class", "FFmpegLabel")
         quality_layout.addWidget(format_label, 3, 0)
         quality_layout.addWidget(self.ffmpeg_pix_fmt_combo, 3, 1)
 
         preset_label = QLabel(self.tr("Encoder Speed:"))
-        # Color styling handled by qt-material theme
+        preset_label.setProperty("class", "FFmpegLabel")
         quality_layout.addWidget(preset_label, 3, 2)
         quality_layout.addWidget(self.ffmpeg_filter_preset_combo, 3, 3)
 
@@ -533,6 +509,7 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_filter_group = QGroupBox(self.tr("Filters"))
         filter_layout = QVBoxLayout(self.ffmpeg_filter_group)
         filter_label = QLabel(self.tr("Video Filters:"))
+        filter_label.setProperty("class", "FFmpegLabel")
         self.crop_filter_edit = QLineEdit()
         self.crop_filter_edit.setPlaceholderText(self.tr("e.g. crop=width:height:x:y"))
         self.crop_filter_edit.setToolTip(self.tr("Additional FFmpeg filter string"))

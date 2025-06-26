@@ -191,7 +191,12 @@ EXPECTED_SCHEMA: Dict[str, Any] = {
     "pipeline": {"default_tile_size": int, "supported_extensions": list},
     "sanchez": {"bin_dir": str},
     "logging": {"level": str},
-    "theme": {"name": str, "custom_overrides": bool, "density_scale": str, "fallback_enabled": bool},
+    "theme": {
+        "name": str,
+        "custom_overrides": bool,
+        "density_scale": str,
+        "fallback_enabled": bool,
+    },
 }
 
 

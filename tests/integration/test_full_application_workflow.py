@@ -78,7 +78,6 @@ class TestFullApplicationWorkflow:
             patch("socket.gethostbyname") as mock_gethostbyname,
             patch("subprocess.run") as mock_subprocess,
         ):
-
             mock_models.return_value = ["rife-v4.6"]
             mock_find_rife.return_value = pathlib.Path("/mock/rife")
             mock_analyze.return_value = {

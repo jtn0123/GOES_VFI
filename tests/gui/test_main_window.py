@@ -61,28 +61,24 @@ def mock_worker(mocker):
 def mock_dialogs():
     """Mocks QFileDialog and QMessageBox."""
     with (
-        # Patch QFileDialog methods in both gui.py and main_tab.py
-        patch("goesvfi.gui.QFileDialog.getExistingDirectory", return_value="/fake/input"),
+        # Patch QFileDialog methods in main_tab.py (where they're actually imported)
         patch(
             "goesvfi.gui_tabs.main_tab.QFileDialog.getExistingDirectory",
             return_value="/fake/input",
         ) as mock_get_existing_dir_tab,
         patch(
-            "goesvfi.gui.QFileDialog.getSaveFileName",
-            return_value=("/fake/output.mp4", "Video Files (*.mp4 *.mov *.mkv)"),
-        ),
-        patch(
             "goesvfi.gui_tabs.main_tab.QFileDialog.getSaveFileName",
             return_value=("/fake/output.mp4", "Video Files (*.mp4 *.mov *.mkv)"),
         ) as mock_get_save_file_tab,
-        patch("goesvfi.gui.QMessageBox.critical") as mock_critical,
-        patch("goesvfi.gui.QMessageBox.information") as mock_info,
-        patch("goesvfi.gui.QMessageBox.warning") as mock_warning,
-        patch("goesvfi.gui.QMessageBox.question") as mock_question,
+        # Patch QMessageBox in PyQt6.QtWidgets (where it's actually used from)
+        patch("PyQt6.QtWidgets.QMessageBox.critical") as mock_critical,
+        patch("PyQt6.QtWidgets.QMessageBox.information") as mock_info,
+        patch("PyQt6.QtWidgets.QMessageBox.warning") as mock_warning,
+        patch("PyQt6.QtWidgets.QMessageBox.question") as mock_question,
     ):  # Mock question for closeEvent test
         yield {
-            "getExistingDirectory": mock_get_existing_dir_tab,  # Use the main_tab version since that's what tests check
-            "getSaveFileName": mock_get_save_file_tab,  # Use the main_tab version since that's what tests check
+            "getExistingDirectory": mock_get_existing_dir_tab,
+            "getSaveFileName": mock_get_save_file_tab,
             "critical": mock_critical,
             "information": mock_info,
             "warning": mock_warning,

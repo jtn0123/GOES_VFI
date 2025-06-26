@@ -503,7 +503,7 @@ class TestCropSelectionDialog:
         """Test CropSelectionDialog initialization with valid image."""
         dialog = CropSelectionDialog(sample_image)
 
-        assert dialog.windowTitle() == "Select Crop Region"
+        assert dialog.windowTitle() == "✂️ Select Crop Region"
         assert dialog.isModal() is True
         assert dialog.image == sample_image
         assert dialog.scale_factor > 0

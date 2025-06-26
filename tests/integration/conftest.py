@@ -178,7 +178,6 @@ def mock_vfi_processing():
         patch("subprocess.run") as mock_subprocess_run,
         patch("subprocess.Popen") as mock_subprocess_popen,
     ):
-
         # Mock RIFE executable exists
         mock_find_rife.return_value = "/mock/rife"
 

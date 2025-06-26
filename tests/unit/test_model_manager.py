@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import ClassVar, Optional
 from unittest.mock import MagicMock, patch
 
-from PyQt6.QtCore import QSettings
+from PyQt6.QtCore import QCoreApplication, QSettings
 from PyQt6.QtWidgets import QApplication, QComboBox
 
 from goesvfi.gui_components.model_manager import ModelManager
@@ -15,7 +15,7 @@ from goesvfi.gui_components.model_manager import ModelManager
 class TestModelManager(unittest.TestCase):
     """Test cases for ModelManager."""
 
-    app: ClassVar[Optional[QApplication]] = None
+    app: ClassVar[Optional[QCoreApplication]] = None
 
     @classmethod
     def setUpClass(cls):
@@ -23,7 +23,7 @@ class TestModelManager(unittest.TestCase):
         if not QApplication.instance():
             cls.app = QApplication([])
         else:
-            cls.app = QApplication.instance()
+            cls.app = QCoreApplication.instance()
 
     def setUp(self):
         """Set up test fixtures."""

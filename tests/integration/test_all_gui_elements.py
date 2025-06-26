@@ -44,7 +44,6 @@ class TestAllGUIElements:
             patch("os.path.exists") as mock_exists,
             patch("socket.gethostbyname") as mock_gethostbyname,
         ):
-
             mock_models.return_value = ["rife-v4.6"]
             mock_find_rife.return_value = pathlib.Path("/mock/rife")
             mock_analyze.return_value = {

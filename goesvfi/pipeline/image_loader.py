@@ -135,8 +135,8 @@ class ImageLoader(ImageProcessor):
         except IOError as e:
             # Re-raise other IOErrors encountered by Pillow
             raise InputError(f"Error reading image file {source_path}: {e}") from e
-        except MemoryError:
-            # Re-raise memory errors
+        except MemoryError:  # pylint: disable=try-except-raise
+            # Re-raise memory errors unchanged - let caller handle OOM
             raise
         except (KeyError, ValueError, RuntimeError) as e:
             # Catch any other unexpected errors during loading

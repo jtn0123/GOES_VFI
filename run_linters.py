@@ -108,9 +108,7 @@ def run_vulture(paths: List[str]) -> Tuple[int, str, int]:
         print_colored("Vulture is not installed. Skipping dead code check.", YELLOW)
         return 0, "Vulture not installed", 0
 
-    print_colored(
-        f"\n{BOLD}Running Vulture (Dead Code Finder)...{RESET}", BLUE, bold=True
-    )
+    print_colored(f"\n{BOLD}Running Vulture (Dead Code Finder)...{RESET}", BLUE, bold=True)
 
     # Build vulture command
     cmd = [
@@ -124,21 +122,13 @@ def run_vulture(paths: List[str]) -> Tuple[int, str, int]:
     exit_code, output = run_command(cmd)
 
     # Count issues - vulture outputs one issue per line (excluding empty lines)
-    issue_count = len(
-        [
-            line
-            for line in output.split("\n")
-            if line.strip() and not line.startswith("vulture:")
-        ]
-    )
+    issue_count = len([line for line in output.split("\n") if line.strip() and not line.startswith("vulture:")])
 
     if exit_code == 0 and issue_count == 0:
         print_colored("Vulture found no dead code! ✅", GREEN, bold=True)
     elif issue_count > 0:
         print(output)
-        print_colored(
-            f"Vulture found {issue_count} instances of potentially dead code. ❌", RED
-        )
+        print_colored(f"Vulture found {issue_count} instances of potentially dead code. ❌", RED)
     else:
         print(output)
         print_colored("Vulture completed with warnings.", YELLOW)
@@ -168,9 +158,7 @@ def run_flake8_bugbear(paths: List[str]) -> Tuple[int, str, int]:
         )
         return 0, "flake8-bugbear not installed", 0
 
-    print_colored(
-        f"\n{BOLD}Running Flake8-Bugbear (Bug Detection)...{RESET}", BLUE, bold=True
-    )
+    print_colored(f"\n{BOLD}Running Flake8-Bugbear (Bug Detection)...{RESET}", BLUE, bold=True)
 
     # Build flake8 command with bugbear-specific settings
     cmd = [
@@ -184,11 +172,7 @@ def run_flake8_bugbear(paths: List[str]) -> Tuple[int, str, int]:
 
     # Count issues by counting lines with actual error reports
     issue_count = len(
-        [
-            line
-            for line in output.split("\n")
-            if ":" in line and any(f"B{i:03d}" in line for i in range(1, 999))
-        ]
+        [line for line in output.split("\n") if ":" in line and any(f"B{i:03d}" in line for i in range(1, 999))]
     )
 
     if exit_code == 0 and issue_count == 0:
@@ -411,9 +395,7 @@ def run_ruff(paths: List[str]) -> Tuple[int, str, int]:
     exit_code, output = run_command(cmd)
 
     # Count issues by counting lines with file paths
-    issue_count = len(
-        [line for line in output.split("\n") if line.strip() and ":" in line]
-    )
+    issue_count = len([line for line in output.split("\n") if line.strip() and ":" in line])
 
     if exit_code == 0:
         print_colored("Ruff found no issues! ✅", GREEN, bold=True)
@@ -500,9 +482,7 @@ def run_safety() -> Tuple[int, str, int]:
     Returns:
         Tuple of (exit_code, output, issue_count)
     """
-    print_colored(
-        f"\n{BOLD}Running Safety Dependency Scanner...{RESET}", BLUE, bold=True
-    )
+    print_colored(f"\n{BOLD}Running Safety Dependency Scanner...{RESET}", BLUE, bold=True)
 
     # Check if safety is available
     exit_code, _ = run_command(["safety", "--version"])
@@ -605,9 +585,7 @@ def run_pylint(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, 
             YELLOW,
         )
     elif exit_code < 8:  # Warning issues
-        print_colored(
-            f"Pylint found {issue_count} warnings. Exit code: {exit_code} ⚠️", YELLOW
-        )
+        print_colored(f"Pylint found {issue_count} warnings. Exit code: {exit_code} ⚠️", YELLOW)
     else:  # Error/fatal issues
         print_colored(
             f"Pylint found {issue_count} significant issues. Exit code: {exit_code} ❌",
@@ -629,38 +607,22 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_PATHS,
         help=f"Paths to lint (default: {' '.join(DEFAULT_PATHS)})",
     )
-    parser.add_argument(
-        "--jobs", "-j", type=int, help="Number of parallel jobs (default: auto)"
-    )
+    parser.add_argument("--jobs", "-j", type=int, help="Number of parallel jobs (default: auto)")
     parser.add_argument("--flake8-only", action="store_true", help="Run only flake8")
-    parser.add_argument(
-        "--bugbear-only", action="store_true", help="Run only flake8-bugbear"
-    )
+    parser.add_argument("--bugbear-only", action="store_true", help="Run only flake8-bugbear")
     parser.add_argument(
         "--vulture-only",
         action="store_true",
         help="Run only vulture (dead code finder)",
     )
     parser.add_argument("--pylint-only", action="store_true", help="Run only pylint")
-    parser.add_argument(
-        "--mypy-only", action="store_true", help="Run only mypy type checking"
-    )
-    parser.add_argument(
-        "--black-only", action="store_true", help="Run only Black code formatter"
-    )
-    parser.add_argument(
-        "--isort-only", action="store_true", help="Run only isort import sorting"
-    )
+    parser.add_argument("--mypy-only", action="store_true", help="Run only mypy type checking")
+    parser.add_argument("--black-only", action="store_true", help="Run only Black code formatter")
+    parser.add_argument("--isort-only", action="store_true", help="Run only isort import sorting")
     parser.add_argument("--ruff-only", action="store_true", help="Run only Ruff linter")
-    parser.add_argument(
-        "--pyright-only", action="store_true", help="Run only Pyright type checker"
-    )
-    parser.add_argument(
-        "--bandit-only", action="store_true", help="Run only Bandit security scanner"
-    )
-    parser.add_argument(
-        "--safety-only", action="store_true", help="Run only Safety dependency scanner"
-    )
+    parser.add_argument("--pyright-only", action="store_true", help="Run only Pyright type checker")
+    parser.add_argument("--bandit-only", action="store_true", help="Run only Bandit security scanner")
+    parser.add_argument("--safety-only", action="store_true", help="Run only Safety dependency scanner")
     parser.add_argument("--strict", action="store_true", help="Run mypy in strict mode")
     parser.add_argument(
         "--check",
@@ -672,9 +634,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Apply formatting changes with Black/isort (will modify files)",
     )
-    parser.add_argument(
-        "--fix", action="store_true", help="Try to auto-fix issues (limited support)"
-    )
+    parser.add_argument("--fix", action="store_true", help="Try to auto-fix issues (limited support)")
     return parser.parse_args()
 
 
@@ -700,9 +660,7 @@ def main() -> int:
 
     # Print header
     print_colored("\n" + "=" * 70, BLUE)
-    print_colored(
-        "             GOES_VFI LINTER RUNNER                ", BLUE, bold=True
-    )
+    print_colored("             GOES_VFI LINTER RUNNER                ", BLUE, bold=True)
     print_colored("=" * 70 + "\n", BLUE)
 
     # Run linters based on options
@@ -791,9 +749,7 @@ def main() -> int:
 
     # Display total and final result
     if all(code == 0 for code in exit_codes) and total_issues == 0:
-        print_colored(
-            f"Total: {total_issues} issues - All linters passed! 🎉", GREEN, bold=True
-        )
+        print_colored(f"Total: {total_issues} issues - All linters passed! 🎉", GREEN, bold=True)
         return 0
     else:
         color = YELLOW if total_issues < 20 else RED

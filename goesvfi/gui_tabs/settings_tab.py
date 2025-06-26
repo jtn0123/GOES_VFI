@@ -74,17 +74,7 @@ class SettingsTab(QWidget):
         """Create the settings header."""
         header = QLabel("⚙️ Application Settings")
         header.setProperty("class", "AppHeader")
-        header.setStyleSheet(
-            """
-            QLabel {
-                font-size: 18px;
-                font-weight: bold;
-                padding: 12px 16px;
-                border-radius: 8px;
-                margin-bottom: 10px;
-            }
-            """
-        )
+        # Header styling handled by AppHeader theme class
         return header
 
     def _create_appearance_tab(self) -> QWidget:
@@ -102,26 +92,40 @@ class SettingsTab(QWidget):
         self.theme_combo = QComboBox()
         self.theme_combo.addItems(AVAILABLE_THEMES)
         self.theme_combo.setToolTip("Select the application theme")
-        theme_layout.addRow("Theme:", self.theme_combo)
+        theme_label = QLabel("Theme:")
+        theme_label.setProperty("class", "FFmpegLabel")
+        theme_layout.addRow(theme_label, self.theme_combo)
 
         # Custom overrides
         self.custom_overrides_checkbox = QCheckBox("Enable custom GOES-VFI styling")
         self.custom_overrides_checkbox.setToolTip("Apply domain-specific styling for satellite data visualization")
-        theme_layout.addRow("Custom styling:", self.custom_overrides_checkbox)
+        custom_styling_label = QLabel("Custom styling:")
+        custom_styling_label.setProperty("class", "FFmpegLabel")
+        theme_layout.addRow(custom_styling_label, self.custom_overrides_checkbox)
 
         # Density scale
         self.density_scale_combo = QComboBox()
         self.density_scale_combo.addItems(
-            ["0 (Normal)", "-1 (Compact)", "-2 (Very Compact)", "1 (Spacious)", "2 (Very Spacious)"]
+            [
+                "0 (Normal)",
+                "-1 (Compact)",
+                "-2 (Very Compact)",
+                "1 (Spacious)",
+                "2 (Very Spacious)",
+            ]
         )
         self.density_scale_combo.setToolTip("Adjust UI element spacing and sizing")
-        theme_layout.addRow("UI Density:", self.density_scale_combo)
+        ui_density_label = QLabel("UI Density:")
+        ui_density_label.setProperty("class", "FFmpegLabel")
+        theme_layout.addRow(ui_density_label, self.density_scale_combo)
 
         # Theme preview
         preview_label = QLabel("Theme preview will update when you change themes")
         preview_label.setProperty("class", "StatusInfo")
         preview_label.setWordWrap(True)
-        theme_layout.addRow("Preview:", preview_label)
+        preview_title_label = QLabel("Preview:")
+        preview_title_label.setProperty("class", "FFmpegLabel")
+        theme_layout.addRow(preview_title_label, preview_label)
 
         layout.addWidget(theme_group)
 
@@ -158,12 +162,16 @@ class SettingsTab(QWidget):
         # Auto-save settings
         self.auto_save_checkbox = QCheckBox("Auto-save settings on change")
         self.auto_save_checkbox.setToolTip("Automatically save settings when changed")
-        general_layout.addRow("Auto-save:", self.auto_save_checkbox)
+        auto_save_label = QLabel("Auto-save:")
+        auto_save_label.setProperty("class", "FFmpegLabel")
+        general_layout.addRow(auto_save_label, self.auto_save_checkbox)
 
         # Debug mode
         self.debug_mode_checkbox = QCheckBox("Enable debug mode")
         self.debug_mode_checkbox.setToolTip("Enable debug logging and additional diagnostics")
-        general_layout.addRow("Debug mode:", self.debug_mode_checkbox)
+        debug_mode_label = QLabel("Debug mode:")
+        debug_mode_label.setProperty("class", "FFmpegLabel")
+        general_layout.addRow(debug_mode_label, self.debug_mode_checkbox)
 
         layout.addWidget(general_group)
 
@@ -177,14 +185,18 @@ class SettingsTab(QWidget):
         self.preview_delay_spinbox.setSuffix(" ms")
         self.preview_delay_spinbox.setValue(100)
         self.preview_delay_spinbox.setToolTip("Delay before updating previews after changes")
-        performance_layout.addRow("Preview delay:", self.preview_delay_spinbox)
+        preview_delay_label = QLabel("Preview delay:")
+        preview_delay_label.setProperty("class", "FFmpegLabel")
+        performance_layout.addRow(preview_delay_label, self.preview_delay_spinbox)
 
         # Thread pool size
         self.thread_pool_spinbox = QSpinBox()
         self.thread_pool_spinbox.setRange(1, 16)
         self.thread_pool_spinbox.setValue(4)
         self.thread_pool_spinbox.setToolTip("Number of worker threads for processing")
-        performance_layout.addRow("Worker threads:", self.thread_pool_spinbox)
+        worker_threads_label = QLabel("Worker threads:")
+        worker_threads_label.setProperty("class", "FFmpegLabel")
+        performance_layout.addRow(worker_threads_label, self.thread_pool_spinbox)
 
         layout.addWidget(performance_group)
         layout.addStretch()
@@ -226,8 +238,9 @@ class SettingsTab(QWidget):
         dev_layout.addWidget(config_location_label)
 
         # Settings file location
-        if hasattr(self.parent(), "settings"):
-            settings_location = getattr(self.parent().settings, "fileName", lambda: "Unknown")()
+        parent = self.parent()
+        if parent and hasattr(parent, "settings"):
+            settings_location = getattr(parent.settings, "fileName", lambda: "Unknown")()
             settings_location_label = QLabel(f"Settings: {settings_location}")
         else:
             settings_location_label = QLabel("Settings: Unknown location")
@@ -315,7 +328,7 @@ class SettingsTab(QWidget):
             from PyQt6.QtWidgets import QApplication
 
             app = QApplication.instance()
-            if app:
+            if app and isinstance(app, QApplication):
                 self.theme_manager.change_theme(app, theme_name)
                 LOGGER.info(f"Applied theme: {theme_name}")
             else:

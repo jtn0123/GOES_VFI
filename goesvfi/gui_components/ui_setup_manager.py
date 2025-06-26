@@ -42,6 +42,13 @@ class UISetupManager:
         main_window.tab_widget.setDocumentMode(True)
         # Set elide mode for tabs to make them more compact
         main_window.tab_widget.setElideMode(Qt.TextElideMode.ElideRight)
+        # Make tabs movable for better user experience
+        main_window.tab_widget.setMovable(True)
+        # Set tab shape to rounded for better aesthetics
+        main_window.tab_widget.setTabShape(QTabWidget.TabShape.Rounded)
+        # Enable close buttons on tabs for enhanced UX (though we won't use them)
+        main_window.tab_widget.setTabsClosable(False)
+        # Tab bar width is controlled by CSS styling
 
         # Tab styling is now handled by qt-material theme system
         # Any custom overrides would be applied via ThemeManager's custom_overrides
@@ -88,14 +95,22 @@ class UISetupManager:
         # Create integrity check tab
         self.create_integrity_check_tab(main_window)
 
-        # Add all tabs to widget
-        main_window.tab_widget.addTab(main_window.main_tab, "Main")
-        main_window.tab_widget.addTab(main_window.ffmpeg_settings_tab, "FFmpeg Settings")
-        main_window.tab_widget.addTab(main_window.model_library_tab, "Model Library")
-        main_window.tab_widget.addTab(main_window.file_sorter_tab, "File Sorter")
-        main_window.tab_widget.addTab(main_window.date_sorter_tab, "Date Sorter")
-        main_window.tab_widget.addTab(main_window.combined_tab, "Satellite Integrity")
-        main_window.tab_widget.addTab(main_window.settings_tab, "⚙️ Settings")
+        # Add all tabs to widget with icon-only labels for ultra-compact design
+        main_window.tab_widget.addTab(main_window.main_tab, "🎬")
+        main_window.tab_widget.addTab(main_window.ffmpeg_settings_tab, "🎥")
+        main_window.tab_widget.addTab(main_window.model_library_tab, "📚")
+        main_window.tab_widget.addTab(main_window.file_sorter_tab, "📁")
+        main_window.tab_widget.addTab(main_window.date_sorter_tab, "📅")
+        main_window.tab_widget.addTab(main_window.combined_tab, "🛰️")
+        main_window.tab_widget.addTab(main_window.settings_tab, "⚙️")
+        # Add tooltips for the icon-only tabs
+        main_window.tab_widget.setTabToolTip(0, "Main - Video generation and processing")
+        main_window.tab_widget.setTabToolTip(1, "FFmpeg Settings - Video encoding options")
+        main_window.tab_widget.setTabToolTip(2, "Model Library - AI model management")
+        main_window.tab_widget.setTabToolTip(3, "File Sorter - Organize files by type")
+        main_window.tab_widget.setTabToolTip(4, "Date Sorter - Organize files by date")
+        main_window.tab_widget.setTabToolTip(5, "Satellite Integrity - Data validation")
+        main_window.tab_widget.setTabToolTip(6, "Settings - Application preferences")
 
     def create_integrity_check_tab(self, main_window: Any) -> None:
         """Create and configure the integrity check tab.

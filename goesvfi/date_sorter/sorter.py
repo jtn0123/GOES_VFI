@@ -287,8 +287,7 @@ class DateSorter:
 
                 except ValueError as e:
                     print(f"Could not parse date from filename {file_name!r} " f"with format {date_format!r}: {e}")
-                    # Optionally handle files that don't match the format
-                    pass  # Skip files that don't match the expected date format
+                    # Skip files that don't match the expected date format
                 except Exception as e:
                     print(f"Error processing file {file_path!r}: {e}")
                     # Handle other potential errors during file processing

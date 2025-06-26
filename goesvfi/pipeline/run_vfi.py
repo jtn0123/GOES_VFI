@@ -22,16 +22,24 @@ from goesvfi.pipeline.exceptions import (
 )
 
 # Import image processing classes that tests expect
-from goesvfi.pipeline.image_cropper import ImageCropper  # noqa: F401
-from goesvfi.pipeline.image_loader import ImageLoader  # noqa: F401
-from goesvfi.pipeline.image_saver import ImageSaver  # noqa: F401
+from goesvfi.pipeline.image_cropper import (  # noqa: F401  # pylint: disable=unused-import
+    ImageCropper,
+)
+from goesvfi.pipeline.image_loader import (  # noqa: F401  # pylint: disable=unused-import
+    ImageLoader,
+)
+from goesvfi.pipeline.image_saver import (  # noqa: F401  # pylint: disable=unused-import
+    ImageSaver,
+)
 
 # Import resource management
 from goesvfi.pipeline.resource_manager import (
     get_resource_manager,
     managed_executor,
 )
-from goesvfi.pipeline.sanchez_processor import SanchezProcessor  # noqa: F401
+from goesvfi.pipeline.sanchez_processor import (  # noqa: F401  # pylint: disable=unused-import
+    SanchezProcessor,
+)
 
 # --- Add Sanchez Import ---
 from goesvfi.sanchez.runner import colourise
@@ -234,7 +242,7 @@ class VFIProcessor:
         ffmpeg_proc: subprocess.Popen[bytes] | None = None
         try:
             # Start FFmpeg process
-            ffmpeg_proc = subprocess.Popen(
+            ffmpeg_proc = subprocess.Popen(  # pylint: disable=consider-using-with
                 ffmpeg_cmd,
                 stdin=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -786,7 +794,6 @@ def _process_with_rife(
     Yields:
         Tuple of (current_frame, total_frames, elapsed_time)
     """
-    import time
 
     start_time = time.time()
     total_pairs = len(all_processed_paths) - 1
@@ -818,7 +825,7 @@ def _process_with_rife(
             rife_cmd.append("-z")
 
         # Run RIFE interpolation
-        result = subprocess.run(rife_cmd, capture_output=True, text=True)
+        result = subprocess.run(rife_cmd, capture_output=True, text=True, check=False)
         if result.returncode != 0:
             LOGGER.error("RIFE failed: %s", result.stderr)
             continue
@@ -836,8 +843,8 @@ def _process_with_rife(
         except OSError as e:
             LOGGER.error("Failed to read interpolated frame %d: %s", i, e)
             raise ProcessingError(f"Failed to read interpolated frame {i}: {e}") from e
-        except FFmpegError:
-            # Re-raise FFmpeg errors as-is
+        except FFmpegError:  # pylint: disable=try-except-raise
+            # Re-raise FFmpeg errors as-is for proper handling upstream
             raise
 
         # Write the next original frame
@@ -1219,7 +1226,6 @@ def _process_in_skip_model_mode(
     Yields:
         Tuple of (current_frame, total_frames, elapsed_time)
     """
-    import time
 
     start_time = time.time()
     total_frames = len(image_paths)
@@ -1291,8 +1297,8 @@ def _process_single_image_worker(
             left, upper, right, lower = crop_rect_pil
             if right > orig_w or lower > orig_h:
                 raise ValueError(
-                    "Crop rectangle %s exceeds original dimensions (%sx%s) of image %s"
-                    % (crop_rect_pil, orig_w, orig_h, original_path.name)
+                    f"Crop rectangle {crop_rect_pil} exceeds original dimensions "
+                    f"({orig_w}x{orig_h}) of image {original_path.name}"
                 )
             try:
                 img_cropped = img.crop(crop_rect_pil)

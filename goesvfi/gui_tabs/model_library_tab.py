@@ -59,22 +59,7 @@ class ModelLibraryTab(QWidget):
         self.model_table.setHorizontalHeaderLabels(["🤖 Model Key", "📁 Path", "📊 Status"])
 
         # Style the table
-        self.model_table.setStyleSheet(
-            """
-            QTableWidget {
-                border-radius: 8px;
-            }
-            QTableWidget::item {
-                padding: 8px;
-            }
-            QHeaderView::section {
-                padding: 8px;
-                font-weight: bold;
-                font-size: 12px;
-            }
-            /* Scrollbar styling handled by qt-material theme */
-            """
-        )
+        # Use default qt-material styling for QTableWidget
 
         header = self.model_table.horizontalHeader()
         if header is not None:
@@ -97,36 +82,19 @@ class ModelLibraryTab(QWidget):
         """Create the enhanced header section."""
         header = QLabel("🤖 RIFE Model Library")
         header.setProperty("class", "AppHeader")
-        header.setStyleSheet(
-            """
-            QLabel {
-                font-size: 18px;
-                font-weight: bold;
-                padding: 12px 16px;
-                border-radius: 8px;
-                margin-bottom: 10px;
-            }
-            """
-        )
+        # AppHeader class already set above, remove duplicate styling
         layout.addWidget(header)
 
     def _create_info_section(self) -> QFrame:
         """Create the information section."""
         container = QFrame()
-        container.setStyleSheet(
-            """
-            QFrame {
-                border-radius: 8px;
-                padding: 10px;
-            }
-            """
-        )
+        # Use default qt-material styling for QFrame
 
         layout = QVBoxLayout(container)
         layout.setSpacing(8)
 
         info_label = QLabel("📚 Available RIFE Models")
-        info_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 5px;")
+        info_label.setProperty("class", "FFmpegLabel")
         layout.addWidget(info_label)
 
         description = QLabel(
@@ -134,7 +102,7 @@ class ModelLibraryTab(QWidget):
             "Models with ✅ status are ready to use for processing."
         )
         description.setWordWrap(True)
-        description.setStyleSheet("font-size: 11px; line-height: 1.4;")
+        # Use default qt-material styling for QLabel
         layout.addWidget(description)
 
         return container
@@ -142,36 +110,20 @@ class ModelLibraryTab(QWidget):
     def _create_status_section(self, layout: QVBoxLayout) -> None:
         """Create the status section."""
         status_container = QFrame()
-        status_container.setStyleSheet(
-            """
-            QFrame {
-                border-radius: 8px;
-                padding: 10px;
-                margin-top: 10px;
-            }
-            """
-        )
+        # Use default qt-material styling for QFrame
 
         status_layout = QHBoxLayout(status_container)
 
         # Status label
         self.status_label = QLabel("🔄 Loading model information...")
         self.status_label.setProperty("class", "StatusInfo")
-        self.status_label.setStyleSheet("padding: 8px 12px; border-radius: 4px; font-weight: bold;")
+        # StatusInfo class already provides styling
         status_layout.addWidget(self.status_label)
 
         # Refresh button
         refresh_btn = QPushButton("🔄 Refresh")
-        refresh_btn.setStyleSheet(
-            """
-            QPushButton {
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-weight: bold;
-                font-size: 11px;
-            }
-            """
-        )
+        refresh_btn.setProperty("class", "DialogButton")
+        refresh_btn.setToolTip("Refresh the model list")
         refresh_btn.clicked.connect(self._populate_model_table)
         status_layout.addWidget(refresh_btn)
 
@@ -242,4 +194,4 @@ class ModelLibraryTab(QWidget):
             if hasattr(self, "status_label"):
                 self.status_label.setText("❌ Error loading model information")
                 self.status_label.setProperty("class", "StatusError")
-                self.status_label.setStyleSheet("padding: 8px 12px; border-radius: 4px; font-weight: bold;")
+                # StatusError class already provides styling

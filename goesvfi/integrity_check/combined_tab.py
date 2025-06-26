@@ -60,29 +60,46 @@ class CombinedIntegrityAndImageryTab(QWidget):
         """Set up the user interface."""
         # Main layout
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
 
-        # Tab selection buttons
-        button_layout = QHBoxLayout()
+        # Add header
+        from PyQt6.QtWidgets import QFrame, QLabel
 
-        self.integrity_button = QPushButton("File Integrity")
+        header = QLabel("🛰️ Satellite Integrity Check")
+        header.setProperty("class", "AppHeader")
+        layout.addWidget(header)
+
+        # Tab selection buttons in a frame
+        button_frame = QFrame()
+        button_frame.setProperty("class", "ControlFrame")
+        button_layout = QHBoxLayout(button_frame)
+        button_layout.setContentsMargins(10, 10, 10, 10)
+        button_layout.setSpacing(10)
+
+        self.integrity_button = QPushButton("📁 File Integrity")
         self.integrity_button.setCheckable(True)
         self.integrity_button.setChecked(True)
+        self.integrity_button.setProperty("class", "TabButton")
         button_layout.addWidget(self.integrity_button)
 
-        self.timeline_button = QPushButton("Timeline")
+        self.timeline_button = QPushButton("📈 Timeline")
         self.timeline_button.setCheckable(True)
+        self.timeline_button.setProperty("class", "TabButton")
         button_layout.addWidget(self.timeline_button)
 
-        self.results_button = QPushButton("Results")
+        self.results_button = QPushButton("📋 Results")
         self.results_button.setCheckable(True)
+        self.results_button.setProperty("class", "TabButton")
         button_layout.addWidget(self.results_button)
 
-        self.imagery_button = QPushButton("GOES Imagery")
+        self.imagery_button = QPushButton("🌍 GOES Imagery")
         self.imagery_button.setCheckable(True)
+        self.imagery_button.setProperty("class", "TabButton")
         button_layout.addWidget(self.imagery_button)
 
         button_layout.addStretch()
-        layout.addLayout(button_layout)
+        layout.addWidget(button_frame)
 
         # Stacked widget for tab content
         self.stacked_widget = QStackedWidget()

@@ -173,7 +173,7 @@ class TestTimeIndex(unittest.TestCase):
         self.assertFalse(TimeIndex.is_cdn_available(old_date))
 
         # Edge case - exactly at the window boundary
-        current_time - timedelta(days=TimeIndex.RECENT_WINDOW_DAYS)
+        _ = current_time - timedelta(days=TimeIndex.RECENT_WINDOW_DAYS)
         # This could be either True or False depending on implementation details,
         # so we're not asserting a specific value
 

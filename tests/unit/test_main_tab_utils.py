@@ -65,37 +65,37 @@ class TestValidateThreadSpec:
     def test_empty_thread_spec_allowed(self, main_tab):
         """Test that empty thread spec is allowed."""
         main_tab._validate_thread_spec("")
-        assert main_tab.rife_thread_spec_edit.styleSheet() == ""
+        assert main_tab.rife_thread_spec_edit.property("class") == ""
 
     def test_valid_thread_spec_single_digits(self, main_tab):
         """Test valid thread spec with single digits."""
         main_tab._validate_thread_spec("1:2:3")
-        assert main_tab.rife_thread_spec_edit.styleSheet() == ""
+        assert main_tab.rife_thread_spec_edit.property("class") == ""
 
     def test_valid_thread_spec_multiple_digits(self, main_tab):
         """Test valid thread spec with multiple digits."""
         main_tab._validate_thread_spec("10:20:30")
-        assert main_tab.rife_thread_spec_edit.styleSheet() == ""
+        assert main_tab.rife_thread_spec_edit.property("class") == ""
 
     def test_invalid_thread_spec_missing_colons(self, main_tab):
         """Test invalid thread spec with missing colons."""
         main_tab._validate_thread_spec("1:2")
-        assert "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
+        assert main_tab.rife_thread_spec_edit.property("class") == "ValidationError"
 
     def test_invalid_thread_spec_extra_colons(self, main_tab):
         """Test invalid thread spec with extra colons."""
         main_tab._validate_thread_spec("1:2:3:4")
-        assert "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
+        assert main_tab.rife_thread_spec_edit.property("class") == "ValidationError"
 
     def test_invalid_thread_spec_non_digits(self, main_tab):
         """Test invalid thread spec with non-digit characters."""
         main_tab._validate_thread_spec("a:b:c")
-        assert "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
+        assert main_tab.rife_thread_spec_edit.property("class") == "ValidationError"
 
     def test_invalid_thread_spec_mixed_content(self, main_tab):
         """Test invalid thread spec with mixed valid/invalid content."""
         main_tab._validate_thread_spec("1:2a:3")
-        assert "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
+        assert main_tab.rife_thread_spec_edit.property("class") == "ValidationError"
 
 
 class TestGenerateTimestampedOutputPath:

@@ -26,6 +26,9 @@ class AWSConfigDialog(QDialog):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
+        # Apply material theme dialog class
+        self.setProperty("class", "CropSelectionDialog")
+
         self.setWindowTitle(self.tr("AWS S3 Configuration"))
         self.setMinimumWidth(500)
 
@@ -38,7 +41,7 @@ class AWSConfigDialog(QDialog):
             "This application uses unsigned S3 access for the public NOAA buckets."
         )
         info_label.setWordWrap(True)
-        info_label.setStyleSheet("QLabel { padding: 10px; border-radius: 5px; }")
+        info_label.setProperty("class", "StatusInfo")
         layout.addWidget(info_label)
 
         form_layout = QFormLayout()
@@ -75,13 +78,18 @@ class AWSConfigDialog(QDialog):
             "Only provide a profile if you need to access private buckets."
         )
         note_label.setWordWrap(True)
-        note_label.setStyleSheet("QLabel { }")
+        note_label.setProperty("class", "StatusLabel")
 
         layout.addLayout(form_layout)
         layout.addWidget(note_label)
 
         # Buttons
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        # Apply theme classes to dialog buttons
+        if ok_button := button_box.button(QDialogButtonBox.StandardButton.Ok):
+            ok_button.setProperty("class", "DialogPrimaryButton")
+        if cancel_button := button_box.button(QDialogButtonBox.StandardButton.Cancel):
+            cancel_button.setProperty("class", "DialogButton")
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
@@ -110,6 +118,9 @@ class CDNConfigDialog(QDialog):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
+        # Apply material theme dialog class
+        self.setProperty("class", "CropSelectionDialog")
+
         self.setWindowTitle(self.tr("CDN Configuration"))
         self.setMinimumWidth(400)
 
@@ -131,13 +142,18 @@ class CDNConfigDialog(QDialog):
             "The NOAA STAR CDN may not provide all resolutions for all images."
         )
         note_label.setWordWrap(True)
-        note_label.setStyleSheet("QLabel { }")
+        note_label.setProperty("class", "StatusLabel")
 
         layout.addLayout(form_layout)
         layout.addWidget(note_label)
 
         # Buttons
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        # Apply theme classes to dialog buttons
+        if ok_button := button_box.button(QDialogButtonBox.StandardButton.Ok):
+            ok_button.setProperty("class", "DialogPrimaryButton")
+        if cancel_button := button_box.button(QDialogButtonBox.StandardButton.Cancel):
+            cancel_button.setProperty("class", "DialogButton")
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
@@ -156,6 +172,9 @@ class AdvancedOptionsDialog(QDialog):
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+
+        # Apply material theme dialog class
+        self.setProperty("class", "CropSelectionDialog")
 
         self.setWindowTitle(self.tr("Advanced Integrity Check Options"))
         self.setMinimumWidth(500)
@@ -266,6 +285,11 @@ class AdvancedOptionsDialog(QDialog):
 
         # Buttons
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        # Apply theme classes to dialog buttons
+        if ok_button := button_box.button(QDialogButtonBox.StandardButton.Ok):
+            ok_button.setProperty("class", "DialogPrimaryButton")
+        if cancel_button := button_box.button(QDialogButtonBox.StandardButton.Cancel):
+            cancel_button.setProperty("class", "DialogButton")
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
@@ -320,6 +344,9 @@ class BatchOperationsDialog(QDialog):
 
     def __init__(self, items: List[EnhancedMissingTimestamp], parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
+
+        # Apply material theme dialog class
+        self.setProperty("class", "CropSelectionDialog")
 
         self.items = items
 
@@ -378,6 +405,11 @@ class BatchOperationsDialog(QDialog):
 
         # Buttons
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        # Apply theme classes to dialog buttons
+        if ok_button := button_box.button(QDialogButtonBox.StandardButton.Ok):
+            ok_button.setProperty("class", "DialogPrimaryButton")
+        if cancel_button := button_box.button(QDialogButtonBox.StandardButton.Cancel):
+            cancel_button.setProperty("class", "DialogButton")
         button_box.accepted.connect(self.accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)

@@ -34,8 +34,7 @@ class WidgetSafetyValidator(ValidatorBase):
         if value is None:
             if self.allow_none:
                 return ValidationResult.success()
-            else:
-                return ValidationResult.failure(self._create_error("Widget is None", value))
+            return ValidationResult.failure(self._create_error("Widget is None", value))
 
         # Check if object still exists (not deleted)
         try:
@@ -107,10 +106,13 @@ class SafeWidgetAccessor:
             if result.is_valid:
                 # Type checking passed, safe to return
                 return widget if isinstance(widget, (type(None), QWidget)) else cast(Optional[QWidget], default)
-            else:
-                if result.errors:
-                    LOGGER.debug("Widget %s validation failed: %s", widget_name, result.errors[0].message)
-                return cast(Optional[QWidget], default)
+            if result.errors:
+                LOGGER.debug(
+                    "Widget %s validation failed: %s",
+                    widget_name,
+                    result.errors[0].message,
+                )
+            return cast(Optional[QWidget], default)
 
         except Exception as e:
             error = self.classifier.create_structured_error(e, f"get_widget_{widget_name}", "widget_accessor")
@@ -148,12 +150,10 @@ class SafeWidgetAccessor:
                 if hasattr(widget, value_getter):
                     method = getattr(widget, value_getter)
                     return method()
-                else:
-                    LOGGER.debug("Widget %s has no method %s", widget_name, value_getter)
-                    return default
-            else:
-                # Callable
-                return value_getter(widget)
+                LOGGER.debug("Widget %s has no method %s", widget_name, value_getter)
+                return default
+            # Callable
+            return value_getter(widget)
 
         except Exception as e:
             error = self.classifier.create_structured_error(e, f"get_value_{widget_name}", "widget_accessor")
@@ -192,13 +192,11 @@ class SafeWidgetAccessor:
                     method = getattr(widget, value_setter)
                     method(value)
                     return True
-                else:
-                    LOGGER.debug("Widget %s has no method %s", widget_name, value_setter)
-                    return False
-            else:
-                # Callable
-                value_setter(widget, value)
-                return True
+                LOGGER.debug("Widget %s has no method %s", widget_name, value_setter)
+                return False
+            # Callable
+            value_setter(widget, value)
+            return True
 
         except Exception as e:
             error = self.classifier.create_structured_error(e, f"set_value_{widget_name}", "widget_accessor")

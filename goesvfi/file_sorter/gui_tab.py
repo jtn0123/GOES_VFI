@@ -44,71 +44,27 @@ class FileSorterTab(QWidget):
         main_layout.setContentsMargins(15, 15, 15, 15)
 
         # Add enhanced header
-        self._create_header(main_layout)
+        header = QLabel("📁 File Sorter - Organize Converted Files")
+        header.setProperty("class", "AppHeader")
+        main_layout.addWidget(header)
 
         # Source Group with enhanced styling
         source_group = QGroupBox(self.tr("📁 Source Directory"))
         source_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        source_group.setStyleSheet(
-            """
-            QGroupBox {
-                border-radius: 8px;
-                font-weight: bold;
-                font-size: 12px;
-                padding-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 8px 0 8px;
-            }
-            """
-        )
+        # Use default qt-material styling for QGroupBox
         source_layout = QGridLayout()
         source_layout.setContentsMargins(10, 15, 10, 10)
         source_layout.setSpacing(8)
 
         source_label = QLabel(self.tr("📂 Folder:"))
-        source_label.setStyleSheet("font-weight: bold;")
+        source_label.setProperty("class", "StandardLabel")
 
         self.source_line_edit = QLineEdit()
-        self.source_line_edit.setStyleSheet(
-            """
-            QLineEdit {
-                padding: 8px 12px;
-                background-color: #3a3a3a;
-                border: 2px solid #555555;
-                border-radius: 6px;
-                color: #f0f0f0;
-                font-size: 11px;
-            }
-            QLineEdit:focus {
-                border-color: #4a6fa5;
-            }
-            """
-        )
+        # Use default qt-material styling for QLineEdit
 
         source_browse_button = QPushButton(self.tr("🔍 Browse..."))
         source_browse_button.setFixedWidth(120)
-        source_browse_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #4a6fa5;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-weight: bold;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #5a7fb5;
-            }
-            QPushButton:pressed {
-                background-color: #3a5f95;
-            }
-            """
-        )
+        # Use default qt-material styling for QPushButton
 
         source_layout.addWidget(source_label, 0, 0)
         source_layout.addWidget(self.source_line_edit, 0, 1)
@@ -119,36 +75,16 @@ class FileSorterTab(QWidget):
         # Destination Group with enhanced styling
         destination_group = QGroupBox(self.tr("💾 Destination"))
         destination_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        destination_group.setStyleSheet(
-            """
-            QGroupBox {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
-                border-radius: 8px;
-                font-weight: bold;
-                font-size: 12px;
-                color: #f0f0f0;
-                padding-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 8px 0 8px;
-                color: #ffffff;
-            }
-            """
-        )
+        # Use default qt-material styling for QGroupBox
         destination_layout = QGridLayout()
         destination_layout.setContentsMargins(10, 15, 10, 10)
         destination_layout.setSpacing(8)
 
         destination_label = QLabel(self.tr("📄 Output Folder:"))
-        destination_label.setStyleSheet("font-weight: bold;")
+        destination_label.setProperty("class", "StandardLabel")
 
         destination_info = QLabel(self.tr("✨ Files will be sorted to a 'converted' subfolder"))
-        destination_info.setStyleSheet(
-            "color: #66aaff; font-style: italic; padding: 4px 8px; " "background-color: #2a2a2a; border-radius: 4px;"
-        )
+        destination_info.setProperty("class", "StatusInfo")
 
         destination_layout.addWidget(destination_label, 0, 0)
         destination_layout.addWidget(destination_info, 0, 1, 1, 2)
@@ -158,82 +94,23 @@ class FileSorterTab(QWidget):
         # Options Group with enhanced styling
         options_group = QGroupBox(self.tr("⚙️ Options"))
         options_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        options_group.setStyleSheet(
-            """
-            QGroupBox {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
-                border-radius: 8px;
-                font-weight: bold;
-                font-size: 12px;
-                color: #f0f0f0;
-                padding-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 8px 0 8px;
-                color: #ffffff;
-            }
-            """
-        )
+        # Use default qt-material styling for QGroupBox
         options_layout = QVBoxLayout()
         options_layout.setContentsMargins(10, 15, 10, 10)
         options_layout.setSpacing(8)
 
         # Dry Run Checkbox with enhanced styling
         self.dry_run_checkbox = QCheckBox(self.tr("📋 Dry Run (Log actions without moving files)"))
-        self.dry_run_checkbox.setStyleSheet(
-            """
-            QCheckBox {
-                color: #f0f0f0;
-                font-weight: bold;
-                spacing: 8px;
-            }
-            QCheckBox::indicator {
-                width: 16px;
-                height: 16px;
-                border: 2px solid #555555;
-                border-radius: 3px;
-                background-color: #3a3a3a;
-            }
-            QCheckBox::indicator:checked {
-                background-color: #4a6fa5;
-                border-color: #4a6fa5;
-            }
-            QCheckBox::indicator:checked:hover {
-                background-color: #5a7fb5;
-            }
-            """
-        )
+        # Use default qt-material styling for QCheckBox
         options_layout.addWidget(self.dry_run_checkbox)
 
         # Duplicate Handling with enhanced styling
         duplicate_label = QLabel(self.tr("🔄 Duplicate Handling:"))
-        duplicate_label.setStyleSheet("font-weight: bold; margin-top: 8px;")
+        duplicate_label.setProperty("class", "StandardLabel")
 
         self.duplicate_combo = QComboBox()
         self.duplicate_combo.addItems([self.tr("♾️ Overwrite"), self.tr("⏭️ Skip"), self.tr("🔄 Rename")])
-        self.duplicate_combo.setStyleSheet(
-            """
-            QComboBox {
-                padding: 8px 12px;
-                min-width: 140px;
-                background-color: #3a3a3a;
-                border: 2px solid #555555;
-                border-radius: 6px;
-                color: #f0f0f0;
-                font-size: 11px;
-            }
-            QComboBox:hover {
-                border-color: #4a6fa5;
-            }
-            QComboBox::drop-down {
-                border: none;
-                width: 20px;
-            }
-            """
-        )
+        # Use default qt-material styling for QComboBox
         options_layout.addWidget(duplicate_label)
         options_layout.addWidget(self.duplicate_combo)
 
@@ -243,25 +120,7 @@ class FileSorterTab(QWidget):
         # Actions Group with enhanced styling
         actions_group = QGroupBox(self.tr("🚀 Actions"))
         actions_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        actions_group.setStyleSheet(
-            """
-            QGroupBox {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
-                border-radius: 8px;
-                font-weight: bold;
-                font-size: 12px;
-                color: #f0f0f0;
-                padding-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 8px 0 8px;
-                color: #ffffff;
-            }
-            """
-        )
+        # Use default qt-material styling for QGroupBox
         actions_layout = QVBoxLayout()
         actions_layout.setContentsMargins(10, 15, 10, 10)
         actions_layout.setSpacing(8)
@@ -269,54 +128,14 @@ class FileSorterTab(QWidget):
         # Sort Button with enhanced styling
         self.sort_button = QPushButton(self.tr("📁 Sort Files"))
         self.sort_button.setFixedHeight(40)
-        self.sort_button.setStyleSheet(
-            """
-            QPushButton {
-                background-color: #4a6fa5;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 8px;
-                font-weight: bold;
-                font-size: 14px;
-            }
-            QPushButton:hover {
-                background-color: #5a7fb5;
-            }
-            QPushButton:pressed {
-                background-color: #3a5f95;
-            }
-            QPushButton:disabled {
-                background-color: #6a6a6a;
-                color: #aaaaaa;
-            }
-            """
-        )
+        self.sort_button.setProperty("class", "StartButton")
         actions_layout.addWidget(self.sort_button)
         actions_group.setLayout(actions_layout)
         main_layout.addWidget(actions_group)
 
         # Status Group with enhanced styling
         status_group = QGroupBox(self.tr("📊 Status & Progress"))
-        status_group.setStyleSheet(
-            """
-            QGroupBox {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
-                border-radius: 8px;
-                font-weight: bold;
-                font-size: 12px;
-                color: #f0f0f0;
-                padding-top: 10px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 8px 0 8px;
-                color: #ffffff;
-            }
-            """
-        )
+        # Use default qt-material styling for QGroupBox
         status_layout = QVBoxLayout()
         status_layout.setContentsMargins(10, 15, 10, 10)
         status_layout.setSpacing(10)
@@ -327,57 +146,14 @@ class FileSorterTab(QWidget):
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setFormat("%p% - Sorting files...")
-        self.progress_bar.setStyleSheet(
-            """
-            QProgressBar {
-                border: 2px solid #555555;
-                border-radius: 8px;
-                background-color: #3a3a3a;
-                text-align: center;
-                font-weight: bold;
-                color: #ffffff;
-                padding: 2px;
-            }
-            QProgressBar::chunk {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4a6fa5, stop:1 #3a5f95);
-                border-radius: 6px;
-            }
-            """
-        )
+        self.progress_bar.setProperty("class", "DataProgress")
         status_layout.addWidget(self.progress_bar)
 
         # Status Text Display with enhanced styling
         self.status_text = QTextEdit()
         self.status_text.setReadOnly(True)
         self.status_text.setMaximumHeight(150)
-        self.status_text.setStyleSheet(
-            """
-            QTextEdit {
-                background-color: #1a1a1a;
-                border: 2px solid #454545;
-                border-radius: 6px;
-                color: #f0f0f0;
-                font-family: 'Courier New', 'DejaVu Sans Mono', monospace;
-                font-size: 11px;
-                padding: 8px;
-                selection-background-color: #4a6fa5;
-            }
-            QScrollBar:vertical {
-                background-color: #2d2d2d;
-                width: 12px;
-                border-radius: 6px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #555555;
-                border-radius: 6px;
-                min-height: 20px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #666666;
-            }
-            """
-        )
+        self.status_text.setProperty("class", "DatePickerMonospace")
         status_layout.addWidget(self.status_text)
 
         status_group.setLayout(status_layout)
@@ -393,21 +169,7 @@ class FileSorterTab(QWidget):
     def _create_header(self, layout: QVBoxLayout) -> None:
         """Create the enhanced header section."""
         header = QLabel("🗂️ File Sorter - Organize Files by Type")
-        header.setStyleSheet(
-            """
-            QLabel {
-                font-size: 18px;
-                font-weight: bold;
-                color: #ffffff;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4a6fa5, stop:0.5 #3a5f95, stop:1 #2a4f85);
-                padding: 12px 16px;
-                border-radius: 8px;
-                margin-bottom: 10px;
-                border: 2px solid #5a7fb5;
-            }
-            """
-        )
+        header.setProperty("class", "AppHeader")
         layout.addWidget(header)
 
     def _browse_source(self) -> None:

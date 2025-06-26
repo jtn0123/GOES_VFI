@@ -192,10 +192,11 @@ class OptimizedDateSelectionTab(QWidget):
     def _open_visual_date_picker(self) -> None:
         """Open the visual date picker dialog."""
         # Use default range (last 7 days) since get_date_range isn't available
-        from datetime import datetime, timedelta
+        from datetime import datetime as dt
+        from datetime import timedelta
 
-        current_start = datetime.now() - timedelta(days=7)
-        current_end = datetime.now()
+        current_start = dt.now() - timedelta(days=7)
+        current_end = dt.now()
 
         dialog = VisualDateRangePicker(self, current_start, current_end)
         dialog.dateRangeSelected.connect(self._handle_date_range_selected)
@@ -222,9 +223,10 @@ class OptimizedDateSelectionTab(QWidget):
 
     def _select_today(self) -> None:
         """Select today's date range."""
-        from datetime import datetime, timedelta
+        from datetime import datetime as dt
+        from datetime import timedelta
 
-        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        today = dt.now().replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today + timedelta(days=1)
         self._handle_date_range_selected(today, tomorrow)
 

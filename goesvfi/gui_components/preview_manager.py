@@ -61,6 +61,10 @@ class PreviewManager(QObject):
             True if preview images were loaded successfully
         """
         try:
+            # Ensure input_dir is a Path object
+            if isinstance(input_dir, str):
+                input_dir = Path(input_dir)
+
             self.current_input_dir = input_dir
             self.current_crop_rect = crop_rect
 
@@ -133,6 +137,10 @@ class PreviewManager(QObject):
             Tuple of (first_path, middle_path, last_path), any may be None
         """
         try:
+            # Ensure input_dir is a Path object
+            if isinstance(input_dir, str):
+                input_dir = Path(input_dir)
+
             # Get all image files
             image_extensions = {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}
             image_files = []
