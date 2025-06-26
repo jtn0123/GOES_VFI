@@ -68,7 +68,7 @@ typing = [
     "types-Pillow",
     "types-aiofiles",
     "types-tqdm>=4.66.0",
-    "git+https://github.com/python-qt-tools/PyQt6-stubs.git",
+    "PyQt6-stubs @ git+https://github.com/python-qt-tools/PyQt6-stubs.git",
 ]
 
 docs = [
