@@ -99,7 +99,9 @@ class StateManager:
 
     def _update_crop_buttons(self) -> None:
         """Update crop button states."""
-        if hasattr(self.main_window, "main_tab") and hasattr(self.main_window.main_tab, "_update_crop_buttons_state"):
+        if hasattr(self.main_window, "main_tab") and hasattr(
+            self.main_window.main_tab, "_update_crop_buttons_state"
+        ):
             self.main_window.main_tab._update_crop_buttons_state()
         else:
             LOGGER.warning("Could not call main_tab._update_crop_buttons_state()")
@@ -117,17 +119,23 @@ class StateManager:
 
                 # Final verification
                 if self.main_window.in_dir:
-                    saved_dir = self.main_window.settings.value("paths/inputDirectory", "", type=str)
+                    saved_dir = self.main_window.settings.value(
+                        "paths/inputDirectory", "", type=str
+                    )
                     LOGGER.debug("Final verification - Input directory: %s", saved_dir)
 
                     # If saving failed, try to revert
                     if not saved_dir and old_path:
-                        LOGGER.warning("Input directory not saved, attempting to revert to previous value")
+                        LOGGER.warning(
+                            "Input directory not saved, attempting to revert to previous value"
+                        )
                         self.main_window._save_input_directory(old_path)
         except Exception as e:
             LOGGER.error("Error saving settings after input directory change: %s", e)
 
-    def _save_all_settings_with_crop_fallback(self, old_rect: Optional[Tuple[int, int, int, int]]) -> None:
+    def _save_all_settings_with_crop_fallback(
+        self, old_rect: Optional[Tuple[int, int, int, int]]
+    ) -> None:
         """Save all settings with fallback for crop rect.
 
         Args:
@@ -140,12 +148,16 @@ class StateManager:
 
                 # Final verification
                 if self.main_window.current_crop_rect:
-                    saved_rect = self.main_window.settings.value("preview/cropRectangle", "", type=str)
+                    saved_rect = self.main_window.settings.value(
+                        "preview/cropRectangle", "", type=str
+                    )
                     LOGGER.debug("Final verification - Crop rectangle: %s", saved_rect)
 
                     # If saving failed, try to revert
                     if not saved_rect and old_rect:
-                        LOGGER.warning("Crop rectangle not saved, attempting to revert to previous value")
+                        LOGGER.warning(
+                            "Crop rectangle not saved, attempting to revert to previous value"
+                        )
                         self.main_window._save_crop_rect(old_rect)
         except Exception as e:
             LOGGER.error("Error saving settings after crop rectangle change: %s", e)

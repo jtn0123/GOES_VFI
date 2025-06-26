@@ -7,6 +7,8 @@ py-version=3.13
 jobs=4
 # Allow loading of arbitrary C extensions
 unsafe-load-any-extension=no
+# Whitelist PyQt6 extension packages
+extension-pkg-whitelist=PyQt6
 # optimize-ast is no longer supported in pylint 3+
 # Keeping this comment for documentation purposes
 # Minimum line length for similarity reports

@@ -14,10 +14,8 @@ Options:
     --install-stubs Install all required type stubs (or --install)
 """
 
-import os
 import subprocess
 import sys
-from pathlib import Path
 
 # Core files that should pass mypy checks
 CORE_FILES = [
@@ -102,9 +100,7 @@ def main():
     try:
         subprocess.run(["python", "--version"], check=True, capture_output=True)
     except (subprocess.SubprocessError, FileNotFoundError):
-        print(
-            "Error: Python executable not found. Please activate your virtual environment."
-        )
+        print("Error: Python executable not found. Please activate your virtual environment.")
         print("   source venv-py313/bin/activate")
         return 1
 

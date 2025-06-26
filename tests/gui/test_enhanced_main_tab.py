@@ -2,7 +2,7 @@ import sys
 import types
 
 import pytest
-from PyQt6.QtWidgets import QApplication, QLabel, QLineEdit, QProgressBar, QWidget
+from PyQt6.QtWidgets import QLabel, QLineEdit, QProgressBar, QWidget
 
 
 # Fixture to mock goesvfi.utils.ui_enhancements before importing the tab

@@ -65,7 +65,9 @@ class PreviewManager(QObject):
             self.current_crop_rect = crop_rect
 
             # Load first, middle, and last frames
-            first_path, middle_path, last_path = self._get_first_middle_last_paths(input_dir)
+            first_path, middle_path, last_path = self._get_first_middle_last_paths(
+                input_dir
+            )
 
             if not first_path or not last_path:
                 self.preview_error.emit("No images found in directory")
@@ -75,7 +77,9 @@ class PreviewManager(QObject):
             self.first_frame_data = self._load_and_process_image(
                 first_path, crop_rect, apply_sanchez, sanchez_resolution
             )
-            self.last_frame_data = self._load_and_process_image(last_path, crop_rect, apply_sanchez, sanchez_resolution)
+            self.last_frame_data = self._load_and_process_image(
+                last_path, crop_rect, apply_sanchez, sanchez_resolution
+            )
 
             # Load middle frame if available
             if middle_path:
@@ -123,7 +127,9 @@ class PreviewManager(QObject):
             self.preview_error.emit(str(e))
             return False
 
-    def _get_first_middle_last_paths(self, input_dir: Path) -> Tuple[Optional[Path], Optional[Path], Optional[Path]]:
+    def _get_first_middle_last_paths(
+        self, input_dir: Path
+    ) -> Tuple[Optional[Path], Optional[Path], Optional[Path]]:
         """Get the first, middle, and last image paths from a directory.
 
         Args:
@@ -195,10 +201,14 @@ class PreviewManager(QObject):
                 left, top, right, bottom = x, y, x + width, y + height
                 # Validate crop coordinates
                 if width <= 0 or height <= 0:
-                    LOGGER.error("Invalid crop dimensions: width=%d, height=%d", width, height)
+                    LOGGER.error(
+                        "Invalid crop dimensions: width=%d, height=%d", width, height
+                    )
                     return None
                 crop_coords = (left, top, right, bottom)
-                LOGGER.debug("Converting crop rect %s to coordinates %s", crop_rect, crop_coords)
+                LOGGER.debug(
+                    "Converting crop rect %s to coordinates %s", crop_rect, crop_coords
+                )
                 image_data = self.cropper.crop(image_data, crop_coords)
                 if not image_data:
                     return None

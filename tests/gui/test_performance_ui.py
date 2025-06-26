@@ -2,13 +2,11 @@
 
 import threading
 import time
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import psutil
 import pytest
 from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
-from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QListWidget, QListWidgetItem, QProgressBar
 
 from goesvfi.gui import MainWindow
@@ -199,14 +197,18 @@ class TestPerformanceUI:
 
         # Connect worker
         worker = HeavyWorker()
-        worker.progress.connect(lambda v, m: (progress_bar.setValue(v), status_label.setText(m)))
+        worker.progress.connect(
+            lambda v, m: (progress_bar.setValue(v), status_label.setText(m))
+        )
 
         # Responsiveness checks during processing
         responsiveness_results = []
 
         def check_responsiveness():
             checker = ResponsivenessChecker(window)
-            checker.responsiveness_checked.connect(lambda r: responsiveness_results.append(r))
+            checker.responsiveness_checked.connect(
+                lambda r: responsiveness_results.append(r)
+            )
             checker.start()
 
         # Start worker
@@ -258,7 +260,7 @@ class TestPerformanceUI:
             create_and_destroy_widgets()
 
             # Sample memory
-            current_memory = mem_monitor.sample()
+            mem_monitor.sample()
 
             # Small wait between iterations
             qtbot.wait(100)
@@ -503,7 +505,7 @@ class TestPerformanceUI:
         # First access triggers load
         start = time.perf_counter()
         widget = loader.get_component("heavy_widget", create_heavy_widget)
-        first_load_time = time.perf_counter() - start
+        time.perf_counter() - start
 
         assert loader.is_loaded("heavy_widget")
         assert isinstance(widget, QListWidget)

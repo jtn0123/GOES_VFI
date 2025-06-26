@@ -49,7 +49,9 @@ class RifeUIManager:
         main_tab.rife_model_combo.setEnabled(is_rife)
         main_tab.rife_tile_checkbox.setEnabled(is_rife)
         # Ensure tile size spinbox state depends on checkbox state *and* RIFE selection
-        main_tab.rife_tile_size_spinbox.setEnabled(is_rife and main_tab.rife_tile_checkbox.isChecked())
+        main_tab.rife_tile_size_spinbox.setEnabled(
+            is_rife and main_tab.rife_tile_checkbox.isChecked()
+        )
         main_tab.rife_uhd_checkbox.setEnabled(is_rife)
         main_tab.rife_tta_spatial_checkbox.setEnabled(is_rife)
         main_tab.rife_tta_temporal_checkbox.setEnabled(is_rife)
@@ -73,14 +75,26 @@ class RifeUIManager:
             capability_detector = RifeCapabilityManager(model_key=current_model_key)
 
             # Update UI elements based on capabilities
-            main_tab.rife_tile_checkbox.setEnabled(capability_detector.capabilities.get("tiling", False))
-            main_tab.rife_uhd_checkbox.setEnabled(capability_detector.capabilities.get("uhd", False))
-            main_tab.rife_thread_spec_edit.setEnabled(capability_detector.capabilities.get("thread_spec", False))
-            main_tab.rife_tta_spatial_checkbox.setEnabled(capability_detector.capabilities.get("tta_spatial", False))
-            main_tab.rife_tta_temporal_checkbox.setEnabled(capability_detector.capabilities.get("tta_temporal", False))
+            main_tab.rife_tile_checkbox.setEnabled(
+                capability_detector.capabilities.get("tiling", False)
+            )
+            main_tab.rife_uhd_checkbox.setEnabled(
+                capability_detector.capabilities.get("uhd", False)
+            )
+            main_tab.rife_thread_spec_edit.setEnabled(
+                capability_detector.capabilities.get("thread_spec", False)
+            )
+            main_tab.rife_tta_spatial_checkbox.setEnabled(
+                capability_detector.capabilities.get("tta_spatial", False)
+            )
+            main_tab.rife_tta_temporal_checkbox.setEnabled(
+                capability_detector.capabilities.get("tta_temporal", False)
+            )
 
             # Warn if selected model doesn't support features
-            self._check_capability_warnings(main_tab, capability_detector, current_model_key)
+            self._check_capability_warnings(
+                main_tab, capability_detector, current_model_key
+            )
 
         except FileNotFoundError:
             # If RIFE executable is not found, disable all RIFE options
@@ -111,29 +125,46 @@ class RifeUIManager:
             capability_detector: The capability detector instance
             current_model_key: Current RIFE model key
         """
-        if main_tab.rife_tile_checkbox.isChecked() and not capability_detector.capabilities.get("tiling", False):
-            LOGGER.warning("Selected model '%s' does not support tiling.", current_model_key)
+        if (
+            main_tab.rife_tile_checkbox.isChecked()
+            and not capability_detector.capabilities.get("tiling", False)
+        ):
+            LOGGER.warning(
+                "Selected model '%s' does not support tiling.", current_model_key
+            )
 
-        if main_tab.rife_uhd_checkbox.isChecked() and not capability_detector.capabilities.get("uhd", False):
-            LOGGER.warning("Selected model '%s' does not support UHD mode.", current_model_key)
+        if (
+            main_tab.rife_uhd_checkbox.isChecked()
+            and not capability_detector.capabilities.get("uhd", False)
+        ):
+            LOGGER.warning(
+                "Selected model '%s' does not support UHD mode.", current_model_key
+            )
 
-        if main_tab.rife_thread_spec_edit.text() != "1:2:2" and not capability_detector.capabilities.get(
-            "thread_spec", False
+        if (
+            main_tab.rife_thread_spec_edit.text() != "1:2:2"
+            and not capability_detector.capabilities.get("thread_spec", False)
         ):
             LOGGER.warning(
                 "Selected model '%s' does not support custom thread specification.",
                 current_model_key,
             )
 
-        if main_tab.rife_tta_spatial_checkbox.isChecked() and not capability_detector.capabilities.get(
-            "tta_spatial", False
+        if (
+            main_tab.rife_tta_spatial_checkbox.isChecked()
+            and not capability_detector.capabilities.get("tta_spatial", False)
         ):
-            LOGGER.warning("Selected model '%s' does not support spatial TTA.", current_model_key)
+            LOGGER.warning(
+                "Selected model '%s' does not support spatial TTA.", current_model_key
+            )
 
-        if main_tab.rife_tta_temporal_checkbox.isChecked() and not capability_detector.capabilities.get(
-            "tta_temporal", False
+        if (
+            main_tab.rife_tta_temporal_checkbox.isChecked()
+            and not capability_detector.capabilities.get("tta_temporal", False)
         ):
-            LOGGER.warning("Selected model '%s' does not support temporal TTA.", current_model_key)
+            LOGGER.warning(
+                "Selected model '%s' does not support temporal TTA.", current_model_key
+            )
 
     def _disable_all_rife_options(self, main_tab: Any) -> None:
         """Disable all RIFE options.

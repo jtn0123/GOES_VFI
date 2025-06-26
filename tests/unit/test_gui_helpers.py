@@ -1,11 +1,10 @@
 """Tests for gui_helpers utility functions and classes."""
 
 from pathlib import Path
-from typing import Optional
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
-from PyQt6.QtCore import QPoint, QPointF, QRect, QSize, Qt
+from PyQt6.QtCore import QPoint, QPointF, QRect, Qt
 from PyQt6.QtGui import QImage, QMouseEvent, QPixmap, QWheelEvent
 from PyQt6.QtWidgets import QApplication, QCheckBox, QLabel, QLineEdit, QSpinBox
 

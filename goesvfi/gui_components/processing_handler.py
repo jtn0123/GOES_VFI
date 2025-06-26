@@ -73,7 +73,9 @@ class ProcessingHandler:
             True if worker was created and started successfully, False otherwise
         """
         try:
-            main_window.vfi_worker = WorkerFactory.create_worker(args, main_window.debug_mode)
+            main_window.vfi_worker = WorkerFactory.create_worker(
+                args, main_window.debug_mode
+            )
         except Exception as e:
             LOGGER.exception("Failed to create VfiWorker: %s", e)
             main_window.is_processing = False
@@ -89,7 +91,9 @@ class ProcessingHandler:
             return False
 
         # Connect worker signals through SignalBroker
-        main_window.signal_broker.setup_worker_connections(main_window, main_window.vfi_worker)
+        main_window.signal_broker.setup_worker_connections(
+            main_window, main_window.vfi_worker
+        )
 
         # Start the worker thread
         main_window.vfi_worker.start()

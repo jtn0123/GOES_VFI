@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from goesvfi.pipeline.tiler import merge_tiles, tile_image
 
@@ -57,7 +56,9 @@ def test_merge_tiles_basic():
     overlap = 32
 
     tiles = tile_image(img, tile_size=tile_size, overlap=overlap)
-    merged = merge_tiles(tiles, full_shape=(img.shape[0], img.shape[1]), overlap=overlap)
+    merged = merge_tiles(
+        tiles, full_shape=(img.shape[0], img.shape[1]), overlap=overlap
+    )
 
     # The merged image should be close to the original
     # Allow some tolerance due to overlap averaging
@@ -72,7 +73,9 @@ def test_merge_tiles_with_overlap():
     overlap = 20
 
     tiles = tile_image(img, tile_size=tile_size, overlap=overlap)
-    merged = merge_tiles(tiles, full_shape=(img.shape[0], img.shape[1]), overlap=overlap)
+    merged = merge_tiles(
+        tiles, full_shape=(img.shape[0], img.shape[1]), overlap=overlap
+    )
 
     # Since original image is all ones, merged should be all ones
     assert merged.shape == img.shape

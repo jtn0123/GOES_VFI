@@ -92,7 +92,9 @@ class TestConfigurationError:
 
     def test_configuration_error_with_details(self):
         """Test configuration error with detailed message."""
-        error = ConfigurationError("Missing required setting 'database_url' in section 'connection'")
+        error = ConfigurationError(
+            "Missing required setting 'database_url' in section 'connection'"
+        )
 
         assert "database_url" in str(error)
         assert "connection" in str(error)
@@ -311,7 +313,9 @@ class TestExceptionIntegration:
 
         def simulate_gui_operation():
             """Simulate GUI operation that might fail."""
-            raise GuiError("Failed to update progress dialog: widget has been destroyed")
+            raise GuiError(
+                "Failed to update progress dialog: widget has been destroyed"
+            )
 
         # Test that we can catch and handle different error types appropriately
         scenarios = [
@@ -353,7 +357,9 @@ class TestExceptionIntegration:
         """Test that exception messages are properly formatted."""
 
         # Test that messages contain relevant information
-        config_error = ConfigurationError("Database URL not found in config section 'database'")
+        config_error = ConfigurationError(
+            "Database URL not found in config section 'database'"
+        )
         assert "Database URL" in str(config_error)
         assert "database" in str(config_error)
 
@@ -361,7 +367,9 @@ class TestExceptionIntegration:
         assert "interpolation" in str(pipeline_error)
         assert "step 3 of 5" in str(pipeline_error)
 
-        tool_error = ExternalToolError("ffmpeg", "Codec not supported", stderr="libx264 not found")
+        tool_error = ExternalToolError(
+            "ffmpeg", "Codec not supported", stderr="libx264 not found"
+        )
         error_str = str(tool_error)
         assert "ffmpeg" in error_str
         assert "Codec not supported" in error_str

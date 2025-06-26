@@ -23,7 +23,9 @@ from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import SatellitePattern
 
 
-def retry_with_exponential_backoff(max_retries=3, initial_backoff=1.0, jitter_factor=0.0):
+def retry_with_exponential_backoff(
+    max_retries=3, initial_backoff=1.0, jitter_factor=0.0
+):
     """Decorator to retry a function with exponential backoff."""
 
     def decorator(func):
@@ -40,7 +42,11 @@ def retry_with_exponential_backoff(max_retries=3, initial_backoff=1.0, jitter_fa
 
                     # Check if this is a non-retryable error
                     if isinstance(e, botocore.exceptions.ClientError):
-                        error_code = e.response.get("Error", {}).get("Code", "") if hasattr(e, "response") else ""
+                        error_code = (
+                            e.response.get("Error", {}).get("Code", "")
+                            if hasattr(e, "response")
+                            else ""
+                        )
                         # Authentication errors should not be retried
                         if error_code in [
                             "AccessDenied",
@@ -53,7 +59,9 @@ def retry_with_exponential_backoff(max_retries=3, initial_backoff=1.0, jitter_fa
                         # Apply jitter if requested
                         jittered_backoff = backoff
                         if jitter_factor > 0:
-                            jittered_backoff = backoff * (1 + random.uniform(0, jitter_factor))
+                            jittered_backoff = backoff * (
+                                1 + random.uniform(0, jitter_factor)
+                            )
                         await asyncio.sleep(jittered_backoff)
                         backoff *= 2
                     else:
@@ -91,7 +99,7 @@ class TestNetworkFailureSimulation:
             return "Success"
 
         # Execute the operation
-        start_time = time.time()
+        time.time()
         result = await flaky_operation()
 
         assert result == "Success"
@@ -150,7 +158,9 @@ class TestNetworkFailureSimulation:
         with patch("asyncio.sleep") as mock_sleep:
             mock_sleep.side_effect = lambda x: backoff_times.append(x)
 
-            @retry_with_exponential_backoff(max_retries=3, initial_backoff=1.0, jitter_factor=0.3)
+            @retry_with_exponential_backoff(
+                max_retries=3, initial_backoff=1.0, jitter_factor=0.3
+            )
             async def flaky_operation():
                 if len(backoff_times) < 3:
                     raise aiohttp.ClientError("Timeout")
@@ -171,13 +181,17 @@ class TestNetworkFailureSimulation:
 
         # Mock S3 client to simulate timeout
         mock_s3_client = AsyncMock()
-        mock_s3_client.head_object = AsyncMock(side_effect=asyncio.TimeoutError("Connection timeout"))
+        mock_s3_client.head_object = AsyncMock(
+            side_effect=asyncio.TimeoutError("Connection timeout")
+        )
 
         with patch.object(store, "_get_s3_client", return_value=mock_s3_client):
             timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
             with pytest.raises(asyncio.TimeoutError) as exc_info:
-                await store.check_file_exists(timestamp=timestamp, satellite=SatellitePattern.GOES_16)
+                await store.check_file_exists(
+                    timestamp=timestamp, satellite=SatellitePattern.GOES_16
+                )
 
             assert "Connection timeout" in str(exc_info.value)
 
@@ -197,8 +211,10 @@ class TestNetworkFailureSimulation:
         with patch.object(store, "_get_s3_client", return_value=mock_s3_client):
             timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
-            with pytest.raises(aiohttp.ClientConnectorError) as exc_info:
-                await store.check_file_exists(timestamp=timestamp, satellite=SatellitePattern.GOES_16)
+            with pytest.raises(aiohttp.ClientConnectorError):
+                await store.check_file_exists(
+                    timestamp=timestamp, satellite=SatellitePattern.GOES_16
+                )
 
     @pytest.mark.asyncio
     async def test_rate_limiting_handling(self, _mock_time):
@@ -225,19 +241,25 @@ class TestNetworkFailureSimulation:
             timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
             # Should log the error and return False (not retry automatically)
-            result = await store.check_file_exists(timestamp=timestamp, satellite=SatellitePattern.GOES_16)
+            result = await store.check_file_exists(
+                timestamp=timestamp, satellite=SatellitePattern.GOES_16
+            )
 
             assert result is False
             assert mock_s3_client.head_object.call_count == 1
 
-    @pytest.mark.skip(reason="CompositeStore requires more complex mocking - needs dedicated test refactoring")
+    @pytest.mark.skip(
+        reason="CompositeStore requires more complex mocking - needs dedicated test refactoring"
+    )
     @pytest.mark.asyncio
     async def test_composite_store_failover(self):
         """Test composite store failover between multiple sources."""
         # Mock S3 store that fails
         mock_s3 = MagicMock()
         mock_s3.download = AsyncMock(side_effect=NetworkError("S3 connection failed"))
-        mock_s3.download_file = AsyncMock(side_effect=NetworkError("S3 connection failed"))
+        mock_s3.download_file = AsyncMock(
+            side_effect=NetworkError("S3 connection failed")
+        )
         mock_s3.get_statistics = MagicMock(
             return_value={
                 "attempts": 10,
@@ -289,7 +311,9 @@ class TestNetworkFailureSimulation:
             cdn_stats = stats.get("CDN", {})
             s3_stats = stats.get("S3", {})
             if cdn_stats and s3_stats:
-                assert cdn_stats.get("success_rate", 0) > s3_stats.get("success_rate", 0)
+                assert cdn_stats.get("success_rate", 0) > s3_stats.get(
+                    "success_rate", 0
+                )
 
     @pytest.mark.asyncio
     async def test_intermittent_network_issues(self, _mock_time):
@@ -300,7 +324,11 @@ class TestNetworkFailureSimulation:
         @retry_with_exponential_backoff(max_retries=5, initial_backoff=0.1)
         async def intermittent_operation():
             nonlocal attempt_idx
-            success = success_pattern[attempt_idx] if attempt_idx < len(success_pattern) else True
+            success = (
+                success_pattern[attempt_idx]
+                if attempt_idx < len(success_pattern)
+                else True
+            )
             attempt_idx += 1
 
             if not success:
@@ -326,7 +354,9 @@ class TestNetworkFailureSimulation:
 
             # Should raise aiohttp.ClientError
             with pytest.raises(aiohttp.ClientError) as exc_info:
-                await store.check_file_exists(timestamp=timestamp, satellite=SatellitePattern.GOES_16)
+                await store.check_file_exists(
+                    timestamp=timestamp, satellite=SatellitePattern.GOES_16
+                )
 
             assert "Connection pool" in str(exc_info.value)
 
@@ -354,11 +384,15 @@ class TestNetworkFailureSimulation:
             download_path.write_bytes(b"complete data file")
             return None
 
-        mock_s3_client.download_file = AsyncMock(side_effect=[partial_download, successful_download])
-        mock_s3_client.head_object = AsyncMock(return_value={"ContentLength": len(b"complete data file")})
+        mock_s3_client.download_file = AsyncMock(
+            side_effect=[partial_download, successful_download]
+        )
+        mock_s3_client.head_object = AsyncMock(
+            return_value={"ContentLength": len(b"complete data file")}
+        )
 
         with patch.object(store, "_get_s3_client", return_value=mock_s3_client):
-            with patch("pathlib.Path.unlink") as mock_unlink:
+            with patch("pathlib.Path.unlink"):
                 timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
                 # Should retry and succeed
@@ -366,7 +400,7 @@ class TestNetworkFailureSimulation:
                     with patch("pathlib.Path.stat") as mock_stat:
                         mock_stat.return_value.st_size = len(b"complete data file")
 
-                        result = await store.download_file(
+                        await store.download_file(
                             timestamp=timestamp,
                             satellite=SatellitePattern.GOES_16,
                             destination=download_path,
@@ -377,7 +411,7 @@ class TestNetworkFailureSimulation:
     @pytest.mark.asyncio
     async def test_network_diagnostics_in_errors(self):
         """Test that network errors include diagnostic information."""
-        store = S3Store()
+        S3Store()
 
         # Create network error with diagnostics
         from goesvfi.integrity_check.remote.base import RemoteStoreError
@@ -394,12 +428,16 @@ class TestNetworkFailureSimulation:
         # Should be a RemoteStoreError of some kind
         assert isinstance(error, RemoteStoreError)
         error_msg = str(error)
-        assert "Connection failed" in error_msg or "timeout" in error_msg.lower() or "error" in error_msg.lower()
+        assert (
+            "Connection failed" in error_msg
+            or "timeout" in error_msg.lower()
+            or "error" in error_msg.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_concurrent_retry_limiting(self):
         """Test that concurrent operations don't overwhelm with retries."""
-        store = S3Store()
+        S3Store()
         retry_counts = []
 
         @retry_with_exponential_backoff(max_retries=3, initial_backoff=0.1)

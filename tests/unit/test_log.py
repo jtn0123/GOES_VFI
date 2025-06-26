@@ -1,9 +1,6 @@
 import logging
-import sys
-import types
 from unittest.mock import patch
 
-import pytest
 
 import goesvfi.utils.log as log
 

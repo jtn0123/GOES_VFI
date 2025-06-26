@@ -1,13 +1,10 @@
 """Tests for GUI component validation and visual feedback."""
 
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
-from PyQt6.QtCore import QRect, Qt, QTimer
-from PyQt6.QtGui import QImage, QPixmap
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPixmap
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication, QProgressBar
 
 from goesvfi.gui import MainWindow
 from goesvfi.utils.gui_helpers import ClickableLabel
@@ -46,7 +43,10 @@ class TestGUIComponentValidation:
         assert window.main_tab.progress_bar.value() == 100
 
         # Verify status bar shows progress
-        assert "50%" in window.status_bar.currentMessage() or "100%" in window.status_bar.currentMessage()
+        assert (
+            "50%" in window.status_bar.currentMessage()
+            or "100%" in window.status_bar.currentMessage()
+        )
 
     def test_preview_labels_display_images(self, qtbot, window, mocker):
         """Test that preview labels correctly display images."""
@@ -57,7 +57,6 @@ class TestGUIComponentValidation:
         test_pixmap2.fill(Qt.GlobalColor.blue)
 
         # Mock preview manager to emit signals
-        mock_preview_manager = window.main_view_model.preview_manager
 
         # Manually call the preview loaded callback
         window._on_preview_images_loaded(test_pixmap1, test_pixmap2)
@@ -104,8 +103,12 @@ class TestGUIComponentValidation:
         # Encoder combo
         encoder_combo = window.main_tab.encoder_combo
         assert encoder_combo.count() > 0
-        assert "RIFE" in [encoder_combo.itemText(i) for i in range(encoder_combo.count())]
-        assert "FFmpeg" in [encoder_combo.itemText(i) for i in range(encoder_combo.count())]
+        assert "RIFE" in [
+            encoder_combo.itemText(i) for i in range(encoder_combo.count())
+        ]
+        assert "FFmpeg" in [
+            encoder_combo.itemText(i) for i in range(encoder_combo.count())
+        ]
 
         # RIFE model combo
         model_combo = window.main_tab.rife_model_combo
@@ -176,7 +179,7 @@ class TestGUIComponentValidation:
     def test_status_bar_messages(self, qtbot, window):
         """Test status bar displays appropriate messages."""
         # Initial message
-        initial_msg = window.status_bar.currentMessage()
+        window.status_bar.currentMessage()
 
         # Processing started
         window._set_processing_state(True)
@@ -247,7 +250,10 @@ class TestGUIComponentValidation:
 
         # Check margins are reasonable
         margins = main_layout.contentsMargins()
-        assert all(m >= 0 for m in [margins.left(), margins.top(), margins.right(), margins.bottom()])
+        assert all(
+            m >= 0
+            for m in [margins.left(), margins.top(), margins.right(), margins.bottom()]
+        )
 
     def test_window_properties(self, qtbot, window):
         """Test main window properties."""

@@ -49,11 +49,17 @@ class WorkerFactory:
         me_algo = ffmpeg_settings.get("me_algo", "")
         search_param = ffmpeg_settings.get("search_param", 96)
         scd_mode = ffmpeg_settings.get("scd", "fdi")
-        scd_threshold = ffmpeg_settings.get("scd_threshold") if scd_mode != "none" else None
+        scd_threshold = (
+            ffmpeg_settings.get("scd_threshold") if scd_mode != "none" else None
+        )
 
         # Handle mb_size conversion
         mb_size_text = ffmpeg_settings.get("mb_size", "")
-        minter_mb_size = int(mb_size_text) if isinstance(mb_size_text, str) and mb_size_text.isdigit() else None
+        minter_mb_size = (
+            int(mb_size_text)
+            if isinstance(mb_size_text, str) and mb_size_text.isdigit()
+            else None
+        )
         minter_vsbmc = 1 if ffmpeg_settings.get("vsbmc", False) else 0
 
         # Extract unsharp settings
@@ -120,7 +126,9 @@ class WorkerFactory:
             false_colour=bool(args.get("sanchez_enabled", False)),
             res_km=int(float(args.get("sanchez_resolution_km", 4.0))),
             # Sanchez GUI temp dir
-            sanchez_gui_temp_dir=(str(sanchez_gui_temp_dir) if sanchez_gui_temp_dir else None),
+            sanchez_gui_temp_dir=(
+                str(sanchez_gui_temp_dir) if sanchez_gui_temp_dir else None
+            ),
         )
 
         LOGGER.info("Created VfiWorker with parameters from MainTab")

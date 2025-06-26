@@ -4,7 +4,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from PyQt6.QtCore import QThread
 from PyQt6.QtWidgets import QApplication
 
 from goesvfi.gui_components.processing_manager import ProcessingManager
@@ -35,11 +34,21 @@ class TestProcessingManager(unittest.TestCase):
         }
 
         # Connect signals to track emissions
-        self.processing_manager.processing_started.connect(lambda: self._signal_emitted("started", True))
-        self.processing_manager.processing_progress.connect(lambda c, t, e: self._signal_emitted("progress", (c, t, e)))
-        self.processing_manager.processing_finished.connect(lambda p: self._signal_emitted("finished", p))
-        self.processing_manager.processing_error.connect(lambda e: self._signal_emitted("error", e))
-        self.processing_manager.processing_state_changed.connect(lambda s: self._signal_emitted("state_changed", s))
+        self.processing_manager.processing_started.connect(
+            lambda: self._signal_emitted("started", True)
+        )
+        self.processing_manager.processing_progress.connect(
+            lambda c, t, e: self._signal_emitted("progress", (c, t, e))
+        )
+        self.processing_manager.processing_finished.connect(
+            lambda p: self._signal_emitted("finished", p)
+        )
+        self.processing_manager.processing_error.connect(
+            lambda e: self._signal_emitted("error", e)
+        )
+        self.processing_manager.processing_state_changed.connect(
+            lambda s: self._signal_emitted("state_changed", s)
+        )
 
     def _signal_emitted(self, signal_name, value):
         """Helper to track signal emissions."""
@@ -146,7 +155,9 @@ class TestProcessingManager(unittest.TestCase):
         # Verify
         self.assertTrue(result)
         self.assertTrue(self.processing_manager.is_processing)
-        self.assertEqual(self.processing_manager.current_output_path, Path("/tmp/test_output.mp4"))
+        self.assertEqual(
+            self.processing_manager.current_output_path, Path("/tmp/test_output.mp4")
+        )
 
         # Verify signals were emitted
         self.assertTrue(self.emitted_signals["started"])

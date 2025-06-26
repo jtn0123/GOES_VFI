@@ -2,7 +2,6 @@
 Example test file to demonstrate coverage reporting.
 """
 
-from pathlib import Path
 
 import pytest
 

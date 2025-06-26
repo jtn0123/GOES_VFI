@@ -257,7 +257,7 @@ class VFIProcessor:
             LOGGER.info("Successfully created raw video: %s", raw_path)
             yield raw_path
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error during VFI processing.")
             if ffmpeg_proc and ffmpeg_proc.poll() is None:
                 LOGGER.warning("Terminating ffmpeg process due to error.")
@@ -396,7 +396,11 @@ class VFIProcessor:
                 with Image.open(interpolated_frame_path) as im_interp:
                     if im_interp.size != (target_width, target_height):
                         LOGGER.warning(
-                            f"Resizing interpolated frame for pair {idx} from {im_interp.size} to {(target_width, target_height)}."
+                            "Resizing interpolated frame for pair %s from %s to (%s, %s).",
+                            idx,
+                            im_interp.size,
+                            target_width,
+                            target_height,
                         )
                         im_interp = im_interp.resize(
                             (target_width, target_height),
@@ -415,7 +419,10 @@ class VFIProcessor:
             try:
                 with Image.open(p2_processed_path) as img2_handle:
                     LOGGER.debug(
-                        f"Encoding second processed frame {idx} ({p2_processed_path.name}, size {img2_handle.size}) for ffmpeg."
+                        "Encoding second processed frame %s (%s, size %s) for ffmpeg.",
+                        idx,
+                        p2_processed_path.name,
+                        img2_handle.size,
                     )
                     png_data = _encode_frame_to_png_bytes(img2_handle)
                 _safe_write(
@@ -1273,7 +1280,8 @@ def _process_single_image_worker(
             left, upper, right, lower = crop_rect_pil
             if right > orig_w or lower > orig_h:
                 raise ValueError(
-                    f"Crop rectangle {crop_rect_pil} exceeds original dimensions ({orig_w}x{orig_h}) of image {original_path.name}"
+                    "Crop rectangle %s exceeds original dimensions (%sx%s) of image %s"
+                    % (crop_rect_pil, orig_w, orig_h, original_path.name)
                 )
             try:
                 img_cropped = img.crop(crop_rect_pil)
@@ -1293,7 +1301,7 @@ def _process_single_image_worker(
 
         return processed_output_path
 
-    except Exception as e:
+    except Exception:
         # Log any exception from the worker and re-raise
         LOGGER.exception("Worker failed processing %s", original_path.name)
         raise
@@ -1360,7 +1368,11 @@ def run_vfi(
     skip_model = kwargs.get("skip_model", False)
 
     LOGGER.info(
-        f"run_vfi called with: false_colour={false_colour}, res_km={res_km}km, crop_rect={crop_rect_xywh}, skip_model={skip_model}"
+        "run_vfi called with: false_colour=%s, res_km=%skm, crop_rect=%s, skip_model=%s",
+        false_colour,
+        res_km,
+        crop_rect_xywh,
+        skip_model,
     )
 
     # Initialize VFI processor with configuration
@@ -1512,7 +1524,7 @@ def _run_rife_pair(
         LOGGER.debug("Running RIFE command: %s", " ".join(cmd))
 
         try:
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
             if not output_path.exists():
                 raise RIFEError(f"RIFE did not create output file at {output_path}")
 

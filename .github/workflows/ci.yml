@@ -43,18 +43,29 @@ jobs:
         pip install -r requirements.txt
         pip install -r test-requirements.txt
 
+    - name: Run Ruff linting and formatting
+      run: |
+        ruff check goesvfi tests --output-format=github
+        ruff format goesvfi tests --check
+
     - name: Run comprehensive linting
       run: |
         python run_linters.py --check
 
-    - name: Run type checking
+    - name: Run type checking with MyPy
       run: |
         python run_mypy_checks.py
 
-    - name: Check security vulnerabilities
+    - name: Run type checking with Pyright
       run: |
-        pip install bandit safety
+        pyright goesvfi tests
+
+    - name: Check security vulnerabilities with Bandit
+      run: |
         bandit -r goesvfi/ -f json -o bandit-report.json || true
+
+    - name: Check dependency vulnerabilities with Safety
+      run: |
         safety check --json --output safety-report.json || true
 
     - name: Upload security reports

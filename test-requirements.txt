@@ -8,16 +8,27 @@ pytest-asyncio>=1.0.0  # For async test support
 # Mock library for tests
 mock>=5.2.0
 
-# Type checker for tests
+# Type checkers for tests
 mypy
+pyright>=1.1.390    # Microsoft's fast type checker
 
 # Type stubs for libraries used in tests
 types-requests
 types-Pillow
 types-aiofiles
 types-tqdm>=4.66.0   # Type stubs for tqdm
+git+https://github.com/python-qt-tools/PyQt6-stubs.git  # PyQt6 type stubs
 
 # Dev utilities
 black>=24.2.0        # Code formatter
-ruff>=0.1.15         # Linter
-flake8-qt-tr>=0.2.0  # PyQt translation checking for flake8
+ruff>=0.8.0          # Fast Rust-based linter and formatter
+isort>=5.12.0        # Import sorter
+flake8>=7.2.0        # Python linter
+flake8-bugbear       # Additional bug finding for flake8
+flake8-comprehensions # Checks for unnecessary comprehensions
+pylint>=3.3.7        # Comprehensive Python linter
+vulture>=2.14        # Dead code finder
+bandit>=1.8.0        # Security vulnerability scanner
+safety>=4.0.0        # Dependency vulnerability checker
+xenon>=0.9.3         # Code complexity monitoring
+tox>=4.0.0           # Multi-environment testing

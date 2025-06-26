@@ -1,9 +1,9 @@
 """Comprehensive tests for the refactored time_utils modules."""
 
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 from goesvfi.integrity_check.time_utils import (
     BAND,
@@ -115,7 +115,9 @@ class TestTimestampFormatter(unittest.TestCase):
         self.assertEqual(pattern, "image_G16_{timestamp}Z.png")
 
         # Test GOES-18 with custom base name
-        pattern = TimestampFormatter.get_filename_pattern(SatellitePattern.GOES_18, "test")
+        pattern = TimestampFormatter.get_filename_pattern(
+            SatellitePattern.GOES_18, "test"
+        )
         self.assertEqual(pattern, "test_G18_{timestamp}Z.png")
 
         # Test generic pattern
@@ -125,7 +127,9 @@ class TestTimestampFormatter(unittest.TestCase):
     def test_generate_expected_filename(self):
         """Test generating expected filename."""
         dt = datetime(2023, 6, 15, 12, 30, 0)
-        filename = TimestampFormatter.generate_expected_filename(dt, SatellitePattern.GOES_16)
+        filename = TimestampFormatter.generate_expected_filename(
+            dt, SatellitePattern.GOES_16
+        )
         self.assertEqual(filename, "image_G16_20230615T123000Z.png")
 
 
@@ -204,8 +208,12 @@ class TestS3KeyGenerator(unittest.TestCase):
 
     def test_get_s3_bucket(self):
         """Test getting S3 bucket name."""
-        self.assertEqual(S3KeyGenerator.get_s3_bucket(SatellitePattern.GOES_16), "noaa-goes16")
-        self.assertEqual(S3KeyGenerator.get_s3_bucket(SatellitePattern.GOES_18), "noaa-goes18")
+        self.assertEqual(
+            S3KeyGenerator.get_s3_bucket(SatellitePattern.GOES_16), "noaa-goes16"
+        )
+        self.assertEqual(
+            S3KeyGenerator.get_s3_bucket(SatellitePattern.GOES_18), "noaa-goes18"
+        )
 
         with self.assertRaises(ValueError):
             S3KeyGenerator.get_s3_bucket(SatellitePattern.GENERIC)
@@ -215,8 +223,18 @@ class TestS3KeyGenerator(unittest.TestCase):
         ts = datetime(2023, 6, 15, 12, 30)
         base_dir = Path("/data")
 
-        path = S3KeyGenerator.generate_local_path(ts, SatellitePattern.GOES_16, base_dir)
-        expected = base_dir / "GOES16" / "FD" / "13" / "2023" / "166" / "20231661230_GOES16-ABI-FD-13-5424x5424.png"
+        path = S3KeyGenerator.generate_local_path(
+            ts, SatellitePattern.GOES_16, base_dir
+        )
+        expected = (
+            base_dir
+            / "GOES16"
+            / "FD"
+            / "13"
+            / "2023"
+            / "166"
+            / "20231661230_GOES16-ABI-FD-13-5424x5424.png"
+        )
         self.assertEqual(path, expected)
 
     def test_to_local_path(self):
@@ -298,7 +316,9 @@ class TestDirectoryScanner(unittest.TestCase):
 
         # Test scanning
         directory = Path("/test")
-        timestamps = DirectoryScanner.scan_directory_for_timestamps(directory, SatellitePattern.GOES_16)
+        timestamps = DirectoryScanner.scan_directory_for_timestamps(
+            directory, SatellitePattern.GOES_16
+        )
 
         self.assertEqual(len(timestamps), 3)
         self.assertEqual(timestamps[0], datetime(2023, 6, 15, 12, 0, 0))
@@ -307,7 +327,9 @@ class TestDirectoryScanner(unittest.TestCase):
 
     def test_find_date_range_in_directory(self):
         """Test finding date range in directory."""
-        with patch.object(DirectoryScanner, "scan_directory_for_timestamps") as mock_scan:
+        with patch.object(
+            DirectoryScanner, "scan_directory_for_timestamps"
+        ) as mock_scan:
             mock_scan.return_value = [
                 datetime(2023, 6, 15, 12, 0, 0),
                 datetime(2023, 6, 15, 13, 0, 0),
@@ -315,7 +337,9 @@ class TestDirectoryScanner(unittest.TestCase):
             ]
 
             directory = Path("/test")
-            start, end = DirectoryScanner.find_date_range_in_directory(directory, SatellitePattern.GOES_16)
+            start, end = DirectoryScanner.find_date_range_in_directory(
+                directory, SatellitePattern.GOES_16
+            )
 
             self.assertEqual(start, datetime(2023, 6, 15, 12, 0, 0))
             self.assertEqual(end, datetime(2023, 6, 15, 14, 0, 0))

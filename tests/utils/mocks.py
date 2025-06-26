@@ -5,8 +5,8 @@ import io  # Import io
 import pathlib
 import subprocess
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from unittest.mock import MagicMock, Mock
+from typing import Callable, List, Optional, Tuple
+from unittest.mock import MagicMock
 
 # Add imports for creating PNG test images
 import numpy as np
@@ -124,7 +124,7 @@ class MockPopen:
             try:
                 self.wait(timeout=timeout)
             except subprocess.TimeoutExpired:
-                raise
+                raise  # pylint: disable=try-except-raise
         else:
             self.wait()
         return self._stdout_data, self._stderr_data
@@ -178,9 +178,11 @@ def create_mock_subprocess_run(
 
         # Optional: Assert the command matches expectations
         if expected_command:
-            assert (
-                cmd_list == expected_command
-            ), f"Mock subprocess.run called with unexpected command.\nExpected: {expected_command}\nGot:      {cmd_list}"
+            assert cmd_list == expected_command, (
+                "Mock subprocess.run called with unexpected command.\n"
+                f"Expected: {expected_command}\n"
+                f"Got:      {cmd_list}"
+            )
 
         # Simulate output file creation first IF return code is 0
         # Check if this is a RIFE command by looking for -o flag
@@ -246,9 +248,11 @@ def create_mock_popen(
 
         # Optional: Assert the command matches expectations
         if expected_command:
-            assert (
-                cmd_list == expected_command
-            ), f"Mock subprocess.Popen called with unexpected command.\nExpected: {expected_command}\nGot:      {cmd_list}"
+            assert cmd_list == expected_command, (
+                "Mock subprocess.Popen called with unexpected command.\n"
+                f"Expected: {expected_command}\n"
+                f"Got:      {cmd_list}"
+            )
 
         # Handle side effect (e.g., raise exception *during Popen call*)
         if side_effect:

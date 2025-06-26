@@ -34,7 +34,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         # We need to mock at the aioboto3.Session level
         with (
             patch("aioboto3.Session") as mock_session_class,
-            patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep,
+            patch("asyncio.sleep", new_callable=AsyncMock),
         ):
             # Setup a mock session
             mock_session = MagicMock()
@@ -82,7 +82,9 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
             # Setup the client context to always raise TimeoutError
             mock_client_context = MagicMock()
-            mock_client_context.__aenter__ = AsyncMock(side_effect=asyncio.TimeoutError("Connection timed out"))
+            mock_client_context.__aenter__ = AsyncMock(
+                side_effect=asyncio.TimeoutError("Connection timed out")
+            )
 
             # Configure session.client to return our mock context
             mock_session.client.return_value = mock_client_context
@@ -200,7 +202,9 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
     async def test_network_diagnostics_collection(self):
         """Test that network diagnostics are collected on repeated failures."""
         # Mock get_system_network_info
-        with patch("goesvfi.integrity_check.remote.s3_store.get_system_network_info") as mock_info:
+        with patch(
+            "goesvfi.integrity_check.remote.s3_store.get_system_network_info"
+        ) as mock_info:
             # Set the failed count to 10 so that when the condition checks failed % 5 == 0 it's true
             # The code checks the OLD value before increment: if old_failed % 5 == 0, so we need 10 % 5 == 0
             from goesvfi.integrity_check.remote.s3_store import DOWNLOAD_STATS
@@ -211,7 +215,9 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
             # Call update_download_stats with a failure
             # This should trigger network diagnostics collection because 10 % 5 == 0
-            update_download_stats(success=False, error_type="network", error_message="Connection failed")
+            update_download_stats(
+                success=False, error_type="network", error_message="Connection failed"
+            )
 
             # Verify get_system_network_info was called
             mock_info.assert_called_once()

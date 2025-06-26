@@ -29,7 +29,9 @@ class ValidationPipeline:
         self.fail_fast = fail_fast
         self.validators: List[Tuple[str, ValidatorBase, Any]] = []
 
-    def add_validator(self, field_name: str, validator: ValidatorBase, value: Any) -> "ValidationPipeline":
+    def add_validator(
+        self, field_name: str, validator: ValidatorBase, value: Any
+    ) -> "ValidationPipeline":
         """
         Add a validator to the pipeline.
 
@@ -124,7 +126,9 @@ class ValidationPipeline:
         )
         return self.add_validator(field_name, validator, file_value)
 
-    def add_executable_validation(self, field_name: str, executable_value: Any) -> "ValidationPipeline":
+    def add_executable_validation(
+        self, field_name: str, executable_value: Any
+    ) -> "ValidationPipeline":
         """
         Convenience method to add executable validation.
 
@@ -186,7 +190,10 @@ class ValidationPipeline:
         if not result.is_valid:
             # Create a summary error message
             error_messages = [str(error) for error in result.errors]
-            summary = f"{self.name} failed with {len(result.errors)} error(s): " + "; ".join(error_messages)
+            summary = (
+                f"{self.name} failed with {len(result.errors)} error(s): "
+                + "; ".join(error_messages)
+            )
             raise ValidationError(summary)
 
     def clear(self) -> "ValidationPipeline":
@@ -243,9 +250,13 @@ class ValidationStepBuilder:
         )
         return self
 
-    def validate_executable(self, path: Any, field_name: str = "executable") -> "ValidationStepBuilder":
+    def validate_executable(
+        self, path: Any, field_name: str = "executable"
+    ) -> "ValidationStepBuilder":
         """Add executable validation step."""
-        self.pipeline.add_executable_validation(field_name=field_name, executable_value=path)
+        self.pipeline.add_executable_validation(
+            field_name=field_name, executable_value=path
+        )
         return self
 
     def validate_input_file(
@@ -265,7 +276,9 @@ class ValidationStepBuilder:
         )
         return self
 
-    def validate_custom(self, field_name: str, validator: ValidatorBase, value: Any) -> "ValidationStepBuilder":
+    def validate_custom(
+        self, field_name: str, validator: ValidatorBase, value: Any
+    ) -> "ValidationStepBuilder":
         """Add custom validator."""
         self.pipeline.add_validator(field_name, validator, value)
         return self

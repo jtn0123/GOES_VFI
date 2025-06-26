@@ -100,7 +100,9 @@ class RifeCapabilityDetector:
             try:
                 return help_text.decode("utf-8")
             except UnicodeDecodeError:
-                logger.warning("Could not decode help text as UTF-8, attempting latin-1")
+                logger.warning(
+                    "Could not decode help text as UTF-8, attempting latin-1"
+                )
                 return help_text.decode("latin-1", errors="ignore")
         return help_text  # Assume it's already a string
 
@@ -109,7 +111,9 @@ class RifeCapabilityDetector:
         if not success:
             if not help_text_str:
                 # Use the exact message expected by the test
-                logger.debug("RIFE help command failed or produced no output (expected in tests).")
+                logger.debug(
+                    "RIFE help command failed or produced no output (expected in tests)."
+                )
             else:
                 # Log a slightly different message when *some* error text was captured
                 logger.debug(
@@ -118,7 +122,10 @@ class RifeCapabilityDetector:
                 )
         # Optional: Log a warning if command succeeded but output looks bad
         elif (
-            not help_text_str or "Error:" in help_text_str or "Timeout" in help_text_str or "No output" in help_text_str
+            not help_text_str
+            or "Error:" in help_text_str
+            or "Timeout" in help_text_str
+            or "No output" in help_text_str
         ):
             logger.warning(
                 "RIFE help command succeeded but output seems problematic: \n%s",
@@ -142,13 +149,19 @@ class RifeCapabilityDetector:
     def _extract_version(self, help_text_str: str) -> None:
         """Extract version from help text."""
         # Look for patterns like "version 4.6", "v4.6", "Version: 4.6", etc.
-        version_match = re.search(r"(?:version[:\s]+|v)([0-9.]+)", help_text_str, re.IGNORECASE)
+        version_match = re.search(
+            r"(?:version[:\s]+|v)([0-9.]+)", help_text_str, re.IGNORECASE
+        )
         if version_match:
-            self._version = version_match.group(1)  # pylint: disable=attribute-defined-outside-init
+            self._version = version_match.group(
+                1
+            )  # pylint: disable=attribute-defined-outside-init
 
     def _parse_supported_arguments(self, help_text_str: str) -> None:
         """Parse help text to find supported arguments."""
-        arg_matches = re.finditer(r"^\s+-([a-zA-Z0-9])\s+.*", help_text_str, re.MULTILINE)
+        arg_matches = re.finditer(
+            r"^\s+-([a-zA-Z0-9])\s+.*", help_text_str, re.MULTILINE
+        )
         for match in arg_matches:
             # Extract all possible groups and filter out None values
             arg = match.group(1)
@@ -171,7 +184,8 @@ class RifeCapabilityDetector:
 
         for capability, args, keyword in capability_mappings:
             self._capabilities[capability] = (
-                any(arg in self._supported_args for arg in args) or keyword in help_text_lower
+                any(arg in self._supported_args for arg in args)
+                or keyword in help_text_lower
             )
 
     def _detect_capabilities(self) -> None:
@@ -188,7 +202,9 @@ class RifeCapabilityDetector:
         self._log_help_command_status(success, help_text_str)
 
         # Store default capabilities
-        self._capabilities = self._initialize_default_capabilities()  # pylint: disable=attribute-defined-outside-init
+        self._capabilities = (
+            self._initialize_default_capabilities()
+        )  # pylint: disable=attribute-defined-outside-init
 
         # Extract version if available
         self._extract_version(help_text_str)

@@ -27,7 +27,9 @@ class DateSorterTab(QWidget):
     directory_selected = pyqtSignal(str)  # Signal emitted when a directory is selected
 
     # Modified __init__ to accept a ViewModel instance
-    def __init__(self, view_model: DateSorterViewModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self, view_model: DateSorterViewModel, parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent)
 
         if not isinstance(view_model, DateSorterViewModel):
@@ -46,7 +48,9 @@ class DateSorterTab(QWidget):
 
         # Source Group with enhanced styling
         source_group = QGroupBox(self.tr("📁 Source Directory"))
-        source_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        source_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         source_group.setStyleSheet(
             """
             QGroupBox {
@@ -120,7 +124,9 @@ class DateSorterTab(QWidget):
 
         # Options Group with enhanced styling
         options_group = QGroupBox(self.tr("⚙️ Analysis Options"))
-        options_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        options_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         options_group.setStyleSheet(
             """
             QGroupBox {
@@ -149,7 +155,8 @@ class DateSorterTab(QWidget):
 
         interval_info = QLabel(self.tr("✨ Automatic interval detection will be used"))
         interval_info.setStyleSheet(
-            "color: #66aaff; font-style: italic; padding: 4px 8px; " "background-color: #2a2a2a; border-radius: 4px;"
+            "color: #66aaff; font-style: italic; padding: 4px 8px; "
+            "background-color: #2a2a2a; border-radius: 4px;"
         )
 
         options_layout.addWidget(interval_label, 0, 0)
@@ -159,7 +166,9 @@ class DateSorterTab(QWidget):
 
         # Actions Group with enhanced styling
         actions_group = QGroupBox(self.tr("🚀 Actions"))
-        actions_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        actions_group.setSizePolicy(
+            QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
+        )
         actions_group.setStyleSheet(
             """
             QGroupBox {
@@ -348,12 +357,16 @@ class DateSorterTab(QWidget):
         else:
             # This case should ideally be handled by the ViewModel's can_execute
             # but adding a fallback message here for clarity.
-            QMessageBox.warning(self, "Action Not Allowed", "Cannot start scan at this time.")
+            QMessageBox.warning(
+                self, "Action Not Allowed", "Cannot start scan at this time."
+            )
 
     def _update_ui(self) -> None:
         """Updates the UI elements based on the ViewModel's state."""
         self.source_line_edit.setText(self.view_model.source_directory)
-        self.status_text.setPlainText(self.view_model.status_message)  # Use setPlainText to replace content
+        self.status_text.setPlainText(
+            self.view_model.status_message
+        )  # Use setPlainText to replace content
         self.progress_bar.setValue(int(self.view_model.progress_percentage))
         self.scan_button.setEnabled(self.view_model.can_start_sorting)
 
@@ -364,12 +377,17 @@ class DateSorterTab(QWidget):
 
         # Update progress bar format based on progress
         if self.view_model.progress_percentage > 0:
-            self.progress_bar.setFormat(f"%p% - {self.view_model.status_message[:30]}...")
+            self.progress_bar.setFormat(
+                f"%p% - {self.view_model.status_message[:30]}..."
+            )
         else:
             self.progress_bar.setFormat("Ready to scan...")
 
         # Update button text based on state
-        if self.view_model.progress_percentage > 0 and self.view_model.progress_percentage < 100:
+        if (
+            self.view_model.progress_percentage > 0
+            and self.view_model.progress_percentage < 100
+        ):
             self.scan_button.setText("⏸️ Scanning...")
         else:
             self.scan_button.setText("🔍 Scan Folder")

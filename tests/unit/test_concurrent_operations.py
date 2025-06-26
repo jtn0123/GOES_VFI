@@ -71,7 +71,7 @@ class TestConcurrentOperations:
 
             # Create multiple tasks that will need S3 client
             async def use_s3_client(task_id):
-                client = await store._get_s3_client()
+                await store._get_s3_client()
                 # Simulate some work
                 await asyncio.sleep(0.01)
                 return task_id
@@ -96,12 +96,17 @@ class TestConcurrentOperations:
         satellite = SatellitePattern.GOES_18
         base_time = datetime.now(timezone.utc)
 
-        test_entries = [(base_time + timedelta(minutes=i * 10), f"/path/to/file_{i}.nc", True) for i in range(100)]
+        test_entries = [
+            (base_time + timedelta(minutes=i * 10), f"/path/to/file_{i}.nc", True)
+            for i in range(100)
+        ]
 
         # Concurrent write operations
         async def write_entries(entries):
             for timestamp, filepath, found in entries:
-                await thread_safe_db.add_timestamp(timestamp, satellite, filepath, found)
+                await thread_safe_db.add_timestamp(
+                    timestamp, satellite, filepath, found
+                )
                 await asyncio.sleep(0.001)  # Simulate work
 
         # Concurrent read operations
@@ -342,7 +347,9 @@ class TestConcurrentOperations:
             task_results = []
             task_lock = threading.Lock()
 
-            def sample_task(task_id, duration, progress_callback=None, cancel_check=None):
+            def sample_task(
+                task_id, duration, progress_callback=None, cancel_check=None
+            ):
                 time.sleep(duration)
                 with task_lock:
                     task_results.append((task_id, time.time()))
@@ -422,7 +429,9 @@ class TestConcurrentOperations:
             tasks.append(task)
 
         # Should complete without deadlock
-        results = await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=5.0)
+        results = await asyncio.wait_for(
+            asyncio.gather(*tasks, return_exceptions=True), timeout=5.0
+        )
 
         # At least some should succeed
         successful = [r for r in results if isinstance(r, Path)]

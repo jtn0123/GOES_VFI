@@ -19,17 +19,25 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import unittest.mock  # noqa: E402
 
 from PyQt6.QtCore import QDateTime  # noqa: E402
-from PyQt6.QtWidgets import QApplication, QMessageBox  # noqa: E402
+from PyQt6.QtWidgets import QApplication  # noqa: E402
 
 # Import comprehensive mocks from test utils
 from tests.utils.mocks import MockCDNStore, MockS3Store
 
 # Patch at the module level before any imports
-unittest.mock.patch("goesvfi.integrity_check.remote.s3_store.S3Store", MockS3Store).start()
-unittest.mock.patch("goesvfi.integrity_check.remote.cdn_store.CDNStore", MockCDNStore).start()
+unittest.mock.patch(
+    "goesvfi.integrity_check.remote.s3_store.S3Store", MockS3Store
+).start()
+unittest.mock.patch(
+    "goesvfi.integrity_check.remote.cdn_store.CDNStore", MockCDNStore
+).start()
 # Also patch in the enhanced_gui_tab module to ensure it uses our mocks
-unittest.mock.patch("goesvfi.integrity_check.enhanced_gui_tab.S3Store", MockS3Store).start()
-unittest.mock.patch("goesvfi.integrity_check.enhanced_gui_tab.CDNStore", MockCDNStore).start()
+unittest.mock.patch(
+    "goesvfi.integrity_check.enhanced_gui_tab.S3Store", MockS3Store
+).start()
+unittest.mock.patch(
+    "goesvfi.integrity_check.enhanced_gui_tab.CDNStore", MockCDNStore
+).start()
 
 from goesvfi.integrity_check.enhanced_gui_tab import (  # noqa: E402
     EnhancedIntegrityCheckTab,
@@ -260,7 +268,9 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         actual_end = self.tab.end_date_edit.dateTime().toPyDateTime()
 
         expected_start = datetime(2023, 2, 1, 0, 0, 0)
-        expected_end = datetime(2023, 2, 10, 23, 59, 0)  # Note: QDateTime seconds precision
+        expected_end = datetime(
+            2023, 2, 10, 23, 59, 0
+        )  # Note: QDateTime seconds precision
 
         assert actual_start.replace(second=0, microsecond=0) == expected_start
         assert actual_end.replace(second=0, microsecond=0) == expected_end
@@ -300,7 +310,9 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         # Mock the selection model to indicate items are selected
         mock_selection = MagicMock()
         mock_selection.hasSelection.return_value = True
-        mock_selection.selectedRows.return_value = [MagicMock(row=MagicMock(return_value=0))]
+        mock_selection.selectedRows.return_value = [
+            MagicMock(row=MagicMock(return_value=0))
+        ]
 
         # Mock the results table and model
         self.tab.results_table = MagicMock()
@@ -346,7 +358,9 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
         # Mock table model with proper _items attribute that the handler expects
         self.tab.results_model = MagicMock()
-        self.tab.results_model._items = missing_items  # The handler checks len(self.results_model._items)
+        self.tab.results_model._items = (
+            missing_items  # The handler checks len(self.results_model._items)
+        )
 
         # Simulate the missing items being updated (which enables the download button)
         self.tab._on_missing_items_updated(missing_items)  # type: ignore[arg-type]

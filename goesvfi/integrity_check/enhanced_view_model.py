@@ -747,12 +747,10 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         self.status = ScanStatus.COMPLETED
 
         # Calculate download rate if we have a start time
-        download_rate_info = ""
         if self._download_start_time > 0:
             total_time = time.time() - self._download_start_time
             if total_time > 0 and (self._downloaded_success_count + self._downloaded_failed_count) > 0:
-                rate = (self._downloaded_success_count + self._downloaded_failed_count) / total_time
-                download_rate_info = f" (Avg: {rate:.1f} files/sec)"
+                (self._downloaded_success_count + self._downloaded_failed_count) / total_time
             self._download_start_time = 0.0  # Reset timer
 
         # Enhanced status message with more details

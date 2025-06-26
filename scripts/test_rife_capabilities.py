@@ -13,7 +13,6 @@ Usage:
 import argparse
 import logging
 import os
-import pathlib
 import sys
 
 # Add the project root to the Python path
@@ -36,9 +35,7 @@ def main():
         default="rife-v4.6",
         help="Model key to use (default: rife-v4.6)",
     )
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Show verbose output"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show verbose output")
     args = parser.parse_args()
 
     # Set log level

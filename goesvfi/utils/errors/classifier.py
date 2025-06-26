@@ -37,13 +37,19 @@ class ErrorClassifier:
         }
 
         # Custom classification functions
-        self._custom_classifiers: list[Callable[[Exception], Optional[ErrorCategory]]] = []
+        self._custom_classifiers: list[
+            Callable[[Exception], Optional[ErrorCategory]]
+        ] = []
 
-    def add_type_mapping(self, exception_type: Type[Exception], category: ErrorCategory) -> None:
+    def add_type_mapping(
+        self, exception_type: Type[Exception], category: ErrorCategory
+    ) -> None:
         """Add a custom exception type mapping."""
         self._type_mappings[exception_type] = category
 
-    def add_custom_classifier(self, classifier_func: Callable[[Exception], Optional[ErrorCategory]]) -> None:
+    def add_custom_classifier(
+        self, classifier_func: Callable[[Exception], Optional[ErrorCategory]]
+    ) -> None:
         """Add a custom classification function."""
         self._custom_classifiers.append(classifier_func)
 
@@ -63,6 +69,17 @@ class ErrorClassifier:
             if category is not None:
                 return category
 
+        # Special handling for OSError with errno (before checking type mappings)
+        # This needs to come first because socket.error is OSError in Python 3
+        if (
+            isinstance(exception, OSError)
+            and hasattr(exception, "errno")
+            and exception.errno
+        ):
+            errno_category = self._classify_os_error(exception)
+            # Return the errno-based classification directly
+            return errno_category
+
         # Check direct type mappings
         exception_type = type(exception)
         if exception_type in self._type_mappings:
@@ -72,10 +89,6 @@ class ErrorClassifier:
         for exc_type, category in self._type_mappings.items():
             if isinstance(exception, exc_type):
                 return category
-
-        # Special handling for OSError with errno
-        if isinstance(exception, OSError):
-            return self._classify_os_error(exception)
 
         return ErrorCategory.UNKNOWN
 
@@ -141,7 +154,9 @@ class ErrorClassifier:
             suggestions=suggestions,
         )
 
-    def _generate_user_message(self, exception: Exception, category: ErrorCategory) -> str:
+    def _generate_user_message(
+        self, exception: Exception, category: ErrorCategory
+    ) -> str:
         """Generate a user-friendly message based on exception and category."""
         if category == ErrorCategory.FILE_NOT_FOUND:
             return f"File or directory not found: {exception}"
@@ -158,7 +173,9 @@ class ErrorClassifier:
         else:
             return str(exception)
 
-    def _generate_suggestions(self, exception: Exception, category: ErrorCategory) -> list[str]:
+    def _generate_suggestions(
+        self, exception: Exception, category: ErrorCategory
+    ) -> list[str]:
         """Generate helpful suggestions based on exception and category."""
         suggestions = []
 
@@ -226,9 +243,13 @@ class ErrorClassifier:
         }
         return category in recoverable_categories
 
-    def _add_context_from_exception(self, context: ErrorContext, exception: Exception) -> None:
+    def _add_context_from_exception(
+        self, context: ErrorContext, exception: Exception
+    ) -> None:
         """Add relevant context data from the exception."""
-        if isinstance(exception, (FileNotFoundError, PermissionError, IsADirectoryError)):
+        if isinstance(
+            exception, (FileNotFoundError, PermissionError, IsADirectoryError)
+        ):
             if hasattr(exception, "filename") and exception.filename:
                 context.add_user_data("file_path", str(exception.filename))
 

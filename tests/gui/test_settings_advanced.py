@@ -1,14 +1,12 @@
 """Advanced settings persistence tests for GOES VFI GUI."""
 
 import json
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock
 
 import pytest
-from PyQt6.QtCore import QByteArray, QRect, QSettings, Qt
-from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication, QFileDialog, QMessageBox
+from PyQt6.QtCore import QSettings
+from PyQt6.QtWidgets import QFileDialog, QMessageBox
 
 from goesvfi.gui import MainWindow
 
@@ -139,7 +137,9 @@ class TestSettingsAdvanced:
 
                 # Save window state (maximized, fullscreen, etc.)
                 self.settings.setValue("window/is_maximized", self.window.isMaximized())
-                self.settings.setValue("window/is_fullscreen", self.window.isFullScreen())
+                self.settings.setValue(
+                    "window/is_fullscreen", self.window.isFullScreen()
+                )
 
             def restore_window_state(self):
                 # Restore geometry
@@ -426,7 +426,7 @@ class TestSettingsAdvanced:
 
         # Verify migration
         assert new_settings["version"] == "2.0"
-        assert new_settings["general"]["auto_save"] == True
+        assert new_settings["general"]["auto_save"]
         assert new_settings["processing"]["fps"] == 24
         assert new_settings["processing"]["encoder"] == "FFmpeg"
         assert new_settings["paths"]["output_dir"] == "/old/path"
@@ -505,9 +505,15 @@ class TestSettingsAdvanced:
 
                     # Apply settings
                     main_settings = settings.get("main_settings", {})
-                    self.window.main_tab.fps_spinbox.setValue(main_settings.get("fps", 30))
-                    self.window.main_tab.encoder_combo.setCurrentText(main_settings.get("encoder", "RIFE"))
-                    self.window.main_tab.sanchez_checkbox.setChecked(main_settings.get("enhance", False))
+                    self.window.main_tab.fps_spinbox.setValue(
+                        main_settings.get("fps", 30)
+                    )
+                    self.window.main_tab.encoder_combo.setCurrentText(
+                        main_settings.get("encoder", "RIFE")
+                    )
+                    self.window.main_tab.sanchez_checkbox.setChecked(
+                        main_settings.get("enhance", False)
+                    )
 
                     return True
 
@@ -579,9 +585,15 @@ class TestSettingsAdvanced:
                     return False
 
                 if not category or category == "main":
-                    self.window.main_tab.fps_spinbox.setValue(self.default_values["fps"])
-                    self.window.main_tab.encoder_combo.setCurrentText(self.default_values["encoder"])
-                    self.window.main_tab.sanchez_checkbox.setChecked(self.default_values["enhance"])
+                    self.window.main_tab.fps_spinbox.setValue(
+                        self.default_values["fps"]
+                    )
+                    self.window.main_tab.encoder_combo.setCurrentText(
+                        self.default_values["encoder"]
+                    )
+                    self.window.main_tab.sanchez_checkbox.setChecked(
+                        self.default_values["enhance"]
+                    )
 
                 if not category or category == "processing":
                     # Reset processing settings
@@ -656,7 +668,7 @@ class TestSettingsAdvanced:
 
             def save_settings(self):
                 # Save current settings
-                settings = {
+                {
                     "fps": self.window.main_tab.fps_spinbox.value(),
                     "encoder": self.window.main_tab.encoder_combo.currentText(),
                     # Add more settings...

@@ -86,7 +86,7 @@ class RecoveryManager:
             if strategy.can_recover(error):
                 try:
                     return strategy.recover(error, context)
-                except Exception as recovery_error:
+                except Exception:
                     # Log recovery failure but continue to next strategy
                     continue
 

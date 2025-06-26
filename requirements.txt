@@ -22,6 +22,7 @@ aiofiles>=24.1.0       # Async file I/O
 types-Pillow
 types-requests
 types-aiofiles
+git+https://github.com/python-qt-tools/PyQt6-stubs.git
 imageio
 
 # Development tools
@@ -37,6 +38,11 @@ flake8-bugbear      # Additional bug finding for flake8
 flake8-comprehensions  # Checks for unnecessary comprehensions
 pylint>=3.3.7
 vulture>=2.14       # Dead code finder
+ruff>=0.8.0         # Fast Rust-based linter and formatter
+pyright>=1.1.390    # Microsoft's fast type checker
+bandit>=1.8.0       # Security vulnerability scanner
+safety>=4.0.0       # Dependency vulnerability checker
+tox>=4.0.0          # Multi-environment testing
 
 # Documentation tools (optional - only needed for building docs)
 # To install: pip install -r docs/requirements.txt

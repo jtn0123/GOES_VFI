@@ -1,10 +1,9 @@
 """Tests for GUI components in the gui_components package."""
 
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
-import pytest
-from PyQt6.QtCore import QObject, QSettings, Qt, pyqtSignal
+from PyQt6.QtCore import QObject, QSettings, pyqtSignal
 from PyQt6.QtWidgets import QComboBox, QWidget
 
 from goesvfi.gui_components import (
@@ -12,7 +11,6 @@ from goesvfi.gui_components import (
     FilePickerManager,
     ModelSelectorManager,
     ProcessingCallbacks,
-    RifeUIManager,
     SettingsPersistence,
     SignalBroker,
     StateManager,
@@ -139,7 +137,9 @@ class TestProcessingCallbacks:
 
         callbacks = ProcessingCallbacks()
 
-        with patch("goesvfi.gui_components.processing_callbacks.QMessageBox.information") as mock_info:
+        with patch(
+            "goesvfi.gui_components.processing_callbacks.QMessageBox.information"
+        ) as mock_info:
             callbacks.on_processing_finished(main_window, "/test/output.mp4")
 
         # Verify state updated
@@ -157,7 +157,9 @@ class TestProcessingCallbacks:
 
         callbacks = ProcessingCallbacks()
 
-        with patch("goesvfi.gui_components.processing_callbacks.QMessageBox.critical") as mock_error:
+        with patch(
+            "goesvfi.gui_components.processing_callbacks.QMessageBox.critical"
+        ) as mock_error:
             callbacks.on_processing_error(main_window, "Test error")
 
         # Verify error shown
@@ -184,7 +186,10 @@ class TestProcessingCallbacks:
         # Verify UI disabled
         assert not main_window.main_tab.in_dir_button.setEnabled.call_args[0][0]
         assert not main_window.main_tab.out_file_button.setEnabled.call_args[0][0]
-        assert main_window.main_tab.start_button.setText.call_args[0][0] == "Stop Processing"
+        assert (
+            main_window.main_tab.start_button.setText.call_args[0][0]
+            == "Stop Processing"
+        )
 
         # Verify other tabs disabled
         for i in range(1, 5):
@@ -195,7 +200,10 @@ class TestProcessingCallbacks:
 
         # Verify UI re-enabled
         assert main_window.main_tab.in_dir_button.setEnabled.call_args_list[-1][0][0]
-        assert main_window.main_tab.start_button.setText.call_args_list[-1][0][0] == "Start Processing"
+        assert (
+            main_window.main_tab.start_button.setText.call_args_list[-1][0][0]
+            == "Start Processing"
+        )
 
 
 class TestSettingsPersistence:
@@ -209,7 +217,9 @@ class TestSettingsPersistence:
         test_path = Path("/test/input")
         result = persistence.save_input_directory(test_path)
 
-        settings.setValue.assert_called_once_with("paths/inputDirectory", str(test_path))
+        settings.setValue.assert_called_once_with(
+            "paths/inputDirectory", str(test_path)
+        )
         settings.sync.assert_called_once()
         assert result is True
 
@@ -221,7 +231,9 @@ class TestSettingsPersistence:
         test_rect = (10, 20, 100, 50)
         result = persistence.save_crop_rect(test_rect)
 
-        settings.setValue.assert_called_once_with("preview/cropRectangle", "10,20,100,50")
+        settings.setValue.assert_called_once_with(
+            "preview/cropRectangle", "10,20,100,50"
+        )
         settings.sync.assert_called_once()
         assert result is True
 
@@ -232,7 +244,9 @@ class TestSettingsPersistence:
         settings.applicationName.return_value = "TestApp"
 
         # Mock QApplication
-        with patch("goesvfi.gui_components.settings_persistence.QApplication") as mock_app:
+        with patch(
+            "goesvfi.gui_components.settings_persistence.QApplication"
+        ) as mock_app:
             mock_instance = MagicMock()
             mock_instance.organizationName.return_value = "TestOrg"
             mock_instance.applicationName.return_value = "TestApp"
@@ -255,7 +269,9 @@ class TestCropHandler:
 
         handler = CropHandler()
 
-        with patch("goesvfi.gui_components.crop_handler.QMessageBox.warning") as mock_warning:
+        with patch(
+            "goesvfi.gui_components.crop_handler.QMessageBox.warning"
+        ) as mock_warning:
             handler.on_crop_clicked(main_window)
 
         mock_warning.assert_called_once()
@@ -312,7 +328,9 @@ class TestFilePickerManager:
 
         manager = FilePickerManager()
 
-        with patch("goesvfi.gui_components.file_picker_manager.QFileDialog.getExistingDirectory") as mock_dialog:
+        with patch(
+            "goesvfi.gui_components.file_picker_manager.QFileDialog.getExistingDirectory"
+        ) as mock_dialog:
             mock_dialog.return_value = "/test/selected/dir"
 
             manager.pick_input_directory(main_window)
@@ -325,13 +343,17 @@ class TestFilePickerManager:
 
         manager = FilePickerManager()
 
-        with patch("goesvfi.gui_components.file_picker_manager.QFileDialog.getSaveFileName") as mock_dialog:
+        with patch(
+            "goesvfi.gui_components.file_picker_manager.QFileDialog.getSaveFileName"
+        ) as mock_dialog:
             mock_dialog.return_value = ("/test/output.mp4", "Video Files (*.mp4)")
 
             manager.pick_output_file(main_window)
 
             assert main_window.out_file_path == Path("/test/output.mp4")
-            main_window.main_tab.out_file_edit.setText.assert_called_once_with("/test/output.mp4")
+            main_window.main_tab.out_file_edit.setText.assert_called_once_with(
+                "/test/output.mp4"
+            )
 
 
 class TestModelSelectorManager:

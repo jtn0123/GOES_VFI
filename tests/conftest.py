@@ -64,7 +64,7 @@ def qapp_args():
 
 
 @pytest.fixture(scope="session")
-def qapp(qapp_args, pytestconfig):
+def qapp(qapp_args, pytestconfig):  # noqa: ARG001
     """Create the QApplication instance with custom font settings."""
     from PyQt6.QtWidgets import QApplication
 

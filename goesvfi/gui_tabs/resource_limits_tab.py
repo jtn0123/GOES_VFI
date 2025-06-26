@@ -277,13 +277,9 @@ class ResourceLimitsTab(QWidget):
 
             # Open files limit (not supported by ResourceLimits)
             # Note: max_open_files not available in ResourceLimits
-            if False:  # limits.max_open_files is not None:
-                self.files_limit_checkbox.setChecked(True)
-                self.files_limit_spinbox.setValue(limits.max_open_files)
-                self.files_limit_spinbox.setEnabled(True)
-            else:
-                self.files_limit_checkbox.setChecked(False)
-                self.files_limit_spinbox.setEnabled(False)
+            # File limit (currently not supported)
+            self.files_limit_checkbox.setChecked(False)
+            self.files_limit_spinbox.setEnabled(False)
 
             # Swap limit
             # Note: ResourceLimits doesn't have enable_swap_limit attribute
@@ -301,8 +297,6 @@ class ResourceLimitsTab(QWidget):
         """Update the real-time monitoring display."""
         try:
             if self.monitor is None:
-                # Create a temporary monitor just for display
-                temp_limits = ResourceLimits()  # No limits, just for monitoring
                 # TODO: Implement ResourceMonitor
                 self.monitor = None
 
@@ -360,7 +354,7 @@ class ResourceLimitsTab(QWidget):
     def start_monitoring(self) -> None:
         """Start resource monitoring."""
         if self.monitor is None:
-            limits = self.get_current_limits()
+            self.get_current_limits()
             # TODO: Implement ResourceMonitor
             self.monitor = None
         if self.monitor is not None and hasattr(self.monitor, "start_monitoring"):

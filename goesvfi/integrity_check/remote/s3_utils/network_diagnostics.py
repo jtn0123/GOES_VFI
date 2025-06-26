@@ -143,7 +143,9 @@ class NetworkDiagnostics:
         s3_resolutions = info.get("s3_host_resolution", [])
         for resolution in s3_resolutions:
             if resolution.get("success"):
-                log_lines.append(f"  S3 Host Resolution: {resolution['host']} -> {resolution['ip']}")
+                log_lines.append(
+                    f"  S3 Host Resolution: {resolution['host']} -> {resolution['ip']}"
+                )
             else:
                 log_lines.append(
                     f"  S3 Host Resolution Failed: {resolution['host']} - {resolution.get('error', 'Unknown error')}"

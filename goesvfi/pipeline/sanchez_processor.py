@@ -40,7 +40,7 @@ class SanchezProcessor(ImageProcessor):
         self._temp_dir = Path(temp_dir)
         self._temp_dir.mkdir(parents=True, exist_ok=True)
         self._progress_callback = progress_callback
-        LOGGER.info(f"SanchezProcessor initialized with temp dir: {self._temp_dir}")
+        LOGGER.info("SanchezProcessor initialized with temp dir: %s", self._temp_dir)
 
     def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
         """Process image data using Sanchez colorization.
@@ -84,7 +84,9 @@ class SanchezProcessor(ImageProcessor):
                     if len(img_array.shape) == 3 and img_array.shape[2] == 1:
                         img_array = img_array.squeeze(axis=2)
 
-                    pil_image = Image.fromarray(img_array, mode="L" if len(img_array.shape) == 2 else "RGB")
+                    pil_image = Image.fromarray(
+                        img_array, mode="L" if len(img_array.shape) == 2 else "RGB"
+                    )
                 else:
                     pil_image = image_data.image_data
 
@@ -94,11 +96,18 @@ class SanchezProcessor(ImageProcessor):
                 if self._progress_callback:
                     self._progress_callback("Running Sanchez colorization", 0.5)
 
-                LOGGER.debug(f"Running Sanchez: {input_temp} -> {output_temp} (res={res_km}km)")
+                LOGGER.debug(
+                    "Running Sanchez: %s -> %s (res=%skm)",
+                    input_temp,
+                    output_temp,
+                    res_km,
+                )
                 colourise(input_temp, output_temp, res_km=res_km)
 
                 if not output_temp.exists():
-                    raise RuntimeError("Sanchez processing failed - output file not created")
+                    raise RuntimeError(
+                        "Sanchez processing failed - output file not created"
+                    )
 
                 # Load processed image
                 if self._progress_callback:
@@ -116,7 +125,11 @@ class SanchezProcessor(ImageProcessor):
                         "processed_by": "sanchez",
                         "width": processed_array.shape[1],
                         "height": processed_array.shape[0],
-                        "channels": (1 if len(processed_array.shape) == 2 else processed_array.shape[2]),
+                        "channels": (
+                            1
+                            if len(processed_array.shape) == 2
+                            else processed_array.shape[2]
+                        ),
                         "sanchez_res_km": res_km,
                         "processing_time": time.time() - start_time,
                     },
@@ -125,7 +138,9 @@ class SanchezProcessor(ImageProcessor):
                 if self._progress_callback:
                     self._progress_callback("Sanchez processing completed", 1.0)
 
-                LOGGER.info(f"Sanchez processing completed in {time.time() - start_time:.2f}s")
+                LOGGER.info(
+                    "Sanchez processing completed in %.2fs", time.time() - start_time
+                )
                 return processed_data
 
             finally:

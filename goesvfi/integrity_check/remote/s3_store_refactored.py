@@ -421,7 +421,7 @@ class S3Store(RemoteStore):
         LOGGER.info("Searching with wildcard: s3://%s/%s", bucket, wildcard_key)
 
         # Extract prefix and create regex pattern
-        prefix = wildcard_key.split("*")[0] if "*" in wildcard_key else wildcard_key
+        wildcard_key.split("*")[0] if "*" in wildcard_key else wildcard_key
         base_path = "/".join(wildcard_key.split("/")[:-1]) + "/"
 
         # Create search parameters

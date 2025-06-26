@@ -6,10 +6,10 @@ proper protection against common vulnerabilities like command injection
 and path traversal.
 """
 
-import os
 import pathlib
 import tempfile
-from unittest.mock import Mock, mock_open, patch
+from typing import Any, List
+from unittest.mock import Mock, patch
 
 import pytest
 

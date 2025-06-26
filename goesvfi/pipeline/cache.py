@@ -58,8 +58,11 @@ def load_cached(
 ) -> Optional[List[NDArray[Any]]]:
     """Load cached intermediate frames if all ``.npy`` files are present."""
     LOGGER.debug(
-        f"Attempting to load cache for {path1.name}, {path2.name}, model={model_id}, "
-        f"frames={num_intermediate_frames}"
+        "Attempting to load cache for %s, %s, model=%s, frames=%s",
+        path1.name,
+        path2.name,
+        model_id,
+        num_intermediate_frames,
     )
     if num_intermediate_frames <= 0:
         LOGGER.debug("num_intermediate_frames is 0 or less, returning None")
@@ -114,14 +117,24 @@ def save_cache(
 ) -> None:
     """Persist interpolated frames to ``CACHE_DIR`` for later reuse."""
     LOGGER.debug(
-        f"Attempting to save cache for {path1.name}, {path2.name}, model={model_id}, frames={num_intermediate_frames}"
+        "Attempting to save cache for %s, %s, model=%s, frames=%s",
+        path1.name,
+        path2.name,
+        model_id,
+        num_intermediate_frames,
     )
     LOGGER.debug(
-        f"save_cache - num_intermediate_frames: {num_intermediate_frames} (type: {type(num_intermediate_frames)}), len(frames): {len(frames)} (type: {type(frames)})"
+        "save_cache - num_intermediate_frames: %s (type: %s), len(frames): %s (type: %s)",
+        num_intermediate_frames,
+        type(num_intermediate_frames),
+        len(frames),
+        type(frames),
     )
     if not frames or num_intermediate_frames != len(frames):
         LOGGER.warning(
-            f"Cache save called with mismatch: num_intermediate_frames={num_intermediate_frames}, len(frames)={len(frames)}"
+            "Cache save called with mismatch: num_intermediate_frames=%s, len(frames)=%s",
+            num_intermediate_frames,
+            len(frames),
         )
         LOGGER.debug("save_cache returning early due to mismatch")
         return

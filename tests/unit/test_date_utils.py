@@ -2,7 +2,6 @@
 
 import datetime
 import pathlib
-from typing import Optional
 
 import pytest
 
@@ -117,7 +116,9 @@ class TestParseSatellitePath:
             (pathlib.Path("2023-10-27"), datetime.date(2023, 10, 27)),
         ],
     )
-    def test_parse_with_path_objects(self, path_str: pathlib.Path, expected_date: datetime.date):
+    def test_parse_with_path_objects(
+        self, path_str: pathlib.Path, expected_date: datetime.date
+    ):
         """Test parsing dates from pathlib.Path objects."""
         result = parse_satellite_path(path_str)
         assert result == expected_date

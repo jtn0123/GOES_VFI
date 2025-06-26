@@ -6,7 +6,6 @@ This script validates the CI/CD setup to ensure all components are properly conf
 """
 
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Any, Dict, List

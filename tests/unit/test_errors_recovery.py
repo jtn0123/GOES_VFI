@@ -6,7 +6,6 @@ proper error recovery functionality.
 """
 
 from typing import Any, Dict, Optional
-from unittest.mock import Mock, patch
 
 import pytest
 
@@ -47,8 +46,12 @@ class TestFileRecoveryStrategy:
         """Test that file recovery strategy can handle file-related errors."""
         strategy = FileRecoveryStrategy()
 
-        file_not_found_error = StructuredError("File not found", category=ErrorCategory.FILE_NOT_FOUND)
-        permission_error = StructuredError("Permission denied", category=ErrorCategory.PERMISSION)
+        file_not_found_error = StructuredError(
+            "File not found", category=ErrorCategory.FILE_NOT_FOUND
+        )
+        permission_error = StructuredError(
+            "Permission denied", category=ErrorCategory.PERMISSION
+        )
         network_error = StructuredError("Network error", category=ErrorCategory.NETWORK)
 
         assert strategy.can_recover(file_not_found_error) is True
@@ -60,7 +63,9 @@ class TestFileRecoveryStrategy:
         strategy = FileRecoveryStrategy()
         error = StructuredError("File not found", category=ErrorCategory.FILE_NOT_FOUND)
 
-        with pytest.raises(NotImplementedError, match="File recovery strategy not implemented"):
+        with pytest.raises(
+            NotImplementedError, match="File recovery strategy not implemented"
+        ):
             strategy.recover(error)
 
     def test_file_recovery_with_context(self):
@@ -91,8 +96,12 @@ class TestRetryRecoveryStrategy:
         strategy = RetryRecoveryStrategy()
 
         network_error = StructuredError("Network error", category=ErrorCategory.NETWORK)
-        external_tool_error = StructuredError("Tool failed", category=ErrorCategory.EXTERNAL_TOOL)
-        validation_error = StructuredError("Invalid input", category=ErrorCategory.VALIDATION)
+        external_tool_error = StructuredError(
+            "Tool failed", category=ErrorCategory.EXTERNAL_TOOL
+        )
+        validation_error = StructuredError(
+            "Invalid input", category=ErrorCategory.VALIDATION
+        )
 
         assert strategy.can_recover(network_error) is True
         assert strategy.can_recover(external_tool_error) is True
@@ -103,14 +112,18 @@ class TestRetryRecoveryStrategy:
         strategy = RetryRecoveryStrategy()
         error = StructuredError("Network error", category=ErrorCategory.NETWORK)
 
-        with pytest.raises(NotImplementedError, match="Retry recovery strategy not implemented"):
+        with pytest.raises(
+            NotImplementedError, match="Retry recovery strategy not implemented"
+        ):
             strategy.recover(error)
 
 
 class CustomRecoveryStrategy(RecoveryStrategy):
     """Custom recovery strategy for testing."""
 
-    def __init__(self, recoverable_categories=None, recovery_result=None, should_fail=False):
+    def __init__(
+        self, recoverable_categories=None, recovery_result=None, should_fail=False
+    ):
         self.recoverable_categories = recoverable_categories or []
         self.recovery_result = recovery_result
         self.should_fail = should_fail
@@ -119,7 +132,9 @@ class CustomRecoveryStrategy(RecoveryStrategy):
     def can_recover(self, error: StructuredError) -> bool:
         return error.category in self.recoverable_categories
 
-    def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+    def recover(
+        self, error: StructuredError, context: Optional[Dict[str, Any]] = None
+    ) -> Any:
         self.recovery_attempts.append({"error": error, "context": context})
 
         if self.should_fail:
@@ -197,14 +212,20 @@ class TestRecoveryManager:
 
     def test_recovery_manager_strategy_failure(self):
         """Test recovery when strategy fails."""
-        failing_strategy = CustomRecoveryStrategy(recoverable_categories=[ErrorCategory.VALIDATION], should_fail=True)
+        failing_strategy = CustomRecoveryStrategy(
+            recoverable_categories=[ErrorCategory.VALIDATION], should_fail=True
+        )
 
         backup_strategy = CustomRecoveryStrategy(
             recoverable_categories=[ErrorCategory.VALIDATION],
             recovery_result="Backup recovery successful",
         )
 
-        manager = RecoveryManager().add_strategy(failing_strategy).add_strategy(backup_strategy)
+        manager = (
+            RecoveryManager()
+            .add_strategy(failing_strategy)
+            .add_strategy(backup_strategy)
+        )
 
         error = StructuredError("Validation error", category=ErrorCategory.VALIDATION)
 
@@ -217,9 +238,13 @@ class TestRecoveryManager:
 
     def test_recovery_manager_all_strategies_fail(self):
         """Test recovery when all strategies fail."""
-        strategy1 = CustomRecoveryStrategy(recoverable_categories=[ErrorCategory.VALIDATION], should_fail=True)
+        strategy1 = CustomRecoveryStrategy(
+            recoverable_categories=[ErrorCategory.VALIDATION], should_fail=True
+        )
 
-        strategy2 = CustomRecoveryStrategy(recoverable_categories=[ErrorCategory.VALIDATION], should_fail=True)
+        strategy2 = CustomRecoveryStrategy(
+            recoverable_categories=[ErrorCategory.VALIDATION], should_fail=True
+        )
 
         manager = RecoveryManager().add_strategy(strategy1).add_strategy(strategy2)
 
@@ -246,7 +271,9 @@ class TestRecoveryManager:
             recovery_result="Second strategy result",
         )
 
-        manager = RecoveryManager().add_strategy(first_strategy).add_strategy(second_strategy)
+        manager = (
+            RecoveryManager().add_strategy(first_strategy).add_strategy(second_strategy)
+        )
 
         error = StructuredError("Validation error", category=ErrorCategory.VALIDATION)
 
@@ -271,7 +298,9 @@ class TestRecoveryIntegration:
             def can_recover(self, error: StructuredError) -> bool:
                 return error.category == ErrorCategory.FILE_NOT_FOUND
 
-            def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+            def recover(
+                self, error: StructuredError, context: Optional[Dict[str, Any]] = None
+            ) -> Any:
                 file_path = error.context.user_data.get("file_path", "unknown")
                 self.created_files.append(file_path)
                 return f"Created file: {file_path}"
@@ -283,7 +312,9 @@ class TestRecoveryIntegration:
             def can_recover(self, error: StructuredError) -> bool:
                 return error.category == ErrorCategory.PERMISSION
 
-            def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+            def recover(
+                self, error: StructuredError, context: Optional[Dict[str, Any]] = None
+            ) -> Any:
                 file_path = error.context.user_data.get("file_path", "unknown")
                 self.permission_fixes.append(file_path)
                 return f"Fixed permissions for: {file_path}"
@@ -291,7 +322,11 @@ class TestRecoveryIntegration:
         file_strategy = FileCreationStrategy()
         permission_strategy = PermissionFixStrategy()
 
-        manager = RecoveryManager().add_strategy(file_strategy).add_strategy(permission_strategy)
+        manager = (
+            RecoveryManager()
+            .add_strategy(file_strategy)
+            .add_strategy(permission_strategy)
+        )
 
         # Test file not found recovery
         file_context = ErrorContext(operation="file_read", component="loader")
@@ -311,7 +346,9 @@ class TestRecoveryIntegration:
         perm_context = ErrorContext(operation="file_write", component="saver")
         perm_context.add_user_data("file_path", "/restricted/config.json")
 
-        perm_error = StructuredError("Permission denied", category=ErrorCategory.PERMISSION, context=perm_context)
+        perm_error = StructuredError(
+            "Permission denied", category=ErrorCategory.PERMISSION, context=perm_context
+        )
 
         result = manager.attempt_recovery(perm_error)
         assert result == "Fixed permissions for: /restricted/config.json"
@@ -328,12 +365,16 @@ class TestRecoveryIntegration:
             def can_recover(self, error: StructuredError) -> bool:
                 return error.category == ErrorCategory.NETWORK
 
-            def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+            def recover(
+                self, error: StructuredError, context: Optional[Dict[str, Any]] = None
+            ) -> Any:
                 operation_id = error.context.operation
                 current_count = self.retry_counts.get(operation_id, 0)
 
                 if current_count >= self.max_retries:
-                    raise RuntimeError(f"Max retries ({self.max_retries}) exceeded for {operation_id}")
+                    raise RuntimeError(
+                        f"Max retries ({self.max_retries}) exceeded for {operation_id}"
+                    )
 
                 self.retry_counts[operation_id] = current_count + 1
                 return f"Retry {current_count + 1} for {operation_id}"
@@ -341,8 +382,12 @@ class TestRecoveryIntegration:
         strategy = NetworkRetryStrategy(max_retries=2)
         manager = RecoveryManager().add_strategy(strategy)
 
-        network_context = ErrorContext(operation="api_call_123", component="http_client")
-        network_error = StructuredError("Connection failed", category=ErrorCategory.NETWORK, context=network_context)
+        network_context = ErrorContext(
+            operation="api_call_123", component="http_client"
+        )
+        network_error = StructuredError(
+            "Connection failed", category=ErrorCategory.NETWORK, context=network_context
+        )
 
         # First retry should succeed
         result1 = manager.attempt_recovery(network_error)
@@ -369,7 +414,9 @@ class TestRecoveryIntegration:
             def can_recover(self, error: StructuredError) -> bool:
                 return error.category == ErrorCategory.PROCESSING
 
-            def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+            def recover(
+                self, error: StructuredError, context: Optional[Dict[str, Any]] = None
+            ) -> Any:
                 self.attempts += 1
                 if self.attempts <= 2:  # Fail first 2 attempts
                     raise RuntimeError("Primary strategy failed")
@@ -382,7 +429,9 @@ class TestRecoveryIntegration:
             def can_recover(self, error: StructuredError) -> bool:
                 return error.category == ErrorCategory.PROCESSING
 
-            def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+            def recover(
+                self, error: StructuredError, context: Optional[Dict[str, Any]] = None
+            ) -> Any:
                 self.attempts += 1
                 if self.attempts == 1:
                     raise RuntimeError("Fallback strategy failed on first try")
@@ -395,7 +444,9 @@ class TestRecoveryIntegration:
             def can_recover(self, error: StructuredError) -> bool:
                 return True  # Can handle any error
 
-            def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+            def recover(
+                self, error: StructuredError, context: Optional[Dict[str, Any]] = None
+            ) -> Any:
                 self.attempts += 1
                 return "Last resort strategy succeeded"
 
@@ -403,9 +454,16 @@ class TestRecoveryIntegration:
         fallback = FallbackStrategy()
         last_resort = LastResortStrategy()
 
-        manager = RecoveryManager().add_strategy(primary).add_strategy(fallback).add_strategy(last_resort)
+        manager = (
+            RecoveryManager()
+            .add_strategy(primary)
+            .add_strategy(fallback)
+            .add_strategy(last_resort)
+        )
 
-        processing_error = StructuredError("Processing failed", category=ErrorCategory.PROCESSING)
+        processing_error = StructuredError(
+            "Processing failed", category=ErrorCategory.PROCESSING
+        )
 
         # First attempt - primary fails, fallback fails, last resort succeeds
         result1 = manager.attempt_recovery(processing_error)
@@ -438,7 +496,9 @@ class TestRecoveryIntegration:
             def can_recover(self, error: StructuredError) -> bool:
                 return True
 
-            def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+            def recover(
+                self, error: StructuredError, context: Optional[Dict[str, Any]] = None
+            ) -> Any:
                 recovery_context = {
                     "error_context": {
                         "operation": error.context.operation,
@@ -451,7 +511,9 @@ class TestRecoveryIntegration:
                     "recoverable": error.recoverable,
                 }
                 self.processed_contexts.append(recovery_context)
-                return f"Recovered with context: {len(self.processed_contexts)} attempts"
+                return (
+                    f"Recovered with context: {len(self.processed_contexts)} attempts"
+                )
 
         strategy = ContextAwareStrategy()
         manager = RecoveryManager().add_strategy(strategy)
@@ -481,7 +543,9 @@ class TestRecoveryIntegration:
 
         processed = strategy.processed_contexts[0]
         assert processed["error_context"]["operation"] == "image_processing"
-        assert processed["error_context"]["user_data"]["image_path"] == "/images/large.jpg"
+        assert (
+            processed["error_context"]["user_data"]["image_path"] == "/images/large.jpg"
+        )
         assert processed["error_context"]["system_data"]["memory_usage"] == "250MB"
         assert processed["recovery_context"]["retry_with_smaller_size"] is True
         assert processed["error_category"] == ErrorCategory.PROCESSING

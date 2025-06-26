@@ -8,7 +8,6 @@ structured errors in both simple and verbose modes.
 import sys
 from io import StringIO
 
-import pytest
 
 from goesvfi.utils.errors.base import ErrorCategory, ErrorContext, StructuredError
 from goesvfi.utils.errors.reporter import ErrorReporter
@@ -78,7 +77,9 @@ class TestErrorReporter:
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=False)
 
-        error = StructuredError(message="Simple error", user_message="Simple user message")
+        error = StructuredError(
+            message="Simple error", user_message="Simple user message"
+        )
 
         reporter.report_error(error)
 

@@ -96,7 +96,9 @@ class UISetupManager:
 
         # Create FFmpeg settings tab
         main_window.ffmpeg_settings_tab = FFmpegSettingsTab(parent=main_window)
-        main_window.ffmpeg_settings_tab.set_enabled(main_window.current_encoder == "FFmpeg")
+        main_window.ffmpeg_settings_tab.set_enabled(
+            main_window.current_encoder == "FFmpeg"
+        )
 
         # Create model library tab
         main_window.model_library_tab = ModelLibraryTab(parent=main_window)
@@ -114,7 +116,9 @@ class UISetupManager:
 
         # Add all tabs to widget
         main_window.tab_widget.addTab(main_window.main_tab, "Main")
-        main_window.tab_widget.addTab(main_window.ffmpeg_settings_tab, "FFmpeg Settings")
+        main_window.tab_widget.addTab(
+            main_window.ffmpeg_settings_tab, "FFmpeg Settings"
+        )
         main_window.tab_widget.addTab(main_window.model_library_tab, "Model Library")
         main_window.tab_widget.addTab(main_window.file_sorter_tab, "File Sorter")
         main_window.tab_widget.addTab(main_window.date_sorter_tab, "Date Sorter")

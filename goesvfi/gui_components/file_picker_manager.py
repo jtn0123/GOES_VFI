@@ -20,7 +20,9 @@ class FilePickerManager:
             main_window: The MainWindow instance
         """
         LOGGER.debug("Entering pick_input_directory...")
-        dir_path = QFileDialog.getExistingDirectory(main_window, "Select Input Image Folder")
+        dir_path = QFileDialog.getExistingDirectory(
+            main_window, "Select Input Image Folder"
+        )
         if dir_path:
             LOGGER.debug("Input directory selected: %s", dir_path)
             main_window.in_dir = Path(dir_path)
@@ -36,7 +38,9 @@ class FilePickerManager:
             main_window: The MainWindow instance
         """
         LOGGER.debug("Entering pick_output_file...")
-        file_path, _ = QFileDialog.getSaveFileName(main_window, "Save Output Video", "", "MP4 Files (*.mp4)")
+        file_path, _ = QFileDialog.getSaveFileName(
+            main_window, "Save Output Video", "", "MP4 Files (*.mp4)"
+        )
         if file_path:
             LOGGER.debug("Output file selected: %s", file_path)
             main_window.out_file_path = Path(file_path)

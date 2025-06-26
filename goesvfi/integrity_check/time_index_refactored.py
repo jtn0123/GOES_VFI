@@ -80,7 +80,9 @@ def extract_timestamp(filename: str, pattern: SatellitePattern) -> Optional[date
     return None
 
 
-def _try_extract_time_component(dirname: str, patterns: List[Pattern[str]]) -> Optional[Tuple[int, int, int]]:
+def _try_extract_time_component(
+    dirname: str, patterns: List[Pattern[str]]
+) -> Optional[Tuple[int, int, int]]:
     """Try to extract hour, minute, second from a directory name using multiple patterns.
 
     Args:
@@ -245,7 +247,9 @@ def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
         time_components = _try_extract_time_component(dirname, time_patterns)
         if time_components:
             hour, minute, second = time_components
-            return datetime(date_obj.year, date_obj.month, date_obj.day, hour, minute, second)
+            return datetime(
+                date_obj.year, date_obj.month, date_obj.day, hour, minute, second
+            )
 
         # If we found a date but no time, return datetime at midnight
         return datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0)
@@ -266,7 +270,9 @@ def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
     return None
 
 
-def _validate_directory_and_pattern(directory: Path, pattern: SatellitePattern) -> Tuple[bool, Optional[Pattern[str]]]:
+def _validate_directory_and_pattern(
+    directory: Path, pattern: SatellitePattern
+) -> Tuple[bool, Optional[Pattern[str]]]:
     """Validate directory exists and pattern is valid.
 
     Args:
@@ -289,7 +295,9 @@ def _validate_directory_and_pattern(directory: Path, pattern: SatellitePattern) 
     return True, compiled_pattern
 
 
-def _extract_timestamp_from_file(file_path: Path, pattern: SatellitePattern) -> Optional[datetime]:
+def _extract_timestamp_from_file(
+    file_path: Path, pattern: SatellitePattern
+) -> Optional[datetime]:
     """Extract timestamp from a file using various methods.
 
     Args:
@@ -428,7 +436,9 @@ def scan_directory_for_timestamps(
 
     # If no timestamps found in files, try subdirectory names
     if not timestamps:
-        timestamps = _scan_subdirectories_for_timestamps(directory, start_time, end_time)
+        timestamps = _scan_subdirectories_for_timestamps(
+            directory, start_time, end_time
+        )
 
     LOGGER.info("Found %s timestamps in %s", len(timestamps), directory)
     return sorted(timestamps)
@@ -467,14 +477,18 @@ def _validate_product_type_and_band(product_type: str, band: int) -> None:
     # Validate product type
     valid_products = ["RadF", "RadC", "RadM"]
     if product_type not in valid_products:
-        raise ValueError(f"Invalid product type: {product_type}. Must be one of {valid_products}")
+        raise ValueError(
+            f"Invalid product type: {product_type}. Must be one of {valid_products}"
+        )
 
     # Validate band number
     if not 1 <= band <= 16:
         raise ValueError(f"Invalid band number: {band}. Must be between 1 and 16.")
 
 
-def _find_nearest_valid_scan_minute(original_minute: int, scan_minutes: Optional[List[int]]) -> int:
+def _find_nearest_valid_scan_minute(
+    original_minute: int, scan_minutes: Optional[List[int]]
+) -> int:
     """Find the nearest valid scan minute for the given product type.
 
     Args:
@@ -566,7 +580,10 @@ def _get_s3_filename_pattern(
         else:
             # Use wildcard pattern for production
             # Specify the band but use wildcard for the whole hour to be maximally flexible
-            return f"OR_ABI-L1b-{product_type}-M6C{band_str}_{satellite_code}_s" f"{year}{doy_str}{hour}*_e*_c*.nc"
+            return (
+                f"OR_ABI-L1b-{product_type}-M6C{band_str}_{satellite_code}_s"
+                f"{year}{doy_str}{hour}*_e*_c*.nc"
+            )
 
 
 def to_s3_key(
@@ -608,7 +625,9 @@ def to_s3_key(
     is_test_env, is_basic_test, is_remote_test = _detect_test_environment()
 
     # 5. Determine if we should use exact match
-    use_exact_match = exact_match or (is_test_env and is_remote_test and _USE_EXACT_MATCH_IN_TEST)
+    use_exact_match = exact_match or (
+        is_test_env and is_remote_test and _USE_EXACT_MATCH_IN_TEST
+    )
 
     # 6. Get scan minutes for the product type
     scan_minutes = []

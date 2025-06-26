@@ -68,13 +68,15 @@ class S3ErrorConverter:
         if error_code in ("AccessDenied", "403", "InvalidAccessKeyId"):
             return AuthenticationError(
                 message=f"Access denied to {satellite.name} data",
-                technical_details=technical_details + "\nNote: NOAA buckets should be publicly accessible.",
+                technical_details=technical_details
+                + "\nNote: NOAA buckets should be publicly accessible.",
                 original_exception=error,
             )
         elif error_code in ("NoSuchBucket", "NoSuchKey", "404"):
             return ResourceNotFoundError(
                 message=f"Resource not found for {satellite.name} at {timestamp.isoformat()}",
-                technical_details=technical_details + "\nThis data may not be available in the AWS S3 bucket.",
+                technical_details=technical_details
+                + "\nThis data may not be available in the AWS S3 bucket.",
                 original_exception=error,
             )
         else:
@@ -82,7 +84,8 @@ class S3ErrorConverter:
             if "timeout" in str(error).lower() or "connection" in str(error).lower():
                 return RemoteConnectionError(
                     message=f"Connection error accessing {satellite.name} data",
-                    technical_details=technical_details + "\nThis suggests network connectivity issues.",
+                    technical_details=technical_details
+                    + "\nThis suggests network connectivity issues.",
                     original_exception=error,
                 )
             else:
@@ -121,16 +124,25 @@ class S3ErrorConverter:
         )
 
         # Determine error type based on error message
-        if isinstance(error, PermissionError) or "permission" in error_str or "access" in error_str:
+        if (
+            isinstance(error, PermissionError)
+            or "permission" in error_str
+            or "access" in error_str
+        ):
             return AuthenticationError(
                 message=f"Permission error {operation} {satellite.name} data",
-                technical_details=technical_details + "\nCheck file system permissions.",
+                technical_details=technical_details
+                + "\nCheck file system permissions.",
                 original_exception=error,
             )
-        elif isinstance(error, (asyncio.TimeoutError, TimeoutError)) or "timeout" in error_str:
+        elif (
+            isinstance(error, (asyncio.TimeoutError, TimeoutError))
+            or "timeout" in error_str
+        ):
             return RemoteConnectionError(
                 message=f"Timeout {operation} {satellite.name} data",
-                technical_details=technical_details + "\nCheck your internet connection speed.",
+                technical_details=technical_details
+                + "\nCheck your internet connection speed.",
                 original_exception=error,
             )
         elif "not found" in error_str or "404" in error_str or "no such" in error_str:
@@ -142,7 +154,8 @@ class S3ErrorConverter:
         elif "connection" in error_str or "network" in error_str:
             return RemoteConnectionError(
                 message=f"Network error {operation} {satellite.name} data",
-                technical_details=technical_details + "\nCheck your internet connection.",
+                technical_details=technical_details
+                + "\nCheck your internet connection.",
                 original_exception=error,
             )
         else:

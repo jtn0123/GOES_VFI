@@ -1,5 +1,4 @@
 import pytest
-from PyQt6.QtCore import QObject
 
 from goesvfi.date_sorter.sorter import DateSorter
 from goesvfi.file_sorter.sorter import FileSorter
@@ -34,5 +33,10 @@ def test_active_tab_signal_emitted(main_window_vm, qtbot):
 
 
 def test_processing_vm_has_dependencies(main_window_vm):
-    assert main_window_vm.processing_vm.preview_manager is main_window_vm.preview_manager
-    assert main_window_vm.processing_vm.processing_manager is main_window_vm.processing_manager
+    assert (
+        main_window_vm.processing_vm.preview_manager is main_window_vm.preview_manager
+    )
+    assert (
+        main_window_vm.processing_vm.processing_manager
+        is main_window_vm.processing_manager
+    )

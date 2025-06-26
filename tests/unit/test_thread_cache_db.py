@@ -11,7 +11,6 @@ from typing import Any, Dict
 
 import pytest
 
-from goesvfi.integrity_check.cache_db import CacheDB
 from goesvfi.integrity_check.thread_cache_db import ThreadLocalCacheDB
 from goesvfi.integrity_check.time_index import SatellitePattern
 
@@ -116,7 +115,9 @@ class TestThreadLocalCacheDB:
                     task = asyncio.wrap_future(
                         executor.submit(
                             asyncio.run,
-                            self.async_worker(db, satellite, timestamp, file_path, True),
+                            self.async_worker(
+                                db, satellite, timestamp, file_path, True
+                            ),
                         )
                     )
                     tasks.append(task)
@@ -143,7 +144,9 @@ class TestThreadLocalCacheDB:
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(asyncio.run, verify_timestamps())
                 thread_count = future.result()
-                assert thread_count == 10, f"Expected 10 timestamps from thread, got {thread_count}"
+                assert (
+                    thread_count == 10
+                ), f"Expected 10 timestamps from thread, got {thread_count}"
 
         finally:
             db.close()
@@ -183,7 +186,7 @@ class TestThreadLocalCacheDB:
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
         # Get a connection for the main thread
-        main_conn = db._get_connection()
+        db._get_connection()
         main_thread_id = threading.get_ident()
 
         # Create connections from a worker thread

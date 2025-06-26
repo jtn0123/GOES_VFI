@@ -100,9 +100,7 @@ def update_readme_badge(percentage: float) -> bool:
 
         # New badge with updated percentage
         shields_url = generate_shields_io_url(percentage)
-        replacement = (
-            f"[![Coverage]({shields_url})](https://codecov.io/gh/jtn0123/GOES_VFI)"
-        )
+        replacement = f"[![Coverage]({shields_url})](https://codecov.io/gh/jtn0123/GOES_VFI)"
 
         # Replace in content
         new_content = re.sub(pattern, replacement, content)
@@ -110,7 +108,7 @@ def update_readme_badge(percentage: float) -> bool:
         if new_content != content:
             with open(readme_path, "w") as f:
                 f.write(new_content)
-            print(f"✅ Updated README.md coverage badge")
+            print("✅ Updated README.md coverage badge")
             return True
         else:
             print("ℹ️  No changes needed in README.md")
@@ -138,7 +136,7 @@ def main():
 
     # Generate shields.io URL
     shields_url = generate_shields_io_url(percentage)
-    print(f"\n📊 Shields.io badge URL:")
+    print("\n📊 Shields.io badge URL:")
     print(f"   {shields_url}")
 
     # Update README if requested

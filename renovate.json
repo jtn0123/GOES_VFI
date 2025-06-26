@@ -1,0 +1,76 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommitTypeAll(deps)"
+  ],
+  "timezone": "America/New_York",
+  "schedule": ["after 10pm every weekday", "before 5am every weekday", "every weekend"],
+  "python": {
+    "enabled": true
+  },
+  "pip_requirements": {
+    "fileMatch": ["(^|/)requirements\\.txt$", "(^|/)test-requirements\\.txt$"]
+  },
+  "packageRules": [
+    {
+      "description": "Automatically merge minor and patch updates for test dependencies",
+      "matchFiles": ["test-requirements.txt"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true
+    },
+    {
+      "description": "Group PyQt6 related packages",
+      "matchPackagePatterns": ["^PyQt6"],
+      "groupName": "PyQt6 packages"
+    },
+    {
+      "description": "Group pytest and test-related packages",
+      "matchPackagePatterns": ["^pytest", "^coverage", "^mock"],
+      "groupName": "test packages"
+    },
+    {
+      "description": "Group linting tools",
+      "matchPackageNames": ["flake8", "black", "isort", "mypy", "pylint", "bandit"],
+      "groupName": "linting tools"
+    },
+    {
+      "description": "Group AWS/boto3 packages",
+      "matchPackagePatterns": ["^boto3", "^botocore"],
+      "groupName": "AWS packages"
+    },
+    {
+      "description": "Disable updates for pinned critical dependencies",
+      "matchPackageNames": ["ncnn"],
+      "enabled": false
+    },
+    {
+      "description": "Security updates should be merged automatically",
+      "matchDatasources": ["pypi"],
+      "matchUpdateTypes": ["patch"],
+      "matchPackagePatterns": ["*"],
+      "prPriority": 10,
+      "automerge": true,
+      "automergeType": "pr",
+      "matchFiles": ["requirements.txt", "test-requirements.txt"],
+      "matchManagers": ["pip_requirements"],
+      "vulnerabilityAlerts": {
+        "enabled": true
+      }
+    }
+  ],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 10,
+  "prCreation": "immediate",
+  "rangeStrategy": "pin",
+  "postUpdateOptions": ["gomodTidy", "npmDedupe", "yarnDedupeHighest"],
+  "commitMessagePrefix": "chore(deps):",
+  "commitMessageAction": "update",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "to {{newVersion}}",
+  "github": {
+    "ensureIssue": true,
+    "ensureIssueTitle": "Dependency Dashboard"
+  }
+}

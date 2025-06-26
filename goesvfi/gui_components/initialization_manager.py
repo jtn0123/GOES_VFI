@@ -66,9 +66,13 @@ class InitializationManager:
         main_window.image_loader = ImageLoader()
 
         # SanchezProcessor needs a temp directory, create one for the GUI lifetime
-        main_window._sanchez_gui_temp_dir = Path(tempfile.gettempdir()) / f"goes_vfi_sanchez_gui_{os.getpid()}"
+        main_window._sanchez_gui_temp_dir = (
+            Path(tempfile.gettempdir()) / f"goes_vfi_sanchez_gui_{os.getpid()}"
+        )
         os.makedirs(main_window._sanchez_gui_temp_dir, exist_ok=True)
-        main_window.sanchez_processor = SanchezProcessor(main_window._sanchez_gui_temp_dir)
+        main_window.sanchez_processor = SanchezProcessor(
+            main_window._sanchez_gui_temp_dir
+        )
         main_window.image_cropper = ImageCropper()
         LOGGER.info("GUI Image processors instantiated.")
 
@@ -89,7 +93,9 @@ class InitializationManager:
         # no need to initialize them here
 
         # Create preview processor
-        main_window.preview_processor = RefactoredPreviewProcessor(main_window.sanchez_preview_cache)
+        main_window.preview_processor = RefactoredPreviewProcessor(
+            main_window.sanchez_preview_cache
+        )
 
         # Create all component managers
         self._create_component_managers(main_window)

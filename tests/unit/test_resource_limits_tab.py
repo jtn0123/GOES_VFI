@@ -99,7 +99,6 @@ def test_checkboxes_toggle_spinboxes(resource_tab):
 
 def test_limits_changed_emits_expected_values(resource_tab):
     """Toggling limits should emit ResourceLimits with expected values."""
-    from goesvfi.utils.resource_manager import ResourceLimits  # type: ignore
 
     emitted = []
     resource_tab.limits_changed.connect(lambda limits: emitted.append(limits))

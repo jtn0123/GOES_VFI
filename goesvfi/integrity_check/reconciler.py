@@ -90,7 +90,9 @@ class Reconciler:
 
         # Scan directory for existing files
         LOGGER.info(f"Scanning directory: {base_directory}")
-        found_timestamps = scan_directory_for_timestamps(base_directory, satellite_pattern)
+        found_timestamps = scan_directory_for_timestamps(
+            base_directory, satellite_pattern
+        )
 
         # Auto-detect interval if not specified
         if interval_minutes == 0:
@@ -98,7 +100,9 @@ class Reconciler:
             LOGGER.info(f"Auto-detected interval: {interval_minutes} minutes")
 
         # Generate expected timestamps
-        expected_timestamps = list(generate_timestamp_sequence(start_date, end_date, interval_minutes))
+        expected_timestamps = list(
+            generate_timestamp_sequence(start_date, end_date, interval_minutes)
+        )
 
         # Find missing timestamps
         found_set = set(found_timestamps)
@@ -156,6 +160,8 @@ class Reconciler:
         Returns:
             List of missing timestamps
         """
-        scan_result = self.scan_date_range(start_date, end_date, satellite_pattern, base_directory, interval_minutes)
+        scan_result = self.scan_date_range(
+            start_date, end_date, satellite_pattern, base_directory, interval_minutes
+        )
         missing = scan_result.get("missing", [])
         return list(missing) if missing else []

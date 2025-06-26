@@ -11,6 +11,15 @@ repos:
         exclude: ^(legacy_tests/|fix_.*\.py|.*\.md)
     -   id: check-merge-conflict
 
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+    -   id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        exclude: ^(legacy_tests/)
+    -   id: ruff-format
+        exclude: ^(legacy_tests/)
+
 -   repo: https://github.com/pycqa/flake8
     rev: 7.2.0
     hooks:
@@ -33,28 +42,43 @@ repos:
     hooks:
     -   id: black
         language_version: python3.13
-        args: [--line-length=88]
+        args: [--line-length=120]
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.16.1
     hooks:
     -   id: mypy
-        additional_dependencies: [types-requests, types-PyYAML, types-setuptools]
-        args: [--ignore-missing-imports]
+        additional_dependencies:
+          - types-requests
+          - types-PyYAML
+          - types-setuptools
+          - types-Pillow
+          - types-aiofiles
+        args: [--ignore-missing-imports, --disable-error-code=import-untyped]
+        exclude: ^(legacy_tests/)
+
+-   repo: local
+    hooks:
+    -   id: pyright
+        name: pyright type checker
+        entry: pyright
+        language: python
+        files: ^goesvfi/.*\.py$
+        additional_dependencies: [pyright>=1.1.390]
         exclude: ^(legacy_tests/)
 
 -   repo: https://github.com/PyCQA/bandit
     rev: 1.8.5
     hooks:
     -   id: bandit
-        args: [--format, json, --severity-level, medium]
+        args: [--format, json, --severity-level, medium, --confidence-level, medium]
         exclude: ^(tests/|legacy_tests/)
 
 -   repo: https://github.com/Lucas-C/pre-commit-hooks-safety
     rev: v1.4.2
     hooks:
     -   id: python-safety-dependencies-check
-        files: requirements\.txt$
+        files: requirements.*\.txt$
 
 -   repo: local
     hooks:

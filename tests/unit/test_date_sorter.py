@@ -71,7 +71,7 @@ def test_detect_interval_regular(date_files_dir):
     """Test interval detection with mostly regular intervals."""
     _, created_dts_utc = date_files_dir
     # Convert to naive datetimes as used in the sorter's parsing logic
-    created_dts_naive = [dt.replace(tzinfo=None) for dt in created_dts_utc]
+    [dt.replace(tzinfo=None) for dt in created_dts_utc]
 
     # Manually select datetimes that form 30 min intervals mostly
     test_dts = [
@@ -138,7 +138,9 @@ def test_core_interval_analysis_logic(date_files_dir):
             datetime(2023, 5, 1, 10, 30, 0),
             datetime(2023, 5, 1, 11, 30, 0),
             datetime(2023, 5, 1, 12, 0, 0),
-            datetime(2023, 5, 1, 12, 15, 0),  # Note: This exists but might be skipped depending on detected interval
+            datetime(
+                2023, 5, 1, 12, 15, 0
+            ),  # Note: This exists but might be skipped depending on detected interval
             datetime(2023, 5, 2, 8, 0, 0),
         ]
     )
@@ -152,7 +154,9 @@ def test_core_interval_analysis_logic(date_files_dir):
     interval_minutes = detect_interval(datetimes)
     assert interval_minutes == 30  # Based on fixture data (10:00, 10:30, 11:30, 12:00)
 
-    daily_records, missing_intervals = compute_missing_intervals(datetimes, interval_minutes)
+    daily_records, missing_intervals = compute_missing_intervals(
+        datetimes, interval_minutes
+    )
 
     # --- Assertions ---
     # Expected missing intervals based on 30 min steps from 10:00 to 12:00 on day 1,
@@ -171,7 +175,9 @@ def test_core_interval_analysis_logic(date_files_dir):
 
     # Check daily_records structure (example for day 1)
     assert "2023-05-01" in daily_records
-    day1_records = dict(daily_records["2023-05-01"])  # Convert list of tuples to dict for easier check
+    day1_records = dict(
+        daily_records["2023-05-01"]
+    )  # Convert list of tuples to dict for easier check
     assert day1_records.get("10:00") is True
     assert day1_records.get("10:30") is True
     assert day1_records.get("11:00") is False  # Missing
@@ -215,7 +221,9 @@ def test_format_calendar_output():
     idx_missing2 = output.find("\nMissing times:", idx_date2)
     # Find the index of "(none)" after that "Missing times:"
     idx_none = output.find("  (none)", idx_missing2)
-    assert idx_none > idx_missing2  # Ensure "(none)" appears under the second date's missing section
+    assert (
+        idx_none > idx_missing2
+    )  # Ensure "(none)" appears under the second date's missing section
 
 
 def test_empty_directory(tmp_path):
@@ -246,7 +254,9 @@ def test_empty_directory(tmp_path):
     assert "\n=== Time Interval Analysis ===" in output
     # Should not contain any date headers or time entries
     assert "202" not in output  # Check no year appears
-    assert ":" not in output.split("===")[-1]  # Check no time format appears after header
+    assert (
+        ":" not in output.split("===")[-1]
+    )  # Check no time format appears after header
 
 
 def test_no_matching_files(tmp_path):

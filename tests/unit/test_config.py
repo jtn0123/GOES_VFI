@@ -111,7 +111,10 @@ default_tile_size = 512
     assert cfg["output_dir"] == "/tmp/out"
     # missing keys filled from defaults
     assert cfg["cache_dir"] == config.DEFAULTS["cache_dir"]
-    assert cfg["pipeline"]["supported_extensions"] == config.DEFAULTS["pipeline"]["supported_extensions"]
+    assert (
+        cfg["pipeline"]["supported_extensions"]
+        == config.DEFAULTS["pipeline"]["supported_extensions"]
+    )
 
 
 def test_invalid_config_type(monkeypatch, tmp_path):

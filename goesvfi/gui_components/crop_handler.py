@@ -25,7 +25,9 @@ class CropHandler:
 
         if not main_window.in_dir or not main_window.in_dir.is_dir():
             LOGGER.debug("No input directory selected for cropping.")
-            QMessageBox.warning(main_window, "Warning", "Please select an input directory first.")
+            QMessageBox.warning(
+                main_window, "Warning", "Please select an input directory first."
+            )
             return
 
         image_files = self.get_sorted_image_files(main_window)
@@ -40,7 +42,9 @@ class CropHandler:
 
         # Prepare image for dialog
         first_image_path = image_files[0]
-        pixmap_for_dialog = self.prepare_image_for_crop_dialog(main_window, first_image_path)
+        pixmap_for_dialog = self.prepare_image_for_crop_dialog(
+            main_window, first_image_path
+        )
 
         if not pixmap_for_dialog:
             QMessageBox.critical(
@@ -64,9 +68,17 @@ class CropHandler:
         """
         if not main_window.in_dir:
             return []
-        return sorted([f for f in main_window.in_dir.iterdir() if f.suffix.lower() in [".png", ".jpg", ".jpeg"]])
+        return sorted(
+            [
+                f
+                for f in main_window.in_dir.iterdir()
+                if f.suffix.lower() in [".png", ".jpg", ".jpeg"]
+            ]
+        )
 
-    def prepare_image_for_crop_dialog(self, main_window: Any, image_path: Path) -> Optional[QPixmap]:
+    def prepare_image_for_crop_dialog(
+        self, main_window: Any, image_path: Path
+    ) -> Optional[QPixmap]:
         """Prepare an image for the crop dialog, applying Sanchez if enabled.
 
         Args:
@@ -80,7 +92,9 @@ class CropHandler:
 
         try:
             pixmap_for_dialog: QPixmap | None = None
-            sanchez_preview_enabled = main_window.main_tab.sanchez_false_colour_checkbox.isChecked()
+            sanchez_preview_enabled = (
+                main_window.main_tab.sanchez_false_colour_checkbox.isChecked()
+            )
 
             if sanchez_preview_enabled:
                 # Try to get processed image from preview label
@@ -93,7 +107,9 @@ class CropHandler:
                 if not original_image.isNull():
                     pixmap_for_dialog = QPixmap.fromImage(original_image)
                 else:
-                    LOGGER.error("Failed to load original image for cropping: %s", image_path)
+                    LOGGER.error(
+                        "Failed to load original image for cropping: %s", image_path
+                    )
 
             return pixmap_for_dialog
 
@@ -112,11 +128,22 @@ class CropHandler:
         """
         LOGGER.debug("Attempting to get processed preview pixmap")
 
-        if hasattr(main_window.main_tab, "first_frame_label") and main_window.main_tab.first_frame_label is not None:
-            full_res_image = getattr(main_window.main_tab.first_frame_label, "processed_image", None)
+        if (
+            hasattr(main_window.main_tab, "first_frame_label")
+            and main_window.main_tab.first_frame_label is not None
+        ):
+            full_res_image = getattr(
+                main_window.main_tab.first_frame_label, "processed_image", None
+            )
 
-            if full_res_image is not None and isinstance(full_res_image, QImage) and not full_res_image.isNull():
-                LOGGER.debug("Successfully retrieved processed image from first_frame_label")
+            if (
+                full_res_image is not None
+                and isinstance(full_res_image, QImage)
+                and not full_res_image.isNull()
+            ):
+                LOGGER.debug(
+                    "Successfully retrieved processed image from first_frame_label"
+                )
                 return QPixmap.fromImage(full_res_image)
 
         LOGGER.warning("processed_image not found or invalid on first_frame_label")

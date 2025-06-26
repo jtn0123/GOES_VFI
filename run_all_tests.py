@@ -13,8 +13,7 @@ import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 # Define colors for different statuses (globally)
 STATUS_COLOR = {
@@ -81,24 +80,16 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
         fatal_error = "Fatal Python error: Aborted" in output
 
         # Find specific failed/errored test names
-        failed_tests = re.findall(
-            r"^(?:FAILURES|ERRORS)\n_+\s*(.*?)\s*_+", output, re.MULTILINE | re.DOTALL
-        )
+        failed_tests = re.findall(r"^(?:FAILURES|ERRORS)\n_+\s*(.*?)\s*_+", output, re.MULTILINE | re.DOTALL)
         failed_test_details = []
         if failed_tests:
             # Extract lines like FAILED path::class::test or ERROR path::class::test
-            failed_test_details = re.findall(
-                r"^(FAILED|ERROR)\s+.*?::.*?::(.*?)\s+-", failed_tests[0], re.MULTILINE
-            )
+            failed_test_details = re.findall(r"^(FAILED|ERROR)\s+.*?::.*?::(.*?)\s+-", failed_tests[0], re.MULTILINE)
             # Format as "status test_name"
-            failed_test_details = [
-                f"{status} {name}" for status, name in failed_test_details
-            ]
+            failed_test_details = [f"{status} {name}" for status, name in failed_test_details]
 
         # Extract summary line details
-        summary_line_match = re.search(
-            r"=+ short test summary info =+\n(.*?)\n=+", output, re.DOTALL
-        )
+        summary_line_match = re.search(r"=+ short test summary info =+\n(.*?)\n=+", output, re.DOTALL)
         summary_details = []
         if summary_line_match:
             summary_text = summary_line_match.group(1)
@@ -110,9 +101,7 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
             )
             # Format as "status test_name"
             summary_details = [
-                f"{status} {name}"
-                for status, name, _ in summary_details
-                if status in ["FAILED", "ERROR"]
+                f"{status} {name}" for status, name, _ in summary_details if status in ["FAILED", "ERROR"]
             ]
 
         # Combine details from both sections, removing duplicates
@@ -140,9 +129,7 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
 
         # Look first for the "collected X items" count which is most reliable
         collected_count_match = re.search(r"collected\s+(\d+)\s+items", output)
-        collected_count = (
-            int(collected_count_match.group(1)) if collected_count_match else 0
-        )
+        collected_count = int(collected_count_match.group(1)) if collected_count_match else 0
 
         # Count all PASSED test lines directly from the output - make patterns more flexible
         passed_tests = re.findall(r"(?::|^)test_\w+\s+PASSED", output)
@@ -186,9 +173,7 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
 
         # Find the summary line like "===... 4 passed, 2 skipped ... in 0.23s ==="
         # Make the pattern more flexible to catch various formats
-        summary_line_matches = re.findall(
-            r"={5,}\s*(.*?)\s*in\s+[\d.]+s\s*={5,}", output
-        )
+        summary_line_matches = re.findall(r"={5,}\s*(.*?)\s*in\s+[\d.]+s\s*={5,}", output)
         summary_lines = summary_line_matches if summary_line_matches else []
 
         # If we have summary lines, they may provide more complete counts
@@ -206,9 +191,7 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
                 for status_key, variations in status_variations.items():
                     for variation in variations:
                         # Use case-insensitive matching
-                        match = re.search(
-                            rf"(\d+)\s+{variation}", summary_line, re.IGNORECASE
-                        )
+                        match = re.search(rf"(\d+)\s+{variation}", summary_line, re.IGNORECASE)
                         if match:
                             # Update count if we found a larger value in the summary
                             new_count = int(match.group(1))
@@ -218,12 +201,7 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
         # If we have segment fault but collected count is set, we know the tests crashed in the middle
         if segfault and collected_count > 0:
             # Consider tests that weren't explicitly counted as errors
-            total_accounted = (
-                counts["passed"]
-                + counts["failed"]
-                + counts["skipped"]
-                + counts["error"]
-            )
+            total_accounted = counts["passed"] + counts["failed"] + counts["skipped"] + counts["error"]
             if total_accounted < collected_count:
                 counts["error"] += collected_count - total_accounted
 
@@ -231,24 +209,14 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
         if test_path == "tests/gui/test_main_window.py" and collected_count > 0:
             # We know from pytest output that this file has 12 tests
             # If our counts don't add up, adjust them
-            total_accounted = (
-                counts["passed"]
-                + counts["failed"]
-                + counts["skipped"]
-                + counts["error"]
-            )
+            total_accounted = counts["passed"] + counts["failed"] + counts["skipped"] + counts["error"]
             if total_accounted != collected_count:
                 counts["passed"] = collected_count
 
         # Determine status
         if success:
             status = "PASSED"
-        elif (
-            counts["skipped"] > 0
-            and counts["passed"] == 0
-            and counts["failed"] == 0
-            and counts["error"] == 0
-        ):
+        elif counts["skipped"] > 0 and counts["passed"] == 0 and counts["failed"] == 0 and counts["error"] == 0:
             # If only skipped tests are reported, mark as SKIPPED
             status = "SKIPPED"
         else:
@@ -270,13 +238,7 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
             status = "SKIPPED"
 
         # Special case: Tests were collected but crashed before results could be reported
-        if (
-            collected_count > 0
-            and fatal_error
-            and not passed
-            and not failed
-            and not skipped
-        ):
+        if collected_count > 0 and fatal_error and not passed and not failed and not skipped:
             status = "CRASHED"
             counts["error"] = collected_count
 
@@ -371,26 +333,13 @@ def print_status(
     # Determine the overall line color based on the most severe status found
     line_color = RESET  # Default to no color
     if counts.get("failed", 0) > 0 or status == "FAILED":
-        line_color = STATUS_COLOR[
-            "FAILED"
-        ]  # Red if any failures or overall status is FAILED
-    elif (
-        counts.get("error", 0) > 0
-        or status == "ERROR"
-        or status == "CRASHED"
-        or "teardown error" in status
-    ):
-        line_color = STATUS_COLOR[
-            "CRASHED"
-        ]  # Yellow if any errors, crashed, or teardown error (and no failures)
+        line_color = STATUS_COLOR["FAILED"]  # Red if any failures or overall status is FAILED
+    elif counts.get("error", 0) > 0 or status == "ERROR" or status == "CRASHED" or "teardown error" in status:
+        line_color = STATUS_COLOR["CRASHED"]  # Yellow if any errors, crashed, or teardown error (and no failures)
     elif status == "PASSED":
-        line_color = STATUS_COLOR[
-            "PASSED"
-        ]  # Green if passed (and no internal failures/errors)
+        line_color = STATUS_COLOR["PASSED"]  # Green if passed (and no internal failures/errors)
     elif status == "SKIPPED":
-        line_color = STATUS_COLOR[
-            "SKIPPED"
-        ]  # Blue if skipped (and no internal failures/errors)
+        line_color = STATUS_COLOR["SKIPPED"]  # Blue if skipped (and no internal failures/errors)
 
     # Start colored line output
     print(f"{line_color}", end="")
@@ -434,9 +383,7 @@ def print_status(
 
     # Print verbose output for failed, error, or crashed tests
     if verbose and (
-        status in ["FAILED", "ERROR", "CRASHED"]
-        or counts.get("failed", 0) > 0
-        or counts.get("error", 0) > 0
+        status in ["FAILED", "ERROR", "CRASHED"] or counts.get("failed", 0) > 0 or counts.get("error", 0) > 0
     ):
         print(line_color, end="")  # Use line color for verbose output too
         print("=" * 40)
@@ -487,16 +434,10 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Run all tests directly with pytest")
-    parser.add_argument(
-        "--verbose", "-v", action="store_true", help="Print verbose output"
-    )
-    parser.add_argument(
-        "--parallel", "-p", type=int, default=4, help="Number of parallel workers"
-    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Print verbose output")
+    parser.add_argument("--parallel", "-p", type=int, default=4, help="Number of parallel workers")
     parser.add_argument("--file", action="append", help="Run specific test file")
-    parser.add_argument(
-        "--directory", default="tests", help="Directory containing tests"
-    )
+    parser.add_argument("--directory", default="tests", help="Directory containing tests")
     parser.add_argument(
         "--tolerant",
         action="store_true",
@@ -507,12 +448,8 @@ def main():
         action="store_true",
         help="Dump output logs for crashed and failed tests to files",
     )
-    parser.add_argument(
-        "--skip-problematic", action="store_true", help="Skip known problematic tests"
-    )
-    parser.add_argument(
-        "--debug-mode", action="store_true", help="Run tests with extra debug options"
-    )
+    parser.add_argument("--skip-problematic", action="store_true", help="Skip known problematic tests")
+    parser.add_argument("--debug-mode", action="store_true", help="Run tests with extra debug options")
 
     args = parser.parse_args()
 
@@ -561,10 +498,7 @@ def main():
 
     # Run tests in parallel
     with ThreadPoolExecutor(max_workers=args.parallel) as executor:
-        future_to_path = {
-            executor.submit(run_test, path, args.debug_mode): path
-            for path in test_files
-        }
+        future_to_path = {executor.submit(run_test, path, args.debug_mode): path for path in test_files}
 
         for i, future in enumerate(as_completed(future_to_path), 1):
             path = future_to_path[future]
@@ -572,9 +506,7 @@ def main():
                 result = future.result()
                 all_results.append(result)
                 print(f"[{i}/{len(test_files)}] ", end="")
-                result["log_path"] = print_status(
-                    result, args.verbose, args.dump_logs, args.debug_mode
-                )
+                result["log_path"] = print_status(result, args.verbose, args.dump_logs, args.debug_mode)
             except Exception as e:
                 print(f"[{i}/{len(test_files)}] {path}: ERROR - {e}")
                 all_results.append(
@@ -616,13 +548,7 @@ def main():
         error_count = counts.get("error", 0)
 
         # Use collected count for passed if we have no other counts
-        if (
-            collected > 0
-            and passed_count == 0
-            and failed_count == 0
-            and skipped_count == 0
-            and error_count == 0
-        ):
+        if collected > 0 and passed_count == 0 and failed_count == 0 and skipped_count == 0 and error_count == 0:
             passed_count = collected
             counts["passed"] = collected
 

@@ -8,8 +8,7 @@ and day of year (DOY) formats for satellite imagery directories.
 
 import os
 import sys
-from datetime import date, datetime
-from pathlib import Path
+from datetime import date
 
 # Add the project root to the path so we can import the modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -43,13 +42,9 @@ def demonstrate_date_conversion():
     # Format as different path styles
     print("\nPath Formatting Examples")
     print("=======================")
-    print(
-        f"Calendar format: {date_utils.format_satellite_path(calendar_date, 'calendar')}"
-    )
+    print(f"Calendar format: {date_utils.format_satellite_path(calendar_date, 'calendar')}")
     print(f"DOY format:      {date_utils.format_satellite_path(calendar_date, 'doy')}")
-    print(
-        f"Compact DOY:     {date_utils.format_satellite_path(calendar_date, 'compact_doy')}"
-    )
+    print(f"Compact DOY:     {date_utils.format_satellite_path(calendar_date, 'compact_doy')}")
 
     # Parse satellite paths
     print("\nParsing Satellite Paths")
@@ -89,9 +84,7 @@ def demonstrate_date_conversion():
             print(f"Path: {path}")
             print(f"  Parsed date: {date_obj.strftime('%Y-%m-%d')}")
             print(f"  Day of year: {date_utils.date_to_doy(date_obj)}")
-            print(
-                f"  Calendar format: {date_utils.format_satellite_path(date_obj, 'calendar')}"
-            )
+            print(f"  Calendar format: {date_utils.format_satellite_path(date_obj, 'calendar')}")
             print(f"  DOY format: {date_utils.format_satellite_path(date_obj, 'doy')}")
             print()
 

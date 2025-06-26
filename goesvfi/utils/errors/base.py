@@ -111,7 +111,11 @@ class StructuredError(Exception):
         if file_path:
             context.add_user_data("file_path", file_path)
 
-        category = ErrorCategory.FILE_NOT_FOUND if "not found" in message.lower() else ErrorCategory.PERMISSION
+        category = (
+            ErrorCategory.FILE_NOT_FOUND
+            if "not found" in message.lower()
+            else ErrorCategory.PERMISSION
+        )
 
         return cls(
             message=message,
@@ -245,7 +249,9 @@ class StructuredError(Exception):
         message = self.user_message
 
         if self.suggestions:
-            suggestions_text = "\n".join(f"• {suggestion}" for suggestion in self.suggestions)
+            suggestions_text = "\n".join(
+                f"• {suggestion}" for suggestion in self.suggestions
+            )
             message += f"\n\nSuggestions:\n{suggestions_text}"
 
         return message

@@ -2,13 +2,13 @@
 
 import time
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import patch
 
 import pytest
-from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QAction
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication, QMenu, QProgressBar, QPushButton
+from PyQt6.QtWidgets import QMenu, QProgressBar, QPushButton
 
 from goesvfi.gui import MainWindow
 
@@ -166,7 +166,9 @@ class TestButtonAdvanced:
         # Mock queue operations
         def add_to_queue():
             if window.in_dir and window.out_file_path:
-                queue_list.append({"input": window.in_dir, "output": window.out_file_path})
+                queue_list.append(
+                    {"input": window.in_dir, "output": window.out_file_path}
+                )
                 process_queue_btn.setEnabled(True)
                 clear_queue_btn.setEnabled(True)
 
@@ -248,15 +250,25 @@ class TestButtonAdvanced:
             menu.addAction(properties_action)
 
             # Mock action triggers
-            copy_action.triggered.connect(lambda: setattr(window, "_last_action", "copy"))
-            save_as_action.triggered.connect(lambda: setattr(window, "_last_action", "save_as"))
-            open_folder_action.triggered.connect(lambda: setattr(window, "_last_action", "open_folder"))
-            properties_action.triggered.connect(lambda: setattr(window, "_last_action", "properties"))
+            copy_action.triggered.connect(
+                lambda: setattr(window, "_last_action", "copy")
+            )
+            save_as_action.triggered.connect(
+                lambda: setattr(window, "_last_action", "save_as")
+            )
+            open_folder_action.triggered.connect(
+                lambda: setattr(window, "_last_action", "open_folder")
+            )
+            properties_action.triggered.connect(
+                lambda: setattr(window, "_last_action", "properties")
+            )
 
             return menu
 
         # Override context menu
-        preview_label.contextMenuEvent = lambda event: create_context_menu(event.pos()).exec(event.globalPos())
+        preview_label.contextMenuEvent = lambda event: create_context_menu(
+            event.pos()
+        ).exec(event.globalPos())
 
         # Simulate right-click
         qtbot.mouseClick(preview_label, Qt.MouseButton.RightButton)
@@ -267,10 +279,14 @@ class TestButtonAdvanced:
     def test_keyboard_shortcuts_functionality(self, qtbot, window, mocker):
         """Test keyboard shortcuts trigger correct actions."""
         # Mock dialog methods
-        mock_get_dir = mocker.patch("goesvfi.gui_tabs.main_tab.QFileDialog.getExistingDirectory")
+        mock_get_dir = mocker.patch(
+            "goesvfi.gui_tabs.main_tab.QFileDialog.getExistingDirectory"
+        )
         mock_get_dir.return_value = "/test/input"
 
-        mock_get_save = mocker.patch("goesvfi.gui_tabs.main_tab.QFileDialog.getSaveFileName")
+        mock_get_save = mocker.patch(
+            "goesvfi.gui_tabs.main_tab.QFileDialog.getSaveFileName"
+        )
         mock_get_save.return_value = ("/test/output.mp4", "")
 
         # Test Ctrl+O (Open directory)
@@ -282,14 +298,14 @@ class TestButtonAdvanced:
         window.set_in_dir(Path("/test/input"))
         window.out_file_path = Path("/test/output.mp4")
 
-        with patch.object(window, "_start_processing") as mock_start:
+        with patch.object(window, "_start_processing"):
             QTest.keyClick(window, Qt.Key.Key_S, Qt.KeyboardModifier.ControlModifier)
             qtbot.wait(50)
             # Would trigger save or start depending on implementation
 
         # Test Escape (Cancel/Stop)
         window._set_processing_state(True)
-        with patch.object(window, "_handle_stop_processing") as mock_stop:
+        with patch.object(window, "_handle_stop_processing"):
             QTest.keyClick(window, Qt.Key.Key_Escape)
             qtbot.wait(50)
             # Would trigger stop if processing
@@ -332,9 +348,9 @@ class TestButtonAdvanced:
         # Mock toolbar if exists
         if hasattr(window, "toolbar"):
             # Create mock toolbar buttons
-            new_action = QAction("New", window)
-            open_action = QAction("Open", window)
-            save_action = QAction("Save", window)
+            QAction("New", window)
+            QAction("Open", window)
+            QAction("Save", window)
 
             # Test state changes during processing
             window._set_processing_state(True)

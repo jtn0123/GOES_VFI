@@ -101,7 +101,9 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
 class ImprovedEnhancedIntegrityCheckTab(QWidget):
     """Improved enhanced integrity check tab with streamlined interface."""
 
-    def __init__(self, view_model: Any = None, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self, view_model: Any = None, parent: Optional[QWidget] = None
+    ) -> None:
         super().__init__(parent)
         # Use provided view model or create a simple stub view model
         if view_model is not None:

@@ -7,7 +7,6 @@ from pathlib import Path
 from goesvfi.integrity_check.time_index import (
     DEFAULT_CDN_RESOLUTION,
     SatellitePattern,
-    TimeIndex,
     is_recent,
     to_cdn_url,
     to_local_path,
@@ -50,58 +49,84 @@ class TestBasicTimeIndex(unittest.TestCase):
         custom_res = "250m"
         url = to_cdn_url(self.test_date_recent, self.goes16, custom_res)
         expected = (
-            f"https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/13/" f"2023166123000_GOES16-ABI-FD-13-{custom_res}.jpg"
+            f"https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/13/"
+            f"2023166123000_GOES16-ABI-FD-13-{custom_res}.jpg"
         )
         self.assertEqual(url, expected)
 
     def test_to_s3_key(self):
         """Test generating S3 keys."""
         # Test GOES-16 RadF pattern
-        key_radf_g16 = to_s3_key(self.test_date_old, self.goes16, product_type="RadF", band=13)
+        key_radf_g16 = to_s3_key(
+            self.test_date_old, self.goes16, product_type="RadF", band=13
+        )
         # Make sure key matches expected pattern format
-        self.assertTrue(key_radf_g16.startswith(f"ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C13_G16_s20220010"))
+        self.assertTrue(
+            key_radf_g16.startswith(
+                "ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C13_G16_s20220010"
+            )
+        )
         self.assertTrue(key_radf_g16.endswith("*_e*_c*.nc"))
 
         # Test GOES-18 RadF pattern
-        key_radf_g18 = to_s3_key(self.test_date_old, self.goes18, product_type="RadF", band=13)
-        self.assertTrue(key_radf_g18.startswith(f"ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C13_G18_s20220010"))
+        key_radf_g18 = to_s3_key(
+            self.test_date_old, self.goes18, product_type="RadF", band=13
+        )
+        self.assertTrue(
+            key_radf_g18.startswith(
+                "ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C13_G18_s20220010"
+            )
+        )
         self.assertTrue(key_radf_g18.endswith("*_e*_c*.nc"))
 
         # Test GOES-16 RadC pattern
-        key_radc_g16 = to_s3_key(self.test_date_old, self.goes16, product_type="RadC", band=13)
-        self.assertTrue(key_radc_g16.startswith(f"ABI-L1b-RadC/2022/001/00/OR_ABI-L1b-RadC-M6C13_G16_s20220010"))
+        key_radc_g16 = to_s3_key(
+            self.test_date_old, self.goes16, product_type="RadC", band=13
+        )
+        self.assertTrue(
+            key_radc_g16.startswith(
+                "ABI-L1b-RadC/2022/001/00/OR_ABI-L1b-RadC-M6C13_G16_s20220010"
+            )
+        )
         self.assertTrue(key_radc_g16.endswith("*_e*_c*.nc"))
 
         # Test different band
-        key_band1 = to_s3_key(self.test_date_old, self.goes16, product_type="RadF", band=1)
-        self.assertTrue(key_band1.startswith(f"ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C01_G16_s20220010"))
+        key_band1 = to_s3_key(
+            self.test_date_old, self.goes16, product_type="RadF", band=1
+        )
+        self.assertTrue(
+            key_band1.startswith(
+                "ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C01_G16_s20220010"
+            )
+        )
         self.assertTrue(key_band1.endswith("*_e*_c*.nc"))
 
     def test_to_local_path(self):
         """Test generating local paths."""
         # GOES-16 path
         path = to_local_path(self.test_date_recent, self.goes16)
-        expected = Path(f"2023/06/15/goes16_20230615_123000_band13.png")
+        expected = Path("2023/06/15/goes16_20230615_123000_band13.png")
         self.assertEqual(path, expected)
 
         # GOES-18 path
         path = to_local_path(self.test_date_recent, self.goes18)
-        expected = Path(f"2023/06/15/goes18_20230615_123000_band13.png")
+        expected = Path("2023/06/15/goes18_20230615_123000_band13.png")
         self.assertEqual(path, expected)
 
     def test_is_recent(self):
         """Test the is_recent function."""
         # Set up a known cutoff time
         now = datetime(2023, 6, 20, 0, 0, 0)
-        window_days = 7
 
         # Test dates
         recent_date = now - timedelta(days=3)  # Within window
-        border_date = now - timedelta(days=7)  # At the window edge
+        now - timedelta(days=7)  # At the window edge
         old_date = now - timedelta(days=14)  # Outside window
 
         # Test with monkeypatching datetime.now in the correct module
-        with unittest.mock.patch("goesvfi.integrity_check.time_utils.timestamp.datetime") as mock_datetime:
+        with unittest.mock.patch(
+            "goesvfi.integrity_check.time_utils.timestamp.datetime"
+        ) as mock_datetime:
             mock_datetime.now.return_value = now
             mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
 

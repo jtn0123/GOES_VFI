@@ -5,8 +5,6 @@ Simple CI/CD Configuration Validator for GOES_VFI
 This script validates the CI/CD setup without external dependencies.
 """
 
-import json
-import os
 import sys
 from pathlib import Path
 

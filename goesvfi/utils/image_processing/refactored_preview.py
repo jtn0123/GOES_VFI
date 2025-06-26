@@ -77,7 +77,7 @@ class RefactoredPreviewProcessor:
 
             return cast(Optional[QPixmap], result.data)
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception(f"Unhandled error in preview processing for {image_path}")
             self._clear_label_state(target_label)
             return None

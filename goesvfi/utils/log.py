@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Colourised logging helper using ``colorlog`` when available."""
+
+from __future__ import annotations
 
 import logging
 import sys

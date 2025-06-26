@@ -90,7 +90,7 @@ class StatsExtractor:
         """Extract and validate all statistics."""
         try:
             # Validate input
-            pipeline = ValidationPipeline("stats_extraction")
+            ValidationPipeline("stats_extraction")
             if raw_stats is None:
                 return DownloadStats()
 

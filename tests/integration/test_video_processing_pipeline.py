@@ -43,7 +43,9 @@ class TestVideoProcessingPipeline:
     def mock_rife(self):
         """Mock RIFE executable and processing."""
         with (
-            patch("goesvfi.pipeline.run_vfi.VfiWorker._get_rife_executable") as mock_find,
+            patch(
+                "goesvfi.pipeline.run_vfi.VfiWorker._get_rife_executable"
+            ) as mock_find,
             patch("goesvfi.pipeline.run_vfi.subprocess.run") as mock_run,
         ):
 
@@ -95,10 +97,9 @@ class TestVideoProcessingPipeline:
         )
 
         # Consume the generator to execute the pipeline
-        result = None
         for item in result_gen:
             if isinstance(item, pathlib.Path):
-                result = item
+                pass
             # Otherwise it's a progress update tuple
 
         # Verify RIFE was called for each frame pair
@@ -118,7 +119,9 @@ class TestVideoProcessingPipeline:
         assert "libx264" in ffmpeg_cmd  # Encoder
         assert str(output_file) in ffmpeg_cmd
 
-    def test_pipeline_with_sanchez_processing(self, test_images, mock_rife, mock_ffmpeg, tmp_path):
+    def test_pipeline_with_sanchez_processing(
+        self, test_images, mock_rife, mock_ffmpeg, tmp_path
+    ):
         """Test pipeline with Sanchez false color processing."""
         input_dir, image_files = test_images
         output_file = tmp_path / "output_sanchez.mp4"
@@ -204,7 +207,9 @@ class TestVideoProcessingPipeline:
         # Verify RIFE was called
         assert mock_rife_run.called
 
-    def test_pipeline_with_multiple_intermediate_frames(self, test_images, mock_rife, mock_ffmpeg, tmp_path):
+    def test_pipeline_with_multiple_intermediate_frames(
+        self, test_images, mock_rife, mock_ffmpeg, tmp_path
+    ):
         """Test pipeline with multiple intermediate frames."""
         input_dir, image_files = test_images
         output_file = tmp_path / "output_interpolated.mp4"
@@ -233,7 +238,9 @@ class TestVideoProcessingPipeline:
 
         assert "num_intermediate_frames=1 is supported" in str(exc_info.value)
 
-    def test_pipeline_with_hardware_encoder(self, test_images, mock_rife, mock_ffmpeg, tmp_path):
+    def test_pipeline_with_hardware_encoder(
+        self, test_images, mock_rife, mock_ffmpeg, tmp_path
+    ):
         """Test pipeline with hardware encoder."""
         input_dir, image_files = test_images
         output_file = tmp_path / "output_hw.mp4"
@@ -244,7 +251,6 @@ class TestVideoProcessingPipeline:
         if platform.system() != "Darwin":
             pytest.skip("Hardware encoder test only for macOS")
 
-        encoder = "hevc_videotoolbox"
 
         # Mock FFmpeg to succeed
         mock_ffmpeg_popen, mock_process = mock_ffmpeg
@@ -332,7 +338,9 @@ class TestVideoProcessingPipeline:
             with pytest.raises(BrokenPipeError):
                 list(result_gen)
 
-    def test_pipeline_with_resource_limits(self, test_images, mock_rife, mock_ffmpeg, tmp_path):
+    def test_pipeline_with_resource_limits(
+        self, test_images, mock_rife, mock_ffmpeg, tmp_path
+    ):
         """Test pipeline with resource management."""
         input_dir, image_files = test_images
         output_file = tmp_path / "output_limited.mp4"
@@ -364,7 +372,9 @@ class TestVideoProcessingPipeline:
         assert mock_rife_run.called
         assert mock_ffmpeg_popen.called
 
-    def test_pipeline_progress_reporting(self, test_images, mock_rife, mock_ffmpeg, tmp_path):
+    def test_pipeline_progress_reporting(
+        self, test_images, mock_rife, mock_ffmpeg, tmp_path
+    ):
         """Test progress reporting during processing."""
         input_dir, image_files = test_images
         output_file = tmp_path / "output_progress.mp4"
@@ -434,7 +444,9 @@ class TestVideoProcessingPipeline:
             # FFmpeg should still be called
             assert mock_ffmpeg_popen.called
 
-    def test_pipeline_with_custom_ffmpeg_options(self, test_images, mock_rife, mock_ffmpeg, tmp_path):
+    def test_pipeline_with_custom_ffmpeg_options(
+        self, test_images, mock_rife, mock_ffmpeg, tmp_path
+    ):
         """Test pipeline with custom FFmpeg options."""
         input_dir, image_files = test_images
         output_file = tmp_path / "output_custom.mp4"
@@ -493,7 +505,7 @@ class TestVideoProcessingPipeline:
         # Get mocked RIFE path
         mock_find, _ = mock_rife
 
-        result = run_vfi(
+        run_vfi(
             folder=input_dir,
             output_mp4_path=output_file,
             rife_exe_path=mock_find.return_value,
@@ -507,5 +519,5 @@ class TestVideoProcessingPipeline:
         # Verify RIFE was called with tiling options
         _, mock_rife_run = mock_rife
         if mock_rife_run.called:
-            rife_cmd = mock_rife_run.call_args[0][0]
+            mock_rife_run.call_args[0][0]
             # Check for tiling-related arguments

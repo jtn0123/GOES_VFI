@@ -47,7 +47,9 @@ from .time_utils.patterns import (
 # Timestamp extraction functions
 extract_timestamp = TimestampExtractor.extract_timestamp
 extract_timestamp_and_satellite = TimestampExtractor.extract_timestamp_and_satellite
-extract_timestamp_from_directory_name = TimestampExtractor.extract_timestamp_from_directory_name
+extract_timestamp_from_directory_name = (
+    TimestampExtractor.extract_timestamp_from_directory_name
+)
 
 # Timestamp formatting functions
 format_timestamp = TimestampFormatter.format_timestamp

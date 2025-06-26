@@ -84,14 +84,18 @@ class TestGOESImagery(unittest.TestCase):
         downloader.s3_client = mock_s3  # type: ignore
 
         # Test download
-        result = downloader.download_precolorized_image(channel=ChannelType.CH13, product_type=ProductType.FULL_DISK)
+        result = downloader.download_precolorized_image(
+            channel=ChannelType.CH13, product_type=ProductType.FULL_DISK
+        )
 
         # Verify result
         assert result is not None
         assert result.check_file_exists()
 
         # Verify mock was called with correct URL
-        expected_url = "https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/latest/13_1200x1200.jpg"
+        expected_url = (
+            "https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/latest/13_1200x1200.jpg"
+        )
         mock_get.assert_called_once_with(expected_url, timeout=30)
 
     def test_extract_timestamp_from_filename(self):
@@ -105,7 +109,9 @@ class TestGOESImagery(unittest.TestCase):
         # Verify result (day 300 of 2023 = Oct 27, 2023)
         assert result == "20231027_155021"
 
-    @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_precolorized_image")
+    @patch(
+        "goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_precolorized_image"
+    )
     def test_get_imagery_product_mode(self, mock_download):
         """Test getting imagery in product mode."""
         # Setup mock
@@ -138,7 +144,9 @@ class TestGOESImagery(unittest.TestCase):
         )
 
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.find_raw_data")
-    @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_raw_data")
+    @patch(
+        "goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_raw_data"
+    )
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageProcessor.process_raw_data")
     def test_get_imagery_raw_mode(self, mock_process, mock_download, mock_find):
         """Test getting imagery in raw data mode."""
@@ -149,11 +157,15 @@ class TestGOESImagery(unittest.TestCase):
         mock_process.return_value = expected_path
 
         # Create manager
-        manager = GOESImageryManager(output_dir=self.test_dir, default_mode=ImageryMode.RAW_DATA)
+        manager = GOESImageryManager(
+            output_dir=self.test_dir, default_mode=ImageryMode.RAW_DATA
+        )
         manager.downloader.s3_client = MagicMock()  # type: ignore
 
         # Test getting imagery
-        result = manager.get_imagery(channel=ChannelType.CH13, product_type=ProductType.FULL_DISK)
+        result = manager.get_imagery(
+            channel=ChannelType.CH13, product_type=ProductType.FULL_DISK
+        )
 
         # Verify result
         assert result == expected_path

@@ -1,0 +1,105 @@
+# Configuration for PR Labeler - https://github.com/actions/labeler
+
+# Add 'documentation' label to any change in docs folder
+documentation:
+  - changed-files:
+    - any-glob-to-any-file:
+      - docs/**
+      - '*.md'
+      - '*.rst'
+
+# Add 'tests' label to any change in test files
+tests:
+  - changed-files:
+    - any-glob-to-any-file:
+      - tests/**
+      - '**/test_*.py'
+      - '**/*_test.py'
+      - test-requirements.txt
+
+# Add 'gui' label for GUI-related changes
+gui:
+  - changed-files:
+    - any-glob-to-any-file:
+      - goesvfi/gui.py
+      - goesvfi/gui_components/**
+      - goesvfi/gui_tabs/**
+      - tests/gui/**
+
+# Add 'pipeline' label for video processing pipeline changes
+pipeline:
+  - changed-files:
+    - any-glob-to-any-file:
+      - goesvfi/pipeline/**
+
+# Add 'integrity-check' label for satellite data integrity features
+integrity-check:
+  - changed-files:
+    - any-glob-to-any-file:
+      - goesvfi/integrity_check/**
+      - tests/integration/test_integrity_*.py
+      - tests/unit/test_*integrity*.py
+
+# Add 'dependencies' label for dependency updates
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - requirements.txt
+      - test-requirements.txt
+      - pyproject.toml
+      - setup.py
+      - setup.cfg
+
+# Add 'ci/cd' label for workflow changes
+ci/cd:
+  - changed-files:
+    - any-glob-to-any-file:
+      - .github/workflows/**
+      - .github/actions/**
+      - .github/*.yml
+      - .github/*.yaml
+
+# Add 'docker' label for containerization changes
+docker:
+  - changed-files:
+    - any-glob-to-any-file:
+      - Dockerfile
+      - docker-compose.yml
+      - .dockerignore
+
+# Add 'utils' label for utility changes
+utils:
+  - changed-files:
+    - any-glob-to-any-file:
+      - goesvfi/utils/**
+
+# Add 'sanchez' label for Sanchez integration changes
+sanchez:
+  - changed-files:
+    - any-glob-to-any-file:
+      - goesvfi/sanchez/**
+      - goesvfi/pipeline/sanchez_processor.py
+
+# Add 'file-sorting' label for file sorting features
+file-sorting:
+  - changed-files:
+    - any-glob-to-any-file:
+      - goesvfi/file_sorter/**
+      - goesvfi/date_sorter/**
+
+# Add 'performance' label for performance-related changes
+performance:
+  - changed-files:
+    - any-glob-to-any-file:
+      - goesvfi/utils/memory_manager.py
+      - goesvfi/pipeline/cache.py
+      - goesvfi/pipeline/resource_manager.py
+      - tests/integration/test_*performance*.py
+
+# Add 'security' label for security-related changes
+security:
+  - changed-files:
+    - any-glob-to-any-file:
+      - goesvfi/utils/security.py
+      - .github/workflows/*security*.yml
+      - '**/test_security*.py'

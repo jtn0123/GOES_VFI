@@ -1,7 +1,7 @@
 # pylint: disable=wrong-import-position, pointless-string-statement, too-many-nested-blocks
-from __future__ import annotations
-
 """goesvfi.utils.config – user paths and TOML config loader"""
+
+from __future__ import annotations
 
 import os
 import pathlib

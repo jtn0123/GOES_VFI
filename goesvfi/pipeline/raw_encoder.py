@@ -19,7 +19,9 @@ FloatNDArray = NDArray[np.float32]
 
 
 # Renamed from write_mp4
-def write_raw_mp4(frames: Iterable[FloatNDArray], raw_path: pathlib.Path, fps: int) -> pathlib.Path:
+def write_raw_mp4(
+    frames: Iterable[FloatNDArray], raw_path: pathlib.Path, fps: int
+) -> pathlib.Path:
     """
     Writes intermediate MP4 with a lossless codec (FFV1).
     Returns the path to raw_path.
@@ -61,7 +63,9 @@ def write_raw_mp4(frames: Iterable[FloatNDArray], raw_path: pathlib.Path, fps: i
         raise  # Re-raise the exception
     except FileNotFoundError:
         pass
-        LOGGER.error("Error: ffmpeg command not found. Is ffmpeg installed and in your PATH?")
+        LOGGER.error(
+            "Error: ffmpeg command not found. Is ffmpeg installed and in your PATH?"
+        )
         tmpdir.cleanup()
         raise
 

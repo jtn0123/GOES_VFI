@@ -16,7 +16,9 @@ from PyQt6.QtGui import QImage, QPixmap
 class ImageProcessingError(Exception):
     """Base exception for image processing failures."""
 
-    def __init__(self, message: str, stage: Optional[str] = None, cause: Any = None) -> None:
+    def __init__(
+        self, message: str, stage: Optional[str] = None, cause: Any = None
+    ) -> None:
         self.message = message
         self.stage = stage
         self.cause = cause
@@ -86,7 +88,9 @@ class ProcessorBase(ABC):
         self.stage_name = stage_name
 
     @abstractmethod
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(
+        self, input_data: Any, context: Optional[Dict[str, Any]] = None
+    ) -> ImageProcessingResult:
         """
         Process input data.
 
@@ -107,11 +111,15 @@ class ProcessorBase(ABC):
 class CompositeProcessor(ProcessorBase):
     """Processor that combines multiple processors in sequence."""
 
-    def __init__(self, processors: List[ProcessorBase], stage_name: str = "composite") -> None:
+    def __init__(
+        self, processors: List[ProcessorBase], stage_name: str = "composite"
+    ) -> None:
         super().__init__(stage_name)
         self.processors = processors
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(
+        self, input_data: Any, context: Optional[Dict[str, Any]] = None
+    ) -> ImageProcessingResult:
         """Run all processors in sequence."""
         current_data = input_data
         combined_metadata = {}
@@ -150,10 +158,14 @@ class ConditionalProcessor(ProcessorBase):
         self.processor = processor
         self.condition_func = condition_func
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(
+        self, input_data: Any, context: Optional[Dict[str, Any]] = None
+    ) -> ImageProcessingResult:
         """Run processor only if condition is true."""
         if self.condition_func(input_data, context):
             return self.processor.process(input_data, context)
 
         # If condition not met, pass through input unchanged
-        return ImageProcessingResult.success_result(input_data, {"skipped": self.processor.stage_name})
+        return ImageProcessingResult.success_result(
+            input_data, {"skipped": self.processor.stage_name}
+        )

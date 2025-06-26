@@ -55,17 +55,15 @@ class OptimizedDateSelectionTab(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
 
-        # Add header with icon
-        header = QLabel(self.tr("📅 Select Date Range for Analysis"))
+        # Add header
+        header = QLabel(self.tr("Select Date Range for Analysis"))
         header.setStyleSheet(
             """
         font-size: 16px;
         font-weight: bold;
         margin-bottom: 8px;
-        color: #ffffff;
-        background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #4a6fa5, stop:1 #3a5f95);
+        color: #EFEFEF;
         padding: 8px 12px;
-        border-radius: 6px;
         """
         )
         layout.addWidget(header)
@@ -86,9 +84,9 @@ class OptimizedDateSelectionTab(QWidget):
         controls_frame.setStyleSheet(
             """
         #dateControlsFrame {
-        background-color: #2d2d2d;
-        border: 1px solid #454545;
-        border-radius: 4px;
+        background-color: #3D3D3D;
+        border: 1px solid #555555;
+        border-radius: 3px;
         padding: 10px;
         }
         """
@@ -112,9 +110,11 @@ class OptimizedDateSelectionTab(QWidget):
         self.date_range_label = QLabel(self.tr("No date range selected"))
         self.date_range_label.setStyleSheet(
             """
-        background-color: #3a3a3a;
+        background-color: #3D3D3D;
+        color: #EFEFEF;
         padding: 8px;
-        border-radius: 4px;
+        border: 1px solid #555555;
+        border-radius: 3px;
         margin-top: 10px;
         """
         )
@@ -129,9 +129,9 @@ class OptimizedDateSelectionTab(QWidget):
         quick_select_frame.setStyleSheet(
             """
         #quickSelectFrame {
-        background-color: #2d2d2d;
-        border: 1px solid #454545;
-        border-radius: 4px;
+        background-color: #3D3D3D;
+        border: 1px solid #555555;
+        border-radius: 3px;
         padding: 10px;
         margin-top: 10px;
         }
@@ -144,23 +144,23 @@ class OptimizedDateSelectionTab(QWidget):
         buttons_layout = QHBoxLayout()
         buttons_layout.setSpacing(5)
 
-        # Add quick select buttons with icons
-        today_btn = QPushButton(self.tr("📅 Today"))
+        # Add quick select buttons
+        today_btn = QPushButton(self.tr("Today"))
         today_btn.setToolTip("Select today's date range")
         today_btn.clicked.connect(self._select_today)
         buttons_layout.addWidget(today_btn)
 
-        yesterday_btn = QPushButton(self.tr("⏪ Yesterday"))
+        yesterday_btn = QPushButton(self.tr("Yesterday"))
         yesterday_btn.setToolTip("Select yesterday's date range")
         yesterday_btn.clicked.connect(self._select_yesterday)
         buttons_layout.addWidget(yesterday_btn)
 
-        last_week_btn = QPushButton(self.tr("📅 Last 7 Days"))
+        last_week_btn = QPushButton(self.tr("Last 7 Days"))
         last_week_btn.setToolTip("Select last 7 days")
         last_week_btn.clicked.connect(self._select_last_week)
         buttons_layout.addWidget(last_week_btn)
 
-        last_month_btn = QPushButton(self.tr("📅 Last 30 Days"))
+        last_month_btn = QPushButton(self.tr("Last 30 Days"))
         last_month_btn.setToolTip("Select last 30 days")
         last_month_btn.clicked.connect(self._select_last_month)
         buttons_layout.addWidget(last_month_btn)
@@ -186,7 +186,8 @@ class OptimizedDateSelectionTab(QWidget):
 
         # Update label
         self.date_range_label.setText(
-            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - " f"{end.strftime('%Y-%m-%d %H:%M')}"
+            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - "
+            f"{end.strftime('%Y-%m-%d %H:%M')}"
         )
 
     def _open_visual_date_picker(self) -> None:
@@ -211,7 +212,8 @@ class OptimizedDateSelectionTab(QWidget):
         """
         # Update label
         self.date_range_label.setText(
-            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - " f"{end.strftime('%Y-%m-%d %H:%M')}"
+            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - "
+            f"{end.strftime('%Y-%m-%d %H:%M')}"
         )
 
         # Update timeline picker
@@ -330,35 +332,35 @@ class OptimizedResultsTab(QWidget):
         layout.setContentsMargins(10, 5, 10, 5)
         layout.setSpacing(10)
 
-        # Group by control with icon
-        group_label = QLabel(self.tr("📂 Group by:"))
-        group_label.setStyleSheet("font-weight: bold; color: #f0f0f0;")
+        # Group by control
+        group_label = QLabel(self.tr("Group by:"))
+        group_label.setStyleSheet("font-weight: bold; color: #EFEFEF;")
         layout.addWidget(group_label)
 
         self.group_combo = QComboBox()
         self.group_combo.addItems(
             [
-                self.tr("📅 Day"),
-                self.tr("🕰 Hour"),
-                self.tr("🛰 Satellite"),
-                self.tr("📊 Status"),
-                self.tr("📎 Source"),
+                self.tr("Day"),
+                self.tr("Hour"),
+                self.tr("Satellite"),
+                self.tr("Status"),
+                self.tr("Source"),
             ]
         )
-        self.group_combo.setStyleSheet("QComboBox { padding: 4px 8px; min-width: 120px; }")
+        # Use default ComboBox styling from theme
         self.group_combo.currentTextChanged.connect(self._handle_group_changed)
         layout.addWidget(self.group_combo)
 
         # Spacer
         layout.addStretch(1)
 
-        # Add expand/collapse buttons with icons
-        self.expand_btn = QPushButton(self.tr("🔽 Expand All"))
+        # Add expand/collapse buttons
+        self.expand_btn = QPushButton(self.tr("Expand All"))
         self.expand_btn.setToolTip("Expand all groups")
         self.expand_btn.clicked.connect(self._expand_all)
         layout.addWidget(self.expand_btn)
 
-        self.collapse_btn = QPushButton(self.tr("🔼 Collapse All"))
+        self.collapse_btn = QPushButton(self.tr("Collapse All"))
         self.collapse_btn.setToolTip("Collapse all groups")
         self.collapse_btn.clicked.connect(self._collapse_all)
         layout.addWidget(self.collapse_btn)
@@ -477,6 +479,10 @@ class SatelliteIntegrityTabGroup(QWidget):
 
         # Create tab widget
         self.tab_widget = QTabWidget()
+        # Match main app styling - tabs on left side
+        self.tab_widget.setTabPosition(QTabWidget.TabPosition.West)
+        self.tab_widget.setDocumentMode(True)
+        self.tab_widget.setElideMode(Qt.TextElideMode.ElideRight)
 
         # Create tabs
         self.date_selection_tab = OptimizedDateSelectionTab()
@@ -484,38 +490,44 @@ class SatelliteIntegrityTabGroup(QWidget):
         self.results_tab = OptimizedResultsTab()
         self.imagery_tab = EnhancedGOESImageryTab()
 
-        # Add tabs to tab widget with icons
-        self.tab_widget.addTab(self.date_selection_tab, "📅 Date Selection")
-        self.tab_widget.addTab(self.timeline_tab, "📊 Timeline")
-        self.tab_widget.addTab(self.results_tab, "📁 Results")
-        self.tab_widget.addTab(self.imagery_tab, "🛰 GOES Imagery")
+        # Add tabs to tab widget without emojis to match main app
+        self.tab_widget.addTab(self.date_selection_tab, "Date Selection")
+        self.tab_widget.addTab(self.timeline_tab, "Timeline")
+        self.tab_widget.addTab(self.results_tab, "Results")
+        self.tab_widget.addTab(self.imagery_tab, "GOES Imagery")
 
-        # Style the tab widget
+        # Apply consistent styling with main app
         self.tab_widget.setStyleSheet(
             """
             QTabWidget::pane {
-                border: 1px solid #454545;
-                border-radius: 6px;
-                background-color: #2d2d2d;
+                border: 1px solid #3c3c3c;
+                background-color: #2a2a2a;
             }
-            QTabBar::tab {
-                background-color: #3a3a3a;
-                color: #f0f0f0;
-                border: 1px solid #454545;
-                border-bottom: none;
-                border-top-left-radius: 6px;
-                border-top-right-radius: 6px;
-                padding: 8px 16px;
-                margin-right: 2px;
-                font-weight: bold;
+            QTabWidget::tab-bar {
+                alignment: left;
             }
-            QTabBar::tab:selected {
-                background-color: #2d2d2d;
-                color: #ffffff;
-                border-bottom: 2px solid #4a6fa5;
+            QTabBar::tab:left {
+                background-color: #303030;
+                color: #b0b0b0;
+                border: 1px solid #444;
+                border-right: none;
+                border-top-left-radius: 4px;
+                border-bottom-left-radius: 4px;
+                min-height: 30px;
+                padding: 6px;
+                margin: 2px 0;
+                margin-right: -1px;
             }
-            QTabBar::tab:hover:!selected {
-                background-color: #4a4a4a;
+            QTabBar::tab:left:selected {
+                background-color: #2a2a2a;
+                color: white;
+                border-left: 3px solid #3498db;
+                padding-left: 4px;
+            }
+            QTabBar::tab:left:hover:!selected {
+                background-color: #383838;
+                border-left: 2px solid #666;
+                padding-left: 5px;
             }
             """
         )
@@ -529,7 +541,9 @@ class SatelliteIntegrityTabGroup(QWidget):
     def _connect_internal_signals(self) -> None:
         """Connect signals between internal tabs."""
         # From date selection tab to timeline tab
-        self.date_selection_tab.dateRangeSelected.connect(self._handle_date_range_selected)
+        self.date_selection_tab.dateRangeSelected.connect(
+            self._handle_date_range_selected
+        )
 
         # From timeline tab to results tab
         self.timeline_tab.timestampSelected.connect(self.results_tab.highlight_item)

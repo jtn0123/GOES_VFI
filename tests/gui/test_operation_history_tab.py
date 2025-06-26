@@ -3,7 +3,6 @@ from pathlib import Path
 from types import ModuleType
 from unittest.mock import MagicMock
 
-import pytest
 
 
 def test_export_operations_dialog_and_filters(qtbot, monkeypatch):
@@ -32,9 +31,13 @@ def test_export_operations_dialog_and_filters(qtbot, monkeypatch):
         "PyQt6.QtWidgets.QFileDialog.getSaveFileName",
         mock_get_save,
     )
-    monkeypatch.setattr("goesvfi.gui_tabs.operation_history_tab.QMessageBox.information", MagicMock())
+    monkeypatch.setattr(
+        "goesvfi.gui_tabs.operation_history_tab.QMessageBox.information", MagicMock()
+    )
 
     tab._export_operations()
 
     mock_get_save.assert_called_once()
-    store.export_to_json.assert_called_once_with(dialog_path, {"name": "Download", "status": "success"})
+    store.export_to_json.assert_called_once_with(
+        dialog_path, {"name": "Download", "status": "success"}
+    )

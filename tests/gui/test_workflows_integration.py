@@ -1,17 +1,13 @@
 """Complex user workflow integration tests for GOES VFI GUI."""
 
-import shutil
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 
-import numpy as np
 import pytest
 from PIL import Image
-from PyQt6.QtCore import QMimeData, QObject, Qt, QTimer, QUrl, pyqtSignal
+from PyQt6.QtCore import QMimeData, QObject, Qt, QTimer, QUrl
 from PyQt6.QtGui import QDragEnterEvent, QDropEvent
-from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication, QListWidget, QListWidgetItem
+from PyQt6.QtWidgets import QListWidget, QListWidgetItem
 
 from goesvfi.gui import MainWindow
 
@@ -66,7 +62,7 @@ class TestWorkflowsIntegration:
     def test_complete_processing_workflow(self, qtbot, window, test_images, mocker):
         """Test complete end-to-end processing workflow."""
         # Setup signal capture
-        signal_capture = ProcessingSignalCapture()
+        ProcessingSignalCapture()
 
         # Mock VfiWorker
         mock_worker_instance = MagicMock()
@@ -75,11 +71,19 @@ class TestWorkflowsIntegration:
         mock_worker_instance.error = MagicMock()
 
         # Connect to signal capture
-        mock_worker_instance.progress.connect = lambda fn: setattr(mock_worker_instance, "_progress_handler", fn)
-        mock_worker_instance.finished.connect = lambda fn: setattr(mock_worker_instance, "_finished_handler", fn)
-        mock_worker_instance.error.connect = lambda fn: setattr(mock_worker_instance, "_error_handler", fn)
+        mock_worker_instance.progress.connect = lambda fn: setattr(
+            mock_worker_instance, "_progress_handler", fn
+        )
+        mock_worker_instance.finished.connect = lambda fn: setattr(
+            mock_worker_instance, "_finished_handler", fn
+        )
+        mock_worker_instance.error.connect = lambda fn: setattr(
+            mock_worker_instance, "_error_handler", fn
+        )
 
-        mocker.patch("goesvfi.pipeline.run_vfi.VfiWorker", return_value=mock_worker_instance)
+        mocker.patch(
+            "goesvfi.pipeline.run_vfi.VfiWorker", return_value=mock_worker_instance
+        )
 
         # Step 1: Select input directory
         input_dir = test_images[0].parent
@@ -214,7 +218,9 @@ class TestWorkflowsIntegration:
             item = source_list.item(source_index)
             if item:
                 new_item = QListWidgetItem(item.text())
-                new_item.setData(Qt.ItemDataRole.UserRole, item.data(Qt.ItemDataRole.UserRole))
+                new_item.setData(
+                    Qt.ItemDataRole.UserRole, item.data(Qt.ItemDataRole.UserRole)
+                )
                 target_list.addItem(new_item)
 
         # Simulate drag from source to target
@@ -265,9 +271,13 @@ class TestWorkflowsIntegration:
                     # Apply job settings
                     self.window.set_in_dir(self.current_job["input_dir"])
                     self.window.out_file_path = self.current_job["output_file"]
-                    self.window.main_tab.fps_spinbox.setValue(self.current_job["settings"]["fps"])
+                    self.window.main_tab.fps_spinbox.setValue(
+                        self.current_job["settings"]["fps"]
+                    )
                     if self.current_job["settings"]["crop"]:
-                        self.window.current_crop_rect = self.current_job["settings"]["crop"]
+                        self.window.current_crop_rect = self.current_job["settings"][
+                            "crop"
+                        ]
 
                     # Simulate processing
                     QTimer.singleShot(100, self._complete_current_job)
@@ -299,11 +309,6 @@ class TestWorkflowsIntegration:
     def test_model_switching_during_operation(self, qtbot, window, mocker):
         """Test switching models during operation."""
         # Mock model manager
-        models = {
-            "rife-v4.6": {"path": "/models/rife-v4.6", "loaded": True},
-            "rife-v4.13": {"path": "/models/rife-v4.13", "loaded": True},
-            "rife-v4.14": {"path": "/models/rife-v4.14", "loaded": False},
-        }
 
         # Track model switches
         model_switches = []
@@ -502,14 +507,20 @@ class TestWorkflowsIntegration:
 
             def select_processing_options(self):
                 # Step 3: Processing options
-                self.step_data["encoder"] = self.window.main_tab.encoder_combo.currentText()
+                self.step_data["encoder"] = (
+                    self.window.main_tab.encoder_combo.currentText()
+                )
                 self.step_data["fps"] = self.window.main_tab.fps_spinbox.value()
-                self.step_data["enhance"] = self.window.main_tab.sanchez_checkbox.isChecked()
+                self.step_data["enhance"] = (
+                    self.window.main_tab.sanchez_checkbox.isChecked()
+                )
                 return True
 
             def review_and_confirm(self):
                 # Step 4: Review settings
-                return all(key in self.step_data for key in ["input", "output", "encoder"])
+                return all(
+                    key in self.step_data for key in ["input", "output", "encoder"]
+                )
 
         # Run wizard
         wizard = SetupWizard(window)

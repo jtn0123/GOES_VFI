@@ -123,8 +123,7 @@ def _format_bytes_per_second(speed_bps: float) -> str:
     """Format bytes per second to human readable string."""
     if speed_bps > 1024 * 1024:
         return f"{speed_bps / 1024 / 1024:.2f} MB/s"
-    else:
-        return f"{speed_bps / 1024:.2f} KB/s"
+    return f"{speed_bps / 1024:.2f} KB/s"
 
 
 def _calculate_network_speed(download_times_float: List[float], total_bytes: int) -> str:
@@ -432,12 +431,11 @@ def create_error_from_code(
             technical_details=technical_details + "This suggests network connectivity issues.",
             original_exception=exception,
         )
-    else:
-        return RemoteStoreError(
-            message=error_msg or f"Error accessing {satellite_name} data",
-            technical_details=technical_details,
-            original_exception=exception,
-        )
+    return RemoteStoreError(
+        message=error_msg or f"Error accessing {satellite_name} data",
+        technical_details=technical_details,
+        original_exception=exception,
+    )
 
     # This should never be reached, but is needed for mypy
     return fallback_error
@@ -458,8 +456,7 @@ def format_error_message(error_type: str, error_message: str) -> str:
     # Ensure error_type is not duplicated
     if error_message.startswith(f"{error_type}:"):
         return f"[{timestamp}] {error_message}"
-    else:
-        return f"[{timestamp}] {error_type}: {error_message}"
+    return f"[{timestamp}] {error_type}: {error_message}"
 
 
 def update_download_stats(
@@ -794,7 +791,8 @@ class S3Store(RemoteStore):
                         retries={"max_attempts": 2},
                     )
                     LOGGER.debug(
-                        f"Created config with UNSIGNED signature version and timeouts (connect: 10s, read: {self.timeout}s)"
+                        "Created config with UNSIGNED signature version and timeouts "
+                        f"(connect: 10s, read: {self.timeout}s)"
                     )
 
                     # First, create the Session
@@ -838,14 +836,17 @@ class S3Store(RemoteStore):
                                 max_retries,
                             )
                             if retry_count >= max_retries:
-                                error_msg = "Connection to AWS S3 timed out. Please check your internet connection and try again."
+                                error_msg = (
+                                    "Connection to AWS S3 timed out. "
+                                    "Please check your internet connection and try again."
+                                )
                                 technical_details = (
                                     f"Client creation timed out after {retry_count} attempts with "
                                     f"increasing timeouts (15s, 22.5s, 30s)."
                                 )
 
                                 # Add network diagnostics to help troubleshoot
-                                network_info = get_system_network_info()
+                                get_system_network_info()
 
                                 raise RemoteConnectionError(
                                     message=error_msg,
@@ -892,11 +893,14 @@ class S3Store(RemoteStore):
                             )
                             if retry_count >= max_retries:
                                 # Add network diagnostics to help troubleshoot
-                                network_info = get_system_network_info()
+                                get_system_network_info()
 
                                 raise RemoteConnectionError(
                                     message="Could not connect to AWS S3 service - check your internet connection",
-                                    technical_details=f"Connection error after {retry_count} attempts with exponential backoff: {e}",
+                                    technical_details=(
+                                        f"Connection error after {retry_count} attempts "
+                                        f"with exponential backoff: {e}"
+                                    ),
                                     original_exception=e,
                                     error_code="CONN-FAILED",
                                 )
@@ -923,7 +927,7 @@ class S3Store(RemoteStore):
                 LOGGER.error(traceback.format_exc())
 
                 # Add network diagnostics to help troubleshoot
-                network_info = get_system_network_info()
+                get_system_network_info()
 
                 # Wrap in RemoteStoreError
                 raise RemoteStoreError(
@@ -1077,33 +1081,32 @@ class S3Store(RemoteStore):
                 error_message = e.response.get("Error", {}).get("Message", "Unknown error")
                 LOGGER.debug("S3 404 details: %s", error_message)
                 return False
-            else:
-                # Handle other errors
-                LOGGER.error("S3 error during head_object check: %s", error_code)
-                error_message = e.response.get("Error", {}).get("Message", "Unknown error")
-                LOGGER.error("S3 error message: %s", error_message)
+            # Handle other errors
+            LOGGER.error("S3 error during head_object check: %s", error_code)
+            error_message = e.response.get("Error", {}).get("Message", "Unknown error")
+            LOGGER.error("S3 error message: %s", error_message)
 
-                # Create enhanced error with detailed context
-                error_msg = f"Error checking if file exists for {satellite.name} at {ts.isoformat()}"
-                technical_details = (
-                    f"S3 {error_code}: {error_message}\n"
-                    f"Path: s3://{bucket}/{key}\n"
-                    f"Timestamp details: Year={ts.year}, DOY={ts.strftime('%j')}, "
-                    f"Hour={ts.strftime('%H')}, Minute={ts.strftime('%M')}\n"
-                )
+            # Create enhanced error with detailed context
+            error_msg = f"Error checking if file exists for {satellite.name} at {ts.isoformat()}"
+            technical_details = (
+                f"S3 {error_code}: {error_message}\n"
+                f"Path: s3://{bucket}/{key}\n"
+                f"Timestamp details: Year={ts.year}, DOY={ts.strftime('%j')}, "
+                f"Hour={ts.strftime('%H')}, Minute={ts.strftime('%M')}\n"
+            )
 
-                error = create_error_from_code(
-                    error_code=error_code if error_code is not None else "UnknownError",
-                    error_message=error_message,
-                    technical_details=technical_details,
-                    satellite_name=satellite.name,
-                    exception=e,
-                    error_msg=error_msg,
-                )
+            error = create_error_from_code(
+                error_code=error_code if error_code is not None else "UnknownError",
+                error_message=error_message,
+                technical_details=technical_details,
+                satellite_name=satellite.name,
+                exception=e,
+                error_msg=error_msg,
+            )
 
-                LOGGER.error("S3 error: %s", error.get_user_message())
-                LOGGER.error("S3 technical details: %s", error.technical_details)
-                raise error
+            LOGGER.error("S3 error: %s", error.get_user_message())
+            LOGGER.error("S3 technical details: %s", error.technical_details)
+            raise error
 
     async def _download_exact_file(
         self,

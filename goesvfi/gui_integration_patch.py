@@ -29,19 +29,25 @@ def patch_main_window(MainWindow_class: Type[Any]) -> None:
 
         # Add UI enhancements after initialization
         try:
-            self._ui_enhancer = enhance_existing_gui(self)  # pylint: disable=attribute-defined-outside-init
+            self._ui_enhancer = enhance_existing_gui(
+                self
+            )  # pylint: disable=attribute-defined-outside-init
             LOGGER.info("UI enhancements successfully integrated")
 
             # Connect to processing signals if available
             if hasattr(self, "main_tab"):
                 # Connect processing started signal
                 if hasattr(self.main_tab, "processing_started"):
-                    self.main_tab.processing_started.connect(lambda: self._ui_enhancer.start_operation("processing"))
+                    self.main_tab.processing_started.connect(
+                        lambda: self._ui_enhancer.start_operation("processing")
+                    )
 
                 # Connect processing finished signal
                 if hasattr(self.main_tab, "processing_finished"):
                     self.main_tab.processing_finished.connect(
-                        lambda success, msg: self._ui_enhancer.stop_operation("processing")
+                        lambda success, msg: self._ui_enhancer.stop_operation(
+                            "processing"
+                        )
                     )
 
         except Exception as e:
@@ -51,7 +57,9 @@ def patch_main_window(MainWindow_class: Type[Any]) -> None:
     # Replace the __init__ method
     MainWindow_class.__init__ = enhanced_init
 
-    def update_progress(self: Any, current: int, total: int, bytes_transferred: int = 0) -> None:
+    def update_progress(
+        self: Any, current: int, total: int, bytes_transferred: int = 0
+    ) -> None:
         """Update progress information."""
         if hasattr(self, "_ui_enhancer"):
             # Update progress through enhancer

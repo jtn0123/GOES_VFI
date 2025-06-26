@@ -176,7 +176,9 @@ class FileSorterViewModel:
             Notifies observers if implemented.
         """
         LOGGER.info("Command: Select Destination Directory")
-        directory = QFileDialog.getExistingDirectory(None, "Select Destination Directory")
+        directory = QFileDialog.getExistingDirectory(
+            None, "Select Destination Directory"
+        )
         if directory:
             self.destination_directory = directory
             self.status_message = f"Destination directory set to: {directory}"
@@ -196,7 +198,9 @@ class FileSorterViewModel:
         If preconditions are not met, updates `status_message` with an error.
         """
         if self.can_start_sorting:
-            LOGGER.info(f"Command: Start Sorting from {self.source_directory} to {self.destination_directory}")
+            LOGGER.info(
+                f"Command: Start Sorting from {self.source_directory} to {self.destination_directory}"
+            )
             self.is_sorting = True
             self.status_message = "Sorting started..."
             self.progress_percentage = 0.0

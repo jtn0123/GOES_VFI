@@ -199,7 +199,7 @@ class S3KeyGenerator:
             # Calculate actual second based on start time and product type
             actual_second = start_sec
             # Generate exact end time and creation time for completely concrete filename
-            end_minute = valid_minute + 4 if valid_minute + 4 < 60 else valid_minute + 4 - 60
+            (valid_minute + 4 if valid_minute + 4 < 60 else valid_minute + 4 - 60)
             end_second = 59  # End seconds are typically near the end of the scan
             creation_time = f"{year}{doy_str}{hour}{valid_minute:02d}{end_second:02d}"
             pattern = (

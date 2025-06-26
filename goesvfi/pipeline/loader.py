@@ -7,7 +7,9 @@ from goesvfi.utils import config
 
 # TODO: discover + sort input frames
 
-SUPPORTED_EXT = set(config.get_supported_extensions())  # Get from config and convert to set
+SUPPORTED_EXT = set(
+    config.get_supported_extensions()
+)  # Get from config and convert to set
 
 
 def discover_frames(folder: pathlib.Path) -> List[pathlib.Path]:

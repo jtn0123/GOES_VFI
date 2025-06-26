@@ -31,10 +31,8 @@ def check_coverage_threshold(threshold: float = 80.0) -> bool:
             return True
         else:
             print(f"❌ Coverage {percentage:.1f}% is below threshold of {threshold}%")
-            print(f"   Please add tests to improve coverage.")
-            print(
-                f"   Run 'python run_coverage.py --html --open' to see uncovered lines."
-            )
+            print("   Please add tests to improve coverage.")
+            print("   Run 'python run_coverage.py --html --open' to see uncovered lines.")
             return False
 
     except Exception as e:

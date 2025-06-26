@@ -1,19 +1,15 @@
 """Tests for Sanchez health check and monitoring."""
 
-import asyncio
 import os
 import platform
 import subprocess
 import tempfile
-from datetime import datetime
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
 from PIL import Image
 
-from goesvfi.exceptions import ConfigurationError, ExternalToolError
 from goesvfi.sanchez.health_check import (
     SanchezHealthChecker,
     SanchezHealthStatus,
@@ -129,7 +125,9 @@ class TestSanchezHealthChecker:
         checker = SanchezHealthChecker()
         status = SanchezHealthStatus()
 
-        with patch.object(checker, "_get_binary_path", return_value=Path("/nonexistent/path")):
+        with patch.object(
+            checker, "_get_binary_path", return_value=Path("/nonexistent/path")
+        ):
             checker.check_binary(status)
 
         assert not status.binary_exists
@@ -208,7 +206,9 @@ class TestSanchezHealthChecker:
         mock_run.return_value = Mock(returncode=0, stdout="Sanchez v1.0.0", stderr="")
 
         checker = SanchezHealthChecker()
-        status = SanchezHealthStatus(binary_executable=True, binary_path=Path("/fake/Sanchez"))
+        status = SanchezHealthStatus(
+            binary_executable=True, binary_path=Path("/fake/Sanchez")
+        )
 
         checker.check_execution(status)
 
@@ -222,7 +222,9 @@ class TestSanchezHealthChecker:
         mock_run.side_effect = subprocess.TimeoutExpired("sanchez", 5)
 
         checker = SanchezHealthChecker()
-        status = SanchezHealthStatus(binary_executable=True, binary_path=Path("/fake/Sanchez"))
+        status = SanchezHealthStatus(
+            binary_executable=True, binary_path=Path("/fake/Sanchez")
+        )
 
         checker.check_execution(status)
 
@@ -357,7 +359,9 @@ def test_validate_sanchez_input_too_large():
         try:
             # Create a large image that won't trigger PIL's decompression bomb protection
             # but will still be too large for our check
-            img = Image.new("RGB", (10001, 10001), color="red")  # Just over 10000x10000 limit
+            img = Image.new(
+                "RGB", (10001, 10001), color="red"
+            )  # Just over 10000x10000 limit
             img.save(tmp_path, "PNG")
 
             is_valid, msg = validate_sanchez_input(tmp_path)

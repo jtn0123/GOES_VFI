@@ -1,15 +1,13 @@
 """Error handling and edge case UI tests for GOES VFI GUI."""
 
-import os
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import psutil
 import pytest
-from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
-from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication, QLabel, QMessageBox, QProgressBar
+from PyQt6.QtCore import QThread, QTimer, pyqtSignal
+from PyQt6.QtWidgets import QLabel, QMessageBox, QProgressBar
 
 from goesvfi.gui import MainWindow
 
@@ -34,7 +32,9 @@ class MockNetworkOperation(QThread):
 
             if self.timeout_after and self.attempts <= self.timeout_after:
                 # Simulate timeout
-                self.error.emit(f"Network timeout (attempt {self.attempts}/{self.retry_count})")
+                self.error.emit(
+                    f"Network timeout (attempt {self.attempts}/{self.retry_count})"
+                )
                 self.msleep(1000)  # Wait before retry
                 continue
             else:
@@ -130,7 +130,9 @@ class TestErrorHandlingUI:
 
             def _try_operation(self):
                 self.current_attempt += 1
-                self.status_callback(f"Attempt {self.current_attempt}/{self.max_retries}")
+                self.status_callback(
+                    f"Attempt {self.current_attempt}/{self.max_retries}"
+                )
 
                 try:
                     result = self.operation_func()
@@ -139,11 +141,15 @@ class TestErrorHandlingUI:
                         return True
                 except Exception as e:
                     if self.current_attempt < self.max_retries:
-                        self.status_callback(f"Failed: {e}. Retrying in {self.retry_delay/1000}s...")
+                        self.status_callback(
+                            f"Failed: {e}. Retrying in {self.retry_delay/1000}s..."
+                        )
                         self.retry_timer.start(self.retry_delay)
                         return False
                     else:
-                        self.status_callback(f"Failed after {self.max_retries} attempts")
+                        self.status_callback(
+                            f"Failed after {self.max_retries} attempts"
+                        )
                         return False
 
             def _retry_operation(self):
@@ -270,7 +276,9 @@ class TestErrorHandlingUI:
                     self.window.thumbnail_generation = False
 
                 # Show warning
-                self.window.status_bar.showMessage("Low memory mode enabled - some features limited", 5000)
+                self.window.status_bar.showMessage(
+                    "Low memory mode enabled - some features limited", 5000
+                )
 
             def disable_low_memory_mode(self):
                 self.low_memory_mode = False
@@ -389,7 +397,9 @@ class TestErrorHandlingUI:
 
         # UI should show warning
         if not second_acquire:
-            window.status_bar.showMessage("Operation already in progress. Please wait...", 3000)
+            window.status_bar.showMessage(
+                "Operation already in progress. Please wait...", 3000
+            )
 
         assert "already in progress" in window.status_bar.currentMessage()
 
@@ -425,8 +435,8 @@ class TestErrorHandlingUI:
                 try:
                     # Try to load settings
                     settings = mock_settings()
-                    test_value = settings.value("corrupted_key", "default")
-                except Exception as e:
+                    settings.value("corrupted_key", "default")
+                except Exception:
                     # Settings corrupted, use defaults
                     return self.load_default_settings()
 
@@ -486,11 +496,6 @@ class TestErrorHandlingUI:
 
             def show_recovery_options(self):
                 # Mock dialog with options
-                options = [
-                    ("Restore previous session", "restore"),
-                    ("Start fresh", "fresh"),
-                    ("Open recovery folder", "folder"),
-                ]
 
                 # Simulate user selection
                 self.recovery_option = "restore"  # Mock selection

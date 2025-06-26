@@ -277,7 +277,7 @@ class MainWindow(QWidget):
 
         LOGGER.info("Loading application settings...")
         self.settings_manager.load_all_settings(self)
-        self.settings_loaded = True
+        self.settings_loaded = True  # pylint: disable=attribute-defined-outside-init
         LOGGER.info("All settings loaded")
 
     def saveSettings(self) -> None:
@@ -353,7 +353,11 @@ class MainWindow(QWidget):
                 if hasattr(self.main_tab, "sanchez_res_combo"):
                     sanchez_resolution = int(self.main_tab.sanchez_res_combo.currentText())
 
-            LOGGER.debug(f"Loading preview images from {self.in_dir}, apply_sanchez={apply_sanchez}")
+            LOGGER.debug(
+                "Loading preview images from %s, apply_sanchez=%s",
+                self.in_dir,
+                apply_sanchez,
+            )
 
             # Disconnect any existing connections first
             try:
@@ -381,7 +385,7 @@ class MainWindow(QWidget):
                 LOGGER.error("Failed to load preview images")
 
         except Exception as e:
-            LOGGER.exception(f"Error updating previews: {e}")
+            LOGGER.exception("Error updating previews: %s", e)
 
     def _handle_processing(self, args: Dict[str, Any]) -> None:
         """Handle the processing_started signal from MainTab."""
@@ -416,7 +420,10 @@ class MainWindow(QWidget):
             last_pixmap: The last frame pixmap
         """
         LOGGER.debug(
-            f"_on_preview_images_loaded called with pixmaps: first={not first_pixmap.isNull()}, middle={not middle_pixmap.isNull()}, last={not last_pixmap.isNull()}"
+            "_on_preview_images_loaded called with pixmaps: first=%s, middle=%s, last=%s",
+            not first_pixmap.isNull(),
+            not middle_pixmap.isNull(),
+            not last_pixmap.isNull(),
         )
 
         try:
@@ -449,7 +456,8 @@ class MainWindow(QWidget):
                     if not full_res_pixmap.isNull():
                         self.main_tab.first_frame_label.processed_image = full_res_pixmap.toImage()
                         LOGGER.debug(
-                            f"Set processed_image on first_frame_label: {self.main_tab.first_frame_label.processed_image}"
+                            "Set processed_image on first_frame_label: %s",
+                            self.main_tab.first_frame_label.processed_image,
                         )
                 else:
                     LOGGER.warning("No first_frame_data available from preview manager")
@@ -514,7 +522,7 @@ class MainWindow(QWidget):
             LOGGER.debug("Preview images updated successfully")
 
         except Exception as e:
-            LOGGER.exception(f"Error updating preview labels: {e}")
+            LOGGER.exception("Error updating preview labels: %s", e)
 
     def _on_preview_error(self, error_message: str) -> None:
         """Handle preview loading errors.
@@ -522,7 +530,7 @@ class MainWindow(QWidget):
         Args:
             error_message: The error message from PreviewManager
         """
-        LOGGER.error(f"Preview loading error: {error_message}")
+        LOGGER.error("Preview loading error: %s", error_message)
         # Update status bar to show error
         self.status_bar.showMessage(f"Preview error: {error_message}", 5000)
 

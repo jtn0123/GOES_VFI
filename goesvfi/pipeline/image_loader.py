@@ -45,7 +45,6 @@ class ImageLoader(ImageProcessor):
         """Load image data from a specified source path using Pillow.
 
         Args:
-            pass
             source_path (str): The path to the image file to load.
 
         Returns:
@@ -62,7 +61,6 @@ class ImageLoader(ImageProcessor):
 
         # Log memory before loading
         if self.optimize_memory:
-            pass
             log_memory_usage("Before loading image")
 
         try:
@@ -73,7 +71,6 @@ class ImageLoader(ImageProcessor):
 
                 # Estimate memory requirement
                 if self.optimize_memory:
-                    pass
                     # Calculate expected memory usage
                     shape = (height, width, channels) if channels > 1 else (height, width)
                     estimated_mb = estimate_memory_requirement(shape, np.dtype(np.uint8))
@@ -89,17 +86,14 @@ class ImageLoader(ImageProcessor):
 
                     # Check against limit
                     if self.max_image_size_mb and estimated_mb > self.max_image_size_mb:
-                        pass
                         raise ValueError(
                             f"Image too large: {estimated_mb}MB exceeds limit of " f"{self.max_image_size_mb}MB"
                         )
 
                     # Check available memory
                     if self.memory_optimizer:
-                        pass
                         has_memory, msg = self.memory_optimizer.check_available_memory(estimated_mb + 100)  # Add buffer
                         if not has_memory:
-                            pass
                             raise MemoryError(f"Insufficient memory to load image: {msg}")
 
                 # Convert Pillow Image to NumPy array
@@ -107,11 +101,9 @@ class ImageLoader(ImageProcessor):
 
                 # Optimize array dtype if enabled
                 if self.optimize_memory and self.memory_optimizer:
-                    pass
                     original_dtype = image_data_array.dtype
                     image_data_array = self.memory_optimizer.optimize_array_dtype(image_data_array, preserve_range=True)
                     if image_data_array.dtype != original_dtype:
-                        pass
                         LOGGER.debug(
                             "Optimized array dtype from %s to %s",
                             original_dtype,
@@ -132,7 +124,6 @@ class ImageLoader(ImageProcessor):
 
                 # Log memory after loading
                 if self.optimize_memory:
-                    pass
                     log_memory_usage("After loading image")
 
                 return ImageData(

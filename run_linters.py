@@ -389,6 +389,148 @@ def run_isort(paths: List[str], check_only: bool = True) -> Tuple[int, str, int]
     return exit_code, output, issue_count
 
 
+def run_ruff(paths: List[str]) -> Tuple[int, str, int]:
+    """
+    Run ruff linter on the given paths.
+
+    Returns:
+        Tuple of (exit_code, output, issue_count)
+    """
+    print_colored(f"\n{BOLD}Running Ruff Linter...{RESET}", BLUE, bold=True)
+
+    # Check if ruff is available
+    exit_code, _ = run_command(["ruff", "--version"])
+    if exit_code != 0:
+        print_colored("Ruff is not installed. Skipping ruff check.", YELLOW)
+        return 0, "Ruff not installed", 0
+
+    # Build ruff command
+    cmd = ["ruff", "check", "--output-format=text"]
+    cmd.extend(paths)
+
+    exit_code, output = run_command(cmd)
+
+    # Count issues by counting lines with file paths
+    issue_count = len([line for line in output.split("\n") if line.strip() and ":" in line])
+
+    if exit_code == 0:
+        print_colored("Ruff found no issues! ✅", GREEN, bold=True)
+    else:
+        print(output)
+        print_colored(f"Ruff found {issue_count} issues. ❌", RED)
+
+    return exit_code, output, issue_count
+
+
+def run_pyright(paths: List[str]) -> Tuple[int, str, int]:
+    """
+    Run pyright type checker on the given paths.
+
+    Returns:
+        Tuple of (exit_code, output, issue_count)
+    """
+    print_colored(f"\n{BOLD}Running Pyright Type Checker...{RESET}", BLUE, bold=True)
+
+    # Check if pyright is available
+    exit_code, _ = run_command(["pyright", "--version"])
+    if exit_code != 0:
+        print_colored("Pyright is not installed. Skipping pyright check.", YELLOW)
+        return 0, "Pyright not installed", 0
+
+    # Build pyright command
+    cmd = ["pyright"] + paths
+
+    exit_code, output = run_command(cmd)
+
+    # Count issues by looking for error/warning lines
+    issue_count = 0
+    if output:
+        for line in output.splitlines():
+            if "error:" in line or "warning:" in line:
+                issue_count += 1
+
+    if exit_code == 0:
+        print_colored("Pyright found no type errors! ✅", GREEN, bold=True)
+    else:
+        print(output)
+        print_colored(f"Pyright found {issue_count} type issues. ❌", RED)
+
+    return exit_code, output, issue_count
+
+
+def run_bandit(paths: List[str]) -> Tuple[int, str, int]:
+    """
+    Run bandit security scanner on the given paths.
+
+    Returns:
+        Tuple of (exit_code, output, issue_count)
+    """
+    print_colored(f"\n{BOLD}Running Bandit Security Scanner...{RESET}", BLUE, bold=True)
+
+    # Check if bandit is available
+    exit_code, _ = run_command(["bandit", "--version"])
+    if exit_code != 0:
+        print_colored("Bandit is not installed. Skipping security scan.", YELLOW)
+        return 0, "Bandit not installed", 0
+
+    # Build bandit command
+    cmd = ["bandit", "-r", "-f", "txt"]
+    cmd.extend(paths)
+
+    exit_code, output = run_command(cmd)
+
+    # Count issues by looking for "Issue:" lines
+    issue_count = output.count("Issue:") if output else 0
+
+    if exit_code == 0:
+        print_colored("Bandit found no security issues! ✅", GREEN, bold=True)
+    else:
+        print(output)
+        print_colored(f"Bandit found {issue_count} security issues. ❌", RED)
+
+    return exit_code, output, issue_count
+
+
+def run_safety() -> Tuple[int, str, int]:
+    """
+    Run safety dependency vulnerability scanner.
+
+    Returns:
+        Tuple of (exit_code, output, issue_count)
+    """
+    print_colored(f"\n{BOLD}Running Safety Dependency Scanner...{RESET}", BLUE, bold=True)
+
+    # Check if safety is available
+    exit_code, _ = run_command(["safety", "--version"])
+    if exit_code != 0:
+        print_colored("Safety is not installed. Skipping dependency scan.", YELLOW)
+        return 0, "Safety not installed", 0
+
+    # Build safety command
+    cmd = ["safety", "check", "--json"]
+
+    exit_code, output = run_command(cmd)
+
+    # Count vulnerabilities in JSON output
+    issue_count = 0
+    if output and "vulnerabilities" in output:
+        try:
+            import json
+            data = json.loads(output)
+            issue_count = len(data.get("vulnerabilities", []))
+        except json.JSONDecodeError:
+            # Fallback to text parsing
+            issue_count = output.count("vulnerability") if output else 0
+
+    if exit_code == 0:
+        print_colored("Safety found no vulnerabilities! ✅", GREEN, bold=True)
+    else:
+        print(output)
+        print_colored(f"Safety found {issue_count} vulnerabilities. ❌", RED)
+
+    return exit_code, output, issue_count
+
+
 def run_pylint(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, int]:
     """
     Run pylint on the given paths.
@@ -504,6 +646,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--isort-only", action="store_true", help="Run only isort import sorting"
     )
+    parser.add_argument(
+        "--ruff-only", action="store_true", help="Run only Ruff linter"
+    )
+    parser.add_argument(
+        "--pyright-only", action="store_true", help="Run only Pyright type checker"
+    )
+    parser.add_argument(
+        "--bandit-only", action="store_true", help="Run only Bandit security scanner"
+    )
+    parser.add_argument(
+        "--safety-only", action="store_true", help="Run only Safety dependency scanner"
+    )
     parser.add_argument("--strict", action="store_true", help="Run mypy in strict mode")
     parser.add_argument(
         "--check",
@@ -570,23 +724,43 @@ def main() -> int:
     elif args.isort_only:
         exit_code, _, issue_count = run_isort(paths, check_only)
         linter_results.append(("isort", exit_code, issue_count))
+    elif args.ruff_only:
+        exit_code, _, issue_count = run_ruff(paths)
+        linter_results.append(("Ruff", exit_code, issue_count))
+    elif args.pyright_only:
+        exit_code, _, issue_count = run_pyright(paths)
+        linter_results.append(("Pyright", exit_code, issue_count))
+    elif args.bandit_only:
+        exit_code, _, issue_count = run_bandit(paths)
+        linter_results.append(("Bandit", exit_code, issue_count))
+    elif args.safety_only:
+        exit_code, _, issue_count = run_safety()
+        linter_results.append(("Safety", exit_code, issue_count))
     else:
         # Run all linters - first run static analyzers, then formatting tools
         flake8_code, _, flake8_count = run_flake8(paths, args.jobs)
+        ruff_code, _, ruff_count = run_ruff(paths)
         bugbear_code, _, bugbear_count = run_flake8_bugbear(paths)
         vulture_code, _, vulture_count = run_vulture(paths)
         pylint_code, _, pylint_count = run_pylint(paths, args.jobs)
         mypy_code, _, mypy_count = run_mypy(paths, args.strict)
+        pyright_code, _, pyright_count = run_pyright(paths)
+        bandit_code, _, bandit_count = run_bandit(paths)
+        safety_code, _, safety_count = run_safety()
         black_code, _, black_count = run_black(paths, check_only)
         isort_code, _, isort_count = run_isort(paths, check_only)
 
         linter_results.extend(
             [
                 ("Flake8", flake8_code, flake8_count),
+                ("Ruff", ruff_code, ruff_count),
                 ("Flake8-Bugbear", bugbear_code, bugbear_count),
                 ("Vulture", vulture_code, vulture_count),
                 ("Pylint", pylint_code, pylint_count),
                 ("Mypy", mypy_code, mypy_count),
+                ("Pyright", pyright_code, pyright_count),
+                ("Bandit", bandit_code, bandit_count),
+                ("Safety", safety_code, safety_count),
                 ("Black", black_code, black_count),
                 ("isort", isort_code, isort_count),
             ]

@@ -11,15 +11,22 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
+# Store the original QDateTimeEdit class before patching
+_original_QDateTimeEdit = None
+
+
 class NoPopupQDateTimeEdit:
     """QDateTimeEdit that never opens calendar popups."""
 
     def __init__(self, *args, **kwargs):
-        # Import here to avoid circular dependency
-        from PyQt6.QtWidgets import QDateTimeEdit as _QDateTimeEdit
+        # Use the stored original class to avoid recursion
+        global _original_QDateTimeEdit
+        if _original_QDateTimeEdit is None:
+            # This should never happen if patches are applied correctly
+            from PyQt6.QtWidgets import QDateTimeEdit as _original_QDateTimeEdit
 
         # Create the real widget and copy its attributes
-        self._widget = _QDateTimeEdit(*args, **kwargs)
+        self._widget = _original_QDateTimeEdit(*args, **kwargs)
         # Disable calendar popup
         self._widget.setCalendarPopup(False)
 
@@ -83,6 +90,13 @@ def apply_gui_patches() -> List[Any]:
     """Apply patches to prevent GUI popups."""
     patches: List[Any] = []
 
+    # Store the original QDateTimeEdit class before patching
+    global _original_QDateTimeEdit
+    if _original_QDateTimeEdit is None:
+        from PyQt6.QtWidgets import QDateTimeEdit
+
+        _original_QDateTimeEdit = QDateTimeEdit
+
     # Patch QFileDialog - only patch PyQt6 directly to avoid import issues
     patches.extend(
         [
@@ -99,7 +113,9 @@ def apply_gui_patches() -> List[Any]:
                 NoPopupQMessageBox,
             ),
             patch("goesvfi.integrity_check.gui_tab.QMessageBox", NoPopupQMessageBox),
-            patch("goesvfi.gui_tabs.batch_processing_tab.QMessageBox", NoPopupQMessageBox),
+            patch(
+                "goesvfi.gui_tabs.batch_processing_tab.QMessageBox", NoPopupQMessageBox
+            ),
         ]
     )
 

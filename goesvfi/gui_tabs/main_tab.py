@@ -330,6 +330,7 @@ class MainTab(QWidget):
         self.in_dir_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.in_dir_button = QPushButton(self.tr("Browse..."))
         self.in_dir_button.setObjectName("browse_button")
+        self.in_dir_button.setToolTip("Browse for input directory containing image files")
         in_dir_layout.addWidget(self.in_dir_edit)
         in_dir_layout.addWidget(self.in_dir_button)
         # Connect button click here for clarity
@@ -345,6 +346,7 @@ class MainTab(QWidget):
         self.out_file_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.out_file_button = QPushButton(self.tr("Browse..."))
         self.out_file_button.setObjectName("browse_button")
+        self.out_file_button.setToolTip("Browse for output video file location")
         out_file_layout.addWidget(self.out_file_edit)
         out_file_layout.addWidget(self.out_file_button)
         # Connect button click here
@@ -364,8 +366,10 @@ class MainTab(QWidget):
         crop_buttons_layout.setContentsMargins(10, 0, 10, 0)
         self.crop_button = SuperButton(self.tr("Select Crop Region"))
         self.crop_button.setObjectName("crop_button")
+        self.crop_button.setToolTip("Select a region of the image to crop during processing")
         self.clear_crop_button = SuperButton(self.tr("Clear Crop"))
         self.clear_crop_button.setObjectName("clear_crop_button")
+        self.clear_crop_button.setToolTip("Remove the current crop selection and use full image")
         crop_buttons_layout.addWidget(self.crop_button)
         crop_buttons_layout.addWidget(self.clear_crop_button)
         crop_buttons_layout.addStretch(1)
@@ -431,6 +435,7 @@ class MainTab(QWidget):
         # Create a completely redesigned start button implementation
         self.start_button = SuperButton(self.tr("START"))
         self.start_button.setObjectName("start_button")
+        self.start_button.setToolTip("Start video interpolation processing")
         self.start_button.setMinimumHeight(50)
         self.start_button.setEnabled(True)  # Initially enabled for debugging
         self.start_button.setStyleSheet(
@@ -2218,7 +2223,6 @@ class MainTab(QWidget):
         self.rife_model_combo.clear()
         self.available_models.clear()
         project_root = config.get_project_root()
-        models_base_dir = project_root / "models"
         cache_dir = get_cache_dir()
         analysis_cache_file = cache_dir / "rife_analysis_cache.json"
 

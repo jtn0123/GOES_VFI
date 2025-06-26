@@ -57,7 +57,9 @@ class ModelLibraryTab(QWidget):
         # Enhanced model table
         self.model_table = QTableWidget()
         self.model_table.setColumnCount(3)
-        self.model_table.setHorizontalHeaderLabels(["🤖 Model Key", "📁 Path", "📊 Status"])
+        self.model_table.setHorizontalHeaderLabels(
+            ["🤖 Model Key", "📁 Path", "📊 Status"]
+        )
 
         # Style the table
         self.model_table.setStyleSheet(
@@ -158,7 +160,9 @@ class ModelLibraryTab(QWidget):
         layout.setSpacing(8)
 
         info_label = QLabel("📚 Available RIFE Models")
-        info_label.setStyleSheet("color: #ffffff; font-weight: bold; font-size: 14px; margin-bottom: 5px;")
+        info_label.setStyleSheet(
+            "color: #ffffff; font-weight: bold; font-size: 14px; margin-bottom: 5px;"
+        )
         layout.addWidget(info_label)
 
         description = QLabel(
@@ -270,9 +274,12 @@ class ModelLibraryTab(QWidget):
                 available_count = sum(
                     1
                     for row in range(self.model_table.rowCount())
-                    if (item := self.model_table.item(row, 2)) is not None and "Available" in item.text()
+                    if (item := self.model_table.item(row, 2)) is not None
+                    and "Available" in item.text()
                 )
-                self.status_label.setText(f"✅ {available_count} of {len(available_models)} models available")
+                self.status_label.setText(
+                    f"✅ {available_count} of {len(available_models)} models available"
+                )
         except Exception as e:
             LOGGER.error(f"Failed to populate model table: {e}", exc_info=True)
             # Enhanced error display

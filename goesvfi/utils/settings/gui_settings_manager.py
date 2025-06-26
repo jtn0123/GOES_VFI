@@ -26,7 +26,9 @@ class GUISettingsManager:
     This replacement: A-grade complexity (~3), ~25 lines of orchestration
     """
 
-    def __init__(self, qsettings: QSettings, classifier: Optional[ErrorClassifier] = None) -> None:
+    def __init__(
+        self, qsettings: QSettings, classifier: Optional[ErrorClassifier] = None
+    ) -> None:
         self.classifier = classifier or ErrorClassifier()
 
         # Create the settings manager with organized sections
@@ -64,11 +66,15 @@ class GUISettingsManager:
             return success
 
         except Exception as e:
-            error = self.classifier.create_structured_error(e, "save_all_gui_settings", "gui_settings_manager")
+            error = self.classifier.create_structured_error(
+                e, "save_all_gui_settings", "gui_settings_manager"
+            )
             LOGGER.error(f"Failed to save GUI settings: {error.user_message}")
             return False
 
-    def load_all_settings(self, main_window: Any, defaults: Optional[Dict[str, Any]] = None) -> bool:
+    def load_all_settings(
+        self, main_window: Any, defaults: Optional[Dict[str, Any]] = None
+    ) -> bool:
         """
         Load all GUI settings with clean error handling.
 
@@ -97,7 +103,9 @@ class GUISettingsManager:
             return success
 
         except Exception as e:
-            error = self.classifier.create_structured_error(e, "load_all_gui_settings", "gui_settings_manager")
+            error = self.classifier.create_structured_error(
+                e, "load_all_gui_settings", "gui_settings_manager"
+            )
             LOGGER.error(f"Failed to load GUI settings: {error.user_message}")
             return False
 
@@ -154,7 +162,9 @@ def save_settings_refactored(main_window: Any, qsettings: QSettings) -> bool:
     return manager.save_all_settings(main_window)
 
 
-def load_settings_refactored(main_window: Any, qsettings: QSettings, defaults: Optional[Dict[str, Any]] = None) -> bool:
+def load_settings_refactored(
+    main_window: Any, qsettings: QSettings, defaults: Optional[Dict[str, Any]] = None
+) -> bool:
     """
     Drop-in replacement for complex loadSettings method.
 

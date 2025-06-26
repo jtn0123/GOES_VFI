@@ -3,7 +3,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from typing import ClassVar, Optional, Tuple
+from typing import ClassVar, Optional
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QApplication

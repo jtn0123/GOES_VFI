@@ -35,14 +35,18 @@ class ErrorReporter:
 
     def _report_verbose(self, error: StructuredError) -> None:
         """Report detailed error information."""
-        self.output.write(f"Error in {error.context.component} ({error.category.name}):\n")
+        self.output.write(
+            f"Error in {error.context.component} ({error.category.name}):\n"
+        )
         self.output.write(f"  Message: {error.message}\n")
         self.output.write(f"  Operation: {error.context.operation}\n")
         self.output.write(f"  Recoverable: {error.recoverable}\n")
 
-        if error.context.user_data:
+        if error.context.user_data or error.context.system_data:
             self.output.write("  Context:\n")
             for key, value in error.context.user_data.items():
+                self.output.write(f"    {key}: {value}\n")
+            for key, value in error.context.system_data.items():
                 self.output.write(f"    {key}: {value}\n")
 
         if error.suggestions:

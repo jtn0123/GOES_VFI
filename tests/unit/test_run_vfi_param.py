@@ -1,6 +1,6 @@
 import pathlib
 import subprocess
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -39,7 +39,9 @@ def mock_capability_detector(mocker):
 
     mock_detector = mocker.MagicMock(spec=RifeCapabilityDetector)
     mock_detector.supports_thread_spec.return_value = True
-    return mocker.patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector)
+    return mocker.patch(
+        "goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_detector
+    )
 
 
 @pytest.mark.parametrize(
@@ -52,7 +54,9 @@ def mock_capability_detector(mocker):
         ("sanchez_fail", False),
     ],
 )
-def test_run_vfi_scenarios(scenario, expect_error, tmp_path, mocker, mock_capability_detector):
+def test_run_vfi_scenarios(
+    scenario, expect_error, tmp_path, mocker, mock_capability_detector
+):  # noqa: ARG001
     img_paths = make_dummy_images(tmp_path, 2)
     output_mp4 = tmp_path / "out.mp4"
     raw_output = output_mp4.with_suffix(".raw.mp4")
@@ -81,14 +85,20 @@ def test_run_vfi_scenarios(scenario, expect_error, tmp_path, mocker, mock_capabi
             mock_run.side_effect = None
             mock_popen.side_effect = create_mock_popen(output_file_to_create=raw_output)
         elif scenario == "rife_fail":
-            mock_run.side_effect = create_mock_subprocess_run(side_effect=subprocess.CalledProcessError(1, "rife"))
+            mock_run.side_effect = create_mock_subprocess_run(
+                side_effect=subprocess.CalledProcessError(1, "rife")
+            )
             mock_popen.side_effect = create_mock_popen(output_file_to_create=raw_output)
         elif scenario == "ffmpeg_fail":
-            mock_run.side_effect = create_mock_subprocess_run(output_file_to_create=tmp_path / "interp.png")
+            mock_run.side_effect = create_mock_subprocess_run(
+                output_file_to_create=tmp_path / "interp.png"
+            )
             mock_popen.side_effect = create_mock_popen(returncode=1, stderr=b"fail")
         elif scenario == "sanchez":
             kwargs.update({"false_colour": True, "res_km": 2})
-            mock_run.side_effect = create_mock_subprocess_run(output_file_to_create=tmp_path / "interp.png")
+            mock_run.side_effect = create_mock_subprocess_run(
+                output_file_to_create=tmp_path / "interp.png"
+            )
             mock_popen.side_effect = create_mock_popen(output_file_to_create=raw_output)
             mocker.patch(
                 "goesvfi.pipeline.run_vfi.colourise",
@@ -96,7 +106,9 @@ def test_run_vfi_scenarios(scenario, expect_error, tmp_path, mocker, mock_capabi
             )
         elif scenario == "sanchez_fail":
             kwargs.update({"false_colour": True, "res_km": 2})
-            mock_run.side_effect = create_mock_subprocess_run(output_file_to_create=tmp_path / "interp.png")
+            mock_run.side_effect = create_mock_subprocess_run(
+                output_file_to_create=tmp_path / "interp.png"
+            )
             mock_popen.side_effect = create_mock_popen(output_file_to_create=raw_output)
             mocker.patch(
                 "goesvfi.pipeline.run_vfi.colourise",

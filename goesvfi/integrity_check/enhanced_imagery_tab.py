@@ -48,6 +48,22 @@ class EnhancedGOESImageryTab(QWidget):
         super().__init__(parent)
         self.current_data: List[Any] = []
         self.current_timestamp: Optional[datetime] = None
+
+        # Initialize UI widget attributes to satisfy pylint
+        self.product_combo: Optional[QComboBox] = None
+        self.satellite_combo: Optional[QComboBox] = None
+        self.band_combo: Optional[QComboBox] = None
+        self.enhancement_combo: Optional[QComboBox] = None
+        self.load_btn: Optional[QPushButton] = None
+        self.refresh_btn: Optional[QPushButton] = None
+        self.compare_btn: Optional[QPushButton] = None
+        self.animate_btn: Optional[QPushButton] = None
+        self.image_area: Optional[QScrollArea] = None
+        self.info_panel: Optional[QWidget] = None
+        self.image_label: Optional[QLabel] = None
+        self.info_content: Optional[QLabel] = None
+        self.status_label: Optional[QLabel] = None
+
         self.initUI()
         LOGGER.info("Enhanced GOES Imagery Tab initialized")
 
@@ -72,19 +88,14 @@ class EnhancedGOESImageryTab(QWidget):
 
     def _create_header(self, layout: QVBoxLayout) -> None:
         """Create the enhanced header section."""
-        header = QLabel("🛰️ GOES Satellite Imagery Viewer")
+        header = QLabel("GOES Satellite Imagery Viewer")
         header.setStyleSheet(
             """
             QLabel {
                 font-size: 20px;
                 font-weight: bold;
-                color: #ffffff;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4a6fa5, stop:0.5 #3a5f95, stop:1 #2a4f85);
-                padding: 15px 20px;
-                border-radius: 10px;
-                margin-bottom: 10px;
-                border: 2px solid #5a7fb5;
+                color: #EFEFEF;
+                padding: 15px;
             }
             """
         )
@@ -96,46 +107,40 @@ class EnhancedGOESImageryTab(QWidget):
         control_frame.setStyleSheet(
             """
             QFrame {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
-                border-radius: 8px;
+                background-color: #3D3D3D;
+                border: 1px solid #555555;
+                border-radius: 3px;
                 padding: 10px;
             }
             QLabel {
-                color: #f0f0f0;
+                color: #EFEFEF;
                 font-weight: bold;
                 font-size: 12px;
             }
             QComboBox {
-                padding: 8px 12px;
+                background-color: #3D3D3D;
+                border: 1px solid #555555;
+                border-radius: 3px;
+                padding: 5px;
+                color: #EFEFEF;
                 min-width: 140px;
-                background-color: #3a3a3a;
-                border: 2px solid #555555;
-                border-radius: 6px;
-                color: #f0f0f0;
-                font-size: 11px;
             }
-            QComboBox:hover {
-                border-color: #4a6fa5;
-            }
-            QComboBox::drop-down {
-                border: none;
-                width: 20px;
+            QComboBox:focus {
+                border: 1px solid #6C9BD1;
             }
             QPushButton {
-                background-color: #4a6fa5;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 6px;
+                background-color: #4A4A4A;
+                border: 1px solid #555555;
+                border-radius: 3px;
+                padding: 5px 15px;
+                color: #EFEFEF;
                 font-weight: bold;
-                font-size: 11px;
             }
             QPushButton:hover {
-                background-color: #5a7fb5;
+                background-color: #5A5A5A;
             }
             QPushButton:pressed {
-                background-color: #3a5f95;
+                background-color: #3A3A3A;
             }
             """
         )
@@ -144,52 +149,52 @@ class EnhancedGOESImageryTab(QWidget):
         control_layout.setSpacing(12)
 
         # Row 1: Product and Satellite selection
-        control_layout.addWidget(QLabel("🌍 Product:"), 0, 0)
+        control_layout.addWidget(QLabel("Product:"), 0, 0)
         self.product_combo = QComboBox()
         self.product_combo.addItems(
             [
-                "🌍 Full Disk (ABI-L2-CMIPF)",
-                "🇺🇸 CONUS (ABI-L2-CMIPC)",
-                "🔍 Mesoscale-1 (ABI-L2-CMIPM1)",
-                "🔍 Mesoscale-2 (ABI-L2-CMIPM2)",
+                "Full Disk (ABI-L2-CMIPF)",
+                "CONUS (ABI-L2-CMIPC)",
+                "Mesoscale-1 (ABI-L2-CMIPM1)",
+                "Mesoscale-2 (ABI-L2-CMIPM2)",
             ]
         )
         self.product_combo.setToolTip("Select GOES-R ABI product type")
         self.product_combo.currentTextChanged.connect(self._on_product_changed)
         control_layout.addWidget(self.product_combo, 0, 1)
 
-        control_layout.addWidget(QLabel("🛰️ Satellite:"), 0, 2)
+        control_layout.addWidget(QLabel("Satellite:"), 0, 2)
         self.satellite_combo = QComboBox()
-        self.satellite_combo.addItems(["🛰️ GOES-16 (East)", "🛰️ GOES-18 (West)"])
+        self.satellite_combo.addItems(["GOES-16 (East)", "GOES-18 (West)"])
         self.satellite_combo.setToolTip("Select GOES satellite")
         control_layout.addWidget(self.satellite_combo, 0, 3)
 
         # Row 2: Band and Enhancement selection
-        control_layout.addWidget(QLabel("🌈 Band/Channel:"), 1, 0)
+        control_layout.addWidget(QLabel("Band/Channel:"), 1, 0)
         self.band_combo = QComboBox()
         self.band_combo.addItems(
             [
-                "🔴 Band 13 (10.3 μm IR)",
-                "🔴 Band 14 (11.2 μm IR)",
-                "🔴 Band 15 (12.3 μm IR)",
-                "🌈 True Color RGB",
-                "☁️ Enhanced IR",
-                "🌡️ Sea Surface Temp",
+                "Band 13 (10.3 μm IR)",
+                "Band 14 (11.2 μm IR)",
+                "Band 15 (12.3 μm IR)",
+                "True Color RGB",
+                "Enhanced IR",
+                "Sea Surface Temp",
             ]
         )
         self.band_combo.setToolTip("Select spectral band or composite")
         self.band_combo.currentTextChanged.connect(self._on_band_changed)
         control_layout.addWidget(self.band_combo, 1, 1)
 
-        control_layout.addWidget(QLabel("🎨 Enhancement:"), 1, 2)
+        control_layout.addWidget(QLabel("Enhancement:"), 1, 2)
         self.enhancement_combo = QComboBox()
         self.enhancement_combo.addItems(
             [
-                "🔄 Auto Contrast",
-                "🌡️ Temperature Scale",
-                "🌈 Rainbow",
-                "⚫ Grayscale",
-                "🔆 Linear",
+                "Auto Contrast",
+                "Temperature Scale",
+                "Rainbow",
+                "Grayscale",
+                "Linear",
             ]
         )
         self.enhancement_combo.setToolTip("Select color enhancement")
@@ -198,20 +203,20 @@ class EnhancedGOESImageryTab(QWidget):
         # Row 3: Action buttons
         button_layout = QHBoxLayout()
 
-        self.load_btn = QPushButton("📷 Load Image")
+        self.load_btn = QPushButton("Load Image")
         self.load_btn.setToolTip("Load the selected satellite image")
         self.load_btn.clicked.connect(self._load_current_image)
         button_layout.addWidget(self.load_btn)
 
-        self.refresh_btn = QPushButton("🔄 Refresh")
+        self.refresh_btn = QPushButton("Refresh")
         self.refresh_btn.setToolTip("Refresh available imagery")
         button_layout.addWidget(self.refresh_btn)
 
-        self.compare_btn = QPushButton("⚖️ Compare")
+        self.compare_btn = QPushButton("Compare")
         self.compare_btn.setToolTip("Compare multiple images side-by-side")
         button_layout.addWidget(self.compare_btn)
 
-        self.animate_btn = QPushButton("▶️ Animate")
+        self.animate_btn = QPushButton("Animate")
         self.animate_btn.setToolTip("Create animation from time series")
         button_layout.addWidget(self.animate_btn)
 
@@ -254,7 +259,7 @@ class EnhancedGOESImageryTab(QWidget):
         layout = QVBoxLayout(container)
 
         # Image display label
-        self.image_label = QLabel("🖼️ No image loaded")
+        self.image_label = QLabel("No image loaded")
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setStyleSheet(
             """
@@ -390,7 +395,7 @@ class EnhancedGOESImageryTab(QWidget):
         Args:
             params: Dictionary of image request parameters
         """
-        self._update_status("🔄 Processing image request...")
+        self._update_status("Processing image request...")
         self.imageRequested.emit(params)
 
     def loadTimestamp(self, timestamp: Any) -> None:
@@ -402,7 +407,7 @@ class EnhancedGOESImageryTab(QWidget):
         self.current_timestamp = timestamp
         self.timestampChanged.emit(timestamp)
         self._update_info_panel()
-        self._update_status(f"🕰️ Timestamp set to: {timestamp}")
+        self._update_status(f"Timestamp set to: {timestamp}")
 
     def set_data(self, items: List[Any], start_date: datetime, end_date: datetime) -> None:
         """Set data for the imagery tab.
@@ -414,26 +419,26 @@ class EnhancedGOESImageryTab(QWidget):
         """
         self.current_data = items
         self._update_status(
-            f"📊 Data updated: {len(items)} items from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
+            f"Data updated: {len(items)} items from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
         )
 
     def _update_info_panel(self) -> None:
         """Update the information panel with current selection details."""
         if self.current_timestamp:
             info_text = f"""
-            <b>🕰️ Current Timestamp:</b><br>
+            <b>Current Timestamp:</b><br>
             {self.current_timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}<br><br>
 
-            <b>🌍 Product:</b><br>
+            <b>Product:</b><br>
             {self.product_combo.currentText()}<br><br>
 
-            <b>🛰️ Satellite:</b><br>
+            <b>Satellite:</b><br>
             {self.satellite_combo.currentText()}<br><br>
 
-            <b>🌈 Band:</b><br>
+            <b>Band:</b><br>
             {self.band_combo.currentText()}<br><br>
 
-            <b>🎨 Enhancement:</b><br>
+            <b>Enhancement:</b><br>
             {self.enhancement_combo.currentText()}<br><br>
 
             <b>📁 Available Data:</b><br>
