@@ -411,7 +411,9 @@ def run_ruff(paths: List[str]) -> Tuple[int, str, int]:
     exit_code, output = run_command(cmd)
 
     # Count issues by counting lines with file paths
-    issue_count = len([line for line in output.split("\n") if line.strip() and ":" in line])
+    issue_count = len(
+        [line for line in output.split("\n") if line.strip() and ":" in line]
+    )
 
     if exit_code == 0:
         print_colored("Ruff found no issues! ✅", GREEN, bold=True)
@@ -498,7 +500,9 @@ def run_safety() -> Tuple[int, str, int]:
     Returns:
         Tuple of (exit_code, output, issue_count)
     """
-    print_colored(f"\n{BOLD}Running Safety Dependency Scanner...{RESET}", BLUE, bold=True)
+    print_colored(
+        f"\n{BOLD}Running Safety Dependency Scanner...{RESET}", BLUE, bold=True
+    )
 
     # Check if safety is available
     exit_code, _ = run_command(["safety", "--version"])
@@ -516,6 +520,7 @@ def run_safety() -> Tuple[int, str, int]:
     if output and "vulnerabilities" in output:
         try:
             import json
+
             data = json.loads(output)
             issue_count = len(data.get("vulnerabilities", []))
         except json.JSONDecodeError:
@@ -646,9 +651,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--isort-only", action="store_true", help="Run only isort import sorting"
     )
-    parser.add_argument(
-        "--ruff-only", action="store_true", help="Run only Ruff linter"
-    )
+    parser.add_argument("--ruff-only", action="store_true", help="Run only Ruff linter")
     parser.add_argument(
         "--pyright-only", action="store_true", help="Run only Pyright type checker"
     )
