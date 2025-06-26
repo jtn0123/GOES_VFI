@@ -4,14 +4,17 @@ version = "0.8.0"  # Updated version for Integrity Check feature
 description = "GOES satellite frame interpolation tool with integrity checking"
 dependencies = [
     "PyQt6",
-    "onnxruntime",
+    "qt-material>=2.14",
     "numpy",
     "Pillow",
     "opencv-python-headless",
     "ffmpeg-python",
     "colorlog",
     "requests",
+    "psutil",
     "tqdm",
+    "imageio",
+    "python-dateutil>=2.9.0",
     # Integrity Check module dependencies
     "aiohttp>=3.11.0",
     "aioboto3>=14.0.0",
@@ -39,18 +42,41 @@ test = [
     "pytest-cov>=4.1.0",
     "pytest-qt>=4.4.0",
     "pytest-mock>=3.14.0",
+    "pytest-asyncio>=1.0.0",
     "mock>=5.2.0",
-    "mypy",
-    "types-requests",
-    "types-Pillow",
-    "types-aiofiles",
-    "types-tqdm",
-    "types-boto3",
 ]
 
 dev = [
     "black>=24.2.0",
-    "ruff>=0.1.15",
+    "ruff>=0.8.0",
+    "isort>=5.12.0",
+    "flake8>=7.2.0",
+    "flake8-bugbear",
+    "flake8-comprehensions",
+    "pylint>=3.3.7",
+    "vulture>=2.14",
+    "bandit>=1.8.0",
+    "safety>=4.0.0",
+    "xenon>=0.9.3",
+    "tox>=4.0.0",
+]
+
+typing = [
+    "mypy",
+    "pyright>=1.1.390",
+    "types-requests",
+    "types-Pillow",
+    "types-aiofiles",
+    "types-tqdm>=4.66.0",
+    "git+https://github.com/python-qt-tools/PyQt6-stubs.git",
+]
+
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=2.0.0",
+    "sphinx-autodoc-typehints>=2.0.0",
+    "myst-parser>=2.0.0",
+    "sphinx-copybutton>=0.5.0",
 ]
 
 [tool.pytest.ini_options]

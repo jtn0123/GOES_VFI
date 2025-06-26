@@ -1,52 +1,28 @@
-# Runtime dependencies for GOES‑VFI
+# Runtime dependencies for GOES-VFI
+# For fresh installation, use: pip install -e .
+# This file is maintained for compatibility but pyproject.toml is the source of truth
+
+# Core runtime dependencies
 PyQt6
-qt-material>=2.14  # Material Design themes for PyQt6
+qt-material>=2.14
 numpy
 Pillow
 opencv-python-headless
 ffmpeg-python
 colorlog
 requests
-psutil  # For resource monitoring and management
-# Optional dependencies:
-tqdm  # For progress bars (not required for core functionality)
-
-# Integrity Check module dependencies
-aiohttp>=3.11.0        # Async HTTP requests for CDN fetching
-aioboto3>=14.0.0       # Async AWS SDK for S3 access
-xarray>=2025.4.0       # For NetCDF file handling
-netCDF4>=1.6.0         # Required by xarray for NetCDF support
-matplotlib>=3.10.0     # For rendering NetCDF to PNG
-aiofiles>=24.1.0       # Async file I/O
-
-# Type stubs for MyPy
-types-Pillow
-types-requests
-types-aiofiles
-git+https://github.com/python-qt-tools/PyQt6-stubs.git
+psutil
+tqdm
 imageio
-
-# Development tools
-mypy
-pytest>=8.3.0
-pytest-qt           # For GUI testing
-pytest-mock>=3.14.0 # For mocking in tests
 python-dateutil>=2.9.0
 
-# Linting tools
-flake8>=7.2.0
-flake8-bugbear      # Additional bug finding for flake8
-flake8-comprehensions  # Checks for unnecessary comprehensions
-pylint>=3.3.7
-vulture>=2.14       # Dead code finder
-ruff>=0.8.0         # Fast Rust-based linter and formatter
-pyright>=1.1.390    # Microsoft's fast type checker
-bandit>=1.8.0       # Security vulnerability scanner
-safety>=4.0.0       # Dependency vulnerability checker
-tox>=4.0.0          # Multi-environment testing
+# Integrity Check module dependencies
+aiohttp>=3.11.0
+aioboto3>=14.0.0
+xarray>=2025.4.0
+netCDF4>=1.6.0
+matplotlib>=3.10.0
+aiofiles>=24.1.0
 
-# Documentation tools (optional - only needed for building docs)
-# To install: pip install -r docs/requirements.txt
-# Sphinx>=7.1.0
-# sphinx-rtd-theme>=2.0.0
-# myst-parser>=2.0.0
+# For development dependencies, use:
+# pip install -e .[test,dev,typing,docs]

@@ -159,6 +159,13 @@ Before installing GOES-VFI, ensure you have:
 
 3.  **Install Python dependencies:**
     ```bash
+    # Recommended: Install as editable package with all dependencies
+    pip install -e .
+
+    # Or install with specific dependency groups
+    pip install -e .[test,dev,typing,docs]
+
+    # Legacy method (still works but deprecated)
     pip install -r requirements.txt
     ```
 
@@ -166,8 +173,8 @@ Before installing GOES-VFI, ensure you have:
     - PyQt6 (GUI framework)
     - NumPy (numerical processing)
     - Pillow (image handling)
-    - pytest (testing framework)
-    - And other required packages
+    - All required runtime dependencies
+    - Optional: testing, development, type checking, and documentation tools
 
 4.  **Download and place RIFE components:**
 
@@ -184,12 +191,18 @@ Before installing GOES-VFI, ensure you have:
          - `flownet.bin` (the neural network weights)
          - `flownet.param` (the network parameters)
 
-5.  **Install optional dependencies (recommended):**
+5.  **Install development dependencies (optional):**
 
-    For enhanced functionality:
+    For development work:
     ```bash
-    pip install psutil         # Memory monitoring and resource management
-    pip install boto3 aioboto3 # AWS S3 access for satellite data
+    # Install all development tools
+    pip install -e .[test,dev,typing]
+
+    # Or install specific groups
+    pip install -e .[test]    # Testing framework
+    pip install -e .[dev]     # Linting and formatting
+    pip install -e .[typing]  # Type checking
+    pip install -e .[docs]    # Documentation generation
     ```
 
 6.  **Verify installation:**
@@ -455,7 +468,7 @@ dependencies are installed:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .[test,dev,typing]
 ```
 
 #### Test Runner Scripts

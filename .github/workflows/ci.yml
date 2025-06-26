@@ -33,15 +33,14 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/test-requirements.txt') }}
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r test-requirements.txt
+        pip install -e .[test,dev,typing]
 
     - name: Run Ruff linting and formatting
       run: |
@@ -99,7 +98,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-${{ matrix.python-version }}-pip-v2-${{ hashFiles('**/requirements.txt', '**/test-requirements.txt') }}
+        key: ${{ runner.os }}-${{ matrix.python-version }}-pip-v2-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.python-version }}-pip-v2-
 
@@ -112,8 +111,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r test-requirements.txt
+        pip install -e .[test,dev,typing]
         pip install coverage pytest-cov
 
     - name: Set Python encoding for Windows
@@ -240,8 +238,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r docs/requirements.txt
+        pip install -e .[docs]
 
     - name: Generate API documentation
       run: |

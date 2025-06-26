@@ -12,8 +12,11 @@ python3 -m venv .venv
 # Activate the environment
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (recommended for development)
+pip install -e .[test,dev,typing]
+
+# Or install minimal runtime dependencies
+pip install -e .
 ```
 
 -## Build, Lint & Test Commands

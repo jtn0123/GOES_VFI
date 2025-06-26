@@ -1,34 +1,36 @@
-# Test dependencies for GOES-VFI project
-pytest>=8.3.0
-pytest-qt>=4.4.0     # For GUI testing
-pytest-mock>=3.14.0  # For mocking in tests
-pytest-cov>=4.1.0    # For test coverage reports
-pytest-asyncio>=1.0.0  # For async test support
+# Test and development dependencies for GOES-VFI
+# DEPRECATED: Use pyproject.toml optional dependencies instead
+# pip install -e .[test,dev,typing]
 
-# Mock library for tests
+# This file is maintained only for legacy CI compatibility
+# New installations should use: pip install -e .[test,dev,typing,docs]
+
+pytest>=8.3.0
+pytest-qt>=4.4.0
+pytest-mock>=3.14.0
+pytest-cov>=4.1.0
+pytest-asyncio>=1.0.0
 mock>=5.2.0
 
-# Type checkers for tests
+# Type checking
 mypy
-pyright>=1.1.390    # Microsoft's fast type checker
-
-# Type stubs for libraries used in tests
+pyright>=1.1.390
 types-requests
 types-Pillow
 types-aiofiles
-types-tqdm>=4.66.0   # Type stubs for tqdm
-git+https://github.com/python-qt-tools/PyQt6-stubs.git  # PyQt6 type stubs
+types-tqdm>=4.66.0
+git+https://github.com/python-qt-tools/PyQt6-stubs.git
 
-# Dev utilities
-black>=24.2.0        # Code formatter
-ruff>=0.8.0          # Fast Rust-based linter and formatter
-isort>=5.12.0        # Import sorter
-flake8>=7.2.0        # Python linter
-flake8-bugbear       # Additional bug finding for flake8
-flake8-comprehensions # Checks for unnecessary comprehensions
-pylint>=3.3.7        # Comprehensive Python linter
-vulture>=2.14        # Dead code finder
-bandit>=1.8.0        # Security vulnerability scanner
-safety>=4.0.0        # Dependency vulnerability checker
-xenon>=0.9.3         # Code complexity monitoring
-tox>=4.0.0           # Multi-environment testing
+# Linting and formatting
+black>=24.2.0
+ruff>=0.8.0
+isort>=5.12.0
+flake8>=7.2.0
+flake8-bugbear
+flake8-comprehensions
+pylint>=3.3.7
+vulture>=2.14
+bandit>=1.8.0
+safety>=4.0.0
+xenon>=0.9.3
+tox>=4.0.0
