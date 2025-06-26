@@ -39,9 +39,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.get_paginator = MagicMock()
 
         # Patch the _get_s3_client method to return our mock
-        patcher = patch.object(
-            S3Store, "_get_s3_client", return_value=self.mock_s3_client
-        )
+        patcher = patch.object(S3Store, "_get_s3_client", return_value=self.mock_s3_client)
         self.mock_get_s3_client = patcher.start()
 
         async def async_stop():
@@ -75,9 +73,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.get_paginator.return_value = paginator_mock
 
         # Test the exists method
-        result = await self.store.check_file_exists(
-            self.test_timestamp, self.test_satellite
-        )
+        result = await self.store.check_file_exists(self.test_timestamp, self.test_satellite)
         self.assertFalse(result)
 
         # Verify the correct calls were made
@@ -94,9 +90,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Test the download method - should raise AuthenticationError
         with self.assertRaises(AuthenticationError) as context:
-            await self.store.download_file(
-                self.test_timestamp, self.test_satellite, self.test_dest_path
-            )
+            await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify the error message contains helpful information
         error_msg = str(context.exception)
@@ -109,15 +103,11 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
 
         # Then make download_file fail with timeout
-        self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError(
-            "Connection timed out"
-        )
+        self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError("Connection timed out")
 
         # Test the download method - should raise ConnectionError
         with self.assertRaises(ConnectionError) as context:
-            await self.store.download_file(
-                self.test_timestamp, self.test_satellite, self.test_dest_path
-            )
+            await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify the error message contains helpful information
         error_msg = str(context.exception)
@@ -148,9 +138,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         # Test the download method - should raise RemoteStoreError
         # (The ResourceNotFoundError from wildcard search is caught and re-raised as RemoteStoreError)
         with self.assertRaises(RemoteStoreError) as context:
-            await self.store.download_file(
-                self.test_timestamp, self.test_satellite, self.test_dest_path
-            )
+            await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify the error message contains helpful information
         error_msg = str(context.exception)
@@ -167,15 +155,11 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
 
         # Make download_file raise PermissionError
-        self.mock_s3_client.download_file.side_effect = PermissionError(
-            "Permission denied"
-        )
+        self.mock_s3_client.download_file.side_effect = PermissionError("Permission denied")
 
         # Test the download method - should raise AuthenticationError
         with self.assertRaises(AuthenticationError) as context:
-            await self.store.download_file(
-                self.test_timestamp, self.test_satellite, self.test_dest_path
-            )
+            await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify the error message contains helpful information
         error_msg = str(context.exception)
@@ -199,7 +183,9 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Create a test page with one match
         # The key needs to have the satellite code and timestamp part that match
-        test_key = "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661200000_e20231661202000_c20231661202030.nc"
+        test_key = (
+            "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661200000_e20231661202000_c20231661202030.nc"
+        )
         test_page = {"Contents": [{"Key": test_key}]}
 
         # Create async generator for paginate method
@@ -211,18 +197,14 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Set up download_file to fail with a client error
         download_error = botocore.exceptions.ClientError(
-            error_response={
-                "Error": {"Code": "InternalError", "Message": "Server Error"}
-            },
+            error_response={"Error": {"Code": "InternalError", "Message": "Server Error"}},
             operation_name="GetObject",
         )
         self.mock_s3_client.download_file.side_effect = download_error
 
         # Test the download method - should raise RemoteStoreError
         with self.assertRaises(RemoteStoreError) as context:
-            await self.store.download_file(
-                self.test_timestamp, self.test_satellite, self.test_dest_path
-            )
+            await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify the error message contains helpful information
         error_msg = str(context.exception)

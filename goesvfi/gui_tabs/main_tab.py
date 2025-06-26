@@ -213,18 +213,15 @@ class MainTab(QWidget):
     def _create_header(self) -> QLabel:
         """Create the enhanced header for the main tab."""
         header = QLabel("🎬 GOES VFI - Video Frame Interpolation")
+        header.setProperty("class", "AppHeader")
         header.setStyleSheet(
             """
             QLabel {
                 font-size: 20px;
                 font-weight: bold;
-                color: #ffffff;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4a6fa5, stop:0.5 #3a5f95, stop:1 #2a4f85);
                 padding: 15px 20px;
                 border-radius: 10px;
                 margin-bottom: 10px;
-                border: 2px solid #5a7fb5;
             }
             """
         )
@@ -237,80 +234,16 @@ class MainTab(QWidget):
         layout.setSpacing(10)  # Adjust spacing between major groups
 
         # Apply enhanced styling to the main tab
+        # Minimal styling - qt-material theme handles most elements
         self.setStyleSheet(
             """
             QGroupBox {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
+                font-weight: bold;
+                margin-top: 10px;
+                padding-top: 15px;
                 border-radius: 8px;
-                font-weight: bold;
-                font-size: 12px;
-                color: #f0f0f0;
-                padding-top: 10px;
             }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 8px 0 8px;
-                color: #ffffff;
-            }
-            QLineEdit {
-                padding: 6px 10px;
-                background-color: #3a3a3a;
-                border: 2px solid #555555;
-                border-radius: 6px;
-                color: #f0f0f0;
-                font-size: 11px;
-            }
-            QLineEdit:focus {
-                border-color: #4a6fa5;
-            }
-            QPushButton {
-                background-color: #4a6fa5;
-                color: white;
-                border: none;
-                padding: 6px 12px;
-                border-radius: 6px;
-                font-weight: bold;
-                font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #5a7fb5;
-            }
-            QPushButton:pressed {
-                background-color: #3a5f95;
-            }
-            QComboBox {
-                padding: 6px 10px;
-                background-color: #3a3a3a;
-                border: 2px solid #555555;
-                border-radius: 6px;
-                color: #f0f0f0;
-                font-size: 11px;
-            }
-            QComboBox:hover {
-                border-color: #4a6fa5;
-            }
-            QSpinBox {
-                padding: 6px 10px;
-                background-color: #3a3a3a;
-                border: 2px solid #555555;
-                border-radius: 6px;
-                color: #f0f0f0;
-                font-size: 11px;
-            }
-            QSpinBox:hover {
-                border-color: #4a6fa5;
-            }
-            QCheckBox {
-                color: #f0f0f0;
-                font-size: 11px;
-            }
-            QLabel {
-                color: #f0f0f0;
-                font-size: 11px;
-            }
-        """
+            """
         )
 
         # Add enhanced header
@@ -438,21 +371,14 @@ class MainTab(QWidget):
         self.start_button.setToolTip("Start video interpolation processing")
         self.start_button.setMinimumHeight(50)
         self.start_button.setEnabled(True)  # Initially enabled for debugging
+        self.start_button.setProperty("class", "StatusSuccess")
         self.start_button.setStyleSheet(
             """
             QPushButton#start_button {
-                background-color: #4CAF50;
-                color: white;
                 font-weight: bold;
                 font-size: 16px;
                 border-radius: 5px;
                 padding: 8px 16px;
-            }
-            QPushButton#start_button:hover {
-                background-color: #45a049;
-            }
-            QPushButton#start_button:pressed {
-                background-color: #3e8e41;
             }
         """
         )
@@ -1084,7 +1010,7 @@ class MainTab(QWidget):
             label.setToolTip(self.tr("Click to zoom"))
             label.setMinimumSize(100, 100)  # Ensure minimum size
             label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)  # Allow shrinking/expanding
-            label.setStyleSheet("border: 1px solid gray; background-color: #2a2a2a;")  # Style
+            label.setStyleSheet("border: 1px solid gray;")  # Style
 
             container_layout.addWidget(title_label)
             container_layout.addWidget(label, 1)  # Give label stretch factor
@@ -1152,7 +1078,7 @@ class MainTab(QWidget):
         if re.fullmatch(r"\d+:\d+:\d+", text):
             self.rife_thread_spec_edit.setStyleSheet("")
         else:
-            self.rife_thread_spec_edit.setStyleSheet("background-color: #401010;")  # Indicate error
+            self.rife_thread_spec_edit.setProperty("class", "StatusError")  # Indicate error
 
     def _start(self) -> None:
         """Prepare arguments and emit the processing_started signal."""
@@ -2008,11 +1934,10 @@ class MainTab(QWidget):
         if self.is_processing:
             # Processing mode
             self.start_button.setText(self.tr("Cancel"))
+            self.start_button.setProperty("class", "StatusError")
             self.start_button.setStyleSheet(
                 """
                 QPushButton#start_button {
-                    background-color: #f44336;
-                    color: white;
                     font-weight: bold;
                     font-size: 16px;
                     border-radius: 5px;
@@ -2023,21 +1948,14 @@ class MainTab(QWidget):
             # Ready or disabled mode
             if can_start:
                 self.start_button.setText(self.tr("START"))
+                self.start_button.setProperty("class", "StatusSuccess")
                 self.start_button.setStyleSheet(
                     """
                     QPushButton#start_button {
-                        background-color: #4CAF50;
-                        color: white;
                         font-weight: bold;
                         font-size: 16px;
                         border-radius: 5px;
                         padding: 8px 16px;
-                    }
-                    QPushButton#start_button:hover {
-                        background-color: #45a049;
-                    }
-                    QPushButton#start_button:pressed {
-                        background-color: #3e8e41;
                     }
                 """
                 )
@@ -2046,8 +1964,6 @@ class MainTab(QWidget):
                 self.start_button.setStyleSheet(
                     """
                     QPushButton#start_button {
-                        background-color: #9E9E9E;
-                        color: #F5F5F5;
                         font-weight: bold;
                         font-size: 16px;
                         border-radius: 5px;

@@ -169,13 +169,9 @@ class ResultsSummaryWidget(QWidget):
         self.total_expected_label.setText(str(total_expected))
 
         # Count items by status
-        downloaded_count = sum(
-            1 for item in items if getattr(item, "is_downloaded", False)
-        )
+        downloaded_count = sum(1 for item in items if getattr(item, "is_downloaded", False))
         error_count = sum(1 for item in items if getattr(item, "download_error", None))
-        downloading_count = sum(
-            1 for item in items if getattr(item, "is_downloading", False)
-        )
+        downloading_count = sum(1 for item in items if getattr(item, "is_downloading", False))
         missing_count = len(items) - downloaded_count - error_count - downloading_count
 
         # Update labels
@@ -187,9 +183,7 @@ class ResultsSummaryWidget(QWidget):
 class CollapsibleSettingsGroup(QWidget):
     """Collapsible settings group widget."""
 
-    def __init__(
-        self, title: str = "Settings", parent: Optional[QWidget] = None
-    ) -> None:
+    def __init__(self, title: str = "Settings", parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.title = title
         self.collapsed = False

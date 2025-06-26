@@ -35,9 +35,7 @@ class TestImageCropper:
     def test_basic_crop(self, sample_image, cropper):
         """Test basic image cropping."""
         # Create ImageData object
-        image_data = ImageData(
-            image_data=sample_image, metadata={"width": 100, "height": 100}
-        )
+        image_data = ImageData(image_data=sample_image, metadata={"width": 100, "height": 100})
 
         # Crop center region
         rect = (25, 25, 75, 75)

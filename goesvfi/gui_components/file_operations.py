@@ -32,9 +32,7 @@ class FileOperations:
             Selected directory path or None if cancelled
         """
         LOGGER.debug("Opening directory selection dialog")
-        dir_path = QFileDialog.getExistingDirectory(
-            self.parent, "Select Input Image Folder"
-        )
+        dir_path = QFileDialog.getExistingDirectory(self.parent, "Select Input Image Folder")
 
         if dir_path:
             LOGGER.debug("Input directory selected: %s", dir_path)
@@ -50,9 +48,7 @@ class FileOperations:
             Selected file path or None if cancelled
         """
         LOGGER.debug("Opening output file selection dialog")
-        file_path, _ = QFileDialog.getSaveFileName(
-            self.parent, "Save Output Video", "", "MP4 Files (*.mp4)"
-        )
+        file_path, _ = QFileDialog.getSaveFileName(self.parent, "Save Output Video", "", "MP4 Files (*.mp4)")
 
         if file_path:
             LOGGER.debug("Output file selected: %s", file_path)

@@ -84,9 +84,7 @@ class SanchezProcessor(ImageProcessor):
                     if len(img_array.shape) == 3 and img_array.shape[2] == 1:
                         img_array = img_array.squeeze(axis=2)
 
-                    pil_image = Image.fromarray(
-                        img_array, mode="L" if len(img_array.shape) == 2 else "RGB"
-                    )
+                    pil_image = Image.fromarray(img_array, mode="L" if len(img_array.shape) == 2 else "RGB")
                 else:
                     pil_image = image_data.image_data
 
@@ -105,9 +103,7 @@ class SanchezProcessor(ImageProcessor):
                 colourise(input_temp, output_temp, res_km=res_km)
 
                 if not output_temp.exists():
-                    raise RuntimeError(
-                        "Sanchez processing failed - output file not created"
-                    )
+                    raise RuntimeError("Sanchez processing failed - output file not created")
 
                 # Load processed image
                 if self._progress_callback:
@@ -125,11 +121,7 @@ class SanchezProcessor(ImageProcessor):
                         "processed_by": "sanchez",
                         "width": processed_array.shape[1],
                         "height": processed_array.shape[0],
-                        "channels": (
-                            1
-                            if len(processed_array.shape) == 2
-                            else processed_array.shape[2]
-                        ),
+                        "channels": (1 if len(processed_array.shape) == 2 else processed_array.shape[2]),
                         "sanchez_res_km": res_km,
                         "processing_time": time.time() - start_time,
                     },
@@ -138,9 +130,7 @@ class SanchezProcessor(ImageProcessor):
                 if self._progress_callback:
                     self._progress_callback("Sanchez processing completed", 1.0)
 
-                LOGGER.info(
-                    "Sanchez processing completed in %.2fs", time.time() - start_time
-                )
+                LOGGER.info("Sanchez processing completed in %.2fs", time.time() - start_time)
                 return processed_data
 
             finally:
@@ -162,7 +152,7 @@ class SanchezProcessor(ImageProcessor):
         """Alias for process method for compatibility."""
         return self.process(image_data, **kwargs)
 
-    def load(self, path: str) -> ImageData:
+    def load(self, source_path: str) -> ImageData:
         """Not implemented."""
         raise NotImplementedError("SanchezProcessor does not implement load")
 
@@ -170,6 +160,6 @@ class SanchezProcessor(ImageProcessor):
         """Not implemented."""
         raise NotImplementedError("SanchezProcessor does not implement crop")
 
-    def save(self, image_data: ImageData, path: str) -> None:
+    def save(self, image_data: ImageData, destination_path: str) -> None:
         """Not implemented."""
         raise NotImplementedError("SanchezProcessor does not implement save")

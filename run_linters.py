@@ -405,7 +405,7 @@ def run_ruff(paths: List[str]) -> Tuple[int, str, int]:
         return 0, "Ruff not installed", 0
 
     # Build ruff command
-    cmd = ["ruff", "check", "--output-format=text"]
+    cmd = ["ruff", "check", "--output-format=concise"]
     cmd.extend(paths)
 
     exit_code, output = run_command(cmd)

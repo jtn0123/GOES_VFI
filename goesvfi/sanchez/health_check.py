@@ -79,9 +79,7 @@ class SanchezHealthStatus:
                 "executable": self.binary_executable,
                 "path": str(self.binary_path) if self.binary_path else None,
                 "size": self.binary_size,
-                "modified": (
-                    self.binary_modified.isoformat() if self.binary_modified else None
-                ),
+                "modified": (self.binary_modified.isoformat() if self.binary_modified else None),
             },
             "dependencies": {
                 "resources_exist": self.resources_exist,
@@ -127,9 +125,7 @@ class SanchezHealthChecker:
         binary_path = self._get_binary_path()
 
         if binary_path is None:
-            status.errors.append(
-                f"Sanchez not supported on platform: {self.platform_key}"
-            )
+            status.errors.append(f"Sanchez not supported on platform: {self.platform_key}")
             return
 
         status.binary_path = binary_path
@@ -192,9 +188,7 @@ class SanchezHealthChecker:
                 status.missing_resources.append(resource)
 
         # Overall resources check
-        status.resources_exist = (
-            len(status.gradient_files) > 0 and len(status.missing_resources) == 0
-        )
+        status.resources_exist = len(status.gradient_files) > 0 and len(status.missing_resources) == 0
 
     def check_execution(self, status: SanchezHealthStatus) -> None:
         """Check if Sanchez can actually execute."""
@@ -253,9 +247,7 @@ class SanchezHealthChecker:
         """Check system resources (memory, disk space, temp directory)."""
         # Check temp directory
         try:
-            with tempfile.NamedTemporaryFile(
-                dir=tempfile.gettempdir(), delete=True
-            ) as tmp:
+            with tempfile.NamedTemporaryFile(dir=tempfile.gettempdir(), delete=True) as tmp:
                 tmp.write(b"test")
                 tmp.flush()
                 status.temp_dir_writable = True
@@ -271,9 +263,7 @@ class SanchezHealthChecker:
 
             # Warn if less than 500MB available
             if status.memory_available_mb < 500:
-                status.warnings.append(
-                    f"Low memory available: {status.memory_available_mb}MB"
-                )
+                status.warnings.append(f"Low memory available: {status.memory_available_mb}MB")
 
         except ImportError:
             # psutil not available, try platform-specific
@@ -286,15 +276,11 @@ class SanchezHealthChecker:
             if status.binary_path:
                 stat = os.statvfs(status.binary_path.parent)
                 # Available space in MB
-                status.disk_space_available_mb = (stat.f_bavail * stat.f_frsize) // (
-                    1024 * 1024
-                )
+                status.disk_space_available_mb = (stat.f_bavail * stat.f_frsize) // (1024 * 1024)
 
                 # Warn if less than 100MB
                 if status.disk_space_available_mb < 100:
-                    status.warnings.append(
-                        f"Low disk space: {status.disk_space_available_mb}MB"
-                    )
+                    status.warnings.append(f"Low disk space: {status.disk_space_available_mb}MB")
         except (OSError, AttributeError):
             # Windows doesn't have statvfs
             try:
@@ -407,8 +393,7 @@ class SanchezProcessMonitor:
 
         input_size = input_path.stat().st_size
         LOGGER.info(
-            f"Processing {input_path.name} ({input_size / 1024 / 1024:.1f}MB) "
-            f"at {res_km}km/pixel resolution"
+            f"Processing {input_path.name} ({input_size / 1024 / 1024:.1f}MB) " f"at {res_km}km/pixel resolution"
         )
 
         # Create output directory
@@ -456,9 +441,7 @@ class SanchezProcessMonitor:
                 # Wait for completion with timeout
                 if self.current_process is None:
                     raise RuntimeError("Process not started")
-                stdout, stderr = await asyncio.wait_for(
-                    self.current_process.communicate(), timeout=timeout
-                )
+                stdout, stderr = await asyncio.wait_for(self.current_process.communicate(), timeout=timeout)
 
                 # Cancel monitor
                 monitor_task.cancel()
@@ -474,9 +457,7 @@ class SanchezProcessMonitor:
                     raise ExternalToolError(
                         tool_name="Sanchez",
                         message=f"Sanchez failed with exit code {self.current_process.returncode}",
-                        stderr=(
-                            stderr.decode("utf-8", errors="replace") if stderr else None
-                        ),
+                        stderr=(stderr.decode("utf-8", errors="replace") if stderr else None),
                     )
 
                 # Verify output
@@ -490,8 +471,7 @@ class SanchezProcessMonitor:
                 elapsed = time.time() - self.start_time
 
                 LOGGER.info(
-                    f"Sanchez completed successfully in {elapsed:.1f}s. "
-                    f"Output: {output_size / 1024 / 1024:.1f}MB"
+                    f"Sanchez completed successfully in {elapsed:.1f}s. " f"Output: {output_size / 1024 / 1024:.1f}MB"
                 )
 
                 self._report_progress("Complete", 1.0)
@@ -508,9 +488,7 @@ class SanchezProcessMonitor:
                     except ProcessLookupError:
                         pass
 
-                raise TimeoutError(
-                    f"Sanchez execution timed out after {timeout} seconds"
-                )
+                raise TimeoutError(f"Sanchez execution timed out after {timeout} seconds")
 
         except Exception:
             self._report_progress("Error", 0.0)
@@ -540,12 +518,7 @@ class SanchezProcessMonitor:
                         # Estimate progress (rough heuristic)
                         estimated_progress = min(
                             0.9,
-                            current_size
-                            / (
-                                self.input_file.stat().st_size * 2
-                                if self.input_file
-                                else 1000000
-                            ),
+                            current_size / (self.input_file.stat().st_size * 2 if self.input_file else 1000000),
                         )
                         self._report_progress("Processing", estimated_progress)
                     else:

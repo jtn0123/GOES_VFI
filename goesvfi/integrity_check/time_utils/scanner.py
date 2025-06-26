@@ -36,9 +36,7 @@ class DirectoryScanner:
             A list of datetime objects extracted from filenames or directory names
         """
         if not directory.exists() or not directory.is_dir():
-            LOGGER.error(
-                "Directory does not exist or is not a directory: %s", directory
-            )
+            LOGGER.error("Directory does not exist or is not a directory: %s", directory)
             return []
 
         # Compile regex pattern for files
@@ -62,9 +60,7 @@ class DirectoryScanner:
                 if not timestamp:
                     # If that fails, try to extract from parent directory name
                     parent_dir = file_path.parent.name
-                    extracted_ts = extractor.extract_timestamp_from_directory_name(
-                        parent_dir
-                    )
+                    extracted_ts = extractor.extract_timestamp_from_directory_name(parent_dir)
                     if extracted_ts is not None:
                         timestamp = extracted_ts
 
@@ -85,9 +81,7 @@ class DirectoryScanner:
             subdirs = [p for p in directory.iterdir() if p.is_dir()]
             for subdir in subdirs:
                 # Initialize timestamp as None
-                extracted_ts = extractor.extract_timestamp_from_directory_name(
-                    subdir.name
-                )
+                extracted_ts = extractor.extract_timestamp_from_directory_name(subdir.name)
                 # Skip iterations where we can't extract a timestamp
                 if extracted_ts is None:
                     continue

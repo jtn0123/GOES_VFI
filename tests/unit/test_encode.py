@@ -24,9 +24,7 @@ def test_stream_copy_success(mock_popen_patch, temp_paths):
 
     # Expected command for stream copy
     expected_cmd = ["ffmpeg", "-y", "-i", str(intermediate), "-c", "copy", str(final)]
-    mock_popen_factory = create_mock_popen(
-        expected_command=expected_cmd, output_file_to_create=final
-    )
+    mock_popen_factory = create_mock_popen(expected_command=expected_cmd, output_file_to_create=final)
     mock_popen_patch.side_effect = mock_popen_factory
 
     # Act
@@ -85,9 +83,7 @@ def test_2pass_x265_calls(mock_temp_file, mock_popen_patch, temp_paths):
     pix_fmt = "yuv420p"
     # Mock the temp file context manager
     mock_log_file = MagicMock()
-    mock_log_file.name = str(
-        temp_paths[0].parent / "ffmpeg_passlog"
-    )  # Predictable name
+    mock_log_file.name = str(temp_paths[0].parent / "ffmpeg_passlog")  # Predictable name
     mock_temp_file.return_value.__enter__.return_value = mock_log_file
 
     # Expected commands
@@ -142,9 +138,7 @@ def test_2pass_x265_calls(mock_temp_file, mock_popen_patch, temp_paths):
     # Create two mock factories, one for each pass
     mock_popen_pass1 = create_mock_popen(expected_command=cmd_pass1)
     # Pass 2 creates the final output file
-    mock_popen_pass2 = create_mock_popen(
-        expected_command=cmd_pass2, output_file_to_create=final
-    )
+    mock_popen_pass2 = create_mock_popen(expected_command=cmd_pass2, output_file_to_create=final)
 
     # Define a side effect function to consume the factories
     factories = [mock_popen_pass1, mock_popen_pass2]
@@ -187,9 +181,7 @@ def test_2pass_x265_calls(mock_temp_file, mock_popen_patch, temp_paths):
         ("Hardware H.264 (VideoToolbox)", "h264_videotoolbox", False),
     ],
 )
-def test_single_pass_encoders(
-    mock_popen_patch, temp_paths, encoder, expected_codec, use_crf
-):
+def test_single_pass_encoders(mock_popen_patch, temp_paths, encoder, expected_codec, use_crf):
     intermediate, final = temp_paths
     crf = 23
     bitrate = 500
@@ -228,9 +220,7 @@ def test_single_pass_encoders(
     expected_cmd = base_cmd + encoder_args + ["-pix_fmt", pix_fmt, str(final)]
 
     # Configure mock Popen
-    mock_popen_factory = create_mock_popen(
-        expected_command=expected_cmd, output_file_to_create=final
-    )
+    mock_popen_factory = create_mock_popen(expected_command=expected_cmd, output_file_to_create=final)
     mock_popen_patch.side_effect = mock_popen_factory
 
     # Act

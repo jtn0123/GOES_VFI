@@ -17,9 +17,7 @@ class ImageCropper(ImageProcessor):
     This class provides a crop method that extracts a rectangular region from an image.
     """
 
-    def crop(
-        self, image_data: ImageData, crop_area: Tuple[int, int, int, int]
-    ) -> ImageData:
+    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]) -> ImageData:
         """Crop the image data to the specified rectangular area.
 
         Args:
@@ -41,10 +39,7 @@ class ImageCropper(ImageProcessor):
 
         # Validate crop area
         if not (0 <= left < right <= width and 0 <= top < bottom <= height):
-            pass
-            raise ValueError(
-                f"Invalid crop area: {crop_area} for image dimensions {width}x{height}"
-            )
+            raise ValueError(f"Invalid crop area: {crop_area} for image dimensions {width}x{height}")
 
         # Perform crop
         cropped_array = image_array[top:bottom, left:right]
@@ -56,15 +51,12 @@ class ImageCropper(ImageProcessor):
 
         # Update processing steps
         if "processing_steps" not in new_metadata:
-            pass
             new_metadata["processing_steps"] = []
-        new_metadata["processing_steps"].append(
-            {"operation": "crop", "area": crop_area}
-        )
+        new_metadata["processing_steps"].append({"operation": "crop", "area": crop_area})
 
         return ImageData(image_data=cropped_array, metadata=new_metadata)
 
-    def load(self, image_path: str) -> ImageData:
+    def load(self, source_path: str) -> ImageData:
         """Not implemented. ImageCropper does not support loading images.
 
         Raises:
@@ -80,7 +72,7 @@ class ImageCropper(ImageProcessor):
         """
         raise NotImplementedError("ImageCropper does not implement process.")
 
-    def save(self, image_data: ImageData, output_path: str) -> None:
+    def save(self, image_data: ImageData, destination_path: str) -> None:
         """Not implemented. ImageCropper does not support saving images.
 
         Raises:

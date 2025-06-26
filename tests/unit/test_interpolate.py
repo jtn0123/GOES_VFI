@@ -30,9 +30,7 @@ def test_interpolate_pair_invokes_command_and_file_ops(tmp_path, dummy_img):
         patch("goesvfi.pipeline.interpolate.Image.fromarray"),
         patch("goesvfi.pipeline.interpolate.Image.open") as mock_image_open,
         patch("goesvfi.pipeline.interpolate.shutil.rmtree") as mock_rmtree,
-        patch(
-            "goesvfi.pipeline.interpolate.pathlib.Path.exists", return_value=True
-        ) as mock_exists,
+        patch("goesvfi.pipeline.interpolate.pathlib.Path.exists", return_value=True) as mock_exists,
     ):  # Give exists a name
         # --- Setup Mocks ---
         # Mock Command Builder (as before)
@@ -65,14 +63,10 @@ def test_interpolate_pair_invokes_command_and_file_ops(tmp_path, dummy_img):
         mock_pil_image.convert.return_value = mock_pil_image  # Return self for convert
         mock_pil_image.size = (4, 4)
         # Simulate Image.open returning a usable image mock that can be converted to numpy array
-        mock_image_open.return_value.__enter__.return_value = (
-            mock_pil_image  # Handle context manager if used
-        )
+        mock_image_open.return_value.__enter__.return_value = mock_pil_image  # Handle context manager if used
 
         # Mock np.array to return a valid array when called on the mock PIL image
-        with patch(
-            "numpy.array", return_value=np.ones((4, 4, 3), dtype=np.uint8)
-        ) as mock_np_array:
+        with patch("numpy.array", return_value=np.ones((4, 4, 3), dtype=np.uint8)) as mock_np_array:
             # --- Setup Backend ---
             # Create dummy executable file before creating backend
             dummy_exe_path = tmp_path / "rife-cli"
@@ -82,9 +76,7 @@ def test_interpolate_pair_invokes_command_and_file_ops(tmp_path, dummy_img):
             # backend.exe.is_file = MagicMock(return_value=True) # Ensure exe is seen as valid
 
             # --- Act ---
-            result = backend.interpolate_pair(
-                dummy_img, dummy_img, options={"timestep": 0.5, "tile_enable": True}
-            )
+            result = backend.interpolate_pair(dummy_img, dummy_img, options={"timestep": 0.5, "tile_enable": True})
 
             # --- Assert ---
             # Check command builder was called
@@ -124,21 +116,13 @@ def test_interpolate_pair_raises_on_subprocess_error(tmp_path, dummy_img):
         expected_rife_cmd = ["rife", "args"]
         mock_cmd_builder.build_command.return_value = expected_rife_cmd
         mock_cmd_builder.detector = MagicMock()  # Add detector mock
-        mock_cmd_builder.detector.supports_tiling.return_value = (
-            True  # Example capability
-        )
-        mock_cmd_builder_cls.return_value = (
-            mock_cmd_builder  # Now mock_cmd_builder_cls is defined
-        )
+        mock_cmd_builder.detector.supports_tiling.return_value = True  # Example capability
+        mock_cmd_builder_cls.return_value = mock_cmd_builder  # Now mock_cmd_builder_cls is defined
 
         # Use mock factory to raise CalledProcessError
         rife_error = subprocess.CalledProcessError(1, expected_rife_cmd, stderr="fail")
-        mock_run_factory = create_mock_subprocess_run(
-            expected_command=expected_rife_cmd, side_effect=rife_error
-        )
-        mock_run_patch.side_effect = (
-            mock_run_factory  # Assign side_effect to the correct mock
-        )
+        mock_run_factory = create_mock_subprocess_run(expected_command=expected_rife_cmd, side_effect=rife_error)
+        mock_run_patch.side_effect = mock_run_factory  # Assign side_effect to the correct mock
 
         # Create dummy executable
         dummy_exe_path = tmp_path / "rife-cli"
@@ -170,9 +154,7 @@ def test_interpolate_three_calls_interpolate_pair_correctly(dummy_img, dummy_bac
     options = {"tile_enable": True, "tile_size": 128}
 
     # Call interpolate_three
-    result = interpolate_mod.interpolate_three(
-        dummy_img, dummy_img, dummy_backend, options
-    )
+    result = interpolate_mod.interpolate_three(dummy_img, dummy_img, dummy_backend, options)
 
     # Should call interpolate_pair three times
     assert dummy_backend.interpolate_pair.call_count == 3
@@ -200,9 +182,7 @@ def test_interpolate_three_calls_interpolate_pair_correctly(dummy_img, dummy_bac
 
     # Check result is a list of three float32 arrays
     assert isinstance(result, list)
-    assert all(
-        isinstance(arr, np.ndarray) and arr.dtype == np.float32 for arr in result
-    )
+    assert all(isinstance(arr, np.ndarray) and arr.dtype == np.float32 for arr in result)
     assert np.allclose(result[0], 0.5)  # img_left corresponds to second call
     assert np.allclose(result[1], 0.25)  # img_mid corresponds to first call
     assert np.allclose(result[2], 0.75)  # img_right corresponds to third call

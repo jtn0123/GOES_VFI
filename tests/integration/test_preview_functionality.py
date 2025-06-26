@@ -1,6 +1,7 @@
 """Integration test for preview functionality when directory is selected."""
 
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -44,9 +45,7 @@ class TestPreviewFunctionality(unittest.TestCase):
         self.temp_dir.cleanup()
         self.main_window.close()
 
-    def _create_test_image(
-        self, name: str, size: tuple = (100, 100), color: tuple = (255, 0, 0)
-    ) -> Path:
+    def _create_test_image(self, name: str, size: tuple = (100, 100), color: tuple = (255, 0, 0)) -> Path:
         """Create a test image file."""
         img = Image.new("RGB", size, color)
         path = self.test_dir / name
@@ -91,12 +90,8 @@ class TestPreviewFunctionality(unittest.TestCase):
         self.assertFalse(last_pixmap.isNull())
 
         # Check that processed_image attribute is set
-        self.assertTrue(
-            hasattr(self.main_window.main_tab.first_frame_label, "processed_image")
-        )
-        self.assertTrue(
-            hasattr(self.main_window.main_tab.last_frame_label, "processed_image")
-        )
+        self.assertTrue(hasattr(self.main_window.main_tab.first_frame_label, "processed_image"))
+        self.assertTrue(hasattr(self.main_window.main_tab.last_frame_label, "processed_image"))
 
     def test_preview_error_message_behavior(self):
         """Test error handling when preview label is clicked without processed_image."""

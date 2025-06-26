@@ -2,7 +2,6 @@
 Example test file to demonstrate coverage reporting.
 """
 
-
 import pytest
 
 
@@ -39,7 +38,7 @@ class ExampleClass:
 
     def __init__(self, name: str):
         self.name = name
-        self._cache = {}
+        self._cache: dict[str, str] = {}
 
     def process(self, data: str) -> str:
         """Process data with caching."""

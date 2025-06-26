@@ -5,6 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
+from tests.utils.mocks import MockPopen
+
 sys.modules.setdefault("PyQt6", types.ModuleType("PyQt6"))
 qtcore = types.ModuleType("QtCore")
 qtcore.QCoreApplication = type("QCoreApplication", (), {})
@@ -20,8 +22,6 @@ pil_image = types.ModuleType("Image")
 pil.Image = pil_image
 sys.modules.setdefault("PIL", pil)
 sys.modules.setdefault("PIL.Image", pil_image)
-
-from tests.utils.mocks import MockPopen
 
 
 def test_wait_timeout_then_complete():

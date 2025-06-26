@@ -38,10 +38,7 @@ def test_get_cache_filepath(tmp_path):
     index = 5
     total_frames = 100
     expected_digits = len(str(total_frames - 1))
-    expected_path = (
-        cache.CACHE_DIR
-        / f"{base_key}_k{total_frames}_frame{index:0{expected_digits}}.npy"
-    )
+    expected_path = cache.CACHE_DIR / f"{base_key}_k{total_frames}_frame{index:0{expected_digits}}.npy"
     path = cache._get_cache_filepath(base_key, index, total_frames)
     assert path.name == expected_path.name
 
@@ -90,9 +87,7 @@ def test_save_and_load_cache_roundtrip(monkeypatch, sample_paths, tmp_path):
 
 
 @patch("goesvfi.pipeline.cache.CACHE_DIR")
-def test_save_cache_mismatch_length_warns_and_does_nothing(
-    mock_cache_dir, sample_paths, caplog
-):
+def test_save_cache_mismatch_length_warns_and_does_nothing(mock_cache_dir, sample_paths, caplog):
     mock_cache_dir.return_value = pathlib.Path("/tmp/fake_cache_dir")
     file1, file2 = sample_paths
     model_id = "modelA"
@@ -110,9 +105,7 @@ def test_save_cache_mismatch_length_warns_and_does_nothing(
 
 
 @patch("goesvfi.pipeline.cache.pathlib.Path")
-def test_load_cached_handles_load_error(
-    _mock_Path, monkeypatch, sample_paths, tmp_path, caplog
-):
+def test_load_cached_handles_load_error(_mock_Path, monkeypatch, sample_paths, tmp_path, caplog):
     # Use monkeypatch to set the module-level CACHE_DIR value for the test duration
     monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
 

@@ -78,16 +78,14 @@ class ResourceManager:
         if required_memory_mb > 0:
             if stats.available_mb < required_memory_mb:
                 raise ResourceError(
-                    f"Insufficient memory: {stats.available_mb}MB available, "
-                    f"{required_memory_mb}MB required",
+                    f"Insufficient memory: {stats.available_mb}MB available, " f"{required_memory_mb}MB required",
                     resource_type="memory",
                 )
 
         # Check if we're over the critical threshold
         if stats.percent_used > self.limits.critical_memory_percent:
             raise ResourceError(
-                f"Memory usage too high: {stats.percent_used:.1f}% "
-                f"(limit: {self.limits.critical_memory_percent}%)",
+                f"Memory usage too high: {stats.percent_used:.1f}% " f"(limit: {self.limits.critical_memory_percent}%)",
                 resource_type="memory",
             )
 

@@ -106,7 +106,9 @@ class VFIProcessor:
             return crop_for_pil
         except (TypeError, ValueError) as e:
             LOGGER.error(
-                f"Invalid crop rectangle format provided: {crop_rect_xywh}. Error: {e}. Cropping will be disabled."
+                "Invalid crop rectangle format provided: %s. Error: %s. Cropping will be disabled.",
+                crop_rect_xywh,
+                e,
             )
             return None
 
@@ -306,7 +308,9 @@ class VFIProcessor:
         try:
             with Image.open(all_processed_paths[0]) as im0_handle:
                 LOGGER.debug(
-                    f"Encoding first processed frame {all_processed_paths[0].name} (size {im0_handle.size}) for ffmpeg."
+                    "Encoding first processed frame %s (size %s) for ffmpeg.",
+                    all_processed_paths[0].name,
+                    im0_handle.size,
                 )
                 png_data = _encode_frame_to_png_bytes(im0_handle)
             _safe_write(
@@ -448,7 +452,11 @@ class VFIProcessor:
                 last_yield_time = current_time
 
             LOGGER.debug(
-                f"Pair {idx + 1}/{total_pairs} processed in {time.time() - pair_start_time:.2f}s. ETA: {eta:.1f}s"
+                "Pair %d/%d processed in %.2fs. ETA: %.1fs",
+                idx + 1,
+                total_pairs,
+                time.time() - pair_start_time,
+                eta,
             )
 
         LOGGER.info("Finished AI interpolation processing.")
@@ -975,7 +983,10 @@ def _load_process_image(
             img = img_cropped  # Update img reference to cropped version
         except Exception as e:
             LOGGER.error(
-                f"Failed to crop image {path.name} with rect {crop_rect_pil}: {e}",
+                "Failed to crop image %s with rect %s: %s",
+                path.name,
+                crop_rect_pil,
+                e,
                 exc_info=True,
             )
             # Decide whether to raise or return uncropped image
@@ -1293,7 +1304,9 @@ def _process_single_image_worker(
         # 4. Validate dimensions - REMOVED
         # if target_width is not None and target_height is not None:
         #     if img.size != (target_width, target_height):
-        #          raise ValueError(f"Processed {original_path.name} dimensions {img.size} != target {target_width}x{target_height}")
+        #          raise ValueError(
+        #              f"Processed {original_path.name} dimensions {img.size} != target {target_width}x{target_height}"
+        #          )
 
         # 5. Save processed image to unique file in output_dir
         processed_output_path = output_dir / f"processed_{original_path.stem}_{time.monotonic_ns()}.png"

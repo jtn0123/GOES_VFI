@@ -79,9 +79,7 @@ class TestRifeCapabilityDetector:
         expected_cmd = [str(dummy_exe_path), "--help"]
 
         # Configure mock run using the factory
-        mock_run_factory = create_mock_subprocess_run(
-            expected_command=expected_cmd, stdout=SAMPLE_HELP_TEXT_FULL
-        )
+        mock_run_factory = create_mock_subprocess_run(expected_command=expected_cmd, stdout=SAMPLE_HELP_TEXT_FULL)
         mock_run_patch.side_effect = mock_run_factory
 
         # Create a detector with the temporary dummy path
@@ -111,9 +109,7 @@ class TestRifeCapabilityDetector:
         expected_cmd = [str(dummy_exe_path), "--help"]
 
         # Configure mock run using the factory
-        mock_run_factory = create_mock_subprocess_run(
-            expected_command=expected_cmd, stdout=SAMPLE_HELP_TEXT_BASIC
-        )
+        mock_run_factory = create_mock_subprocess_run(expected_command=expected_cmd, stdout=SAMPLE_HELP_TEXT_BASIC)
         mock_run_patch.side_effect = mock_run_factory
 
         # Create a detector with the temporary dummy path
@@ -143,9 +139,7 @@ class TestRifeCapabilityDetector:
         expected_cmd = [str(dummy_exe_path), "--help"]
 
         # Configure mock run using the factory
-        mock_run_factory = create_mock_subprocess_run(
-            expected_command=expected_cmd, stdout=SAMPLE_HELP_TEXT_FULL
-        )
+        mock_run_factory = create_mock_subprocess_run(expected_command=expected_cmd, stdout=SAMPLE_HELP_TEXT_FULL)
         mock_run_patch.side_effect = mock_run_factory
 
         # Create a detector with the temporary dummy path

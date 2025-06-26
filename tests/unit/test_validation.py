@@ -1,4 +1,3 @@
-
 import pytest
 
 from goesvfi.utils.validation import validate_path_exists, validate_positive_int

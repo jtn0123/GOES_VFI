@@ -92,9 +92,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
         # Mock the ClientSession class
         with patch("aiohttp.ClientSession") as mock_client_session:
             # Create a simple mock object to return - need to be careful with AsyncMock and spec
-            session_mock = (
-                MagicMock()
-            )  # Use MagicMock instead of AsyncMock to avoid coroutine issues
+            session_mock = MagicMock()  # Use MagicMock instead of AsyncMock to avoid coroutine issues
             mock_client_session.return_value = session_mock
 
             # Avoid 'closed' property triggering additional session creation
@@ -137,17 +135,13 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
         cdn_store = CDNStore(resolution="1000m", timeout=5)
 
         # Create mocks
-        with patch(
-            "goesvfi.integrity_check.remote.cdn_store.aiohttp.ClientSession"
-        ) as mock_session_class:
+        with patch("goesvfi.integrity_check.remote.cdn_store.aiohttp.ClientSession") as mock_session_class:
             # Create response mock
             response_mock = MagicMock()  # Regular MagicMock for response
             response_mock.status = 200
 
             # Create context manager for head
-            context_manager = (
-                MagicMock()
-            )  # Use MagicMock for the context manager itself
+            context_manager = MagicMock()  # Use MagicMock for the context manager itself
             # Use AsyncMock for the async methods
             context_manager.__aenter__ = AsyncMock(return_value=response_mock)
             context_manager.__aexit__ = AsyncMock(return_value=None)
@@ -165,27 +159,19 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
                 return_value=mock_url,
             ):
                 # Test success case (200)
-                exists = await cdn_store.check_file_exists(
-                    self.test_timestamp, self.test_satellite
-                )
+                exists = await cdn_store.check_file_exists(self.test_timestamp, self.test_satellite)
                 assert exists
 
                 # Test not found case (404)
                 response_mock.status = 404
-                exists = await cdn_store.check_file_exists(
-                    self.test_timestamp, self.test_satellite
-                )
+                exists = await cdn_store.check_file_exists(self.test_timestamp, self.test_satellite)
                 assert not exists
 
                 # Test error case
                 error_cm = MagicMock()
-                error_cm.__aenter__ = AsyncMock(
-                    side_effect=aiohttp.ClientError("Test error")
-                )
+                error_cm.__aenter__ = AsyncMock(side_effect=aiohttp.ClientError("Test error"))
                 session_mock.head = MagicMock(return_value=error_cm)
-                exists = await cdn_store.check_file_exists(
-                    self.test_timestamp, self.test_satellite
-                )
+                exists = await cdn_store.check_file_exists(self.test_timestamp, self.test_satellite)
                 assert not exists
 
     async def test_download_success(self):
@@ -242,9 +228,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
         ):
             # Test successful download
             with patch("builtins.open", open_patch):
-                result = await cdn_store.download_file(
-                    self.test_timestamp, self.test_satellite, dest_path
-                )
+                result = await cdn_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
 
             # Verify
             assert result == dest_path
@@ -262,9 +246,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
 
         # Create not found response for ClientResponseError
         # Instead of setting status=404, we'll raise ClientResponseError with status=404
-        error = aiohttp.ClientResponseError(
-            request_info=MagicMock(), history=MagicMock(), status=404
-        )
+        error = aiohttp.ClientResponseError(request_info=MagicMock(), history=MagicMock(), status=404)
 
         # Configure head context manager to raise the 404 error
         head_context = MagicMock()
@@ -289,9 +271,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
         ):
             # Test file not found case
             with patch("builtins.open", open_patch), pytest.raises(FileNotFoundError):
-                await cdn_store.download_file(
-                    self.test_timestamp, self.test_satellite, dest_path
-                )
+                await cdn_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
 
     async def test_download_error(self):
         """Test client error case when downloading from CDN."""
@@ -305,9 +285,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
         # Configure head context manager to raise an error
         error_head_context = MagicMock()
         error_head_context.__aenter__ = AsyncMock(
-            side_effect=aiohttp.ClientResponseError(
-                request_info=MagicMock(), history=MagicMock(), status=500
-            )
+            side_effect=aiohttp.ClientResponseError(request_info=MagicMock(), history=MagicMock(), status=500)
         )
         error_head_context.__aexit__ = AsyncMock(return_value=None)
         session_mock.head = MagicMock(return_value=error_head_context)
@@ -329,9 +307,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
         ):
             # Test client error case
             with patch("builtins.open", open_patch), pytest.raises(IOError):
-                await cdn_store.download_file(
-                    self.test_timestamp, self.test_satellite, dest_path
-                )
+                await cdn_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
 
 
 class TestS3Store(unittest.IsolatedAsyncioTestCase):
@@ -355,14 +331,10 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
                 return_value="127.0.0.1",
             ),
         ):
-            self.s3_store = S3Store(
-                aws_profile=None, aws_region="us-east-1", timeout=30
-            )
+            self.s3_store = S3Store(aws_profile=None, aws_region="us-east-1", timeout=30)
 
         # Mock S3 client
-        self.s3_client_mock = (
-            MagicMock()
-        )  # Use regular MagicMock for methods that don't need to be awaited
+        self.s3_client_mock = MagicMock()  # Use regular MagicMock for methods that don't need to be awaited
         self.s3_client_mock.__aenter__ = AsyncMock(return_value=self.s3_client_mock)
         self.s3_client_mock.__aexit__ = AsyncMock(return_value=None)
 
@@ -402,9 +374,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
 
         # We need to patch the Config and UNSIGNED imports directly in the S3Store module
         with (
-            patch(
-                "goesvfi.integrity_check.remote.s3_store.Config"
-            ) as mock_config_class,
+            patch("goesvfi.integrity_check.remote.s3_store.Config") as mock_config_class,
             patch("goesvfi.integrity_check.remote.s3_store.UNSIGNED", "UNSIGNED"),
         ):
             # Mock for Config
@@ -457,25 +427,17 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         mock_get_client.return_value = None
 
         # Test with GOES-16
-        bucket, key = self.s3_store._get_bucket_and_key(
-            self.test_timestamp, SatellitePattern.GOES_16
-        )
+        bucket, key = self.s3_store._get_bucket_and_key(self.test_timestamp, SatellitePattern.GOES_16)
         expected_bucket = TimeIndex.S3_BUCKETS[SatellitePattern.GOES_16]
-        expected_key = TimeIndex.to_s3_key(
-            self.test_timestamp, SatellitePattern.GOES_16, product_type="RadC", band=13
-        )
+        expected_key = TimeIndex.to_s3_key(self.test_timestamp, SatellitePattern.GOES_16, product_type="RadC", band=13)
 
         assert bucket == expected_bucket
         assert key == expected_key
 
         # Test with GOES-18
-        bucket, key = self.s3_store._get_bucket_and_key(
-            self.test_timestamp, SatellitePattern.GOES_18
-        )
+        bucket, key = self.s3_store._get_bucket_and_key(self.test_timestamp, SatellitePattern.GOES_18)
         expected_bucket = TimeIndex.S3_BUCKETS[SatellitePattern.GOES_18]
-        expected_key = TimeIndex.to_s3_key(
-            self.test_timestamp, SatellitePattern.GOES_18, product_type="RadC", band=13
-        )
+        expected_key = TimeIndex.to_s3_key(self.test_timestamp, SatellitePattern.GOES_18, product_type="RadC", band=13)
 
         assert bucket == expected_bucket
         assert key == expected_key
@@ -485,9 +447,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
             self.test_timestamp, SatellitePattern.GOES_16, product_type="RadF", band=1
         )
         expected_bucket = TimeIndex.S3_BUCKETS[SatellitePattern.GOES_16]
-        expected_key = TimeIndex.to_s3_key(
-            self.test_timestamp, SatellitePattern.GOES_16, product_type="RadF", band=1
-        )
+        expected_key = TimeIndex.to_s3_key(self.test_timestamp, SatellitePattern.GOES_16, product_type="RadF", band=1)
 
         assert bucket == expected_bucket
         assert key == expected_key
@@ -500,21 +460,15 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
 
         # Test success case
         self.s3_client_mock.head_object.return_value = {"ContentLength": 12345}
-        exists = await self.s3_store.check_file_exists(
-            self.test_timestamp, self.test_satellite
-        )
+        exists = await self.s3_store.check_file_exists(self.test_timestamp, self.test_satellite)
 
         # Verify
         assert exists
 
         # Test not found case
         error_response = {"Error": {"Code": "404"}}
-        self.s3_client_mock.head_object.side_effect = botocore.exceptions.ClientError(
-            error_response, "HeadObject"
-        )
-        exists = await self.s3_store.check_file_exists(
-            self.test_timestamp, self.test_satellite
-        )
+        self.s3_client_mock.head_object.side_effect = botocore.exceptions.ClientError(error_response, "HeadObject")
+        exists = await self.s3_store.check_file_exists(self.test_timestamp, self.test_satellite)
 
         # Verify
         assert not exists
@@ -523,24 +477,16 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         from goesvfi.integrity_check.remote.base import AuthenticationError
 
         error_response = {"Error": {"Code": "InvalidAccessKeyId"}}
-        self.s3_client_mock.head_object.side_effect = botocore.exceptions.ClientError(
-            error_response, "HeadObject"
-        )
+        self.s3_client_mock.head_object.side_effect = botocore.exceptions.ClientError(error_response, "HeadObject")
 
         # Should raise AuthenticationError
         with pytest.raises(AuthenticationError):
-            await self.s3_store.check_file_exists(
-                self.test_timestamp, self.test_satellite
-            )
+            await self.s3_store.check_file_exists(self.test_timestamp, self.test_satellite)
 
         # Test other error case - regular ClientError returns False
         error_response = {"Error": {"Code": "500"}}
-        self.s3_client_mock.head_object.side_effect = botocore.exceptions.ClientError(
-            error_response, "HeadObject"
-        )
-        exists = await self.s3_store.check_file_exists(
-            self.test_timestamp, self.test_satellite
-        )
+        self.s3_client_mock.head_object.side_effect = botocore.exceptions.ClientError(error_response, "HeadObject")
+        exists = await self.s3_store.check_file_exists(self.test_timestamp, self.test_satellite)
 
         # Verify
         assert not exists
@@ -557,14 +503,10 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         dest_path = self.base_dir / "test_download.nc"
 
         # Test successful download
-        result = await self.s3_store.download_file(
-            self.test_timestamp, self.test_satellite, dest_path
-        )
+        result = await self.s3_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
 
         # Verify the download method was called
-        mock_download.assert_called_once_with(
-            self.test_timestamp, self.test_satellite, dest_path
-        )
+        mock_download.assert_called_once_with(self.test_timestamp, self.test_satellite, dest_path)
 
         # Verify result
         assert result == dest_path
@@ -577,9 +519,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         mock_download.side_effect = ResourceNotFoundError("File not found")
 
         with pytest.raises(ResourceNotFoundError):
-            await self.s3_store.download_file(
-                self.test_timestamp, self.test_satellite, dest_path
-            )
+            await self.s3_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
 
         # Test authentication error
         from goesvfi.integrity_check.remote.base import AuthenticationError
@@ -587,9 +527,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         mock_download.side_effect = AuthenticationError("Invalid credentials")
 
         with pytest.raises(AuthenticationError):
-            await self.s3_store.download_file(
-                self.test_timestamp, self.test_satellite, dest_path
-            )
+            await self.s3_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
 
         # Test other error
         from goesvfi.integrity_check.remote.base import RemoteStoreError
@@ -597,13 +535,9 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         mock_download.side_effect = RemoteStoreError("Server error")
 
         with pytest.raises(RemoteStoreError):
-            await self.s3_store.download_file(
-                self.test_timestamp, self.test_satellite, dest_path
-            )
+            await self.s3_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
 
-    @patch(
-        "goesvfi.integrity_check.time_index._USE_EXACT_MATCH_IN_TEST", False
-    )  # Allow wildcard testing
+    @patch("goesvfi.integrity_check.time_index._USE_EXACT_MATCH_IN_TEST", False)  # Allow wildcard testing
     @patch.object(S3Store, "download", new_callable=AsyncMock)
     async def test_download_with_wildcard(self, mock_download):
         """Test downloading a file from S3 using wildcard pattern when exact match not found."""
@@ -614,14 +548,10 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         dest_path = self.base_dir / "test_download.nc"
 
         # Test successful download
-        result = await self.s3_store.download_file(
-            self.test_timestamp, self.test_satellite, dest_path
-        )
+        result = await self.s3_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
 
         # Verify the download method was called
-        mock_download.assert_called_once_with(
-            self.test_timestamp, self.test_satellite, dest_path
-        )
+        mock_download.assert_called_once_with(self.test_timestamp, self.test_satellite, dest_path)
 
         # Verify result
         assert result == dest_path

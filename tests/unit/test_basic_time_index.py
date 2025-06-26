@@ -49,56 +49,31 @@ class TestBasicTimeIndex(unittest.TestCase):
         custom_res = "250m"
         url = to_cdn_url(self.test_date_recent, self.goes16, custom_res)
         expected = (
-            f"https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/13/"
-            f"2023166123000_GOES16-ABI-FD-13-{custom_res}.jpg"
+            f"https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/13/" f"2023166123000_GOES16-ABI-FD-13-{custom_res}.jpg"
         )
         self.assertEqual(url, expected)
 
     def test_to_s3_key(self):
         """Test generating S3 keys."""
         # Test GOES-16 RadF pattern
-        key_radf_g16 = to_s3_key(
-            self.test_date_old, self.goes16, product_type="RadF", band=13
-        )
+        key_radf_g16 = to_s3_key(self.test_date_old, self.goes16, product_type="RadF", band=13)
         # Make sure key matches expected pattern format
-        self.assertTrue(
-            key_radf_g16.startswith(
-                "ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C13_G16_s20220010"
-            )
-        )
+        self.assertTrue(key_radf_g16.startswith("ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C13_G16_s20220010"))
         self.assertTrue(key_radf_g16.endswith("*_e*_c*.nc"))
 
         # Test GOES-18 RadF pattern
-        key_radf_g18 = to_s3_key(
-            self.test_date_old, self.goes18, product_type="RadF", band=13
-        )
-        self.assertTrue(
-            key_radf_g18.startswith(
-                "ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C13_G18_s20220010"
-            )
-        )
+        key_radf_g18 = to_s3_key(self.test_date_old, self.goes18, product_type="RadF", band=13)
+        self.assertTrue(key_radf_g18.startswith("ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C13_G18_s20220010"))
         self.assertTrue(key_radf_g18.endswith("*_e*_c*.nc"))
 
         # Test GOES-16 RadC pattern
-        key_radc_g16 = to_s3_key(
-            self.test_date_old, self.goes16, product_type="RadC", band=13
-        )
-        self.assertTrue(
-            key_radc_g16.startswith(
-                "ABI-L1b-RadC/2022/001/00/OR_ABI-L1b-RadC-M6C13_G16_s20220010"
-            )
-        )
+        key_radc_g16 = to_s3_key(self.test_date_old, self.goes16, product_type="RadC", band=13)
+        self.assertTrue(key_radc_g16.startswith("ABI-L1b-RadC/2022/001/00/OR_ABI-L1b-RadC-M6C13_G16_s20220010"))
         self.assertTrue(key_radc_g16.endswith("*_e*_c*.nc"))
 
         # Test different band
-        key_band1 = to_s3_key(
-            self.test_date_old, self.goes16, product_type="RadF", band=1
-        )
-        self.assertTrue(
-            key_band1.startswith(
-                "ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C01_G16_s20220010"
-            )
-        )
+        key_band1 = to_s3_key(self.test_date_old, self.goes16, product_type="RadF", band=1)
+        self.assertTrue(key_band1.startswith("ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C01_G16_s20220010"))
         self.assertTrue(key_band1.endswith("*_e*_c*.nc"))
 
     def test_to_local_path(self):
@@ -124,9 +99,7 @@ class TestBasicTimeIndex(unittest.TestCase):
         old_date = now - timedelta(days=14)  # Outside window
 
         # Test with monkeypatching datetime.now in the correct module
-        with unittest.mock.patch(
-            "goesvfi.integrity_check.time_utils.timestamp.datetime"
-        ) as mock_datetime:
+        with unittest.mock.patch("goesvfi.integrity_check.time_utils.timestamp.datetime") as mock_datetime:
             mock_datetime.now.return_value = now
             mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
 

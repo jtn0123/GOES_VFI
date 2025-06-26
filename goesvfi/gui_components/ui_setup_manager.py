@@ -9,8 +9,11 @@ from PyQt6.QtWidgets import QTabWidget
 from goesvfi.date_sorter.gui_tab import DateSorterTab
 from goesvfi.file_sorter.gui_tab import FileSorterTab
 from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab
-from goesvfi.gui_tabs.main_tab import MainTab
+
+# Import moved to method to avoid circular import
+# from goesvfi.gui_tabs.main_tab import MainTab
 from goesvfi.gui_tabs.model_library_tab import ModelLibraryTab
+from goesvfi.gui_tabs.settings_tab import SettingsTab
 from goesvfi.integrity_check.cache_db import CacheDB
 from goesvfi.integrity_check.combined_tab import CombinedIntegrityAndImageryTab
 from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
@@ -40,41 +43,8 @@ class UISetupManager:
         # Set elide mode for tabs to make them more compact
         main_window.tab_widget.setElideMode(Qt.TextElideMode.ElideRight)
 
-        # Apply custom styling
-        main_window.tab_widget.setStyleSheet(
-            """
-            QTabWidget::pane {
-                border: 1px solid  #3c3c3c;
-                background-color:  #2a2a2a;
-            }
-            QTabWidget::tab-bar {
-                alignment: left;
-            }
-            QTabBar::tab:left {
-                background-color:  #303030;
-                color:  #b0b0b0;
-                border: 1px solid  #444;
-                border-right: none;
-                border-top-left-radius: 4px;
-                border-bottom-left-radius: 4px;
-                min-height: 30px;
-                padding: 6px;
-                margin: 2px 0;
-                margin-right: -1px; /* Create slight overlap with the pane */
-            }
-            QTabBar::tab:left:selected {
-                background-color:  #2a2a2a;
-                color: white;
-                border-left: 3px solid  #3498db; /* Blue accent for selected tab */
-                padding-left: 4px; /* Compensate for thicker border */
-            }
-            QTabBar::tab:left:hover:!selected {
-                background-color:  #383838;
-                border-left: 2px solid  #666;
-                padding-left: 5px; /* Compensate for border */
-            }
-        """
-        )
+        # Tab styling is now handled by qt-material theme system
+        # Any custom overrides would be applied via ThemeManager's custom_overrides
 
     def create_all_tabs(self, main_window: Any) -> None:
         """Create and configure all application tabs.
@@ -82,6 +52,9 @@ class UISetupManager:
         Args:
             main_window: The MainWindow instance
         """
+        # Import here to avoid circular import
+        from goesvfi.gui_tabs.main_tab import MainTab
+
         # Create main tab
         main_window.main_tab = MainTab(
             main_view_model=main_window.main_view_model,
@@ -96,12 +69,13 @@ class UISetupManager:
 
         # Create FFmpeg settings tab
         main_window.ffmpeg_settings_tab = FFmpegSettingsTab(parent=main_window)
-        main_window.ffmpeg_settings_tab.set_enabled(
-            main_window.current_encoder == "FFmpeg"
-        )
+        main_window.ffmpeg_settings_tab.set_enabled(main_window.current_encoder == "FFmpeg")
 
         # Create model library tab
         main_window.model_library_tab = ModelLibraryTab(parent=main_window)
+
+        # Create settings tab
+        main_window.settings_tab = SettingsTab(parent=main_window)
 
         # Create sorter tabs
         main_window.file_sorter_tab = FileSorterTab(
@@ -116,13 +90,12 @@ class UISetupManager:
 
         # Add all tabs to widget
         main_window.tab_widget.addTab(main_window.main_tab, "Main")
-        main_window.tab_widget.addTab(
-            main_window.ffmpeg_settings_tab, "FFmpeg Settings"
-        )
+        main_window.tab_widget.addTab(main_window.ffmpeg_settings_tab, "FFmpeg Settings")
         main_window.tab_widget.addTab(main_window.model_library_tab, "Model Library")
         main_window.tab_widget.addTab(main_window.file_sorter_tab, "File Sorter")
         main_window.tab_widget.addTab(main_window.date_sorter_tab, "Date Sorter")
         main_window.tab_widget.addTab(main_window.combined_tab, "Satellite Integrity")
+        main_window.tab_widget.addTab(main_window.settings_tab, "⚙️ Settings")
 
     def create_integrity_check_tab(self, main_window: Any) -> None:
         """Create and configure the integrity check tab.

@@ -116,12 +116,8 @@ def _mock_resource_monitoring(monkeypatch):
     # Also mock any direct imports
     try:
         # Mock in gui module
-        monkeypatch.setattr(
-            "goesvfi.gui.get_resource_manager", mock_get_resource_manager, raising=False
-        )
-        monkeypatch.setattr(
-            "goesvfi.gui.MemoryManager", MockMemoryManager, raising=False
-        )
+        monkeypatch.setattr("goesvfi.gui.get_resource_manager", mock_get_resource_manager, raising=False)
+        monkeypatch.setattr("goesvfi.gui.MemoryManager", MockMemoryManager, raising=False)
 
         # Mock in main_tab module
         monkeypatch.setattr(
@@ -129,12 +125,8 @@ def _mock_resource_monitoring(monkeypatch):
             mock_get_resource_manager,
             raising=False,
         )
-        monkeypatch.setattr(
-            "goesvfi.gui_tabs.main_tab.MemoryManager", MockMemoryManager, raising=False
-        )
-        monkeypatch.setattr(
-            "goesvfi.gui_tabs.main_tab.run_vfi", mock_run_vfi, raising=False
-        )
+        monkeypatch.setattr("goesvfi.gui_tabs.main_tab.MemoryManager", MockMemoryManager, raising=False)
+        monkeypatch.setattr("goesvfi.gui_tabs.main_tab.run_vfi", mock_run_vfi, raising=False)
 
         # Mock the direct start handler method specifically
         monkeypatch.setattr(

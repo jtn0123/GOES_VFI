@@ -99,9 +99,7 @@ class GOESImageryTab(QWidget):
                 "Temperature",
             ]
         )
-        self.channel_combo.setToolTip(
-            "Select the satellite band or composite to display"
-        )
+        self.channel_combo.setToolTip("Select the satellite band or composite to display")
         control_layout.addRow(channel_label, self.channel_combo)
 
         layout.addWidget(control_panel)
@@ -124,9 +122,7 @@ class GOESImageryTab(QWidget):
         layout.addLayout(button_layout)
 
         # Enhanced status label
-        self.status_label = QLabel(
-            "✅ Ready - Select product and channel to load imagery"
-        )
+        self.status_label = QLabel("✅ Ready - Select product and channel to load imagery")
         self.status_label.setStyleSheet(
             """
             QLabel {

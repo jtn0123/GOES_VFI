@@ -117,7 +117,9 @@ def encode_with_ffmpeg(
         ]
         try:
             _run_ffmpeg_command(cmd_copy, "Stream Copy", monitor_memory=monitor_memory)
-        except (RuntimeError, IOError) as e:
+        except FileNotFoundError:
+            raise
+        except (RuntimeError, OSError) as e:
             LOGGER.warning("Stream copy failed (%s). Attempting simple rename as fallback...", e)
             try:
                 intermediate_input.replace(final_output)
@@ -125,10 +127,6 @@ def encode_with_ffmpeg(
             except (KeyError, ValueError, OSError) as move_e:
                 LOGGER.error("Fallback rename failed: %s", move_e)
                 raise IOError("Stream copy fallback rename failed") from move_e
-        except FileNotFoundError:
-            raise  # pylint: disable=try-except-raise
-        except OSError:
-            raise  # pylint: disable=try-except-raise
         except (KeyError, ValueError) as e:
             LOGGER.exception("Unexpected error during stream copy fallback.")
             raise ValueError(f"Unexpected error during stream copy: {e}") from e

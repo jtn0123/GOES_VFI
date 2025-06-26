@@ -45,9 +45,7 @@ class PermissionValidator(ValidatorBase):
         self.check_other_write = check_other_write
         self.check_other_execute = check_other_execute
 
-    def validate(
-        self, value: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ValidationResult:
+    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
         """Validate permissions for a path."""
         # Basic validation
         path_result = self._validate_path_input(value)
@@ -57,9 +55,7 @@ class PermissionValidator(ValidatorBase):
         path = Path(value) if isinstance(value, str) else value
 
         if not path.exists():
-            return ValidationResult.failure(
-                self._create_error(f"Path does not exist: {path}", value)
-            )
+            return ValidationResult.failure(self._create_error(f"Path does not exist: {path}", value))
 
         result = ValidationResult.success()
 
@@ -72,36 +68,26 @@ class PermissionValidator(ValidatorBase):
     def _validate_path_input(self, value: Any) -> ValidationResult:
         """Validate the input path value."""
         if value is None:
-            return ValidationResult.failure(
-                self._create_error("Path cannot be None", value)
-            )
+            return ValidationResult.failure(self._create_error("Path cannot be None", value))
 
         try:
             Path(value) if isinstance(value, str) else value
             return ValidationResult.success()
         except Exception as e:
-            return ValidationResult.failure(
-                self._create_error(f"Invalid path: {e}", value)
-            )
+            return ValidationResult.failure(self._create_error(f"Invalid path: {e}", value))
 
     def _check_basic_permissions(self, path: Path, value: Any) -> ValidationResult:
         """Check basic access permissions (read, write, execute)."""
         result = ValidationResult.success()
 
         if self.check_read and not os.access(path, os.R_OK):
-            result.add_error(
-                self._create_error(f"No read permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No read permission for: {path}", value))
 
         if self.check_write and not os.access(path, os.W_OK):
-            result.add_error(
-                self._create_error(f"No write permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No write permission for: {path}", value))
 
         if self.check_execute and not os.access(path, os.X_OK):
-            result.add_error(
-                self._create_error(f"No execute permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No execute permission for: {path}", value))
 
         return result
 
@@ -125,72 +111,48 @@ class PermissionValidator(ValidatorBase):
 
         return result
 
-    def _check_owner_permissions(
-        self, mode: int, path: Path, value: Any
-    ) -> ValidationResult:
+    def _check_owner_permissions(self, mode: int, path: Path, value: Any) -> ValidationResult:
         """Check owner permissions."""
         result = ValidationResult.success()
 
         if self.check_owner_read and not (mode & stat.S_IRUSR):
-            result.add_error(
-                self._create_error(f"No owner read permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No owner read permission for: {path}", value))
 
         if self.check_owner_write and not (mode & stat.S_IWUSR):
-            result.add_error(
-                self._create_error(f"No owner write permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No owner write permission for: {path}", value))
 
         if self.check_owner_execute and not (mode & stat.S_IXUSR):
-            result.add_error(
-                self._create_error(f"No owner execute permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No owner execute permission for: {path}", value))
 
         return result
 
-    def _check_group_permissions(
-        self, mode: int, path: Path, value: Any
-    ) -> ValidationResult:
+    def _check_group_permissions(self, mode: int, path: Path, value: Any) -> ValidationResult:
         """Check group permissions."""
         result = ValidationResult.success()
 
         if self.check_group_read and not (mode & stat.S_IRGRP):
-            result.add_error(
-                self._create_error(f"No group read permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No group read permission for: {path}", value))
 
         if self.check_group_write and not (mode & stat.S_IWGRP):
-            result.add_error(
-                self._create_error(f"No group write permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No group write permission for: {path}", value))
 
         if self.check_group_execute and not (mode & stat.S_IXGRP):
-            result.add_error(
-                self._create_error(f"No group execute permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No group execute permission for: {path}", value))
 
         return result
 
-    def _check_other_permissions(
-        self, mode: int, path: Path, value: Any
-    ) -> ValidationResult:
+    def _check_other_permissions(self, mode: int, path: Path, value: Any) -> ValidationResult:
         """Check other permissions."""
         result = ValidationResult.success()
 
         if self.check_other_read and not (mode & stat.S_IROTH):
-            result.add_error(
-                self._create_error(f"No other read permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No other read permission for: {path}", value))
 
         if self.check_other_write and not (mode & stat.S_IWOTH):
-            result.add_error(
-                self._create_error(f"No other write permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No other write permission for: {path}", value))
 
         if self.check_other_execute and not (mode & stat.S_IXOTH):
-            result.add_error(
-                self._create_error(f"No other execute permission for: {path}", value)
-            )
+            result.add_error(self._create_error(f"No other execute permission for: {path}", value))
 
         return result
 
@@ -201,39 +163,27 @@ class ExecutableValidator(ValidatorBase):
     def __init__(self, field_name: Optional[str] = None) -> None:
         super().__init__(field_name)
 
-    def validate(
-        self, value: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ValidationResult:
+    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
         """Validate that a file is executable."""
         if value is None:
-            return ValidationResult.failure(
-                self._create_error("Executable path cannot be None", value)
-            )
+            return ValidationResult.failure(self._create_error("Executable path cannot be None", value))
 
         try:
             path = Path(value) if isinstance(value, str) else value
         except Exception as e:
-            return ValidationResult.failure(
-                self._create_error(f"Invalid executable path: {e}", value)
-            )
+            return ValidationResult.failure(self._create_error(f"Invalid executable path: {e}", value))
 
         result = ValidationResult.success()
 
         if not path.exists():
-            result.add_error(
-                self._create_error(f"Executable does not exist: {path}", value)
-            )
+            result.add_error(self._create_error(f"Executable does not exist: {path}", value))
             return result
 
         if not path.is_file():
-            result.add_error(
-                self._create_error(f"Executable must be a file: {path}", value)
-            )
+            result.add_error(self._create_error(f"Executable must be a file: {path}", value))
 
         if not os.access(path, os.X_OK):
-            result.add_error(
-                self._create_error(f"File is not executable: {path}", value)
-            )
+            result.add_error(self._create_error(f"File is not executable: {path}", value))
 
         return result
 
@@ -251,21 +201,15 @@ class WritableDirectoryValidator(ValidatorBase):
         self.create_if_missing = create_if_missing
         self.min_free_space_mb = min_free_space_mb
 
-    def validate(
-        self, value: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ValidationResult:
+    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
         """Validate a writable directory."""
         if value is None:
-            return ValidationResult.failure(
-                self._create_error("Directory path cannot be None", value)
-            )
+            return ValidationResult.failure(self._create_error("Directory path cannot be None", value))
 
         try:
             path = Path(value) if isinstance(value, str) else value
         except Exception as e:
-            return ValidationResult.failure(
-                self._create_error(f"Invalid directory path: {e}", value)
-            )
+            return ValidationResult.failure(self._create_error(f"Invalid directory path: {e}", value))
 
         result = ValidationResult.success()
 
@@ -276,30 +220,20 @@ class WritableDirectoryValidator(ValidatorBase):
                     path.mkdir(parents=True, exist_ok=True)
                     result.add_warning(f"Created directory: {path}")
                 except Exception as e:
-                    result.add_error(
-                        self._create_error(
-                            f"Could not create directory {path}: {e}", value
-                        )
-                    )
+                    result.add_error(self._create_error(f"Could not create directory {path}: {e}", value))
                     return result
             else:
-                result.add_error(
-                    self._create_error(f"Directory does not exist: {path}", value)
-                )
+                result.add_error(self._create_error(f"Directory does not exist: {path}", value))
                 return result
 
         # Check it's actually a directory
         if not path.is_dir():
-            result.add_error(
-                self._create_error(f"Path is not a directory: {path}", value)
-            )
+            result.add_error(self._create_error(f"Path is not a directory: {path}", value))
             return result
 
         # Check write permissions
         if not os.access(path, os.W_OK):
-            result.add_error(
-                self._create_error(f"Directory is not writable: {path}", value)
-            )
+            result.add_error(self._create_error(f"Directory is not writable: {path}", value))
 
         # Check free space if required
         if self.min_free_space_mb:

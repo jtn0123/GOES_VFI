@@ -46,9 +46,7 @@ class TimeIndex:
     }
 
     @staticmethod
-    def to_cdn_url(
-        ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None
-    ) -> str:
+    def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None) -> str:
         """
         Generate a CDN URL for the given timestamp and satellite.
 
@@ -100,9 +98,7 @@ class TimeIndex:
         return S3KeyGenerator.get_s3_bucket(satellite)
 
     @staticmethod
-    def generate_local_path(
-        ts: datetime, satellite: SatellitePattern, base_dir: Path
-    ) -> Path:
+    def generate_local_path(ts: datetime, satellite: SatellitePattern, base_dir: Path) -> Path:
         """
         Generate a local path for storing the image.
 
@@ -172,9 +168,7 @@ class TimeIndex:
         return TimestampGenerator.is_recent(ts)
 
     @staticmethod
-    def find_nearest_intervals(
-        ts: datetime, product_type: str = "RadF"
-    ) -> List[datetime]:
+    def find_nearest_intervals(ts: datetime, product_type: str = "RadF") -> List[datetime]:
         """
         Find the nearest standard GOES imagery intervals for a given timestamp and product type.
 
@@ -226,9 +220,7 @@ class TimeIndex:
         Returns:
             A list of datetime objects extracted from filenames
         """
-        return DirectoryScanner.scan_directory_for_timestamps(
-            directory, pattern, start_time, end_time
-        )
+        return DirectoryScanner.scan_directory_for_timestamps(directory, pattern, start_time, end_time)
 
     @staticmethod
     def filter_s3_keys_by_band(keys: List[str], target_band: int = 13) -> List[str]:

@@ -46,6 +46,12 @@ DEFAULTS: Dict[str, Any] = {
     "logging": {
         "level": "INFO",
     },
+    "theme": {
+        "name": "dark_blue",
+        "custom_overrides": True,
+        "density_scale": "0",
+        "fallback_enabled": True,
+    },
 }
 
 
@@ -185,6 +191,7 @@ EXPECTED_SCHEMA: Dict[str, Any] = {
     "pipeline": {"default_tile_size": int, "supported_extensions": list},
     "sanchez": {"bin_dir": str},
     "logging": {"level": str},
+    "theme": {"name": str, "custom_overrides": bool, "density_scale": str, "fallback_enabled": bool},
 }
 
 
@@ -410,3 +417,59 @@ def get_user_config_dir() -> pathlib.Path:
     path = pathlib.Path(env_dir).expanduser() if env_dir else CONFIG_DIR
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def get_theme_name() -> str:
+    """
+    Get the current theme name from configuration.
+
+    Returns:
+        Theme name string (defaults to 'dark_blue')
+    """
+    theme_config = _load_config().get("theme", {})
+    theme_name = theme_config.get("name", DEFAULTS["theme"]["name"])
+    if not isinstance(theme_name, str):
+        theme_name = DEFAULTS["theme"]["name"]
+    return cast(str, theme_name)
+
+
+def get_theme_custom_overrides() -> bool:
+    """
+    Get whether custom theme overrides are enabled.
+
+    Returns:
+        True if custom overrides should be applied
+    """
+    theme_config = _load_config().get("theme", {})
+    custom_overrides = theme_config.get("custom_overrides", DEFAULTS["theme"]["custom_overrides"])
+    if not isinstance(custom_overrides, bool):
+        custom_overrides = DEFAULTS["theme"]["custom_overrides"]
+    return cast(bool, custom_overrides)
+
+
+def get_theme_density_scale() -> str:
+    """
+    Get the theme density scale setting.
+
+    Returns:
+        Density scale string (defaults to '0' for normal)
+    """
+    theme_config = _load_config().get("theme", {})
+    density_scale = theme_config.get("density_scale", DEFAULTS["theme"]["density_scale"])
+    if not isinstance(density_scale, str):
+        density_scale = DEFAULTS["theme"]["density_scale"]
+    return cast(str, density_scale)
+
+
+def get_theme_fallback_enabled() -> bool:
+    """
+    Get whether theme fallback is enabled.
+
+    Returns:
+        True if fallback to basic theme should be enabled on errors
+    """
+    theme_config = _load_config().get("theme", {})
+    fallback_enabled = theme_config.get("fallback_enabled", DEFAULTS["theme"]["fallback_enabled"])
+    if not isinstance(fallback_enabled, bool):
+        fallback_enabled = DEFAULTS["theme"]["fallback_enabled"]
+    return cast(bool, fallback_enabled)

@@ -1,6 +1,5 @@
 """Tests for GUI component validation and visual feedback."""
 
-
 import pytest
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
@@ -17,8 +16,8 @@ class TestGUIComponentValidation:
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
-        mocker.patch("goesvfi.gui.CombinedIntegrityAndImageryTab")
-        mocker.patch("goesvfi.integrity_check.enhanced_gui_tab.EnhancedImageryTab")
+        mocker.patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab")
+        mocker.patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab")
 
         window = MainWindow(debug_mode=True)
         qtbot.addWidget(window)
@@ -43,10 +42,7 @@ class TestGUIComponentValidation:
         assert window.main_tab.progress_bar.value() == 100
 
         # Verify status bar shows progress
-        assert (
-            "50%" in window.status_bar.currentMessage()
-            or "100%" in window.status_bar.currentMessage()
-        )
+        assert "50%" in window.status_bar.currentMessage() or "100%" in window.status_bar.currentMessage()
 
     def test_preview_labels_display_images(self, qtbot, window, mocker):
         """Test that preview labels correctly display images."""
@@ -103,12 +99,8 @@ class TestGUIComponentValidation:
         # Encoder combo
         encoder_combo = window.main_tab.encoder_combo
         assert encoder_combo.count() > 0
-        assert "RIFE" in [
-            encoder_combo.itemText(i) for i in range(encoder_combo.count())
-        ]
-        assert "FFmpeg" in [
-            encoder_combo.itemText(i) for i in range(encoder_combo.count())
-        ]
+        assert "RIFE" in [encoder_combo.itemText(i) for i in range(encoder_combo.count())]
+        assert "FFmpeg" in [encoder_combo.itemText(i) for i in range(encoder_combo.count())]
 
         # RIFE model combo
         model_combo = window.main_tab.rife_model_combo
@@ -250,10 +242,7 @@ class TestGUIComponentValidation:
 
         # Check margins are reasonable
         margins = main_layout.contentsMargins()
-        assert all(
-            m >= 0
-            for m in [margins.left(), margins.top(), margins.right(), margins.bottom()]
-        )
+        assert all(m >= 0 for m in [margins.left(), margins.top(), margins.right(), margins.bottom()])
 
     def test_window_properties(self, qtbot, window):
         """Test main window properties."""

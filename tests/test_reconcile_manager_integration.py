@@ -90,9 +90,7 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         # Create a small test file with .nc extension
         dest_path = dest_path.with_suffix(".nc")
         with open(dest_path, "w") as f:
-            f.write(
-                f"S3 NetCDF test file for {ts.isoformat()} satellite {satellite.name}"
-            )
+            f.write(f"S3 NetCDF test file for {ts.isoformat()} satellite {satellite.name}")
 
         return dest_path
 
@@ -150,15 +148,11 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         for ts in timestamps_to_create:
             self.manager._get_local_path(ts, self.satellite)
             # Query the cache for this timestamp
-            timestamp_exists = await self.cache_db.timestamp_exists(
-                timestamp=ts, satellite=self.satellite
-            )
+            timestamp_exists = await self.cache_db.timestamp_exists(timestamp=ts, satellite=self.satellite)
             assert timestamp_exists
 
     @patch("goesvfi.integrity_check.render.netcdf.render_png", autospec=True)
-    @unittest.skip(
-        "ReconcileManager is stub implementation - fetch missing files not implemented"
-    )
+    @unittest.skip("ReconcileManager is stub implementation - fetch missing files not implemented")
     async def test_fetch_missing_files(self, mock_render_png):
         """Test fetching missing files."""
 
@@ -220,9 +214,7 @@ class TestReconcileManagerIntegration(unittest.TestCase):
 
         # Check that the cache was updated
         for ts in missing_timestamps:
-            timestamp_exists = await self.cache_db.timestamp_exists(
-                timestamp=ts, satellite=self.satellite
-            )
+            timestamp_exists = await self.cache_db.timestamp_exists(timestamp=ts, satellite=self.satellite)
             assert timestamp_exists
 
     @patch("goesvfi.integrity_check.reconcile_manager.render_png", autospec=True)
@@ -314,9 +306,7 @@ def async_test(coro):
 
 # Apply async_test decorator to async test methods
 for attr in dir(TestReconcileManagerIntegration):
-    if attr.startswith("test_") and asyncio.iscoroutinefunction(
-        getattr(TestReconcileManagerIntegration, attr)
-    ):
+    if attr.startswith("test_") and asyncio.iscoroutinefunction(getattr(TestReconcileManagerIntegration, attr)):
         setattr(
             TestReconcileManagerIntegration,
             attr,

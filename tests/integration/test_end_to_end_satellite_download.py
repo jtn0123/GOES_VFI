@@ -154,18 +154,12 @@ class TestEndToEndSatelliteDownload:
                 # Mock S3 store to fail
                 mock_s3_store = AsyncMock(spec=S3Store)
                 if i < max_retries - 1:
-                    mock_s3_store.download = AsyncMock(
-                        side_effect=TemporaryError("Connection timeout")
-                    )
+                    mock_s3_store.download = AsyncMock(side_effect=TemporaryError("Connection timeout"))
                 else:
-                    mock_s3_store.download = AsyncMock(
-                        side_effect=NetworkError("Connection failed")
-                    )
+                    mock_s3_store.download = AsyncMock(side_effect=NetworkError("Connection failed"))
 
                 # Try to download
-                await mock_s3_store.download(
-                    ts=timestamp, satellite=satellite, dest_path=download_path
-                )
+                await mock_s3_store.download(ts=timestamp, satellite=satellite, dest_path=download_path)
                 break  # Success
             except TemporaryError:
                 retry_count += 1
@@ -175,9 +169,7 @@ class TestEndToEndSatelliteDownload:
                 mock_cdn_store = AsyncMock(spec=CDNStore)
                 mock_cdn_store.download = AsyncMock(return_value=download_path)
 
-                result = await mock_cdn_store.download(
-                    ts=timestamp, satellite=satellite, dest_path=download_path
-                )
+                result = await mock_cdn_store.download(ts=timestamp, satellite=satellite, dest_path=download_path)
 
                 assert result == download_path
                 break
@@ -195,32 +187,24 @@ class TestEndToEndSatelliteDownload:
         # Test behavior when all sources fail
         # Mock S3 store to fail
         mock_s3_store = AsyncMock(spec=S3Store)
-        mock_s3_store.download = AsyncMock(
-            side_effect=NetworkError("S3 connection failed")
-        )
+        mock_s3_store.download = AsyncMock(side_effect=NetworkError("S3 connection failed"))
 
         # Mock CDN store to also fail
         mock_cdn_store = AsyncMock(spec=CDNStore)
-        mock_cdn_store.download = AsyncMock(
-            side_effect=ResourceNotFoundError("File not found on CDN")
-        )
+        mock_cdn_store.download = AsyncMock(side_effect=ResourceNotFoundError("File not found on CDN"))
 
         # Test the failure scenario
         errors = []
 
         # Try S3
         try:
-            await mock_s3_store.download(
-                ts=timestamp, satellite=satellite, dest_path=download_path
-            )
+            await mock_s3_store.download(ts=timestamp, satellite=satellite, dest_path=download_path)
         except NetworkError as e:
             errors.append(f"S3: {str(e)}")
 
         # Try CDN as fallback
         try:
-            await mock_cdn_store.download(
-                ts=timestamp, satellite=satellite, dest_path=download_path
-            )
+            await mock_cdn_store.download(ts=timestamp, satellite=satellite, dest_path=download_path)
         except ResourceNotFoundError as e:
             errors.append(f"CDN: {str(e)}")
 
@@ -257,9 +241,7 @@ class TestEndToEndSatelliteDownload:
             tasks = []
             for i, ts in enumerate(timestamps):
                 download_path = temp_dir / f"goes16_{i}.nc"
-                task = mock_s3_store.download(
-                    ts=ts, satellite=satellite, dest_path=download_path
-                )
+                task = mock_s3_store.download(ts=ts, satellite=satellite, dest_path=download_path)
                 tasks.append(task)
 
             # Wait for all downloads
@@ -288,9 +270,7 @@ class TestEndToEndSatelliteDownload:
         # Mock S3 store with progress reporting
         mock_s3_store = AsyncMock(spec=S3Store)
 
-        async def mock_download_with_progress(
-            ts, satellite, dest_path, progress_callback=None, **kwargs
-        ):
+        async def mock_download_with_progress(ts, satellite, dest_path, progress_callback=None, **kwargs):
             # Simulate progressive download
             total_size = 1024 * 1024  # 1MB
             chunk_size = 256 * 1024  # 256KB chunks
@@ -346,9 +326,7 @@ class TestEndToEndSatelliteDownload:
 
         async with mock_s3_store:
             # Download the file
-            result = await mock_s3_store.download(
-                ts=timestamp, satellite=satellite, dest_path=download_path
-            )
+            result = await mock_s3_store.download(ts=timestamp, satellite=satellite, dest_path=download_path)
 
             # Validate checksum
             downloaded_data = result.read_bytes()
@@ -376,9 +354,7 @@ class TestEndToEndSatelliteDownload:
 
         async with mock_s3_store:
             with pytest.raises(ResourceNotFoundError) as exc_info:
-                await mock_s3_store.download(
-                    ts=recent_timestamp, satellite=satellite, dest_path=download_path
-                )
+                await mock_s3_store.download(ts=recent_timestamp, satellite=satellite, dest_path=download_path)
 
             # Verify helpful error message
             assert "not yet available" in str(exc_info.value)

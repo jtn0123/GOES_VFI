@@ -37,9 +37,7 @@ class GroupingModel(QAbstractItemModel):
         self._root_item = GroupItem("Root", None)
         self._headers = ["Group", "Count", "Status"]
 
-    def index(
-        self, row: int, column: int, parent: Optional[QModelIndex] = None
-    ) -> QModelIndex:
+    def index(self, row: int, column: int, parent: Optional[QModelIndex] = None) -> QModelIndex:
         """Create an index for the given row, column, and parent."""
         if parent is None:
             parent = QModelIndex()
@@ -126,10 +124,7 @@ class GroupingModel(QAbstractItemModel):
         role: int = Qt.ItemDataRole.DisplayRole,
     ) -> Any:
         """Return header data for the given section, orientation, and role."""
-        if (
-            orientation == Qt.Orientation.Horizontal
-            and role == Qt.ItemDataRole.DisplayRole
-        ):
+        if orientation == Qt.Orientation.Horizontal and role == Qt.ItemDataRole.DisplayRole:
             return self._headers[section]
         return None
 
@@ -144,9 +139,7 @@ class GroupingModel(QAbstractItemModel):
         self.beginResetModel()
 
         # Clear existing items
-        self._root_item = GroupItem(
-            "Root", None
-        )  # pylint: disable=attribute-defined-outside-init
+        self._root_item = GroupItem("Root", None)  # pylint: disable=attribute-defined-outside-init
 
         # Group by selected method
         if grouping == "day":
@@ -162,9 +155,7 @@ class GroupingModel(QAbstractItemModel):
         else:
             # No grouping, just add all items
             for item in items:
-                self._root_item.addChild(
-                    GroupItem(str(item.timestamp), self._root_item, item)
-                )
+                self._root_item.addChild(GroupItem(str(item.timestamp), self._root_item, item))
 
         self.endResetModel()
 
@@ -317,9 +308,7 @@ class GroupingModel(QAbstractItemModel):
             for item in satellite_items:
                 # Use timestamp as item text
                 timestamp_text = item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-                satellite_group.addChild(
-                    GroupItem(timestamp_text, satellite_group, item)
-                )
+                satellite_group.addChild(GroupItem(timestamp_text, satellite_group, item))
 
     def _group_by_source(self, items: List[MissingTimestamp]) -> None:
         """
@@ -578,9 +567,7 @@ class MissingItemsTreeView(QWidget):
 
         layout.addWidget(self.tree_view)
 
-    def set_items(
-        self, items: List[MissingTimestamp], *args: Any, **kwargs: Any
-    ) -> None:
+    def set_items(self, items: List[MissingTimestamp], *args: Any, **kwargs: Any) -> None:
         """
         Set the items to be displayed.
 
@@ -743,25 +730,25 @@ class ResultsSummaryWidget(QWidget):
         # Row 2: Found
         stats_grid.addWidget(QLabel(self.tr("Available:")), 1, 0)
         self.found_label = QLabel(self.tr("0"))
-        self.found_label.setStyleSheet("color: #28a745;")  # Green
+        self.found_label.setProperty("class", "StatusSuccess")
         stats_grid.addWidget(self.found_label, 1, 1)
 
         # Row 3: Missing
         stats_grid.addWidget(QLabel(self.tr("Missing:")), 2, 0)
         self.missing_label = QLabel(self.tr("0"))
-        self.missing_label.setStyleSheet("color: #dc3545;")  # Red
+        self.missing_label.setProperty("class", "StatusError")
         stats_grid.addWidget(self.missing_label, 2, 1)
 
         # Row 4: Downloaded
         stats_grid.addWidget(QLabel(self.tr("Downloaded:")), 3, 0)
         self.downloaded_label = QLabel(self.tr("0"))
-        self.downloaded_label.setStyleSheet("color: #007bff;")  # Blue
+        self.downloaded_label.setProperty("class", "StatusInfo")
         stats_grid.addWidget(self.downloaded_label, 3, 1)
 
         # Row 5: Errors
         stats_grid.addWidget(QLabel(self.tr("Errors:")), 4, 0)
         self.errors_label = QLabel(self.tr("0"))
-        self.errors_label.setStyleSheet("color: #ffc107;")  # Yellow
+        self.errors_label.setProperty("class", "StatusWarning")
         stats_grid.addWidget(self.errors_label, 4, 1)
 
         # Add stats grid to layout
@@ -791,9 +778,7 @@ class ResultsSummaryWidget(QWidget):
         # Add stretch to push everything to the top
         layout.addStretch()
 
-    def update_summary(
-        self, items: List[MissingTimestamp], total_expected: int
-    ) -> None:
+    def update_summary(self, items: List[MissingTimestamp], total_expected: int) -> None:
         """
         Update the summary with current data.
 
@@ -851,9 +836,7 @@ class ItemPreviewWidget(QWidget):
         # Create form layout for details
         form_layout = QFormLayout()
         form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
-        form_layout.setFieldGrowthPolicy(
-            QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow
-        )
+        form_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
 
         # Timestamp
         self.timestamp_label = QLabel(self.tr(""))
@@ -939,29 +922,23 @@ class ItemPreviewWidget(QWidget):
         # Set status with color
         if getattr(item, "is_downloaded", False):
             self.status_label.setText(self.tr("Downloaded"))
-            self.status_label.setStyleSheet(
-                "color: #28a745; font-weight: bold;"
-            )  # Green
+            self.status_label.setProperty("class", "StatusSuccess")
             self.download_btn.setEnabled(False)
             self.view_btn.setEnabled(True)
         elif getattr(item, "is_downloading", False):
             progress = getattr(item, "progress", 0)
             self.status_label.setText(f"Downloading ({progress}%)")
-            self.status_label.setStyleSheet(
-                "color: #007bff; font-weight: bold;"
-            )  # Blue
+            self.status_label.setProperty("class", "StatusInfo")
             self.download_btn.setEnabled(False)
             self.view_btn.setEnabled(False)
         elif getattr(item, "download_error", ""):
             self.status_label.setText(self.tr("Error"))
-            self.status_label.setStyleSheet("color: #dc3545; font-weight: bold;")  # Red
+            self.status_label.setProperty("class", "StatusError")
             self.download_btn.setEnabled(True)
             self.view_btn.setEnabled(False)
         else:
             self.status_label.setText(self.tr("Missing"))
-            self.status_label.setStyleSheet(
-                "color: #6c757d; font-weight: bold;"
-            )  # Gray
+            self.status_label.setProperty("class", "StatusWarning")
             self.download_btn.setEnabled(True)
             self.view_btn.setEnabled(False)
 

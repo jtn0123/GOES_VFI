@@ -3,6 +3,10 @@ import sys
 from types import ModuleType
 from unittest.mock import MagicMock
 
+from PIL import Image
+
+from goesvfi.pipeline.run_vfi import VfiWorker
+
 # Provide minimal PyQt6 mocks for headless test execution
 qtcore = ModuleType("PyQt6.QtCore")
 qtcore.QThread = object  # type: ignore
@@ -13,10 +17,6 @@ pyqt6.QtCore = qtcore  # type: ignore
 
 sys.modules.setdefault("PyQt6", pyqt6)
 sys.modules.setdefault("PyQt6.QtCore", qtcore)
-
-from PIL import Image
-
-from goesvfi.pipeline.run_vfi import VfiWorker
 
 
 def create_dummy_png(path: pathlib.Path, size=(10, 10)) -> None:

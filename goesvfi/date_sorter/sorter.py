@@ -119,9 +119,7 @@ def report_missing_intervals(
 # 1. Extract conditional blocks into separate helper functions
 # Consider breaking into smaller helper functions for:
 # TODO: This function has high cyclomatic complexity (15) and should be refactored.
-def scan_for_missing_intervals(
-    converted_folder: Path, interval_minutes: int = 30
-) -> None:
+def scan_for_missing_intervals(converted_folder: Path, interval_minutes: int = 30) -> None:
     """
     Scans the converted folder (recursively) for PNG files named like: baseName_YYYYMMDDThhmmssZ.png,
 
@@ -129,21 +127,15 @@ def scan_for_missing_intervals(
     """
     png_files = find_png_files(converted_folder)
     if not png_files:
-        print(
-            "\nNo PNG files found in the 'converted' folder. Cannot scan for missing intervals."
-        )
+        print("\nNo PNG files found in the 'converted' folder. Cannot scan for missing intervals.")
         return
 
     datetimes = extract_timestamps_from_files(png_files)
     if not datetimes:
-        print(
-            "\nNo valid date/time-based files found (e.g., baseName_YYYYMMDDThhmmssZ.png)."
-        )
+        print("\nNo valid date/time-based files found (e.g., baseName_YYYYMMDDThhmmssZ.png).")
         return
 
-    daily_records, missing_intervals = compute_missing_intervals(
-        datetimes, interval_minutes
-    )
+    daily_records, missing_intervals = compute_missing_intervals(datetimes, interval_minutes)
     report_missing_intervals(daily_records, missing_intervals, interval_minutes)
 
 
@@ -174,9 +166,7 @@ def detect_interval(datetimes: List[datetime]) -> int:
     return round(most_common / 5) * 5
 
 
-def format_calendar_output(
-    daily_records: Dict[str, List[Tuple[str, bool]]], missing_intervals: List[datetime]
-) -> str:
+def format_calendar_output(daily_records: Dict[str, List[Tuple[str, bool]]], missing_intervals: List[datetime]) -> str:
     """Format the analysis results as a calendar-style output"""
     output_lines = []
     output_lines.append("\n=== Time Interval Analysis ===")
@@ -289,19 +279,14 @@ class DateSorter:
                         dest_file_path = final_dest_dir / file_name
 
                         # Copy the file
-                        shutil.copy2(
-                            file_path, dest_file_path
-                        )  # copy2 preserves metadata
+                        shutil.copy2(file_path, dest_file_path)  # copy2 preserves metadata
 
                         processed_count += 1
                         if progress_callback:
                             progress_callback(processed_count, total_files)
 
                 except ValueError as e:
-                    print(
-                        f"Could not parse date from filename {file_name!r} "
-                        f"with format {date_format!r}: {e}"
-                    )
+                    print(f"Could not parse date from filename {file_name!r} " f"with format {date_format!r}: {e}")
                     # Optionally handle files that don't match the format
                     pass  # Skip files that don't match the expected date format
                 except Exception as e:
@@ -309,9 +294,7 @@ class DateSorter:
                     # Handle other potential errors during file processing
 
         if progress_callback:
-            progress_callback(
-                total_files, total_files
-            )  # Ensure 100% progress at the end
+            progress_callback(total_files, total_files)  # Ensure 100% progress at the end
 
 
 # The original main function is removed as the DateSorter class will handle sorting logic.

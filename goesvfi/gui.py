@@ -118,15 +118,23 @@ class MainWindow(QWidget):
         self.model_combo = self.main_tab.rife_model_combo
         self.sanchez_res_km_combo = self.main_tab.sanchez_res_combo
 
-        # Apply dark theme
+        # Apply qt-material theme
         self.theme_manager = ThemeManager()
-        self.theme_manager.apply_dark_theme(self)
+        app = QApplication.instance()
+        if app:
+            self.theme_manager.apply_theme(app)
+        else:
+            LOGGER.error("No QApplication instance found for theme application")
 
         # Load settings after main layout is constructed
         self.loadSettings()
 
         # Set up all signal connections through SignalBroker
         self.signal_broker.setup_main_window_connections(self)
+
+        # Connect settings tab signals if it exists
+        if hasattr(self, "settings_tab"):
+            self._connect_settings_tab()
 
         # Initial preview update after a short delay
         QTimer.singleShot(100, self.request_previews_update.emit)
@@ -348,7 +356,8 @@ class MainWindow(QWidget):
             # Get sanchez settings from main tab
             apply_sanchez = False
             sanchez_resolution = None
-            if hasattr(self.main_tab, "sanchez_checkbox") and self.main_tab.sanchez_checkbox.isChecked():
+            sanchez_checkbox = getattr(self.main_tab, "sanchez_false_colour_checkbox", None)
+            if sanchez_checkbox and sanchez_checkbox.isChecked():
                 apply_sanchez = True
                 if hasattr(self.main_tab, "sanchez_res_combo"):
                     sanchez_resolution = int(self.main_tab.sanchez_res_combo.currentText())
@@ -563,3 +572,35 @@ class MainWindow(QWidget):
 
         # Accept the close event
         event.accept()
+
+    def _connect_settings_tab(self) -> None:
+        """Connect settings tab signals to handlers."""
+        if hasattr(self, "settings_tab"):
+            # Connect theme change signal
+            self.settings_tab.themeChanged.connect(self._on_settings_theme_changed)
+            # Connect general settings change signal
+            self.settings_tab.settingsChanged.connect(self._on_settings_changed)
+
+    def _on_settings_theme_changed(self, theme_name: str) -> None:
+        """Handle theme change from settings tab."""
+        try:
+            app = QApplication.instance()
+            if app:
+                self.theme_manager.change_theme(app, theme_name)
+                LOGGER.info("Theme changed to: %s", theme_name)
+            else:
+                LOGGER.error("No QApplication instance found for theme change")
+        except Exception as e:
+            LOGGER.error("Failed to change theme: %s", e)
+
+    def _on_settings_changed(self) -> None:
+        """Handle general settings changes."""
+        try:
+            if hasattr(self, "settings_tab"):
+                current_settings = self.settings_tab.get_current_settings()
+                LOGGER.debug("Settings changed: %s", current_settings)
+                # Save settings if auto-save is enabled
+                if current_settings.get("app", {}).get("auto_save", True):
+                    self.saveSettings()
+        except Exception as e:
+            LOGGER.error("Failed to handle settings change: %s", e)

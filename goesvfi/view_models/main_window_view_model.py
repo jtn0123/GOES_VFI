@@ -140,9 +140,7 @@ class MainWindowViewModel(QObject):
             index (int): The new active tab index.
         """
         if self._active_tab_index != index:
-            self._active_tab_index = (
-                index  # pylint: disable=attribute-defined-outside-init
-            )
+            self._active_tab_index = index  # pylint: disable=attribute-defined-outside-init
             self.active_tab_changed.emit(self._active_tab_index)
             LOGGER.debug("Active tab changed to index: %s", self._active_tab_index)
 

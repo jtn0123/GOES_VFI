@@ -84,9 +84,7 @@ class CachedProcessor(ProcessorBase):
         self.cache_manager = cache_manager
         self.key_generator = key_generator
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Process with caching."""
         try:
             # Generate cache key
@@ -95,9 +93,7 @@ class CachedProcessor(ProcessorBase):
             # Check cache first
             cached_result = self.cache_manager.get(cache_key)
             if cached_result is not None:
-                return ImageProcessingResult.success_result(
-                    cached_result, {"cache_hit": True, "cache_key": cache_key}
-                )
+                return ImageProcessingResult.success_result(cached_result, {"cache_hit": True, "cache_key": cache_key})
 
             # Process normally
             result = self.processor.process(input_data, context)
@@ -111,9 +107,7 @@ class CachedProcessor(ProcessorBase):
             return result
 
         except Exception as e:
-            return ImageProcessingResult.failure_result(
-                self._create_error(f"Cache processing failed: {e}", e)
-            )
+            return ImageProcessingResult.failure_result(self._create_error(f"Cache processing failed: {e}", e))
 
 
 class SanchezCacheProcessor(ProcessorBase):
@@ -123,14 +117,10 @@ class SanchezCacheProcessor(ProcessorBase):
         super().__init__("sanchez_cache")
         self.cache_dict = cache_dict
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Check for cached Sanchez results."""
         if not context or "image_path" not in context:
-            return ImageProcessingResult.failure_result(
-                self._create_error("No image_path in context for cache lookup")
-            )
+            return ImageProcessingResult.failure_result(self._create_error("No image_path in context for cache lookup"))
 
         image_path = context["image_path"]
 
@@ -146,13 +136,9 @@ class SanchezCacheProcessor(ProcessorBase):
                 metadata={"source_path": image_path, "cached": True},
             )
 
-            return ImageProcessingResult.success_result(
-                image_data, {"cache_hit": True, "source": "sanchez_cache"}
-            )
+            return ImageProcessingResult.success_result(image_data, {"cache_hit": True, "source": "sanchez_cache"})
 
-        return ImageProcessingResult.failure_result(
-            self._create_error("No cached Sanchez result found")
-        )
+        return ImageProcessingResult.failure_result(self._create_error("No cached Sanchez result found"))
 
     def store_result(self, image_path: Path, processed_array: np.ndarray) -> None:
         """Store a processed Sanchez result in cache."""

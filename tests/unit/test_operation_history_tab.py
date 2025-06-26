@@ -9,13 +9,9 @@ import types
 
 # Provide stub modules if missing
 if "goesvfi.utils.enhanced_log" not in sys.modules:
-    sys.modules["goesvfi.utils.enhanced_log"] = types.SimpleNamespace(
-        get_enhanced_logger=lambda name: None
-    )
+    sys.modules["goesvfi.utils.enhanced_log"] = types.SimpleNamespace(get_enhanced_logger=lambda name: None)
 if "goesvfi.utils.operation_history" not in sys.modules:
-    sys.modules["goesvfi.utils.operation_history"] = types.SimpleNamespace(
-        get_operation_store=lambda: None
-    )
+    sys.modules["goesvfi.utils.operation_history"] = types.SimpleNamespace(get_operation_store=lambda: None)
 
 from unittest.mock import patch
 
@@ -116,17 +112,11 @@ def history_tab(dummy_store):
 def test_table_models_populate(history_tab, dummy_store):
     assert history_tab.operations_model.rowCount() == len(dummy_store.operations)
     first_op_index = history_tab.operations_model.index(0, 1)
-    assert (
-        history_tab.operations_model.data(first_op_index)
-        == dummy_store.operations[0]["name"]
-    )
+    assert history_tab.operations_model.data(first_op_index) == dummy_store.operations[0]["name"]
 
     assert history_tab.metrics_model.rowCount() == len(dummy_store.metrics)
     first_metric_index = history_tab.metrics_model.index(0, 0)
-    assert (
-        history_tab.metrics_model.data(first_metric_index)
-        == dummy_store.metrics[0]["operation_name"]
-    )
+    assert history_tab.metrics_model.data(first_metric_index) == dummy_store.metrics[0]["operation_name"]
 
 
 def test_auto_refresh_toggle(history_tab):

@@ -246,9 +246,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
         # Now start a scan to trigger view model update from UI
-        with patch.object(
-            self.view_model, "start_enhanced_scan", autospec=True
-        ):
+        with patch.object(self.view_model, "start_enhanced_scan", autospec=True):
             self.tab._start_enhanced_scan()
 
             # Verify view model date range was updated
@@ -271,10 +269,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         """Test that only selected items are passed to start_downloads."""
 
         # Prepare some missing items
-        items = [
-            EnhancedMissingTimestamp(datetime(2023, 1, 1, 0, i * 5), f"file_{i}.nc")
-            for i in range(3)
-        ]
+        items = [EnhancedMissingTimestamp(datetime(2023, 1, 1, 0, i * 5), f"file_{i}.nc") for i in range(3)]
         self.tab.results_model.set_items(items)
 
         # Select first and third rows
@@ -283,13 +278,11 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         idx2 = self.tab.results_model.index(2, 0)
         selection_model.select(
             idx0,
-            QItemSelectionModel.SelectionFlag.Select
-            | QItemSelectionModel.SelectionFlag.Rows,
+            QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows,
         )
         selection_model.select(
             idx2,
-            QItemSelectionModel.SelectionFlag.Select
-            | QItemSelectionModel.SelectionFlag.Rows,
+            QItemSelectionModel.SelectionFlag.Select | QItemSelectionModel.SelectionFlag.Rows,
         )
 
         with patch.object(self.view_model, "start_downloads", autospec=True) as mock_dl:

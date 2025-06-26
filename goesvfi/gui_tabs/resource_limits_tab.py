@@ -335,17 +335,17 @@ class ResourceLimitsTab(QWidget):
             progress_bar: Progress bar to update
             value: Current value (0-100)
         """
+        # Use theme classes instead of hardcoded colors
         if value < 50:
-            color = "#4CAF50"  # Green
+            progress_bar.setProperty("class", "StatusSuccess")
         elif value < 80:
-            color = "#FF9800"  # Orange
+            progress_bar.setProperty("class", "StatusWarning")
         else:
-            color = "#f44336"  # Red
+            progress_bar.setProperty("class", "StatusError")
 
         progress_bar.setStyleSheet(
-            f"""
-            QProgressBar::chunk {{
-                background-color: {color};
+            """
+            QProgressBar::chunk {
                 border-radius: 3px;
             }}
         """

@@ -139,9 +139,7 @@ class ReconcileManager:
                 existing.add(ts)
                 # Update cache
                 if hasattr(self, "cache_db") and self.cache_db:
-                    await self.cache_db.add_timestamp(
-                        ts, satellite, str(path), found=True
-                    )
+                    await self.cache_db.add_timestamp(ts, satellite, str(path), found=True)
 
         # Step 4: Finalizing results
         if progress_callback:
@@ -219,9 +217,7 @@ class ReconcileManager:
         # Return empty dict as a stub
         return {}
 
-    def _get_local_path(
-        self, timestamp: datetime, satellite: Any, directory: Any = None
-    ) -> Path:
+    def _get_local_path(self, timestamp: datetime, satellite: Any, directory: Any = None) -> Path:
         """Get local path for a timestamp.
 
         Args:

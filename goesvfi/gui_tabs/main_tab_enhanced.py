@@ -193,9 +193,7 @@ class EnhancedMainTab(MainTab):
         if first_path.is_dir():
             # Set as input directory
             self.in_dir_edit.setText(str(first_path))
-            self._notification.show_message(
-                f"Input directory set to: {first_path.name}"
-            )
+            self._notification.show_message(f"Input directory set to: {first_path.name}")
         elif first_path.suffix.lower() in [".mp4", ".avi", ".mov", ".mkv"]:
             # Set as output file
             self.out_file_edit.setText(str(first_path))
@@ -206,9 +204,7 @@ class EnhancedMainTab(MainTab):
             if first_path.suffix.lower() in image_extensions:
                 # Set parent directory as input
                 self.in_dir_edit.setText(str(first_path.parent))
-                self._notification.show_message(
-                    f"Input directory set to: {first_path.parent.name}"
-                )
+                self._notification.show_message(f"Input directory set to: {first_path.parent.name}")
 
     @pyqtSlot(dict)
     def _update_progress_stats(self, stats: Dict[str, Any]) -> None:

@@ -101,9 +101,7 @@ class TestHeadlessWorkflow:
 
         # Verify setText was called
         mock_gui_window.main_tab.in_dir_edit.setText.assert_called_with(str(input_dir))
-        mock_gui_window.main_tab.out_file_edit.setText.assert_called_with(
-            str(output_file)
-        )
+        mock_gui_window.main_tab.out_file_edit.setText.assert_called_with(str(output_file))
 
         # Simulate start button click
         mock_gui_window.main_tab.start_button.click()

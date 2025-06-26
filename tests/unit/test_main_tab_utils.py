@@ -80,30 +80,22 @@ class TestValidateThreadSpec:
     def test_invalid_thread_spec_missing_colons(self, main_tab):
         """Test invalid thread spec with missing colons."""
         main_tab._validate_thread_spec("1:2")
-        assert (
-            "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
-        )
+        assert "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
 
     def test_invalid_thread_spec_extra_colons(self, main_tab):
         """Test invalid thread spec with extra colons."""
         main_tab._validate_thread_spec("1:2:3:4")
-        assert (
-            "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
-        )
+        assert "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
 
     def test_invalid_thread_spec_non_digits(self, main_tab):
         """Test invalid thread spec with non-digit characters."""
         main_tab._validate_thread_spec("a:b:c")
-        assert (
-            "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
-        )
+        assert "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
 
     def test_invalid_thread_spec_mixed_content(self, main_tab):
         """Test invalid thread spec with mixed valid/invalid content."""
         main_tab._validate_thread_spec("1:2a:3")
-        assert (
-            "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
-        )
+        assert "background-color: #401010;" in main_tab.rife_thread_spec_edit.styleSheet()
 
 
 class TestGenerateTimestampedOutputPath:
@@ -181,15 +173,11 @@ class TestCheckInputDirectoryContents:
             main_tab._check_input_directory_contents(tmp_path)
 
             # Should log warning about no images
-            mock_logger.warning.assert_called_once_with(
-                "No image files found in input directory"
-            )
+            mock_logger.warning.assert_called_once_with("No image files found in input directory")
 
     @patch("goesvfi.gui_tabs.main_tab.np")
     @patch("PIL.Image")
-    def test_check_directory_with_images(
-        self, mock_image_class, mock_np, main_tab, tmp_path
-    ):
+    def test_check_directory_with_images(self, mock_image_class, mock_np, main_tab, tmp_path):
         """Test checking directory with valid image files."""
         # Create test image files
         image_files = []
@@ -219,9 +207,7 @@ class TestCheckInputDirectoryContents:
             assert mock_image_class.open.call_count == 3
 
     @patch("PIL.Image")
-    def test_check_directory_with_mixed_files(
-        self, mock_image_class, main_tab, tmp_path
-    ):
+    def test_check_directory_with_mixed_files(self, mock_image_class, main_tab, tmp_path):
         """Test checking directory with mixed file types."""
         # Create various file types
         (tmp_path / "image1.png").touch()
@@ -247,9 +233,7 @@ class TestCheckInputDirectoryContents:
                 mock_logger.debug.assert_any_call(f"Found 3 image files in {tmp_path}")
 
     @patch("PIL.Image")
-    def test_check_directory_with_corrupt_image(
-        self, mock_image_class, main_tab, tmp_path
-    ):
+    def test_check_directory_with_corrupt_image(self, mock_image_class, main_tab, tmp_path):
         """Test handling of corrupt/unreadable images."""
         # Create test image files
         for i in range(3):
@@ -274,9 +258,7 @@ class TestCheckInputDirectoryContents:
 
                 # Should log error for corrupt image
                 error_calls = [
-                    call
-                    for call in mock_logger.error.call_args_list
-                    if "Error analyzing image" in str(call)
+                    call for call in mock_logger.error.call_args_list if "Error analyzing image" in str(call)
                 ]
                 assert len(error_calls) == 1
 
@@ -383,9 +365,7 @@ class TestGetProcessingArgs:
         assert result["max_workers"] == 4
         assert result["encoder"] == "RIFE"
         assert result["rife_model_key"] == "rife-ncnn-vulkan"
-        assert result["rife_model_path"] == Path(
-            "/project/root/models/rife-ncnn-vulkan"
-        )
+        assert result["rife_model_path"] == Path("/project/root/models/rife-ncnn-vulkan")
         assert result["rife_exe_path"] == Path("/path/to/rife")
         assert result["rife_uhd"] is True
         assert result["rife_thread_spec"] == "1:2:1"
@@ -476,9 +456,7 @@ class TestVerifyCropAgainstImages:
             )
 
     @patch("PIL.Image")
-    def test_verify_invalid_crop_exceeds_bounds(
-        self, mock_image_class, main_tab, tmp_path
-    ):
+    def test_verify_invalid_crop_exceeds_bounds(self, mock_image_class, main_tab, tmp_path):
         """Test verifying a crop rectangle that exceeds image bounds."""
         # Create test image
         (tmp_path / "image.png").touch()
@@ -494,9 +472,7 @@ class TestVerifyCropAgainstImages:
 
             # Should log warning about crop exceeding bounds
             warning_calls = [
-                call
-                for call in mock_logger.warning.call_args_list
-                if "exceeds image dimensions" in str(call)
+                call for call in mock_logger.warning.call_args_list if "exceeds image dimensions" in str(call)
             ]
             assert len(warning_calls) > 0
 
@@ -578,10 +554,7 @@ class TestVerifyStartButtonState:
             result = main_tab._verify_start_button_state()
 
             assert result is False
-            assert any(
-                "Has valid input directory: False" in str(call)
-                for call in mock_logger.debug.call_args_list
-            )
+            assert any("Has valid input directory: False" in str(call) for call in mock_logger.debug.call_args_list)
 
     def test_verify_button_should_be_disabled_no_output(self, main_tab):
         """Test verification when button should be disabled due to no output."""
@@ -606,10 +579,7 @@ class TestVerifyStartButtonState:
             result = main_tab._verify_start_button_state()
 
             assert result is False
-            assert any(
-                "Has output file path: False" in str(call)
-                for call in mock_logger.debug.call_args_list
-            )
+            assert any("Has output file path: False" in str(call) for call in mock_logger.debug.call_args_list)
 
 
 if __name__ == "__main__":

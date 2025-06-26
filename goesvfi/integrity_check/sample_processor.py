@@ -46,9 +46,7 @@ class SampleProcessor:
         self.temp_dir = Path(tempfile.mkdtemp(prefix="goes_samples_"))
 
         # Create visualization manager if not provided
-        self.viz_manager = visualization_manager or VisualizationManager(
-            base_dir=self.temp_dir, satellite=satellite
-        )
+        self.viz_manager = visualization_manager or VisualizationManager(base_dir=self.temp_dir, satellite=satellite)
 
     def create_sample_comparison(
         self, channel: Union[ChannelType, int], product_type: ProductType
@@ -67,9 +65,7 @@ class SampleProcessor:
         img = Image.new("RGB", self.sample_size, color="gray")
         return img
 
-    def get_estimated_processing_time(
-        self, channel: Union[ChannelType, int], product_type: ProductType
-    ) -> float:
+    def get_estimated_processing_time(self, channel: Union[ChannelType, int], product_type: ProductType) -> float:
         """Get estimated processing time for a channel/product combination.
 
         Args:

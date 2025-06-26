@@ -81,9 +81,7 @@ def _convert_radiance_to_temperature(
         Normalized temperature data (0-1 range, inverted for IR)
     """
     # Convert radiance to brightness temperature if Planck constants are available
-    if all(
-        k in ds.attrs for k in ["planck_fk1", "planck_fk2", "planck_bc1", "planck_bc2"]
-    ):
+    if all(k in ds.attrs for k in ["planck_fk1", "planck_fk2", "planck_bc1", "planck_bc2"]):
         fk1 = ds.attrs["planck_fk1"]
         fk2 = ds.attrs["planck_fk2"]
         bc1 = ds.attrs["planck_bc1"]
@@ -121,23 +119,17 @@ def _get_colormap(colormap_name: str) -> Any:
 
     if colormap_name == "gray":
         # Custom grayscale with enhanced contrast
-        return LinearSegmentedColormap.from_list(
-            "enhanced_gray", [(0, 0, 0), (1, 1, 1)], N=256
-        )
+        return LinearSegmentedColormap.from_list("enhanced_gray", [(0, 0, 0), (1, 1, 1)], N=256)
     else:
         # Get the colormap - we just need a Colormap,
         # not specifically LinearSegmentedColormap
         _cmap = plt.get_cmap(colormap_name)
         # Create a new LinearSegmentedColormap with the data from _cmap
         # This ensures type safety while maintaining the colormap
-        return LinearSegmentedColormap.from_list(
-            colormap_name, _cmap(np.linspace(0, 1, 256)), N=256
-        )
+        return LinearSegmentedColormap.from_list(colormap_name, _cmap(np.linspace(0, 1, 256)), N=256)
 
 
-def _create_figure(
-    data: npt.NDArray[np.float64], colormap_name: str, output_path: Path
-) -> None:
+def _create_figure(data: npt.NDArray[np.float64], colormap_name: str, output_path: Path) -> None:
     """
     Create a matplotlib figure and save it to a file.
 
@@ -187,9 +179,7 @@ def _resize_image(image_path: Path, resolution: Tuple[int, int]) -> None:
     img.save(image_path)
 
 
-def _prepare_output_path(
-    netcdf_path: Path, output_path: Optional[Union[str, Path]]
-) -> Path:
+def _prepare_output_path(netcdf_path: Path, output_path: Optional[Union[str, Path]]) -> Path:
     """
     Prepare the output path for the rendered image.
 
@@ -253,16 +243,12 @@ def render_png(
 
             # 2. Extract the radiance data
             if RADIANCE_VAR not in ds.variables:
-                raise ValueError(
-                    f"Radiance variable {RADIANCE_VAR!r} not found in dataset"
-                )
+                raise ValueError(f"Radiance variable {RADIANCE_VAR!r} not found in dataset")
 
             data = ds[RADIANCE_VAR].values
 
             # 3. Convert radiance to brightness temperature and normalize
-            normalized_data = _convert_radiance_to_temperature(
-                data, ds, min_temp_k, max_temp_k
-            )
+            normalized_data = _convert_radiance_to_temperature(data, ds, min_temp_k, max_temp_k)
 
             # 4. Create figure and save to file
             _create_figure(normalized_data, colormap, final_output_path)
@@ -308,15 +294,9 @@ def extract_metadata(netcdf_path: Union[str, Path]) -> Dict[str, Any]:
                 "satellite": ds.attrs.get("platform_ID", None),
                 "instrument": ds.attrs.get("instrument_type", None),
                 "timestamp": ds.attrs.get("date_created", None),
-                "band_id": (
-                    ds[BAND_ID_VAR].values.item()
-                    if BAND_ID_VAR in ds.variables
-                    else None
-                ),
+                "band_id": (ds[BAND_ID_VAR].values.item() if BAND_ID_VAR in ds.variables else None),
                 "band_wavelength": (
-                    ds[BAND_WAVELENGTH_VAR].values.item()
-                    if BAND_WAVELENGTH_VAR in ds.variables
-                    else None
+                    ds[BAND_WAVELENGTH_VAR].values.item() if BAND_WAVELENGTH_VAR in ds.variables else None
                 ),
                 "resolution_x": ds[X_VAR].size if X_VAR in ds.variables else None,
                 "resolution_y": ds[Y_VAR].size if Y_VAR in ds.variables else None,

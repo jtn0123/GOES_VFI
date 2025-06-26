@@ -52,8 +52,7 @@ class ModelManager:
                     detector = RifeCapabilityDetector(exe_path)
                     capabilities = {
                         "hd": detector.supports_uhd(),
-                        "ensemble": detector.supports_tta_spatial()
-                        or detector.supports_tta_temporal(),
+                        "ensemble": detector.supports_tta_spatial() or detector.supports_tta_temporal(),
                         "fastmode": detector.supports_thread_spec(),
                         "tiling": detector.supports_tiling(),
                     }
@@ -64,9 +63,7 @@ class ModelManager:
                         e,
                     )
             else:
-                LOGGER.warning(
-                    "RIFE executable not found in model directory: %s", model_dir
-                )
+                LOGGER.warning("RIFE executable not found in model directory: %s", model_dir)
 
             self.model_capabilities[model_name] = capabilities
 

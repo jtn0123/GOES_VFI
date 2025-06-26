@@ -29,21 +29,15 @@ class ModelSelectorManager:
             main_window.model_combo.addItems(available_models)
 
             # Set the current text to the loaded setting or default
-            loaded_model = main_window.settings.value(
-                "rife_model_key", "rife-v4.6", type=str
-            )
+            loaded_model = main_window.settings.value("rife_model_key", "rife-v4.6", type=str)
             if loaded_model in available_models:
                 main_window.model_combo.setCurrentText(loaded_model)
             else:
-                main_window.model_combo.setCurrentIndex(
-                    0
-                )  # Select the first available model
+                main_window.model_combo.setCurrentIndex(0)  # Select the first available model
 
             # Set model key on main_tab since current_model_key is a property in MainWindow
             if hasattr(main_window.main_tab, "current_model_key"):
-                main_window.main_tab.current_model_key = (
-                    main_window.model_combo.currentText()
-                )
+                main_window.main_tab.current_model_key = main_window.model_combo.currentText()
         else:
             main_window.model_combo.addItem(main_window.tr("No RIFE models found"))
             main_window.model_combo.setEnabled(False)
@@ -84,9 +78,7 @@ class ModelSelectorManager:
             main_window.main_tab.rife_thread_spec_edit.setStyleSheet("")
             main_window._update_start_button_state()
 
-    def toggle_sanchez_res_enabled(
-        self, main_window: Any, state: Qt.CheckState
-    ) -> None:
+    def toggle_sanchez_res_enabled(self, main_window: Any, state: Qt.CheckState) -> None:
         """Enable or disable the Sanchez resolution combo box based on checkbox state.
 
         Args:
@@ -94,9 +86,7 @@ class ModelSelectorManager:
             state: The checkbox state
         """
         # Use the combo box alias defined in __init__
-        main_window.sanchez_res_km_combo.setEnabled(
-            state == Qt.CheckState.Checked.value
-        )
+        main_window.sanchez_res_km_combo.setEnabled(state == Qt.CheckState.Checked.value)
 
     def connect_model_combo(self, main_window: Any) -> None:
         """Connect the model combo box signal.

@@ -63,21 +63,15 @@ class OptimizedTimelineTab(QWidget):
         main_layout.setSpacing(10)
 
         # Section 1: Compact Control Panel
-        self.control_panel = (
-            self._create_control_panel()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.control_panel = self._create_control_panel()  # pylint: disable=attribute-defined-outside-init
         main_layout.addWidget(self.control_panel)
 
         # Section 2: View Selector and Visualizations
-        self.view_selector = (
-            self._create_view_selector()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.view_selector = self._create_view_selector()  # pylint: disable=attribute-defined-outside-init
         main_layout.addWidget(self.view_selector, 1)  # Give stretch priority
 
         # Section 3: Information Panel
-        self.info_panel = (
-            self._create_info_panel()
-        )  # pylint: disable=attribute-defined-outside-init
+        self.info_panel = self._create_info_panel()  # pylint: disable=attribute-defined-outside-init
         main_layout.addWidget(self.info_panel)
 
     def _create_control_panel(self) -> QFrame:
@@ -88,8 +82,6 @@ class OptimizedTimelineTab(QWidget):
         panel.setStyleSheet(
             """
             #controlPanel {
-                background-color: #3D3D3D;
-                border: 1px solid #555555;
                 border-radius: 3px;
             }
             """
@@ -100,32 +92,26 @@ class OptimizedTimelineTab(QWidget):
         layout.setSpacing(8)
 
         # Add a spacer at the beginning
-        layout.addSpacerItem(
-            QSpacerItem(10, 10, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        )
+        layout.addSpacerItem(QSpacerItem(10, 10, QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
 
         # Add separator line
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.VLine)
         separator.setFrameShadow(QFrame.Shadow.Sunken)
-        separator.setStyleSheet("color: #454545;")
+        separator.setStyleSheet("")  # Removed hardcoded color
         layout.addWidget(separator)
 
-        # Create button row styling - unified style for all controls
+        # Create button row styling - unified style for all controls (colors handled by theme)
         control_style = """
         QFrame.ControlGroup {
-        background-color: #3D3D3D;
-        border: 1px solid #555555;
         border-radius: 3px;
         }
         QLabel.ControlLabel {
-        color: #EFEFEF;
         font-weight: bold;
         padding-right: 4px;
         font-size: 11px;
         }
         QRadioButton {
-        color: #EFEFEF;
         spacing: 4px;
         padding: 0px 3px;
         font-size: 11px;
@@ -133,31 +119,16 @@ class OptimizedTimelineTab(QWidget):
         QRadioButton::indicator {
         width: 13px;
         height: 13px;
-        background-color: #3D3D3D;
-        border: 1px solid #555555;
         border-radius: 2px;
         }
-        QRadioButton::indicator:checked {
-        background-color: #6C9BD1;
-        border: 1px solid #6C9BD1;
-        }
         QPushButton {
-        background-color: #4A4A4A;
-        border: 1px solid #555555;
         border-radius: 3px;
         padding: 1px 6px;
-        color: #EFEFEF;
         font-weight: bold;
         min-height: 20px;
         max-height: 20px;
         min-width: 24px;
         font-size: 11px;
-        }
-        QPushButton:hover {
-        background-color: #5A5A5A;
-        }
-        QPushButton:pressed {
-        background-color: #3A3A3A;
         }
         """
         panel.setStyleSheet(panel.styleSheet() + control_style)
@@ -191,9 +162,7 @@ class OptimizedTimelineTab(QWidget):
         self.filter_available_btn = QPushButton(self.tr("Available"))
         self.filter_available_btn.setCheckable(True)
         self.filter_available_btn.setToolTip(self.tr("Show only available data points"))
-        self.filter_available_btn.clicked.connect(
-            lambda: self._set_view_mode("available")
-        )
+        self.filter_available_btn.clicked.connect(lambda: self._set_view_mode("available"))
         filter_layout.addWidget(self.filter_available_btn)
 
         # Connect buttons to work as a group (when one is checked, others are unchecked)
@@ -203,12 +172,8 @@ class OptimizedTimelineTab(QWidget):
             self.filter_available_btn.setChecked(btn_name == "available")
 
         self.filter_all_btn.clicked.connect(lambda: update_filter_buttons("all"))
-        self.filter_missing_btn.clicked.connect(
-            lambda: update_filter_buttons("missing")
-        )
-        self.filter_available_btn.clicked.connect(
-            lambda: update_filter_buttons("available")
-        )
+        self.filter_missing_btn.clicked.connect(lambda: update_filter_buttons("missing"))
+        self.filter_available_btn.clicked.connect(lambda: update_filter_buttons("available"))
 
         layout.addWidget(filter_group)
 
@@ -216,7 +181,7 @@ class OptimizedTimelineTab(QWidget):
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.VLine)
         separator.setFrameShadow(QFrame.Shadow.Sunken)
-        separator.setStyleSheet("color: #454545;")
+        separator.setStyleSheet("")  # Removed hardcoded color
         layout.addWidget(separator)
 
         # === View Mode Controls ===
@@ -278,9 +243,7 @@ class OptimizedTimelineTab(QWidget):
         zoom_layout.addWidget(self.zoom_out_btn)
 
         self.zoom_level_label = QLabel(self.tr("100%"))
-        self.zoom_level_label.setStyleSheet(
-            "color: #f0f0f0; min-width: 36px; text-align: center; font-size: 11px;"
-        )
+        self.zoom_level_label.setStyleSheet("min-width: 36px; text-align: center; font-size: 11px;")
         self.zoom_level_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         zoom_layout.addWidget(self.zoom_level_label)
 
@@ -310,14 +273,12 @@ class OptimizedTimelineTab(QWidget):
         # Add a header with view name and status indicator
         self.view_header = QLabel(self.tr("📊 Timeline View"))
         self.view_header.setObjectName("viewHeader")
+        self.view_header.setProperty("class", "AppHeader")
         self.view_header.setStyleSheet(
             """
             #viewHeader {
-                color: #f0f0f0;
                 font-weight: bold;
                 font-size: 14px;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #4a4a4a, stop:1 #3a3a3a);
-                border: 1px solid #555555;
                 border-radius: 6px;
                 padding: 6px 12px;
                 margin-bottom: 8px;
@@ -353,8 +314,6 @@ class OptimizedTimelineTab(QWidget):
         panel.setStyleSheet(
             """
             #infoPanel {
-                background-color: #3D3D3D;
-                border: 1px solid #555555;
                 border-radius: 3px;
             }
             """
@@ -365,9 +324,7 @@ class OptimizedTimelineTab(QWidget):
 
         # Panel title
         title = QLabel(self.tr("Selection Details"))
-        title.setStyleSheet(
-            "color: #EFEFEF; font-weight: bold; font-size: 14px; padding-bottom: 5px;"
-        )
+        title.setStyleSheet("font-weight: bold; font-size: 14px; padding-bottom: 5px;")
         layout.addWidget(title)
 
         # Content area
@@ -375,7 +332,7 @@ class OptimizedTimelineTab(QWidget):
 
         # Info section
         self.info_label = QLabel(self.tr("No item selected"))
-        self.info_label.setStyleSheet("color: #EFEFEF;")
+        self.info_label.setStyleSheet("")  # Removed hardcoded color
         self.info_label.setWordWrap(True)
         content_layout.addWidget(self.info_label, 3)  # Give more space to info
 
@@ -428,14 +385,10 @@ class OptimizedTimelineTab(QWidget):
         self.interval_minutes = interval_minutes
 
         # Update timeline visualization
-        self.timeline_viz.set_data(
-            missing_items, start_time, end_time, interval_minutes or 60
-        )
+        self.timeline_viz.set_data(missing_items, start_time, end_time, interval_minutes or 60)
 
         # Update calendar visualization
-        self.calendar_view.set_data(
-            missing_items, start_time, end_time, interval_minutes or 60
-        )
+        self.calendar_view.set_data(missing_items, start_time, end_time, interval_minutes or 60)
 
         # Reset selection state
         self.selected_timestamp = None
@@ -529,9 +482,7 @@ class OptimizedTimelineTab(QWidget):
         # Find the corresponding item if it exists
         self.selected_item = None
         for item in self.missing_items:
-            if (
-                abs((item.timestamp - timestamp).total_seconds()) < 60
-            ):  # Within a minute
+            if abs((item.timestamp - timestamp).total_seconds()) < 60:  # Within a minute
                 self.selected_item = item
                 break
 
@@ -573,9 +524,7 @@ class OptimizedTimelineTab(QWidget):
             )
 
             # Enable/disable action buttons based on status
-            self.action_view_btn.setEnabled(
-                getattr(self.selected_item, "is_downloaded", False)
-            )
+            self.action_view_btn.setEnabled(getattr(self.selected_item, "is_downloaded", False))
             self.action_download_btn.setEnabled(
                 not getattr(self.selected_item, "is_downloaded", False)
                 and not getattr(self.selected_item, "is_downloading", False)
@@ -664,9 +613,7 @@ class OptimizedTimelineTab(QWidget):
     def _action_download(self) -> None:
         """Handle action to download item."""
         # Simply a placeholder for demo purposes
-        if self.selected_item and not getattr(
-            self.selected_item, "is_downloaded", False
-        ):
+        if self.selected_item and not getattr(self.selected_item, "is_downloaded", False):
             pass
             print(f"Downloading {self.selected_item.expected_filename}")
 

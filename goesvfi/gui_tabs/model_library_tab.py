@@ -5,7 +5,6 @@ import logging
 import pathlib  # Import pathlib
 from typing import TYPE_CHECKING
 
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -57,51 +56,23 @@ class ModelLibraryTab(QWidget):
         # Enhanced model table
         self.model_table = QTableWidget()
         self.model_table.setColumnCount(3)
-        self.model_table.setHorizontalHeaderLabels(
-            ["🤖 Model Key", "📁 Path", "📊 Status"]
-        )
+        self.model_table.setHorizontalHeaderLabels(["🤖 Model Key", "📁 Path", "📊 Status"])
 
         # Style the table
         self.model_table.setStyleSheet(
             """
             QTableWidget {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
                 border-radius: 8px;
-                gridline-color: #454545;
-                color: #f0f0f0;
-                font-size: 11px;
-                selection-background-color: #4a6fa5;
             }
             QTableWidget::item {
                 padding: 8px;
-                border-bottom: 1px solid #3a3a3a;
-            }
-            QTableWidget::item:selected {
-                background-color: #4a6fa5;
-                color: white;
             }
             QHeaderView::section {
-                background-color: #3a3a3a;
-                color: #ffffff;
                 padding: 8px;
-                border: 1px solid #454545;
                 font-weight: bold;
                 font-size: 12px;
             }
-            QScrollBar:vertical {
-                background-color: #2d2d2d;
-                width: 12px;
-                border-radius: 6px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #555555;
-                border-radius: 6px;
-                min-height: 20px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #666666;
-            }
+            /* Scrollbar styling handled by qt-material theme */
             """
         )
 
@@ -125,18 +96,15 @@ class ModelLibraryTab(QWidget):
     def _create_header(self, layout: QVBoxLayout) -> None:
         """Create the enhanced header section."""
         header = QLabel("🤖 RIFE Model Library")
+        header.setProperty("class", "AppHeader")
         header.setStyleSheet(
             """
             QLabel {
                 font-size: 18px;
                 font-weight: bold;
-                color: #ffffff;
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 #4a6fa5, stop:0.5 #3a5f95, stop:1 #2a4f85);
                 padding: 12px 16px;
                 border-radius: 8px;
                 margin-bottom: 10px;
-                border: 2px solid #5a7fb5;
             }
             """
         )
@@ -148,8 +116,6 @@ class ModelLibraryTab(QWidget):
         container.setStyleSheet(
             """
             QFrame {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
                 border-radius: 8px;
                 padding: 10px;
             }
@@ -160,9 +126,7 @@ class ModelLibraryTab(QWidget):
         layout.setSpacing(8)
 
         info_label = QLabel("📚 Available RIFE Models")
-        info_label.setStyleSheet(
-            "color: #ffffff; font-weight: bold; font-size: 14px; margin-bottom: 5px;"
-        )
+        info_label.setStyleSheet("font-weight: bold; font-size: 14px; margin-bottom: 5px;")
         layout.addWidget(info_label)
 
         description = QLabel(
@@ -170,7 +134,7 @@ class ModelLibraryTab(QWidget):
             "Models with ✅ status are ready to use for processing."
         )
         description.setWordWrap(True)
-        description.setStyleSheet("color: #cccccc; font-size: 11px; line-height: 1.4;")
+        description.setStyleSheet("font-size: 11px; line-height: 1.4;")
         layout.addWidget(description)
 
         return container
@@ -181,8 +145,6 @@ class ModelLibraryTab(QWidget):
         status_container.setStyleSheet(
             """
             QFrame {
-                background-color: #2d2d2d;
-                border: 2px solid #454545;
                 border-radius: 8px;
                 padding: 10px;
                 margin-top: 10px;
@@ -194,10 +156,8 @@ class ModelLibraryTab(QWidget):
 
         # Status label
         self.status_label = QLabel("🔄 Loading model information...")
-        self.status_label.setStyleSheet(
-            "color: #66aaff; background-color: #2a2a2a; padding: 8px 12px; "
-            "border-radius: 4px; border-left: 4px solid #66aaff; font-weight: bold;"
-        )
+        self.status_label.setProperty("class", "StatusInfo")
+        self.status_label.setStyleSheet("padding: 8px 12px; border-radius: 4px; font-weight: bold;")
         status_layout.addWidget(self.status_label)
 
         # Refresh button
@@ -205,19 +165,10 @@ class ModelLibraryTab(QWidget):
         refresh_btn.setStyleSheet(
             """
             QPushButton {
-                background-color: #4a6fa5;
-                color: white;
-                border: none;
                 padding: 8px 16px;
                 border-radius: 6px;
                 font-weight: bold;
                 font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #5a7fb5;
-            }
-            QPushButton:pressed {
-                background-color: #3a5f95;
             }
             """
         )
@@ -250,18 +201,14 @@ class ModelLibraryTab(QWidget):
 
                 if model_exists:
                     status_item = QTableWidgetItem("✅ Available")
-                    status_item.setForeground(QColor("#66ff66"))
                     font = status_item.font()
                     font.setBold(True)
                     status_item.setFont(font)
                 else:
                     status_item = QTableWidgetItem("❌ Missing")
-                    status_item.setForeground(QColor("#ff6666"))
                     font = status_item.font()
                     font.setBold(True)
                     status_item.setFont(font)
-                    key_item.setForeground(QColor("#aaaaaa"))
-                    path_item.setForeground(QColor("#aaaaaa"))
 
                 self.model_table.setItem(row, 0, key_item)
                 self.model_table.setItem(row, 1, path_item)
@@ -274,18 +221,14 @@ class ModelLibraryTab(QWidget):
                 available_count = sum(
                     1
                     for row in range(self.model_table.rowCount())
-                    if (item := self.model_table.item(row, 2)) is not None
-                    and "Available" in item.text()
+                    if (item := self.model_table.item(row, 2)) is not None and "Available" in item.text()
                 )
-                self.status_label.setText(
-                    f"✅ {available_count} of {len(available_models)} models available"
-                )
+                self.status_label.setText(f"✅ {available_count} of {len(available_models)} models available")
         except Exception as e:
             LOGGER.error(f"Failed to populate model table: {e}", exc_info=True)
             # Enhanced error display
             error_item = QTableWidgetItem(f"⚠️ Error loading models: {e}")
             status_item = QTableWidgetItem("❌ Failed")
-            status_item.setForeground(QColor("#ff6666"))
             font = status_item.font()
             font.setBold(True)
             status_item.setFont(font)
@@ -298,7 +241,5 @@ class ModelLibraryTab(QWidget):
             # Update status label for error
             if hasattr(self, "status_label"):
                 self.status_label.setText("❌ Error loading model information")
-                self.status_label.setStyleSheet(
-                    "color: #ff6666; background-color: #2a2a2a; padding: 8px 12px; "
-                    "border-radius: 4px; border-left: 4px solid #ff6666; font-weight: bold;"
-                )
+                self.status_label.setProperty("class", "StatusError")
+                self.status_label.setStyleSheet("padding: 8px 12px; border-radius: 4px; font-weight: bold;")

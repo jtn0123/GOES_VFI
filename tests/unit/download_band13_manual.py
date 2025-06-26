@@ -16,9 +16,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
 from goesvfi.utils import date_utils, log
 
 # Set up logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 LOGGER = log.get_logger(__name__)
 
 # Set the download directory - create if it doesn't exist
@@ -37,9 +35,7 @@ async def list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10):
     Returns:
         List of S3 object keys for Band 13
     """
-    LOGGER.info(
-        "Listing Band 13 objects in s3://%s/%s (limit: %s)", bucket, prefix, limit
-    )
+    LOGGER.info("Listing Band 13 objects in s3://%s/%s (limit: %s)", bucket, prefix, limit)
 
     import aioboto3
     from botocore import UNSIGNED
@@ -79,9 +75,7 @@ async def list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10):
             # Sort by timestamp
             band13_objects = sorted(band13_objects)
 
-            LOGGER.info(
-                f"Found {len(band13_objects)} Band 13 objects out of {len(all_objects)} total"
-            )
+            LOGGER.info(f"Found {len(band13_objects)} Band 13 objects out of {len(all_objects)} total")
 
             # Return the first 'limit' Band 13 objects
             return band13_objects[:limit]
@@ -103,9 +97,7 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
     Returns:
         Path to downloaded file if successful, None otherwise
     """
-    LOGGER.info(
-        f"Testing download of Band 13 {product_type} for {satellite_pattern.name} at {timestamp.isoformat()}"
-    )
+    LOGGER.info(f"Testing download of Band 13 {product_type} for {satellite_pattern.name} at {timestamp.isoformat()}")
 
     # Create S3 store
     s3_store = S3Store(timeout=60)
@@ -122,9 +114,7 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
             LOGGER.warning("No valid scan times found for %s", product_type)
             return None
 
-        LOGGER.info(
-            f"Found {len(nearest_times)} nearest scan times: {[t.isoformat() for t in nearest_times]}"
-        )
+        LOGGER.info(f"Found {len(nearest_times)} nearest scan times: {[t.isoformat() for t in nearest_times]}")
 
         # Convert date to DOY format
         year = timestamp.year
@@ -146,9 +136,7 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
         LOGGER.info("Testing download of key: s3://%s/%s", bucket, test_key)
 
         # Generate destination path with product type and satellite in the filename
-        filename = (
-            f"{satellite_pattern.name}_{product_type}_Band13_{test_key.split('/')[-1]}"
-        )
+        filename = f"{satellite_pattern.name}_{product_type}_Band13_{test_key.split('/')[-1]}"
         dest_path = dest_dir / filename
 
         # Create a file pattern for list_objects_v2 that uses actual pattern
@@ -206,16 +194,12 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
                 if dest_path.exists():
                     pass
                     file_size = dest_path.stat().st_size
-                    LOGGER.info(
-                        f"✓ Successfully downloaded to {dest_path} ({file_size} bytes)"
-                    )
+                    LOGGER.info(f"✓ Successfully downloaded to {dest_path} ({file_size} bytes)")
                     return dest_path
                 LOGGER.error(f"✗ Download failed: File doesn't exist at {dest_path}")
                 return None
             else:
-                LOGGER.error(
-                    "✗ Failed to extract timestamp from filename: %s", test_key
-                )
+                LOGGER.error("✗ Failed to extract timestamp from filename: %s", test_key)
                 return None
         except Exception as e:
             pass
@@ -285,14 +269,10 @@ async def download_fixed_list():
                 if dest_path.exists():
                     pass
                     file_size = dest_path.stat().st_size
-                    LOGGER.info(
-                        f"✓ Successfully downloaded to {dest_path} ({file_size} bytes)"
-                    )
+                    LOGGER.info(f"✓ Successfully downloaded to {dest_path} ({file_size} bytes)")
                     downloaded_files.append(dest_path)
                 else:
-                    LOGGER.error(
-                        f"✗ Download failed: File doesn't exist at {dest_path}"
-                    )
+                    LOGGER.error(f"✗ Download failed: File doesn't exist at {dest_path}")
         except Exception as e:
             pass
             LOGGER.error("✗ Error downloading %s: %s", key, e)
@@ -319,16 +299,14 @@ async def main():
     # Test with RadF, RadC, and RadM product types
     product_types = ["RadF", "RadC", "RadM"]
 
-    results = {}
-    downloaded_files = []
+    results: dict[str, dict] = {}
+    downloaded_files: list[str] = []
 
     for satellite, sat_name in satellites:
         results[sat_name] = {}
 
         for product_type in product_types:
-            downloaded_path = await test_download_band13(
-                test_time, satellite, product_type, DOWNLOAD_DIR
-            )
+            downloaded_path = await test_download_band13(test_time, satellite, product_type, DOWNLOAD_DIR)
             results[sat_name][product_type] = downloaded_path is not None
             if downloaded_path:
                 pass

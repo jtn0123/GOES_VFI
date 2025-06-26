@@ -14,9 +14,7 @@ class TooltipHelper:
     """Helper class for managing tooltips."""
 
     @staticmethod
-    def add_tooltip(
-        widget: QWidget, tooltip_key: str, tooltip: Optional[str] = None
-    ) -> None:
+    def add_tooltip(widget: QWidget, tooltip_key: str, tooltip: Optional[str] = None) -> None:
         """Add a tooltip to a widget.
 
         Args:

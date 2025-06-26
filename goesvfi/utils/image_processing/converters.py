@@ -21,9 +21,7 @@ class ArrayToImageConverter(ProcessorBase):
         super().__init__("array_to_image")
         self.format_hint = format_hint
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Convert numpy array to QImage."""
         try:
             if not isinstance(input_data, np.ndarray):
@@ -54,9 +52,7 @@ class ArrayToImageConverter(ProcessorBase):
                 )
 
             if qimage.isNull():
-                return ImageProcessingResult.failure_result(
-                    self._create_error("Failed to create QImage from array")
-                )
+                return ImageProcessingResult.failure_result(self._create_error("Failed to create QImage from array"))
 
             return ImageProcessingResult.success_result(
                 qimage,
@@ -72,9 +68,7 @@ class ArrayToImageConverter(ProcessorBase):
         """Convert grayscale array to QImage."""
         # Ensure 8-bit
         if array.dtype != np.uint8:
-            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(
-                np.uint8
-            )
+            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
 
         height, width = array.shape
         return QImage(array.data, width, height, width, QImage.Format.Format_Grayscale8)
@@ -83,29 +77,21 @@ class ArrayToImageConverter(ProcessorBase):
         """Convert RGB array to QImage."""
         # Ensure 8-bit
         if array.dtype != np.uint8:
-            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(
-                np.uint8
-            )
+            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
 
         height, width, channels = array.shape
         bytes_per_line = width * channels
-        return QImage(
-            array.data, width, height, bytes_per_line, QImage.Format.Format_RGB888
-        )
+        return QImage(array.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
 
     def _array_to_qimage_rgba(self, array: np.ndarray) -> QImage:
         """Convert RGBA array to QImage."""
         # Ensure 8-bit
         if array.dtype != np.uint8:
-            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(
-                np.uint8
-            )
+            array = ((array - array.min()) / (array.max() - array.min()) * 255).astype(np.uint8)
 
         height, width, channels = array.shape
         bytes_per_line = width * channels
-        return QImage(
-            array.data, width, height, bytes_per_line, QImage.Format.Format_RGBA8888
-        )
+        return QImage(array.data, width, height, bytes_per_line, QImage.Format.Format_RGBA8888)
 
 
 class ImageToPixmapConverter(ProcessorBase):
@@ -122,9 +108,7 @@ class ImageToPixmapConverter(ProcessorBase):
         self.aspect_ratio_mode = aspect_ratio_mode
         self.transformation_mode = transformation_mode
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Convert QImage to QPixmap with optional scaling."""
         try:
             if not isinstance(input_data, QImage):
@@ -141,9 +125,7 @@ class ImageToPixmapConverter(ProcessorBase):
 
             # Scale if target size is specified
             if target_size and (target_size.width() > 0 and target_size.height() > 0):
-                scaled_image = qimage.scaled(
-                    target_size, self.aspect_ratio_mode, self.transformation_mode
-                )
+                scaled_image = qimage.scaled(target_size, self.aspect_ratio_mode, self.transformation_mode)
             else:
                 scaled_image = qimage
 
@@ -151,9 +133,7 @@ class ImageToPixmapConverter(ProcessorBase):
             pixmap = QPixmap.fromImage(scaled_image)
 
             if pixmap.isNull():
-                return ImageProcessingResult.failure_result(
-                    self._create_error("Failed to create QPixmap from QImage")
-                )
+                return ImageProcessingResult.failure_result(self._create_error("Failed to create QPixmap from QImage"))
 
             metadata = {
                 "original_size": qimage.size(),
@@ -175,9 +155,7 @@ class ImageDataConverter(ProcessorBase):
     def __init__(self) -> None:
         super().__init__("imagedata_to_array")
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Convert ImageData to numpy array."""
         try:
             # Import here to avoid circular imports
@@ -191,17 +169,13 @@ class ImageDataConverter(ProcessorBase):
             image_data = input_data
 
             if image_data.image_data is None:
-                return ImageProcessingResult.failure_result(
-                    self._create_error("ImageData contains no image data")
-                )
+                return ImageProcessingResult.failure_result(self._create_error("ImageData contains no image data"))
 
             array = image_data.image_data
 
             if not isinstance(array, np.ndarray):
                 return ImageProcessingResult.failure_result(
-                    self._create_error(
-                        f"ImageData contains non-array data: {type(array)}"
-                    )
+                    self._create_error(f"ImageData contains non-array data: {type(array)}")
                 )
 
             metadata = {
@@ -224,9 +198,7 @@ class CropProcessor(ProcessorBase):
     def __init__(self) -> None:
         super().__init__("crop")
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Crop numpy array."""
         try:
             if not isinstance(input_data, np.ndarray):
@@ -260,9 +232,7 @@ class CropProcessor(ProcessorBase):
                 img_height, img_width = array.shape[:2]
             else:
                 return ImageProcessingResult.failure_result(
-                    self._create_error(
-                        f"Unsupported array shape for cropping: {array.shape}"
-                    )
+                    self._create_error(f"Unsupported array shape for cropping: {array.shape}")
                 )
 
             # Clamp crop coordinates to image bounds
@@ -287,6 +257,4 @@ class CropProcessor(ProcessorBase):
             return ImageProcessingResult.success_result(cropped, metadata)
 
         except Exception as e:
-            return ImageProcessingResult.failure_result(
-                self._create_error(f"Crop processing failed: {e}", e)
-            )
+            return ImageProcessingResult.failure_result(self._create_error(f"Crop processing failed: {e}", e))

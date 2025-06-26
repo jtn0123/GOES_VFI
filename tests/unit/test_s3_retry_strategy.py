@@ -36,9 +36,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.get_paginator = MagicMock()
 
         # Patch the _get_s3_client method to return our mock
-        patcher = patch.object(
-            S3Store, "_get_s3_client", return_value=self.mock_s3_client
-        )
+        patcher = patch.object(S3Store, "_get_s3_client", return_value=self.mock_s3_client)
         self.mock_get_s3_client = patcher.start()
 
         async def async_stop() -> None:
@@ -122,9 +120,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
 
         # Download attempt fails with connection error
-        error_response = {
-            "Error": {"Code": "ConnectionError", "Message": "Connection error"}
-        }
+        error_response = {"Error": {"Code": "ConnectionError", "Message": "Connection error"}}
         connection_error = botocore.exceptions.ClientError(error_response, "GetObject")
 
         # Setup download_file to fail
@@ -134,9 +130,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         # Execute the download method, expect it to raise ConnectionError
         with patch("goesvfi.integrity_check.remote.s3_store.update_download_stats"):
             with self.assertRaises(RemoteConnectionError):
-                await self.store.download_file(
-                    self.test_timestamp, self.test_satellite, self.test_dest_path
-                )
+                await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify download_file was called once (no retry at download level)
         self.assertEqual(self.mock_s3_client.download_file.call_count, 1)
@@ -154,7 +148,9 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
         # Setup a mock page with one result
         # The key needs to have the satellite code and timestamp part that match
-        test_key = "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661200000_e20231661202000_c20231661202030.nc"
+        test_key = (
+            "ABI-L1b-RadC/2023/166/12/OR_ABI-L1b-RadC-M6C13_G18_s20231661200000_e20231661202000_c20231661202030.nc"
+        )
         test_page = {"Contents": [{"Key": test_key}]}
 
         # Create an async generator for the paginator
@@ -169,9 +165,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
         # Execute the download method
         with patch("goesvfi.integrity_check.remote.s3_store.update_download_stats"):
-            result = await self.store.download_file(
-                self.test_timestamp, self.test_satellite, self.test_dest_path
-            )
+            result = await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify the paginator was used to find a wildcard match
         self.mock_s3_client.get_paginator.assert_called_with("list_objects_v2")
@@ -197,9 +191,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         # Create a spy for update_download_stats
         stats_updates = []
 
-        def mock_update_stats(
-            success, download_time=0, file_size=0, error_type=None, error_message=None
-        ):
+        def mock_update_stats(success, download_time=0, file_size=0, error_type=None, error_message=None):
             stats_updates.append(
                 {
                     "success": success,
@@ -225,13 +217,9 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
             with (
                 patch("pathlib.Path.exists", return_value=True),
                 patch("pathlib.Path.stat", return_value=mock_stat),
-                patch(
-                    "pathlib.Path.mkdir"
-                ),  # Mock mkdir to avoid directory creation issues
+                patch("pathlib.Path.mkdir"),  # Mock mkdir to avoid directory creation issues
             ):
-                result = await self.store.download_file(
-                    self.test_timestamp, self.test_satellite, tmp_dest_path
-                )
+                result = await self.store.download_file(self.test_timestamp, self.test_satellite, tmp_dest_path)
 
         # Verify update_download_stats was called with success=True
         self.assertTrue(len(stats_updates) > 0)
@@ -249,16 +237,12 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
 
         # Make download_file fail with a timeout
-        self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError(
-            "Download timed out"
-        )
+        self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError("Download timed out")
 
         # Create a spy for update_download_stats
         stats_updates = []
 
-        def mock_update_stats(
-            success, download_time=0, file_size=0, error_type=None, error_message=None
-        ):
+        def mock_update_stats(success, download_time=0, file_size=0, error_type=None, error_message=None):
             stats_updates.append(
                 {
                     "success": success,
@@ -275,9 +259,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
             side_effect=mock_update_stats,
         ):
             with self.assertRaises(RemoteConnectionError):
-                await self.store.download_file(
-                    self.test_timestamp, self.test_satellite, self.test_dest_path
-                )
+                await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify update_download_stats was called with success=False
         self.assertTrue(len(stats_updates) > 0)
@@ -314,9 +296,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         async def tracking_download(ts, satellite, dest_path):
             # Increment active count
             delay_tracker["active_count"] += 1
-            delay_tracker["max_active"] = max(
-                delay_tracker["max_active"], delay_tracker["active_count"]
-            )
+            delay_tracker["max_active"] = max(delay_tracker["max_active"], delay_tracker["active_count"])
 
             try:
                 # Add a delay to ensure overlap
@@ -362,14 +342,10 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.download_file.side_effect = network_error
 
         # Mock the diagnostics collector
-        with patch(
-            "goesvfi.integrity_check.remote.s3_store.get_system_network_info"
-        ) as mock_diagnostics:
+        with patch("goesvfi.integrity_check.remote.s3_store.get_system_network_info") as mock_diagnostics:
             # Execute the download method, expect a RemoteStoreError
             with self.assertRaises(RemoteStoreError):
-                await self.store.download_file(
-                    self.test_timestamp, self.test_satellite, self.test_dest_path
-                )
+                await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
             # Verify diagnostics were collected
             mock_diagnostics.assert_called_once()
@@ -396,12 +372,8 @@ def async_test(coro):
 
 # Apply async_test decorator to async test methods
 for name in dir(TestS3RetryStrategy):
-    if name.startswith("test_") and asyncio.iscoroutinefunction(
-        getattr(TestS3RetryStrategy, name)
-    ):
-        setattr(
-            TestS3RetryStrategy, name, async_test(getattr(TestS3RetryStrategy, name))
-        )
+    if name.startswith("test_") and asyncio.iscoroutinefunction(getattr(TestS3RetryStrategy, name)):
+        setattr(TestS3RetryStrategy, name, async_test(getattr(TestS3RetryStrategy, name)))
 
 
 if __name__ == "__main__":

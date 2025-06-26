@@ -53,9 +53,7 @@ def doy_to_date(year: int, doy: int) -> datetime.date:
 
 
 # Helper functions for date parsing
-def _try_create_date_from_year_month_day(
-    year: int, month: int, day: int, pattern_name: str
-) -> Optional[datetime.date]:
+def _try_create_date_from_year_month_day(year: int, month: int, day: int, pattern_name: str) -> Optional[datetime.date]:
     """
     Try to create a date from year, month, and day components.
 
@@ -84,9 +82,7 @@ def _try_create_date_from_year_month_day(
         return None
 
 
-def _try_create_date_from_year_doy(
-    year: int, doy: int, pattern_name: str
-) -> Optional[datetime.date]:
+def _try_create_date_from_year_doy(year: int, doy: int, pattern_name: str) -> Optional[datetime.date]:
     """
     Try to create a date from year and day-of-year components.
 
@@ -103,9 +99,7 @@ def _try_create_date_from_year_doy(
         LOGGER.debug("Found date %s using %s pattern", date, pattern_name)
         return date
     except ValueError as e:
-        LOGGER.debug(
-            "Invalid date from %s pattern: %s/%s (%s)", pattern_name, year, doy, e
-        )
+        LOGGER.debug("Invalid date from %s pattern: %s/%s (%s)", pattern_name, year, doy, e)
         return None
 
 
@@ -413,19 +407,12 @@ def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.date]:
     return None
 
 
-def _try_doy_pattern(
-    path_str: str, pattern: str, pattern_name: str
-) -> Optional[datetime.date]:
+def _try_doy_pattern(path_str: str, pattern: str, pattern_name: str) -> Optional[datetime.date]:
     """Try to parse using day-of-year pattern."""
     # For YYYYDDD pattern, check if this string was already rejected as invalid YYYYMMDD
     if pattern_name == "YYYYDDD":
-        if (
-            hasattr(_try_calendar_pattern, "_failed_yyyymmdd")
-            and path_str in _try_calendar_pattern._failed_yyyymmdd
-        ):
-            LOGGER.debug(
-                "Skipping %s as YYYYDDD because it failed as YYYYMMDD", path_str
-            )
+        if hasattr(_try_calendar_pattern, "_failed_yyyymmdd") and path_str in _try_calendar_pattern._failed_yyyymmdd:
+            LOGGER.debug("Skipping %s as YYYYDDD because it failed as YYYYMMDD", path_str)
             return None
 
     match = re.search(pattern, path_str)
@@ -441,9 +428,7 @@ def _try_doy_pattern(
     return None
 
 
-def _try_calendar_pattern(
-    path_str: str, pattern: str, pattern_name: str
-) -> Optional[datetime.date]:
+def _try_calendar_pattern(path_str: str, pattern: str, pattern_name: str) -> Optional[datetime.date]:
     """Try to parse using calendar date pattern."""
     match = re.search(pattern, path_str)
     if match:
@@ -465,9 +450,7 @@ def _try_calendar_pattern(
     return None
 
 
-def _try_timestamp_pattern(
-    path_str: str, pattern: str, pattern_name: str
-) -> Optional[datetime.date]:
+def _try_timestamp_pattern(path_str: str, pattern: str, pattern_name: str) -> Optional[datetime.date]:
     """Try to parse using timestamp pattern (extract date part only)."""
     match = re.search(pattern, path_str)
     if match:

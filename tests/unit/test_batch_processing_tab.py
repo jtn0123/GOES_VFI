@@ -2,13 +2,12 @@ from unittest.mock import patch
 
 import pytest
 
-# Disable GUI popups for testing
-from tests.utils.disable_popups import disable_all_gui_popups
-
-disable_all_gui_popups()
-
 from goesvfi.gui_tabs.batch_processing_tab import BatchProcessingTab
 from goesvfi.pipeline.batch_queue import BatchJob, JobPriority
+from tests.utils.disable_popups import disable_all_gui_popups
+
+# Disable GUI popups for testing
+disable_all_gui_popups()
 
 
 class DummySignal:
@@ -18,7 +17,7 @@ class DummySignal:
 
 class DummyQueue:
     def __init__(self) -> None:
-        self.jobs = []
+        self.jobs: list[dict] = []
         self.job_added = DummySignal()
         self.job_started = DummySignal()
         self.job_progress = DummySignal()
@@ -49,9 +48,7 @@ def batch_tab(qtbot):
         proc_instance = MockProc.return_value
         proc_instance.create_queue.return_value = dummy_queue
 
-        def fake_create_job_from_paths(
-            input_paths, output_dir, settings, priority=JobPriority.NORMAL, **_
-        ):
+        def fake_create_job_from_paths(input_paths, output_dir, settings, priority=JobPriority.NORMAL, **_):
             return [
                 BatchJob(
                     id="job1",

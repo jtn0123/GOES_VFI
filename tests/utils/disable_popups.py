@@ -15,33 +15,29 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 _original_QDateTimeEdit = None
 
 
-class NoPopupQDateTimeEdit:
-    """QDateTimeEdit that never opens calendar popups."""
+def NoPopupQDateTimeEdit(*args, **kwargs):
+    """Factory function that returns a QDateTimeEdit with calendar popup disabled."""
+    # Use the stored original class to avoid recursion
+    global _original_QDateTimeEdit
+    if _original_QDateTimeEdit is None:
+        # This should never happen if patches are applied correctly
+        from PyQt6.QtWidgets import QDateTimeEdit as _original_QDateTimeEdit
 
-    def __init__(self, *args, **kwargs):
-        # Use the stored original class to avoid recursion
-        global _original_QDateTimeEdit
-        if _original_QDateTimeEdit is None:
-            # This should never happen if patches are applied correctly
-            from PyQt6.QtWidgets import QDateTimeEdit as _original_QDateTimeEdit
+    # Create the real widget
+    widget = _original_QDateTimeEdit(*args, **kwargs)
+    # Disable calendar popup and override setCalendarPopup
+    widget.setCalendarPopup(False)
 
-        # Create the real widget and copy its attributes
-        self._widget = _original_QDateTimeEdit(*args, **kwargs)
-        # Disable calendar popup
-        self._widget.setCalendarPopup(False)
+    # Override setCalendarPopup to always keep it disabled
+    original_setCalendarPopup = widget.setCalendarPopup
 
-        # Override setCalendarPopup to always keep it disabled
-        original_setCalendarPopup = self._widget.setCalendarPopup
+    def no_popup_setCalendarPopup(enable: bool) -> None:
+        original_setCalendarPopup(False)
 
-        def no_popup_setCalendarPopup(enable: bool) -> None:
-            original_setCalendarPopup(False)
+    # Use setattr to avoid mypy method assignment error
+    widget.setCalendarPopup = no_popup_setCalendarPopup  # type: ignore[method-assign]
 
-        # Use setattr to avoid mypy method assignment error
-        self._widget.setCalendarPopup = no_popup_setCalendarPopup  # type: ignore[method-assign]
-
-    def __getattr__(self, name):
-        """Delegate all attribute access to the real widget."""
-        return getattr(self._widget, name)
+    return widget
 
 
 class NoPopupQFileDialog:
@@ -113,9 +109,7 @@ def apply_gui_patches() -> List[Any]:
                 NoPopupQMessageBox,
             ),
             patch("goesvfi.integrity_check.gui_tab.QMessageBox", NoPopupQMessageBox),
-            patch(
-                "goesvfi.gui_tabs.batch_processing_tab.QMessageBox", NoPopupQMessageBox
-            ),
+            patch("goesvfi.gui_tabs.batch_processing_tab.QMessageBox", NoPopupQMessageBox),
         ]
     )
 

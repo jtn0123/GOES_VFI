@@ -306,7 +306,7 @@ class EnhancedGOESImageryTab(QWidget):
 
         # Title
         title = QLabel("📊 Image Information")
-        title.setStyleSheet("font-size: 14px; font-weight: bold; color: #ffffff; padding: 5px;")
+        title.setStyleSheet("font-size: 14px; font-weight: bold; padding: 5px;")
         layout.addWidget(title)
 
         # Info content
@@ -418,9 +418,9 @@ class EnhancedGOESImageryTab(QWidget):
             end_date: End date of the data range
         """
         self.current_data = items
-        self._update_status(
-            f"Data updated: {len(items)} items from {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}"
-        )
+        start_str = start_date.strftime("%Y-%m-%d")
+        end_str = end_date.strftime("%Y-%m-%d")
+        self._update_status(f"Data updated: {len(items)} items from {start_str} to {end_str}")
 
     def _update_info_panel(self) -> None:
         """Update the information panel with current selection details."""

@@ -46,8 +46,8 @@ class TestButtonAdvanced:
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
-        mocker.patch("goesvfi.gui.CombinedIntegrityAndImageryTab")
-        mocker.patch("goesvfi.integrity_check.enhanced_gui_tab.EnhancedImageryTab")
+        mocker.patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab")
+        mocker.patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab")
 
         window = MainWindow(debug_mode=True)
         qtbot.addWidget(window)
@@ -166,9 +166,7 @@ class TestButtonAdvanced:
         # Mock queue operations
         def add_to_queue():
             if window.in_dir and window.out_file_path:
-                queue_list.append(
-                    {"input": window.in_dir, "output": window.out_file_path}
-                )
+                queue_list.append({"input": window.in_dir, "output": window.out_file_path})
                 process_queue_btn.setEnabled(True)
                 clear_queue_btn.setEnabled(True)
 
@@ -250,25 +248,15 @@ class TestButtonAdvanced:
             menu.addAction(properties_action)
 
             # Mock action triggers
-            copy_action.triggered.connect(
-                lambda: setattr(window, "_last_action", "copy")
-            )
-            save_as_action.triggered.connect(
-                lambda: setattr(window, "_last_action", "save_as")
-            )
-            open_folder_action.triggered.connect(
-                lambda: setattr(window, "_last_action", "open_folder")
-            )
-            properties_action.triggered.connect(
-                lambda: setattr(window, "_last_action", "properties")
-            )
+            copy_action.triggered.connect(lambda: setattr(window, "_last_action", "copy"))
+            save_as_action.triggered.connect(lambda: setattr(window, "_last_action", "save_as"))
+            open_folder_action.triggered.connect(lambda: setattr(window, "_last_action", "open_folder"))
+            properties_action.triggered.connect(lambda: setattr(window, "_last_action", "properties"))
 
             return menu
 
         # Override context menu
-        preview_label.contextMenuEvent = lambda event: create_context_menu(
-            event.pos()
-        ).exec(event.globalPos())
+        preview_label.contextMenuEvent = lambda event: create_context_menu(event.pos()).exec(event.globalPos())
 
         # Simulate right-click
         qtbot.mouseClick(preview_label, Qt.MouseButton.RightButton)
@@ -279,14 +267,10 @@ class TestButtonAdvanced:
     def test_keyboard_shortcuts_functionality(self, qtbot, window, mocker):
         """Test keyboard shortcuts trigger correct actions."""
         # Mock dialog methods
-        mock_get_dir = mocker.patch(
-            "goesvfi.gui_tabs.main_tab.QFileDialog.getExistingDirectory"
-        )
+        mock_get_dir = mocker.patch("goesvfi.gui_tabs.main_tab.QFileDialog.getExistingDirectory")
         mock_get_dir.return_value = "/test/input"
 
-        mock_get_save = mocker.patch(
-            "goesvfi.gui_tabs.main_tab.QFileDialog.getSaveFileName"
-        )
+        mock_get_save = mocker.patch("goesvfi.gui_tabs.main_tab.QFileDialog.getSaveFileName")
         mock_get_save.return_value = ("/test/output.mp4", "")
 
         # Test Ctrl+O (Open directory)

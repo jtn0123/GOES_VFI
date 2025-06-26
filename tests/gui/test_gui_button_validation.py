@@ -16,8 +16,8 @@ class TestGUIButtonValidation:
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
-        mocker.patch("goesvfi.gui.CombinedIntegrityAndImageryTab")
-        mocker.patch("goesvfi.integrity_check.enhanced_gui_tab.EnhancedImageryTab")
+        mocker.patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab")
+        mocker.patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab")
 
         # Create window
         window = MainWindow(debug_mode=True)
@@ -35,9 +35,7 @@ class TestGUIButtonValidation:
         assert not window.main_tab.clear_crop_button.isEnabled()
 
         # Mock directory selection
-        mock_dialog = mocker.patch(
-            "goesvfi.gui_tabs.main_tab.QFileDialog.getExistingDirectory"
-        )
+        mock_dialog = mocker.patch("goesvfi.gui_tabs.main_tab.QFileDialog.getExistingDirectory")
         mock_dialog.return_value = "/test/input/dir"
 
         # Click the input directory button
@@ -47,9 +45,7 @@ class TestGUIButtonValidation:
         assert window.main_tab.in_dir_edit.text() == "/test/input/dir"
         assert window.in_dir == Path("/test/input/dir")
         assert window.main_tab.crop_button.isEnabled()  # Should be enabled now
-        assert (
-            not window.main_tab.clear_crop_button.isEnabled()
-        )  # Still disabled (no crop)
+        assert not window.main_tab.clear_crop_button.isEnabled()  # Still disabled (no crop)
 
     def test_output_file_button_interaction(self, qtbot, window, mocker):
         """Test output file selection button."""
@@ -58,9 +54,7 @@ class TestGUIButtonValidation:
         assert window.main_tab.out_file_edit.text() == ""
 
         # Mock file dialog
-        mock_dialog = mocker.patch(
-            "goesvfi.gui_tabs.main_tab.QFileDialog.getSaveFileName"
-        )
+        mock_dialog = mocker.patch("goesvfi.gui_tabs.main_tab.QFileDialog.getSaveFileName")
         mock_dialog.return_value = ("/test/output.mp4", "Video Files (*.mp4)")
 
         # Click the output file button

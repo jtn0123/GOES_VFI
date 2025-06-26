@@ -12,9 +12,7 @@ LOGGER = log.get_logger(__name__)
 class ProcessingCallbacks:
     """Handles processing callbacks and UI state updates during VFI processing."""
 
-    def on_processing_progress(
-        self, main_window: Any, current: int, total: int, eta: float
-    ) -> None:
+    def on_processing_progress(self, main_window: Any, current: int, total: int, eta: float) -> None:
         """Handle progress updates from the VFI worker.
 
         Args:
@@ -62,9 +60,7 @@ class ProcessingCallbacks:
             main_window.main_tab._reset_start_button()
 
         # Show completion message
-        QMessageBox.information(
-            main_window, "Success", "Video interpolation completed successfully!"
-        )
+        QMessageBox.information(main_window, "Success", "Video interpolation completed successfully!")
 
     def on_processing_error(self, main_window: Any, error_msg: str) -> None:
         """Handle errors during VFI processing.
@@ -89,11 +85,14 @@ class ProcessingCallbacks:
         if hasattr(main_window.main_tab, "_reset_start_button"):
             main_window.main_tab._reset_start_button()
 
-        # Show error message
+        # Show error message with actionable advice
+        error_message = (
+            f"An error occurred during processing:\n\n{error_msg}\n\nPlease check your inputs and try again."
+        )
         QMessageBox.critical(
             main_window,
             "Processing Error",
-            f"An error occurred during processing:\n\n{error_msg}",
+            error_message,
         )
 
     def set_processing_state(self, main_window: Any, is_processing: bool) -> None:
@@ -143,11 +142,7 @@ class ProcessingCallbacks:
             main_window.main_tab._update_start_button_state()
         else:
             # Fallback implementation
-            enabled = bool(
-                main_window.in_dir
-                and main_window.out_file_path
-                and not main_window.is_processing
-            )
+            enabled = bool(main_window.in_dir and main_window.out_file_path and not main_window.is_processing)
             if hasattr(main_window.main_tab, "start_button"):
                 main_window.main_tab.start_button.setEnabled(enabled)
 

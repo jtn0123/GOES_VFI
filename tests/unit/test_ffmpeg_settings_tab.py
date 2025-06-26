@@ -38,12 +38,10 @@ def test_initial_state(ffmpeg_tab):
     # Test profile combo has expected items
     assert ffmpeg_tab.ffmpeg_profile_combo.count() > 0
     assert "Default" in [
-        ffmpeg_tab.ffmpeg_profile_combo.itemText(i)
-        for i in range(ffmpeg_tab.ffmpeg_profile_combo.count())
+        ffmpeg_tab.ffmpeg_profile_combo.itemText(i) for i in range(ffmpeg_tab.ffmpeg_profile_combo.count())
     ]
     assert "Custom" in [
-        ffmpeg_tab.ffmpeg_profile_combo.itemText(i)
-        for i in range(ffmpeg_tab.ffmpeg_profile_combo.count())
+        ffmpeg_tab.ffmpeg_profile_combo.itemText(i) for i in range(ffmpeg_tab.ffmpeg_profile_combo.count())
     ]
 
     # Test that the interpolation group exists and is checkable
@@ -57,9 +55,7 @@ def test_initial_state(ffmpeg_tab):
     assert hasattr(ffmpeg_tab, "ffmpeg_crf_spinbox")
 
     # Check that the correct number of profiles is available
-    assert (
-        ffmpeg_tab.ffmpeg_profile_combo.count() == len(FFMPEG_PROFILES) + 1
-    )  # +1 for "Custom"
+    assert ffmpeg_tab.ffmpeg_profile_combo.count() == len(FFMPEG_PROFILES) + 1  # +1 for "Custom"
 
 
 def test_profile_selection(ffmpeg_tab):
@@ -68,9 +64,7 @@ def test_profile_selection(ffmpeg_tab):
     initial_profile = ffmpeg_tab.ffmpeg_profile_combo.currentText()
 
     # Force a selection to a specific profile (Default)
-    with patch.object(
-        ffmpeg_tab, "_verify_profile_match"
-    ):  # Prevent automatic verification
+    with patch.object(ffmpeg_tab, "_verify_profile_match"):  # Prevent automatic verification
         ffmpeg_tab.ffmpeg_profile_combo.setCurrentText("Default")
         ffmpeg_tab._on_profile_selected("Default")
 
@@ -81,16 +75,11 @@ def test_profile_selection(ffmpeg_tab):
 
     # Check that values from the Default profile were applied
     default_profile = FFMPEG_PROFILES["Default"]
-    assert (
-        ffmpeg_tab.ffmpeg_settings_group.isChecked()
-        == default_profile["use_ffmpeg_interp"]
-    )
+    assert ffmpeg_tab.ffmpeg_settings_group.isChecked() == default_profile["use_ffmpeg_interp"]
     assert ffmpeg_tab.ffmpeg_mi_mode_combo.currentText() == default_profile["mi_mode"]
 
     # Switch to a different profile
-    with patch.object(
-        ffmpeg_tab, "_verify_profile_match"
-    ):  # Prevent automatic verification
+    with patch.object(ffmpeg_tab, "_verify_profile_match"):  # Prevent automatic verification
         ffmpeg_tab.ffmpeg_profile_combo.setCurrentText("Optimal")
         ffmpeg_tab._on_profile_selected("Optimal")
 
@@ -101,10 +90,7 @@ def test_profile_selection(ffmpeg_tab):
 
     # Check that values from the Optimal profile were applied
     optimal_profile = FFMPEG_PROFILES["Optimal"]
-    assert (
-        ffmpeg_tab.ffmpeg_settings_group.isChecked()
-        == optimal_profile["use_ffmpeg_interp"]
-    )
+    assert ffmpeg_tab.ffmpeg_settings_group.isChecked() == optimal_profile["use_ffmpeg_interp"]
     assert ffmpeg_tab.ffmpeg_mi_mode_combo.currentText() == optimal_profile["mi_mode"]
 
     # Return to original profile

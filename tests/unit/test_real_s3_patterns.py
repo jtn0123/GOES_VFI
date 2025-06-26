@@ -4,7 +4,6 @@ import re
 import unittest
 from datetime import datetime
 
-
 from goesvfi.integrity_check.time_index import (
     RADC_MINUTES,
     RADF_MINUTES,
@@ -22,9 +21,7 @@ class TestRealS3Patterns(unittest.TestCase):
         """Set up test fixtures."""
         # Sample dates for testing
         self.test_date = datetime(2023, 6, 15, 12, 30, 0)
-        self.test_date_2 = datetime(
-            2024, 4, 1, 10, 15, 0
-        )  # April 1, 2024 - day of year 092
+        self.test_date_2 = datetime(2024, 4, 1, 10, 15, 0)  # April 1, 2024 - day of year 092
 
     def test_radf_minutes_pattern(self):
         """Test if RadF minutes pattern matches expected schedule."""
@@ -80,9 +77,7 @@ class TestRealS3Patterns(unittest.TestCase):
         self.assertIn("M6C13_G16_s", key)
 
         # Check for the correct minute (should use 11 here, which is the nearest RadC minute before 14)
-        pattern = re.compile(
-            r"s2023166121([0-9][0-9])"
-        )  # Fixed to use hour 12 (not 20)
+        pattern = re.compile(r"s2023166121([0-9][0-9])")  # Fixed to use hour 12 (not 20)
         match = pattern.search(key)
         if match:
             minute_str = match.group(1)
@@ -93,21 +88,15 @@ class TestRealS3Patterns(unittest.TestCase):
     def test_to_s3_key_band_format(self):
         """Test that keys with different bands have the correct format."""
         # Test band 1
-        key_band1 = to_s3_key(
-            self.test_date, SatellitePattern.GOES_18, product_type="RadC", band=1
-        )
+        key_band1 = to_s3_key(self.test_date, SatellitePattern.GOES_18, product_type="RadC", band=1)
         self.assertIn("M6C01_G18_s", key_band1)
 
         # Test band 13
-        key_band13 = to_s3_key(
-            self.test_date, SatellitePattern.GOES_18, product_type="RadC", band=13
-        )
+        key_band13 = to_s3_key(self.test_date, SatellitePattern.GOES_18, product_type="RadC", band=13)
         self.assertIn("M6C13_G18_s", key_band13)
 
         # Test band 9
-        key_band9 = to_s3_key(
-            self.test_date, SatellitePattern.GOES_18, product_type="RadC", band=9
-        )
+        key_band9 = to_s3_key(self.test_date, SatellitePattern.GOES_18, product_type="RadC", band=9)
         self.assertIn("M6C09_G18_s", key_band9)
 
     def test_to_s3_key_wildcard_handling(self):
@@ -177,30 +166,22 @@ class TestRealS3Patterns(unittest.TestCase):
         for file_pattern in real_patterns:
             if "C13_" in file_pattern:
                 filtered = filter_s3_keys_by_band([file_pattern], 13)
-                self.assertEqual(
-                    len(filtered), 1, f"Failed to filter band 13 from {file_pattern}"
-                )
+                self.assertEqual(len(filtered), 1, f"Failed to filter band 13 from {file_pattern}")
                 self.assertEqual(filtered[0], file_pattern)
 
     def test_doy_handling_in_keys(self):
         """Test that day of year is correctly calculated and formatted in S3 keys."""
         # April 1, 2024 is day of year 92
         test_date = datetime(2024, 4, 1, 12, 0, 0)
-        key = to_s3_key(
-            test_date, SatellitePattern.GOES_18, product_type="RadC", band=13
-        )
+        key = to_s3_key(test_date, SatellitePattern.GOES_18, product_type="RadC", band=13)
 
         # Day of year should be formatted as 092 (3 digits with leading zeros)
         self.assertIn("/092/", key)
         self.assertIn("s2024092", key)
 
         # Test with a day in November (day of year > 300)
-        test_date_2 = datetime(
-            2024, 11, 1, 12, 0, 0
-        )  # November 1 is day 306 in 2024 (leap year)
-        key_2 = to_s3_key(
-            test_date_2, SatellitePattern.GOES_18, product_type="RadC", band=13
-        )
+        test_date_2 = datetime(2024, 11, 1, 12, 0, 0)  # November 1 is day 306 in 2024 (leap year)
+        key_2 = to_s3_key(test_date_2, SatellitePattern.GOES_18, product_type="RadC", band=13)
 
         # Day of year should be formatted as 306 (3 digits)
         self.assertIn("/306/", key_2)
@@ -208,9 +189,7 @@ class TestRealS3Patterns(unittest.TestCase):
 
         # Test with leap year February 29
         leap_day = datetime(2024, 2, 29, 12, 0, 0)  # February 29 is day 60 in 2024
-        key_3 = to_s3_key(
-            leap_day, SatellitePattern.GOES_18, product_type="RadC", band=13
-        )
+        key_3 = to_s3_key(leap_day, SatellitePattern.GOES_18, product_type="RadC", band=13)
 
         # Day of year should be formatted as 060 (3 digits with leading zero)
         self.assertIn("/060/", key_3)
@@ -220,23 +199,17 @@ class TestRealS3Patterns(unittest.TestCase):
         """Test that the nearest valid minute is correctly selected for each product type."""
         # RadF should select 30 for timestamp with minute=32
         test_ts_1 = datetime(2023, 6, 15, 12, 32, 0)
-        key_1 = to_s3_key(
-            test_ts_1, SatellitePattern.GOES_18, product_type="RadF", band=13
-        )
+        key_1 = to_s3_key(test_ts_1, SatellitePattern.GOES_18, product_type="RadF", band=13)
         self.assertIn("s20231661230", key_1)
 
         # RadC should select 31 for timestamp with minute=32
         test_ts_2 = datetime(2023, 6, 15, 12, 32, 0)
-        key_2 = to_s3_key(
-            test_ts_2, SatellitePattern.GOES_18, product_type="RadC", band=13
-        )
+        key_2 = to_s3_key(test_ts_2, SatellitePattern.GOES_18, product_type="RadC", band=13)
         self.assertIn("s20231661231", key_2)
 
         # RadM should select 32 for timestamp with minute=32 (exact same minute)
         test_ts_3 = datetime(2023, 6, 15, 12, 32, 0)
-        key_3 = to_s3_key(
-            test_ts_3, SatellitePattern.GOES_18, product_type="RadM", band=13
-        )
+        key_3 = to_s3_key(test_ts_3, SatellitePattern.GOES_18, product_type="RadM", band=13)
         self.assertIn("s20231661232", key_3)
 
     def test_real_examples_from_logs(self):

@@ -16,27 +16,21 @@ class ImageProcessingPipeline(CompositeProcessor):
     def __init__(self, processors: List[ProcessorBase]) -> None:
         super().__init__(processors, "image_processing_pipeline")
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Execute all processors in the pipeline."""
         # Import logging here to avoid circular imports
         from goesvfi.utils import log
 
         logger = log.get_logger(__name__)
 
-        logger.debug(
-            f"Starting image processing pipeline with {len(self.processors)} stages"
-        )
+        logger.debug(f"Starting image processing pipeline with {len(self.processors)} stages")
 
         current_data = input_data
         combined_metadata: Dict[str, Any] = {"pipeline_stages": []}
         combined_warnings = []
 
         for i, processor in enumerate(self.processors):
-            logger.debug(
-                f"Executing stage {i + 1}/{len(self.processors)}: {processor.stage_name}"
-            )
+            logger.debug(f"Executing stage {i + 1}/{len(self.processors)}: {processor.stage_name}")
 
             try:
                 result = processor.process(current_data, context)
@@ -51,12 +45,12 @@ class ImageProcessingPipeline(CompositeProcessor):
                 combined_metadata["pipeline_stages"].append(stage_info)
 
                 if not result.success:
-                    logger.error(
-                        f"Pipeline failed at stage {processor.stage_name}: {result.errors}"
-                    )
+                    logger.error(f"Pipeline failed at stage {processor.stage_name}: {result.errors}")
                     # Add pipeline context to the error
                     for error in result.errors:
-                        error.message = f"Pipeline stage {i + 1}/{len(self.processors)} ({processor.stage_name}): {error.message}"
+                        error.message = (
+                            f"Pipeline stage {i + 1}/{len(self.processors)} ({processor.stage_name}): {error.message}"
+                        )
                     return result
 
                 current_data = result.data
@@ -64,20 +58,14 @@ class ImageProcessingPipeline(CompositeProcessor):
                 combined_warnings.extend(result.warnings)
 
                 if result.warnings:
-                    logger.warning(
-                        f"Stage {processor.stage_name} completed with warnings: {result.warnings}"
-                    )
+                    logger.warning(f"Stage {processor.stage_name} completed with warnings: {result.warnings}")
                 else:
                     logger.debug(f"Stage {processor.stage_name} completed successfully")
 
             except Exception as e:
-                logger.exception(
-                    f"Unhandled exception in pipeline stage {processor.stage_name}"
-                )
+                logger.exception(f"Unhandled exception in pipeline stage {processor.stage_name}")
                 return ImageProcessingResult.failure_result(
-                    self._create_error(
-                        f"Unhandled exception in stage {processor.stage_name}: {e}", e
-                    )
+                    self._create_error(f"Unhandled exception in stage {processor.stage_name}: {e}", e)
                 )
 
         logger.debug("Image processing pipeline completed successfully")
@@ -103,9 +91,7 @@ class ConditionalPipeline(ProcessorBase):
         self.condition_map = condition_map
         self.default_processor = default_processor
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Execute processor based on context conditions."""
         if not context:
             if self.default_processor:
@@ -140,9 +126,7 @@ class ParallelPipeline(ProcessorBase):
         self.processors = processors
         self.combiner_func = combiner_func or self._default_combiner
 
-    def process(
-        self, input_data: Any, context: Optional[Dict[str, Any]] = None
-    ) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
         """Execute all processors in parallel."""
         # For now, execute sequentially (true parallelism would require threading)
         results = []
@@ -178,9 +162,7 @@ class ParallelPipeline(ProcessorBase):
             return (
                 results[0]
                 if results
-                else ImageProcessingResult.failure_result(
-                    self._create_error("No processors in parallel pipeline")
-                )
+                else ImageProcessingResult.failure_result(self._create_error("No processors in parallel pipeline"))
             )
 
         # Return first successful result with combined metadata

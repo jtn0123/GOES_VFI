@@ -75,9 +75,7 @@ class TestS3StoreCritical:
         # Create boto3 style error
         import botocore.exceptions
 
-        error = botocore.exceptions.ClientError(
-            {"Error": {"Code": "404", "Message": "NoSuchKey"}}, "HeadObject"
-        )
+        error = botocore.exceptions.ClientError({"Error": {"Code": "404", "Message": "NoSuchKey"}}, "HeadObject")
         mock_s3_client.head_object = AsyncMock(side_effect=error)
 
         # Mock the paginator for wildcard search
@@ -133,9 +131,7 @@ class TestS3StoreCritical:
         # Create boto3 style error
         import botocore.exceptions
 
-        error = botocore.exceptions.ClientError(
-            {"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject"
-        )
+        error = botocore.exceptions.ClientError({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")
         mock_s3_client.head_object = AsyncMock(side_effect=error)
 
         with patch.object(store, "_get_s3_client", return_value=mock_s3_client):
@@ -191,9 +187,7 @@ class TestS3StoreCritical:
         # Mock head_object to return 404 (so it tries wildcard)
         import botocore.exceptions
 
-        error = botocore.exceptions.ClientError(
-            {"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject"
-        )
+        error = botocore.exceptions.ClientError({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")
         mock_s3_client.head_object = AsyncMock(side_effect=error)
 
         # Mock paginator for wildcard search

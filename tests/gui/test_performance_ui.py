@@ -6,8 +6,14 @@ from unittest.mock import MagicMock
 
 import psutil
 import pytest
-from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
-from PyQt6.QtWidgets import QApplication, QListWidget, QListWidgetItem, QProgressBar
+from PyQt6.QtCore import QEvent, QObject, Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtWidgets import (
+    QApplication,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QProgressBar,
+)
 
 from goesvfi.gui import MainWindow
 
@@ -83,8 +89,8 @@ class TestPerformanceUI:
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
-        mocker.patch("goesvfi.gui.CombinedIntegrityAndImageryTab")
-        mocker.patch("goesvfi.integrity_check.enhanced_gui_tab.EnhancedImageryTab")
+        mocker.patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab")
+        mocker.patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab")
 
         window = MainWindow(debug_mode=True)
         qtbot.addWidget(window)
@@ -197,18 +203,14 @@ class TestPerformanceUI:
 
         # Connect worker
         worker = HeavyWorker()
-        worker.progress.connect(
-            lambda v, m: (progress_bar.setValue(v), status_label.setText(m))
-        )
+        worker.progress.connect(lambda v, m: (progress_bar.setValue(v), status_label.setText(m)))
 
         # Responsiveness checks during processing
         responsiveness_results = []
 
         def check_responsiveness():
             checker = ResponsivenessChecker(window)
-            checker.responsiveness_checked.connect(
-                lambda r: responsiveness_results.append(r)
-            )
+            checker.responsiveness_checked.connect(lambda r: responsiveness_results.append(r))
             checker.start()
 
         # Start worker
@@ -292,11 +294,11 @@ class TestPerformanceUI:
 
         # Mock components with timing
         mocker.patch(
-            "goesvfi.gui.CombinedIntegrityAndImageryTab",
+            "goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab",
             side_effect=lambda: timed_init("imagery_tab", MagicMock),
         )
         mocker.patch(
-            "goesvfi.integrity_check.enhanced_gui_tab.EnhancedImageryTab",
+            "goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab",
             side_effect=lambda: timed_init("enhanced_tab", MagicMock),
         )
 

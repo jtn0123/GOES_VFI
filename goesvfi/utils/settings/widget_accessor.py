@@ -35,22 +35,16 @@ class WidgetSafetyValidator(ValidatorBase):
             if self.allow_none:
                 return ValidationResult.success()
             else:
-                return ValidationResult.failure(
-                    self._create_error("Widget is None", value)
-                )
+                return ValidationResult.failure(self._create_error("Widget is None", value))
 
         # Check if object still exists (not deleted)
         try:
             # Accessing any property will raise RuntimeError if object is deleted
             _ = value.objectName()
         except RuntimeError:
-            return ValidationResult.failure(
-                self._create_error("Widget has been deleted", value)
-            )
+            return ValidationResult.failure(self._create_error("Widget has been deleted", value))
         except AttributeError:
-            return ValidationResult.failure(
-                self._create_error("Value is not a widget", value)
-            )
+            return ValidationResult.failure(self._create_error("Value is not a widget", value))
 
         # Check type if specified
         if self.expected_type and not isinstance(value, self.expected_type):
@@ -112,23 +106,15 @@ class SafeWidgetAccessor:
             result = validator.validate(widget)
             if result.is_valid:
                 # Type checking passed, safe to return
-                return (
-                    widget
-                    if isinstance(widget, (type(None), QWidget))
-                    else cast(Optional[QWidget], default)
-                )
+                return widget if isinstance(widget, (type(None), QWidget)) else cast(Optional[QWidget], default)
             else:
                 if result.errors:
-                    LOGGER.debug(
-                        f"Widget {widget_name} validation failed: {result.errors[0].message}"
-                    )
+                    LOGGER.debug("Widget %s validation failed: %s", widget_name, result.errors[0].message)
                 return cast(Optional[QWidget], default)
 
         except Exception as e:
-            error = self.classifier.create_structured_error(
-                e, f"get_widget_{widget_name}", "widget_accessor"
-            )
-            LOGGER.debug(f"Failed to get widget {widget_name}: {error.user_message}")
+            error = self.classifier.create_structured_error(e, f"get_widget_{widget_name}", "widget_accessor")
+            LOGGER.debug("Failed to get widget %s: %s", widget_name, error.user_message)
             return cast(Optional[QWidget], default)
 
     def safe_get_value(
@@ -163,19 +149,15 @@ class SafeWidgetAccessor:
                     method = getattr(widget, value_getter)
                     return method()
                 else:
-                    LOGGER.debug(f"Widget {widget_name} has no method {value_getter}")
+                    LOGGER.debug("Widget %s has no method %s", widget_name, value_getter)
                     return default
             else:
                 # Callable
                 return value_getter(widget)
 
         except Exception as e:
-            error = self.classifier.create_structured_error(
-                e, f"get_value_{widget_name}", "widget_accessor"
-            )
-            LOGGER.debug(
-                f"Failed to get value from {widget_name}: {error.user_message}"
-            )
+            error = self.classifier.create_structured_error(e, f"get_value_{widget_name}", "widget_accessor")
+            LOGGER.debug("Failed to get value from %s: %s", widget_name, error.user_message)
             return default
 
     def safe_set_value(
@@ -211,7 +193,7 @@ class SafeWidgetAccessor:
                     method(value)
                     return True
                 else:
-                    LOGGER.debug(f"Widget {widget_name} has no method {value_setter}")
+                    LOGGER.debug("Widget %s has no method %s", widget_name, value_setter)
                     return False
             else:
                 # Callable
@@ -219,10 +201,8 @@ class SafeWidgetAccessor:
                 return True
 
         except Exception as e:
-            error = self.classifier.create_structured_error(
-                e, f"set_value_{widget_name}", "widget_accessor"
-            )
-            LOGGER.debug(f"Failed to set value on {widget_name}: {error.user_message}")
+            error = self.classifier.create_structured_error(e, f"set_value_{widget_name}", "widget_accessor")
+            LOGGER.debug("Failed to set value on %s: %s", widget_name, error.user_message)
             return False
 
     # Convenience methods for common widget types
@@ -231,27 +211,17 @@ class SafeWidgetAccessor:
         result = self.safe_get_value(parent, widget_name, "value", QSpinBox, default)
         return int(result) if result is not None else default
 
-    def get_combobox_text(
-        self, parent: Any, widget_name: str, default: str = ""
-    ) -> str:
+    def get_combobox_text(self, parent: Any, widget_name: str, default: str = "") -> str:
         """Get current text from a QComboBox."""
-        result = self.safe_get_value(
-            parent, widget_name, "currentText", QComboBox, default
-        )
+        result = self.safe_get_value(parent, widget_name, "currentText", QComboBox, default)
         return str(result) if result is not None else default
 
-    def get_checkbox_checked(
-        self, parent: Any, widget_name: str, default: bool = False
-    ) -> bool:
+    def get_checkbox_checked(self, parent: Any, widget_name: str, default: bool = False) -> bool:
         """Get checked state from a QCheckBox."""
-        result = self.safe_get_value(
-            parent, widget_name, "isChecked", QCheckBox, default
-        )
+        result = self.safe_get_value(parent, widget_name, "isChecked", QCheckBox, default)
         return bool(result) if result is not None else default
 
-    def get_lineedit_text(
-        self, parent: Any, widget_name: str, default: str = ""
-    ) -> str:
+    def get_lineedit_text(self, parent: Any, widget_name: str, default: str = "") -> str:
         """Get text from a QLineEdit."""
         result = self.safe_get_value(parent, widget_name, "text", QLineEdit, default)
         return str(result) if result is not None else default
@@ -262,17 +232,11 @@ class SafeWidgetAccessor:
 
     def set_combobox_text(self, parent: Any, widget_name: str, text: str) -> bool:
         """Set current text on a QComboBox."""
-        return self.safe_set_value(
-            parent, widget_name, text, "setCurrentText", QComboBox
-        )
+        return self.safe_set_value(parent, widget_name, text, "setCurrentText", QComboBox)
 
-    def set_checkbox_checked(
-        self, parent: Any, widget_name: str, checked: bool
-    ) -> bool:
+    def set_checkbox_checked(self, parent: Any, widget_name: str, checked: bool) -> bool:
         """Set checked state on a QCheckBox."""
-        return self.safe_set_value(
-            parent, widget_name, checked, "setChecked", QCheckBox
-        )
+        return self.safe_set_value(parent, widget_name, checked, "setChecked", QCheckBox)
 
     def set_lineedit_text(self, parent: Any, widget_name: str, text: str) -> bool:
         """Set text on a QLineEdit."""

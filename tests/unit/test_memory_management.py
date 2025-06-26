@@ -93,9 +93,7 @@ class TestMemoryMonitor:
 
     def test_get_memory_stats_psutil_mock(self):
         """Memory stats should be retrieved using psutil when available."""
-        fake_vm = Mock(
-            total=8 * 1024**3, available=6 * 1024**3, used=2 * 1024**3, percent=25.0
-        )
+        fake_vm = Mock(total=8 * 1024**3, available=6 * 1024**3, used=2 * 1024**3, percent=25.0)
         fake_proc = Mock()
         fake_proc.memory_info.return_value = Mock(rss=256 * 1024**2)
         fake_proc.memory_percent.return_value = 1.2

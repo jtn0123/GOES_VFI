@@ -20,34 +20,24 @@ def numpy_to_qimage(array: NDArray[np.uint8]) -> QImage:
             bytes_per_line = 3 * width
             image_format = QImage.Format.Format_RGB888
             # Create QImage from buffer protocol. Make a copy to be safe.
-            qimage = QImage(
-                array.data, width, height, bytes_per_line, image_format
-            ).copy()
+            qimage = QImage(array.data, width, height, bytes_per_line, image_format).copy()
         elif channel == 4:  # RGBA?
             bytes_per_line = 4 * width
             image_format = QImage.Format.Format_RGBA8888
-            qimage = QImage(
-                array.data, width, height, bytes_per_line, image_format
-            ).copy()
+            qimage = QImage(array.data, width, height, bytes_per_line, image_format).copy()
         elif channel == 1 or len(array.shape) == 2:  # Grayscale
             height, width = array.shape[:2]
             bytes_per_line = width
             image_format = QImage.Format.Format_Grayscale8
             # Ensure array is contiguous C-style for grayscale
             gray_array = np.ascontiguousarray(array.squeeze())
-            qimage = QImage(
-                gray_array.data, width, height, bytes_per_line, image_format
-            ).copy()
+            qimage = QImage(gray_array.data, width, height, bytes_per_line, image_format).copy()
         else:
-            LOGGER.error(
-                f"Unsupported NumPy array shape for QImage conversion: {array.shape}"
-            )
+            LOGGER.error(f"Unsupported NumPy array shape for QImage conversion: {array.shape}")
             return QImage()
 
         if qimage.isNull():
-            LOGGER.error(
-                "Failed to create QImage from NumPy array (check format/data)."
-            )
+            LOGGER.error("Failed to create QImage from NumPy array (check format/data).")
             return QImage()
 
         return qimage

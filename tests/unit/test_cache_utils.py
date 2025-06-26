@@ -17,18 +17,12 @@ def sample_files(tmp_path: Path) -> tuple[Path, Path]:
     return file1, file2
 
 
-def _expected_paths(
-    file1: Path, file2: Path, model_id: str, frame_count: int
-) -> List[Path]:
+def _expected_paths(file1: Path, file2: Path, model_id: str, frame_count: int) -> List[Path]:
     base_key = cache._hash_pair(file1, file2, model_id, frame_count)
-    return [
-        cache._get_cache_filepath(base_key, i, frame_count) for i in range(frame_count)
-    ]
+    return [cache._get_cache_filepath(base_key, i, frame_count) for i in range(frame_count)]
 
 
-def test_save_and_load_arrays(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sample_files: tuple[Path, Path]
-) -> None:
+def test_save_and_load_arrays(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sample_files: tuple[Path, Path]) -> None:
     monkeypatch.setattr(cache, "CACHE_DIR", tmp_path)
     monkeypatch.setattr(config, "get_cache_dir", lambda: tmp_path)
     file1, file2 = sample_files

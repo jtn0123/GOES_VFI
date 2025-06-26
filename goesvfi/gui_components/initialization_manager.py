@@ -23,7 +23,9 @@ from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.sanchez_processor import SanchezProcessor
 from goesvfi.utils import log
 from goesvfi.utils.image_processing.refactored_preview import RefactoredPreviewProcessor
-from goesvfi.view_models.main_window_view_model import MainWindowViewModel
+
+# Import moved to method to avoid circular import
+# from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 
 LOGGER = log.get_logger(__name__)
 
@@ -37,6 +39,9 @@ class InitializationManager:
         Args:
             main_window: The MainWindow instance
         """
+        # Import here to avoid circular import
+        from goesvfi.view_models.main_window_view_model import MainWindowViewModel
+
         # Instantiate Models needed by ViewModels
         file_sorter_model = FileSorter()
         date_sorter_model = DateSorter()
@@ -66,13 +71,9 @@ class InitializationManager:
         main_window.image_loader = ImageLoader()
 
         # SanchezProcessor needs a temp directory, create one for the GUI lifetime
-        main_window._sanchez_gui_temp_dir = (
-            Path(tempfile.gettempdir()) / f"goes_vfi_sanchez_gui_{os.getpid()}"
-        )
+        main_window._sanchez_gui_temp_dir = Path(tempfile.gettempdir()) / f"goes_vfi_sanchez_gui_{os.getpid()}"
         os.makedirs(main_window._sanchez_gui_temp_dir, exist_ok=True)
-        main_window.sanchez_processor = SanchezProcessor(
-            main_window._sanchez_gui_temp_dir
-        )
+        main_window.sanchez_processor = SanchezProcessor(main_window._sanchez_gui_temp_dir)
         main_window.image_cropper = ImageCropper()
         LOGGER.info("GUI Image processors instantiated.")
 
@@ -93,9 +94,7 @@ class InitializationManager:
         # no need to initialize them here
 
         # Create preview processor
-        main_window.preview_processor = RefactoredPreviewProcessor(
-            main_window.sanchez_preview_cache
-        )
+        main_window.preview_processor = RefactoredPreviewProcessor(main_window.sanchez_preview_cache)
 
         # Create all component managers
         self._create_component_managers(main_window)

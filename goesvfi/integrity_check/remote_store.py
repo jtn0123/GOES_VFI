@@ -55,9 +55,7 @@ class HTTPRemoteStore(RemoteStore):
     This is a minimal stub implementation.
     """
 
-    def __init__(
-        self, base_url: str, timeout: int = 30, verify_ssl: bool = True
-    ) -> None:
+    def __init__(self, base_url: str, timeout: int = 30, verify_ssl: bool = True) -> None:
         """Initialize the HTTP remote store."""
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout

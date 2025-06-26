@@ -107,9 +107,7 @@ class ProcessingViewModel(QObject):
             total: Total number of frames to process
             time_elapsed: Time elapsed in seconds
         """
-        LOGGER.debug(
-            "Progress update: %s/%s frames, %.2fs", current, total, time_elapsed
-        )
+        LOGGER.debug("Progress update: %s/%s frames, %.2fs", current, total, time_elapsed)
 
         # Update internal state
         self._current_progress = current

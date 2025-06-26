@@ -1,5 +1,6 @@
 # Runtime dependencies for GOES‑VFI
 PyQt6
+qt-material>=2.14  # Material Design themes for PyQt6
 numpy
 Pillow
 opencv-python-headless

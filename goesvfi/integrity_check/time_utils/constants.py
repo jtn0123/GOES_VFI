@@ -31,9 +31,7 @@ RADC_MINUTES: List[int] = [
     51,
     56,
 ]  # CONUS scans, start sec ≈ 19.1
-RADM_MINUTES: List[int] = list(
-    range(60)
-)  # Mesoscale scans, every minute, start sec ≈ 24.4
+RADM_MINUTES: List[int] = list(range(60))  # Mesoscale scans, every minute, start sec ≈ 24.4
 
 # Approximate start seconds for each product type
 START_SECONDS: Dict[str, int] = {"RadF": 0, "RadC": 19, "RadM": 24}

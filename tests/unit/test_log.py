@@ -1,7 +1,6 @@
 import logging
 from unittest.mock import patch
 
-
 import goesvfi.utils.log as log
 
 

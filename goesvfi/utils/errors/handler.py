@@ -34,9 +34,7 @@ class ErrorHandler(ABC):
 class LoggingErrorHandler(ErrorHandler):
     """Error handler that logs errors."""
 
-    def __init__(
-        self, logger: Optional[logging.Logger] = None, log_level: int = logging.ERROR
-    ) -> None:
+    def __init__(self, logger: Optional[logging.Logger] = None, log_level: int = logging.ERROR) -> None:
         self.logger = logger or logging.getLogger(__name__)
         self.log_level = log_level
 
@@ -46,9 +44,7 @@ class LoggingErrorHandler(ErrorHandler):
 
     def handle(self, error: StructuredError) -> bool:
         """Log the error and continue processing."""
-        self.logger.log(
-            self.log_level, f"Error in {error.context.component}: {error.message}"
-        )
+        self.logger.log(self.log_level, f"Error in {error.context.component}: {error.message}")
         return False  # Continue to next handler
 
 

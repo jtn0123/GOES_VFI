@@ -349,14 +349,10 @@ class TestPipelineExceptionHierarchy:
         ]
         for exc in direct_pipeline_exceptions:
             assert isinstance(exc, PipelineError)
-            assert not isinstance(
-                exc, ProcessingError
-            )  # Should not inherit from ProcessingError
+            assert not isinstance(exc, ProcessingError)  # Should not inherit from ProcessingError
 
         # All should be exceptions
-        all_exceptions = (
-            [pipeline_error] + processing_exceptions + direct_pipeline_exceptions
-        )
+        all_exceptions = [pipeline_error] + processing_exceptions + direct_pipeline_exceptions
         for exc in all_exceptions:
             assert isinstance(exc, Exception)
 
@@ -364,9 +360,7 @@ class TestPipelineExceptionHierarchy:
         """Test different exception catching patterns."""
 
         def raise_ffmpeg_error():
-            raise FFmpegError(
-                "FFmpeg failed", command="ffmpeg -i test.mp4", stderr="Codec error"
-            )
+            raise FFmpegError("FFmpeg failed", command="ffmpeg -i test.mp4", stderr="Codec error")
 
         def raise_rife_error():
             raise RIFEError("RIFE interpolation failed")
@@ -440,9 +434,7 @@ class TestPipelineExceptionIntegration:
 
         def simulate_resource_constraint():
             """Simulate resource constraint."""
-            raise ResourceError(
-                "Insufficient memory for 4K processing", resource_type="memory"
-            )
+            raise ResourceError("Insufficient memory for 4K processing", resource_type="memory")
 
         def simulate_input_validation():
             """Simulate input validation failure."""
@@ -507,10 +499,7 @@ class TestPipelineExceptionIntegration:
         )
 
         assert "HEVC codec" in str(ffmpeg_error)
-        assert (
-            ffmpeg_error.command
-            == "ffmpeg -i input.mp4 -c:v libx265 -preset slow output.mp4"
-        )
+        assert ffmpeg_error.command == "ffmpeg -i input.mp4 -c:v libx265 -preset slow output.mp4"
         assert "VBV buffer" in ffmpeg_error.stderr
 
         # Resource error with specific resource type
@@ -523,9 +512,7 @@ class TestPipelineExceptionIntegration:
         assert resource_error.resource_type == "memory"
 
         # Input error with validation details
-        input_error = InputError(
-            "Input validation failed: expected at least 2 PNG files, found 0 in '/data/frames/'"
-        )
+        input_error = InputError("Input validation failed: expected at least 2 PNG files, found 0 in '/data/frames/'")
 
         assert "at least 2 PNG files" in str(input_error)
         assert "/data/frames/" in str(input_error)
