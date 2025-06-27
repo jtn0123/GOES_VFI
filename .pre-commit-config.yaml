@@ -32,17 +32,7 @@ repos:
           - flake8-pytest-style
         exclude: ^(legacy_tests/)
 
--   repo: https://github.com/pycqa/isort
-    rev: 6.0.1
-    hooks:
-    -   id: isort
-
--   repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-    -   id: black
-        language_version: python3.13
-        args: [--line-length=120]
+# Ruff handles both import sorting and formatting, so isort and black are not needed
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.16.1
@@ -74,11 +64,7 @@ repos:
         args: [--format, json, --severity-level, medium, --confidence-level, medium]
         exclude: ^(tests/|legacy_tests/)
 
--   repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-    rev: v1.4.2
-    hooks:
-    -   id: python-safety-dependencies-check
-        files: requirements.*\.txt$
+# Safety check removed - it only supports Poetry format, not setuptools
 
 -   repo: local
     hooks:
