@@ -1,115 +1,117 @@
 /* ========================================================================== */
-/*                      GOES_VFI Custom Style Sheet                           */
-/*              Optimized for performance and consistency                      */
+/*                 GOES_VFI Dynamic Theme Template                             */
+/*        Color placeholders are replaced with theme-specific colors          */
 /* ========================================================================== */
 
-/* Color Palette Variables (for documentation - Qt doesn't support CSS vars) */
-/* Primary Blue: #4a6fa5, #3a5f95 (darker), #5a7fb5 (lighter), #6c9bd1 (accent) */
-/* Success Green: #66ff66, #44dd44 (darker), #77ff77 (lighter) */
-/* Error Red: #ff6666, #dd4444 (darker), #ff7777 (lighter) */
-/* Warning Orange: #ffaa66 */
-/* Info Blue: #66aaff */
-/* Date Picker Blue: #2a82da, #1a72ca (darker), #3a92ea (lighter) */
-
-/* Spacing System: 4px, 8px, 12px, 16px, 24px */
-/* Border Radius: 2px (small), 4px (default), 6px (medium), 8px (large) */
+/* Color placeholders:
+   {primary} - Main theme color
+   {primary_light} - Lighter variant
+   {primary_dark} - Darker variant
+   {accent} - Accent color
+   {accent_light} - Lighter accent
+   {accent_dark} - Darker accent
+   {success} - Success status color
+   {error} - Error status color
+   {warning} - Warning status color
+   {info} - Info status color
+*/
 
 /* ========================================================================== */
 /*                          Application Headers                                */
 /* ========================================================================== */
 
-QLabel.AppHeader {
+QLabel.AppHeader {{
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 #4a6fa5, stop:1 #3a5f95);
+        stop:0 {primary}, stop:1 {primary_dark});
     color: #ffffff;
     font-weight: bold;
     border-radius: 6px;
     padding: 8px 12px;
-}
+}}
 
 /* ========================================================================== */
 /*                          Status Indicators                                  */
 /* ========================================================================== */
 
 /* Base status label styling */
-QLabel.StatusLabel {
+QLabel.StatusLabel {{
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(255, 255, 255, 0.1);
     font-weight: normal;
-}
+}}
 
-/* Status type variations - consolidated from duplicates */
-QLabel.StatusSuccess {
-    color: #66ff66;
+/* Status type variations */
+QLabel.StatusSuccess {{
+    color: {success};
     font-weight: bold;
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(102, 255, 102, 0.1);
-}
+}}
 
-QLabel.StatusError {
-    color: #ff6666;
+QLabel.StatusError {{
+    color: {error};
     font-weight: bold;
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(255, 102, 102, 0.1);
-}
+}}
 
-QLabel.StatusWarning {
-    color: #ffaa66;
+QLabel.StatusWarning {{
+    color: {warning};
     font-weight: bold;
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(255, 170, 102, 0.1);
-}
+}}
 
-QLabel.StatusInfo {
-    color: #66aaff;
+QLabel.StatusInfo {{
+    color: {info};
     font-weight: bold;
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(102, 170, 255, 0.1);
-}
+}}
 
 /* ========================================================================== */
 /*                          Progress Indicators                                */
 /* ========================================================================== */
 
-QProgressBar.DataProgress {
+QProgressBar.DataProgress {{
     text-align: center;
     font-weight: bold;
-}
+}}
 
-QProgressBar.DataProgress::chunk {
+QProgressBar.DataProgress::chunk {{
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-        stop:0 #4a6fa5, stop:1 #6c9bd1);
+        stop:0 {primary}, stop:1 {accent});
     border-radius: 3px;
-}
+}}
 
 /* ========================================================================== */
 /*                          Data Visualization                                 */
 /* ========================================================================== */
 
-QFrame.SatelliteDataFrame {
-    border: 2px solid #4a6fa5;
+QFrame.SatelliteDataFrame {{
+    border: 2px solid {primary};
     border-radius: 8px;
-    background: rgba(74, 111, 165, 0.1);
-}
+    background: rgba({primary_rgb}, 0.1);
+}}
 
-QWidget.TimelineViz {
+QWidget.TimelineViz {{
     background-color: transparent;
-}
+}}
 
-QLabel.ImageryLabel {
+QLabel.ImageryLabel {{
     background-color: #1a1a1a;
     border: 1px solid #333333;
-}
+}}
 
-QLabel.ImagePreview {
+QLabel.ImagePreview {{
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 4px;
-}
+}}
 
 /* ========================================================================== */
 /*                          Tab Widget Styling                                 */
@@ -118,24 +120,24 @@ QLabel.ImagePreview {
 /* Main tab containers */
 QWidget.IntegrityCheckTab,
 QWidget.MainTab,
-QWidget.FFmpegSettingsTab {
+QWidget.FFmpegSettingsTab {{
     background-color: transparent;
-}
+}}
 
 /* Tab bar configuration */
-QTabWidget::tab-bar {
+QTabWidget::tab-bar {{
     alignment: left;
     width: 40px;
-}
+}}
 
-QTabWidget::pane {
+QTabWidget::pane {{
     border: none;
     background-color: transparent;
     margin-left: 0px;
-}
+}}
 
 /* Tab styling */
-QTabBar::tab {
+QTabBar::tab {{
     background: rgba(60, 60, 60, 0.6);
     border: none;
     border-radius: 2px;
@@ -148,63 +150,63 @@ QTabBar::tab {
     font-weight: 400;
     font-size: 10px;
     text-align: center;
-}
+}}
 
-QTabBar::tab:hover {
-    background: rgba(74, 111, 165, 0.7);
+QTabBar::tab:hover {{
+    background: rgba({primary_rgb}, 0.7);
     color: #ffffff;
-}
+}}
 
-QTabBar::tab:selected {
-    background: #4a6fa5;
+QTabBar::tab:selected {{
+    background: {primary};
     color: #ffffff;
     font-weight: 500;
-}
+}}
 
-QTabBar::tab:!selected {
+QTabBar::tab:!selected {{
     margin-left: 2px;
-}
+}}
 
 /* Left-positioned tabs */
-QTabWidget[tabPosition="2"] QTabBar::tab {
+QTabWidget[tabPosition="2"] QTabBar::tab {{
     padding: 3px 1px;
     margin: 1px 0px;
     text-align: center;
     border-radius: 2px;
-}
+}}
 
-QTabWidget[tabPosition="2"] QTabBar::tab:selected {
-    border-right: 2px solid #6c9bd1;
-}
+QTabWidget[tabPosition="2"] QTabBar::tab:selected {{
+    border-right: 2px solid {accent};
+}}
 
 /* ========================================================================== */
 /*                          Button Styling                                     */
 /* ========================================================================== */
 
 /* Primary action buttons */
-QPushButton.StartButton {
+QPushButton.StartButton {{
     font-weight: bold;
     font-size: 16px;
     border-radius: 4px;
     padding: 8px 16px;
     min-height: 50px;
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 #66ff66, stop:1 #44dd44);
+        stop:0 {success}, stop:1 {success_dark});
     color: #000000;
-}
+}}
 
-QPushButton.StartButton:hover {
+QPushButton.StartButton:hover {{
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 #77ff77, stop:1 #55ee55);
-}
+        stop:0 {success_light}, stop:1 {success});
+}}
 
-QPushButton.StartButton:pressed {
+QPushButton.StartButton:pressed {{
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 #44dd44, stop:1 #22bb22);
-}
+        stop:0 {success_dark}, stop:1 #22bb22);
+}}
 
 QPushButton.StartButton:disabled,
-QPushButton.StartButtonDisabled {
+QPushButton.StartButtonDisabled {{
     font-weight: bold;
     font-size: 16px;
     border-radius: 4px;
@@ -212,426 +214,426 @@ QPushButton.StartButtonDisabled {
     min-height: 50px;
     background-color: rgba(128, 128, 128, 0.3);
     color: rgba(255, 255, 255, 0.5);
-}
+}}
 
 /* Cancel button */
-QPushButton.CancelButton {
+QPushButton.CancelButton {{
     font-weight: bold;
     font-size: 16px;
     border-radius: 4px;
     padding: 8px 16px;
     min-height: 50px;
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 #ff6666, stop:1 #dd4444);
+        stop:0 {error}, stop:1 {error_dark});
     color: #ffffff;
-}
+}}
 
-QPushButton.CancelButton:hover {
+QPushButton.CancelButton:hover {{
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 #ff7777, stop:1 #ee5555);
-}
+        stop:0 {error_light}, stop:1 {error});
+}}
 
-QPushButton.CancelButton:pressed {
+QPushButton.CancelButton:pressed {{
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-        stop:0 #dd4444, stop:1 #bb2222);
-}
+        stop:0 {error_dark}, stop:1 #bb2222);
+}}
 
 /* Dialog buttons */
-QPushButton.DialogButton {
+QPushButton.DialogButton {{
     background-color: rgba(60, 60, 60, 0.9);
     color: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 4px;
     padding: 6px 12px;
     font-weight: normal;
-}
+}}
 
-QPushButton.DialogButton:hover {
+QPushButton.DialogButton:hover {{
     background-color: rgba(80, 80, 80, 0.9);
     border-color: rgba(255, 255, 255, 0.5);
-}
+}}
 
-QPushButton.DialogButton:pressed {
+QPushButton.DialogButton:pressed {{
     background-color: rgba(40, 40, 40, 0.9);
-}
+}}
 
-QPushButton.DialogPrimaryButton {
-    background-color: #4a6fa5;
+QPushButton.DialogPrimaryButton {{
+    background-color: {primary};
     color: #ffffff;
-    border: 1px solid #6c9bd1;
+    border: 1px solid {accent};
     border-radius: 4px;
     padding: 6px 12px;
     font-weight: bold;
-}
+}}
 
-QPushButton.DialogPrimaryButton:hover {
-    background-color: #5a7fb5;
-}
+QPushButton.DialogPrimaryButton:hover {{
+    background-color: {primary_light};
+}}
 
-QPushButton.DialogPrimaryButton:pressed {
-    background-color: #3a5f95;
-}
+QPushButton.DialogPrimaryButton:pressed {{
+    background-color: {primary_dark};
+}}
 
 /* Tab-style buttons */
-QPushButton.TabButton {
+QPushButton.TabButton {{
     font-weight: bold;
     padding: 8px 16px;
     min-height: 35px;
     border-radius: 4px;
     background-color: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
-}
+}}
 
-QPushButton.TabButton:checked {
-    background-color: #4a6fa5;
+QPushButton.TabButton:checked {{
+    background-color: {primary};
     color: #ffffff;
-    border: 1px solid #6c9bd1;
-}
+    border: 1px solid {accent};
+}}
 
-QPushButton.TabButton:hover:!checked {
+QPushButton.TabButton:hover:!checked {{
     background-color: rgba(255, 255, 255, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.3);
-}
+}}
 
 /* ========================================================================== */
 /*                          Input Field Styling                                */
 /* ========================================================================== */
 
-QLineEdit.ValidationError {
+QLineEdit.ValidationError {{
     background-color: rgba(255, 102, 102, 0.2);
-    border: 2px solid #ff6666;
+    border: 2px solid {error};
     border-radius: 4px;
-}
+}}
 
 /* ========================================================================== */
 /*                          Dialog Styling                                     */
 /* ========================================================================== */
 
 /* Crop selection dialog */
-QDialog.CropSelectionDialog {
+QDialog.CropSelectionDialog {{
     background-color: rgba(20, 20, 20, 0.95);
     border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 8px;
-}
+}}
 
-QWidget.CropDialogHeader {
+QWidget.CropDialogHeader {{
     background-color: rgba(0, 0, 0, 0.8);
     border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-}
+}}
 
-QLabel.CropDialogInstruction {
+QLabel.CropDialogInstruction {{
     color: rgba(255, 255, 255, 0.9);
     font-size: 14px;
     font-family: "Segoe UI", "Arial", "Helvetica", sans-serif;
-}
+}}
 
 /* Image viewer dialog */
-QDialog.ImageViewerDialog {
+QDialog.ImageViewerDialog {{
     background-color: rgba(30, 30, 30, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.2);
-}
+}}
 
 /* Error dialog */
-QLabel.ErrorDialogMessage {
+QLabel.ErrorDialogMessage {{
     padding: 10px;
     background-color: rgba(248, 215, 218, 0.3);
     border: 1px solid rgba(245, 198, 203, 0.5);
     border-radius: 4px;
     color: #721c24;
-}
+}}
 
-QPlainTextEdit.ErrorDialogTraceback {
+QPlainTextEdit.ErrorDialogTraceback {{
     font-family: "Consolas", "Monaco", "Courier New", monospace;
     font-size: 10pt;
     background-color: rgba(245, 245, 245, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
-}
+}}
 
 /* ========================================================================== */
 /*                          Feedback System                                    */
 /* ========================================================================== */
 
-QLabel.FeedbackStatusLabel {
+QLabel.FeedbackStatusLabel {{
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(240, 240, 240, 0.1);
     font-weight: bold;
-}
+}}
 
-QLabel.FeedbackStatusInfo {
+QLabel.FeedbackStatusInfo {{
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(212, 237, 218, 0.3);
     color: #155724;
     font-weight: bold;
-}
+}}
 
-QLabel.FeedbackStatusSuccess {
+QLabel.FeedbackStatusSuccess {{
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(195, 230, 203, 0.3);
     color: #155724;
     font-weight: bold;
-}
+}}
 
-QLabel.FeedbackStatusWarning {
+QLabel.FeedbackStatusWarning {{
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(255, 243, 205, 0.3);
     color: #856404;
     font-weight: bold;
-}
+}}
 
-QLabel.FeedbackStatusError {
+QLabel.FeedbackStatusError {{
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(248, 215, 218, 0.3);
     color: #721c24;
     font-weight: bold;
-}
+}}
 
-QLabel.FeedbackStatusDebug {
+QLabel.FeedbackStatusDebug {{
     padding: 8px;
     border-radius: 4px;
     background-color: rgba(240, 240, 240, 0.2);
     color: rgba(255, 255, 255, 0.7);
     font-weight: bold;
-}
+}}
 
-QListWidget.FeedbackMessageList {
+QListWidget.FeedbackMessageList {{
     background-color: rgba(245, 245, 245, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
-}
+}}
 
 /* ========================================================================== */
 /*                          Date Picker Components                             */
 /* ========================================================================== */
 
-QLabel.DateRangeDisplay {
+QLabel.DateRangeDisplay {{
     font-weight: bold;
     padding: 4px 8px;
     border-radius: 4px;
-    background-color: rgba(74, 111, 165, 0.1);
-}
+    background-color: rgba({primary_rgb}, 0.1);
+}}
 
-QFrame.DatePickerGroup {
+QFrame.DatePickerGroup {{
     background-color: rgba(53, 53, 53, 0.3);
     border-radius: 4px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-}
+}}
 
-QFrame.DatePickerPreview {
+QFrame.DatePickerPreview {{
     background-color: rgba(30, 47, 69, 0.3);
     border-radius: 4px;
-    border: 1px solid rgba(74, 111, 165, 0.3);
-}
+    border: 1px solid rgba({primary_rgb}, 0.3);
+}}
 
-QLabel.DatePickerTitle {
+QLabel.DatePickerTitle {{
     font-weight: bold;
     font-size: 14px;
     color: rgba(255, 255, 255, 0.9);
-}
+}}
 
-QLabel.DatePickerMonospace {
+QLabel.DatePickerMonospace {{
     font-family: "Consolas", "Monaco", "Courier New", monospace;
     color: rgba(255, 255, 255, 0.8);
-}
+}}
 
-QPushButton.DatePickerButton {
+QPushButton.DatePickerButton {{
     background-color: rgba(58, 58, 58, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     padding: 6px 12px;
     color: rgba(255, 255, 255, 0.9);
-}
+}}
 
-QPushButton.DatePickerButton:hover {
+QPushButton.DatePickerButton:hover {{
     background-color: rgba(69, 69, 69, 0.8);
     border-color: rgba(255, 255, 255, 0.3);
-}
+}}
 
-QPushButton.DatePickerButton:pressed {
-    background-color: #2a82da;
-    border-color: #2a82da;
-}
+QPushButton.DatePickerButton:pressed {{
+    background-color: {primary};
+    border-color: {primary};
+}}
 
-QPushButton.DatePickerPrimary {
-    background-color: #2a82da;
-    border: 1px solid #3a92ea;
+QPushButton.DatePickerPrimary {{
+    background-color: {primary};
+    border: 1px solid {accent};
     border-radius: 4px;
     padding: 6px 12px;
     color: #ffffff;
     font-weight: bold;
-}
+}}
 
-QPushButton.DatePickerPrimary:hover {
-    background-color: #3a92ea;
-}
+QPushButton.DatePickerPrimary:hover {{
+    background-color: {primary_light};
+}}
 
-QPushButton.DatePickerPrimary:pressed {
-    background-color: #1a72ca;
-}
+QPushButton.DatePickerPrimary:pressed {{
+    background-color: {primary_dark};
+}}
 
-QCalendarWidget.DatePickerCalendar {
+QCalendarWidget.DatePickerCalendar {{
     background-color: rgba(45, 45, 45, 0.8);
     color: rgba(255, 255, 255, 0.9);
-    selection-background-color: #2a82da;
+    selection-background-color: {primary};
     selection-color: #ffffff;
-}
+}}
 
-QTimeEdit.DatePickerTime {
+QTimeEdit.DatePickerTime {{
     background-color: rgba(58, 58, 58, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 4px;
     padding: 4px;
     color: rgba(255, 255, 255, 0.9);
-}
+}}
 
-QTimeEdit.DatePickerTime:focus {
+QTimeEdit.DatePickerTime:focus {{
     background-color: rgba(69, 69, 69, 0.8);
-    border-color: #2a82da;
-}
+    border-color: {primary};
+}}
 
 /* ========================================================================== */
 /*                          Label Styling                                      */
 /* ========================================================================== */
 
 QLabel.FFmpegLabel,
-QLabel.StandardLabel {
+QLabel.StandardLabel {{
     font-weight: bold;
     color: rgba(255, 255, 255, 0.9);
     padding: 2px 4px;
     min-width: 100px;
     text-align: right;
-}
+}}
 
 /* Form layout labels */
-QFormLayout QLabel {
+QFormLayout QLabel {{
     font-weight: bold;
     color: rgba(255, 255, 255, 0.9);
     padding: 2px 4px;
     text-align: right;
-}
+}}
 
 /* ========================================================================== */
 /*                          Container Styling                                  */
 /* ========================================================================== */
 
 /* Profile container styling (from ffmpeg_settings_tab) */
-QWidget.ProfileContainer {
+QWidget.ProfileContainer {{
     border-radius: 6px;
-}
+}}
 
-QWidget.ProfileContainer QLabel {
+QWidget.ProfileContainer QLabel {{
     font-weight: bold;
     padding-left: 5px;
-}
+}}
 
-QWidget.ProfileContainer QComboBox {
+QWidget.ProfileContainer QComboBox {{
     min-width: 180px;
-}
+}}
 
 /* Group boxes */
-QGroupBox {
+QGroupBox {{
     font-weight: bold;
     border: 2px solid rgba(255, 255, 255, 0.2);
     border-radius: 6px;
     margin-top: 10px;
     padding-top: 10px;
-}
+}}
 
-QGroupBox::title {
+QGroupBox::title {{
     subcontrol-origin: margin;
     left: 10px;
     padding: 0 8px 0 8px;
     background-color: rgba(45, 45, 45, 0.9);
     border-radius: 3px;
-}
+}}
 
 /* Control frames */
-QFrame.ControlFrame {
+QFrame.ControlFrame {{
     background-color: rgba(50, 50, 50, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 6px;
     padding: 10px;
-}
+}}
 
 /* ========================================================================== */
 /*                          Layout Styling                                     */
 /* ========================================================================== */
 
-QGridLayout {
+QGridLayout {{
     spacing: 10px;
-}
+}}
 
-QGridLayout QLabel {
+QGridLayout QLabel {{
     min-width: 100px;
-}
+}}
 
 /* ========================================================================== */
 /*                          Satellite Tab Styling                              */
 /* ========================================================================== */
 
 /* Satellite tab headers */
-QLabel.SatelliteHeader {
+QLabel.SatelliteHeader {{
     font-size: 16px;
     font-weight: bold;
     margin-bottom: 8px;
     color: #efefef;
     padding: 8px 12px;
-}
+}}
 
-QLabel.SatelliteDescription {
+QLabel.SatelliteDescription {{
     margin-bottom: 10px;
-}
+}}
 
 /* Date controls frame */
-QFrame#dateControlsFrame {
+QFrame#dateControlsFrame {{
     background-color: #3d3d3d;
     border: 1px solid #555555;
     border-radius: 3px;
     padding: 10px;
-}
+}}
 
 /* Date range label */
-QLabel.DateRangeLabel {
+QLabel.DateRangeLabel {{
     background-color: #3d3d3d;
     color: #efefef;
     padding: 8px;
     border: 1px solid #555555;
     border-radius: 3px;
     margin-top: 10px;
-}
+}}
 
 /* Quick select frame */
-QFrame#quickSelectFrame {
+QFrame#quickSelectFrame {{
     background-color: #3d3d3d;
     border: 1px solid #555555;
     border-radius: 3px;
     padding: 10px;
     margin-top: 10px;
-}
+}}
 
 /* Results control panel */
-QWidget#resultsControlPanel {
+QWidget#resultsControlPanel {{
     background-color: #2d2d2d;
     border: 1px solid #454545;
     border-radius: 4px;
-}
+}}
 
 /* Satellite tab widget styling */
-QTabWidget.SatelliteTabWidget::pane {
+QTabWidget.SatelliteTabWidget::pane {{
     border: 1px solid #3c3c3c;
     background-color: #2a2a2a;
-}
+}}
 
-QTabWidget.SatelliteTabWidget::tab-bar {
+QTabWidget.SatelliteTabWidget::tab-bar {{
     alignment: left;
-}
+}}
 
-QTabWidget.SatelliteTabWidget QTabBar::tab:left {
+QTabWidget.SatelliteTabWidget QTabBar::tab:left {{
     background-color: #303030;
     color: #b0b0b0;
     border: 1px solid #444;
@@ -642,93 +644,93 @@ QTabWidget.SatelliteTabWidget QTabBar::tab:left {
     padding: 6px;
     margin: 2px 0;
     margin-right: -1px;
-}
+}}
 
-QTabWidget.SatelliteTabWidget QTabBar::tab:left:selected {
+QTabWidget.SatelliteTabWidget QTabBar::tab:left:selected {{
     background-color: #2a2a2a;
     color: white;
-    border-left: 3px solid #3498db;
+    border-left: 3px solid {primary};
     padding-left: 4px;
-}
+}}
 
-QTabWidget.SatelliteTabWidget QTabBar::tab:left:hover:!selected {
+QTabWidget.SatelliteTabWidget QTabBar::tab:left:hover:!selected {{
     background-color: #363636;
     color: #d0d0d0;
-}
+}}
 
 /* ========================================================================== */
 /*                          Progress Dialog Styling                            */
 /* ========================================================================== */
 
-QProgressDialog.AutoDetectionDialog {
+QProgressDialog.AutoDetectionDialog {{
     background-color: #2d2d2d;
     border: 1px solid #3a3a3a;
     border-radius: 8px;
     padding: 10px;
-}
+}}
 
-QProgressDialog.AutoDetectionDialog QLabel {
+QProgressDialog.AutoDetectionDialog QLabel {{
     color: #e0e0e0;
     font-size: 12px;
-}
+}}
 
-QProgressDialog.AutoDetectionDialog QProgressBar {
+QProgressDialog.AutoDetectionDialog QProgressBar {{
     border: 1px solid #555;
     border-radius: 4px;
     background-color: #333;
     text-align: center;
     height: 20px;
-}
+}}
 
-QProgressDialog.AutoDetectionDialog QProgressBar::chunk {
-    background-color: #3498db;
+QProgressDialog.AutoDetectionDialog QProgressBar::chunk {{
+    background-color: {primary};
     border-radius: 3px;
-}
+}}
 
-QProgressDialog.AutoDetectionDialog QPushButton {
-    background-color: #3498db;
+QProgressDialog.AutoDetectionDialog QPushButton {{
+    background-color: {primary};
     color: white;
     border: none;
     border-radius: 4px;
     padding: 6px 12px;
     font-weight: bold;
-}
+}}
 
-QProgressDialog.AutoDetectionDialog QPushButton:hover {
-    background-color: #2980b9;
-}
+QProgressDialog.AutoDetectionDialog QPushButton:hover {{
+    background-color: {primary_dark};
+}}
 
 /* Log widget styling */
-QListWidget.AutoDetectionLog {
+QListWidget.AutoDetectionLog {{
     background-color: #1d1d1d;
     border: 1px solid #555;
     border-radius: 4px;
     color: #e0e0e0;
     font-family: monospace;
-}
+}}
 
 /* ========================================================================== */
 /*                          Image Viewer Styling                               */
 /* ========================================================================== */
 
 /* Crop preview label */
-QLabel.CropPreviewLabel {
+QLabel.CropPreviewLabel {{
     border: 2px dashed rgba(255, 255, 255, 0.3);
     border-radius: 4px;
     background-color: rgba(0, 0, 0, 0.2);
-}
+}}
 
 /* Image viewer label */
-QLabel.ImageViewerLabel {
+QLabel.ImageViewerLabel {{
     background-color: rgba(0, 0, 0, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.2);
-}
+}}
 
 /* GOES imagery header */
-QLabel.GOESImageryHeader {
+QLabel.GOESImageryHeader {{
     font-size: 18px;
     font-weight: bold;
     color: #efefef;
     padding: 12px 16px;
     margin-bottom: 10px;
-}
+}}

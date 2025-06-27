@@ -1,13 +1,12 @@
-"""
-Unified date range selector component for the GOES Integrity Check UI.
+"""Unified date range selector component for the GOES Integrity Check UI.
 
 This module provides a standardized date range selector component that can be
 used across all tabs in the integrity check system, ensuring consistent UI
 and behavior for date selection.
 """
 
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Callable, Optional, Tuple
 
 from PyQt6.QtCore import QDate, QDateTime, Qt, QTime, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -36,8 +35,7 @@ class DateRangePreset:
         start_date_func: Callable[[], datetime],
         end_date_func: Callable[[], datetime],
     ) -> None:
-        """
-        Initialize a date range preset.
+        """Initialize a date range preset.
 
         Args:
             name: The preset name (e.g., "Today", "Last Week")
@@ -50,14 +48,13 @@ class DateRangePreset:
         self._start_date_func = start_date_func  # pylint: disable=attribute-defined-outside-init
         self._end_date_func = end_date_func  # pylint: disable=attribute-defined-outside-init
 
-    def get_date_range(self) -> Tuple[datetime, datetime]:
+    def get_date_range(self) -> tuple[datetime, datetime]:
         """Get the date range for this preset."""
         return self._start_date_func(), self._end_date_func()
 
 
 class UnifiedDateRangeSelector(QWidget):
-    """
-    A standardized date range selector component for use across all tabs.
+    """A standardized date range selector component for use across all tabs.
 
     This component provides a consistent interface for selecting date ranges
     with support for presets, manual date entry, and visual date picking.
@@ -68,13 +65,12 @@ class UnifiedDateRangeSelector(QWidget):
 
     def __init__(
         self,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         include_visual_picker: bool = True,
         include_presets: bool = True,
         layout_direction: Qt.Orientation = Qt.Orientation.Horizontal,
     ) -> None:
-        """
-        Initialize the date range selector.
+        """Initialize the date range selector.
 
         Args:
             parent: The parent widget
@@ -91,12 +87,8 @@ class UnifiedDateRangeSelector(QWidget):
 
         # Initialize date range with defaults
         yesterday = datetime.now() - timedelta(days=1)
-        self._start_date = yesterday.replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )  # pylint: disable=attribute-defined-outside-init
-        self._end_date = yesterday.replace(
-            hour=23, minute=59, second=59, microsecond=0
-        )  # pylint: disable=attribute-defined-outside-init
+        self._start_date = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)  # pylint: disable=attribute-defined-outside-init
+        self._end_date = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)  # pylint: disable=attribute-defined-outside-init
 
         # Create UI components
         self._setup_ui()
@@ -264,8 +256,7 @@ class UnifiedDateRangeSelector(QWidget):
         dialog.exec()
 
     def _handle_visual_date_selection(self, start: datetime, end: datetime) -> None:
-        """
-        Handle date selection from visual date picker.
+        """Handle date selection from visual date picker.
 
         Args:
             start: Start date
@@ -282,8 +273,7 @@ class UnifiedDateRangeSelector(QWidget):
         self.dateRangeSelected.emit(start, end)
 
     def _apply_preset(self, preset_name: str) -> None:
-        """
-        Apply a preset date range.
+        """Apply a preset date range.
 
         Args:
             preset_name: Name of the preset to apply
@@ -358,13 +348,12 @@ class UnifiedDateRangeSelector(QWidget):
         # Emit signal
         self.dateRangeSelected.emit(start, end)
 
-    def get_date_range(self) -> Tuple[datetime, datetime]:
+    def get_date_range(self) -> tuple[datetime, datetime]:
         """Get the current date range."""
         return self._start_date, self._end_date
 
     def set_date_range(self, start: datetime, end: datetime) -> None:
-        """
-        Set the date range.
+        """Set the date range.
 
         Args:
             start: Start date
@@ -379,8 +368,7 @@ class UnifiedDateRangeSelector(QWidget):
 
 
 class CompactDateRangeSelector(QWidget):
-    """
-    A compact date range selector for use in space-constrained UIs.
+    """A compact date range selector for use in space-constrained UIs.
 
     This component provides a simplified version of the date selector with
     a dropdown for common presets and a compact date display.
@@ -389,7 +377,7 @@ class CompactDateRangeSelector(QWidget):
     # Signal when date range changes
     dateRangeSelected = pyqtSignal(datetime, datetime)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the compact date range selector."""
         super().__init__(parent)
 
@@ -415,19 +403,17 @@ class CompactDateRangeSelector(QWidget):
 
         # Preset dropdown
         self.preset_combo = QComboBox()
-        self.preset_combo.addItems(
-            [
-                self.tr("Last 7 Days"),
-                self.tr("Last 24 Hours"),
-                self.tr("Today"),
-                self.tr("Yesterday"),
-                self.tr("Last 30 Days"),
-                self.tr("This Month"),
-                self.tr("Last Month"),
-                self.tr("This Year"),
-                self.tr("Custom..."),
-            ]
-        )
+        self.preset_combo.addItems([
+            self.tr("Last 7 Days"),
+            self.tr("Last 24 Hours"),
+            self.tr("Today"),
+            self.tr("Yesterday"),
+            self.tr("Last 30 Days"),
+            self.tr("This Month"),
+            self.tr("Last Month"),
+            self.tr("This Year"),
+            self.tr("Custom..."),
+        ])
         self.preset_combo.currentTextChanged.connect(self._handle_preset_change)
         main_layout.addWidget(self.preset_combo)
 
@@ -448,25 +434,23 @@ class CompactDateRangeSelector(QWidget):
         if self._start_date.date() == self._end_date.date():
             # Same day
             display_text = f"{self._start_date.strftime('%Y-%m-%d')}"
-        else:
-            # Different days
-            if self._start_date.year == self._end_date.year:
-                # Same year
-                if self._start_date.month == self._end_date.month:
-                    # Same month
-                    display_text = f"{self._start_date.strftime('%b %d')} - " f"{self._end_date.strftime('%d, %Y')}"
-                else:
-                    # Different months
-                    display_text = f"{self._start_date.strftime('%b %d')} - " f"{self._end_date.strftime('%b %d, %Y')}"
+        # Different days
+        elif self._start_date.year == self._end_date.year:
+            # Same year
+            if self._start_date.month == self._end_date.month:
+                # Same month
+                display_text = f"{self._start_date.strftime('%b %d')} - {self._end_date.strftime('%d, %Y')}"
             else:
-                # Different years
-                display_text = f"{self._start_date.strftime('%Y-%m-%d')} - " f"{self._end_date.strftime('%Y-%m-%d')}"
+                # Different months
+                display_text = f"{self._start_date.strftime('%b %d')} - {self._end_date.strftime('%b %d, %Y')}"
+        else:
+            # Different years
+            display_text = f"{self._start_date.strftime('%Y-%m-%d')} - {self._end_date.strftime('%Y-%m-%d')}"
 
         self.date_display.setText(display_text)
 
     def _handle_preset_change(self, preset_text: str) -> None:
-        """
-        Handle preset change from the dropdown.
+        """Handle preset change from the dropdown.
 
         Args:
             preset_text: The selected preset text
@@ -539,8 +523,7 @@ class CompactDateRangeSelector(QWidget):
             self.preset_combo.blockSignals(False)
 
     def _handle_visual_date_selection(self, start: datetime, end: datetime) -> None:
-        """
-        Handle date selection from visual date picker.
+        """Handle date selection from visual date picker.
 
         Args:
             start: Start date
@@ -556,13 +539,12 @@ class CompactDateRangeSelector(QWidget):
         # Emit signal
         self.dateRangeSelected.emit(start, end)
 
-    def get_date_range(self) -> Tuple[datetime, datetime]:
+    def get_date_range(self) -> tuple[datetime, datetime]:
         """Get the current date range."""
         return self._start_date, self._end_date
 
     def set_date_range(self, start: datetime, end: datetime) -> None:
-        """
-        Set the date range.
+        """Set the date range.
 
         Args:
             start: Start date

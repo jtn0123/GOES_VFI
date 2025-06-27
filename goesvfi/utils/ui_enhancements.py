@@ -4,7 +4,7 @@ This module provides UI enhancement classes that are currently stubbed.
 Future implementation will provide actual functionality.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import QWidget
@@ -14,7 +14,7 @@ class TooltipHelper:
     """Helper class for managing tooltips."""
 
     @staticmethod
-    def add_tooltip(widget: QWidget, tooltip_key: str, tooltip: Optional[str] = None) -> None:
+    def add_tooltip(widget: QWidget, tooltip_key: str, tooltip: str | None = None) -> None:
         """Add a tooltip to a widget.
 
         Args:
@@ -32,7 +32,7 @@ class HelpButton(QWidget):
 
     help_requested = pyqtSignal(str)
 
-    def __init__(self, topic: str, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, topic: str, parent: QWidget | None = None) -> None:
         """Initialize help button.
 
         Args:
@@ -57,7 +57,7 @@ class HelpButton(QWidget):
 class FadeInNotification(QWidget):
     """A notification widget with fade-in effect."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize notification widget.
 
         Args:
@@ -76,7 +76,6 @@ class FadeInNotification(QWidget):
             duration: Duration in milliseconds to show message
         """
         # Stub implementation - could print or show basic message
-        print(f"Notification: {message}")
 
 
 class DragDropWidget(QWidget):
@@ -84,7 +83,7 @@ class DragDropWidget(QWidget):
 
     files_dropped = pyqtSignal(list)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize drag drop widget."""
         super().__init__(parent)
         self.setAcceptDrops(True)
@@ -101,7 +100,7 @@ class DragDropWidget(QWidget):
 class LoadingSpinner(QWidget):
     """A loading spinner widget."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize loading spinner."""
         super().__init__(parent)
         # Initialize spinner-specific attributes
@@ -124,13 +123,13 @@ class ProgressTracker(QObject):
     status_updated = pyqtSignal(str)
     stats_updated = pyqtSignal(dict)
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         """Initialize progress tracker."""
         super().__init__(parent)
         # Initialize tracker-specific attributes
         self.current_progress = 0
         self.current_status = "Ready"
-        self.operation_stats = {}
+        self.operation_stats: dict[str, Any] = {}
 
     def set_progress(self, value: int) -> None:
         """Set progress value (0-100)."""
@@ -158,7 +157,7 @@ class ProgressTracker(QObject):
 class ShortcutManager:
     """Manages keyboard shortcuts."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize shortcut manager."""
         self.shortcuts: dict[str, Any] = {}
         self.parent = parent
@@ -177,11 +176,11 @@ class ShortcutManager:
     def show_shortcuts(self) -> None:
         """Show available shortcuts to the user."""
         # Display shortcuts - to be implemented
-        for key, _ in self.shortcuts.items():
-            print(f"Shortcut: {key}")
+        for _key in self.shortcuts:
+            pass
 
 
-def create_status_widget(parent: Optional[QWidget] = None) -> QWidget:
+def create_status_widget(parent: QWidget | None = None) -> QWidget:
     """Create a status widget.
 
     Args:

@@ -1,10 +1,10 @@
 """Integration tests for the ReconcileManager with real filesystem operations."""
 
 import asyncio
-import tempfile
-import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
+import tempfile
+import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from goesvfi.integrity_check.cache_db import CacheDB
@@ -17,7 +17,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
 class TestReconcileManagerIntegration(unittest.TestCase):
     """Integration tests for ReconcileManager that actually create files."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Create a temporary directory for testing
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -63,7 +63,7 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         self.original_window_days = TimeIndex.RECENT_WINDOW_DAYS
         TimeIndex.RECENT_WINDOW_DAYS = 7
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up temporary directory
         self.temp_dir.cleanup()
@@ -77,7 +77,7 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         dest_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Create a small test file
-        with open(dest_path, "w") as f:
+        with open(dest_path, "w", encoding="utf-8") as f:
             f.write(f"CDN test file for {ts.isoformat()} satellite {satellite.name}")
 
         return dest_path
@@ -89,12 +89,12 @@ class TestReconcileManagerIntegration(unittest.TestCase):
 
         # Create a small test file with .nc extension
         dest_path = dest_path.with_suffix(".nc")
-        with open(dest_path, "w") as f:
+        with open(dest_path, "w", encoding="utf-8") as f:
             f.write(f"S3 NetCDF test file for {ts.isoformat()} satellite {satellite.name}")
 
         return dest_path
 
-    def _create_test_files(self, timestamps, satellite):
+    def _create_test_files(self, timestamps, satellite) -> None:
         """Create test files in the filesystem."""
         for ts in timestamps:
             # Get path
@@ -102,10 +102,10 @@ class TestReconcileManagerIntegration(unittest.TestCase):
             # Create directory
             path.parent.mkdir(parents=True, exist_ok=True)
             # Create empty file
-            with open(path, "w") as f:
+            with open(path, "w", encoding="utf-8") as f:
                 f.write(f"Test file for {ts.isoformat()}")
 
-    async def test_scan_directory_with_real_files(self):
+    async def test_scan_directory_with_real_files(self) -> None:
         """Test scanning a directory with real files."""
         # Create a sequence of timestamps
         interval = 10  # 10-minute intervals
@@ -153,7 +153,7 @@ class TestReconcileManagerIntegration(unittest.TestCase):
 
     @patch("goesvfi.integrity_check.render.netcdf.render_png", autospec=True)
     @unittest.skip("ReconcileManager is stub implementation - fetch missing files not implemented")
-    async def test_fetch_missing_files(self, mock_render_png):
+    async def test_fetch_missing_files(self, mock_render_png) -> None:
         """Test fetching missing files."""
 
         # Setup mock render_png function to immediately return a PNG path
@@ -161,7 +161,7 @@ class TestReconcileManagerIntegration(unittest.TestCase):
             # Just create the PNG file so tests pass
             png_path = netcdf_path.with_suffix(".png")
             png_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(png_path, "w") as f:
+            with open(png_path, "w", encoding="utf-8") as f:
                 f.write(f"Fake rendered PNG for {netcdf_path}")
             return png_path
 
@@ -176,12 +176,12 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         # Define callbacks for testing
         progress_updates = []
 
-        def progress_callback(current, total, message):
+        def progress_callback(current, total, message) -> None:
             progress_updates.append((current, total, message))
 
         file_callbacks = []
 
-        def file_callback(path, success):
+        def file_callback(path, success) -> None:
             file_callbacks.append((path, success))
 
         # Fetch missing files
@@ -219,7 +219,7 @@ class TestReconcileManagerIntegration(unittest.TestCase):
 
     @patch("goesvfi.integrity_check.reconcile_manager.render_png", autospec=True)
     @unittest.skip("ReconcileManager is stub implementation - render_png doesn't exist")
-    async def test_reconcile(self, mock_render_png):
+    async def test_reconcile(self, mock_render_png) -> None:
         """Test the full reconcile process."""
 
         # Setup mock render_png function to immediately return a PNG path
@@ -227,7 +227,7 @@ class TestReconcileManagerIntegration(unittest.TestCase):
             # Just create the PNG file so tests pass
             png_path = netcdf_path.with_suffix(".png")
             png_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(png_path, "w") as f:
+            with open(png_path, "w", encoding="utf-8") as f:
                 f.write(f"Fake rendered PNG for {netcdf_path}")
             return png_path
 
@@ -252,12 +252,12 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         # Define callbacks for testing
         progress_updates = []
 
-        def progress_callback(current, total, message):
+        def progress_callback(current, total, message) -> None:
             progress_updates.append((current, total, message))
 
         file_callbacks = []
 
-        def file_callback(path, success):
+        def file_callback(path, success) -> None:
             file_callbacks.append((path, success))
 
         # Run reconcile
@@ -289,9 +289,9 @@ class TestReconcileManagerIntegration(unittest.TestCase):
         for i in range(7):
             ts = start_time + timedelta(minutes=i * 10)
             path = self.manager._get_local_path(ts, self.satellite)
-            assert (
-                path.exists() or Path(str(path).replace(".png", ".nc")).exists()
-            ), f"File doesn't exist for timestamp {ts}"
+            assert path.exists() or Path(str(path).replace(".png", ".nc")).exists(), (
+                f"File doesn't exist for timestamp {ts}"
+            )
 
 
 def async_test(coro):

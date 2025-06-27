@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 import math  # For isnan check
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import QFrame  # Added QFrame for separators
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -13,27 +12,27 @@ from PyQt6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
-    QLabel,
-    QLineEdit,
     QMessageBox,
     QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
+from goesvfi.gui_components.widget_factory import WidgetFactory
+
 # Setup logger
 from goesvfi.utils import log
 
 # Runtime import for constants defined in gui.py
-from goesvfi.utils.config import DEFAULT_FFMPEG_PROFILE  # Import from config
-from goesvfi.utils.config import FFMPEG_PROFILES, FfmpegProfile
+from goesvfi.utils.config import (
+    DEFAULT_FFMPEG_PROFILE,  # Import from config
+    FFMPEG_PROFILES,
+    FfmpegProfile,
+)
 
 LOGGER = log.get_logger(__name__)  # Use __name__ for specific logger
 
 # Type annotations for complex function arguments
-if TYPE_CHECKING:
-    pass
-    pass  # Using FfmpegProfile imported from config
 
 
 class FFmpegSettingsTab(QWidget):
@@ -44,7 +43,7 @@ class FFmpegSettingsTab(QWidget):
     # or if MainWindow needs to connect to it later)
     # preview_settings_changed = pyqtSignal()
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the FFmpegSettingsTab."""
         super().__init__(parent)
 
@@ -68,9 +67,9 @@ class FFmpegSettingsTab(QWidget):
     def _create_header(self) -> None:
         """Create the enhanced header for the FFmpeg tab."""
         # This will be added to the layout in _setup_layout
-        self.header_widget = QLabel("⚙️ FFmpeg Settings - Video Processing Configuration")
-        self.header_widget.setProperty("class", "AppHeader")
-        # Header styling handled by AppHeader theme class
+        self.header_widget = WidgetFactory.create_label(
+            "⚙️ FFmpeg Settings - Video Processing Configuration", style="header"
+        )
 
     def _apply_stylesheet(self) -> None:
         """Apply enhanced stylesheet - most styling now handled by qt-material theme."""
@@ -83,50 +82,51 @@ class FFmpegSettingsTab(QWidget):
         self._create_header()
 
         # --- Profile Selection ---
-        self.ffmpeg_profile_combo = QComboBox()
-        profile_items = list(FFMPEG_PROFILES.keys()) + ["Custom"]
-        self.ffmpeg_profile_combo.addItems(profile_items)
-        self.ffmpeg_profile_combo.setToolTip(self.tr("Select a predefined FFmpeg settings profile or 'Custom'"))
+        self.ffmpeg_profile_combo = WidgetFactory.create_combo_box(
+            items=[*list(FFMPEG_PROFILES.keys()), "Custom"],
+            tooltip=self.tr("Select a predefined FFmpeg settings profile or 'Custom'"),
+        )
 
         # --- Interpolation Settings Group ---
-        self.ffmpeg_settings_group = QGroupBox(self.tr("⚙️ Interpolation (minterpolate filter)"))
-        self.ffmpeg_settings_group.setCheckable(True)  # Corresponds to use_ffmpeg_interp
-        self.ffmpeg_settings_group.setToolTip(self.tr("Enable and configure FFmpeg's motion interpolation filter"))
+        self.ffmpeg_settings_group = WidgetFactory.create_group_box(
+            self.tr("⚙️ Interpolation (minterpolate filter)"),
+            checkable=True,
+            tooltip=self.tr("Enable and configure FFmpeg's motion interpolation filter"),
+        )
 
-        self.ffmpeg_mi_mode_combo = QComboBox()
-        self.ffmpeg_mi_mode_combo.addItems([self.tr("dup"), self.tr("blend"), self.tr("mci")])
-        self.ffmpeg_mi_mode_combo.setToolTip(self.tr("Motion interpolation mode"))
+        self.ffmpeg_mi_mode_combo = WidgetFactory.create_combo_box(
+            items=[self.tr("dup"), self.tr("blend"), self.tr("mci")], tooltip=self.tr("Motion interpolation mode")
+        )
 
-        self.ffmpeg_mc_mode_combo = QComboBox()
-        self.ffmpeg_mc_mode_combo.addItems([self.tr("obmc"), self.tr("aobmc")])
-        self.ffmpeg_mc_mode_combo.setToolTip(self.tr("Motion compensation mode"))
+        self.ffmpeg_mc_mode_combo = WidgetFactory.create_combo_box(
+            items=[self.tr("obmc"), self.tr("aobmc")], tooltip=self.tr("Motion compensation mode")
+        )
 
-        self.ffmpeg_me_mode_combo = QComboBox()
-        self.ffmpeg_me_mode_combo.addItems([self.tr("bidir"), self.tr("bilat")])
-        self.ffmpeg_me_mode_combo.setToolTip(self.tr("Motion estimation mode"))
+        self.ffmpeg_me_mode_combo = WidgetFactory.create_combo_box(
+            items=[self.tr("bidir"), self.tr("bilat")], tooltip=self.tr("Motion estimation mode")
+        )
 
-        self.ffmpeg_vsbmc_checkbox = QCheckBox(self.tr("⚙️ VSBMC"))
-        self.ffmpeg_vsbmc_checkbox.setToolTip(self.tr("Variable size block motion compensation"))
+        self.ffmpeg_vsbmc_checkbox = WidgetFactory.create_checkbox(
+            self.tr("⚙️ VSBMC"), tooltip=self.tr("Variable size block motion compensation")
+        )
 
-        self.ffmpeg_scd_combo = QComboBox()
-        self.ffmpeg_scd_combo.addItems([self.tr("none"), self.tr("fdiff")])
-        self.ffmpeg_scd_combo.setToolTip(self.tr("Scene change detection mode"))
+        self.ffmpeg_scd_combo = WidgetFactory.create_combo_box(
+            items=[self.tr("none"), self.tr("fdiff")], tooltip=self.tr("Scene change detection mode")
+        )
 
         self.ffmpeg_me_algo_combo = QComboBox()  # Changed from QLineEdit
-        self.ffmpeg_me_algo_combo.addItems(
-            [
-                self.tr("(default)"),
-                self.tr("esa"),
-                self.tr("tss"),
-                self.tr("tdls"),
-                self.tr("ntss"),
-                self.tr("fss"),
-                self.tr("ds"),
-                self.tr("hexbs"),
-                self.tr("epzs"),
-                self.tr("umh"),
-            ]
-        )
+        self.ffmpeg_me_algo_combo.addItems([
+            self.tr("(default)"),
+            self.tr("esa"),
+            self.tr("tss"),
+            self.tr("tdls"),
+            self.tr("ntss"),
+            self.tr("fss"),
+            self.tr("ds"),
+            self.tr("hexbs"),
+            self.tr("epzs"),
+            self.tr("umh"),
+        ])
         self.ffmpeg_me_algo_combo.setToolTip(
             self.tr("Motion estimation algorithm (leave as default unless you know why)")
         )
@@ -142,21 +142,21 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_scd_threshold_spinbox.setToolTip(self.tr("Scene change detection threshold (0-100)"))
 
         self.ffmpeg_mb_size_combo = QComboBox()  # Changed from QLineEdit
-        self.ffmpeg_mb_size_combo.addItems(
-            [
-                self.tr("(default)"),
-                self.tr("8"),
-                self.tr("16"),
-                self.tr("32"),
-                self.tr("64"),
-            ]
-        )  # Common block sizes
+        self.ffmpeg_mb_size_combo.addItems([
+            self.tr("(default)"),
+            self.tr("8"),
+            self.tr("16"),
+            self.tr("32"),
+            self.tr("64"),
+        ])  # Common block sizes
         self.ffmpeg_mb_size_combo.setToolTip(self.tr("Macroblock size for motion estimation"))
 
         # --- Unsharp Mask Group ---
-        self.ffmpeg_unsharp_group = QGroupBox(self.tr("🔍 Sharpening (unsharp filter)"))
-        self.ffmpeg_unsharp_group.setCheckable(True)  # Corresponds to apply_unsharp
-        self.ffmpeg_unsharp_group.setToolTip(self.tr("Apply unsharp mask for sharpening"))
+        self.ffmpeg_unsharp_group = WidgetFactory.create_group_box(
+            self.tr("🔍 Sharpening (unsharp filter)"),
+            checkable=True,
+            tooltip=self.tr("Apply unsharp mask for sharpening"),
+        )
 
         self.ffmpeg_unsharp_lx_spinbox = QSpinBox()
         self.ffmpeg_unsharp_lx_spinbox.setRange(3, 63)
@@ -191,8 +191,9 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_unsharp_ca_spinbox.setToolTip(self.tr("Chroma amount (-10 to 10)"))
 
         # --- Quality Settings Group ---
-        self.ffmpeg_quality_group = QGroupBox(self.tr("📹 Encoding Quality (libx264)"))
-        self.ffmpeg_quality_group.setToolTip(self.tr("Settings for the final video encoding"))
+        self.ffmpeg_quality_group = WidgetFactory.create_group_box(
+            self.tr("📹 Encoding Quality (libx264)"), tooltip=self.tr("Settings for the final video encoding")
+        )
 
         self.ffmpeg_quality_combo = QComboBox()
         # Define presets similar to gui_backup.py
@@ -253,30 +254,26 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_bufsize_spinbox.setDisabled(True)  # Typically controlled by preset/CRF
 
         self.ffmpeg_pix_fmt_combo = QComboBox()
-        self.ffmpeg_pix_fmt_combo.addItems(
-            [
-                self.tr("yuv444p"),
-                self.tr("yuv420p"),
-                self.tr("yuv422p"),
-                self.tr("rgb24"),
-            ]
-        )  # Common formats
+        self.ffmpeg_pix_fmt_combo.addItems([
+            self.tr("yuv444p"),
+            self.tr("yuv420p"),
+            self.tr("yuv422p"),
+            self.tr("rgb24"),
+        ])  # Common formats
         self.ffmpeg_pix_fmt_combo.setToolTip(self.tr("Pixel format for encoding (yuv444p recommended for quality)"))
 
         self.ffmpeg_filter_preset_combo = QComboBox()
-        self.ffmpeg_filter_preset_combo.addItems(
-            [
-                self.tr("ultrafast"),
-                self.tr("superfast"),
-                self.tr("veryfast"),
-                self.tr("faster"),
-                self.tr("fast"),
-                self.tr("medium"),
-                self.tr("slow"),
-                self.tr("slower"),
-                self.tr("veryslow"),
-            ]
-        )
+        self.ffmpeg_filter_preset_combo.addItems([
+            self.tr("ultrafast"),
+            self.tr("superfast"),
+            self.tr("veryfast"),
+            self.tr("faster"),
+            self.tr("fast"),
+            self.tr("medium"),
+            self.tr("slow"),
+            self.tr("slower"),
+            self.tr("veryslow"),
+        ])
         self.ffmpeg_filter_preset_combo.setToolTip(
             self.tr("x264 encoding speed preset (slower = better compression/quality)")
         )
@@ -289,26 +286,12 @@ class FFmpegSettingsTab(QWidget):
         main_layout.addWidget(self.header_widget)
 
         # Profile Selection Layout with enhanced styling
-        profile_container = QWidget()
-        profile_container.setStyleSheet(
-            """
-        QWidget {
-        border-radius: 6px;
-        }
-        QLabel {
-        font-weight: bold;
-        padding-left: 5px;
-        }
-        QComboBox {
-        min-width: 180px;
-        }
-        """
-        )
+        profile_container = WidgetFactory.create_container(style="profile")
 
         profile_layout = QHBoxLayout(profile_container)
         profile_layout.setContentsMargins(10, 10, 10, 10)
 
-        profile_label = QLabel(self.tr("📋 FFmpeg Profile:"))
+        profile_label = WidgetFactory.create_label(self.tr("📋 FFmpeg Profile:"), style="standard")
         profile_label.setObjectName("profile_label")
         self.ffmpeg_profile_combo.setMinimumWidth(200)
 
@@ -327,18 +310,15 @@ class FFmpegSettingsTab(QWidget):
         interp_layout.setContentsMargins(10, 15, 10, 10)  # More comfortable margins
 
         # Add styled labels with better descriptions
-        mi_label = QLabel(self.tr("Motion Interp:"))
-        mi_label.setProperty("class", "FFmpegLabel")
+        mi_label = WidgetFactory.create_label(self.tr("Motion Interp:"), style="ffmpeg")
         interp_layout.addWidget(mi_label, 0, 0)
         interp_layout.addWidget(self.ffmpeg_mi_mode_combo, 0, 1)
 
-        mc_label = QLabel(self.tr("Motion Comp:"))
-        mc_label.setProperty("class", "FFmpegLabel")
+        mc_label = WidgetFactory.create_label(self.tr("Motion Comp:"), style="ffmpeg")
         interp_layout.addWidget(mc_label, 0, 2)
         interp_layout.addWidget(self.ffmpeg_mc_mode_combo, 0, 3)
 
-        me_label = QLabel(self.tr("Motion Est:"))
-        me_label.setProperty("class", "FFmpegLabel")
+        me_label = WidgetFactory.create_label(self.tr("Motion Est:"), style="ffmpeg")
         interp_layout.addWidget(me_label, 1, 0)
         interp_layout.addWidget(self.ffmpeg_me_mode_combo, 1, 1)
 
@@ -347,30 +327,25 @@ class FFmpegSettingsTab(QWidget):
         # Checkbox styling handled by qt-material theme
         interp_layout.addWidget(self.ffmpeg_vsbmc_checkbox, 1, 2, 1, 2)  # Span 2 columns
         # Scene detection row with enhanced styling
-        scd_label = QLabel(self.tr("Scene Detect:"))
-        scd_label.setProperty("class", "FFmpegLabel")
+        scd_label = WidgetFactory.create_label(self.tr("Scene Detect:"), style="ffmpeg")
         interp_layout.addWidget(scd_label, 2, 0)
         interp_layout.addWidget(self.ffmpeg_scd_combo, 2, 1)
 
-        scd_thresh_label = QLabel(self.tr("SCD Threshold:"))
-        scd_thresh_label.setProperty("class", "FFmpegLabel")
+        scd_thresh_label = WidgetFactory.create_label(self.tr("SCD Threshold:"), style="ffmpeg")
         interp_layout.addWidget(scd_thresh_label, 2, 2)
         interp_layout.addWidget(self.ffmpeg_scd_threshold_spinbox, 2, 3)
 
         # Advanced motion estimation row
-        me_algo_label = QLabel(self.tr("ME Algorithm:"))
-        me_algo_label.setProperty("class", "FFmpegLabel")
+        me_algo_label = WidgetFactory.create_label(self.tr("ME Algorithm:"), style="ffmpeg")
         interp_layout.addWidget(me_algo_label, 3, 0)
         interp_layout.addWidget(self.ffmpeg_me_algo_combo, 3, 1)
 
-        search_param_label = QLabel(self.tr("Search Range:"))
-        search_param_label.setProperty("class", "FFmpegLabel")
+        search_param_label = WidgetFactory.create_label(self.tr("Search Range:"), style="ffmpeg")
         interp_layout.addWidget(search_param_label, 3, 2)
         interp_layout.addWidget(self.ffmpeg_search_param_spinbox, 3, 3)
 
         # Block size row
-        mb_size_label = QLabel(self.tr("Block Size:"))
-        mb_size_label.setProperty("class", "FFmpegLabel")
+        mb_size_label = WidgetFactory.create_label(self.tr("Block Size:"), style="ffmpeg")
         interp_layout.addWidget(mb_size_label, 4, 0)
         interp_layout.addWidget(self.ffmpeg_mb_size_combo, 4, 1)
         interp_layout.setColumnStretch(1, 1)  # Allow combos/spinners to expand
@@ -386,51 +361,39 @@ class FFmpegSettingsTab(QWidget):
         unsharp_layout.setContentsMargins(10, 15, 10, 10)  # More comfortable margins
 
         # Add section headers
-        luma_header = QLabel(self.tr("Luma (Brightness):"))
-        luma_header.setProperty("class", "FFmpegLabel")
+        luma_header = WidgetFactory.create_label(self.tr("Luma (Brightness):"), style="ffmpeg")
         unsharp_layout.addWidget(luma_header, 0, 0, 1, 2)
 
-        chroma_header = QLabel(self.tr("Chroma (Color):"))
-        chroma_header.setProperty("class", "FFmpegLabel")
+        chroma_header = WidgetFactory.create_label(self.tr("Chroma (Color):"), style="ffmpeg")
         unsharp_layout.addWidget(chroma_header, 0, 3, 1, 2)
 
         # Luma controls
-        luma_x_label = QLabel(self.tr("X Size:"))
-        luma_x_label.setProperty("class", "FFmpegLabel")
+        luma_x_label = WidgetFactory.create_label(self.tr("X Size:"), style="ffmpeg")
         unsharp_layout.addWidget(luma_x_label, 1, 0)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_lx_spinbox, 1, 1)
 
-        luma_y_label = QLabel(self.tr("Y Size:"))
-        luma_y_label.setProperty("class", "FFmpegLabel")
+        luma_y_label = WidgetFactory.create_label(self.tr("Y Size:"), style="ffmpeg")
         unsharp_layout.addWidget(luma_y_label, 2, 0)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_ly_spinbox, 2, 1)
 
-        luma_amt_label = QLabel(self.tr("Amount:"))
-        luma_amt_label.setProperty("class", "FFmpegLabel")
+        luma_amt_label = WidgetFactory.create_label(self.tr("Amount:"), style="ffmpeg")
         unsharp_layout.addWidget(luma_amt_label, 3, 0)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_la_spinbox, 3, 1)
 
         # Add a visual separator
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.VLine)
-        separator.setFrameShadow(QFrame.Shadow.Sunken)
-        # Separator styling handled by qt-material theme
-        separator.setMaximumWidth(1)
+        separator = WidgetFactory.create_separator(orientation="vertical")
         unsharp_layout.addWidget(separator, 1, 2, 3, 1)
 
         # Chroma controls
-        chroma_x_label = QLabel(self.tr("X Size:"))
-        chroma_x_label.setProperty("class", "FFmpegLabel")
+        chroma_x_label = WidgetFactory.create_label(self.tr("X Size:"), style="ffmpeg")
         unsharp_layout.addWidget(chroma_x_label, 1, 3)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_cx_spinbox, 1, 4)
 
-        chroma_y_label = QLabel(self.tr("Y Size:"))
-        chroma_y_label.setProperty("class", "FFmpegLabel")
+        chroma_y_label = WidgetFactory.create_label(self.tr("Y Size:"), style="ffmpeg")
         unsharp_layout.addWidget(chroma_y_label, 2, 3)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_cy_spinbox, 2, 4)
 
-        chroma_amt_label = QLabel(self.tr("Amount:"))
-        chroma_amt_label.setProperty("class", "FFmpegLabel")
+        chroma_amt_label = WidgetFactory.create_label(self.tr("Amount:"), style="ffmpeg")
         unsharp_layout.addWidget(chroma_amt_label, 3, 3)
         unsharp_layout.addWidget(self.ffmpeg_unsharp_ca_spinbox, 3, 4)
 
@@ -449,55 +412,45 @@ class FFmpegSettingsTab(QWidget):
         quality_layout.setContentsMargins(10, 15, 10, 10)  # More comfortable margins
 
         # Quality preset with styled label
-        quality_preset_label = QLabel(self.tr("Quality Preset:"))
-        quality_preset_label.setProperty("class", "FFmpegLabel")
+        quality_preset_label = WidgetFactory.create_label(self.tr("Quality Preset:"), style="ffmpeg")
         quality_layout.addWidget(quality_preset_label, 0, 0)
         quality_layout.addWidget(self.ffmpeg_quality_combo, 0, 1)
 
         # CRF with emphasis
-        crf_label = QLabel(self.tr("CRF Value:"))
-        crf_label.setProperty("class", "FFmpegLabel")
+        crf_label = WidgetFactory.create_label(self.tr("CRF Value:"), style="ffmpeg")
         quality_layout.addWidget(crf_label, 0, 2)
         self.ffmpeg_crf_spinbox.setToolTip(self.tr("Constant Rate Factor: Lower values = higher quality (0-51)"))
         quality_layout.addWidget(self.ffmpeg_crf_spinbox, 0, 3)
 
         # Bitrate section
-        bitrate_label = QLabel(self.tr("Target Bitrate:"))
-        bitrate_label.setProperty("class", "FFmpegLabel")
+        bitrate_label = WidgetFactory.create_label(self.tr("Target Bitrate:"), style="ffmpeg")
         quality_layout.addWidget(bitrate_label, 1, 0)
         quality_layout.addWidget(self.ffmpeg_bitrate_spinbox, 1, 1)
 
         # Buffer size
-        bufsize_label = QLabel(self.tr("Buffer Size:"))
-        bufsize_label.setProperty("class", "FFmpegLabel")
+        bufsize_label = WidgetFactory.create_label(self.tr("Buffer Size:"), style="ffmpeg")
         quality_layout.addWidget(bufsize_label, 1, 2)
         quality_layout.addWidget(self.ffmpeg_bufsize_spinbox, 1, 3)
 
         # Add a separator
-        separator = QFrame()
-        separator.setFrameShape(QFrame.Shape.HLine)
-        separator.setFrameShadow(QFrame.Shadow.Sunken)
-        # Separator styling handled by qt-material theme
-        separator.setMaximumHeight(1)
+        separator = WidgetFactory.create_separator(orientation="horizontal")
         quality_layout.addWidget(separator, 2, 0, 1, 4)
 
         # Format and presets section
-        format_label = QLabel(self.tr("Pixel Format:"))
-        format_label.setProperty("class", "FFmpegLabel")
+        format_label = WidgetFactory.create_label(self.tr("Pixel Format:"), style="ffmpeg")
         quality_layout.addWidget(format_label, 3, 0)
         quality_layout.addWidget(self.ffmpeg_pix_fmt_combo, 3, 1)
 
-        preset_label = QLabel(self.tr("Encoder Speed:"))
-        preset_label.setProperty("class", "FFmpegLabel")
+        preset_label = WidgetFactory.create_label(self.tr("Encoder Speed:"), style="ffmpeg")
         quality_layout.addWidget(preset_label, 3, 2)
         quality_layout.addWidget(self.ffmpeg_filter_preset_combo, 3, 3)
 
         # Add a note about quality
-        note_label = QLabel(
-            self.tr("<i>Note: Slower encoder presets generally produce better quality at the same bitrate</i>")
+        note_label = WidgetFactory.create_label(
+            self.tr("<i>Note: Slower encoder presets generally produce better quality at the same bitrate</i>"),
+            style="standard",
+            wordWrap=True,
         )
-        # Color styling handled by qt-material theme
-        note_label.setWordWrap(True)
         quality_layout.addWidget(note_label, 4, 0, 1, 4)
 
         quality_layout.setColumnStretch(1, 1)  # Allow combos/spinners to expand
@@ -506,13 +459,12 @@ class FFmpegSettingsTab(QWidget):
         main_layout.addWidget(self.ffmpeg_quality_group)
 
         # --- Filters Group (Crop) ---
-        self.ffmpeg_filter_group = QGroupBox(self.tr("Filters"))
+        self.ffmpeg_filter_group = WidgetFactory.create_group_box(self.tr("Filters"))
         filter_layout = QVBoxLayout(self.ffmpeg_filter_group)
-        filter_label = QLabel(self.tr("Video Filters:"))
-        filter_label.setProperty("class", "FFmpegLabel")
-        self.crop_filter_edit = QLineEdit()
-        self.crop_filter_edit.setPlaceholderText(self.tr("e.g. crop=width:height:x:y"))
-        self.crop_filter_edit.setToolTip(self.tr("Additional FFmpeg filter string"))
+        filter_label = WidgetFactory.create_label(self.tr("Video Filters:"), style="ffmpeg")
+        self.crop_filter_edit = WidgetFactory.create_line_edit(
+            placeholder=self.tr("e.g. crop=width:height:x:y"), tooltip=self.tr("Additional FFmpeg filter string")
+        )
         filter_layout.addWidget(filter_label)
         filter_layout.addWidget(self.crop_filter_edit)
         main_layout.addWidget(self.ffmpeg_filter_group)
@@ -562,16 +514,12 @@ class FFmpegSettingsTab(QWidget):
 
         for control in controls_to_monitor:
             if isinstance(control, (QComboBox)):
-                pass
                 control.currentTextChanged.connect(self._on_ffmpeg_setting_changed)
-            elif isinstance(control, (QSpinBox, QDoubleSpinBox)):
-                pass
+            elif isinstance(control, QSpinBox | QDoubleSpinBox):
                 control.valueChanged.connect(self._on_ffmpeg_setting_changed)
             elif isinstance(control, QCheckBox):
-                pass
                 control.stateChanged.connect(self._on_ffmpeg_setting_changed)
             elif isinstance(control, QGroupBox) and control.isCheckable():
-                pass
                 control.toggled.connect(self._on_ffmpeg_setting_changed)
 
     # --- Control State Update Methods (from gui_backup.py, adapted) ---
@@ -600,7 +548,6 @@ class FFmpegSettingsTab(QWidget):
             widget.setEnabled(enable)
         # Special handling for SCD threshold based on SCD mode
         if enable:
-            pass
             self._update_scd_thresh_state(self.ffmpeg_scd_combo.currentText())
         else:
             self.ffmpeg_scd_threshold_spinbox.setEnabled(False)
@@ -624,10 +571,9 @@ class FFmpegSettingsTab(QWidget):
         for widget in widgets:
             widget.setEnabled(enable)
 
-    def _update_quality_controls_state(self, preset_text: Optional[str] = None) -> None:
+    def _update_quality_controls_state(self, preset_text: str | None = None) -> None:
         """Update quality controls based on the selected preset."""
         if preset_text is None:
-            pass
             preset_text = self.ffmpeg_quality_combo.currentText()
 
         preset_settings = self.quality_presets.get(preset_text)
@@ -642,7 +588,6 @@ class FFmpegSettingsTab(QWidget):
             return
 
         if preset_text == "Custom":
-            pass
             # Enable all controls for custom configuration
             self.ffmpeg_crf_spinbox.setEnabled(True)
             self.ffmpeg_bitrate_spinbox.setEnabled(True)
@@ -667,16 +612,12 @@ class FFmpegSettingsTab(QWidget):
                 w.blockSignals(True)
             try:
                 if "crf" in preset_settings and isinstance(preset_settings["crf"], int):
-                    pass
                     self.ffmpeg_crf_spinbox.setValue(preset_settings["crf"])
                 if "bitrate" in preset_settings and isinstance(preset_settings["bitrate"], int):
-                    pass
                     self.ffmpeg_bitrate_spinbox.setValue(preset_settings["bitrate"])
                 if "bufsize" in preset_settings and isinstance(preset_settings["bufsize"], int):
-                    pass
                     self.ffmpeg_bufsize_spinbox.setValue(preset_settings["bufsize"])
                 if "pix_fmt" in preset_settings and isinstance(preset_settings["pix_fmt"], str):
-                    pass
                     self.ffmpeg_pix_fmt_combo.setCurrentText(preset_settings["pix_fmt"])
             finally:
                 for w in widgets_to_block:
@@ -688,14 +629,12 @@ class FFmpegSettingsTab(QWidget):
         LOGGER.debug("FFmpeg profile selected: %s", profile_name)
         """Load settings from the selected FFmpeg profile."""
         if profile_name == "Custom":
-            pass
             # When user explicitly selects "Custom", enable quality controls
             self._update_quality_controls_state("Custom")
             return  # Don't load any settings
 
         profile_dict = FFMPEG_PROFILES.get(profile_name)
         if not profile_dict:
-            pass
             LOGGER.warning("Unknown FFmpeg profile selected: %s", profile_name)
             return
 
@@ -740,10 +679,8 @@ class FFmpegSettingsTab(QWidget):
             self._update_all_control_states()
 
         except KeyError as e:
-            pass
-            LOGGER.error("Profile %r is missing key: %s", profile_name, e)
+            LOGGER.exception("Profile %r is missing key: %s", profile_name, e)
         except Exception as e:
-            pass
             LOGGER.error("Error applying profile %r: %s", profile_name, e, exc_info=True)
         finally:
             # Unblock signals
@@ -757,21 +694,17 @@ class FFmpegSettingsTab(QWidget):
         QTimer.singleShot(0, self._verify_profile_match)  # Check slightly later
 
     def _verify_profile_match(self) -> None:
-        pass
         """Checks if current settings match the selected profile and updates combo if not."""
         current_profile_name = self.ffmpeg_profile_combo.currentText()
 
         if current_profile_name == "Custom":
-            pass
             return  # Already custom
 
         profile_dict = FFMPEG_PROFILES.get(current_profile_name)
         if not profile_dict:
-            pass
             return  # Unknown profile selected
 
         if not self._check_settings_match_profile(profile_dict):
-            pass
             LOGGER.warning(
                 "Settings drifted after applying profile %r. Setting to 'Custom'.",
                 current_profile_name,
@@ -789,7 +722,6 @@ class FFmpegSettingsTab(QWidget):
         if self.ffmpeg_profile_combo.currentText() == "Custom":
             # If the quality preset was changed *to* "Custom", ensure controls are enabled
             if self.sender() == self.ffmpeg_quality_combo and self.ffmpeg_quality_combo.currentText() == "Custom":
-                pass
                 self._update_quality_controls_state("Custom")
             return
 
@@ -803,10 +735,8 @@ class FFmpegSettingsTab(QWidget):
 
         # If settings no longer match the currently selected profile, switch to "Custom"
         if not matching_profile_name:
-            pass
             # Check if the combo isn't already "Custom" to prevent loops
             if self.ffmpeg_profile_combo.currentText() != "Custom":
-                pass
                 LOGGER.debug("Settings no longer match any profile, setting profile combo to 'Custom'.")
                 self.ffmpeg_profile_combo.blockSignals(True)
                 self.ffmpeg_profile_combo.setCurrentText("Custom")
@@ -830,11 +760,10 @@ class FFmpegSettingsTab(QWidget):
         key: str,
         current_value: Any,
         profile_value: Any,
-        current_settings: Optional[Dict[str, Any]] = None,
-        profile_dict: Optional[FfmpegProfile] = None,
+        current_settings: dict[str, Any] | None = None,
+        profile_dict: FfmpegProfile | None = None,
     ) -> bool:
-        """
-        Compare float values with proper handling of None, NaN, and type conversions.
+        """Compare float values with proper handling of None, NaN, and type conversions.
 
         Args:
             key: The setting key being compared
@@ -848,11 +777,9 @@ class FFmpegSettingsTab(QWidget):
         """
         # Special check for scd_threshold - skip comparison if both SCDs are "none"
         if key == "scd_threshold" and current_settings and profile_dict:
-            pass
             current_scd_mode = current_settings.get("scd")
             profile_scd_mode = profile_dict.get("scd")
             if current_scd_mode == "none" and profile_scd_mode == "none":
-                pass
                 return True  # Threshold doesn't matter if both are none, consider matching
             # No need to handle the case where one is "none" - the main key loop will catch it
 
@@ -863,17 +790,14 @@ class FFmpegSettingsTab(QWidget):
             or (isinstance(current_value, float) and math.isnan(current_value))
             or (isinstance(profile_value, float) and math.isnan(profile_value))
         ):
-            pass
             # Both are None or NaN - consider matching
             if current_value == profile_value:
-                pass
                 return True
             # One is None/NaN and other isn't - not matching
             return False
 
         # Handle type conversion if needed
-        if not isinstance(current_value, (float, int)) or not isinstance(profile_value, (float, int)):
-            pass
+        if not isinstance(current_value, float | int) or not isinstance(profile_value, float | int):
             LOGGER.warning(
                 "Non-numeric value for float key %r. Current: %s, Profile: %s",
                 key,
@@ -885,15 +809,13 @@ class FFmpegSettingsTab(QWidget):
                 float_diff = abs(float(current_value) - float(profile_value))
                 return float_diff <= 1e-6  # Within tolerance
             except (ValueError, TypeError):
-                pass
                 return False  # Can't convert, definitely not matching
 
         # Normal numeric comparison with tolerance
         return abs(float(current_value) - float(profile_value)) <= 1e-6
 
     def _compare_text_values(self, key: str, current_value: Any, profile_value: Any) -> bool:
-        """
-        Compare text values with handling for special cases like "(default)".
+        """Compare text values with handling for special cases like "(default)".
 
         Args:
             key: The setting key being compared
@@ -911,10 +833,8 @@ class FFmpegSettingsTab(QWidget):
     def _check_settings_match_profile(self, profile_dict: FfmpegProfile) -> bool:
         """Checks if current FFmpeg settings match a given profile dictionary."""
         try:
-            pass
             current_settings = self.get_current_settings()  # Use getter method
         except Exception as e:
-            pass
             LOGGER.error(
                 "Error getting current settings in _check_settings_match_profile: %s",
                 e,
@@ -925,7 +845,7 @@ class FFmpegSettingsTab(QWidget):
         # Compare current settings with the profile dictionary
         # Explicitly list keys from FfmpegProfile *excluding* 'preset_text'
         # as preset_text is derived/used to set other values, not a direct setting itself.
-        ffmpeg_profile_keys_to_compare: List[str] = [
+        ffmpeg_profile_keys_to_compare: list[str] = [
             "use_ffmpeg_interp",
             "mi_mode",
             "mc_mode",
@@ -953,7 +873,6 @@ class FFmpegSettingsTab(QWidget):
         for key in ffmpeg_profile_keys_to_compare:
             # Ensure key exists in current_settings before accessing
             if key not in current_settings:
-                pass
                 LOGGER.warning("Key %r in profile but not returned by get_current_settings().", key)
                 return False
 
@@ -963,29 +882,24 @@ class FFmpegSettingsTab(QWidget):
 
             # Choose appropriate comparison strategy based on key type
             # Float comparison for numeric values that need precision handling
-            if key in ["scd_threshold", "unsharp_la", "unsharp_ca"]:
-                pass
+            if key in {"scd_threshold", "unsharp_la", "unsharp_ca"}:
                 if not self._compare_float_values(key, current_value, profile_value, current_settings, profile_dict):
-                    pass
                     return False
 
             # Special handling for text fields that might be "(default)" or empty
-            elif key in ["me_algo", "mb_size"]:
-                pass
+            elif key in {"me_algo", "mb_size"}:
                 if not self._compare_text_values(key, current_value, profile_value):
-                    pass
                     return False
 
             # General comparison for other types (bool, int, str)
             elif current_value != profile_value:
-                pass
                 return False
 
         return True
 
     # --- Helper Methods ---
 
-    def _get_all_setting_controls(self) -> List[QWidget]:
+    def _get_all_setting_controls(self) -> list[QWidget]:
         """Returns a list of all widgets that define FFmpeg settings."""
         return [
             self.ffmpeg_profile_combo,
@@ -1061,13 +975,13 @@ class FFmpegSettingsTab(QWidget):
             )
         self.crop_filter_edit.setText(new_filter)
 
-    def get_current_settings(self) -> Dict[str, Any]:
+    def get_current_settings(self) -> dict[str, Any]:
         """Returns a dictionary of the current FFmpeg settings from the UI."""
         # Handle "(default)" text for combo boxes that allow it
         me_algo = self.ffmpeg_me_algo_combo.currentText()
         mb_size = self.ffmpeg_mb_size_combo.currentText()
 
-        settings = {
+        return {
             # Interpolation Group
             "use_ffmpeg_interp": self.ffmpeg_settings_group.isChecked(),
             "mi_mode": self.ffmpeg_mi_mode_combo.currentText(),
@@ -1097,13 +1011,12 @@ class FFmpegSettingsTab(QWidget):
             "filter_preset": self.ffmpeg_filter_preset_combo.currentText(),
             "filter_string": self.crop_filter_edit.text(),
         }
-        return settings
 
     def get_selected_profile_name(self) -> str:
         """Returns the name of the currently selected profile."""
         return str(self.ffmpeg_profile_combo.currentText())
 
-    def load_settings(self, settings: Dict[str, Any]) -> None:
+    def load_settings(self, settings: dict[str, Any]) -> None:
         """Loads settings into the UI elements, typically from QSettings."""
         LOGGER.debug("Loading FFmpeg settings into tab UI...")
 
@@ -1128,7 +1041,6 @@ class FFmpegSettingsTab(QWidget):
 
             # If the loaded profile is "Custom", load individual settings
             if profile_name == "Custom":
-                pass
                 LOGGER.debug("Loading individual custom FFmpeg settings...")
                 # Interpolation
                 self.ffmpeg_settings_group.setChecked(
@@ -1147,7 +1059,7 @@ class FFmpegSettingsTab(QWidget):
                 self.ffmpeg_scd_combo.setCurrentText(settings.get("ffmpeg_scd", DEFAULT_FFMPEG_PROFILE["scd"]))
                 # Handle "(default)" vs empty string for loading
                 me_algo_saved = settings.get("ffmpeg_me_algo", DEFAULT_FFMPEG_PROFILE["me_algo"])
-                self.ffmpeg_me_algo_combo.setCurrentText(me_algo_saved if me_algo_saved else "(default)")
+                self.ffmpeg_me_algo_combo.setCurrentText(me_algo_saved or "(default)")
                 self.ffmpeg_search_param_spinbox.setValue(
                     settings.get("ffmpeg_search_param", DEFAULT_FFMPEG_PROFILE["search_param"])
                 )
@@ -1155,7 +1067,7 @@ class FFmpegSettingsTab(QWidget):
                     settings.get("ffmpeg_scd_threshold", DEFAULT_FFMPEG_PROFILE["scd_threshold"])
                 )
                 mb_size_saved = settings.get("ffmpeg_mb_size", DEFAULT_FFMPEG_PROFILE["mb_size"])
-                self.ffmpeg_mb_size_combo.setCurrentText(mb_size_saved if mb_size_saved else "(default)")
+                self.ffmpeg_mb_size_combo.setCurrentText(mb_size_saved or "(default)")
 
                 # Unsharp
                 self.ffmpeg_unsharp_group.setChecked(
@@ -1187,7 +1099,6 @@ class FFmpegSettingsTab(QWidget):
                     self.ffmpeg_quality_combo.itemText(i) for i in range(self.ffmpeg_quality_combo.count())
                 ]
                 if quality_preset_text not in quality_items:
-                    pass
                     LOGGER.warning(
                         "Saved quality preset %r not found, defaulting.",
                         quality_preset_text,
@@ -1198,7 +1109,6 @@ class FFmpegSettingsTab(QWidget):
 
                 # If the loaded quality preset is "Custom", load the specific values
                 if quality_preset_text == "Custom":
-                    pass
                     self.ffmpeg_crf_spinbox.setValue(settings.get("ffmpeg_crf", DEFAULT_FFMPEG_PROFILE["crf"]))
                     self.ffmpeg_bitrate_spinbox.setValue(
                         settings.get("ffmpeg_bitrate", DEFAULT_FFMPEG_PROFILE["bitrate"])
@@ -1219,7 +1129,6 @@ class FFmpegSettingsTab(QWidget):
 
             # If a specific profile was loaded, apply it (this handles non-"Custom" cases)
             else:
-                pass
                 LOGGER.debug("Applying loaded profile: %s", profile_name)
                 self._on_profile_selected(profile_name)  # Apply the loaded profile
 
@@ -1227,7 +1136,6 @@ class FFmpegSettingsTab(QWidget):
             self._update_all_control_states()
 
         except Exception as e:
-            pass
             LOGGER.error(f"Error loading FFmpeg settings into UI: {e}", exc_info=True)
         finally:
             # Unblock signals
@@ -1239,15 +1147,12 @@ class FFmpegSettingsTab(QWidget):
             QTimer.singleShot(0, self._verify_profile_match_after_load)
 
     def _verify_profile_match_after_load(self) -> None:
-        pass
         """Checks if loaded settings match a profile and updates combo if needed."""
         current_profile_name = self.ffmpeg_profile_combo.currentText()
         if current_profile_name != "Custom":
-            pass
             # If a profile was explicitly loaded, trust it unless it drifted during load somehow
             profile_dict = FFMPEG_PROFILES.get(current_profile_name)
             if profile_dict and not self._check_settings_match_profile(profile_dict):
-                pass
                 LOGGER.warning(
                     "Settings drifted from loaded profile %r during load. Setting to 'Custom'.",
                     current_profile_name,
@@ -1261,14 +1166,11 @@ class FFmpegSettingsTab(QWidget):
         # If "Custom" was loaded, check if the loaded values actually match a profile
         matching_profile_name = None
         for name, profile_dict in FFMPEG_PROFILES.items():
-            pass
             if self._check_settings_match_profile(profile_dict):
-                pass
                 matching_profile_name = name
                 break
 
         if matching_profile_name:
-            pass
             LOGGER.info(
                 "Loaded custom settings match profile %r. Updating profile combo.",
                 matching_profile_name,

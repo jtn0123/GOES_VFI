@@ -5,9 +5,8 @@ particularly for converting between calendar dates and day of year (DOY) formats
 """
 
 import datetime
-import re
 from pathlib import Path
-from typing import Optional, Tuple, Union
+import re
 
 from goesvfi.utils import log
 
@@ -41,21 +40,22 @@ def doy_to_date(year: int, doy: int) -> datetime.date:
         ValueError: If the day of year is invalid for the given year.
     """
     if doy < 1 or doy > 366:
-        raise ValueError(f"Day of year must be between 1 and 366, got {doy}")
+        msg = f"Day of year must be between 1 and 366, got {doy}"
+        raise ValueError(msg)
 
     # Check if it's a leap year and doy is 366
     is_leap_year = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
     if doy == 366 and not is_leap_year:
-        raise ValueError(f"Day of year 366 is invalid for non-leap year {year}")
+        msg = f"Day of year 366 is invalid for non-leap year {year}"
+        raise ValueError(msg)
 
     # Create the date
     return (datetime.datetime(year, 1, 1) + datetime.timedelta(days=doy - 1)).date()
 
 
 # Helper functions for date parsing
-def _try_create_date_from_year_month_day(year: int, month: int, day: int, pattern_name: str) -> Optional[datetime.date]:
-    """
-    Try to create a date from year, month, and day components.
+def _try_create_date_from_year_month_day(year: int, month: int, day: int, pattern_name: str) -> datetime.date | None:
+    """Try to create a date from year, month, and day components.
 
     Args:
         year: Year value
@@ -82,9 +82,8 @@ def _try_create_date_from_year_month_day(year: int, month: int, day: int, patter
         return None
 
 
-def _try_create_date_from_year_doy(year: int, doy: int, pattern_name: str) -> Optional[datetime.date]:
-    """
-    Try to create a date from year and day-of-year components.
+def _try_create_date_from_year_doy(year: int, doy: int, pattern_name: str) -> datetime.date | None:
+    """Try to create a date from year and day-of-year components.
 
     Args:
         year: Year value
@@ -103,10 +102,9 @@ def _try_create_date_from_year_doy(year: int, doy: int, pattern_name: str) -> Op
         return None
 
 
-def _try_satellite_filename_pattern(path_str: str) -> Optional[datetime.date]:
-    """
-    Try to parse a date using the satellite filename pattern.
-    Example: goes18_20231027_120000_band13.png
+def _try_satellite_filename_pattern(path_str: str) -> datetime.date | None:
+    """Try to parse a date using the satellite filename pattern.
+    Example: goes18_20231027_120000_band13.png.
 
     Args:
         path_str: Path string to parse
@@ -124,10 +122,9 @@ def _try_satellite_filename_pattern(path_str: str) -> Optional[datetime.date]:
     return _try_create_date_from_year_month_day(year, month, day, "satellite filename")
 
 
-def _try_year_doy_slash_pattern(path_str: str) -> Optional[datetime.date]:
-    """
-    Try to parse a date using the YYYY/DDD pattern.
-    Example: 2023/123
+def _try_year_doy_slash_pattern(path_str: str) -> datetime.date | None:
+    """Try to parse a date using the YYYY/DDD pattern.
+    Example: 2023/123.
 
     Args:
         path_str: Path string to parse
@@ -144,10 +141,9 @@ def _try_year_doy_slash_pattern(path_str: str) -> Optional[datetime.date]:
     return _try_create_date_from_year_doy(year, doy, "YYYY/DDD")
 
 
-def _try_hyphenated_date_pattern(path_str: str) -> Optional[datetime.date]:
-    """
-    Try to parse a date using the YYYY-MM-DD pattern.
-    Example: 2023-10-27
+def _try_hyphenated_date_pattern(path_str: str) -> datetime.date | None:
+    """Try to parse a date using the YYYY-MM-DD pattern.
+    Example: 2023-10-27.
 
     Args:
         path_str: Path string to parse
@@ -165,9 +161,8 @@ def _try_hyphenated_date_pattern(path_str: str) -> Optional[datetime.date]:
     return _try_create_date_from_year_month_day(year, month, day, "YYYY-MM-DD")
 
 
-def extract_date_from_path(path: Union[str, Path]) -> Optional[datetime.date]:
-    """
-    Extract a date from a file or directory path using various patterns.
+def extract_date_from_path(path: str | Path) -> datetime.date | None:
+    """Extract a date from a file or directory path using various patterns.
 
     This function tries multiple patterns to extract a date from a path:
     1. YYYY-MM-DD (hyphenated date)
@@ -201,8 +196,7 @@ def extract_date_from_path(path: Union[str, Path]) -> Optional[datetime.date]:
 
 
 def format_satellite_path(date: datetime.date, format_type: str = "calendar") -> str:
-    """
-    Format a date for satellite data paths.
+    """Format a date for satellite data paths.
 
     Args:
         date: The date to format
@@ -225,13 +219,13 @@ def format_satellite_path(date: datetime.date, format_type: str = "calendar") ->
         # YYYYDDD format (no separator)
         doy = date_to_doy(date)
         return f"{date.year}{doy:03d}"
-    else:
-        raise ValueError(f"Invalid format_type: {format_type}")
+
+    msg = f"Invalid format_type: {format_type}"
+    raise ValueError(msg)
 
 
-def get_all_date_formats(date: datetime.date) -> Tuple[str, str, str]:
-    """
-    Get all common date formats for a given date.
+def get_all_date_formats(date: datetime.date) -> tuple[str, str, str]:
+    """Get all common date formats for a given date.
 
     Args:
         date: The date to format
@@ -254,8 +248,7 @@ def get_all_date_formats(date: datetime.date) -> Tuple[str, str, str]:
 
 
 def parse_timestamp(timestamp_str: str) -> datetime.datetime:
-    """
-    Parse a timestamp string in various formats.
+    """Parse a timestamp string in various formats.
 
     Supported formats:
     - ISO format: YYYY-MM-DDTHH:MM:SS
@@ -286,12 +279,12 @@ def parse_timestamp(timestamp_str: str) -> datetime.datetime:
             continue
 
     # If none worked, raise an error
-    raise ValueError(f"Could not parse timestamp: {timestamp_str}")
+    msg = f"Could not parse timestamp: {timestamp_str}"
+    raise ValueError(msg)
 
 
 def format_timestamp(dt: datetime.datetime, compact: bool = False) -> str:
-    """
-    Format a datetime as a timestamp string.
+    """Format a datetime as a timestamp string.
 
     Args:
         dt: Datetime to format
@@ -306,10 +299,9 @@ def format_timestamp(dt: datetime.datetime, compact: bool = False) -> str:
 
 
 def get_satellite_path_components(
-    path: Union[str, Path],
-) -> Optional[Tuple[int, int, int]]:
-    """
-    Extract year, day of year, and hour from a satellite data path.
+    path: str | Path,
+) -> tuple[int, int, int] | None:
+    """Extract year, day of year, and hour from a satellite data path.
 
     Args:
         path: Path to analyze
@@ -346,9 +338,8 @@ def get_satellite_path_components(
     return None
 
 
-def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.date]:
-    """
-    Parse a satellite data path to extract a date.
+def parse_satellite_path(path: str | Path) -> datetime.date | None:
+    """Parse a satellite data path to extract a date.
 
     Args:
         path: Path to parse
@@ -406,7 +397,7 @@ def parse_satellite_path(path: Union[str, Path]) -> Optional[datetime.date]:
     return None
 
 
-def _try_doy_pattern(path_str: str, pattern: str, pattern_name: str) -> Optional[datetime.date]:
+def _try_doy_pattern(path_str: str, pattern: str, pattern_name: str) -> datetime.date | None:
     """Try to parse using day-of-year pattern."""
     # For YYYYDDD pattern, check if this string was already rejected as invalid YYYYMMDD
     if pattern_name == "YYYYDDD":
@@ -427,7 +418,7 @@ def _try_doy_pattern(path_str: str, pattern: str, pattern_name: str) -> Optional
     return None
 
 
-def _try_calendar_pattern(path_str: str, pattern: str, pattern_name: str) -> Optional[datetime.date]:
+def _try_calendar_pattern(path_str: str, pattern: str, pattern_name: str) -> datetime.date | None:
     """Try to parse using calendar date pattern."""
     match = re.search(pattern, path_str)
     if match:
@@ -449,7 +440,7 @@ def _try_calendar_pattern(path_str: str, pattern: str, pattern_name: str) -> Opt
     return None
 
 
-def _try_timestamp_pattern(path_str: str, pattern: str, pattern_name: str) -> Optional[datetime.date]:
+def _try_timestamp_pattern(path_str: str, pattern: str, pattern_name: str) -> datetime.date | None:
     """Try to parse using timestamp pattern (extract date part only)."""
     match = re.search(pattern, path_str)
     if match:

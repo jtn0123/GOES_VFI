@@ -17,7 +17,7 @@ class TestRifeCapabilityDetector:
     """Tests for the RifeCapabilityDetector class."""
 
     @patch("subprocess.run")
-    def test_init_successful_detection(self, mock_run):
+    def test_init_successful_detection(self, mock_run) -> None:
         """Test successful initialization and capability detection."""
         # Create a mock executable path
         exe_path = pathlib.Path("/path/to/rife")
@@ -57,7 +57,7 @@ class TestRifeCapabilityDetector:
         assert detector.supports_thread_spec() is True
         assert detector.supports_gpu_id() is True
 
-    def test_init_exe_not_found(self):
+    def test_init_exe_not_found(self) -> None:
         """Test initialization with non-existent executable."""
         exe_path = pathlib.Path("/nonexistent/rife")
 
@@ -65,7 +65,7 @@ class TestRifeCapabilityDetector:
             RifeCapabilityDetector(exe_path)
 
     @patch("subprocess.run")
-    def test_init_help_command_fails(self, mock_run):
+    def test_init_help_command_fails(self, mock_run) -> None:
         """Test handling when help command fails."""
         exe_path = pathlib.Path("/path/to/rife")
 
@@ -85,7 +85,7 @@ class TestRifeCapabilityDetector:
         assert detector.supports_uhd() is False
 
     @patch("subprocess.run")
-    def test_version_detection(self, mock_run):
+    def test_version_detection(self, mock_run) -> None:
         """Test version detection from help output."""
         exe_path = pathlib.Path("/path/to/rife")
 
@@ -110,7 +110,7 @@ class TestRifeCapabilityDetector:
             assert detector.version == expected_version
 
     @patch("subprocess.run")
-    def test_capability_detection_partial_support(self, mock_run):
+    def test_capability_detection_partial_support(self, mock_run) -> None:
         """Test detection when only some capabilities are supported."""
         exe_path = pathlib.Path("/path/to/rife")
 
@@ -136,7 +136,7 @@ class TestRifeCapabilityDetector:
         assert detector.supports_tta_spatial() is False
         assert detector.supports_thread_spec() is False
 
-    def test_detect_capabilities_with_simulated_help(self, mocker):
+    def test_detect_capabilities_with_simulated_help(self, mocker) -> None:
         """Detect capabilities using a predefined help text."""
         exe_path = pathlib.Path("/path/to/rife")
         help_text = (
@@ -169,7 +169,7 @@ class TestRifeCapabilityDetector:
         assert detector.supports_gpu_id() is True
         assert detector.supports_model_path() is True
 
-    def test_help_command_timeout(self, mocker):
+    def test_help_command_timeout(self, mocker) -> None:
         """_run_help_command should handle subprocess timeouts."""
         exe_path = pathlib.Path("/path/to/rife")
         mocker.patch("pathlib.Path.exists", return_value=True)
@@ -185,7 +185,7 @@ class TestRifeCapabilityDetector:
         assert success is False
         assert "Timeout" in text
 
-    def test_build_command_basic(self):
+    def test_build_command_basic(self) -> None:
         """Test building basic command without optional features."""
         exe_path = pathlib.Path("/path/to/rife")
 
@@ -220,7 +220,7 @@ class TestRifeCapabilityDetector:
         # Model path is not added because model_path capability is False
         assert "-m" not in cmd
 
-    def test_build_command_with_capabilities(self):
+    def test_build_command_with_capabilities(self) -> None:
         """Test building command with optional features enabled."""
         exe_path = pathlib.Path("/path/to/rife")
 
@@ -268,7 +268,7 @@ class TestRifeCapabilityDetector:
         assert "-m" in cmd  # Model path
         assert "/model" in cmd
 
-    def test_build_command_ignores_unsupported(self):
+    def test_build_command_ignores_unsupported(self) -> None:
         """Test that unsupported options are ignored in command."""
         exe_path = pathlib.Path("/path/to/rife")
 
@@ -299,7 +299,7 @@ class TestAnalyzeRifeExecutable:
 
     @patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector")
     @patch("pathlib.Path.exists")
-    def test_analyze_successful(self, mock_exists, mock_detector_class):
+    def test_analyze_successful(self, mock_exists, mock_detector_class) -> None:
         """Test successful analysis of RIFE executable."""
         exe_path = pathlib.Path("/path/to/rife")
 
@@ -333,7 +333,7 @@ class TestAnalyzeRifeExecutable:
         assert result["capabilities"]["tta_spatial"] is False
         assert len(result["capabilities"]) == 9
 
-    def test_analyze_file_not_found(self):
+    def test_analyze_file_not_found(self) -> None:
         """Test analysis when executable doesn't exist."""
         exe_path = pathlib.Path("/nonexistent/rife")
 
@@ -343,10 +343,10 @@ class TestAnalyzeRifeExecutable:
         assert "not found" in result["error"]
         assert result["exe_path"] == str(exe_path)
         assert result["version"] is None
-        assert result["capabilities"] == {}
+        assert not result["capabilities"]
 
     @patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector")
-    def test_analyze_detection_error(self, mock_detector_class):
+    def test_analyze_detection_error(self, mock_detector_class) -> None:
         """Test analysis when detection raises an error."""
         exe_path = pathlib.Path("/path/to/rife")
 

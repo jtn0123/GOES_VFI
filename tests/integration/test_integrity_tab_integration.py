@@ -5,10 +5,10 @@ These tests focus on verifying data propagation, signal connections, and feature
 across all the integrity check tabs.
 """
 
-import tempfile
-import unittest
 from datetime import datetime
 from pathlib import Path
+import tempfile
+import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 from PyQt6.QtCore import QCoreApplication
@@ -33,7 +33,7 @@ from tests.utils.pyqt_async_test import PyQtAsyncTestCase, async_test
 class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
     """Integration tests for the integrity check tabs to verify synchronization."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Call parent setUp
         super().setUp()
@@ -58,13 +58,13 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
         self.window = QMainWindow()
         self.window.setCentralWidget(self.combined_tab)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up resources."""
         self.window.close()
         self.temp_dir.cleanup()
         super().tearDown()
 
-    def _create_test_files(self):
+    def _create_test_files(self) -> None:
         """Create test files in a directory structure that can be detected."""
         # Create GOES-16 test files
         self.goes16_dir = self.base_dir / "goes16"
@@ -107,7 +107,7 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
             filename = f"OR_ABI-L1b-RadF-M6C13_G18_{ts.strftime('%Y%m%d%H%M%S')}.nc"
             (self.goes18_dir / filename).touch()
 
-    def _setup_view_model(self):
+    def _setup_view_model(self) -> None:
         """Create and configure the view model with appropriate mocks."""
         # Create cache DB mock
         self.cache_db_mock = MagicMock()
@@ -138,7 +138,7 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
         self.view_model.satellite = SatellitePattern.GOES_16
         self.view_model.fetch_source = FetchSource.AUTO
 
-    def _create_tabs(self):
+    def _create_tabs(self) -> None:
         """Create all the tabs and the combined container."""
         # Create the integrity tab
         self.integrity_tab = EnhancedIntegrityCheckTab(self.view_model)
@@ -152,7 +152,7 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
         self.results_tab = self.combined_tab.results_tab
 
     @async_test
-    async def test_directory_selection_propagation(self):
+    async def test_directory_selection_propagation(self) -> None:
         """Test that base directory is properly set in the view model."""
         # Set a new directory in the view model
         test_dir = self.goes16_dir  # Use the goes16 subdirectory
@@ -165,12 +165,12 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
         assert self.view_model.base_directory == test_dir, "View model base directory was not updated"
 
         # Verify the integrity tab has access to the view model
-        assert (
-            self.integrity_tab.view_model is self.view_model
-        ), "Integrity tab does not have correct view model reference"
+        assert self.integrity_tab.view_model is self.view_model, (
+            "Integrity tab does not have correct view model reference"
+        )
 
     @async_test
-    async def test_date_range_auto_detection(self):
+    async def test_date_range_auto_detection(self) -> None:
         """Test that date range can be set in the view model."""
         # Simplified test - just verify view model date range functionality
         start_date = datetime(2023, 1, 1)
@@ -187,7 +187,7 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
         assert self.view_model.end_date == end_date
 
     @async_test
-    async def test_data_propagation_after_scan(self):
+    async def test_data_propagation_after_scan(self) -> None:
         """Test that missing items can be tracked in the view model."""
         # Simplified test - just verify view model can track missing items
         # The original test expected non-existent signals and methods
@@ -200,7 +200,7 @@ class TestIntegrityTabsIntegration(PyQtAsyncTestCase):
         QCoreApplication.processEvents()
 
     @async_test
-    async def test_date_range_synchronization(self):
+    async def test_date_range_synchronization(self) -> None:
         """Test that view model properties are accessible from tabs."""
         # Simplified test - just verify tabs have access to the view model
         # The original test expected non-existent signals and UI synchronization

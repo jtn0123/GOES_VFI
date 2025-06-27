@@ -10,13 +10,13 @@ from goesvfi.pipeline import raw_encoder
 from tests.utils.mocks import create_mock_subprocess_run
 
 
-@pytest.fixture
+@pytest.fixture()
 def dummy_frames():
     # Create 3 dummy float32 RGB frames (4x4)
     return [np.ones((4, 4, 3), dtype=np.float32) * i for i in range(3)]
 
 
-def test_write_raw_mp4_success(tmp_path, dummy_frames):
+def test_write_raw_mp4_success(tmp_path, dummy_frames) -> None:
     raw_path = tmp_path / "output.mp4"
     temp_dir_path = tmp_path / "tempdir"
     temp_dir_path.mkdir()
@@ -49,7 +49,7 @@ def test_write_raw_mp4_success(tmp_path, dummy_frames):
     ):  # Apply factory
         # Setup tempdir context manager mock (still needed)
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
-        mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
+        mock_tempdir.return_value.__enter__.return_value = str(temp_dir_path)  # Return the path string directly
         mock_tempdir.return_value.__exit__.return_value = None
         mock_tempdir.return_value.name = str(temp_dir_path)  # Ensure the mock uses the correct path
 
@@ -76,7 +76,7 @@ def test_write_raw_mp4_success(tmp_path, dummy_frames):
         assert raw_path.exists()  # Check mock file creation
 
 
-def test_write_raw_mp4_ffmpeg_error(tmp_path, dummy_frames):
+def test_write_raw_mp4_ffmpeg_error(tmp_path, dummy_frames) -> None:
     raw_path = tmp_path / "output.mp4"
     temp_dir_path = tmp_path / "tempdir"
     temp_dir_path.mkdir()
@@ -106,7 +106,7 @@ def test_write_raw_mp4_ffmpeg_error(tmp_path, dummy_frames):
         patch("goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory) as mock_run_patch,
     ):
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
-        mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
+        mock_tempdir.return_value.__enter__.return_value = str(temp_dir_path)  # Return the path string directly
         mock_tempdir.return_value.__exit__.return_value = None
         mock_tempdir.return_value.name = str(temp_dir_path)
 
@@ -120,7 +120,7 @@ def test_write_raw_mp4_ffmpeg_error(tmp_path, dummy_frames):
         mock_run_patch.assert_called_once()  # Check mock was called
 
 
-def test_write_raw_mp4_ffmpeg_not_found(tmp_path, dummy_frames):
+def test_write_raw_mp4_ffmpeg_not_found(tmp_path, dummy_frames) -> None:  # pylint: disable=redefined-outer-name
     raw_path = tmp_path / "output.mp4"
     temp_dir_path = tmp_path / "tempdir"
     temp_dir_path.mkdir()
@@ -150,7 +150,7 @@ def test_write_raw_mp4_ffmpeg_not_found(tmp_path, dummy_frames):
         patch("goesvfi.pipeline.raw_encoder.subprocess.run", side_effect=mock_run_factory) as mock_run_patch,
     ):
         mock_tempdir.return_value = MagicMock(name="TemporaryDirectory")
-        mock_tempdir.return_value.__enter__.return_value = mock_tempdir.return_value
+        mock_tempdir.return_value.__enter__.return_value = str(temp_dir_path)  # Return the path string directly
         mock_tempdir.return_value.__exit__.return_value = None
         mock_tempdir.return_value.name = str(temp_dir_path)
 

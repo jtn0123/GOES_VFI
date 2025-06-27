@@ -1,5 +1,4 @@
-"""
-Satellite Integrity Tab Group for the GOES Integrity Check application.
+"""Satellite Integrity Tab Group for the GOES Integrity Check application.
 
 This module provides a cohesive group of tabs that bridge the gap between
 visualizing GOES imagery and checking file integrity, with a focus on
@@ -7,7 +6,7 @@ temporal analysis and organization of satellite data.
 """
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -40,13 +39,11 @@ LOGGER = log.get_logger(__name__)
 
 
 class OptimizedDateSelectionTab(QWidget):
-    """
-    Date selection tab optimized for satellite data analysis.
-    """
+    """Date selection tab optimized for satellite data analysis."""
 
     dateRangeSelected = pyqtSignal(datetime, datetime)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the optimized date selection tab."""
         super().__init__(parent)
 
@@ -174,8 +171,7 @@ class OptimizedDateSelectionTab(QWidget):
         layout.addStretch()
 
     def set_date_range(self, start: datetime, end: datetime) -> None:
-        """
-        Set the displayed date range.
+        """Set the displayed date range.
 
         Args:
             start: Start date
@@ -186,14 +182,13 @@ class OptimizedDateSelectionTab(QWidget):
 
         # Update label
         self.date_range_label.setText(
-            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - " f"{end.strftime('%Y-%m-%d %H:%M')}"
+            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - {end.strftime('%Y-%m-%d %H:%M')}"
         )
 
     def _open_visual_date_picker(self) -> None:
         """Open the visual date picker dialog."""
         # Use default range (last 7 days) since get_date_range isn't available
-        from datetime import datetime as dt
-        from datetime import timedelta
+        from datetime import datetime as dt, timedelta
 
         current_start = dt.now() - timedelta(days=7)
         current_end = dt.now()
@@ -203,8 +198,7 @@ class OptimizedDateSelectionTab(QWidget):
         dialog.exec()
 
     def _handle_date_range_selected(self, start: datetime, end: datetime) -> None:
-        """
-        Handle date range selection.
+        """Handle date range selection.
 
         Args:
             start: Start date
@@ -212,7 +206,7 @@ class OptimizedDateSelectionTab(QWidget):
         """
         # Update label
         self.date_range_label.setText(
-            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - " f"{end.strftime('%Y-%m-%d %H:%M')}"
+            f"Selected range: {start.strftime('%Y-%m-%d %H:%M')} - {end.strftime('%Y-%m-%d %H:%M')}"
         )
 
         # Update timeline picker
@@ -223,8 +217,7 @@ class OptimizedDateSelectionTab(QWidget):
 
     def _select_today(self) -> None:
         """Select today's date range."""
-        from datetime import datetime as dt
-        from datetime import timedelta
+        from datetime import datetime as dt, timedelta
 
         today = dt.now().replace(hour=0, minute=0, second=0, microsecond=0)
         tomorrow = today + timedelta(days=1)
@@ -256,16 +249,14 @@ class OptimizedDateSelectionTab(QWidget):
 
 
 class OptimizedResultsTab(QWidget):
-    """
-    Optimized results organization tab for satellite data.
-    """
+    """Optimized results organization tab for satellite data."""
 
     itemSelected = pyqtSignal(MissingTimestamp)
     downloadRequested = pyqtSignal(MissingTimestamp)
     viewRequested = pyqtSignal(MissingTimestamp)
     directorySelected = pyqtSignal(str)  # Signal for directory selection
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the optimized results tab."""
         super().__init__(parent)
 
@@ -338,15 +329,13 @@ class OptimizedResultsTab(QWidget):
         layout.addWidget(group_label)
 
         self.group_combo = QComboBox()
-        self.group_combo.addItems(
-            [
-                self.tr("Day"),
-                self.tr("Hour"),
-                self.tr("Satellite"),
-                self.tr("Status"),
-                self.tr("Source"),
-            ]
-        )
+        self.group_combo.addItems([
+            self.tr("Day"),
+            self.tr("Hour"),
+            self.tr("Satellite"),
+            self.tr("Status"),
+            self.tr("Source"),
+        ])
         # Use default ComboBox styling from theme
         self.group_combo.currentTextChanged.connect(self._handle_group_changed)
         layout.addWidget(self.group_combo)
@@ -367,9 +356,8 @@ class OptimizedResultsTab(QWidget):
 
         return panel
 
-    def set_items(self, items: List[MissingTimestamp], total_expected: int) -> None:
-        """
-        Set the items for display in this tab.
+    def set_items(self, items: list[MissingTimestamp], total_expected: int) -> None:
+        """Set the items for display in this tab.
 
         Args:
             items: List of missing timestamps
@@ -386,8 +374,7 @@ class OptimizedResultsTab(QWidget):
             self.preview_widget.clear()
 
     def highlight_item(self, timestamp: datetime) -> None:
-        """
-        Highlight an item with the given timestamp.
+        """Highlight an item with the given timestamp.
 
         Args:
             timestamp: Timestamp to highlight
@@ -395,8 +382,7 @@ class OptimizedResultsTab(QWidget):
         self.tree_view.highlight_timestamp(timestamp)
 
     def _handle_item_selected(self, item: MissingTimestamp) -> None:
-        """
-        Handle item selection from the tree view.
+        """Handle item selection from the tree view.
 
         Args:
             item: Selected missing timestamp
@@ -420,8 +406,7 @@ class OptimizedResultsTab(QWidget):
             self.viewRequested.emit(item)
 
     def _handle_group_changed(self, group_by: str) -> None:
-        """
-        Handle change in grouping option.
+        """Handle change in grouping option.
 
         Args:
             group_by: Grouping method (Day, Hour, Satellite, etc.)
@@ -437,8 +422,7 @@ class OptimizedResultsTab(QWidget):
         self.tree_view.collapseAll()
 
     def set_directory(self, directory: str) -> None:
-        """
-        Set the current working directory for the results tab.
+        """Set the current working directory for the results tab.
 
         Args:
             directory: Path to the directory to analyze
@@ -449,8 +433,7 @@ class OptimizedResultsTab(QWidget):
 
 
 class SatelliteIntegrityTabGroup(QWidget):
-    """
-    Container for satellite integrity analysis tabs.
+    """Container for satellite integrity analysis tabs.
 
     This class contains and coordinates the three tabs for satellite integrity analysis:
         1. Date Selection
@@ -468,7 +451,7 @@ class SatelliteIntegrityTabGroup(QWidget):
     downloadRequested = pyqtSignal(MissingTimestamp)
     viewRequested = pyqtSignal(MissingTimestamp)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the satellite integrity tab group."""
         super().__init__(parent)
 
@@ -557,8 +540,7 @@ class SatelliteIntegrityTabGroup(QWidget):
             self.imagery_tab.imageRequested.connect(self._handle_image_requested)
 
     def _handle_date_range_selected(self, start: datetime, end: datetime) -> None:
-        """
-        Handle date range selection from the date selection tab.
+        """Handle date range selection from the date selection tab.
 
         Args:
             start: Start date
@@ -575,14 +557,13 @@ class SatelliteIntegrityTabGroup(QWidget):
 
     def set_data(
         self,
-        items: List[MissingTimestamp],
+        items: list[MissingTimestamp],
         start_date: datetime,
         end_date: datetime,
         total_expected: int,
-        interval_minutes: Optional[int] = None,
+        interval_minutes: int | None = None,
     ) -> None:
-        """
-        Set data for all tabs in the group.
+        """Set data for all tabs in the group.
 
         Args:
             items: List of missing timestamps
@@ -605,8 +586,7 @@ class SatelliteIntegrityTabGroup(QWidget):
             self.imagery_tab.set_data(items, start_date, end_date)
 
     def connect_to_goes_imagery_tab(self, tab: Any) -> None:
-        """
-        Connect to the GOES imagery tab for data flow.
+        """Connect to the GOES imagery tab for data flow.
 
         Args:
             tab: GOES imagery tab object
@@ -621,15 +601,11 @@ class SatelliteIntegrityTabGroup(QWidget):
 
             if hasattr(tab, "satelliteSelected"):
                 tab.satelliteSelected.connect(self._handle_satellite_selected)
-        except Exception as e:
-            import traceback
-
-            print(f"Error connecting to GOES imagery tab: {e}")
-            print(traceback.format_exc())
+        except Exception:
+            pass
 
     def connect_to_integrity_tab(self, tab: Any) -> None:
-        """
-        Connect to the file integrity tab for data flow.
+        """Connect to the file integrity tab for data flow.
 
         Args:
             tab: File integrity tab object
@@ -643,22 +619,17 @@ class SatelliteIntegrityTabGroup(QWidget):
 
             # Example: Pass download requests to integrity tab
             self.downloadRequested.connect(tab.download_item)
-        except Exception as e:
-            import traceback
-
-            print(f"Error connecting to integrity tab: {e}")
-            print(traceback.format_exc())
+        except Exception:
+            pass
 
     def _handle_satellite_selected(self, satellite: Any) -> None:
-        """
-        Handle satellite selection from GOES imagery tab.
+        """Handle satellite selection from GOES imagery tab.
 
         Args:
             satellite: Selected satellite object or identifier
         """
         # This method would need to be customized based on how
         # satellites are represented in the application
-        pass
 
     def _handle_image_requested(self, params: dict) -> None:
         """Handle image request from the imagery tab.

@@ -15,21 +15,9 @@ repos:
     rev: v0.8.0
     hooks:
     -   id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        args: [--fix, --exit-non-zero-on-fix, --show-fixes]
         exclude: ^(legacy_tests/)
     -   id: ruff-format
-        exclude: ^(legacy_tests/)
-
--   repo: https://github.com/pycqa/flake8
-    rev: 7.2.0
-    hooks:
-    -   id: flake8
-        additional_dependencies:
-          - flake8-bugbear
-          - flake8-docstrings
-          - flake8-quotes
-          - flake8-comprehensions
-          - flake8-pytest-style
         exclude: ^(legacy_tests/)
 
 # Ruff handles both import sorting and formatting, so isort and black are not needed

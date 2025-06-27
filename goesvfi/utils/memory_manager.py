@@ -4,11 +4,12 @@ This module provides memory monitoring, optimization, and management capabilitie
 to prevent out-of-memory errors and optimize performance.
 """
 
+from collections.abc import Callable, Iterable
+from dataclasses import dataclass
 import gc
 import threading
 import time
-from dataclasses import dataclass
-from typing import Any, Callable, Iterable, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -61,8 +62,8 @@ class MemoryMonitor:
         self.warning_threshold_mb = warning_threshold_mb
         self.critical_threshold_mb = critical_threshold_mb
         self._monitoring = False
-        self._monitor_thread: Optional[threading.Thread] = None
-        self._callbacks: List[Callable[[MemoryStats], None]] = []
+        self._monitor_thread: threading.Thread | None = None
+        self._callbacks: list[Callable[[MemoryStats], None]] = []
 
     def get_memory_stats(self) -> MemoryStats:
         """Get current memory statistics.
@@ -161,12 +162,12 @@ class MemoryMonitor:
                     try:
                         callback(stats)
                     except Exception as e:
-                        LOGGER.error("Error in memory callback: %s", e)
+                        LOGGER.exception("Error in memory callback: %s", e)
 
                 time.sleep(interval)
 
             except Exception as e:
-                LOGGER.error("Error in memory monitoring: %s", e)
+                LOGGER.exception("Error in memory monitoring: %s", e)
                 time.sleep(interval)
 
 
@@ -222,7 +223,7 @@ class MemoryOptimizer:
 
         return array
 
-    def chunk_large_array(self, array: np.ndarray, max_chunk_mb: int = 100) -> List[np.ndarray]:
+    def chunk_large_array(self, array: np.ndarray, max_chunk_mb: int = 100) -> list[np.ndarray]:
         """Split large array into chunks for processing.
 
         Args:
@@ -272,7 +273,6 @@ class MemoryOptimizer:
         Yields:
             NumPy arrays containing contiguous chunks of ``array``.
         """
-
         chunk_size = max(1, max_chunk_mb * 1024 * 1024 // array.itemsize)
         for start in range(0, len(array), chunk_size):
             chunk = array[start : start + chunk_size].copy()
@@ -312,7 +312,7 @@ class MemoryOptimizer:
         stats = self.monitor.get_memory_stats()
 
         if stats.available_mb < required_mb:
-            return False, (f"Insufficient memory: {stats.available_mb}MB available, " f"{required_mb}MB required")
+            return False, (f"Insufficient memory: {stats.available_mb}MB available, {required_mb}MB required")
 
         if stats.available_mb < required_mb * 1.5:
             LOGGER.warning(
@@ -399,7 +399,7 @@ class ObjectPool:
         """
         self.factory = factory
         self.max_size = max_size
-        self.pool: List = []
+        self.pool: list = []
         self._lock = threading.Lock()
 
     def acquire(self) -> Any:

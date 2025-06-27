@@ -1,11 +1,12 @@
 # goesvfi/gui_tabs/main_tab.py
 
+from collections.abc import Callable
+from enum import Enum
 import json
 import os
-import re
-from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict, cast
+import re
+from typing import Any, TypedDict, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,7 +21,6 @@ from PyQt6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMessageBox,
     QPushButton,
     QSizePolicy,
@@ -29,6 +29,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.gui_components.widget_factory import WidgetFactory
 from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
@@ -52,12 +53,12 @@ LOGGER = log.get_logger(__name__)
 class SuperButton(QPushButton):
     """A custom button class that ensures clicks are properly processed."""
 
-    def __init__(self, text: str, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, text: str, parent: QWidget | None = None) -> None:
         super().__init__(text, parent)
-        self.click_callback: Optional[Callable[[], None]] = None
+        self.click_callback: Callable[[], None] | None = None
         LOGGER.debug("SuperButton created with text: %s", text)
 
-    def set_click_callback(self, callback: Optional[Callable[[], None]]) -> None:
+    def set_click_callback(self, callback: Callable[[], None] | None) -> None:
         """Set a direct callback function for click events."""
         self.click_callback = callback
         LOGGER.debug(
@@ -65,7 +66,7 @@ class SuperButton(QPushButton):
             callback.__name__ if callback else None,
         )
 
-    def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
+    def mousePressEvent(self, event: QMouseEvent | None) -> None:
         """Explicitly override mouse press event."""
         if event is None:
             return
@@ -74,7 +75,7 @@ class SuperButton(QPushButton):
         # Call the parent implementation
         super().mousePressEvent(event)
 
-    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent | None) -> None:
         """Explicitly override mouse release event for better click detection."""
         if event is None:
             return
@@ -110,10 +111,10 @@ class RawEncoderMethod(Enum):
 
 # Define RIFEModelDetails TypedDict locally
 class RIFEModelDetails(TypedDict, total=False):  # Use total=False for compatibility < 3.11
-    version: Optional[str]
-    capabilities: Dict[str, bool]
-    supported_args: List[str]
-    help_text: Optional[str]
+    version: str | None
+    capabilities: dict[str, bool]
+    supported_args: list[str]
+    help_text: str | None
     _mtime: float  # Add _mtime used for caching
 
 
@@ -198,12 +199,12 @@ class MainTab(QWidget):
         # --- State Variables ---
         # self.in_dir and self.current_crop_rect removed, managed by MainWindow
         self.out_file_path: Path | None = None  # Keep output path state local
-        self.vfi_worker: "VfiWorker | None" = None  # type: ignore
+        self.vfi_worker: VfiWorker | None = None  # type: ignore
         self.is_processing = False
         self.current_encoder = "RIFE"  # Default encoder
         self.current_model_key: str | None = "rife-v4.6"  # Default RIFE model key
-        self.available_models: Dict[str, RIFEModelDetails] = {}  # Use Dict
-        self.image_viewer_dialog: Optional[ImageViewerDialog] = None  # Add member to hold viewer reference
+        self.available_models: dict[str, RIFEModelDetails] = {}  # Use Dict
+        self.image_viewer_dialog: ImageViewerDialog | None = None  # Add member to hold viewer reference
         # -----------------------
 
         self._setup_ui()
@@ -212,9 +213,7 @@ class MainTab(QWidget):
 
     def _create_header(self) -> QLabel:
         """Create the enhanced header for the main tab."""
-        header = QLabel("🎬 GOES VFI - Video Frame Interpolation")
-        header.setProperty("class", "AppHeader")
-        return header
+        return WidgetFactory.create_label("🎬 GOES VFI - Video Frame Interpolation", style="header")
 
     def _setup_ui(self) -> None:
         """Create the UI elements for the main tab."""
@@ -223,53 +222,53 @@ class MainTab(QWidget):
         layout.setSpacing(10)  # Adjust spacing between major groups
 
         # Apply qt-material theme properties to main tab
-        self.setProperty("class", "MainTab")
+        WidgetFactory.update_widget_style(self, "MainTab")
 
         # Add enhanced header
         header = self._create_header()
         layout.addWidget(header)
 
         # Input/Output Group
-        io_group = QGroupBox(self.tr("📁 Input/Output"))
+        io_group = WidgetFactory.create_group_box(self.tr("📁 Input/Output"))
         io_layout = QGridLayout(io_group)
         io_layout.setContentsMargins(10, 15, 10, 10)
         io_layout.setSpacing(8)
 
         # Input directory row (Layout for LineEdit and Button)
         in_dir_layout = QHBoxLayout()
-        self.in_dir_edit = QLineEdit()
-        self.in_dir_edit.setPlaceholderText("Select input image folder...")
+        self.in_dir_edit = WidgetFactory.create_line_edit(placeholder="Select input image folder...")
         self.in_dir_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.in_dir_button = QPushButton(self.tr("Browse..."))
-        self.in_dir_button.setObjectName("browse_button")
-        self.in_dir_button.setProperty("class", "DialogButton")
-        self.in_dir_button.setToolTip("Browse for input directory containing image files")
+        self.in_dir_button = WidgetFactory.create_button(
+            self.tr("Browse..."),
+            style="secondary",
+            objectName="browse_button",
+            toolTip="Browse for input directory containing image files",
+        )
         in_dir_layout.addWidget(self.in_dir_edit)
         in_dir_layout.addWidget(self.in_dir_button)
         # Connect button click here for clarity
         self.in_dir_button.clicked.connect(self._pick_in_dir)
 
-        in_label = QLabel(self.tr("Input Directory:"))
-        in_label.setProperty("class", "StandardLabel")
+        in_label = WidgetFactory.create_label(self.tr("Input Directory:"), style="standard")
         io_layout.addWidget(in_label, 0, 0)
         io_layout.addLayout(in_dir_layout, 0, 1, 1, 2)  # Span layout across 2 columns
 
         # Output file row (Layout for LineEdit and Button)
         out_file_layout = QHBoxLayout()
-        self.out_file_edit = QLineEdit()
-        self.out_file_edit.setPlaceholderText("Select output MP4 file...")
+        self.out_file_edit = WidgetFactory.create_line_edit(placeholder="Select output MP4 file...")
         self.out_file_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.out_file_button = QPushButton(self.tr("Browse..."))
-        self.out_file_button.setObjectName("browse_button")
-        self.out_file_button.setProperty("class", "DialogButton")
-        self.out_file_button.setToolTip("Browse for output video file location")
+        self.out_file_button = WidgetFactory.create_button(
+            self.tr("Browse..."),
+            style="secondary",
+            objectName="browse_button",
+            toolTip="Browse for output video file location",
+        )
         out_file_layout.addWidget(self.out_file_edit)
         out_file_layout.addWidget(self.out_file_button)
         # Connect button click here
         self.out_file_button.clicked.connect(self._pick_out_file)
 
-        out_label = QLabel(self.tr("Output File (MP4):"))
-        out_label.setProperty("class", "StandardLabel")
+        out_label = WidgetFactory.create_label(self.tr("Output File (MP4):"), style="standard")
         io_layout.addWidget(out_label, 1, 0)
         io_layout.addLayout(out_file_layout, 1, 1, 1, 2)  # Span layout across 2 columns
 
@@ -284,11 +283,11 @@ class MainTab(QWidget):
         crop_buttons_layout.setContentsMargins(10, 0, 10, 0)
         self.crop_button = SuperButton(self.tr("✂️ Select Crop Region"))
         self.crop_button.setObjectName("crop_button")
-        self.crop_button.setProperty("class", "DialogButton")
+        WidgetFactory.update_widget_style(self.crop_button, "DialogButton")
         self.crop_button.setToolTip("Select a region of the image to crop during processing")
         self.clear_crop_button = SuperButton(self.tr("❌ Clear Crop"))
         self.clear_crop_button.setObjectName("clear_crop_button")
-        self.clear_crop_button.setProperty("class", "DialogButton")
+        WidgetFactory.update_widget_style(self.clear_crop_button, "DialogButton")
         self.clear_crop_button.setToolTip("Remove the current crop selection and use full image")
         crop_buttons_layout.addWidget(self.crop_button)
         crop_buttons_layout.addWidget(self.clear_crop_button)
@@ -307,11 +306,10 @@ class MainTab(QWidget):
         processing_group = self._create_processing_settings_group()  # Calls helper
 
         # RIFE Options Group
-        self.rife_options_group = QGroupBox(self.tr("🤖 RIFE Options"))
+        self.rife_options_group = WidgetFactory.create_group_box(self.tr("🤖 RIFE Options"))
         self.rife_options_group.setCheckable(False)
         rife_layout = QGridLayout(self.rife_options_group)
-        rife_model_label = QLabel(self.tr("RIFE Model:"))
-        rife_model_label.setProperty("class", "StandardLabel")
+        rife_model_label = WidgetFactory.create_label(self.tr("RIFE Model:"), style="standard")
         rife_layout.addWidget(rife_model_label, 0, 0)
         self.rife_model_combo = QComboBox()
         self.rife_model_combo.setToolTip("Select the RIFE model version for frame interpolation")
@@ -331,12 +329,11 @@ class MainTab(QWidget):
         self.rife_uhd_checkbox.setChecked(False)
         self.rife_uhd_checkbox.setToolTip("Enable UHD mode for 4K video processing")
         rife_layout.addWidget(self.rife_uhd_checkbox, 2, 0, 1, 2)
-        thread_spec_label = QLabel(self.tr("Thread Spec:"))
-        thread_spec_label.setProperty("class", "StandardLabel")
+        thread_spec_label = WidgetFactory.create_label(self.tr("Thread Spec:"), style="standard")
         rife_layout.addWidget(thread_spec_label, 3, 0)
-        self.rife_thread_spec_edit = QLineEdit()
-        self.rife_thread_spec_edit.setPlaceholderText("e.g., 1:2:2, 2:2:1")
-        self.rife_thread_spec_edit.setToolTip(self.tr("Specify thread distribution (encoder:decoder:processor)"))
+        self.rife_thread_spec_edit = WidgetFactory.create_line_edit(
+            placeholder="e.g., 1:2:2, 2:2:1", toolTip=self.tr("Specify thread distribution (encoder:decoder:processor)")
+        )
         rife_layout.addWidget(self.rife_thread_spec_edit, 3, 1)
         self.rife_tta_spatial_checkbox = QCheckBox(self.tr("TTA Spatial"))
         self.rife_tta_spatial_checkbox.setChecked(False)
@@ -352,18 +349,20 @@ class MainTab(QWidget):
         rife_layout.addWidget(self.rife_tta_temporal_checkbox, 5, 0, 1, 2)
 
         # Sanchez Options Group
-        self.sanchez_options_group = QGroupBox(self.tr("🌍 Sanchez Options"))
+        self.sanchez_options_group = WidgetFactory.create_group_box(self.tr("🌍 Sanchez Options"))
         self.sanchez_options_group.setCheckable(False)
         sanchez_layout = QGridLayout(self.sanchez_options_group)
         # False colour checkbox moved near previews
         # sanchez_layout.addWidget(self.sanchez_false_colour_checkbox, 0, 0, 1, 2) # REMOVED
-        res_label = QLabel(self.tr("Resolution (km):"))
-        res_label.setProperty("class", "StandardLabel")
+        res_label = WidgetFactory.create_label(self.tr("Resolution (km):"), style="standard")
         sanchez_layout.addWidget(res_label, 1, 0)  # Adjusted row index if needed (seems okay)
         self.sanchez_res_combo = QComboBox()
-        self.sanchez_res_combo.addItems(
-            [self.tr("0.5"), self.tr("1"), self.tr("2"), self.tr("4")]
-        )  # Keep other Sanchez options here
+        self.sanchez_res_combo.addItems([
+            self.tr("0.5"),
+            self.tr("1"),
+            self.tr("2"),
+            self.tr("4"),
+        ])  # Keep other Sanchez options here
         self.sanchez_res_combo.setCurrentText("4")
         sanchez_layout.addWidget(self.sanchez_res_combo, 1, 1)
         self.sanchez_res_km_combo = self.sanchez_res_combo  # Alias
@@ -374,7 +373,7 @@ class MainTab(QWidget):
         self.start_button.setToolTip("Start video interpolation processing")
         self.start_button.setMinimumHeight(50)
         self.start_button.setEnabled(True)  # Initially enabled for debugging
-        self.start_button.setProperty("class", "StartButton")
+        WidgetFactory.update_widget_style(self.start_button, "StartButton")
 
         # Create a button container for the start button
         button_container = QWidget()
@@ -625,7 +624,7 @@ class MainTab(QWidget):
         except Exception as e:
             LOGGER.exception(f"_on_crop_clicked: Error accessing main_window_ref attributes early: {e}")
 
-    def _validate_input_directory_for_crop(self, current_in_dir: Optional[Path]) -> bool:
+    def _validate_input_directory_for_crop(self, current_in_dir: Path | None) -> bool:
         """Validate that input directory is suitable for cropping."""
         if not current_in_dir or not current_in_dir.is_dir():
             LOGGER.warning("No input directory selected for cropping.")
@@ -633,11 +632,11 @@ class MainTab(QWidget):
             return False
         return True
 
-    def _get_image_files_for_crop(self, current_in_dir: Path) -> List[Path]:
+    def _get_image_files_for_crop(self, current_in_dir: Path) -> list[Path]:
         """Get sorted list of image files from directory."""
-        image_files = sorted(
-            [f for f in current_in_dir.iterdir() if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]]
-        )
+        image_files = sorted([
+            f for f in current_in_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+        ])
         LOGGER.debug(f"Found {len(image_files)} image files in {current_in_dir}")
 
         if not image_files:
@@ -646,7 +645,7 @@ class MainTab(QWidget):
 
         return image_files
 
-    def _prepare_image_for_crop_dialog(self, first_image_path: Path) -> Optional[QImage]:
+    def _prepare_image_for_crop_dialog(self, first_image_path: Path) -> QImage | None:
         """Prepare image for crop dialog, handling Sanchez processing if needed."""
         is_sanchez = self.sanchez_false_colour_checkbox.isChecked()
         LOGGER.debug(f"Sanchez checked: {is_sanchez}")
@@ -662,7 +661,7 @@ class MainTab(QWidget):
 
         return full_res_qimage
 
-    def _try_get_sanchez_image_for_crop(self, first_image_path: Path) -> Optional[QImage]:
+    def _try_get_sanchez_image_for_crop(self, first_image_path: Path) -> QImage | None:
         """Try to get Sanchez-processed image for cropping."""
         LOGGER.debug("Sanchez preview enabled. Trying to get/process Sanchez image.")
 
@@ -672,12 +671,11 @@ class MainTab(QWidget):
 
         if cached_np_array is not None:
             return self._convert_cached_sanchez_to_qimage(cached_np_array, first_image_path)
-        else:
-            return self._process_fresh_sanchez_image(first_image_path)
+        return self._process_fresh_sanchez_image(first_image_path)
 
     def _convert_cached_sanchez_to_qimage(
         self, cached_np_array: NDArray[np.float64], first_image_path: Path
-    ) -> Optional[QImage]:
+    ) -> QImage | None:
         """Convert cached Sanchez array to QImage."""
         LOGGER.debug(f"Found cached Sanchez result for {first_image_path.name}.")
         # Convert float64 array to uint8 for QImage conversion
@@ -690,7 +688,7 @@ class MainTab(QWidget):
 
         return full_res_qimage
 
-    def _process_fresh_sanchez_image(self, first_image_path: Path) -> Optional[QImage]:
+    def _process_fresh_sanchez_image(self, first_image_path: Path) -> QImage | None:
         """Process fresh Sanchez image for cropping."""
         LOGGER.debug(f"No cached Sanchez result for {first_image_path.name}. Processing...")
 
@@ -727,7 +725,7 @@ class MainTab(QWidget):
             )
             return None
 
-    def _load_original_image_for_crop(self, first_image_path: Path) -> Optional[QImage]:
+    def _load_original_image_for_crop(self, first_image_path: Path) -> QImage | None:
         """Load original image for cropping."""
         LOGGER.debug("Loading original image for cropping (Sanchez not used or failed).")
 
@@ -741,14 +739,14 @@ class MainTab(QWidget):
         LOGGER.debug("Successfully loaded original image for cropping.")
         return full_res_qimage
 
-    def _load_original_image_data(self, image_path: Path) -> Optional[ImageData]:
+    def _load_original_image_data(self, image_path: Path) -> ImageData | None:
         """Load original image data using MainWindow's image loader."""
         loader = getattr(self.main_window_ref, "image_loader", None)
         if not loader:
             LOGGER.error("Could not access MainWindow's image_loader.")
             return None
 
-        return cast(Optional[ImageData], loader.load(str(image_path)))
+        return cast(ImageData | None, loader.load(str(image_path)))
 
     def _show_crop_image_error(self, first_image_path: Path) -> None:
         """Show error message when image cannot be loaded for cropping."""
@@ -779,7 +777,7 @@ class MainTab(QWidget):
 
         LOGGER.debug("Exiting _on_crop_clicked.")
 
-    def _get_initial_crop_rect(self) -> Optional[QRect]:
+    def _get_initial_crop_rect(self) -> QRect | None:
         """Get initial crop rectangle from MainWindow state."""
         current_crop_rect_mw = getattr(self.main_window_ref, "current_crop_rect", None)
         if current_crop_rect_mw:
@@ -847,7 +845,7 @@ class MainTab(QWidget):
 
         self._display_zoom_dialog(image_to_show, info_title)
 
-    def _extract_image_from_label(self, label: ClickableLabel) -> Optional[QImage]:
+    def _extract_image_from_label(self, label: ClickableLabel) -> QImage | None:
         """Extract and validate image from label."""
         full_res_image = getattr(label, "processed_image", None)
 
@@ -856,7 +854,7 @@ class MainTab(QWidget):
 
         return None
 
-    def _process_image_for_zoom(self, full_res_image: QImage) -> Tuple[QImage, bool]:
+    def _process_image_for_zoom(self, full_res_image: QImage) -> tuple[QImage, bool]:
         """Process image for zoom view, applying crop if needed."""
         crop_rect_tuple = getattr(self.main_window_ref, "current_crop_rect", None)
 
@@ -871,8 +869,8 @@ class MainTab(QWidget):
             return full_res_image, False
 
     def _apply_crop_to_image(
-        self, full_res_image: QImage, crop_rect_tuple: Tuple[int, int, int, int]
-    ) -> Tuple[QImage, bool]:
+        self, full_res_image: QImage, crop_rect_tuple: tuple[int, int, int, int]
+    ) -> tuple[QImage, bool]:
         """Apply crop rectangle to image if valid."""
         x, y, w, h = crop_rect_tuple
         crop_qrect = QRect(x, y, w, h)
@@ -898,17 +896,15 @@ class MainTab(QWidget):
         info_title = preview_type
 
         info_title = self._add_crop_info_to_title(info_title, is_cropped_view)
-        info_title = self._add_file_info_to_title(info_title, label)
-
-        return info_title
+        return self._add_file_info_to_title(info_title, label)
 
     def _get_preview_type(self, label: ClickableLabel) -> str:
         """Get preview type based on which label was clicked."""
         if label == self.first_frame_label:
             return "First Frame"
-        elif label == self.middle_frame_label:
+        if label == self.middle_frame_label:
             return "Middle Frame"
-        elif label == self.last_frame_label:
+        if label == self.last_frame_label:
             return "Last Frame"
         return ""
 
@@ -971,17 +967,17 @@ class MainTab(QWidget):
         """Get specific reason why image is unavailable."""
         if not hasattr(label, "processed_image"):
             return "\n\nReason: No processed image data is attached to this preview."
-        elif label.processed_image is None:
+        if label.processed_image is None:
             return "\n\nReason: The processed image data is null."
-        elif not isinstance(label.processed_image, QImage):
+        if not isinstance(label.processed_image, QImage):
             return f"\n\nReason: The image data is not a QImage (found {type(label.processed_image)})."
-        elif label.processed_image.isNull():
+        if label.processed_image.isNull():
             return "\n\nReason: The image is empty or invalid."
         return ""
 
     def _enhance_preview_area(self) -> QGroupBox:
         """Create the group box containing the preview image labels."""
-        previews_group = QGroupBox(self.tr("🖼️ Previews"))
+        previews_group = WidgetFactory.create_group_box(self.tr("🖼️ Previews"))
         previews_layout = QHBoxLayout(previews_group)
         previews_layout.setContentsMargins(10, 15, 10, 10)
         previews_layout.setSpacing(10)
@@ -999,14 +995,16 @@ class MainTab(QWidget):
             container_layout.setContentsMargins(0, 0, 0, 0)
             container_layout.setSpacing(5)
 
-            title_label = QLabel(preview_titles[i])
+            title_label = WidgetFactory.create_label(preview_titles[i])
             title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setToolTip(self.tr("Click to zoom"))
-            label.setMinimumSize(100, 100)  # Ensure minimum size
-            label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)  # Allow shrinking/expanding
-            label.setProperty("class", "ImagePreview")  # Use theme class
+            label.setMinimumSize(200, 200)  # Ensure reasonable minimum size for preview visibility
+            label.setSizePolicy(
+                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+            )  # Allow expanding but maintain minimum
+            WidgetFactory.update_widget_style(label, "ImagePreview")  # Use theme class
 
             container_layout.addWidget(title_label)
             container_layout.addWidget(label, 1)  # Give label stretch factor
@@ -1016,7 +1014,7 @@ class MainTab(QWidget):
 
     def _create_processing_settings_group(self) -> QGroupBox:
         """Create the group box for general processing settings."""
-        group = QGroupBox(self.tr("⚙️ Processing Settings"))
+        group = WidgetFactory.create_group_box(self.tr("⚙️ Processing Settings"))
         layout = QGridLayout(group)
         layout.setContentsMargins(10, 15, 10, 10)
         layout.setSpacing(8)
@@ -1031,8 +1029,7 @@ class MainTab(QWidget):
         self.fps_spinbox.setRange(1, 120)
         self.fps_spinbox.setValue(60)
         self.fps_spinbox.setToolTip("Target frames per second for the output video")
-        fps_label = QLabel(self.tr("Output FPS:"))
-        fps_label.setProperty("class", "StandardLabel")
+        fps_label = WidgetFactory.create_label(self.tr("Output FPS:"), style="standard")
         layout.addWidget(fps_label, 0, 0)
         layout.addWidget(self.fps_spinbox, 0, 1)
 
@@ -1040,8 +1037,7 @@ class MainTab(QWidget):
         self.multiplier_spinbox.setRange(2, 16)  # Example range
         self.multiplier_spinbox.setValue(2)
         self.multiplier_spinbox.setToolTip("Number of frames to interpolate between each pair of input frames")
-        multiplier_label = QLabel(self.tr("Frame Multiplier:"))
-        multiplier_label.setProperty("class", "StandardLabel")
+        multiplier_label = WidgetFactory.create_label(self.tr("Frame Multiplier:"), style="standard")
         layout.addWidget(multiplier_label, 1, 0)
         layout.addWidget(self.multiplier_spinbox, 1, 1)
         self.mid_count_spinbox = self.multiplier_spinbox  # Alias for compatibility if needed
@@ -1052,16 +1048,14 @@ class MainTab(QWidget):
         self.max_workers_spinbox.setRange(1, os.cpu_count() or 1)
         self.max_workers_spinbox.setValue(default_workers)
         self.max_workers_spinbox.setToolTip("Number of parallel worker threads for processing")
-        workers_label = QLabel(self.tr("Max Workers:"))
-        workers_label.setProperty("class", "StandardLabel")
+        workers_label = WidgetFactory.create_label(self.tr("Max Workers:"), style="standard")
         layout.addWidget(workers_label, 2, 0)
         layout.addWidget(self.max_workers_spinbox, 2, 1)
 
         self.encoder_combo = QComboBox()
         self.encoder_combo.addItems([self.tr("RIFE"), self.tr("FFmpeg")])  # Add other encoders if supported
         self.encoder_combo.setToolTip("Select the video interpolation engine")
-        encoder_label = QLabel(self.tr("Encoder:"))
-        encoder_label.setProperty("class", "StandardLabel")
+        encoder_label = WidgetFactory.create_label(self.tr("Encoder:"), style="standard")
         layout.addWidget(encoder_label, 3, 0)
         layout.addWidget(self.encoder_combo, 3, 1)
 
@@ -1079,14 +1073,14 @@ class MainTab(QWidget):
     def _validate_thread_spec(self, text: str) -> None:
         """Validate the RIFE thread specification format."""
         if not text:  # Allow empty
-            self.rife_thread_spec_edit.setProperty("class", "")
+            WidgetFactory.update_widget_style(self.rife_thread_spec_edit, "")
             return
 
         # Basic regex for N:N:N format (allows single digits or more)
         if re.fullmatch(r"\d+:\d+:\d+", text):
-            self.rife_thread_spec_edit.setProperty("class", "")
+            WidgetFactory.update_widget_style(self.rife_thread_spec_edit, "")
         else:
-            self.rife_thread_spec_edit.setProperty("class", "ValidationError")  # Use theme error class
+            WidgetFactory.update_widget_style(self.rife_thread_spec_edit, "ValidationError")  # Use theme error class
 
     def _start(self) -> None:
         """Prepare arguments and emit the processing_started signal."""
@@ -1146,13 +1140,11 @@ class MainTab(QWidget):
         # Check for files in input directory
         try:
             if current_in_dir and current_in_dir.is_dir():
-                image_files = sorted(
-                    [
-                        f
-                        for f in current_in_dir.iterdir()
-                        if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
-                    ]
-                )
+                image_files = sorted([
+                    f
+                    for f in current_in_dir.iterdir()
+                    if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+                ])
                 LOGGER.debug(f"Found {len(image_files)} image files in input directory")
                 if not image_files:
                     LOGGER.warning("No image files found in the input directory")
@@ -1248,7 +1240,7 @@ class MainTab(QWidget):
 
         return should_be_enabled
 
-    def _deep_verify_args(self, args: Dict[str, Any]) -> None:
+    def _deep_verify_args(self, args: dict[str, Any]) -> None:
         """Perform a deep verification of processing arguments for debugging."""
         LOGGER.debug("Deep verification of processing arguments...")
 
@@ -1257,12 +1249,12 @@ class MainTab(QWidget):
         self._verify_crop_rectangle(args)
         self._verify_processing_parameters(args)
 
-    def _verify_critical_paths(self, args: Dict[str, Any]) -> None:
+    def _verify_critical_paths(self, args: dict[str, Any]) -> None:
         """Verify input and output path arguments."""
         self._verify_input_directory(args)
         self._verify_output_file(args)
 
-    def _verify_input_directory(self, args: Dict[str, Any]) -> None:
+    def _verify_input_directory(self, args: dict[str, Any]) -> None:
         """Verify input directory exists and is accessible."""
         in_dir = args.get("in_dir")
         if not in_dir:
@@ -1276,7 +1268,7 @@ class MainTab(QWidget):
         if exists and is_dir:
             self._check_input_directory_contents(in_dir)
 
-    def _verify_output_file(self, args: Dict[str, Any]) -> None:
+    def _verify_output_file(self, args: dict[str, Any]) -> None:
         """Verify output file path and directory writability."""
         out_file = args.get("out_file")
         if not out_file:
@@ -1288,7 +1280,7 @@ class MainTab(QWidget):
         dir_writable = os.access(str(out_dir), os.W_OK) if dir_exists else False
         LOGGER.debug(f"out_file: {out_file}, dir_exists: {dir_exists}, dir_writable: {dir_writable}")
 
-    def _verify_encoder_arguments(self, args: Dict[str, Any]) -> None:
+    def _verify_encoder_arguments(self, args: dict[str, Any]) -> None:
         """Verify encoder-specific arguments."""
         encoder = args.get("encoder")
         LOGGER.debug(f"encoder: {encoder}")
@@ -1298,7 +1290,7 @@ class MainTab(QWidget):
         elif encoder == "FFmpeg":
             self._verify_ffmpeg_arguments(args)
 
-    def _verify_rife_arguments(self, args: Dict[str, Any]) -> None:
+    def _verify_rife_arguments(self, args: dict[str, Any]) -> None:
         """Verify RIFE-specific arguments."""
         rife_model_key = args.get("rife_model_key")
         rife_model_path = args.get("rife_model_path")
@@ -1315,7 +1307,7 @@ class MainTab(QWidget):
         else:
             LOGGER.error("Missing required RIFE executable path")
 
-    def _verify_ffmpeg_arguments(self, args: Dict[str, Any]) -> None:
+    def _verify_ffmpeg_arguments(self, args: dict[str, Any]) -> None:
         """Verify FFmpeg-specific arguments."""
         LOGGER.debug("Checking FFmpeg-specific arguments...")
         ffmpeg_args = args.get("ffmpeg_args")
@@ -1327,7 +1319,7 @@ class MainTab(QWidget):
             LOGGER.warning("No FFmpeg arguments provided")
             self._debug_generate_ffmpeg_command(args)
 
-    def _log_ffmpeg_settings(self, ffmpeg_args: Dict[str, Any]) -> None:
+    def _log_ffmpeg_settings(self, ffmpeg_args: dict[str, Any]) -> None:
         """Log FFmpeg settings for verification."""
         if "profile" in ffmpeg_args:
             profile_name = ffmpeg_args.get("profile")
@@ -1341,7 +1333,7 @@ class MainTab(QWidget):
             bitrate = ffmpeg_args.get("bitrate")
             LOGGER.debug(f"FFmpeg bitrate: {bitrate}")
 
-    def _verify_crop_rectangle(self, args: Dict[str, Any]) -> None:
+    def _verify_crop_rectangle(self, args: dict[str, Any]) -> None:
         """Verify crop rectangle dimensions and validity."""
         crop_rect = args.get("crop_rect")
         if not crop_rect:
@@ -1362,16 +1354,16 @@ class MainTab(QWidget):
             self._debug_check_ffmpeg_crop_integration(crop_rect)
 
         except (ValueError, TypeError) as e:
-            LOGGER.error(f"Invalid crop rectangle format: {e}")
+            LOGGER.exception(f"Invalid crop rectangle format: {e}")
 
-    def _verify_crop_against_input_images(self, args: Dict[str, Any], crop_rect: Tuple[int, int, int, int]) -> None:
+    def _verify_crop_against_input_images(self, args: dict[str, Any], crop_rect: tuple[int, int, int, int]) -> None:
         """Verify crop rectangle against actual image dimensions."""
         in_dir = args.get("in_dir")
         if in_dir is not None:
             in_dir_path = Path(in_dir) if isinstance(in_dir, str) else in_dir
             self._verify_crop_against_images(in_dir_path, crop_rect)
 
-    def _verify_processing_parameters(self, args: Dict[str, Any]) -> None:
+    def _verify_processing_parameters(self, args: dict[str, Any]) -> None:
         """Verify other processing parameters."""
         parameters = {
             "fps": args.get("fps"),
@@ -1387,9 +1379,9 @@ class MainTab(QWidget):
     def _check_input_directory_contents(self, in_dir: Path) -> None:
         """Check images in the input directory and report details for debugging."""
         try:
-            image_files = sorted(
-                [f for f in in_dir.iterdir() if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]]
-            )
+            image_files = sorted([
+                f for f in in_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+            ])
 
             LOGGER.debug(f"Found {len(image_files)} image files in {in_dir}")
 
@@ -1412,17 +1404,15 @@ class MainTab(QWidget):
                     img_path = image_files[idx]
                     img = Image.open(img_path)
                     img_array = np.array(img)
-                    sample_stats.append(
-                        {
-                            "index": idx,
-                            "filename": img_path.name,
-                            "dimensions": img.size,
-                            "shape": img_array.shape,
-                            "dtype": str(img_array.dtype),
-                        }
-                    )
+                    sample_stats.append({
+                        "index": idx,
+                        "filename": img_path.name,
+                        "dimensions": img.size,
+                        "shape": img_array.shape,
+                        "dtype": str(img_array.dtype),
+                    })
                 except Exception as e:
-                    LOGGER.error(f"Error analyzing image {image_files[idx]}: {e}")
+                    LOGGER.exception(f"Error analyzing image {image_files[idx]}: {e}")
 
             LOGGER.debug(f"Sample image stats: {sample_stats}")
 
@@ -1432,9 +1422,9 @@ class MainTab(QWidget):
     def _verify_crop_against_images(self, in_dir: Path, crop_rect: tuple[int, int, int, int]) -> None:
         """Verify that crop rectangle is valid for the images in the directory."""
         try:
-            image_files = sorted(
-                [f for f in in_dir.iterdir() if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]]
-            )
+            image_files = sorted([
+                f for f in in_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+            ])
 
             if not image_files:
                 LOGGER.warning("No images found to verify crop against")
@@ -1513,7 +1503,7 @@ class MainTab(QWidget):
         except Exception as e:
             LOGGER.exception(f"Error checking FFmpeg crop integration: {e}")
 
-    def _debug_generate_ffmpeg_command(self, args: Dict[str, Any]) -> None:
+    def _debug_generate_ffmpeg_command(self, args: dict[str, Any]) -> None:
         """Generate a sample FFmpeg command for debugging."""
         try:
             from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
@@ -1621,9 +1611,7 @@ class MainTab(QWidget):
             # This is for debugging - in production we'd respect the enabled state
             QTimer.singleShot(200, self._direct_start)
 
-    def _generate_timestamped_output_path(
-        self, base_dir: Optional[Path] = None, base_name: Optional[str] = None
-    ) -> Path:
+    def _generate_timestamped_output_path(self, base_dir: Path | None = None, base_name: str | None = None) -> Path:
         """Generate a fresh timestamped output path for uniqueness across runs.
 
         Args:
@@ -1683,13 +1671,12 @@ class MainTab(QWidget):
             if match:
                 # Extract the original name
                 base_name = match.group(1)
+            # If no timestamp found, try to remove _output suffix
+            elif "_output" in filename:
+                base_name = filename.split("_output")[0]
             else:
-                # If no timestamp found, try to remove _output suffix
-                if "_output" in filename:
-                    base_name = filename.split("_output")[0]
-                else:
-                    # Just use the whole name as base
-                    base_name = filename
+                # Just use the whole name as base
+                base_name = filename
 
         # Generate fresh path
         fresh_output_path = self._generate_timestamped_output_path(base_dir, base_name)
@@ -1748,9 +1735,9 @@ class MainTab(QWidget):
 
         # Check for images in input directory
         try:
-            image_files = sorted(
-                [f for f in current_in_dir.iterdir() if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]]
-            )
+            image_files = sorted([
+                f for f in current_in_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+            ])
 
             if not image_files:
                 LOGGER.warning("No image files found in %s", current_in_dir)
@@ -1903,7 +1890,7 @@ class MainTab(QWidget):
                 elif hasattr(widget, "value"):
                     LOGGER.debug(f"{key} value: {widget.value()}")
             except Exception as e:
-                LOGGER.error(f"Error getting value for {key}: {e}")
+                LOGGER.exception(f"Error getting value for {key}: {e}")
 
         LOGGER.debug("----------------------------------")
 
@@ -1942,15 +1929,14 @@ class MainTab(QWidget):
         if self.is_processing:
             # Processing mode
             self.start_button.setText(self.tr("Cancel"))
-            self.start_button.setProperty("class", "CancelButton")
+            WidgetFactory.update_widget_style(self.start_button, "CancelButton")
+        # Ready or disabled mode
+        elif can_start:
+            self.start_button.setText(self.tr("START"))
+            WidgetFactory.update_widget_style(self.start_button, "StartButton")
         else:
-            # Ready or disabled mode
-            if can_start:
-                self.start_button.setText(self.tr("START"))
-                self.start_button.setProperty("class", "StartButton")
-            else:
-                self.start_button.setText(self.tr("START"))
-                self.start_button.setProperty("class", "StartButtonDisabled")
+            self.start_button.setText(self.tr("START"))
+            WidgetFactory.update_widget_style(self.start_button, "StartButtonDisabled")
 
         # Print debug info about button state
         LOGGER.debug(f"Start button enabled: {self.start_button.isEnabled()}")
@@ -1979,7 +1965,7 @@ class MainTab(QWidget):
         except Exception as e:  # pragma: no cover - UI update errors
             LOGGER.exception("Progress update failed: %s", e)
 
-    def _start_worker(self, args: Dict[str, Any]) -> None:
+    def _start_worker(self, args: dict[str, Any]) -> None:
         """Create and start the VfiWorker thread using provided args."""
         ffmpeg_args = args.get("ffmpeg_args") or {}
 
@@ -2123,10 +2109,10 @@ class MainTab(QWidget):
         analysis_cache_file = cache_dir / "rife_analysis_cache.json"
 
         # Load cached analysis if available
-        cached_analysis: Dict[str, RIFEModelDetails] = {}
+        cached_analysis: dict[str, RIFEModelDetails] = {}
         if analysis_cache_file.exists():
             try:
-                with open(analysis_cache_file, "r", encoding="utf-8") as f:
+                with open(analysis_cache_file, encoding="utf-8") as f:
                     cached_analysis = json.load(f)
                 LOGGER.debug(f"Loaded RIFE analysis cache from {analysis_cache_file}")
             except Exception as e:
@@ -2225,7 +2211,7 @@ class MainTab(QWidget):
             self._update_rife_ui_elements()  # Disable options
             self._update_start_button_state()
 
-    def get_processing_args(self) -> Dict[str, Any] | None:
+    def get_processing_args(self) -> dict[str, Any] | None:
         """Gather all processing arguments from the UI."""
         LOGGER.debug("Gathering processing arguments...")
 
@@ -2253,7 +2239,7 @@ class MainTab(QWidget):
             main_window = self.parent()
         return cast(QObject, main_window)
 
-    def _validate_processing_inputs(self, main_window: QObject) -> Optional[Tuple[Path, Any, str, str]]:
+    def _validate_processing_inputs(self, main_window: QObject) -> tuple[Path, Any, str, str] | None:
         """Validate all required inputs for processing."""
         # Get critical parameters
         current_in_dir = getattr(main_window, "in_dir", None)
@@ -2278,7 +2264,7 @@ class MainTab(QWidget):
         encoder, rife_model_key = encoder_validation
         return current_in_dir, current_crop_rect_mw, encoder, rife_model_key
 
-    def _validate_input_directory(self, current_in_dir: Optional[Path]) -> bool:
+    def _validate_input_directory(self, current_in_dir: Path | None) -> bool:
         """Validate input directory exists and is accessible."""
         try:
             validate_path_exists(
@@ -2289,7 +2275,7 @@ class MainTab(QWidget):
             return True
         except (ValueError, FileNotFoundError, NotADirectoryError) as exc:
             error_msg = str(exc)
-            LOGGER.error(error_msg)
+            LOGGER.exception(error_msg)
             QMessageBox.critical(self, "Error", error_msg)
             return False
 
@@ -2302,7 +2288,7 @@ class MainTab(QWidget):
             return False
         return True
 
-    def _validate_encoder_and_model(self) -> Optional[Tuple[str, str]]:
+    def _validate_encoder_and_model(self) -> tuple[str, str] | None:
         """Validate encoder selection and associated model."""
         encoder = self.encoder_combo.currentText()
         rife_model_key = self.rife_model_combo.currentData()
@@ -2329,7 +2315,7 @@ class MainTab(QWidget):
                 out_dir.mkdir(parents=True, exist_ok=True)
             except Exception as e:
                 error_msg = f"Could not create output directory: {e}"
-                LOGGER.error(error_msg)
+                LOGGER.exception(error_msg)
                 QMessageBox.critical(self, "Error", error_msg)
                 return False
         return True
@@ -2340,7 +2326,7 @@ class MainTab(QWidget):
         current_crop_rect_mw: Any,
         encoder: str,
         rife_model_key: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build base arguments dictionary."""
         LOGGER.debug("Building arguments dictionary...")
 
@@ -2359,44 +2345,36 @@ class MainTab(QWidget):
         self._add_rife_arguments(args, encoder, rife_model_key)
         return args
 
-    def _add_rife_arguments(self, args: Dict[str, Any], encoder: str, rife_model_key: str) -> None:
+    def _add_rife_arguments(self, args: dict[str, Any], encoder: str, rife_model_key: str) -> None:
         """Add RIFE-specific arguments to args dictionary."""
         if encoder == "RIFE":
-            args.update(
-                {
-                    "rife_model_key": rife_model_key,
-                    "rife_model_path": (
-                        config.get_project_root() / "models" / rife_model_key if rife_model_key else None
-                    ),
-                    "rife_exe_path": (config.find_rife_executable(rife_model_key) if rife_model_key else None),
-                    "rife_tta_spatial": self.rife_tta_spatial_checkbox.isChecked(),
-                    "rife_tta_temporal": self.rife_tta_temporal_checkbox.isChecked(),
-                    "rife_uhd": self.rife_uhd_checkbox.isChecked(),
-                    "rife_tiling_enabled": self.rife_tile_checkbox.isChecked(),
-                    "rife_tile_size": self.rife_tile_size_spinbox.value(),
-                    "rife_thread_spec": (
-                        self.rife_thread_spec_edit.text() if self.rife_thread_spec_edit.text() else None
-                    ),
-                }
-            )
+            args.update({
+                "rife_model_key": rife_model_key,
+                "rife_model_path": (config.get_project_root() / "models" / rife_model_key if rife_model_key else None),
+                "rife_exe_path": (config.find_rife_executable(rife_model_key) if rife_model_key else None),
+                "rife_tta_spatial": self.rife_tta_spatial_checkbox.isChecked(),
+                "rife_tta_temporal": self.rife_tta_temporal_checkbox.isChecked(),
+                "rife_uhd": self.rife_uhd_checkbox.isChecked(),
+                "rife_tiling_enabled": self.rife_tile_checkbox.isChecked(),
+                "rife_tile_size": self.rife_tile_size_spinbox.value(),
+                "rife_thread_spec": (self.rife_thread_spec_edit.text() or None),
+            })
         else:
-            args.update(
-                {
-                    "rife_model_key": None,
-                    "rife_model_path": None,
-                    "rife_exe_path": None,
-                    "rife_tta_spatial": False,
-                    "rife_tta_temporal": False,
-                    "rife_uhd": False,
-                    "rife_tiling_enabled": False,
-                    "rife_tile_size": None,
-                    "rife_thread_spec": None,
-                }
-            )
+            args.update({
+                "rife_model_key": None,
+                "rife_model_path": None,
+                "rife_exe_path": None,
+                "rife_tta_spatial": False,
+                "rife_tta_temporal": False,
+                "rife_uhd": False,
+                "rife_tiling_enabled": False,
+                "rife_tile_size": None,
+                "rife_thread_spec": None,
+            })
 
     def _add_encoder_specific_arguments(
         self,
-        args: Dict[str, Any],
+        args: dict[str, Any],
         encoder: str,
         rife_model_key: str,
         main_window: QObject,
@@ -2407,12 +2385,12 @@ class MainTab(QWidget):
         else:
             args["ffmpeg_args"] = None
 
-    def _get_ffmpeg_arguments(self, main_window: QObject) -> Dict[str, Any]:
+    def _get_ffmpeg_arguments(self, main_window: QObject) -> dict[str, Any]:
         """Get FFmpeg-specific arguments from FFmpeg tab."""
         ffmpeg_tab = getattr(main_window, "ffmpeg_tab", None)
         if ffmpeg_tab:
             try:
-                ffmpeg_args: Dict[str, Any] = getattr(ffmpeg_tab, "get_ffmpeg_args", lambda: {})()
+                ffmpeg_args: dict[str, Any] = getattr(ffmpeg_tab, "get_ffmpeg_args", dict)()
                 LOGGER.debug(f"Added FFmpeg args from ffmpeg_tab: {ffmpeg_args}")
                 return ffmpeg_args
             except Exception as e:
@@ -2474,10 +2452,10 @@ class MainTab(QWidget):
             loaded_in_dir = self._resolve_input_directory_path(in_dir_str)
             self._update_input_directory_ui(main_window, loaded_in_dir)
         except Exception as e:
-            LOGGER.error(f"Error loading input directory setting: {e}")
+            LOGGER.exception(f"Error loading input directory setting: {e}")
             self._update_input_directory_ui(main_window, None)
 
-    def _resolve_input_directory_path(self, in_dir_str: str) -> Optional[Path]:
+    def _resolve_input_directory_path(self, in_dir_str: str) -> Path | None:
         """Resolve input directory path with fallback to common locations."""
         if not in_dir_str:
             LOGGER.debug("No input directory string in settings")
@@ -2496,10 +2474,10 @@ class MainTab(QWidget):
             # Try fallback locations
             return self._find_directory_in_common_locations(in_dir_path.name, in_dir_str)
         except Exception as e:
-            LOGGER.error(f"Error resolving input directory path: {e}")
+            LOGGER.exception(f"Error resolving input directory path: {e}")
             return None
 
-    def _find_directory_in_common_locations(self, dir_name: str, original_path: str) -> Optional[Path]:
+    def _find_directory_in_common_locations(self, dir_name: str, original_path: str) -> Path | None:
         """Find directory in common locations when original path doesn't exist."""
         LOGGER.warning(f"Saved input directory does not exist: {original_path}")
         LOGGER.debug("Will check if directory exists in other locations...")
@@ -2519,7 +2497,7 @@ class MainTab(QWidget):
 
         return None
 
-    def _update_input_directory_ui(self, main_window: QObject, loaded_in_dir: Optional[Path]) -> None:
+    def _update_input_directory_ui(self, main_window: QObject, loaded_in_dir: Path | None) -> None:
         """Update UI elements with loaded input directory."""
         LOGGER.debug(f"Final loaded input directory: {loaded_in_dir}")
 
@@ -2552,7 +2530,7 @@ class MainTab(QWidget):
             resolved_path = self._resolve_output_file_path(out_file_path, out_file_str)
             self.out_file_edit.setText(str(resolved_path))
         except Exception as e:
-            LOGGER.error(f"Error loading output file path: {e}")
+            LOGGER.exception(f"Error loading output file path: {e}")
             self.out_file_path = None
 
     def _resolve_output_file_path(self, out_file_path: Path, original_str: str) -> Path:
@@ -2641,10 +2619,10 @@ class MainTab(QWidget):
             loaded_crop_rect = self._parse_crop_rectangle(crop_rect_str)
             self._update_crop_rectangle_ui(main_window, loaded_crop_rect)
         except Exception as e:
-            LOGGER.error(f"Error loading crop rectangle setting: {e}")
+            LOGGER.exception(f"Error loading crop rectangle setting: {e}")
             self._update_crop_rectangle_ui(main_window, None)
 
-    def _parse_crop_rectangle(self, crop_rect_str: str) -> Optional[Tuple[int, int, int, int]]:
+    def _parse_crop_rectangle(self, crop_rect_str: str) -> tuple[int, int, int, int] | None:
         """Parse crop rectangle string into coordinates tuple."""
         if not crop_rect_str:
             LOGGER.debug("No crop rectangle string in settings")
@@ -2654,10 +2632,9 @@ class MainTab(QWidget):
             coords = [int(c.strip()) for c in crop_rect_str.split(",")]
             if len(coords) == 4:
                 LOGGER.info(f"Loaded crop rectangle: {tuple(coords)}")
-                return cast(Tuple[int, int, int, int], tuple(coords))
-            else:
-                LOGGER.warning(f"Invalid crop rectangle format in settings: {crop_rect_str}")
-                return None
+                return cast(tuple[int, int, int, int], tuple(coords))
+            LOGGER.warning(f"Invalid crop rectangle format in settings: {crop_rect_str}")
+            return None
         except ValueError:
             LOGGER.warning(f"Could not parse crop rectangle from settings: {crop_rect_str}")
             return None
@@ -2665,7 +2642,7 @@ class MainTab(QWidget):
     def _update_crop_rectangle_ui(
         self,
         main_window: QObject,
-        loaded_crop_rect: Optional[Tuple[int, int, int, int]],
+        loaded_crop_rect: tuple[int, int, int, int] | None,
     ) -> None:
         """Update UI with loaded crop rectangle."""
         LOGGER.debug(f"Final loaded crop rectangle: {loaded_crop_rect}")
@@ -2682,10 +2659,9 @@ class MainTab(QWidget):
 
         if isinstance(raw_value, bool):
             return raw_value
-        elif isinstance(raw_value, str):
+        if isinstance(raw_value, str):
             return raw_value.lower() == "true"
-        else:
-            return bool(raw_value)
+        return bool(raw_value)
 
     def _finalize_settings_load(self) -> None:
         """Finalize settings loading by updating UI states."""
@@ -2729,7 +2705,7 @@ class MainTab(QWidget):
                         self.settings.setValue("inputDir", in_dir_str)  # Alternate key for redundancy
                         self.settings.sync()  # Force immediate sync
                 except Exception as e:
-                    LOGGER.error(f"Error saving input directory from text field: {e}")
+                    LOGGER.exception(f"Error saving input directory from text field: {e}")
 
             # Then also try to save from MainWindow's state as a backup
             current_in_dir = getattr(main_window, "in_dir", None)
@@ -2745,7 +2721,7 @@ class MainTab(QWidget):
                     # Force immediate sync after saving this critical value
                     self.settings.sync()
                 except Exception as e:
-                    LOGGER.error(f"Failed to resolve absolute path for input directory: {e}")
+                    LOGGER.exception(f"Failed to resolve absolute path for input directory: {e}")
             elif not in_dir_text:
                 LOGGER.debug("No input directory to save (None/empty)")
                 # We don't remove it so we can restore the last value - safer for users
@@ -2758,7 +2734,7 @@ class MainTab(QWidget):
                     LOGGER.debug(f"Saving output file path (absolute): {out_file_str!r}")
                     self.settings.setValue("paths/outputFile", out_file_str)
                 except Exception as e:
-                    LOGGER.error(f"Failed to resolve absolute path for output file: {e}")
+                    LOGGER.exception(f"Failed to resolve absolute path for output file: {e}")
                     # Fall back to regular path string
                     out_file_str = str(self.out_file_path)
                     LOGGER.debug(f"Saving output file path (non-resolved): {out_file_str!r}")
@@ -2854,7 +2830,7 @@ class MainTab(QWidget):
                 all_keys_after = self.settings.allKeys()
                 LOGGER.debug(f"Verification - Settings keys after save: {all_keys_after}")
             except Exception as ve:
-                LOGGER.error(f"Error verifying saved settings: {ve}")
+                LOGGER.exception(f"Error verifying saved settings: {ve}")
 
         except Exception as e:
             LOGGER.exception(f"Error saving settings: {e}")

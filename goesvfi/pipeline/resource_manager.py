@@ -4,12 +4,13 @@ This module provides resource monitoring and limiting capabilities
 to prevent system overload during video processing operations.
 """
 
-import os
-import threading
+from collections.abc import Generator
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, Generator, Optional, Union
+import os
+import threading
+from typing import Any
 
 from goesvfi.pipeline.exceptions import ResourceError
 from goesvfi.utils import log
@@ -33,7 +34,7 @@ class ResourceLimits:
 class ResourceManager:
     """Manages system resources for processing operations."""
 
-    def __init__(self, limits: Optional[ResourceLimits] = None) -> None:
+    def __init__(self, limits: ResourceLimits | None = None) -> None:
         """Initialize resource manager.
 
         Args:
@@ -41,7 +42,7 @@ class ResourceManager:
         """
         self.limits = limits or ResourceLimits()
         self.memory_monitor = get_memory_monitor()
-        self._executors: Dict[str, Union[ProcessPoolExecutor, ThreadPoolExecutor]] = {}
+        self._executors: dict[str, ProcessPoolExecutor | ThreadPoolExecutor] = {}
         self._lock = threading.Lock()
 
         # Start memory monitoring
@@ -75,17 +76,18 @@ class ResourceManager:
         stats = self.memory_monitor.get_memory_stats()
 
         # Check memory availability
-        if required_memory_mb > 0:
-            if stats.available_mb < required_memory_mb:
-                raise ResourceError(
-                    f"Insufficient memory: {stats.available_mb}MB available, " f"{required_memory_mb}MB required",
-                    resource_type="memory",
-                )
+        if required_memory_mb > 0 and stats.available_mb < required_memory_mb:
+            msg = f"Insufficient memory: {stats.available_mb}MB available, {required_memory_mb}MB required"
+            raise ResourceError(
+                msg,
+                resource_type="memory",
+            )
 
         # Check if we're over the critical threshold
         if stats.percent_used > self.limits.critical_memory_percent:
+            msg = f"Memory usage too high: {stats.percent_used:.1f}% (limit: {self.limits.critical_memory_percent}%)"
             raise ResourceError(
-                f"Memory usage too high: {stats.percent_used:.1f}% " f"(limit: {self.limits.critical_memory_percent}%)",
+                msg,
                 resource_type="memory",
             )
 
@@ -122,8 +124,8 @@ class ResourceManager:
 
     @contextmanager
     def process_executor(
-        self, max_workers: Optional[int] = None, executor_id: str = "default"
-    ) -> Generator[ProcessPoolExecutor, None, None]:
+        self, max_workers: int | None = None, executor_id: str = "default"
+    ) -> Generator[ProcessPoolExecutor]:
         """Context manager for ProcessPoolExecutor with resource limits.
 
         Args:
@@ -133,10 +135,7 @@ class ResourceManager:
         Yields:
             ProcessPoolExecutor instance
         """
-        if max_workers is None:
-            max_workers = self.get_optimal_workers()
-        else:
-            max_workers = min(max_workers, self.limits.max_workers)
+        max_workers = self.get_optimal_workers() if max_workers is None else min(max_workers, self.limits.max_workers)
 
         # Check resources before creating executor
         self.check_resources()
@@ -157,8 +156,8 @@ class ResourceManager:
 
     @contextmanager
     def thread_executor(
-        self, max_workers: Optional[int] = None, executor_id: str = "default"
-    ) -> Generator[ThreadPoolExecutor, None, None]:
+        self, max_workers: int | None = None, executor_id: str = "default"
+    ) -> Generator[ThreadPoolExecutor]:
         """Context manager for ThreadPoolExecutor with resource limits.
 
         Args:
@@ -168,10 +167,7 @@ class ResourceManager:
         Yields:
             ThreadPoolExecutor instance
         """
-        if max_workers is None:
-            max_workers = self.get_optimal_workers()
-        else:
-            max_workers = min(max_workers, self.limits.max_workers)
+        max_workers = self.get_optimal_workers() if max_workers is None else min(max_workers, self.limits.max_workers)
 
         # Check resources before creating executor
         self.check_resources()
@@ -236,10 +232,10 @@ class ResourceManager:
 
 
 # Global resource manager instance
-_resource_manager: Optional[ResourceManager] = None
+_resource_manager: ResourceManager | None = None
 
 
-def get_resource_manager(limits: Optional[ResourceLimits] = None) -> ResourceManager:
+def get_resource_manager(limits: ResourceLimits | None = None) -> ResourceManager:
     """Get the global resource manager instance.
 
     Args:
@@ -257,9 +253,9 @@ def get_resource_manager(limits: Optional[ResourceLimits] = None) -> ResourceMan
 @contextmanager
 def managed_executor(
     executor_type: str = "process",
-    max_workers: Optional[int] = None,
+    max_workers: int | None = None,
     check_resources: bool = True,
-) -> Generator[Union[ProcessPoolExecutor, ThreadPoolExecutor], None, None]:
+) -> Generator[ProcessPoolExecutor | ThreadPoolExecutor]:
     """Convenience context manager for resource-managed executors.
 
     Args:
@@ -282,7 +278,8 @@ def managed_executor(
         with manager.thread_executor(max_workers) as executor:
             yield executor
     else:
-        raise ValueError(f"Unknown executor type: {executor_type}")
+        msg = f"Unknown executor type: {executor_type}"
+        raise ValueError(msg)
 
 
 def estimate_processing_memory(
@@ -311,6 +308,4 @@ def estimate_processing_memory(
     total_bytes = num_frames * frame_size * 3
 
     # Convert to MB and add 20% buffer
-    total_mb = int((total_bytes / (1024 * 1024)) * 1.2)
-
-    return total_mb
+    return int((total_bytes / (1024 * 1024)) * 1.2)

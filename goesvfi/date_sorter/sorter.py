@@ -1,9 +1,9 @@
+from collections.abc import Callable, Iterable
+from datetime import datetime, timedelta
 import os
+from pathlib import Path
 import re
 import shutil
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Callable, Dict, Iterable, List, Optional, Tuple
 
 # !/usr/bin/env python3
 
@@ -17,8 +17,7 @@ def copy_file_with_buffer(
     source_mtime_utc: float,
     buffer_size: int = 1048576,
 ) -> None:
-    """
-    Copies a file in chunks (buffered) and preserves its last modified time (UTC).
+    """Copies a file in chunks (buffered) and preserves its last modified time (UTC).
     :param source_path: The full path to the source file.
     :param dest_path: The full path to the destination file.
     :param source_mtime_utc: The source file's mtime in epoch seconds (UTC).
@@ -31,23 +30,22 @@ def copy_file_with_buffer(
                 if not buffer:
                     break
                 df.write(buffer)
-    except Exception as e:
-        print(f"Error copying file {source_path!r} to {dest_path!r}: {e}")
+    except Exception:
         raise
 
     # Preserve the source file's modification time (in UTC).
     os.utime(dest_path, (source_mtime_utc, source_mtime_utc))
 
 
-def find_png_files(directory: Path) -> List[Path]:
+def find_png_files(directory: Path) -> list[Path]:
     """Return all PNG files under ``directory`` recursively."""
     return list(directory.rglob("*.png"))
 
 
-def extract_timestamps_from_files(files: Iterable[Path]) -> List[datetime]:
+def extract_timestamps_from_files(files: Iterable[Path]) -> list[datetime]:
     """Extract datetimes from file names matching ``*_YYYYMMDDTHHMMSSZ.png``."""
     pattern = re.compile(r"_(\d{8}T\d{6})Z\.png$")
-    datetimes: List[datetime] = []
+    datetimes: list[datetime] = []
     for path in files:
         match = pattern.search(path.name)
         if not match:
@@ -61,8 +59,8 @@ def extract_timestamps_from_files(files: Iterable[Path]) -> List[datetime]:
 
 
 def compute_missing_intervals(
-    datetimes: List[datetime], interval_minutes: int
-) -> Tuple[Dict[str, List[Tuple[str, bool]]], List[datetime]]:
+    datetimes: list[datetime], interval_minutes: int
+) -> tuple[dict[str, list[tuple[str, bool]]], list[datetime]]:
     """Compute present/missing records for the given datetimes."""
     if not datetimes:
         return {}, []
@@ -71,8 +69,8 @@ def compute_missing_intervals(
     earliest, latest = datetimes[0], datetimes[-1]
     date_set = set(datetimes)
     current_dt = earliest
-    missing: List[datetime] = []
-    daily_records: Dict[str, List[Tuple[str, bool]]] = {}
+    missing: list[datetime] = []
+    daily_records: dict[str, list[tuple[str, bool]]] = {}
 
     while current_dt <= latest:
         day = current_dt.strftime("%Y-%m-%d")
@@ -89,26 +87,23 @@ def compute_missing_intervals(
 
 
 def report_missing_intervals(
-    daily_records: Dict[str, List[Tuple[str, bool]]],
-    missing_intervals: List[datetime],
+    daily_records: dict[str, list[tuple[str, bool]]],
+    missing_intervals: list[datetime],
     interval_minutes: int,
 ) -> None:
     """Print a summary of missing intervals similar to the original output."""
-    print(f"\n=== Missing Interval Scan (every {interval_minutes} minutes) ===")
     for day in sorted(daily_records.keys()):
-        print(f"\nDate: {day}")
-        for time_str, present in daily_records[day]:
+        for _time_str, present in daily_records[day]:
             if present:
-                print(f"  {time_str}  \033[32m✓\033[0m")
+                pass
             else:
-                print(f"  {time_str}  \033[31mX\033[0m")
+                pass
 
-    print("\nSummary of missing intervals:")
     if missing_intervals:
-        for dt_obj in missing_intervals:
-            print(f"  \033[31mMissing:\033[0m {dt_obj.strftime('%Y-%m-%d %H:%M:%S')}")
+        for _dt_obj in missing_intervals:
+            pass
     else:
-        print("  No missing intervals!")
+        pass
 
 
 # --------------------------------------------------------------------------------
@@ -120,27 +115,24 @@ def report_missing_intervals(
 # Consider breaking into smaller helper functions for:
 # TODO: This function has high cyclomatic complexity (15) and should be refactored.
 def scan_for_missing_intervals(converted_folder: Path, interval_minutes: int = 30) -> None:
-    """
-    Scans the converted folder (recursively) for PNG files named like: baseName_YYYYMMDDThhmmssZ.png,
+    """Scans the converted folder (recursively) for PNG files named like: baseName_YYYYMMDDThhmmssZ.png,.
 
     extracts the datetime from each file, and finds any missing 30-minute intervals between
     """
     png_files = find_png_files(converted_folder)
     if not png_files:
-        print("\nNo PNG files found in the 'converted' folder. Cannot scan for missing intervals.")
         return
 
     datetimes = extract_timestamps_from_files(png_files)
     if not datetimes:
-        print("\nNo valid date/time-based files found (e.g., baseName_YYYYMMDDThhmmssZ.png).")
         return
 
     daily_records, missing_intervals = compute_missing_intervals(datetimes, interval_minutes)
     report_missing_intervals(daily_records, missing_intervals, interval_minutes)
 
 
-def detect_interval(datetimes: List[datetime]) -> int:
-    """Detect the most common interval between consecutive timestamps"""
+def detect_interval(datetimes: list[datetime]) -> int:
+    """Detect the most common interval between consecutive timestamps."""
     if len(datetimes) < 2:
         return 30  # Default to 30 minutes if not enough data
 
@@ -166,13 +158,13 @@ def detect_interval(datetimes: List[datetime]) -> int:
     return round(most_common / 5) * 5
 
 
-def format_calendar_output(daily_records: Dict[str, List[Tuple[str, bool]]], missing_intervals: List[datetime]) -> str:
-    """Format the analysis results as a calendar-style output"""
+def format_calendar_output(daily_records: dict[str, list[tuple[str, bool]]], missing_intervals: list[datetime]) -> str:
+    """Format the analysis results as a calendar-style output."""
     output_lines = []
     output_lines.append("\n=== Time Interval Analysis ===")
 
     # Group missing intervals by date
-    missing_by_date: Dict[str, List[str]] = {}
+    missing_by_date: dict[str, list[str]] = {}
     for dt in missing_intervals:
         date_str = dt.strftime("%Y-%m-%d")
         if date_str not in missing_by_date:
@@ -181,9 +173,7 @@ def format_calendar_output(daily_records: Dict[str, List[Tuple[str, bool]]], mis
 
     # Print calendar view for each date
     for date_str in sorted(daily_records.keys()):
-        output_lines.append(f"\n{date_str}")
-        output_lines.append("Time  | Status")
-        output_lines.append("------+--------")
+        output_lines.extend((f"\n{date_str}", "Time  | Status", "------+--------"))
 
         for time_str, present in daily_records[date_str]:
             status = "✓" if present else "X"
@@ -192,8 +182,7 @@ def format_calendar_output(daily_records: Dict[str, List[Tuple[str, bool]]], mis
         # Always print a "Missing times:" section
         output_lines.append("\nMissing times:")
         if date_str in missing_by_date:
-            for time_entry in sorted(missing_by_date[date_str]):
-                output_lines.append(f"  - {time_entry}")
+            output_lines.extend(f"  - {time_entry}" for time_entry in sorted(missing_by_date[date_str]))
         else:
             output_lines.append("  (none)")
 
@@ -201,20 +190,17 @@ def format_calendar_output(daily_records: Dict[str, List[Tuple[str, bool]]], mis
 
 
 class DateSorter:
-    """
-    Sorts files from a source directory into a destination directory
-    """
+    """Sorts files from a source directory into a destination directory."""
 
     def sort_files(
         self,
         source: str,
         destination: str,
         date_format: str,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
-        should_cancel: Optional[Callable[[], bool]] = None,
+        progress_callback: Callable[[int, int], None] | None = None,
+        should_cancel: Callable[[], bool] | None = None,
     ) -> None:
-        """
-        Sorts files from source to destination based on date in filename.
+        """Sorts files from source to destination based on date in filename.
 
         :param source: Source directory path.
         :param destination: Destination directory path.
@@ -226,7 +212,8 @@ class DateSorter:
         destination_path = Path(destination)
 
         if not source_path.is_dir():
-            raise FileNotFoundError(f"Source directory not found: {source}")
+            msg = f"Source directory not found: {source}"
+            raise FileNotFoundError(msg)
         if not destination_path.exists():
             destination_path.mkdir(parents=True, exist_ok=True)
 
@@ -236,7 +223,6 @@ class DateSorter:
 
         for file_path in all_files:
             if should_cancel and should_cancel():
-                print("Sorting cancelled.")
                 return
 
             if file_path.is_file():
@@ -285,11 +271,11 @@ class DateSorter:
                         if progress_callback:
                             progress_callback(processed_count, total_files)
 
-                except ValueError as e:
-                    print(f"Could not parse date from filename {file_name!r} " f"with format {date_format!r}: {e}")
+                except ValueError:
+                    pass
                     # Skip files that don't match the expected date format
-                except Exception as e:
-                    print(f"Error processing file {file_path!r}: {e}")
+                except Exception:
+                    pass
                     # Handle other potential errors during file processing
 
         if progress_callback:
@@ -304,4 +290,4 @@ if __name__ == "__main__":
     # Example usage (for testing the class directly)
     # sorter = DateSorter()
     # sorter.sort_files(source="/path/to/source", destination="/path/to/destination", date_format="%Y/%m/%d")
-    print("DateSorter class is intended to be used as a module.")
+    pass

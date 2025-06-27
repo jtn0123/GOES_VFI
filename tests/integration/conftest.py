@@ -3,8 +3,8 @@
 import os
 from unittest.mock import MagicMock, patch
 
-import pytest
 from PyQt6.QtWidgets import QMessageBox
+import pytest
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -25,7 +25,7 @@ def _setup_headless_env():
 
 
 @pytest.fixture(autouse=True)
-def _mock_resource_monitoring(monkeypatch):
+def _mock_resource_monitoring(monkeypatch) -> None:
     """Mock resource monitoring to prevent memory monitoring threads."""
 
     # Create a mock memory stats object
@@ -53,24 +53,24 @@ def _mock_resource_monitoring(monkeypatch):
 
     # Mock memory manager class completely
     class MockMemoryManager:
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs) -> None:
             self._monitoring = False
             self._monitor_thread = None
             self._callbacks = []
 
-        def start_monitoring(self, interval=5.0):
+        def start_monitoring(self, interval=5.0) -> None:
             pass  # Do nothing
 
-        def stop_monitoring(self):
+        def stop_monitoring(self) -> None:
             pass  # Do nothing
 
         def get_memory_stats(self):
             return mock_stats
 
-        def add_callback(self, callback):
+        def add_callback(self, callback) -> None:
             pass  # Do nothing
 
-        def _monitor_loop(self, interval):
+        def _monitor_loop(self, interval) -> None:
             pass  # Do nothing
 
     # Apply comprehensive mocking
@@ -85,12 +85,8 @@ def _mock_resource_monitoring(monkeypatch):
     # Also mock any direct imports
     try:
         # Mock in gui module
-        monkeypatch.setattr(
-            "goesvfi.gui.get_resource_manager", mock_get_resource_manager, raising=False
-        )
-        monkeypatch.setattr(
-            "goesvfi.gui.MemoryManager", MockMemoryManager, raising=False
-        )
+        monkeypatch.setattr("goesvfi.gui.get_resource_manager", mock_get_resource_manager, raising=False)
+        monkeypatch.setattr("goesvfi.gui.MemoryManager", MockMemoryManager, raising=False)
 
         # Mock in main_tab module
         monkeypatch.setattr(
@@ -98,9 +94,7 @@ def _mock_resource_monitoring(monkeypatch):
             mock_get_resource_manager,
             raising=False,
         )
-        monkeypatch.setattr(
-            "goesvfi.gui_tabs.main_tab.MemoryManager", MockMemoryManager, raising=False
-        )
+        monkeypatch.setattr("goesvfi.gui_tabs.main_tab.MemoryManager", MockMemoryManager, raising=False)
 
         # Apply all patches
         for attr_path, mock_obj in patches_to_apply:
@@ -112,12 +106,10 @@ def _mock_resource_monitoring(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _no_gui_dialogs(monkeypatch):
+def _no_gui_dialogs(monkeypatch) -> None:
     """Automatically prevent all GUI dialogs in integration tests."""
     # Mock all file dialogs to return empty/cancel
-    monkeypatch.setattr(
-        "PyQt6.QtWidgets.QFileDialog.getOpenFileName", lambda *args, **kwargs: ("", "")
-    )
+    monkeypatch.setattr("PyQt6.QtWidgets.QFileDialog.getOpenFileName", lambda *args, **kwargs: ("", ""))
     # Note: getOpenFileNames doesn't exist in PyQt6, only getOpenFileNames is valid
     # But we'll mock it just in case some code expects it
     try:
@@ -128,12 +120,8 @@ def _no_gui_dialogs(monkeypatch):
     except AttributeError:
         # Method doesn't exist, that's fine
         pass
-    monkeypatch.setattr(
-        "PyQt6.QtWidgets.QFileDialog.getSaveFileName", lambda *args, **kwargs: ("", "")
-    )
-    monkeypatch.setattr(
-        "PyQt6.QtWidgets.QFileDialog.getExistingDirectory", lambda *args, **kwargs: ""
-    )
+    monkeypatch.setattr("PyQt6.QtWidgets.QFileDialog.getSaveFileName", lambda *args, **kwargs: ("", ""))
+    monkeypatch.setattr("PyQt6.QtWidgets.QFileDialog.getExistingDirectory", lambda *args, **kwargs: "")
 
     # Mock all message boxes
     monkeypatch.setattr(
@@ -175,21 +163,13 @@ def _no_gui_dialogs(monkeypatch):
     )
 
     # Mock input dialog
-    monkeypatch.setattr(
-        "PyQt6.QtWidgets.QInputDialog.getText", lambda *args, **kwargs: ("", False)
-    )
-    monkeypatch.setattr(
-        "PyQt6.QtWidgets.QInputDialog.getInt", lambda *args, **kwargs: (0, False)
-    )
-    monkeypatch.setattr(
-        "PyQt6.QtWidgets.QInputDialog.getDouble", lambda *args, **kwargs: (0.0, False)
-    )
-    monkeypatch.setattr(
-        "PyQt6.QtWidgets.QInputDialog.getItem", lambda *args, **kwargs: ("", False)
-    )
+    monkeypatch.setattr("PyQt6.QtWidgets.QInputDialog.getText", lambda *args, **kwargs: ("", False))
+    monkeypatch.setattr("PyQt6.QtWidgets.QInputDialog.getInt", lambda *args, **kwargs: (0, False))
+    monkeypatch.setattr("PyQt6.QtWidgets.QInputDialog.getDouble", lambda *args, **kwargs: (0.0, False))
+    monkeypatch.setattr("PyQt6.QtWidgets.QInputDialog.getItem", lambda *args, **kwargs: ("", False))
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_vfi_processing():
     """Mock the actual VFI processing to prevent real computation."""
     with (
@@ -220,8 +200,8 @@ def mock_vfi_processing():
         }
 
 
-@pytest.fixture
-def _mock_long_operations(monkeypatch):
+@pytest.fixture()
+def _mock_long_operations(monkeypatch) -> None:
     """Mock long-running operations to speed up tests."""
     # Mock sleep to be instant
     monkeypatch.setattr("time.sleep", lambda x: None)
@@ -266,10 +246,7 @@ def _cleanup_threads_and_memory():
                 target_func = getattr(thread, "_target", None)
                 if target_func:
                     target_name = getattr(target_func, "__name__", str(target_func))
-                    if (
-                        "_monitor_loop" in target_name
-                        or "memory" in target_name.lower()
-                    ):
+                    if "_monitor_loop" in target_name or "memory" in target_name.lower():
                         # This looks like a memory monitoring thread
                         try:
                             # Try to stop the monitoring by setting a flag
@@ -295,9 +272,7 @@ def _cleanup_threads_and_memory():
             import sys
 
             for module_name, module in sys.modules.items():
-                if "memory_manager" in module_name.lower() and hasattr(
-                    module, "MemoryManager"
-                ):
+                if "memory_manager" in module_name.lower() and hasattr(module, "MemoryManager"):
                     # This module has MemoryManager, see if there are any instances
                     pass
         except Exception:

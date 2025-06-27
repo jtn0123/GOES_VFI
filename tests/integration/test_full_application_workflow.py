@@ -7,11 +7,11 @@ covering all tabs and major functionality.
 import pathlib
 from unittest.mock import MagicMock, patch
 
-import pytest
 from PIL import Image
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QMessageBox
+import pytest
 
 from goesvfi.gui import MainWindow
 
@@ -19,7 +19,7 @@ from goesvfi.gui import MainWindow
 class TestFullApplicationWorkflow:
     """Test complete application workflows from start to finish."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def app(self):
         """Use existing QApplication instance."""
         # The conftest.py already sets up headless environment
@@ -29,7 +29,7 @@ class TestFullApplicationWorkflow:
         yield app
         app.processEvents()
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_vfi_worker(self):
         """Comprehensive mock for VfiWorker to prevent real processing."""
         with (
@@ -63,16 +63,14 @@ class TestFullApplicationWorkflow:
 
             yield mock_worker_class_tab, mock_instance
 
-    @pytest.fixture
+    @pytest.fixture()
     def main_window(self, app, tmp_path, mock_vfi_worker):
         """Create MainWindow instance for testing."""
         # mock_vfi_worker is automatically applied
         with (
             patch("goesvfi.utils.config.get_available_rife_models") as mock_models,
             patch("goesvfi.utils.config.find_rife_executable") as mock_find_rife,
-            patch(
-                "goesvfi.utils.rife_analyzer.analyze_rife_executable"
-            ) as mock_analyze,
+            patch("goesvfi.utils.rife_analyzer.analyze_rife_executable") as mock_analyze,
             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor.process_image"),
             patch("os.path.getmtime") as mock_getmtime,
             patch("os.path.exists") as mock_exists,
@@ -107,7 +105,7 @@ class TestFullApplicationWorkflow:
             window.close()
             app.processEvents()
 
-    @pytest.fixture
+    @pytest.fixture()
     def test_images(self, tmp_path):
         """Create test images for processing."""
         input_dir = tmp_path / "input"
@@ -122,9 +120,9 @@ class TestFullApplicationWorkflow:
 
     def test_complete_workflow_main_tab_to_video(
         self, main_window, app, test_images, tmp_path, mock_vfi_worker
-    ):
+    ) -> None:
         """Test complete workflow from main tab setup to video generation."""
-        mock_worker_class, mock_instance = mock_vfi_worker
+        _mock_worker_class, mock_instance = mock_vfi_worker
         output_file = tmp_path / "output.mp4"
 
         # Step 1: Set input directory
@@ -155,18 +153,18 @@ class TestFullApplicationWorkflow:
         progress_callback = None
         finished_callback = None
 
-        def mock_progress_connect(callback):
+        def mock_progress_connect(callback) -> None:
             nonlocal progress_callback
             progress_callback = callback
 
-        def mock_finished_connect(callback):
+        def mock_finished_connect(callback) -> None:
             nonlocal finished_callback
             finished_callback = callback
 
         mock_instance.progress.connect.side_effect = mock_progress_connect
         mock_instance.finished.connect.side_effect = mock_finished_connect
 
-        def mock_start():
+        def mock_start() -> None:
             # Simulate progress
             if progress_callback:
                 for i in range(1, 11):
@@ -202,20 +200,18 @@ class TestFullApplicationWorkflow:
         app.processEvents()
 
         # Verify processing completed successfully by checking the processing state
-        assert (
-            not main_window.main_tab.is_processing
-        ), "Should not be in processing state after completion"
+        assert not main_window.main_tab.is_processing, "Should not be in processing state after completion"
 
         # The test should verify that processing completed by checking the UI state
         # and that no errors occurred. Since the actual file gets cleaned up or
         # created with complex timestamps, we focus on the processing workflow itself.
 
         # Verify the UI shows completion (start button should be enabled again)
-        assert (
-            main_window.main_tab.start_button.isEnabled()
-        ), "Start button should be enabled after processing completes"
+        assert main_window.main_tab.start_button.isEnabled(), (
+            "Start button should be enabled after processing completes"
+        )
 
-    def test_complete_workflow_with_crop(self, main_window, app, test_images, tmp_path):
+    def test_complete_workflow_with_crop(self, main_window, app, test_images, tmp_path) -> None:
         """Test workflow with crop selection."""
         output_file = tmp_path / "output_cropped.mp4"
 
@@ -239,19 +235,15 @@ class TestFullApplicationWorkflow:
             main_window.current_crop_rect = None
 
             # Click crop button - this should try to open crop dialog
-            QTest.mouseClick(
-                main_window.main_tab.crop_button, Qt.MouseButton.LeftButton
-            )
+            QTest.mouseClick(main_window.main_tab.crop_button, Qt.MouseButton.LeftButton)
             app.processEvents()
-            QTimer.singleShot(100, lambda: app.processEvents())  # Wait for SuperButton
+            QTimer.singleShot(100, app.processEvents)  # Wait for SuperButton
 
             # Verify crop dialog was attempted to be created
             # (Even if it fails due to missing images, the button click should be handled)
             assert True  # Test that crop button click doesn't crash
 
-    def test_workflow_with_ffmpeg_settings(
-        self, main_window, app, test_images, tmp_path
-    ):
+    def test_workflow_with_ffmpeg_settings(self, main_window, app, test_images, tmp_path) -> None:
         """Test workflow including FFmpeg settings configuration."""
         # Switch to FFmpeg tab
         tab_widget = main_window.tab_widget
@@ -293,7 +285,7 @@ class TestFullApplicationWorkflow:
         if hasattr(ffmpeg_tab, "quality_slider"):
             assert ffmpeg_tab.quality_slider.value() == 25
 
-    def test_workflow_with_file_sorter(self, main_window, app, tmp_path):
+    def test_workflow_with_file_sorter(self, main_window, app, tmp_path) -> None:
         """Test workflow using file sorter to organize images."""
         # Create unsorted images
         unsorted_dir = tmp_path / "unsorted"
@@ -332,9 +324,7 @@ class TestFullApplicationWorkflow:
             # Verify the UI remains responsive after button click
             assert file_sorter_tab.sort_button is not None
 
-    def test_workflow_with_sanchez_processing(
-        self, main_window, app, test_images, tmp_path
-    ):
+    def test_workflow_with_sanchez_processing(self, main_window, app, test_images, tmp_path) -> None:
         """Test workflow with Sanchez false color processing enabled."""
         output_file = tmp_path / "output_sanchez.mp4"
 
@@ -363,9 +353,7 @@ class TestFullApplicationWorkflow:
 
             # Enable and click start
             main_window.main_tab.start_button.setEnabled(True)
-            QTest.mouseClick(
-                main_window.main_tab.start_button, Qt.MouseButton.LeftButton
-            )
+            QTest.mouseClick(main_window.main_tab.start_button, Qt.MouseButton.LeftButton)
             app.processEvents()
 
             # Verify Sanchez settings were passed
@@ -373,7 +361,7 @@ class TestFullApplicationWorkflow:
             assert call_args["false_colour"] is True
             assert call_args["res_km"] == 2
 
-    def test_all_tab_navigation(self, main_window, app):
+    def test_all_tab_navigation(self, main_window, app) -> None:
         """Test navigation through all tabs."""
         tab_widget = main_window.tab_widget
         tab_count = tab_widget.count()
@@ -409,7 +397,7 @@ class TestFullApplicationWorkflow:
         # Verify all expected tabs are present
         assert expected_tabs.issubset(found_tabs)
 
-    def test_error_handling_workflow(self, main_window, app, tmp_path):
+    def test_error_handling_workflow(self, main_window, app, tmp_path) -> None:
         """Test error handling across the workflow."""
         # Test 1: Invalid input directory
         main_window.main_tab.in_dir_edit.setText("/nonexistent/directory")
@@ -441,7 +429,7 @@ class TestFullApplicationWorkflow:
 
             error_callback = None
 
-            def mock_error_connect(callback):
+            def mock_error_connect(callback) -> None:
                 nonlocal error_callback
                 error_callback = callback
 
@@ -449,7 +437,7 @@ class TestFullApplicationWorkflow:
             mock_worker.finished.connect = MagicMock()
             mock_worker.error.connect = mock_error_connect
 
-            def mock_start():
+            def mock_start() -> None:
                 if error_callback:
                     error_callback("Test error: Processing failed")
 
@@ -459,15 +447,13 @@ class TestFullApplicationWorkflow:
             with patch.object(QMessageBox, "critical"):
                 # Enable and click start
                 main_window.main_tab.start_button.setEnabled(True)
-                QTest.mouseClick(
-                    main_window.main_tab.start_button, Qt.MouseButton.LeftButton
-                )
+                QTest.mouseClick(main_window.main_tab.start_button, Qt.MouseButton.LeftButton)
                 app.processEvents()
 
                 # Verify error was handled
                 assert mock_worker.start.called
 
-    def test_settings_persistence_workflow(self, main_window, app, tmp_path):
+    def test_settings_persistence_workflow(self, main_window, app, tmp_path) -> None:
         """Test that settings persist across tab switches."""
         # Configure settings in main tab
         main_window.main_tab.fps_spinbox.setValue(60)
@@ -492,9 +478,7 @@ class TestFullApplicationWorkflow:
         assert main_window.main_tab.sanchez_false_colour_checkbox.isChecked()
 
     @pytest.mark.parametrize("encoder", ["RIFE", "FFmpeg"])
-    def test_different_encoders_workflow(
-        self, main_window, app, test_images, tmp_path, encoder
-    ):
+    def test_different_encoders_workflow(self, main_window, app, test_images, tmp_path, encoder) -> None:
         """Test workflow with different encoders."""
         output_file = tmp_path / f"output_{encoder}.mp4"
 

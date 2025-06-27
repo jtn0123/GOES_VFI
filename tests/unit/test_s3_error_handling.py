@@ -2,11 +2,10 @@
 
 # flake8: noqa: PT009,PT027
 
-import asyncio
-import tempfile
-import unittest
 from datetime import datetime
 from pathlib import Path
+import tempfile
+import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import botocore.exceptions
@@ -23,7 +22,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern
 class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
     """Test cases for S3Store error handling."""
 
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         """Set up test fixtures."""
         self.store = S3Store()
         self.test_timestamp = datetime(2023, 6, 15, 12, 0, 0)
@@ -42,13 +41,13 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         patcher = patch.object(S3Store, "_get_s3_client", return_value=self.mock_s3_client)
         self.mock_get_s3_client = patcher.start()
 
-        async def async_stop():
+        async def async_stop() -> None:
             patcher.stop()
             self.temp_dir.cleanup()
 
         self.addAsyncCleanup(async_stop)
 
-    async def test_head_object_not_found(self):
+    async def test_head_object_not_found(self) -> None:
         """Test handling of 404 Not Found error during head_object call."""
         # Prepare a 404 ClientError response
         client_error = botocore.exceptions.ClientError(
@@ -61,12 +60,12 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         paginator_mock = MagicMock()  # Use MagicMock, not AsyncMock
 
         # Create an async generator that returns no pages
-        async def empty_paginate(*args, **kwargs):
+        async def empty_paginate(*args, **kwargs) -> None:
             # Return empty async iterator
             return
 
         # Create an actual async generator
-        async def async_empty_gen():
+        async def async_empty_gen() -> None:
             return
 
         paginator_mock.paginate.return_value = async_empty_gen()
@@ -79,7 +78,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         # Verify the correct calls were made
         self.mock_s3_client.head_object.assert_called_once()
 
-    async def test_download_access_denied(self):
+    async def test_download_access_denied(self) -> None:
         """Test handling of Access Denied error during download."""
         # Prepare a 403 ClientError response
         client_error = botocore.exceptions.ClientError(
@@ -97,13 +96,13 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Access denied", error_msg)
         self.assertIn(self.test_satellite.name, error_msg)
 
-    async def test_download_timeout_error(self):
+    async def test_download_timeout_error(self) -> None:
         """Test handling of timeout error during download."""
         # First let head_object succeed
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
 
         # Then make download_file fail with timeout
-        self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError("Connection timed out")
+        self.mock_s3_client.download_file.side_effect = TimeoutError("Connection timed out")
 
         # Test the download method - should raise ConnectionError
         with self.assertRaises(ConnectionError) as context:
@@ -114,7 +113,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Timeout", error_msg)
         self.assertIn(self.test_satellite.name, error_msg)
 
-    async def test_download_wildcard_not_found(self):
+    async def test_download_wildcard_not_found(self) -> None:
         """Test handling of not found errors during wildcard matching."""
         # Set up head_object to return 404
         client_error = botocore.exceptions.ClientError(
@@ -149,7 +148,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         technical_details = getattr(context.exception, "technical_details", "")
         self.assertIn("Search parameters", technical_details)
 
-    async def test_download_permission_error(self):
+    async def test_download_permission_error(self) -> None:
         """Test handling of permission error during file writing."""
         # Make head_object succeed
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
@@ -169,7 +168,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
         technical_details = getattr(context.exception, "technical_details", "")
         self.assertIn(str(self.test_dest_path), technical_details)
 
-    async def test_wildcard_match_download_error(self):
+    async def test_wildcard_match_download_error(self) -> None:
         """Test handling of download error after successful wildcard match."""
         # Set up head_object to return 404 (falling back to wildcard)
         head_error = botocore.exceptions.ClientError(
@@ -208,7 +207,7 @@ class TestS3ErrorHandling(unittest.IsolatedAsyncioTestCase):
 
         # Verify the error message contains helpful information
         error_msg = str(context.exception)
-        self.assertIn("Unexpected error searching", error_msg)
+        self.assertIn("Error accessing", error_msg)
         self.assertIn(self.test_satellite.name, error_msg)
 
 

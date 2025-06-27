@@ -7,7 +7,6 @@ they function correctly.
 import pathlib
 from unittest.mock import MagicMock, patch
 
-import pytest
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import (
@@ -15,6 +14,7 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QPushButton,
 )
+import pytest
 
 from goesvfi.gui import MainWindow
 from goesvfi.gui_tabs.main_tab import SuperButton
@@ -23,7 +23,7 @@ from goesvfi.gui_tabs.main_tab import SuperButton
 class TestAllGUIElements:
     """Test all GUI elements across the application."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def app(self):
         """Create QApplication for tests."""
         app = QApplication.instance()
@@ -32,15 +32,13 @@ class TestAllGUIElements:
         yield app
         app.processEvents()
 
-    @pytest.fixture
+    @pytest.fixture()
     def main_window(self, app):
         """Create MainWindow instance for testing."""
         with (
             patch("goesvfi.utils.config.get_available_rife_models") as mock_models,
             patch("goesvfi.utils.config.find_rife_executable") as mock_find_rife,
-            patch(
-                "goesvfi.utils.rife_analyzer.analyze_rife_executable"
-            ) as mock_analyze,
+            patch("goesvfi.utils.rife_analyzer.analyze_rife_executable") as mock_analyze,
             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor.process_image"),
             patch("os.path.getmtime") as mock_getmtime,
             patch("os.path.exists") as mock_exists,
@@ -69,7 +67,7 @@ class TestAllGUIElements:
                 window.vfi_worker.wait()
             app.processEvents()
 
-    def test_main_tab_all_buttons(self, main_window, app, tmp_path):
+    def test_main_tab_all_buttons(self, main_window, app, tmp_path) -> None:
         """Test all buttons in the main tab."""
         main_tab = main_window.main_tab
 
@@ -111,14 +109,14 @@ class TestAllGUIElements:
             # Just click the button without worrying about preview loading
             QTest.mouseClick(main_tab.crop_button, Qt.MouseButton.LeftButton)
             app.processEvents()
-            QTimer.singleShot(100, lambda: app.processEvents())
+            QTimer.singleShot(100, app.processEvents)
 
         # Test Clear Crop button (SuperButton)
         assert isinstance(main_tab.clear_crop_button, SuperButton)
         main_window.current_crop_rect = (0, 0, 100, 100)
         QTest.mouseClick(main_tab.clear_crop_button, Qt.MouseButton.LeftButton)
         app.processEvents()
-        QTimer.singleShot(100, lambda: app.processEvents())
+        QTimer.singleShot(100, app.processEvents)
 
         # Test Start button (SuperButton)
         assert isinstance(main_tab.start_button, SuperButton)
@@ -127,7 +125,7 @@ class TestAllGUIElements:
         # Note: VLC button doesn't exist in main_tab
         # It might be in a different tab or removed from the current version
 
-    def test_main_tab_all_checkboxes(self, main_window, app):
+    def test_main_tab_all_checkboxes(self, main_window, app) -> None:
         """Test all checkboxes in the main tab."""
         main_tab = main_window.main_tab
 
@@ -156,22 +154,18 @@ class TestAllGUIElements:
                     # Test unchecking
                     checkbox.setChecked(False)
                     app.processEvents()
-                    assert (
-                        not checkbox.isChecked()
-                    ), f"{description} should be unchecked"
+                    assert not checkbox.isChecked(), f"{description} should be unchecked"
 
                     # Test click
                     initial_state = checkbox.isChecked()
                     checkbox.click()
                     app.processEvents()
-                    assert (
-                        checkbox.isChecked() != initial_state
-                    ), f"{description} state should toggle"
+                    assert checkbox.isChecked() != initial_state, f"{description} state should toggle"
                 else:
                     # Just verify the checkbox exists even if disabled
                     assert checkbox is not None, f"{description} checkbox should exist"
 
-    def test_main_tab_all_spinboxes_and_combos(self, main_window, app):
+    def test_main_tab_all_spinboxes_and_combos(self, main_window, app) -> None:
         """Test all spin boxes and combo boxes in the main tab."""
         main_tab = main_window.main_tab
 
@@ -219,7 +213,7 @@ class TestAllGUIElements:
                     app.processEvents()
                     assert main_tab.sanchez_res_combo.currentText() == res
 
-    def test_ffmpeg_tab_all_controls(self, main_window, app):
+    def test_ffmpeg_tab_all_controls(self, main_window, app) -> None:
         """Test all controls in FFmpeg settings tab."""
         ffmpeg_tab = main_window.ffmpeg_settings_tab
 
@@ -251,10 +245,7 @@ class TestAllGUIElements:
                 assert not checkbox.isChecked()
 
         # Test quality slider - check if it exists first
-        if (
-            hasattr(ffmpeg_tab, "quality_slider")
-            and ffmpeg_tab.quality_slider.isEnabled()
-        ):
+        if hasattr(ffmpeg_tab, "quality_slider") and ffmpeg_tab.quality_slider.isEnabled():
             ffmpeg_tab.quality_slider.setValue(20)
             app.processEvents()
             assert ffmpeg_tab.quality_slider.value() == 20
@@ -268,7 +259,7 @@ class TestAllGUIElements:
                 ffmpeg_tab.encoder_combo.setCurrentIndex(i)
                 app.processEvents()
 
-    def test_file_sorter_tab_all_controls(self, main_window, app, tmp_path):
+    def test_file_sorter_tab_all_controls(self, main_window, app, tmp_path) -> None:
         """Test all controls in file sorter tab."""
         file_sorter_tab = main_window.file_sorter_tab
 
@@ -296,7 +287,7 @@ class TestAllGUIElements:
             # Sort button exists, that's enough for this test
             assert file_sorter_tab.sort_button is not None
 
-    def test_date_sorter_tab_all_controls(self, main_window, app, tmp_path):
+    def test_date_sorter_tab_all_controls(self, main_window, app, tmp_path) -> None:
         """Test all controls in date sorter tab."""
         date_sorter_tab = main_window.date_sorter_tab
 
@@ -320,7 +311,7 @@ class TestAllGUIElements:
         if hasattr(date_sorter_tab, "scan_button"):
             assert date_sorter_tab.scan_button is not None
 
-    def test_batch_processing_tab_controls(self, main_window, app, tmp_path):
+    def test_batch_processing_tab_controls(self, main_window, app, tmp_path) -> None:
         """Test batch processing tab controls."""
         # Skip batch processing tab for now as it may not exist
         if not hasattr(main_window, "batch_processing_tab"):
@@ -345,7 +336,7 @@ class TestAllGUIElements:
             app.processEvents()
             # Process requires folders in list
 
-    def test_satellite_integrity_tab_navigation(self, main_window, app):
+    def test_satellite_integrity_tab_navigation(self, main_window, app) -> None:
         """Test satellite integrity tab group navigation."""
         # Find satellite integrity tab - MainWindow uses tab_widget directly
         tab_widget = main_window.tab_widget
@@ -371,7 +362,7 @@ class TestAllGUIElements:
                     app.processEvents()
                     assert integrity_widget.currentIndex() == i
 
-    def test_preview_image_interactions(self, main_window, app, tmp_path):
+    def test_preview_image_interactions(self, main_window, app, tmp_path) -> None:
         """Test preview image label interactions."""
         # Create test images
         input_dir = tmp_path / "preview_test"
@@ -418,7 +409,7 @@ class TestAllGUIElements:
                         label.mousePressEvent(event)
                         app.processEvents()
 
-    def test_keyboard_shortcuts(self, main_window, app):
+    def test_keyboard_shortcuts(self, main_window, app) -> None:
         """Test keyboard shortcuts if implemented."""
         # Common shortcuts to test
         shortcuts_to_test = [
@@ -434,7 +425,7 @@ class TestAllGUIElements:
 
             # Note: Actual behavior depends on implementation
 
-    def test_all_line_edits_validation(self, main_window, app):
+    def test_all_line_edits_validation(self, main_window, app) -> None:
         """Test all line edit fields for input validation."""
         # Test main tab line edits
         main_tab = main_window.main_tab
@@ -454,7 +445,7 @@ class TestAllGUIElements:
         main_tab.out_file_edit.setText("/path with spaces/output file.mp4")
         app.processEvents()
 
-    def test_drag_and_drop_functionality(self, main_window, app, tmp_path):
+    def test_drag_and_drop_functionality(self, main_window, app, tmp_path) -> None:
         """Test drag and drop if implemented."""
         # Create a mock drag event
         from PyQt6.QtCore import QMimeData, QUrl
@@ -481,7 +472,7 @@ class TestAllGUIElements:
             app.processEvents()
 
     @pytest.mark.parametrize(
-        ("tab_name", "expected_buttons"),
+        "tab_name, expected_buttons",
         [
             ("Main", ["start_button", "crop_button", "clear_crop_button"]),
             ("FFmpeg Settings", []),
@@ -490,9 +481,7 @@ class TestAllGUIElements:
             ("Batch Processing", ["add_folder_button", "process_all_button"]),
         ],
     )
-    def test_tab_specific_buttons_exist(
-        self, main_window, app, tab_name, expected_buttons
-    ):
+    def test_tab_specific_buttons_exist(self, main_window, app, tab_name, expected_buttons) -> None:
         """Verify expected buttons exist in each tab."""
         tab_widget = main_window.tab_widget
 
@@ -520,9 +509,5 @@ class TestAllGUIElements:
             if tab:
                 for button_name in expected_buttons:
                     button = getattr(tab, button_name, None)
-                    assert (
-                        button is not None
-                    ), f"{button_name} should exist in {tab_name}"
-                    assert isinstance(
-                        button, (QPushButton, SuperButton)
-                    ), f"{button_name} should be a button"
+                    assert button is not None, f"{button_name} should exist in {tab_name}"
+                    assert isinstance(button, QPushButton | SuperButton), f"{button_name} should be a button"

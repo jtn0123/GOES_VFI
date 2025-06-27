@@ -2,6 +2,7 @@
 
 from .crop_handler import CropHandler
 from .crop_manager import CropManager
+from .dynamic_theme_manager import DynamicThemeManager as ThemeManager
 from .file_operations import FileOperations
 from .file_picker_manager import FilePickerManager
 from .initialization_manager import InitializationManager
@@ -16,7 +17,6 @@ from .settings_manager import SettingsManager
 from .settings_persistence import SettingsPersistence
 from .signal_broker import SignalBroker
 from .state_manager import StateManager
-from .theme_manager import ThemeManager
 from .ui_setup_manager import UISetupManager
 from .worker_factory import WorkerFactory
 from .zoom_manager import ZoomManager

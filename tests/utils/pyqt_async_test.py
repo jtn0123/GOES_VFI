@@ -6,9 +6,9 @@ provide more reliable tests.
 """
 
 import asyncio
+import contextlib
 import sys
 import unittest
-from typing import List, Optional, Set
 
 from PyQt6.QtCore import QCoreApplication, QObject
 from PyQt6.QtWidgets import QApplication
@@ -29,10 +29,10 @@ class PyQtAsyncTestCase(unittest.TestCase):
     """
 
     # Class variable to track QApplication instances across tests
-    _app_instance: Optional[QApplication] = None
+    _app_instance: QApplication | None = None
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Set up class-level test fixtures.
 
         Creates a QApplication instance if needed.
@@ -55,7 +55,7 @@ class PyQtAsyncTestCase(unittest.TestCase):
 
                 pytest.skip(f"QApplication creation failed: {e}")
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures.
 
         Creates a fresh event loop for each test.
@@ -74,12 +74,12 @@ class PyQtAsyncTestCase(unittest.TestCase):
         asyncio.set_event_loop(self._event_loop)
 
         # Track active tasks for cleanup
-        self._active_tasks: Set[asyncio.Task] = set()
+        self._active_tasks: set[asyncio.Task] = set()
 
         # List of objects to disconnect signals from during cleanup
-        self._objects_with_signals: List[QObject] = []
+        self._objects_with_signals: list[QObject] = []
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up test resources."""
         # Process any pending Qt events before teardown
         QCoreApplication.processEvents()
@@ -93,8 +93,8 @@ class PyQtAsyncTestCase(unittest.TestCase):
             try:
                 self._cancel_all_tasks()
                 self._event_loop.close()
-            except Exception as e:
-                print(f"Error during event loop cleanup: {e}")
+            except Exception:
+                pass
 
         # Restore previous event loop
         if hasattr(self, "_old_event_loop"):
@@ -122,7 +122,7 @@ class PyQtAsyncTestCase(unittest.TestCase):
         finally:
             self._active_tasks.discard(task)
 
-    def track_signals(self, obj: QObject):
+    def track_signals(self, obj: QObject) -> None:
         """Track a QObject to disconnect its signals during tearDown.
 
         Args:
@@ -131,7 +131,7 @@ class PyQtAsyncTestCase(unittest.TestCase):
         if isinstance(obj, QObject) and obj not in self._objects_with_signals:
             self._objects_with_signals.append(obj)
 
-    def _disconnect_all_signals(self, obj: QObject):
+    def _disconnect_all_signals(self, obj: QObject) -> None:
         """Disconnect all signals from a QObject.
 
         Args:
@@ -152,7 +152,7 @@ class PyQtAsyncTestCase(unittest.TestCase):
                         method_name = method.name()
                         if not method_name:
                             continue
-                        name = bytes(method_name).decode("utf-8")
+                        name = method_name.data().decode("utf-8")
                         if hasattr(obj, name):
                             # Try to disconnect
                             try:
@@ -161,10 +161,10 @@ class PyQtAsyncTestCase(unittest.TestCase):
                             except Exception:
                                 # It's normal for this to fail if the signal wasn't connected
                                 pass
-        except Exception as e:
-            print(f"Error disconnecting signals from {obj}: {e}")
+        except Exception:
+            pass
 
-    def _cancel_all_tasks(self):
+    def _cancel_all_tasks(self) -> None:
         """Cancel all tracked tasks."""
         # Get all tasks from the event loop
         pending = asyncio.all_tasks(self._event_loop)
@@ -212,7 +212,7 @@ class AsyncSignalWaiter:
             self.received = received
             self.args = args or []
 
-    def __init__(self, signal):
+    def __init__(self, signal) -> None:
         """Initialize with the signal to wait for.
 
         Args:
@@ -223,7 +223,7 @@ class AsyncSignalWaiter:
         self.future = None
         self._old_connection = None
 
-    def _signal_callback(self, *args):
+    def _signal_callback(self, *args) -> None:
         """Callback for when the signal is emitted."""
         if self.future and not self.future.done():
             self.args = args
@@ -252,14 +252,12 @@ class AsyncSignalWaiter:
             try:
                 await asyncio.wait_for(self.future, timeout)
                 return self.SignalResult(True, self.args)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 return self.SignalResult(False)
         finally:
             # Disconnect the signal
-            try:
+            with contextlib.suppress(Exception):
                 self.signal.disconnect(self._signal_callback)
-            except Exception:
-                pass
 
 
 def async_test(coro):
@@ -287,7 +285,8 @@ def async_test(coro):
 
     def wrapper(self, *args, **kwargs):
         if not isinstance(self, PyQtAsyncTestCase):
-            raise TypeError("async_test can only be used with PyQtAsyncTestCase")
+            msg = "async_test can only be used with PyQtAsyncTestCase"
+            raise TypeError(msg)
         return self.run_async(coro(self, *args, **kwargs))
 
     return wrapper

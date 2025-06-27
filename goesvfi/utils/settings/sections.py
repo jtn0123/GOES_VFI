@@ -1,12 +1,11 @@
-"""
-Concrete settings sections for different areas of the application.
+"""Concrete settings sections for different areas of the application.
 
 Each section handles a focused group of related settings, reducing complexity
 by organizing the massive saveSettings/loadSettings functions.
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from goesvfi.utils.errors import ErrorClassifier
 
@@ -19,13 +18,13 @@ LOGGER = logging.getLogger(__name__)
 class MainTabSettings(SettingsSection):
     """Settings section for main tab widgets."""
 
-    def __init__(self, classifier: Optional[ErrorClassifier] = None) -> None:
+    def __init__(self, classifier: ErrorClassifier | None = None) -> None:
         super().__init__("main_tab", classifier)
         self.accessor = SafeWidgetAccessor(classifier)
 
-    def extract_values(self, source_object: Any) -> Dict[str, Any]:
+    def extract_values(self, source_object: Any) -> dict[str, Any]:
         """Extract main tab settings from GUI."""
-        values: Dict[str, Any] = {}
+        values: dict[str, Any] = {}
         main_tab = getattr(source_object, "main_tab", None)
 
         if main_tab is None:
@@ -57,7 +56,7 @@ class MainTabSettings(SettingsSection):
 
         return values
 
-    def apply_values(self, target_object: Any, values: Dict[str, Any]) -> None:
+    def apply_values(self, target_object: Any, values: dict[str, Any]) -> None:
         """Apply main tab settings to GUI."""
         main_tab = getattr(target_object, "main_tab", None)
 
@@ -95,7 +94,7 @@ class MainTabSettings(SettingsSection):
             values.get("rife_tta_temporal", False),
         )
 
-    def get_setting_keys(self) -> List[str]:
+    def get_setting_keys(self) -> list[str]:
         """Get list of settings keys handled by this section."""
         return [
             "fps",
@@ -115,13 +114,13 @@ class MainTabSettings(SettingsSection):
 class SanchezSettings(SettingsSection):
     """Settings section for Sanchez-related widgets."""
 
-    def __init__(self, classifier: Optional[ErrorClassifier] = None) -> None:
+    def __init__(self, classifier: ErrorClassifier | None = None) -> None:
         super().__init__("sanchez", classifier)
         self.accessor = SafeWidgetAccessor(classifier)
 
-    def extract_values(self, source_object: Any) -> Dict[str, Any]:
+    def extract_values(self, source_object: Any) -> dict[str, Any]:
         """Extract Sanchez settings from GUI."""
-        values: Dict[str, Any] = {}
+        values: dict[str, Any] = {}
         main_tab = getattr(source_object, "main_tab", None)
 
         if main_tab is None:
@@ -142,7 +141,7 @@ class SanchezSettings(SettingsSection):
 
         return values
 
-    def apply_values(self, target_object: Any, values: Dict[str, Any]) -> None:
+    def apply_values(self, target_object: Any, values: dict[str, Any]) -> None:
         """Apply Sanchez settings to GUI."""
         main_tab = getattr(target_object, "main_tab", None)
 
@@ -167,7 +166,7 @@ class SanchezSettings(SettingsSection):
                 "setCurrentText",
             )
 
-    def get_setting_keys(self) -> List[str]:
+    def get_setting_keys(self) -> list[str]:
         """Get list of settings keys handled by this section."""
         return ["sanchez_false_colour", "sanchez_res_km"]
 
@@ -175,13 +174,13 @@ class SanchezSettings(SettingsSection):
 class FFmpegSettings(SettingsSection):
     """Settings section for FFmpeg-related widgets."""
 
-    def __init__(self, classifier: Optional[ErrorClassifier] = None) -> None:
+    def __init__(self, classifier: ErrorClassifier | None = None) -> None:
         super().__init__("ffmpeg", classifier)
         self.accessor = SafeWidgetAccessor(classifier)
 
-    def extract_values(self, source_object: Any) -> Dict[str, Any]:
+    def extract_values(self, source_object: Any) -> dict[str, Any]:
         """Extract FFmpeg settings from GUI."""
-        values: Dict[str, Any] = {}
+        values: dict[str, Any] = {}
         ffmpeg_tab = getattr(source_object, "ffmpeg_settings_tab", None)
 
         if ffmpeg_tab is None:
@@ -206,7 +205,7 @@ class FFmpegSettings(SettingsSection):
 
         return values
 
-    def apply_values(self, target_object: Any, values: Dict[str, Any]) -> None:
+    def apply_values(self, target_object: Any, values: dict[str, Any]) -> None:
         """Apply FFmpeg settings to GUI."""
         ffmpeg_tab = getattr(target_object, "ffmpeg_settings_tab", None)
 
@@ -236,7 +235,7 @@ class FFmpegSettings(SettingsSection):
         # Apply numeric settings
         self.accessor.set_spinbox_value(ffmpeg_tab, "search_param_spinbox", values.get("ffmpeg_search_param", 0))
 
-    def get_setting_keys(self) -> List[str]:
+    def get_setting_keys(self) -> list[str]:
         """Get list of settings keys handled by this section."""
         return [
             "ffmpeg_use_interp",
@@ -253,10 +252,10 @@ class FFmpegSettings(SettingsSection):
 class BasicSettings(SettingsSection):
     """Settings section for basic non-widget settings."""
 
-    def __init__(self, classifier: Optional[ErrorClassifier] = None) -> None:
+    def __init__(self, classifier: ErrorClassifier | None = None) -> None:
         super().__init__("basic", classifier)
 
-    def extract_values(self, source_object: Any) -> Dict[str, Any]:
+    def extract_values(self, source_object: Any) -> dict[str, Any]:
         """Extract basic settings that don't require widget access."""
         values = {}
 
@@ -277,14 +276,20 @@ class BasicSettings(SettingsSection):
 
         return values
 
-    def apply_values(self, target_object: Any, values: Dict[str, Any]) -> None:
+    def apply_values(self, target_object: Any, values: dict[str, Any]) -> None:
         """Apply basic settings to object."""
         from pathlib import Path
 
         # Apply settings with proper type conversion
         in_dir_str = values.get("in_dir", "")
         if in_dir_str and hasattr(target_object, "in_dir"):
-            target_object.in_dir = Path(in_dir_str)
+            input_path = Path(in_dir_str)
+            # Only set the path if it exists and is a directory
+            if input_path.exists() and input_path.is_dir():
+                target_object.in_dir = input_path
+            else:
+                LOGGER.warning("Input directory does not exist, skipping: %s", in_dir_str)
+                target_object.in_dir = None
 
         out_file_path_str = values.get("out_file_path", "")
         if out_file_path_str and hasattr(target_object, "out_file_path"):
@@ -301,6 +306,6 @@ class BasicSettings(SettingsSection):
             except (ValueError, AttributeError):
                 LOGGER.warning("Failed to parse crop_rect: %s", crop_rect_str)
 
-    def get_setting_keys(self) -> List[str]:
+    def get_setting_keys(self) -> list[str]:
         """Get list of settings keys handled by this section."""
         return ["in_dir", "out_file_path", "crop_rect"]

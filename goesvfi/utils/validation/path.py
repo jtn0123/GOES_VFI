@@ -1,12 +1,11 @@
-"""
-Path validation utilities.
+"""Path validation utilities.
 
 Reduces complexity in functions that perform extensive file/directory validation.
 """
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .base import ValidationResult, ValidatorBase
 
@@ -16,13 +15,13 @@ class PathValidator(ValidatorBase):
 
     def __init__(
         self,
-        field_name: Optional[str] = None,
+        field_name: str | None = None,
         must_exist: bool = True,
         must_be_file: bool = False,
         must_be_dir: bool = False,
         must_be_readable: bool = False,
         must_be_writable: bool = False,
-        allowed_extensions: Optional[list] = None,
+        allowed_extensions: list | None = None,
         create_if_missing: bool = False,
     ) -> None:
         super().__init__(field_name)
@@ -34,7 +33,7 @@ class PathValidator(ValidatorBase):
         self.allowed_extensions = allowed_extensions or []
         self.create_if_missing = create_if_missing
 
-    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def validate(self, value: Any, context: dict[str, Any] | None = None) -> ValidationResult:
         """Validate a path value."""
         # Basic validation
         path_result = self._validate_path_input(value)
@@ -67,12 +66,12 @@ class PathValidator(ValidatorBase):
             return ValidationResult.failure(self._create_error("Path cannot be None", value))
 
         try:
-            if isinstance(value, (str, Path)):
+            if isinstance(value, str | Path):
                 return ValidationResult.success()
-            else:
-                return ValidationResult.failure(
-                    self._create_error(f"Path must be string or Path object, got {type(value)}", value)
-                )
+
+            return ValidationResult.failure(
+                self._create_error(f"Path must be string or Path object, got {type(value)}", value)
+            )
         except Exception as e:
             return ValidationResult.failure(self._create_error(f"Invalid path format: {e}", value))
 
@@ -83,8 +82,7 @@ class PathValidator(ValidatorBase):
         if self.must_exist and not path.exists():
             if self.create_if_missing:
                 return self._create_missing_path(path, value)
-            else:
-                result.add_error(self._create_error(f"Path does not exist: {path}", value))
+            result.add_error(self._create_error(f"Path does not exist: {path}", value))
 
         return result
 
@@ -137,7 +135,7 @@ class PathValidator(ValidatorBase):
             if extension not in self.allowed_extensions:
                 result.add_error(
                     self._create_error(
-                        f"File extension '{extension}' not allowed. " f"Allowed: {self.allowed_extensions}",
+                        f"File extension '{extension}' not allowed. Allowed: {self.allowed_extensions}",
                         value,
                     )
                 )
@@ -150,12 +148,12 @@ class DirectoryValidator(PathValidator):
 
     def __init__(
         self,
-        field_name: Optional[str] = None,
+        field_name: str | None = None,
         must_exist: bool = True,
         must_be_readable: bool = True,
         must_be_writable: bool = False,
         create_if_missing: bool = False,
-        min_free_space_mb: Optional[int] = None,
+        min_free_space_mb: int | None = None,
     ) -> None:
         super().__init__(
             field_name=field_name,
@@ -167,7 +165,7 @@ class DirectoryValidator(PathValidator):
         )
         self.min_free_space_mb = min_free_space_mb
 
-    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def validate(self, value: Any, context: dict[str, Any] | None = None) -> ValidationResult:
         """Validate directory with additional directory-specific checks."""
         result = super().validate(value, context)
 
@@ -203,11 +201,11 @@ class FileValidator(PathValidator):
 
     def __init__(
         self,
-        field_name: Optional[str] = None,
+        field_name: str | None = None,
         must_exist: bool = True,
         must_be_readable: bool = True,
-        allowed_extensions: Optional[list] = None,
-        max_size_mb: Optional[int] = None,
+        allowed_extensions: list | None = None,
+        max_size_mb: int | None = None,
         min_size_bytes: int = 0,
     ) -> None:
         super().__init__(
@@ -220,7 +218,7 @@ class FileValidator(PathValidator):
         self.max_size_mb = max_size_mb
         self.min_size_bytes = min_size_bytes
 
-    def validate(self, value: Any, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def validate(self, value: Any, context: dict[str, Any] | None = None) -> ValidationResult:
         """Validate file with additional file-specific checks."""
         result = super().validate(value, context)
 
@@ -247,7 +245,7 @@ class FileValidator(PathValidator):
                     if file_size > max_size_bytes:
                         result.add_error(
                             self._create_error(
-                                f"File too large: {file_size / (1024 * 1024):.1f}MB, " f"maximum {self.max_size_mb}MB",
+                                f"File too large: {file_size / (1024 * 1024):.1f}MB, maximum {self.max_size_mb}MB",
                                 value,
                             )
                         )

@@ -8,7 +8,7 @@ integrity checks, imagery previews, and video generation.  Run
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, cast
 
 from PyQt6.QtCore import QSettings, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QPixmap
@@ -44,8 +44,8 @@ class MainWindow(QWidget):
     ui_setup_manager: Any
     rife_ui_manager: Any
     ffmpeg_settings_tab: Any
-    in_dir: Optional[Path]
-    current_crop_rect: Optional[Any]
+    in_dir: Path | None
+    current_crop_rect: Any | None
     processing_callbacks: Any
 
     def __init__(self, debug_mode: bool = False) -> None:
@@ -239,18 +239,18 @@ class MainWindow(QWidget):
 
     def _get_sorted_image_files(self) -> list[Path]:
         """Get sorted list of image files from input directory."""
-        return cast(List[Path], self.crop_handler.get_sorted_image_files(self))
+        return cast(list[Path], self.crop_handler.get_sorted_image_files(self))
 
-    def _prepare_image_for_crop_dialog(self, image_path: Path) -> Optional[QPixmap]:
+    def _prepare_image_for_crop_dialog(self, image_path: Path) -> QPixmap | None:
         """Prepare an image for the crop dialog, applying Sanchez if enabled."""
         return cast(
-            Optional[QPixmap],
+            QPixmap | None,
             self.crop_handler.prepare_image_for_crop_dialog(self, image_path),
         )
 
-    def _get_processed_preview_pixmap(self) -> Optional[QPixmap]:
+    def _get_processed_preview_pixmap(self) -> QPixmap | None:
         """Get the processed preview pixmap from the first frame label."""
-        return cast(Optional[QPixmap], self.crop_handler.get_processed_preview_pixmap(self))
+        return cast(QPixmap | None, self.crop_handler.get_processed_preview_pixmap(self))
 
     def _show_crop_dialog(self, pixmap: QPixmap) -> None:
         """Show the crop selection dialog."""
@@ -336,8 +336,8 @@ class MainWindow(QWidget):
         """Update preview images using the PreviewManager."""
         LOGGER.debug("_update_previews called")
 
-        if not self.in_dir:
-            LOGGER.debug("No input directory set, skipping preview update")
+        if not self.in_dir or not self.in_dir.exists():
+            LOGGER.debug("No valid input directory set, skipping preview update")
             return
 
         # Get preview labels from main tab
@@ -396,7 +396,7 @@ class MainWindow(QWidget):
         except Exception as e:
             LOGGER.exception("Error updating previews: %s", e)
 
-    def _handle_processing(self, args: Dict[str, Any]) -> None:
+    def _handle_processing(self, args: dict[str, Any]) -> None:
         """Handle the processing_started signal from MainTab."""
         self.processing_handler.handle_processing(self, args)
 
@@ -438,21 +438,28 @@ class MainWindow(QWidget):
         try:
             # Update first frame label
             if hasattr(self.main_tab, "first_frame_label") and not first_pixmap.isNull():
-                # Scale pixmap to fit label while maintaining aspect ratio
+                # Use a reasonable minimum size for preview scaling instead of the actual label size
+                # which might be very small at startup
+                from PyQt6.QtCore import QSize
+
+                target_size = QSize(200, 200)  # Minimum preview size
+                current_size = self.main_tab.first_frame_label.size()
+                if current_size.width() > 200 and current_size.height() > 200:
+                    target_size = current_size
+
+                # Scale pixmap to fit target size while maintaining aspect ratio
                 scaled_first_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(
-                    first_pixmap, self.main_tab.first_frame_label.size()
+                    first_pixmap, target_size
                 )
                 self.main_tab.first_frame_label.setPixmap(scaled_first_pixmap)
 
                 # Set file_path attribute for display
                 if self.in_dir and self.in_dir.exists():
-                    image_files = sorted(
-                        [
-                            f
-                            for f in self.in_dir.iterdir()
-                            if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
-                        ]
-                    )
+                    image_files = sorted([
+                        f
+                        for f in self.in_dir.iterdir()
+                        if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+                    ])
                     if image_files:
                         self.main_tab.first_frame_label.file_path = str(image_files[0])
                 # Store the full resolution image data for preview
@@ -473,21 +480,25 @@ class MainWindow(QWidget):
 
             # Update middle frame label
             if hasattr(self.main_tab, "middle_frame_label") and not middle_pixmap.isNull():
-                # Scale pixmap to fit label while maintaining aspect ratio
+                # Use a reasonable minimum size for preview scaling
+                target_size = QSize(200, 200)  # Minimum preview size
+                current_size = self.main_tab.middle_frame_label.size()
+                if current_size.width() > 200 and current_size.height() > 200:
+                    target_size = current_size
+
+                # Scale pixmap to fit target size while maintaining aspect ratio
                 scaled_middle_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(
-                    middle_pixmap, self.main_tab.middle_frame_label.size()
+                    middle_pixmap, target_size
                 )
                 self.main_tab.middle_frame_label.setPixmap(scaled_middle_pixmap)
 
                 # Set file_path attribute for display
                 if self.in_dir and self.in_dir.exists():
-                    image_files = sorted(
-                        [
-                            f
-                            for f in self.in_dir.iterdir()
-                            if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
-                        ]
-                    )
+                    image_files = sorted([
+                        f
+                        for f in self.in_dir.iterdir()
+                        if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+                    ])
                     if len(image_files) >= 3:
                         middle_index = len(image_files) // 2
                         self.main_tab.middle_frame_label.file_path = str(image_files[middle_index])
@@ -503,21 +514,23 @@ class MainWindow(QWidget):
 
             # Update last frame label
             if hasattr(self.main_tab, "last_frame_label") and not last_pixmap.isNull():
-                # Scale pixmap to fit label while maintaining aspect ratio
-                scaled_last_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(
-                    last_pixmap, self.main_tab.last_frame_label.size()
-                )
+                # Use a reasonable minimum size for preview scaling
+                target_size = QSize(200, 200)  # Minimum preview size
+                current_size = self.main_tab.last_frame_label.size()
+                if current_size.width() > 200 and current_size.height() > 200:
+                    target_size = current_size
+
+                # Scale pixmap to fit target size while maintaining aspect ratio
+                scaled_last_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(last_pixmap, target_size)
                 self.main_tab.last_frame_label.setPixmap(scaled_last_pixmap)
 
                 # Set file_path attribute for display
                 if self.in_dir and self.in_dir.exists():
-                    image_files = sorted(
-                        [
-                            f
-                            for f in self.in_dir.iterdir()
-                            if f.suffix.lower() in [".png", ".jpg", ".jpeg", ".tif", ".tiff"]
-                        ]
-                    )
+                    image_files = sorted([
+                        f
+                        for f in self.in_dir.iterdir()
+                        if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+                    ])
                     if image_files:
                         self.main_tab.last_frame_label.file_path = str(image_files[-1])
                 # Store the full resolution image data for preview
@@ -539,15 +552,20 @@ class MainWindow(QWidget):
         Args:
             error_message: The error message from PreviewManager
         """
-        LOGGER.error("Preview loading error: %s", error_message)
-        # Update status bar to show error
-        self.status_bar.showMessage(f"Preview error: {error_message}", 5000)
+        # Only show error messages if we have a valid input directory
+        # This prevents showing errors during startup when no directory is selected
+        if self.in_dir and self.in_dir.exists():
+            LOGGER.error("Preview loading error: %s", error_message)
+            # Update status bar to show error
+            self.status_bar.showMessage(f"Preview error: {error_message}", 5000)
+        else:
+            LOGGER.debug("Suppressing preview error (no valid directory): %s", error_message)
 
     def _update_crop_buttons_state(self) -> None:
         """Update crop button states based on current state."""
         self.processing_callbacks.update_crop_buttons_state(self)
 
-    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
+    def closeEvent(self, event: QCloseEvent | None) -> None:
         """Handle window close event."""
         LOGGER.info("MainWindow close event triggered")
 
@@ -591,7 +609,7 @@ class MainWindow(QWidget):
             else:
                 LOGGER.error("No QApplication instance found for theme change")
         except Exception as e:
-            LOGGER.error("Failed to change theme: %s", e)
+            LOGGER.exception("Failed to change theme: %s", e)
 
     def _on_settings_changed(self) -> None:
         """Handle general settings changes."""
@@ -603,4 +621,4 @@ class MainWindow(QWidget):
                 if current_settings.get("app", {}).get("auto_save", True):
                     self.saveSettings()
         except Exception as e:
-            LOGGER.error("Failed to handle settings change: %s", e)
+            LOGGER.exception("Failed to handle settings change: %s", e)

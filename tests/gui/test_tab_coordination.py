@@ -1,6 +1,5 @@
 """Tab-specific functionality and coordination tests for GOES VFI GUI."""
 
-import pytest
 from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QLabel,
@@ -12,6 +11,7 @@ from PyQt6.QtWidgets import (
     QTreeWidget,
     QTreeWidgetItem,
 )
+import pytest
 
 from goesvfi.gui import MainWindow
 
@@ -22,13 +22,13 @@ class MockModelDownloader(QThread):
     progress = pyqtSignal(str, int)  # model_name, percent
     finished = pyqtSignal(str, bool, str)  # model_name, success, message
 
-    def __init__(self, model_name, model_size_mb=100):
+    def __init__(self, model_name, model_size_mb=100) -> None:
         super().__init__()
         self.model_name = model_name
         self.model_size_mb = model_size_mb
         self.cancelled = False
 
-    def run(self):
+    def run(self) -> None:
         """Simulate model download."""
         for i in range(0, 101, 10):
             if self.cancelled:
@@ -43,7 +43,7 @@ class MockModelDownloader(QThread):
 class TestTabCoordination:
     """Test tab-specific functionality and inter-tab coordination."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
@@ -56,12 +56,12 @@ class TestTabCoordination:
 
         return window
 
-    def test_model_library_download_operations(self, qtbot, window, mocker):
+    def test_model_library_download_operations(self, qtbot, window, mocker) -> None:
         """Test model library download operations."""
 
         # Create mock model library tab
         class ModelLibraryTab:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.model_list = QListWidget()
                 self.download_button = QPushButton("Download")
                 self.delete_button = QPushButton("Delete")
@@ -73,7 +73,7 @@ class TestTabCoordination:
                 }
                 self.active_downloads = {}
 
-            def populate_model_list(self):
+            def populate_model_list(self) -> None:
                 self.model_list.clear()
                 for model_name, info in self.available_models.items():
                     item = QListWidgetItem(f"{model_name} ({info['size']}MB)")
@@ -82,7 +82,7 @@ class TestTabCoordination:
                         item.setText(f"{item.text()} ✓")
                     self.model_list.addItem(item)
 
-            def download_selected_model(self):
+            def download_selected_model(self) -> None:
                 current_item = self.model_list.currentItem()
                 if not current_item:
                     return
@@ -105,11 +105,11 @@ class TestTabCoordination:
 
                 downloader.start()
 
-            def update_download_progress(self, model_name, percent):
+            def update_download_progress(self, model_name, percent) -> None:
                 if model_name in self.progress_bars:
                     self.progress_bars[model_name].setValue(percent)
 
-            def handle_download_finished(self, model_name, success, message):
+            def handle_download_finished(self, model_name, success, message) -> None:
                 if success:
                     self.available_models[model_name]["installed"] = True
                     self.populate_model_list()
@@ -139,7 +139,7 @@ class TestTabCoordination:
         assert model_tab.available_models["rife-v4.6"]["installed"]
         assert "rife-v4.6" not in model_tab.active_downloads
 
-    def test_model_library_delete_operations(self, qtbot, window, mocker):
+    def test_model_library_delete_operations(self, qtbot, window, mocker) -> None:
         """Test model library delete operations."""
         # Mock confirmation dialog
         mock_question = mocker.patch("PyQt6.QtWidgets.QMessageBox.question")
@@ -147,19 +147,19 @@ class TestTabCoordination:
 
         # Model manager
         class ModelManager:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.installed_models = {
                     "rife-v4.6": "/models/rife-v4.6",
                     "rife-v4.13": "/models/rife-v4.13",
                 }
 
-            def delete_model(self, model_name):
+            def delete_model(self, model_name) -> bool:
                 if model_name in self.installed_models:
                     # Confirm deletion
                     result = QMessageBox.question(
                         None,
                         "Confirm Deletion",
-                        f"Are you sure you want to delete {model_name}?\n" f"This action cannot be undone.",
+                        f"Are you sure you want to delete {model_name}?\nThis action cannot be undone.",
                     )
 
                     if result == QMessageBox.StandardButton.Yes:
@@ -192,7 +192,7 @@ class TestTabCoordination:
         assert "Confirm Deletion" in args[1]
         assert "rife-v4.6" in args[2]
 
-    def test_integrity_check_scan_workflow(self, qtbot, window, mocker):
+    def test_integrity_check_scan_workflow(self, qtbot, window, mocker) -> None:
         """Test integrity check scan workflow."""
 
         # Create integrity check scanner
@@ -200,12 +200,12 @@ class TestTabCoordination:
             scan_progress = pyqtSignal(int, str)
             scan_complete = pyqtSignal(dict)
 
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__()
                 self.is_scanning = False
                 self.scan_results = {}
 
-            def start_scan(self, directory):
+            def start_scan(self, directory) -> None:
                 self.is_scanning = True
                 self.scan_results = {
                     "total_files": 0,
@@ -217,7 +217,7 @@ class TestTabCoordination:
                 # Simulate scan
                 QTimer.singleShot(100, lambda: self._perform_scan(directory))
 
-            def _perform_scan(self, directory):
+            def _perform_scan(self, directory) -> None:
                 # Mock scanning files
                 test_files = [
                     ("file1.nc", "valid"),
@@ -257,11 +257,11 @@ class TestTabCoordination:
         # Track progress
         progress_updates = []
 
-        def on_progress(percent, message):
+        def on_progress(percent, message) -> None:
             progress_updates.append((percent, message))
             progress_label.setText(message)
 
-        def on_complete(results):
+        def on_complete(results) -> None:
             # Populate results tree
             results_tree.clear()
 
@@ -300,35 +300,34 @@ class TestTabCoordination:
         assert corrupted_item.text(1) == "1"
         assert corrupted_item.childCount() == 1
 
-    def test_integrity_check_repair_actions(self, qtbot, window, mocker):
+    def test_integrity_check_repair_actions(self, qtbot, window, mocker) -> None:
         """Test integrity check repair actions."""
 
         # Mock repair operations
         class RepairManager:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.repair_queue = []
                 self.repair_results = {}
 
-            def queue_repair(self, file_info):
+            def queue_repair(self, file_info) -> None:
                 self.repair_queue.append(file_info)
 
-            def repair_corrupted_file(self, filepath):
+            def repair_corrupted_file(self, filepath) -> bool:
                 # Simulate repair attempt
                 success = filepath != "unrepairable.nc"
 
                 if success:
                     self.repair_results[filepath] = "Repaired successfully"
                     return True
-                else:
-                    self.repair_results[filepath] = "Repair failed - file too damaged"
-                    return False
+                self.repair_results[filepath] = "Repair failed - file too damaged"
+                return False
 
-            def download_missing_file(self, filename, source_url):
+            def download_missing_file(self, filename, source_url) -> bool:
                 # Simulate download
                 self.repair_results[filename] = f"Downloaded from {source_url}"
                 return True
 
-            def process_repair_queue(self, progress_callback):
+            def process_repair_queue(self, progress_callback) -> None:
                 total = len(self.repair_queue)
                 for i, file_info in enumerate(self.repair_queue):
                     progress = int((i + 1) / total * 100)
@@ -346,14 +345,12 @@ class TestTabCoordination:
 
         # Add files to repair
         repair_mgr.queue_repair({"name": "corrupted.nc", "path": "/data/corrupted.nc", "type": "corrupted"})
-        repair_mgr.queue_repair(
-            {
-                "name": "missing.nc",
-                "path": "/data/missing.nc",
-                "type": "missing",
-                "url": "http://example.com/missing.nc",
-            }
-        )
+        repair_mgr.queue_repair({
+            "name": "missing.nc",
+            "path": "/data/missing.nc",
+            "type": "missing",
+            "url": "http://example.com/missing.nc",
+        })
         repair_mgr.queue_repair({"name": "unrepairable.nc", "path": "unrepairable.nc", "type": "corrupted"})
 
         # Process repairs
@@ -366,12 +363,12 @@ class TestTabCoordination:
         assert "Downloaded from" in repair_mgr.repair_results["missing.nc"]
         assert "Repair failed" in repair_mgr.repair_results["unrepairable.nc"]
 
-    def test_advanced_settings_validation(self, qtbot, window):
+    def test_advanced_settings_validation(self, qtbot, window) -> None:
         """Test advanced settings validation."""
 
         # Create advanced settings validator
         class SettingsValidator:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.validation_rules = {
                     "thread_count": (1, 32, int),
                     "tile_size": (128, 1024, int),
@@ -390,8 +387,7 @@ class TestTabCoordination:
                     typed_value = type_func(value)
                     if min_val <= typed_value <= max_val:
                         return True, typed_value
-                    else:
-                        return False, f"Value must be between {min_val} and {max_val}"
+                    return False, f"Value must be between {min_val} and {max_val}"
                 except (ValueError, TypeError):
                     return False, f"Invalid {type_func.__name__} value"
 
@@ -431,22 +427,22 @@ class TestTabCoordination:
         assert any("cache_size" in err for err in errors)
         assert any("network_timeout" in err for err in errors)
 
-    def test_inter_tab_state_synchronization(self, qtbot, window):
+    def test_inter_tab_state_synchronization(self, qtbot, window) -> None:
         """Test state synchronization between tabs."""
 
         # Create state synchronizer
         class TabStateSynchronizer(QObject):
             state_changed = pyqtSignal(str, object)  # key, value
 
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__()
                 self.shared_state = {}
                 self.tab_subscriptions = {}
 
-            def register_tab(self, tab_name, keys_of_interest):
+            def register_tab(self, tab_name, keys_of_interest) -> None:
                 self.tab_subscriptions[tab_name] = keys_of_interest
 
-            def update_state(self, key, value):
+            def update_state(self, key, value) -> None:
                 old_value = self.shared_state.get(key)
                 if old_value != value:
                     self.shared_state[key] = value
@@ -455,7 +451,7 @@ class TestTabCoordination:
             def get_state(self, key, default=None):
                 return self.shared_state.get(key, default)
 
-            def sync_to_tab(self, tab_name, update_func):
+            def sync_to_tab(self, tab_name, update_func) -> None:
                 if tab_name in self.tab_subscriptions:
                     for key in self.tab_subscriptions[tab_name]:
                         if key in self.shared_state:
@@ -490,12 +486,12 @@ class TestTabCoordination:
         assert main_tab_state["input_dir"] == "/test/input"
         assert "encoder" not in main_tab_state  # Not subscribed
 
-    def test_dynamic_tab_management(self, qtbot, window):
+    def test_dynamic_tab_management(self, qtbot, window) -> None:
         """Test dynamic tab creation and removal."""
 
         # Tab manager
         class DynamicTabManager:
-            def __init__(self, tab_widget):
+            def __init__(self, tab_widget) -> None:
                 self.tab_widget = tab_widget
                 self.dynamic_tabs = {}
 
@@ -521,7 +517,7 @@ class TestTabCoordination:
 
                 return index
 
-            def remove_tab(self, index):
+            def remove_tab(self, index) -> None:
                 # Find tab by index
                 for title, info in list(self.dynamic_tabs.items()):
                     if info["index"] == index:
@@ -529,7 +525,7 @@ class TestTabCoordination:
                         del self.dynamic_tabs[title]
 
                         # Update indices
-                        for other_title, other_info in self.dynamic_tabs.items():
+                        for other_info in self.dynamic_tabs.values():
                             if other_info["index"] > index:
                                 other_info["index"] -= 1
                         break
@@ -563,24 +559,24 @@ class TestTabCoordination:
         # Verify index was updated
         assert tab_mgr.dynamic_tabs["Process Log"]["index"] < log_index
 
-    def test_tab_specific_shortcuts(self, qtbot, window):
+    def test_tab_specific_shortcuts(self, qtbot, window) -> None:
         """Test tab-specific keyboard shortcuts."""
 
         # Shortcut manager
         class TabShortcutManager:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.shortcuts = {}
                 self.active_tab = None
 
-            def register_shortcut(self, tab_name, key_sequence, action):
+            def register_shortcut(self, tab_name, key_sequence, action) -> None:
                 if tab_name not in self.shortcuts:
                     self.shortcuts[tab_name] = {}
                 self.shortcuts[tab_name][key_sequence] = action
 
-            def set_active_tab(self, tab_name):
+            def set_active_tab(self, tab_name) -> None:
                 self.active_tab = tab_name
 
-            def handle_shortcut(self, key_sequence):
+            def handle_shortcut(self, key_sequence) -> bool:
                 if self.active_tab and self.active_tab in self.shortcuts:
                     if key_sequence in self.shortcuts[self.active_tab]:
                         action = self.shortcuts[self.active_tab][key_sequence]

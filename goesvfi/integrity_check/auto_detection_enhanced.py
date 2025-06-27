@@ -1,14 +1,13 @@
-"""
-Enhanced auto-detection utilities for integrity check tabs.
+"""Enhanced auto-detection utilities for integrity check tabs.
 
 This module provides improved auto-detection functionality with better feedback
 and cross-tab integration for the integrity check system.
 """
 
 import logging
-import traceback
 from pathlib import Path
-from typing import Any, Dict, Optional
+import traceback
+from typing import Any
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QColor
@@ -29,13 +28,11 @@ LOGGER = logging.getLogger(__name__)
 class AutoDetectionError(Exception):
     """Exception raised for auto-detection errors."""
 
-    pass
-
 
 class DetectionProgressDialog(QProgressDialog):
     """Enhanced progress dialog for auto-detection operations with detailed feedback."""
 
-    def __init__(self, title: str, label_text: str, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, title: str, label_text: str, parent: QWidget | None = None) -> None:
         """Initialize the detection progress dialog.
 
         Args:
@@ -177,7 +174,8 @@ class AutoDetectionWorker(QThread):
             elif self.operation == "interval":
                 self._detect_interval()
             else:
-                raise AutoDetectionError(f"Unknown operation: {self.operation}")
+                msg = f"Unknown operation: {self.operation}"
+                raise AutoDetectionError(msg)
 
         except Exception as e:
             error_traceback = traceback.format_exc()
@@ -195,7 +193,7 @@ class AutoDetectionWorker(QThread):
 
             self.progress.emit(
                 20,
-                f"Found {len(png_files)} PNG files, {len(nc_files)} NetCDF files, " f"{len(jpg_files)} JPG files",
+                f"Found {len(png_files)} PNG files, {len(nc_files)} NetCDF files, {len(jpg_files)} JPG files",
                 "info",
             )
 
@@ -238,7 +236,7 @@ class AutoDetectionWorker(QThread):
         goes16_count = len(goes16_files)
         goes18_count = len(goes18_files)
 
-        result: Dict[str, Any]
+        result: dict[str, Any]
         if goes16_count == 0 and goes18_count == 0:
             self.progress.emit(95, "No valid GOES files found", "warning")
             result = {
@@ -296,7 +294,7 @@ class AutoDetectionWorker(QThread):
 
         except Exception as scan_error:
             self.progress.emit(50, f"Error scanning for timestamps: {scan_error}", "error")
-            result: Dict[str, Any] = {
+            result: dict[str, Any] = {
                 "status": "error",
                 "error": str(scan_error),
                 "start": None,
@@ -349,12 +347,12 @@ class AutoDetectionWorker(QThread):
         try:
             timestamps = TimeIndex.scan_directory_for_timestamps(self.directory, satellite)
         except Exception as e:
-            self.error.emit(f"Error scanning directory: {str(e)}", "")
+            self.error.emit(f"Error scanning directory: {e!s}", "")
             return
 
         if len(timestamps) < 2:
             self.progress.emit(100, "Not enough files to detect interval", "warning")
-            result: Dict[str, Any] = {"status": "insufficient_files", "interval": None}
+            result: dict[str, Any] = {"status": "insufficient_files", "interval": None}
             self.finished.emit(result)
             return
 

@@ -1,13 +1,13 @@
-"""
-Batch processing tab for GOES-VFI GUI.
+"""Batch processing tab for GOES-VFI GUI.
 
 This module provides the GUI interface for managing batch processing jobs
 with queue visualization and control.
 """
 
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSlot
 from PyQt6.QtGui import QCloseEvent
@@ -44,9 +44,9 @@ class BatchProcessingTab(QWidget):
 
     def __init__(
         self,
-        process_function: Optional[Callable[..., Any]] = None,
-        resource_manager: Optional[Any] = None,
-        settings_provider: Optional[Callable[[], Dict[str, Any]]] = None,
+        process_function: Callable[..., Any] | None = None,
+        resource_manager: Any | None = None,
+        settings_provider: Callable[[], dict[str, Any]] | None = None,
     ) -> None:
         """Initialize batch processing tab."""
         super().__init__()
@@ -54,7 +54,7 @@ class BatchProcessingTab(QWidget):
         self.process_function = process_function
         self.resource_manager = resource_manager
         self.batch_processor = BatchProcessor(resource_manager)
-        self.batch_queue: Optional[BatchQueue] = None
+        self.batch_queue: BatchQueue | None = None
         self.settings_provider = settings_provider
 
         self._init_ui()
@@ -192,9 +192,15 @@ class BatchProcessingTab(QWidget):
         # Queue table
         self.queue_table = QTableWidget()
         self.queue_table.setColumnCount(7)
-        self.queue_table.setHorizontalHeaderLabels(
-            ["Name", "Status", "Priority", "Progress", "Created", "Duration", "Actions"]
-        )
+        self.queue_table.setHorizontalHeaderLabels([
+            "Name",
+            "Status",
+            "Priority",
+            "Progress",
+            "Created",
+            "Duration",
+            "Actions",
+        ])
         table_header = self.queue_table.horizontalHeader()
         if table_header:
             table_header.setStretchLastSection(False)
@@ -422,7 +428,9 @@ class BatchProcessingTab(QWidget):
                 cancel_btn.clicked.connect(lambda checked, jid=job.id: self._cancel_job(jid))
                 self.queue_table.setCellWidget(row, 6, cancel_btn)
             else:
-                self.queue_table.setCellWidget(row, 6, None)
+                # Create empty widget for consistency
+                empty_widget = QWidget()
+                self.queue_table.setCellWidget(row, 6, empty_widget)
 
         # Update statistics
         stats = {
@@ -504,14 +512,14 @@ class BatchProcessingTab(QWidget):
         if self.batch_queue:
             self.batch_queue.process_function = func
 
-    def get_current_settings(self) -> Dict[str, Any]:
+    def get_current_settings(self) -> dict[str, Any]:
         """Get current batch processing settings."""
         return {
             "max_concurrent_jobs": self.concurrent_spin.value(),
             "output_directory": self.output_dir_label.text(),
         }
 
-    def closeEvent(self, event: Optional[QCloseEvent]) -> None:
+    def closeEvent(self, event: QCloseEvent | None) -> None:
         """Handle widget close event."""
         # Stop the update timer to prevent crashes
         if hasattr(self, "update_timer") and self.update_timer:

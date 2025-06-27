@@ -1,7 +1,6 @@
 """Settings persistence functionality for MainWindow."""
 
 from pathlib import Path
-from typing import Tuple
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QApplication
@@ -71,10 +70,10 @@ class SettingsPersistence:
             # Explicitly cast bool to avoid Any return type
             return bool(saved_dir == in_dir_str)
         except Exception as e:
-            LOGGER.error("Error directly saving input directory: %s", e)
+            LOGGER.exception("Error directly saving input directory: %s", e)
             return False
 
-    def save_crop_rect(self, rect: Tuple[int, int, int, int]) -> bool:
+    def save_crop_rect(self, rect: tuple[int, int, int, int]) -> bool:
         """Save crop rectangle to settings persistently.
 
         Args:
@@ -122,7 +121,7 @@ class SettingsPersistence:
             # Explicitly cast bool to avoid Any return type
             return bool(saved_rect == rect_str)
         except Exception as e:
-            LOGGER.error("Error directly saving crop rectangle: %s", e)
+            LOGGER.exception("Error directly saving crop rectangle: %s", e)
             return False
 
     def _verify_settings_consistency(self) -> None:
@@ -137,7 +136,7 @@ class SettingsPersistence:
 
         if org_name != app_org or app_name != app_name_global:
             LOGGER.error(
-                "QSettings mismatch! Settings: org=%s, app=%s, " "but Application: org=%s, app=%s",
+                "QSettings mismatch! Settings: org=%s, app=%s, but Application: org=%s, app=%s",
                 org_name,
                 app_name,
                 app_org,
@@ -168,9 +167,8 @@ class SettingsPersistence:
                     settings_file.stat().st_size,
                 )
                 return True
-            else:
-                LOGGER.warning("Settings file does not exist after save attempt: %s", settings_file)
-                return False
+            LOGGER.warning("Settings file does not exist after save attempt: %s", settings_file)
+            return False
         except Exception as file_error:
-            LOGGER.error("Error checking settings file: %s", file_error)
+            LOGGER.exception("Error checking settings file: %s", file_error)
             return False

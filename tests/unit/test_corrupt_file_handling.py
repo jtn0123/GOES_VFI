@@ -6,9 +6,9 @@ satellite data files and various error conditions.
 
 import asyncio
 import hashlib
+from pathlib import Path
 import subprocess
 import tempfile
-from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import numpy as np
@@ -25,36 +25,39 @@ from goesvfi.pipeline.sanchez_processor import SanchezProcessor
 class TestCorruptFileHandling:
     """Test handling of corrupt and invalid files."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_dir(self):
         """Create a temporary directory for test files."""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def netcdf_renderer(self):
         """Create a NetCDF renderer instance."""
         # Mock NetCDFRenderer since it doesn't exist
         mock_renderer = AsyncMock()
 
         # Configure render_channel to raise PipelineError when xarray fails
-        async def render_with_error(*args, **kwargs):
+        async def render_with_error(*args, **kwargs) -> None:
             import xarray
 
             try:
                 # This will trigger the mocked xarray.open_dataset
                 xarray.open_dataset(kwargs.get("file_path"))
             except ValueError as e:
-                raise PipelineError(f"Unable to read file: {e}")
+                msg = f"Unable to read file: {e}"
+                raise PipelineError(msg)
             except OSError as e:
-                raise PipelineError(f"File error: {e}")
+                msg = f"File error: {e}"
+                raise PipelineError(msg)
             except Exception as e:
-                raise PipelineError(f"Processing error: {e}")
+                msg = f"Processing error: {e}"
+                raise PipelineError(msg)
 
         mock_renderer.render_channel.side_effect = render_with_error
         return mock_renderer
 
-    @pytest.fixture
+    @pytest.fixture()
     def image_loader(self):
         """Create an image loader instance."""
         return ImageLoader()
@@ -101,8 +104,8 @@ class TestCorruptFileHandling:
 
         return path
 
-    @pytest.mark.asyncio
-    async def test_empty_file_handling(self, temp_dir, netcdf_renderer):
+    @pytest.mark.asyncio()
+    async def test_empty_file_handling(self, temp_dir, netcdf_renderer) -> None:
         """Test handling of empty files."""
         empty_file = self.create_corrupt_file(temp_dir / "empty.nc", "empty")
 
@@ -118,8 +121,8 @@ class TestCorruptFileHandling:
 
             assert "Unable to read file" in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_truncated_file_handling(self, temp_dir, netcdf_renderer):
+    @pytest.mark.asyncio()
+    async def test_truncated_file_handling(self, temp_dir, netcdf_renderer) -> None:
         """Test handling of truncated NetCDF files."""
         truncated_file = self.create_corrupt_file(temp_dir / "truncated.nc", "truncated")
 
@@ -135,8 +138,8 @@ class TestCorruptFileHandling:
 
             assert "Truncated file" in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_wrong_format_file(self, temp_dir, netcdf_renderer):
+    @pytest.mark.asyncio()
+    async def test_wrong_format_file(self, temp_dir, netcdf_renderer) -> None:
         """Test handling of wrong file formats."""
         wrong_format = self.create_corrupt_file(temp_dir / "image.jpg", "wrong_format")
 
@@ -152,12 +155,12 @@ class TestCorruptFileHandling:
 
             assert "Not a valid NetCDF file" in str(exc_info.value)
 
-    def test_corrupted_image_loading(self, temp_dir, image_loader):
+    def test_corrupted_image_loading(self, temp_dir, image_loader) -> None:
         """Test loading of corrupted image files."""
         corrupted_image = self.create_corrupt_file(temp_dir / "corrupted.png", "corrupted_image")
 
         with patch("PIL.Image.open") as mock_open:
-            mock_open.side_effect = IOError("Cannot identify image file")
+            mock_open.side_effect = OSError("Cannot identify image file")
 
             # ImageLoader catches IOError and re-raises as InputError
             from goesvfi.pipeline.exceptions import InputError
@@ -167,8 +170,8 @@ class TestCorruptFileHandling:
 
             assert "Cannot identify image file" in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_checksum_validation_failure(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_checksum_validation_failure(self, temp_dir) -> None:
         """Test checksum validation for downloaded files."""
         test_file = temp_dir / "data.nc"
         test_file.write_bytes(b"corrupted data")
@@ -182,12 +185,13 @@ class TestCorruptFileHandling:
         # In a real scenario, this would raise an error
         with pytest.raises(RemoteStoreError) as exc_info:
             if actual_checksum != expected_checksum:
-                raise RemoteStoreError(f"Checksum mismatch: expected {expected_checksum}, " f"got {actual_checksum}")
+                msg = f"Checksum mismatch: expected {expected_checksum}, got {actual_checksum}"
+                raise RemoteStoreError(msg)
 
         assert "Checksum mismatch" in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_partial_download_detection(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_partial_download_detection(self, temp_dir) -> None:
         """Test detection of partially downloaded files."""
         partial_file = self.create_corrupt_file(temp_dir / "partial.nc", "partial_download")
 
@@ -199,13 +203,12 @@ class TestCorruptFileHandling:
 
         with pytest.raises(RemoteStoreError) as exc_info:
             if actual_size < expected_size:
-                raise RemoteStoreError(
-                    f"Incomplete download: expected {expected_size} bytes, " f"got {actual_size} bytes"
-                )
+                msg = f"Incomplete download: expected {expected_size} bytes, got {actual_size} bytes"
+                raise RemoteStoreError(msg)
 
         assert "Incomplete download" in str(exc_info.value)
 
-    def test_permission_denied_handling(self, temp_dir):
+    def test_permission_denied_handling(self, temp_dir) -> None:
         """Test handling of permission denied errors."""
         if not hasattr(Path, "chmod"):
             pytest.skip("chmod not available on this platform")
@@ -214,15 +217,14 @@ class TestCorruptFileHandling:
 
         try:
             # Attempt to read file with no permissions
-            with pytest.raises(PermissionError):
-                with open(restricted_file, "rb") as f:
-                    f.read()
+            with pytest.raises(PermissionError), open(restricted_file, "rb") as f:
+                f.read()
         finally:
             # Restore permissions for cleanup
             restricted_file.chmod(0o644)
 
-    @pytest.mark.asyncio
-    async def test_invalid_netcdf_structure(self, temp_dir, netcdf_renderer):
+    @pytest.mark.asyncio()
+    async def test_invalid_netcdf_structure(self, temp_dir, netcdf_renderer) -> None:
         """Test handling of NetCDF files with invalid internal structure."""
         invalid_structure = self.create_corrupt_file(temp_dir / "invalid_structure.nc", "invalid_structure")
 
@@ -240,8 +242,8 @@ class TestCorruptFileHandling:
 
             assert "Variable 'Rad' not found" in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_out_of_memory_handling(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_out_of_memory_handling(self, temp_dir) -> None:
         """Test handling of out-of-memory errors."""
         # Simulate loading a very large array
         with patch("numpy.zeros") as mock_zeros:
@@ -253,8 +255,8 @@ class TestCorruptFileHandling:
 
             assert "Unable to allocate array" in str(exc_info.value)
 
-    @pytest.mark.asyncio
-    async def test_corrupt_file_recovery(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_corrupt_file_recovery(self, temp_dir) -> None:
         """Test recovery mechanisms for corrupt files."""
         corrupt_file = temp_dir / "corrupt.nc"
         backup_file = temp_dir / "backup.nc"
@@ -273,17 +275,17 @@ class TestCorruptFileHandling:
             try:
                 # Simulate file validation
                 if file_path == corrupt_file:
-                    raise ValueError("Corrupt file")
-                else:
-                    # Backup is valid
-                    successful_file = file_path
-                    break
+                    msg = "Corrupt file"
+                    raise ValueError(msg)
+                # Backup is valid
+                successful_file = file_path
+                break
             except ValueError:
                 continue
 
         assert successful_file == backup_file
 
-    def test_sanchez_processing_corrupt_input(self, temp_dir):
+    def test_sanchez_processing_corrupt_input(self, temp_dir) -> None:
         """Test Sanchez processing with corrupt input files."""
         processor = SanchezProcessor(temp_dir=temp_dir)
 
@@ -315,18 +317,18 @@ class TestCorruptFileHandling:
             # Verify the error was logged
             mock_colourise.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_race_condition_file_corruption(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_race_condition_file_corruption(self, temp_dir) -> None:
         """Test handling of files corrupted by race conditions."""
         test_file = temp_dir / "race_condition.nc"
 
         # Simulate concurrent writes causing corruption
-        async def corrupt_write():
+        async def corrupt_write() -> None:
             # First writer
             test_file.write_bytes(b"Writer 1 data")
             await asyncio.sleep(0.01)
 
-        async def interfering_write():
+        async def interfering_write() -> None:
             # Second writer interfering
             await asyncio.sleep(0.005)
             test_file.write_bytes(b"Writer 2")
@@ -338,7 +340,7 @@ class TestCorruptFileHandling:
         content = test_file.read_bytes()
         assert content == b"Writer 2"  # Second writer overwrote
 
-    def test_zip_bomb_protection(self, temp_dir):
+    def test_zip_bomb_protection(self, temp_dir) -> None:
         """Test protection against zip bombs or extremely large compressed files."""
         # Create a file that expands to huge size when decompressed
         compressed_file = temp_dir / "bomb.gz"
@@ -365,10 +367,11 @@ class TestCorruptFileHandling:
                 decompressed_size += len(chunk)
 
                 if decompressed_size > max_decompressed_size:
-                    raise ValueError(f"Decompressed size exceeds limit: {decompressed_size} > {max_decompressed_size}")
+                    msg = f"Decompressed size exceeds limit: {decompressed_size} > {max_decompressed_size}"
+                    raise ValueError(msg)
 
-    @pytest.mark.asyncio
-    async def test_file_format_validation(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_file_format_validation(self, temp_dir) -> None:
         """Test validation of file formats before processing."""
         test_files = [
             (temp_dir / "test.nc", b"CDF\x01", True),  # Valid NetCDF
@@ -387,7 +390,7 @@ class TestCorruptFileHandling:
             is_netcdf = file_header.startswith(b"CDF")
             assert is_netcdf == is_valid_netcdf
 
-    def test_graceful_error_messages(self, temp_dir):
+    def test_graceful_error_messages(self, temp_dir) -> None:
         """Test that error messages are helpful for corrupt files."""
         corrupt_file = self.create_corrupt_file(temp_dir / "bad_data.nc", "corrupted_data")
 

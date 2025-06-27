@@ -18,7 +18,7 @@ from goesvfi.utils.errors.base import (
 class TestErrorCategory:
     """Test error category enumeration."""
 
-    def test_error_categories_exist(self):
+    def test_error_categories_exist(self) -> None:
         """Test that all expected error categories are defined."""
         expected_categories = [
             "VALIDATION",
@@ -37,7 +37,7 @@ class TestErrorCategory:
             assert hasattr(ErrorCategory, category_name)
             assert isinstance(getattr(ErrorCategory, category_name), ErrorCategory)
 
-    def test_category_uniqueness(self):
+    def test_category_uniqueness(self) -> None:
         """Test that each category has a unique value."""
         categories = list(ErrorCategory)
         values = [cat.value for cat in categories]
@@ -47,7 +47,7 @@ class TestErrorCategory:
 class TestErrorContext:
     """Test error context data structure."""
 
-    def test_context_creation_minimal(self):
+    def test_context_creation_minimal(self) -> None:
         """Test creating context with minimal parameters."""
         context = ErrorContext(operation="test_op", component="test_comp")
 
@@ -58,7 +58,7 @@ class TestErrorContext:
         assert context.system_data == {}
         assert context.trace_id is None
 
-    def test_context_creation_full(self):
+    def test_context_creation_full(self) -> None:
         """Test creating context with all parameters."""
         timestamp = datetime.now()
         user_data = {"key1": "value1"}
@@ -81,7 +81,7 @@ class TestErrorContext:
         assert context.system_data == system_data
         assert context.trace_id == trace_id
 
-    def test_add_user_data(self):
+    def test_add_user_data(self) -> None:
         """Test adding user data to context."""
         context = ErrorContext(operation="test", component="test")
 
@@ -91,7 +91,7 @@ class TestErrorContext:
         assert context.user_data["key1"] == "value1"
         assert context.user_data["key2"] == 42
 
-    def test_add_system_data(self):
+    def test_add_system_data(self) -> None:
         """Test adding system data to context."""
         context = ErrorContext(operation="test", component="test")
 
@@ -105,7 +105,7 @@ class TestErrorContext:
 class TestStructuredError:
     """Test structured error class."""
 
-    def test_minimal_error_creation(self):
+    def test_minimal_error_creation(self) -> None:
         """Test creating error with minimal parameters."""
         error = StructuredError("Test error message")
 
@@ -119,7 +119,7 @@ class TestStructuredError:
         assert error.user_message == "Test error message"
         assert error.suggestions == []
 
-    def test_full_error_creation(self):
+    def test_full_error_creation(self) -> None:
         """Test creating error with all parameters."""
         context = ErrorContext(operation="test_op", component="test_comp")
         cause = ValueError("Original error")
@@ -143,11 +143,11 @@ class TestStructuredError:
         assert error.user_message == "User-friendly message"
         assert error.suggestions == suggestions
 
-    def test_validation_error_classmethod(self):
+    def test_validation_error_classmethod(self) -> None:
         """Test validation error factory method."""
         error = StructuredError.validation_error(
             message="Invalid input",
-            field="username",
+            field_name="username",
             value="test@",
             suggestions=["Use alphanumeric characters"],
         )
@@ -160,7 +160,7 @@ class TestStructuredError:
         assert error.context.user_data["value"] == "test@"
         assert "Use alphanumeric characters" in error.suggestions
 
-    def test_file_error_classmethod(self):
+    def test_file_error_classmethod(self) -> None:
         """Test file error factory method."""
         cause = FileNotFoundError("File not found")
         error = StructuredError.file_error(
@@ -177,13 +177,13 @@ class TestStructuredError:
         assert error.context.user_data["file_path"] == "/path/to/test.txt"
         assert error.cause == cause
 
-    def test_file_error_permission_detection(self):
+    def test_file_error_permission_detection(self) -> None:
         """Test file error detects permission issues."""
         error = StructuredError.file_error(message="Permission denied accessing file", file_path="/restricted/file.txt")
 
         assert error.category == ErrorCategory.PERMISSION
 
-    def test_network_error_classmethod(self):
+    def test_network_error_classmethod(self) -> None:
         """Test network error factory method."""
         error = StructuredError.network_error(message="Connection failed", url="https://example.com", status_code=404)
 
@@ -195,7 +195,7 @@ class TestStructuredError:
         assert error.context.user_data["status_code"] == 404
         assert "Check network connection" in error.suggestions
 
-    def test_processing_error_classmethod(self):
+    def test_processing_error_classmethod(self) -> None:
         """Test processing error factory method."""
         error = StructuredError.processing_error(
             message="Processing failed", stage="image_resize", input_data="input.jpg"
@@ -208,7 +208,7 @@ class TestStructuredError:
         assert error.context.user_data["processing_stage"] == "image_resize"
         assert error.context.system_data["input_data"] == "input.jpg"
 
-    def test_configuration_error_classmethod(self):
+    def test_configuration_error_classmethod(self) -> None:
         """Test configuration error factory method."""
         error = StructuredError.configuration_error(
             message="Invalid config value",
@@ -225,7 +225,7 @@ class TestStructuredError:
         assert error.context.user_data["config_value"] == "-1"
         assert "Use positive integer" in error.suggestions
 
-    def test_external_tool_error_classmethod(self):
+    def test_external_tool_error_classmethod(self) -> None:
         """Test external tool error factory method."""
         error = StructuredError.external_tool_error(
             message="Tool execution failed",
@@ -243,7 +243,7 @@ class TestStructuredError:
         assert error.context.system_data["exit_code"] == 1
         assert "Check that ffmpeg is installed and accessible" in error.suggestions
 
-    def test_add_suggestion(self):
+    def test_add_suggestion(self) -> None:
         """Test adding suggestions to error."""
         error = StructuredError("Test error")
 
@@ -254,7 +254,7 @@ class TestStructuredError:
         assert "First suggestion" in error.suggestions
         assert "Second suggestion" in error.suggestions
 
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         """Test converting error to dictionary."""
         context = ErrorContext(operation="test", component="test")
         context.add_user_data("key", "value")
@@ -279,7 +279,7 @@ class TestStructuredError:
         assert error_dict["context"]["component"] == "test"
         assert error_dict["context"]["user_data"]["key"] == "value"
 
-    def test_get_user_friendly_message(self):
+    def test_get_user_friendly_message(self) -> None:
         """Test getting user-friendly message."""
         error = StructuredError(
             "Technical error",
@@ -293,7 +293,7 @@ class TestStructuredError:
         assert "• Try this" in friendly_message
         assert "• Try that" in friendly_message
 
-    def test_get_user_friendly_message_no_suggestions(self):
+    def test_get_user_friendly_message_no_suggestions(self) -> None:
         """Test user-friendly message without suggestions."""
         error = StructuredError("Test error", user_message="User message")
 
@@ -305,7 +305,7 @@ class TestStructuredError:
 class TestErrorBuilder:
     """Test error builder class."""
 
-    def test_builder_minimal(self):
+    def test_builder_minimal(self) -> None:
         """Test builder with minimal configuration."""
         error = ErrorBuilder("Test message").build()
 
@@ -313,7 +313,7 @@ class TestErrorBuilder:
         assert error.category == ErrorCategory.UNKNOWN
         assert error.recoverable is False
 
-    def test_builder_fluent_interface(self):
+    def test_builder_fluent_interface(self) -> None:
         """Test builder fluent interface."""
         error = (
             ErrorBuilder("Test message")
@@ -338,14 +338,14 @@ class TestErrorBuilder:
         assert error.context.user_data["key"] == "value"
         assert error.context.system_data["debug"] == "info"
 
-    def test_builder_with_cause(self):
+    def test_builder_with_cause(self) -> None:
         """Test builder with underlying cause."""
         cause = ValueError("Original error")
         error = ErrorBuilder("Test message").with_cause(cause).build()
 
         assert error.cause == cause
 
-    def test_builder_multiple_suggestions(self):
+    def test_builder_multiple_suggestions(self) -> None:
         """Test builder with multiple suggestions."""
         error = (
             ErrorBuilder("Test message")
@@ -360,7 +360,7 @@ class TestErrorBuilder:
         assert "Second" in error.suggestions
         assert "Third" in error.suggestions
 
-    def test_builder_context_data(self):
+    def test_builder_context_data(self) -> None:
         """Test builder with context data."""
         error = (
             ErrorBuilder("Test message")
@@ -376,21 +376,22 @@ class TestErrorBuilder:
 class TestErrorIntegration:
     """Integration tests for error handling components."""
 
-    def test_error_with_traceback(self):
+    def test_error_with_traceback(self) -> None:
         """Test error creation with traceback from exception."""
         try:
-            raise ValueError("Test exception")
+            msg = "Test exception"
+            raise ValueError(msg)
         except ValueError as e:
             error = StructuredError("Wrapped error", cause=e)
             assert error.cause == e
             assert error.traceback_str is not None
 
-    def test_error_without_traceback(self):
+    def test_error_without_traceback(self) -> None:
         """Test error creation without traceback."""
         error = StructuredError("Simple error")
         assert error.traceback_str is None
 
-    def test_complex_error_scenario(self):
+    def test_complex_error_scenario(self) -> None:
         """Test complex error creation scenario."""
         # Simulate a realistic error scenario
         context = ErrorContext(operation="file_processing", component="image_loader")
@@ -398,7 +399,8 @@ class TestErrorIntegration:
         context.add_system_data("file_size", 1024)
 
         try:
-            raise FileNotFoundError("File not found")
+            msg = "File not found"
+            raise FileNotFoundError(msg)
         except FileNotFoundError as e:
             error = StructuredError(
                 message="Failed to load image file",

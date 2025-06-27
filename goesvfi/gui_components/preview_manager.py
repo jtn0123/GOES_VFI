@@ -1,9 +1,9 @@
 """Preview management functionality for the main GUI window."""
 
 import os
-import tempfile
 from pathlib import Path
-from typing import Any, Optional, Tuple
+import tempfile
+from typing import Any
 
 import numpy as np
 from PIL import Image
@@ -36,18 +36,18 @@ class PreviewManager(QObject):
         self._temp_dir.mkdir(exist_ok=True)
         self.sanchez_processor = SanchezProcessor(self._temp_dir)
 
-        self.current_input_dir: Optional[Path] = None
-        self.current_crop_rect: Optional[Tuple[int, int, int, int]] = None
-        self.first_frame_data: Optional[ImageData] = None
-        self.middle_frame_data: Optional[ImageData] = None
-        self.last_frame_data: Optional[ImageData] = None
+        self.current_input_dir: Path | None = None
+        self.current_crop_rect: tuple[int, int, int, int] | None = None
+        self.first_frame_data: ImageData | None = None
+        self.middle_frame_data: ImageData | None = None
+        self.last_frame_data: ImageData | None = None
 
     def load_preview_images(
         self,
         input_dir: Path,
-        crop_rect: Optional[Tuple[int, int, int, int]] = None,
+        crop_rect: tuple[int, int, int, int] | None = None,
         apply_sanchez: bool = False,
-        sanchez_resolution: Optional[Tuple[int, int]] = None,
+        sanchez_resolution: tuple[int, int] | None = None,
     ) -> bool:
         """Load preview images from the input directory.
 
@@ -64,6 +64,12 @@ class PreviewManager(QObject):
             # Ensure input_dir is a Path object
             if isinstance(input_dir, str):
                 input_dir = Path(input_dir)
+
+            # Validate that the directory exists
+            if not input_dir.exists() or not input_dir.is_dir():
+                LOGGER.debug("Input directory does not exist or is not a directory: %s", input_dir)
+                self.preview_error.emit("Input directory does not exist")
+                return False
 
             self.current_input_dir = input_dir
             self.current_crop_rect = crop_rect
@@ -123,11 +129,11 @@ class PreviewManager(QObject):
             return True
 
         except Exception as e:
-            LOGGER.error("Error loading preview images: %s", e)
+            LOGGER.exception("Error loading preview images: %s", e)
             self.preview_error.emit(str(e))
             return False
 
-    def _get_first_middle_last_paths(self, input_dir: Path) -> Tuple[Optional[Path], Optional[Path], Optional[Path]]:
+    def _get_first_middle_last_paths(self, input_dir: Path) -> tuple[Path | None, Path | None, Path | None]:
         """Get the first, middle, and last image paths from a directory.
 
         Args:
@@ -143,11 +149,9 @@ class PreviewManager(QObject):
 
             # Get all image files
             image_extensions = {".png", ".jpg", ".jpeg", ".bmp", ".tiff"}
-            image_files = []
-
-            for file in input_dir.iterdir():
-                if file.is_file() and file.suffix.lower() in image_extensions:
-                    image_files.append(file)
+            image_files = [
+                file for file in input_dir.iterdir() if file.is_file() and file.suffix.lower() in image_extensions
+            ]
 
             if not image_files:
                 return None, None, None
@@ -159,25 +163,24 @@ class PreviewManager(QObject):
             if len(image_files) == 1:
                 # Only one image - use it for all three
                 return image_files[0], image_files[0], image_files[0]
-            elif len(image_files) == 2:
+            if len(image_files) == 2:
                 # Two images - no middle
                 return image_files[0], None, image_files[1]
-            else:
-                # Three or more images - calculate middle
-                middle_index = len(image_files) // 2
-                return image_files[0], image_files[middle_index], image_files[-1]
+            # Three or more images - calculate middle
+            middle_index = len(image_files) // 2
+            return image_files[0], image_files[middle_index], image_files[-1]
 
         except Exception as e:
-            LOGGER.error("Error getting first/middle/last paths: %s", e)
+            LOGGER.exception("Error getting first/middle/last paths: %s", e)
             return None, None, None
 
     def _load_and_process_image(
         self,
         path: Path,
-        crop_rect: Optional[Tuple[int, int, int, int]],
+        crop_rect: tuple[int, int, int, int] | None,
         apply_sanchez: bool,
-        sanchez_resolution: Optional[Tuple[int, int]],
-    ) -> Optional[ImageData]:
+        sanchez_resolution: tuple[int, int] | None,
+    ) -> ImageData | None:
         """Load and process a single image.
 
         Args:
@@ -215,10 +218,10 @@ class PreviewManager(QObject):
             if apply_sanchez:
                 # Convert resolution to valid Sanchez format
                 # Sanchez expects km per pixel, valid values: 0.5, 1, 2, 4
-                if isinstance(sanchez_resolution, (tuple, list)):
+                if isinstance(sanchez_resolution, tuple | list):
                     # If tuple/list provided, use a default valid value
                     res_km = 2  # 2 km/pixel default
-                elif isinstance(sanchez_resolution, (int, float)):
+                elif isinstance(sanchez_resolution, int | float):
                     # Map common pixel values to km/pixel values
                     if sanchez_resolution >= 1000:
                         res_km = 4  # Lower resolution for high pixel values
@@ -236,7 +239,7 @@ class PreviewManager(QObject):
             return image_data
 
         except Exception as e:
-            LOGGER.error("Error loading/processing image %s: %s", path, e)
+            LOGGER.exception("Error loading/processing image %s: %s", path, e)
             return None
 
     def _numpy_to_qpixmap(self, array: np.ndarray[Any, np.dtype[np.uint8]]) -> QPixmap:
@@ -282,13 +285,14 @@ class PreviewManager(QObject):
                     QImage.Format.Format_RGBA8888,
                 )
             else:
-                raise ValueError(f"Unsupported array shape: {array.shape}")
+                msg = f"Unsupported array shape: {array.shape}"
+                raise ValueError(msg)
 
             return QPixmap.fromImage(qimage)
 
         except Exception as e:
-            LOGGER.error("Error converting numpy array to QPixmap: %s", e)
-            LOGGER.error("Array shape: %s, dtype: %s", array.shape, array.dtype)
+            LOGGER.exception("Error converting numpy array to QPixmap: %s", e)
+            LOGGER.exception("Array shape: %s, dtype: %s", array.shape, array.dtype)
             # Return empty pixmap on error
             return QPixmap()
 
@@ -313,7 +317,7 @@ class PreviewManager(QObject):
 
     def get_current_frame_data(
         self,
-    ) -> Tuple[Optional[ImageData], Optional[ImageData], Optional[ImageData]]:
+    ) -> tuple[ImageData | None, ImageData | None, ImageData | None]:
         """Get the current frame data.
 
         Returns:

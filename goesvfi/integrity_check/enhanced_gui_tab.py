@@ -7,7 +7,7 @@ and GOES-18 Band 13 imagery.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from PyQt6.QtCore import QCoreApplication, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -42,7 +42,7 @@ LOGGER = log.get_logger(__name__)
 class FetcherConfigDialog(QDialog):
     """Dialog for configuring CDN/S3 fetcher settings."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Configure Fetchers")
         self.setModal(True)
@@ -108,7 +108,7 @@ class FetcherConfigDialog(QDialog):
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
-    def get_config(self) -> Dict:
+    def get_config(self) -> dict:
         """Get the configuration from the dialog."""
         return {
             "cdn": {
@@ -135,8 +135,8 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
     def __init__(
         self,
-        view_model: Optional[IntegrityCheckViewModel] = None,
-        parent: Optional[QWidget] = None,
+        view_model: IntegrityCheckViewModel | None = None,
+        parent: QWidget | None = None,
     ) -> None:
         """Initialize the enhanced integrity check tab."""
         # Initialize parent class with view_model and parent widget
@@ -168,7 +168,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         LOGGER.info("Enhanced integrity check tab initialized")
 
-    def _default_fetcher_config(self) -> Dict:
+    def _default_fetcher_config(self) -> dict:
         """Get default fetcher configuration."""
         return {
             "cdn": {
@@ -335,7 +335,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             QMessageBox.critical(
                 self,
                 "Error Detecting Date Range",
-                f"Failed to auto-detect date range: {str(e)}",
+                f"Failed to auto-detect date range: {e!s}",
             )
             LOGGER.exception("Failed to auto-detect date range")
 
@@ -366,7 +366,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         strategy = self.fetcher_config["fallback_strategy"]
 
         # Type the stores list properly
-        stores: List[Union[CDNStore, S3Store]] = []
+        stores: list[CDNStore | S3Store] = []
 
         if strategy == "CDN only":
             stores = [self.cdn_store] if self.fetcher_config["cdn"]["enabled"] else []
@@ -399,9 +399,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
         else:
             self.status_label.setText("Error: No view model connected")
 
-    def get_scan_summary(self) -> Dict[str, Any]:
+    def get_scan_summary(self) -> dict[str, Any]:
         """Get a summary of the current scan results."""
-        summary: Dict[str, Any] = {
+        summary: dict[str, Any] = {
             "total": 0,
             "missing": 0,
             "downloaded": 0,
@@ -463,7 +463,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         # Add to layout with improved spacing and grouping
         source_label = QLabel("📡 Source:")
-        source_label.setStyleSheet("font-weight: bold;")
+        source_label.setProperty("class", "StandardLabel")
         radio_layout.addWidget(source_label)
         radio_layout.addWidget(self.auto_radio)
         radio_layout.addWidget(self.cdn_radio)
@@ -651,7 +651,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             goes_count = goes16_count if detected == "GOES-16" else goes18_count
             other_count = goes18_count if detected == "GOES-16" else goes16_count
             LOGGER.info(
-                f"Auto-detect satellite: Selected {detected} based on file count " f"({goes_count} vs {other_count})"
+                f"Auto-detect satellite: Selected {detected} based on file count ({goes_count} vs {other_count})"
             )
             LOGGER.info(f"Auto-detect satellite: Completed successfully, selected {detected_full}")
 

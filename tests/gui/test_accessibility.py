@@ -1,6 +1,5 @@
 """Accessibility tests for GOES VFI GUI."""
 
-import pytest
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import (
@@ -12,6 +11,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QToolTip,
 )
+import pytest
 
 from goesvfi.gui import MainWindow
 
@@ -25,11 +25,11 @@ class AccessibilityTester:
         issues = []
 
         # Check accessible name
-        if not widget.accessibleName() and isinstance(widget, (QPushButton, QLineEdit, QComboBox)):
+        if not widget.accessibleName() and isinstance(widget, QPushButton | QLineEdit | QComboBox):
             issues.append(f"{widget.__class__.__name__} missing accessible name")
 
         # Check accessible description
-        if isinstance(widget, (QPushButton, QLineEdit)) and not widget.accessibleDescription():
+        if isinstance(widget, QPushButton | QLineEdit) and not widget.accessibleDescription():
             issues.append(f"{widget.__class__.__name__} missing accessible description")
 
         # Check tooltip
@@ -37,7 +37,7 @@ class AccessibilityTester:
             issues.append(f"Button '{widget.text()}' missing tooltip")
 
         # Check keyboard navigation
-        if isinstance(widget, (QPushButton, QLineEdit, QComboBox)) and not widget.focusPolicy():
+        if isinstance(widget, QPushButton | QLineEdit | QComboBox) and not widget.focusPolicy():
             issues.append(f"{widget.__class__.__name__} cannot receive keyboard focus")
 
         return issues
@@ -48,7 +48,7 @@ class AccessibilityTester:
 
         def relative_luminance(color):
             def channel_value(c):
-                c = c / 255.0
+                c /= 255.0
                 if c <= 0.03928:
                     return c / 12.92
                 return ((c + 0.055) / 1.055) ** 2.4
@@ -72,7 +72,7 @@ class AccessibilityTester:
 class TestAccessibility:
     """Test accessibility features of the GUI."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
@@ -85,7 +85,7 @@ class TestAccessibility:
 
         return window
 
-    def test_screen_reader_compatibility(self, qtbot, window):
+    def test_screen_reader_compatibility(self, qtbot, window) -> None:
         """Test screen reader compatibility of UI elements."""
         accessibility_tester = AccessibilityTester()
         all_issues = []
@@ -183,7 +183,7 @@ class TestAccessibility:
         # Verify no critical issues
         assert len(all_issues) == 0, f"Accessibility issues found: {all_issues}"
 
-    def test_keyboard_navigation_flow(self, qtbot, window):
+    def test_keyboard_navigation_flow(self, qtbot, window) -> None:
         """Test keyboard navigation through UI elements."""
 
         # Basic test to ensure widgets can receive focus
@@ -224,7 +224,7 @@ class TestAccessibility:
         # Basic functionality test passed - widgets can be focused
         # This demonstrates that keyboard navigation is fundamentally working
 
-    def test_high_contrast_theme(self, qtbot, window):
+    def test_high_contrast_theme(self, qtbot, window) -> None:
         """Test high contrast theme support."""
 
         # High contrast palette creator
@@ -288,7 +288,7 @@ class TestAccessibility:
 
         assert selection_contrast >= 4.5, f"Selection contrast ratio {selection_contrast:.2f} below standard"
 
-    def test_tooltip_accuracy(self, qtbot, window):
+    def test_tooltip_accuracy(self, qtbot, window) -> None:
         """Test tooltip accuracy and helpfulness."""
 
         # Tooltip validator
@@ -305,7 +305,7 @@ class TestAccessibility:
                 return False, f"Tooltip too long ({len(tooltip)} chars)"
 
             # Check for placeholder text
-            if tooltip.lower() in ["tooltip", "todo", "tbd", "..."]:
+            if tooltip.lower() in {"tooltip", "todo", "tbd", "..."}:
                 return False, "Placeholder tooltip"
 
             # Check for sentence structure
@@ -365,18 +365,12 @@ class TestAccessibility:
                 validation_results.append((widget.__class__.__name__, valid, message))
 
                 if not valid:
-                    widget_name = widget.__class__.__name__
-                    widget_id = widget.objectName() if hasattr(widget, "objectName") else "unnamed"
-                    print(f"Tooltip issue for {widget_name} ({widget_id}): {message}")
-                    print(f"  Widget path: {widget_path}")
-                    print(f"  Current tooltip: '{widget.toolTip()}'")
+                    widget.objectName() if hasattr(widget, "objectName") else "unnamed"
                     if hasattr(widget, "text"):
-                        print(f"  Widget text: '{widget.text()}'")
+                        pass
                     if hasattr(widget, "accessibleName"):
-                        print(f"  Accessible name: '{widget.accessibleName()}'")
-                    print("---")
-            except (AttributeError, NameError) as e:
-                print(f"Widget does not exist: {widget_path} - {e}")
+                        pass
+            except (AttributeError, NameError):
                 continue  # Skip widgets that don't exist
 
         # All tooltips should be valid - only count ones we explicitly set
@@ -395,7 +389,7 @@ class TestAccessibility:
         qtbot.wait(100)
         # Tooltip should be visible (actual verification would require screenshot)
 
-    def test_error_message_clarity(self, qtbot, window, mocker):
+    def test_error_message_clarity(self, qtbot, window, mocker) -> None:
         """Test that error messages are clear and actionable."""
         # Mock message box
         mocker.patch.object(QMessageBox, "critical")
@@ -403,7 +397,9 @@ class TestAccessibility:
 
         # Error message validator
         def validate_error_message(title, message):
-            issues = []
+            issues = [
+                f"Contains technical jargon: '{term}'" for term in jargon_terms if term.lower() in message.lower()
+            ]
 
             # Check title
             if not title or len(title) < 5:
@@ -418,10 +414,6 @@ class TestAccessibility:
                 issues.append("Message too long")
 
             # Check for technical jargon
-            jargon_terms = ["exception", "null", "undefined", "stack trace", "segfault"]
-            for term in jargon_terms:
-                if term.lower() in message.lower():
-                    issues.append(f"Contains technical jargon: '{term}'")
 
             # Check for actionable advice
             action_keywords = ["please", "try", "check", "ensure", "verify", "consider"]
@@ -447,7 +439,7 @@ class TestAccessibility:
         # Test each scenario
         for scenario in error_scenarios:
             # Mock the error display
-            def show_error(parent, title, message):
+            def show_error(parent, title, message) -> None:
                 # Validate the error message
                 issues = validate_error_message(title, message)
                 assert len(issues) == 0, f"Error message issues: {issues}"
@@ -463,18 +455,18 @@ class TestAccessibility:
 
             # Additional validation could be done here
 
-    def test_focus_indicators(self, qtbot, window):
+    def test_focus_indicators(self, qtbot, window) -> None:
         """Test that focus indicators are visible and clear."""
 
         # Focus indicator checker
-        def check_focus_indicator(widget):
+        def check_focus_indicator(widget) -> None:
             # In headless testing, focus may not work reliably, so just check focus capabilities
             # Verify the widget can receive focus and has good contrast for focus indicators
 
             # Check if widget can accept focus
-            assert (
-                widget.focusPolicy() != Qt.FocusPolicy.NoFocus
-            ), f"Widget {widget.__class__.__name__} cannot accept focus"
+            assert widget.focusPolicy() != Qt.FocusPolicy.NoFocus, (
+                f"Widget {widget.__class__.__name__} cannot accept focus"
+            )
 
             # Check if widget has good contrast for focus indicators
             palette = widget.palette()
@@ -513,7 +505,7 @@ class TestAccessibility:
             if widget.isEnabled() and widget.focusPolicy() != Qt.FocusPolicy.NoFocus:
                 check_focus_indicator(widget)
 
-    def test_tab_order_logic(self, qtbot, window):
+    def test_tab_order_logic(self, qtbot, window) -> None:
         """Test that tab order can be set and widgets are focusable."""
         # Expected tab order for main controls
         expected_order = [
@@ -529,9 +521,9 @@ class TestAccessibility:
         # Verify all widgets exist and can accept focus
         for widget in expected_order:
             assert widget is not None, "Widget should exist"
-            assert (
-                widget.focusPolicy() != Qt.FocusPolicy.NoFocus
-            ), f"Widget {widget.__class__.__name__} should accept focus"
+            assert widget.focusPolicy() != Qt.FocusPolicy.NoFocus, (
+                f"Widget {widget.__class__.__name__} should accept focus"
+            )
 
         # Set explicit tab order (this tests that the tab order system works)
         for i in range(len(expected_order) - 1):
@@ -542,7 +534,7 @@ class TestAccessibility:
         # (We don't test actual tab navigation due to headless environment limitations)
         assert len(expected_order) > 0, "Should have widgets in tab order"
 
-    def test_aria_labels(self, qtbot, window):
+    def test_aria_labels(self, qtbot, window) -> None:
         """Test ARIA-like labels for complex widgets."""
         # For Qt, we use accessible properties as ARIA equivalents
 
@@ -562,8 +554,7 @@ class TestAccessibility:
                             return True, label.text()
 
                 return False, "No label association found"
-            else:
-                return True, accessible_name
+            return True, accessible_name
 
         # Check input field labels
         input_checks = [
@@ -573,7 +564,7 @@ class TestAccessibility:
         ]
 
         for widget, expected_label in input_checks:
-            has_label, label_text = check_label_association(widget, expected_label)
+            has_label, _label_text = check_label_association(widget, expected_label)
             if not has_label:
                 # Set accessible name as fallback
                 widget.setAccessibleName(expected_label)
@@ -592,7 +583,7 @@ class TestAccessibility:
             )
 
         # State descriptions for dynamic elements
-        def update_start_button_state():
+        def update_start_button_state() -> None:
             if window.is_processing:
                 window.main_tab.start_button.setAccessibleDescription(
                     "Processing in progress. Click to stop the current operation."

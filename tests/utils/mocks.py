@@ -1,11 +1,11 @@
 # tests/utils/mocks.py
 """Reusable mocks for testing external process interactions."""
 
+from collections.abc import Callable
 import io  # Import io
 import pathlib
 import subprocess
 import time
-from typing import Callable, List, Optional, Tuple
 from unittest.mock import MagicMock
 
 # Add imports for creating PNG test images
@@ -14,7 +14,7 @@ from PIL import Image
 
 
 # A helper function to create a valid minimal PNG for testing
-def create_test_png(path: pathlib.Path, size: Tuple[int, int] = (10, 10)):
+def create_test_png(path: pathlib.Path, size: tuple[int, int] = (10, 10)):
     """Create a minimal valid PNG file at the given path."""
     # Create a small black image
     img_array = np.zeros((size[1], size[0], 3), dtype=np.uint8)
@@ -37,14 +37,14 @@ class MockSubprocessResult:
         returncode: int = 0,
         stdout: str = "",
         stderr: str = "",
-        args: Optional[List[str]] = None,
+        args: list[str] | None = None,
     ):
         self.returncode = returncode
         self.stdout = stdout.encode()  # Store as bytes like subprocess does
         self.stderr = stderr.encode()
         self.args = args or []
 
-    def check_returncode(self):
+    def check_returncode(self) -> None:
         """Raises CalledProcessError if returncode is non-zero."""
         if self.returncode != 0:
             raise subprocess.CalledProcessError(self.returncode, self.args, output=self.stdout, stderr=self.stderr)
@@ -55,16 +55,16 @@ class MockPopen:
 
     def __init__(
         self,
-        args: List[str],
+        args: list[str],
         returncode: int = 0,
         stdout: bytes = b"",
         stderr: bytes = b"",
-        stdin_write_limit: Optional[int] = None,
+        stdin_write_limit: int | None = None,
         complete_after: float = 0.0,
     ):
         self.args = args
         self._desired_returncode = returncode
-        self.returncode: Optional[int] = None
+        self.returncode: int | None = None
         self._stdout_data = stdout
         self._stderr_data = stderr
         self._start_time = time.monotonic()
@@ -92,9 +92,10 @@ class MockPopen:
         self.stdin.write.side_effect = self._handle_stdin_write
         self.stdin.close = MagicMock()
 
-    def _handle_stdin_write(self, data: bytes):
+    def _handle_stdin_write(self, data: bytes) -> None:
         if self._stdin_write_limit is not None and (self._stdin_bytes_written + len(data)) > self._stdin_write_limit:
-            raise BrokenPipeError("Mock Popen: stdin write limit exceeded")
+            msg = "Mock Popen: stdin write limit exceeded"
+            raise BrokenPipeError(msg)
         self._stdin_bytes_written += len(data)
         # In a real scenario, the process would consume this data.
         # For the mock, we just track the amount written.
@@ -108,7 +109,7 @@ class MockPopen:
             return True
         return False
 
-    def wait(self, timeout: Optional[float] = None) -> int:
+    def wait(self, timeout: float | None = None) -> int:
         """Simulates waiting for the process to terminate."""
         if self._check_completion():
             return self.returncode or 0
@@ -122,7 +123,7 @@ class MockPopen:
         self.returncode = self._desired_returncode
         return self.returncode
 
-    def communicate(self, input: Optional[bytes] = None, timeout: Optional[float] = None) -> Tuple[bytes, bytes]:
+    def communicate(self, input: bytes | None = None, timeout: float | None = None) -> tuple[bytes, bytes]:
         """Simulates communicating with the process."""
         if input:
             self.stdin.write(input)
@@ -136,7 +137,7 @@ class MockPopen:
             self.wait()
         return self._stdout_data, self._stderr_data
 
-    def poll(self) -> Optional[int]:
+    def poll(self) -> int | None:
         """Simulates checking if the process has terminated."""
         if self._check_completion():
             return self.returncode
@@ -168,12 +169,12 @@ class MockPopen:
 
 
 def create_mock_subprocess_run(
-    expected_command: Optional[List[str]] = None,
+    expected_command: list[str] | None = None,
     returncode: int = 0,
     stdout: str = "",
     stderr: str = "",
-    output_file_to_create: Optional[pathlib.Path] = None,
-    side_effect: Optional[Exception] = None,
+    output_file_to_create: pathlib.Path | None = None,
+    side_effect: Exception | None = None,
 ) -> Callable:
     """Creates a mock function to replace subprocess.run."""
 
@@ -212,9 +213,8 @@ def create_mock_subprocess_run(
                 # FIX: Just create a dummy file to avoid calling Image.fromarray via create_test_png
                 file_to_create.parent.mkdir(parents=True, exist_ok=True)
                 file_to_create.touch()
-                print(f"Mock run created dummy file: {file_to_create}")  # Debug print
-            except Exception as e:
-                print(f"Mock run failed to create file {file_to_create}: {e}")
+            except Exception:
+                pass
 
         # Handle side effect (e.g., raise exception)
         if side_effect:
@@ -222,26 +222,25 @@ def create_mock_subprocess_run(
             if isinstance(side_effect, BaseException):
                 raise side_effect
             # If it's callable, call it (though less common for run)
-            elif callable(side_effect):
+            if callable(side_effect):
                 return side_effect(*args, **kwargs)
             # Otherwise, maybe it's an iterator? (Less likely for run)
             # else: return next(side_effect)
 
         # Return a result object
-        result = MockSubprocessResult(returncode=returncode, stdout=stdout, stderr=stderr, args=cmd_list)
-        return result
+        return MockSubprocessResult(returncode=returncode, stdout=stdout, stderr=stderr, args=cmd_list)
 
     return mock_run
 
 
 def create_mock_popen(
-    expected_command: Optional[List[str]] = None,
+    expected_command: list[str] | None = None,
     returncode: int = 0,
     stdout: bytes = b"",
     stderr: bytes = b"",
-    stdin_write_limit: Optional[int] = None,
-    output_file_to_create: Optional[pathlib.Path] = None,
-    side_effect: Optional[Exception] = None,
+    stdin_write_limit: int | None = None,
+    output_file_to_create: pathlib.Path | None = None,
+    side_effect: Exception | None = None,
     complete_after: float = 0.0,
 ) -> Callable:
     """Creates a mock function that returns a MockPopen instance."""
@@ -288,9 +287,8 @@ def create_mock_popen(
                         # Write dummy data instead of touch for Popen mocks (ffmpeg)
                         with open(output_file_to_create, "wb") as f:
                             f.write(b"dummy ffmpeg output")
-                    print(f"Mock Popen created file: {output_file_to_create}")  # Debug print
-                except Exception as e:
-                    print(f"Mock Popen failed to create file {output_file_to_create}: {e}")
+                except Exception:
+                    pass
             return res
 
         mock_instance.wait = wait_with_file_creation  # type: ignore[method-assign]
@@ -301,22 +299,22 @@ def create_mock_popen(
 
 
 def create_mock_colourise(
-    expected_input: Optional[str] = None,
-    expected_output: Optional[str] = None,
-    expected_res_km: Optional[int] = None,
-    output_file_to_create: Optional[pathlib.Path] = None,
-    side_effect: Optional[Exception] = None,
+    expected_input: str | None = None,
+    expected_output: str | None = None,
+    expected_res_km: int | None = None,
+    output_file_to_create: pathlib.Path | None = None,
+    side_effect: Exception | None = None,
 ) -> Callable:
     """Creates a mock function to replace goesvfi.sanchez.runner.colourise."""
 
-    def mock_colourise(input_path: str, output_path: str, res_km: int):
+    def mock_colourise(input_path: str, output_path: str, res_km: int) -> None:
         # Assert arguments
         if expected_input:
             assert input_path == expected_input, f"Mock colourise: Expected input {expected_input}, got {input_path}"
         if expected_output:
-            assert (
-                output_path == expected_output
-            ), f"Mock colourise: Expected output {expected_output}, got {output_path}"
+            assert output_path == expected_output, (
+                f"Mock colourise: Expected output {expected_output}, got {output_path}"
+            )
         if expected_res_km:
             assert res_km == expected_res_km, f"Mock colourise: Expected res_km {expected_res_km}, got {res_km}"
 
@@ -331,7 +329,6 @@ def create_mock_colourise(
 
         # Create a valid PNG instead of just touching the file
         create_test_png(output_file)
-        print(f"Mock colourise created valid PNG file: {output_file}")  # Add print for debugging tests
 
     return mock_colourise
 
@@ -346,7 +343,7 @@ class MockS3Store:
         self.bucket_name = bucket_name
         self._closed = False
         self._client = MagicMock()
-        self._s3_client = None  # Add this to match real S3Store interface
+        self._s3_client: MagicMock | None = None  # Add this to match real S3Store interface
 
     async def __aenter__(self):
         self._s3_client = MagicMock()
@@ -355,7 +352,7 @@ class MockS3Store:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
-    async def close(self):
+    async def close(self) -> None:
         self._closed = True
         self._s3_client = None
 
@@ -369,7 +366,7 @@ class MockS3Store:
         """Mock bucket and key extraction."""
         return self.bucket_name, f"mock/key/{timestamp}/{satellite}"
 
-    async def exists(self, timestamp, satellite=None):
+    async def exists(self, timestamp, satellite=None) -> bool:
         """Mock file existence check."""
         return True
 
@@ -381,7 +378,7 @@ class MockS3Store:
         local_path.write_bytes(b"mock s3 download content")
         return local_path
 
-    async def check_file_exists(self, timestamp, satellite):
+    async def check_file_exists(self, timestamp, satellite) -> bool:
         """Mock file existence check."""
         return True
 
@@ -389,7 +386,7 @@ class MockS3Store:
         """Mock file download."""
         return await self.download(timestamp, satellite, local_path)
 
-    async def get_file_url(self, timestamp, satellite):
+    async def get_file_url(self, timestamp, satellite) -> str:
         """Mock URL generation."""
         return f"https://s3.amazonaws.com/{self.bucket_name}/mock/key/{timestamp}/{satellite}"
 
@@ -401,7 +398,7 @@ class MockS3Store:
 class MockCDNStore:
     """Comprehensive mock for CDNStore."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         pass
 
     async def __aenter__(self):
@@ -410,7 +407,7 @@ class MockCDNStore:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    async def exists(self, timestamp, satellite=None):
+    async def exists(self, timestamp, satellite=None) -> bool:
         return True
 
     async def download(self, timestamp, satellite, local_path):

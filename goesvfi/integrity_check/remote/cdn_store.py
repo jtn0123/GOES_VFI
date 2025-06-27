@@ -1,13 +1,12 @@
-"""
-CDN Store implementation for accessing GOES imagery via NOAA STAR CDN.
+"""CDN Store implementation for accessing GOES imagery via NOAA STAR CDN.
 
 This module provides a RemoteStore implementation that fetches GOES Band 13
 imagery from the NOAA STAR CDN using asynchronous HTTP requests.
 """
 
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Optional, Type
 
 import aiohttp
 from aiohttp.client_exceptions import ClientError, ClientResponseError
@@ -22,7 +21,7 @@ LOGGER = get_logger(__name__)
 class CDNStore(RemoteStore):
     """Store implementation for the NOAA STAR CDN."""
 
-    def __init__(self, resolution: Optional[str] = None, timeout: int = 30) -> None:
+    def __init__(self, resolution: str | None = None, timeout: int = 30) -> None:
         """Initialize with optional resolution and timeout parameters.
 
         Args:
@@ -31,7 +30,7 @@ class CDNStore(RemoteStore):
         """
         self.resolution = resolution or TimeIndex.CDN_RES
         self.timeout = timeout
-        self._session: Optional[aiohttp.ClientSession] = None
+        self._session: aiohttp.ClientSession | None = None
 
     @property
     async def session(self) -> aiohttp.ClientSession:
@@ -58,9 +57,9 @@ class CDNStore(RemoteStore):
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[object],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object | None,
     ) -> None:
         """Context manager exit."""
         _ = exc_val  # Unused but required by protocol
@@ -109,7 +108,8 @@ class CDNStore(RemoteStore):
             # First check if the file exists
             async with session.head(url, allow_redirects=True) as response:
                 if response.status != 200:
-                    raise FileNotFoundError(f"File not found at {url} (status: {response.status})")
+                    msg = f"File not found at {url} (status: {response.status})"
+                    raise FileNotFoundError(msg)
 
             # Create parent directory if it doesn't exist
             dest_path.parent.mkdir(parents=True, exist_ok=True)
@@ -118,7 +118,8 @@ class CDNStore(RemoteStore):
             LOGGER.debug("Downloading %s to %s", url, dest_path)
             async with session.get(url, allow_redirects=True) as response:
                 if response.status != 200:
-                    raise FileNotFoundError(f"File not found at {url} (status: {response.status})")
+                    msg = f"File not found at {url} (status: {response.status})"
+                    raise FileNotFoundError(msg)
 
                 content_length = response.headers.get("Content-Length", "0")
                 total_size = int(content_length) if content_length.isdigit() else 0
@@ -140,12 +141,16 @@ class CDNStore(RemoteStore):
 
         except ClientResponseError as e:
             if e.status == 404:
-                raise FileNotFoundError(f"File not found at {url}")
-            raise IOError(f"Failed to download {url}: {e}")
+                msg = f"File not found at {url}"
+                raise FileNotFoundError(msg) from e
+            msg = f"Failed to download {url}: {e}"
+            raise OSError(msg) from e
         except ClientError as e:
-            raise IOError(f"Failed to download {url}: {e}")
+            msg = f"Failed to download {url}: {e}"
+            raise OSError(msg) from e
         except Exception as e:
-            raise IOError(f"Unexpected error downloading {url}: {e}")
+            msg = f"Unexpected error downloading {url}: {e}"
+            raise OSError(msg) from e
 
     async def check_file_exists(self, timestamp: datetime, satellite: SatellitePattern) -> bool:
         """Check if a file exists for the given timestamp and satellite.
@@ -159,8 +164,8 @@ class CDNStore(RemoteStore):
         timestamp: datetime,
         satellite: SatellitePattern,
         destination: Path,
-        progress_callback: Optional[Callable[..., None]] = None,
-        cancel_check: Optional[Callable[[], bool]] = None,
+        progress_callback: Callable[..., None] | None = None,
+        cancel_check: Callable[[], bool] | None = None,
     ) -> Path:
         """Download a file for the given timestamp and satellite.
 

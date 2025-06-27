@@ -1,11 +1,11 @@
-"""image_loader.py
+"""image_loader.py.
 
 Provides the ImageLoader class, an ImageProcessor implementation for loading images
 from disk using Pillow and converting them to ImageData objects for the GOES_VFI pipeline.
 """
 
 import os
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from PIL import Image
@@ -30,7 +30,7 @@ class ImageLoader(ImageProcessor):
     basic metadata. It does not implement processing, cropping, or saving.
     """
 
-    def __init__(self, optimize_memory: bool = True, max_image_size_mb: Optional[int] = None) -> None:
+    def __init__(self, optimize_memory: bool = True, max_image_size_mb: int | None = None) -> None:
         """Initialize ImageLoader with optional memory optimization.
 
         Args:
@@ -57,7 +57,8 @@ class ImageLoader(ImageProcessor):
             MemoryError: If image is too large for available memory.
         """
         if not os.path.exists(source_path):
-            raise InputError(f"Image file not found: {source_path}")
+            msg = f"Image file not found: {source_path}"
+            raise InputError(msg)
 
         # Log memory before loading
         if self.optimize_memory:
@@ -86,15 +87,15 @@ class ImageLoader(ImageProcessor):
 
                     # Check against limit
                     if self.max_image_size_mb and estimated_mb > self.max_image_size_mb:
-                        raise ValueError(
-                            f"Image too large: {estimated_mb}MB exceeds limit of " f"{self.max_image_size_mb}MB"
-                        )
+                        msg = f"Image too large: {estimated_mb}MB exceeds limit of {self.max_image_size_mb}MB"
+                        raise ValueError(msg)
 
                     # Check available memory
                     if self.memory_optimizer:
                         has_memory, msg = self.memory_optimizer.check_available_memory(estimated_mb + 100)  # Add buffer
                         if not has_memory:
-                            raise MemoryError(f"Insufficient memory to load image: {msg}")
+                            msg = f"Insufficient memory to load image: {msg}"
+                            raise MemoryError(msg)
 
                 # Convert Pillow Image to NumPy array
                 image_data_array = np.array(img)
@@ -132,15 +133,17 @@ class ImageLoader(ImageProcessor):
                     metadata=metadata,
                 )
 
-        except IOError as e:
+        except OSError as e:
             # Re-raise other IOErrors encountered by Pillow
-            raise InputError(f"Error reading image file {source_path}: {e}") from e
+            msg = f"Error reading image file {source_path}: {e}"
+            raise InputError(msg) from e
         except MemoryError:  # pylint: disable=try-except-raise
             # Re-raise memory errors unchanged - let caller handle OOM
             raise
         except (KeyError, ValueError, RuntimeError) as e:
             # Catch any other unexpected errors during loading
-            raise ProcessingError(f"Could not load image from {source_path}: {e}") from e
+            msg = f"Could not load image from {source_path}: {e}"
+            raise ProcessingError(msg) from e
 
     def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
         """Not implemented. ImageLoader does not perform processing.
@@ -148,15 +151,17 @@ class ImageLoader(ImageProcessor):
         Raises:
             NotImplementedError: Always.
         """
-        raise NotImplementedError("ImageLoader does not implement the process method.")
+        msg = "ImageLoader does not implement the process method."
+        raise NotImplementedError(msg)
 
-    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]) -> ImageData:
+    def crop(self, image_data: ImageData, crop_area: tuple[int, int, int, int]) -> ImageData:
         """Not implemented. ImageLoader does not perform cropping.
 
         Raises:
             NotImplementedError: Always.
         """
-        raise NotImplementedError("ImageLoader does not implement the crop method.")
+        msg = "ImageLoader does not implement the crop method."
+        raise NotImplementedError(msg)
 
     def save(self, image_data: ImageData, destination_path: str) -> None:
         """Not implemented. ImageLoader does not perform saving.
@@ -164,4 +169,5 @@ class ImageLoader(ImageProcessor):
         Raises:
             NotImplementedError: Always.
         """
-        raise NotImplementedError("ImageLoader does not implement the save method.")
+        msg = "ImageLoader does not implement the save method."
+        raise NotImplementedError(msg)

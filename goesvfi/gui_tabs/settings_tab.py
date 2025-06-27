@@ -1,8 +1,6 @@
 """Settings tab for GOES-VFI application configuration."""
 
-from typing import Optional
-
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -17,7 +15,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from goesvfi.gui_components.theme_manager import AVAILABLE_THEMES, ThemeManager
+from goesvfi.gui_components.dynamic_theme_manager import AVAILABLE_THEMES, DynamicThemeManager
 from goesvfi.utils import config, log
 
 LOGGER = log.get_logger(__name__)
@@ -30,10 +28,10 @@ class SettingsTab(QWidget):
     themeChanged = pyqtSignal(str)  # Emitted when theme changes
     settingsChanged = pyqtSignal()  # Emitted when any setting changes
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the settings tab."""
         super().__init__(parent)
-        self.theme_manager = ThemeManager()
+        self.theme_manager = DynamicThemeManager()
         self._setup_ui()
         self._load_current_settings()
         self._connect_signals()
@@ -96,6 +94,9 @@ class SettingsTab(QWidget):
         theme_label.setProperty("class", "FFmpegLabel")
         theme_layout.addRow(theme_label, self.theme_combo)
 
+        # Theme color preview
+        self._create_theme_preview(theme_layout)
+
         # Custom overrides
         self.custom_overrides_checkbox = QCheckBox("Enable custom GOES-VFI styling")
         self.custom_overrides_checkbox.setToolTip("Apply domain-specific styling for satellite data visualization")
@@ -105,15 +106,13 @@ class SettingsTab(QWidget):
 
         # Density scale
         self.density_scale_combo = QComboBox()
-        self.density_scale_combo.addItems(
-            [
-                "0 (Normal)",
-                "-1 (Compact)",
-                "-2 (Very Compact)",
-                "1 (Spacious)",
-                "2 (Very Spacious)",
-            ]
-        )
+        self.density_scale_combo.addItems([
+            "0 (Normal)",
+            "-1 (Compact)",
+            "-2 (Very Compact)",
+            "1 (Spacious)",
+            "2 (Very Spacious)",
+        ])
         self.density_scale_combo.setToolTip("Adjust UI element spacing and sizing")
         ui_density_label = QLabel("UI Density:")
         ui_density_label.setProperty("class", "FFmpegLabel")
@@ -297,12 +296,12 @@ class SettingsTab(QWidget):
 
             # Log level
             log_level = config.get_logging_level()
-            if log_level in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+            if log_level in {"DEBUG", "INFO", "WARNING", "ERROR"}:
                 self.log_level_combo.setCurrentText(log_level)
 
             LOGGER.info("Settings loaded successfully")
         except Exception as e:
-            LOGGER.error(f"Failed to load settings: {e}")
+            LOGGER.exception(f"Failed to load settings: {e}")
 
     def _connect_signals(self) -> None:
         """Connect widget signals to handlers."""
@@ -314,6 +313,7 @@ class SettingsTab(QWidget):
     def _on_theme_changed(self, theme_name: str) -> None:
         """Handle theme selection change."""
         LOGGER.info(f"Theme changed to: {theme_name}")
+        self._update_theme_preview()  # Update preview when theme changes
         self.themeChanged.emit(theme_name)
         self._on_setting_changed()
 
@@ -334,7 +334,79 @@ class SettingsTab(QWidget):
             else:
                 LOGGER.error("No QApplication instance found")
         except Exception as e:
-            LOGGER.error(f"Failed to apply theme: {e}")
+            LOGGER.exception(f"Failed to apply theme: {e}")
+
+    def _create_theme_preview(self, layout: QFormLayout) -> None:
+        """Create theme color preview section."""
+        preview_widget = QWidget()
+        preview_layout = QHBoxLayout(preview_widget)
+        preview_layout.setContentsMargins(0, 5, 0, 5)
+
+        # Primary color preview
+        self.primary_color_label = QLabel("●")
+        self.primary_color_label.setFixedSize(20, 20)
+        self.primary_color_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.primary_color_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+
+        # Accent color preview
+        self.accent_color_label = QLabel("●")
+        self.accent_color_label.setFixedSize(20, 20)
+        self.accent_color_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.accent_color_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+
+        # Color info labels
+        self.color_info_label = QLabel("Theme colors will update headers and buttons")
+        self.color_info_label.setProperty("class", "StandardLabel")
+
+        # Layout
+        preview_layout.addWidget(QLabel("Primary:"))
+        preview_layout.addWidget(self.primary_color_label)
+        preview_layout.addWidget(QLabel("Accent:"))
+        preview_layout.addWidget(self.accent_color_label)
+        preview_layout.addStretch()
+
+        preview_label = QLabel("Preview:")
+        preview_label.setProperty("class", "FFmpegLabel")
+        layout.addRow(preview_label, preview_widget)
+        layout.addRow("", self.color_info_label)
+
+        # Update preview initially
+        self._update_theme_preview()
+
+    def _update_theme_preview(self) -> None:
+        """Update the theme color preview."""
+        try:
+            current_theme = self.theme_combo.currentText()
+            if hasattr(self.theme_manager, "get_theme_color"):
+                # Get colors for current theme selection
+                theme_manager = self.theme_manager
+                if hasattr(theme_manager, "_extract_theme_colors"):
+                    # Temporarily extract colors for preview
+                    old_theme = theme_manager._current_theme
+                    theme_manager._current_theme = current_theme
+                    theme_manager._extract_theme_colors()
+
+                    primary_color = theme_manager.get_theme_color("primary") or "#4a6fa5"
+                    accent_color = theme_manager.get_theme_color("accent") or "#6c9bd1"
+
+                    # Restore original theme
+                    theme_manager._current_theme = old_theme
+                    theme_manager._extract_theme_colors()
+                else:
+                    # Fallback colors
+                    primary_color = "#4a6fa5"
+                    accent_color = "#6c9bd1"
+            else:
+                # Fallback colors
+                primary_color = "#4a6fa5"
+                accent_color = "#6c9bd1"
+
+            # Update preview labels
+            self.primary_color_label.setStyleSheet(f"color: {primary_color}; font-size: 16px; font-weight: bold;")
+            self.accent_color_label.setStyleSheet(f"color: {accent_color}; font-size: 16px; font-weight: bold;")
+
+        except Exception as e:
+            LOGGER.debug(f"Failed to update theme preview: {e}")
 
     def _reset_theme_to_default(self) -> None:
         """Reset theme to default."""
@@ -351,7 +423,7 @@ class SettingsTab(QWidget):
             self.settingsChanged.emit()
             LOGGER.info("Settings saved")
         except Exception as e:
-            LOGGER.error(f"Failed to save settings: {e}")
+            LOGGER.exception(f"Failed to save settings: {e}")
 
     def _reset_to_defaults(self) -> None:
         """Reset all settings to defaults."""
@@ -365,7 +437,7 @@ class SettingsTab(QWidget):
             self.debug_mode_checkbox.setChecked(False)
             LOGGER.info("Settings reset to defaults")
         except Exception as e:
-            LOGGER.error(f"Failed to reset settings: {e}")
+            LOGGER.exception(f"Failed to reset settings: {e}")
 
     def _reload_settings(self) -> None:
         """Reload settings from configuration files."""
@@ -375,7 +447,7 @@ class SettingsTab(QWidget):
             self._load_current_settings()
             LOGGER.info("Settings reloaded")
         except Exception as e:
-            LOGGER.error(f"Failed to reload settings: {e}")
+            LOGGER.exception(f"Failed to reload settings: {e}")
 
     def get_current_theme(self) -> str:
         """Get the currently selected theme."""

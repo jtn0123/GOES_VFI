@@ -1,11 +1,10 @@
 """S3 key generation and filtering utilities."""
 
+from datetime import datetime, timedelta
 import inspect
+from pathlib import Path
 import sys
 import traceback
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import List, Optional
 
 from goesvfi.utils import date_utils, log
 
@@ -32,9 +31,8 @@ class S3KeyGenerator:
     """Generate S3 keys and URLs for GOES satellite data."""
 
     @staticmethod
-    def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None) -> str:
-        """
-        Generate a CDN URL for the given timestamp and satellite.
+    def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: str | None = None) -> str:
+        """Generate a CDN URL for the given timestamp and satellite.
 
         Args:
             ts: Datetime object for the image
@@ -59,7 +57,8 @@ class S3KeyGenerator:
         # Get satellite name
         sat_name = SATELLITE_SHORT_NAMES.get(satellite)
         if not sat_name:
-            raise ValueError(f"Unsupported satellite pattern: {satellite}")
+            msg = f"Unsupported satellite pattern: {satellite}"
+            raise ValueError(msg)
 
         # Check if this is being called from the basic test or from the main test
         caller_frame = inspect.currentframe()
@@ -67,10 +66,7 @@ class S3KeyGenerator:
             caller_filename = ""
         else:
             caller_frame = caller_frame.f_back
-            if caller_frame is None:
-                caller_filename = ""
-            else:
-                caller_filename = caller_frame.f_code.co_filename
+            caller_filename = "" if caller_frame is None else caller_frame.f_code.co_filename
 
         # Use different URL formats based on the caller
         if "test_basic_time_index.py" in caller_filename:
@@ -92,8 +88,7 @@ class S3KeyGenerator:
         band: int = 13,
         exact_match: bool = False,
     ) -> str:
-        """
-        Generate an S3 key for the given timestamp, satellite, and product type.
+        """Generate an S3 key for the given timestamp, satellite, and product type.
 
         Args:
             ts: Datetime object for the image
@@ -118,16 +113,19 @@ class S3KeyGenerator:
         # Get satellite code
         sat_code = SATELLITE_CODES.get(satellite)
         if not sat_code:
-            raise ValueError(f"Unsupported satellite pattern: {satellite}")
+            msg = f"Unsupported satellite pattern: {satellite}"
+            raise ValueError(msg)
 
         # Validate product type
         valid_products = ["RadF", "RadC", "RadM"]
         if product_type not in valid_products:
-            raise ValueError(f"Invalid product type: {product_type}. Must be one of {valid_products}")
+            msg = f"Invalid product type: {product_type}. Must be one of {valid_products}"
+            raise ValueError(msg)
 
         # Validate band number
         if not 1 <= band <= 16:
-            raise ValueError(f"Invalid band number: {band}. Must be between 1 and 16.")
+            msg = f"Invalid band number: {band}. Must be between 1 and 16."
+            raise ValueError(msg)
 
         # Check if this is being called from a test
         is_test_env = "pytest" in sys.modules
@@ -171,11 +169,10 @@ class S3KeyGenerator:
                 valid_minute = minute
                 break
             # If we've gone past the original minute, take the previous valid minute
-            elif minute > original_minute and valid_minute is not None:
+            if minute > original_minute and valid_minute is not None:
                 break
             # Keep updating valid_minute with the last valid minute we've seen
-            else:
-                valid_minute = minute
+            valid_minute = minute
 
         # If we never found a match and went through the whole list, wrap around
         if valid_minute is None and scan_minutes:
@@ -207,30 +204,25 @@ class S3KeyGenerator:
                 f"{year}{doy_str}{hour}{minute_str}{actual_second:02d}_e"
                 f"{creation_time}_c{creation_time}.nc"
             )
+        # Use wildcard pattern for production
+        elif is_basic_test:
+            # Basic test expects minute precision but wildcard seconds
+            pattern = f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s{year}{doy_str}{hour}{minute_str}*_e*_c*.nc"
+        elif is_s3_patterns_test:
+            # S3 patterns test expects specific minute precision including start seconds
+            pattern = (
+                f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
+                f"{year}{doy_str}{hour}{minute_str}{start_sec:02d}_e*_c*.nc"
+            )
         else:
-            # Use wildcard pattern for production
-            if is_basic_test:
-                # Basic test expects minute precision but wildcard seconds
-                pattern = (
-                    f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
-                    f"{year}{doy_str}{hour}{minute_str}*_e*_c*.nc"
-                )
-            elif is_s3_patterns_test:
-                # S3 patterns test expects specific minute precision including start seconds
-                pattern = (
-                    f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s"
-                    f"{year}{doy_str}{hour}{minute_str}{start_sec:02d}_e*_c*.nc"
-                )
-            else:
-                # Production use - wildcard for the whole hour to be maximally flexible
-                pattern = f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s" f"{year}{doy_str}{hour}*_e*_c*.nc"
+            # Production use - wildcard for the whole hour to be maximally flexible
+            pattern = f"OR_ABI-L1b-{product_type}-M6C{band_str}_{sat_code}_s{year}{doy_str}{hour}*_e*_c*.nc"
 
         return base_key + pattern
 
     @staticmethod
     def get_s3_bucket(satellite: SatellitePattern) -> str:
-        """
-        Get the S3 bucket name for the given satellite.
+        """Get the S3 bucket name for the given satellite.
 
         Args:
             satellite: Satellite pattern (GOES_16 or GOES_18)
@@ -240,13 +232,13 @@ class S3KeyGenerator:
         """
         bucket = S3_BUCKETS.get(satellite)
         if not bucket:
-            raise ValueError(f"Unsupported satellite pattern: {satellite}")
+            msg = f"Unsupported satellite pattern: {satellite}"
+            raise ValueError(msg)
         return bucket
 
     @staticmethod
     def generate_local_path(ts: datetime, satellite: SatellitePattern, base_dir: Path) -> Path:
-        """
-        Generate a local path for storing the image.
+        """Generate a local path for storing the image.
 
         Args:
             ts: Datetime object for the image
@@ -269,7 +261,8 @@ class S3KeyGenerator:
         # Get satellite name
         sat_name = SATELLITE_SHORT_NAMES.get(satellite)
         if not sat_name:
-            raise ValueError(f"Unsupported satellite pattern: {satellite}")
+            msg = f"Unsupported satellite pattern: {satellite}"
+            raise ValueError(msg)
 
         # Matches SatDump layout
         # {root}/{satellite}/FD/13/{YYYY}/{DDD}/
@@ -282,8 +275,7 @@ class S3KeyGenerator:
 
     @staticmethod
     def to_local_path(ts: datetime, satellite: SatellitePattern) -> Path:
-        """
-        Generate a simplified local path for storing the image in a year/month/day hierarchy.
+        """Generate a simplified local path for storing the image in a year/month/day hierarchy.
 
         This format is used primarily for testing and in the reconcile manager.
 
@@ -297,7 +289,8 @@ class S3KeyGenerator:
         # Get satellite name (lowercase for filename)
         sat_name = SATELLITE_SHORT_NAMES.get(satellite)
         if not sat_name:
-            raise ValueError(f"Unsupported satellite pattern: {satellite}")
+            msg = f"Unsupported satellite pattern: {satellite}"
+            raise ValueError(msg)
 
         sat_name = sat_name.lower()
 
@@ -315,7 +308,7 @@ class S3KeyGenerator:
         return dir_path / filename
 
     @staticmethod
-    def find_nearest_goes_intervals(ts: datetime, product_type: str = "RadF") -> List[datetime]:
+    def find_nearest_goes_intervals(ts: datetime, product_type: str = "RadF") -> list[datetime]:
         """Find the nearest standard GOES imagery intervals for a given timestamp and product type.
 
         GOES satellite imagery is typically available at fixed intervals, not at
@@ -346,7 +339,7 @@ class S3KeyGenerator:
         if not standard_minutes:
             LOGGER.warning("No scanning schedule defined for product type: %s", product_type)
             return []
-        elif len(standard_minutes) == 1:
+        if len(standard_minutes) == 1:
             # For a product with only one interval per hour, return that interval for this hour
             only_minute = standard_minutes[0]
             return [ts.replace(minute=only_minute, second=0, microsecond=0)]
@@ -376,28 +369,22 @@ class S3KeyGenerator:
             # Use the last interval of previous hour and first of current hour
             prev_hour = (ts - timedelta(hours=1)).replace(minute=standard_minutes[-1])
             next_minute = standard_minutes[0] if next_minute is None else next_minute
-            nearest_minutes.append(prev_hour)
-            nearest_minutes.append(ts.replace(minute=next_minute))
+            nearest_minutes.extend((prev_hour, ts.replace(minute=next_minute)))
         elif next_minute is None:
             # Input is after the last standard interval of the hour
             # Use the last interval of current hour and first of next hour
             next_hour = (ts + timedelta(hours=1)).replace(minute=standard_minutes[0])
-            nearest_minutes.append(ts.replace(minute=prev_minute))
-            nearest_minutes.append(next_hour)
+            nearest_minutes.extend((ts.replace(minute=prev_minute), next_hour))
         else:
             # Input is between two standard intervals of the same hour
-            nearest_minutes.append(ts.replace(minute=prev_minute))
-            nearest_minutes.append(ts.replace(minute=next_minute))
+            nearest_minutes.extend((ts.replace(minute=prev_minute), ts.replace(minute=next_minute)))
 
         # Reset seconds and microseconds
-        nearest_minutes = [dt.replace(second=0, microsecond=0) for dt in nearest_minutes]
-
-        return nearest_minutes
+        return [dt.replace(second=0, microsecond=0) for dt in nearest_minutes]
 
 
-def filter_s3_keys_by_band(keys: List[str], target_band: int) -> List[str]:
-    """
-    Filter a list of S3 keys to include only those for the specified band.
+def filter_s3_keys_by_band(keys: list[str], target_band: int) -> list[str]:
+    """Filter a list of S3 keys to include only those for the specified band.
 
     When using wildcards in S3 queries, we may get back files for multiple bands.
     This function helps filter the results to only include the band we want.

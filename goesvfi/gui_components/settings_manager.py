@@ -1,7 +1,7 @@
 """Settings management functionality for the main GUI window."""
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QApplication
@@ -44,7 +44,7 @@ class SettingsManager:
 
             if org_name != app_org or app_name != app_name_global:
                 LOGGER.error(
-                    "QSettings mismatch detected! Settings: org=%s, app=%s, " "but Application: org=%s, app=%s",
+                    "QSettings mismatch detected! Settings: org=%s, app=%s, but Application: org=%s, app=%s",
                     org_name,
                     app_name,
                     app_org,
@@ -77,10 +77,10 @@ class SettingsManager:
             LOGGER.debug("Saved setting: %s = %s", key, value)
             return True
         except Exception as e:
-            LOGGER.error("Error saving setting %s: %s", key, e)
+            LOGGER.exception("Error saving setting %s: %s", key, e)
             return False
 
-    def load_value(self, key: str, default: Any = None, value_type: Optional[type] = None) -> Any:
+    def load_value(self, key: str, default: Any = None, value_type: type | None = None) -> Any:
         """Load a single value from settings.
 
         Args:
@@ -96,10 +96,10 @@ class SettingsManager:
                 return self.settings.value(key, default, type=value_type)
             return self.settings.value(key, default)
         except Exception as e:
-            LOGGER.error("Error loading setting %s: %s", key, e)
+            LOGGER.exception("Error loading setting %s: %s", key, e)
             return default
 
-    def save_window_geometry(self, window_key: str, geometry: Dict[str, int]) -> bool:
+    def save_window_geometry(self, window_key: str, geometry: dict[str, int]) -> bool:
         """Save window geometry settings.
 
         Args:
@@ -117,10 +117,10 @@ class SettingsManager:
             self.settings.sync()
             return True
         except Exception as e:
-            LOGGER.error("Error saving window geometry for %s: %s", window_key, e)
+            LOGGER.exception("Error saving window geometry for %s: %s", window_key, e)
             return False
 
-    def load_window_geometry(self, window_key: str) -> Optional[Dict[str, int]]:
+    def load_window_geometry(self, window_key: str) -> dict[str, int] | None:
         """Load window geometry settings.
 
         Args:
@@ -146,10 +146,10 @@ class SettingsManager:
 
             return geometry
         except Exception as e:
-            LOGGER.error("Error loading window geometry for %s: %s", window_key, e)
+            LOGGER.exception("Error loading window geometry for %s: %s", window_key, e)
             return None
 
-    def save_recent_paths(self, key: str, paths: List[Path], max_items: int = 10) -> bool:
+    def save_recent_paths(self, key: str, paths: list[Path], max_items: int = 10) -> bool:
         """Save a list of recent paths.
 
         Args:
@@ -171,10 +171,10 @@ class SettingsManager:
             self.settings.sync()
             return True
         except Exception as e:
-            LOGGER.error("Error saving recent paths for %s: %s", key, e)
+            LOGGER.exception("Error saving recent paths for %s: %s", key, e)
             return False
 
-    def load_recent_paths(self, key: str) -> List[Path]:
+    def load_recent_paths(self, key: str) -> list[Path]:
         """Load a list of recent paths.
 
         Args:
@@ -187,7 +187,7 @@ class SettingsManager:
             path_strings = self.settings.value(f"RecentPaths/{key}", [], type=list)
             return [Path(p) for p in path_strings if p]
         except Exception as e:
-            LOGGER.error("Error loading recent paths for %s: %s", key, e)
+            LOGGER.exception("Error loading recent paths for %s: %s", key, e)
             return []
 
     def clear_group(self, group_name: str) -> bool:
@@ -207,10 +207,10 @@ class SettingsManager:
             LOGGER.debug("Cleared settings group: %s", group_name)
             return True
         except Exception as e:
-            LOGGER.error("Error clearing settings group %s: %s", group_name, e)
+            LOGGER.exception("Error clearing settings group %s: %s", group_name, e)
             return False
 
-    def get_all_keys(self) -> List[str]:
+    def get_all_keys(self) -> list[str]:
         """Get all settings keys.
 
         Returns:
@@ -220,7 +220,7 @@ class SettingsManager:
             keys = self.settings.allKeys()
             return [str(key) for key in keys]  # Convert to List[str]
         except Exception as e:
-            LOGGER.error("Error getting all keys: %s", e)
+            LOGGER.exception("Error getting all keys: %s", e)
             return []
 
     def remove_key(self, key: str) -> bool:
@@ -238,7 +238,7 @@ class SettingsManager:
             LOGGER.debug("Removed setting key: %s", key)
             return True
         except Exception as e:
-            LOGGER.error("Error removing key %s: %s", key, e)
+            LOGGER.exception("Error removing key %s: %s", key, e)
             return False
 
     def sync(self) -> bool:
@@ -251,5 +251,5 @@ class SettingsManager:
             self.settings.sync()
             return True
         except Exception as e:
-            LOGGER.error("Error syncing settings: %s", e)
+            LOGGER.exception("Error syncing settings: %s", e)
             return False

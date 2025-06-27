@@ -2,11 +2,13 @@ import os
 import pathlib
 import unittest
 
+import pytest
+
 from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
 
 
 class TestFFmpegCommandBuilder(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up a temporary directory and file paths for testing."""
         self.test_dir = pathlib.Path("test_temp_dir")
         self.test_dir.mkdir(exist_ok=True)
@@ -16,14 +18,14 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
         self.input_path.touch()
         self.output_path.touch()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up the temporary directory and files."""
         if self.test_dir.exists():
             for item in self.test_dir.iterdir():
                 item.unlink()
             self.test_dir.rmdir()
 
-    def test_single_pass_x264(self):
+    def test_single_pass_x264(self) -> None:
         builder = FFmpegCommandBuilder()
         cmd = (
             builder.set_input(self.input_path)
@@ -52,9 +54,9 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
             "yuv420p",
             str(self.output_path),
         ]
-        self.assertEqual(cmd, expected_cmd_parts)
+        assert cmd == expected_cmd_parts
 
-    def test_single_pass_x265(self):
+    def test_single_pass_x265(self) -> None:
         builder = FFmpegCommandBuilder()
         cmd = (
             builder.set_input(self.input_path)
@@ -85,9 +87,9 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
             "yuv420p",
             str(self.output_path),
         ]
-        self.assertEqual(cmd, expected_cmd_parts)
+        assert cmd == expected_cmd_parts
 
-    def test_two_pass_x265_pass1(self):
+    def test_two_pass_x265_pass1(self) -> None:
         builder = FFmpegCommandBuilder()
         pass_log_prefix = str(self.test_dir / "ffmpeg_pass")
         cmd = (
@@ -122,9 +124,9 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
             "null",
             os.devnull,
         ]
-        self.assertEqual(cmd, expected_cmd_parts)
+        assert cmd == expected_cmd_parts
 
-    def test_two_pass_x265_pass2(self):
+    def test_two_pass_x265_pass2(self) -> None:
         builder = FFmpegCommandBuilder()
         pass_log_prefix = str(self.test_dir / "ffmpeg_pass")
         cmd = (
@@ -159,9 +161,9 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
             "yuv420p",
             str(self.output_path),
         ]
-        self.assertEqual(cmd, expected_cmd_parts)
+        assert cmd == expected_cmd_parts
 
-    def test_hardware_hevc(self):
+    def test_hardware_hevc(self) -> None:
         builder = FFmpegCommandBuilder()
         cmd = (
             builder.set_input(self.input_path)
@@ -193,9 +195,9 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
             "yuv420p",
             str(self.output_path),
         ]
-        self.assertEqual(cmd, expected_cmd_parts)
+        assert cmd == expected_cmd_parts
 
-    def test_hardware_h264(self):
+    def test_hardware_h264(self) -> None:
         builder = FFmpegCommandBuilder()
         cmd = (
             builder.set_input(self.input_path)
@@ -225,9 +227,9 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
             "yuv420p",
             str(self.output_path),
         ]
-        self.assertEqual(cmd, expected_cmd_parts)
+        assert cmd == expected_cmd_parts
 
-    def test_stream_copy(self):
+    def test_stream_copy(self) -> None:
         builder = FFmpegCommandBuilder()
         cmd = (
             builder.set_input(self.input_path).set_output(self.output_path).set_encoder("None (copy original)").build()
@@ -241,57 +243,57 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
             "copy",
             str(self.output_path),
         ]
-        self.assertEqual(cmd, expected_cmd_parts)
+        assert cmd == expected_cmd_parts
 
-    def test_missing_input(self):
+    def test_missing_input(self) -> None:
         builder = FFmpegCommandBuilder()
         builder.set_output(self.output_path).set_encoder("Software x264").set_crf(23).set_pix_fmt("yuv420p")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             builder.build()
 
-    def test_missing_output(self):
+    def test_missing_output(self) -> None:
         builder = FFmpegCommandBuilder()
         builder.set_input(self.input_path).set_encoder("Software x264").set_crf(23).set_pix_fmt("yuv420p")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             builder.build()
 
-    def test_missing_encoder(self):
+    def test_missing_encoder(self) -> None:
         builder = FFmpegCommandBuilder()
         builder.set_input(self.input_path).set_output(self.output_path).set_crf(23).set_pix_fmt("yuv420p")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             builder.build()
 
-    def test_missing_crf_for_x264(self):
+    def test_missing_crf_for_x264(self) -> None:
         builder = FFmpegCommandBuilder()
         builder.set_input(self.input_path).set_output(self.output_path).set_encoder("Software x264").set_pix_fmt(
             "yuv420p"
         )
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             builder.build()
 
-    def test_missing_bitrate_for_hardware(self):
+    def test_missing_bitrate_for_hardware(self) -> None:
         builder = FFmpegCommandBuilder()
         builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
             "Hardware HEVC (VideoToolbox)"
         ).set_bufsize(4000).set_pix_fmt("yuv420p")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             builder.build()
 
-    def test_missing_bufsize_for_hardware(self):
+    def test_missing_bufsize_for_hardware(self) -> None:
         builder = FFmpegCommandBuilder()
         builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
             "Hardware HEVC (VideoToolbox)"
         ).set_bitrate(2000).set_pix_fmt("yuv420p")
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             builder.build()
 
-    def test_two_pass_missing_params(self):
+    def test_two_pass_missing_params(self) -> None:
         builder = FFmpegCommandBuilder()
         builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
             "Software x265 (2-Pass)"
         ).set_bitrate(1000).set_pix_fmt("yuv420p")
         # Missing set_two_pass call
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             builder.build()
 
         builder = FFmpegCommandBuilder()
@@ -302,7 +304,7 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
             None,  # type: ignore[arg-type]
             1,
         )  # Missing log prefix
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             builder.build()
 
         builder = FFmpegCommandBuilder()
@@ -313,17 +315,15 @@ class TestFFmpegCommandBuilder(unittest.TestCase):
             "log_prefix",
             None,  # type: ignore
         )  # Missing pass number
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             builder.build()
 
-    def test_two_pass_invalid_pass_number(self):
+    def test_two_pass_invalid_pass_number(self) -> None:
         builder = FFmpegCommandBuilder()
         builder.set_input(self.input_path).set_output(self.output_path).set_encoder(
             "Software x265 (2-Pass)"
-        ).set_bitrate(1000).set_pix_fmt("yuv420p").set_two_pass(
-            True, "log_prefix", 3
-        )  # Invalid pass number
-        with self.assertRaises(ValueError):
+        ).set_bitrate(1000).set_pix_fmt("yuv420p").set_two_pass(True, "log_prefix", 3)  # Invalid pass number
+        with pytest.raises(ValueError):
             builder.build()
 
 

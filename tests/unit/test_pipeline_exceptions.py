@@ -4,6 +4,8 @@ Tests for pipeline-specific exceptions.
 Tests the pipeline exception hierarchy and their specific use cases.
 """
 
+from typing import Never
+
 import pytest
 
 from goesvfi.pipeline.exceptions import (
@@ -22,7 +24,7 @@ from goesvfi.pipeline.exceptions import (
 class TestPipelineError:
     """Test base pipeline error."""
 
-    def test_pipeline_error_creation(self):
+    def test_pipeline_error_creation(self) -> None:
         """Test creating pipeline error."""
         error = PipelineError("Pipeline processing failed")
 
@@ -30,7 +32,7 @@ class TestPipelineError:
         assert isinstance(error, PipelineError)
         assert isinstance(error, Exception)
 
-    def test_pipeline_error_inheritance(self):
+    def test_pipeline_error_inheritance(self) -> None:
         """Test pipeline error inheritance."""
         error = PipelineError("Test error")
 
@@ -40,7 +42,7 @@ class TestPipelineError:
 class TestProcessingError:
     """Test processing error functionality."""
 
-    def test_processing_error_creation(self):
+    def test_processing_error_creation(self) -> None:
         """Test creating processing error."""
         error = ProcessingError("Video processing failed")
 
@@ -48,7 +50,7 @@ class TestProcessingError:
         assert isinstance(error, ProcessingError)
         assert isinstance(error, PipelineError)
 
-    def test_processing_error_inheritance(self):
+    def test_processing_error_inheritance(self) -> None:
         """Test processing error inheritance."""
         error = ProcessingError("Processing failed")
 
@@ -59,7 +61,7 @@ class TestProcessingError:
 class TestFFmpegError:
     """Test FFmpeg-specific error functionality."""
 
-    def test_ffmpeg_error_creation_minimal(self):
+    def test_ffmpeg_error_creation_minimal(self) -> None:
         """Test creating FFmpeg error with minimal parameters."""
         error = FFmpegError("Encoding failed")
 
@@ -69,7 +71,7 @@ class TestFFmpegError:
         assert isinstance(error, FFmpegError)
         assert isinstance(error, ProcessingError)
 
-    def test_ffmpeg_error_creation_with_command(self):
+    def test_ffmpeg_error_creation_with_command(self) -> None:
         """Test creating FFmpeg error with command information."""
         command = "ffmpeg -i input.mp4 -c:v libx264 output.mp4"
         error = FFmpegError("Encoding failed", command=command)
@@ -78,7 +80,7 @@ class TestFFmpegError:
         assert error.command == command
         assert error.stderr == ""
 
-    def test_ffmpeg_error_creation_with_stderr(self):
+    def test_ffmpeg_error_creation_with_stderr(self) -> None:
         """Test creating FFmpeg error with stderr output."""
         stderr_output = "Error: Unknown encoder 'libx265'"
         error = FFmpegError("Encoding failed", stderr=stderr_output)
@@ -87,7 +89,7 @@ class TestFFmpegError:
         assert error.command == ""
         assert error.stderr == stderr_output
 
-    def test_ffmpeg_error_creation_full(self):
+    def test_ffmpeg_error_creation_full(self) -> None:
         """Test creating FFmpeg error with all parameters."""
         command = "ffmpeg -i input.mp4 -c:v libx264 output.mp4"
         stderr_output = "Error: Input file not found"
@@ -97,7 +99,7 @@ class TestFFmpegError:
         assert error.command == command
         assert error.stderr == stderr_output
 
-    def test_ffmpeg_error_inheritance(self):
+    def test_ffmpeg_error_inheritance(self) -> None:
         """Test FFmpeg error inheritance chain."""
         error = FFmpegError("FFmpeg failed")
 
@@ -109,7 +111,7 @@ class TestFFmpegError:
 class TestRIFEError:
     """Test RIFE-specific error functionality."""
 
-    def test_rife_error_creation(self):
+    def test_rife_error_creation(self) -> None:
         """Test creating RIFE error."""
         error = RIFEError("Frame interpolation failed")
 
@@ -117,14 +119,14 @@ class TestRIFEError:
         assert isinstance(error, RIFEError)
         assert isinstance(error, ProcessingError)
 
-    def test_rife_error_inheritance(self):
+    def test_rife_error_inheritance(self) -> None:
         """Test RIFE error inheritance."""
         error = RIFEError("RIFE processing failed")
 
         assert isinstance(error, ProcessingError)
         assert isinstance(error, PipelineError)
 
-    def test_rife_error_specific_scenarios(self):
+    def test_rife_error_specific_scenarios(self) -> None:
         """Test RIFE error for specific scenarios."""
         scenarios = [
             "RIFE model not found",
@@ -141,7 +143,7 @@ class TestRIFEError:
 class TestSanchezError:
     """Test Sanchez-specific error functionality."""
 
-    def test_sanchez_error_creation(self):
+    def test_sanchez_error_creation(self) -> None:
         """Test creating Sanchez error."""
         error = SanchezError("Image processing failed")
 
@@ -149,14 +151,14 @@ class TestSanchezError:
         assert isinstance(error, SanchezError)
         assert isinstance(error, ProcessingError)
 
-    def test_sanchez_error_inheritance(self):
+    def test_sanchez_error_inheritance(self) -> None:
         """Test Sanchez error inheritance."""
         error = SanchezError("Sanchez processing failed")
 
         assert isinstance(error, ProcessingError)
         assert isinstance(error, PipelineError)
 
-    def test_sanchez_error_specific_scenarios(self):
+    def test_sanchez_error_specific_scenarios(self) -> None:
         """Test Sanchez error for specific scenarios."""
         scenarios = [
             "Sanchez executable not found",
@@ -173,7 +175,7 @@ class TestSanchezError:
 class TestInputError:
     """Test input validation error functionality."""
 
-    def test_input_error_creation(self):
+    def test_input_error_creation(self) -> None:
         """Test creating input error."""
         error = InputError("Invalid input file format")
 
@@ -181,14 +183,14 @@ class TestInputError:
         assert isinstance(error, InputError)
         assert isinstance(error, PipelineError)
 
-    def test_input_error_inheritance(self):
+    def test_input_error_inheritance(self) -> None:
         """Test input error inheritance."""
         error = InputError("Input validation failed")
 
         assert isinstance(error, PipelineError)
         assert isinstance(error, Exception)
 
-    def test_input_error_validation_scenarios(self):
+    def test_input_error_validation_scenarios(self) -> None:
         """Test input error for various validation scenarios."""
         scenarios = [
             "No PNG files found in input directory",
@@ -205,7 +207,7 @@ class TestInputError:
 class TestOutputError:
     """Test output operation error functionality."""
 
-    def test_output_error_creation(self):
+    def test_output_error_creation(self) -> None:
         """Test creating output error."""
         error = OutputError("Failed to write output file")
 
@@ -213,14 +215,14 @@ class TestOutputError:
         assert isinstance(error, OutputError)
         assert isinstance(error, PipelineError)
 
-    def test_output_error_inheritance(self):
+    def test_output_error_inheritance(self) -> None:
         """Test output error inheritance."""
         error = OutputError("Output operation failed")
 
         assert isinstance(error, PipelineError)
         assert isinstance(error, Exception)
 
-    def test_output_error_scenarios(self):
+    def test_output_error_scenarios(self) -> None:
         """Test output error for various scenarios."""
         scenarios = [
             "Insufficient disk space",
@@ -237,7 +239,7 @@ class TestOutputError:
 class TestResourceError:
     """Test resource constraint error functionality."""
 
-    def test_resource_error_creation_minimal(self):
+    def test_resource_error_creation_minimal(self) -> None:
         """Test creating resource error with minimal parameters."""
         error = ResourceError("Insufficient resources")
 
@@ -246,21 +248,21 @@ class TestResourceError:
         assert isinstance(error, ResourceError)
         assert isinstance(error, PipelineError)
 
-    def test_resource_error_creation_with_type(self):
+    def test_resource_error_creation_with_type(self) -> None:
         """Test creating resource error with resource type."""
         error = ResourceError("Insufficient memory", resource_type="memory")
 
         assert str(error) == "Insufficient memory"
         assert error.resource_type == "memory"
 
-    def test_resource_error_inheritance(self):
+    def test_resource_error_inheritance(self) -> None:
         """Test resource error inheritance."""
         error = ResourceError("Resource constraint")
 
         assert isinstance(error, PipelineError)
         assert isinstance(error, Exception)
 
-    def test_resource_error_different_types(self):
+    def test_resource_error_different_types(self) -> None:
         """Test resource error for different resource types."""
         resource_scenarios = [
             ("Insufficient memory", "memory"),
@@ -279,7 +281,7 @@ class TestResourceError:
 class TestConfigurationError:
     """Test pipeline configuration error functionality."""
 
-    def test_configuration_error_creation(self):
+    def test_configuration_error_creation(self) -> None:
         """Test creating configuration error."""
         error = ConfigurationError("Invalid pipeline configuration")
 
@@ -287,14 +289,14 @@ class TestConfigurationError:
         assert isinstance(error, ConfigurationError)
         assert isinstance(error, PipelineError)
 
-    def test_configuration_error_inheritance(self):
+    def test_configuration_error_inheritance(self) -> None:
         """Test configuration error inheritance."""
         error = ConfigurationError("Config error")
 
         assert isinstance(error, PipelineError)
         assert isinstance(error, Exception)
 
-    def test_configuration_error_scenarios(self):
+    def test_configuration_error_scenarios(self) -> None:
         """Test configuration error for various scenarios."""
         scenarios = [
             "Missing required configuration parameter 'fps'",
@@ -311,7 +313,7 @@ class TestConfigurationError:
 class TestPipelineExceptionHierarchy:
     """Test pipeline exception hierarchy and relationships."""
 
-    def test_exception_hierarchy_structure(self):
+    def test_exception_hierarchy_structure(self) -> None:
         """Test that pipeline exception hierarchy is properly structured."""
         # Create instances of all exception types
         pipeline_error = PipelineError("Base pipeline error")
@@ -347,26 +349,29 @@ class TestPipelineExceptionHierarchy:
             resource_error,
             config_error,
         ]
-        for exc in direct_pipeline_exceptions:
-            assert isinstance(exc, PipelineError)
-            assert not isinstance(exc, ProcessingError)  # Should not inherit from ProcessingError
+        for pipeline_exc in direct_pipeline_exceptions:
+            assert isinstance(pipeline_exc, PipelineError)
+            assert not isinstance(pipeline_exc, ProcessingError)  # Should not inherit from ProcessingError
 
         # All should be exceptions
-        all_exceptions = [pipeline_error] + processing_exceptions + direct_pipeline_exceptions
-        for exc in all_exceptions:
-            assert isinstance(exc, Exception)
+        all_exceptions = [pipeline_error, *processing_exceptions, *direct_pipeline_exceptions]
+        for exception in all_exceptions:
+            assert isinstance(exception, Exception)
 
-    def test_exception_catching_patterns(self):
+    def test_exception_catching_patterns(self) -> None:
         """Test different exception catching patterns."""
 
-        def raise_ffmpeg_error():
-            raise FFmpegError("FFmpeg failed", command="ffmpeg -i test.mp4", stderr="Codec error")
+        def raise_ffmpeg_error() -> Never:
+            msg = "FFmpeg failed"
+            raise FFmpegError(msg, command="ffmpeg -i test.mp4", stderr="Codec error")
 
-        def raise_rife_error():
-            raise RIFEError("RIFE interpolation failed")
+        def raise_rife_error() -> Never:
+            msg = "RIFE interpolation failed"
+            raise RIFEError(msg)
 
-        def raise_resource_error():
-            raise ResourceError("Out of memory", resource_type="memory")
+        def raise_resource_error() -> Never:
+            msg = "Out of memory"
+            raise ResourceError(msg, resource_type="memory")
 
         # Catch specific exception types
         with pytest.raises(FFmpegError):
@@ -399,7 +404,7 @@ class TestPipelineExceptionHierarchy:
         with pytest.raises(PipelineError):
             raise_resource_error()
 
-    def test_exception_error_context_preservation(self):
+    def test_exception_error_context_preservation(self) -> None:
         """Test that exception context is properly preserved."""
 
         # FFmpeg error with context
@@ -419,26 +424,30 @@ class TestPipelineExceptionHierarchy:
 class TestPipelineExceptionIntegration:
     """Integration tests for pipeline exception usage."""
 
-    def test_realistic_pipeline_error_scenarios(self):
+    def test_realistic_pipeline_error_scenarios(self) -> None:
         """Test realistic pipeline error scenarios."""
 
-        def simulate_ffmpeg_encoding():
+        def simulate_ffmpeg_encoding() -> Never:
             """Simulate FFmpeg encoding failure."""
             command = "ffmpeg -i satellite_data.mp4 -c:v libx265 -crf 23 output.mp4"
             stderr = "Unknown encoder 'libx265'"
-            raise FFmpegError("Video encoding failed", command=command, stderr=stderr)
+            msg = "Video encoding failed"
+            raise FFmpegError(msg, command=command, stderr=stderr)
 
-        def simulate_rife_interpolation():
+        def simulate_rife_interpolation() -> Never:
             """Simulate RIFE interpolation failure."""
-            raise RIFEError("Failed to interpolate frames: model file corrupted")
+            msg = "Failed to interpolate frames: model file corrupted"
+            raise RIFEError(msg)
 
-        def simulate_resource_constraint():
+        def simulate_resource_constraint() -> Never:
             """Simulate resource constraint."""
-            raise ResourceError("Insufficient memory for 4K processing", resource_type="memory")
+            msg = "Insufficient memory for 4K processing"
+            raise ResourceError(msg, resource_type="memory")
 
-        def simulate_input_validation():
+        def simulate_input_validation() -> Never:
             """Simulate input validation failure."""
-            raise InputError("No valid PNG files found in input directory")
+            msg = "No valid PNG files found in input directory"
+            raise InputError(msg)
 
         # Test error handling patterns
         scenarios = [
@@ -461,23 +470,26 @@ class TestPipelineExceptionIntegration:
             with pytest.raises(PipelineError):
                 scenario_func()
 
-    def test_exception_chaining_in_pipeline(self):
+    def test_exception_chaining_in_pipeline(self) -> None:
         """Test exception chaining in pipeline context."""
 
-        def low_level_operation():
-            raise OSError("File not found")
+        def low_level_operation() -> Never:
+            msg = "File not found"
+            raise OSError(msg)
 
-        def pipeline_operation():
+        def pipeline_operation() -> None:
             try:
                 low_level_operation()
             except OSError as e:
-                raise InputError("Failed to read input file") from e
+                msg = "Failed to read input file"
+                raise InputError(msg) from e
 
-        def high_level_pipeline():
+        def high_level_pipeline() -> None:
             try:
                 pipeline_operation()
             except InputError as e:
-                raise PipelineError("Pipeline initialization failed") from e
+                msg = "Pipeline initialization failed"
+                raise PipelineError(msg) from e
 
         with pytest.raises(PipelineError) as exc_info:
             high_level_pipeline()
@@ -488,7 +500,7 @@ class TestPipelineExceptionIntegration:
         assert exc_info.value.__cause__.__cause__ is not None
         assert isinstance(exc_info.value.__cause__.__cause__, OSError)
 
-    def test_error_message_context_integration(self):
+    def test_error_message_context_integration(self) -> None:
         """Test that error messages provide good context in pipeline scenarios."""
 
         # FFmpeg error with full context

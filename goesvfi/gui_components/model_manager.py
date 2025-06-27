@@ -1,10 +1,10 @@
 """Model management functionality for the main GUI window."""
 
 from pathlib import Path
-from typing import Dict, Optional, Tuple, cast
+from typing import cast
 
 from PyQt6.QtCore import QSettings
-from PyQt6.QtWidgets import QComboBox, QMessageBox
+from PyQt6.QtWidgets import QComboBox, QMessageBox, QWidget
 
 from goesvfi.utils.gui_helpers import RifeCapabilityDetector, RifeCapabilityManager
 from goesvfi.utils.log import get_logger
@@ -23,13 +23,12 @@ class ModelManager:
         """
         self.settings = settings
         self.capability_manager = RifeCapabilityManager()
-        self.current_model_path: Optional[Path] = None
-        self.available_models: Dict[str, Path] = {}
-        self.model_capabilities: Dict[str, Dict[str, bool]] = {}
+        self.current_model_path: Path | None = None
+        self.available_models: dict[str, Path] = {}
+        self.model_capabilities: dict[str, dict[str, bool]] = {}
 
     def refresh_models(self, model_location: str) -> None:
         """Refresh available models and detect their capabilities."""
-
         self.available_models.clear()
         self.model_capabilities.clear()
 
@@ -46,7 +45,7 @@ class ModelManager:
             if exe_path.suffix == "" and exe_path.with_suffix(".exe").exists():
                 exe_path = exe_path.with_suffix(".exe")
 
-            capabilities: Dict[str, bool] = {}
+            capabilities: dict[str, bool] = {}
             if exe_path.exists():
                 try:
                     detector = RifeCapabilityDetector(exe_path)
@@ -57,7 +56,7 @@ class ModelManager:
                         "tiling": detector.supports_tiling(),
                     }
                 except Exception as e:  # pylint: disable=broad-except
-                    LOGGER.error(
+                    LOGGER.exception(
                         "Failed to analyze model %s capabilities: %s",
                         model_name,
                         e,
@@ -87,14 +86,15 @@ class ModelManager:
                 model_combo.setCurrentIndex(0)
 
         except Exception as e:  # pylint: disable=broad-except
-            LOGGER.error("Error populating models: %s", e)
+            LOGGER.exception("Error populating models: %s", e)
+            parent_widget = cast(QWidget, model_combo.parent()) if model_combo.parent() else model_combo
             QMessageBox.critical(
-                None,
+                parent_widget,
                 "Model Loading Error",
-                f"Failed to load RIFE models: {str(e)}",
+                f"Failed to load RIFE models: {e!s}",
             )
 
-    def get_model_path(self, model_name: str) -> Optional[Path]:
+    def get_model_path(self, model_name: str) -> Path | None:
         """Get the path for a model by name.
 
         Args:
@@ -105,7 +105,7 @@ class ModelManager:
         """
         return self.available_models.get(model_name)
 
-    def get_model_capabilities(self, model_name: str) -> Dict[str, bool]:
+    def get_model_capabilities(self, model_name: str) -> dict[str, bool]:
         """Get the capabilities for a model by name.
 
         Args:
@@ -152,7 +152,7 @@ class ModelManager:
         capabilities = self.get_model_capabilities(model_name)
         return capabilities.get("hd", False)
 
-    def get_model_info(self, model_name: str) -> Tuple[Optional[Path], Dict[str, bool]]:
+    def get_model_info(self, model_name: str) -> tuple[Path | None, dict[str, bool]]:
         """Get both path and capabilities for a model.
 
         Args:
@@ -176,9 +176,9 @@ class ModelManager:
             self.settings.sync()
             LOGGER.debug("Saved selected model: %s", model_name)
         except Exception as e:
-            LOGGER.error("Error saving selected model: %s", e)
+            LOGGER.exception("Error saving selected model: %s", e)
 
-    def load_selected_model(self) -> Optional[str]:
+    def load_selected_model(self) -> str | None:
         """Load the previously selected model from settings.
 
         Returns:
@@ -186,7 +186,7 @@ class ModelManager:
         """
         try:
             model_name = self.settings.value("selected_model", "", type=str)
-            return cast(Optional[str], model_name if model_name else None)
+            return cast(str | None, model_name or None)
         except Exception as e:
-            LOGGER.error("Error loading selected model: %s", e)
+            LOGGER.exception("Error loading selected model: %s", e)
             return None

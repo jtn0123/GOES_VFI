@@ -12,14 +12,14 @@ not for absolute performance benchmarks, as times will vary based on the
 test machine's capabilities.
 """
 
+from datetime import datetime, timedelta
 import gc
 import os
+from pathlib import Path
 import tempfile
 import time
 import tracemalloc
 import unittest
-from datetime import datetime, timedelta
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import psutil
@@ -47,7 +47,7 @@ from tests.utils.pyqt_async_test import PyQtAsyncTestCase
 class PerformanceMetrics:
     """Class to track performance metrics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize performance metrics tracking."""
         self.start_time = 0
         self.end_time = 0
@@ -55,7 +55,7 @@ class PerformanceMetrics:
         self.end_memory = 0
         self.peak_memory = 0
 
-    def start(self):
+    def start(self) -> None:
         """Start performance measurement."""
         # Collect garbage first to reduce noise
         gc.collect()
@@ -71,7 +71,7 @@ class PerformanceMetrics:
         # Start memory tracing
         tracemalloc.start()
 
-    def update_peak(self):
+    def update_peak(self) -> None:
         """Update peak memory usage."""
         process = psutil.Process(os.getpid())
         current_memory = process.memory_info().rss / (1024 * 1024)  # MB
@@ -109,7 +109,7 @@ class PerformanceMetrics:
 class TestIntegrityTabPerformance(PyQtAsyncTestCase):
     """Performance tests for integrity check tabs."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Call parent setUp for proper PyQt/asyncio setup
         super().setUp()
@@ -141,7 +141,7 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         # Set up metrics collection
         self.metrics = PerformanceMetrics()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up temporary directory
         self.temp_dir.cleanup()
@@ -165,7 +165,6 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
 
         # Generate missing items
         for i in range(missing_count):
-            pass
             ts = base_date + timedelta(minutes=i * 10)
             item = EnhancedMissingTimestamp(ts, f"missing_file_{i}.nc")
             items.append(item)
@@ -195,17 +194,13 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
 
         return items
 
-    def test_timeline_tab_data_loading_performance(self):
+    def test_timeline_tab_data_loading_performance(self) -> None:
         """Test performance of loading data in the timeline tab."""
         # Create the timeline tab
         timeline_tab = OptimizedTimelineTab()
 
         # Generate test data with various dataset sizes
         dataset_sizes = [100, 500, 1000]
-
-        print("\nTimeline Tab Data Loading Performance:")
-        print("=====================================")
-        print(f"{'Dataset Size':<15} {'Time (s)':<10} {'Memory Diff (MB)':<20} {'Peak Memory (MB)':<20}")
 
         for size in dataset_sizes:
             # Generate data
@@ -221,13 +216,9 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
             QApplication.processEvents()
 
             # Stop measurement and get results
-            metrics = self.metrics.stop()
+            self.metrics.stop()
 
             # Print results
-            print(
-                f"{size:<15} {metrics['elapsed_time']:<10.6f} "
-                f"{metrics['memory_diff']:<20.2f} {metrics['peak_memory']:<20.2f}"
-            )
 
             # Add a small delay to ensure we're starting the next test clean
             time.sleep(0.1)
@@ -236,17 +227,13 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         timeline_tab.close()
         timeline_tab.deleteLater()
 
-    def test_results_tab_data_loading_performance(self):
+    def test_results_tab_data_loading_performance(self) -> None:
         """Test performance of loading data in the results tab."""
         # Create the results tab
         results_tab = OptimizedResultsTab()
 
         # Generate test data with various dataset sizes
         dataset_sizes = [100, 500, 1000]
-
-        print("\nResults Tab Data Loading Performance:")
-        print("===================================")
-        print(f"{'Dataset Size':<15} {'Time (s)':<10} {'Memory Diff (MB)':<20} {'Peak Memory (MB)':<20}")
 
         for size in dataset_sizes:
             # Generate data
@@ -262,13 +249,9 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
             QApplication.processEvents()
 
             # Stop measurement and get results
-            metrics = self.metrics.stop()
+            self.metrics.stop()
 
             # Print results
-            print(
-                f"{size:<15} {metrics['elapsed_time']:<10.6f} "
-                f"{metrics['memory_diff']:<20.2f} {metrics['peak_memory']:<20.2f}"
-            )
 
             # Add a small delay to ensure we're starting the next test clean
             time.sleep(0.1)
@@ -277,7 +260,7 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         results_tab.close()
         results_tab.deleteLater()
 
-    def test_results_tab_grouping_performance(self):
+    def test_results_tab_grouping_performance(self) -> None:
         """Test performance of grouping data in the results tab."""
         # Create the results tab
         results_tab = OptimizedResultsTab()
@@ -292,10 +275,6 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         # Test performance of different grouping methods
         grouping_methods = ["Day", "Hour", "Satellite", "Status", "Source"]
 
-        print("\nResults Tab Grouping Performance:")
-        print("===============================")
-        print(f"{'Grouping Method':<20} {'Time (s)':<10} {'Memory Diff (MB)':<20} {'Peak Memory (MB)':<20}")
-
         for method in grouping_methods:
             # Start measurement
             self.metrics.start()
@@ -307,13 +286,9 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
             QApplication.processEvents()
 
             # Stop measurement and get results
-            metrics = self.metrics.stop()
+            self.metrics.stop()
 
             # Print results
-            print(
-                f"{method:<20} {metrics['elapsed_time']:<10.6f} "
-                f"{metrics['memory_diff']:<20.2f} {metrics['peak_memory']:<20.2f}"
-            )
 
             # Add a small delay to ensure we're starting the next test clean
             time.sleep(0.1)
@@ -322,7 +297,7 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         results_tab.close()
         results_tab.deleteLater()
 
-    def test_tab_switch_performance(self):
+    def test_tab_switch_performance(self) -> None:
         """Test performance of switching between tabs."""
         # Create a main window with tab widget
         main_window = QMainWindow()
@@ -348,21 +323,13 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         main_window.show()
         QApplication.processEvents()
 
-        print("\nTab Switching Performance:")
-        print("========================")
-        print(f"{'Transition':<25} {'Time (s)':<10} {'Memory Diff (MB)':<20} {'Peak Memory (MB)':<20}")
-
         # Test switching from Integrity to Timeline
         self.metrics.start()
         tab_widget.setCurrentIndex(0)  # Integrity tab
         QApplication.processEvents()
         tab_widget.setCurrentIndex(1)  # Timeline tab
         QApplication.processEvents()
-        metrics = self.metrics.stop()
-        print(
-            f"{'Integrity -> Timeline':<25} {metrics['elapsed_time']:<10.6f} "
-            f"{metrics['memory_diff']:<20.2f} {metrics['peak_memory']:<20.2f}"
-        )
+        self.metrics.stop()
 
         # Test switching from Timeline to Results
         self.metrics.start()
@@ -370,11 +337,7 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         QApplication.processEvents()
         tab_widget.setCurrentIndex(2)  # Results tab
         QApplication.processEvents()
-        metrics = self.metrics.stop()
-        print(
-            f"{'Timeline -> Results':<25} {metrics['elapsed_time']:<10.6f} "
-            f"{metrics['memory_diff']:<20.2f} {metrics['peak_memory']:<20.2f}"
-        )
+        self.metrics.stop()
 
         # Test switching from Results to Integrity
         self.metrics.start()
@@ -382,11 +345,7 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         QApplication.processEvents()
         tab_widget.setCurrentIndex(0)  # Integrity tab
         QApplication.processEvents()
-        metrics = self.metrics.stop()
-        print(
-            f"{'Results -> Integrity':<25} {metrics['elapsed_time']:<10.6f} "
-            f"{metrics['memory_diff']:<20.2f} {metrics['peak_memory']:<20.2f}"
-        )
+        self.metrics.stop()
 
         # Test cycling through all tabs
         self.metrics.start()
@@ -398,17 +357,13 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         QApplication.processEvents()
         tab_widget.setCurrentIndex(0)  # Back to Integrity
         QApplication.processEvents()
-        metrics = self.metrics.stop()
-        print(
-            f"{'Full Cycle':<25} {metrics['elapsed_time']:<10.6f} "
-            f"{metrics['memory_diff']:<20.2f} {metrics['peak_memory']:<20.2f}"
-        )
+        self.metrics.stop()
 
         # Clean up
         main_window.close()
         main_window.deleteLater()
 
-    def test_ui_responsiveness(self):
+    def test_ui_responsiveness(self) -> None:
         """Test UI responsiveness during data loading."""
         # Create a main window with tab widget
         main_window = QMainWindow()
@@ -429,9 +384,6 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         main_window.show()
         QApplication.processEvents()
 
-        print("\nUI Responsiveness During Data Loading:")
-        print("===================================")
-
         # Generate large dataset
         large_dataset = self._generate_test_data(2000)
 
@@ -440,7 +392,7 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         max_timer_count = 10
         event_times = []
 
-        def ui_interaction():
+        def ui_interaction() -> None:
             nonlocal timer_count
             # Record the time taken for the event to be processed
             event_start = time.time()
@@ -452,7 +404,6 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
 
             timer_count += 1
             if timer_count < max_timer_count:
-                pass
                 QTimer.singleShot(100, ui_interaction)
 
         # Start measuring
@@ -479,23 +430,16 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         time.sleep(1.5)
 
         # Stop measuring
-        metrics = self.metrics.stop()
+        self.metrics.stop()
 
         # Print overall metrics
-        print(f"Total time for loading: {metrics['elapsed_time']:.6f} seconds")
-        print(f"Memory usage: {metrics['memory_diff']:.2f} MB (diff)," f"{metrics['peak_memory']:.2f} MB (peak)")
 
         # Print UI responsiveness metrics
         if event_times:
-            pass
-            avg_event_time = sum(event_times) / len(event_times)
-            max_event_time = max(event_times)
-            print("UI interaction times:")
-            print(f"  Average: {avg_event_time:.6f} seconds")
-            print(f"  Maximum: {max_event_time:.6f} seconds")
-            print(f"  Events recorded: {len(event_times)}")
+            sum(event_times) / len(event_times)
+            max(event_times)
         else:
-            print("No UI events were recorded.")
+            pass
 
         # Clean up
         main_window.close()
@@ -503,5 +447,4 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
 
 
 if __name__ == "__main__":
-    pass
     unittest.main()

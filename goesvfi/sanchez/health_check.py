@@ -1,5 +1,4 @@
-"""
-Sanchez health check and monitoring system.
+"""Sanchez health check and monitoring system.
 
 This module provides comprehensive health checks for the Sanchez
 external tool, including binary validation, dependency checks,
@@ -8,15 +7,17 @@ and runtime monitoring.
 
 import asyncio
 import asyncio.subprocess
+from collections.abc import Callable
+import contextlib
+from dataclasses import dataclass, field
+from datetime import datetime
 import os
+from pathlib import Path
 import platform
 import subprocess
 import tempfile
 import time
-from dataclasses import dataclass, field
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 from PIL import Image
 
@@ -34,19 +35,19 @@ class SanchezHealthStatus:
     # Basic checks
     binary_exists: bool = False
     binary_executable: bool = False
-    binary_path: Optional[Path] = None
+    binary_path: Path | None = None
     binary_size: int = 0
-    binary_modified: Optional[datetime] = None
+    binary_modified: datetime | None = None
 
     # Dependency checks
     resources_exist: bool = False
-    gradient_files: List[str] = field(default_factory=list)
-    missing_resources: List[str] = field(default_factory=list)
+    gradient_files: list[str] = field(default_factory=list)
+    missing_resources: list[str] = field(default_factory=list)
 
     # Runtime checks
     can_execute: bool = False
     execution_time: float = 0.0
-    version_info: Optional[str] = None
+    version_info: str | None = None
     help_available: bool = False
 
     # System checks
@@ -55,8 +56,8 @@ class SanchezHealthStatus:
     disk_space_available_mb: int = 0
 
     # Error information
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def is_healthy(self) -> bool:
@@ -70,7 +71,7 @@ class SanchezHealthStatus:
             and len(self.errors) == 0
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for logging/serialization."""
         return {
             "healthy": self.is_healthy,
@@ -110,7 +111,7 @@ class SanchezHealthChecker:
         self.platform_key = (platform.system(), platform.machine())
         self.sanchez_dir = config.get_sanchez_bin_dir()
 
-    def _get_binary_path(self) -> Optional[Path]:
+    def _get_binary_path(self) -> Path | None:
         """Get the expected Sanchez binary path for this platform."""
         lookup = {
             ("Darwin", "x86_64"): self.sanchez_dir / "osx-x64" / "Sanchez",
@@ -210,6 +211,7 @@ class SanchezHealthChecker:
                 text=True,
                 timeout=5,
                 cwd=binary_dir,
+                check=False,
             )
             elapsed = time.time() - start_time
 
@@ -225,6 +227,7 @@ class SanchezHealthChecker:
                     text=True,
                     timeout=5,
                     cwd=binary_dir,
+                    check=False,
                 )
 
                 if result.returncode == 0 or "Usage:" in result.stdout:
@@ -287,7 +290,7 @@ class SanchezHealthChecker:
                 import shutil
 
                 if status.binary_path:
-                    total, used, free = shutil.disk_usage(status.binary_path.parent)
+                    _total, _used, free = shutil.disk_usage(status.binary_path.parent)
                     status.disk_space_available_mb = free // (1024 * 1024)
             except Exception as e:
                 status.warnings.append(f"Could not check disk space: {e}")
@@ -328,11 +331,11 @@ class SanchezProcessMonitor:
 
     def __init__(self) -> None:
         """Initialize the process monitor."""
-        self.current_process: Optional[asyncio.subprocess.Process] = None
-        self.start_time: Optional[float] = None
-        self.input_file: Optional[Path] = None
-        self.output_file: Optional[Path] = None
-        self.progress_callback: Optional[Callable[[str, float], None]] = None
+        self.current_process: asyncio.subprocess.Process | None = None
+        self.start_time: float | None = None
+        self.input_file: Path | None = None
+        self.output_file: Path | None = None
+        self.progress_callback: Callable[[str, float], None] | None = None
         self.is_cancelled: bool = False
 
     def set_progress_callback(self, callback: Callable[[str, float], None]) -> None:
@@ -349,7 +352,7 @@ class SanchezProcessMonitor:
             try:
                 self.progress_callback(step, progress)
             except Exception as e:
-                LOGGER.error("Error in progress callback: %s", e)
+                LOGGER.exception("Error in progress callback: %s", e)
 
     async def run_sanchez_monitored(
         self,
@@ -357,7 +360,7 @@ class SanchezProcessMonitor:
         output_path: Path,
         res_km: int = 4,
         timeout: int = 120,
-        _memory_limit_mb: Optional[int] = None,
+        _memory_limit_mb: int | None = None,
     ) -> Path:
         """Run Sanchez with monitoring and progress tracking.
 
@@ -385,16 +388,16 @@ class SanchezProcessMonitor:
         health_status = health_checker.run_health_check()
 
         if not health_status.is_healthy:
-            raise ConfigurationError(f"Sanchez is not healthy: {health_status.errors}")
+            msg = f"Sanchez is not healthy: {health_status.errors}"
+            raise ConfigurationError(msg)
 
         # Verify input file
         if not input_path.exists():
-            raise FileNotFoundError(f"Input file not found: {input_path}")
+            msg = f"Input file not found: {input_path}"
+            raise FileNotFoundError(msg)
 
         input_size = input_path.stat().st_size
-        LOGGER.info(
-            f"Processing {input_path.name} ({input_size / 1024 / 1024:.1f}MB) " f"at {res_km}km/pixel resolution"
-        )
+        LOGGER.info(f"Processing {input_path.name} ({input_size / 1024 / 1024:.1f}MB) at {res_km}km/pixel resolution")
 
         # Create output directory
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -402,7 +405,8 @@ class SanchezProcessMonitor:
         # Build command
         binary_path = health_status.binary_path
         if binary_path is None:
-            raise ConfigurationError("Sanchez binary path not found")
+            msg = "Sanchez binary path not found"
+            raise ConfigurationError(msg)
         binary_dir = binary_path.parent
 
         cmd = [
@@ -440,19 +444,19 @@ class SanchezProcessMonitor:
             try:
                 # Wait for completion with timeout
                 if self.current_process is None:
-                    raise RuntimeError("Process not started")
-                stdout, stderr = await asyncio.wait_for(self.current_process.communicate(), timeout=timeout)
+                    msg = "Process not started"
+                    raise RuntimeError(msg)
+                _stdout, stderr = await asyncio.wait_for(self.current_process.communicate(), timeout=timeout)
 
                 # Cancel monitor
                 monitor_task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await monitor_task
-                except asyncio.CancelledError:
-                    pass
 
                 # Check result
                 if self.current_process is None:
-                    raise RuntimeError("Process not started")
+                    msg = "Process not started"
+                    raise RuntimeError(msg)
                 if self.current_process.returncode != 0:
                     raise ExternalToolError(
                         tool_name="Sanchez",
@@ -471,13 +475,13 @@ class SanchezProcessMonitor:
                 elapsed = time.time() - self.start_time
 
                 LOGGER.info(
-                    f"Sanchez completed successfully in {elapsed:.1f}s. " f"Output: {output_size / 1024 / 1024:.1f}MB"
+                    f"Sanchez completed successfully in {elapsed:.1f}s. Output: {output_size / 1024 / 1024:.1f}MB"
                 )
 
                 self._report_progress("Complete", 1.0)
                 return output_path
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Kill the process
                 if self.current_process:
                     try:
@@ -488,7 +492,8 @@ class SanchezProcessMonitor:
                     except ProcessLookupError:
                         pass
 
-                raise TimeoutError(f"Sanchez execution timed out after {timeout} seconds")
+                msg = f"Sanchez execution timed out after {timeout} seconds"
+                raise TimeoutError(msg)
 
         except Exception:
             self._report_progress("Error", 0.0)
@@ -545,20 +550,18 @@ class SanchezProcessMonitor:
                 await asyncio.sleep(check_interval)
 
             except Exception as e:
-                LOGGER.error("Error monitoring Sanchez process: %s", e)
+                LOGGER.exception("Error monitoring Sanchez process: %s", e)
                 break
 
     def cancel(self) -> None:
         """Cancel the current Sanchez process."""
         self.is_cancelled = True
         if self.current_process:
-            try:
+            with contextlib.suppress(ProcessLookupError):
                 self.current_process.terminate()
-            except ProcessLookupError:
-                pass
 
 
-def validate_sanchez_input(input_path: Path) -> Tuple[bool, str]:
+def validate_sanchez_input(input_path: Path) -> tuple[bool, str]:
     """Validate that an input file is suitable for Sanchez.
 
     Args:
@@ -582,7 +585,7 @@ def validate_sanchez_input(input_path: Path) -> Tuple[bool, str]:
     try:
         with Image.open(input_path) as img:
             # Check format
-            if img.format not in ("PNG", "JPEG", "TIFF"):
+            if img.format not in {"PNG", "JPEG", "TIFF"}:
                 return False, f"Unsupported image format: {img.format}"
 
             # Check dimensions
@@ -593,7 +596,7 @@ def validate_sanchez_input(input_path: Path) -> Tuple[bool, str]:
                 return False, f"Image too large: {width}x{height} (max 10000x10000)"
 
             # Check mode
-            if img.mode not in ("L", "RGB", "RGBA"):
+            if img.mode not in {"L", "RGB", "RGBA"}:
                 return False, f"Unsupported image mode: {img.mode}"
 
     except Exception as e:

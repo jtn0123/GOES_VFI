@@ -1,11 +1,11 @@
-"""Enhanced GOES Satellite Imagery Tab
+"""Enhanced GOES Satellite Imagery Tab.
 
 This module provides an enhanced version of the GOES Imagery Tab with additional
 features for previewing, comparing, and organizing satellite imagery.
 """
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -39,30 +39,30 @@ class EnhancedGOESImageryTab(QWidget):
     productChanged = pyqtSignal(str)
     bandChanged = pyqtSignal(str)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the enhanced imagery tab.
 
         Args:
             parent: Optional parent widget
         """
         super().__init__(parent)
-        self.current_data: List[Any] = []
-        self.current_timestamp: Optional[datetime] = None
+        self.current_data: list[Any] = []
+        self.current_timestamp: datetime | None = None
 
         # Initialize UI widget attributes to satisfy pylint
-        self.product_combo: Optional[QComboBox] = None
-        self.satellite_combo: Optional[QComboBox] = None
-        self.band_combo: Optional[QComboBox] = None
-        self.enhancement_combo: Optional[QComboBox] = None
-        self.load_btn: Optional[QPushButton] = None
-        self.refresh_btn: Optional[QPushButton] = None
-        self.compare_btn: Optional[QPushButton] = None
-        self.animate_btn: Optional[QPushButton] = None
-        self.image_area: Optional[QWidget] = None
-        self.info_panel: Optional[QWidget] = None
-        self.image_label: Optional[QLabel] = None
-        self.info_content: Optional[QLabel] = None
-        self.status_label: Optional[QLabel] = None
+        self.product_combo: QComboBox | None = None
+        self.satellite_combo: QComboBox | None = None
+        self.band_combo: QComboBox | None = None
+        self.enhancement_combo: QComboBox | None = None
+        self.load_btn: QPushButton | None = None
+        self.refresh_btn: QPushButton | None = None
+        self.compare_btn: QPushButton | None = None
+        self.animate_btn: QPushButton | None = None
+        self.image_area: QWidget | None = None
+        self.info_panel: QWidget | None = None
+        self.image_label: QLabel | None = None
+        self.info_content: QLabel | None = None
+        self.status_label: QLabel | None = None
 
         self.initUI()
         LOGGER.info("Enhanced GOES Imagery Tab initialized")
@@ -106,14 +106,12 @@ class EnhancedGOESImageryTab(QWidget):
         product_label.setProperty("class", "StandardLabel")
         control_layout.addWidget(product_label, 0, 0)
         self.product_combo = QComboBox()
-        self.product_combo.addItems(
-            [
-                "Full Disk (ABI-L2-CMIPF)",
-                "CONUS (ABI-L2-CMIPC)",
-                "Mesoscale-1 (ABI-L2-CMIPM1)",
-                "Mesoscale-2 (ABI-L2-CMIPM2)",
-            ]
-        )
+        self.product_combo.addItems([
+            "Full Disk (ABI-L2-CMIPF)",
+            "CONUS (ABI-L2-CMIPC)",
+            "Mesoscale-1 (ABI-L2-CMIPM1)",
+            "Mesoscale-2 (ABI-L2-CMIPM2)",
+        ])
         self.product_combo.setToolTip("Select GOES-R ABI product type")
         self.product_combo.currentTextChanged.connect(self._on_product_changed)
         control_layout.addWidget(self.product_combo, 0, 1)
@@ -131,16 +129,14 @@ class EnhancedGOESImageryTab(QWidget):
         band_label.setProperty("class", "StandardLabel")
         control_layout.addWidget(band_label, 1, 0)
         self.band_combo = QComboBox()
-        self.band_combo.addItems(
-            [
-                "Band 13 (10.3 μm IR)",
-                "Band 14 (11.2 μm IR)",
-                "Band 15 (12.3 μm IR)",
-                "True Color RGB",
-                "Enhanced IR",
-                "Sea Surface Temp",
-            ]
-        )
+        self.band_combo.addItems([
+            "Band 13 (10.3 μm IR)",
+            "Band 14 (11.2 μm IR)",
+            "Band 15 (12.3 μm IR)",
+            "True Color RGB",
+            "Enhanced IR",
+            "Sea Surface Temp",
+        ])
         self.band_combo.setToolTip("Select spectral band or composite")
         self.band_combo.currentTextChanged.connect(self._on_band_changed)
         control_layout.addWidget(self.band_combo, 1, 1)
@@ -149,15 +145,13 @@ class EnhancedGOESImageryTab(QWidget):
         enhancement_label.setProperty("class", "StandardLabel")
         control_layout.addWidget(enhancement_label, 1, 2)
         self.enhancement_combo = QComboBox()
-        self.enhancement_combo.addItems(
-            [
-                "Auto Contrast",
-                "Temperature Scale",
-                "Rainbow",
-                "Grayscale",
-                "Linear",
-            ]
-        )
+        self.enhancement_combo.addItems([
+            "Auto Contrast",
+            "Temperature Scale",
+            "Rainbow",
+            "Grayscale",
+            "Linear",
+        ])
         self.enhancement_combo.setToolTip("Select color enhancement")
         control_layout.addWidget(self.enhancement_combo, 1, 3)
 
@@ -313,7 +307,7 @@ class EnhancedGOESImageryTab(QWidget):
         self._update_info_panel()
         self._update_status(f"Timestamp set to: {timestamp}")
 
-    def set_data(self, items: List[Any], start_date: datetime, end_date: datetime) -> None:
+    def set_data(self, items: list[Any], start_date: datetime, end_date: datetime) -> None:
         """Set data for the imagery tab.
 
         Args:
@@ -331,7 +325,7 @@ class EnhancedGOESImageryTab(QWidget):
         if self.current_timestamp:
             info_text = f"""
             <b>Current Timestamp:</b><br>
-            {self.current_timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')}<br><br>
+            {self.current_timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")}<br><br>
 
             <b>Product:</b><br>
             {self.product_combo.currentText() if self.product_combo else "N/A"}<br><br>

@@ -8,8 +8,8 @@ These tests focus on the results tab's ability to:
 4. Process item actions (download, view)
 """
 
-import unittest
 from datetime import datetime
+import unittest
 
 from PyQt6.QtWidgets import QApplication, QMainWindow
 
@@ -24,7 +24,7 @@ from tests.utils.pyqt_async_test import AsyncSignalWaiter, PyQtAsyncTestCase, as
 class TestOptimizedResultsTab(PyQtAsyncTestCase):
     """Unit tests for the OptimizedResultsTab."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up the test environment."""
         super().setUp()
 
@@ -42,12 +42,12 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         # Create temporary data for tests
         self._create_test_data()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up resources."""
         self.window.close()
         super().tearDown()
 
-    def _create_test_data(self):
+    def _create_test_data(self) -> None:
         """Create test data for the results tab."""
         # Create a list of mock missing timestamps with various states
         self.missing_items = []
@@ -84,7 +84,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         self.total_expected = 30  # Expected total items
 
     @async_test
-    async def test_set_items(self):
+    async def test_set_items(self) -> None:
         """Test the set_items method properly sets data and updates widgets."""
         # Set the data
         self.tab.set_items(self.missing_items, self.total_expected)
@@ -101,7 +101,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert total_expected_text == str(self.total_expected), "Total expected count not displayed correctly"
 
     @async_test
-    async def test_group_by_day(self):
+    async def test_group_by_day(self) -> None:
         """Test grouping items by day."""
         # Set the data first
         self.tab.set_items(self.missing_items, self.total_expected)
@@ -117,7 +117,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert row_count == 4, "Tree view should show 4 days"
 
     @async_test
-    async def test_group_by_status(self):
+    async def test_group_by_status(self) -> None:
         """Test grouping items by status."""
         # Set the data first
         self.tab.set_items(self.missing_items, self.total_expected)
@@ -136,7 +136,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert row_count == 4, "Tree view should show 4 status groups"
 
     @async_test
-    async def test_group_by_satellite(self):
+    async def test_group_by_satellite(self) -> None:
         """Test grouping items by satellite."""
         # Set the data first
         self.tab.set_items(self.missing_items, self.total_expected)
@@ -155,7 +155,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert row_count >= 2, "Tree view should show at least 2 satellite groups"
 
     @async_test
-    async def test_expand_collapse(self):
+    async def test_expand_collapse(self) -> None:
         """Test expand all and collapse all functionality."""
         # Set the data first
         self.tab.set_items(self.missing_items, self.total_expected)
@@ -180,7 +180,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         # but that's difficult to do directly with QTreeView
 
     @async_test
-    async def test_item_selection(self):
+    async def test_item_selection(self) -> None:
         """Test that selecting an item emits the correct signal and updates preview."""
         import asyncio
 
@@ -198,7 +198,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         test_item = self.missing_items[0]
 
         # Use asyncio to ensure waiter is ready
-        async def select_after_delay():
+        async def select_after_delay() -> None:
             await asyncio.sleep(0.01)
             self.tab._handle_item_selected(test_item)
 
@@ -215,7 +215,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert self.tab.preview_widget.current_item == test_item, "Preview widget not updated with selected item"
 
     @async_test
-    async def test_download_request(self):
+    async def test_download_request(self) -> None:
         """Test that clicking download button emits the downloadRequested signal."""
         import asyncio
 
@@ -233,7 +233,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         download_waiter = AsyncSignalWaiter(self.tab.downloadRequested)
 
         # Click the download button after a short delay to ensure waiter is ready
-        async def click_after_delay():
+        async def click_after_delay() -> None:
             await asyncio.sleep(0.01)
             self.tab._handle_download_clicked()
 
@@ -247,7 +247,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert result.args[0] == test_item, "Download signal not emitted with correct item"
 
     @async_test
-    async def test_view_request(self):
+    async def test_view_request(self) -> None:
         """Test that clicking view button emits the viewRequested signal."""
         import asyncio
 
@@ -265,7 +265,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         view_waiter = AsyncSignalWaiter(self.tab.viewRequested)
 
         # Click the view button after a short delay
-        async def click_after_delay():
+        async def click_after_delay() -> None:
             await asyncio.sleep(0.01)
             self.tab._handle_view_clicked()
 
@@ -279,7 +279,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert result.args[0] == test_item, "View signal not emitted with correct item"
 
     @async_test
-    async def test_highlight_item(self):
+    async def test_highlight_item(self) -> None:
         """Test the highlight_item method selects the correct tree item."""
         # Set the data first
         self.tab.set_items(self.missing_items, self.total_expected)
@@ -301,7 +301,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         # A more thorough test would verify the exact item is selected
 
     @async_test
-    async def test_summary_widget_update(self):
+    async def test_summary_widget_update(self) -> None:
         """Test that the summary widget is updated correctly."""
         # Set the data
         self.tab.set_items(self.missing_items, self.total_expected)
@@ -330,7 +330,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         assert missing_text == str(missing_count), "Missing count doesn't match expected value"
 
     @async_test
-    async def test_preview_widget_button_states(self):
+    async def test_preview_widget_button_states(self) -> None:
         """Test that the preview widget buttons are enabled/disabled correctly."""
         # Set the data
         self.tab.set_items(self.missing_items, self.total_expected)
@@ -351,13 +351,13 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         self.tab._handle_item_selected(downloaded_item)
         QApplication.processEvents()
 
-        assert (
-            not self.tab.preview_widget.download_btn.isEnabled()
-        ), "Download button should be disabled for downloaded item"
+        assert not self.tab.preview_widget.download_btn.isEnabled(), (
+            "Download button should be disabled for downloaded item"
+        )
         assert self.tab.preview_widget.view_btn.isEnabled(), "View button should be enabled for downloaded item"
 
     @async_test
-    async def test_set_directory(self):
+    async def test_set_directory(self) -> None:
         """Test that set_directory emits the directorySelected signal."""
         import asyncio
 
@@ -367,7 +367,7 @@ class TestOptimizedResultsTab(PyQtAsyncTestCase):
         # Set the directory after a short delay
         test_dir = "/test/directory"
 
-        async def set_after_delay():
+        async def set_after_delay() -> None:
             await asyncio.sleep(0.01)
             self.tab.set_directory(test_dir)
 

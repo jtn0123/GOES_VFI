@@ -1,26 +1,24 @@
-"""
-Error classification utilities.
+"""Error classification utilities.
 
 Automatically categorizes exceptions to reduce complexity in error handling code.
 """
 
+from collections.abc import Callable
 import errno
 import socket
-from typing import Callable, Dict, Optional, Type
 
 from .base import ErrorCategory, ErrorContext, StructuredError
 
 
 class ErrorClassifier:
-    """
-    Automatically classifies exceptions into structured errors.
+    """Automatically classifies exceptions into structured errors.
 
     Reduces complexity by centralizing error classification logic.
     """
 
     def __init__(self) -> None:
         # Map exception types to categories
-        self._type_mappings: Dict[Type[Exception], ErrorCategory] = {
+        self._type_mappings: dict[type[Exception], ErrorCategory] = {
             FileNotFoundError: ErrorCategory.FILE_NOT_FOUND,
             PermissionError: ErrorCategory.PERMISSION,
             IsADirectoryError: ErrorCategory.VALIDATION,
@@ -37,19 +35,18 @@ class ErrorClassifier:
         }
 
         # Custom classification functions
-        self._custom_classifiers: list[Callable[[Exception], Optional[ErrorCategory]]] = []
+        self._custom_classifiers: list[Callable[[Exception], ErrorCategory | None]] = []
 
-    def add_type_mapping(self, exception_type: Type[Exception], category: ErrorCategory) -> None:
+    def add_type_mapping(self, exception_type: type[Exception], category: ErrorCategory) -> None:
         """Add a custom exception type mapping."""
         self._type_mappings[exception_type] = category
 
-    def add_custom_classifier(self, classifier_func: Callable[[Exception], Optional[ErrorCategory]]) -> None:
+    def add_custom_classifier(self, classifier_func: Callable[[Exception], ErrorCategory | None]) -> None:
         """Add a custom classification function."""
         self._custom_classifiers.append(classifier_func)
 
     def classify_exception(self, exception: Exception) -> ErrorCategory:
-        """
-        Classify an exception into an error category.
+        """Classify an exception into an error category.
 
         Args:
             exception: The exception to classify
@@ -66,9 +63,8 @@ class ErrorClassifier:
         # Special handling for OSError with errno (before checking type mappings)
         # This needs to come first because socket.error is OSError in Python 3
         if isinstance(exception, OSError) and hasattr(exception, "errno") and exception.errno:
-            errno_category = self._classify_os_error(exception)
+            return self._classify_os_error(exception)
             # Return the errno-based classification directly
-            return errno_category
 
         # Check direct type mappings
         exception_type = type(exception)
@@ -104,10 +100,9 @@ class ErrorClassifier:
         exception: Exception,
         operation: str = "unknown",
         component: str = "unknown",
-        user_message: Optional[str] = None,
+        user_message: str | None = None,
     ) -> StructuredError:
-        """
-        Create a structured error from an exception.
+        """Create a structured error from an exception.
 
         Args:
             exception: The original exception
@@ -148,71 +143,59 @@ class ErrorClassifier:
         """Generate a user-friendly message based on exception and category."""
         if category == ErrorCategory.FILE_NOT_FOUND:
             return f"File or directory not found: {exception}"
-        elif category == ErrorCategory.PERMISSION:
+        if category == ErrorCategory.PERMISSION:
             return f"Permission denied: {exception}"
-        elif category == ErrorCategory.NETWORK:
+        if category == ErrorCategory.NETWORK:
             return f"Network error: {exception}"
-        elif category == ErrorCategory.VALIDATION:
+        if category == ErrorCategory.VALIDATION:
             return f"Invalid input: {exception}"
-        elif category == ErrorCategory.CONFIGURATION:
+        if category == ErrorCategory.CONFIGURATION:
             return f"Configuration error: {exception}"
-        elif category == ErrorCategory.EXTERNAL_TOOL:
+        if category == ErrorCategory.EXTERNAL_TOOL:
             return f"External tool error: {exception}"
-        else:
-            return str(exception)
+
+        return str(exception)
 
     def _generate_suggestions(self, exception: Exception, category: ErrorCategory) -> list[str]:
         """Generate helpful suggestions based on exception and category."""
         suggestions = []
 
         if category == ErrorCategory.FILE_NOT_FOUND:
-            suggestions.extend(
-                [
-                    "Check that the file path is correct",
-                    "Ensure the file exists",
-                    "Verify you have permission to access the directory",
-                ]
-            )
+            suggestions.extend([
+                "Check that the file path is correct",
+                "Ensure the file exists",
+                "Verify you have permission to access the directory",
+            ])
         elif category == ErrorCategory.PERMISSION:
-            suggestions.extend(
-                [
-                    "Check file/directory permissions",
-                    "Run with appropriate privileges",
-                    "Ensure you own the file or have necessary access rights",
-                ]
-            )
+            suggestions.extend([
+                "Check file/directory permissions",
+                "Run with appropriate privileges",
+                "Ensure you own the file or have necessary access rights",
+            ])
         elif category == ErrorCategory.NETWORK:
-            suggestions.extend(
-                [
-                    "Check your internet connection",
-                    "Verify the server is accessible",
-                    "Check firewall settings",
-                ]
-            )
+            suggestions.extend([
+                "Check your internet connection",
+                "Verify the server is accessible",
+                "Check firewall settings",
+            ])
         elif category == ErrorCategory.VALIDATION:
-            suggestions.extend(
-                [
-                    "Check input parameters",
-                    "Verify data format is correct",
-                    "Ensure all required fields are provided",
-                ]
-            )
+            suggestions.extend([
+                "Check input parameters",
+                "Verify data format is correct",
+                "Ensure all required fields are provided",
+            ])
         elif category == ErrorCategory.CONFIGURATION:
-            suggestions.extend(
-                [
-                    "Check configuration file",
-                    "Verify all required settings are present",
-                    "Check for typos in configuration keys",
-                ]
-            )
+            suggestions.extend([
+                "Check configuration file",
+                "Verify all required settings are present",
+                "Check for typos in configuration keys",
+            ])
         elif category == ErrorCategory.EXTERNAL_TOOL:
-            suggestions.extend(
-                [
-                    "Check that the tool is installed",
-                    "Verify the tool is in your PATH",
-                    "Check tool version compatibility",
-                ]
-            )
+            suggestions.extend([
+                "Check that the tool is installed",
+                "Verify the tool is in your PATH",
+                "Check tool version compatibility",
+            ])
 
         return suggestions
 
@@ -231,14 +214,14 @@ class ErrorClassifier:
 
     def _add_context_from_exception(self, context: ErrorContext, exception: Exception) -> None:
         """Add relevant context data from the exception."""
-        if isinstance(exception, (FileNotFoundError, PermissionError, IsADirectoryError)):
+        if isinstance(exception, FileNotFoundError | PermissionError | IsADirectoryError):
             if hasattr(exception, "filename") and exception.filename:
                 context.add_user_data("file_path", str(exception.filename))
 
         if isinstance(exception, OSError) and hasattr(exception, "errno"):
             context.add_system_data("errno", exception.errno)
 
-        if isinstance(exception, (ConnectionError, TimeoutError, socket.error)):
+        if isinstance(exception, ConnectionError | TimeoutError | socket.error):
             context.add_system_data("network_error_type", type(exception).__name__)
 
 
@@ -247,14 +230,14 @@ default_classifier = ErrorClassifier()
 
 
 # Add some additional custom classifiers
-def _classify_import_errors(exception: Exception) -> Optional[ErrorCategory]:
+def _classify_import_errors(exception: Exception) -> ErrorCategory | None:
     """Custom classifier for import errors."""
     if isinstance(exception, ImportError):
         return ErrorCategory.CONFIGURATION
     return None
 
 
-def _classify_subprocess_errors(exception: Exception) -> Optional[ErrorCategory]:
+def _classify_subprocess_errors(exception: Exception) -> ErrorCategory | None:
     """Custom classifier for subprocess errors."""
     import subprocess
 

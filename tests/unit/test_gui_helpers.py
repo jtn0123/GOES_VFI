@@ -3,10 +3,10 @@
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-import pytest
 from PyQt6.QtCore import QPoint, QPointF, QRect, Qt
 from PyQt6.QtGui import QImage, QMouseEvent, QPixmap, QWheelEvent
 from PyQt6.QtWidgets import QApplication, QCheckBox, QLabel, QLineEdit, QSpinBox
+import pytest
 
 from goesvfi.utils.gui_helpers import (
     ClickableLabel,
@@ -18,7 +18,7 @@ from goesvfi.utils.gui_helpers import (
 )
 
 
-@pytest.fixture
+@pytest.fixture()
 def app():
     """Create a QApplication for tests."""
     app = QApplication.instance()
@@ -28,7 +28,7 @@ def app():
     app.quit()
 
 
-@pytest.fixture
+@pytest.fixture()
 def sample_image():
     """Create a sample QImage for testing."""
     image = QImage(800, 600, QImage.Format.Format_RGB32)
@@ -36,7 +36,7 @@ def sample_image():
     return image
 
 
-@pytest.fixture
+@pytest.fixture()
 def sample_pixmap(sample_image):
     """Create a sample QPixmap from the sample image."""
     return QPixmap.fromImage(sample_image)
@@ -45,14 +45,14 @@ def sample_pixmap(sample_image):
 class TestClickableLabel:
     """Tests for the ClickableLabel class."""
 
-    def test_init(self, app):
+    def test_init(self, app) -> None:
         """Test ClickableLabel initialization."""
         label = ClickableLabel()
         assert label.file_path is None
         assert label.processed_image is None
         assert label.cursor() == Qt.CursorShape.PointingHandCursor
 
-    def test_mouse_release_emits_clicked(self, app):
+    def test_mouse_release_emits_clicked(self, app) -> None:
         """Test that mouse release emits clicked signal."""
         label = ClickableLabel()
 
@@ -75,7 +75,7 @@ class TestClickableLabel:
         # Verify signal was emitted
         mock_handler.assert_called_once()
 
-    def test_mouse_release_right_button_no_signal(self, app):
+    def test_mouse_release_right_button_no_signal(self, app) -> None:
         """Test that right mouse button doesn't emit clicked signal."""
         label = ClickableLabel()
 
@@ -102,7 +102,7 @@ class TestClickableLabel:
 class TestZoomDialog:
     """Tests for the ZoomDialog class."""
 
-    def test_init(self, app, sample_pixmap):
+    def test_init(self, app, sample_pixmap) -> None:
         """Test ZoomDialog initialization."""
         dialog = ZoomDialog(sample_pixmap)
 
@@ -110,12 +110,19 @@ class TestZoomDialog:
         assert dialog.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         assert dialog.size() == sample_pixmap.size()
 
-    def test_mouse_press_closes_dialog(self, app, sample_pixmap):
+    def test_mouse_press_closes_dialog(self, app, sample_pixmap) -> None:
         """Test that mouse press closes the dialog."""
         dialog = ZoomDialog(sample_pixmap)
 
-        # Mock the close method
-        dialog.close = Mock()
+        # Track if close was called
+        close_called = []
+        original_close = dialog.close
+
+        def mock_close() -> None:
+            close_called.append(True)
+            original_close()
+
+        dialog.close = mock_close
 
         # Create a mouse press event
         event = QMouseEvent(
@@ -138,7 +145,7 @@ class TestRifeCapabilityManager:
 
     @patch("goesvfi.utils.gui_helpers.find_rife_executable")
     @patch("goesvfi.utils.gui_helpers.RifeCapabilityDetector")
-    def test_init_successful_detection(self, mock_detector_class, mock_find_exe, app):
+    def test_init_successful_detection(self, mock_detector_class, mock_find_exe, app) -> None:
         """Test successful capability detection."""
         # Mock find_rife_executable
         mock_exe_path = Path("/path/to/rife")
@@ -171,7 +178,7 @@ class TestRifeCapabilityManager:
         assert manager.capabilities["thread_spec"] is True
 
     @patch("goesvfi.utils.gui_helpers.find_rife_executable")
-    def test_init_detection_failure(self, mock_find_exe, app):
+    def test_init_detection_failure(self, mock_find_exe, app) -> None:
         """Test handling of detection failure."""
         # Make find_rife_executable raise an exception
         mock_find_exe.side_effect = Exception("RIFE not found")
@@ -184,7 +191,7 @@ class TestRifeCapabilityManager:
         assert manager.exe_path is None
         assert manager.version is None
 
-    def test_update_ui_elements_with_capabilities(self, app):
+    def test_update_ui_elements_with_capabilities(self, app) -> None:
         """Test updating UI elements based on capabilities."""
         manager = RifeCapabilityManager()
 
@@ -229,7 +236,7 @@ class TestRifeCapabilityManager:
         assert tta_spatial_cb.isEnabled() is False
         assert tta_temporal_cb.isEnabled() is False
 
-    def test_get_capability_summary(self, app):
+    def test_get_capability_summary(self, app) -> None:
         """Test capability summary generation."""
         manager = RifeCapabilityManager()
 
@@ -253,7 +260,7 @@ class TestRifeCapabilityManager:
 class TestImageViewerDialog:
     """Tests for the ImageViewerDialog class."""
 
-    def test_init_with_valid_image(self, app, sample_image):
+    def test_init_with_valid_image(self, app, sample_image) -> None:
         """Test ImageViewerDialog initialization with valid image."""
         dialog = ImageViewerDialog(sample_image)
 
@@ -262,7 +269,7 @@ class TestImageViewerDialog:
         assert dialog.pan_offset == QPointF(0.0, 0.0)
         assert not dialog.panning
 
-    def test_init_with_null_image(self, app):
+    def test_init_with_null_image(self, app) -> None:
         """Test ImageViewerDialog with null image."""
         null_image = QImage()
         dialog = ImageViewerDialog(null_image)
@@ -270,7 +277,7 @@ class TestImageViewerDialog:
         # Should handle gracefully
         assert dialog.original_qimage.isNull()
 
-    def test_wheel_zoom_in(self, app, sample_image):
+    def test_wheel_zoom_in(self, app, sample_image) -> None:
         """Test zooming in with mouse wheel."""
         dialog = ImageViewerDialog(sample_image)
         initial_zoom = dialog.zoom_factor
@@ -291,7 +298,7 @@ class TestImageViewerDialog:
 
         assert dialog.zoom_factor > initial_zoom
 
-    def test_wheel_zoom_out(self, app, sample_image):
+    def test_wheel_zoom_out(self, app, sample_image) -> None:
         """Test zooming out with mouse wheel."""
         dialog = ImageViewerDialog(sample_image)
 
@@ -315,7 +322,7 @@ class TestImageViewerDialog:
 
         assert dialog.zoom_factor < initial_zoom
 
-    def test_mouse_drag_panning(self, app, sample_image):
+    def test_mouse_drag_panning(self, app, sample_image) -> None:
         """Test panning with mouse drag."""
         dialog = ImageViewerDialog(sample_image)
 
@@ -356,7 +363,7 @@ class TestImageViewerDialog:
 
         assert dialog.panning is False
 
-    def test_click_closes_dialog(self, app, sample_image):
+    def test_click_closes_dialog(self, app, sample_image) -> None:
         """Test that clicking without dragging closes the dialog."""
         dialog = ImageViewerDialog(sample_image)
         dialog.accept = Mock()
@@ -387,7 +394,7 @@ class TestImageViewerDialog:
 class TestCropLabel:
     """Tests for the CropLabel class."""
 
-    def test_init(self, app):
+    def test_init(self, app) -> None:
         """Test CropLabel initialization."""
         label = CropLabel()
 
@@ -398,7 +405,7 @@ class TestCropLabel:
         assert label.selection_end_point is None
         assert label.selected_rect is None
 
-    def test_set_pixmap_updates_offset(self, app, sample_pixmap):
+    def test_set_pixmap_updates_offset(self, app, sample_pixmap) -> None:
         """Test that setPixmap updates pixmap offset."""
         label = CropLabel()
         label.setFixedSize(1000, 800)  # Larger than pixmap
@@ -409,7 +416,7 @@ class TestCropLabel:
         assert label._pixmap_offset_x > 0
         assert label._pixmap_offset_y > 0
 
-    def test_mouse_press_starts_selection(self, app, sample_pixmap):
+    def test_mouse_press_starts_selection(self, app, sample_pixmap) -> None:
         """Test mouse press starts selection."""
         label = CropLabel()
         label.setPixmap(sample_pixmap)
@@ -432,7 +439,7 @@ class TestCropLabel:
         assert label.selection_end_point == QPoint(50, 50)
         assert label.selected_rect is None
 
-    def test_mouse_move_updates_selection(self, app, sample_pixmap):
+    def test_mouse_move_updates_selection(self, app, sample_pixmap) -> None:
         """Test mouse move updates selection during drag."""
         label = CropLabel()
         label.setPixmap(sample_pixmap)
@@ -461,7 +468,7 @@ class TestCropLabel:
         assert label.selection_end_point == QPoint(150, 150)
         mock_handler.assert_called_once()
 
-    def test_mouse_release_finalizes_selection(self, app, sample_pixmap):
+    def test_mouse_release_finalizes_selection(self, app, sample_pixmap) -> None:
         """Test mouse release finalizes selection."""
         label = CropLabel()
         label.setPixmap(sample_pixmap)
@@ -499,7 +506,7 @@ class TestCropLabel:
 class TestCropSelectionDialog:
     """Tests for the CropSelectionDialog class."""
 
-    def test_init_with_valid_image(self, app, sample_image):
+    def test_init_with_valid_image(self, app, sample_image) -> None:
         """Test CropSelectionDialog initialization with valid image."""
         dialog = CropSelectionDialog(sample_image)
 
@@ -508,14 +515,14 @@ class TestCropSelectionDialog:
         assert dialog.image == sample_image
         assert dialog.scale_factor > 0
 
-    def test_init_with_null_image(self, app):
+    def test_init_with_null_image(self, app) -> None:
         """Test CropSelectionDialog with null image."""
         null_image = QImage()
         dialog = CropSelectionDialog(null_image)
 
         assert dialog.image.isNull()
 
-    def test_get_selected_rect_no_selection(self, app, sample_image):
+    def test_get_selected_rect_no_selection(self, app, sample_image) -> None:
         """Test get_selected_rect returns empty rect when no selection."""
         dialog = CropSelectionDialog(sample_image)
 
@@ -523,7 +530,7 @@ class TestCropSelectionDialog:
 
         assert result.isNull()
 
-    def test_get_selected_rect_with_selection(self, app, sample_image):
+    def test_get_selected_rect_with_selection(self, app, sample_image) -> None:
         """Test get_selected_rect with valid selection."""
         dialog = CropSelectionDialog(sample_image)
 
@@ -539,7 +546,7 @@ class TestCropSelectionDialog:
         assert result.width() == 100
         assert result.height() == 100
 
-    def test_get_selected_rect_clamping(self, app, sample_image):
+    def test_get_selected_rect_clamping(self, app, sample_image) -> None:
         """Test that get_selected_rect clamps to image boundaries."""
         dialog = CropSelectionDialog(sample_image)
 
@@ -553,7 +560,7 @@ class TestCropSelectionDialog:
         assert result.right() < sample_image.width()
         assert result.bottom() < sample_image.height()
 
-    def test_store_final_selection(self, app, sample_image):
+    def test_store_final_selection(self, app, sample_image) -> None:
         """Test _store_final_selection method."""
         dialog = CropSelectionDialog(sample_image)
 

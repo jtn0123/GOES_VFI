@@ -4,7 +4,7 @@ This module provides a user interface for configuring resource limits
 such as memory usage, processing time, and file handles.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -31,12 +31,12 @@ class ResourceLimitsTab(QWidget):
     # Signal emitted when resource limits are changed
     limits_changed = pyqtSignal(object)  # ResourceLimits object
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the Resource Limits tab."""
         super().__init__(parent)
 
-        self.monitor: Optional[object] = None
-        self.system_info: Dict[str, Any] = {}  # TODO: Implement system resource info
+        self.monitor: object | None = None
+        self.system_info: dict[str, Any] = {}  # TODO: Implement system resource info
 
         self._setup_ui()
         self._setup_monitoring()
@@ -369,7 +369,7 @@ class ResourceLimitsTab(QWidget):
             self._update_progress_bar_colors(self.cpu_progress, cpu_percent)
 
         except Exception as e:
-            LOGGER.error("Error updating monitoring display: %s", e)
+            LOGGER.exception("Error updating monitoring display: %s", e)
 
     def _update_progress_bar_colors(self, progress_bar: QProgressBar, value: int) -> None:
         """Update progress bar colors based on usage level.
@@ -386,13 +386,7 @@ class ResourceLimitsTab(QWidget):
         else:
             progress_bar.setProperty("class", "StatusError")
 
-        progress_bar.setStyleSheet(
-            """
-            QProgressBar::chunk {
-                border-radius: 3px;
-            }}
-        """
-        )
+        # Border radius is now handled in default.qss for DataProgress class
 
     def start_monitoring(self) -> None:
         """Start resource monitoring."""
@@ -405,10 +399,9 @@ class ResourceLimitsTab(QWidget):
 
     def stop_monitoring(self) -> None:
         """Stop resource monitoring."""
-        if self.monitor:
-            if hasattr(self.monitor, "stop_monitoring"):
-                self.monitor.stop_monitoring()
+        if self.monitor and hasattr(self.monitor, "stop_monitoring"):
+            self.monitor.stop_monitoring()
 
-    def get_monitor(self) -> Optional[object]:
+    def get_monitor(self) -> object | None:
         """Get the current resource monitor."""
         return self.monitor

@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from goesvfi.pipeline import run_vfi as run_vfi_mod
+
 from tests.utils.mocks import (
     create_mock_colourise,
     create_mock_popen,
@@ -33,7 +34,7 @@ def make_dummy_images(tmp_path: pathlib.Path, count: int) -> list[pathlib.Path]:
     return paths
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_capability_detector(mocker):
     from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 
@@ -52,9 +53,7 @@ def mock_capability_detector(mocker):
         ("sanchez_fail", False),
     ],
 )
-def test_run_vfi_scenarios(
-    scenario, expect_error, tmp_path, mocker, mock_capability_detector
-):  # noqa: ARG001  # vulture: ignore
+def test_run_vfi_scenarios(scenario, expect_error, tmp_path, mocker, mock_capability_detector) -> None:  # noqa: ARG001  # vulture: ignore
     img_paths = make_dummy_images(tmp_path, 2)
     output_mp4 = tmp_path / "out.mp4"
     raw_output = output_mp4.with_suffix(".raw.mp4")

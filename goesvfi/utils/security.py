@@ -7,7 +7,7 @@ to prevent common vulnerabilities like command injection and path traversal.
 import os
 import pathlib
 import re
-from typing import Any, List, Optional, Union
+from typing import Any
 
 from goesvfi.utils import log
 
@@ -51,7 +51,7 @@ class InputValidator:
     @staticmethod
     def validate_file_path(
         path: str,
-        allowed_extensions: Optional[List[str]] = None,
+        allowed_extensions: list[str] | None = None,
         must_exist: bool = False,
     ) -> bool:
         """Validate file path to prevent directory traversal and ensure safety.
@@ -68,37 +68,43 @@ class InputValidator:
             SecurityError: If path contains security issues
         """
         if not path or not isinstance(path, str):
-            raise SecurityError("Path must be a non-empty string")
+            msg = "Path must be a non-empty string"
+            raise SecurityError(msg)
 
         # Normalize path and resolve any symlinks
         try:
             normalized = os.path.normpath(os.path.abspath(path))
         except (OSError, ValueError) as e:
-            raise SecurityError(f"Invalid path format: {e}") from e
+            msg = f"Invalid path format: {e}"
+            raise SecurityError(msg) from e
 
         # Check for directory traversal attempts
-        if ".." in path or path.startswith("/") and not os.path.isabs(path):
-            raise SecurityError("Path contains directory traversal attempts")
+        if ".." in path or (path.startswith("/") and not os.path.isabs(path)):
+            msg = "Path contains directory traversal attempts"
+            raise SecurityError(msg)
 
         # Validate extension if specified
         if allowed_extensions:
             _, ext = os.path.splitext(normalized)
             if ext.lower() not in [e.lower() for e in allowed_extensions]:
-                raise SecurityError(f"File extension '{ext}' not allowed. " f"Allowed: {allowed_extensions}")
+                msg = f"File extension '{ext}' not allowed. Allowed: {allowed_extensions}"
+                raise SecurityError(msg)
 
         # Check if file exists if required
         if must_exist and not os.path.exists(normalized):
-            raise SecurityError(f"File does not exist: {normalized}")
+            msg = f"File does not exist: {normalized}"
+            raise SecurityError(msg)
 
         # Check if path is within reasonable bounds (prevent extremely long paths)
         if len(normalized) > 4096:  # Most filesystems have much shorter limits
-            raise SecurityError("Path too long")
+            msg = "Path too long"
+            raise SecurityError(msg)
 
         LOGGER.debug("Path validation passed: %s", normalized)
         return True
 
     @staticmethod
-    def validate_numeric_range(value: Union[int, float], min_val: float, max_val: float, name: str = "value") -> bool:
+    def validate_numeric_range(value: float, min_val: float, max_val: float, name: str = "value") -> bool:
         """Validate that a numeric value is within acceptable bounds.
 
         Args:
@@ -113,11 +119,13 @@ class InputValidator:
         Raises:
             SecurityError: If value is out of range
         """
-        if not isinstance(value, (int, float)):
-            raise SecurityError(f"{name} must be a number")
+        if not isinstance(value, int | float):
+            msg = f"{name} must be a number"
+            raise SecurityError(msg)
 
         if not min_val <= value <= max_val:
-            raise SecurityError(f"{name} must be between {min_val} and {max_val}, " f"got {value}")
+            msg = f"{name} must be between {min_val} and {max_val}, got {value}"
+            raise SecurityError(msg)
 
         return True
 
@@ -166,9 +174,8 @@ class InputValidator:
             SecurityError: If encoder is not in whitelist
         """
         if encoder not in InputValidator.ALLOWED_FFMPEG_ENCODERS:
-            raise SecurityError(
-                f"FFmpeg encoder '{encoder}' not allowed. " f"Allowed: {InputValidator.ALLOWED_FFMPEG_ENCODERS}"
-            )
+            msg = f"FFmpeg encoder '{encoder}' not allowed. Allowed: {InputValidator.ALLOWED_FFMPEG_ENCODERS}"
+            raise SecurityError(msg)
         return True
 
     @staticmethod
@@ -186,16 +193,18 @@ class InputValidator:
             SecurityError: If argument is invalid or potentially dangerous
         """
         if key not in InputValidator.ALLOWED_SANCHEZ_ARGS:
-            raise SecurityError(f"Sanchez argument '{key}' not allowed")
+            msg = f"Sanchez argument '{key}' not allowed"
+            raise SecurityError(msg)
 
         pattern = InputValidator.ALLOWED_SANCHEZ_ARGS[key]
         if not re.match(pattern, str(value)):
-            raise SecurityError(f"Sanchez argument '{key}' has invalid value: {value}")
+            msg = f"Sanchez argument '{key}' has invalid value: {value}"
+            raise SecurityError(msg)
 
         return True
 
     @staticmethod
-    def validate_command_args(args: List[str], max_args: int = 100) -> bool:
+    def validate_command_args(args: list[str], max_args: int = 100) -> bool:
         """Validate command line arguments for subprocess execution.
 
         Args:
@@ -209,7 +218,8 @@ class InputValidator:
             SecurityError: If arguments contain dangerous patterns
         """
         if len(args) > max_args:
-            raise SecurityError(f"Too many command arguments: {len(args)} > {max_args}")
+            msg = f"Too many command arguments: {len(args)} > {max_args}"
+            raise SecurityError(msg)
 
         # Check for dangerous patterns in arguments
         dangerous_patterns = [
@@ -220,11 +230,13 @@ class InputValidator:
 
         for arg in args:
             if not isinstance(arg, str):
-                raise SecurityError(f"Command argument must be string, got {type(arg)}")
+                msg = f"Command argument must be string, got {type(arg)}"
+                raise SecurityError(msg)
 
             for pattern in dangerous_patterns:
                 if re.search(pattern, arg):
-                    raise SecurityError(f"Dangerous pattern found in argument: {arg}")
+                    msg = f"Dangerous pattern found in argument: {arg}"
+                    raise SecurityError(msg)
 
         return True
 
@@ -273,7 +285,7 @@ class SecureFileHandler:
         LOGGER.info("Created secure config directory: %s", config_dir)
 
 
-def secure_subprocess_call(command: List[str], **kwargs: Any) -> Any:
+def secure_subprocess_call(command: list[str], **kwargs: Any) -> Any:
     """Execute subprocess with security validations.
 
     Args:
@@ -305,14 +317,16 @@ def secure_subprocess_call(command: List[str], **kwargs: Any) -> Any:
 
     # Ensure shell is never enabled
     if secure_kwargs.get("shell", False):
-        raise SecurityError("Shell execution not allowed for security reasons")
+        msg = "Shell execution not allowed for security reasons"
+        raise SecurityError(msg)
 
     LOGGER.info("Executing secure subprocess: %s with %s args", command[0], len(command) - 1)
 
     try:
-        return subprocess.run(command, **secure_kwargs)
+        return subprocess.run(command, check=False, **secure_kwargs)
     except subprocess.TimeoutExpired as e:
-        raise SecurityError(f"Command timed out after {secure_kwargs['timeout']} seconds") from e
+        msg = f"Command timed out after {secure_kwargs['timeout']} seconds"
+        raise SecurityError(msg) from e
     except Exception as e:
-        LOGGER.error("Subprocess execution failed: %s", e)
+        LOGGER.exception("Subprocess execution failed: %s", e)
         raise

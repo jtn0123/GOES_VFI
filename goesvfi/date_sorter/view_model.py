@@ -5,8 +5,8 @@ presentation logic for the Date Sorter feature. It interacts with the DateSorter
 model and exposes data and commands to the GUI view layer.
 """
 
+from collections.abc import Callable
 import threading
-from typing import Callable, Optional
 
 from goesvfi.utils import log
 
@@ -19,8 +19,7 @@ LOGGER = log.get_logger(__name__)
 
 
 class DateSorterViewModel:
-    """
-    ViewModel for the Date Sorter GUI tab.
+    """ViewModel for the Date Sorter GUI tab.
 
     This class manages the state and presentation logic for the Date Sorter feature,
     acting as an intermediary between the DateSorter model and the GUI view.
@@ -29,8 +28,7 @@ class DateSorterViewModel:
     """
 
     def __init__(self, sorter_model: DateSorter) -> None:
-        """
-        Initializes the DateSorterViewModel with default state.
+        """Initializes the DateSorterViewModel with default state.
 
         Args:
                     sorter_model (DateSorter): The DateSorter model instance to use for file operations.
@@ -46,16 +44,17 @@ class DateSorterViewModel:
             _observer (Optional[Callable[[], None]]): Optional callback for observer notification.
         """
         self.sorter_model = sorter_model  # Store the DateSorter model instance
-        self._source_directory: Optional[str] = None
-        self._destination_directory: Optional[str] = None
+        self._source_directory: str | None = None
+        self._destination_directory: str | None = None
         self._is_sorting: bool = False
         self._progress_percentage: float = 0.0
         self._status_message: str = "Ready"
         self._date_format_pattern: str = "%Y/%m/%d"  # Example default
         self._cancel_requested: bool = False  # Flag for cancellation
+        self._sort_thread: threading.Thread | None = None  # Thread for sorting operation
 
         # Placeholder for observer notification mechanism
-        self._observer: Optional[Callable[[], None]] = None
+        self._observer: Callable[[], None] | None = None
 
         # Properties that might be observable in a full MVVM implementation
         # self.source_directory = Observable(None)
@@ -75,9 +74,8 @@ class DateSorterViewModel:
             self._observer()
 
     @property
-    def source_directory(self) -> Optional[str]:
-        """
-        The currently selected source directory for sorting.
+    def source_directory(self) -> str | None:
+        """The currently selected source directory for sorting.
 
         Returns:
             Optional[str]: The path to the source directory, or None if not set.
@@ -85,9 +83,8 @@ class DateSorterViewModel:
         return self._source_directory
 
     @source_directory.setter
-    def source_directory(self, value: Optional[str]) -> None:
-        """
-        Sets the source directory for sorting.
+    def source_directory(self, value: str | None) -> None:
+        """Sets the source directory for sorting.
 
         Args:
             value (Optional[str]): The path to the source directory.
@@ -97,9 +94,8 @@ class DateSorterViewModel:
         # self.source_directory.set(value)
 
     @property
-    def destination_directory(self) -> Optional[str]:
-        """
-        The currently selected destination directory for sorted files.
+    def destination_directory(self) -> str | None:
+        """The currently selected destination directory for sorted files.
 
         Returns:
             Optional[str]: The path to the destination directory, or None if not set.
@@ -107,9 +103,8 @@ class DateSorterViewModel:
         return self._destination_directory
 
     @destination_directory.setter
-    def destination_directory(self, value: Optional[str]) -> None:
-        """
-        Sets the destination directory for sorted files.
+    def destination_directory(self, value: str | None) -> None:
+        """Sets the destination directory for sorted files.
 
         Args:
             value (Optional[str]): The path to the destination directory.
@@ -120,8 +115,7 @@ class DateSorterViewModel:
 
     @property
     def is_sorting(self) -> bool:
-        """
-        Whether a sorting operation is currently in progress.
+        """Whether a sorting operation is currently in progress.
 
         Returns:
             bool: True if sorting is in progress, False otherwise.
@@ -130,8 +124,7 @@ class DateSorterViewModel:
 
     @is_sorting.setter
     def is_sorting(self, value: bool) -> None:
-        """
-        Sets the sorting state.
+        """Sets the sorting state.
 
         Args:
             value (bool): True if sorting is in progress, False otherwise.
@@ -142,8 +135,7 @@ class DateSorterViewModel:
 
     @property
     def progress_percentage(self) -> float:
-        """
-        The current progress of the sorting operation as a percentage.
+        """The current progress of the sorting operation as a percentage.
 
         Returns:
             float: Progress percentage (0-100).
@@ -152,8 +144,7 @@ class DateSorterViewModel:
 
     @progress_percentage.setter
     def progress_percentage(self, value: float) -> None:
-        """
-        Sets the progress percentage of the sorting operation.
+        """Sets the progress percentage of the sorting operation.
 
         Args:
             value (float): Progress percentage (0-100).
@@ -164,8 +155,7 @@ class DateSorterViewModel:
 
     @property
     def status_message(self) -> str:
-        """
-        The current status message for display in the UI.
+        """The current status message for display in the UI.
 
         Returns:
             str: Status message describing the current state.
@@ -174,8 +164,7 @@ class DateSorterViewModel:
 
     @status_message.setter
     def status_message(self, value: str) -> None:
-        """
-        Sets the status message for display in the UI.
+        """Sets the status message for display in the UI.
 
         Args:
             value (str): The status message.
@@ -186,8 +175,7 @@ class DateSorterViewModel:
 
     @property
     def date_format_pattern(self) -> str:
-        """
-        The date format pattern used for sorting files.
+        """The date format pattern used for sorting files.
 
         Returns:
             str: The date format pattern (e.g., "%Y/%m/%d").
@@ -196,8 +184,7 @@ class DateSorterViewModel:
 
     @date_format_pattern.setter
     def date_format_pattern(self, value: str) -> None:
-        """
-        Sets the date format pattern for sorting files.
+        """Sets the date format pattern for sorting files.
 
         Args:
             value (str): The date format pattern (e.g., "%Y/%m/%d").
@@ -208,8 +195,7 @@ class DateSorterViewModel:
 
     @property
     def can_start_sorting(self) -> bool:
-        """
-        Whether the sorting process can be started.
+        """Whether the sorting process can be started.
 
         Returns:
             bool: True if both source and destination directories are set and valid,
@@ -218,8 +204,7 @@ class DateSorterViewModel:
         return self.source_directory is not None and self.destination_directory is not None and not self.is_sorting
 
     def select_source_directory(self) -> None:
-        """
-        Command to select the source directory.
+        """Command to select the source directory.
 
         This method should be triggered by the UI when the user wants to choose
         a source directory for sorting. The actual implementation should open a
@@ -232,8 +217,6 @@ class DateSorterViewModel:
             Notifies observers if implemented.
 
         Note:
-
-
             This is a placeholder implementation for testing purposes.
         """
         # This method will typically trigger a file dialog in the View
@@ -243,8 +226,7 @@ class DateSorterViewModel:
         # self._notify_observer()
 
     def select_destination_directory(self) -> None:
-        """
-        Command to select the destination directory.
+        """Command to select the destination directory.
 
         This method should be triggered by the UI when the user wants to choose
         a destination directory for sorted files. The actual implementation should
@@ -257,8 +239,6 @@ class DateSorterViewModel:
             Notifies observers if implemented.
 
         Note:
-
-
             This is a placeholder implementation for testing purposes.
         """
         # This method will typically trigger a file dialog in the View
@@ -268,8 +248,7 @@ class DateSorterViewModel:
         # self._notify_observer()
 
     def start_sorting(self) -> None:
-        """
-        Command to start the sorting process.
+        """Command to start the sorting process.
 
         Initiates the file sorting operation in a separate thread if the
         preconditions are met (valid source/destination directories and not already sorting).
@@ -291,9 +270,7 @@ class DateSorterViewModel:
             self._notify_observer()  # Notify view of state change
 
             # Run the sorting in a separate thread
-            self._sort_thread = threading.Thread(
-                target=self._sort_worker
-            )  # pylint: disable=attribute-defined-outside-init
+            self._sort_thread = threading.Thread(target=self._sort_worker)  # pylint: disable=attribute-defined-outside-init
             self._sort_thread.start()
 
     def _sort_worker(self) -> None:
@@ -331,8 +308,7 @@ class DateSorterViewModel:
         self._notify_observer()  # Notify view of progress update
 
     def cancel_sorting(self) -> None:
-        """
-        Command to cancel the ongoing sorting process.
+        """Command to cancel the ongoing sorting process.
 
         If a sorting operation is in progress, sets the cancellation flag and updates
         the status message. The sorting thread should periodically check this flag and

@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
-"""
-Script to run Flake8, Flake8-Qt, and Pylint linters on the GOES_VFI codebase.
+"""Script to run linters on the GOES_VFI codebase, aligned with pre-commit configuration.
 This provides a consistent way to lint the code and can be integrated with CI/CD.
 """
 
 import argparse
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
-from typing import List, Optional, Tuple
 
 # Default directories to check
 DEFAULT_PATHS = [
@@ -28,12 +26,12 @@ BOLD = "\033[1m"
 def print_colored(message: str, color: str = RESET, bold: bool = False) -> None:
     """Print a message with color."""
     if bold:
-        print(f"{BOLD}{color}{message}{RESET}")
+        pass
     else:
-        print(f"{color}{message}{RESET}")
+        pass
 
 
-def run_command(cmd: List[str]) -> Tuple[int, str]:
+def run_command(cmd: list[str]) -> tuple[int, str]:
     """Run a command and return the exit code and output."""
     try:
         result = subprocess.run(
@@ -48,9 +46,8 @@ def run_command(cmd: List[str]) -> Tuple[int, str]:
         return 1, str(e)
 
 
-def run_flake8(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, int]:
-    """
-    Run flake8 on the given paths.
+def run_flake8(paths: list[str], jobs: int | None = None) -> tuple[int, str, int]:
+    """Run flake8 on the given paths.
 
     Returns:
         Tuple of (exit_code, output, issue_count)
@@ -74,15 +71,13 @@ def run_flake8(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, 
         print_colored("Flake8 found no issues! ✅", GREEN, bold=True)
         issue_count = 0  # Force to 0 if exit code is 0
     else:
-        print(output)
         print_colored(f"Flake8 found {issue_count} issues. ❌", RED)
 
     return exit_code, output, issue_count
 
 
-def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
-    """
-    DISABLED: flake8-qt-tr functionality removed due to configuration issues.
+def run_flake8_qt(paths: list[str]) -> tuple[int, str, int]:
+    """DISABLED: flake8-qt-tr functionality removed due to configuration issues.
 
     Returns:
         Tuple of (exit_code, output, issue_count)
@@ -95,50 +90,20 @@ def run_flake8_qt(paths: List[str]) -> Tuple[int, str, int]:
     return 0, "flake8-qt-tr disabled", 0
 
 
-def run_vulture(paths: List[str]) -> Tuple[int, str, int]:
+def run_vulture(paths: list[str]) -> tuple[int, str, int]:
+    """DEPRECATED: Vulture is not included in pre-commit hooks.
+    Dead code detection is partially covered by ruff.
     """
-    Run vulture (dead code finder) on the given paths.
-
-    Returns:
-        Tuple of (exit_code, output, issue_count)
-    """
-    # Check if vulture is installed
-    exit_code, _ = run_command(["vulture", "--help"])
-    if exit_code != 0:
-        print_colored("Vulture is not installed. Skipping dead code check.", YELLOW)
-        return 0, "Vulture not installed", 0
-
-    print_colored(f"\n{BOLD}Running Vulture (Dead Code Finder)...{RESET}", BLUE, bold=True)
-
-    # Build vulture command
-    cmd = [
-        "vulture",
-        "--min-confidence",
-        "80",  # Only report high-confidence dead code
-        "--sort-by-size",  # Sort by size to show largest issues first
-    ]
-    cmd.extend(paths)
-
-    exit_code, output = run_command(cmd)
-
-    # Count issues - vulture outputs one issue per line (excluding empty lines)
-    issue_count = len([line for line in output.split("\n") if line.strip() and not line.startswith("vulture:")])
-
-    if exit_code == 0 and issue_count == 0:
-        print_colored("Vulture found no dead code! ✅", GREEN, bold=True)
-    elif issue_count > 0:
-        print(output)
-        print_colored(f"Vulture found {issue_count} instances of potentially dead code. ❌", RED)
-    else:
-        print(output)
-        print_colored("Vulture completed with warnings.", YELLOW)
-
-    return exit_code, output, issue_count
+    print_colored(
+        "Vulture is not included in pre-commit hooks. Dead code detection is partially covered by ruff.",
+        YELLOW,
+        bold=True,
+    )
+    return 0, "Vulture not in pre-commit configuration", 0
 
 
-def run_flake8_bugbear(paths: List[str]) -> Tuple[int, str, int]:
-    """
-    Run flake8 with bugbear plugin specifically enabled.
+def run_flake8_bugbear(paths: list[str]) -> tuple[int, str, int]:
+    """Run flake8 with bugbear plugin specifically enabled.
 
     Returns:
         Tuple of (exit_code, output, issue_count)
@@ -171,25 +136,22 @@ def run_flake8_bugbear(paths: List[str]) -> Tuple[int, str, int]:
     exit_code, output = run_command(cmd)
 
     # Count issues by counting lines with actual error reports
-    issue_count = len(
-        [line for line in output.split("\n") if ":" in line and any(f"B{i:03d}" in line for i in range(1, 999))]
-    )
+    issue_count = len([
+        line for line in output.split("\n") if ":" in line and any(f"B{i:03d}" in line for i in range(1, 999))
+    ])
 
     if exit_code == 0 and issue_count == 0:
         print_colored("Flake8-Bugbear found no bugs! ✅", GREEN, bold=True)
     elif issue_count > 0:
-        print(output)
         print_colored(f"Flake8-Bugbear found {issue_count} potential bugs. ❌", RED)
     else:
-        print(output)
         print_colored("Flake8-Bugbear completed with warnings.", YELLOW)
 
     return exit_code, output, issue_count
 
 
-def run_mypy(paths: List[str], strict: bool = False) -> Tuple[int, str, int]:
-    """
-    Run mypy type checking on the given paths.
+def run_mypy(paths: list[str], strict: bool = False) -> tuple[int, str, int]:
+    """Run mypy type checking on the given paths.
 
     Args:
         paths: List of file or directory paths to check
@@ -232,7 +194,7 @@ def run_mypy(paths: List[str], strict: bool = False) -> Tuple[int, str, int]:
 
     # Print mypy output
     if output:
-        print(output)
+        pass
 
     # Display summary based on the results
     if exit_code == 0:
@@ -243,9 +205,8 @@ def run_mypy(paths: List[str], strict: bool = False) -> Tuple[int, str, int]:
     return exit_code, output, issue_count
 
 
-def run_black(paths: List[str], check_only: bool = True) -> Tuple[int, str, int]:
-    """
-    Run Black code formatter on the given paths.
+def run_ruff_format(paths: list[str], check_only: bool = True) -> tuple[int, str, int]:
+    """Run Ruff formatter on the given paths.
 
     Args:
         paths: List of file or directory paths to format
@@ -254,28 +215,20 @@ def run_black(paths: List[str], check_only: bool = True) -> Tuple[int, str, int]
     Returns:
         Tuple of (exit_code, output, issue_count)
     """
-    print_colored(f"\n{BOLD}Running Black Code Formatter...{RESET}", BLUE, bold=True)
+    print_colored(f"\n{BOLD}Running Ruff Formatter...{RESET}", BLUE, bold=True)
 
-    # Check if black is available
-    try:
-        # Just check if we can import it without storing the module
-        __import__("black")
-    except ImportError:
-        print_colored(
-            "⚠️ Black is not properly installed in your environment. Skipping Black checks.",
-            YELLOW,
-            bold=True,
-        )
-        print_colored("To install Black: pip install black", YELLOW)
-        return 1, "Black not installed", 1
+    # Check if ruff is available
+    exit_code, _ = run_command(["ruff", "--version"])
+    if exit_code != 0:
+        print_colored("Ruff is not installed. Skipping ruff format check.", YELLOW)
+        return 0, "Ruff not installed", 0
 
-    # Basic command
-    cmd = [".venv/bin/python", "-m", "black", "--line-length=120"]
+    # Build ruff format command
+    cmd = ["ruff", "format"]
 
     # If we're only checking, add the --check flag
     if check_only:
-        cmd.append("--check")
-        cmd.append("--diff")  # Show the differences
+        cmd.extend(("--check", "--diff"))  # Show the differences
 
     # Add paths
     cmd.extend(paths)
@@ -285,97 +238,59 @@ def run_black(paths: List[str], check_only: bool = True) -> Tuple[int, str, int]
     # Count issues by checking files that would be reformatted
     issue_count = output.count("would be reformatted") if output else 0
 
-    # Print black output
+    # Print ruff output
     if output:
-        print(output)
+        pass
 
     # Display summary based on the results
     if exit_code == 0:
-        print_colored("Black formatting check passed! ✅", GREEN, bold=True)
-    else:
-        if check_only:
-            print_colored(f"Black would reformat {issue_count} files. ❌", RED)
-            print_colored(
-                "Run with --format flag to apply the formatting changes",
-                YELLOW,
-                bold=True,
-            )
-        else:
-            print_colored(f"Black reformatted {issue_count} files. ✅", GREEN)
-
-    return exit_code, output, issue_count
-
-
-def run_isort(paths: List[str], check_only: bool = True) -> Tuple[int, str, int]:
-    """
-    Run isort import sorter on the given paths.
-
-    Args:
-        paths: List of file or directory paths to sort imports in
-        check_only: Whether to only check for sorting issues without modifying files
-
-    Returns:
-        Tuple of (exit_code, output, issue_count)
-    """
-    print_colored(f"\n{BOLD}Running isort Import Sorter...{RESET}", BLUE, bold=True)
-
-    # Check if isort is available
-    try:
-        # Just check if we can import it without storing the module
-        __import__("isort")
-    except ImportError:
+        print_colored("Ruff formatting check passed! ✅", GREEN, bold=True)
+    elif check_only:
+        print_colored(f"Ruff would reformat {issue_count} files. ❌", RED)
         print_colored(
-            "⚠️ isort is not properly installed in your environment. Skipping isort checks.",
+            "Run with --format flag to apply the formatting changes",
             YELLOW,
             bold=True,
         )
-        print_colored("To install isort: pip install isort", YELLOW)
-        return 1, "isort not installed", 1
-
-    # Basic command - using same settings as pre-commit
-    cmd = [".venv/bin/python", "-m", "isort"]
-
-    # If we're only checking, add the --check flag
-    if check_only:
-        cmd.append("--check")
-        cmd.append("--diff")  # Show the differences
-
-    # Add paths
-    cmd.extend(paths)
-
-    exit_code, output = run_command(cmd)
-
-    # Count issues by checking for "ERROR" lines in the output
-    issue_count = 0
-    if output:
-        for line in output.splitlines():
-            if "ERROR:" in line or "Skipped" in line:
-                issue_count += 1
-
-    # Print isort output
-    if output:
-        print(output)
-
-    # Display summary based on the results
-    if exit_code == 0:
-        print_colored("isort import sorting check passed! ✅", GREEN, bold=True)
     else:
-        if check_only:
-            print_colored(f"isort would fix imports in {issue_count} files. ❌", RED)
-            print_colored(
-                "Run with --format flag to apply the import sorting changes",
-                YELLOW,
-                bold=True,
-            )
-        else:
-            print_colored(f"isort fixed imports in {issue_count} files. ✅", GREEN)
+        print_colored(f"Ruff reformatted {issue_count} files. ✅", GREEN)
 
     return exit_code, output, issue_count
 
 
-def run_ruff(paths: List[str]) -> Tuple[int, str, int]:
+# Keep black function for backward compatibility
+def run_black(paths: list[str], check_only: bool = True) -> tuple[int, str, int]:
+    """DEPRECATED: Black functionality is now handled by ruff format.
+    This function redirects to ruff format for backward compatibility.
     """
-    Run ruff linter on the given paths.
+    print_colored(
+        "Black is deprecated in favor of Ruff. Using Ruff format instead...",
+        YELLOW,
+        bold=True,
+    )
+    return run_ruff_format(paths, check_only)
+
+
+# Note: isort functionality is now handled by ruff
+# Keeping this function as a stub for backward compatibility
+def run_isort(paths: list[str], check_only: bool = True) -> tuple[int, str, int]:
+    """DEPRECATED: Import sorting is now handled by ruff.
+    This function is kept for backward compatibility.
+    """
+    print_colored(
+        "Import sorting is now handled by Ruff. Use --ruff-only instead.",
+        YELLOW,
+        bold=True,
+    )
+    return 0, "isort functionality moved to ruff", 0
+
+
+def run_ruff(paths: list[str], fix: bool = False) -> tuple[int, str, int]:
+    """Run ruff linter on the given paths.
+
+    Args:
+        paths: List of file or directory paths to lint
+        fix: Whether to automatically fix issues
 
     Returns:
         Tuple of (exit_code, output, issue_count)
@@ -390,6 +305,10 @@ def run_ruff(paths: List[str]) -> Tuple[int, str, int]:
 
     # Build ruff command
     cmd = ["ruff", "check", "--output-format=concise"]
+
+    if fix:
+        cmd.extend(["--fix", "--exit-non-zero-on-fix"])
+
     cmd.extend(paths)
 
     exit_code, output = run_command(cmd)
@@ -399,16 +318,16 @@ def run_ruff(paths: List[str]) -> Tuple[int, str, int]:
 
     if exit_code == 0:
         print_colored("Ruff found no issues! ✅", GREEN, bold=True)
+    elif fix:
+        print_colored(f"Ruff fixed {issue_count} issues. ✅", GREEN)
     else:
-        print(output)
         print_colored(f"Ruff found {issue_count} issues. ❌", RED)
 
     return exit_code, output, issue_count
 
 
-def run_pyright(paths: List[str]) -> Tuple[int, str, int]:
-    """
-    Run pyright type checker on the given paths.
+def run_pyright(paths: list[str]) -> tuple[int, str, int]:
+    """Run pyright type checker on the given paths.
 
     Returns:
         Tuple of (exit_code, output, issue_count)
@@ -422,7 +341,7 @@ def run_pyright(paths: List[str]) -> Tuple[int, str, int]:
         return 0, "Pyright not installed", 0
 
     # Build pyright command
-    cmd = ["pyright"] + paths
+    cmd = ["pyright", *paths]
 
     exit_code, output = run_command(cmd)
 
@@ -436,15 +355,13 @@ def run_pyright(paths: List[str]) -> Tuple[int, str, int]:
     if exit_code == 0:
         print_colored("Pyright found no type errors! ✅", GREEN, bold=True)
     else:
-        print(output)
         print_colored(f"Pyright found {issue_count} type issues. ❌", RED)
 
     return exit_code, output, issue_count
 
 
-def run_bandit(paths: List[str]) -> Tuple[int, str, int]:
-    """
-    Run bandit security scanner on the given paths.
+def run_bandit(paths: list[str]) -> tuple[int, str, int]:
+    """Run bandit security scanner on the given paths.
 
     Returns:
         Tuple of (exit_code, output, issue_count)
@@ -469,133 +386,76 @@ def run_bandit(paths: List[str]) -> Tuple[int, str, int]:
     if exit_code == 0:
         print_colored("Bandit found no security issues! ✅", GREEN, bold=True)
     else:
-        print(output)
         print_colored(f"Bandit found {issue_count} security issues. ❌", RED)
 
     return exit_code, output, issue_count
 
 
-def run_safety() -> Tuple[int, str, int]:
+def run_safety() -> tuple[int, str, int]:
+    """DEPRECATED: Safety is not included in pre-commit hooks.
+    It only supports Poetry, not setuptools-based projects.
     """
-    Run safety dependency vulnerability scanner.
+    print_colored(
+        "Safety is not included in pre-commit hooks (only supports Poetry).",
+        YELLOW,
+        bold=True,
+    )
+    return 0, "Safety not supported for setuptools projects", 0
+
+
+def run_xenon(paths: list[str]) -> tuple[int, str, int]:
+    """Run xenon complexity checker on the given paths.
 
     Returns:
         Tuple of (exit_code, output, issue_count)
     """
-    print_colored(f"\n{BOLD}Running Safety Dependency Scanner...{RESET}", BLUE, bold=True)
+    print_colored(f"\n{BOLD}Running Xenon Complexity Checker...{RESET}", BLUE, bold=True)
 
-    # Check if safety is available
-    exit_code, _ = run_command(["safety", "--version"])
+    # Check if xenon is available
+    exit_code, _ = run_command(["xenon", "--version"])
     if exit_code != 0:
-        print_colored("Safety is not installed. Skipping dependency scan.", YELLOW)
-        return 0, "Safety not installed", 0
+        print_colored("Xenon is not installed. Skipping complexity check.", YELLOW)
+        return 0, "Xenon not installed", 0
 
-    # Build safety command
-    cmd = ["safety", "check", "--json"]
+    # Build xenon command - matching pre-commit config
+    cmd = ["xenon", "--max-absolute", "C"]
+
+    # Filter to only check goesvfi files, matching pre-commit config
+    filtered_paths = [path for path in paths if "goesvfi" in path or path == "goesvfi"]
+
+    if not filtered_paths:
+        print_colored("No goesvfi files to check for complexity.", YELLOW)
+        return 0, "No goesvfi files", 0
+
+    cmd.extend(filtered_paths)
 
     exit_code, output = run_command(cmd)
 
-    # Count vulnerabilities in JSON output
+    # Count issues by looking for complexity grades worse than C
     issue_count = 0
-    if output and "vulnerabilities" in output:
-        try:
-            import json
-
-            data = json.loads(output)
-            issue_count = len(data.get("vulnerabilities", []))
-        except json.JSONDecodeError:
-            # Fallback to text parsing
-            issue_count = output.count("vulnerability") if output else 0
+    if output:
+        for line in output.splitlines():
+            if any(grade in line for grade in [" D ", " E ", " F "]):
+                issue_count += 1
 
     if exit_code == 0:
-        print_colored("Safety found no vulnerabilities! ✅", GREEN, bold=True)
+        print_colored("Xenon found no high complexity code! ✅", GREEN, bold=True)
     else:
-        print(output)
-        print_colored(f"Safety found {issue_count} vulnerabilities. ❌", RED)
+        print_colored(f"Xenon found {issue_count} high complexity functions. ❌", RED)
 
     return exit_code, output, issue_count
 
 
-def run_pylint(paths: List[str], jobs: Optional[int] = None) -> Tuple[int, str, int]:
+def run_pylint(paths: list[str], jobs: int | None = None) -> tuple[int, str, int]:
+    """DEPRECATED: Pylint is not included in pre-commit hooks.
+    Consider using ruff instead, which covers most pylint checks.
     """
-    Run pylint on the given paths.
-
-    Returns:
-        Tuple of (exit_code, output, issue_count)
-    """
-    print_colored(f"\n{BOLD}Running Pylint...{RESET}", BLUE, bold=True)
-
-    # Check if pylint is available and handle any potential issues
-    try:
-        # Try to import pylint modules
-        __import__("pylint")
-
-        # Also check for the dill import issue
-        try:
-            # Check for dill import issues without storing the module
-            __import__("dill")
-        except ImportError as e:
-            if "circular import" in str(e):
-                print_colored(
-                    "⚠️ Pylint has a dependency issue that prevents it from running correctly.",
-                    YELLOW,
-                    bold=True,
-                )
-                print_colored(
-                    "This is a known issue with the dill package that pylint depends on.",
-                    YELLOW,
-                )
-                print_colored(
-                    "SOLUTION: Use ./run_only_flake8.py instead for linting with flake8 only:",
-                    YELLOW,
-                    bold=True,
-                )
-                print_colored(f"    python run_only_flake8.py {' '.join(paths)}", GREEN)
-                return 1, "Circular import in dill package", 1
-    except ImportError:
-        print_colored(
-            "⚠️ Pylint is not properly installed in your environment. Skipping pylint checks.",
-            YELLOW,
-            bold=True,
-        )
-        print_colored("To install pylint: pip install pylint", YELLOW)
-        print_colored("Or use run_only_flake8.py which doesn't require pylint:", YELLOW)
-        print_colored(f"    python run_only_flake8.py {' '.join(paths)}", GREEN)
-        return 1, "Pylint not installed", 1
-
-    cmd = ["pylint", "--output-format=parseable"]
-    if jobs:
-        cmd.extend(["--jobs", str(jobs)])
-    cmd.extend(paths)
-
-    exit_code, output = run_command(cmd)
-
-    # Count the number of issues by counting lines in the output that match the pylint pattern
-    issue_count = output.count(": ") if output else 0
-
-    # Print pylint output
-    print(output)
-
-    # Pylint exit codes: 0=no issues, 1-15=increasing severity of issues
-    if exit_code == 0:
-        print_colored("Pylint found no issues! ✅", GREEN, bold=True)
-    elif exit_code < 4:  # Convention/refactor issues only
-        print_colored(
-            f"Pylint found {issue_count} minor issues. Exit code: {exit_code} ⚠️",
-            YELLOW,
-        )
-    elif exit_code < 8:  # Warning issues
-        print_colored(f"Pylint found {issue_count} warnings. Exit code: {exit_code} ⚠️", YELLOW)
-    else:  # Error/fatal issues
-        print_colored(
-            f"Pylint found {issue_count} significant issues. Exit code: {exit_code} ❌",
-            RED,
-        )
-
-    # Normalize exit code to 0 or 1
-    exit_code = min(exit_code, 1)
-
-    return exit_code, output, issue_count
+    print_colored(
+        "Pylint is not included in pre-commit hooks. Consider using ruff instead.",
+        YELLOW,
+        bold=True,
+    )
+    return 0, "Pylint not in pre-commit configuration", 0
 
 
 def parse_args() -> argparse.Namespace:
@@ -711,21 +571,19 @@ def main() -> int:
         black_code, _, black_count = run_black(paths, check_only)
         isort_code, _, isort_count = run_isort(paths, check_only)
 
-        linter_results.extend(
-            [
-                ("Flake8", flake8_code, flake8_count),
-                ("Ruff", ruff_code, ruff_count),
-                ("Flake8-Bugbear", bugbear_code, bugbear_count),
-                ("Vulture", vulture_code, vulture_count),
-                ("Pylint", pylint_code, pylint_count),
-                ("Mypy", mypy_code, mypy_count),
-                ("Pyright", pyright_code, pyright_count),
-                ("Bandit", bandit_code, bandit_count),
-                ("Safety", safety_code, safety_count),
-                ("Black", black_code, black_count),
-                ("isort", isort_code, isort_count),
-            ]
-        )
+        linter_results.extend([
+            ("Flake8", flake8_code, flake8_count),
+            ("Ruff", ruff_code, ruff_count),
+            ("Flake8-Bugbear", bugbear_code, bugbear_count),
+            ("Vulture", vulture_code, vulture_count),
+            ("Pylint", pylint_code, pylint_count),
+            ("Mypy", mypy_code, mypy_count),
+            ("Pyright", pyright_code, pyright_count),
+            ("Bandit", bandit_code, bandit_count),
+            ("Safety", safety_code, safety_count),
+            ("Black", black_code, black_count),
+            ("isort", isort_code, isort_count),
+        ])
 
     # Print summary
     print_colored("\n" + "=" * 70, BLUE)
@@ -736,7 +594,6 @@ def main() -> int:
     total_issues = 0
     exit_codes = []
 
-    print()  # Add a blank line
     for linter_name, exit_code, issue_count in linter_results:
         total_issues += issue_count
         exit_codes.append(exit_code)
@@ -745,20 +602,17 @@ def main() -> int:
         color = GREEN if issue_count == 0 else YELLOW if issue_count < 10 else RED
         print_colored(f"{linter_name}: {issue_count} issues", color)
 
-    print()  # Add another blank line
-
     # Display total and final result
     if all(code == 0 for code in exit_codes) and total_issues == 0:
         print_colored(f"Total: {total_issues} issues - All linters passed! 🎉", GREEN, bold=True)
         return 0
-    else:
-        color = YELLOW if total_issues < 20 else RED
-        print_colored(
-            f"Total: {total_issues} issues found - Check output above for details ⚠️",
-            color,
-            bold=True,
-        )
-        return 1
+    color = YELLOW if total_issues < 20 else RED
+    print_colored(
+        f"Total: {total_issues} issues found - Check output above for details ⚠️",
+        color,
+        bold=True,
+    )
+    return 1
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
 import pathlib
+from typing import Never
 from unittest.mock import patch
 
-import pathlib
 import pytest
 
 from goesvfi.pipeline.run_ffmpeg import run_ffmpeg_interpolation
+
 from tests.utils.helpers import create_dummy_png
 
 
@@ -16,12 +17,12 @@ def _create_inputs(tmp_path: pathlib.Path, count: int = 2) -> pathlib.Path:
     return input_dir
 
 
-def test_ffmpeg_interpolation_success(tmp_path: pathlib.Path):
+def test_ffmpeg_interpolation_success(tmp_path: pathlib.Path) -> None:
     input_dir = _create_inputs(tmp_path)
     output_file = tmp_path / "out.mp4"
     captured = {}
 
-    def fake_run(cmd, desc, monitor_memory=False):
+    def fake_run(cmd, desc, monitor_memory=False) -> None:
         captured["cmd"] = cmd
         output_file.write_text("done")
 
@@ -66,12 +67,13 @@ def test_ffmpeg_interpolation_success(tmp_path: pathlib.Path):
     mock_run.assert_called_once()
 
 
-def test_ffmpeg_interpolation_failure(tmp_path: pathlib.Path):
+def test_ffmpeg_interpolation_failure(tmp_path: pathlib.Path) -> None:
     input_dir = _create_inputs(tmp_path)
     output_file = tmp_path / "out.mp4"
 
-    def fail_run(*_a, **_k):
-        raise RuntimeError("ffmpeg failed")
+    def fail_run(*_a, **_k) -> Never:
+        msg = "ffmpeg failed"
+        raise RuntimeError(msg)
 
     with patch("goesvfi.pipeline.run_ffmpeg._run_ffmpeg_command", side_effect=fail_run):
         with pytest.raises(RuntimeError):
@@ -106,4 +108,3 @@ def test_ffmpeg_interpolation_failure(tmp_path: pathlib.Path):
                 bufsize_kb=1500,
                 pix_fmt="yuv420p",
             )
-

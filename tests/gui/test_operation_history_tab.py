@@ -1,10 +1,10 @@
-import sys
 from pathlib import Path
+import sys
 from types import ModuleType
 from unittest.mock import MagicMock
 
 
-def test_export_operations_dialog_and_filters(qtbot, monkeypatch):
+def test_export_operations_dialog_and_filters(qtbot, monkeypatch) -> None:
     """Export uses selected path and passes current filters."""
     # Provide stub for missing enhanced_log module before import
     dummy_log = ModuleType("enhanced_log")
@@ -17,6 +17,9 @@ def test_export_operations_dialog_and_filters(qtbot, monkeypatch):
     monkeypatch.setitem(sys.modules, "goesvfi.utils.operation_history", dummy_history)
 
     from goesvfi.gui_tabs.operation_history_tab import OperationHistoryTab
+
+    # Mock the get_operation_store function in the actual module
+    monkeypatch.setattr("goesvfi.gui_tabs.operation_history_tab.get_operation_store", lambda: store)
 
     tab = OperationHistoryTab()
     qtbot.addWidget(tab)

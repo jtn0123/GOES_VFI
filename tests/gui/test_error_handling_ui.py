@@ -1,13 +1,13 @@
 """Error handling and edge case UI tests for GOES VFI GUI."""
 
-import tempfile
 from pathlib import Path
+import tempfile
 from unittest.mock import MagicMock
 
 import psutil
-import pytest
 from PyQt6.QtCore import QThread, QTimer, pyqtSignal
 from PyQt6.QtWidgets import QLabel, QMessageBox, QProgressBar
+import pytest
 
 from goesvfi.gui import MainWindow
 
@@ -19,13 +19,13 @@ class MockNetworkOperation(QThread):
     finished = pyqtSignal(bool, str)
     error = pyqtSignal(str)
 
-    def __init__(self, timeout_after=None, retry_count=3):
+    def __init__(self, timeout_after=None, retry_count=3) -> None:
         super().__init__()
         self.timeout_after = timeout_after
         self.retry_count = retry_count
         self.attempts = 0
 
-    def run(self):
+    def run(self) -> None:
         """Simulate network operation with potential timeout."""
         while self.attempts < self.retry_count:
             self.attempts += 1
@@ -35,11 +35,10 @@ class MockNetworkOperation(QThread):
                 self.error.emit(f"Network timeout (attempt {self.attempts}/{self.retry_count})")
                 self.msleep(1000)  # Wait before retry
                 continue
-            else:
-                # Success
-                self.progress.emit(100, "Download complete")
-                self.finished.emit(True, "Success")
-                return
+            # Success
+            self.progress.emit(100, "Download complete")
+            self.finished.emit(True, "Success")
+            return
 
         # All retries failed
         self.error.emit("Network operation failed after all retries")
@@ -49,7 +48,7 @@ class MockNetworkOperation(QThread):
 class TestErrorHandlingUI:
     """Test error handling and edge cases in the UI."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
@@ -62,7 +61,7 @@ class TestErrorHandlingUI:
 
         return window
 
-    def test_network_timeout_ui_feedback(self, qtbot, window, mocker):
+    def test_network_timeout_ui_feedback(self, qtbot, window, mocker) -> None:
         """Test UI feedback during network timeouts."""
         # Create UI elements for network status
         status_label = QLabel("Ready")
@@ -75,7 +74,7 @@ class TestErrorHandlingUI:
         # Track UI updates
         ui_updates = []
 
-        def update_ui_on_error(error_msg):
+        def update_ui_on_error(error_msg) -> None:
             ui_updates.append(error_msg)
             status_label.setText(f"Error: {error_msg}")
             if "attempt" in error_msg:
@@ -84,7 +83,7 @@ class TestErrorHandlingUI:
             else:
                 retry_label.setStyleSheet("color: red;")
 
-        def update_ui_on_progress(value, msg):
+        def update_ui_on_progress(value, msg) -> None:
             progress_bar.setValue(value)
             status_label.setText(msg)
 
@@ -108,25 +107,25 @@ class TestErrorHandlingUI:
         # Verify final success
         assert status_label.text() == "Download complete"
 
-    def test_network_retry_mechanisms(self, qtbot, window, mocker):
+    def test_network_retry_mechanisms(self, qtbot, window, mocker) -> None:
         """Test network retry mechanisms with UI updates."""
 
         # Create retry manager
         class RetryManager:
-            def __init__(self, max_retries=3, retry_delay=1000):
+            def __init__(self, max_retries=3, retry_delay=1000) -> None:
                 self.max_retries = max_retries
                 self.retry_delay = retry_delay
                 self.current_attempt = 0
                 self.retry_timer = QTimer()
                 self.retry_timer.timeout.connect(self._retry_operation)
 
-            def start_operation(self, operation_func, status_callback):
+            def start_operation(self, operation_func, status_callback) -> None:
                 self.operation_func = operation_func
                 self.status_callback = status_callback
                 self.current_attempt = 0
                 self._try_operation()
 
-            def _try_operation(self):
+            def _try_operation(self) -> bool | None:
                 self.current_attempt += 1
                 self.status_callback(f"Attempt {self.current_attempt}/{self.max_retries}")
 
@@ -137,14 +136,13 @@ class TestErrorHandlingUI:
                         return True
                 except Exception as e:
                     if self.current_attempt < self.max_retries:
-                        self.status_callback(f"Failed: {e}. Retrying in {self.retry_delay/1000}s...")
+                        self.status_callback(f"Failed: {e}. Retrying in {self.retry_delay / 1000}s...")
                         self.retry_timer.start(self.retry_delay)
                         return False
-                    else:
-                        self.status_callback(f"Failed after {self.max_retries} attempts")
-                        return False
+                    self.status_callback(f"Failed after {self.max_retries} attempts")
+                    return False
 
-            def _retry_operation(self):
+            def _retry_operation(self) -> None:
                 self.retry_timer.stop()
                 self._try_operation()
 
@@ -158,14 +156,15 @@ class TestErrorHandlingUI:
                 result = attempt_results[attempt_index]
                 attempt_index += 1
                 if not result:
-                    raise ConnectionError("Network error")
+                    msg = "Network error"
+                    raise ConnectionError(msg)
                 return result
             return False
 
         # Track status updates
         status_updates = []
 
-        def status_callback(msg):
+        def status_callback(msg) -> None:
             status_updates.append(msg)
 
         # Run with retries
@@ -181,7 +180,7 @@ class TestErrorHandlingUI:
         assert "Attempt 2/3" in status_updates
         assert "Success!" in status_updates[-1]
 
-    def test_low_disk_space_warnings(self, qtbot, window, mocker):
+    def test_low_disk_space_warnings(self, qtbot, window, mocker) -> None:
         """Test low disk space warning UI."""
         # Mock disk usage
         mock_disk_usage = mocker.patch("psutil.disk_usage")
@@ -198,7 +197,7 @@ class TestErrorHandlingUI:
         mock_warning = mocker.patch.object(QMessageBox, "warning")
 
         # Function to check disk space
-        def check_disk_space_for_output(output_path, required_space_gb=10):
+        def check_disk_space_for_output(output_path, required_space_gb=10) -> bool:
             disk_stats = psutil.disk_usage(str(Path(output_path).parent))
             free_gb = disk_stats.free / (1024**3)
 
@@ -228,7 +227,7 @@ class TestErrorHandlingUI:
         assert "5.0 GB free" in args[2]
         assert "Consider:" in args[2]
 
-    def test_memory_limit_handling(self, qtbot, window, mocker):
+    def test_memory_limit_handling(self, qtbot, window, mocker) -> None:
         """Test memory limit handling and UI adjustments."""
         # Mock memory info
         mock_virtual_memory = mocker.patch("psutil.virtual_memory")
@@ -243,21 +242,21 @@ class TestErrorHandlingUI:
 
         # Memory manager
         class MemoryManager:
-            def __init__(self, window):
+            def __init__(self, window) -> None:
                 self.window = window
                 self.low_memory_mode = False
                 self.memory_timer = QTimer()
                 self.memory_timer.timeout.connect(self.check_memory)
                 self.memory_timer.start(5000)  # Check every 5 seconds
 
-            def check_memory(self):
+            def check_memory(self) -> None:
                 mem = psutil.virtual_memory()
                 if mem.percent > 85 and not self.low_memory_mode:
                     self.enable_low_memory_mode()
                 elif mem.percent < 70 and self.low_memory_mode:
                     self.disable_low_memory_mode()
 
-            def enable_low_memory_mode(self):
+            def enable_low_memory_mode(self) -> None:
                 self.low_memory_mode = True
                 # Reduce UI update frequency
                 if hasattr(self.window, "preview_timer"):
@@ -270,7 +269,7 @@ class TestErrorHandlingUI:
                 # Show warning
                 self.window.status_bar.showMessage("Low memory mode enabled - some features limited", 5000)
 
-            def disable_low_memory_mode(self):
+            def disable_low_memory_mode(self) -> None:
                 self.low_memory_mode = False
                 # Restore normal operation
                 if hasattr(self.window, "preview_timer"):
@@ -292,7 +291,7 @@ class TestErrorHandlingUI:
         # Stop timer for cleanup
         mem_mgr.memory_timer.stop()
 
-    def test_invalid_file_format_errors(self, qtbot, window, mocker):
+    def test_invalid_file_format_errors(self, qtbot, window, mocker) -> None:
         """Test handling of invalid file formats."""
         # Mock file validation
         invalid_files = [
@@ -352,21 +351,21 @@ class TestErrorHandlingUI:
         assert "document.pdf" in args[2]
         assert "Unsupported format" in args[2]
 
-    def test_concurrent_operation_prevention(self, qtbot, window):
+    def test_concurrent_operation_prevention(self, qtbot, window) -> None:
         """Test prevention of concurrent operations."""
 
         # Operation lock manager
         class OperationLock:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.locked_operations = set()
 
-            def acquire(self, operation_name):
+            def acquire(self, operation_name) -> bool:
                 if operation_name in self.locked_operations:
                     return False
                 self.locked_operations.add(operation_name)
                 return True
 
-            def release(self, operation_name):
+            def release(self, operation_name) -> None:
                 self.locked_operations.discard(operation_name)
 
             def is_locked(self, operation_name):
@@ -398,7 +397,7 @@ class TestErrorHandlingUI:
         # Now should be able to acquire again
         assert lock_mgr.acquire("processing")
 
-    def test_corrupted_settings_recovery(self, qtbot, window, mocker):
+    def test_corrupted_settings_recovery(self, qtbot, window, mocker) -> None:
         """Test recovery from corrupted settings."""
         # Mock corrupted settings
         mock_settings = mocker.patch("PyQt6.QtCore.QSettings")
@@ -407,7 +406,8 @@ class TestErrorHandlingUI:
         # Simulate corrupted read
         def mock_value(key, default=None, type=None):
             if key == "corrupted_key":
-                raise ValueError("Settings corrupted")
+                msg = "Settings corrupted"
+                raise ValueError(msg)
             return default
 
         mock_instance.value = mock_value
@@ -415,7 +415,7 @@ class TestErrorHandlingUI:
 
         # Settings recovery manager
         class SettingsRecovery:
-            def __init__(self, window):
+            def __init__(self, window) -> None:
                 self.window = window
                 self.backup_settings = {}
 
@@ -470,7 +470,7 @@ class TestErrorHandlingUI:
         assert "Settings Reset" in args[1]
         assert "corrupted" in args[2]
 
-    def test_crash_recovery_dialog(self, qtbot, window, mocker):
+    def test_crash_recovery_dialog(self, qtbot, window, mocker) -> None:
         """Test crash recovery dialog and options."""
         # Mock crash detection
         crash_file = Path(tempfile.gettempdir()) / "goes_vfi_crash.log"
@@ -478,7 +478,7 @@ class TestErrorHandlingUI:
 
         # Crash recovery dialog
         class CrashRecoveryDialog:
-            def __init__(self, crash_info):
+            def __init__(self, crash_info) -> None:
                 self.crash_info = crash_info
                 self.recovery_option = None
 
@@ -489,7 +489,7 @@ class TestErrorHandlingUI:
                 self.recovery_option = "restore"  # Mock selection
                 return self.recovery_option
 
-            def restore_session(self, window):
+            def restore_session(self, window) -> bool:
                 # Restore from autosave
                 autosave_data = {
                     "input_dir": "/previous/input",
