@@ -76,6 +76,12 @@ GOES-VFI transforms sequences of satellite images into smooth timelapse videos b
     *   Settings persistence between sessions
     *   Intelligent default values based on your input
 
+### Custom Themes
+Custom theme override files can be placed under
+`goesvfi/gui_components/resources/styles`. The application loads
+`default.qss` from this directory and will apply any additional overrides you
+drop alongside it.
+
 ## Architecture Overview
 
 GOES-VFI is structured using modern software architecture patterns to maximize maintainability and extensibility:

@@ -1,0 +1,514 @@
+            /* Custom overrides for GOES_VFI branding and domain-specific styling */
+
+            /* Application header gradients for visual hierarchy */
+            QLabel.AppHeader {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #4a6fa5, stop:1 #3a5f95);
+                color: #ffffff;
+                font-weight: bold;
+                border-radius: 6px;
+                padding: 8px 12px;
+            }
+
+            /* Status indicators with domain-specific colors */
+            QLabel.StatusSuccess {
+                color: #66ff66;
+                font-weight: bold;
+            }
+
+            QLabel.StatusError {
+                color: #ff6666;
+                font-weight: bold;
+            }
+
+            QLabel.StatusWarning {
+                color: #ffaa66;
+                font-weight: bold;
+            }
+
+            QLabel.StatusInfo {
+                color: #66aaff;
+                font-weight: bold;
+            }
+
+            /* Progress bars for data processing */
+            QProgressBar.DataProgress {
+                text-align: center;
+                font-weight: bold;
+            }
+
+            QProgressBar.DataProgress::chunk {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 #4a6fa5, stop:1 #6C9BD1);
+            }
+
+            /* Satellite data visualization elements */
+            QFrame.SatelliteDataFrame {
+                border: 2px solid #4a6fa5;
+                border-radius: 8px;
+                background: rgba(74, 111, 165, 0.1);
+            }
+
+            /* Timeline visualization custom colors */
+            QWidget.TimelineViz {
+                background-color: transparent;
+            }
+
+            /* Keep scientific accuracy for imagery components */
+            QLabel.ImageryLabel {
+                background-color: #1a1a1a;
+                border: 1px solid #333333;
+            }
+
+            /* Integrity Check Tab styling */
+            QWidget.IntegrityCheckTab {
+                background-color: transparent;
+            }
+
+            /* Enhanced Tab Widget Styling for Left-positioned Tabs */
+            QTabWidget::tab-bar {
+                alignment: left;
+                width: 40px;  /* Ultra-compact sidebar */
+            }
+
+            QTabBar::tab {
+                background: rgba(60, 60, 60, 0.6);
+                border: none;
+                border-radius: 2px;
+                padding: 4px 2px;
+                margin: 1px 0px;
+                min-width: 36px;
+                max-width: 38px;
+                min-height: 24px;
+                color: #ffffff;
+                font-weight: 400;
+                font-size: 10px;
+                text-align: center;
+            }
+
+            QTabBar::tab:hover {
+                background: rgba(74, 111, 165, 0.7);
+                color: #ffffff;
+            }
+
+            QTabBar::tab:selected {
+                background: #4a6fa5;
+                color: #ffffff;
+                font-weight: 500;
+            }
+
+            QTabBar::tab:!selected {
+                margin-left: 2px;
+            }
+
+            /* For left-positioned tabs specifically */
+            QTabWidget[tabPosition="2"] QTabBar::tab {
+                padding: 3px 1px;
+                margin: 1px 0px;
+                text-align: center;
+                border-radius: 2px;
+            }
+
+            QTabWidget[tabPosition="2"] QTabBar::tab:selected {
+                border-right: 2px solid #6c9bd1;
+            }
+
+            /* Tab widget pane styling */
+            QTabWidget::pane {
+                border: none;
+                background-color: transparent;
+                margin-left: 0px;
+            }
+
+            /* Status labels with improved styling */
+            QLabel.StatusLabel {
+                padding: 5px 8px;
+                border-radius: 4px;
+                background-color: rgba(255, 255, 255, 0.1);
+                font-weight: normal;
+            }
+
+            QLabel.StatusSuccess {
+                color: #66ff66;
+                font-weight: bold;
+                padding: 5px 8px;
+                border-radius: 4px;
+                background-color: rgba(102, 255, 102, 0.1);
+            }
+
+            QLabel.StatusError {
+                color: #ff6666;
+                font-weight: bold;
+                padding: 5px 8px;
+                border-radius: 4px;
+                background-color: rgba(255, 102, 102, 0.1);
+            }
+
+            QLabel.StatusWarning {
+                color: #ffaa66;
+                font-weight: bold;
+                padding: 5px 8px;
+                border-radius: 4px;
+                background-color: rgba(255, 170, 102, 0.1);
+            }
+
+            /* Main Tab specific styling */
+            QWidget.MainTab {
+                background-color: transparent;
+            }
+
+            /* Start Button styling */
+            QPushButton.StartButton {
+                font-weight: bold;
+                font-size: 16px;
+                border-radius: 5px;
+                padding: 8px 16px;
+                min-height: 50px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #66ff66, stop:1 #44dd44);
+                color: #000000;
+            }
+
+            QPushButton.StartButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #77ff77, stop:1 #55ee55);
+            }
+
+            QPushButton.StartButton:pressed {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #44dd44, stop:1 #22bb22);
+            }
+
+            QPushButton.CancelButton {
+                font-weight: bold;
+                font-size: 16px;
+                border-radius: 5px;
+                padding: 8px 16px;
+                min-height: 50px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ff6666, stop:1 #dd4444);
+                color: #ffffff;
+            }
+
+            QPushButton.CancelButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 #ff7777, stop:1 #ee5555);
+            }
+
+            QPushButton.StartButtonDisabled {
+                font-weight: bold;
+                font-size: 16px;
+                border-radius: 5px;
+                padding: 8px 16px;
+                min-height: 50px;
+                background-color: rgba(128, 128, 128, 0.3);
+                color: rgba(255, 255, 255, 0.5);
+            }
+
+            /* Image Preview styling */
+            QLabel.ImagePreview {
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 4px;
+            }
+
+            /* Validation Error styling */
+            QLineEdit.ValidationError {
+                background-color: rgba(255, 102, 102, 0.2);
+                border: 2px solid #ff6666;
+                border-radius: 4px;
+            }
+
+            /* Crop Selection Dialog styling */
+            QDialog.CropSelectionDialog {
+                background-color: rgba(20, 20, 20, 0.95);
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 8px;
+            }
+
+            QWidget.CropDialogHeader {
+                background-color: rgba(0, 0, 0, 0.8);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            }
+
+            QLabel.CropDialogInstruction {
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 14px;
+                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            }
+
+            /* Image Viewer Dialog styling */
+            QDialog.ImageViewerDialog {
+                background-color: rgba(30, 30, 30, 0.98);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            /* General Dialog Button styling */
+            QPushButton.DialogButton {
+                background-color: rgba(60, 60, 60, 0.9);
+                color: rgba(255, 255, 255, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-weight: normal;
+            }
+
+            QPushButton.DialogButton:hover {
+                background-color: rgba(80, 80, 80, 0.9);
+                border-color: rgba(255, 255, 255, 0.5);
+            }
+
+            QPushButton.DialogButton:pressed {
+                background-color: rgba(40, 40, 40, 0.9);
+            }
+
+            QPushButton.DialogPrimaryButton {
+                background-color: #4a6fa5;
+                color: #ffffff;
+                border: 1px solid #6C9BD1;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font-weight: bold;
+            }
+
+            QPushButton.DialogPrimaryButton:hover {
+                background-color: #5a7fb5;
+            }
+
+            QPushButton.DialogPrimaryButton:pressed {
+                background-color: #3a5f95;
+            }
+
+            /* Feedback System styling */
+            QLabel.FeedbackStatusLabel {
+                padding: 8px;
+                border-radius: 4px;
+                background-color: rgba(240, 240, 240, 0.1);
+                font-weight: bold;
+            }
+
+            QLabel.FeedbackStatusInfo {
+                padding: 8px;
+                border-radius: 4px;
+                background-color: rgba(212, 237, 218, 0.3);
+                color: #155724;
+                font-weight: bold;
+            }
+
+            QLabel.FeedbackStatusSuccess {
+                padding: 8px;
+                border-radius: 4px;
+                background-color: rgba(195, 230, 203, 0.3);
+                color: #155724;
+                font-weight: bold;
+            }
+
+            QLabel.FeedbackStatusWarning {
+                padding: 8px;
+                border-radius: 4px;
+                background-color: rgba(255, 243, 205, 0.3);
+                color: #856404;
+                font-weight: bold;
+            }
+
+            QLabel.FeedbackStatusError {
+                padding: 8px;
+                border-radius: 4px;
+                background-color: rgba(248, 215, 218, 0.3);
+                color: #721c24;
+                font-weight: bold;
+            }
+
+            QLabel.FeedbackStatusDebug {
+                padding: 8px;
+                border-radius: 4px;
+                background-color: rgba(240, 240, 240, 0.2);
+                color: rgba(255, 255, 255, 0.7);
+                font-weight: bold;
+            }
+
+            QListWidget.FeedbackMessageList {
+                background-color: rgba(245, 245, 245, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 4px;
+            }
+
+            /* Error Dialog styling */
+            QLabel.ErrorDialogMessage {
+                padding: 10px;
+                background-color: rgba(248, 215, 218, 0.3);
+                border: 1px solid rgba(245, 198, 203, 0.5);
+                border-radius: 4px;
+                color: #721c24;
+            }
+
+            QPlainTextEdit.ErrorDialogTraceback {
+                font-family: "Consolas", "Monaco", "Courier New", monospace;
+                font-size: 10pt;
+                background-color: rgba(245, 245, 245, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 4px;
+            }
+
+            /* Date Range and Visual Date Picker styling */
+            QLabel.DateRangeDisplay {
+                font-weight: bold;
+                padding: 4px 8px;
+                border-radius: 4px;
+                background-color: rgba(74, 111, 165, 0.1);
+            }
+
+            QFrame.DatePickerGroup {
+                background-color: rgba(53, 53, 53, 0.3);
+                border-radius: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            QFrame.DatePickerPreview {
+                background-color: rgba(30, 47, 69, 0.3);
+                border-radius: 4px;
+                border: 1px solid rgba(74, 111, 165, 0.3);
+            }
+
+            QLabel.DatePickerTitle {
+                font-weight: bold;
+                font-size: 14px;
+                color: rgba(255, 255, 255, 0.9);
+            }
+
+            QLabel.DatePickerMonospace {
+                font-family: "Consolas", "Monaco", "Courier New", monospace;
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            QPushButton.DatePickerButton {
+                background-color: rgba(58, 58, 58, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 4px;
+                padding: 6px 12px;
+                color: rgba(255, 255, 255, 0.9);
+            }
+
+            QPushButton.DatePickerButton:hover {
+                background-color: rgba(69, 69, 69, 0.8);
+                border-color: rgba(255, 255, 255, 0.3);
+            }
+
+            QPushButton.DatePickerButton:pressed {
+                background-color: #2a82da;
+                border-color: #2a82da;
+            }
+
+            QPushButton.DatePickerPrimary {
+                background-color: #2a82da;
+                border: 1px solid #3a92ea;
+                border-radius: 4px;
+                padding: 6px 12px;
+                color: #ffffff;
+                font-weight: bold;
+            }
+
+            QPushButton.DatePickerPrimary:hover {
+                background-color: #3a92ea;
+            }
+
+            QPushButton.DatePickerPrimary:pressed {
+                background-color: #1a72ca;
+            }
+
+            QCalendarWidget.DatePickerCalendar {
+                background-color: rgba(45, 45, 45, 0.8);
+                color: rgba(255, 255, 255, 0.9);
+                selection-background-color: #2a82da;
+                selection-color: #ffffff;
+            }
+
+            QTimeEdit.DatePickerTime {
+                background-color: rgba(58, 58, 58, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 4px;
+                padding: 4px;
+                color: rgba(255, 255, 255, 0.9);
+            }
+
+            QTimeEdit.DatePickerTime:focus {
+                background-color: rgba(69, 69, 69, 0.8);
+                border-color: #2a82da;
+            }
+
+            /* FFmpeg Settings Tab styling */
+            QWidget.FFmpegSettingsTab {
+                background-color: transparent;
+            }
+
+            /* Common label styling for consistent alignment */
+            QLabel.FFmpegLabel, QLabel.StandardLabel {
+                font-weight: bold;
+                color: rgba(255, 255, 255, 0.9);
+                padding: 2px 4px;
+                min-width: 100px;
+                text-align: right;
+            }
+
+            /* Form layout labels - right aligned for consistency */
+            QFormLayout QLabel {
+                font-weight: bold;
+                color: rgba(255, 255, 255, 0.9);
+                padding: 2px 4px;
+                text-align: right;
+            }
+
+            /* Group box titles */
+            QGroupBox {
+                font-weight: bold;
+                border: 2px solid rgba(255, 255, 255, 0.2);
+                border-radius: 6px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 8px 0 8px;
+                background-color: rgba(45, 45, 45, 0.9);
+                border-radius: 3px;
+            }
+
+            /* Control Frame styling for satellite tabs */
+            QFrame.ControlFrame {
+                background-color: rgba(50, 50, 50, 0.3);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                padding: 10px;
+            }
+
+            /* Consistent grid layout spacing */
+            QGridLayout {
+                spacing: 10px;
+            }
+
+            /* Ensure consistent alignment in grid layouts */
+            QGridLayout QLabel {
+                min-width: 100px;
+            }
+
+            /* Tab button styling for satellite integrity sub-tabs */
+            QPushButton.TabButton {
+                font-weight: bold;
+                padding: 8px 16px;
+                min-height: 35px;
+                border-radius: 4px;
+                background-color: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+
+            QPushButton.TabButton:checked {
+                background-color: #4a6fa5;
+                color: #ffffff;
+                border: 1px solid #6C9BD1;
+            }
+
+            QPushButton.TabButton:hover:!checked {
+                background-color: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+            }
