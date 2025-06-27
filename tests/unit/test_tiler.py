@@ -76,3 +76,13 @@ def test_merge_tiles_with_overlap():
     # Since original image is all ones, merged should be all ones
     assert merged.shape == img.shape
     assert np.allclose(merged, img, atol=1e-6)
+
+
+def test_lossless_reconstruction_random():
+    """Verify tiling and merging with overlap reconstructs the image exactly."""
+    img = np.random.rand(256, 256, 3).astype(np.float32)
+    tiles = tile_image(img, tile_size=128, overlap=32)
+    merged = merge_tiles(tiles, full_shape=(img.shape[0], img.shape[1]), overlap=32)
+
+    assert merged.shape == img.shape
+    assert np.allclose(merged, img, atol=1e-6)
