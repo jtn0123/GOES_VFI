@@ -31,11 +31,11 @@ source venv-py313/bin/activate
 ### Step 2: Install Dependencies
 
 ```bash
-# Install all dependencies from requirements
-pip install -r requirements.txt
+# Install all dependencies from pyproject.toml
+pip install -e .
 
 # Install development and test dependencies (optional)
-pip install -r test-requirements.txt
+pip install -e .[test,dev,typing]
 ```
 
 Alternatively, you can install the package with all dependencies:
@@ -93,7 +93,7 @@ python -m pytest tests/unit/test_*_time_index.py tests/unit/test_remote_stores.p
 If you encounter errors about missing dependencies, ensure you've installed all required packages:
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### AWS Access Issues

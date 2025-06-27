@@ -115,7 +115,7 @@ Install GOES_VFI using pip:
 
 .. code-block:: bash
 
-   pip install -r requirements.txt
+   pip install -e .
 
 Or for development:
 
@@ -123,8 +123,7 @@ Or for development:
 
    git clone https://github.com/username/GOES_VFI.git
    cd GOES_VFI
-   pip install -r requirements.txt
-   pip install -r test-requirements.txt
+   pip install -e .[test,dev,typing,docs]
 
 System Requirements
 -------------------

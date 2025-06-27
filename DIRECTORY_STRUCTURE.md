@@ -81,8 +81,7 @@ This document provides an overview of the directory structure for the GOES VFI p
 - **[CLAUDE.md](CLAUDE.md)**: Instructions for Claude Code AI
 - **[DIRECTORY_STRUCTURE.md](DIRECTORY_STRUCTURE.md)**: This directory structure guide
 - **[CHANGELOG.md](CHANGELOG.md)**: Project changelog and version history
-- **[requirements.txt](requirements.txt)**: Python dependencies
-- **[test-requirements.txt](test-requirements.txt)**: Test-specific dependencies
+- **[pyproject.toml](pyproject.toml)**: Project configuration and dependencies
 - **[mypy.ini](mypy.ini)**: Type checking configuration
 
 ## Test Runner Scripts

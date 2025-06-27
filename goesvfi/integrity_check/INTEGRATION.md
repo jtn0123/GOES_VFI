@@ -169,7 +169,7 @@ Make sure your environment has the following dependencies installed for the enha
 - numpy (for numerical operations)
 - matplotlib (for rendering NetCDF data)
 
-These can be added to your `requirements.txt` file:
+These dependencies are included in the project's `pyproject.toml` file:
 
 ```
 PyQt6>=6.0

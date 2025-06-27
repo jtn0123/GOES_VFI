@@ -53,8 +53,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r test-requirements.txt
+        pip install -e .[test,dev]
         pip install coverage pytest-cov radon complexity-metrics
 
     - name: Run linting on changed files
@@ -155,7 +154,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        pip install -e .
         pip install memory-profiler line-profiler pytest-benchmark
 
     - name: Run performance benchmarks
@@ -193,8 +192,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r docs/requirements.txt
+        pip install -e .[docs]
         pip install interrogate pydocstyle
 
     - name: Check docstring coverage

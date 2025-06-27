@@ -25,7 +25,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-coverage-${{ hashFiles('**/requirements.txt', '**/test-requirements.txt') }}
+        key: ${{ runner.os }}-pip-coverage-${{ hashFiles('**/pyproject.toml') }}
         restore-keys: |
           ${{ runner.os }}-pip-coverage-
           ${{ runner.os }}-pip-
@@ -38,8 +38,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r test-requirements.txt
+        pip install -e .[test]
         pip install coverage[toml] pytest-cov pytest-xdist
 
     - name: Run tests with coverage

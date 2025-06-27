@@ -11,12 +11,16 @@
     "enabled": true
   },
   "pip_requirements": {
-    "fileMatch": ["(^|/)requirements\\.txt$", "(^|/)test-requirements\\.txt$"]
+    "enabled": false
+  },
+  "pip_setup": {
+    "fileMatch": ["(^|/)pyproject\\.toml$"]
   },
   "packageRules": [
     {
       "description": "Automatically merge minor and patch updates for test dependencies",
-      "matchFiles": ["test-requirements.txt"],
+      "matchFiles": ["pyproject.toml"],
+      "matchDepTypes": ["test", "dev"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true
     },
@@ -53,8 +57,8 @@
       "prPriority": 10,
       "automerge": true,
       "automergeType": "pr",
-      "matchFiles": ["requirements.txt", "test-requirements.txt"],
-      "matchManagers": ["pip_requirements"],
+      "matchFiles": ["pyproject.toml"],
+      "matchManagers": ["pip_setup"],
       "vulnerabilityAlerts": {
         "enabled": true
       }

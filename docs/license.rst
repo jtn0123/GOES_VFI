@@ -27,7 +27,7 @@ SOFTWARE.
 Dependencies
 ------------
 
-GOES_VFI uses several open-source libraries. See the ``requirements.txt`` file
+GOES_VFI uses several open-source libraries. See the ``pyproject.toml`` file
 for a complete list of dependencies and their licenses.
 
 Key Dependencies:

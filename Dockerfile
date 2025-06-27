@@ -66,18 +66,17 @@ RUN useradd --create-home --shell /bin/bash app
 # Set work directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt test-requirements.txt ./
+# Copy project files first for better caching
+COPY pyproject.toml ./
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir -r test-requirements.txt
+RUN pip install --no-cache-dir .
 
 # Copy application code
 COPY . .
 
-# Install the package in development mode
-RUN pip install -e .
+# Reinstall in editable mode with all dependencies
+RUN pip install -e .[test,dev]
 
 # Create necessary directories
 RUN mkdir -p /app/data /app/output /app/logs \

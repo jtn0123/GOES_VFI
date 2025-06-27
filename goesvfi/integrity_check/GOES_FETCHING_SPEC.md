@@ -661,7 +661,7 @@ New dependencies required for the enhanced fetching functionality:
 - **pillow**: Image processing and conversion
 - **qasync**: For integrating asyncio with Qt
 
-These dependencies should be added to `pyproject.toml` or `requirements.txt`.
+These dependencies should be added to `pyproject.toml`.
 
 ## 6. Implementation Timeline
 

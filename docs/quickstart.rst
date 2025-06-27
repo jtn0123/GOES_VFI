@@ -34,7 +34,7 @@ Installation
 
    .. code-block:: bash
 
-      pip install -r requirements.txt
+      pip install -e .
 
 4. **Verify installation:**
 

@@ -136,8 +136,7 @@ Automated alerts for:
    cd GOES_VFI
 
    # Install dependencies
-   pip install -r requirements.txt
-   pip install -r test-requirements.txt
+   pip install -e .[test,dev,typing]
    ```
 
 ### Running CI/CD Locally
@@ -278,7 +277,7 @@ def health_check():
 ```bash
 # Check logs in GitHub Actions
 # Common fixes:
-- Update dependencies in requirements.txt
+- Update dependencies in pyproject.toml
 - Fix linting issues: python run_linters.py --format
 - Resolve test failures: python run_working_tests_with_mocks.py
 ```

@@ -15,7 +15,7 @@ tests:
       - tests/**
       - '**/test_*.py'
       - '**/*_test.py'
-      - test-requirements.txt
+      - pyproject.toml
 
 # Add 'gui' label for GUI-related changes
 gui:
@@ -44,8 +44,6 @@ integrity-check:
 dependencies:
   - changed-files:
     - any-glob-to-any-file:
-      - requirements.txt
-      - test-requirements.txt
       - pyproject.toml
       - setup.py
       - setup.cfg

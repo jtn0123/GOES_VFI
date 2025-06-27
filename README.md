@@ -95,7 +95,7 @@ GOES-VFI is structured using modern software architecture patterns to maximize m
 ## Requirements
 
 * **Python:** 3.13+ required.
-* **Packages:** See `requirements.txt` (mainly `PyQt6`, `numpy`, `Pillow`). Install with `pip install -r requirements.txt`.
+* **Packages:** See `pyproject.toml` (mainly `PyQt6`, `numpy`, `Pillow`). Install with `pip install -e .`.
 * **FFmpeg:** Required for video processing/encoding. Must be installed and available in your system's PATH.
 * **RIFE v4.6 ncnn:** The `rife-cli` executable and associated model files (`flownet.bin`, `flownet.param`) are expected.
     * The application looks for `rife-cli` in `goesvfi/bin/rife-cli` relative to the package installation.
@@ -107,7 +107,7 @@ GOES-VFI is structured using modern software architecture patterns to maximize m
     * [`isort`](https://pycqa.github.io/isort/) - Import statement sorting
     * [`mypy`](http://mypy-lang.org/) - Static type checking
     * [`pylint`](https://pylint.org/) - Advanced code analysis
-    * Install all with: `pip install -r requirements-dev.txt` (if available) or individually
+    * Install all with: `pip install -e .[dev,typing]`
 
 ## Installation
 
@@ -165,14 +165,11 @@ Before installing GOES-VFI, ensure you have:
 
 3.  **Install Python dependencies:**
     ```bash
-    # Recommended: Install as editable package with all dependencies
+    # Install as editable package with runtime dependencies
     pip install -e .
 
     # Or install with specific dependency groups
     pip install -e .[test,dev,typing,docs]
-
-    # Legacy method (still works but deprecated)
-    pip install -r requirements.txt
     ```
 
     This installs:

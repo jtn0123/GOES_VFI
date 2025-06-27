@@ -30,7 +30,7 @@ livehtml:
 
 install-deps:
 	@echo "Installing documentation dependencies..."
-	pip install -r requirements.txt
+	pip install -e ..[docs]
 
 check:
 	@echo "Checking documentation for errors..."

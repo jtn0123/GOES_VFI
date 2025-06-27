@@ -42,7 +42,7 @@ GOES-VFI is a desktop application that creates smooth timelapse videos from sate
   ```bash
   python3 -m venv .venv
   source .venv/bin/activate
-  pip install -r requirements.txt
+  pip install -e .
   ```
 
 ## Running the Application
@@ -179,7 +179,7 @@ That's it! No need to overthink it.
    - Solution: Run GUI tests separately or use `run_non_gui_tests.py`
 
 3. **Import errors:** Always activate virtual environment first
-   - Solution: `source .venv/bin/activate && pip install -r requirements.txt`
+   - Solution: `source .venv/bin/activate && pip install -e .`
 
 ## Repository Guidelines
 - Follow the project structure described in `DIRECTORY_STRUCTURE.md` and the
@@ -209,7 +209,7 @@ That's it! No need to overthink it.
 1. **Always read before editing** - Use the Read tool before Edit/Write tools
 2. **Prefer Edit over Write** - Edit existing files rather than creating new ones
 3. **Check for existing patterns** - Look at neighboring files for conventions
-4. **Verify imports** - Never assume a library is available; check requirements.txt or imports
+4. **Verify imports** - Never assume a library is available; check pyproject.toml or imports
 5. **Follow existing style** - Match the code style, naming conventions, and patterns
 6. **Minimize file creation** - Don't create documentation files unless explicitly requested
 
@@ -390,7 +390,7 @@ goesvfi/                    # Main application package
    - Solution: Always activate virtual environment first
    ```bash
    source .venv/bin/activate
-   pip install -r requirements.txt
+   pip install -e .
    ```
 
 4. **Large File Commits**

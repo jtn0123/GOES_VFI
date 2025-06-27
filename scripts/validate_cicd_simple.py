@@ -67,8 +67,6 @@ def validate_cicd_setup(repo_root: Path) -> bool:
     # Check required project files
     print("📁 Checking required project files...")
     required_files = [
-        "requirements.txt",
-        "test-requirements.txt",
         "pyproject.toml",
         "README.md",
     ]

@@ -56,7 +56,7 @@ The recommended way to install GOES_VFI:
    source .venv/bin/activate
 
    # Install dependencies
-   pip install -r requirements.txt
+   pip install -e .
 
 Method 2: Development Installation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -73,12 +73,8 @@ For contributors and developers:
    python -m venv .venv
    source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 
-   # Install all dependencies including development tools
-   pip install -r requirements.txt
-   pip install -r test-requirements.txt
-
-   # Install the package in editable mode
-   pip install -e .
+   # Install the package in editable mode with development tools
+   pip install -e .[test,dev,typing,docs]
 
 Dependency Installation
 -----------------------
@@ -331,8 +327,8 @@ For containerized deployment:
        && rm -rf /var/lib/apt/lists/*
 
    WORKDIR /app
-   COPY requirements.txt .
-   RUN pip install -r requirements.txt
+   COPY pyproject.toml .
+   RUN pip install .
 
    COPY . .
    CMD ["python", "-m", "goesvfi.gui"]

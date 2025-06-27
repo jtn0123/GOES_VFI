@@ -163,7 +163,7 @@ class CICDValidator:
             required_instructions = [
                 "FROM python:",
                 "WORKDIR",
-                "COPY requirements.txt",
+                "COPY pyproject.toml",
                 "RUN pip install",
             ]
 
@@ -300,8 +300,6 @@ class CICDValidator:
         LOGGER.info("Validating required files...")
 
         required_files = [
-            "requirements.txt",
-            "test-requirements.txt",
             "pyproject.toml",
             "README.md",
             "LICENSE",
