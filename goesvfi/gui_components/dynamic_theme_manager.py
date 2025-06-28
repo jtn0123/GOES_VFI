@@ -10,6 +10,7 @@ from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import QApplication
 
 from goesvfi.gui_components.theme_manager import AVAILABLE_THEMES, ThemeManager
+from goesvfi.gui_components.widget_factory import WidgetFactory
 from goesvfi.utils import log
 
 LOGGER = log.get_logger(__name__)
@@ -109,33 +110,48 @@ class DynamicThemeManager(ThemeManager):
         self._theme_colors = theme_colors.copy()
 
         # Add derived colors
-        self._theme_colors["primary_gradient_start"] = self._lighten_color(theme_colors["primary"], 0.1)
-        self._theme_colors["primary_gradient_end"] = self._darken_color(theme_colors["primary"], 0.1)
-        self._theme_colors["button_hover"] = self._lighten_color(theme_colors["primary"], 0.2)
-        self._theme_colors["button_pressed"] = self._darken_color(theme_colors["primary"], 0.2)
+        self._theme_colors["primary_gradient_start"] = DynamicThemeManager._lighten_color(theme_colors["primary"], 0.1)
+        self._theme_colors["primary_gradient_end"] = DynamicThemeManager._darken_color(theme_colors["primary"], 0.1)
+        self._theme_colors["button_hover"] = DynamicThemeManager._lighten_color(theme_colors["primary"], 0.2)
+        self._theme_colors["button_pressed"] = DynamicThemeManager._darken_color(theme_colors["primary"], 0.2)
 
         # Add RGB values for use in rgba() functions
         primary_color = QColor(theme_colors["primary"])
         self._theme_colors["primary_rgb"] = f"{primary_color.red()}, {primary_color.green()}, {primary_color.blue()}"
 
-    def _lighten_color(self, hex_color: str, factor: float) -> str:
-        """Lighten a color by a factor (0-1)."""
-        color = QColor(hex_color)
-        h, s, l, a = color.getHslF()
-        l = min(1.0, l + (1.0 - l) * factor)
-        color.setHslF(h, s, l, a)
-        return color.name()
+    @staticmethod
+    def _lighten_color(hex_color: str, factor: float) -> str:
+        """Lighten a color by a factor (0-1).
 
-    def _darken_color(self, hex_color: str, factor: float) -> str:
-        """Darken a color by a factor (0-1)."""
+        Returns:
+            str: The lightened color as a hex string.
+        """
         color = QColor(hex_color)
-        h, s, l, a = color.getHslF()
-        l = max(0.0, l - l * factor)
-        color.setHslF(h, s, l, a)
-        return color.name()
+        h, s, lightness, a = color.getHslF()
+        lightness = min(1.0, lightness + (1.0 - lightness) * factor)
+        color.setHslF(h, s, lightness, a)
+        return str(color.name())
 
-    def _extract_palette_colors(self, app: QApplication) -> dict[str, str]:
-        """Extract colors from the application palette after theme is applied."""
+    @staticmethod
+    def _darken_color(hex_color: str, factor: float) -> str:
+        """Darken a color by a factor (0-1).
+
+        Returns:
+            str: The darkened color as a hex string.
+        """
+        color = QColor(hex_color)
+        h, s, lightness, a = color.getHslF()
+        lightness = max(0.0, lightness - lightness * factor)
+        color.setHslF(h, s, lightness, a)
+        return str(color.name())
+
+    @staticmethod
+    def _extract_palette_colors(app: QApplication) -> dict[str, str]:
+        """Extract colors from the application palette after theme is applied.
+
+        Returns:
+            dict[str, str]: Dictionary mapping color names to hex values.
+        """
         palette = app.palette()
 
         return {
@@ -151,7 +167,11 @@ class DynamicThemeManager(ThemeManager):
         }
 
     def _create_dynamic_overrides(self) -> str:
-        """Create dynamic CSS overrides based on the current theme colors."""
+        """Create dynamic CSS overrides based on the current theme colors.
+
+        Returns:
+            str: CSS stylesheet string with dynamic overrides.
+        """
         colors = self._theme_colors
 
         # Load the template
@@ -179,7 +199,7 @@ class DynamicThemeManager(ThemeManager):
                 template_content = template_content.replace("#1a72ca", "{date_picker_dark}")
                 template_content = template_content.replace("#3a92ea", "{date_picker_light}")
             else:
-                template_content = self._get_default_template()
+                template_content = DynamicThemeManager._get_default_template()
         else:
             template_content = template_path.read_text()
 
@@ -200,11 +220,16 @@ class DynamicThemeManager(ThemeManager):
         try:
             return template_content.format(**colors)
         except KeyError as e:
-            LOGGER.warning(f"Missing color key in template: {e}")
+            LOGGER.warning("Missing color key in template: %s", e)
             return template_content
 
-    def _get_default_template(self) -> str:
-        """Get a default template with color placeholders."""
+    @staticmethod
+    def _get_default_template() -> str:
+        """Get a default template with color placeholders.
+
+        Returns:
+            str: CSS template string with placeholders.
+        """
         return """
 /* Dynamic Theme Colors */
 
@@ -346,26 +371,24 @@ QLabel.StatusInfo {{
             self._apply_dynamic_overrides(app)
 
         # Force refresh all widgets to pick up new theme
-        self._refresh_all_widgets(app)
+        DynamicThemeManager._refresh_all_widgets(app)
 
-    def _refresh_all_widgets(self, app: QApplication) -> None:
+    @staticmethod
+    def _refresh_all_widgets(app: QApplication) -> None:
         """Force refresh all widgets in the application to pick up theme changes."""
         try:
             # Get all top-level widgets
             for widget in app.allWidgets():
                 if widget.isTopLevel():
-                    # Import here to avoid circular imports
-                    from goesvfi.gui_components.widget_factory import WidgetFactory
-
                     WidgetFactory.update_all_widget_styles(widget)
-        except Exception as e:
-            LOGGER.warning(f"Failed to refresh widget styles: {e}")
+        except ImportError as e:
+            LOGGER.warning("Failed to refresh widget styles: %s", e)
 
     def _apply_dynamic_overrides(self, app: QApplication) -> None:
         """Apply dynamic CSS overrides based on current theme colors."""
         try:
             # Extract additional colors from the applied palette
-            palette_colors = self._extract_palette_colors(app)
+            palette_colors = DynamicThemeManager._extract_palette_colors(app)
             self._theme_colors.update(palette_colors)
 
             # Generate dynamic CSS
@@ -376,10 +399,10 @@ QLabel.StatusInfo {{
             combined_style = existing_style + "\n" + dynamic_css
             app.setStyleSheet(combined_style)
 
-            LOGGER.info(f"Applied dynamic theme overrides for {self._current_theme}")
-            LOGGER.debug(f"Theme colors: {self._theme_colors}")
-        except Exception as e:
-            LOGGER.exception(f"Failed to apply dynamic overrides: {e}")
+            LOGGER.info("Applied dynamic theme overrides for %s", self._current_theme)
+            LOGGER.debug("Theme colors: %s", self._theme_colors)
+        except Exception:
+            LOGGER.exception("Failed to apply dynamic overrides")
             # Fall back to parent implementation
             super()._apply_custom_overrides(app)
 
@@ -395,7 +418,11 @@ QLabel.StatusInfo {{
         return self._theme_colors.get(color_key)
 
     def get_all_theme_colors(self) -> dict[str, str]:
-        """Get all colors for the current theme."""
+        """Get all colors for the current theme.
+
+        Returns:
+            dict[str, str]: Copy of all theme colors.
+        """
         return self._theme_colors.copy()
 
     def create_themed_stylesheet(self, widget_class: str, properties: dict[str, str]) -> str:
@@ -412,9 +439,10 @@ QLabel.StatusInfo {{
 
         for prop, value in properties.items():
             # Replace color placeholders
+            css_value = value
             for color_key, color_value in self._theme_colors.items():
-                value = value.replace(f"{{{color_key}}}", color_value)
-            css_lines.append(f"    {prop}: {value};")
+                css_value = css_value.replace(f"{{{color_key}}}", color_value)
+            css_lines.append(f"    {prop}: {css_value};")
 
         css_lines.append("}")
         return "\n".join(css_lines)
