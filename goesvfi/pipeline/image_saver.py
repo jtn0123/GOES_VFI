@@ -1,11 +1,11 @@
-"""image_saver.py
+"""image_saver.py.
 
 Provides the ImageSaver class, an ImageProcessor implementation for saving images
 to disk using Pillow.
 """
 
 import os
-from typing import Any, Tuple
+from typing import Any
 
 from PIL import Image
 
@@ -38,10 +38,12 @@ class ImageSaver(ImageProcessor):
             # Convert NumPy array to Pillow Image and save
             img = Image.fromarray(image_data.image_data)
             img.save(destination_path)
-        except IOError as e:
-            raise IOError(f"Error writing image file {destination_path}: {e}") from e
+        except OSError as e:
+            msg = f"Error writing image file {destination_path}: {e}"
+            raise OSError(msg) from e
         except (KeyError, ValueError, RuntimeError, TypeError) as e:
-            raise ValueError(f"Could not save image to {destination_path}: {e}") from e
+            msg = f"Could not save image to {destination_path}: {e}"
+            raise ValueError(msg) from e
 
     def load(self, source_path: str) -> ImageData:
         """Not implemented. ImageSaver does not perform loading.
@@ -49,7 +51,8 @@ class ImageSaver(ImageProcessor):
         Raises:
             NotImplementedError: Always.
         """
-        raise NotImplementedError("ImageSaver does not implement the load method.")
+        msg = "ImageSaver does not implement the load method."
+        raise NotImplementedError(msg)
 
     def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
         """Not implemented. ImageSaver does not perform processing.
@@ -57,7 +60,8 @@ class ImageSaver(ImageProcessor):
         Raises:
             NotImplementedError: Always.
         """
-        raise NotImplementedError("ImageSaver does not implement the process method.")
+        msg = "ImageSaver does not implement the process method."
+        raise NotImplementedError(msg)
 
     def crop(self, image_data: ImageData, crop_area: tuple[int, int, int, int]) -> ImageData:
         """Not implemented. ImageSaver does not perform cropping.
@@ -65,4 +69,5 @@ class ImageSaver(ImageProcessor):
         Raises:
             NotImplementedError: Always.
         """
-        raise NotImplementedError("ImageSaver does not implement the crop method.")
+        msg = "ImageSaver does not implement the crop method."
+        raise NotImplementedError(msg)

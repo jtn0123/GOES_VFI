@@ -1,14 +1,12 @@
-"""
-Enhanced user feedback utilities for integrity check tabs.
+"""Enhanced user feedback utilities for integrity check tabs.
 
 This module provides improved user feedback functionality, including detailed
 progress reporting, error messaging, and status updates for the integrity check system.
 """
 
-import logging
 from datetime import datetime
 from enum import Enum, auto
-from typing import List, Optional, Tuple
+import logging
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtGui import QColor
@@ -39,8 +37,7 @@ class MessageType(Enum):
 
 
 class FeedbackManager(QObject):
-    """
-    Central manager for user feedback across the integrity check system.
+    """Central manager for user feedback across the integrity check system.
 
     This class provides a standardized approach for displaying progress, status messages,
     and error notifications to the user, with consistent styling and behavior.

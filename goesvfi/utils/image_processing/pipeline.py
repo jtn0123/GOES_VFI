@@ -142,7 +142,7 @@ class ParallelPipeline(ProcessorBase):
         # Combine results
         try:
             combined_result = self.combiner_func(results, input_data, context)
-            return cast(ImageProcessingResult, combined_result)
+            return cast("ImageProcessingResult", combined_result)
         except Exception as e:
             return ImageProcessingResult.failure_result(
                 self._create_error(f"Failed to combine parallel results: {e}", e)

@@ -6,7 +6,6 @@ including standard and enhanced imagery, colormaps, and comparisons.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -25,7 +24,7 @@ class ExtendedChannelType:
     """
 
     @staticmethod
-    def get_display_name(channel: Union[ChannelType, int]) -> str:
+    def get_display_name(channel: ChannelType | int) -> str:
         """Get display name for a channel.
 
         Args:
@@ -36,11 +35,10 @@ class ExtendedChannelType:
         """
         if isinstance(channel, ChannelType):
             return channel.display_name
-        elif isinstance(channel, int):
+        if isinstance(channel, int):
             ch = ChannelType.from_number(channel)
             return ch.display_name if ch else f"Channel {channel}"
-        else:
-            return str(channel)
+        return str(channel)
 
 
 class VisualizationManager:
@@ -76,7 +74,7 @@ class VisualizationManager:
     def create_visualization(
         self,
         data: NDArray[np.float64],
-        channel: Union[ChannelType, int],
+        channel: ChannelType | int,
         timestamp: datetime,
         colormap: str | None = None,
         output_size: tuple[int, int] | None = None,
@@ -96,13 +94,12 @@ class VisualizationManager:
         LOGGER.warning("Stub: Visualization creation not implemented")
         # Return a placeholder image
         size = output_size or (512, 512)
-        img = Image.new("RGB", size, color="gray")
-        return img
+        return Image.new("RGB", size, color="gray")
 
     def create_sample_visualization(
         self,
         data: NDArray[np.float64],
-        channel: Union[ChannelType, int],
+        channel: ChannelType | int,
         sample_size: tuple[int, int] = (500, 500),
     ) -> tuple[Image.Image, Image.Image]:
         """Create sample visualizations.

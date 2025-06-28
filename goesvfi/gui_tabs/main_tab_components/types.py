@@ -1,6 +1,6 @@
 """Type definitions for the main tab module."""
 
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 
 class RIFEModelDetails(TypedDict, total=False):

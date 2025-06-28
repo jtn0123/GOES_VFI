@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -21,7 +19,6 @@ def tile_image(
     overlap:
         Amount of overlap in pixels between tiles. Set to 0 for no overlap.
     """
-
     h, w, _ = img.shape
     step = tile_size - overlap if overlap < tile_size else tile_size
     tiles: list[tuple[int, int, NDArray[np.float32]]] = []

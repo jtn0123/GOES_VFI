@@ -7,28 +7,28 @@ and fetch missing images from remote sources using a hybrid CDN/S3 strategy.
 
 # Make public API explicitly available
 __all__ = [
-    # Basic implementation components
-    "IntegrityCheckTab",
-    "IntegrityCheckViewModel",
-    "ScanStatus",
-    "MissingTimestamp",
-    "Reconciler",
-    "SatellitePattern",
-    "TimeIndex",
+    "CDNStore",
+    "CombinedIntegrityAndImageryTab",
+    # GOES Imagery visualization components
+    "EnhancedGOESImageryTab",
     # Enhanced implementation components
     "EnhancedIntegrityCheckTab",
     "EnhancedIntegrityCheckViewModel",
-    "FetchSource",
-    "ReconcileManager",
-    "CDNStore",
-    "S3Store",
-    "render_png",
-    # GOES Imagery visualization components
-    "EnhancedGOESImageryTab",
-    "VisualizationManager",
     "ExtendedChannelType",
+    "FetchSource",
+    # Basic implementation components
+    "IntegrityCheckTab",
+    "IntegrityCheckViewModel",
+    "MissingTimestamp",
+    "ReconcileManager",
+    "Reconciler",
+    "S3Store",
     "SampleProcessor",
-    "CombinedIntegrityAndImageryTab",
+    "SatellitePattern",
+    "ScanStatus",
+    "TimeIndex",
+    "VisualizationManager",
+    "render_png",
 ]
 
 from .combined_tab import CombinedIntegrityAndImageryTab

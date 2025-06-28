@@ -104,7 +104,7 @@ class ThemeManager:
                 self._apply_fallback_theme(app)
             else:
                 LOGGER.exception("Fallback disabled, theme application failed")
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to apply theme '%s'", theme_name)
             if self._fallback_enabled:
                 self._apply_fallback_theme(app)
@@ -129,7 +129,7 @@ class ThemeManager:
             self.apply_theme(app, theme_name)
             LOGGER.info("Theme changed to: %s", theme_name)
             return True
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to change theme")
             return False
 
@@ -346,7 +346,7 @@ class ThemeManager:
                 self.apply_theme(app)
                 LOGGER.info("Accessibility mode disabled")
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to apply accessibility mode")
 
     def get_theme_classes_list(self) -> dict[str, list[str]]:

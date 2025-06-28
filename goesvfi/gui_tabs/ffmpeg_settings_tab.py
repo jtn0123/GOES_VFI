@@ -878,7 +878,7 @@ class FFmpegSettingsTab(QWidget):
 
             current_value = current_settings[key]
             # Use cast to satisfy type checker for TypedDict access
-            profile_value = cast(Any, profile_dict[key])  # type: ignore[literal-required]
+            profile_value = cast("Any", profile_dict[key])  # type: ignore[literal-required]
 
             # Choose appropriate comparison strategy based on key type
             # Float comparison for numeric values that need precision handling

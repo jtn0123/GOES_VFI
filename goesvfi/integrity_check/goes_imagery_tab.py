@@ -1,10 +1,8 @@
-"""GOES Satellite Imagery Tab
+"""GOES Satellite Imagery Tab.
 
 This module extends the Integrity Check tab with satellite imagery capabilities,
 providing UI components for selecting and viewing different GOES products.
 """
-
-from typing import Optional
 
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -68,15 +66,13 @@ class GOESImageryTab(QWidget):
         channel_label = QLabel("Channel/Band:")
         channel_label.setProperty("class", "StandardLabel")
         self.channel_combo = QComboBox()
-        self.channel_combo.addItems(
-            [
-                "Band 13 (IR)",
-                "Band 14 (IR)",
-                "True Color",
-                "Cloud Top",
-                "Temperature",
-            ]
-        )
+        self.channel_combo.addItems([
+            "Band 13 (IR)",
+            "Band 14 (IR)",
+            "True Color",
+            "Cloud Top",
+            "Temperature",
+        ])
         self.channel_combo.setToolTip("Select the satellite band or composite to display")
         control_layout.addRow(channel_label, self.channel_combo)
 

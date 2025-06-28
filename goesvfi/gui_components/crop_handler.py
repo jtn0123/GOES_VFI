@@ -1,7 +1,7 @@
 """Crop dialog handling for MainWindow."""
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from PyQt6.QtCore import QRect
 from PyQt6.QtGui import QImage, QPixmap
@@ -64,7 +64,7 @@ class CropHandler:
         """
         if not main_window.in_dir:
             return []
-        return sorted([f for f in main_window.in_dir.iterdir() if f.suffix.lower() in [".png", ".jpg", ".jpeg"]])
+        return sorted([f for f in main_window.in_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg"}])
 
     def prepare_image_for_crop_dialog(self, main_window: Any, image_path: Path) -> QPixmap | None:
         """Prepare an image for the crop dialog, applying Sanchez if enabled.
@@ -97,8 +97,8 @@ class CropHandler:
 
             return pixmap_for_dialog
 
-        except Exception as e:
-            LOGGER.exception("Error preparing image for crop dialog: %s", e)
+        except Exception:
+            LOGGER.exception("Error preparing image for crop dialog")
             return None
 
     def get_processed_preview_pixmap(self, main_window: Any) -> QPixmap | None:

@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import pathlib
-from typing import Any, List, Optional, cast
+from typing import Any, cast
 
 import numpy as np
 
@@ -95,7 +95,7 @@ def load_cached(
         try:
             for npy_path in frame_paths:
                 LOGGER.debug("Loading cache file: %s", npy_path)
-                loaded_frames.append(cast(NDArray[Any], np.load(npy_path)))
+                loaded_frames.append(cast("NDArray[Any]", np.load(npy_path)))
             LOGGER.debug("Successfully loaded all cache files")
             return loaded_frames
         except (OSError, KeyError, ValueError, RuntimeError) as e:
@@ -150,4 +150,5 @@ def save_cache(
     except (KeyError, ValueError, RuntimeError) as e:
         LOGGER.warning("Error saving cache files for key %s: %s", base_key, e)
         LOGGER.debug("Exception details:", exc_info=True)
-        raise IOError(f"Error saving cache files for key {base_key}: {e}") from e
+        msg = f"Error saving cache files for key {base_key}: {e}"
+        raise OSError(msg) from e

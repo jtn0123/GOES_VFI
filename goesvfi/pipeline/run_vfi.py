@@ -117,7 +117,7 @@ class VFIProcessor:
                 crop_for_pil,
             )
             return crop_for_pil
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError):
             LOGGER.exception(
                 "Invalid crop rectangle format provided: %s. Cropping will be disabled.",
                 crop_rect_xywh,
@@ -865,7 +865,7 @@ def _process_with_rife(
             with Image.open(next_frame) as img:
                 png_bytes = _encode_frame_to_png_bytes(img)
                 _safe_write(ffmpeg_proc, png_bytes, f"frame {i + 1}")
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to process frame %s", next_frame)
 
         # Yield progress after writing frames
@@ -1253,7 +1253,7 @@ def _process_in_skip_model_mode(
             elapsed = time.time() - start_time
             yield (i, total_frames, elapsed)
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to process frame %s", img_path)
 
 
@@ -1295,7 +1295,7 @@ def _process_single_image_worker(
                 colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
                 img_colourised = Image.open(temp_out_path)
                 img = img_colourised
-            except Exception as e:
+            except Exception:
                 # Log error but return original image if Sanchez fails
                 LOGGER.exception("Worker Sanchez failed for %s", original_path.name)
                 # Keep original 'img' loaded above
@@ -1318,7 +1318,7 @@ def _process_single_image_worker(
             try:
                 img_cropped = img.crop(crop_rect_pil)
                 img = img_cropped
-            except Exception as e:
+            except Exception:
                 LOGGER.exception("Worker failed to crop image %s", original_path.name)
                 raise  # Re-raise cropping errors
 

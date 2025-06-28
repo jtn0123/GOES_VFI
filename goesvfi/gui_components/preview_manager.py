@@ -170,7 +170,7 @@ class PreviewManager(QObject):
             middle_index = len(image_files) // 2
             return image_files[0], image_files[middle_index], image_files[-1]
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error getting first/middle/last paths")
             return None, None, None
 
@@ -238,7 +238,7 @@ class PreviewManager(QObject):
 
             return image_data
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error loading/processing image %s", path)
             return None
 
@@ -290,7 +290,7 @@ class PreviewManager(QObject):
 
             return QPixmap.fromImage(qimage)
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error converting numpy array to QPixmap")
             LOGGER.exception("Array shape: %s, dtype: %s", array.shape, array.dtype)
             # Return empty pixmap on error

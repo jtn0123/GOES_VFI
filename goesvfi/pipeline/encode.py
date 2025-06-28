@@ -4,9 +4,9 @@ import logging
 import pathlib
 import subprocess
 import tempfile
-from typing import List
 
-from ..utils.memory_manager import MemoryMonitor, log_memory_usage
+from goesvfi.utils.memory_manager import MemoryMonitor, log_memory_usage
+
 from .ffmpeg_builder import FFmpegCommandBuilder
 
 LOGGER = logging.getLogger(__name__)
@@ -58,7 +58,8 @@ def _run_ffmpeg_command(cmd: list[str], desc: str, monitor_memory: bool = False)
                     desc,
                     ret,
                 )
-                raise RuntimeError(f"FFmpeg ({desc}) failed (exit code {ret})")
+                msg = f"FFmpeg ({desc}) failed (exit code {ret})"
+                raise RuntimeError(msg)
 
         if monitor_memory:
             log_memory_usage(f"After {desc}")
@@ -66,11 +67,12 @@ def _run_ffmpeg_command(cmd: list[str], desc: str, monitor_memory: bool = False)
         LOGGER.info("FFmpeg (%s) completed successfully.", desc)
 
     except FileNotFoundError:
-        LOGGER.error("ffmpeg command not found for %s.", desc)
+        LOGGER.exception("ffmpeg command not found for %s.", desc)
         raise
     except (KeyError, ValueError, RuntimeError) as e:
         LOGGER.exception("Error during FFmpeg execution (%s)", desc)
-        raise IOError(f"Error during FFmpeg execution ({desc})") from e
+        msg = f"Error during FFmpeg execution ({desc})"
+        raise OSError(msg) from e
 
 
 def encode_with_ffmpeg(
@@ -125,11 +127,13 @@ def encode_with_ffmpeg(
                 intermediate_input.replace(final_output)
                 LOGGER.info("Fallback rename successful.")
             except (KeyError, ValueError, OSError) as move_e:
-                LOGGER.error("Fallback rename failed: %s", move_e)
-                raise IOError("Stream copy fallback rename failed") from move_e
+                LOGGER.exception("Fallback rename failed: %s", move_e)
+                msg = "Stream copy fallback rename failed"
+                raise OSError(msg) from move_e
         except (KeyError, ValueError) as e:
             LOGGER.exception("Unexpected error during stream copy fallback.")
-            raise ValueError(f"Unexpected error during stream copy: {e}") from e
+            msg = f"Unexpected error during stream copy: {e}"
+            raise ValueError(msg) from e
         return
 
     # Use FFmpegCommandBuilder for other encoders
@@ -171,7 +175,8 @@ def encode_with_ffmpeg(
 
         except (KeyError, ValueError, RuntimeError) as e:
             LOGGER.exception("Error during 2-pass x265 encoding")
-            raise IOError("2-pass x265 encoding failed") from e
+            msg = "2-pass x265 encoding failed"
+            raise OSError(msg) from e
 
     else:
         # Single-pass encoding for other encoders

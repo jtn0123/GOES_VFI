@@ -1,12 +1,10 @@
-"""
-This module defines the ProcessingViewModel class, which is intended to manage
+"""This module defines the ProcessingViewModel class, which is intended to manage
 the state, input parameters, and results for the core VFI processing pipeline.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Tuple
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -19,8 +17,7 @@ LOGGER = log.get_logger(__name__)
 
 
 class ProcessingViewModel(QObject):
-    """
-    ViewModel for the main VFI processing tab.
+    """ViewModel for the main VFI processing tab.
 
     This class manages input parameters, processing state, and results
     for the core VFI pipeline. It coordinates the main processing logic and
@@ -61,8 +58,7 @@ class ProcessingViewModel(QObject):
         self._current_encoder: str = "RIFE"  # Default encoder
 
     def start_processing(self) -> None:
-        """
-        Command to start the VFI processing pipeline.
+        """Command to start the VFI processing pipeline.
 
         This method should be triggered by the UI to initiate the main VFI processing.
         Sets the internal state to processing and emits a status update.
@@ -80,8 +76,7 @@ class ProcessingViewModel(QObject):
         self.status_updated.emit(self._status_message)
 
     def cancel_processing(self) -> None:
-        """
-        Command to cancel the ongoing VFI processing.
+        """Command to cancel the ongoing VFI processing.
 
         This method should be triggered by the UI to request cancellation of the
         main VFI processing pipeline.
@@ -99,8 +94,7 @@ class ProcessingViewModel(QObject):
         self.processing_finished.emit(False, "Processing cancelled by user")
 
     def update_progress(self, current: int, total: int, time_elapsed: float) -> None:
-        """
-        Update the progress information during processing.
+        """Update the progress information during processing.
 
         Args:
             current: Current frame being processed
@@ -123,8 +117,7 @@ class ProcessingViewModel(QObject):
         self.progress_updated.emit(current, total, time_elapsed)
 
     def finish_processing(self, success: bool = True, message: str | Path = "") -> None:
-        """
-        Handle completion of processing.
+        """Handle completion of processing.
 
         Args:
             success: Whether processing completed successfully
@@ -159,8 +152,7 @@ class ProcessingViewModel(QObject):
         self.processing_finished.emit(success, message_str)
 
     def handle_error(self, error_message: str) -> None:
-        """
-        Handle an error during processing.
+        """Handle an error during processing.
 
         Args:
             error_message: Description of the error that occurred
@@ -176,8 +168,7 @@ class ProcessingViewModel(QObject):
         self.processing_finished.emit(False, error_message)
 
     def set_output_file_path(self, path: Path) -> None:
-        """
-        Set the output file path after successful processing.
+        """Set the output file path after successful processing.
 
         Args:
             path: The path to the generated output file
@@ -188,8 +179,7 @@ class ProcessingViewModel(QObject):
     # Properties
     @property
     def status(self) -> str:
-        """
-        The current status message for the processing tab.
+        """The current status message for the processing tab.
 
         Returns:
             str: Status message describing the current state.
@@ -198,8 +188,7 @@ class ProcessingViewModel(QObject):
 
     @property
     def is_processing(self) -> bool:
-        """
-        Whether processing is currently in progress.
+        """Whether processing is currently in progress.
 
         Returns:
             bool: True if processing is in progress, False otherwise
@@ -208,8 +197,7 @@ class ProcessingViewModel(QObject):
 
     @property
     def current_progress(self) -> int:
-        """
-        The current progress value.
+        """The current progress value.
 
         Returns:
             int: Current frame being processed
@@ -218,8 +206,7 @@ class ProcessingViewModel(QObject):
 
     @property
     def total_frames(self) -> int:
-        """
-        The total number of frames to process.
+        """The total number of frames to process.
 
         Returns:
             int: Total number of frames
@@ -228,8 +215,7 @@ class ProcessingViewModel(QObject):
 
     @property
     def output_file_path(self) -> Path | None:
-        """
-        The path to the generated output file.
+        """The path to the generated output file.
 
         Returns:
             Optional[Path]: The output file path, or None if not set
@@ -238,8 +224,7 @@ class ProcessingViewModel(QObject):
 
     @property
     def input_directory(self) -> Path | None:
-        """
-        The input directory for processing.
+        """The input directory for processing.
 
         Returns:
             Optional[Path]: The input directory path, or None if not set
@@ -248,8 +233,7 @@ class ProcessingViewModel(QObject):
 
     @input_directory.setter
     def input_directory(self, path: Path | None) -> None:
-        """
-        Set the input directory.
+        """Set the input directory.
 
         Args:
             path: The input directory path
@@ -259,8 +243,7 @@ class ProcessingViewModel(QObject):
 
     @property
     def crop_rect(self) -> tuple[int, int, int, int] | None:
-        """
-        The current crop rectangle.
+        """The current crop rectangle.
 
         Returns:
             Optional[Tuple[int, int, int, int]]: The crop rect as (x, y, w, h), or None
@@ -269,8 +252,7 @@ class ProcessingViewModel(QObject):
 
     @crop_rect.setter
     def crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
-        """
-        Set the crop rectangle.
+        """Set the crop rectangle.
 
         Args:
             rect: The crop rectangle as (x, y, w, h), or None to clear
@@ -280,8 +262,7 @@ class ProcessingViewModel(QObject):
 
     @property
     def current_encoder(self) -> str:
-        """
-        The currently selected encoder.
+        """The currently selected encoder.
 
         Returns:
             str: The encoder name (e.g., "RIFE", "FFmpeg")
@@ -290,8 +271,7 @@ class ProcessingViewModel(QObject):
 
     @current_encoder.setter
     def current_encoder(self, encoder: str) -> None:
-        """
-        Set the current encoder.
+        """Set the current encoder.
 
         Args:
             encoder: The encoder name

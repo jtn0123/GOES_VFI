@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import (
     QAbstractTableModel,
@@ -86,30 +86,29 @@ class OperationTableModel(QAbstractTableModel):
             if col == 0:  # Time
                 timestamp = operation.get("start_time", 0)
                 return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
-            elif col == 1:  # Operation
+            if col == 1:  # Operation
                 return operation.get("name", "")
-            elif col == 2:  # Status
+            if col == 2:  # Status
                 return operation.get("status", "")
-            elif col == 3:  # Duration
+            if col == 3:  # Duration
                 duration = operation.get("duration")
                 if duration is not None:
                     return f"{duration:.3f}s"
                 return "N/A"
-            elif col == 4:  # Correlation ID
+            if col == 4:  # Correlation ID
                 return operation.get("correlation_id", "")[:8] + "..."
 
         elif role == Qt.ItemDataRole.TextAlignmentRole:
-            if col in [2, 3]:  # Center align status and duration
+            if col in {2, 3}:  # Center align status and duration
                 return Qt.AlignmentFlag.AlignCenter
 
-        elif role == Qt.ItemDataRole.ForegroundRole:
-            if col == 2:  # Color code status
-                status = operation.get("status", "")
-                if status == "success":
-                    return Qt.GlobalColor.darkGreen
-                elif status == "failure":
-                    return Qt.GlobalColor.darkRed
-                return Qt.GlobalColor.darkYellow
+        elif role == Qt.ItemDataRole.ForegroundRole and col == 2:  # Color code status
+            status = operation.get("status", "")
+            if status == "success":
+                return Qt.GlobalColor.darkGreen
+            if status == "failure":
+                return Qt.GlobalColor.darkRed
+            return Qt.GlobalColor.darkYellow
 
         return None
 
@@ -178,25 +177,24 @@ class MetricsModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             if col == 0:  # Operation
                 return metric.get("operation_name", "")
-            elif col == 1:  # Total
+            if col == 1:  # Total
                 return str(metric.get("total_count", 0))
-            elif col == 2:  # Success
+            if col == 2:  # Success
                 return str(metric.get("success_count", 0))
-            elif col == 3:  # Failure
+            if col == 3:  # Failure
                 return str(metric.get("failure_count", 0))
-            elif col == 4:  # Avg Duration
+            if col == 4:  # Avg Duration
                 avg = metric.get("avg_duration", 0)
                 return f"{avg:.3f}s" if avg else "N/A"
-            elif col == 5:  # Min
+            if col == 5:  # Min
                 min_dur = metric.get("min_duration", 0)
                 return f"{min_dur:.3f}s" if min_dur else "N/A"
-            elif col == 6:  # Max
+            if col == 6:  # Max
                 max_dur = metric.get("max_duration", 0)
                 return f"{max_dur:.3f}s" if max_dur else "N/A"
 
-        elif role == Qt.ItemDataRole.TextAlignmentRole:
-            if col > 0:  # Right align numeric columns
-                return Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        elif role == Qt.ItemDataRole.TextAlignmentRole and col > 0:  # Right align numeric columns
+            return Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
 
         return None
 
@@ -457,9 +455,11 @@ class OperationHistoryTab(QWidget):
     def _show_operation_details(self, operation: dict[str, Any]) -> None:
         """Show details for selected operation."""
         details = []
-        details.append(f"<b>Operation:</b> {operation.get('name', 'N/A')}")
-        details.append(f"<b>Correlation ID:</b> {operation.get('correlation_id', 'N/A')}")
-        details.append(f"<b>Status:</b> {operation.get('status', 'N/A')}")
+        details.extend((
+            f"<b>Operation:</b> {operation.get('name', 'N/A')}",
+            f"<b>Correlation ID:</b> {operation.get('correlation_id', 'N/A')}",
+            f"<b>Status:</b> {operation.get('status', 'N/A')}",
+        ))
 
         # Times
         start_time = operation.get("start_time", 0)
@@ -519,7 +519,7 @@ class OperationHistoryTab(QWidget):
                 else:
                     QMessageBox.information(self, "Info", "Operation store not implemented yet")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to clear operations: {str(e)}")
+                QMessageBox.critical(self, "Error", f"Failed to clear operations: {e!s}")
 
     def _export_operations(self) -> None:
         """Export operations to file."""
@@ -554,7 +554,7 @@ class OperationHistoryTab(QWidget):
                 else:
                     QMessageBox.information(self, "Info", "Operation store not implemented yet")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to export operations: {str(e)}")
+                QMessageBox.critical(self, "Error", f"Failed to export operations: {e!s}")
 
     def cleanup(self) -> None:
         """Clean up resources."""

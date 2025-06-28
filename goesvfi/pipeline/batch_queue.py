@@ -179,7 +179,7 @@ class BatchQueue(QObject):
         try:
             with open(queue_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to save queue")
 
         self.job_added.emit(job.id)
@@ -207,7 +207,7 @@ class BatchQueue(QObject):
         try:
             with open(queue_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to save queue")
 
         self.job_cancelled.emit(job_id)
@@ -248,7 +248,7 @@ class BatchQueue(QObject):
         try:
             with open(queue_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to save queue")
 
         LOGGER.info("Cleared %s completed/cancelled jobs", len(to_remove))
@@ -350,7 +350,7 @@ class BatchQueue(QObject):
         try:
             with open(queue_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to save queue")
 
     def _load_queue(self) -> None:
@@ -380,12 +380,12 @@ class BatchQueue(QObject):
                     if job.status == JobStatus.PENDING:
                         self._queue.put(job)
 
-                except Exception as e:
+                except Exception:
                     LOGGER.exception("Failed to load job")
 
             LOGGER.info("Loaded %s jobs from queue", len(self._jobs))
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to load queue")
 
 

@@ -5,7 +5,7 @@ import pathlib
 import shutil
 import subprocess
 import tempfile
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -22,7 +22,8 @@ class RifeBackend:
 
     def __init__(self, exe_path: pathlib.Path) -> None:
         if not exe_path.is_file():
-            raise FileNotFoundError(f"RIFE executable not found at: {exe_path}")
+            msg = f"RIFE executable not found at: {exe_path}"
+            raise FileNotFoundError(msg)
         if not shutil.which(str(exe_path)):
             # Check if it's executable or just if it exists
             # On Unix-like systems, check execute permission
@@ -53,8 +54,7 @@ class RifeBackend:
         img2: NDArray[np.float32],
         options: dict[str, Any] | None = None,
     ) -> NDArray[np.float32]:
-        """
-        Interpolate between two frames using the RIFE CLI.
+        """Interpolate between two frames using the RIFE CLI.
 
         Args:
             img1: First input frame as float32 numpy array (0.0-1.0)
@@ -109,18 +109,21 @@ class RifeBackend:
                 logger.warning("RIFE stderr: %s", result.stderr)
 
             if not out_f.exists():
-                raise RuntimeError(f"RIFE failed to generate frame at timestep {timestep}")
+                msg = f"RIFE failed to generate frame at timestep {timestep}"
+                raise RuntimeError(msg)
 
             # Load the generated frame
             with Image.open(out_f) as _img_temp:
                 frame_arr = np.array(_img_temp).astype(np.float32) / 255.0
 
         except subprocess.CalledProcessError as e:
-            logger.error("RIFE CLI Error Output:\n%s", e.stderr)
-            raise RuntimeError(f"RIFE executable failed (timestep {timestep}) with code {e.returncode}") from e
+            logger.exception("RIFE CLI Error Output:\n%s", e.stderr)
+            msg = f"RIFE executable failed (timestep {timestep}) with code {e.returncode}"
+            raise RuntimeError(msg) from e
         except (KeyError, ValueError, RuntimeError) as e:
             logger.error("Error during RIFE CLI processing: %s", e, exc_info=True)
-            raise IOError(f"Error during RIFE CLI processing: {e}") from e
+            msg = f"Error during RIFE CLI processing: {e}"
+            raise OSError(msg) from e
         finally:
             shutil.rmtree(tmp)
 
@@ -133,8 +136,7 @@ def interpolate_three(
     backend: RifeBackend,
     options: dict[str, Any] | None = None,
 ) -> list[NDArray[np.float32]]:
-    """
-    Recursively interpolates three frames between img1 and img2.
+    """Recursively interpolates three frames between img1 and img2.
 
     Args:
         img1: First input frame as float32 numpy array (0.0-1.0)

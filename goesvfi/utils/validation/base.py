@@ -1,13 +1,13 @@
-"""
-Base validation classes and types.
+"""Base validation classes and types.
 
 Provides the foundation for composable validation that reduces complexity
 in functions with extensive parameter checking.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any
 
 
 class ValidationError(Exception):
@@ -77,8 +77,7 @@ class ValidatorBase(ABC):
 
     @abstractmethod
     def validate(self, value: Any, context: dict[str, Any] | None = None) -> ValidationResult:
-        """
-        Validate a value.
+        """Validate a value.
 
         Args:
             value: The value to validate

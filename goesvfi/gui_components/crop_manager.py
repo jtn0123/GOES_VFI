@@ -96,13 +96,13 @@ class CropManager:
                         settings_file,
                     )
                     return False
-            except Exception as file_error:
-                LOGGER.exception("Error checking settings file after crop save: %s", file_error)
+            except Exception:
+                LOGGER.exception("Error checking settings file after crop save")
 
             # Explicitly cast bool to avoid Any return type
             return bool(saved_rect == rect_str)
-        except Exception as e:
-            LOGGER.exception("Error directly saving crop rectangle: %s", e)
+        except Exception:
+            LOGGER.exception("Error directly saving crop rectangle")
             return False
 
     def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> bool:

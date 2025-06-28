@@ -10,10 +10,10 @@ from .error_converter import S3ErrorConverter
 from .network_diagnostics import NetworkDiagnostics
 
 __all__ = [
-    "S3ClientConfig",
-    "create_s3_config",
     "DownloadStats",
     "DownloadStatsTracker",
-    "S3ErrorConverter",
     "NetworkDiagnostics",
+    "S3ClientConfig",
+    "S3ErrorConverter",
+    "create_s3_config",
 ]

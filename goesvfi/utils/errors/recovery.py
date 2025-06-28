@@ -1,11 +1,10 @@
-"""
-Error recovery utilities.
+"""Error recovery utilities.
 
 Provides recovery strategies to reduce complexity in error recovery logic.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .base import ErrorCategory, StructuredError
 
@@ -19,8 +18,7 @@ class RecoveryStrategy(ABC):
 
     @abstractmethod
     def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
-        """
-        Attempt to recover from the error.
+        """Attempt to recover from the error.
 
         Returns:
             Recovery result or raises exception if recovery fails
@@ -32,15 +30,16 @@ class FileRecoveryStrategy(RecoveryStrategy):
 
     def can_recover(self, error: StructuredError) -> bool:
         """Can recover from file-related errors."""
-        return error.category in [
+        return error.category in {
             ErrorCategory.FILE_NOT_FOUND,
             ErrorCategory.PERMISSION,
-        ]
+        }
 
     def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
         """Attempt file recovery."""
         # This is a placeholder - specific recovery logic would go here
-        raise NotImplementedError("File recovery strategy not implemented")
+        msg = "File recovery strategy not implemented"
+        raise NotImplementedError(msg)
 
 
 class RetryRecoveryStrategy(RecoveryStrategy):
@@ -51,12 +50,13 @@ class RetryRecoveryStrategy(RecoveryStrategy):
 
     def can_recover(self, error: StructuredError) -> bool:
         """Can retry network and external tool errors."""
-        return error.category in [ErrorCategory.NETWORK, ErrorCategory.EXTERNAL_TOOL]
+        return error.category in {ErrorCategory.NETWORK, ErrorCategory.EXTERNAL_TOOL}
 
     def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
         """Attempt retry recovery."""
         # This is a placeholder - specific retry logic would go here
-        raise NotImplementedError("Retry recovery strategy not implemented")
+        msg = "Retry recovery strategy not implemented"
+        raise NotImplementedError(msg)
 
 
 class RecoveryManager:
@@ -71,8 +71,7 @@ class RecoveryManager:
         return self
 
     def attempt_recovery(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
-        """
-        Attempt to recover from an error using available strategies.
+        """Attempt to recover from an error using available strategies.
 
         Returns:
             Recovery result if successful

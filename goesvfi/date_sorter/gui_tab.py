@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
@@ -31,7 +30,8 @@ class DateSorterTab(QWidget):
         super().__init__(parent)
 
         if not isinstance(view_model, DateSorterViewModel):
-            raise TypeError("view_model must be an instance of DateSorterViewModel")
+            msg = "view_model must be an instance of DateSorterViewModel"
+            raise TypeError(msg)
 
         self.view_model = view_model  # Use the provided ViewModel
 

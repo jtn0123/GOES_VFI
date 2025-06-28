@@ -72,7 +72,7 @@ class RefactoredPreviewProcessor:
             # Update label state with results
             self._update_label_state(target_label, image_path, result)
 
-            return cast(QPixmap | None, result.data)
+            return cast("QPixmap | None", result.data)
 
         except Exception:
             LOGGER.exception("Unhandled error in preview processing for %s", image_path)

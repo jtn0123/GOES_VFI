@@ -30,14 +30,14 @@ __all__ = [
     "RADM_MINUTES",
     "RECENT_WINDOW_DAYS",
     "START_SECONDS",
+    "DirectoryScanner",
+    "S3KeyGenerator",
     # Classes and functions
     "SatellitePattern",
-    "get_satellite_info",
-    "S3KeyGenerator",
-    "filter_s3_keys_by_band",
-    "DirectoryScanner",
     "TimeIndex",
     "TimestampExtractor",
     "TimestampFormatter",
     "TimestampGenerator",
+    "filter_s3_keys_by_band",
+    "get_satellite_info",
 ]

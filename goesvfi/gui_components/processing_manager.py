@@ -1,7 +1,7 @@
 """Processing management functionality for the main GUI window."""
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
 
@@ -47,7 +47,8 @@ class ProcessingManager(QObject):
             required_keys = ["input_dir", "output_file", "model_location"]
             for key in required_keys:
                 if key not in args:
-                    raise ValueError(f"Missing required argument: {key}")
+                    msg = f"Missing required argument: {key}"
+                    raise ValueError(msg)
 
             # Store output path
             self.current_output_path = Path(args["output_file"])
@@ -80,7 +81,7 @@ class ProcessingManager(QObject):
             return True
 
         except Exception as e:
-            LOGGER.error("Failed to start processing: %s", e)
+            LOGGER.exception("Failed to start processing: %s", e)
             self.processing_error.emit(str(e))
             self.is_processing = False
             self.processing_state_changed.emit(False)
@@ -217,4 +218,4 @@ class ProcessingManager(QObject):
             return True, ""
 
         except Exception as e:
-            return False, f"Validation error: {str(e)}"
+            return False, f"Validation error: {e!s}"

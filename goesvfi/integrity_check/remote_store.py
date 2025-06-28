@@ -5,9 +5,10 @@ satellite imagery repositories, downloading missing files, and reporting progres
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any
 from urllib.parse import urlparse
 
 from goesvfi.utils import log
@@ -99,7 +100,7 @@ def create_remote_store(url: str, **kwargs: Any) -> RemoteStore:
     """
     parsed = urlparse(url)
 
-    if parsed.scheme in ("http", "https"):
+    if parsed.scheme in {"http", "https"}:
         return HTTPRemoteStore(url, **kwargs)
-    else:
-        raise ValueError(f"Unsupported URL scheme: {parsed.scheme}")
+    msg = f"Unsupported URL scheme: {parsed.scheme}"
+    raise ValueError(msg)

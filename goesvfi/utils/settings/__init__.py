@@ -10,11 +10,11 @@ from .sections import FFmpegSettings, MainTabSettings, SanchezSettings
 from .widget_accessor import SafeWidgetAccessor, WidgetSafetyValidator
 
 __all__ = [
-    "SettingsSection",
-    "SettingsManager",
-    "SafeWidgetAccessor",
-    "WidgetSafetyValidator",
-    "MainTabSettings",
     "FFmpegSettings",
+    "MainTabSettings",
+    "SafeWidgetAccessor",
     "SanchezSettings",
+    "SettingsManager",
+    "SettingsSection",
+    "WidgetSafetyValidator",
 ]

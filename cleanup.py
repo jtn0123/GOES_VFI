@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-cleanup.py - Intelligent cleanup script for GOES VFI project
+"""cleanup.py - Intelligent cleanup script for GOES VFI project.
 
 This script removes test artifacts, temporary files, and large data files that should
 not be committed to the repository. It includes safety checks to prevent accidental
@@ -8,9 +7,9 @@ deletion of important files.
 """
 
 import argparse
-import shutil
+import operator
 from pathlib import Path, PurePosixPath
-from typing import List, Optional, Set, Tuple
+import shutil
 
 
 class CleanupManager:
@@ -139,18 +138,18 @@ class CleanupManager:
         """Find files matching the given patterns."""
         files = []
         for pattern in patterns:
-            for path in self.project_root.glob(pattern):
-                if path.is_file() and not self.is_protected(path):
-                    files.append(path)
+            files.extend(
+                path for path in self.project_root.glob(pattern) if path.is_file() and not self.is_protected(path)
+            )
         return files
 
     def find_directories_to_clean(self) -> list[Path]:
         """Find directories that should be cleaned entirely."""
         directories = []
         for pattern in self.directory_patterns:
-            for path in self.project_root.rglob(pattern):
-                if path.is_dir() and not self.is_protected(path):
-                    directories.append(path)
+            directories.extend(
+                path for path in self.project_root.rglob(pattern) if path.is_dir() and not self.is_protected(path)
+            )
         return directories
 
     def find_large_files(self) -> list[tuple[Path, int]]:
@@ -173,13 +172,10 @@ class CleanupManager:
             size_float /= 1024
         return f"{size_float:.2f} TB"
 
-    def analyze(self, categories: set[str] | None = None):
+    def analyze(self, categories: set[str] | None = None) -> None:
         """Analyze files to be cleaned."""
         if categories is None:
             categories = set(self.file_patterns.keys())
-
-        print(f"\nAnalyzing files in {self.project_root}...")
-        print("=" * 80)
 
         # Find files by category
         for category, patterns in self.file_patterns.items():
@@ -188,7 +184,6 @@ class CleanupManager:
 
             files = self.find_files_to_clean(patterns)
             if files:
-                print(f"\n{category.upper()}:")
                 category_size = 0
                 for file in files:
                     size = file.stat().st_size
@@ -196,54 +191,31 @@ class CleanupManager:
                     self.total_size += size
                     self.files_to_delete.append(file)
                     if self.dry_run or len(files) <= 10:
-                        print(
-                            f"  - {file.relative_to(self.project_root)} ({self.format_size(size)})"
-                        )
+                        pass
                 if len(files) > 10 and not self.dry_run:
-                    print(f"  ... and {len(files) - 10} more files")
-                print(f"  Total: {len(files)} files, {self.format_size(category_size)}")
+                    pass
 
         # Find directories to clean
         self.directories_to_delete = self.find_directories_to_clean()
         if self.directories_to_delete:
-            print("\nDIRECTORIES TO CLEAN:")
             for directory in self.directories_to_delete:
-                dir_size = sum(
-                    f.stat().st_size for f in directory.rglob("*") if f.is_file()
-                )
+                dir_size = sum(f.stat().st_size for f in directory.rglob("*") if f.is_file())
                 self.total_size += dir_size
-                print(
-                    f"  - {directory.relative_to(self.project_root)} ({self.format_size(dir_size)})"
-                )
 
         # Find large files
         large_files = self.find_large_files()
         if large_files:
-            print(f"\nLARGE FILES (>{self.format_size(self.large_file_threshold)}):")
-            for file, size in sorted(large_files, key=lambda x: x[1], reverse=True)[
-                :10
-            ]:
+            for file, size in sorted(large_files, key=operator.itemgetter(1), reverse=True)[:10]:
                 if file not in self.files_to_delete:
-                    print(
-                        f"  - {file.relative_to(self.project_root)} ({self.format_size(size)})"
-                    )
                     self.files_to_delete.append(file)
                     self.total_size += size
 
-        print("\n" + "=" * 80)
-        print(f"Total files to delete: {len(self.files_to_delete)}")
-        print(f"Total directories to delete: {len(self.directories_to_delete)}")
-        print(f"Total size to free: {self.format_size(self.total_size)}")
-
-    def clean(self, force: bool = False):
+    def clean(self, force: bool = False) -> None:
         """Perform the cleanup operation."""
         if self.dry_run:
-            print("\nDRY RUN - No files will be deleted.")
-            print("Run with --delete to actually delete files.")
             return
 
         if not self.files_to_delete and not self.directories_to_delete:
-            print("\nNothing to clean!")
             return
 
         # Confirm before deletion (unless forced)
@@ -252,7 +224,6 @@ class CleanupManager:
                 f"\nDelete {len(self.files_to_delete)} files and {len(self.directories_to_delete)} directories? [y/N]: "
             )
             if response.lower() != "y":
-                print("Cleanup cancelled.")
                 return
 
         # Delete files
@@ -261,8 +232,8 @@ class CleanupManager:
             try:
                 file.unlink()
                 deleted_files += 1
-            except Exception as e:
-                print(f"Error deleting {file}: {e}")
+            except Exception:
+                pass
 
         # Delete directories
         deleted_dirs = 0
@@ -270,18 +241,13 @@ class CleanupManager:
             try:
                 shutil.rmtree(directory)
                 deleted_dirs += 1
-            except Exception as e:
-                print(f"Error deleting {directory}: {e}")
-
-        print(f"\nDeleted {deleted_files} files and {deleted_dirs} directories.")
-        print(f"Freed {self.format_size(self.total_size)} of disk space.")
+            except Exception:
+                pass
 
 
-def main():
+def main() -> None:
     """Main entry point for the cleanup script."""
-    parser = argparse.ArgumentParser(
-        description="Clean up test artifacts and large files from the GOES VFI project"
-    )
+    parser = argparse.ArgumentParser(description="Clean up test artifacts and large files from the GOES VFI project")
     parser.add_argument(
         "--list-only",
         action="store_true",

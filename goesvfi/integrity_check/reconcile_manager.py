@@ -5,7 +5,7 @@ This module manages the reconciliation of missing timestamps and downloads.
 
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from goesvfi.utils import log
 
@@ -122,7 +122,7 @@ class ReconcileManager:
         all_timestamps = set()
         while current <= end_time:
             all_timestamps.add(current)
-            current = current + timedelta(minutes=interval_minutes)
+            current += timedelta(minutes=interval_minutes)
 
         # Step 2: Check cache
         if progress_callback:

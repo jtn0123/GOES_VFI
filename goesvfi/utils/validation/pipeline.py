@@ -1,25 +1,22 @@
-"""
-Validation pipeline for composing multiple validators.
+"""Validation pipeline for composing multiple validators.
 
 Reduces complexity by providing a clean interface for running multiple validations.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from .base import ValidationError, ValidationResult, ValidatorBase
 
 
 class ValidationPipeline:
-    """
-    Pipeline for running multiple validators in sequence.
+    """Pipeline for running multiple validators in sequence.
 
     This helps reduce complexity in functions that need to validate many parameters
     by centralizing validation logic and providing clear error reporting.
     """
 
     def __init__(self, name: str | None = None, fail_fast: bool = False) -> None:
-        """
-        Initialize validation pipeline.
+        """Initialize validation pipeline.
 
         Args:
             name: Optional name for the pipeline (used in error reporting)
@@ -30,8 +27,7 @@ class ValidationPipeline:
         self.validators: list[tuple[str, ValidatorBase, Any]] = []
 
     def add_validator(self, field_name: str, validator: ValidatorBase, value: Any) -> "ValidationPipeline":
-        """
-        Add a validator to the pipeline.
+        """Add a validator to the pipeline.
 
         Args:
             field_name: Name of the field being validated
@@ -55,8 +51,7 @@ class ValidationPipeline:
         must_be_writable: bool = False,
         create_if_missing: bool = False,
     ) -> "ValidationPipeline":
-        """
-        Convenience method to add path validation.
+        """Convenience method to add path validation.
 
         Returns:
             Self for method chaining
@@ -83,8 +78,7 @@ class ValidationPipeline:
         must_be_writable: bool = False,
         min_free_space_mb: int | None = None,
     ) -> "ValidationPipeline":
-        """
-        Convenience method to add directory validation.
+        """Convenience method to add directory validation.
 
         Returns:
             Self for method chaining
@@ -108,8 +102,7 @@ class ValidationPipeline:
         allowed_extensions: list | None = None,
         max_size_mb: int | None = None,
     ) -> "ValidationPipeline":
-        """
-        Convenience method to add file validation.
+        """Convenience method to add file validation.
 
         Returns:
             Self for method chaining
@@ -125,8 +118,7 @@ class ValidationPipeline:
         return self.add_validator(field_name, validator, file_value)
 
     def add_executable_validation(self, field_name: str, executable_value: Any) -> "ValidationPipeline":
-        """
-        Convenience method to add executable validation.
+        """Convenience method to add executable validation.
 
         Returns:
             Self for method chaining
@@ -137,8 +129,7 @@ class ValidationPipeline:
         return self.add_validator(field_name, validator, executable_value)
 
     def validate(self, context: dict[str, Any] | None = None) -> ValidationResult:
-        """
-        Run all validators in the pipeline.
+        """Run all validators in the pipeline.
 
         Args:
             context: Optional context data shared across validators
@@ -172,8 +163,7 @@ class ValidationPipeline:
         return overall_result
 
     def validate_and_raise(self, context: dict[str, Any] | None = None) -> None:
-        """
-        Run validation and raise ValidationError if any validation fails.
+        """Run validation and raise ValidationError if any validation fails.
 
         Args:
             context: Optional context data shared across validators
@@ -190,8 +180,7 @@ class ValidationPipeline:
             raise ValidationError(summary)
 
     def clear(self) -> "ValidationPipeline":
-        """
-        Clear all validators from the pipeline.
+        """Clear all validators from the pipeline.
 
         Returns:
             Self for method chaining
@@ -201,8 +190,7 @@ class ValidationPipeline:
 
 
 class ValidationStepBuilder:
-    """
-    Builder for creating validation steps with fluent interface.
+    """Builder for creating validation steps with fluent interface.
 
     Helps reduce complexity when building complex validation scenarios.
     """

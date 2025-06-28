@@ -1,13 +1,13 @@
-"""
-Base classes for image processing framework.
+"""Base classes for image processing framework.
 
 Provides the foundation for composable image processing that reduces complexity
 in functions with extensive image manipulation logic.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Type, Union
+from typing import Any
 
 import numpy as np
 from PyQt6.QtGui import QImage, QPixmap
@@ -34,7 +34,7 @@ class ImageProcessingResult:
     """Result of an image processing operation."""
 
     success: bool
-    data: Union[np.ndarray, QImage, QPixmap] | None
+    data: np.ndarray | QImage | QPixmap | None
     errors: list[ImageProcessingError]
     warnings: list[str]
     metadata: dict[str, Any]
@@ -87,8 +87,7 @@ class ProcessorBase(ABC):
 
     @abstractmethod
     def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
-        """
-        Process input data.
+        """Process input data.
 
         Args:
             input_data: The data to process

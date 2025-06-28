@@ -76,7 +76,7 @@ class SettingsManager:
             self.settings.sync()
             LOGGER.debug("Saved setting: %s = %s", key, value)
             return True
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error saving setting %s", key)
             return False
 
@@ -95,7 +95,7 @@ class SettingsManager:
             if value_type is not None:
                 return self.settings.value(key, default, type=value_type)
             return self.settings.value(key, default)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error loading setting %s", key)
             return default
 
@@ -116,7 +116,7 @@ class SettingsManager:
             self.settings.endGroup()
             self.settings.sync()
             return True
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error saving window geometry for %s", window_key)
             return False
 
@@ -145,7 +145,7 @@ class SettingsManager:
                 return None
 
             return geometry
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error loading window geometry for %s", window_key)
             return None
 
@@ -170,7 +170,7 @@ class SettingsManager:
             self.settings.setValue(f"RecentPaths/{key}", path_strings)
             self.settings.sync()
             return True
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error saving recent paths for %s", key)
             return False
 
@@ -186,7 +186,7 @@ class SettingsManager:
         try:
             path_strings = self.settings.value(f"RecentPaths/{key}", [], type=list)
             return [Path(p) for p in path_strings if p]
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error loading recent paths for %s", key)
             return []
 
@@ -206,7 +206,7 @@ class SettingsManager:
             self.settings.sync()
             LOGGER.debug("Cleared settings group: %s", group_name)
             return True
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error clearing settings group %s", group_name)
             return False
 
@@ -219,7 +219,7 @@ class SettingsManager:
         try:
             keys = self.settings.allKeys()
             return [str(key) for key in keys]  # Convert to List[str]
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error getting all keys")
             return []
 
@@ -237,7 +237,7 @@ class SettingsManager:
             self.settings.sync()
             LOGGER.debug("Removed setting key: %s", key)
             return True
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error removing key %s", key)
             return False
 
@@ -250,6 +250,6 @@ class SettingsManager:
         try:
             self.settings.sync()
             return True
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error syncing settings")
             return False

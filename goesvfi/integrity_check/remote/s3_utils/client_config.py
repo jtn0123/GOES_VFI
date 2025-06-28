@@ -4,9 +4,9 @@ This module provides configuration management for S3 clients,
 including unsigned access configuration for public NOAA buckets.
 """
 
-import logging
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+import logging
+from typing import Any
 
 from botocore import UNSIGNED
 from botocore.config import Config

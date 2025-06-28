@@ -1,11 +1,10 @@
-"""
-Preview-specific image processing utilities.
+"""Preview-specific image processing utilities.
 
 Provides specialized processors for generating preview images with annotations
 and overlays.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPainter, QPixmap
@@ -116,9 +115,7 @@ class PreviewProcessor(ProcessorBase):
 
             # Create and run pipeline
             pipeline = ImageProcessingPipeline(pipeline_stages)
-            result = pipeline.process(input_data, context)
-
-            return result
+            return pipeline.process(input_data, context)
 
         except Exception as e:
             return ImageProcessingResult.failure_result(self._create_error(f"Preview processing failed: {e}", e))

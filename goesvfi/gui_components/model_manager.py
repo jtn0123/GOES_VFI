@@ -55,7 +55,7 @@ class ModelManager:
                         "fastmode": detector.supports_thread_spec(),
                         "tiling": detector.supports_tiling(),
                     }
-                except Exception as e:  # pylint: disable=broad-except
+                except Exception:  # pylint: disable=broad-except
                     LOGGER.exception(
                         "Failed to analyze model %s capabilities",
                         model_name,
@@ -86,7 +86,7 @@ class ModelManager:
 
         except Exception as e:  # pylint: disable=broad-except
             LOGGER.exception("Error populating models")
-            parent_widget = cast(QWidget, model_combo.parent()) if model_combo.parent() else model_combo
+            parent_widget = cast("QWidget", model_combo.parent()) if model_combo.parent() else model_combo
             QMessageBox.critical(
                 parent_widget,
                 "Model Loading Error",
@@ -174,7 +174,7 @@ class ModelManager:
             self.settings.setValue("selected_model", model_name)
             self.settings.sync()
             LOGGER.debug("Saved selected model: %s", model_name)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error saving selected model")
 
     def load_selected_model(self) -> str | None:
@@ -185,7 +185,7 @@ class ModelManager:
         """
         try:
             model_name = self.settings.value("selected_model", "", type=str)
-            return cast(str | None, model_name or None)
-        except Exception as e:
+            return cast("str | None", model_name or None)
+        except Exception:
             LOGGER.exception("Error loading selected model")
             return None

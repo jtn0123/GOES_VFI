@@ -5,21 +5,20 @@ for better maintainability and testability.
 """
 
 import asyncio
+from collections.abc import Callable
+from datetime import datetime
+from pathlib import Path
 import re
 import time
 import traceback
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Callable, Optional, Tuple, Type, TypeVar
+from typing import Any, TypeVar
 
 import aioboto3  # type: ignore
 import botocore.exceptions
 
 from goesvfi.integrity_check.remote.base import (
     AuthenticationError,
-)
-from goesvfi.integrity_check.remote.base import ConnectionError as RemoteConnectionError
-from goesvfi.integrity_check.remote.base import (
+    ConnectionError as RemoteConnectionError,
     RemoteStore,
     RemoteStoreError,
     ResourceNotFoundError,
@@ -104,7 +103,7 @@ class S3Store(RemoteStore):
             LOGGER.info("Collecting system and network diagnostics during S3Store initialization")
             self._network_diagnostics.log_system_info()
         except Exception as e:
-            LOGGER.error("Error collecting system diagnostics: %s", e)
+            LOGGER.exception("Error collecting system diagnostics: %s", e)
 
         # Test connectivity
         self._network_diagnostics.log_connectivity_test()
@@ -166,13 +165,13 @@ class S3Store(RemoteStore):
                 LOGGER.debug("Successfully created S3 client")
                 return self._s3_client
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 retry_count += 1
                 self._stats_tracker.increment_retry()
 
                 if retry_count >= max_retries:
                     error_details = self._network_diagnostics.create_network_error_details(
-                        asyncio.TimeoutError("Client creation timeout"),
+                        TimeoutError("Client creation timeout"),
                         "Creating S3 client",
                         {"attempts": retry_count, "timeouts": [15, 22.5, 30]},
                     )
@@ -183,7 +182,7 @@ class S3Store(RemoteStore):
                     )
 
             except Exception as e:
-                LOGGER.error("Error creating S3 client: %s", e)
+                LOGGER.exception("Error creating S3 client: %s", e)
 
                 # Convert to appropriate error type
                 if retry_count < max_retries - 1:
@@ -200,6 +199,7 @@ class S3Store(RemoteStore):
                     {"region": self._config.aws_region},
                 )
                 raise error
+        return None
 
     async def close(self) -> None:
         """Close the S3 client and log final statistics."""
@@ -292,12 +292,12 @@ class S3Store(RemoteStore):
             )
 
             # Log error details
-            LOGGER.error("S3 error: %s", error.get_user_message())
+            LOGGER.exception("S3 error: %s", error.get_user_message())
             if hasattr(error, "technical_details"):
                 LOGGER.debug("Technical details: %s", error.technical_details)
 
             # Re-raise authentication/connection errors
-            if isinstance(error, (AuthenticationError, RemoteConnectionError)):
+            if isinstance(error, AuthenticationError | RemoteConnectionError):
                 raise error
 
             # For other errors, return False
@@ -343,23 +343,22 @@ class S3Store(RemoteStore):
 
             if has_exact_match:
                 return await self._download_file(s3, bucket, key, dest_path, ts, satellite)
-            else:
-                # Try wildcard match
-                bucket, wildcard_key = self._get_bucket_and_key(
-                    ts,
-                    satellite,
-                    exact_match=False,
-                    product_type=product_type,
-                    band=band,
-                )
+            # Try wildcard match
+            bucket, wildcard_key = self._get_bucket_and_key(
+                ts,
+                satellite,
+                exact_match=False,
+                product_type=product_type,
+                band=band,
+            )
 
-                best_match_key = await self._find_best_match(s3, bucket, wildcard_key, ts, satellite)
+            best_match_key = await self._find_best_match(s3, bucket, wildcard_key, ts, satellite)
 
-                return await self._download_file(s3, bucket, best_match_key, dest_path, ts, satellite)
+            return await self._download_file(s3, bucket, best_match_key, dest_path, ts, satellite)
 
         except Exception as e:
             # Handle all errors consistently
-            if isinstance(e, (RemoteStoreError, ResourceNotFoundError)):
+            if isinstance(e, RemoteStoreError | ResourceNotFoundError):
                 raise
 
             # Convert other errors
@@ -443,9 +442,8 @@ class S3Store(RemoteStore):
 
             for obj in page["Contents"]:
                 key = obj["Key"]
-                if sat_code in key and timestamp_part in key:
-                    if compiled_pattern.search(key):
-                        matching_objects.append(key)
+                if sat_code in key and timestamp_part in key and compiled_pattern.search(key):
+                    matching_objects.append(key)
 
         if not matching_objects:
             raise ResourceNotFoundError(
@@ -578,8 +576,8 @@ class S3Store(RemoteStore):
                     },
                 )
 
-            LOGGER.error("Download error: %s", error.get_user_message())
-            LOGGER.error("Traceback: %s", traceback.format_exc())
+            LOGGER.exception("Download error: %s", error.get_user_message())
+            LOGGER.exception("Traceback: %s", traceback.format_exc())
 
             raise error
 

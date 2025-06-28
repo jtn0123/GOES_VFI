@@ -1,11 +1,10 @@
-"""
-Image format converters for the image processing framework.
+"""Image format converters for the image processing framework.
 
 Provides converters between different image formats (numpy arrays, QImage, QPixmap)
 to reduce complexity in image handling functions.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 from PyQt6.QtCore import QSize, Qt
@@ -218,7 +217,7 @@ class CropProcessor(ProcessorBase):
                 return ImageProcessingResult.success_result(array, {"cropped": False})
 
             # Extract crop coordinates
-            if isinstance(crop_rect, (tuple, list)) and len(crop_rect) == 4:
+            if isinstance(crop_rect, tuple | list) and len(crop_rect) == 4:
                 x, y, width, height = crop_rect
             else:
                 return ImageProcessingResult.failure_result(
@@ -242,10 +241,9 @@ class CropProcessor(ProcessorBase):
             height = max(1, min(height, img_height - y))
 
             # Perform crop
-            if array.ndim == 2:
-                cropped = array[y : y + height, x : x + width]
-            else:
-                cropped = array[y : y + height, x : x + width, :]
+            cropped = (
+                array[y : y + height, x : x + width] if array.ndim == 2 else array[y : y + height, x : x + width, :]
+            )
 
             metadata = {
                 "cropped": True,

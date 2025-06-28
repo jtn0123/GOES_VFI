@@ -14,8 +14,9 @@ LOGGER = log.get_logger(__name__)
 class DirectoryScanner:
     """Scan directories for GOES satellite imagery files and extract timestamps."""
 
-    @staticmethod
+    @classmethod
     def scan_directory_for_timestamps(
+        cls,
         directory: Path,
         pattern: SatellitePattern,
         start_time: datetime | None = None,
@@ -44,17 +45,18 @@ class DirectoryScanner:
             return []
 
         # Extract timestamps from PNG files
-        timestamps = Scanner._extract_timestamps_from_files(directory, pattern, start_time, end_time)
-        
+        timestamps = cls._extract_timestamps_from_files(directory, pattern, start_time, end_time)
+
         # If no timestamps found, try subdirectories
         if not timestamps:
-            timestamps = Scanner._extract_timestamps_from_subdirs(directory, start_time, end_time)
+            timestamps = cls._extract_timestamps_from_subdirs(directory, start_time, end_time)
 
         LOGGER.info("Found %s timestamps in %s", len(timestamps), directory)
         return sorted(timestamps)
 
-    @staticmethod
+    @classmethod
     def _extract_timestamps_from_files(
+        cls,
         directory: Path,
         pattern: SatellitePattern,
         start_time: datetime | None,
@@ -63,19 +65,20 @@ class DirectoryScanner:
         """Extract timestamps from PNG files in directory."""
         png_files = list(directory.glob("**/*.png"))
         LOGGER.info("Found %s PNG files in %s", len(png_files), directory)
-        
+
         timestamps = []
         extractor = TimestampExtractor()
 
         for file_path in png_files:
-            timestamp = Scanner._extract_timestamp_from_file(file_path, pattern, extractor)
-            if timestamp and Scanner._is_in_time_range(timestamp, start_time, end_time):
+            timestamp = cls._extract_timestamp_from_file(file_path, pattern, extractor)
+            if timestamp and cls._is_in_time_range(timestamp, start_time, end_time):
                 timestamps.append(timestamp)
-                
+
         return timestamps
-    
-    @staticmethod
+
+    @classmethod
     def _extract_timestamp_from_file(
+        cls,
         file_path: Path, pattern: SatellitePattern, extractor: TimestampExtractor
     ) -> datetime | None:
         """Extract timestamp from a single file or its parent directory."""
@@ -89,33 +92,31 @@ class DirectoryScanner:
             return timestamp
         except ValueError:
             return None
-    
-    @staticmethod
+
+    @classmethod
     def _extract_timestamps_from_subdirs(
+        cls,
         directory: Path, start_time: datetime | None, end_time: datetime | None
     ) -> list[datetime]:
         """Extract timestamps from subdirectory names."""
         timestamps = []
         extractor = TimestampExtractor()
-        
+
         subdirs = [p for p in directory.iterdir() if p.is_dir()]
         for subdir in subdirs:
             timestamp = extractor.extract_timestamp_from_directory_name(subdir.name)
-            if timestamp and Scanner._is_in_time_range(timestamp, start_time, end_time):
+            if timestamp and cls._is_in_time_range(timestamp, start_time, end_time):
                 timestamps.append(timestamp)
-                
+
         return timestamps
-    
-    @staticmethod
+
+    @classmethod
     def _is_in_time_range(
-        timestamp: datetime, start_time: datetime | None, end_time: datetime | None
-    ) -> bool:
+        cls,timestamp: datetime, start_time: datetime | None, end_time: datetime | None) -> bool:
         """Check if timestamp is within the specified time range."""
         if start_time and timestamp < start_time:
             return False
-        if end_time and timestamp > end_time:
-            return False
-        return True
+        return not (end_time and timestamp > end_time)
 
     @staticmethod
     def find_date_range_in_directory(

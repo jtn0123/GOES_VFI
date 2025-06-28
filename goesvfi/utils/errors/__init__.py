@@ -13,12 +13,12 @@ from .reporter import ErrorReporter
 
 __all__ = [
     "ErrorCategory",
-    "ErrorContext",
-    "StructuredError",
     "ErrorClassifier",
+    "ErrorContext",
     "ErrorHandler",
     "ErrorHandlerChain",
     "ErrorReporter",
     "RecoveryManager",
     "RecoveryStrategy",
+    "StructuredError",
 ]

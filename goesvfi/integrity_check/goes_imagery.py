@@ -4,16 +4,16 @@ This module provides classes and utilities for handling GOES satellite imagery,
 including channel definitions, product types, and imagery management.
 """
 
-import tempfile
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+import tempfile
+from typing import Any, Optional
 
 import numpy as np
-import requests
 from numpy.typing import NDArray
 from PIL import Image
+import requests
 
 from goesvfi.utils import log
 
@@ -287,8 +287,7 @@ class GOESImageryManager:
         LOGGER.warning("Stub: Image processing not implemented")
         # Return a placeholder image
         size = output_size or (512, 512)
-        img = Image.new("RGB", size, color="gray")
-        return img
+        return Image.new("RGB", size, color="gray")
 
     def create_composite(
         self,
@@ -339,7 +338,7 @@ class GOESImageryManager:
             )
             return result.file_path if result else None
 
-        if mode in (ImageryMode.RAW, ImageryMode.RAW_DATA):
+        if mode in {ImageryMode.RAW, ImageryMode.RAW_DATA}:
             # Raw data mode - find, download, and process
             # 1. Find raw data file
             s3_key = self.downloader.find_raw_data(channel, product_type, date)
@@ -354,8 +353,7 @@ class GOESImageryManager:
                 return None
 
             # 3. Process it
-            processed_file = self.processor.process_raw_data(raw_file, channel)
-            return processed_file
+            return self.processor.process_raw_data(raw_file, channel)
 
         LOGGER.warning("Unsupported mode: %s", mode)
         return None
@@ -408,9 +406,7 @@ class GOESImageryDownloader:
         LOGGER.warning("Stub: Download functionality not implemented")
         return None
 
-    def download_batch(
-        self, _download_requests: list[dict[str, Any]], max_workers: int = 5
-    ) -> dict[str, Path | None]:
+    def download_batch(self, _download_requests: list[dict[str, Any]], max_workers: int = 5) -> dict[str, Path | None]:
         """Download multiple files in parallel.
 
         Args:
@@ -462,7 +458,7 @@ class GOESImageryDownloader:
             return DownloadResult(output_path)
 
         except Exception as e:
-            LOGGER.error("Failed to download precolorized image: %s", e)
+            LOGGER.exception("Failed to download precolorized image: %s", e)
             return None
 
     def find_raw_data(
@@ -566,8 +562,7 @@ class GOESImageProcessor:
         """
         LOGGER.warning("Stub: Process functionality not implemented")
         # Return a placeholder image
-        img = Image.new("RGB", (512, 512), color="gray")
-        return img
+        return Image.new("RGB", (512, 512), color="gray")
 
     def apply_calibration(self, data: NDArray[np.float64], channel: ChannelType) -> NDArray[np.float64]:
         """Apply calibration to raw data.

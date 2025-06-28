@@ -4,10 +4,9 @@ This module provides functionality for processing sample satellite data
 for preview purposes.
 """
 
-import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Tuple, Union
+import tempfile
 
 import numpy as np
 from numpy.typing import NDArray
@@ -48,9 +47,7 @@ class SampleProcessor:
         # Create visualization manager if not provided
         self.viz_manager = visualization_manager or VisualizationManager(base_dir=self.temp_dir, satellite=satellite)
 
-    def create_sample_comparison(
-        self, channel: Union[ChannelType, int], product_type: ProductType
-    ) -> Image.Image | None:
+    def create_sample_comparison(self, channel: ChannelType | int, product_type: ProductType) -> Image.Image | None:
         """Create a sample comparison image.
 
         Args:
@@ -62,10 +59,9 @@ class SampleProcessor:
         """
         LOGGER.warning("Stub: Sample comparison not implemented")
         # Return a placeholder image
-        img = Image.new("RGB", self.sample_size, color="gray")
-        return img
+        return Image.new("RGB", self.sample_size, color="gray")
 
-    def get_estimated_processing_time(self, channel: Union[ChannelType, int], product_type: ProductType) -> float:
+    def get_estimated_processing_time(self, channel: ChannelType | int, product_type: ProductType) -> float:
         """Get estimated processing time for a channel/product combination.
 
         Args:
@@ -80,7 +76,7 @@ class SampleProcessor:
 
     def download_sample_data(
         self,
-        channel: Union[ChannelType, int],
+        channel: ChannelType | int,
         product_type: ProductType,
         date: datetime | None = None,
     ) -> Path | None:
@@ -98,7 +94,7 @@ class SampleProcessor:
         return None
 
     def process_sample_netcdf(
-        self, file_path: Path, channel: Union[ChannelType, int]
+        self, file_path: Path, channel: ChannelType | int
     ) -> tuple[NDArray[np.float64], Image.Image, Image.Image] | None:
         """Process a sample NetCDF file.
 
@@ -114,7 +110,7 @@ class SampleProcessor:
 
     def download_web_sample(
         self,
-        channel: Union[ChannelType, int],
+        channel: ChannelType | int,
         product_type: ProductType,
     ) -> Image.Image | None:
         """Download a sample image from the web.
@@ -128,8 +124,7 @@ class SampleProcessor:
         """
         LOGGER.warning("Stub: Web sample download not implemented")
         # Return a placeholder image for testing
-        img = Image.new("RGB", self.sample_size, color="lightgray")
-        return img
+        return Image.new("RGB", self.sample_size, color="lightgray")
 
     def cleanup(self) -> None:
         """Clean up temporary files and resources."""

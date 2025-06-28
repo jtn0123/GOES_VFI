@@ -1,8 +1,8 @@
 """Factory for creating VfiWorker instances with proper parameter mapping."""
 
-import tempfile
 from pathlib import Path
-from typing import Any, Dict
+import tempfile
+from typing import Any
 
 from goesvfi.pipeline.run_vfi import VfiWorker
 from goesvfi.utils import log
@@ -35,7 +35,8 @@ class WorkerFactory:
         required_args = ["in_dir", "out_file", "fps", "multiplier", "encoder"]
         for arg in required_args:
             if arg not in args:
-                raise ValueError(f"Missing required argument: {arg}")
+                msg = f"Missing required argument: {arg}"
+                raise ValueError(msg)
 
         # Extract FFmpeg settings
         ffmpeg_settings = args.get("ffmpeg_args", {}) or {}
@@ -105,7 +106,7 @@ class WorkerFactory:
             # Model settings
             skip_model=False,
             # Crop settings
-            crop_rect=args.get("crop_rect", None),
+            crop_rect=args.get("crop_rect"),
             # Debug mode
             debug_mode=debug_mode,
             # RIFE settings

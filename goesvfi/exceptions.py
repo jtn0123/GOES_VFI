@@ -1,4 +1,4 @@
-"""exceptions.py
+"""exceptions.py.
 
 Defines custom exception classes for the GOES_VFI application, providing
 clear error types for pipeline processing, configuration, GUI operations,
@@ -6,8 +6,6 @@ and external tool execution.
 
 All exceptions inherit from GoesVfiError, allowing for unified error handling.
 """
-
-from typing import Optional
 
 
 class GoesVfiError(Exception):  # pylint: disable=too-few-public-methods

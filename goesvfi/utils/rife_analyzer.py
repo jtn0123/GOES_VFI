@@ -1,4 +1,4 @@
-"""RIFE CLI Analyzer - Utility to detect RIFE CLI capabilities
+"""RIFE CLI Analyzer - Utility to detect RIFE CLI capabilities.
 
 This module provides functionality to analyze the capabilities of the RIFE CLI executable,
 helping to bridge the gap between what the application expects and what the executable
@@ -9,15 +9,14 @@ import logging
 import pathlib
 import re
 import subprocess
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
 
 class RifeCapabilityDetector:
-    """
-    Detects and reports on the capabilities of a RIFE CLI executable.
+    """Detects and reports on the capabilities of a RIFE CLI executable.
 
     This class runs the RIFE executable with various flags to determine
     which options are supported, allowing the application to adapt its
@@ -25,14 +24,14 @@ class RifeCapabilityDetector:
     """
 
     def __init__(self, executable_path: pathlib.Path) -> None:
-        """
-        Initialize the detector with the path to the RIFE executable.
+        """Initialize the detector with the path to the RIFE executable.
 
         Args:
             executable_path: Path to the RIFE CLI executable
         """
         if not executable_path.exists():
-            raise FileNotFoundError(f"RIFE executable not found at: {executable_path}")
+            msg = f"RIFE executable not found at: {executable_path}"
+            raise FileNotFoundError(msg)
 
         self.exe_path = executable_path
         self._capabilities: dict[str, bool] = {}
@@ -44,8 +43,7 @@ class RifeCapabilityDetector:
         self._detect_capabilities()
 
     def _run_help_command(self) -> tuple[str, bool]:
-        """
-        Run the executable with --help flag and capture output.
+        """Run the executable with --help flag and capture output.
 
         Returns:
             Tuple of (help_text, success_flag)
@@ -92,9 +90,9 @@ class RifeCapabilityDetector:
             return "Timeout while getting help text", False
         except Exception as e:
             logger.debug("Error running help command (expected in tests): %s", e)
-            return f"Error: {str(e)}", False
+            return f"Error: {e!s}", False
 
-    def _decode_help_text(self, help_text: Union[str, bytes]) -> str:
+    def _decode_help_text(self, help_text: str | bytes) -> str:
         """Decode help text from bytes to string if needed."""
         if isinstance(help_text, bytes):
             try:
@@ -175,9 +173,7 @@ class RifeCapabilityDetector:
             )
 
     def _detect_capabilities(self) -> None:
-        """
-        Detect the capabilities of the RIFE executable by analyzing help output.
-        """
+        """Detect the capabilities of the RIFE executable by analyzing help output."""
         help_text, success = self._run_help_command()
         self._help_text = help_text  # pylint: disable=attribute-defined-outside-init
 
@@ -255,16 +251,14 @@ class RifeCapabilityDetector:
 
 
 class RifeCommandBuilder:
-    """
-    Builds RIFE CLI commands based on detected capabilities.
+    """Builds RIFE CLI commands based on detected capabilities.
 
     This class uses the RifeCapabilityDetector to determine which options
     are supported by the RIFE executable, and builds commands accordingly.
     """
 
     def __init__(self, executable_path: pathlib.Path) -> None:
-        """
-        Initialize the command builder with the path to the RIFE executable.
+        """Initialize the command builder with the path to the RIFE executable.
 
         Args:
             executable_path: Path to the RIFE CLI executable
@@ -279,8 +273,7 @@ class RifeCommandBuilder:
         output_path: pathlib.Path,
         options: dict[str, Any],
     ) -> list[str]:
-        """
-        Build a RIFE command based on detected capabilities.
+        """Build a RIFE command based on detected capabilities.
 
         Args:
             input_frame1: Path to the first input frame
@@ -340,8 +333,7 @@ class RifeCommandBuilder:
         return cmd
 
     def get_capabilities_summary(self) -> dict[str, bool]:
-        """
-        Get a summary of supported capabilities.
+        """Get a summary of supported capabilities.
 
         Returns:
             Dictionary mapping capability names to boolean support status
@@ -360,8 +352,7 @@ class RifeCommandBuilder:
 
 
 def analyze_rife_executable(executable_path: pathlib.Path) -> dict[str, Any]:
-    """
-    Analyze a RIFE executable and return its capabilities.
+    """Analyze a RIFE executable and return its capabilities.
 
     Args:
         executable_path: Path to the RIFE CLI executable
@@ -411,21 +402,16 @@ def analyze_rife_executable(executable_path: pathlib.Path) -> dict[str, Any]:
 
 if __name__ == "__main__":
     # When run as a script, analyze the RIFE executable specified as an argument.
-    import json
     import sys
 
     if len(sys.argv) < 2:
-        print("Usage: python rife_analyzer.py <path_to_rife_executable>")
         sys.exit(1)
 
     exe_path = pathlib.Path(sys.argv[1])
     if not exe_path.exists():
-        print(f"Error: File not found: {exe_path}")
         sys.exit(1)
 
     try:
         result = analyze_rife_executable(exe_path)
-        print(json.dumps(result, indent=2))
-    except Exception as e:
-        print(f"Error analyzing RIFE executable: {e}")
+    except Exception:
         sys.exit(1)

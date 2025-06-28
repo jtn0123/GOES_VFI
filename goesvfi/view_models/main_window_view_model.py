@@ -29,8 +29,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class MainWindowViewModel(QObject):
-    """
-    ViewModel for the main application window (MainWindow).
+    """ViewModel for the main application window (MainWindow).
 
     This class coordinates the child ViewModels for each main tab (File Sorter,)
     Date Sorter, Processing) and manages global application state such as the
@@ -50,8 +49,7 @@ class MainWindowViewModel(QObject):
         processing_manager: ProcessingManager,
         parent: QObject | None = None,
     ) -> None:
-        """
-        Initializes the MainWindowViewModel and its child ViewModels.
+        """Initializes the MainWindowViewModel and its child ViewModels.
 
         Args:
             file_sorter_model: Model for the File Sorter tab.
@@ -100,8 +98,7 @@ class MainWindowViewModel(QObject):
 
     @property
     def status(self) -> str:
-        """
-        The current global status message for the application.
+        """The current global status message for the application.
 
         Returns:
             str: The current status message.
@@ -110,8 +107,7 @@ class MainWindowViewModel(QObject):
 
     @status.setter
     def status(self, value: str) -> None:
-        """
-        Sets the global status message and emits a signal.
+        """Sets the global status message and emits a signal.
 
         Args:
             value (str): The new status message.
@@ -123,8 +119,7 @@ class MainWindowViewModel(QObject):
 
     @property
     def active_tab_index(self) -> int:
-        """
-        The index of the currently active tab in the main window.
+        """The index of the currently active tab in the main window.
 
         Returns:
             int: The index of the active tab.
@@ -133,8 +128,7 @@ class MainWindowViewModel(QObject):
 
     @active_tab_index.setter
     def active_tab_index(self, index: int) -> None:
-        """
-        Sets the active tab index and emits a signal.
+        """Sets the active tab index and emits a signal.
 
         Args:
             index (int): The new active tab index.
@@ -147,8 +141,7 @@ class MainWindowViewModel(QObject):
     # --- Global Actions ---
 
     def quit_application(self) -> None:
-        """
-        Handles the application quit action.
+        """Handles the application quit action.
 
         This method can be called to initiate application shutdown logic,
         such as prompting the user to save work or performing cleanup.
@@ -163,8 +156,7 @@ class MainWindowViewModel(QObject):
         # The MainWindow's closeEvent will handle the actual closing
 
     def show_about_dialog(self) -> None:
-        """
-        Handles the action to show the About dialog.
+        """Handles the action to show the About dialog.
 
         This method can be called to trigger the display of an About dialog.
         The actual dialog display is typically handled by the View.
@@ -180,8 +172,7 @@ class MainWindowViewModel(QObject):
     # --- Coordination Methods (Example) ---
 
     def update_global_status_from_child(self, message: str) -> None:
-        """
-        Allows child ViewModels to update the global status message.
+        """Allows child ViewModels to update the global status message.
 
         Args:
             message (str): The new status message to set globally.

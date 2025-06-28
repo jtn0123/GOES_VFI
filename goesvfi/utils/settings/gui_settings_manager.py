@@ -1,12 +1,11 @@
-"""
-GUI Settings Manager - Refactored replacement for complex saveSettings/loadSettings.
+"""GUI Settings Manager - Refactored replacement for complex saveSettings/loadSettings.
 
 This module demonstrates the dramatic complexity reduction achieved by using
 the settings framework to replace the F-grade saveSettings function.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from PyQt6.QtCore import QSettings
 
@@ -19,8 +18,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class GUISettingsManager:
-    """
-    Refactored GUI settings management.
+    """Refactored GUI settings management.
 
     Original saveSettings function: F-grade complexity (79), 200+ lines
     This replacement: A-grade complexity (~3), ~25 lines of orchestration
@@ -37,8 +35,7 @@ class GUISettingsManager:
         self.manager.add_section(FFmpegSettings(classifier))
 
     def save_all_settings(self, main_window: Any) -> bool:
-        """
-        Save all GUI settings with clean error handling.
+        """Save all GUI settings with clean error handling.
 
         Original function: 200+ lines with repetitive widget checking
         Refactored: Clean orchestration with automatic error handling
@@ -65,12 +62,11 @@ class GUISettingsManager:
 
         except Exception as e:
             error = self.classifier.create_structured_error(e, "save_all_gui_settings", "gui_settings_manager")
-            LOGGER.error("Failed to save GUI settings: %s", error.user_message)
+            LOGGER.exception("Failed to save GUI settings: %s", error.user_message)
             return False
 
     def load_all_settings(self, main_window: Any, defaults: dict[str, Any] | None = None) -> bool:
-        """
-        Load all GUI settings with clean error handling.
+        """Load all GUI settings with clean error handling.
 
         Args:
             main_window: Main window object to apply settings to
@@ -98,7 +94,7 @@ class GUISettingsManager:
 
         except Exception as e:
             error = self.classifier.create_structured_error(e, "load_all_gui_settings", "gui_settings_manager")
-            LOGGER.error("Failed to load GUI settings: %s", error.user_message)
+            LOGGER.exception("Failed to load GUI settings: %s", error.user_message)
             return False
 
     def _organize_defaults(self, defaults: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -144,8 +140,7 @@ def create_gui_settings_manager(qsettings: QSettings) -> GUISettingsManager:
 
 # Drop-in replacement functions for existing code
 def save_settings_refactored(main_window: Any, qsettings: QSettings) -> bool:
-    """
-    Drop-in replacement for the original saveSettings method.
+    """Drop-in replacement for the original saveSettings method.
 
     Original: F-grade complexity (79), 200+ lines
     Refactored: A-grade complexity (3), 5 lines
@@ -155,8 +150,7 @@ def save_settings_refactored(main_window: Any, qsettings: QSettings) -> bool:
 
 
 def load_settings_refactored(main_window: Any, qsettings: QSettings, defaults: dict[str, Any] | None = None) -> bool:
-    """
-    Drop-in replacement for complex loadSettings method.
+    """Drop-in replacement for complex loadSettings method.
 
     Provides the same functionality with dramatically reduced complexity.
     """

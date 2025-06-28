@@ -4,9 +4,10 @@ This module provides functionality to apply Sanchez colorization to GOES infrare
 satellite imagery using the Sanchez binary.
 """
 
-import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Optional
+import time
+from typing import Any
 
 import numpy as np
 from PIL import Image
@@ -103,7 +104,8 @@ class SanchezProcessor(ImageProcessor):
                 colourise(input_temp, output_temp, res_km=res_km)
 
                 if not output_temp.exists():
-                    raise RuntimeError("Sanchez processing failed - output file not created")
+                    msg = "Sanchez processing failed - output file not created"
+                    raise RuntimeError(msg)
 
                 # Load processed image
                 if self._progress_callback:
@@ -154,12 +156,15 @@ class SanchezProcessor(ImageProcessor):
 
     def load(self, source_path: str) -> ImageData:
         """Not implemented."""
-        raise NotImplementedError("SanchezProcessor does not implement load")
+        msg = "SanchezProcessor does not implement load"
+        raise NotImplementedError(msg)
 
     def crop(self, image_data: ImageData, crop_area: tuple) -> ImageData:
         """Not implemented."""
-        raise NotImplementedError("SanchezProcessor does not implement crop")
+        msg = "SanchezProcessor does not implement crop"
+        raise NotImplementedError(msg)
 
     def save(self, image_data: ImageData, destination_path: str) -> None:
         """Not implemented."""
-        raise NotImplementedError("SanchezProcessor does not implement save")
+        msg = "SanchezProcessor does not implement save"
+        raise NotImplementedError(msg)

@@ -1,6 +1,6 @@
 """Dialog classes for the enhanced integrity check GUI tab."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -97,7 +97,7 @@ class AWSConfigDialog(QDialog):
     def get_aws_profile(self) -> str | None:
         """Get the AWS profile name."""
         profile = self.profile_edit.text().strip()
-        return profile if profile else None
+        return profile or None
 
     def get_aws_region(self) -> str:
         """Get the AWS region."""

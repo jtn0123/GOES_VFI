@@ -6,9 +6,9 @@ from .utils import numpy_to_qimage
 from .widgets import SuperButton
 
 __all__ = [
-    "SuperButton",
     "InterpolationMethod",
-    "RawEncoderMethod",
     "RIFEModelDetails",
+    "RawEncoderMethod",
+    "SuperButton",
     "numpy_to_qimage",
 ]

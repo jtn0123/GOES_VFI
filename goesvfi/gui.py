@@ -239,18 +239,18 @@ class MainWindow(QWidget):
 
     def _get_sorted_image_files(self) -> list[Path]:
         """Get sorted list of image files from input directory."""
-        return cast(list[Path], self.crop_handler.get_sorted_image_files(self))
+        return cast("list[Path]", self.crop_handler.get_sorted_image_files(self))
 
     def _prepare_image_for_crop_dialog(self, image_path: Path) -> QPixmap | None:
         """Prepare an image for the crop dialog, applying Sanchez if enabled."""
         return cast(
-            QPixmap | None,
+            "QPixmap | None",
             self.crop_handler.prepare_image_for_crop_dialog(self, image_path),
         )
 
     def _get_processed_preview_pixmap(self) -> QPixmap | None:
         """Get the processed preview pixmap from the first frame label."""
-        return cast(QPixmap | None, self.crop_handler.get_processed_preview_pixmap(self))
+        return cast("QPixmap | None", self.crop_handler.get_processed_preview_pixmap(self))
 
     def _show_crop_dialog(self, pixmap: QPixmap) -> None:
         """Show the crop selection dialog."""
@@ -439,46 +439,53 @@ class MainWindow(QWidget):
             # Get image files once for all frames
             image_files = self._get_image_files_from_input_dir()
             frame_data = self.main_view_model.preview_manager.get_current_frame_data()
-            
+
             # Update each frame label
             self._update_frame_label("first_frame_label", first_pixmap, image_files, frame_data[0], 0)
-            self._update_frame_label("middle_frame_label", middle_pixmap, image_files, frame_data[1], len(image_files) // 2 if image_files else 0)
+            self._update_frame_label(
+                "middle_frame_label",
+                middle_pixmap,
+                image_files,
+                frame_data[1],
+                len(image_files) // 2 if image_files else 0,
+            )
             self._update_frame_label("last_frame_label", last_pixmap, image_files, frame_data[2], -1)
-            
+
             LOGGER.debug("Preview images updated successfully")
 
         except Exception:
             LOGGER.exception("Error updating preview labels")
-            
+
     def _get_image_files_from_input_dir(self) -> list[Path]:
         """Get sorted list of image files from input directory."""
         if not (self.in_dir and self.in_dir.exists()):
             return []
-            
+
         return sorted([
-            f for f in self.in_dir.iterdir()
-            if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+            f for f in self.in_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
         ])
-    
-    def _update_frame_label(self, label_name: str, pixmap: QPixmap, image_files: list[Path], frame_data, file_index: int) -> None:
+
+    def _update_frame_label(
+        self, label_name: str, pixmap: QPixmap, image_files: list[Path], frame_data, file_index: int
+    ) -> None:
         """Update a single frame label with pixmap and metadata."""
         if not (hasattr(self.main_tab, label_name) and not pixmap.isNull()):
             return
-            
+
         label = getattr(self.main_tab, label_name)
-        
+
         # Scale and set pixmap
         target_size = self._get_target_size_for_label(label)
         scaled_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(pixmap, target_size)
         label.setPixmap(scaled_pixmap)
-        
+
         # Set file path
         if image_files:
             if file_index == -1:  # Last file
                 label.file_path = str(image_files[-1])
             elif file_index < len(image_files):
                 label.file_path = str(image_files[file_index])
-                
+
         # Set processed image data
         if frame_data and frame_data.image_data is not None:
             full_res_pixmap = self.main_view_model.preview_manager._numpy_to_qpixmap(frame_data.image_data)
@@ -488,11 +495,11 @@ class MainWindow(QWidget):
                     LOGGER.debug("Set processed_image on first_frame_label: %s", label.processed_image)
         elif label_name == "first_frame_label":
             LOGGER.warning("No first_frame_data available from preview manager")
-    
-    def _get_target_size_for_label(self, label) -> 'QSize':
+
+    def _get_target_size_for_label(self, label) -> QSize:
         """Get appropriate target size for scaling a label's pixmap."""
         from PyQt6.QtCore import QSize
-        
+
         target_size = QSize(200, 200)  # Minimum preview size
         current_size = label.size()
         if current_size.width() > 200 and current_size.height() > 200:

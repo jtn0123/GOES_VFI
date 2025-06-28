@@ -5,7 +5,6 @@ over time with improved organization and focus.
 """
 
 from datetime import datetime
-from typing import List, Optional, Tuple
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -26,8 +25,7 @@ from goesvfi.integrity_check.view_model import MissingTimestamp
 
 
 class OptimizedTimelineTab(QWidget):
-    """
-    Optimized timeline visualization tab that provides a more focused
+    """Optimized timeline visualization tab that provides a more focused
     and user-friendly interface for exploring satellite data availability.
     """
 
@@ -323,8 +321,7 @@ class OptimizedTimelineTab(QWidget):
         end_time: datetime,
         interval_minutes: int | None = None,
     ) -> None:
-        """
-        Set the data for visualization.
+        """Set the data for visualization.
 
         Args:
             missing_items: List of missing timestamps
@@ -350,8 +347,7 @@ class OptimizedTimelineTab(QWidget):
         self._update_info_panel()
 
     def _set_view_mode(self, mode: str) -> None:
-        """
-        Set the view mode for the timeline visualization.
+        """Set the view mode for the timeline visualization.
 
         Args:
             mode: View mode ('both', 'missing', 'available')
@@ -363,8 +359,7 @@ class OptimizedTimelineTab(QWidget):
         # No direct mode control for calendar view (always shows all)
 
     def _toggle_visualization(self, index: int) -> None:
-        """
-        Toggle between timeline and calendar visualizations.
+        """Toggle between timeline and calendar visualizations.
 
         Args:
             index: Index of the visualization to show (0=timeline, 1=calendar)
@@ -401,8 +396,7 @@ class OptimizedTimelineTab(QWidget):
         # Only applies to timeline view
         if self.timeline_viz.zoom_level > 0.5:
             self.timeline_viz.zoom_level /= 1.5
-            if self.timeline_viz.zoom_level < 1.0:
-                self.timeline_viz.zoom_level = 1.0
+            self.timeline_viz.zoom_level = max(self.timeline_viz.zoom_level, 1.0)
             self.timeline_viz.update()
 
             # Update zoom level label
@@ -420,8 +414,7 @@ class OptimizedTimelineTab(QWidget):
         self.zoom_level_label.setText(self.tr("100%"))
 
     def _handle_timestamp_selected(self, timestamp: datetime) -> None:
-        """
-        Handle selection of a single timestamp.
+        """Handle selection of a single timestamp.
 
         Args:
             timestamp: Selected timestamp
@@ -443,8 +436,7 @@ class OptimizedTimelineTab(QWidget):
         self.timestampSelected.emit(timestamp)
 
     def _handle_range_selected(self, start: datetime, end: datetime) -> None:
-        """
-        Handle selection of a date range.
+        """Handle selection of a date range.
 
         Args:
             start: Start date
@@ -526,8 +518,7 @@ class OptimizedTimelineTab(QWidget):
             self.action_download_btn.setEnabled(False)
 
     def _get_item_status(self, item: MissingTimestamp) -> str:
-        """
-        Get human-readable status for an item with HTML styling.
+        """Get human-readable status for an item with HTML styling.
 
         Args:
             item: Missing timestamp item
@@ -537,10 +528,10 @@ class OptimizedTimelineTab(QWidget):
         """
         if getattr(item, "is_downloaded", False):
             return '<span class="StatusLabel" status="success">Downloaded</span>'
-        elif getattr(item, "is_downloading", False):
+        if getattr(item, "is_downloading", False):
             progress = getattr(item, "progress", 0)
             return f'<span class="StatusLabel" status="processing">Downloading ({progress}%)</span>'
-        elif getattr(item, "download_error", ""):
+        if getattr(item, "download_error", ""):
             return f'<span class="StatusLabel" status="error">Error</span> {item.download_error}'
         return '<span class="StatusLabel" status="warning">Missing</span>'
 
@@ -548,17 +539,16 @@ class OptimizedTimelineTab(QWidget):
         """Handle action to view item details."""
         # Simply a placeholder for demo purposes
         if self.selected_item and getattr(self.selected_item, "is_downloaded", False):
-            print(f"Viewing details for {self.selected_item.expected_filename}")
+            pass
 
     def _action_download(self) -> None:
         """Handle action to download item."""
         # Simply a placeholder for demo purposes
         if self.selected_item and not getattr(self.selected_item, "is_downloaded", False):
-            print(f"Downloading {self.selected_item.expected_filename}")
+            pass
 
     def set_directory(self, directory: str) -> None:
-        """
-        Set the current working directory for the timeline tab.
+        """Set the current working directory for the timeline tab.
 
         Args:
             directory: Path to the directory to analyze
@@ -568,8 +558,7 @@ class OptimizedTimelineTab(QWidget):
         self.directorySelected.emit(directory)
 
     def set_date_range(self, start_time: datetime, end_time: datetime) -> None:
-        """
-        Set the date range for visualization without changing the data.
+        """Set the date range for visualization without changing the data.
 
         Args:
             start_time: Start of the time range

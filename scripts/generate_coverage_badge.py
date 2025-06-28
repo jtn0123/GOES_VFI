@@ -6,25 +6,23 @@ This script generates a coverage badge based on the current coverage percentage.
 """
 
 import json
-import sys
 from pathlib import Path
-from typing import Tuple
+import sys
 
 
 def get_badge_color(percentage: float) -> str:
     """Get badge color based on coverage percentage."""
     if percentage >= 90:
         return "brightgreen"
-    elif percentage >= 80:
+    if percentage >= 80:
         return "green"
-    elif percentage >= 70:
+    if percentage >= 70:
         return "yellowgreen"
-    elif percentage >= 60:
+    if percentage >= 60:
         return "yellow"
-    elif percentage >= 50:
+    if percentage >= 50:
         return "orange"
-    else:
-        return "red"
+    return "red"
 
 
 def get_coverage_percentage() -> tuple[float, bool]:
@@ -37,7 +35,7 @@ def get_coverage_percentage() -> tuple[float, bool]:
         return 0.0, False
 
     try:
-        with open(coverage_file, "r") as f:
+        with open(coverage_file, encoding="utf-8") as f:
             data = json.load(f)
 
         percentage = data.get("totals", {}).get("percent_covered", 0.0)
@@ -63,7 +61,7 @@ def generate_badge(percentage: float, output_path: Path) -> None:
         "logoColor": "white",
     }
 
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(badge_config, f, indent=2)
 
     print(f"✅ Badge generated: {output_path}")
@@ -76,8 +74,7 @@ def generate_shields_io_url(percentage: float) -> str:
     color = get_badge_color(percentage)
     message = f"{percentage:.1f}%25"  # URL encode %
 
-    url = f"https://img.shields.io/badge/coverage-{message}-{color}?logo=pytest&logoColor=white&style=flat-square"
-    return url
+    return f"https://img.shields.io/badge/coverage-{message}-{color}?logo=pytest&logoColor=white&style=flat-square"
 
 
 def update_readme_badge(percentage: float) -> bool:
@@ -89,7 +86,7 @@ def update_readme_badge(percentage: float) -> bool:
         return False
 
     try:
-        with open(readme_path, "r") as f:
+        with open(readme_path, encoding="utf-8") as f:
             content = f.read()
 
         # Find and replace coverage badge line
@@ -106,20 +103,19 @@ def update_readme_badge(percentage: float) -> bool:
         new_content = re.sub(pattern, replacement, content)
 
         if new_content != content:
-            with open(readme_path, "w") as f:
+            with open(readme_path, "w", encoding="utf-8") as f:
                 f.write(new_content)
             print("✅ Updated README.md coverage badge")
             return True
-        else:
-            print("ℹ️  No changes needed in README.md")
-            return True
+        print("ℹ️  No changes needed in README.md")
+        return True
 
     except Exception as e:
         print(f"❌ Error updating README.md: {e}")
         return False
 
 
-def main():
+def main() -> int:
     """Main function."""
     print("🔧 GOES_VFI Coverage Badge Generator")
     print("=" * 50)

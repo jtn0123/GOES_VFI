@@ -52,12 +52,12 @@ def write_raw_mp4(frames: Iterable[FloatNDArray], raw_path: pathlib.Path, fps: i
             subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120)
             LOGGER.info("Lossless encoding successful.")
         except subprocess.CalledProcessError as e:
-            LOGGER.error("FFmpeg (raw) error:")
-            LOGGER.error("STDOUT: %s", e.stdout)
-            LOGGER.error("STDERR: %s", e.stderr)
+            LOGGER.exception("FFmpeg (raw) error:")
+            LOGGER.exception("STDOUT: %s", e.stdout)
+            LOGGER.exception("STDERR: %s", e.stderr)
             raise  # Re-raise the exception
         except FileNotFoundError:
-            LOGGER.error("Error: ffmpeg command not found. Is ffmpeg installed and in your PATH?")
+            LOGGER.exception("Error: ffmpeg command not found. Is ffmpeg installed and in your PATH?")
             raise
 
         LOGGER.info("Temporary PNGs cleaned up. Raw MP4 created at: %s", raw_path)

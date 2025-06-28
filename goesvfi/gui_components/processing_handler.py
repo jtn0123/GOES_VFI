@@ -1,6 +1,6 @@
 """Processing handler for VFI worker management."""
 
-from typing import Any, Dict
+from typing import Any
 
 from PyQt6.QtWidgets import QMessageBox
 
@@ -83,7 +83,7 @@ class ProcessingHandler:
             QMessageBox.critical(
                 main_window,
                 "Error",
-                f"Failed to initialize processing pipeline.\n\nError: {str(e)}",
+                f"Failed to initialize processing pipeline.\n\nError: {e!s}",
             )
             main_window.main_tab._reset_start_button()
             return False

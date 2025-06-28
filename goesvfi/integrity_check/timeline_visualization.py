@@ -5,7 +5,7 @@ allowing users to easily identify gaps and patterns in the data coverage.
 """
 
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import (

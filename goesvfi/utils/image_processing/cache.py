@@ -1,12 +1,12 @@
-"""
-Cache management for image processing operations.
+"""Cache management for image processing operations.
 
 Provides caching utilities that help reduce redundant processing operations
 in image processing pipelines.
 """
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 

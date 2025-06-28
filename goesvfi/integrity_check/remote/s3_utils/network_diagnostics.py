@@ -4,12 +4,12 @@ This module provides utilities to diagnose network connectivity issues
 when accessing S3 buckets.
 """
 
+from datetime import datetime
 import os
 import platform
 import socket
 import sys
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from goesvfi.utils.log import get_logger
 
@@ -62,7 +62,7 @@ class NetworkDiagnostics:
         try:
             # Try to get DNS server info on Unix systems
             if os.path.exists("/etc/resolv.conf"):
-                with open("/etc/resolv.conf", "r") as f:
+                with open("/etc/resolv.conf", encoding="utf-8") as f:
                     for line in f:
                         if line.startswith("nameserver"):
                             parts = line.split()
@@ -85,22 +85,18 @@ class NetworkDiagnostics:
         for host in NetworkDiagnostics.NOAA_S3_HOSTS:
             try:
                 ip_addr = socket.gethostbyname(host)
-                results.append(
-                    {
-                        "host": host,
-                        "ip": ip_addr,
-                        "success": True,
-                    }
-                )
+                results.append({
+                    "host": host,
+                    "ip": ip_addr,
+                    "success": True,
+                })
                 LOGGER.debug("✓ Successfully resolved %s to %s", host, ip_addr)
             except Exception as e:
-                results.append(
-                    {
-                        "host": host,
-                        "error": str(e),
-                        "success": False,
-                    }
-                )
+                results.append({
+                    "host": host,
+                    "error": str(e),
+                    "success": False,
+                })
                 LOGGER.debug("✗ Failed to resolve %s: %s", host, e)
 
         return results
@@ -115,7 +111,7 @@ class NetworkDiagnostics:
                 ip_addr = socket.gethostbyname(host)
                 LOGGER.info("✓ Successfully resolved %s to %s", host, ip_addr)
             except Exception as e:
-                LOGGER.error("✗ Failed to resolve %s: %s", host, e)
+                LOGGER.exception("✗ Failed to resolve %s: %s", host, e)
 
     @staticmethod
     def log_system_info() -> dict[str, Any]:
@@ -172,7 +168,7 @@ class NetworkDiagnostics:
         details = [
             f"Network operation failed: {operation}",
             f"Error type: {type(error).__name__}",
-            f"Error message: {str(error)}",
+            f"Error message: {error!s}",
         ]
 
         # Add network diagnostics
@@ -188,10 +184,12 @@ class NetworkDiagnostics:
             for key, value in additional_info.items():
                 details.append(f"{key}: {value}")
 
-        details.append("\nTroubleshooting steps:")
-        details.append("1. Check your internet connection")
-        details.append("2. Verify DNS settings")
-        details.append("3. Check for proxy/firewall restrictions")
-        details.append("4. Try again in a few moments")
+        details.extend((
+            "\nTroubleshooting steps:",
+            "1. Check your internet connection",
+            "2. Verify DNS settings",
+            "3. Check for proxy/firewall restrictions",
+            "4. Try again in a few moments",
+        ))
 
         return "\n".join(details)

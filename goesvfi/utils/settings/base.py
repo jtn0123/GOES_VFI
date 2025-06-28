@@ -1,13 +1,12 @@
-"""
-Base settings management classes.
+"""Base settings management classes.
 
 Provides the foundation for safe, organized settings persistence that reduces
 complexity in settings-heavy functions.
 """
 
-import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+import logging
+from typing import Any
 
 from PyQt6.QtCore import QSettings
 
@@ -17,8 +16,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class SettingsSection(ABC):
-    """
-    Base class for settings sections.
+    """Base class for settings sections.
 
     Each section handles a specific group of related settings, reducing
     complexity by organizing settings into focused, manageable units.
@@ -32,8 +30,7 @@ class SettingsSection(ABC):
 
     @abstractmethod
     def extract_values(self, source_object: Any) -> dict[str, Any]:
-        """
-        Extract settings values from source object (e.g., GUI widgets).
+        """Extract settings values from source object (e.g., GUI widgets).
 
         Args:
             source_object: Object containing the settings data
@@ -44,8 +41,7 @@ class SettingsSection(ABC):
 
     @abstractmethod
     def apply_values(self, target_object: Any, values: dict[str, Any]) -> None:
-        """
-        Apply settings values to target object (e.g., GUI widgets).
+        """Apply settings values to target object (e.g., GUI widgets).
 
         Args:
             target_object: Object to apply settings to
@@ -53,8 +49,7 @@ class SettingsSection(ABC):
         """
 
     def save_to_qsettings(self, qsettings: QSettings) -> bool:
-        """
-        Save this section's values to QSettings.
+        """Save this section's values to QSettings.
 
         Returns:
             True if successful, False if there were errors
@@ -70,8 +65,7 @@ class SettingsSection(ABC):
             return False
 
     def load_from_qsettings(self, qsettings: QSettings, defaults: dict[str, Any] | None = None) -> dict[str, Any]:
-        """
-        Load this section's values from QSettings.
+        """Load this section's values from QSettings.
 
         Args:
             qsettings: QSettings instance to load from
@@ -112,8 +106,7 @@ class SettingsSection(ABC):
 
 
 class SettingsManager:
-    """
-    Manages multiple settings sections with centralized error handling.
+    """Manages multiple settings sections with centralized error handling.
 
     Reduces complexity by orchestrating settings operations across
     multiple focused sections instead of one monolithic function.
@@ -131,8 +124,7 @@ class SettingsManager:
         return self
 
     def save_all_settings(self, source_object: Any) -> bool:
-        """
-        Save all settings sections.
+        """Save all settings sections.
 
         Args:
             source_object: Object to extract settings from (e.g., main window)
@@ -156,14 +148,13 @@ class SettingsManager:
             except Exception as e:
                 error = self.classifier.create_structured_error(e, f"save_{section_name}", "settings_manager")
                 self._global_errors.append(error)
-                LOGGER.error("Failed to save section %s: %s", section_name, error.user_message)
+                LOGGER.exception("Failed to save section %s: %s", section_name, error.user_message)
                 all_successful = False
 
         return all_successful
 
     def load_all_settings(self, target_object: Any, defaults: dict[str, dict[str, Any]] | None = None) -> bool:
-        """
-        Load all settings sections.
+        """Load all settings sections.
 
         Args:
             target_object: Object to apply settings to (e.g., main window)
@@ -187,7 +178,7 @@ class SettingsManager:
             except Exception as e:
                 error = self.classifier.create_structured_error(e, f"load_{section_name}", "settings_manager")
                 self._global_errors.append(error)
-                LOGGER.error("Failed to load section %s: %s", section_name, error.user_message)
+                LOGGER.exception("Failed to load section %s: %s", section_name, error.user_message)
                 all_successful = False
 
         return all_successful

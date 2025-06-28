@@ -149,7 +149,7 @@ def numpy_to_qimage(array: NDArray[np.uint8]) -> QImage:
             LOGGER.error("Failed to create QImage from NumPy array (check format/data).")
             return QImage()
         return qimage
-    except Exception as e:
+    except Exception:
         LOGGER.exception("Error converting NumPy array to QImage")
         return QImage()
 
@@ -479,7 +479,7 @@ class MainTab(QWidget):
                 # Note: PyQt6 will silently ignore duplicate connections
                 self.processing_started.connect(main_window._handle_processing)
                 LOGGER.debug("Processing signal connection verified/created")
-            except Exception as e:
+            except Exception:
                 LOGGER.exception("Failed to verify/connect processing_started signal")
         else:
             LOGGER.error("Cannot connect: main_window does not have required handler methods")
@@ -590,7 +590,7 @@ class MainTab(QWidget):
             return
 
         try:
-            image_files = self._get_image_files_for_crop(cast(Path, current_in_dir))
+            image_files = self._get_image_files_for_crop(cast("Path", current_in_dir))
             if not image_files:
                 return
 
@@ -621,7 +621,7 @@ class MainTab(QWidget):
             LOGGER.debug("_on_crop_clicked: Accessed main_window_ref.in_dir: %s", in_dir_check)
             crop_rect_check = getattr(mw_ref, "current_crop_rect", "AttributeMissing")
             LOGGER.debug("_on_crop_clicked: Accessed main_window_ref.current_crop_rect: %s", crop_rect_check)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("_on_crop_clicked: Error accessing main_window_ref attributes early")
 
     def _validate_input_directory_for_crop(self, current_in_dir: Path | None) -> bool:
@@ -746,7 +746,7 @@ class MainTab(QWidget):
             LOGGER.error("Could not access MainWindow's image_loader.")
             return None
 
-        return cast(ImageData | None, loader.load(str(image_path)))
+        return cast("ImageData | None", loader.load(str(image_path)))
 
     def _show_crop_image_error(self, first_image_path: Path) -> None:
         """Show error message when image cannot be loaded for cropping."""
@@ -850,7 +850,7 @@ class MainTab(QWidget):
         full_res_image = getattr(label, "processed_image", None)
 
         if full_res_image and isinstance(full_res_image, QImage) and not full_res_image.isNull():
-            return cast(QImage, full_res_image)
+            return cast("QImage", full_res_image)
 
         return None
 
@@ -864,7 +864,7 @@ class MainTab(QWidget):
 
         try:
             return self._apply_crop_to_image(full_res_image, crop_rect_tuple)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error applying crop in _show_zoom")
             return full_res_image, False
 
@@ -1353,7 +1353,7 @@ class MainTab(QWidget):
             self._verify_crop_against_input_images(args, crop_rect)
             self._debug_check_ffmpeg_crop_integration(crop_rect)
 
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError):
             LOGGER.exception("Invalid crop rectangle format")
 
     def _verify_crop_against_input_images(self, args: dict[str, Any], crop_rect: tuple[int, int, int, int]) -> None:
@@ -1411,12 +1411,12 @@ class MainTab(QWidget):
                         "shape": img_array.shape,
                         "dtype": str(img_array.dtype),
                     })
-                except Exception as e:
+                except Exception:
                     LOGGER.exception("Error analyzing image %s", image_files[idx])
 
             LOGGER.debug("Sample image stats: %s", sample_stats)
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error checking input directory contents")
 
     def _verify_crop_against_images(self, in_dir: Path, crop_rect: tuple[int, int, int, int]) -> None:
@@ -1475,7 +1475,7 @@ class MainTab(QWidget):
             LOGGER.debug("Crop height: %spx (%.1f%% of image height)", h, crop_height_percent)
             LOGGER.debug("Crop area: %spx² (%.1f%% of image area)", w * h, crop_area_percent)
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error verifying crop against images")
 
     def _debug_check_ffmpeg_crop_integration(self, crop_rect: tuple[int, int, int, int]) -> None:
@@ -1506,7 +1506,7 @@ class MainTab(QWidget):
                 fixed_h = h + (1 if h % 2 != 0 else 0)
                 LOGGER.debug("Suggested fixed dimensions: %sx%s", fixed_w, fixed_h)
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error checking FFmpeg crop integration")
 
     def _debug_generate_ffmpeg_command(self, args: dict[str, Any]) -> None:
@@ -1553,7 +1553,7 @@ class MainTab(QWidget):
 
             LOGGER.debug("Sample FFmpeg command with crop/fps: %s", " ".join(command))
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error generating sample FFmpeg command")
 
     # --- Worker Interaction ---
@@ -1895,7 +1895,7 @@ class MainTab(QWidget):
                     LOGGER.debug("%s currentText: %s", key, widget.currentText())
                 elif hasattr(widget, "value"):
                     LOGGER.debug("%s value: %s", key, widget.value())
-            except Exception as e:
+            except Exception:
                 LOGGER.exception("Error getting value for %s", key)
 
         LOGGER.debug("----------------------------------")
@@ -1968,7 +1968,7 @@ class MainTab(QWidget):
         """Update progress through the view model."""
         try:
             self.processing_vm.update_progress(current, total, eta)
-        except Exception as e:  # pragma: no cover - UI update errors
+        except Exception:  # pragma: no cover - UI update errors
             LOGGER.exception("Progress update failed")
 
     def _start_worker(self, args: dict[str, Any]) -> None:
@@ -2152,7 +2152,7 @@ class MainTab(QWidget):
                 try:
                     # Cast the result to the TypedDict
                     details_raw = analyze_rife_executable(rife_exe)
-                    details = cast(RIFEModelDetails, details_raw)
+                    details = cast("RIFEModelDetails", details_raw)
                     details["_mtime"] = exe_mtime  # Store modification time for cache validation
                     cached_analysis[exe_path_str] = details  # Update cache entry
                     needs_cache_update = True
@@ -2162,7 +2162,7 @@ class MainTab(QWidget):
                     # Ensure the error dictionary conforms to the TypedDict structure
                     # (even if values are defaults/errors)
                     details = cast(
-                        RIFEModelDetails,
+                        "RIFEModelDetails",
                         {
                             "version": "Error",
                             "capabilities": {},
@@ -2243,7 +2243,7 @@ class MainTab(QWidget):
         if not main_window:
             LOGGER.warning("main_window_ref is None, falling back to parent()")
             main_window = self.parent()
-        return cast(QObject, main_window)
+        return cast("QObject", main_window)
 
     def _validate_processing_inputs(self, main_window: QObject) -> tuple[Path, Any, str, str] | None:
         """Validate all required inputs for processing."""
@@ -2399,7 +2399,7 @@ class MainTab(QWidget):
                 ffmpeg_args: dict[str, Any] = getattr(ffmpeg_tab, "get_ffmpeg_args", dict)()
                 LOGGER.debug("Added FFmpeg args from ffmpeg_tab: %s", ffmpeg_args)
                 return ffmpeg_args
-            except Exception as e:
+            except Exception:
                 LOGGER.exception("Error getting FFmpeg args")
                 return {}
         else:
@@ -2428,7 +2428,7 @@ class MainTab(QWidget):
             self._finalize_settings_load()
 
             LOGGER.info("MainTab: Settings loaded successfully.")
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error loading settings")
 
     def _log_settings_debug_info(self) -> None:
@@ -2457,7 +2457,7 @@ class MainTab(QWidget):
 
             loaded_in_dir = self._resolve_input_directory_path(in_dir_str)
             self._update_input_directory_ui(main_window, loaded_in_dir)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error loading input directory setting")
             self._update_input_directory_ui(main_window, None)
 
@@ -2479,7 +2479,7 @@ class MainTab(QWidget):
 
             # Try fallback locations
             return self._find_directory_in_common_locations(in_dir_path.name, in_dir_str)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error resolving input directory path")
             return None
 
@@ -2535,7 +2535,7 @@ class MainTab(QWidget):
             out_file_path = Path(out_file_str)
             resolved_path = self._resolve_output_file_path(out_file_path, out_file_str)
             self.out_file_edit.setText(str(resolved_path))
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error loading output file path")
             self.out_file_path = None
 
@@ -2624,7 +2624,7 @@ class MainTab(QWidget):
 
             loaded_crop_rect = self._parse_crop_rectangle(crop_rect_str)
             self._update_crop_rectangle_ui(main_window, loaded_crop_rect)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error loading crop rectangle setting")
             self._update_crop_rectangle_ui(main_window, None)
 
@@ -2638,7 +2638,7 @@ class MainTab(QWidget):
             coords = [int(c.strip()) for c in crop_rect_str.split(",")]
             if len(coords) == 4:
                 LOGGER.info("Loaded crop rectangle: %s", tuple(coords))
-                return cast(tuple[int, int, int, int], tuple(coords))
+                return cast("tuple[int, int, int, int]", tuple(coords))
             LOGGER.warning("Invalid crop rectangle format in settings: %s", crop_rect_str)
             return None
         except ValueError:
@@ -2710,7 +2710,7 @@ class MainTab(QWidget):
                         self.settings.setValue("paths/inputDirectory", in_dir_str)
                         self.settings.setValue("inputDir", in_dir_str)  # Alternate key for redundancy
                         self.settings.sync()  # Force immediate sync
-                except Exception as e:
+                except Exception:
                     LOGGER.exception("Error saving input directory from text field")
 
             # Then also try to save from MainWindow's state as a backup
@@ -2726,7 +2726,7 @@ class MainTab(QWidget):
                     self.settings.setValue("inputDir", in_dir_str)  # Alternate key for redundancy
                     # Force immediate sync after saving this critical value
                     self.settings.sync()
-                except Exception as e:
+                except Exception:
                     LOGGER.exception("Failed to resolve absolute path for input directory")
             elif not in_dir_text:
                 LOGGER.debug("No input directory to save (None/empty)")
@@ -2739,7 +2739,7 @@ class MainTab(QWidget):
                     out_file_str = str(self.out_file_path.resolve())
                     LOGGER.debug("Saving output file path (absolute): %r", out_file_str)
                     self.settings.setValue("paths/outputFile", out_file_str)
-                except Exception as e:
+                except Exception:
                     LOGGER.exception("Failed to resolve absolute path for output file")
                     # Fall back to regular path string
                     out_file_str = str(self.out_file_path)
@@ -2835,9 +2835,9 @@ class MainTab(QWidget):
                 # List all keys again to verify
                 all_keys_after = self.settings.allKeys()
                 LOGGER.debug("Verification - Settings keys after save: %s", all_keys_after)
-            except Exception as ve:
+            except Exception:
                 LOGGER.exception("Error verifying saved settings")
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error saving settings")
             # Continue without failing - don't crash the app if settings saving fails

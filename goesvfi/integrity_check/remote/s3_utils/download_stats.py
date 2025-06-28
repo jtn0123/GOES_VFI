@@ -4,13 +4,13 @@ This module provides thread-safe statistics tracking for S3 downloads,
 replacing the global mutable state with a proper class-based approach.
 """
 
-import random
-import socket
-import time
 from dataclasses import dataclass, field
 from datetime import datetime
+import random
+import socket
 from threading import Lock
-from typing import Any, Dict, List, Optional, Union
+import time
+from typing import Any, Union
 
 from goesvfi.utils.log import get_logger
 
@@ -139,10 +139,8 @@ class DownloadStatsTracker:
         self._stats.total_bytes += file_size
 
         # Update file size stats
-        if file_size > self._stats.largest_file_size:
-            self._stats.largest_file_size = file_size
-        if file_size < self._stats.smallest_file_size:
-            self._stats.smallest_file_size = file_size
+        self._stats.largest_file_size = max(file_size, self._stats.largest_file_size)
+        self._stats.smallest_file_size = min(file_size, self._stats.smallest_file_size)
 
         # Calculate and store download rate
         if download_time > 0:
@@ -301,8 +299,7 @@ class DownloadStatsTracker:
         """Format bytes per second to human readable string."""
         if speed_bps > 1024 * 1024:
             return f"{speed_bps / 1024 / 1024:.2f} MB/s"
-        else:
-            return f"{speed_bps / 1024:.2f} KB/s"
+        return f"{speed_bps / 1024:.2f} KB/s"
 
     def log_statistics(self) -> None:
         """Log detailed download statistics."""

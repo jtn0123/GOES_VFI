@@ -174,7 +174,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         try:
             used_gb, total_gb = self.get_disk_space_info()
             self.disk_space_updated.emit(used_gb, total_gb)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error in initial disk space check")
 
     # --- Additional property accessors ---
@@ -450,7 +450,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             used_gb = used / (1024**3)
 
             return used_gb, total_gb
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error getting disk space info")
             return 0.0, 0.0
 
@@ -478,7 +478,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             try:
                 used_gb, total_gb = self.get_disk_space_info()
                 self.disk_space_updated.emit(used_gb, total_gb)
-            except Exception as e:
+            except Exception:
                 LOGGER.exception("Error in disk space check")
 
             # Sleep for 5 seconds
@@ -529,7 +529,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             expected_filename = f"{self._satellite.name.lower()}_{ts.strftime('%Y%m%d_%H%M%S')}_band13.png"
 
             item = EnhancedMissingTimestamp(ts, expected_filename)
-            item.satellite = cast(Any, self._satellite)
+            item.satellite = cast("Any", self._satellite)
 
             # Determine source based on recency
             cutoff = datetime.utcnow() - timedelta(days=TimeIndex.RECENT_WINDOW_DAYS)
@@ -737,7 +737,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                 self.download_item_updated.emit(i, item)
 
         # Ensure currently_downloading_items is empty at the end of all downloads
-        self._currently_downloading_items = cast(list[datetime], [])
+        self._currently_downloading_items = cast("list[datetime]", [])
 
         # Update status
         self.status = ScanStatus.COMPLETED
@@ -828,7 +828,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                     timeout_ms = 1000  # 1 second timeout
                     if not self._disk_space_timer.wait(timeout_ms):
                         LOGGER.warning("Disk space timer thread did not stop in time")
-            except Exception as e:
+            except Exception:
                 LOGGER.exception("Error stopping disk space timer")
 
         # Close database connection
@@ -839,7 +839,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                     # For thread-local DB, close all thread connections
                     LOGGER.debug("Performing thread-local database cleanup")
                 self._cache_db.close()
-            except Exception as e:
+            except Exception:
                 LOGGER.exception("Error closing cache database")
 
         # Close base reconciler's cache
@@ -847,7 +847,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             try:
                 LOGGER.debug("Closing reconciler cache")
                 self._reconciler.cache.close()
-            except Exception as e:
+            except Exception:
                 LOGGER.exception("Error closing reconciler cache")
 
         # Store active tasks list locally before removing reference
@@ -1185,7 +1185,7 @@ class AsyncDownloadTask(QRunnable):
                         break
 
             # Reset currently downloading items before starting
-            self.view_model._currently_downloading_items = cast(list[datetime], [])
+            self.view_model._currently_downloading_items = cast("list[datetime]", [])
 
             # Run the downloads
             results = await self.view_model._reconcile_manager.fetch_missing_files(
@@ -1210,6 +1210,6 @@ class AsyncDownloadTask(QRunnable):
 
         except asyncio.CancelledError:
             return {}
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error in download operation")
             return {}

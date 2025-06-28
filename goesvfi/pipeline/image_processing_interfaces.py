@@ -1,4 +1,4 @@
-"""image_processing_interfaces.py
+"""image_processing_interfaces.py.
 
 Defines abstract interfaces and data structures for image processing pipeline components
 in the GOES_VFI application. Provides a standard for how image data and processing steps
@@ -7,7 +7,7 @@ are represented and interacted with, enabling modular and extensible pipeline de
 
 import abc
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, TypeAlias, Union
+from typing import TYPE_CHECKING, Any
 
 import numpy as np  # Import numpy
 from PIL import Image  # Import PIL.Image
@@ -15,11 +15,11 @@ from PIL import Image  # Import PIL.Image
 # Define ImageType as a type alias
 if TYPE_CHECKING:
     # Use np.ndarray with type parameters for static analysis
-    ImageType: TypeAlias = Union[Image.Image, np.ndarray[Any, Any]]
+    type ImageType = Image.Image | np.ndarray[Any, Any]
 else:
     # Use a more general type at runtime if numpy isn't strictly typed or for fallback
     # np is already imported at the top of the file
-    ImageType: TypeAlias = Union[Image.Image, np.ndarray]
+    type ImageType = Image.Image | np.ndarray
 
 
 @dataclass
@@ -82,8 +82,7 @@ class ImageProcessor(abc.ABC):
 
     @abc.abstractmethod
     def load(self, source_path: str) -> ImageData:
-        """
-        Loads image data from a specified source path.
+        """Loads image data from a specified source path.
 
         Implementations should handle reading various file formats and
         populating an ImageData object with the image data and
@@ -104,8 +103,7 @@ class ImageProcessor(abc.ABC):
 
     @abc.abstractmethod
     def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
-        """
-        Performs a specific processing step on the image data.
+        """Performs a specific processing step on the image data.
 
         This is a generic method intended for steps like filtering,
         color correction, reprojection (e.g., Sanchez), etc.
@@ -127,8 +125,7 @@ class ImageProcessor(abc.ABC):
 
     @abc.abstractmethod
     def crop(self, image_data: ImageData, crop_area: tuple[int, int, int, int]) -> ImageData:
-        """
-        Crops the image data to the specified rectangular area.
+        """Crops the image data to the specified rectangular area.
 
         Implementations should extract the specified portion of the
         image_data attribute. The crop_area format should be clearly
@@ -154,8 +151,7 @@ class ImageProcessor(abc.ABC):
 
     @abc.abstractmethod
     def save(self, image_data: ImageData, destination_path: str) -> None:
-        """
-        Saves the image data to a specified destination path.
+        """Saves the image data to a specified destination path.
 
         Implementations should handle writing the image_data attribute
         to a file in a suitable format. The format might be determined

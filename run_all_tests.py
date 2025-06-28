@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
-"""
-Direct test runner for all tests in the file_copy project.
+"""Direct test runner for all tests in the file_copy project.
 
 This script runs tests directly with pytest, bypassing the custom test runner
 that has issues with classifying tests that pass but have teardown errors.
 """
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import glob
 import os
 import re
 import subprocess
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict, List
+from typing import Any
 
 # Define colors for different statuses (globally)
 STATUS_COLOR = {
@@ -47,14 +46,12 @@ def run_test(test_path: str, debug_mode: bool = False) -> dict[str, Any]:
 
     # Add debug options if requested
     if debug_mode:
-        cmd.extend(
-            [
-                "--log-cli-level=DEBUG",  # Show debug logs in console
-                "-s",  # Don't capture stdout/stderr
-                "--no-header",  # Skip pytest headers
-                "--showlocals",  # Show local variables in tracebacks
-            ]
-        )
+        cmd.extend([
+            "--log-cli-level=DEBUG",  # Show debug logs in console
+            "-s",  # Don't capture stdout/stderr
+            "--no-header",  # Skip pytest headers
+            "--showlocals",  # Show local variables in tracebacks
+        ])
 
         # Set environment variables for debugging
         os.environ["FILE_COPY_DEBUG"] = "1"
@@ -101,11 +98,11 @@ def run_test(test_path: str, debug_mode: bool = False) -> dict[str, Any]:
             )
             # Format as "status test_name"
             summary_details = [
-                f"{status} {name}" for status, name, _ in summary_details if status in ["FAILED", "ERROR"]
+                f"{status} {name}" for status, name, _ in summary_details if status in {"FAILED", "ERROR"}
             ]
 
         # Combine details from both sections, removing duplicates
-        all_failed_details = sorted(list(set(failed_test_details + summary_details)))
+        all_failed_details = sorted(set(failed_test_details + summary_details))
 
         # Check if tests were collected but no results found
         collection_match = re.search(r"collected (\d+) items", output)
@@ -174,7 +171,7 @@ def run_test(test_path: str, debug_mode: bool = False) -> dict[str, Any]:
         # Find the summary line like "===... 4 passed, 2 skipped ... in 0.23s ==="
         # Make the pattern more flexible to catch various formats
         summary_line_matches = re.findall(r"={5,}\s*(.*?)\s*in\s+[\d.]+s\s*={5,}", output)
-        summary_lines = summary_line_matches if summary_line_matches else []
+        summary_lines = summary_line_matches or []
 
         # If we have summary lines, they may provide more complete counts
         if summary_lines:
@@ -195,8 +192,7 @@ def run_test(test_path: str, debug_mode: bool = False) -> dict[str, Any]:
                         if match:
                             # Update count if we found a larger value in the summary
                             new_count = int(match.group(1))
-                            if new_count > counts[status_key]:
-                                counts[status_key] = new_count
+                            counts[status_key] = max(new_count, counts[status_key])
 
         # If we have segment fault but collected count is set, we know the tests crashed in the middle
         if segfault and collected_count > 0:
@@ -323,7 +319,7 @@ def print_status(
     """Print the status of a test."""
     path = result["path"]
     status = result["status"]
-    duration = result["duration"]
+    result["duration"]
     output = result["output"]
     counts = result["counts"]
 
@@ -331,65 +327,50 @@ def print_status(
     failed_details = result.get("failed_details", [])
 
     # Determine the overall line color based on the most severe status found
-    line_color = RESET  # Default to no color
     if counts.get("failed", 0) > 0 or status == "FAILED":
-        line_color = STATUS_COLOR["FAILED"]  # Red if any failures or overall status is FAILED
-    elif counts.get("error", 0) > 0 or status == "ERROR" or status == "CRASHED" or "teardown error" in status:
-        line_color = STATUS_COLOR["CRASHED"]  # Yellow if any errors, crashed, or teardown error (and no failures)
+        STATUS_COLOR["FAILED"]  # Red if any failures or overall status is FAILED
+    elif counts.get("error", 0) > 0 or status in {"ERROR", "CRASHED"} or "teardown error" in status:
+        STATUS_COLOR["CRASHED"]  # Yellow if any errors, crashed, or teardown error (and no failures)
     elif status == "PASSED":
-        line_color = STATUS_COLOR["PASSED"]  # Green if passed (and no internal failures/errors)
+        STATUS_COLOR["PASSED"]  # Green if passed (and no internal failures/errors)
     elif status == "SKIPPED":
-        line_color = STATUS_COLOR["SKIPPED"]  # Blue if skipped (and no internal failures/errors)
+        STATUS_COLOR["SKIPPED"]  # Blue if skipped (and no internal failures/errors)
 
     # Start colored line output
-    print(f"{line_color}", end="")
 
     # Print basic status (without internal color)
-    print(f"{path}: {status}", end="")
 
     # Add counts if available
     if counts:
-        count_str = []
-        for status_name in ["passed", "failed", "skipped", "error"]:
-            if counts.get(status_name, 0) > 0:
-                count_str.append(f"{counts[status_name]} {status_name}")
+        count_str = [
+            f"{counts[status_name]} {status_name}"
+            for status_name in ["passed", "failed", "skipped", "error"]
+            if counts.get(status_name, 0) > 0
+        ]
         if count_str:
-            print(f" ({', '.join(count_str)})", end="")
+            pass
 
     # Add duration
-    print(f" in {duration:.2f}s", end="")
 
     # End colored line output
-    print(RESET)
 
     # Print details of failed/errored tests if any
     if failed_details:
-        print(f"{line_color}  Problematic tests within this file:", end="")
-        for detail in failed_details:
-            print(f"\n    - {detail}", end="")
-        print(RESET)  # End color after listing details
+        for _detail in failed_details:
+            pass
 
     # Store log path if generated
     log_path = None
 
     # Dump logs to file if requested
-    if dump_logs and (
-        status == "FAILED"
-        or status == "ERROR"
-        or status == "CRASHED"
-        or ("PASSED" in status and "teardown error" in status)
-    ):
+    if dump_logs and (status in {"FAILED", "ERROR", "CRASHED"} or ("PASSED" in status and "teardown error" in status)):
         log_path = dump_log_to_file(path, output, debug_mode)
 
     # Print verbose output for failed, error, or crashed tests
     if verbose and (
-        status in ["FAILED", "ERROR", "CRASHED"] or counts.get("failed", 0) > 0 or counts.get("error", 0) > 0
+        status in {"FAILED", "ERROR", "CRASHED"} or counts.get("failed", 0) > 0 or counts.get("error", 0) > 0
     ):
-        print(line_color, end="")  # Use line color for verbose output too
-        print("=" * 40)
-        print(output)
-        print("=" * 40)
-        print(RESET, end="")
+        pass
 
     return log_path
 
@@ -418,18 +399,17 @@ def dump_log_to_file(test_path: str, output: str, debug_mode: bool = False):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Write to file
-    with open(log_path, "w") as f:
+    with open(log_path, "w", encoding="utf-8") as f:
         f.write(f"=== Test Log for {test_path} ===\n")
         f.write(f"Generated: {timestamp}\n")
         f.write(f"Debug Mode: {'Enabled' if debug_mode else 'Disabled'}\n")
         f.write("=" * 80 + "\n\n")
         f.write(output)
 
-    print(f"\033[94mLog saved to {log_path}\033[0m")
     return log_path
 
 
-def main():
+def main() -> int:
     """Run all tests directly with pytest."""
     import argparse
 
@@ -468,10 +448,7 @@ def main():
     ]
 
     # Find test files
-    if args.file:
-        test_files = args.file
-    else:
-        test_files = find_test_files(args.directory)
+    test_files = args.file or find_test_files(args.directory)
 
     # Filter out problematic tests if requested
     if args.skip_problematic:
@@ -479,9 +456,7 @@ def main():
         test_files = [t for t in test_files if t not in known_problematic_tests]
         skipped_count = orig_count - len(test_files)
         if skipped_count > 0:
-            print(f"Skipping {skipped_count} known problematic tests")
-
-    print(f"Found {len(test_files)} test files")
+            pass
 
     # Track results
     all_results = []
@@ -490,50 +465,39 @@ def main():
     # If debug mode is enabled, limit parallelism to 1 to avoid interference
     if args.debug_mode:
         args.parallel = 1
-        print("\033[93mDebug mode enabled - running tests sequentially\033[0m")
-
-    print("=" * 80)
-    print(f"RUNNING {len(test_files)} TESTS WITH {args.parallel} WORKERS")
-    print("=" * 80)
 
     # Run tests in parallel
     with ThreadPoolExecutor(max_workers=args.parallel) as executor:
         future_to_path = {executor.submit(run_test, path, args.debug_mode): path for path in test_files}
 
-        for i, future in enumerate(as_completed(future_to_path), 1):
+        for _i, future in enumerate(as_completed(future_to_path), 1):
             path = future_to_path[future]
             try:
                 result = future.result()
                 all_results.append(result)
-                print(f"[{i}/{len(test_files)}] ", end="")
                 result["log_path"] = print_status(result, args.verbose, args.dump_logs, args.debug_mode)
             except Exception as e:
-                print(f"[{i}/{len(test_files)}] {path}: ERROR - {e}")
-                all_results.append(
-                    {
-                        "path": path,
-                        "status": "ERROR",
-                        "duration": 0,
-                        "output": str(e),
-                        "counts": {"error": 1},
-                        "collected": 0,
-                    }
-                )
+                all_results.append({
+                    "path": path,
+                    "status": "ERROR",
+                    "duration": 0,
+                    "output": str(e),
+                    "counts": {"error": 1},
+                    "collected": 0,
+                })
 
     # Calculate summary
-    total_duration = time.time() - start_time
-    total_passed = len(
-        [
-            r
-            for r in all_results
-            if r["status"] == "PASSED"
-            or r["status"] == "PASSED (with teardown error)"
-            or r["status"] == "PASSED (with crash)"
-        ]
-    )
+    time.time() - start_time
+    len([
+        r
+        for r in all_results
+        if r["status"] == "PASSED"
+        or r["status"] == "PASSED (with teardown error)"
+        or r["status"] == "PASSED (with crash)"
+    ])
     total_failed = len([r for r in all_results if r["status"] == "FAILED"])
     total_error = len([r for r in all_results if r["status"] == "ERROR"])
-    total_skipped = len([r for r in all_results if r["status"] == "SKIPPED"])
+    len([r for r in all_results if r["status"] == "SKIPPED"])
     total_crashed = len([r for r in all_results if r["status"] == "CRASHED"])
     # Count individual tests
     test_counts = {"passed": 0, "failed": 0, "skipped": 0, "error": 0}
@@ -557,45 +521,22 @@ def main():
             test_counts[key] += counts.get(key, 0)
 
     # Print summary
-    print()
-    print("=" * 80)
-    print(f"SUMMARY ({total_duration:.2f}s)")
-    print("=" * 80)
-
-    print(f"Test files: {len(all_results)}")
-    print(f"  Passed: {total_passed}")
-    print(f"  Failed: {total_failed}")
-    print(f"  Error: {total_error}")
-    print(f"  Skipped: {total_skipped}")
-    print(f"  Crashed: {total_crashed}")
-
-    print("Individual tests:")
-    print(f"  \033[92mPassed\033[0m: {test_counts['passed']}")
-    print(f"  \033[91mFailed\033[0m: {test_counts['failed']}")
-    print(f"  \033[94mSkipped\033[0m: {test_counts['skipped']}")
-    print(f"  \033[91mError\033[0m: {test_counts['error']}")
 
     # Print problematic tests
-    problematic = []
-    for result in all_results:
-        if result["status"] not in ["PASSED", "SKIPPED"]:
-            problematic.append(result)
+    problematic = [result for result in all_results if result["status"] not in {"PASSED", "SKIPPED"}]
 
     if problematic:
-        print("\nProblematic tests:")
         for result in problematic:
             path = result["path"]
             status = result["status"]
-            status_color_code = STATUS_COLOR.get(status, "")
-            print(f"  {path}: {status_color_code}{status}{RESET}")
+            STATUS_COLOR.get(status, "")
             if args.dump_logs and "log_path" in result and result["log_path"]:
-                print(f"    Log saved to: {result['log_path']}")
+                pass
 
     # Return non-zero exit code if there were failures, errors, or crashes
     if args.tolerant:
         return 0
-    else:
-        return 0 if total_failed + total_error + total_crashed == 0 else 1
+    return 0 if total_failed + total_error + total_crashed == 0 else 1
 
 
 if __name__ == "__main__":

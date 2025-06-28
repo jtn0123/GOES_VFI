@@ -4,8 +4,6 @@ This module provides an improved timeline visualization with better contrast,
 interaction feedback, and visual appearance.
 """
 
-from typing import Optional
-
 from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import (
     QColor,

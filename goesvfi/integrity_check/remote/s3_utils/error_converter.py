@@ -6,15 +6,13 @@ appropriate RemoteStoreError subclasses with user-friendly messages.
 
 import asyncio
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any, Union
 
 import botocore.exceptions
 
 from goesvfi.integrity_check.remote.base import (
     AuthenticationError,
-)
-from goesvfi.integrity_check.remote.base import ConnectionError as RemoteConnectionError
-from goesvfi.integrity_check.remote.base import (
+    ConnectionError as RemoteConnectionError,
     RemoteStoreError,
     ResourceNotFoundError,
 )
@@ -65,32 +63,30 @@ class S3ErrorConverter:
         )
 
         # Map error codes to appropriate error types
-        if error_code in ("AccessDenied", "403", "InvalidAccessKeyId"):
+        if error_code in {"AccessDenied", "403", "InvalidAccessKeyId"}:
             return AuthenticationError(
                 message=f"Access denied to {satellite.name} data",
                 technical_details=technical_details + "\nNote: NOAA buckets should be publicly accessible.",
                 original_exception=error,
             )
-        elif error_code in ("NoSuchBucket", "NoSuchKey", "404"):
+        if error_code in {"NoSuchBucket", "NoSuchKey", "404"}:
             return ResourceNotFoundError(
                 message=f"Resource not found for {satellite.name} at {timestamp.isoformat()}",
                 technical_details=technical_details + "\nThis data may not be available in the AWS S3 bucket.",
                 original_exception=error,
             )
-        else:
-            # Check for timeout/connection issues in error message
-            if "timeout" in str(error).lower() or "connection" in str(error).lower():
-                return RemoteConnectionError(
-                    message=f"Connection error accessing {satellite.name} data",
-                    technical_details=technical_details + "\nThis suggests network connectivity issues.",
-                    original_exception=error,
-                )
-            else:
-                return RemoteStoreError(
-                    message=f"Error {operation} for {satellite.name} data",
-                    technical_details=technical_details,
-                    original_exception=error,
-                )
+        # Check for timeout/connection issues in error message
+        if "timeout" in str(error).lower() or "connection" in str(error).lower():
+            return RemoteConnectionError(
+                message=f"Connection error accessing {satellite.name} data",
+                technical_details=technical_details + "\nThis suggests network connectivity issues.",
+                original_exception=error,
+            )
+        return RemoteStoreError(
+            message=f"Error {operation} for {satellite.name} data",
+            technical_details=technical_details,
+            original_exception=error,
+        )
 
     @staticmethod
     def from_generic_error(
@@ -127,30 +123,29 @@ class S3ErrorConverter:
                 technical_details=technical_details + "\nCheck file system permissions.",
                 original_exception=error,
             )
-        elif isinstance(error, (asyncio.TimeoutError, TimeoutError)) or "timeout" in error_str:
+        if isinstance(error, asyncio.TimeoutError | TimeoutError) or "timeout" in error_str:
             return RemoteConnectionError(
                 message=f"Timeout {operation} {satellite.name} data",
                 technical_details=technical_details + "\nCheck your internet connection speed.",
                 original_exception=error,
             )
-        elif "not found" in error_str or "404" in error_str or "no such" in error_str:
+        if "not found" in error_str or "404" in error_str or "no such" in error_str:
             return ResourceNotFoundError(
                 message=f"Resource not found for {satellite.name}",
                 technical_details=technical_details,
                 original_exception=error,
             )
-        elif "connection" in error_str or "network" in error_str:
+        if "connection" in error_str or "network" in error_str:
             return RemoteConnectionError(
                 message=f"Network error {operation} {satellite.name} data",
                 technical_details=technical_details + "\nCheck your internet connection.",
                 original_exception=error,
             )
-        else:
-            return RemoteStoreError(
-                message=f"Error {operation} {satellite.name} data",
-                technical_details=technical_details,
-                original_exception=error,
-            )
+        return RemoteStoreError(
+            message=f"Error {operation} {satellite.name} data",
+            technical_details=technical_details,
+            original_exception=error,
+        )
 
     @staticmethod
     def _build_technical_details(
@@ -179,13 +174,13 @@ class S3ErrorConverter:
         if error_code:
             details.append(f"S3 Error Code: {error_code}")
 
-        details.append(f"Error Message: {error_message}")
-        details.append(f"Satellite: {satellite.name}")
-        details.append(
+        details.extend((
+            f"Error Message: {error_message}",
+            f"Satellite: {satellite.name}",
             f"Timestamp: {timestamp.isoformat()} "
             f"(Year={timestamp.year}, DOY={timestamp.strftime('%j')}, "
-            f"Hour={timestamp.strftime('%H')}, Minute={timestamp.strftime('%M')})"
-        )
+            f"Hour={timestamp.strftime('%H')}, Minute={timestamp.strftime('%M')})",
+        ))
 
         # Add context information
         if "bucket" in context:
@@ -211,27 +206,22 @@ class S3ErrorConverter:
         """
         if isinstance(error, ResourceNotFoundError):
             return "not_found"
-        elif isinstance(error, AuthenticationError):
+        if isinstance(error, AuthenticationError):
             return "auth"
-        elif isinstance(error, RemoteConnectionError):
+        if isinstance(error, RemoteConnectionError):
             # Further classify connection errors
             if "timeout" in str(error).lower():
                 return "timeout"
-            else:
-                return "network"
-        elif isinstance(error, botocore.exceptions.ClientError):
-            error_code = error.response.get("Error", {}).get("Code")
-            if error_code in ("NoSuchKey", "404"):
-                return "not_found"
-            elif error_code in ("AccessDenied", "403"):
-                return "auth"
-            else:
-                return "network"
-        elif isinstance(error, (asyncio.TimeoutError, TimeoutError)):
-            return "timeout"
-        elif "timeout" in str(error).lower():
-            return "timeout"
-        elif "connection" in str(error).lower() or "network" in str(error).lower():
             return "network"
-        else:
-            return "unknown"
+        if isinstance(error, botocore.exceptions.ClientError):
+            error_code = error.response.get("Error", {}).get("Code")
+            if error_code in {"NoSuchKey", "404"}:
+                return "not_found"
+            if error_code in {"AccessDenied", "403"}:
+                return "auth"
+            return "network"
+        if isinstance(error, asyncio.TimeoutError | TimeoutError) or "timeout" in str(error).lower():
+            return "timeout"
+        if "connection" in str(error).lower() or "network" in str(error).lower():
+            return "network"
+        return "unknown"

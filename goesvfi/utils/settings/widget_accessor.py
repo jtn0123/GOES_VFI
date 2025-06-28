@@ -1,12 +1,12 @@
-"""
-Safe widget access utilities.
+"""Safe widget access utilities.
 
 Provides safe widget access patterns that eliminate the repetitive defensive
 programming patterns found in complex settings functions.
 """
 
+from collections.abc import Callable
 import logging
-from typing import Any, Callable, Optional, Type, Union, cast
+from typing import Any, cast
 
 from PyQt6.QtWidgets import QCheckBox, QComboBox, QLineEdit, QSpinBox, QWidget
 
@@ -58,8 +58,7 @@ class WidgetSafetyValidator(ValidatorBase):
 
 
 class SafeWidgetAccessor:
-    """
-    Provides safe access to Qt widgets with automatic error handling.
+    """Provides safe access to Qt widgets with automatic error handling.
 
     Eliminates the repetitive hasattr/isinstance/None checking patterns
     that create complexity in settings functions.
@@ -75,8 +74,7 @@ class SafeWidgetAccessor:
         expected_type: type[QWidget] | None = None,
         default: Any = None,
     ) -> QWidget | None:
-        """
-        Safely get a widget from a parent object.
+        """Safely get a widget from a parent object.
 
         Args:
             parent: Parent object containing the widget
@@ -90,7 +88,7 @@ class SafeWidgetAccessor:
         try:
             # Check if parent has the attribute
             if not hasattr(parent, widget_name):
-                return cast(QWidget | None, default)
+                return cast("QWidget | None", default)
 
             # Get the widget
             widget = getattr(parent, widget_name)
@@ -105,30 +103,29 @@ class SafeWidgetAccessor:
             result = validator.validate(widget)
             if result.is_valid:
                 # Type checking passed, safe to return
-                return widget if isinstance(widget, (type(None), QWidget)) else cast(QWidget | None, default)
+                return widget if isinstance(widget, type(None) | QWidget) else cast("QWidget | None", default)
             if result.errors:
                 LOGGER.debug(
                     "Widget %s validation failed: %s",
                     widget_name,
                     result.errors[0].message,
                 )
-            return cast(QWidget | None, default)
+            return cast("QWidget | None", default)
 
         except Exception as e:
             error = self.classifier.create_structured_error(e, f"get_widget_{widget_name}", "widget_accessor")
             LOGGER.debug("Failed to get widget %s: %s", widget_name, error.user_message)
-            return cast(QWidget | None, default)
+            return cast("QWidget | None", default)
 
     def safe_get_value(
         self,
         parent: Any,
         widget_name: str,
-        value_getter: Union[str, Callable],
+        value_getter: str | Callable,
         expected_type: type[QWidget] | None = None,
         default: Any = None,
     ) -> Any:
-        """
-        Safely get a value from a widget.
+        """Safely get a value from a widget.
 
         Args:
             parent: Parent object containing the widget
@@ -165,11 +162,10 @@ class SafeWidgetAccessor:
         parent: Any,
         widget_name: str,
         value: Any,
-        value_setter: Union[str, Callable],
+        value_setter: str | Callable,
         expected_type: type[QWidget] | None = None,
     ) -> bool:
-        """
-        Safely set a value on a widget.
+        """Safely set a value on a widget.
 
         Args:
             parent: Parent object containing the widget

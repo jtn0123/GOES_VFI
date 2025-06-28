@@ -1,14 +1,13 @@
-"""
-Base error handling types and classes.
+"""Base error handling types and classes.
 
 Provides structured error handling that reduces complexity in error-heavy functions.
 """
 
-import traceback
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Type
+import traceback
+from typing import Any
 
 
 class ErrorCategory(Enum):
@@ -47,8 +46,7 @@ class ErrorContext:
 
 
 class StructuredError(Exception):
-    """
-    Structured error with rich context and classification.
+    """Structured error with rich context and classification.
 
     Reduces complexity by providing a consistent error format with
     built-in classification and context management.

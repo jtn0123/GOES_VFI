@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
@@ -32,7 +31,8 @@ class FileSorterTab(QWidget):
         super().__init__(parent)
 
         if not isinstance(view_model, FileSorterViewModel):
-            raise TypeError("view_model must be an instance of FileSorterViewModel")
+            msg = "view_model must be an instance of FileSorterViewModel"
+            raise TypeError(msg)
 
         self.view_model = view_model  # Use the provided ViewModel
         # self.view_model.add_observer(self._update_ui)
@@ -173,18 +173,18 @@ class FileSorterTab(QWidget):
         layout.addWidget(header)
 
     def _browse_source(self) -> None:
-        """Opens a file dialog to select source folder and updates ViewModel"""
+        """Opens a file dialog to select source folder and updates ViewModel."""
         folder_path = QFileDialog.getExistingDirectory(self, "Select Source Folder")
         if folder_path:
             self.view_model.source_directory = folder_path  # Update ViewModel
             self.directory_selected.emit(folder_path)  # Emit signal with selected path
 
     def _start_sorting(self) -> None:
-        """Starts the file sorting process via the ViewModel"""
+        """Starts the file sorting process via the ViewModel."""
         self.view_model.start_sorting()  # Delegate to ViewModel
 
     def _update_ui(self) -> None:
-        """Updates UI elements based on ViewModel state"""
+        """Updates UI elements based on ViewModel state."""
         self.source_line_edit.setText(self.view_model.source_directory)
         # Assuming ViewModel has properties for options and status
         self.dry_run_checkbox.setChecked(self.view_model.dry_run_enabled)

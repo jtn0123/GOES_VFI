@@ -5,7 +5,7 @@ more streamlined and user-friendly interface.
 """
 
 from datetime import datetime
-from typing import Any, List, Optional, cast
+from typing import Any, cast
 
 from PyQt6.QtCore import (
     QModelIndex,
@@ -66,34 +66,32 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         if not index.isValid() or not (0 <= index.row() < len(self._items)):
             return None
 
-        item = cast(EnhancedMissingTimestamp, self._items[index.row()])
+        item = cast("EnhancedMissingTimestamp", self._items[index.row()])
         col = index.column()
 
         if role == Qt.ItemDataRole.DisplayRole:
             if col == 0:  # Timestamp
                 return item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-            elif col == 1:  # Satellite
+            if col == 1:  # Satellite
                 return item.satellite if isinstance(item.satellite, str) else "Unknown"
-            elif col == 2:  # Source
+            if col == 2:  # Source
                 return item.source.upper() if item.source else "AUTO"
-            elif col == 3:  # Status
+            if col == 3:  # Status
                 if item.is_downloaded:
                     return "Downloaded"
-                elif item.is_downloading:
+                if item.is_downloading:
                     return "Downloading..."
-                elif item.download_error:
+                if item.download_error:
                     return f"Error: {item.download_error[:30]}..."
-                else:
-                    return "Pending"
-            elif col == 4:  # Progress
+                return "Pending"
+            if col == 4:  # Progress
                 if item.is_downloading:
                     return f"{item.progress}%"
-                elif item.is_downloaded:
+                if item.is_downloaded:
                     return "100%"
-                else:
-                    return "0%"
-            elif col == 5:  # Path
-                return item.local_path if item.local_path else ""
+                return "0%"
+            if col == 5:  # Path
+                return item.local_path or ""
 
         return None
 

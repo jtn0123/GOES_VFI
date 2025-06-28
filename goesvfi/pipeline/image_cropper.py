@@ -1,10 +1,10 @@
-"""image_cropper.py
+"""image_cropper.py.
 
 Provides the ImageCropper class, an ImageProcessor implementation for cropping images
 to a specified rectangular area in the GOES_VFI pipeline.
 """
 
-from typing import Any, Dict, Tuple, cast
+from typing import Any, cast
 
 from numpy import ndarray
 
@@ -34,12 +34,13 @@ class ImageCropper(ImageProcessor):
         """
         left, top, right, bottom = crop_area
         # Assume image_data.image_data is a numpy array for cropping
-        image_array = cast(ndarray[Any, Any], image_data.image_data)
+        image_array = cast("ndarray[Any, Any]", image_data.image_data)
         height, width = image_array.shape[:2]
 
         # Validate crop area
         if not (0 <= left < right <= width and 0 <= top < bottom <= height):
-            raise ValueError(f"Invalid crop area: {crop_area} for image dimensions {width}x{height}")
+            msg = f"Invalid crop area: {crop_area} for image dimensions {width}x{height}"
+            raise ValueError(msg)
 
         # Perform crop
         cropped_array = image_array[top:bottom, left:right]
@@ -62,7 +63,8 @@ class ImageCropper(ImageProcessor):
         Raises:
             NotImplementedError: Always.
         """
-        raise NotImplementedError("ImageCropper does not implement load.")
+        msg = "ImageCropper does not implement load."
+        raise NotImplementedError(msg)
 
     def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
         """Not implemented. ImageCropper does not support processing images.
@@ -70,7 +72,8 @@ class ImageCropper(ImageProcessor):
         Raises:
             NotImplementedError: Always.
         """
-        raise NotImplementedError("ImageCropper does not implement process.")
+        msg = "ImageCropper does not implement process."
+        raise NotImplementedError(msg)
 
     def save(self, image_data: ImageData, destination_path: str) -> None:
         """Not implemented. ImageCropper does not support saving images.
@@ -78,4 +81,5 @@ class ImageCropper(ImageProcessor):
         Raises:
             NotImplementedError: Always.
         """
-        raise NotImplementedError("ImageCropper does not implement save.")
+        msg = "ImageCropper does not implement save."
+        raise NotImplementedError(msg)

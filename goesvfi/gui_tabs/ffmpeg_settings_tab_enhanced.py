@@ -1,8 +1,6 @@
 # goesvfi/gui_tabs/ffmpeg_settings_tab_enhanced.py
 """Enhanced FFmpeg settings tab with UI/UX improvements."""
 
-from typing import Optional
-
 from PyQt6.QtCore import pyqtSlot
 from PyQt6.QtWidgets import (
     QCheckBox,

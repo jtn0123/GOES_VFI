@@ -1,15 +1,15 @@
 # pylint: disable=wrong-import-position, pointless-string-statement, too-many-nested-blocks
-"""goesvfi.utils.config – user paths and TOML config loader"""
+"""goesvfi.utils.config – user paths and TOML config loader."""
 
 from __future__ import annotations
 
+from functools import lru_cache
 import os
 import pathlib
 import shutil
 import sys
 import tomllib
-from functools import lru_cache
-from typing import Any, Dict, List, TypedDict, cast
+from typing import Any, TypedDict, cast
 
 DEFAULT_CONFIG_DIR = pathlib.Path.home() / ".config" / "goesvfi"
 # Allow overriding the config directory at import time via environment variable
@@ -226,10 +226,9 @@ def _validate_config(data: dict[str, Any]) -> None:
                     elif not isinstance(subval, exptype):
                         errors.append(f"'{key}.{sub}' must be {exptype.__name__}")
                         value[sub] = DEFAULTS[key][sub]
-        else:
-            if not isinstance(value, expected):
-                errors.append(f"'{key}' must be {expected.__name__}")
-                data[key] = DEFAULTS[key]
+        elif not isinstance(value, expected):
+            errors.append(f"'{key}' must be {expected.__name__}")
+            data[key] = DEFAULTS[key]
     if errors:
         raise ValueError("Invalid configuration: " + "; ".join(errors))
 
@@ -246,7 +245,8 @@ def _load_config() -> dict[str, Any]:
             try:
                 loaded_data = tomllib.load(fp)
             except tomllib.TOMLDecodeError as exc:
-                raise ValueError(f"Invalid TOML in {cfg_path}: {exc}") from exc
+                msg = f"Invalid TOML in {cfg_path}: {exc}"
+                raise ValueError(msg) from exc
 
             for key, value in loaded_data.items():
                 if key in data and isinstance(data[key], dict) and isinstance(value, dict):
@@ -303,7 +303,7 @@ def get_default_tile_size() -> int:
     # Ensure it's an int
     if not isinstance(tile_size, int):
         tile_size = DEFAULTS["pipeline"]["default_tile_size"]  # Fallback to default
-    return cast(int, tile_size)
+    return cast("int", tile_size)
 
 
 def get_sanchez_bin_dir() -> pathlib.Path:
@@ -323,7 +323,7 @@ def get_logging_level() -> str:
     # Ensure it's a string
     if not isinstance(level, str):
         level = DEFAULTS["logging"]["level"]  # Fallback to default
-    return cast(str, level)
+    return cast("str", level)
 
 
 def get_supported_extensions() -> list[str]:
@@ -333,12 +333,11 @@ def get_supported_extensions() -> list[str]:
     # Ensure it's a list of strings
     if not isinstance(extensions, list) or not all(isinstance(ext, str) for ext in extensions):
         extensions = DEFAULTS["pipeline"]["supported_extensions"]  # Fallback to default
-    return cast(list[str], extensions)
+    return cast("list[str]", extensions)
 
 
 def get_project_root() -> pathlib.Path:
-    """
-    Returns the root directory of the project.
+    """Returns the root directory of the project.
     Assumes this config.py file is located within a subdirectory of the project root
     (e.g., goesvfi/utils/).
     """
@@ -347,12 +346,11 @@ def get_project_root() -> pathlib.Path:
 
 
 def find_rife_executable(model_key: str) -> pathlib.Path:
-    """
-    Locate the RIFE CLI executable.
+    """Locate the RIFE CLI executable.
     Searches in order:
         1. System PATH for 'rife-ncnn-vulkan' (or .exe)
     2. Project 'goesvfi/bin/' directory for 'rife-cli' (or .exe)
-    3. Project 'goesvfi/models/<model_key>/' directory for 'rife-cli' (or .exe)
+    3. Project 'goesvfi/models/<model_key>/' directory for 'rife-cli' (or .exe).
     """
     # 1. Check PATH for standard name
     exe_name_std = "rife-ncnn-vulkan"
@@ -381,17 +379,17 @@ def find_rife_executable(model_key: str) -> pathlib.Path:
         return model_specific_exe
 
     # If none found, raise error
-    raise FileNotFoundError(
+    msg = (
         f"RIFE executable not found. Searched:\n"
         f"  - PATH for {exe_name_std!r}\n"
         f"  - {project_bin_exe!r}\n"
         f"  - {model_specific_exe!r}"
     )
+    raise FileNotFoundError(msg)
 
 
 def get_available_rife_models() -> list[str]:
-    """
-    Scans the 'goesvfi/models/' directory for available RIFE models.
+    """Scans the 'goesvfi/models/' directory for available RIFE models.
 
     Returns:
         A sorted list of model directory names found.
@@ -400,18 +398,15 @@ def get_available_rife_models() -> list[str]:
     models_dir = project_root / "models"
     available_models = []
     if models_dir.is_dir():
-        for item in models_dir.iterdir():
-            # Check if it's a directory and potentially contains model files
-            # A simple check is just to see if it's a directory.
-            # More robust checks could look for specific files like flownet.param
-            if item.is_dir():
-                available_models.append(item.name)
+        # Check if it's a directory and potentially contains model files
+        # A simple check is just to see if it's a directory.
+        # More robust checks could look for specific files like flownet.param
+        available_models.extend(item.name for item in models_dir.iterdir() if item.is_dir())
     return sorted(available_models)
 
 
 def get_user_config_dir() -> pathlib.Path:
-    """
-    Returns the directory for user-specific configuration files.
+    """Returns the directory for user-specific configuration files.
 
     Uses CONFIG_DIR from the module, which defaults to ~/.config/goesvfi
 
@@ -425,8 +420,7 @@ def get_user_config_dir() -> pathlib.Path:
 
 
 def get_theme_name() -> str:
-    """
-    Get the current theme name from configuration.
+    """Get the current theme name from configuration.
 
     Returns:
         Theme name string (defaults to 'dark_blue')
@@ -435,12 +429,11 @@ def get_theme_name() -> str:
     theme_name = theme_config.get("name", DEFAULTS["theme"]["name"])
     if not isinstance(theme_name, str):
         theme_name = DEFAULTS["theme"]["name"]
-    return cast(str, theme_name)
+    return cast("str", theme_name)
 
 
 def get_theme_custom_overrides() -> bool:
-    """
-    Get whether custom theme overrides are enabled.
+    """Get whether custom theme overrides are enabled.
 
     Returns:
         True if custom overrides should be applied
@@ -449,12 +442,11 @@ def get_theme_custom_overrides() -> bool:
     custom_overrides = theme_config.get("custom_overrides", DEFAULTS["theme"]["custom_overrides"])
     if not isinstance(custom_overrides, bool):
         custom_overrides = DEFAULTS["theme"]["custom_overrides"]
-    return cast(bool, custom_overrides)
+    return cast("bool", custom_overrides)
 
 
 def get_theme_density_scale() -> str:
-    """
-    Get the theme density scale setting.
+    """Get the theme density scale setting.
 
     Returns:
         Density scale string (defaults to '0' for normal)
@@ -463,12 +455,11 @@ def get_theme_density_scale() -> str:
     density_scale = theme_config.get("density_scale", DEFAULTS["theme"]["density_scale"])
     if not isinstance(density_scale, str):
         density_scale = DEFAULTS["theme"]["density_scale"]
-    return cast(str, density_scale)
+    return cast("str", density_scale)
 
 
 def get_theme_fallback_enabled() -> bool:
-    """
-    Get whether theme fallback is enabled.
+    """Get whether theme fallback is enabled.
 
     Returns:
         True if fallback to basic theme should be enabled on errors
@@ -477,4 +468,4 @@ def get_theme_fallback_enabled() -> bool:
     fallback_enabled = theme_config.get("fallback_enabled", DEFAULTS["theme"]["fallback_enabled"])
     if not isinstance(fallback_enabled, bool):
         fallback_enabled = DEFAULTS["theme"]["fallback_enabled"]
-    return cast(bool, fallback_enabled)
+    return cast("bool", fallback_enabled)

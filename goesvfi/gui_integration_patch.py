@@ -3,7 +3,7 @@
 This can be applied to the MainWindow class to add all the UI/UX improvements.
 """
 
-from typing import Any, Type
+from typing import Any
 
 from goesvfi.gui_enhancements_integration import enhance_existing_gui
 from goesvfi.utils.log import get_logger
@@ -45,7 +45,7 @@ def patch_main_window(MainWindow_class: type[Any]) -> None:
                     )
 
         except Exception as e:
-            LOGGER.error("Failed to integrate UI enhancements: %s", e)
+            LOGGER.exception("Failed to integrate UI enhancements: %s", e)
             # Continue without enhancements
 
     # Replace the __init__ method

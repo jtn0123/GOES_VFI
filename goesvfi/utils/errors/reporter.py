@@ -1,11 +1,10 @@
-"""
-Error reporting utilities.
+"""Error reporting utilities.
 
 Provides consistent error reporting to reduce complexity in error display logic.
 """
 
 import sys
-from typing import Optional, TextIO
+from typing import TextIO
 
 from .base import StructuredError
 

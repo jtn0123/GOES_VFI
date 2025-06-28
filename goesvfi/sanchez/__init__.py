@@ -10,10 +10,10 @@ from .health_check import (
 from .runner import colourise
 
 __all__ = [
-    "colourise",
-    "check_sanchez_health",
     "SanchezHealthChecker",
     "SanchezHealthStatus",
     "SanchezProcessMonitor",
+    "check_sanchez_health",
+    "colourise",
     "validate_sanchez_input",
 ]

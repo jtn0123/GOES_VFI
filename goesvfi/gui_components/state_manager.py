@@ -1,7 +1,7 @@
 """State management functionality for MainWindow."""
 
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any
 
 from goesvfi.utils import log
 
@@ -125,7 +125,7 @@ class StateManager:
                         LOGGER.warning("Input directory not saved, attempting to revert to previous value")
                         self.main_window._save_input_directory(old_path)
         except Exception as e:
-            LOGGER.error("Error saving settings after input directory change: %s", e)
+            LOGGER.exception("Error saving settings after input directory change: %s", e)
 
     def _save_all_settings_with_crop_fallback(self, old_rect: tuple[int, int, int, int] | None) -> None:
         """Save all settings with fallback for crop rect.
@@ -148,4 +148,4 @@ class StateManager:
                         LOGGER.warning("Crop rectangle not saved, attempting to revert to previous value")
                         self.main_window._save_crop_rect(old_rect)
         except Exception as e:
-            LOGGER.error("Error saving settings after crop rectangle change: %s", e)
+            LOGGER.exception("Error saving settings after crop rectangle change: %s", e)

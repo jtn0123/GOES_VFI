@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from types import ModuleType
-from typing import Optional, cast
+from typing import cast
 
 from goesvfi.utils import config  # Import config module
 
@@ -40,7 +40,7 @@ _handler: logging.Handler | None = None
 def _build_handler() -> logging.Handler:
     handler: logging.Handler
     if colorlog_module:
-        handler = cast(logging.Handler, colorlog_module.StreamHandler())
+        handler = cast("logging.Handler", colorlog_module.StreamHandler())
         handler.setFormatter(
             colorlog_module.ColoredFormatter(
                 fmt="%(log_color)s[%(levelname).1s] %(name)s: %(message)s",
@@ -81,8 +81,7 @@ def get_logger(name: str | None = None) -> logging.Logger:
 
 
 def set_global_log_level(level: int) -> None:
-    """
-    Configure the root logger with a single handler and set its level.
+    """Configure the root logger with a single handler and set its level.
     This relies on propagation for named loggers.
     """
     root_logger = logging.getLogger()

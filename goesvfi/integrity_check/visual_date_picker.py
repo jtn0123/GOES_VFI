@@ -4,8 +4,9 @@ This module provides an enhanced date picker with visual calendar and quick pres
 for common date ranges used in satellite data processing.
 """
 
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Any, Callable, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import QDate, QPoint, Qt, QTime, pyqtSignal
 from PyQt6.QtGui import QColor, QPainter, QPen
@@ -24,8 +25,7 @@ from PyQt6.QtWidgets import (
 
 
 class VisualDateRangePicker(QDialog):
-    """
-    Enhanced date picker dialog with visual calendar and quick preset options.
+    """Enhanced date picker dialog with visual calendar and quick preset options.
     Provides a more intuitive interface for selecting date ranges common in
     satellite data processing workflows.
     """
@@ -38,8 +38,7 @@ class VisualDateRangePicker(QDialog):
         start_date: datetime | None = None,
         end_date: datetime | None = None,
     ) -> None:
-        """
-        Initialize the visual date picker dialog.
+        """Initialize the visual date picker dialog.
 
         Args:
             parent: Parent widget

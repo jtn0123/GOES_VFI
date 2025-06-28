@@ -1,18 +1,14 @@
-"""
-Form validation helper utilities for consistent theme-based validation feedback.
+"""Form validation helper utilities for consistent theme-based validation feedback.
 
 This module provides helper functions for applying validation state theme classes
 to form elements, ensuring consistent visual feedback across the application.
 """
 
-from typing import Optional
-
 from PyQt6.QtWidgets import QWidget
 
 
 def apply_validation_state(widget: QWidget, is_valid: bool, error_message: str | None = None) -> None:
-    """
-    Apply validation theme classes to a widget based on validation result.
+    """Apply validation theme classes to a widget based on validation result.
 
     Args:
         widget: The widget to apply validation styling to
@@ -36,8 +32,7 @@ def apply_validation_state(widget: QWidget, is_valid: bool, error_message: str |
 
 
 def clear_validation_state(widget: QWidget) -> None:
-    """
-    Clear validation state from a widget.
+    """Clear validation state from a widget.
 
     Args:
         widget: The widget to clear validation styling from
@@ -46,8 +41,7 @@ def clear_validation_state(widget: QWidget) -> None:
 
 
 def apply_form_label_theme(widget: QWidget, theme_class: str = "FFmpegLabel") -> None:
-    """
-    Apply consistent form label theme class to a widget.
+    """Apply consistent form label theme class to a widget.
 
     Args:
         widget: The widget to apply theme class to

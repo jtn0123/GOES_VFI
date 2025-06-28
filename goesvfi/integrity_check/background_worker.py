@@ -5,12 +5,13 @@ without freezing the UI, with support for progress reporting, cancellation,
 and error handling.
 """
 
+from collections.abc import Callable
+from dataclasses import dataclass
+from enum import Enum, auto
 import logging
 import time
 import traceback
-from dataclasses import dataclass
-from enum import Enum, auto
-from typing import Any, Callable, Dict, Optional, TypeVar
+from typing import Any, TypeVar
 
 from PyQt6.QtCore import QObject, QRunnable, QThreadPool, QTimer, pyqtSignal
 
@@ -64,16 +65,14 @@ class TaskSignals(QObject):
 
 
 class Task[T, P](QRunnable):
-    """
-    Background task that runs in a separate thread.
+    """Background task that runs in a separate thread.
 
     This class provides a way to run a function in a background thread
     with support for progress reporting, cancellation, and error handling.
     """
 
     def __init__(self, task_id: str, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
-        """
-        Initialize the task.
+        """Initialize the task.
 
         Args:
             task_id: Unique identifier for the task
@@ -129,11 +128,10 @@ class Task[T, P](QRunnable):
             self.signals.failed.emit(self.task_id, e, error_traceback)
 
             # Log error
-            LOGGER.error("Task[Any] %s failed: %s\n%s", self.task_id, e, error_traceback)
+            LOGGER.exception("Task[Any] %s failed: %s\n%s", self.task_id, e, error_traceback)
 
     def _progress_callback(self, progress_info: P) -> None:
-        """
-        Report progress from the task.
+        """Report progress from the task.
 
         Args:
             progress_info: Progress information to report
@@ -141,8 +139,7 @@ class Task[T, P](QRunnable):
         self.signals.progress.emit(self.task_id, progress_info)
 
     def _cancel_check(self) -> bool:
-        """
-        Check if the task should be cancelled.
+        """Check if the task should be cancelled.
 
         Returns:
             pass
@@ -157,8 +154,7 @@ class Task[T, P](QRunnable):
 
 
 class TaskManager(QObject):
-    """
-    Manager for background tasks.
+    """Manager for background tasks.
 
     This class provides a centralized way to manage background tasks,
     with support for progress reporting, cancellation, and error handling.
@@ -192,8 +188,7 @@ class TaskManager(QObject):
         LOGGER.info("Task[Any] manager initialized with %d threads", max_threads)
 
     def submit_task(self, task_id: str, func: Callable[..., Any], *args: Any, **kwargs: Any) -> None:
-        """
-        Submit a task for execution in the background.
+        """Submit a task for execution in the background.
 
         Args:
             task_id: Unique identifier for the task
@@ -221,8 +216,7 @@ class TaskManager(QObject):
         LOGGER.debug("Task[Any] %s submitted", task_id)
 
     def cancel_task(self, task_id: str) -> bool:
-        """
-        Request cancellation of a task.
+        """Request cancellation of a task.
 
         Args:
             task_id: Identifier of the task to cancel
@@ -248,8 +242,7 @@ class TaskManager(QObject):
         LOGGER.info("Cancellation requested for all %d tasks", len(self._tasks))
 
     def is_task_active(self, task_id: str) -> bool:
-        """
-        Check if a task is active.
+        """Check if a task is active.
 
         Args:
             pass
@@ -262,8 +255,7 @@ class TaskManager(QObject):
         return task_id in self._tasks
 
     def get_active_task_count(self) -> int:
-        """
-        Get the number of active tasks.
+        """Get the number of active tasks.
 
         Returns:
             Number of active tasks
@@ -271,8 +263,7 @@ class TaskManager(QObject):
         return len(self._tasks)
 
     def _on_task_started(self, task_id: str) -> None:
-        """
-        Handle task started event.
+        """Handle task started event.
 
         Args:
             task_id: Identifier of the started task
@@ -283,8 +274,7 @@ class TaskManager(QObject):
         LOGGER.debug("Task[Any] %s started", task_id)
 
     def _on_task_progress(self, task_id: str, progress_info: Any) -> None:
-        """
-        Handle task progress event.
+        """Handle task progress event.
 
         Args:
             task_id: Identifier of the task reporting progress
@@ -294,8 +284,7 @@ class TaskManager(QObject):
         self.task_progress.emit(task_id, progress_info)
 
     def _on_task_completed(self, task_id: str, result: TaskResult[Any]) -> None:
-        """
-        Handle task completed event.
+        """Handle task completed event.
 
         Args:
             task_id: Identifier of the completed task
@@ -311,8 +300,7 @@ class TaskManager(QObject):
         LOGGER.debug("Task[Any] %s completed", task_id)
 
     def _on_task_failed(self, task_id: str, error: Exception, error_traceback: str) -> None:
-        """
-        Handle task failed event.
+        """Handle task failed event.
 
         Args:
             task_id: Identifier of the failed task
@@ -329,8 +317,7 @@ class TaskManager(QObject):
         LOGGER.error("Task[Any] %s failed: %s\n%s", task_id, error, error_traceback)
 
     def _on_task_cancelled(self, task_id: str) -> None:
-        """
-        Handle task cancelled event.
+        """Handle task cancelled event.
 
         Args:
             task_id: Identifier of the cancelled task
@@ -357,8 +344,7 @@ class TaskManager(QObject):
 
 
 class UIFreezeMonitor(QObject):
-    """
-    Monitor for detecting UI freezes.
+    """Monitor for detecting UI freezes.
 
     This class monitors the application's event loop to detect UI freezes,
     and emits signals when freezes are detected and resolved.
@@ -374,8 +360,7 @@ class UIFreezeMonitor(QObject):
         check_interval_ms: int = 100,
         freeze_threshold_ms: int = 500,
     ) -> None:
-        """
-        Initialize the freeze monitor.
+        """Initialize the freeze monitor.
 
         Args:
             parent: Optional parent object
@@ -410,8 +395,7 @@ class UIFreezeMonitor(QObject):
         LOGGER.debug("UI freeze monitoring stopped")
 
     def is_frozen(self) -> bool:
-        """
-        Check if the UI is currently frozen.
+        """Check if the UI is currently frozen.
 
         Returns:
             pass
@@ -420,8 +404,7 @@ class UIFreezeMonitor(QObject):
         return self._is_frozen
 
     def get_freeze_duration(self) -> float:
-        """
-        Get the duration of the current freeze, in milliseconds.
+        """Get the duration of the current freeze, in milliseconds.
 
         Returns:
             Duration of the current freeze, or 0.0 if not frozen
@@ -460,8 +443,7 @@ class UIFreezeMonitor(QObject):
 
 
 class BackgroundProcessManager:
-    """
-    Manager for background processes to optimize UI responsiveness.
+    """Manager for background processes to optimize UI responsiveness.
 
     This class combines the TaskManager and UIFreezeMonitor to provide
     a comprehensive solution for running background tasks while maintaining
@@ -503,8 +485,7 @@ class BackgroundProcessManager:
         return task_id
 
     def cancel_task(self, task_id: str) -> bool:
-        """
-        Request cancellation of a task.
+        """Request cancellation of a task.
 
         Args:
             task_id: Identifier of the task to cancel
@@ -517,8 +498,7 @@ class BackgroundProcessManager:
         return self.task_manager.cancel_task(task_id)
 
     def _on_freeze_detected(self, duration_ms: float) -> None:
-        """
-        Handle UI freeze detected event.
+        """Handle UI freeze detected event.
 
         Args:
             duration_ms: Duration of the freeze, in milliseconds
@@ -527,8 +507,7 @@ class BackgroundProcessManager:
         LOGGER.warning("UI freeze detected: %.1fms", duration_ms)
 
     def _on_freeze_resolved(self, total_duration_ms: float) -> None:
-        """
-        Handle UI freeze resolved event.
+        """Handle UI freeze resolved event.
 
         Args:
             total_duration_ms: Total duration of the freeze, in milliseconds
@@ -552,8 +531,7 @@ background_manager = BackgroundProcessManager()
 
 
 def get_task_result(task_id: str, timeout: float = 0) -> TaskResult[Any] | None:
-    """
-    Get the result of a background task.
+    """Get the result of a background task.
 
     Args:
         task_id: Task ID returned by run_in_background
@@ -567,8 +545,7 @@ def get_task_result(task_id: str, timeout: float = 0) -> TaskResult[Any] | None:
 
 
 def cancel_background_task(task_id: str) -> bool:
-    """
-    Request cancellation of a background task.
+    """Request cancellation of a background task.
 
     Args:
         task_id: Identifier of the task to cancel
@@ -582,8 +559,7 @@ def cancel_background_task(task_id: str) -> bool:
 
 
 def get_task_manager() -> TaskManager:
-    """
-    Get the global task manager instance.
+    """Get the global task manager instance.
 
     Returns:
         Global task manager instance
@@ -592,8 +568,7 @@ def get_task_manager() -> TaskManager:
 
 
 def get_freeze_monitor() -> UIFreezeMonitor:
-    """
-    Get the global UI freeze monitor instance.
+    """Get the global UI freeze monitor instance.
 
     Returns:
         Global UI freeze monitor instance

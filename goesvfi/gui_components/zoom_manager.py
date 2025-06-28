@@ -1,7 +1,5 @@
 """Zoom functionality management for preview images."""
 
-from typing import Optional
-
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QApplication
@@ -77,15 +75,13 @@ class ZoomManager:
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation,
                 )
-            else:
-                LOGGER.debug("Using original size for zoom image as it fits screen.")
-                return pixmap
-        else:
-            # Fallback if screen info is not available
-            LOGGER.warning("Could not get screen geometry for zoom dialog scaling, using fallback size.")
-            fallback_size = QSize(1024, 768)
-            return pixmap.scaled(
-                fallback_size,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
+            LOGGER.debug("Using original size for zoom image as it fits screen.")
+            return pixmap
+        # Fallback if screen info is not available
+        LOGGER.warning("Could not get screen geometry for zoom dialog scaling, using fallback size.")
+        fallback_size = QSize(1024, 768)
+        return pixmap.scaled(
+            fallback_size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )

@@ -1,7 +1,5 @@
 """Constants for GOES satellite time utilities."""
 
-from typing import Dict, List
-
 # Constants for GOES imagery
 BAND: int = 13  # Hard-coded for Band 13 (Clean IR)
 CDN_RESOLUTIONS: list[str] = [

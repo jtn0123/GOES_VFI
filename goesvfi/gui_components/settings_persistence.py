@@ -69,7 +69,7 @@ class SettingsPersistence:
 
             # Explicitly cast bool to avoid Any return type
             return bool(saved_dir == in_dir_str)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error directly saving input directory")
             return False
 
@@ -120,7 +120,7 @@ class SettingsPersistence:
 
             # Explicitly cast bool to avoid Any return type
             return bool(saved_rect == rect_str)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error directly saving crop rectangle")
             return False
 
@@ -169,6 +169,6 @@ class SettingsPersistence:
                 return True
             LOGGER.warning("Settings file does not exist after save attempt: %s", settings_file)
             return False
-        except Exception as file_error:
+        except Exception:
             LOGGER.exception("Error checking settings file")
             return False

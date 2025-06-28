@@ -5,7 +5,6 @@ the main GUI to reduce complexity and improve modularity.
 """
 
 from pathlib import Path
-from typing import Optional
 
 from PyQt6.QtWidgets import QFileDialog, QWidget
 
@@ -71,10 +70,12 @@ class FileOperations:
         # Validate the directory exists
         if not directory.exists():
             LOGGER.warning("Sorter directory does not exist: %s", directory)
-            raise ValueError(f"Directory does not exist: {directory}")
+            msg = f"Directory does not exist: {directory}"
+            raise ValueError(msg)
 
         if not directory.is_dir():
             LOGGER.warning("Sorter path is not a directory: %s", directory)
-            raise ValueError(f"Path is not a directory: {directory}")
+            msg = f"Path is not a directory: {directory}"
+            raise ValueError(msg)
 
         return directory

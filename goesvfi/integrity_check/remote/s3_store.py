@@ -695,7 +695,7 @@ class S3Store(RemoteStore):
         try:
             LOGGER.info("Collecting system and network diagnostics during S3Store initialization")
             get_system_network_info()
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error collecting system diagnostics")
 
         # Check connectivity to AWS S3 NOAA buckets
@@ -711,9 +711,9 @@ class S3Store(RemoteStore):
                 try:
                     ip_addr = socket.gethostbyname(host)
                     LOGGER.info("✓ Successfully resolved %s to %s", host, ip_addr)
-                except Exception as e:
+                except Exception:
                     LOGGER.exception("✗ Failed to resolve %s", host)
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error testing connectivity")
 
     @property

@@ -1,8 +1,8 @@
 """Satellite pattern definitions and utilities."""
 
-import re
 from enum import Enum, auto
-from typing import Dict, Optional, Pattern
+import re
+from re import Pattern
 
 from goesvfi.utils import log
 

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import os
-import re
+from collections.abc import Callable
 from datetime import datetime
 from enum import Enum, auto
+import os
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+import re
+from typing import Any
 
 # Constants
 DEFAULT_TIME_TOLERANCE_SECONDS = 1.0  # Tolerance for "last modified" comparison, in seconds
@@ -39,8 +40,7 @@ class FileSorter:
         source_mtime_utc: float,
         buffer_size: int = DEFAULT_BUFFER_SIZE,
     ) -> None:
-        """
-        Copies a file in chunks (buffered) and preserves its last modified time (UTC).
+        """Copies a file in chunks (buffered) and preserves its last modified time (UTC).
         :param source_path: The full path to the source file.
         :param dest_path: The full path to the destination file.
         :param source_mtime_utc: The source file's mtime in epoch seconds (UTC).
@@ -53,8 +53,7 @@ class FileSorter:
                     if not buffer:
                         break
                     df.write(buffer)
-        except Exception as e:
-            print(f"Error copying file {source_path!r} to {dest_path!r}: {e}")
+        except Exception:
             raise
 
         # Preserve the source file's modification time (in UTC).
@@ -62,8 +61,7 @@ class FileSorter:
         os.utime(dest_path, (source_mtime_utc, source_mtime_utc))
 
     def _validate_directories(self, source: str, destination: str) -> tuple[Path, Path]:
-        """
-        Validates the source and destination directories.
+        """Validates the source and destination directories.
 
         Args:
             source: The source directory path
@@ -80,31 +78,28 @@ class FileSorter:
         destination_dir = Path(destination)
 
         if not source_dir.is_dir():
-            raise FileNotFoundError(f"Source directory not found: {source}")
+            msg = f"Source directory not found: {source}"
+            raise FileNotFoundError(msg)
 
         if not destination_dir.exists():
             destination_dir.mkdir(parents=True, exist_ok=True)
 
         if not destination_dir.is_dir():
-            raise NotADirectoryError(f"Destination is not a directory: {destination}")
+            msg = f"Destination is not a directory: {destination}"
+            raise NotADirectoryError(msg)
 
         return source_dir, destination_dir
 
     def _check_for_cancellation(self) -> bool:
-        """
-        Checks if cancellation has been requested.
+        """Checks if cancellation has been requested.
 
         Returns:
             True if cancellation was requested, False otherwise
         """
-        if self._should_cancel and self._should_cancel():
-            print("Cancellation requested.")
-            return True
-        return False
+        return bool(self._should_cancel and self._should_cancel())
 
     def _update_progress(self, current: int, total: int) -> None:
-        """
-        Updates progress using the callback if provided.
+        """Updates progress using the callback if provided.
 
         Args:
             current: Current progress value
@@ -114,8 +109,7 @@ class FileSorter:
             self._progress_callback(current, total)
 
     def _is_valid_date_folder(self, folder_name: str) -> bool:
-        """
-        Validate if folder name contains valid date and time components.
+        """Validate if folder name contains valid date and time components.
 
         Args:
             folder_name: The folder name to validate
@@ -147,8 +141,7 @@ class FileSorter:
             return False
 
     def _collect_date_folders(self, source_dir: Path) -> list[Path]:
-        """
-        Finds all date/time folders in the source directory.
+        """Finds all date/time folders in the source directory.
 
         Args:
             source_dir: The source directory to scan
@@ -162,16 +155,13 @@ class FileSorter:
         try:
             # Get all folders in the source directory
             date_folders: list[Path] = [f for f in source_dir.iterdir() if f.is_dir()]
-            total_folders = len(date_folders)
-            print(f"Found {total_folders} date folders in source directory.")
+            len(date_folders)
             return date_folders
-        except Exception as e:
-            print(f"Error retrieving date folders from source directory: {e}")
+        except Exception:
             raise
 
     def _get_folder_datetime(self, folder: Path) -> str | None:
-        """
-        Extracts a formatted datetime string from a folder name.
+        """Extracts a formatted datetime string from a folder name.
 
         Args:
             folder: Path object representing the folder
@@ -189,12 +179,10 @@ class FileSorter:
             return None
 
         # Insert 'T' between the date part (8 digits) and time part (6 digits)
-        folder_datetime = folder_datetime_raw[:8] + "T" + folder_datetime_raw[8:]
-        return folder_datetime
+        return folder_datetime_raw[:8] + "T" + folder_datetime_raw[8:]
 
     def _collect_files_to_process(self, date_folders: list[Path]) -> list[tuple[Path, str]]:
-        """
-        Collects all files to process from date folders.
+        """Collects all files to process from date folders.
 
         Args:
             date_folders: List of date folder paths
@@ -215,7 +203,6 @@ class FileSorter:
 
             # Skip null or unexpected format
             if folder is None:
-                print("Encountered a null folder entry. Skipping...")
                 continue
 
             folder_datetime = self._get_folder_datetime(folder)
@@ -225,22 +212,18 @@ class FileSorter:
             # Gather all PNG files
             try:
                 png_files: list[Path] = list(folder.glob("*.png"))
-            except Exception as e:
-                print(f"Error retrieving files in folder {folder.name!r}: {e}")
+            except Exception:
                 continue
 
-            for file_path in png_files:
-                files_to_process.append((file_path, folder_datetime))
+            files_to_process.extend((file_path, folder_datetime) for file_path in png_files)
 
-        total_files = len(files_to_process)
-        print(f"Total files to process: {total_files}")
+        len(files_to_process)
         return files_to_process
 
     def _prepare_target_path(
         self, file_path: Path, folder_datetime: str, destination_dir: Path
     ) -> tuple[Path, Path, str]:
-        """
-        Prepares the target path for copying.
+        """Prepares the target path for copying.
 
         Args:
             file_path: Source file path
@@ -265,8 +248,7 @@ class FileSorter:
         if not target_folder.exists() and not self.dry_run:
             try:
                 target_folder.mkdir(parents=True, exist_ok=True)
-            except Exception as e:
-                print(f"Error creating folder {target_folder!r}: {e}")
+            except Exception:
                 raise
 
         # Construct new file name with date/time suffix if needed
@@ -285,8 +267,7 @@ class FileSorter:
         new_file_path: Path,
         time_tolerance_seconds: float = DEFAULT_TIME_TOLERANCE_SECONDS,
     ) -> tuple[bool, int, float]:
-        """
-        Checks if source and destination files are identical.
+        """Checks if source and destination files are identical.
 
         Args:
             file_path: Source file path
@@ -313,8 +294,7 @@ class FileSorter:
         return files_are_identical, source_size, source_mtime_utc
 
     def _handle_duplicate(self, new_file_path: Path) -> tuple[Path | None, str]:
-        """
-        Handles duplicate files based on the configured duplicate mode.
+        """Handles duplicate files based on the configured duplicate mode.
 
         Args:
             new_file_path: The destination file path
@@ -329,7 +309,7 @@ class FileSorter:
             action_msg = "SKIPPED (Duplicate)"
             return None, action_msg
 
-        elif self.duplicate_mode == DuplicateMode.RENAME:
+        if self.duplicate_mode == DuplicateMode.RENAME:
             # Generate a new unique name
             rename_counter = 1
             original_stem = new_file_path.stem
@@ -341,9 +321,9 @@ class FileSorter:
             action_msg = f"RENAMED to {new_file_path.name}"
             return new_file_path, action_msg
 
-        else:  # Overwrite mode
-            action_msg = f"OVERWRITING {new_file_path.name}"
-            return new_file_path, action_msg
+        # Overwrite mode
+        action_msg = f"OVERWRITING {new_file_path.name}"
+        return new_file_path, action_msg
 
     def _process_single_file(
         self,
@@ -353,8 +333,7 @@ class FileSorter:
         source_size: int,
         files_are_identical: bool,
     ) -> str:
-        """
-        Processes a single file by copying or skipping it.
+        """Processes a single file by copying or skipping it.
 
         Args:
             file_path: Source file path
@@ -393,8 +372,7 @@ class FileSorter:
         return action_msg
 
     def _process_files(self, files_to_process: list[tuple[Path, str]], destination_dir: Path) -> None:
-        """
-        Processes all files by copying or skipping them.
+        """Processes all files by copying or skipping them.
 
         Args:
             files_to_process: List of tuples containing (file_path, folder_datetime)
@@ -430,12 +408,11 @@ class FileSorter:
                     files_are_identical,
                 )
 
-            except Exception as e:
-                print(f"\nError processing file {file_path.name!r}: {e}")  # Print error on new line
+            except Exception:
+                pass  # Print error on new line
 
     def _generate_stats(self, script_start_time: datetime) -> dict[str, Any]:
-        """
-        Generates statistics of the file sorting operation.
+        """Generates statistics of the file sorting operation.
 
         Args:
             script_start_time: The time when the script started
@@ -446,33 +423,18 @@ class FileSorter:
         script_end_time = datetime.now()
         total_duration = script_end_time - script_start_time
 
-        print("Script execution completed.")
-        print(f"Total execution time: {total_duration}")
-        print(f"Files copied: {self.files_copied}")
-        print(f"Files skipped: {self.files_skipped}")
-
-        size_in_mb = round(self.total_bytes_copied / (1024 * 1024), 2)
-        print(f"Total data copied: {size_in_mb} MB")
+        round(self.total_bytes_copied / (1024 * 1024), 2)
 
         total_files = self.files_copied + self.files_skipped
-        if total_files > 0:
-            average_time_per_file = round(total_duration.total_seconds() / total_files, 2)
-        else:
-            average_time_per_file = 0
-        print(f"Average time per file: {average_time_per_file} seconds")
+        round(total_duration.total_seconds() / total_files, 2) if total_files > 0 else 0
 
-        final_stats = {
+        return {
             "files_copied": self.files_copied,
             "files_skipped": self.files_skipped,
             "total_bytes": self.total_bytes_copied,
             "duration": str(datetime.now() - script_start_time),  # Convert timedelta to string
             "status": "completed",
         }
-
-        print("Returning stats:", final_stats)
-        print("\nAnalysis complete!")
-
-        return final_stats
 
     def sort_files(
         self,
@@ -481,8 +443,7 @@ class FileSorter:
         progress_callback: Callable[[int, int], None] | None = None,
         should_cancel: Callable[[], bool] | None = None,
     ) -> dict[str, Any]:
-        """
-        Sorts files from a source directory into a destination directory based on date/time.
+        """Sorts files from a source directory into a destination directory based on date/time.
 
         :param source: The source directory to read files from.
         :param destination: The destination directory to copy sorted files to.
@@ -522,7 +483,6 @@ class FileSorter:
             return self._generate_stats(script_start_time)
 
         except Exception as e:
-            print(f"Error during file sorting: {e}")
             return {
                 "status": "error",
                 "error_message": str(e),
@@ -567,11 +527,8 @@ def main() -> None:
     root_dir = args.root_dir or os.getcwd()
     root_dir = os.path.abspath(root_dir)  # Convert to absolute path
 
-    print(f"Source directory: {root_dir}")
-
     # If no destination specified, use 'sorted' subdirectory in the source
     dest_dir = args.destination or os.path.join(root_dir, "sorted")
-    print(f"Destination directory: {dest_dir}")
 
     # Convert duplicate mode string to enum
     mode_map = {

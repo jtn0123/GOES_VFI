@@ -1,9 +1,9 @@
 """Timestamp extraction, formatting, and generation utilities."""
 
-import re
 from collections import Counter
 from datetime import datetime, timedelta
-from typing import List, Optional, Tuple
+import itertools
+import re
 
 from goesvfi.utils import date_utils, log
 
@@ -21,8 +21,7 @@ class TimestampExtractor:
 
     @staticmethod
     def extract_timestamp(filename: str, pattern: SatellitePattern) -> datetime:
-        """
-        Extract a timestamp from a filename using the specified pattern.
+        """Extract a timestamp from a filename using the specified pattern.
 
         Args:
             filename: The filename to extract from
@@ -49,29 +48,30 @@ class TimestampExtractor:
         compiled_pattern = COMPILED_PATTERNS.get(pattern)
         if not compiled_pattern:
             LOGGER.error("Unknown satellite pattern: %s", pattern)
-            raise ValueError(f"Unknown satellite pattern: {pattern}")
+            msg = f"Unknown satellite pattern: {pattern}"
+            raise ValueError(msg)
 
         match = compiled_pattern.search(filename)
         if not match:
-            raise ValueError(f"Filename does not match pattern for {pattern}: {filename}")
+            msg = f"Filename does not match pattern for {pattern}: {filename}"
+            raise ValueError(msg)
 
         # Extract the timestamp string (format: YYYYMMDDTHHMMSS)
         timestamp_str = match.group(1)
 
         try:
             # Parse the timestamp string into a datetime object
-            dt = datetime.strptime(timestamp_str, "%Y%m%dT%H%M%S")
-            return dt
+            return datetime.strptime(timestamp_str, "%Y%m%dT%H%M%S")
         except ValueError as e:
             LOGGER.debug("Failed to parse timestamp %s: %s", repr(timestamp_str), e)
-            raise ValueError(f"Failed to parse timestamp: {e}") from e
+            msg = f"Failed to parse timestamp: {e}"
+            raise ValueError(msg) from e
 
     @staticmethod
     def extract_timestamp_and_satellite(
         filename: str,
     ) -> tuple[datetime | None, SatellitePattern | None]:
-        """
-        Extract a timestamp and satellite from a GOES ABI filename.
+        """Extract a timestamp and satellite from a GOES ABI filename.
 
         Args:
             filename: Filename to parse (e.g., 20251150420_GOES18-ABI-FD-13-5424x5424.jpg)
@@ -109,8 +109,7 @@ class TimestampExtractor:
 
     @staticmethod
     def extract_timestamp_from_directory_name(dirname: str) -> datetime | None:
-        """
-        Extract a timestamp from a directory name with various formats.
+        """Extract a timestamp from a directory name with various formats.
 
         Supported formats:
             - YYYY-MM-DD_HH-MM-SS (primary format)
@@ -256,8 +255,7 @@ class TimestampFormatter:
 
     @staticmethod
     def format_timestamp(dt: datetime) -> str:
-        """
-        Format a datetime object as a timestamp string for filenames.
+        """Format a datetime object as a timestamp string for filenames.
 
         Args:
             dt: The datetime object to format
@@ -269,8 +267,7 @@ class TimestampFormatter:
 
     @staticmethod
     def get_filename_pattern(pattern: SatellitePattern, base_name: str = "image") -> str:
-        """
-        Get a filename pattern string for the given satellite pattern.
+        """Get a filename pattern string for the given satellite pattern.
 
         Args:
             pattern: The satellite pattern to use
@@ -281,16 +278,15 @@ class TimestampFormatter:
         """
         if pattern == SatellitePattern.GOES_16:
             return f"{base_name}_G16_{{timestamp}}Z.png"
-        elif pattern == SatellitePattern.GOES_17:
+        if pattern == SatellitePattern.GOES_17:
             return f"{base_name}_G17_{{timestamp}}Z.png"
-        elif pattern == SatellitePattern.GOES_18:
+        if pattern == SatellitePattern.GOES_18:
             return f"{base_name}_G18_{{timestamp}}Z.png"
         return f"{base_name}_{{timestamp}}Z.png"
 
     @staticmethod
     def generate_expected_filename(timestamp: datetime, pattern: SatellitePattern, base_name: str = "image") -> str:
-        """
-        Generate an expected filename for a given timestamp and pattern.
+        """Generate an expected filename for a given timestamp and pattern.
 
         Args:
             timestamp: The datetime to use for the filename
@@ -310,8 +306,7 @@ class TimestampGenerator:
 
     @staticmethod
     def generate_timestamp_sequence(start_time: datetime, end_time: datetime, interval_minutes: int) -> list[datetime]:
-        """
-        Generate a sequence of timestamps at regular intervals.
+        """Generate a sequence of timestamps at regular intervals.
 
         Args:
             start_time: The start datetime (inclusive)
@@ -322,7 +317,8 @@ class TimestampGenerator:
             A list of datetime objects at the specified interval
         """
         if interval_minutes <= 0:
-            raise ValueError("Interval must be a positive number of minutes")
+            msg = "Interval must be a positive number of minutes"
+            raise ValueError(msg)
 
         # Ensure start time is before end time
         if start_time > end_time:
@@ -341,8 +337,7 @@ class TimestampGenerator:
 
     @staticmethod
     def detect_interval(timestamps: list[datetime]) -> int:
-        """
-        Detect the most common interval between consecutive timestamps.
+        """Detect the most common interval between consecutive timestamps.
 
         Args:
             timestamps: A list of timestamp datetime objects
@@ -359,7 +354,7 @@ class TimestampGenerator:
 
         # Calculate intervals between consecutive timestamps
         intervals = []
-        for current, next_time in zip(sorted_times[:-1], sorted_times[1:]):
+        for current, next_time in itertools.pairwise(sorted_times):
             diff = next_time - current
             minutes = diff.total_seconds() / 60
             # Only consider reasonable intervals (1 minute to 60 minutes)
@@ -382,8 +377,7 @@ class TimestampGenerator:
 
     @staticmethod
     def is_recent(ts: datetime) -> bool:
-        """
-        Check if a timestamp is within the recent window (for CDN).
+        """Check if a timestamp is within the recent window (for CDN).
 
         Args:
             ts: Datetime object to check
@@ -394,10 +388,7 @@ class TimestampGenerator:
         from .constants import RECENT_WINDOW_DAYS
 
         # Make both timestamps naive or aware to avoid comparison issues
-        if ts.tzinfo is not None:
-            now = datetime.now(ts.tzinfo)
-        else:
-            now = datetime.now().replace(tzinfo=None)
+        now = datetime.now(ts.tzinfo) if ts.tzinfo is not None else datetime.now().replace(tzinfo=None)
 
         delta = now - ts
         return delta.days < RECENT_WINDOW_DAYS

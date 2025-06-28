@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 from .constants import (
     BAND,
@@ -47,8 +46,7 @@ class TimeIndex:
 
     @staticmethod
     def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: str | None = None) -> str:
-        """
-        Generate a CDN URL for the given timestamp and satellite.
+        """Generate a CDN URL for the given timestamp and satellite.
 
         Args:
             ts: Datetime object for the image
@@ -68,8 +66,7 @@ class TimeIndex:
         band: int = 13,
         exact_match: bool = False,
     ) -> str:
-        """
-        Generate an S3 key for the given timestamp, satellite, and product type.
+        """Generate an S3 key for the given timestamp, satellite, and product type.
 
         Args:
             ts: Datetime object for the image
@@ -86,8 +83,7 @@ class TimeIndex:
 
     @staticmethod
     def get_s3_bucket(satellite: SatellitePattern) -> str:
-        """
-        Get the S3 bucket name for the given satellite.
+        """Get the S3 bucket name for the given satellite.
 
         Args:
             satellite: Satellite pattern (GOES_16 or GOES_18)
@@ -99,8 +95,7 @@ class TimeIndex:
 
     @staticmethod
     def generate_local_path(ts: datetime, satellite: SatellitePattern, base_dir: Path) -> Path:
-        """
-        Generate a local path for storing the image.
+        """Generate a local path for storing the image.
 
         Args:
             ts: Datetime object for the image
@@ -114,8 +109,7 @@ class TimeIndex:
 
     @staticmethod
     def to_local_path(ts: datetime, satellite: SatellitePattern) -> Path:
-        """
-        Generate a simplified local path for storing the image.
+        """Generate a simplified local path for storing the image.
 
         Args:
             ts: Datetime object for the image
@@ -130,8 +124,7 @@ class TimeIndex:
     def ts_from_filename(
         filename: str,
     ) -> tuple[datetime | None, SatellitePattern | None]:
-        """
-        Extract a timestamp and satellite from a filename.
+        """Extract a timestamp and satellite from a filename.
 
         Args:
             filename: Filename to parse
@@ -143,8 +136,7 @@ class TimeIndex:
 
     @staticmethod
     def ts_from_directory_name(dirname: str) -> datetime | None:
-        """
-        Extract a timestamp from a directory name with format YYYY-MM-DD_HH-MM-SS.
+        """Extract a timestamp from a directory name with format YYYY-MM-DD_HH-MM-SS.
 
         Args:
             dirname: Directory name to parse (e.g., "2024-12-21_18-00-22")
@@ -156,8 +148,7 @@ class TimeIndex:
 
     @staticmethod
     def is_cdn_available(ts: datetime) -> bool:
-        """
-        Check if a timestamp is within the recent window (for CDN).
+        """Check if a timestamp is within the recent window (for CDN).
 
         Args:
             ts: Datetime object to check
@@ -169,8 +160,7 @@ class TimeIndex:
 
     @staticmethod
     def find_nearest_intervals(ts: datetime, product_type: str = "RadF") -> list[datetime]:
-        """
-        Find the nearest standard GOES imagery intervals for a given timestamp and product type.
+        """Find the nearest standard GOES imagery intervals for a given timestamp and product type.
 
         GOES satellite imagery is typically available at fixed intervals, not at
         arbitrary timestamps. This function finds the nearest standard intervals
@@ -189,8 +179,7 @@ class TimeIndex:
     def find_date_range_in_directory(
         directory: Path, satellite: SatellitePattern
     ) -> tuple[datetime | None, datetime | None]:
-        """
-        Find the earliest and latest timestamps in the directory.
+        """Find the earliest and latest timestamps in the directory.
 
         Args:
             directory: The directory to scan
@@ -208,8 +197,7 @@ class TimeIndex:
         start_time: datetime | None = None,
         end_time: datetime | None = None,
     ) -> list[datetime]:
-        """
-        Scan a directory for files matching the timestamp pattern.
+        """Scan a directory for files matching the timestamp pattern.
 
         Args:
             directory: The directory to scan
@@ -224,8 +212,7 @@ class TimeIndex:
 
     @staticmethod
     def filter_s3_keys_by_band(keys: list[str], target_band: int = 13) -> list[str]:
-        """
-        Filter a list of S3 keys to include only those for the specified band.
+        """Filter a list of S3 keys to include only those for the specified band.
 
         When using wildcards in S3 queries, we may get back files for multiple bands.
         This function helps filter the results to only include the band we want.

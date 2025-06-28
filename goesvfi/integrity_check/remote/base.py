@@ -5,9 +5,10 @@ implementations used in the integrity check system.
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 from goesvfi.utils import log
 
@@ -46,40 +47,32 @@ class ConnectionError(RemoteStoreError):
     """Error connecting to remote store."""
 
 
-
 class NetworkError(RemoteStoreError):
     """General network-related error."""
-
 
 
 class TemporaryError(RemoteStoreError):
     """Temporary error that may succeed on retry."""
 
 
-
 class AuthenticationError(RemoteStoreError):
     """Authentication or authorization error."""
-
 
 
 class ResourceNotFoundError(RemoteStoreError):
     """Requested resource not found."""
 
 
-
 class TimeoutError(RemoteStoreError):
     """Operation timed out."""
-
 
 
 class RateLimitError(RemoteStoreError):
     """Rate limit exceeded."""
 
 
-
 class ServerError(RemoteStoreError):
     """Server-side error."""
-
 
 
 class RemoteStore(ABC):

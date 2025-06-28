@@ -2,7 +2,7 @@
 """Enhanced main tab with UI/UX improvements."""
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import pyqtSlot
 from PyQt6.QtGui import QDragEnterEvent, QDragLeaveEvent, QDropEvent
@@ -194,7 +194,7 @@ class EnhancedMainTab(MainTab):
             # Set as input directory
             self.in_dir_edit.setText(str(first_path))
             self._notification.show_message(f"Input directory set to: {first_path.name}")
-        elif first_path.suffix.lower() in [".mp4", ".avi", ".mov", ".mkv"]:
+        elif first_path.suffix.lower() in {".mp4", ".avi", ".mov", ".mkv"}:
             # Set as output file
             self.out_file_edit.setText(str(first_path))
             self._notification.show_message(f"Output file set to: {first_path.name}")

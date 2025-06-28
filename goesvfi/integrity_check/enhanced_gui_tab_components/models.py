@@ -1,6 +1,6 @@
 """Model classes for the enhanced integrity check GUI tab."""
 
-from typing import Any, List, Optional, cast
+from typing import Any, cast
 
 from PyQt6.QtCore import QModelIndex, QObject, Qt
 from PyQt6.QtGui import QColor
@@ -31,16 +31,16 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         if not index.isValid() or not (0 <= index.row() < len(self._items)):
             return None
 
-        item = cast(EnhancedMissingTimestamp, self._items[index.row()])
+        item = cast("EnhancedMissingTimestamp", self._items[index.row()])
         col = index.column()
 
         if role == Qt.ItemDataRole.DisplayRole:
             return self._get_display_data(item, col)
-        elif role == Qt.ItemDataRole.ToolTipRole:
+        if role == Qt.ItemDataRole.ToolTipRole:
             return self._get_tooltip_data(item, col)
-        elif role == Qt.ItemDataRole.BackgroundRole:
+        if role == Qt.ItemDataRole.BackgroundRole:
             return self._get_background_color(item, col)
-        elif role == Qt.ItemDataRole.ForegroundRole:
+        if role == Qt.ItemDataRole.ForegroundRole:
             return self._get_foreground_color(item, col)
 
         return None
@@ -49,25 +49,25 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         """Get display data for the given item and column."""
         if col == 0:  # Timestamp
             return item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-        elif col == 1:  # Satellite
+        if col == 1:  # Satellite
             return item.satellite if isinstance(item.satellite, str) else "Unknown"
-        elif col == 2:  # Source
+        if col == 2:  # Source
             return item.source.upper() if item.source else "AUTO"
-        elif col == 3:  # Status
+        if col == 3:  # Status
             return self._format_status(item)
-        elif col == 4:  # Progress
+        if col == 4:  # Progress
             return self._format_progress(item)
-        elif col == 5:  # Path
-            return item.local_path if item.local_path else ""
+        if col == 5:  # Path
+            return item.local_path or ""
         return None
 
     def _format_status(self, item: EnhancedMissingTimestamp) -> str:
         """Format the status column based on item state."""
         if item.is_downloaded:
             return "Downloaded"
-        elif item.is_downloading:
+        if item.is_downloading:
             return "Downloading..."
-        elif item.download_error:
+        if item.download_error:
             return self._format_error_message(item.download_error)
         return "Missing"
 
@@ -113,7 +113,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         """Format the progress column."""
         if item.is_downloading:
             return f"{item.progress}%"
-        elif item.is_downloaded:
+        if item.is_downloaded:
             return "100%"
         return ""
 
@@ -121,9 +121,9 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         """Get tooltip data for the given item and column."""
         if col == 3 and item.download_error:  # Status column with error
             return self._format_error_tooltip(item.download_error)
-        elif col == 0:  # Timestamp column
+        if col == 0:  # Timestamp column
             return item.timestamp.isoformat()
-        elif col == 5 and item.local_path and item.is_downloaded:  # Path column
+        if col == 5 and item.local_path and item.is_downloaded:  # Path column
             return f"Double-click to open folder containing:\n{item.local_path}"
         return None
 
@@ -145,9 +145,9 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         if col == 3:  # Status column
             if item.is_downloaded:
                 return QColor(0, 120, 0)  # Dark green for dark mode
-            elif item.download_error:
+            if item.download_error:
                 return QColor(120, 0, 0)  # Dark red for dark mode
-            elif item.is_downloading:
+            if item.is_downloading:
                 return QColor(0, 0, 120)  # Dark blue for dark mode
         return None
 

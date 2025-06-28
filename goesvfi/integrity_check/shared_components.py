@@ -1,13 +1,12 @@
-"""
-Shared UI Components for GOES Imagery and Integrity Check Tabs
+"""Shared UI Components for GOES Imagery and Integrity Check Tabs.
 
 This module provides shared components that can be used by both the GOES Imagery
 and Integrity Check tabs for improved integration and user experience.
 """
 
-import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+import logging
+from typing import Any
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QPushButton, QVBoxLayout, QWidget

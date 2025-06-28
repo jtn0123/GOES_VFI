@@ -4,11 +4,11 @@ This module provides the IntegrityCheckViewModel class, which serves as the
 intermediary between the UI (View) and the reconciliation logic (Model).
 """
 
-import os
 from datetime import datetime, timedelta
 from enum import Enum, auto
+import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 
@@ -91,8 +91,7 @@ class MissingTimestamp:
 
 
 class IntegrityCheckViewModel(QObject):
-    """
-    ViewModel for the Integrity Check tab.
+    """ViewModel for the Integrity Check tab.
 
     This class manages the state and presentation logic for the Integrity Check feature,
     coordinating between the UI and the underlying business logic in the Reconciler.
@@ -108,8 +107,7 @@ class IntegrityCheckViewModel(QObject):
     download_item_updated = pyqtSignal(int, MissingTimestamp)  # index, updated item
 
     def __init__(self, reconciler: Reconciler | None = None) -> None:
-        """
-        Initialize the IntegrityCheckViewModel.
+        """Initialize the IntegrityCheckViewModel.
 
         Args:
             reconciler: Optional Reconciler instance, will create one if not provided
@@ -273,8 +271,7 @@ class IntegrityCheckViewModel(QObject):
     def can_start_scan(self) -> bool:
         """Check if a scan can be started."""
         return (
-            self._status != ScanStatus.SCANNING
-            and self._status != ScanStatus.DOWNLOADING
+            self._status not in {ScanStatus.SCANNING, ScanStatus.DOWNLOADING}
             and self._base_directory.exists()
             and self._base_directory.is_dir()
         )
@@ -408,7 +405,7 @@ class IntegrityCheckViewModel(QObject):
             LOGGER.info("Started downloads for %s items", len(target_items))
 
         except Exception as e:
-            LOGGER.error("Error starting downloads: %s", e)
+            LOGGER.exception("Error starting downloads: %s", e)
             self.status = ScanStatus.ERROR
             self.status_message = f"Error starting downloads: {e}"
 
@@ -428,7 +425,7 @@ class IntegrityCheckViewModel(QObject):
             else:
                 self.status_message = "Error clearing cache"
         except Exception as e:
-            LOGGER.error("Error clearing cache: %s", e)
+            LOGGER.exception("Error clearing cache: %s", e)
             self.status_message = f"Error clearing cache: {e}"
 
     def get_cache_stats(self) -> dict[str, Any]:
@@ -436,7 +433,7 @@ class IntegrityCheckViewModel(QObject):
         try:
             return self._reconciler.cache.get_cache_stats()
         except Exception as e:
-            LOGGER.error("Error getting cache stats: %s", e)
+            LOGGER.exception("Error getting cache stats: %s", e)
             return {"error": str(e)}
 
     # --- Callback handlers ---
@@ -579,8 +576,7 @@ class ScanTask(QRunnable):
         interval_minutes: int = 0,
         force_rescan: bool = False,
     ) -> None:
-        """
-        Initialize the scan task.
+        """Initialize the scan task.
 
         Args:
             reconciler: Reconciler instance to use
@@ -656,8 +652,7 @@ class DownloadTask(QRunnable):
         item_index: int,
         destination_dir: Path,
     ) -> None:
-        """
-        Initialize the download task.
+        """Initialize the download task.
 
         Args:
             remote_store: RemoteStore instance to use
