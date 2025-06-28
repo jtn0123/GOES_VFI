@@ -301,7 +301,7 @@ class SettingsTab(QWidget):
 
             LOGGER.info("Settings loaded successfully")
         except Exception as e:
-            LOGGER.exception("Failed to load settings: %s", e)
+            LOGGER.exception("Failed to load settings")
 
     def _connect_signals(self) -> None:
         """Connect widget signals to handlers."""
@@ -334,7 +334,7 @@ class SettingsTab(QWidget):
             else:
                 LOGGER.error("No QApplication instance found")
         except Exception as e:
-            LOGGER.exception("Failed to apply theme: %s", e)
+            LOGGER.exception("Failed to apply theme")
 
     def _create_theme_preview(self, layout: QFormLayout) -> None:
         """Create theme color preview section."""
@@ -423,7 +423,7 @@ class SettingsTab(QWidget):
             self.settingsChanged.emit()
             LOGGER.info("Settings saved")
         except Exception as e:
-            LOGGER.exception("Failed to save settings: %s", e)
+            LOGGER.exception("Failed to save settings")
 
     def _reset_to_defaults(self) -> None:
         """Reset all settings to defaults."""
@@ -437,7 +437,7 @@ class SettingsTab(QWidget):
             self.debug_mode_checkbox.setChecked(False)
             LOGGER.info("Settings reset to defaults")
         except Exception as e:
-            LOGGER.exception("Failed to reset settings: %s", e)
+            LOGGER.exception("Failed to reset settings")
 
     def _reload_settings(self) -> None:
         """Reload settings from configuration files."""
@@ -447,7 +447,7 @@ class SettingsTab(QWidget):
             self._load_current_settings()
             LOGGER.info("Settings reloaded")
         except Exception as e:
-            LOGGER.exception("Failed to reload settings: %s", e)
+            LOGGER.exception("Failed to reload settings")
 
     def get_current_theme(self) -> str:
         """Get the currently selected theme."""

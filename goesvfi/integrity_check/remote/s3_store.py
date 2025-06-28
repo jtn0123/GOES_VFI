@@ -696,7 +696,7 @@ class S3Store(RemoteStore):
             LOGGER.info("Collecting system and network diagnostics during S3Store initialization")
             get_system_network_info()
         except Exception as e:
-            LOGGER.exception("Error collecting system diagnostics: %s", e)
+            LOGGER.exception("Error collecting system diagnostics")
 
         # Check connectivity to AWS S3 NOAA buckets
         LOGGER.info("Testing connectivity to AWS S3 NOAA buckets...")
@@ -712,9 +712,9 @@ class S3Store(RemoteStore):
                     ip_addr = socket.gethostbyname(host)
                     LOGGER.info("✓ Successfully resolved %s to %s", host, ip_addr)
                 except Exception as e:
-                    LOGGER.exception("✗ Failed to resolve %s: %s", host, e)
+                    LOGGER.exception("✗ Failed to resolve %s", host)
         except Exception as e:
-            LOGGER.exception("Error testing connectivity: %s", e)
+            LOGGER.exception("Error testing connectivity")
 
     @property
     def session_kwargs(self) -> dict[str, Any]:
@@ -857,7 +857,7 @@ class S3Store(RemoteStore):
                         # This is handled above
                         continue
                     except Exception as e:
-                        LOGGER.exception("Error creating S3 client: %s", e)
+                        LOGGER.exception("Error creating S3 client")
                         if "NoCredentialsError" in str(e) or "AccessDenied" in str(e):
                             # This shouldn't happen with UNSIGNED access
                             raise AuthenticationError(
@@ -909,7 +909,7 @@ class S3Store(RemoteStore):
                 # This is handled in the retry loop
                 continue
             except Exception as e:
-                LOGGER.exception("Unexpected error in _get_s3_client: %s", e)
+                LOGGER.exception("Unexpected error in _get_s3_client")
                 import traceback
 
                 LOGGER.exception(traceback.format_exc())
@@ -1184,7 +1184,7 @@ class S3Store(RemoteStore):
             download_time = time.time() - download_start
 
             # Enhanced error logging for download failures
-            LOGGER.exception("Failed to download file after %.2fs: %s", download_time, download_error)
+            LOGGER.exception("Failed to download file after %.2fs", download_time)
             LOGGER.exception("Download exception type: %s", type(download_error).__name__)
             LOGGER.exception("Download path: s3://%s/%s", bucket, key)
             LOGGER.exception("Destination: %s", dest_path)
@@ -1564,7 +1564,7 @@ class S3Store(RemoteStore):
             raise  # Re-raise our custom errors
         except Exception as e:
             # Enhanced logging for unexpected errors
-            LOGGER.exception("Unexpected error during download: %s", str(e))
+            LOGGER.exception("Unexpected error during download")
             LOGGER.exception("Exception type: %s", type(e).__name__)
             LOGGER.exception("Path: s3://%s/%s", bucket, key)
 

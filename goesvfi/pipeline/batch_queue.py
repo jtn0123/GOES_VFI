@@ -1,20 +1,20 @@
-"""
-Batch processing queue for GOES-VFI.
+"""Batch processing queue for GOES-VFI.
 
 This module provides a queue-based system for processing multiple video
 interpolation jobs in sequence with configurable priorities and resource
 management.
 """
 
-import json
-import threading
-import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
+import json
 from pathlib import Path
 from queue import PriorityQueue
-from typing import Any, Callable, Dict, List, Optional
+import threading
+import time
+from typing import Any
 
 from PyQt6.QtCore import QObject, pyqtSignal
 
@@ -124,8 +124,7 @@ class BatchQueue(QObject):
         max_concurrent_jobs: int = 1,
         resource_manager: Any | None = None,
     ) -> None:
-        """
-        Initialize batch queue.
+        """Initialize batch queue.
 
         Args:
             process_function: Function to process each job
@@ -181,7 +180,7 @@ class BatchQueue(QObject):
             with open(queue_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            LOGGER.error("Failed to save queue: %s", e)
+            LOGGER.exception("Failed to save queue")
 
         self.job_added.emit(job.id)
         LOGGER.info("Job %s added to queue: %s", job.id, job.name)
@@ -209,7 +208,7 @@ class BatchQueue(QObject):
             with open(queue_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            LOGGER.error("Failed to save queue: %s", e)
+            LOGGER.exception("Failed to save queue")
 
         self.job_cancelled.emit(job_id)
         LOGGER.info("Job %s cancelled", job_id)
@@ -234,7 +233,7 @@ class BatchQueue(QObject):
         """Clear completed and cancelled jobs."""
         with self._lock:
             to_remove = [
-                job_id for job_id, job in self._jobs.items() if job.status in (JobStatus.COMPLETED, JobStatus.CANCELLED)
+                job_id for job_id, job in self._jobs.items() if job.status in {JobStatus.COMPLETED, JobStatus.CANCELLED}
             ]
 
             for job_id in to_remove:
@@ -250,7 +249,7 @@ class BatchQueue(QObject):
             with open(queue_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            LOGGER.error("Failed to save queue: %s", e)
+            LOGGER.exception("Failed to save queue")
 
         LOGGER.info("Cleared %s completed/cancelled jobs", len(to_remove))
         return len(to_remove)
@@ -352,7 +351,7 @@ class BatchQueue(QObject):
             with open(queue_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            LOGGER.error("Failed to save queue: %s", e)
+            LOGGER.exception("Failed to save queue")
 
     def _load_queue(self) -> None:
         """Load queue state from disk."""
@@ -362,7 +361,7 @@ class BatchQueue(QObject):
             return
 
         try:
-            with open(queue_file, "r", encoding="utf-8") as f:
+            with open(queue_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             for job_data in data.get("jobs", []):
@@ -382,12 +381,12 @@ class BatchQueue(QObject):
                         self._queue.put(job)
 
                 except Exception as e:
-                    LOGGER.error("Failed to load job: %s", e)
+                    LOGGER.exception("Failed to load job")
 
             LOGGER.info("Loaded %s jobs from queue", len(self._jobs))
 
         except Exception as e:
-            LOGGER.error("Failed to load queue: %s", e)
+            LOGGER.exception("Failed to load queue")
 
 
 class BatchProcessor:
@@ -451,13 +450,11 @@ class BatchProcessor:
     ) -> list[str]:
         """Add all matching files from a directory as batch jobs."""
         if not self.queue:
-            raise RuntimeError("Queue not initialized")
+            msg = "Queue not initialized"
+            raise RuntimeError(msg)
 
         # Find matching files
-        if recursive:
-            input_paths = list(input_dir.rglob(pattern))
-        else:
-            input_paths = list(input_dir.glob(pattern))
+        input_paths = list(input_dir.rglob(pattern)) if recursive else list(input_dir.glob(pattern))
 
         if not input_paths:
             LOGGER.warning("No files matching '%s' found in %s", pattern, input_dir)
