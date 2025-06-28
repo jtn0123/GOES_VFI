@@ -73,10 +73,10 @@ class VisualizationManager:
 
     def create_visualization(
         self,
-        data: NDArray[np.float64],
-        channel: ChannelType | int,
-        timestamp: datetime,
-        colormap: str | None = None,
+        _data: NDArray[np.float64],
+        _channel: ChannelType | int,
+        _timestamp: datetime,
+        _colormap: str | None = None,
         output_size: tuple[int, int] | None = None,
     ) -> Image.Image | None:
         """Create a visualization from satellite data.
@@ -98,8 +98,8 @@ class VisualizationManager:
 
     def create_sample_visualization(
         self,
-        data: NDArray[np.float64],
-        channel: ChannelType | int,
+        _data: NDArray[np.float64],
+        _channel: ChannelType | int,
         sample_size: tuple[int, int] = (500, 500),
     ) -> tuple[Image.Image, Image.Image]:
         """Create sample visualizations.
@@ -120,9 +120,9 @@ class VisualizationManager:
 
     def create_comparison(
         self,
-        images: dict[str, Image.Image],
-        title: str = "Comparison",
-        layout: str = "horizontal",
+        _images: dict[str, Image.Image],
+        _title: str = "Comparison",
+        _layout: str = "horizontal",
     ) -> Image.Image | None:
         """Create a comparison visualization from multiple images.
 

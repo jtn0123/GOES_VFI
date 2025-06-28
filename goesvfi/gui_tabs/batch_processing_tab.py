@@ -303,7 +303,7 @@ class BatchProcessingTab(QWidget):
             try:
                 settings = self.settings_provider()
             except Exception as exc:  # pragma: no cover - defensive
-                LOGGER.exception("Failed to obtain settings: %s", exc)
+                LOGGER.exception("Failed to obtain settings")
                 settings = {}
         else:
             settings = {}
@@ -425,7 +425,7 @@ class BatchProcessingTab(QWidget):
                 cancel_btn = QPushButton("❌ Cancel")
                 cancel_btn.setProperty("class", "DialogButton")
                 cancel_btn.setToolTip("Cancel this job")
-                cancel_btn.clicked.connect(lambda checked, jid=job.id: self._cancel_job(jid))
+                cancel_btn.clicked.connect(lambda _checked, jid=job.id: self._cancel_job(jid))
                 self.queue_table.setCellWidget(row, 6, cancel_btn)
             else:
                 # Create empty widget for consistency
@@ -458,12 +458,12 @@ class BatchProcessingTab(QWidget):
 
     # Signal handlers
     @pyqtSlot(str)
-    def _on_job_added(self, job_id: str) -> None:
+    def _on_job_added(self, _job_id: str) -> None:
         """Handle job added signal."""
         self._update_queue_display()
 
     @pyqtSlot(str)
-    def _on_job_started(self, job_id: str) -> None:
+    def _on_job_started(self, _job_id: str) -> None:
         """Handle job started signal."""
         self._update_queue_display()
 
@@ -481,7 +481,7 @@ class BatchProcessingTab(QWidget):
                 break
 
     @pyqtSlot(str)
-    def _on_job_completed(self, job_id: str) -> None:
+    def _on_job_completed(self, _job_id: str) -> None:
         """Handle job completed signal."""
         self._update_queue_display()
 
@@ -497,7 +497,7 @@ class BatchProcessingTab(QWidget):
                 QMessageBox.critical(self, "Job Failed", f"Job '{job.name}' failed:\n{error}")
 
     @pyqtSlot(str)
-    def _on_job_cancelled(self, job_id: str) -> None:
+    def _on_job_cancelled(self, _job_id: str) -> None:
         """Handle job cancelled signal."""
         self._update_queue_display()
 
