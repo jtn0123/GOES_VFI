@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from goesvfi.utils.rife_analyzer import analyze_rife_executable
 
 
-def main():
+def main() -> None:
     """Main function."""
     parser = argparse.ArgumentParser(
         description="Analyze RIFE CLI executable capabilities"

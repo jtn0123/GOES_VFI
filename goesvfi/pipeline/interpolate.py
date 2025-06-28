@@ -16,6 +16,14 @@ from goesvfi.utils.rife_analyzer import RifeCommandBuilder
 # Set up logging
 logger = logging.getLogger(__name__)
 
+# Import optimized backend (optional, falls back if not available)
+try:
+    from .optimized_interpolator import OptimizedRifeBackend
+    OPTIMIZED_BACKEND_AVAILABLE = True
+except ImportError:
+    OPTIMIZED_BACKEND_AVAILABLE = False
+    logger.debug("Optimized interpolator not available, using standard backend")
+
 
 class RifeBackend:
     """Wraps an external RIFE command-line executable."""
@@ -167,6 +175,45 @@ def interpolate_three(
     img_right = backend.interpolate_pair(img_mid, img2, right_options)
 
     return [img_left, img_mid, img_right]
+
+
+def create_rife_backend(exe_path: pathlib.Path, optimized: bool = True, cache_size: int = 100) -> Any:
+    """Create the best available RIFE backend.
+
+    Args:
+        exe_path: Path to RIFE executable
+        optimized: Whether to use optimized backend if available
+        cache_size: Cache size for optimized backend
+
+    Returns:
+        RifeBackend or OptimizedRifeBackend instance
+    """
+    if optimized and OPTIMIZED_BACKEND_AVAILABLE:
+        logger.info("Creating optimized RIFE backend with cache_size=%d", cache_size)
+        return OptimizedRifeBackend(exe_path, cache_size=cache_size)
+    if optimized and not OPTIMIZED_BACKEND_AVAILABLE:
+        logger.warning("Optimized backend requested but not available, using standard backend")
+    else:
+        logger.info("Creating standard RIFE backend")
+    return RifeBackend(exe_path)
+
+
+def get_backend_performance_info(backend: Any) -> dict[str, Any]:
+    """Get performance information from a backend.
+
+    Args:
+        backend: RifeBackend or OptimizedRifeBackend instance
+
+    Returns:
+        Performance statistics dictionary
+    """
+    if hasattr(backend, "get_performance_stats"):
+        return backend.get_performance_stats()
+    return {
+        "backend_type": "standard",
+        "optimization_available": OPTIMIZED_BACKEND_AVAILABLE,
+        "message": "Standard backend - no performance stats available"
+    }
 
 
 # Note about potential model differences can be kept or removed

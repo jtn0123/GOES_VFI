@@ -7,14 +7,14 @@ which helps prevent segmentation faults that occur when testing it through the M
 
 from unittest.mock import patch
 
-import pytest
 from PyQt6.QtWidgets import QApplication
+import pytest
 
 from goesvfi.gui_tabs.ffmpeg_settings_tab import FFmpegSettingsTab
 from goesvfi.utils.config import FFMPEG_PROFILES
 
 
-@pytest.fixture
+@pytest.fixture()
 def ffmpeg_tab(qtbot):
     """Create an FFmpeg Settings Tab instance for testing."""
     # Create the tab
@@ -33,7 +33,7 @@ def ffmpeg_tab(qtbot):
     QApplication.processEvents()
 
 
-def test_initial_state(ffmpeg_tab):
+def test_initial_state(ffmpeg_tab) -> None:
     """Test the initial state of the FFmpeg settings tab."""
     # Test profile combo has expected items
     assert ffmpeg_tab.ffmpeg_profile_combo.count() > 0
@@ -58,7 +58,7 @@ def test_initial_state(ffmpeg_tab):
     assert ffmpeg_tab.ffmpeg_profile_combo.count() == len(FFMPEG_PROFILES) + 1  # +1 for "Custom"
 
 
-def test_profile_selection(ffmpeg_tab):
+def test_profile_selection(ffmpeg_tab) -> None:
     """Test changing profiles updates widget values correctly."""
     # Initial state check
     initial_profile = ffmpeg_tab.ffmpeg_profile_combo.currentText()
@@ -99,7 +99,7 @@ def test_profile_selection(ffmpeg_tab):
         ffmpeg_tab._on_profile_selected(initial_profile)
 
 
-def test_changing_setting_updates_profile(ffmpeg_tab):
+def test_changing_setting_updates_profile(ffmpeg_tab) -> None:
     """Test changing a setting switches to Custom profile."""
     # First select a known profile
     with patch.object(ffmpeg_tab, "_verify_profile_match"):
@@ -119,7 +119,7 @@ def test_changing_setting_updates_profile(ffmpeg_tab):
     assert ffmpeg_tab.ffmpeg_profile_combo.currentText() == "Custom"
 
 
-def test_unsharp_controls_state(ffmpeg_tab):
+def test_unsharp_controls_state(ffmpeg_tab) -> None:
     """Test unsharp mask controls enable/disable correctly when group is toggled."""
     # Get current state for reference
     original_state = ffmpeg_tab.ffmpeg_unsharp_group.isChecked()
@@ -151,7 +151,7 @@ def test_unsharp_controls_state(ffmpeg_tab):
     ffmpeg_tab._update_unsharp_controls_state(original_state)
 
 
-def test_get_current_settings(ffmpeg_tab):
+def test_get_current_settings(ffmpeg_tab) -> None:
     """Test that get_current_settings returns the expected dictionary."""
     # Get current settings
     settings = ffmpeg_tab.get_current_settings()
@@ -194,7 +194,7 @@ def test_get_current_settings(ffmpeg_tab):
     assert settings["unsharp_lx"] == ffmpeg_tab.ffmpeg_unsharp_lx_spinbox.value()
 
 
-def test_check_settings_match_profile(ffmpeg_tab):
+def test_check_settings_match_profile(ffmpeg_tab) -> None:
     """Test that _check_settings_match_profile correctly identifies matching profiles."""
     # Apply a known profile
     with patch.object(ffmpeg_tab, "_verify_profile_match"):

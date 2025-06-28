@@ -78,7 +78,11 @@ class MemoryStats:
 class MemoryMonitor:
     """Monitor system and process memory usage."""
 
-    def __init__(self, warning_threshold_mb: int = LOW_MEMORY_THRESHOLD_MB, critical_threshold_mb: int = CRITICAL_MEMORY_THRESHOLD_MB) -> None:
+    def __init__(
+        self,
+        warning_threshold_mb: int = LOW_MEMORY_THRESHOLD_MB,
+        critical_threshold_mb: int = CRITICAL_MEMORY_THRESHOLD_MB,
+    ) -> None:
         """Initialize memory monitor.
 
         Args:
@@ -384,7 +388,7 @@ def log_memory_usage(context: str = "") -> None:
     Args:
         context: Optional context string
     """
-    monitor = MemoryMonitor()
+    MemoryMonitor()
     stats = MemoryMonitor.get_memory_stats()
 
     if context:
@@ -495,7 +499,7 @@ class StreamingProcessor:
         array_size_mb = (num_elements * bytes_per_element) / (1024 * 1024)
 
         # Get current memory stats
-        monitor = get_memory_monitor()
+        get_memory_monitor()
         current_stats = MemoryMonitor.get_memory_stats()
 
         # Estimate if processing would fit in memory

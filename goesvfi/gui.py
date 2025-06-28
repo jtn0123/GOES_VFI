@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, cast
 
-from PyQt6.QtCore import QSettings, Qt, QTimer, pyqtSignal
+from PyQt6.QtCore import QSettings, QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QPixmap
 from PyQt6.QtWidgets import QApplication, QStatusBar, QTabWidget, QVBoxLayout, QWidget
 
@@ -20,6 +20,8 @@ from goesvfi.gui_components import (
     SettingsPersistence,
     ThemeManager,
 )
+from goesvfi.gui_components.resource_manager import get_resource_tracker
+from goesvfi.gui_components.update_manager import get_update_manager, register_update, request_update
 from goesvfi.utils import log
 from goesvfi.utils.gui_helpers import ClickableLabel
 from goesvfi.utils.settings.gui_settings_manager import GUISettingsManager
@@ -122,7 +124,7 @@ class MainWindow(QWidget):
         self.theme_manager = ThemeManager()
         app = QApplication.instance()
         if app:
-            self.theme_manager.apply_theme(app)
+            self.theme_manager.apply_theme(cast("QApplication", app))
         else:
             LOGGER.error("No QApplication instance found for theme application")
 
@@ -136,10 +138,40 @@ class MainWindow(QWidget):
         if hasattr(self, "settings_tab"):
             self._connect_settings_tab()
 
-        # Initial preview update after a short delay
-        QTimer.singleShot(100, self.request_previews_update.emit)
+        # Initialize UpdateManager integration
+        self._setup_main_window_update_manager()
+
+        # Initial preview update after a short delay (now through UpdateManager)
+        QTimer.singleShot(100, lambda: request_update("main_window_preview"))
 
         LOGGER.info("MainWindow initialized.")
+
+    def _setup_main_window_update_manager(self) -> None:
+        """Set up UpdateManager integration for main window updates."""
+        # Register main window update operations
+        register_update("main_window_preview", self._emit_preview_update, priority=3)
+        register_update("main_window_status", self._update_status_display, priority=2)
+
+        # Initialize the global UpdateManager
+        update_manager = get_update_manager()
+        LOGGER.info("MainWindow integrated with UpdateManager (batching: %sms)", update_manager.batch_delay_ms)
+
+    def _emit_preview_update(self) -> None:
+        """Emit preview update signal (called by UpdateManager)."""
+        self.request_previews_update.emit()
+
+    def _update_status_display(self) -> None:
+        """Update status display elements (called by UpdateManager)."""
+        # This can be expanded to update various status elements in batches
+
+    def request_main_window_update(self, update_type: str = "preview") -> None:
+        """Request a main window update through UpdateManager.
+
+        Args:
+            update_type: Type of update (preview, status)
+        """
+        update_id = f"main_window_{update_type}"
+        request_update(update_id)
 
     def _setup_tab_widget(self) -> None:
         """Configure the tab widget appearance and behavior."""
@@ -382,8 +414,8 @@ class MainWindow(QWidget):
             self.main_view_model.preview_manager.preview_updated.connect(self._on_preview_images_loaded)
             self.main_view_model.preview_manager.preview_error.connect(self._on_preview_error)
 
-            # Load previews through view model
-            success = self.main_view_model.preview_manager.load_preview_images(
+            # Load previews through view model using memory-efficient thumbnails
+            success = self.main_view_model.preview_manager.load_preview_thumbnails(
                 self.in_dir,
                 crop_rect=self.current_crop_rect,
                 apply_sanchez=apply_sanchez,
@@ -466,7 +498,7 @@ class MainWindow(QWidget):
         ])
 
     def _update_frame_label(
-        self, label_name: str, pixmap: QPixmap, image_files: list[Path], frame_data, file_index: int
+        self, label_name: str, pixmap: QPixmap, image_files: list[Path], frame_data: Any, file_index: int
     ) -> None:
         """Update a single frame label with pixmap and metadata."""
         if not (hasattr(self.main_tab, label_name) and not pixmap.isNull()):
@@ -488,7 +520,7 @@ class MainWindow(QWidget):
 
         # Set processed image data
         if frame_data and frame_data.image_data is not None:
-            full_res_pixmap = self.main_view_model.preview_manager._numpy_to_qpixmap(frame_data.image_data)
+            full_res_pixmap = self.main_view_model.preview_manager.numpy_to_qpixmap(frame_data.image_data)
             if not full_res_pixmap.isNull():
                 label.processed_image = full_res_pixmap.toImage()
                 if label_name == "first_frame_label":
@@ -496,10 +528,8 @@ class MainWindow(QWidget):
         elif label_name == "first_frame_label":
             LOGGER.warning("No first_frame_data available from preview manager")
 
-    def _get_target_size_for_label(self, label) -> QSize:
+    def _get_target_size_for_label(self, label: QWidget) -> QSize:
         """Get appropriate target size for scaling a label's pixmap."""
-        from PyQt6.QtCore import QSize
-
         target_size = QSize(200, 200)  # Minimum preview size
         current_size = label.size()
         if current_size.width() > 200 and current_size.height() > 200:
@@ -532,24 +562,31 @@ class MainWindow(QWidget):
         # Save settings before closing
         self.saveSettings()
 
-        # Clean up resources
+        # Clean up all tracked resources through resource manager
+        resource_tracker = get_resource_tracker()
+        stats = resource_tracker.get_stats()
+        LOGGER.info("Cleaning up resources: %s", stats)
+
+        resource_tracker.cleanup_all()
+
+        # Legacy cleanup for any untracked resources
         if hasattr(self, "_sanchez_gui_temp_dir") and self._sanchez_gui_temp_dir.exists():
             try:
                 import shutil
-
                 shutil.rmtree(self._sanchez_gui_temp_dir)
                 LOGGER.debug("Cleaned up temporary Sanchez directory")
             except Exception as e:
                 LOGGER.warning("Failed to clean up temp directory: %s", e)
 
-        # Terminate any running worker
+        # Terminate any running worker (now also handled by resource tracker)
         if hasattr(self, "vfi_worker") and self.vfi_worker and self.vfi_worker.isRunning():
             LOGGER.info("Terminating VFI worker thread")
             self.vfi_worker.terminate()
             self.vfi_worker.wait(1000)
 
         # Accept the close event
-        event.accept()
+        if event:
+            event.accept()
 
     def _connect_settings_tab(self) -> None:
         """Connect settings tab signals to handlers."""
@@ -564,7 +601,7 @@ class MainWindow(QWidget):
         try:
             app = QApplication.instance()
             if app:
-                self.theme_manager.change_theme(app, theme_name)
+                self.theme_manager.change_theme(cast("QApplication", app), theme_name)
                 LOGGER.info("Theme changed to: %s", theme_name)
             else:
                 LOGGER.error("No QApplication instance found for theme change")

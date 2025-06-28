@@ -4,7 +4,7 @@ from goesvfi.gui_components import PreviewManager, ProcessingManager
 from goesvfi.view_models.processing_view_model import ProcessingViewModel
 
 
-def test_build_ffmpeg_command_with_crop():
+def test_build_ffmpeg_command_with_crop() -> None:
     vm = ProcessingViewModel(PreviewManager(), ProcessingManager())
     output = pathlib.Path("/tmp/out.mp4")
     settings = {"encoder": "Software x264", "crf": 20, "pix_fmt": "yuv420p"}
@@ -14,7 +14,7 @@ def test_build_ffmpeg_command_with_crop():
     assert str(output) in cmd
 
 
-def test_build_ffmpeg_command_without_crop():
+def test_build_ffmpeg_command_without_crop() -> None:
     vm = ProcessingViewModel(PreviewManager(), ProcessingManager())
     output = pathlib.Path("/tmp/out.mp4")
     settings = {"encoder": "Software x264", "crf": 23}

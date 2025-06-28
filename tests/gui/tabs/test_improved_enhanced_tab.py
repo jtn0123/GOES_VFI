@@ -2,8 +2,8 @@
 
 from datetime import datetime, timedelta
 
-import pytest
 from PyQt6.QtCore import Qt
+import pytest
 
 from goesvfi.integrity_check.enhanced_gui_tab_improved import (
     ImprovedEnhancedIntegrityCheckTab,
@@ -14,7 +14,7 @@ from goesvfi.integrity_check.view_model import IntegrityCheckViewModel
 class TestImprovedEnhancedTab:
     """Test the improved enhanced integrity check tab."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def view_model(self, tmpdir):
         """Create a view model for testing."""
         # Use temp dir for testing
@@ -27,14 +27,14 @@ class TestImprovedEnhancedTab:
 
         return model
 
-    @pytest.fixture
+    @pytest.fixture()
     def tab(self, qtbot, view_model):
         """Create the tab widget for testing."""
         widget = ImprovedEnhancedIntegrityCheckTab(view_model)
         qtbot.addWidget(widget)
         return widget
 
-    def test_initial_state(self, tab, view_model):
+    def test_initial_state(self, tab, view_model) -> None:
         """Test the initial state of the tab."""
         # Check that UI elements are initialized correctly
         assert tab.directory_edit.text() == str(view_model.base_directory)
@@ -45,7 +45,7 @@ class TestImprovedEnhancedTab:
         # Advanced options are collapsed by default
         assert not tab.advanced_options.isChecked()
 
-    def test_date_range_display(self, tab, view_model):
+    def test_date_range_display(self, tab, view_model) -> None:
         """Test the date range handling in view model."""
         # Test setting date ranges on the view model
         test_start = datetime(2023, 5, 1, 10, 0)
@@ -65,7 +65,7 @@ class TestImprovedEnhancedTab:
         assert view_model.start_date == test_start
         assert view_model.end_date == test_end
 
-    def test_browse_directory(self, qtbot, tab, view_model, monkeypatch):
+    def test_browse_directory(self, qtbot, tab, view_model, monkeypatch) -> None:
         """Test directory editing."""
         # Since there's no browse button, test direct text entry
         test_path = "/test/path"
@@ -79,12 +79,12 @@ class TestImprovedEnhancedTab:
         # Note: In real implementation, this would need to update view_model.base_directory
         # but the current implementation doesn't have that connection
 
-    def test_start_scan(self, qtbot, tab, view_model, monkeypatch):
+    def test_start_scan(self, qtbot, tab, view_model, monkeypatch) -> None:
         """Test starting a scan."""
         # Mock the start_scan method
         start_scan_called = False
 
-        def mock_start_scan():
+        def mock_start_scan() -> None:
             nonlocal start_scan_called
             start_scan_called = True
 
@@ -99,7 +99,7 @@ class TestImprovedEnhancedTab:
         # Note: The current implementation doesn't have controls for interval,
         # force_rescan, auto_download, satellite, or source selection
 
-    def test_cancel_operation(self, qtbot, tab, view_model, monkeypatch):
+    def test_cancel_operation(self, qtbot, tab, view_model, monkeypatch) -> None:
         """Test button states during operations."""
         # The current implementation doesn't have a cancel button
         # Test that buttons are properly enabled/disabled
@@ -117,7 +117,7 @@ class TestImprovedEnhancedTab:
 
         # Note: The current implementation doesn't have cancel functionality
 
-    def test_progress_updates(self, qtbot, tab):
+    def test_progress_updates(self, qtbot, tab) -> None:
         """Test status updates from view model."""
         # The current implementation doesn't have a progress bar
         # But it does have status updates via the status_label
@@ -135,7 +135,7 @@ class TestImprovedEnhancedTab:
         tab.view_model.status_updated.emit(new_status)
         assert tab.status_label.text() == new_status
 
-    def test_scan_completion(self, qtbot, tab, monkeypatch):
+    def test_scan_completion(self, qtbot, tab, monkeypatch) -> None:
         """Test handling scan completion."""
         # The current implementation only has status updates
         # Test that status is updated on completion

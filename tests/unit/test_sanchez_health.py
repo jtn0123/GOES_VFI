@@ -1,14 +1,14 @@
 """Tests for Sanchez health check and monitoring."""
 
 import os
+from pathlib import Path
 import platform
 import subprocess
 import tempfile
-from pathlib import Path
 from unittest.mock import Mock, patch
 
-import pytest
 from PIL import Image
+import pytest
 
 from goesvfi.sanchez.health_check import (
     SanchezHealthChecker,
@@ -22,7 +22,7 @@ from goesvfi.sanchez.health_check import (
 class TestSanchezHealthStatus:
     """Test SanchezHealthStatus data class."""
 
-    def test_health_status_initialization(self):
+    def test_health_status_initialization(self) -> None:
         """Test default initialization of health status."""
         status = SanchezHealthStatus()
 
@@ -35,7 +35,7 @@ class TestSanchezHealthStatus:
         assert not status.can_execute
         assert not status.is_healthy
 
-    def test_is_healthy_all_good(self):
+    def test_is_healthy_all_good(self) -> None:
         """Test is_healthy when all checks pass."""
         status = SanchezHealthStatus(
             binary_exists=True,
@@ -48,7 +48,7 @@ class TestSanchezHealthStatus:
 
         assert status.is_healthy
 
-    def test_is_healthy_with_errors(self):
+    def test_is_healthy_with_errors(self) -> None:
         """Test is_healthy when there are errors."""
         status = SanchezHealthStatus(
             binary_exists=True,
@@ -61,7 +61,7 @@ class TestSanchezHealthStatus:
 
         assert not status.is_healthy
 
-    def test_to_dict(self):
+    def test_to_dict(self) -> None:
         """Test converting status to dictionary."""
         status = SanchezHealthStatus(
             binary_exists=True,
@@ -85,7 +85,7 @@ class TestSanchezHealthStatus:
 class TestSanchezHealthChecker:
     """Test SanchezHealthChecker functionality."""
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test health checker initialization."""
         checker = SanchezHealthChecker()
 
@@ -94,7 +94,7 @@ class TestSanchezHealthChecker:
 
     @patch("platform.system")
     @patch("platform.machine")
-    def test_get_binary_path_darwin(self, mock_machine, mock_system):
+    def test_get_binary_path_darwin(self, mock_machine, mock_system) -> None:
         """Test getting binary path on macOS."""
         mock_system.return_value = "Darwin"
         mock_machine.return_value = "x86_64"
@@ -108,7 +108,7 @@ class TestSanchezHealthChecker:
 
     @patch("platform.system")
     @patch("platform.machine")
-    def test_get_binary_path_windows(self, mock_machine, mock_system):
+    def test_get_binary_path_windows(self, mock_machine, mock_system) -> None:
         """Test getting binary path on Windows."""
         mock_system.return_value = "Windows"
         mock_machine.return_value = "AMD64"
@@ -120,7 +120,7 @@ class TestSanchezHealthChecker:
         assert "win-x64" in str(path)
         assert path.name == "Sanchez.exe"
 
-    def test_check_binary_not_found(self):
+    def test_check_binary_not_found(self) -> None:
         """Test checking binary when it doesn't exist."""
         checker = SanchezHealthChecker()
         status = SanchezHealthStatus()
@@ -132,7 +132,7 @@ class TestSanchezHealthChecker:
         assert len(status.errors) > 0
         assert "not found" in status.errors[0]
 
-    def test_check_binary_exists(self):
+    def test_check_binary_exists(self) -> None:
         """Test checking binary when it exists."""
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
             tmp_path = Path(tmp.name)
@@ -158,7 +158,7 @@ class TestSanchezHealthChecker:
             finally:
                 tmp_path.unlink()
 
-    def test_check_resources_missing(self):
+    def test_check_resources_missing(self) -> None:
         """Test checking resources when they're missing."""
         checker = SanchezHealthChecker()
         status = SanchezHealthStatus(binary_path=Path("/fake/path/Sanchez"))
@@ -169,7 +169,7 @@ class TestSanchezHealthChecker:
         assert not status.resources_exist
         assert len(status.errors) > 0
 
-    def test_check_resources_present(self):
+    def test_check_resources_present(self) -> None:
         """Test checking resources when they're present."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create fake resource structure
@@ -199,7 +199,7 @@ class TestSanchezHealthChecker:
             assert len(status.missing_resources) == 0
 
     @patch("subprocess.run")
-    def test_check_execution_success(self, mock_run):
+    def test_check_execution_success(self, mock_run) -> None:
         """Test checking execution when Sanchez runs successfully."""
         mock_run.return_value = Mock(returncode=0, stdout="Sanchez v1.0.0", stderr="")
 
@@ -213,7 +213,7 @@ class TestSanchezHealthChecker:
         assert status.execution_time > 0
 
     @patch("subprocess.run")
-    def test_check_execution_failure(self, mock_run):
+    def test_check_execution_failure(self, mock_run) -> None:
         """Test checking execution when Sanchez fails."""
         mock_run.side_effect = subprocess.TimeoutExpired("sanchez", 5)
 
@@ -226,7 +226,7 @@ class TestSanchezHealthChecker:
         assert len(status.errors) > 0
         assert "timed out" in status.errors[0]
 
-    def test_run_health_check_complete(self):
+    def test_run_health_check_complete(self) -> None:
         """Test running a complete health check."""
         checker = SanchezHealthChecker()
 
@@ -249,7 +249,7 @@ class TestSanchezHealthChecker:
 class TestSanchezProcessMonitor:
     """Test SanchezProcessMonitor functionality."""
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test monitor initialization."""
         monitor = SanchezProcessMonitor()
 
@@ -257,7 +257,7 @@ class TestSanchezProcessMonitor:
         assert monitor.start_time is None
         assert monitor.is_cancelled is False
 
-    def test_set_progress_callback(self):
+    def test_set_progress_callback(self) -> None:
         """Test setting progress callback."""
         monitor = SanchezProcessMonitor()
         callback = Mock()
@@ -267,8 +267,8 @@ class TestSanchezProcessMonitor:
 
         callback.assert_called_once_with("Test", 0.5)
 
-    @pytest.mark.asyncio
-    async def test_run_sanchez_monitored_invalid_input(self):
+    @pytest.mark.asyncio()
+    async def test_run_sanchez_monitored_invalid_input(self) -> None:
         """Test running Sanchez with invalid input."""
         monitor = SanchezProcessMonitor()
 
@@ -290,7 +290,7 @@ class TestSanchezProcessMonitor:
                     output_path=Path("/tmp/output.png"),
                 )
 
-    def test_cancel(self):
+    def test_cancel(self) -> None:
         """Test cancelling a process."""
         monitor = SanchezProcessMonitor()
         mock_process = Mock()
@@ -302,7 +302,7 @@ class TestSanchezProcessMonitor:
         mock_process.terminate.assert_called_once()
 
 
-def test_validate_sanchez_input_valid():
+def test_validate_sanchez_input_valid() -> None:
     """Test validating valid input for Sanchez."""
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
         tmp_path = Path(tmp.name)
@@ -321,7 +321,7 @@ def test_validate_sanchez_input_valid():
             tmp_path.unlink()
 
 
-def test_validate_sanchez_input_missing_file():
+def test_validate_sanchez_input_missing_file() -> None:
     """Test validating missing input file."""
     is_valid, msg = validate_sanchez_input(Path("/nonexistent/file.png"))
 
@@ -329,7 +329,7 @@ def test_validate_sanchez_input_missing_file():
     assert "not found" in msg
 
 
-def test_validate_sanchez_input_empty_file():
+def test_validate_sanchez_input_empty_file() -> None:
     """Test validating empty input file."""
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
         tmp_path = Path(tmp.name)
@@ -345,7 +345,7 @@ def test_validate_sanchez_input_empty_file():
             tmp_path.unlink()
 
 
-def test_validate_sanchez_input_too_large():
+def test_validate_sanchez_input_too_large() -> None:
     """Test validating input file that's too large."""
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
         tmp_path = Path(tmp.name)
@@ -366,7 +366,7 @@ def test_validate_sanchez_input_too_large():
 
 
 @patch("goesvfi.sanchez.health_check.SanchezHealthChecker")
-def test_check_sanchez_health(mock_checker_class):
+def test_check_sanchez_health(mock_checker_class) -> None:
     """Test the convenience function check_sanchez_health."""
     mock_checker = Mock()
     mock_checker_class.return_value = mock_checker

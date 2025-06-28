@@ -1,13 +1,13 @@
 """Unit tests for the thread-local cache database."""
 
 import asyncio
-import os
-import tempfile
-import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
+import os
 from pathlib import Path
-from typing import Any, Dict
+import tempfile
+import threading
+from typing import Any
 
 import pytest
 
@@ -18,7 +18,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern
 class TestThreadLocalCacheDB:
     """Test cases for the ThreadLocalCacheDB class."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_db_path(self):
         """Create a temporary database file path."""
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
@@ -29,7 +29,7 @@ class TestThreadLocalCacheDB:
             except OSError:
                 pass  # File might already be deleted
 
-    def test_basic_creation(self, temp_db_path):
+    def test_basic_creation(self, temp_db_path) -> None:
         """Test basic creation and initialization."""
         db = ThreadLocalCacheDB(db_path=temp_db_path)
         try:
@@ -41,16 +41,16 @@ class TestThreadLocalCacheDB:
         finally:
             db.close()
 
-    def test_multithread_access(self, temp_db_path):
+    def test_multithread_access(self, temp_db_path) -> None:
         """Test accessing the database from multiple threads."""
         # Create the thread-local DB
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
         # Store references to thread IDs where each connection was created
         thread_references = {}
-        test_result: Dict[str, Any] = {"success": True, "errors": []}
+        test_result: dict[str, Any] = {"success": True, "errors": []}
 
-        def worker_thread():
+        def worker_thread() -> None:
             """Function that runs in worker threads."""
             thread_id = threading.get_ident()
             try:
@@ -64,7 +64,7 @@ class TestThreadLocalCacheDB:
                 assert thread_id in db._connections
             except Exception as e:
                 test_result["success"] = False
-                test_result["errors"].append(f"Thread {thread_id}: {str(e)}")
+                test_result["errors"].append(f"Thread {thread_id}: {e!s}")
 
         try:
             # Create and start several threads
@@ -93,8 +93,8 @@ class TestThreadLocalCacheDB:
         """Async worker that adds a timestamp to the database."""
         return await db.add_timestamp(timestamp, satellite, file_path, found)
 
-    @pytest.mark.asyncio
-    async def test_async_thread_safe_operations(self, temp_db_path):
+    @pytest.mark.asyncio()
+    async def test_async_thread_safe_operations(self, temp_db_path) -> None:
         """Test thread-safe operations with async functions."""
         # Create the thread-local DB
         db = ThreadLocalCacheDB(db_path=temp_db_path)
@@ -147,13 +147,13 @@ class TestThreadLocalCacheDB:
         finally:
             db.close()
 
-    def test_close_all_connections(self, temp_db_path):
+    def test_close_all_connections(self, temp_db_path) -> None:
         """Test that close() properly closes all connections."""
         # Create the thread-local DB
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
         # Create connections from multiple threads
-        def worker_thread():
+        def worker_thread() -> None:
             db._get_connection()  # Just get a connection
 
         # Start several threads to create connections
@@ -176,7 +176,7 @@ class TestThreadLocalCacheDB:
         # Verify connections dictionary is empty
         assert len(db._connections) == 0
 
-    def test_close_current_thread(self, temp_db_path):
+    def test_close_current_thread(self, temp_db_path) -> None:
         """Test closing the connection for the current thread only."""
         # Create the thread-local DB
         db = ThreadLocalCacheDB(db_path=temp_db_path)
@@ -188,7 +188,7 @@ class TestThreadLocalCacheDB:
         # Create connections from a worker thread
         worker_thread_id = None
 
-        def worker_thread():
+        def worker_thread() -> None:
             nonlocal worker_thread_id
             worker_thread_id = threading.get_ident()
             db._get_connection()  # Get a connection for this thread

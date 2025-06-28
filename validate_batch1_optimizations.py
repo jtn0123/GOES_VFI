@@ -74,8 +74,6 @@ def compare_coverage(original: dict, optimized: dict, name: str) -> bool:
     success = coverage >= 100
     if success:
         pass
-    else:
-        pass
 
     return success
 
@@ -132,8 +130,6 @@ def main() -> int:
         "✅" if r["success"] else "❌"
 
     if all_success:
-        pass
-    else:
         pass
 
     return 0 if all_success else 1

@@ -5,6 +5,10 @@ from pathlib import Path
 import re
 import shutil
 
+from goesvfi.utils import log
+
+LOGGER = log.get_logger(__name__)
+
 # !/usr/bin/env python3
 
 
@@ -96,14 +100,10 @@ def report_missing_intervals(
         for _time_str, present in daily_records[day]:
             if present:
                 pass
-            else:
-                pass
 
     if missing_intervals:
         for _dt_obj in missing_intervals:
             pass
-    else:
-        pass
 
 
 # --------------------------------------------------------------------------------
@@ -272,11 +272,11 @@ class DateSorter:
                             progress_callback(processed_count, total_files)
 
                 except ValueError:
-                    pass
                     # Skip files that don't match the expected date format
-                except Exception:
-                    pass
-                    # Handle other potential errors during file processing
+                    LOGGER.debug("Skipping file %s: Invalid date format", file_path)
+                except (OSError, PermissionError) as e:
+                    # Handle file operation errors
+                    LOGGER.warning("Error processing file %s: %s", file_path, e)
 
         if progress_callback:
             progress_callback(total_files, total_files)  # Ensure 100% progress at the end

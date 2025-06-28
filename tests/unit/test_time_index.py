@@ -1,8 +1,10 @@
 """Unit tests for the integrity_check TimeIndex functionality."""
 
-import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
+import unittest
+
+import pytest
 
 from goesvfi.integrity_check.time_index import (
     SatellitePattern,
@@ -17,7 +19,7 @@ from goesvfi.integrity_check.time_index import (
 class TestTimeIndex(unittest.TestCase):
     """Test cases for the TimeIndex class and related functions."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Sample dates for testing
         self.test_date_recent = datetime(2023, 6, 15, 12, 30, 0)  # Recent date (within 7 days window)
@@ -27,29 +29,29 @@ class TestTimeIndex(unittest.TestCase):
         self.original_recent_window_days = TimeIndex.RECENT_WINDOW_DAYS
         TimeIndex.RECENT_WINDOW_DAYS = 7  # Set to 7 days for testing
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Restore original values
         TimeIndex.RECENT_WINDOW_DAYS = self.original_recent_window_days
 
-    def test_extract_timestamp(self):
+    def test_extract_timestamp(self) -> None:
         """Test extracting timestamps from filenames."""
         # GOES-16 filename
         goes16_filename = "goes16_20220101_000000_band13.png"
         timestamp = extract_timestamp(goes16_filename, SatellitePattern.GOES_16)
-        self.assertEqual(timestamp, datetime(2022, 1, 1, 0, 0, 0))
+        assert timestamp == datetime(2022, 1, 1, 0, 0, 0)
 
         # GOES-18 filename
         goes18_filename = "goes18_20230615_123000_band13.png"
         timestamp = extract_timestamp(goes18_filename, SatellitePattern.GOES_18)
-        self.assertEqual(timestamp, datetime(2023, 6, 15, 12, 30, 0))
+        assert timestamp == datetime(2023, 6, 15, 12, 30, 0)
 
         # Invalid filename
         invalid_filename = "invalid_file.png"
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             extract_timestamp(invalid_filename, SatellitePattern.GOES_16)
 
-    def test_generate_timestamp_sequence(self):
+    def test_generate_timestamp_sequence(self) -> None:
         """Test generating a sequence of timestamps."""
         start = datetime(2023, 1, 1, 0, 0, 0)
         end = datetime(2023, 1, 1, 1, 0, 0)
@@ -58,12 +60,12 @@ class TestTimeIndex(unittest.TestCase):
         sequence = generate_timestamp_sequence(start, end, interval)
 
         # Expected: 7 timestamps (0:00, 0:10, 0:20, 0:30, 0:40, 0:50, 1:00)
-        self.assertEqual(len(sequence), 7)
-        self.assertEqual(sequence[0], start)
-        self.assertEqual(sequence[-1], end)
-        self.assertEqual(sequence[1], start + timedelta(minutes=10))
+        assert len(sequence) == 7
+        assert sequence[0] == start
+        assert sequence[-1] == end
+        assert sequence[1] == start + timedelta(minutes=10)
 
-    def test_detect_interval(self):
+    def test_detect_interval(self) -> None:
         """Test detecting intervals between timestamps."""
         # 10-minute intervals
         timestamps = [
@@ -74,7 +76,7 @@ class TestTimeIndex(unittest.TestCase):
         ]
 
         interval = detect_interval(timestamps)
-        self.assertEqual(interval, 10)
+        assert interval == 10
 
         # Mixed intervals, should detect the most common
         mixed_timestamps = [
@@ -86,9 +88,9 @@ class TestTimeIndex(unittest.TestCase):
         ]
 
         interval = detect_interval(mixed_timestamps)
-        self.assertEqual(interval, 10)  # Should still detect 10 as the most common
+        assert interval == 10  # Should still detect 10 as the most common
 
-    def test_to_cdn_url(self):
+    def test_to_cdn_url(self) -> None:
         """Test generating CDN URLs."""
         # GOES-16 URL
         url = TimeIndex.to_cdn_url(self.test_date_recent, SatellitePattern.GOES_16)
@@ -96,7 +98,7 @@ class TestTimeIndex(unittest.TestCase):
             f"https://cdn.star.nesdis.noaa.gov/GOES16/ABI/CONUS/13/"
             f"{self.test_date_recent.strftime('%Y%j%H%M')}_GOES16-ABI-CONUS-13-{TimeIndex.CDN_RES}.jpg"
         )
-        self.assertEqual(url, expected)
+        assert url == expected
 
         # GOES-18 URL
         url = TimeIndex.to_cdn_url(self.test_date_recent, SatellitePattern.GOES_18)
@@ -104,7 +106,7 @@ class TestTimeIndex(unittest.TestCase):
             f"https://cdn.star.nesdis.noaa.gov/GOES18/ABI/CONUS/13/"
             f"{self.test_date_recent.strftime('%Y%j%H%M')}_GOES18-ABI-CONUS-13-{TimeIndex.CDN_RES}.jpg"
         )
-        self.assertEqual(url, expected)
+        assert url == expected
 
         # With custom resolution
         custom_res = "250m"
@@ -113,35 +115,35 @@ class TestTimeIndex(unittest.TestCase):
             f"https://cdn.star.nesdis.noaa.gov/GOES16/ABI/CONUS/13/"
             f"{self.test_date_recent.strftime('%Y%j%H%M')}_GOES16-ABI-CONUS-13-{custom_res}.jpg"
         )
-        self.assertEqual(url, expected)
+        assert url == expected
 
-    def test_to_s3_key(self):
+    def test_to_s3_key(self) -> None:
         """Test generating S3 keys."""
         # GOES-16 S3 key with RadC product type (default)
         key = TimeIndex.to_s3_key(self.test_date_old, SatellitePattern.GOES_16, product_type="RadC", band=13)
         # Get the exact key generated by the function for the test
         s3_key_actual = to_s3_key(self.test_date_old, SatellitePattern.GOES_16, product_type="RadC", band=13)
-        self.assertEqual(key, s3_key_actual)
+        assert key == s3_key_actual
 
         # GOES-18 S3 key with RadC product type
         key = TimeIndex.to_s3_key(self.test_date_old, SatellitePattern.GOES_18, product_type="RadC", band=13)
         # Get the exact key generated by the function for the test
         s3_key_actual = to_s3_key(self.test_date_old, SatellitePattern.GOES_18, product_type="RadC", band=13)
-        self.assertEqual(key, s3_key_actual)
+        assert key == s3_key_actual
 
         # GOES-16 S3 key with RadF product type
         key = TimeIndex.to_s3_key(self.test_date_old, SatellitePattern.GOES_16, product_type="RadF", band=13)
         # Get the exact key generated by the function for the test
         s3_key_actual = to_s3_key(self.test_date_old, SatellitePattern.GOES_16, product_type="RadF", band=13)
-        self.assertEqual(key, s3_key_actual)
+        assert key == s3_key_actual
 
         # GOES-16 S3 key with different band
         key = TimeIndex.to_s3_key(self.test_date_old, SatellitePattern.GOES_16, product_type="RadC", band=2)
         # Get the exact key generated by the function for the test
         s3_key_actual = to_s3_key(self.test_date_old, SatellitePattern.GOES_16, product_type="RadC", band=2)
-        self.assertEqual(key, s3_key_actual)
+        assert key == s3_key_actual
 
-    def test_to_local_path(self):
+    def test_to_local_path(self) -> None:
         """Test generating local paths."""
         # GOES-16 path
         path = TimeIndex.to_local_path(self.test_date_recent, SatellitePattern.GOES_16)
@@ -149,7 +151,7 @@ class TestTimeIndex(unittest.TestCase):
             f"{self.test_date_recent.year}/{self.test_date_recent.month:02d}/"
             f"{self.test_date_recent.day:02d}/goes16_{self.test_date_recent.strftime('%Y%m%d_%H%M%S')}_band13.png"
         )
-        self.assertEqual(path, expected)
+        assert path == expected
 
         # GOES-18 path
         path = TimeIndex.to_local_path(self.test_date_recent, SatellitePattern.GOES_18)
@@ -157,27 +159,27 @@ class TestTimeIndex(unittest.TestCase):
             f"{self.test_date_recent.year}/{self.test_date_recent.month:02d}/"
             f"{self.test_date_recent.day:02d}/goes18_{self.test_date_recent.strftime('%Y%m%d_%H%M%S')}_band13.png"
         )
-        self.assertEqual(path, expected)
+        assert path == expected
 
-    def test_is_cdn_available(self):
+    def test_is_cdn_available(self) -> None:
         """Test checking if CDN is available for a date."""
         # Mock current time for testing
         current_time = datetime.now()
 
         # Recent date (within window) - should be available on CDN
         recent_date = current_time - timedelta(days=3)
-        self.assertTrue(TimeIndex.is_cdn_available(recent_date))
+        assert TimeIndex.is_cdn_available(recent_date)
 
         # Old date (outside window) - should not be available on CDN
         old_date = current_time - timedelta(days=TimeIndex.RECENT_WINDOW_DAYS + 1)
-        self.assertFalse(TimeIndex.is_cdn_available(old_date))
+        assert not TimeIndex.is_cdn_available(old_date)
 
         # Edge case - exactly at the window boundary
         _ = current_time - timedelta(days=TimeIndex.RECENT_WINDOW_DAYS)
         # This could be either True or False depending on implementation details,
         # so we're not asserting a specific value
 
-    def test_filter_s3_keys_by_band(self):
+    def test_filter_s3_keys_by_band(self) -> None:
         """Test filtering S3 keys by band number."""
         # Create test keys for different bands
         keys = [
@@ -194,61 +196,61 @@ class TestTimeIndex(unittest.TestCase):
 
         # Filter for Band 13
         band13_keys = TimeIndex.filter_s3_keys_by_band(keys, 13)
-        self.assertEqual(len(band13_keys), 3)  # Should match 2 RadC + 1 RadF keys
+        assert len(band13_keys) == 3  # Should match 2 RadC + 1 RadF keys
         for key in band13_keys:
-            self.assertIn("C13_", key)
+            assert "C13_" in key
 
         # Filter for Band 2
         band2_keys = TimeIndex.filter_s3_keys_by_band(keys, 2)
-        self.assertEqual(len(band2_keys), 1)
-        self.assertIn("C02_", band2_keys[0])
+        assert len(band2_keys) == 1
+        assert "C02_" in band2_keys[0]
 
         # Filter for Band 7
         band7_keys = TimeIndex.filter_s3_keys_by_band(keys, 7)
-        self.assertEqual(len(band7_keys), 1)
-        self.assertIn("C07_", band7_keys[0])
+        assert len(band7_keys) == 1
+        assert "C07_" in band7_keys[0]
 
         # Filter for non-existent band
         band99_keys = TimeIndex.filter_s3_keys_by_band(keys, 99)
-        self.assertEqual(len(band99_keys), 0)
+        assert len(band99_keys) == 0
 
         # Test empty list
         empty_keys = TimeIndex.filter_s3_keys_by_band([], 13)
-        self.assertEqual(len(empty_keys), 0)
+        assert len(empty_keys) == 0
 
-    def test_find_nearest_goes_intervals(self):
+    def test_find_nearest_goes_intervals(self) -> None:
         """Test finding nearest GOES intervals for different product types."""
         # Test with RadF product (10-minute intervals)
         test_time = datetime(2023, 6, 15, 12, 15, 0)  # 12:15 - between 12:10 and 12:20
         intervals = TimeIndex.find_nearest_intervals(test_time, product_type="RadF")
-        self.assertEqual(len(intervals), 2)
-        self.assertEqual(intervals[0], datetime(2023, 6, 15, 12, 10, 0))  # Previous interval
-        self.assertEqual(intervals[1], datetime(2023, 6, 15, 12, 20, 0))  # Next interval
+        assert len(intervals) == 2
+        assert intervals[0] == datetime(2023, 6, 15, 12, 10, 0)  # Previous interval
+        assert intervals[1] == datetime(2023, 6, 15, 12, 20, 0)  # Next interval
 
         # Test with RadC product (5-minute intervals)
         intervals = TimeIndex.find_nearest_intervals(test_time, product_type="RadC")
-        self.assertEqual(len(intervals), 2)
-        self.assertEqual(intervals[0], datetime(2023, 6, 15, 12, 11, 0))  # Previous interval
-        self.assertEqual(intervals[1], datetime(2023, 6, 15, 12, 16, 0))  # Next interval
+        assert len(intervals) == 2
+        assert intervals[0] == datetime(2023, 6, 15, 12, 11, 0)  # Previous interval
+        assert intervals[1] == datetime(2023, 6, 15, 12, 16, 0)  # Next interval
 
         # Test with RadM product (1-minute intervals)
         intervals = TimeIndex.find_nearest_intervals(test_time, product_type="RadM")
-        self.assertEqual(len(intervals), 1)
-        self.assertEqual(intervals[0], datetime(2023, 6, 15, 12, 15, 0))  # Exact minute
+        assert len(intervals) == 1
+        assert intervals[0] == datetime(2023, 6, 15, 12, 15, 0)  # Exact minute
 
         # Test with exact match on a RadF interval
         exact_match_time = datetime(2023, 6, 15, 12, 20, 0)  # Exactly on a 10-minute mark
         intervals = TimeIndex.find_nearest_intervals(exact_match_time, product_type="RadF")
-        self.assertEqual(len(intervals), 2)
-        self.assertEqual(intervals[0], datetime(2023, 6, 15, 12, 20, 0))
-        self.assertEqual(intervals[1], datetime(2023, 6, 15, 12, 30, 0))
+        assert len(intervals) == 2
+        assert intervals[0] == datetime(2023, 6, 15, 12, 20, 0)
+        assert intervals[1] == datetime(2023, 6, 15, 12, 30, 0)
 
         # Test edge case - just before the first interval of the hour
         edge_time = datetime(2023, 6, 15, 12, 00, 0)  # 12:00 - first RadF interval of the hour
         intervals = TimeIndex.find_nearest_intervals(edge_time, product_type="RadF")
-        self.assertEqual(len(intervals), 2)
-        self.assertEqual(intervals[0], datetime(2023, 6, 15, 12, 0, 0))  # Current hour's first interval
-        self.assertEqual(intervals[1], datetime(2023, 6, 15, 12, 10, 0))  # Next interval
+        assert len(intervals) == 2
+        assert intervals[0] == datetime(2023, 6, 15, 12, 0, 0)  # Current hour's first interval
+        assert intervals[1] == datetime(2023, 6, 15, 12, 10, 0)  # Next interval
 
 
 if __name__ == "__main__":

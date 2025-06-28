@@ -1,9 +1,9 @@
 """Integration test for preview functionality when directory is selected."""
 
+from pathlib import Path
 import tempfile
 import time
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -19,14 +19,14 @@ class TestPreviewFunctionality(unittest.TestCase):
     """Test preview images show correctly when directory is selected."""
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Set up QApplication for all tests."""
         if not QApplication.instance():
             cls.app = QApplication([])
         else:
             cls.app = QApplication.instance()
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Create temporary directory with test images
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -40,7 +40,7 @@ class TestPreviewFunctionality(unittest.TestCase):
         # Create MainWindow
         self.main_window = MainWindow(debug_mode=True)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up test fixtures."""
         self.temp_dir.cleanup()
         self.main_window.close()
@@ -52,12 +52,12 @@ class TestPreviewFunctionality(unittest.TestCase):
         img.save(path, "PNG")
         return path
 
-    def test_preview_images_loaded_on_directory_selection(self):
+    def test_preview_images_loaded_on_directory_selection(self) -> None:
         """Test that preview images are loaded when directory is selected."""
         # Verify initial state
-        self.assertIsNone(self.main_window.in_dir)
-        self.assertTrue(hasattr(self.main_window.main_tab, "first_frame_label"))
-        self.assertTrue(hasattr(self.main_window.main_tab, "last_frame_label"))
+        assert self.main_window.in_dir is None
+        assert hasattr(self.main_window.main_tab, "first_frame_label")
+        assert hasattr(self.main_window.main_tab, "last_frame_label")
 
         # Set the input directory
         self.main_window.set_in_dir(self.test_dir)
@@ -77,24 +77,24 @@ class TestPreviewFunctionality(unittest.TestCase):
         first_data, middle_data, last_data = preview_manager.get_current_frame_data()
 
         # Verify data was loaded
-        self.assertIsNotNone(first_data)
-        self.assertIsNotNone(middle_data)
-        self.assertIsNotNone(last_data)
+        assert first_data is not None
+        assert middle_data is not None
+        assert last_data is not None
 
         # Check that labels have pixmaps
         first_pixmap = self.main_window.main_tab.first_frame_label.pixmap()
         last_pixmap = self.main_window.main_tab.last_frame_label.pixmap()
 
-        self.assertIsNotNone(first_pixmap)
-        self.assertIsNotNone(last_pixmap)
-        self.assertFalse(first_pixmap.isNull())
-        self.assertFalse(last_pixmap.isNull())
+        assert first_pixmap is not None
+        assert last_pixmap is not None
+        assert not first_pixmap.isNull()
+        assert not last_pixmap.isNull()
 
         # Check that processed_image attribute is set
-        self.assertTrue(hasattr(self.main_window.main_tab.first_frame_label, "processed_image"))
-        self.assertTrue(hasattr(self.main_window.main_tab.last_frame_label, "processed_image"))
+        assert hasattr(self.main_window.main_tab.first_frame_label, "processed_image")
+        assert hasattr(self.main_window.main_tab.last_frame_label, "processed_image")
 
-    def test_preview_error_message_behavior(self):
+    def test_preview_error_message_behavior(self) -> None:
         """Test error handling when preview label is clicked without processed_image."""
         # Create a label without processed_image
         label = self.main_window.main_tab.first_frame_label
@@ -129,15 +129,15 @@ class TestPreviewFunctionality(unittest.TestCase):
 
                 except Exception:
                     # If mousePressEvent fails, test that the label at least exists
-                    self.assertIsNotNone(label)
+                    assert label is not None
                     # Verify it has the expected attributes
-                    self.assertTrue(hasattr(label, "setPixmap"))
+                    assert hasattr(label, "setPixmap")
         else:
             # If no mousePressEvent, just verify the label exists
-            self.assertIsNotNone(label)
+            assert label is not None
 
     @patch("goesvfi.gui_components.preview_manager.ImageLoader")
-    def test_preview_loading_with_sanchez(self, mock_loader_class):
+    def test_preview_loading_with_sanchez(self, mock_loader_class) -> None:
         """Test preview loading with Sanchez processing enabled."""
         # Mock the image loader
         mock_loader = MagicMock()
@@ -169,12 +169,12 @@ class TestPreviewFunctionality(unittest.TestCase):
 
         # Verify Sanchez was attempted
         if hasattr(self.main_window.main_tab, "sanchez_false_colour_checkbox"):
-            self.assertTrue(self.main_window.main_tab.sanchez_false_colour_checkbox.isChecked())
+            assert self.main_window.main_tab.sanchez_false_colour_checkbox.isChecked()
         elif hasattr(self.main_window.main_tab, "sanchez_checkbox"):
-            self.assertTrue(self.main_window.main_tab.sanchez_checkbox.isChecked())
+            assert self.main_window.main_tab.sanchez_checkbox.isChecked()
         else:
             # If checkbox doesn't exist, just verify the test ran without error
-            self.assertTrue(True)
+            assert True
 
 
 if __name__ == "__main__":

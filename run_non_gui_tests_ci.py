@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Test runner for CI environments that runs non-GUI tests with coverage.
+"""Test runner for CI environments that runs non-GUI tests with coverage.
 This version is specifically designed for GitHub Actions and other CI systems.
 """
 
@@ -71,7 +70,6 @@ def main():
         cmd.extend(["-n", str(args.parallel)])
 
     # Run tests
-    print(f"Running: {' '.join(cmd)}")
     result = subprocess.run(cmd, check=False)
 
     return result.returncode

@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.gui_components.icon_manager import get_icon
 from goesvfi.utils import config  # Assuming config is accessible this way
 
 LOGGER = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ class ModelLibraryTab(QWidget):
         # Enhanced model table
         self.model_table = QTableWidget()
         self.model_table.setColumnCount(3)
-        self.model_table.setHorizontalHeaderLabels(["🤖 Model Key", "📁 Path", "📊 Status"])
+        self.model_table.setHorizontalHeaderLabels(["Model Key", "Path", "Status"])
 
         # Style the table
         # Use default qt-material styling for QTableWidget
@@ -74,10 +75,21 @@ class ModelLibraryTab(QWidget):
 
     def _create_header(self, layout: QVBoxLayout) -> None:
         """Create the enhanced header section."""
-        header = QLabel("🤖 RIFE Model Library")
+        # Create header with icon
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+
+        icon_label = QLabel()
+        icon_label.setPixmap(get_icon("🤖").pixmap(24, 24))
+        header_layout.addWidget(icon_label)
+
+        header = QLabel("RIFE Model Library")
         header.setProperty("class", "AppHeader")
+        header_layout.addWidget(header)
+        header_layout.addStretch()
         # AppHeader class already set above, remove duplicate styling
-        layout.addWidget(header)
+        layout.addWidget(header_widget)
 
     def _create_info_section(self) -> QFrame:
         """Create the information section."""
@@ -87,13 +99,24 @@ class ModelLibraryTab(QWidget):
         layout = QVBoxLayout(container)
         layout.setSpacing(8)
 
-        info_label = QLabel("📚 Available RIFE Models")
+        # Create info label with icon
+        info_widget = QWidget()
+        info_layout = QHBoxLayout(info_widget)
+        info_layout.setContentsMargins(0, 0, 0, 0)
+
+        info_icon_label = QLabel()
+        info_icon_label.setPixmap(get_icon("📚").pixmap(16, 16))
+        info_layout.addWidget(info_icon_label)
+
+        info_label = QLabel("Available RIFE Models")
         info_label.setProperty("class", "FFmpegLabel")
-        layout.addWidget(info_label)
+        info_layout.addWidget(info_label)
+        info_layout.addStretch()
+        layout.addWidget(info_widget)
 
         description = QLabel(
-            "📄 RIFE (Real-time Intermediate Flow Estimation) models for video frame interpolation. "
-            "Models with ✅ status are ready to use for processing."
+            "RIFE (Real-time Intermediate Flow Estimation) models for video frame interpolation. "
+            "Models with Available status are ready to use for processing."
         )
         description.setWordWrap(True)
         # Use default qt-material styling for QLabel
@@ -142,16 +165,18 @@ class ModelLibraryTab(QWidget):
                 model_exists = model_dir_path.exists()
 
                 # Create table items with enhanced styling
-                key_item = QTableWidgetItem(f"🤖 {model_key}")
+                key_item = QTableWidgetItem(model_key)
                 path_item = QTableWidgetItem(str(model_dir_path))
 
                 if model_exists:
-                    status_item = QTableWidgetItem("✅ Available")
+                    status_item = QTableWidgetItem("Available")
+                    status_item.setData(1, get_icon("✅"))
                     font = status_item.font()
                     font.setBold(True)
                     status_item.setFont(font)
                 else:
-                    status_item = QTableWidgetItem("❌ Missing")
+                    status_item = QTableWidgetItem("Missing")
+                    status_item.setData(1, get_icon("❌"))
                     font = status_item.font()
                     font.setBold(True)
                     status_item.setFont(font)
@@ -169,12 +194,14 @@ class ModelLibraryTab(QWidget):
                     for row in range(self.model_table.rowCount())
                     if (item := self.model_table.item(row, 2)) is not None and "Available" in item.text()
                 )
-                self.status_label.setText(f"✅ {available_count} of {len(available_models)} models available")
+                self.status_label.setText(f"{available_count} of {len(available_models)} models available")
         except Exception as e:
             LOGGER.error("Failed to populate model table: %s", e, exc_info=True)
             # Enhanced error display
-            error_item = QTableWidgetItem(f"⚠️ Error loading models: {e}")
-            status_item = QTableWidgetItem("❌ Failed")
+            error_item = QTableWidgetItem(f"Error loading models: {e}")
+            error_item.setData(1, get_icon("⚠️"))
+            status_item = QTableWidgetItem("Failed")
+            status_item.setData(1, get_icon("❌"))
             font = status_item.font()
             font.setBold(True)
             status_item.setFont(font)
@@ -186,6 +213,6 @@ class ModelLibraryTab(QWidget):
 
             # Update status label for error
             if hasattr(self, "status_label"):
-                self.status_label.setText("❌ Error loading model information")
+                self.status_label.setText("Error loading model information")
                 self.status_label.setProperty("class", "StatusError")
                 # StatusError class already provides styling

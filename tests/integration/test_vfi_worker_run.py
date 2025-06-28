@@ -25,7 +25,7 @@ def create_dummy_png(path: pathlib.Path, size=(10, 10)) -> None:
     img.save(path, format="PNG")
 
 
-def test_vfi_worker_run(tmp_path, monkeypatch):
+def test_vfi_worker_run(tmp_path, monkeypatch) -> None:
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     for i in range(2):

@@ -8,13 +8,14 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced network and resource management coverage
 """
 
-import tempfile
+import operator
 from pathlib import Path
+import tempfile
 from unittest.mock import MagicMock
 
 import psutil
 from PyQt6.QtCore import QThread, QTimer, pyqtSignal
-from PyQt6.QtWidgets import QLabel, QMessageBox, QProgressBar, QApplication
+from PyQt6.QtWidgets import QApplication, QLabel, QMessageBox, QProgressBar
 import pytest
 
 from goesvfi.gui import MainWindow
@@ -48,7 +49,7 @@ class TestErrorHandlingUIOptimizedV2:
     @pytest.fixture(scope="class")
     def error_handling_components(self):
         """Create shared error handling and network testing components."""
-        
+
         # Enhanced Mock Network Operation
         class MockNetworkOperation(QThread):
             """Mock network operation with comprehensive timeout and retry simulation."""
@@ -57,7 +58,7 @@ class TestErrorHandlingUIOptimizedV2:
             finished = pyqtSignal(bool, str)
             error = pyqtSignal(str)
 
-            def __init__(self, timeout_after=None, retry_count=3, success_after=None):
+            def __init__(self, timeout_after=None, retry_count=3, success_after=None) -> None:
                 super().__init__()
                 self.timeout_after = timeout_after
                 self.retry_count = retry_count
@@ -65,7 +66,7 @@ class TestErrorHandlingUIOptimizedV2:
                 self.attempts = 0
                 self.operation_type = "download"
 
-            def run(self):
+            def run(self) -> None:
                 """Simulate network operation with various failure modes."""
                 while self.attempts < self.retry_count:
                     self.attempts += 1
@@ -76,7 +77,7 @@ class TestErrorHandlingUIOptimizedV2:
                         self.error.emit(f"Network timeout (attempt {self.attempts}/{self.retry_count})")
                         self.msleep(100)  # Fast wait for testing
                         continue
-                    
+
                     if self.attempts >= self.success_after:
                         # Success after specified attempts
                         self.progress.emit(100, f"{self.operation_type.title()} complete")
@@ -90,8 +91,8 @@ class TestErrorHandlingUIOptimizedV2:
         # Enhanced Retry Manager
         class RetryManager:
             """Advanced retry manager with exponential backoff and circuit breaker."""
-            
-            def __init__(self, max_retries=3, base_delay=100, backoff_factor=2.0):
+
+            def __init__(self, max_retries=3, base_delay=100, backoff_factor=2.0) -> None:
                 self.max_retries = max_retries
                 self.base_delay = base_delay
                 self.backoff_factor = backoff_factor
@@ -102,7 +103,7 @@ class TestErrorHandlingUIOptimizedV2:
                 self.consecutive_failures = 0
                 self.circuit_open = False
 
-            def start_operation(self, operation_func, status_callback, error_callback=None):
+            def start_operation(self, operation_func, status_callback, error_callback=None) -> None:
                 self.operation_func = operation_func
                 self.status_callback = status_callback
                 self.error_callback = error_callback or (lambda x: None)
@@ -110,7 +111,7 @@ class TestErrorHandlingUIOptimizedV2:
                 self.circuit_open = False
                 self._try_operation()
 
-            def _try_operation(self):
+            def _try_operation(self) -> bool | None:
                 if self.circuit_open:
                     self.error_callback("Circuit breaker open - too many failures")
                     return False
@@ -124,11 +125,11 @@ class TestErrorHandlingUIOptimizedV2:
                         self.status_callback("Success!")
                         self.consecutive_failures = 0
                         return True
-                    else:
-                        raise RuntimeError("Operation returned False")
+                    msg = "Operation returned False"
+                    raise RuntimeError(msg)
                 except Exception as e:
                     self.consecutive_failures += 1
-                    
+
                     if self.consecutive_failures >= self.circuit_breaker_threshold:
                         self.circuit_open = True
                         self.error_callback("Circuit breaker activated")
@@ -139,16 +140,15 @@ class TestErrorHandlingUIOptimizedV2:
                         self.status_callback(f"Failed: {e}. Retrying in {delay}ms...")
                         self.retry_timer.start(int(delay))
                         return None
-                    else:
-                        self.status_callback(f"Failed after {self.max_retries} attempts: {e}")
-                        self.error_callback(f"All retries exhausted: {e}")
-                        return False
+                    self.status_callback(f"Failed after {self.max_retries} attempts: {e}")
+                    self.error_callback(f"All retries exhausted: {e}")
+                    return False
 
-            def _retry_operation(self):
+            def _retry_operation(self) -> None:
                 self.retry_timer.stop()
                 self._try_operation()
 
-            def reset_circuit_breaker(self):
+            def reset_circuit_breaker(self) -> None:
                 """Reset circuit breaker for testing."""
                 self.circuit_open = False
                 self.consecutive_failures = 0
@@ -156,8 +156,8 @@ class TestErrorHandlingUIOptimizedV2:
         # Enhanced Memory Manager
         class MemoryManager:
             """Advanced memory management with predictive monitoring."""
-            
-            def __init__(self, window):
+
+            def __init__(self, window) -> None:
                 self.window = window
                 self.low_memory_mode = False
                 self.critical_memory_mode = False
@@ -169,17 +169,17 @@ class TestErrorHandlingUIOptimizedV2:
                 self.critical_threshold = 95.0
                 self.recovery_threshold = 70.0
 
-            def start_monitoring(self):
+            def start_monitoring(self) -> None:
                 self.memory_timer.start(1000)  # Check every second for testing
 
-            def stop_monitoring(self):
+            def stop_monitoring(self) -> None:
                 self.memory_timer.stop()
 
-            def check_memory(self):
+            def check_memory(self) -> None:
                 """Check memory usage with trend analysis."""
                 mem = psutil.virtual_memory()
                 self.memory_samples.append(mem.percent)
-                
+
                 # Keep only recent samples
                 if len(self.memory_samples) > self.max_samples:
                     self.memory_samples.pop(0)
@@ -198,7 +198,7 @@ class TestErrorHandlingUIOptimizedV2:
                 elif mem.percent < self.recovery_threshold:
                     self.disable_memory_modes()
 
-            def enable_low_memory_mode(self):
+            def enable_low_memory_mode(self) -> None:
                 self.low_memory_mode = True
                 # Reduce UI update frequency
                 if hasattr(self.window, "preview_timer"):
@@ -210,21 +210,21 @@ class TestErrorHandlingUIOptimizedV2:
 
                 self.window.status_bar.showMessage("Low memory mode enabled - some features limited", 3000)
 
-            def enable_critical_memory_mode(self):
+            def enable_critical_memory_mode(self) -> None:
                 self.critical_memory_mode = True
                 self.enable_low_memory_mode()  # Also enable low memory mode
-                
+
                 # More aggressive memory saving
                 if hasattr(self.window, "image_cache"):
                     self.window.image_cache.clear()
 
                 self.window.status_bar.showMessage("Critical memory mode - processing may be limited", 5000)
 
-            def disable_memory_modes(self):
+            def disable_memory_modes(self) -> None:
                 if self.low_memory_mode or self.critical_memory_mode:
                     self.low_memory_mode = False
                     self.critical_memory_mode = False
-                    
+
                     # Restore normal operation
                     if hasattr(self.window, "preview_timer"):
                         self.window.preview_timer.setInterval(100)
@@ -234,7 +234,7 @@ class TestErrorHandlingUIOptimizedV2:
 
                     self.window.status_bar.showMessage("Memory pressure relieved", 2000)
 
-            def _handle_memory_pressure_trend(self):
+            def _handle_memory_pressure_trend(self) -> None:
                 """Handle rapidly increasing memory usage."""
                 if not self.low_memory_mode:
                     self.window.status_bar.showMessage("Memory usage increasing rapidly", 2000)
@@ -242,8 +242,8 @@ class TestErrorHandlingUIOptimizedV2:
         # Enhanced Operation Lock Manager
         class OperationLockManager:
             """Advanced operation lock with queuing and priorities."""
-            
-            def __init__(self):
+
+            def __init__(self) -> None:
                 self.locked_operations = {}
                 self.operation_queue = []
                 self.max_concurrent = 3
@@ -264,19 +264,19 @@ class TestErrorHandlingUIOptimizedV2:
                 if len(self.locked_operations) >= self.max_concurrent:
                     # Queue the operation
                     self.operation_queue.append((operation_name, priority))
-                    self.operation_queue.sort(key=lambda x: x[1])  # Sort by priority
+                    self.operation_queue.sort(key=operator.itemgetter(1))  # Sort by priority
                     return False, f"Operation queued (position {len(self.operation_queue)})"
 
                 self.locked_operations[operation_name] = {
                     "priority": priority,
-                    "start_time": QTimer().remainingTime()  # Mock timestamp
+                    "start_time": QTimer().remainingTime(),  # Mock timestamp
                 }
                 return True, "Acquired"
 
             def release(self, operation_name):
                 if operation_name in self.locked_operations:
                     del self.locked_operations[operation_name]
-                    
+
                     # Process queue
                     if self.operation_queue:
                         next_op, priority = self.operation_queue.pop(0)
@@ -293,8 +293,8 @@ class TestErrorHandlingUIOptimizedV2:
         # Enhanced File Validator
         class FileValidator:
             """Comprehensive file validation with detailed error reporting."""
-            
-            def __init__(self):
+
+            def __init__(self) -> None:
                 self.valid_extensions = {".png", ".jpg", ".jpeg", ".tiff", ".bmp"}
                 self.supported_video_formats = {".mp4", ".mov", ".avi", ".mkv"}
                 self.max_file_size = 500 * 1024 * 1024  # 500MB
@@ -309,7 +309,7 @@ class TestErrorHandlingUIOptimizedV2:
                 for path in file_paths:
                     path = Path(path)
                     file_errors, file_warnings = self._validate_single_file(path, "input")
-                    
+
                     if file_errors:
                         errors.extend([(path.name, error) for error in file_errors])
                     else:
@@ -323,13 +323,13 @@ class TestErrorHandlingUIOptimizedV2:
                 """Validate output file location and format."""
                 path = Path(file_path)
                 errors, warnings = self._validate_single_file(path, "output")
-                
+
                 # Check parent directory writability
                 if not path.parent.exists():
                     errors.append("Output directory does not exist")
                 elif not path.parent.is_dir():
                     errors.append("Output path parent is not a directory")
-                
+
                 return errors, warnings
 
             def _validate_single_file(self, path, file_type):
@@ -345,7 +345,7 @@ class TestErrorHandlingUIOptimizedV2:
                     else:
                         errors.append(f"Unsupported format: {ext}")
                     return errors, warnings
-                elif file_type == "output" and ext not in self.supported_video_formats:
+                if file_type == "output" and ext not in self.supported_video_formats:
                     if ext in self.valid_extensions:
                         errors.append(f"Image format {ext} not supported for output - use video format")
                     else:
@@ -364,7 +364,7 @@ class TestErrorHandlingUIOptimizedV2:
                         if file_size < self.min_file_size:
                             errors.append("File appears to be corrupted (too small)")
                         elif file_size > self.max_file_size:
-                            warnings.append(f"Large file ({file_size // (1024*1024)}MB) may slow processing")
+                            warnings.append(f"Large file ({file_size // (1024 * 1024)}MB) may slow processing")
                     except OSError:
                         errors.append("Cannot read file statistics")
 
@@ -380,8 +380,7 @@ class TestErrorHandlingUIOptimizedV2:
 
     def test_network_operations_comprehensive(self, qtbot, main_window, error_handling_components) -> None:
         """Test comprehensive network operations with timeout and retry handling."""
-        window = main_window
-        
+
         # Create UI elements for network status
         status_label = QLabel("Ready")
         retry_label = QLabel("")
@@ -415,7 +414,7 @@ class TestErrorHandlingUIOptimizedV2:
         # Track UI updates
         ui_updates = []
 
-        def update_ui_on_error(error_msg):
+        def update_ui_on_error(error_msg) -> None:
             ui_updates.append(error_msg)
             status_label.setText(f"Error: {error_msg}")
             if "attempt" in error_msg:
@@ -424,7 +423,7 @@ class TestErrorHandlingUIOptimizedV2:
             else:
                 retry_label.setStyleSheet("color: red;")
 
-        def update_ui_on_progress(value, msg):
+        def update_ui_on_progress(value, msg) -> None:
             progress_bar.setValue(value)
             status_label.setText(msg)
 
@@ -440,7 +439,7 @@ class TestErrorHandlingUIOptimizedV2:
             network_op = MockNetworkOp(
                 timeout_after=scenario["timeout_after"],
                 success_after=scenario["success_after"],
-                retry_count=scenario["retry_count"]
+                retry_count=scenario["retry_count"],
             )
 
             # Connect signals
@@ -467,7 +466,6 @@ class TestErrorHandlingUIOptimizedV2:
 
     def test_retry_mechanisms_comprehensive(self, qtbot, main_window, error_handling_components) -> None:
         """Test comprehensive retry mechanisms with exponential backoff."""
-        window = main_window
         RetryManager = error_handling_components["retry_manager"]
 
         # Test multiple retry scenarios
@@ -505,7 +503,8 @@ class TestErrorHandlingUIOptimizedV2:
                     result = attempt_results[attempt_index]
                     attempt_index += 1
                     if not result:
-                        raise ConnectionError(f"Network error {attempt_index}")
+                        msg = f"Network error {attempt_index}"
+                        raise ConnectionError(msg)
                     return result
                 return False
 
@@ -513,16 +512,15 @@ class TestErrorHandlingUIOptimizedV2:
             status_updates = []
             error_messages = []
 
-            def status_callback(msg):
+            def status_callback(msg) -> None:
                 status_updates.append(msg)
 
-            def error_callback(msg):
+            def error_callback(msg) -> None:
                 error_messages.append(msg)
 
             # Create and configure retry manager
             retry_mgr = RetryManager(
-                base_delay=scenario["base_delay"],
-                backoff_factor=scenario.get("backoff_factor", 2.0)
+                base_delay=scenario["base_delay"], backoff_factor=scenario.get("backoff_factor", 2.0)
             )
 
             # Run operation
@@ -577,7 +575,7 @@ class TestErrorHandlingUIOptimizedV2:
 
         # Mock QMessageBox
         mock_warning = mocker.patch.object(QMessageBox, "warning")
-        
+
         for scenario in disk_space_scenarios:
             # Mock disk usage
             mock_disk_usage = mocker.patch("psutil.disk_usage")
@@ -588,7 +586,7 @@ class TestErrorHandlingUIOptimizedV2:
             )
 
             # Function to check disk space
-            def check_disk_space_for_output(output_path, required_space_gb=10):
+            def check_disk_space_for_output(output_path, required_space_gb=10) -> bool:
                 disk_stats = psutil.disk_usage(str(Path(output_path).parent))
                 free_gb = disk_stats.free / (1024**3)
 
@@ -716,17 +714,17 @@ class TestErrorHandlingUIOptimizedV2:
 
         # Mock message box
         mock_critical = mocker.patch.object(QMessageBox, "critical")
-        mock_warning = mocker.patch.object(QMessageBox, "warning")
+        mocker.patch.object(QMessageBox, "warning")
 
         for scenario in input_file_scenarios:
             # Create mock file paths
             test_files = [Path(f) for f in scenario["files"]]
-            
+
             # Mock file existence and properties
             def mock_exists(path):
                 # Corrupted/empty files "exist" but have issues
                 return "corrupted" not in str(path) and "empty" not in str(path)
-            
+
             def mock_stat(path):
                 if "corrupted" in str(path) or "empty" in str(path):
                     # Simulate corrupted file
@@ -736,7 +734,7 @@ class TestErrorHandlingUIOptimizedV2:
             with mocker.patch.object(Path, "exists", side_effect=mock_exists):
                 with mocker.patch.object(Path, "stat", side_effect=mock_stat):
                     # Validate files
-                    errors, warnings, processed_files = validator.validate_input_files(test_files)
+                    errors, warnings, _processed_files = validator.validate_input_files(test_files)
 
                     # Verify results
                     assert len(errors) == scenario["expect_errors"], (
@@ -780,12 +778,14 @@ class TestErrorHandlingUIOptimizedV2:
 
         for scenario in output_file_scenarios:
             errors, warnings = validator.validate_output_file(scenario["file"])
-            
+
             assert len(errors) == scenario["expect_errors"], (
                 f"{scenario['name']}: Expected {scenario['expect_errors']} errors, got {len(errors)}"
             )
 
-    def test_concurrent_operations_and_crash_recovery_comprehensive(self, qtbot, main_window, error_handling_components, mocker) -> None:
+    def test_concurrent_operations_and_crash_recovery_comprehensive(
+        self, qtbot, main_window, error_handling_components, mocker
+    ) -> None:
         """Test comprehensive concurrent operation prevention and crash recovery."""
         window = main_window
         OperationLockManager = error_handling_components["lock_manager"]
@@ -815,7 +815,7 @@ class TestErrorHandlingUIOptimizedV2:
         for scenario in lock_scenarios:
             # Create lock manager
             lock_mgr = OperationLockManager()
-            
+
             acquired_count = 0
             queued_count = 0
 
@@ -844,7 +844,7 @@ class TestErrorHandlingUIOptimizedV2:
 
         # Test UI feedback for concurrent operations
         lock_mgr = OperationLockManager()
-        
+
         # First operation should succeed
         success, message = lock_mgr.acquire("processing")
         assert success
@@ -888,20 +888,20 @@ class TestErrorHandlingUIOptimizedV2:
         for scenario in crash_recovery_scenarios:
             # Create crash file if needed
             crash_file = Path(tempfile.gettempdir()) / "goes_vfi_crash_test.log"
-            
+
             if scenario["crash_info"]:
                 crash_file.write_text(scenario["crash_info"])
 
             # Crash recovery dialog simulation
             class CrashRecoveryDialog:
-                def __init__(self, crash_info):
+                def __init__(self, crash_info) -> None:
                     self.crash_info = crash_info
                     self.recovery_option = "restore" if crash_info else None
 
                 def show_recovery_options(self):
                     return self.recovery_option
 
-                def restore_session(self, window):
+                def restore_session(self, window) -> bool:
                     if scenario["recovery_data"]:
                         data = scenario["recovery_data"]
                         window.set_in_dir(Path(data["input_dir"]))
@@ -927,7 +927,9 @@ class TestErrorHandlingUIOptimizedV2:
             # Verify crash file was handled
             assert not crash_file.exists(), f"Crash file not cleaned up for {scenario['name']}"
 
-    def test_settings_corruption_and_recovery_comprehensive(self, qtbot, main_window, error_handling_components, mocker) -> None:
+    def test_settings_corruption_and_recovery_comprehensive(
+        self, qtbot, main_window, error_handling_components, mocker
+    ) -> None:
         """Test comprehensive settings corruption recovery."""
         window = main_window
 
@@ -966,9 +968,11 @@ class TestErrorHandlingUIOptimizedV2:
             def mock_value(key, default=None, type=None):
                 if scenario["corruption_type"] == "value_error":
                     if "all" in scenario["error_keys"] or key in scenario["error_keys"]:
-                        raise ValueError("Settings corrupted")
+                        msg = "Settings corrupted"
+                        raise ValueError(msg)
                 elif scenario["corruption_type"] == "file_not_found":
-                    raise FileNotFoundError("Settings file not found")
+                    msg = "Settings file not found"
+                    raise FileNotFoundError(msg)
                 return default
 
             mock_instance.value = mock_value
@@ -976,7 +980,7 @@ class TestErrorHandlingUIOptimizedV2:
 
             # Settings recovery manager
             class SettingsRecovery:
-                def __init__(self, window):
+                def __init__(self, window) -> None:
                     self.window = window
                     self.backup_settings = {}
 
@@ -985,16 +989,15 @@ class TestErrorHandlingUIOptimizedV2:
                         # Try to load critical settings
                         settings = mock_settings()
                         test_keys = ["fps", "encoder", "output_format", "quality"]
-                        
+
                         for key in test_keys:
                             settings.value(key, "default")
-                        
+
                         return self.load_normal_settings()
-                    except (ValueError, FileNotFoundError) as e:
+                    except (ValueError, FileNotFoundError):
                         if scenario["should_reset_all"]:
                             return self.load_default_settings()
-                        else:
-                            return self.load_partial_recovery()
+                        return self.load_partial_recovery()
 
                 def load_normal_settings(self):
                     return {
@@ -1020,8 +1023,8 @@ class TestErrorHandlingUIOptimizedV2:
                     QMessageBox.information(
                         self.window,
                         "Settings Reset",
-                        f"Settings file was corrupted and has been reset to defaults.\n"
-                        f"Your preferences have been restored to default values.",
+                        "Settings file was corrupted and has been reset to defaults.\n"
+                        "Your preferences have been restored to default values.",
                     )
 
                     return defaults
@@ -1030,7 +1033,7 @@ class TestErrorHandlingUIOptimizedV2:
                     # Try to recover individual settings
                     recovered = {}
                     defaults = {"fps": 30, "encoder": "RIFE"}
-                    
+
                     for key, default in defaults.items():
                         try:
                             # Mock individual recovery attempts
@@ -1049,8 +1052,7 @@ class TestErrorHandlingUIOptimizedV2:
                     QMessageBox.information(
                         self.window,
                         "Settings Partially Recovered",
-                        f"Some settings were corrupted and have been reset.\n"
-                        f"Other settings have been preserved.",
+                        "Some settings were corrupted and have been reset.\nOther settings have been preserved.",
                     )
 
                     return recovered
@@ -1063,7 +1065,7 @@ class TestErrorHandlingUIOptimizedV2:
             assert result is not None, f"Recovery failed for {scenario['name']}"
             assert isinstance(result, dict), f"Recovery result invalid for {scenario['name']}"
             assert "fps" in result, f"FPS setting missing after recovery for {scenario['name']}"
-            
+
             # Verify UI was updated
             assert isinstance(window.main_tab.fps_spinbox.value(), int)
             assert window.main_tab.encoder_combo.currentText() in {"RIFE", "FFmpeg"}
@@ -1073,7 +1075,7 @@ class TestErrorHandlingUIOptimizedV2:
                 mock_info.assert_called()
                 args = mock_info.call_args[0]
                 assert "Settings Reset" in args[1] or "corrupted" in args[2].lower()
-            
+
             # Reset mocks for next scenario
             mock_info.reset_mock()
             mock_critical.reset_mock()

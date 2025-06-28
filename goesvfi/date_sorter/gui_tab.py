@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 )
 
 from goesvfi.date_sorter.view_model import DateSorterViewModel  # Import the ViewModel
+from goesvfi.gui_components.update_manager import register_update, request_update
 
 LOGGER = logging.getLogger(__name__)
 
@@ -135,9 +136,12 @@ class DateSorterTab(QWidget):
         # Set main layout
         self.setLayout(main_layout)
 
+        # Setup UpdateManager integration
+        self._setup_update_manager()
+
         # Register observer with ViewModel
-        self.view_model.set_observer(self._update_ui)
-        self._update_ui()  # Initial UI update
+        self.view_model.set_observer(self._update_ui_via_manager)
+        self.request_ui_update()  # Initial UI update
 
     def _create_header(self, layout: QVBoxLayout) -> None:
         """Create the enhanced header section."""
@@ -161,6 +165,49 @@ class DateSorterTab(QWidget):
             # This case should ideally be handled by the ViewModel's can_execute
             # but adding a fallback message here for clarity.
             QMessageBox.warning(self, "Action Not Allowed", "Cannot start scan at this time.")
+
+    def _setup_update_manager(self) -> None:
+        """Set up UpdateManager integration for batched UI updates."""
+        # Register UI update operations
+        register_update("date_sorter_ui", self._update_ui, priority=2)
+        register_update("date_sorter_progress", self._update_progress_only, priority=1)
+        register_update("date_sorter_status", self._update_status_only, priority=2)
+
+        LOGGER.info("DateSorterTab integrated with UpdateManager")
+
+    def _update_ui_via_manager(self) -> None:
+        """Observer callback that triggers batched UI update."""
+        self.request_ui_update()
+
+    def _update_progress_only(self) -> None:
+        """Update only progress elements."""
+        self.progress_bar.setValue(int(self.view_model.progress_percentage))
+        if self.view_model.progress_percentage > 0:
+            self.progress_bar.setFormat(f"{self.view_model.progress_percentage:.1f}%")
+        else:
+            self.progress_bar.setFormat("Ready")
+
+    def _update_status_only(self) -> None:
+        """Update only status text."""
+        self.status_text.setPlainText(self.view_model.status_message)
+        # Auto-scroll status text to bottom
+        v_scrollbar: QScrollBar | None = self.status_text.verticalScrollBar()
+        if v_scrollbar:
+            v_scrollbar.setValue(v_scrollbar.maximum())
+        self.scan_button.setEnabled(self.view_model.can_start_sorting)
+
+    def request_ui_update(self, update_type: str = "ui") -> None:
+        """Request UI updates through UpdateManager.
+
+        Args:
+            update_type: Type of update ('ui', 'progress', 'status')
+        """
+        if update_type == "ui":
+            request_update("date_sorter_ui")
+        elif update_type == "progress":
+            request_update("date_sorter_progress")
+        elif update_type == "status":
+            request_update("date_sorter_status")
 
     def _update_ui(self) -> None:
         """Updates the UI elements based on the ViewModel's state."""

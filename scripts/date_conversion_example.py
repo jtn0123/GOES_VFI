@@ -6,9 +6,9 @@ This script shows how to use the date_utils module to convert between calendar d
 and day of year (DOY) formats for satellite imagery directories.
 """
 
+from datetime import date
 import os
 import sys
-from datetime import date
 
 # Add the project root to the path so we can import the modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -23,7 +23,7 @@ from goesvfi.integrity_check.time_index import (
 from goesvfi.utils import date_utils
 
 
-def demonstrate_date_conversion():
+def demonstrate_date_conversion() -> None:
     """Demonstrate conversion between calendar dates and DOY format."""
     print("Date Conversion Examples")
     print("=======================")
@@ -89,7 +89,7 @@ def demonstrate_date_conversion():
             print()
 
 
-def demonstrate_time_index_integration():
+def demonstrate_time_index_integration() -> None:
     """Demonstrate integration with time_index module."""
     print("\nTime Index Integration")
     print("=====================")

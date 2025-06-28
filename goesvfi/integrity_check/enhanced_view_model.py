@@ -14,8 +14,9 @@ import time
 import traceback
 from typing import Any, cast
 
-from PyQt6.QtCore import QObject, QRunnable, QThread, QThreadPool, pyqtSignal
+from PyQt6.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
 
+from goesvfi.gui_components.update_manager import register_update, request_update
 from goesvfi.utils import log
 
 from .cache_db import CacheDB
@@ -165,17 +166,11 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         self._last_download_rate = 0.0
         self._currently_downloading_items: list[datetime] = []
 
-        # Setup disk space check timer - disabled for now due to blocking issues
-        self._disk_space_timer = QThread()
-        self._disk_space_timer.setObjectName("DiskSpaceCheckerThread")
-        # self._disk_space_timer.started.connect(self._check_disk_space_loop)
-        # self._disk_space_timer.start()
-        # Instead, just emit a single disk space update
-        try:
-            used_gb, total_gb = self.get_disk_space_info()
-            self.disk_space_updated.emit(used_gb, total_gb)
-        except Exception:
-            LOGGER.exception("Error in initial disk space check")
+        # Setup UpdateManager integration for disk space checks
+        self._setup_update_manager()
+
+        # Initial disk space update
+        request_update("enhanced_vm_disk_space")
 
     # --- Additional property accessors ---
 
@@ -466,6 +461,63 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             LOGGER.exception("Error resetting database")
             self.status_message = f"Error resetting database: {e}"
 
+    # --- UpdateManager Integration ---
+
+    def _setup_update_manager(self) -> None:
+        """Set up UpdateManager integration for batched updates."""
+        # Register update operations
+        register_update("enhanced_vm_disk_space", self._update_disk_space, priority=3)
+        register_update("enhanced_vm_progress", self._update_progress, priority=1)
+        register_update("enhanced_vm_status", self._update_status, priority=2)
+
+        # Register periodic disk space check (every 5 seconds)
+        self._disk_space_check_count = 0
+        self._schedule_disk_space_check()
+
+        LOGGER.info("EnhancedIntegrityCheckViewModel integrated with UpdateManager")
+
+    def _schedule_disk_space_check(self) -> None:
+        """Schedule the next disk space check."""
+        if self._disk_space_check_count < 100:  # Limit to 100 checks
+            from PyQt6.QtCore import QTimer
+            QTimer.singleShot(5000, self._request_disk_space_update)  # 5 seconds
+
+    def _request_disk_space_update(self) -> None:
+        """Request a disk space update through UpdateManager."""
+        self._disk_space_check_count += 1
+        request_update("enhanced_vm_disk_space")
+        self._schedule_disk_space_check()
+
+    def _update_disk_space(self) -> None:
+        """Update disk space information (called by UpdateManager)."""
+        try:
+            used_gb, total_gb = self.get_disk_space_info()
+            self.disk_space_updated.emit(used_gb, total_gb)
+        except Exception:
+            LOGGER.exception("Error in disk space update")
+
+    def _update_progress(self) -> None:
+        """Update progress information (called by UpdateManager)."""
+        if hasattr(self, "_progress_current") and hasattr(self, "_progress_total"):
+            self.progress_updated.emit(self._progress_current, self._progress_total, 0.0)
+
+    def _update_status(self) -> None:
+        """Update status information (called by UpdateManager)."""
+        # This can be expanded to batch multiple status updates
+
+    def request_view_model_update(self, update_type: str = "status") -> None:
+        """Request updates through UpdateManager.
+
+        Args:
+            update_type: Type of update ('disk_space', 'progress', 'status')
+        """
+        if update_type == "disk_space":
+            request_update("enhanced_vm_disk_space")
+        elif update_type == "progress":
+            request_update("enhanced_vm_progress")
+        elif update_type == "status":
+            request_update("enhanced_vm_status")
+
     # --- Callback handlers and utility methods ---
 
     def _check_disk_space_loop(self) -> None:
@@ -492,9 +544,9 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         self._progress_current = current
         self._progress_total = total
 
-        # Update UI
+        # Update UI through UpdateManager
         self.status_message = message
-        self.progress_updated.emit(current, total, 0.0)  # No ETA calculation
+        request_update("enhanced_vm_progress")
 
     def _handle_enhanced_scan_completed(self, result: dict[str, Any]) -> None:
         """Handle completion of the enhanced scan operation."""
@@ -820,16 +872,9 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             self._stop_disk_space_check = True
 
         # Stop disk space check thread
-        if hasattr(self, "_disk_space_timer"):
-            try:
-                if self._disk_space_timer.isRunning():
-                    LOGGER.debug("Stopping disk space timer thread")
-                    self._disk_space_timer.terminate()
-                    timeout_ms = 1000  # 1 second timeout
-                    if not self._disk_space_timer.wait(timeout_ms):
-                        LOGGER.warning("Disk space timer thread did not stop in time")
-            except Exception:
-                LOGGER.exception("Error stopping disk space timer")
+        # Stop disk space checks by setting the counter to max
+        if hasattr(self, "_disk_space_check_count"):
+            self._disk_space_check_count = 100  # Stop further checks
 
         # Close database connection
         if hasattr(self, "_cache_db"):

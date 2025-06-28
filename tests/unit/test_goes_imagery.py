@@ -2,9 +2,9 @@
 Tests for GOES Satellite Imagery functionality
 """
 
+from pathlib import Path
 import shutil
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 # Mock boto3 and botocore before importing the module
@@ -22,19 +22,19 @@ with patch("boto3.client"), patch("botocore.UNSIGNED", create=True):
 class TestGOESImagery(unittest.TestCase):
     """Tests for GOES Imagery functionality."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test environment."""
         # Create a temp directory for test output
         self.test_dir = Path("test_goes_imagery_output")
         self.test_dir.mkdir(exist_ok=True)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up after tests."""
         # Remove test directory
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir)
 
-    def test_channel_type_enum(self):
+    def test_channel_type_enum(self) -> None:
         """Test ChannelType enum."""
         # Test channel attributes
         assert ChannelType.CH13.number == 13
@@ -61,14 +61,14 @@ class TestGOESImagery(unittest.TestCase):
         assert ChannelType.TRUE_COLOR.is_composite
         assert not ChannelType.CH01.is_composite
 
-    def test_product_type_mapping(self):
+    def test_product_type_mapping(self) -> None:
         """Test ProductType mapping functions."""
         assert ProductType.to_s3_prefix(ProductType.FULL_DISK) == "ABI-L1b-RadF"
 
         assert ProductType.to_web_path(ProductType.FULL_DISK) == "FD"
 
     @patch("goesvfi.integrity_check.goes_imagery.requests.get")
-    def test_download_precolorized_image(self, mock_get):
+    def test_download_precolorized_image(self, mock_get) -> None:
         """Test downloading a pre-colorized image."""
         # Setup mock
         mock_response = MagicMock()
@@ -94,7 +94,7 @@ class TestGOESImagery(unittest.TestCase):
         expected_url = "https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/latest/13_1200x1200.jpg"
         mock_get.assert_called_once_with(expected_url, timeout=30)
 
-    def test_extract_timestamp_from_filename(self):
+    def test_extract_timestamp_from_filename(self) -> None:
         """Test extracting timestamp from filename."""
         processor = GOESImageProcessor(output_dir=self.test_dir)
 
@@ -106,7 +106,7 @@ class TestGOESImagery(unittest.TestCase):
         assert result == "20231027_155021"
 
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_precolorized_image")
-    def test_get_imagery_product_mode(self, mock_download):
+    def test_get_imagery_product_mode(self, mock_download) -> None:
         """Test getting imagery in product mode."""
         # Setup mock
         expected_path = self.test_dir / "test_image.jpg"
@@ -140,7 +140,7 @@ class TestGOESImagery(unittest.TestCase):
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.find_raw_data")
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_raw_data")
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageProcessor.process_raw_data")
-    def test_get_imagery_raw_mode(self, mock_process, mock_download, mock_find):
+    def test_get_imagery_raw_mode(self, mock_process, mock_download, mock_find) -> None:
         """Test getting imagery in raw data mode."""
         # Setup mocks
         mock_find.return_value = "test_file_key"

@@ -1,9 +1,9 @@
+from datetime import datetime
 import os
+from pathlib import Path
 import re
 import time
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -16,13 +16,13 @@ from goesvfi.file_sorter.sorter_refactored import (
 # --- Fixtures ---
 
 
-@pytest.fixture
+@pytest.fixture()
 def sorter():
     """Returns a simple FileSorter instance with default settings."""
     return FileSorter(dry_run=False, duplicate_mode=DuplicateMode.OVERWRITE)
 
 
-@pytest.fixture
+@pytest.fixture()
 def sorter_dirs(tmp_path):
     """Creates temporary source directory."""
     source_dir = tmp_path / "source"
@@ -30,7 +30,7 @@ def sorter_dirs(tmp_path):
     return source_dir
 
 
-@pytest.fixture
+@pytest.fixture()
 def create_files(sorter_dirs):
     """Creates date-named folders with PNG files inside.
 
@@ -42,8 +42,8 @@ def create_files(sorter_dirs):
         - expected_copied_count: Integer count of files expected to be copied initially.
     """
     source_dir = sorter_dirs
-    files_details_by_output: Dict[str, Dict[str, Any]] = {}
-    expected_structure: Dict[str, List[str]] = {}
+    files_details_by_output: dict[str, dict[str, Any]] = {}
+    expected_structure: dict[str, list[str]] = {}
     # Structure: {folder_name: [file_base_name1, file_base_name2], ...}
     folder_files = {
         "2023-01-15_10-00-00": ["imageA", "imageB"],
@@ -103,7 +103,7 @@ def create_files(sorter_dirs):
 class TestFileSorterHelpers:
     """Test cases for the refactored FileSorter helper functions."""
 
-    def test_validate_directories_existing(self, sorter, tmp_path):
+    def test_validate_directories_existing(self, sorter, tmp_path) -> None:
         """Test validating existing directories."""
         source_dir = tmp_path / "source"
         dest_dir = tmp_path / "dest"
@@ -115,7 +115,7 @@ class TestFileSorterHelpers:
         assert result_source == source_dir
         assert result_dest == dest_dir
 
-    def test_validate_directories_nonexistent_source(self, sorter, tmp_path):
+    def test_validate_directories_nonexistent_source(self, sorter, tmp_path) -> None:
         """Test validating with non-existent source directory."""
         source_dir = tmp_path / "nonexistent"
         dest_dir = tmp_path / "dest"
@@ -124,7 +124,7 @@ class TestFileSorterHelpers:
         with pytest.raises(FileNotFoundError):
             sorter._validate_directories(str(source_dir), str(dest_dir))
 
-    def test_validate_directories_create_dest(self, sorter, tmp_path):
+    def test_validate_directories_create_dest(self, sorter, tmp_path) -> None:
         """Test that destination directory is created if it doesn't exist."""
         source_dir = tmp_path / "source"
         dest_dir = tmp_path / "dest"
@@ -136,7 +136,7 @@ class TestFileSorterHelpers:
         assert result_dest == dest_dir
         assert dest_dir.exists()
 
-    def test_validate_directories_dest_not_dir(self, sorter, tmp_path):
+    def test_validate_directories_dest_not_dir(self, sorter, tmp_path) -> None:
         """Test validating when destination exists but is not a directory."""
         source_dir = tmp_path / "source"
         dest_file = tmp_path / "dest_file"
@@ -146,7 +146,7 @@ class TestFileSorterHelpers:
         with pytest.raises(NotADirectoryError):
             sorter._validate_directories(str(source_dir), str(dest_file))
 
-    def test_check_for_cancellation_false(self, sorter):
+    def test_check_for_cancellation_false(self, sorter) -> None:
         """Test cancellation check when no cancellation is requested."""
         # No cancellation callback set
         assert not sorter._check_for_cancellation()
@@ -155,17 +155,17 @@ class TestFileSorterHelpers:
         sorter._should_cancel = lambda: False
         assert not sorter._check_for_cancellation()
 
-    def test_check_for_cancellation_true(self, sorter):
+    def test_check_for_cancellation_true(self, sorter) -> None:
         """Test cancellation check when cancellation is requested."""
         sorter._should_cancel = lambda: True
         assert sorter._check_for_cancellation()
 
-    def test_update_progress_no_callback(self, sorter):
+    def test_update_progress_no_callback(self, sorter) -> None:
         """Test progress update with no callback set."""
         # This shouldn't raise any errors
         sorter._update_progress(5, 10)
 
-    def test_update_progress_with_callback(self, sorter):
+    def test_update_progress_with_callback(self, sorter) -> None:
         """Test progress update with callback set."""
         mock_callback = mock.Mock()
         sorter._progress_callback = mock_callback
@@ -174,7 +174,7 @@ class TestFileSorterHelpers:
 
         mock_callback.assert_called_once_with(5, 10)
 
-    def test_is_valid_date_folder_valid(self, sorter):
+    def test_is_valid_date_folder_valid(self, sorter) -> None:
         """Test folder name validation with valid date folders."""
         valid_folders = [
             "2023-01-15_10-00-00",
@@ -185,7 +185,7 @@ class TestFileSorterHelpers:
         for folder in valid_folders:
             assert sorter._is_valid_date_folder(folder)
 
-    def test_is_valid_date_folder_invalid(self, sorter):
+    def test_is_valid_date_folder_invalid(self, sorter) -> None:
         """Test folder name validation with invalid date folders."""
         invalid_folders = [
             "invalid-date-folder",
@@ -204,7 +204,7 @@ class TestFileSorterHelpers:
         for folder in invalid_folders:
             assert not sorter._is_valid_date_folder(folder)
 
-    def test_collect_date_folders(self, sorter, create_files):
+    def test_collect_date_folders(self, sorter, create_files) -> None:
         """Test collecting date folders from source directory."""
         source_dir, _, _, _ = create_files
 
@@ -225,7 +225,7 @@ class TestFileSorterHelpers:
         }
         assert folder_names == expected_folder_names
 
-    def test_get_folder_datetime_valid(self, sorter):
+    def test_get_folder_datetime_valid(self, sorter) -> None:
         """Test extracting datetime string from valid folder names."""
         test_cases = [
             ("2023-01-15_10-00-00", "20230115T100000"),
@@ -239,7 +239,7 @@ class TestFileSorterHelpers:
             result = sorter._get_folder_datetime(folder)
             assert result == expected_dt
 
-    def test_get_folder_datetime_invalid(self, sorter):
+    def test_get_folder_datetime_invalid(self, sorter) -> None:
         """Test extracting datetime string from invalid folder names."""
         invalid_folders = [
             "invalid-date-folder",
@@ -254,7 +254,7 @@ class TestFileSorterHelpers:
             result = sorter._get_folder_datetime(folder)
             assert result is None
 
-    def test_collect_files_to_process(self, sorter, create_files):
+    def test_collect_files_to_process(self, sorter, create_files) -> None:
         """Test collecting files to process from date folders."""
         source_dir, _, _, expected_copied_count = create_files
 
@@ -271,14 +271,14 @@ class TestFileSorterHelpers:
             assert isinstance(folder_datetime, str)
             assert len(folder_datetime) == 15  # Format: "YYYYMMDDThhmmss"
 
-    def test_collect_files_with_cancellation(self, sorter, create_files):
+    def test_collect_files_with_cancellation(self, sorter, create_files) -> None:
         """Test file collection with cancellation."""
         source_dir, _, _, _ = create_files
 
         # Set up cancellation after first folder
         cancel_called = [False]
 
-        def should_cancel():
+        def should_cancel() -> bool:
             if not cancel_called[0]:
                 cancel_called[0] = True
                 return False
@@ -291,7 +291,7 @@ class TestFileSorterHelpers:
         # Should return empty list on cancellation
         assert files_to_process == []
 
-    def test_prepare_target_path_normal(self, sorter, tmp_path):
+    def test_prepare_target_path_normal(self, sorter, tmp_path) -> None:
         """Test preparing target path for a normal file."""
         source_file = Path("imageA.png")
         folder_datetime = "20230115T100000"
@@ -303,7 +303,7 @@ class TestFileSorterHelpers:
         assert new_file_path == dest_dir / "imageA" / "imageA_20230115T100000Z.png"
         assert base_name == "imageA"
 
-    def test_prepare_target_path_already_formatted(self, sorter, tmp_path):
+    def test_prepare_target_path_already_formatted(self, sorter, tmp_path) -> None:
         """Test preparing target path for a file that already has datetime suffix."""
         source_file = Path("imageA_20230115T100000Z.png")
         folder_datetime = "20230115T100000"
@@ -315,7 +315,7 @@ class TestFileSorterHelpers:
         assert new_file_path == dest_dir / "imageA" / "imageA_20230115T100000Z.png"
         assert base_name == "imageA"
 
-    def test_check_files_identical_nonexistent(self, sorter, tmp_path):
+    def test_check_files_identical_nonexistent(self, sorter, tmp_path) -> None:
         """Test checking for identical files when destination doesn't exist."""
         source_file = tmp_path / "source.png"
         source_file.write_text("source content")
@@ -331,7 +331,7 @@ class TestFileSorterHelpers:
         assert abs(mtime - source_mtime) < 0.1
         assert sorter.files_skipped == 0  # Should not increment the skipped counter
 
-    def test_check_files_identical_same(self, sorter, tmp_path):
+    def test_check_files_identical_same(self, sorter, tmp_path) -> None:
         """Test checking for identical files when they are the same size and mtime."""
         source_file = tmp_path / "source.png"
         dest_file = tmp_path / "dest.png"
@@ -350,7 +350,7 @@ class TestFileSorterHelpers:
         assert abs(mtime - source_mtime) < 0.1
         assert sorter.files_skipped == 1  # Should increment the skipped counter
 
-    def test_check_files_identical_different_size(self, sorter, tmp_path):
+    def test_check_files_identical_different_size(self, sorter, tmp_path) -> None:
         """Test checking for identical files when they have different sizes."""
         source_file = tmp_path / "source.png"
         dest_file = tmp_path / "dest.png"
@@ -369,7 +369,7 @@ class TestFileSorterHelpers:
         assert abs(mtime - source_mtime) < 0.1
         assert sorter.files_skipped == 0  # Should not increment the skipped counter
 
-    def test_check_files_identical_different_mtime(self, sorter, tmp_path):
+    def test_check_files_identical_different_mtime(self, sorter, tmp_path) -> None:
         """Test checking for identical files when they have same size but different mtime."""
         source_file = tmp_path / "source.png"
         dest_file = tmp_path / "dest.png"
@@ -390,7 +390,7 @@ class TestFileSorterHelpers:
         assert abs(mtime - source_mtime) < 0.1
         assert sorter.files_skipped == 0  # Should not increment the skipped counter
 
-    def test_check_files_identical_custom_tolerance(self, sorter, tmp_path):
+    def test_check_files_identical_custom_tolerance(self, sorter, tmp_path) -> None:
         """Test checking for identical files with custom mtime tolerance."""
         source_file = tmp_path / "source.png"
         dest_file = tmp_path / "dest.png"
@@ -428,7 +428,7 @@ class TestFileSorterHelpers:
         ),
     ],
 )
-def test_handle_duplicate_modes(sorter, tmp_path, mode, precreate, expected, expected_msg, skipped):
+def test_handle_duplicate_modes(sorter, tmp_path, mode, precreate, expected, expected_msg, skipped) -> None:
     sorter.duplicate_mode = mode
     file_path = tmp_path / "file.png"
     file_path.touch()
@@ -442,7 +442,7 @@ def test_handle_duplicate_modes(sorter, tmp_path, mode, precreate, expected, exp
     assert message == expected_msg
     assert sorter.files_skipped == skipped
 
-    def test_process_single_file_identical(self, sorter, tmp_path):
+    def test_process_single_file_identical(self, sorter, tmp_path) -> None:
         """Test processing a single file when files are identical."""
         source_file = tmp_path / "source.png"
         dest_file = tmp_path / "dest.png"
@@ -462,7 +462,7 @@ def test_handle_duplicate_modes(sorter, tmp_path, mode, precreate, expected, exp
         assert message == "SKIPPED (Identical)"
         assert sorter.files_copied == 0
 
-    def test_process_single_file_new(self, sorter, tmp_path):
+    def test_process_single_file_new(self, sorter, tmp_path) -> None:
         """Test processing a new file (no duplicate)."""
         source_file = tmp_path / "source.png"
         dest_file = tmp_path / "dest.png"
@@ -490,7 +490,7 @@ def test_handle_duplicate_modes(sorter, tmp_path, mode, precreate, expected, exp
         assert sorter.files_copied == 1
         assert sorter.total_bytes_copied == source_size
 
-    def test_process_single_file_dry_run(self, sorter, tmp_path):
+    def test_process_single_file_dry_run(self, sorter, tmp_path) -> None:
         """Test processing a file in dry run mode."""
         sorter.dry_run = True
         source_file = tmp_path / "source.png"
@@ -516,7 +516,7 @@ def test_handle_duplicate_modes(sorter, tmp_path, mode, precreate, expected, exp
         assert sorter.files_copied == 0
         assert sorter.total_bytes_copied == 0
 
-    def test_process_single_file_duplicate_skip(self, sorter, tmp_path):
+    def test_process_single_file_duplicate_skip(self, sorter, tmp_path) -> None:
         """Test processing a file with duplicate in SKIP mode."""
         sorter.duplicate_mode = DuplicateMode.SKIP
         source_file = tmp_path / "source.png"
@@ -545,7 +545,7 @@ def test_handle_duplicate_modes(sorter, tmp_path, mode, precreate, expected, exp
 
         assert message == "SKIPPED (Duplicate)"
 
-    def test_generate_stats(self, sorter):
+    def test_generate_stats(self, sorter) -> None:
         """Test generating statistics for the sorting operation."""
         sorter.files_copied = 5
         sorter.files_skipped = 3
@@ -567,7 +567,7 @@ def test_handle_duplicate_modes(sorter, tmp_path, mode, precreate, expected, exp
 class TestFileSorterRefactored:
     """Test cases for the refactored FileSorter.sort_files function."""
 
-    def test_basic_sort(self, sorter_dirs, create_files):
+    def test_basic_sort(self, sorter_dirs, create_files) -> None:
         """Test basic file sorting into base name folders."""
         source_dir, _, expected_structure, expected_copied = create_files
 
@@ -599,7 +599,7 @@ class TestFileSorterRefactored:
         for base_name in expected_structure:
             assert not (converted_dir / base_name / "ignored.txt").exists()  # Ensure it's not in any sub-dir
 
-    def test_sort_with_progress_callback(self, sorter_dirs, create_files):
+    def test_sort_with_progress_callback(self, sorter_dirs, create_files) -> None:
         """Test sort_files with progress callback."""
         source_dir, _, _, _ = create_files
 
@@ -615,14 +615,14 @@ class TestFileSorterRefactored:
         # Check that progress callback was called multiple times
         assert progress_callback.call_count > 0
 
-    def test_sort_with_cancellation(self, sorter_dirs, create_files):
+    def test_sort_with_cancellation(self, sorter_dirs, create_files) -> None:
         """Test sort_files with cancellation callback."""
         source_dir, _, _, _ = create_files
 
         # Cancel after the first directory scan
         cancel_called = [False]
 
-        def should_cancel():
+        def should_cancel() -> bool:
             if not cancel_called[0]:
                 cancel_called[0] = True
                 return False
@@ -638,7 +638,7 @@ class TestFileSorterRefactored:
         # Check result indicates cancellation
         assert result["status"] == "cancelled"
 
-    def test_sort_with_error(self, sorter_dirs):
+    def test_sort_with_error(self, sorter_dirs) -> None:
         """Test sort_files when an error occurs."""
         source_dir = sorter_dirs
 
@@ -651,7 +651,7 @@ class TestFileSorterRefactored:
             assert result["status"] == "error"
             assert result["error_message"] == "Test error"
 
-    def test_copy_file_with_buffer(self, sorter, tmp_path):
+    def test_copy_file_with_buffer(self, sorter, tmp_path) -> None:
         """Test the buffered file copy functionality."""
         source_file = tmp_path / "source.png"
         dest_file = tmp_path / "dest.png"

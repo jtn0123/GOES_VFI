@@ -185,8 +185,6 @@ class TestOptimizationWorkflow:
         response = input("\n❓ Commit this optimization? (y/n): ")
         if response.lower() == "y":
             self.step6_commit_optimization(test_path, str(optimized_path))
-        else:
-            pass
 
         # Ask to continue
         response = input("\n❓ Optimize another test? (y/n): ")

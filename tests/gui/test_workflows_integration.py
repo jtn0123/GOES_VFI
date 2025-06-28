@@ -3,11 +3,11 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 from PIL import Image
 from PyQt6.QtCore import QMimeData, QObject, Qt, QTimer, QUrl
 from PyQt6.QtGui import QDragEnterEvent, QDropEvent
 from PyQt6.QtWidgets import QListWidget, QListWidgetItem
+import pytest
 
 from goesvfi.gui import MainWindow
 
@@ -15,27 +15,27 @@ from goesvfi.gui import MainWindow
 class ProcessingSignalCapture(QObject):
     """Helper class to capture processing signals."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.progress_updates = []
         self.finished_called = False
         self.error_message = None
 
-    def on_progress(self, current, total, eta):
+    def on_progress(self, current, total, eta) -> None:
         self.progress_updates.append((current, total, eta))
 
-    def on_finished(self, output_path):
+    def on_finished(self, output_path) -> None:
         self.finished_called = True
         self.output_path = output_path
 
-    def on_error(self, error_msg):
+    def on_error(self, error_msg) -> None:
         self.error_message = error_msg
 
 
 class TestWorkflowsIntegration:
     """Test complex user workflows."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
@@ -48,7 +48,7 @@ class TestWorkflowsIntegration:
 
         return window
 
-    @pytest.fixture
+    @pytest.fixture()
     def test_images(self, tmp_path):
         """Create test images for workflows."""
         images = []
@@ -59,7 +59,7 @@ class TestWorkflowsIntegration:
             images.append(img_path)
         return images
 
-    def test_complete_processing_workflow(self, qtbot, window, test_images, mocker):
+    def test_complete_processing_workflow(self, qtbot, window, test_images, mocker) -> None:
         """Test complete end-to-end processing workflow."""
         # Setup signal capture
         ProcessingSignalCapture()
@@ -111,7 +111,7 @@ class TestWorkflowsIntegration:
         assert not window.main_tab.out_file_button.isEnabled()
 
         # Simulate processing progress
-        def simulate_processing():
+        def simulate_processing() -> None:
             # Emit progress updates
             for i in range(1, 11):
                 if hasattr(mock_worker_instance, "_progress_handler"):
@@ -133,7 +133,7 @@ class TestWorkflowsIntegration:
         assert window.main_tab.in_dir_button.isEnabled()
         assert "Processing complete!" in window.status_bar.currentMessage()
 
-    def test_drag_drop_file_operations(self, qtbot, window, test_images):
+    def test_drag_drop_file_operations(self, qtbot, window, test_images) -> None:
         """Test drag and drop file operations."""
         # Test dropping files to input area
         mime_data = QMimeData()
@@ -150,7 +150,7 @@ class TestWorkflowsIntegration:
         )
 
         # Mock dragEnterEvent to accept
-        def mock_drag_enter(event):
+        def mock_drag_enter(event) -> None:
             if event.mimeData().hasUrls():
                 event.acceptProposedAction()
 
@@ -167,7 +167,7 @@ class TestWorkflowsIntegration:
         )
 
         # Mock dropEvent to handle files
-        def mock_drop(event):
+        def mock_drop(event) -> None:
             if event.mimeData().hasUrls():
                 urls = event.mimeData().urls()
                 if urls:
@@ -186,7 +186,7 @@ class TestWorkflowsIntegration:
         expected_dir = test_images[0].parent
         assert window.in_dir == expected_dir
 
-    def test_drag_drop_between_tabs(self, qtbot, window):
+    def test_drag_drop_between_tabs(self, qtbot, window) -> None:
         """Test drag and drop between different tabs."""
         # Create mock list widgets for testing
         source_list = QListWidget()
@@ -206,7 +206,7 @@ class TestWorkflowsIntegration:
         target_list.setDragDropMode(QListWidget.DragDropMode.DropOnly)
 
         # Mock drag and drop operation
-        def transfer_item(source_index, target_list):
+        def transfer_item(source_index, target_list) -> None:
             item = source_list.item(source_index)
             if item:
                 new_item = QListWidgetItem(item.text())
@@ -220,7 +220,7 @@ class TestWorkflowsIntegration:
         assert target_list.count() == 1
         assert target_list.item(0).text() == "Item 0"
 
-    def test_batch_processing_queue(self, qtbot, window, test_images, mocker):
+    def test_batch_processing_queue(self, qtbot, window, test_images, mocker) -> None:
         """Test batch processing queue management."""
         # Create batch queue
         batch_queue = []
@@ -240,22 +240,22 @@ class TestWorkflowsIntegration:
 
         # Mock batch processor
         class BatchProcessor:
-            def __init__(self, window):
+            def __init__(self, window) -> None:
                 self.window = window
                 self.queue = []
                 self.current_job = None
                 self.is_processing = False
                 self.completed_jobs = []
 
-            def add_job(self, job):
+            def add_job(self, job) -> None:
                 self.queue.append(job)
 
-            def start_processing(self):
+            def start_processing(self) -> None:
                 if not self.is_processing and self.queue:
                     self.is_processing = True
                     self._process_next()
 
-            def _process_next(self):
+            def _process_next(self) -> None:
                 if self.queue:
                     self.current_job = self.queue.pop(0)
                     # Apply job settings
@@ -270,7 +270,7 @@ class TestWorkflowsIntegration:
                 else:
                     self.is_processing = False
 
-            def _complete_current_job(self):
+            def _complete_current_job(self) -> None:
                 if self.current_job:
                     self.completed_jobs.append(self.current_job)
                     self.current_job = None
@@ -292,23 +292,22 @@ class TestWorkflowsIntegration:
         assert not processor.is_processing
         assert len(processor.queue) == 0
 
-    def test_model_switching_during_operation(self, qtbot, window, mocker):
+    def test_model_switching_during_operation(self, qtbot, window, mocker) -> None:
         """Test switching models during operation."""
         # Mock model manager
 
         # Track model switches
         model_switches = []
 
-        def switch_model(model_key):
+        def switch_model(model_key) -> bool:
             if window.is_processing:
                 # Queue model switch for after current operation
                 model_switches.append(("queued", model_key))
                 return False
-            else:
-                # Switch immediately
-                model_switches.append(("immediate", model_key))
-                window.current_model_key = model_key
-                return True
+            # Switch immediately
+            model_switches.append(("immediate", model_key))
+            window.current_model_key = model_key
+            return True
 
         # Start with first model
         window.current_model_key = "rife-v4.6"
@@ -331,7 +330,7 @@ class TestWorkflowsIntegration:
         assert model_switches[-1][0] == "immediate"
         assert window.current_model_key == "rife-v4.13"
 
-    def test_cancellation_and_cleanup(self, qtbot, window, test_images, mocker):
+    def test_cancellation_and_cleanup(self, qtbot, window, test_images, mocker) -> None:
         """Test processing cancellation and resource cleanup."""
         # Mock worker with cancellation support
         mock_worker = MagicMock()
@@ -342,13 +341,13 @@ class TestWorkflowsIntegration:
         # Track cleanup actions
         cleanup_actions = []
 
-        def cleanup_temp_files():
+        def cleanup_temp_files() -> None:
             cleanup_actions.append("temp_files")
 
-        def cleanup_memory():
+        def cleanup_memory() -> None:
             cleanup_actions.append("memory")
 
-        def reset_ui_state():
+        def reset_ui_state() -> None:
             cleanup_actions.append("ui_state")
 
         # Mock cleanup methods
@@ -363,7 +362,7 @@ class TestWorkflowsIntegration:
         window._set_processing_state(True)
 
         # Cancel processing
-        def cancel_processing():
+        def cancel_processing() -> None:
             if window.worker and window.worker.isRunning():
                 # Stop worker
                 window.worker.quit()
@@ -389,17 +388,17 @@ class TestWorkflowsIntegration:
         mock_worker.quit.assert_called_once()
         mock_worker.wait.assert_called_once()
 
-    def test_pause_resume_workflow(self, qtbot, window):
+    def test_pause_resume_workflow(self, qtbot, window) -> None:
         """Test pause and resume functionality."""
 
         # Create pause/resume state manager
         class PauseResumeManager:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.is_paused = False
                 self.pause_point = None
                 self.can_pause = True
 
-            def pause(self):
+            def pause(self) -> bool:
                 if self.can_pause and not self.is_paused:
                     self.is_paused = True
                     self.pause_point = {
@@ -442,12 +441,12 @@ class TestWorkflowsIntegration:
         assert not pause_manager.is_paused
         assert resume_point["current_frame"] == 50
 
-    def test_multi_step_wizard_workflow(self, qtbot, window):
+    def test_multi_step_wizard_workflow(self, qtbot, window) -> None:
         """Test multi-step wizard workflow for complex operations."""
 
         # Create wizard steps
         class SetupWizard:
-            def __init__(self, window):
+            def __init__(self, window) -> None:
                 self.window = window
                 self.current_step = 0
                 self.steps = [
@@ -458,7 +457,7 @@ class TestWorkflowsIntegration:
                 ]
                 self.step_data = {}
 
-            def next_step(self):
+            def next_step(self) -> bool:
                 if self.current_step < len(self.steps) - 1:
                     # Validate current step
                     if self.validate_current_step():
@@ -466,7 +465,7 @@ class TestWorkflowsIntegration:
                         return True
                 return False
 
-            def previous_step(self):
+            def previous_step(self) -> bool:
                 if self.current_step > 0:
                     self.current_step -= 1
                     return True
@@ -476,14 +475,14 @@ class TestWorkflowsIntegration:
                 validator = self.steps[self.current_step]
                 return validator()
 
-            def select_input_step(self):
+            def select_input_step(self) -> bool:
                 # Step 1: Select input
                 if self.window.in_dir:
                     self.step_data["input"] = self.window.in_dir
                     return True
                 return False
 
-            def configure_output_step(self):
+            def configure_output_step(self) -> bool:
                 # Step 2: Configure output
                 if self.window.out_file_path:
                     self.step_data["output"] = self.window.out_file_path
@@ -491,7 +490,7 @@ class TestWorkflowsIntegration:
                     return True
                 return False
 
-            def select_processing_options(self):
+            def select_processing_options(self) -> bool:
                 # Step 3: Processing options
                 self.step_data["encoder"] = self.window.main_tab.encoder_combo.currentText()
                 self.step_data["fps"] = self.window.main_tab.fps_spinbox.value()

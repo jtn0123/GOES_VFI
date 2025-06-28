@@ -15,15 +15,15 @@ from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
 class TestEdgeCaseTimezone:
     """Test timezone edge cases and conversions."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def time_index(self):
         """Create a TimeIndex instance for testing."""
         return TimeIndex()
 
-    def test_utc_to_local_conversion(self):
+    def test_utc_to_local_conversion(self) -> None:
         """Test UTC to local timezone conversion."""
         # Test UTC timestamp
-        utc_time = datetime.datetime(2023, 7, 15, 18, 30, 0, tzinfo=datetime.timezone.utc)
+        utc_time = datetime.datetime(2023, 7, 15, 18, 30, 0, tzinfo=datetime.UTC)
 
         # Test conversion to various timezones
         eastern = zoneinfo.ZoneInfo("America/New_York")
@@ -41,7 +41,7 @@ class TestEdgeCaseTimezone:
         assert tokyo_time.hour == 3  # UTC+9, next day
         assert tokyo_time.day == 16  # Next day in Tokyo
 
-    def test_dst_transition_spring_forward(self):
+    def test_dst_transition_spring_forward(self) -> None:
         """Test handling of spring DST transition (spring forward)."""
         # DST starts at 2 AM on second Sunday of March in US
         eastern = zoneinfo.ZoneInfo("America/New_York")
@@ -61,7 +61,7 @@ class TestEdgeCaseTimezone:
         # Unlike some other timezone libraries, it doesn't raise exceptions
         # for non-existent times during DST transitions
 
-    def test_dst_transition_fall_back(self):
+    def test_dst_transition_fall_back(self) -> None:
         """Test handling of fall DST transition (fall back)."""
         # DST ends at 2 AM on first Sunday of November in US
         eastern = zoneinfo.ZoneInfo("America/New_York")
@@ -77,10 +77,10 @@ class TestEdgeCaseTimezone:
         assert first_130am.minute == 30
         assert second_130am.hour == 2  # Actually 2:30 AM in continuous time
 
-    def test_goes_timestamp_parsing_with_timezone(self, time_index):
+    def test_goes_timestamp_parsing_with_timezone(self, time_index) -> None:
         """Test that timezone-aware datetime objects work correctly with existing methods."""
         # Create a UTC datetime (GOES imagery is always in UTC)
-        utc_time = datetime.datetime(2023, 7, 15, 18, 30, 0, tzinfo=datetime.timezone.utc)
+        utc_time = datetime.datetime(2023, 7, 15, 18, 30, 0, tzinfo=datetime.UTC)
 
         # Test that the UTC time works with S3 key generation
         s3_key = time_index.to_s3_key(
@@ -95,35 +95,35 @@ class TestEdgeCaseTimezone:
         assert "ABI-L1b-RadC" in s3_key
         assert "G16" in s3_key
 
-    def test_day_of_year_edge_cases(self, time_index):
+    def test_day_of_year_edge_cases(self, time_index) -> None:
         """Test day-of-year calculations around year boundaries."""
         # Test December 31st
-        dec_31 = datetime.datetime(2023, 12, 31, 23, 59, 59, tzinfo=datetime.timezone.utc)
+        dec_31 = datetime.datetime(2023, 12, 31, 23, 59, 59, tzinfo=datetime.UTC)
         day_of_year = dec_31.timetuple().tm_yday
         assert day_of_year == 365  # 2023 is not a leap year
 
         # Test January 1st
-        jan_1 = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+        jan_1 = datetime.datetime(2024, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
         day_of_year = jan_1.timetuple().tm_yday
         assert day_of_year == 1
 
         # Test leap year
-        feb_29 = datetime.datetime(2024, 2, 29, 12, 0, 0, tzinfo=datetime.timezone.utc)
+        feb_29 = datetime.datetime(2024, 2, 29, 12, 0, 0, tzinfo=datetime.UTC)
         day_of_year = feb_29.timetuple().tm_yday
         assert day_of_year == 60  # Feb 29 is day 60 in leap year
 
         # Test December 31st in leap year
-        dec_31_leap = datetime.datetime(2024, 12, 31, 23, 59, 59, tzinfo=datetime.timezone.utc)
+        dec_31_leap = datetime.datetime(2024, 12, 31, 23, 59, 59, tzinfo=datetime.UTC)
         day_of_year = dec_31_leap.timetuple().tm_yday
         assert day_of_year == 366  # Leap year has 366 days
 
-    def test_midnight_boundary_handling(self, time_index):
+    def test_midnight_boundary_handling(self, time_index) -> None:
         """Test handling of midnight boundary crossing using existing methods."""
         # Just before midnight UTC
-        before_midnight = datetime.datetime(2023, 7, 15, 23, 59, 59, tzinfo=datetime.timezone.utc)
+        before_midnight = datetime.datetime(2023, 7, 15, 23, 59, 59, tzinfo=datetime.UTC)
 
         # Just after midnight UTC
-        after_midnight = datetime.datetime(2023, 7, 16, 0, 0, 1, tzinfo=datetime.timezone.utc)
+        after_midnight = datetime.datetime(2023, 7, 16, 0, 0, 1, tzinfo=datetime.UTC)
 
         # Generate S3 keys using existing method
         key_before = time_index.to_s3_key(
@@ -142,10 +142,10 @@ class TestEdgeCaseTimezone:
         assert "196/23" in key_before  # Day 196, hour 23
         assert "197/00" in key_after  # Day 197, hour 00
 
-    def test_international_date_line_handling(self):
+    def test_international_date_line_handling(self) -> None:
         """Test handling around international date line."""
         # UTC time
-        utc_time = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
+        utc_time = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.UTC)
 
         # Timezones on either side of date line
         fiji = zoneinfo.ZoneInfo("Pacific/Fiji")  # UTC+12
@@ -160,10 +160,10 @@ class TestEdgeCaseTimezone:
         assert fiji_time.hour == 0  # Midnight in Fiji
         assert hawaii_time.hour == 2  # 2 AM in Hawaii
 
-    def test_goes_scan_schedule_timezone_consistency(self, time_index):
+    def test_goes_scan_schedule_timezone_consistency(self, time_index) -> None:
         """Test GOES scan schedule remains consistent across timezones."""
         # GOES operates on UTC schedule
-        base_utc = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
+        base_utc = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.UTC)
 
         # Full disk scans every 15 minutes
         scan_times = []
@@ -180,7 +180,7 @@ class TestEdgeCaseTimezone:
             delta = eastern_scan_times[i] - eastern_scan_times[i - 1]
             assert delta.total_seconds() == 900  # 15 minutes
 
-    def test_filename_timestamp_parsing_edge_cases(self, time_index):
+    def test_filename_timestamp_parsing_edge_cases(self, time_index) -> None:
         """Test parsing timestamps from GOES filenames."""
         # Standard filename
         filename = "OR_ABI-L1b-RadF-M6C13_G16_s20232001200000_e20232001215000_c20232001215300.nc"
@@ -197,7 +197,7 @@ class TestEdgeCaseTimezone:
         second = int(start_str[11:13])
 
         # Reconstruct datetime
-        parsed_date = datetime.datetime(year, 1, 1, tzinfo=datetime.timezone.utc)
+        parsed_date = datetime.datetime(year, 1, 1, tzinfo=datetime.UTC)
         parsed_date += datetime.timedelta(days=day_of_year - 1, hours=hour, minutes=minute, seconds=second)
 
         assert parsed_date.year == 2023
@@ -206,13 +206,13 @@ class TestEdgeCaseTimezone:
         assert parsed_date.hour == 12
         assert parsed_date.minute == 0
 
-    def test_time_range_queries_across_dst(self, time_index):
+    def test_time_range_queries_across_dst(self, time_index) -> None:
         """Test time range queries that span DST transitions."""
         eastern = zoneinfo.ZoneInfo("America/New_York")
 
         # Create range that spans spring DST transition
-        start = datetime.datetime(2023, 3, 11, 22, 0, 0, tzinfo=datetime.timezone.utc)  # 5 PM EST March 11
-        end = datetime.datetime(2023, 3, 12, 22, 0, 0, tzinfo=datetime.timezone.utc)  # 6 PM EDT March 12
+        start = datetime.datetime(2023, 3, 11, 22, 0, 0, tzinfo=datetime.UTC)  # 5 PM EST March 11
+        end = datetime.datetime(2023, 3, 12, 22, 0, 0, tzinfo=datetime.UTC)  # 6 PM EDT March 12
 
         # Convert to local times
         start_local = start.astimezone(eastern)
@@ -226,7 +226,7 @@ class TestEdgeCaseTimezone:
         duration = end - start
         assert duration.total_seconds() == 86400  # Exactly 24 hours
 
-    def test_leap_second_handling(self):
+    def test_leap_second_handling(self) -> None:
         """Test handling of leap seconds (theoretical)."""
         # Note: Python datetime doesn't directly support leap seconds
         # But we should handle timestamps that might include them
@@ -235,17 +235,17 @@ class TestEdgeCaseTimezone:
         # December 31, 2016 had a leap second at 23:59:60 UTC
         try:
             # This would normally fail
-            leap_second = datetime.datetime(2016, 12, 31, 23, 59, 60, tzinfo=datetime.timezone.utc)
+            leap_second = datetime.datetime(2016, 12, 31, 23, 59, 60, tzinfo=datetime.UTC)
         except ValueError:
             # Expected - Python doesn't support second=60
             # In practice, we'd handle this by rounding to next second
-            leap_second = datetime.datetime(2017, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+            leap_second = datetime.datetime(2017, 1, 1, 0, 0, 0, tzinfo=datetime.UTC)
 
         assert leap_second.year == 2017
         assert leap_second.month == 1
         assert leap_second.day == 1
 
-    def test_timezone_abbreviation_ambiguity(self):
+    def test_timezone_abbreviation_ambiguity(self) -> None:
         """Test handling of ambiguous timezone abbreviations."""
         # CST could mean Central Standard Time or China Standard Time
         # EST could mean Eastern Standard Time or Eastern Summer Time (Australia)
@@ -254,7 +254,7 @@ class TestEdgeCaseTimezone:
         us_central = zoneinfo.ZoneInfo("America/Chicago")
         china_standard = zoneinfo.ZoneInfo("Asia/Shanghai")
 
-        utc_time = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
+        utc_time = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.UTC)
 
         us_time = utc_time.astimezone(us_central)
         china_time = utc_time.astimezone(china_standard)
@@ -263,10 +263,10 @@ class TestEdgeCaseTimezone:
         assert us_time.hour == 7  # 7 AM CDT (summer)
         assert china_time.hour == 20  # 8 PM CST
 
-    def test_sub_second_timestamp_precision(self, time_index):
+    def test_sub_second_timestamp_precision(self, time_index) -> None:
         """Test handling of sub-second precision in timestamps using existing methods."""
         # GOES can have sub-second start times
-        precise_time = datetime.datetime(2023, 7, 15, 12, 30, 45, 123456, tzinfo=datetime.timezone.utc)
+        precise_time = datetime.datetime(2023, 7, 15, 12, 30, 45, 123456, tzinfo=datetime.UTC)
 
         # Generate S3 key using existing method
         s3_key = time_index.to_s3_key(
@@ -284,17 +284,17 @@ class TestEdgeCaseTimezone:
         assert "G16" in s3_key
 
     @pytest.mark.skip(reason="Timezone rule test assumptions may vary")
-    def test_historical_timezone_rules(self):
+    def test_historical_timezone_rules(self) -> None:
         """Test handling of historical timezone rule changes."""
         # Indiana used to not observe DST before 2006
         indiana = zoneinfo.ZoneInfo("America/Indiana/Indianapolis")
 
         # Date in 2005 (no DST)
-        old_summer = datetime.datetime(2005, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
+        old_summer = datetime.datetime(2005, 7, 15, 12, 0, 0, tzinfo=datetime.UTC)
         old_local = old_summer.astimezone(indiana)
 
         # Date in 2023 (with DST)
-        new_summer = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.timezone.utc)
+        new_summer = datetime.datetime(2023, 7, 15, 12, 0, 0, tzinfo=datetime.UTC)
         new_local = new_summer.astimezone(indiana)
 
         # Different UTC offsets for same summer date
@@ -311,9 +311,9 @@ class TestEdgeCaseTimezone:
             (23, 4),  # 11 PM UTC - 4 scans
         ],
     )
-    def test_hourly_scan_consistency(self, time_index, hour, expected_scan_count):
+    def test_hourly_scan_consistency(self, time_index, hour, expected_scan_count) -> None:
         """Test that scan counts are consistent regardless of hour."""
-        base_time = datetime.datetime(2023, 7, 15, hour, 0, 0, tzinfo=datetime.timezone.utc)
+        base_time = datetime.datetime(2023, 7, 15, hour, 0, 0, tzinfo=datetime.UTC)
 
         # Get scans for the hour
         scans = []

@@ -115,7 +115,7 @@ GOES-VFI is structured using modern software architecture patterns to maximize m
 
 #### Minimum Requirements
 - **Operating System**: Windows 10/11, macOS 10.14+, or Linux (Ubuntu 20.04+)
-- **Python**: 3.8 or higher (3.13 recommended)
+- **Python**: 3.13+ required
 - **RAM**: 4GB minimum, 8GB+ recommended for processing large images
 - **Storage**: 2GB free space for installation, plus space for your image sequences
 - **Display**: GUI requires display with 1280x720 minimum resolution
@@ -432,7 +432,7 @@ The GOES-VFI project is organized with a clean directory structure to make the c
 
 ### Development Tools
 - `scripts/`: Development and utility scripts
-- `run_all_tests.py`, `run_working_tests_with_mocks.py`, `run_non_gui_tests.py`, `run_non_gui_tests_ci.py`, etc.: Test runner scripts
+- `run_all_tests.py`, `run_non_gui_tests_ci.py`, `run_coverage.py`: Test runner scripts
 - `cleanup.py`: Script to clean up temporary and cache files
 
 ## Examples and Testing

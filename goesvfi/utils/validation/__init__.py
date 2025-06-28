@@ -1,5 +1,4 @@
-"""
-Validation framework for reducing complexity in validation-heavy functions.
+"""Validation framework for reducing complexity in validation-heavy functions.
 
 This module provides composable validation utilities that help reduce the complexity
 of functions with extensive parameter validation and safety checking.
@@ -22,32 +21,36 @@ def validate_path_exists(
     field_name: str = "path",
 ) -> Path:
     """Validate that a path exists and optionally enforce type."""
-
     if path is None:
-        raise ValueError(f"{field_name} is required")
+        msg = f"{field_name} is required"
+        raise ValueError(msg)
 
     p = Path(path)
 
     if not p.exists():
-        raise FileNotFoundError(f"{field_name} does not exist: {p}")
+        msg = f"{field_name} does not exist: {p}"
+        raise FileNotFoundError(msg)
 
     if must_be_dir and not p.is_dir():
-        raise NotADirectoryError(f"{field_name} is not a directory: {p}")
+        msg = f"{field_name} is not a directory: {p}"
+        raise NotADirectoryError(msg)
 
     if must_be_file and not p.is_file():
-        raise FileNotFoundError(f"{field_name} is not a file: {p}")
+        msg = f"{field_name} is not a file: {p}"
+        raise FileNotFoundError(msg)
 
     return p
 
 
 def validate_positive_int(value: Any, field_name: str = "value") -> int:
     """Validate that ``value`` is a positive integer."""
-
     if not isinstance(value, int):
-        raise TypeError(f"{field_name} must be an int")
+        msg = f"{field_name} must be an int"
+        raise TypeError(msg)
 
     if value <= 0:
-        raise ValueError(f"{field_name} must be positive, got {value}")
+        msg = f"{field_name} must be positive, got {value}"
+        raise ValueError(msg)
 
     return value
 

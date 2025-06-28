@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Run mypy type checking on key files.
+"""Run mypy type checking on key files.
 
 This script runs mypy checks on specified files or directories,
 making it easier to verify type annotations.
@@ -42,23 +41,17 @@ def run_mypy(target_files, strict=False):
         cmd.append("--strict")
 
     cmd.extend(target_files)
-    print(f"Running: {' '.join(cmd)}")
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)
 
     if result.returncode == 0:
-        print("✅ Success! No type errors found.")
-    else:
-        print("❌ Type errors found:")
-        print(result.stdout or result.stderr)
+        pass
 
     return result.returncode
 
 
-def install_type_stubs():
+def install_type_stubs() -> bool:
     """Install necessary type stubs."""
-    print("Installing required type stubs...")
-
     stubs = [
         "types-requests",
         "types-Pillow",
@@ -76,7 +69,7 @@ def install_type_stubs():
         )
 
         # Install type stubs
-        cmd = ["python", "-m", "pip", "install", "--upgrade"] + stubs
+        cmd = ["python", "-m", "pip", "install", "--upgrade", *stubs]
         subprocess.run(cmd, check=True, capture_output=True)
 
         # Also run mypy's built-in install-types
@@ -86,9 +79,7 @@ def install_type_stubs():
             capture_output=True,
         )
 
-        print("✅ Type stubs installed successfully.")
-    except subprocess.SubprocessError as e:
-        print(f"❌ Error installing type stubs: {e}")
+    except subprocess.SubprocessError:
         return False
 
     return True
@@ -100,8 +91,6 @@ def main():
     try:
         subprocess.run(["python", "--version"], check=True, capture_output=True)
     except (subprocess.SubprocessError, FileNotFoundError):
-        print("Error: Python executable not found. Please activate your virtual environment.")
-        print("   source venv-py313/bin/activate")
         return 1
 
     # Determine which files to check and mode
@@ -109,19 +98,15 @@ def main():
     strict_mode = "--strict" in sys.argv
     install_stubs = "--install-stubs" in sys.argv or "--install" in sys.argv
 
-    if install_stubs:
-        if not install_type_stubs():
-            return 1
+    if install_stubs and not install_type_stubs():
+        return 1
 
     if strict_mode:
-        print("Running in strict mode...")
+        pass
 
     if check_all:
-        print("Checking all files...")
         return run_mypy(ALL_DIRS, strict=strict_mode)
-    else:
-        print("Checking core files...")
-        return run_mypy(CORE_FILES, strict=strict_mode)
+    return run_mypy(CORE_FILES, strict=strict_mode)
 
 
 if __name__ == "__main__":

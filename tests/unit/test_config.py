@@ -10,8 +10,8 @@ from goesvfi.utils import config
 # pylint: disable=redefined-outer-name
 
 
-@pytest.fixture
-def sample_toml_content():
+@pytest.fixture()
+def sample_toml_content() -> str:
     return """
 output_dir = "/tmp/goesvfi_output"
 cache_dir = "/tmp/goesvfi_cache"
@@ -29,7 +29,7 @@ level = "INFO"
 
 
 @mock.patch("pathlib.Path.exists", return_value=False)
-def test_load_config_defaults(mock_exists, monkeypatch, tmp_path):
+def test_load_config_defaults(mock_exists, monkeypatch, tmp_path) -> None:
     # Patching exists globally, no need for monkeypatch setattr
     # monkeypatch.setattr(config.CONFIG_FILE, "exists", lambda: False)
 
@@ -46,7 +46,7 @@ def test_load_config_defaults(mock_exists, monkeypatch, tmp_path):
     assert out_dir.is_dir()  # Check dir creation
 
 
-def test_load_config_from_file(monkeypatch, tmp_path, sample_toml_content):
+def test_load_config_from_file(monkeypatch, tmp_path, sample_toml_content) -> None:
     # Create a temp config file with sample TOML content
     config_path = tmp_path / "config.toml"
     config_path.write_text(sample_toml_content)
@@ -63,7 +63,7 @@ def test_load_config_from_file(monkeypatch, tmp_path, sample_toml_content):
     assert pathlib.Path(cfg["cache_dir"]).exists()
 
 
-def test_load_config_invalid_toml(monkeypatch, tmp_path):
+def test_load_config_invalid_toml(monkeypatch, tmp_path) -> None:
     # Create a temp config file with invalid TOML content
     config_path = tmp_path / "config.toml"
     config_path.write_text("invalid = [this is not valid toml")
@@ -76,7 +76,7 @@ def test_load_config_invalid_toml(monkeypatch, tmp_path):
         config._load_config()
 
 
-def test_env_override_config_path(monkeypatch, tmp_path, sample_toml_content):
+def test_env_override_config_path(monkeypatch, tmp_path, sample_toml_content) -> None:
     cfg_path = tmp_path / "alt.toml"
     cfg_path.write_text(sample_toml_content)
     monkeypatch.setenv("GOESVFI_CONFIG_FILE", str(cfg_path))
@@ -85,7 +85,7 @@ def test_env_override_config_path(monkeypatch, tmp_path, sample_toml_content):
     assert cfg["output_dir"] == "/tmp/goesvfi_output"
 
 
-def test_env_override_config_dir(monkeypatch, tmp_path, sample_toml_content):
+def test_env_override_config_dir(monkeypatch, tmp_path, sample_toml_content) -> None:
     cfg_dir = tmp_path / "conf"
     cfg_dir.mkdir()
     cfg_file = cfg_dir / "config.toml"
@@ -96,7 +96,7 @@ def test_env_override_config_dir(monkeypatch, tmp_path, sample_toml_content):
     assert cfg["output_dir"] == "/tmp/goesvfi_output"
 
 
-def test_partial_config_merge(monkeypatch, tmp_path):
+def test_partial_config_merge(monkeypatch, tmp_path) -> None:
     cfg_file = tmp_path / "config.toml"
     cfg_file.write_text(
         """
@@ -114,7 +114,7 @@ default_tile_size = 512
     assert cfg["pipeline"]["supported_extensions"] == config.DEFAULTS["pipeline"]["supported_extensions"]
 
 
-def test_invalid_config_type(monkeypatch, tmp_path):
+def test_invalid_config_type(monkeypatch, tmp_path) -> None:
     cfg_file = tmp_path / "bad.toml"
     cfg_file.write_text("""output_dir = 123""")
     monkeypatch.setenv("GOESVFI_CONFIG_FILE", str(cfg_file))
@@ -123,7 +123,7 @@ def test_invalid_config_type(monkeypatch, tmp_path):
         config._load_config()
 
 
-def test_missing_required_key(monkeypatch, tmp_path):
+def test_missing_required_key(monkeypatch, tmp_path) -> None:
     config_path = tmp_path / "broken.toml"
     config_path.write_text("cache_dir='/tmp/cache'")
     monkeypatch.setenv("GOESVFI_CONFIG_FILE", str(config_path))
@@ -132,7 +132,7 @@ def test_missing_required_key(monkeypatch, tmp_path):
     assert cfg["output_dir"] == str(pathlib.Path.home() / "Documents/goesvfi")
 
 
-def test_get_output_dir(monkeypatch, tmp_path, sample_toml_content):
+def test_get_output_dir(monkeypatch, tmp_path, sample_toml_content) -> None:
     config_path = tmp_path / "config.toml"
     config_path.write_text(sample_toml_content)
     monkeypatch.setattr(config, "CONFIG_FILE", config_path)
@@ -142,7 +142,7 @@ def test_get_output_dir(monkeypatch, tmp_path, sample_toml_content):
     assert str(output_dir) == "/tmp/goesvfi_output"
 
 
-def test_get_cache_dir(monkeypatch, tmp_path, sample_toml_content):
+def test_get_cache_dir(monkeypatch, tmp_path, sample_toml_content) -> None:
     config_path = tmp_path / "config.toml"
     config_path.write_text(sample_toml_content)
     monkeypatch.setattr(config, "CONFIG_FILE", config_path)
@@ -154,7 +154,7 @@ def test_get_cache_dir(monkeypatch, tmp_path, sample_toml_content):
 
 @mock.patch("shutil.which")
 @mock.patch("pathlib.Path.exists")
-def test_find_rife_executable_in_path(mock_exists, mock_which):
+def test_find_rife_executable_in_path(mock_exists, mock_which) -> None:
     # Simulate executable found in PATH
     mock_which.return_value = "/usr/bin/rife-ncnn-vulkan"
     path = config.find_rife_executable("rife-v4.6")
@@ -164,15 +164,13 @@ def test_find_rife_executable_in_path(mock_exists, mock_which):
 
 @mock.patch("shutil.which")
 @mock.patch("pathlib.Path.exists", autospec=True)
-def test_find_rife_executable_in_bin_dir(mock_exists, mock_which):
+def test_find_rife_executable_in_bin_dir(mock_exists, mock_which) -> None:
     # Simulate not found in PATH
     mock_which.return_value = None
 
     # Simulate bin fallback exists
-    def exists_side_effect(self_path):
-        if "bin/rife-cli" in str(self_path):
-            return True
-        return False
+    def exists_side_effect(self_path) -> bool:
+        return "bin/rife-cli" in str(self_path)
 
     mock_exists.side_effect = exists_side_effect
 
@@ -184,16 +182,14 @@ def test_find_rife_executable_in_bin_dir(mock_exists, mock_which):
 
 @mock.patch("shutil.which")
 @mock.patch("pathlib.Path.exists", autospec=True)
-def test_find_rife_executable_in_model_dir(mock_exists, mock_which):
+def test_find_rife_executable_in_model_dir(mock_exists, mock_which) -> None:
     # Simulate not found in PATH or bin dir
     mock_which.return_value = None
 
-    def exists_side_effect(self_path):
+    def exists_side_effect(self_path) -> bool:
         if "bin/rife-cli" in str(self_path):
             return False
-        if "models/rife-v4.6/rife-cli" in str(self_path):
-            return True
-        return False
+        return "models/rife-v4.6/rife-cli" in str(self_path)
 
     mock_exists.side_effect = exists_side_effect
 
@@ -205,7 +201,7 @@ def test_find_rife_executable_in_model_dir(mock_exists, mock_which):
 
 @mock.patch("shutil.which")
 @mock.patch("pathlib.Path.exists")
-def test_find_rife_executable_not_found(mock_exists, mock_which):
+def test_find_rife_executable_not_found(mock_exists, mock_which) -> None:
     # Simulate not found anywhere
     mock_which.return_value = None
     mock_exists.return_value = False

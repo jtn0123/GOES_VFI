@@ -47,7 +47,7 @@ def ensure_single_qapp_instance():
 
 
 @pytest.fixture(autouse=True)
-def _mock_resource_monitoring(monkeypatch):
+def _mock_resource_monitoring(monkeypatch) -> None:
     """Mock resource monitoring to prevent memory monitoring threads."""
 
     # Create a mock memory stats object
@@ -73,34 +73,34 @@ def _mock_resource_monitoring(monkeypatch):
 
     # Mock memory manager class completely
     class MockMemoryManager:
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs) -> None:
             self._monitoring = False
             self._monitor_thread = None
             self._callbacks = []
 
-        def start_monitoring(self, interval=5.0):
+        def start_monitoring(self, interval=5.0) -> None:
             pass  # Do nothing
 
-        def stop_monitoring(self):
+        def stop_monitoring(self) -> None:
             pass  # Do nothing
 
         def get_memory_stats(self):
             return mock_stats
 
-        def add_callback(self, callback):
+        def add_callback(self, callback) -> None:
             pass  # Do nothing
 
-        def _monitor_loop(self, interval):
+        def _monitor_loop(self, interval) -> None:
             pass  # Do nothing
 
     # Mock VFI processing to prevent actual execution
-    def mock_run_vfi(*args, **kwargs):
+    def mock_run_vfi(*args, **kwargs) -> str:
         return "/mock/output.mp4"
 
     # Mock direct start handler to prevent processing
-    def mock_direct_start_handler(self):
+    def mock_direct_start_handler(self) -> None:
         """Mock the direct start handler to prevent actual processing."""
-        pass  # Do nothing
+        # Do nothing
 
     # Apply comprehensive mocking
     patches_to_apply = [
@@ -229,18 +229,17 @@ def _aggressive_cleanup_and_isolation():
 
 
 @pytest.fixture(autouse=True)
-def _disable_qtbot_wait(monkeypatch):
+def _disable_qtbot_wait(monkeypatch) -> None:
     """Disable problematic qtbot.wait calls that cause segfaults."""
 
     # Mock qtbot.wait to do nothing (it's causing the segfaults)
-    def mock_qtbot_wait(self, _ms):
+    def mock_qtbot_wait(self, _ms) -> None:
         # Instead of waiting, just process events immediately
         from PyQt6.QtWidgets import QApplication
 
         app = QApplication.instance()
         if app:
             app.processEvents()
-        return
 
     try:
         # Patch the qtbot wait method

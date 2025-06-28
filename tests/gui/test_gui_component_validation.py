@@ -1,9 +1,9 @@
 """Tests for GUI component validation and visual feedback."""
 
-import pytest
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtTest import QTest
+import pytest
 
 from goesvfi.gui import MainWindow
 from goesvfi.utils.gui_helpers import ClickableLabel
@@ -12,7 +12,7 @@ from goesvfi.utils.gui_helpers import ClickableLabel
 class TestGUIComponentValidation:
     """Test suite for validating GUI components and visual feedback."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
@@ -25,7 +25,7 @@ class TestGUIComponentValidation:
 
         return window
 
-    def test_progress_bar_updates(self, qtbot, window):
+    def test_progress_bar_updates(self, qtbot, window) -> None:
         """Test progress bar visual updates during processing."""
         # Initial state
         assert window.main_tab.progress_bar.value() == 0
@@ -44,7 +44,7 @@ class TestGUIComponentValidation:
         # Verify status bar shows progress
         assert "50%" in window.status_bar.currentMessage() or "100%" in window.status_bar.currentMessage()
 
-    def test_preview_labels_display_images(self, qtbot, window, mocker):
+    def test_preview_labels_display_images(self, qtbot, window, mocker) -> None:
         """Test that preview labels correctly display images."""
         # Create test pixmaps
         test_pixmap1 = QPixmap(100, 100)
@@ -66,7 +66,7 @@ class TestGUIComponentValidation:
         assert not first_pixmap.isNull()
         assert not last_pixmap.isNull()
 
-    def test_spinbox_value_limits(self, qtbot, window):
+    def test_spinbox_value_limits(self, qtbot, window) -> None:
         """Test spinbox controls have proper limits and behavior."""
         # FPS spinbox
         fps_spin = window.main_tab.fps_spinbox
@@ -94,7 +94,7 @@ class TestGUIComponentValidation:
         assert workers_spin.minimum() >= 1
         assert workers_spin.maximum() <= 16
 
-    def test_combo_box_items_populated(self, qtbot, window):
+    def test_combo_box_items_populated(self, qtbot, window) -> None:
         """Test that combo boxes are properly populated."""
         # Encoder combo
         encoder_combo = window.main_tab.encoder_combo
@@ -111,7 +111,7 @@ class TestGUIComponentValidation:
         assert sanchez_combo.count() > 0
         assert "4" in [sanchez_combo.itemText(i) for i in range(sanchez_combo.count())]
 
-    def test_text_edit_validation(self, qtbot, window):
+    def test_text_edit_validation(self, qtbot, window) -> None:
         """Test text input fields validation and display."""
         # Input directory edit
         test_path = "/test/input/directory"
@@ -127,7 +127,7 @@ class TestGUIComponentValidation:
         assert window.main_tab.in_dir_edit.isReadOnly()
         assert window.main_tab.out_file_edit.isReadOnly()
 
-    def test_group_box_visibility(self, qtbot, window):
+    def test_group_box_visibility(self, qtbot, window) -> None:
         """Test group box visibility and enable states."""
         # RIFE options group
         assert window.main_tab.rife_options_group.isVisible()
@@ -142,7 +142,7 @@ class TestGUIComponentValidation:
         qtbot.wait(50)
         assert not window.main_tab.rife_options_group.isEnabled()
 
-    def test_checkbox_states_and_dependencies(self, qtbot, window):
+    def test_checkbox_states_and_dependencies(self, qtbot, window) -> None:
         """Test checkbox states and their dependent controls."""
         # RIFE checkboxes
         rife_tile_cb = window.main_tab.rife_tile_checkbox
@@ -168,7 +168,7 @@ class TestGUIComponentValidation:
         window._toggle_sanchez_res_enabled(Qt.CheckState.Checked)
         assert sanchez_res.isEnabled()
 
-    def test_status_bar_messages(self, qtbot, window):
+    def test_status_bar_messages(self, qtbot, window) -> None:
         """Test status bar displays appropriate messages."""
         # Initial message
         window.status_bar.currentMessage()
@@ -189,7 +189,7 @@ class TestGUIComponentValidation:
         window._on_processing_error("Test error")
         assert "failed" in window.status_bar.currentMessage().lower()
 
-    def test_tab_widget_structure(self, qtbot, window):
+    def test_tab_widget_structure(self, qtbot, window) -> None:
         """Test tab widget has correct structure and tabs."""
         tab_widget = window.tab_widget
 
@@ -212,7 +212,7 @@ class TestGUIComponentValidation:
         for i in range(tab_widget.count()):
             assert tab_widget.isTabEnabled(i)
 
-    def test_preview_label_visual_properties(self, qtbot, window):
+    def test_preview_label_visual_properties(self, qtbot, window) -> None:
         """Test preview labels have correct visual properties."""
         # First frame label
         first_label = window.main_tab.first_frame_label
@@ -231,7 +231,7 @@ class TestGUIComponentValidation:
             assert isinstance(middle_label, ClickableLabel)
             assert middle_label.isVisible()
 
-    def test_layout_spacing_and_margins(self, qtbot, window):
+    def test_layout_spacing_and_margins(self, qtbot, window) -> None:
         """Test that layouts have proper spacing."""
         # Main tab layout
         main_layout = window.main_tab.layout()
@@ -244,7 +244,7 @@ class TestGUIComponentValidation:
         margins = main_layout.contentsMargins()
         assert all(m >= 0 for m in [margins.left(), margins.top(), margins.right(), margins.bottom()])
 
-    def test_window_properties(self, qtbot, window):
+    def test_window_properties(self, qtbot, window) -> None:
         """Test main window properties."""
         # Window title
         assert "GOES" in window.windowTitle() or "VFI" in window.windowTitle()
@@ -258,7 +258,7 @@ class TestGUIComponentValidation:
         qtbot.waitExposed(window)
         assert window.isVisible()
 
-    def test_tooltips_present(self, qtbot, window):
+    def test_tooltips_present(self, qtbot, window) -> None:
         """Test that important controls have tooltips."""
         # Check key controls have tooltips
         controls_to_check = [
@@ -274,7 +274,7 @@ class TestGUIComponentValidation:
         tooltips_found = sum(1 for control in controls_to_check if control.toolTip())
         assert tooltips_found > 0
 
-    def test_focus_navigation(self, qtbot, window):
+    def test_focus_navigation(self, qtbot, window) -> None:
         """Test tab order and focus navigation."""
         # Set focus to first control
         window.main_tab.in_dir_button.setFocus()
@@ -288,7 +288,7 @@ class TestGUIComponentValidation:
         # Just verify focus moved
         assert not window.main_tab.in_dir_button.hasFocus()
 
-    def test_visual_feedback_on_hover(self, qtbot, window):
+    def test_visual_feedback_on_hover(self, qtbot, window) -> None:
         """Test visual feedback on button hover if implemented."""
         # This would test hover effects, cursor changes, etc.
         # Implementation depends on custom styling
@@ -297,7 +297,7 @@ class TestGUIComponentValidation:
         # Check if button has hover effects by checking cursor
         cursor = start_button.cursor()
         # Most buttons should have pointing hand cursor
-        assert cursor.shape() in [
+        assert cursor.shape() in {
             Qt.CursorShape.ArrowCursor,
             Qt.CursorShape.PointingHandCursor,
-        ]
+        }

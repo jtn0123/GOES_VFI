@@ -5,8 +5,8 @@ Simple CI/CD Configuration Validator for GOES_VFI
 This script validates the CI/CD setup without external dependencies.
 """
 
-import sys
 from pathlib import Path
+import sys
 
 
 def validate_cicd_setup(repo_root: Path) -> bool:
@@ -119,12 +119,11 @@ def validate_cicd_setup(repo_root: Path) -> bool:
         print("3. Configure monitoring dashboards")
         print("4. Set up release process")
         return True
-    else:
-        print("\n💡 Please fix the errors above before using CI/CD")
-        return False
+    print("\n💡 Please fix the errors above before using CI/CD")
+    return False
 
 
-def main():
+def main() -> int:
     """Main function."""
     repo_root = Path(__file__).parent.parent
     success = validate_cicd_setup(repo_root)

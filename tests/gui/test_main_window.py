@@ -1,14 +1,13 @@
 # tests/gui/test_main_window.py
 import pathlib
-import warnings
 from pathlib import Path
-from typing import List
 from unittest.mock import MagicMock, patch
+import warnings
 
-import pytest
 from PyQt6.QtCore import QByteArray, QRect, Qt
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtWidgets import QApplication, QDialog
+import pytest
 
 # Import the class to be tested and related utilities
 from goesvfi.gui import MainWindow
@@ -26,9 +25,9 @@ from goesvfi.gui import MainWindow
 
 
 @pytest.fixture(autouse=True)
-def _mock_config_io():
+def _mock_config_io() -> None:
     """Mocks config loading and saving (using QSettings)."""
-    pass  # No explicit patching for now, rely on window state.
+    # No explicit patching for now, rely on window state.
 
 
 @pytest.fixture(autouse=True)
@@ -86,8 +85,8 @@ def mock_dialogs():
         }
 
 
-@pytest.fixture
-def dummy_files(tmp_path: pathlib.Path) -> List[pathlib.Path]:
+@pytest.fixture()
+def dummy_files(tmp_path: pathlib.Path) -> list[pathlib.Path]:
     files = []
     # Create input dir structure expected by FileSorter tests (used indirectly by MainWindow)
     input_dir = tmp_path / "dummy_input"
@@ -111,7 +110,7 @@ def dummy_files(tmp_path: pathlib.Path) -> List[pathlib.Path]:
 
 
 @pytest.fixture(autouse=True)
-def _mock_preview(monkeypatch):
+def _mock_preview(monkeypatch) -> None:
     """Mocks methods related to preview generation."""
 
     # Mock the RefactoredPreviewProcessor's load_process_scale_preview method
@@ -130,11 +129,11 @@ def _mock_preview(monkeypatch):
     )
 
 
-@pytest.fixture  # Add mock_populate_models fixture
-def _mock_populate_models(monkeypatch):
+@pytest.fixture()  # Add mock_populate_models fixture
+def _mock_populate_models(monkeypatch) -> None:
     """Mocks ModelSelectorManager.populate_models to provide a dummy model."""
 
-    def mock_populate(self, main_window):
+    def mock_populate(self, main_window) -> None:
         main_window.model_combo.clear()
         main_window.model_combo.addItem("rife-dummy (Dummy Description)", "rife-dummy")
         main_window.model_combo.setEnabled(True)
@@ -156,7 +155,7 @@ def _mock_populate_models(monkeypatch):
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def window(qtbot, _mock_preview, _mock_populate_models, mocker):  # Add mock_populate_models, mocker
     """Creates the main window instance for testing."""
     # Mock helper classes that might cause segfaults during teardown
@@ -213,13 +212,12 @@ def window(qtbot, _mock_preview, _mock_populate_models, mocker):  # Add mock_pop
 
         # Teardown (optional, as qtbot should handle it, but added for explicit cleanup attempt)
         # No explicit cleanup needed here as qtbot manages widget destruction.
-        pass
 
 
 # --- Test Cases ---
 
 
-def test_initial_state(qtbot, window, mocker):
+def test_initial_state(qtbot, window, mocker) -> None:
     """Test the initial state of the UI components."""
     # Initial state checks...
     assert window.main_tab.in_dir_edit.text() == ""  # Updated name
@@ -251,7 +249,7 @@ def test_initial_state(qtbot, window, mocker):
     # ... rest of test ...
 
 
-def test_select_input_path(qtbot, window, mock_dialogs, mocker):
+def test_select_input_path(qtbot, window, mock_dialogs, mocker) -> None:
     """Test selecting an input path."""
     # Since the button is not exposed as instance variable,
     # call the method directly that the button would call
@@ -278,7 +276,7 @@ def test_select_input_path(qtbot, window, mock_dialogs, mocker):
     assert window.main_tab.start_button.isEnabled()  # Should be enabled now
 
 
-def test_select_output_path(qtbot, window, mock_dialogs, mocker):
+def test_select_output_path(qtbot, window, mock_dialogs, mocker) -> None:
     """Test selecting an output path."""
     window.main_tab.in_dir_edit.setText("/fake/input")
     window.in_dir = Path("/fake/input")  # Set the actual property
@@ -303,7 +301,7 @@ def test_select_output_path(qtbot, window, mock_dialogs, mocker):
     assert window.main_tab.start_button.isEnabled()
 
 
-def test_change_settings(qtbot, window):
+def test_change_settings(qtbot, window) -> None:
     """Test changing various settings via UI controls."""
     # Assert against widget states, not mock_config
     # --- Main Tab Settings ---
@@ -401,10 +399,9 @@ def test_change_settings(qtbot, window):
     # Test enabling/disabling sharpening group
     # Skip this for now due to complexity with profile state management
     # The unsharp group state depends on the current profile and quality settings
-    pass
 
 
-def test_dynamic_ui_enable_disable(qtbot, window):
+def test_dynamic_ui_enable_disable(qtbot, window) -> None:
     """Test that UI elements enable/disable correctly based on selections."""
     # 1. RIFE/FFmpeg Encoder Selection
     # Initial state (RIFE)
@@ -526,7 +523,7 @@ def test_dynamic_ui_enable_disable(qtbot, window):
     assert not window.ffmpeg_settings_tab.ffmpeg_profile_combo.isEnabled()
 
 
-def test_start_interpolation(qtbot, window, mock_worker, dummy_files):
+def test_start_interpolation(qtbot, window, mock_worker, dummy_files) -> None:
     """Test clicking the 'Start VFI' button."""
     valid_input_dir = dummy_files[0].parent
     window.main_tab.in_dir_edit.setText(str(valid_input_dir))  # Updated name
@@ -553,7 +550,7 @@ def test_start_interpolation(qtbot, window, mock_worker, dummy_files):
     assert True  # Test passes if we reach this point without crashing
 
 
-def test_progress_update(qtbot, window, mock_worker, dummy_files, mocker):
+def test_progress_update(qtbot, window, mock_worker, dummy_files, mocker) -> None:
     """Test the UI updates when the worker emits progress."""
     # --- Manually set state to processing ---
     window._set_processing_state(True)
@@ -569,11 +566,9 @@ def test_progress_update(qtbot, window, mock_worker, dummy_files, mocker):
     assert window.main_view_model.processing_vm.current_progress == 10
     # First check if the processing view model has the correct status
     vm_status = window.main_view_model.processing_vm.status
-    print(f"Processing VM status: {vm_status}")
 
     # Check the status bar message
     sb_msg = window.status_bar.currentMessage()
-    print(f"Status bar message: {sb_msg}")
 
     # The ProcessingViewModel should have updated its status
     # The actual format appears to be simpler
@@ -594,10 +589,11 @@ def test_progress_update(qtbot, window, mock_worker, dummy_files, mocker):
     qtbot.wait(10)
     assert window.main_view_model.processing_vm.current_progress == 100
     # The actual format includes "Processing: 100.0% (100/100)"
-    assert "100" in window.status_bar.currentMessage() and "%" in window.status_bar.currentMessage()
+    assert "100" in window.status_bar.currentMessage()
+    assert "%" in window.status_bar.currentMessage()
 
 
-def test_successful_completion(qtbot, window, mock_worker, dummy_files):
+def test_successful_completion(qtbot, window, mock_worker, dummy_files) -> None:
     """Test the UI updates on successful worker completion."""
     # Simulate worker being created and started
     valid_input_dir = dummy_files[0].parent
@@ -627,7 +623,7 @@ def test_successful_completion(qtbot, window, mock_worker, dummy_files):
     # Note: open_vlc_button is not enabled in tests because the output file doesn't actually exist
 
 
-def test_error_handling(qtbot, window, mock_dialogs, mock_worker, dummy_files):
+def test_error_handling(qtbot, window, mock_dialogs, mock_worker, dummy_files) -> None:
     """Test the UI updates on worker error."""
     # Simulate worker being created and started
     valid_input_dir = dummy_files[0].parent
@@ -661,7 +657,7 @@ def test_error_handling(qtbot, window, mock_dialogs, mock_worker, dummy_files):
 
 
 @patch("goesvfi.gui_tabs.main_tab.CropSelectionDialog")
-def test_open_crop_dialog(MockCropSelectionDialog, qtbot, window, dummy_files):
+def test_open_crop_dialog(MockCropSelectionDialog, qtbot, window, dummy_files) -> None:
     """Test opening the crop dialog."""
     mock_dialog_instance = MockCropSelectionDialog.return_value
     mock_dialog_instance.exec.return_value = QDialog.DialogCode.Accepted
@@ -707,7 +703,7 @@ def test_open_crop_dialog(MockCropSelectionDialog, qtbot, window, dummy_files):
     mock_dialog_instance.deleteLater()
 
 
-def test_clear_crop(qtbot, window):
+def test_clear_crop(qtbot, window) -> None:
     """Test clearing the crop region."""
     # Need to set input directory first for clear button to be enabled
     window.in_dir = Path("/fake/input")
@@ -729,7 +725,7 @@ def test_clear_crop(qtbot, window):
     assert not window.main_tab.clear_crop_button.isEnabled()
 
 
-def test_preview_zoom(qtbot, window):
+def test_preview_zoom(qtbot, window) -> None:
     """Test zooming into a preview image."""
     # Simulate input directory being set to enable crop/preview
     window.main_tab.in_dir_edit.setText("/fake/input")
@@ -757,7 +753,7 @@ def test_preview_zoom(qtbot, window):
 
 
 @patch("goesvfi.gui_tabs.main_tab.CropSelectionDialog")
-def test_crop_persists_across_tabs(MockCropSelectionDialog, qtbot, window, dummy_files, mock_dialogs):
+def test_crop_persists_across_tabs(MockCropSelectionDialog, qtbot, window, dummy_files, mock_dialogs) -> None:
     """Crop settings should persist when switching tabs."""
     mock_dialog_instance = MockCropSelectionDialog.return_value
     mock_dialog_instance.exec.return_value = QDialog.DialogCode.Accepted

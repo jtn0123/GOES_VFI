@@ -5,7 +5,6 @@ import time
 from unittest.mock import MagicMock
 
 import psutil
-import pytest
 from PyQt6.QtCore import QEvent, QObject, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication,
@@ -14,6 +13,7 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QProgressBar,
 )
+import pytest
 
 from goesvfi.gui import MainWindow
 
@@ -21,13 +21,13 @@ from goesvfi.gui import MainWindow
 class MemoryMonitor:
     """Monitor memory usage during tests."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.process = psutil.Process()
         self.baseline = None
         self.peak = None
         self.samples = []
 
-    def start(self):
+    def start(self) -> None:
         self.baseline = self.process.memory_info().rss / 1024 / 1024  # MB
         self.peak = self.baseline
         self.samples = [self.baseline]
@@ -54,15 +54,15 @@ class PerformanceMonitor(QObject):
 
     frame_rendered = pyqtSignal(float)  # Frame time in ms
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.frame_times = []
         self.last_frame_time = None
 
-    def start_frame(self):
+    def start_frame(self) -> None:
         self.last_frame_time = time.perf_counter()
 
-    def end_frame(self):
+    def end_frame(self) -> None:
         if self.last_frame_time:
             frame_time = (time.perf_counter() - self.last_frame_time) * 1000  # ms
             self.frame_times.append(frame_time)
@@ -85,7 +85,7 @@ class PerformanceMonitor(QObject):
 class TestPerformanceUI:
     """Test UI performance and responsiveness."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
@@ -98,7 +98,7 @@ class TestPerformanceUI:
 
         return window
 
-    def test_ui_responsiveness_large_datasets(self, qtbot, window):
+    def test_ui_responsiveness_large_datasets(self, qtbot, window) -> None:
         """Test UI responsiveness with large datasets."""
         # Create large file list
         file_list = QListWidget()
@@ -163,7 +163,7 @@ class TestPerformanceUI:
         scroll_fps = scroll_perf.get_average_fps()
         assert scroll_fps > 30  # Smooth scrolling
 
-    def test_non_blocking_progress_updates(self, qtbot, window):
+    def test_non_blocking_progress_updates(self, qtbot, window) -> None:
         """Test that progress updates don't block the UI."""
         # Create progress UI
         progress_bar = QProgressBar()
@@ -173,12 +173,12 @@ class TestPerformanceUI:
         class ResponsivenessChecker(QThread):
             responsiveness_checked = pyqtSignal(bool)
 
-            def __init__(self, widget):
+            def __init__(self, widget) -> None:
                 super().__init__()
                 self.widget = widget
                 self.is_responsive = True
 
-            def run(self):
+            def run(self) -> None:
                 # Try to interact with UI
                 start = time.perf_counter()
                 QApplication.postEvent(self.widget, QEvent(QEvent.Type.User))
@@ -193,7 +193,7 @@ class TestPerformanceUI:
         class HeavyWorker(QThread):
             progress = pyqtSignal(int, str)
 
-            def run(self):
+            def run(self) -> None:
                 for i in range(100):
                     # Simulate heavy computation
                     time.sleep(0.01)
@@ -208,9 +208,9 @@ class TestPerformanceUI:
         # Responsiveness checks during processing
         responsiveness_results = []
 
-        def check_responsiveness():
+        def check_responsiveness() -> None:
             checker = ResponsivenessChecker(window)
-            checker.responsiveness_checked.connect(lambda r: responsiveness_results.append(r))
+            checker.responsiveness_checked.connect(responsiveness_results.append)
             checker.start()
 
         # Start worker
@@ -228,13 +228,13 @@ class TestPerformanceUI:
         assert all(responsiveness_results)
         assert progress_bar.value() == 100
 
-    def test_memory_leak_prevention(self, qtbot, window):
+    def test_memory_leak_prevention(self, qtbot, window) -> None:
         """Test that repeated operations don't leak memory."""
         mem_monitor = MemoryMonitor()
         mem_monitor.start()
 
         # Operation that could leak memory
-        def create_and_destroy_widgets():
+        def create_and_destroy_widgets() -> None:
             widgets = []
 
             # Create many widgets
@@ -258,7 +258,7 @@ class TestPerformanceUI:
         initial_memory = mem_monitor.sample()
 
         # Repeat operation multiple times
-        for iteration in range(10):
+        for _iteration in range(10):
             create_and_destroy_widgets()
 
             # Sample memory
@@ -281,7 +281,7 @@ class TestPerformanceUI:
             variation = max(last_samples) - min(last_samples)
             assert variation < 10, "Memory usage not stable"
 
-    def test_startup_performance(self, qtbot, mocker):
+    def test_startup_performance(self, qtbot, mocker) -> None:
         """Test application startup performance."""
         # Mock heavy initialization
         init_times = {}
@@ -325,12 +325,12 @@ class TestPerformanceUI:
         qtbot.mouseClick(window.main_tab.in_dir_button, Qt.MouseButton.LeftButton)
         # Should respond immediately
 
-    def test_animation_smoothness(self, qtbot, window):
+    def test_animation_smoothness(self, qtbot, window) -> None:
         """Test UI animation smoothness."""
 
         # Create animated progress indicator
         class SmoothProgressBar(QProgressBar):
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__()
                 self.animation_timer = QTimer()
                 self.animation_timer.timeout.connect(self.animate_step)
@@ -338,12 +338,12 @@ class TestPerformanceUI:
                 self.current_smooth_value = 0.0
                 self.animation_speed = 0.1  # Interpolation factor
 
-            def set_target_value(self, value):
+            def set_target_value(self, value) -> None:
                 self.target_value = value
                 if not self.animation_timer.isActive():
                     self.animation_timer.start(16)  # ~60 FPS
 
-            def animate_step(self):
+            def animate_step(self) -> None:
                 # Smooth interpolation
                 diff = self.target_value - self.current_smooth_value
                 self.current_smooth_value += diff * self.animation_speed
@@ -365,7 +365,7 @@ class TestPerformanceUI:
         frame_times = []
         last_frame = time.perf_counter()
 
-        def on_animation_frame():
+        def on_animation_frame() -> None:
             nonlocal last_frame
             current = time.perf_counter()
             frame_times.append((current - last_frame) * 1000)
@@ -392,19 +392,19 @@ class TestPerformanceUI:
             assert avg_frame_time < 20, f"Average frame time: {avg_frame_time:.1f}ms"
             assert max_frame_time < 33, f"Max frame time: {max_frame_time:.1f}ms"
 
-    def test_thread_pool_management(self, qtbot, window):
+    def test_thread_pool_management(self, qtbot, window) -> None:
         """Test thread pool management for concurrent operations."""
 
         # Thread pool monitor
         class ThreadPoolMonitor:
-            def __init__(self, max_threads=4):
+            def __init__(self, max_threads=4) -> None:
                 self.max_threads = max_threads
                 self.active_threads = 0
                 self.completed_tasks = 0
                 self.pending_tasks = []
                 self.lock = threading.Lock()
 
-            def submit_task(self, task_func):
+            def submit_task(self, task_func) -> None:
                 with self.lock:
                     if self.active_threads < self.max_threads:
                         self.active_threads += 1
@@ -412,8 +412,8 @@ class TestPerformanceUI:
                     else:
                         self.pending_tasks.append(task_func)
 
-            def _run_task(self, task_func):
-                def wrapper():
+            def _run_task(self, task_func) -> None:
+                def wrapper() -> None:
                     try:
                         task_func()
                     finally:
@@ -438,7 +438,7 @@ class TestPerformanceUI:
         task_completed = threading.Event()
         completed_count = 0
 
-        def dummy_task():
+        def dummy_task() -> None:
             nonlocal completed_count
             time.sleep(0.1)  # Simulate work
             completed_count += 1
@@ -463,12 +463,12 @@ class TestPerformanceUI:
         # With 4 threads and 0.1s per task, should complete in ~0.5s
         assert total_time < 1.0, f"Tasks took {total_time:.2f}s"
 
-    def test_lazy_loading_components(self, qtbot, window):
+    def test_lazy_loading_components(self, qtbot, window) -> None:
         """Test lazy loading of heavy components."""
 
         # Lazy loader implementation
         class LazyComponentLoader:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.components = {}
                 self.load_times = {}
 
@@ -526,14 +526,14 @@ class TestPerformanceUI:
         assert model["model"] == "loaded"
         assert loader.load_times["heavy_model"] >= 0.2
 
-    def test_ui_freezing_prevention(self, qtbot, window):
+    def test_ui_freezing_prevention(self, qtbot, window) -> None:
         """Test prevention of UI freezing during heavy operations."""
 
         # Freezing detector
         class FreezeDetector(QObject):
             freeze_detected = pyqtSignal(float)  # Duration in seconds
 
-            def __init__(self, threshold_ms=100):
+            def __init__(self, threshold_ms=100) -> None:
                 super().__init__()
                 self.threshold_ms = threshold_ms
                 self.timer = QTimer()
@@ -541,13 +541,13 @@ class TestPerformanceUI:
                 self.last_check = time.perf_counter()
                 self.is_frozen = False
 
-            def start_monitoring(self):
+            def start_monitoring(self) -> None:
                 self.timer.start(50)  # Check every 50ms
 
-            def stop_monitoring(self):
+            def stop_monitoring(self) -> None:
                 self.timer.stop()
 
-            def check_responsiveness(self):
+            def check_responsiveness(self) -> None:
                 current = time.perf_counter()
                 elapsed = (current - self.last_check) * 1000
 
@@ -563,20 +563,20 @@ class TestPerformanceUI:
         # Create detector
         detector = FreezeDetector(threshold_ms=100)
         freezes = []
-        detector.freeze_detected.connect(lambda d: freezes.append(d))
+        detector.freeze_detected.connect(freezes.append)
 
         # Start monitoring
         detector.start_monitoring()
 
         # Perform operations that could freeze UI
         # Good practice - process in chunks
-        def process_large_data_good():
+        def process_large_data_good() -> None:
             total_items = 10000
             chunk_size = 100
 
-            for i in range(0, total_items, chunk_size):
+            for _i in range(0, total_items, chunk_size):
                 # Process chunk
-                for j in range(chunk_size):
+                for _j in range(chunk_size):
                     # Simulate work
                     _ = sum(range(1000))
 

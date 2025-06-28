@@ -2,12 +2,12 @@
 """Script to generate documentation for the GOES_VFI project."""
 
 import argparse
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
 
 
-def main():
+def main() -> None:
     """Main entry point for documentation generation."""
     parser = argparse.ArgumentParser(description="Generate GOES_VFI documentation")
     parser.add_argument("--build", action="store_true", help="Build the documentation")
@@ -53,7 +53,7 @@ def main():
             f"_build/{args.format}",  # output dir
         ]
 
-        result = subprocess.run(cmd)
+        result = subprocess.run(cmd, check=False)
         if result.returncode == 0:
             print(f"Documentation built successfully in _build/{args.format}")
         else:

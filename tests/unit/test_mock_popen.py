@@ -24,7 +24,7 @@ sys.modules.setdefault("PIL", pil)
 sys.modules.setdefault("PIL.Image", pil_image)
 
 
-def test_wait_timeout_then_complete():
+def test_wait_timeout_then_complete() -> None:
     current_time = 0.0
 
     def fake_monotonic():
@@ -40,7 +40,7 @@ def test_wait_timeout_then_complete():
         assert proc.returncode == 0
 
 
-def test_terminate_and_poll():
+def test_terminate_and_poll() -> None:
     proc = MockPopen(["cmd"], complete_after=10)
     assert proc.poll() is None
     proc.terminate()

@@ -1,20 +1,20 @@
 from unittest.mock import patch
 
-import pytest
 from PyQt6.QtWidgets import QApplication
+import pytest
 
 from goesvfi.file_sorter.sorter import FileSorter
 from goesvfi.file_sorter.view_model import FileSorterViewModel
 
 
-@pytest.fixture
+@pytest.fixture()
 def view_model(qtbot):
     if QApplication.instance() is None:
         QApplication([])
     return FileSorterViewModel(FileSorter())
 
 
-def test_select_source_directory_updates_property(view_model, tmp_path):
+def test_select_source_directory_updates_property(view_model, tmp_path) -> None:
     src_dir = tmp_path / "src"
     src_dir.mkdir()
     with patch(
@@ -27,7 +27,7 @@ def test_select_source_directory_updates_property(view_model, tmp_path):
         assert f"Source directory set to: {src_dir}" == view_model.status_message
 
 
-def test_select_destination_directory_updates_property(view_model, tmp_path):
+def test_select_destination_directory_updates_property(view_model, tmp_path) -> None:
     dst_dir = tmp_path / "dst"
     dst_dir.mkdir()
     with patch(

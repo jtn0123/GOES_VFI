@@ -350,7 +350,7 @@ class S3KeyGenerator:
 
         # For other products, find the nearest intervals
         input_minute = ts.minute
-        nearest_minutes = []
+        nearest_minutes: list[int] = []
 
         # Find the standard intervals before and after the input
         prev_minute = None

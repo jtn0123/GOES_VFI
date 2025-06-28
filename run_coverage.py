@@ -123,8 +123,6 @@ class CoverageRunner:
 
         if self.htmlcov_dir.exists() and (self.htmlcov_dir / "index.html").exists():
             reports["html"] = str(self.htmlcov_dir / "index.html")
-        else:
-            pass
 
         # Generate XML report (for CI/CD integration)
         subprocess.run(
@@ -136,8 +134,6 @@ class CoverageRunner:
 
         if self.coverage_xml.exists():
             reports["xml"] = str(self.coverage_xml)
-        else:
-            pass
 
         # Generate JSON report
         subprocess.run(
@@ -152,8 +148,6 @@ class CoverageRunner:
 
             # Parse and display summary
             self._display_json_summary()
-        else:
-            pass
 
         return reports
 
@@ -195,8 +189,6 @@ class CoverageRunner:
         html_index = self.htmlcov_dir / "index.html"
         if html_index.exists():
             webbrowser.open(f"file://{html_index.absolute()}")
-        else:
-            pass
 
 
 def main() -> int:

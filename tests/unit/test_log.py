@@ -1,10 +1,10 @@
 import logging
 from unittest.mock import patch
 
-import goesvfi.utils.log as log
+from goesvfi.utils import log
 
 
-def test_get_logger_default_level_and_handler():
+def test_get_logger_default_level_and_handler() -> None:
     logger = log.get_logger("test_logger")
     assert logger.level == log._LEVEL
     # The handler should be added to the logger
@@ -14,7 +14,7 @@ def test_get_logger_default_level_and_handler():
     assert logger.handlers[0].formatter is not None
 
 
-def test_set_level_changes_level_and_handler_level():
+def test_set_level_changes_level_and_handler_level() -> None:
     log.set_level(debug_mode=True)
     assert log._LEVEL == logging.DEBUG
     if log._handler:
@@ -26,7 +26,7 @@ def test_set_level_changes_level_and_handler_level():
         assert log._handler.level == logging.INFO
 
 
-def test_get_logger_adds_handler_once():
+def test_get_logger_adds_handler_once() -> None:
     logger = log.get_logger("unique_logger")
     initial_handler_count = len(logger.handlers)
     # Calling get_logger again should not add another handler of the same type
@@ -35,14 +35,14 @@ def test_get_logger_adds_handler_once():
 
 
 @patch("goesvfi.utils.log.colorlog_module", create=True)
-def test_handler_type_and_formatter_with_colorlog(mock_colorlog_module):
+def test_handler_type_and_formatter_with_colorlog(mock_colorlog_module) -> None:
     # Create a mock colorlog module with StreamHandler and ColoredFormatter
     class MockStreamHandler(logging.StreamHandler):
         pass
 
     class MockColoredFormatter(logging.Formatter):
         # Add **kwargs to initializer to accept unexpected args
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *args, **kwargs) -> None:
             super().__init__(*args)
 
     mock_colorlog_module.StreamHandler = MockStreamHandler
@@ -58,7 +58,7 @@ def test_handler_type_and_formatter_with_colorlog(mock_colorlog_module):
 
 
 @patch("goesvfi.utils.log.colorlog_module", None)
-def test_handler_type_and_formatter_without_colorlog():
+def test_handler_type_and_formatter_without_colorlog() -> None:
     # Reset handler to None to force rebuild
     log._handler = None
     logger = log.get_logger("no_colorlog_logger")

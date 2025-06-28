@@ -1,12 +1,13 @@
 """Initialization management for MainWindow components."""
 
 import os
-import tempfile
 from pathlib import Path
+import tempfile
 from typing import Any
 
 from goesvfi.date_sorter.sorter import DateSorter
 from goesvfi.file_sorter.sorter import FileSorter
+from goesvfi.gui_components.common_widget_pools import initialize_common_pools
 from goesvfi.gui_components.crop_handler import CropHandler
 from goesvfi.gui_components.file_picker_manager import FilePickerManager
 from goesvfi.gui_components.model_selector_manager import ModelSelectorManager
@@ -41,6 +42,9 @@ class InitializationManager:
         """
         # Import here to avoid circular import
         from goesvfi.view_models.main_window_view_model import MainWindowViewModel
+
+        # Initialize widget pools for efficient widget reuse
+        initialize_common_pools()
 
         # Instantiate Models needed by ViewModels
         file_sorter_model = FileSorter()

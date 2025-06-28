@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 from PyQt6.QtCore import QSettings, QTimer
 from PyQt6.QtWidgets import QFileDialog, QMessageBox
+import pytest
 
 from goesvfi.gui import MainWindow
 
@@ -14,7 +14,7 @@ from goesvfi.gui import MainWindow
 class TestSettingsAdvanced:
     """Test advanced settings persistence functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
@@ -27,18 +27,17 @@ class TestSettingsAdvanced:
 
         return window
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_settings_file(self, tmp_path):
         """Create temporary settings file."""
-        settings_file = tmp_path / "test_settings.ini"
-        return settings_file
+        return tmp_path / "test_settings.ini"
 
-    def test_profile_save_load_delete(self, qtbot, window, temp_settings_file):
+    def test_profile_save_load_delete(self, qtbot, window, temp_settings_file) -> None:
         """Test profile save, load, and delete operations."""
 
         # Profile manager
         class ProfileManager:
-            def __init__(self, base_path):
+            def __init__(self, base_path) -> None:
                 self.base_path = Path(base_path)
                 self.profiles_dir = self.base_path / "profiles"
                 self.profiles_dir.mkdir(exist_ok=True)
@@ -48,10 +47,11 @@ class TestSettingsAdvanced:
 
                 # Validate profile name
                 if not name or "/" in name or "\\" in name:
-                    raise ValueError("Invalid profile name")
+                    msg = "Invalid profile name"
+                    raise ValueError(msg)
 
                 # Save profile
-                with open(profile_path, "w") as f:
+                with open(profile_path, "w", encoding="utf-8") as f:
                     json.dump(settings_dict, f, indent=2)
 
                 return profile_path
@@ -60,12 +60,13 @@ class TestSettingsAdvanced:
                 profile_path = self.profiles_dir / f"{name}.json"
 
                 if not profile_path.exists():
-                    raise FileNotFoundError(f"Profile '{name}' not found")
+                    msg = f"Profile '{name}' not found"
+                    raise FileNotFoundError(msg)
 
-                with open(profile_path, "r") as f:
+                with open(profile_path, encoding="utf-8") as f:
                     return json.load(f)
 
-            def delete_profile(self, name):
+            def delete_profile(self, name) -> bool:
                 profile_path = self.profiles_dir / f"{name}.json"
 
                 if profile_path.exists():
@@ -113,7 +114,7 @@ class TestSettingsAdvanced:
         with pytest.raises(FileNotFoundError):
             profile_mgr.load_profile("non_existent")
 
-    def test_window_geometry_persistence(self, qtbot, window, mocker):
+    def test_window_geometry_persistence(self, qtbot, window, mocker) -> None:
         """Test window geometry persistence."""
         # Mock QSettings
         mock_settings = MagicMock(spec=QSettings)
@@ -121,11 +122,11 @@ class TestSettingsAdvanced:
 
         # Window state manager
         class WindowStateManager:
-            def __init__(self, window):
+            def __init__(self, window) -> None:
                 self.window = window
                 self.settings = QSettings()
 
-            def save_window_state(self):
+            def save_window_state(self) -> None:
                 # Save geometry
                 self.settings.setValue("window/geometry", self.window.saveGeometry())
 
@@ -139,7 +140,7 @@ class TestSettingsAdvanced:
                 self.settings.setValue("window/is_maximized", self.window.isMaximized())
                 self.settings.setValue("window/is_fullscreen", self.window.isFullScreen())
 
-            def restore_window_state(self):
+            def restore_window_state(self) -> None:
                 # Restore geometry
                 geometry = self.settings.value("window/geometry")
                 if geometry:
@@ -196,15 +197,15 @@ class TestSettingsAdvanced:
         assert window.width() == 1400
         assert window.height() == 900
 
-    def test_splitter_position_persistence(self, qtbot, window):
+    def test_splitter_position_persistence(self, qtbot, window) -> None:
         """Test splitter position persistence."""
 
         # Splitter state manager
         class SplitterStateManager:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.splitter_states = {}
 
-            def save_splitter_state(self, name, sizes):
+            def save_splitter_state(self, name, sizes) -> None:
                 """Save splitter sizes."""
                 self.splitter_states[name] = sizes
 
@@ -212,12 +213,12 @@ class TestSettingsAdvanced:
                 """Restore splitter sizes."""
                 return self.splitter_states.get(name, default_sizes)
 
-            def save_all_to_settings(self, settings):
+            def save_all_to_settings(self, settings) -> None:
                 """Save all splitter states to settings."""
                 for name, sizes in self.splitter_states.items():
                     settings.setValue(f"splitters/{name}", sizes)
 
-            def load_all_from_settings(self, settings):
+            def load_all_from_settings(self, settings) -> None:
                 """Load all splitter states from settings."""
                 settings.beginGroup("splitters")
                 for name in settings.childKeys():
@@ -246,18 +247,18 @@ class TestSettingsAdvanced:
         restored = splitter_mgr.restore_splitter_state("non_existent", [100, 100])
         assert restored == [100, 100]
 
-    def test_recent_items_management(self, qtbot, window):
+    def test_recent_items_management(self, qtbot, window) -> None:
         """Test recent files and directories management."""
 
         # Recent items manager
         class RecentItemsManager:
-            def __init__(self, max_items=10):
+            def __init__(self, max_items=10) -> None:
                 self.max_items = max_items
                 self.recent_files = []
                 self.recent_directories = []
                 self.recent_searches = []
 
-            def add_recent_file(self, filepath):
+            def add_recent_file(self, filepath) -> None:
                 filepath = str(filepath)
 
                 # Remove if already exists
@@ -270,7 +271,7 @@ class TestSettingsAdvanced:
                 # Trim to max
                 self.recent_files = self.recent_files[: self.max_items]
 
-            def add_recent_directory(self, dirpath):
+            def add_recent_directory(self, dirpath) -> None:
                 dirpath = str(dirpath)
 
                 if dirpath in self.recent_directories:
@@ -279,17 +280,17 @@ class TestSettingsAdvanced:
                 self.recent_directories.insert(0, dirpath)
                 self.recent_directories = self.recent_directories[: self.max_items]
 
-            def add_recent_search(self, search_term):
+            def add_recent_search(self, search_term) -> None:
                 if search_term in self.recent_searches:
                     self.recent_searches.remove(search_term)
 
                 self.recent_searches.insert(0, search_term)
                 self.recent_searches = self.recent_searches[: self.max_items]
 
-            def clear_recent_files(self):
+            def clear_recent_files(self) -> None:
                 self.recent_files.clear()
 
-            def clear_all(self):
+            def clear_all(self) -> None:
                 self.recent_files.clear()
                 self.recent_directories.clear()
                 self.recent_searches.clear()
@@ -297,9 +298,9 @@ class TestSettingsAdvanced:
             def get_recent_menu_actions(self, item_type="files"):
                 if item_type == "files":
                     return self.recent_files
-                elif item_type == "directories":
+                if item_type == "directories":
                     return self.recent_directories
-                elif item_type == "searches":
+                if item_type == "searches":
                     return self.recent_searches
                 return []
 
@@ -341,12 +342,12 @@ class TestSettingsAdvanced:
         recent_mgr.clear_all()
         assert len(recent_mgr.recent_directories) == 0
 
-    def test_settings_migration_v1_to_v2(self, qtbot, window, temp_settings_file):
+    def test_settings_migration_v1_to_v2(self, qtbot, window, temp_settings_file) -> None:
         """Test settings migration from v1 to v2 format."""
 
         # Settings migrator
         class SettingsMigrator:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.migrations = {
                     "1.0": self.migrate_1_0_to_1_1,
                     "1.1": self.migrate_1_1_to_2_0,
@@ -387,7 +388,7 @@ class TestSettingsAdvanced:
                 # Restructure settings
                 old_settings = settings.copy()
 
-                new_settings = {
+                return {
                     "version": "2.0",
                     "general": {
                         "auto_save": old_settings.get("auto_save", True),
@@ -405,8 +406,6 @@ class TestSettingsAdvanced:
                         "output_filename": old_settings.get("output_filename", ""),
                     },
                 }
-
-                return new_settings
 
         # Test migration
         migrator = SettingsMigrator()
@@ -430,7 +429,7 @@ class TestSettingsAdvanced:
         assert new_settings["paths"]["output_dir"] == "/old/path"
         assert new_settings["paths"]["output_filename"] == "output.mp4"
 
-    def test_settings_export_import(self, qtbot, window, temp_settings_file, mocker):
+    def test_settings_export_import(self, qtbot, window, temp_settings_file, mocker) -> None:
         """Test settings export and import functionality."""
         # Mock file dialog
         mock_get_save_file = mocker.patch.object(QFileDialog, "getSaveFileName")
@@ -442,10 +441,10 @@ class TestSettingsAdvanced:
 
         # Settings import/export manager
         class SettingsPortability:
-            def __init__(self, window):
+            def __init__(self, window) -> None:
                 self.window = window
 
-            def export_settings(self):
+            def export_settings(self) -> bool | None:
                 # Get save location
                 filepath, _ = QFileDialog.getSaveFileName(
                     self.window,
@@ -475,13 +474,13 @@ class TestSettingsAdvanced:
 
                 # Write to file
                 try:
-                    with open(filepath, "w") as f:
+                    with open(filepath, "w", encoding="utf-8") as f:
                         json.dump(settings, f, indent=2)
                     return True
                 except Exception:
                     return False
 
-            def import_settings(self):
+            def import_settings(self) -> bool | None:
                 # Get file to import
                 filepath, _ = QFileDialog.getOpenFileName(
                     self.window,
@@ -494,12 +493,13 @@ class TestSettingsAdvanced:
                     return False
 
                 try:
-                    with open(filepath, "r") as f:
+                    with open(filepath, encoding="utf-8") as f:
                         settings = json.load(f)
 
                     # Validate version
                     if settings.get("version") != "2.0":
-                        raise ValueError("Incompatible settings version")
+                        msg = "Incompatible settings version"
+                        raise ValueError(msg)
 
                     # Apply settings
                     main_settings = settings.get("main_settings", {})
@@ -513,7 +513,7 @@ class TestSettingsAdvanced:
                     QMessageBox.critical(
                         self.window,
                         "Import Failed",
-                        f"Failed to import settings: {str(e)}",
+                        f"Failed to import settings: {e!s}",
                     )
                     return False
 
@@ -544,7 +544,7 @@ class TestSettingsAdvanced:
         assert window.main_tab.encoder_combo.currentText() == "RIFE"
         assert window.main_tab.sanchez_checkbox.isChecked()
 
-    def test_preferences_reset_functionality(self, qtbot, window, mocker):
+    def test_preferences_reset_functionality(self, qtbot, window, mocker) -> None:
         """Test preferences reset functionality."""
         # Mock confirmation dialog
         mock_question = mocker.patch.object(QMessageBox, "question")
@@ -552,7 +552,7 @@ class TestSettingsAdvanced:
 
         # Preferences reset manager
         class PreferencesReset:
-            def __init__(self, window):
+            def __init__(self, window) -> None:
                 self.window = window
                 self.default_values = {
                     "fps": 30,
@@ -563,12 +563,12 @@ class TestSettingsAdvanced:
                     "crop": None,
                 }
 
-            def reset_to_defaults(self, category=None):
+            def reset_to_defaults(self, category=None) -> bool:
                 # Confirm with user
                 result = QMessageBox.question(
                     self.window,
                     "Reset Preferences",
-                    f"Are you sure you want to reset {'all' if not category else category} preferences to defaults?\n"
+                    f"Are you sure you want to reset {category or 'all'} preferences to defaults?\n"
                     "This action cannot be undone.",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 )
@@ -621,7 +621,7 @@ class TestSettingsAdvanced:
         assert "Reset Preferences" in args[1]
         assert "all preferences" in args[2]
 
-    def test_auto_save_settings(self, qtbot, window, mocker):
+    def test_auto_save_settings(self, qtbot, window, mocker) -> None:
         """Test auto-save settings functionality."""
         # Mock QTimer for auto-save
         mock_timer = MagicMock()
@@ -629,7 +629,7 @@ class TestSettingsAdvanced:
 
         # Auto-save manager
         class AutoSaveManager:
-            def __init__(self, window, interval_ms=30000):
+            def __init__(self, window, interval_ms=30000) -> None:
                 self.window = window
                 self.interval_ms = interval_ms
                 self.timer = QTimer()
@@ -637,22 +637,22 @@ class TestSettingsAdvanced:
                 self.unsaved_changes = False
                 self.last_save_time = None
 
-            def start(self):
+            def start(self) -> None:
                 self.timer.start(self.interval_ms)
 
-            def stop(self):
+            def stop(self) -> None:
                 self.timer.stop()
 
-            def mark_changed(self):
+            def mark_changed(self) -> None:
                 self.unsaved_changes = True
 
-            def auto_save(self):
+            def auto_save(self) -> None:
                 if self.unsaved_changes:
                     self.save_settings()
                     self.unsaved_changes = False
                     self.last_save_time = QTimer().toString()
 
-            def save_settings(self):
+            def save_settings(self) -> bool:
                 # Save current settings
                 {
                     "fps": self.window.main_tab.fps_spinbox.value(),

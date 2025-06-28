@@ -1,18 +1,19 @@
 """Comprehensive tests for the SuperButton widget."""
 
 import sys
+from typing import Never
 from unittest.mock import Mock, patch
 
-import pytest
 from PyQt6.QtCore import QEvent, QPointF, Qt
 from PyQt6.QtGui import QMouseEvent
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QPushButton, QWidget
+import pytest
 
 from goesvfi.gui_tabs.main_tab_components.widgets import SuperButton
 
 
-@pytest.fixture
+@pytest.fixture()
 def app():
     """Create QApplication for tests."""
     app = QApplication.instance()
@@ -23,7 +24,7 @@ def app():
     app.processEvents()
 
 
-@pytest.fixture
+@pytest.fixture()
 def super_button(app: QApplication) -> SuperButton:
     """Create a SuperButton instance for testing."""
     button = SuperButton("Test Button")
@@ -38,13 +39,13 @@ def super_button(app: QApplication) -> SuperButton:
 class TestSuperButton:
     """Test suite for SuperButton widget."""
 
-    def test_initialization(self, super_button):
+    def test_initialization(self, super_button) -> None:
         """Test SuperButton initialization."""
         assert super_button.text() == "Test Button"
         assert super_button.click_callback is None
         assert isinstance(super_button, QPushButton)
 
-    def test_initialization_with_parent(self, app):
+    def test_initialization_with_parent(self, app) -> None:
         """Test SuperButton initialization with parent widget."""
         parent = QWidget()
         button = SuperButton("Child Button", parent)
@@ -57,7 +58,7 @@ class TestSuperButton:
         parent.close()
         app.processEvents()
 
-    def test_set_click_callback(self, super_button):
+    def test_set_click_callback(self, super_button) -> None:
         """Test setting click callback."""
         callback = Mock()
         callback.__name__ = "mock_callback"  # Add __name__ attribute to Mock
@@ -65,7 +66,7 @@ class TestSuperButton:
 
         assert super_button.click_callback == callback
 
-    def test_set_click_callback_none(self, super_button):
+    def test_set_click_callback_none(self, super_button) -> None:
         """Test setting click callback to None."""
         # First set a callback
         callback = Mock()
@@ -77,7 +78,7 @@ class TestSuperButton:
         super_button.set_click_callback(None)
         assert super_button.click_callback is None
 
-    def test_mouse_press_event(self, super_button, app):
+    def test_mouse_press_event(self, super_button, app) -> None:
         """Test mouse press event handling."""
         with patch("builtins.print") as mock_print:
             # Create mouse press event
@@ -96,13 +97,13 @@ class TestSuperButton:
             # Check that debug print was called
             mock_print.assert_any_call(f"SuperButton MOUSE PRESS: {Qt.MouseButton.LeftButton}")
 
-    def test_mouse_press_event_none(self, super_button):
+    def test_mouse_press_event_none(self, super_button) -> None:
         """Test mouse press event with None event."""
         # Should handle None gracefully
         super_button.mousePressEvent(None)
         # No exception should be raised
 
-    def test_mouse_release_event_left_click_with_callback(self, super_button, app, qtbot):
+    def test_mouse_release_event_left_click_with_callback(self, super_button, app, qtbot) -> None:
         """Test mouse release event with left click and callback."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -132,7 +133,7 @@ class TestSuperButton:
             # Check callback was called
             callback.assert_called_once()
 
-    def test_mouse_release_event_left_click_no_callback(self, super_button, app):
+    def test_mouse_release_event_left_click_no_callback(self, super_button, app) -> None:
         """Test mouse release event with left click but no callback."""
         with patch("builtins.print") as mock_print:
             # Create mouse release event
@@ -153,7 +154,7 @@ class TestSuperButton:
             mock_print.assert_any_call("SuperButton: LEFT CLICK DETECTED")
             mock_print.assert_any_call("SuperButton: No callback registered")
 
-    def test_mouse_release_event_right_click(self, super_button, app, qtbot):
+    def test_mouse_release_event_right_click(self, super_button, app, qtbot) -> None:
         """Test mouse release event with right click."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -183,13 +184,13 @@ class TestSuperButton:
             qtbot.wait(20)
             callback.assert_not_called()
 
-    def test_mouse_release_event_none(self, super_button):
+    def test_mouse_release_event_none(self, super_button) -> None:
         """Test mouse release event with None event."""
         # Should handle None gracefully
         super_button.mouseReleaseEvent(None)
         # No exception should be raised
 
-    def test_click_simulation(self, super_button, app, qtbot):
+    def test_click_simulation(self, super_button, app, qtbot) -> None:
         """Test simulated click using QTest."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -204,7 +205,7 @@ class TestSuperButton:
         # Verify callback was called
         callback.assert_called_once()
 
-    def test_multiple_callbacks(self, super_button, app, qtbot):
+    def test_multiple_callbacks(self, super_button, app, qtbot) -> None:
         """Test changing callbacks multiple times."""
         callback1 = Mock()
         callback1.__name__ = "mock_callback1"
@@ -233,7 +234,7 @@ class TestSuperButton:
         # Second callback should now be called
         callback2.assert_called_once()
 
-    def test_disabled_button_behavior(self, super_button, app, qtbot):
+    def test_disabled_button_behavior(self, super_button, app, qtbot) -> None:
         """Test behavior when button is disabled."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -258,11 +259,12 @@ class TestSuperButton:
         # Now it should be called
         callback.assert_called_once()
 
-    def test_callback_exception_handling(self, super_button, app, qtbot):
+    def test_callback_exception_handling(self, super_button, app, qtbot) -> None:
         """Test that exceptions in callbacks don't crash the button."""
 
-        def failing_callback():
-            raise RuntimeError("Test exception")
+        def failing_callback() -> Never:
+            msg = "Test exception"
+            raise RuntimeError(msg)
 
         super_button.set_click_callback(failing_callback)
 
@@ -280,7 +282,7 @@ class TestSuperButton:
         super_button.set_click_callback(new_callback)
         assert super_button.click_callback == new_callback
 
-    def test_rapid_clicks(self, super_button, app, qtbot):
+    def test_rapid_clicks(self, super_button, app, qtbot) -> None:
         """Test rapid clicking behavior."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -297,12 +299,12 @@ class TestSuperButton:
         # All clicks should register
         assert callback.call_count == 5
 
-    def test_button_text_changes(self, super_button):
+    def test_button_text_changes(self, super_button) -> None:
         """Test that button text can be changed."""
         super_button.setText("New Text")
         assert super_button.text() == "New Text"
 
-    def test_button_signals(self, super_button, qtbot):
+    def test_button_signals(self, super_button, qtbot) -> None:
         """Test that standard QPushButton signals still work."""
         clicked_signal = Mock()
         pressed_signal = Mock()
@@ -321,7 +323,7 @@ class TestSuperButton:
         pressed_signal.assert_called()
         released_signal.assert_called()
 
-    def test_geometry_and_visibility(self, super_button, app):
+    def test_geometry_and_visibility(self, super_button, app) -> None:
         """Test button geometry and visibility."""
         # Set size
         super_button.resize(100, 50)
@@ -342,7 +344,7 @@ class TestSuperButton:
         assert super_button.isVisible()
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
-    def test_timer_delay(self, mock_timer, super_button, app):
+    def test_timer_delay(self, mock_timer, super_button, app) -> None:
         """Test that QTimer is used with correct delay."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -363,7 +365,7 @@ class TestSuperButton:
         # Verify QTimer.singleShot was called with 10ms delay
         mock_timer.assert_called_once_with(10, callback)
 
-    def test_double_click_behavior(self, super_button, app, qtbot):
+    def test_double_click_behavior(self, super_button, app, qtbot) -> None:
         """Test double-click behavior."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -386,7 +388,7 @@ class TestSuperButton:
         # Both clicks should have triggered the callback
         assert callback.call_count == 2
 
-    def test_middle_button_click(self, super_button, app, qtbot):
+    def test_middle_button_click(self, super_button, app, qtbot) -> None:
         """Test middle mouse button behavior."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -399,7 +401,7 @@ class TestSuperButton:
         # Callback should not be called for middle button
         callback.assert_not_called()
 
-    def test_keyboard_activation(self, super_button, app, qtbot):
+    def test_keyboard_activation(self, super_button, app, qtbot) -> None:
         """Test keyboard activation (space/enter)."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -417,7 +419,7 @@ class TestSuperButton:
         # So callback should not be called
         callback.assert_not_called()
 
-    def test_tooltip_and_accessibility(self, super_button):
+    def test_tooltip_and_accessibility(self, super_button) -> None:
         """Test tooltip and accessibility features."""
         # Set tooltip
         super_button.setToolTip("This is a super button")
@@ -431,13 +433,13 @@ class TestSuperButton:
         super_button.setAccessibleDescription("A button with enhanced click handling")
         assert super_button.accessibleDescription() == "A button with enhanced click handling"
 
-    def test_style_sheet_compatibility(self, super_button):
+    def test_style_sheet_compatibility(self, super_button) -> None:
         """Test that custom stylesheets work with SuperButton."""
         style = "QPushButton { background-color: red; color: white; }"
         super_button.setStyleSheet(style)
         assert super_button.styleSheet() == style
 
-    def test_parent_widget_deletion(self, app):
+    def test_parent_widget_deletion(self, app) -> None:
         """Test SuperButton behavior when parent is deleted."""
         parent = QWidget()
         button = SuperButton("Child Button", parent)

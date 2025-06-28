@@ -5,11 +5,12 @@ in concurrent satellite data processing operations.
 """
 
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
+import operator
+from pathlib import Path
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -23,21 +24,20 @@ from goesvfi.pipeline.run_vfi import InterpolationPipeline
 
 
 class TestConcurrentOperations:
-    pass
     """Test concurrent operations and thread safety."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_db_path(self, tmp_path):
         """Create a temporary database path."""
         return tmp_path / "test_cache.db"
 
-    @pytest.fixture
+    @pytest.fixture()
     def thread_safe_db(self, temp_db_path):
         """Create a thread-safe cache database."""
         return ThreadLocalCacheDB(temp_db_path)
 
-    @pytest.mark.asyncio
-    async def test_concurrent_s3_client_initialization(self):
+    @pytest.mark.asyncio()
+    async def test_concurrent_s3_client_initialization(self) -> None:
         """Test thread-safe S3 client initialization."""
         # Track client creation calls
         client_ids = []
@@ -85,8 +85,8 @@ class TestConcurrentOperations:
             # Should have created at least one client
             assert len(client_ids) >= 1
 
-    @pytest.mark.asyncio
-    async def test_concurrent_cache_db_operations(self, thread_safe_db):
+    @pytest.mark.asyncio()
+    async def test_concurrent_cache_db_operations(self, thread_safe_db) -> None:
         """Test concurrent read/write operations on cache database."""
         # Database is initialized in constructor
 
@@ -94,12 +94,12 @@ class TestConcurrentOperations:
         from goesvfi.integrity_check.time_index import SatellitePattern
 
         satellite = SatellitePattern.GOES_18
-        base_time = datetime.now(timezone.utc)
+        base_time = datetime.now(UTC)
 
         test_entries = [(base_time + timedelta(minutes=i * 10), f"/path/to/file_{i}.nc", True) for i in range(100)]
 
         # Concurrent write operations
-        async def write_entries(entries):
+        async def write_entries(entries) -> None:
             for timestamp, filepath, found in entries:
                 await thread_safe_db.add_timestamp(timestamp, satellite, filepath, found)
                 await asyncio.sleep(0.001)  # Simulate work
@@ -139,19 +139,19 @@ class TestConcurrentOperations:
         # Should have read all entries
         assert len(non_none_results) == len(test_entries)
 
-    def test_thread_pool_cache_operations(self, thread_safe_db):
+    def test_thread_pool_cache_operations(self, thread_safe_db) -> None:
         """Test cache operations from multiple threads."""
         # Database is initialized in constructor
 
         # Operations to run in threads
-        def write_operation(thread_id, count):
+        def write_operation(thread_id, count) -> None:
             for _i in range(count):
                 filepath = f"thread_{thread_id}_file_{_i}.nc"
                 thread_safe_db.add_entry(
                     filepath=filepath,
                     file_hash=f"hash_{thread_id}_{_i}",
                     file_size=_i * 1000,
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                 )
                 time.sleep(0.001)  # Simulate work
 
@@ -192,9 +192,8 @@ class TestConcurrentOperations:
         non_none_results = [r for r in all_read_results if r is not None]
         assert len(non_none_results) == 100  # 4 threads * 25 entries each
 
-    @pytest.mark.asyncio
-    async def test_concurrent_download_deduplication(self):
-        pass
+    @pytest.mark.asyncio()
+    async def test_concurrent_download_deduplication(self) -> None:
         """Test that concurrent downloads of same file are deduplicated."""
         store = S3Store()
         download_count = 0
@@ -203,12 +202,11 @@ class TestConcurrentOperations:
         # Mock S3 client
         mock_s3_client = AsyncMock()
 
-        async def mock_download(*args, **kwargs):
+        async def mock_download(*args, **kwargs) -> None:
             async with download_lock:
                 nonlocal download_count
                 download_count += 1
             await asyncio.sleep(0.1)  # Simulate download time
-            return None
 
         mock_s3_client.download_file = mock_download
         mock_s3_client.head_object = AsyncMock(return_value={"ContentLength": 1000})
@@ -232,7 +230,7 @@ class TestConcurrentOperations:
                     import tempfile
 
                     temp_dir = tempfile.mkdtemp()
-                    timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+                    timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
                     dest_path = Path(temp_dir) / "same_file.nc"
 
                     # Launch multiple concurrent downloads of same file
@@ -254,20 +252,19 @@ class TestConcurrentOperations:
                     assert len(results) == 5
                     assert download_count == 5  # Without deduplication
 
-    @pytest.mark.asyncio
-    async def test_race_condition_in_progress_tracking(self):
-        pass
+    @pytest.mark.asyncio()
+    async def test_race_condition_in_progress_tracking(self) -> None:
         """Test for race conditions in progress tracking."""
         progress_tracker: dict[str, int] = {}
         progress_lock = asyncio.Lock()
 
-        async def update_progress(task_id, progress):
+        async def update_progress(task_id, progress) -> None:
             # Simulate race condition without lock
             current = progress_tracker.get(task_id, 0)
             await asyncio.sleep(0.001)  # Simulate work
             progress_tracker[task_id] = current + progress
 
-        async def safe_update_progress(task_id, progress):
+        async def safe_update_progress(task_id, progress) -> None:
             async with progress_lock:
                 current = progress_tracker.get(task_id, 0)
                 await asyncio.sleep(0.001)  # Simulate work
@@ -294,7 +291,7 @@ class TestConcurrentOperations:
         # Unsafe updates might lose some due to race condition
         # (In practice, asyncio's single-threaded nature might hide this)
 
-    async def test_concurrent_pipeline_processing(self):
+    async def test_concurrent_pipeline_processing(self) -> None:
         """Test concurrent processing in interpolation pipeline."""
         processing_times = []
         processing_lock = threading.Lock()
@@ -314,8 +311,7 @@ class TestConcurrentOperations:
                     return pipeline.process(images, task_id)
 
             # Run in executor
-            result = await asyncio.get_event_loop().run_in_executor(None, run_pipeline)
-            return result
+            return await asyncio.get_event_loop().run_in_executor(None, run_pipeline)
 
         # Run tasks concurrently
         tasks = []
@@ -332,8 +328,8 @@ class TestConcurrentOperations:
         # Verify concurrent execution (overlapping times)
         assert len(processing_times) == 5
 
-    @pytest.mark.asyncio
-    async def test_background_worker_concurrent_tasks(self):
+    @pytest.mark.asyncio()
+    async def test_background_worker_concurrent_tasks(self) -> None:
         """Test background worker handling concurrent tasks."""
         # Mock the UIFreezeMonitor to avoid QTimer issues in tests
         with patch("goesvfi.integrity_check.background_worker.UIFreezeMonitor"):
@@ -342,7 +338,7 @@ class TestConcurrentOperations:
             task_results = []
             task_lock = threading.Lock()
 
-            def sample_task(task_id, duration, progress_callback=None, cancel_check=None):
+            def sample_task(task_id, duration, progress_callback=None, cancel_check=None) -> str:
                 time.sleep(duration)
                 with task_lock:
                     task_results.append((task_id, time.time()))
@@ -363,7 +359,7 @@ class TestConcurrentOperations:
 
             # Verify concurrent execution by checking overlapping times
             # Sort by start time
-            task_results.sort(key=lambda x: x[1])
+            task_results.sort(key=operator.itemgetter(1))
 
             # Check for overlapping execution times
             overlaps = 0
@@ -377,7 +373,7 @@ class TestConcurrentOperations:
             # Clean up
             worker.cleanup()
 
-    async def test_deadlock_prevention_in_composite_store(self):
+    async def test_deadlock_prevention_in_composite_store(self) -> None:
         """Test that composite store prevents deadlocks."""
         # Create a composite store with default initialization
         composite = CompositeStore(enable_s3=True, enable_cdn=True, enable_cache=False)
@@ -409,7 +405,7 @@ class TestConcurrentOperations:
         composite.sources = [("S3", store1), ("CDN", store2)]
 
         # Test concurrent downloads
-        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         # These should not deadlock
         tasks = []
@@ -428,15 +424,15 @@ class TestConcurrentOperations:
         successful = [r for r in results if isinstance(r, Path)]
         assert len(successful) > 0
 
-    @pytest.mark.asyncio
-    async def test_atomic_operations_in_cache(self, thread_safe_db):
+    @pytest.mark.asyncio()
+    async def test_atomic_operations_in_cache(self, thread_safe_db) -> None:
         """Test atomic operations in cache database."""
         # Database is initialized in constructor
 
         # Test atomic increment operation
         counter_key = "download_counter"
 
-        async def increment_counter(count):
+        async def increment_counter(count) -> None:
             for _ in range(count):
                 # Get current value - don't use context manager here since it closes the connection
                 db = thread_safe_db.get_db()
@@ -451,7 +447,7 @@ class TestConcurrentOperations:
                     filepath=counter_key,
                     file_hash="counter",
                     file_size=new_value,
-                    timestamp=datetime.now(timezone.utc),
+                    timestamp=datetime.now(UTC),
                     metadata={"type": "counter"},
                 )
 

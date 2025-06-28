@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 import pathlib
 import subprocess
 import tempfile
-from typing import Iterable
 
 import numpy as np
 from numpy.typing import NDArray
@@ -20,8 +20,7 @@ FloatNDArray = NDArray[np.float32]
 
 # Renamed from write_mp4
 def write_raw_mp4(frames: Iterable[FloatNDArray], raw_path: pathlib.Path, fps: int) -> pathlib.Path:
-    """
-    Writes intermediate MP4 with a lossless codec (FFV1).
+    """Writes intermediate MP4 with a lossless codec (FFV1).
     Returns the path to raw_path.
     """
     with tempfile.TemporaryDirectory() as tmpdir_name:

@@ -7,12 +7,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from goesvfi.core.base_manager import ConfigurableManager
 from goesvfi.utils import log
 
 LOGGER = log.get_logger(__name__)
 
 
-class ReconcileManager:
+class ReconcileManager(ConfigurableManager):
     """Manages reconciliation of missing timestamps and downloads.
 
     This is a minimal stub implementation to allow the app to start.
@@ -38,13 +39,33 @@ class ReconcileManager:
             max_concurrency: Maximum concurrent downloads
             **kwargs: Additional keyword arguments
         """
-        LOGGER.warning("Using stub implementation of ReconcileManager")
+        # Set up default configuration
+        default_config = {
+            "max_concurrency": max_concurrency,
+            "base_dir": str(kwargs.get("base_dir", Path.cwd())),
+            "retry_attempts": kwargs.get("retry_attempts", 3),
+            "timeout_seconds": kwargs.get("timeout_seconds", 30),
+        }
+
+        super().__init__("ReconcileManager", default_config=default_config)
+
+        self.log_warning("Using stub implementation of ReconcileManager")
+
         self.cache_db = cache_db
         self.reconciler = reconciler
         self.cdn_store = cdn_store
         self.s3_store = s3_store
-        self.max_concurrency = max_concurrency
-        self.base_dir = kwargs.get("base_dir", Path.cwd())
+        self.base_dir = Path(self.get_config("base_dir"))
+
+        # Track resources for cleanup
+        if cache_db:
+            self._track_resource(cache_db)
+        if reconciler:
+            self._track_resource(reconciler)
+        if cdn_store:
+            self._track_resource(cdn_store)
+        if s3_store:
+            self._track_resource(s3_store)
 
     async def download_missing_timestamps(
         self,

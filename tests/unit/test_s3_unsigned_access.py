@@ -3,15 +3,16 @@ Unit tests for unsigned S3 access in the integrity_check module.
 """
 
 import asyncio
-import tempfile
-import unittest
 from datetime import datetime
 from pathlib import Path
+import tempfile
+import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import botocore.exceptions
 from botocore import UNSIGNED
 from botocore.config import Config
+import botocore.exceptions
+import pytest
 
 from goesvfi.integrity_check.remote.base import (
     AuthenticationError,
@@ -23,7 +24,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern
 class TestUnsignedS3Access(unittest.TestCase):
     """Test cases for S3Store's unsigned S3 access functionality."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Create a temporary directory
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -45,7 +46,7 @@ class TestUnsignedS3Access(unittest.TestCase):
         self.session_mock = MagicMock()
         self.session_mock.client = MagicMock(return_value=self.s3_client_mock)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up temporary directory
         self.temp_dir.cleanup()
@@ -62,7 +63,7 @@ class TestUnsignedS3Access(unittest.TestCase):
             self.s3_store._s3_client = None
 
     @patch("aioboto3.Session")
-    async def test_unsigned_s3_client_creation(self, mock_session_class):
+    async def test_unsigned_s3_client_creation(self, mock_session_class) -> None:
         """Test that S3 client is created with unsigned access."""
         # Setup
         mock_session_class.return_value = self.session_mock
@@ -81,15 +82,15 @@ class TestUnsignedS3Access(unittest.TestCase):
             # Verify Config was called with UNSIGNED
             config_spy.assert_called_once()
             # Check the args passed to Config
-            args, kwargs = config_spy.call_args
-            self.assertIn("signature_version", kwargs)
-            self.assertEqual(kwargs["signature_version"], UNSIGNED)
+            _args, kwargs = config_spy.call_args
+            assert "signature_version" in kwargs
+            assert kwargs["signature_version"] == UNSIGNED
 
             # Verify the client was returned
-            self.assertEqual(client, self.s3_client_mock)
+            assert client == self.s3_client_mock
 
     @patch("aioboto3.Session")
-    async def test_unsigned_access_for_public_buckets(self, mock_session_class):
+    async def test_unsigned_access_for_public_buckets(self, mock_session_class) -> None:
         """Test S3Store correctly accesses public NOAA buckets with unsigned access."""
         # Setup
         mock_session_class.return_value = self.session_mock
@@ -109,21 +110,21 @@ class TestUnsignedS3Access(unittest.TestCase):
             # Verify Config was created with UNSIGNED
             mock_config_class.assert_called_once()
             config_args = mock_config_class.call_args
-            self.assertEqual(config_args[1]["signature_version"], UNSIGNED)
+            assert config_args[1]["signature_version"] == UNSIGNED
 
             # Verify client was created correctly
             self.session_mock.client.assert_called_once_with("s3", config=mock_config)
 
             # Verify head_object was called with the right bucket and key
             args = self.s3_client_mock.head_object.call_args
-            self.assertIn("Bucket", args[1])
-            self.assertIn("Key", args[1])
+            assert "Bucket" in args[1]
+            assert "Key" in args[1]
 
             # Verify the exists check succeeded
-            self.assertTrue(exists)
+            assert exists
 
     @patch("aioboto3.Session")
-    async def test_error_handling_for_404(self, mock_session_class):
+    async def test_error_handling_for_404(self, mock_session_class) -> None:
         """Test error handling for 404 Not Found responses."""
         # Setup
         mock_session_class.return_value = self.session_mock
@@ -137,10 +138,10 @@ class TestUnsignedS3Access(unittest.TestCase):
         exists = await self.s3_store.check_file_exists(self.test_timestamp, self.test_satellite)
 
         # Verify exists returns False for 404
-        self.assertFalse(exists)
+        assert not exists
 
     @patch("aioboto3.Session")
-    async def test_error_handling_for_auth_errors(self, mock_session_class):
+    async def test_error_handling_for_auth_errors(self, mock_session_class) -> None:
         """Test error handling for authentication errors."""
         # Setup
         mock_session_class.return_value = self.session_mock
@@ -151,11 +152,11 @@ class TestUnsignedS3Access(unittest.TestCase):
         self.s3_client_mock.head_object = AsyncMock(side_effect=error)
 
         # Call the exists method - should raise AuthenticationError
-        with self.assertRaises(AuthenticationError):
+        with pytest.raises(AuthenticationError):
             await self.s3_store.check_file_exists(self.test_timestamp, self.test_satellite)
 
     @patch("aioboto3.Session")
-    async def test_download_with_unsigned_access(self, mock_session_class):
+    async def test_download_with_unsigned_access(self, mock_session_class) -> None:
         """Test downloading a file with unsigned access."""
         # Setup
         mock_session_class.return_value = self.session_mock
@@ -174,18 +175,18 @@ class TestUnsignedS3Access(unittest.TestCase):
 
             # Verify Config was called with UNSIGNED
             config_spy.assert_called_once()
-            args, kwargs = config_spy.call_args
-            self.assertIn("signature_version", kwargs)
-            self.assertEqual(kwargs["signature_version"], UNSIGNED)
+            _args, kwargs = config_spy.call_args
+            assert "signature_version" in kwargs
+            assert kwargs["signature_version"] == UNSIGNED
 
             # Verify download_file was called
             self.s3_client_mock.download_file.assert_called_once()
 
             # Verify the result is the destination path
-            self.assertEqual(result, dest_path)
+            assert result == dest_path
 
     @patch("aioboto3.Session")
-    async def test_noaa_bucket_access(self, mock_session_class):
+    async def test_noaa_bucket_access(self, mock_session_class) -> None:
         """Test S3Store correctly accesses NOAA buckets."""
         # Setup
         mock_session_class.return_value = self.session_mock
@@ -207,7 +208,7 @@ class TestUnsignedS3Access(unittest.TestCase):
 
             # Verify the correct bucket was accessed
             args = self.s3_client_mock.head_object.call_args
-            self.assertEqual(args[1]["Bucket"], expected_buckets[satellite])
+            assert args[1]["Bucket"] == expected_buckets[satellite]
 
 
 def async_test(coro):

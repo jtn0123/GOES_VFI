@@ -1,17 +1,17 @@
 """Tests for utility functions in the MainTab class."""
 
-import re
 from pathlib import Path
+import re
 from unittest.mock import MagicMock, Mock, patch
 
-import pytest
 from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QApplication, QLineEdit, QMessageBox
+import pytest
 
 from goesvfi.gui_tabs.main_tab import MainTab
 
 
-@pytest.fixture
+@pytest.fixture()
 def app():
     """Create a QApplication for tests."""
     app = QApplication.instance()
@@ -21,7 +21,7 @@ def app():
     app.quit()
 
 
-@pytest.fixture
+@pytest.fixture()
 def main_tab(app):
     """Create a MainTab instance for testing."""
     # Create mock dependencies
@@ -56,43 +56,43 @@ def main_tab(app):
     tab.rife_thread_spec_edit = QLineEdit()
     tab.out_file_path = None
 
-    yield tab
+    return tab
 
 
 class TestValidateThreadSpec:
     """Tests for the _validate_thread_spec utility function."""
 
-    def test_empty_thread_spec_allowed(self, main_tab):
+    def test_empty_thread_spec_allowed(self, main_tab) -> None:
         """Test that empty thread spec is allowed."""
         main_tab._validate_thread_spec("")
         assert main_tab.rife_thread_spec_edit.property("class") == ""
 
-    def test_valid_thread_spec_single_digits(self, main_tab):
+    def test_valid_thread_spec_single_digits(self, main_tab) -> None:
         """Test valid thread spec with single digits."""
         main_tab._validate_thread_spec("1:2:3")
         assert main_tab.rife_thread_spec_edit.property("class") == ""
 
-    def test_valid_thread_spec_multiple_digits(self, main_tab):
+    def test_valid_thread_spec_multiple_digits(self, main_tab) -> None:
         """Test valid thread spec with multiple digits."""
         main_tab._validate_thread_spec("10:20:30")
         assert main_tab.rife_thread_spec_edit.property("class") == ""
 
-    def test_invalid_thread_spec_missing_colons(self, main_tab):
+    def test_invalid_thread_spec_missing_colons(self, main_tab) -> None:
         """Test invalid thread spec with missing colons."""
         main_tab._validate_thread_spec("1:2")
         assert main_tab.rife_thread_spec_edit.property("class") == "ValidationError"
 
-    def test_invalid_thread_spec_extra_colons(self, main_tab):
+    def test_invalid_thread_spec_extra_colons(self, main_tab) -> None:
         """Test invalid thread spec with extra colons."""
         main_tab._validate_thread_spec("1:2:3:4")
         assert main_tab.rife_thread_spec_edit.property("class") == "ValidationError"
 
-    def test_invalid_thread_spec_non_digits(self, main_tab):
+    def test_invalid_thread_spec_non_digits(self, main_tab) -> None:
         """Test invalid thread spec with non-digit characters."""
         main_tab._validate_thread_spec("a:b:c")
         assert main_tab.rife_thread_spec_edit.property("class") == "ValidationError"
 
-    def test_invalid_thread_spec_mixed_content(self, main_tab):
+    def test_invalid_thread_spec_mixed_content(self, main_tab) -> None:
         """Test invalid thread spec with mixed valid/invalid content."""
         main_tab._validate_thread_spec("1:2a:3")
         assert main_tab.rife_thread_spec_edit.property("class") == "ValidationError"
@@ -102,7 +102,7 @@ class TestGenerateTimestampedOutputPath:
     """Tests for the _generate_timestamped_output_path utility function."""
 
     @patch("datetime.datetime")
-    def test_generate_with_base_params(self, mock_datetime, main_tab):
+    def test_generate_with_base_params(self, mock_datetime, main_tab) -> None:
         """Test generating path with provided base directory and name."""
         mock_datetime.now.return_value.strftime.return_value = "20231225_120000"
 
@@ -115,7 +115,7 @@ class TestGenerateTimestampedOutputPath:
         mock_datetime.now.return_value.strftime.assert_called_once_with("%Y%m%d_%H%M%S")
 
     @patch("datetime.datetime")
-    def test_generate_from_input_dir(self, mock_datetime, main_tab):
+    def test_generate_from_input_dir(self, mock_datetime, main_tab) -> None:
         """Test generating path using input directory as base."""
         mock_datetime.now.return_value.strftime.return_value = "20231225_120000"
 
@@ -132,7 +132,7 @@ class TestGenerateTimestampedOutputPath:
 
     @patch("datetime.datetime")
     @patch("os.getcwd")
-    def test_generate_fallback_to_cwd(self, mock_getcwd, mock_datetime, main_tab):
+    def test_generate_fallback_to_cwd(self, mock_getcwd, mock_datetime, main_tab) -> None:
         """Test fallback to current working directory when no input dir."""
         mock_datetime.now.return_value.strftime.return_value = "20231225_120000"
         mock_getcwd.return_value = "/current/working/dir"
@@ -144,7 +144,7 @@ class TestGenerateTimestampedOutputPath:
 
         assert result == Path("/current/working/dir/output_output_20231225_120000.mp4")
 
-    def test_timestamp_format(self, main_tab):
+    def test_timestamp_format(self, main_tab) -> None:
         """Test that timestamp format is correct."""
         # Create a real timestamp to verify format
         base_dir = Path("/test")
@@ -167,7 +167,7 @@ class TestCheckInputDirectoryContents:
     """Tests for the _check_input_directory_contents utility function."""
 
     @patch("PIL.Image")
-    def test_check_empty_directory(self, mock_image_class, main_tab, tmp_path):
+    def test_check_empty_directory(self, mock_image_class, main_tab, tmp_path) -> None:
         """Test checking an empty directory."""
         with patch("goesvfi.gui_tabs.main_tab.LOGGER") as mock_logger:
             main_tab._check_input_directory_contents(tmp_path)
@@ -177,7 +177,7 @@ class TestCheckInputDirectoryContents:
 
     @patch("goesvfi.gui_tabs.main_tab.np")
     @patch("PIL.Image")
-    def test_check_directory_with_images(self, mock_image_class, mock_np, main_tab, tmp_path):
+    def test_check_directory_with_images(self, mock_image_class, mock_np, main_tab, tmp_path) -> None:
         """Test checking directory with valid image files."""
         # Create test image files
         image_files = []
@@ -207,7 +207,7 @@ class TestCheckInputDirectoryContents:
             assert mock_image_class.open.call_count == 3
 
     @patch("PIL.Image")
-    def test_check_directory_with_mixed_files(self, mock_image_class, main_tab, tmp_path):
+    def test_check_directory_with_mixed_files(self, mock_image_class, main_tab, tmp_path) -> None:
         """Test checking directory with mixed file types."""
         # Create various file types
         (tmp_path / "image1.png").touch()
@@ -233,7 +233,7 @@ class TestCheckInputDirectoryContents:
                 mock_logger.debug.assert_any_call(f"Found 3 image files in {tmp_path}")
 
     @patch("PIL.Image")
-    def test_check_directory_with_corrupt_image(self, mock_image_class, main_tab, tmp_path):
+    def test_check_directory_with_corrupt_image(self, mock_image_class, main_tab, tmp_path) -> None:
         """Test handling of corrupt/unreadable images."""
         # Create test image files
         for i in range(3):
@@ -242,7 +242,8 @@ class TestCheckInputDirectoryContents:
         # Mock Image.open to fail on middle image
         def side_effect(path):
             if "image_1" in str(path):
-                raise Exception("Corrupt image")
+                msg = "Corrupt image"
+                raise Exception(msg)
             mock_img = Mock()
             mock_img.size = (1920, 1080)
             return mock_img
@@ -266,7 +267,7 @@ class TestCheckInputDirectoryContents:
 class TestGetProcessingArgs:
     """Tests for the get_processing_args utility function."""
 
-    def setup_main_tab_ui(self, main_tab):
+    def setup_main_tab_ui(self, main_tab) -> None:
         """Set up necessary UI elements for get_processing_args."""
         # Create mock UI elements
         main_tab.encoder_combo = Mock()
@@ -308,7 +309,7 @@ class TestGetProcessingArgs:
         main_tab.sanchez_res_combo = Mock()
         main_tab.sanchez_res_combo.currentText.return_value = "2.0"
 
-    def test_get_args_no_input_directory(self, main_tab):
+    def test_get_args_no_input_directory(self, main_tab) -> None:
         """Test error when no input directory is selected."""
         self.setup_main_tab_ui(main_tab)
         main_tab.out_file_path = Path("/test/output.mp4")
@@ -317,7 +318,7 @@ class TestGetProcessingArgs:
             result = main_tab.get_processing_args()
             assert result is None
 
-    def test_get_args_no_output_file(self, main_tab):
+    def test_get_args_no_output_file(self, main_tab) -> None:
         """Test error when no output file is selected."""
         self.setup_main_tab_ui(main_tab)
         main_tab.main_window_ref.in_dir = Path("/test/input")
@@ -327,7 +328,7 @@ class TestGetProcessingArgs:
             result = main_tab.get_processing_args()
             assert result is None
 
-    def test_get_args_input_dir_not_exists(self, main_tab):
+    def test_get_args_input_dir_not_exists(self, main_tab) -> None:
         """Test error when input directory doesn't exist."""
         self.setup_main_tab_ui(main_tab)
         main_tab.main_window_ref.in_dir = Path("/nonexistent/directory")
@@ -338,7 +339,7 @@ class TestGetProcessingArgs:
             assert result is None
 
     @patch("goesvfi.gui_tabs.main_tab.config")
-    def test_get_args_rife_encoder(self, mock_config, main_tab, tmp_path):
+    def test_get_args_rife_encoder(self, mock_config, main_tab, tmp_path) -> None:
         """Test getting args with RIFE encoder."""
         self.setup_main_tab_ui(main_tab)
 
@@ -371,7 +372,7 @@ class TestGetProcessingArgs:
         assert result["rife_thread_spec"] == "1:2:1"
         assert result["crop_rect"] == (0, 0, 100, 100)
 
-    def test_get_args_ffmpeg_encoder(self, main_tab, tmp_path):
+    def test_get_args_ffmpeg_encoder(self, main_tab, tmp_path) -> None:
         """Test getting args with FFmpeg encoder."""
         self.setup_main_tab_ui(main_tab)
         main_tab.encoder_combo.currentText.return_value = "FFmpeg"
@@ -396,7 +397,7 @@ class TestGetProcessingArgs:
         assert result["rife_model_key"] is None
         assert result["ffmpeg_args"] == {"preset": "fast", "crf": 23}
 
-    def test_get_args_creates_output_directory(self, main_tab, tmp_path):
+    def test_get_args_creates_output_directory(self, main_tab, tmp_path) -> None:
         """Test that output directory is created if it doesn't exist."""
         self.setup_main_tab_ui(main_tab)
 
@@ -413,7 +414,7 @@ class TestGetProcessingArgs:
         assert result is not None
         assert output_file.parent.exists()
 
-    def test_get_args_no_rife_model_selected(self, main_tab, tmp_path):
+    def test_get_args_no_rife_model_selected(self, main_tab, tmp_path) -> None:
         """Test error when RIFE encoder selected but no model."""
         self.setup_main_tab_ui(main_tab)
         main_tab.rife_model_combo.currentData.return_value = None
@@ -434,7 +435,7 @@ class TestVerifyCropAgainstImages:
     """Tests for the _verify_crop_against_images utility function."""
 
     @patch("PIL.Image")
-    def test_verify_valid_crop(self, mock_image_class, main_tab, tmp_path):
+    def test_verify_valid_crop(self, mock_image_class, main_tab, tmp_path) -> None:
         """Test verifying a valid crop rectangle."""
         # Create test images
         for i in range(3):
@@ -456,7 +457,7 @@ class TestVerifyCropAgainstImages:
             )
 
     @patch("PIL.Image")
-    def test_verify_invalid_crop_exceeds_bounds(self, mock_image_class, main_tab, tmp_path):
+    def test_verify_invalid_crop_exceeds_bounds(self, mock_image_class, main_tab, tmp_path) -> None:
         """Test verifying a crop rectangle that exceeds image bounds."""
         # Create test image
         (tmp_path / "image.png").touch()
@@ -476,7 +477,7 @@ class TestVerifyCropAgainstImages:
             ]
             assert len(warning_calls) > 0
 
-    def test_verify_crop_no_images(self, main_tab, tmp_path):
+    def test_verify_crop_no_images(self, main_tab, tmp_path) -> None:
         """Test verifying crop with no images in directory."""
         with patch("goesvfi.gui_tabs.main_tab.LOGGER") as mock_logger:
             main_tab._verify_crop_against_images(tmp_path, (0, 0, 100, 100))
@@ -488,7 +489,7 @@ class TestVerifyCropAgainstImages:
 class TestSetInputDirectory:
     """Tests for the set_input_directory utility function."""
 
-    def test_set_input_directory_string(self, main_tab):
+    def test_set_input_directory_string(self, main_tab) -> None:
         """Test setting input directory with string path."""
         main_tab.in_dir_edit = Mock()
 
@@ -496,7 +497,7 @@ class TestSetInputDirectory:
 
         main_tab.in_dir_edit.setText.assert_called_once_with("/test/path")
 
-    def test_set_input_directory_path_object(self, main_tab):
+    def test_set_input_directory_path_object(self, main_tab) -> None:
         """Test setting input directory with Path object."""
         main_tab.in_dir_edit = Mock()
 
@@ -508,7 +509,7 @@ class TestSetInputDirectory:
 class TestVerifyStartButtonState:
     """Tests for the _verify_start_button_state utility function."""
 
-    def test_verify_button_should_be_enabled(self, main_tab):
+    def test_verify_button_should_be_enabled(self, main_tab) -> None:
         """Test verification when button should be enabled."""
         # Set up conditions for enabled state
         mock_path = MagicMock(spec=Path)
@@ -533,7 +534,7 @@ class TestVerifyStartButtonState:
             assert result is True
             mock_logger.debug.assert_any_call("Start button should be enabled: True")
 
-    def test_verify_button_should_be_disabled_no_input(self, main_tab):
+    def test_verify_button_should_be_disabled_no_input(self, main_tab) -> None:
         """Test verification when button should be disabled due to no input."""
         # No input directory
         main_tab.main_window_ref.in_dir = None
@@ -556,7 +557,7 @@ class TestVerifyStartButtonState:
             assert result is False
             assert any("Has valid input directory: False" in str(call) for call in mock_logger.debug.call_args_list)
 
-    def test_verify_button_should_be_disabled_no_output(self, main_tab):
+    def test_verify_button_should_be_disabled_no_output(self, main_tab) -> None:
         """Test verification when button should be disabled due to no output."""
         # No output file
         mock_path = MagicMock(spec=Path)

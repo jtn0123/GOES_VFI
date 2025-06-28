@@ -28,6 +28,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.gui_components.icon_manager import get_icon
+from goesvfi.gui_components.update_manager import register_update, request_update
 from goesvfi.pipeline.batch_queue import (
     BatchProcessor,
     BatchQueue,
@@ -60,10 +62,22 @@ class BatchProcessingTab(QWidget):
         self._init_ui()
         self._init_batch_queue()
 
-        # Update timer
+        # Replace individual timer with UpdateManager integration
+        self._setup_update_manager()
+
+    def _setup_update_manager(self) -> None:
+        """Set up UpdateManager integration for batch processing updates."""
+        register_update("batch_queue_display", self._update_queue_display, priority=1)
+        # Start regular queue display updates (but now batched)
+        self._start_periodic_updates()
+        LOGGER.debug("BatchProcessingTab integrated with UpdateManager")
+
+    def _start_periodic_updates(self) -> None:
+        """Start periodic updates through UpdateManager instead of QTimer."""
+        # Use a single QTimer to request updates through UpdateManager
         self.update_timer = QTimer()
-        self.update_timer.timeout.connect(self._update_queue_display)
-        self.update_timer.start(1000)  # Update every second
+        self.update_timer.timeout.connect(lambda: request_update("batch_queue_display"))
+        self.update_timer.start(1000)  # Request updates every second, but they'll be batched
 
     def _init_ui(self) -> None:
         """Initialize UI components."""
@@ -72,9 +86,20 @@ class BatchProcessingTab(QWidget):
         layout.setSpacing(12)
 
         # Add header
-        header = QLabel("📦 Batch Processing")
+        # Create header with icon
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+
+        icon_label = QLabel()
+        icon_label.setPixmap(get_icon("📦").pixmap(24, 24))
+        header_layout.addWidget(icon_label)
+
+        header = QLabel("Batch Processing")
         header.setProperty("class", "AppHeader")
-        layout.addWidget(header)
+        header_layout.addWidget(header)
+        header_layout.addStretch()
+        layout.addWidget(header_widget)
 
         # Add Jobs section
         add_group = QGroupBox("➕ Add Jobs")
@@ -96,13 +121,15 @@ class BatchProcessingTab(QWidget):
         self.add_files_btn.clicked.connect(self._add_files)
         input_buttons.addWidget(self.add_files_btn)
 
-        self.add_folder_btn = QPushButton("📁 Add Folder...")
+        self.add_folder_btn = QPushButton("Add Folder...")
+        self.add_folder_btn.setIcon(get_icon("📁"))
         self.add_folder_btn.setProperty("class", "DialogButton")
         self.add_folder_btn.setToolTip("Add all files from a folder to the batch queue")
         self.add_folder_btn.clicked.connect(self._add_folder)
         input_buttons.addWidget(self.add_folder_btn)
 
-        self.clear_inputs_btn = QPushButton("🗑️ Clear")
+        self.clear_inputs_btn = QPushButton("Clear")
+        self.clear_inputs_btn.setIcon(get_icon("🗑️"))
         self.clear_inputs_btn.setProperty("class", "DialogButton")
         self.clear_inputs_btn.setToolTip("Clear all input files")
         self.clear_inputs_btn.clicked.connect(self._clear_inputs)
@@ -118,7 +145,8 @@ class BatchProcessingTab(QWidget):
         output_layout.addWidget(output_label)
         self.output_dir_label = QLabel("Not selected")
         output_layout.addWidget(self.output_dir_label)
-        self.select_output_btn = QPushButton("📁 Select...")
+        self.select_output_btn = QPushButton("Select...")
+        self.select_output_btn.setIcon(get_icon("📁"))
         self.select_output_btn.setProperty("class", "DialogButton")
         self.select_output_btn.setToolTip("Select output directory for processed files")
         self.select_output_btn.clicked.connect(self._select_output_dir)
@@ -156,13 +184,15 @@ class BatchProcessingTab(QWidget):
         # Controls
         controls_layout = QHBoxLayout()
 
-        self.start_btn = QPushButton("▶️ Start Processing")
+        self.start_btn = QPushButton("Start Processing")
+        self.start_btn.setIcon(get_icon("▶️"))
         self.start_btn.setProperty("class", "StartButton")
         self.start_btn.setToolTip("Start processing jobs in the queue")
         self.start_btn.clicked.connect(self._start_processing)
         controls_layout.addWidget(self.start_btn)
 
-        self.stop_btn = QPushButton("⏹️ Stop Processing")
+        self.stop_btn = QPushButton("Stop Processing")
+        self.stop_btn.setIcon(get_icon("⏹️"))
         self.stop_btn.setProperty("class", "StopButton")
         self.stop_btn.setToolTip("Stop processing jobs")
         self.stop_btn.clicked.connect(self._stop_processing)
@@ -181,7 +211,8 @@ class BatchProcessingTab(QWidget):
 
         controls_layout.addStretch()
 
-        self.clear_completed_btn = QPushButton("🧹 Clear Completed")
+        self.clear_completed_btn = QPushButton("Clear Completed")
+        self.clear_completed_btn.setIcon(get_icon("🧹"))
         self.clear_completed_btn.setProperty("class", "DialogButton")
         self.clear_completed_btn.setToolTip("Remove completed jobs from the queue")
         self.clear_completed_btn.clicked.connect(self._clear_completed)
@@ -302,7 +333,7 @@ class BatchProcessingTab(QWidget):
         if self.settings_provider:
             try:
                 settings = self.settings_provider()
-            except Exception as exc:  # pragma: no cover - defensive
+            except Exception:  # pragma: no cover - defensive
                 LOGGER.exception("Failed to obtain settings")
                 settings = {}
         else:
@@ -422,7 +453,8 @@ class BatchProcessingTab(QWidget):
 
             # Actions
             if job.status == JobStatus.PENDING:
-                cancel_btn = QPushButton("❌ Cancel")
+                cancel_btn = QPushButton("Cancel")
+                cancel_btn.setIcon(get_icon("❌"))
                 cancel_btn.setProperty("class", "DialogButton")
                 cancel_btn.setToolTip("Cancel this job")
                 cancel_btn.clicked.connect(lambda _checked, jid=job.id: self._cancel_job(jid))

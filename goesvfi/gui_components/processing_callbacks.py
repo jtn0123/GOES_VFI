@@ -22,7 +22,7 @@ class ProcessingCallbacks:
             eta: Estimated time remaining
         """
         # Calculate percentage
-        value = int((current / total * 100)) if total > 0 else 0
+        value = int(current / total * 100) if total > 0 else 0
         LOGGER.debug("Processing progress: %d%% (%d/%d)", value, current, total)
 
         # Update progress in view model with all values

@@ -43,10 +43,12 @@ class SignalBroker(QObject):
         )
         LOGGER.debug("Connected view model status updates")
 
-        # Connect sorter tab signals
-        main_window.file_sorter_tab.directory_selected.connect(main_window._set_in_dir_from_sorter)
-        main_window.date_sorter_tab.directory_selected.connect(main_window._set_in_dir_from_sorter)
-        LOGGER.debug("Connected sorter tab signals")
+        # Connect sorter tab signals (only if tabs exist - they may be lazily loaded)
+        if hasattr(main_window, "file_sorter_tab") and main_window.file_sorter_tab is not None:
+            main_window.file_sorter_tab.directory_selected.connect(main_window._set_in_dir_from_sorter)
+        if hasattr(main_window, "date_sorter_tab") and main_window.date_sorter_tab is not None:
+            main_window.date_sorter_tab.directory_selected.connect(main_window._set_in_dir_from_sorter)
+        LOGGER.debug("Connected available sorter tab signals")
 
         # Connect encoder combo signal
         main_window.main_tab.encoder_combo.currentTextChanged.connect(

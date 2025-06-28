@@ -1,9 +1,9 @@
 """Fixed integration tests for S3Store with proper async mock handling."""
 
-import tempfile
-import unittest
 from datetime import datetime
 from pathlib import Path
+import tempfile
+import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from goesvfi.integrity_check.remote.s3_store import S3Store
@@ -14,7 +14,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern
 class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
     """Test S3Store with mocked responses that simulate real NOAA GOES data patterns."""
 
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         """Set up test fixtures."""
         # Create S3 store
         self.store = S3Store(aws_region="us-east-1", timeout=30)
@@ -35,12 +35,12 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
         patcher = patch.object(S3Store, "_get_s3_client", return_value=self.s3_client_mock)
         self.mock_get_s3_client = patcher.start()
 
-        async def _stop_patcher():
+        async def _stop_patcher() -> None:
             patcher.stop()
 
         self.addAsyncCleanup(_stop_patcher)
 
-    async def asyncTearDown(self):
+    async def asyncTearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up temporary directory
         self.temp_dir.cleanup()
@@ -48,7 +48,7 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
         # Close S3 store
         await self.store.close()
 
-    async def test_mocked_real_s3_head_object(self):
+    async def test_mocked_real_s3_head_object(self) -> None:
         """Test head_object with mocked real S3 response."""
         # Configure mock to return success
         self.s3_client_mock.head_object.return_value = {
@@ -77,7 +77,7 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
         assert key.startswith("ABI-L1b-RadC/2023/166/12/")
         assert "M6C13_G18_s" in key
 
-    async def test_mocked_real_s3_download(self):
+    async def test_mocked_real_s3_download(self) -> None:
         """Test download with mocked real S3 response."""
         # Configure head_object to return success
         self.s3_client_mock.head_object.return_value = {
@@ -117,7 +117,7 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
         # Check destination path
         assert filename == str(dest_path)
 
-    async def test_mocked_real_s3_download_wildcard(self):
+    async def test_mocked_real_s3_download_wildcard(self) -> None:
         """Test download with wildcard matching using mocked real S3 responses."""
         # Configure head_object to return 404 (fall back to wildcard search)
         import botocore.exceptions
@@ -149,7 +149,7 @@ class TestMockedRealS3StoreFixed(unittest.IsolatedAsyncioTestCase):
 
         # Create proper async iterator for paginate
         class AsyncPaginateIterator:
-            def __init__(self, pages):
+            def __init__(self, pages) -> None:
                 self.pages = pages
                 self.index = 0
 

@@ -1,11 +1,11 @@
 """Tests for image saving functionality."""
 
-import tempfile
 from pathlib import Path
+import tempfile
 
 import numpy as np
-import pytest
 from PIL import Image
+import pytest
 
 from goesvfi.pipeline.image_processing_interfaces import ImageData
 from goesvfi.pipeline.image_saver import ImageSaver
@@ -14,12 +14,12 @@ from goesvfi.pipeline.image_saver import ImageSaver
 class TestImageSaver:
     """Test image saving functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def saver(self):
         """Create an ImageSaver instance."""
         return ImageSaver()
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_image(self):
         """Create a sample RGB image array."""
         # Create 100x100 RGB image with gradient
@@ -29,14 +29,14 @@ class TestImageSaver:
                 img_array[i, j] = [i * 2, j * 2, (i + j)]
         return img_array
 
-    def test_saver_initialization(self, saver):
+    def test_saver_initialization(self, saver) -> None:
         """Test ImageSaver initialization."""
         assert hasattr(saver, "save")
         assert hasattr(saver, "load")
         assert hasattr(saver, "process")
         assert hasattr(saver, "crop")
 
-    def test_save_rgb_image(self, saver, sample_image):
+    def test_save_rgb_image(self, saver, sample_image) -> None:
         """Test saving RGB image."""
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp_path = Path(tmp.name)
@@ -64,7 +64,7 @@ class TestImageSaver:
             if tmp_path.exists():
                 tmp_path.unlink()
 
-    def test_save_grayscale_image(self, saver):
+    def test_save_grayscale_image(self, saver) -> None:
         """Test saving grayscale image."""
         # Create grayscale image
         gray_array = np.random.randint(0, 255, (50, 50), dtype=np.uint8)
@@ -89,7 +89,7 @@ class TestImageSaver:
             if tmp_path.exists():
                 tmp_path.unlink()
 
-    def test_save_creates_directory(self, saver, sample_image):
+    def test_save_creates_directory(self, saver, sample_image) -> None:
         """Test that save creates parent directory if it doesn't exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create nested path that doesn't exist
@@ -103,7 +103,7 @@ class TestImageSaver:
             assert output_path.exists()
             assert output_path.parent.exists()
 
-    def test_save_different_formats(self, saver, sample_image):
+    def test_save_different_formats(self, saver, sample_image) -> None:
         """Test saving in different formats."""
         formats = [".png", ".jpg", ".bmp"]
 
@@ -119,7 +119,7 @@ class TestImageSaver:
                 # Verify can be loaded
                 Image.open(output_path)
 
-    def test_save_error_handling(self, saver, sample_image):
+    def test_save_error_handling(self, saver, sample_image) -> None:
         """Test error handling during save."""
         # Test with invalid path (e.g., read-only location)
         image_data = ImageData(image_data=sample_image, metadata={"width": 100, "height": 100})
@@ -128,7 +128,7 @@ class TestImageSaver:
         with pytest.raises(IOError):
             saver.save(image_data, "/invalid/path/that/doesnt/exist/image.png")
 
-    def test_save_invalid_data(self, saver):
+    def test_save_invalid_data(self, saver) -> None:
         """Test saving invalid image data."""
         # Test with invalid array shape
         invalid_array = np.array([1, 2, 3])  # 1D array
@@ -145,7 +145,7 @@ class TestImageSaver:
             if tmp_path.exists():
                 tmp_path.unlink()
 
-    def test_not_implemented_methods(self, saver):
+    def test_not_implemented_methods(self, saver) -> None:
         """Test that non-save methods raise NotImplementedError."""
         # Test load
         with pytest.raises(NotImplementedError):
@@ -160,7 +160,7 @@ class TestImageSaver:
         with pytest.raises(NotImplementedError):
             saver.crop(image_data, (0, 0, 5, 5))
 
-    def test_save_rgba_image(self, saver):
+    def test_save_rgba_image(self, saver) -> None:
         """Test saving RGBA image with transparency."""
         # Create RGBA image
         rgba_array = np.zeros((50, 50, 4), dtype=np.uint8)
@@ -187,7 +187,7 @@ class TestImageSaver:
             if tmp_path.exists():
                 tmp_path.unlink()
 
-    def test_save_with_source_path_metadata(self, saver, sample_image):
+    def test_save_with_source_path_metadata(self, saver, sample_image) -> None:
         """Test saving preserves source path in metadata."""
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             tmp_path = Path(tmp.name)
@@ -211,7 +211,7 @@ class TestImageSaver:
             if tmp_path.exists():
                 tmp_path.unlink()
 
-    def test_save_16bit_image(self, saver):
+    def test_save_16bit_image(self, saver) -> None:
         """Test saving 16-bit depth image."""
         # Create 16-bit grayscale image
         img_16bit = np.random.randint(0, 65535, (100, 100), dtype=np.uint16)
@@ -229,7 +229,7 @@ class TestImageSaver:
             try:
                 saver.save(image_data, str(tmp_path))
                 assert tmp_path.exists()
-            except (IOError, ValueError):
+            except (OSError, ValueError):
                 # Expected if PIL doesn't support 16-bit for this format
                 pytest.skip("16-bit image saving not supported")
         finally:

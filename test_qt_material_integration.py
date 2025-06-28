@@ -79,8 +79,6 @@ def test_file_migrations():
 
             if found_keywords:
                 success_count += 1
-            else:
-                pass
         except Exception:
             pass
 

@@ -3,7 +3,6 @@ Test utility helper functions for the GOES-VFI test suite.
 """
 
 import pathlib
-from typing import Tuple
 
 import numpy as np
 from PIL import Image
@@ -11,9 +10,9 @@ from PIL import Image
 
 def create_dummy_png(
     path: pathlib.Path,
-    size: Tuple[int, int] = (10, 10),
-    color: Tuple[int, int, int] = (0, 0, 0),
-):
+    size: tuple[int, int] = (10, 10),
+    color: tuple[int, int, int] = (0, 0, 0),
+) -> None:
     """
     Creates a dummy PNG image file at the specified path.
 
@@ -28,8 +27,7 @@ def create_dummy_png(
         img = Image.fromarray(img_array, "RGB")
         path.parent.mkdir(parents=True, exist_ok=True)  # Ensure directory exists
         img.save(path, format="PNG")
-    except Exception as e:
-        print(f"Error creating dummy PNG at {path}: {e}")
+    except Exception:
         raise
 
 
@@ -57,8 +55,7 @@ def compare_images(path1: pathlib.Path, path2: pathlib.Path) -> bool:
         return np.array_equal(arr1, arr2)
     except FileNotFoundError:
         return False
-    except Exception as e:
-        print(f"Error comparing images {path1} and {path2}: {e}")
+    except Exception:
         return False
 
 

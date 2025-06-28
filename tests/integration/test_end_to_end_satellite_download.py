@@ -5,10 +5,10 @@ including retry logic, error handling, and data validation.
 """
 
 import asyncio
+from datetime import UTC, datetime, timedelta
 import hashlib
-import tempfile
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
@@ -29,13 +29,13 @@ from goesvfi.integrity_check.time_index import SatellitePattern
 class TestEndToEndSatelliteDownload:
     """Test complete satellite data download and processing workflow."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_dir(self):
         """Create a temporary directory for test files."""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_netcdf_data(self):
         """Create mock NetCDF data structure."""
         # Simulate GOES-16 ABI L1b RadC data structure
@@ -56,11 +56,11 @@ class TestEndToEndSatelliteDownload:
             "instrument_type": "GOES-16 ABI",
         }
 
-    @pytest.mark.asyncio
-    async def test_complete_download_workflow(self, temp_dir, mock_netcdf_data):
+    @pytest.mark.asyncio()
+    async def test_complete_download_workflow(self, temp_dir, mock_netcdf_data) -> None:
         """Test the complete workflow from download to processed image."""
         # Setup test parameters
-        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
         satellite = SatellitePattern.GOES_16
         channel = ChannelType.CH13  # Clean longwave infrared window
 
@@ -85,7 +85,7 @@ class TestEndToEndSatelliteDownload:
         # Mock NetCDF file reading
         with patch("xarray.open_dataset") as mock_open_dataset:
             mock_dataset = MagicMock()
-            mock_dataset.__getitem__.side_effect = lambda key: mock_netcdf_data.get(key)
+            mock_dataset.__getitem__.side_effect = mock_netcdf_data.get
             mock_dataset.attrs = {
                 "time_coverage_start": mock_netcdf_data["time_coverage_start"],
                 "time_coverage_end": mock_netcdf_data["time_coverage_end"],
@@ -135,10 +135,10 @@ class TestEndToEndSatelliteDownload:
                     apply_enhancement=True,
                 )
 
-    @pytest.mark.asyncio
-    async def test_download_with_retry_and_fallback(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_download_with_retry_and_fallback(self, temp_dir) -> None:
         """Test download with retry logic and fallback to CDN."""
-        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
         satellite = SatellitePattern.GOES_16
         download_path = temp_dir / "test_file.nc"
 
@@ -177,10 +177,10 @@ class TestEndToEndSatelliteDownload:
         # Verify retries happened
         assert retry_count == 2  # Two retries before final failure
 
-    @pytest.mark.asyncio
-    async def test_download_all_sources_fail(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_download_all_sources_fail(self, temp_dir) -> None:
         """Test behavior when all download sources fail."""
-        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
         satellite = SatellitePattern.GOES_16
         download_path = temp_dir / "test_file.nc"
 
@@ -200,24 +200,24 @@ class TestEndToEndSatelliteDownload:
         try:
             await mock_s3_store.download(ts=timestamp, satellite=satellite, dest_path=download_path)
         except NetworkError as e:
-            errors.append(f"S3: {str(e)}")
+            errors.append(f"S3: {e!s}")
 
         # Try CDN as fallback
         try:
             await mock_cdn_store.download(ts=timestamp, satellite=satellite, dest_path=download_path)
         except ResourceNotFoundError as e:
-            errors.append(f"CDN: {str(e)}")
+            errors.append(f"CDN: {e!s}")
 
         # Verify both failed
         assert len(errors) == 2
         assert "S3: S3 connection failed" in errors
         assert "CDN: File not found on CDN" in errors
 
-    @pytest.mark.asyncio
-    async def test_parallel_downloads(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_parallel_downloads(self, temp_dir) -> None:
         """Test concurrent downloads of multiple satellite files."""
         # Setup multiple timestamps (every 15 minutes for GOES-16)
-        base_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        base_time = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
         timestamps = [base_time + timedelta(minutes=15 * i) for i in range(4)]
         satellite = SatellitePattern.GOES_16
 
@@ -255,16 +255,16 @@ class TestEndToEndSatelliteDownload:
             for result in results:
                 assert result.exists()
 
-    @pytest.mark.asyncio
-    async def test_download_with_progress_callback(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_download_with_progress_callback(self, temp_dir) -> None:
         """Test download with progress reporting."""
-        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
         satellite = SatellitePattern.GOES_16
         download_path = temp_dir / "test_file.nc"
 
         progress_updates = []
 
-        def progress_callback(downloaded, total):
+        def progress_callback(downloaded, total) -> None:
             progress_updates.append((downloaded, total))
 
         # Mock S3 store with progress reporting
@@ -303,10 +303,10 @@ class TestEndToEndSatelliteDownload:
             assert result.exists()
             assert result.stat().st_size == 1024 * 1024
 
-    @pytest.mark.asyncio
-    async def test_download_and_validate_checksum(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_download_and_validate_checksum(self, temp_dir) -> None:
         """Test download with checksum validation."""
-        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        timestamp = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
         satellite = SatellitePattern.GOES_16
         download_path = temp_dir / "test_file.nc"
 
@@ -335,11 +335,11 @@ class TestEndToEndSatelliteDownload:
             assert actual_checksum == expected_checksum
             assert downloaded_data == test_data
 
-    @pytest.mark.asyncio
-    async def test_download_recent_data_handling(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_download_recent_data_handling(self, temp_dir) -> None:
         """Test handling of requests for very recent data that may not be available yet."""
         # Request data from 5 minutes ago (likely not available yet)
-        recent_timestamp = datetime.now(timezone.utc) - timedelta(minutes=5)
+        recent_timestamp = datetime.now(UTC) - timedelta(minutes=5)
         satellite = SatellitePattern.GOES_16
         download_path = temp_dir / "recent_file.nc"
 

@@ -19,8 +19,8 @@ if "goesvfi.utils.operation_history" not in sys.modules:
 
 from unittest.mock import patch
 
-import pytest
 from PyQt6.QtWidgets import QApplication
+import pytest
 
 import goesvfi.gui_tabs.operation_history_tab as oh_tab
 
@@ -77,19 +77,19 @@ class DummyStore:
     def get_operation_metrics(self):
         return self.metrics
 
-    def cleanup_old_operations(self, days: int = 30):
+    def cleanup_old_operations(self, days: int = 30) -> int:
         return 0
 
-    def export_to_json(self, path, filters):
+    def export_to_json(self, path, filters) -> None:
         pass
 
 
-@pytest.fixture
+@pytest.fixture()
 def dummy_store():
     return DummyStore()
 
 
-@pytest.fixture
+@pytest.fixture()
 def history_tab_models(dummy_store):
     """Create just the table models without the full widget to avoid segfaults."""
     QApplication.instance() or QApplication([])
@@ -104,14 +104,14 @@ def history_tab_models(dummy_store):
 
     # Create a mock tab object with just the models
     class MockHistoryTab:
-        def __init__(self):
+        def __init__(self) -> None:
             self.operations_model = operations_model
             self.metrics_model = metrics_model
 
-    yield MockHistoryTab()
+    return MockHistoryTab()
 
 
-def test_table_models_populate(history_tab_models, dummy_store):
+def test_table_models_populate(history_tab_models, dummy_store) -> None:
     """Test that table models can be populated with data."""
     assert history_tab_models.operations_model.rowCount() == len(dummy_store.operations)
     first_op_index = history_tab_models.operations_model.index(0, 1)
@@ -122,7 +122,7 @@ def test_table_models_populate(history_tab_models, dummy_store):
     assert history_tab_models.metrics_model.data(first_metric_index) == dummy_store.metrics[0]["operation_name"]
 
 
-def test_refresh_worker_functionality(dummy_store):
+def test_refresh_worker_functionality(dummy_store) -> None:
     """Test that RefreshWorker can function without crashing."""
     QApplication.instance() or QApplication([])
 
@@ -138,10 +138,10 @@ def test_refresh_worker_functionality(dummy_store):
         operations_received = []
         metrics_received = []
 
-        def collect_operations(ops):
+        def collect_operations(ops) -> None:
             operations_received.extend(ops)
 
-        def collect_metrics(metrics):
+        def collect_metrics(metrics) -> None:
             metrics_received.extend(metrics)
 
         worker.operations_loaded.connect(collect_operations)

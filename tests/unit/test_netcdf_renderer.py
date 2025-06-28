@@ -1,12 +1,13 @@
 """Unit tests for the integrity_check NetCDF renderer functionality."""
 
+from pathlib import Path
 import sys
 import tempfile
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from goesvfi.integrity_check.render.netcdf import extract_metadata, render_png
 
@@ -68,7 +69,7 @@ def create_mock_dataset():
 class TestNetCDFRenderer(unittest.TestCase):
     """Test cases for the NetCDF renderer."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Create a temporary directory
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -76,15 +77,15 @@ class TestNetCDFRenderer(unittest.TestCase):
 
         # Create a mock NetCDF file
         self.netcdf_path = self.base_dir / "test.nc"
-        with open(self.netcdf_path, "w") as f:
+        with open(self.netcdf_path, "w", encoding="utf-8") as f:
             f.write("mock netcdf content")
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up temporary directory
         self.temp_dir.cleanup()
 
-    def test_render_png(self):
+    def test_render_png(self) -> None:
         """Test rendering a NetCDF file to PNG."""
         # Setup mock dataset
         mock_ds = create_mock_dataset()
@@ -114,12 +115,12 @@ class TestNetCDFRenderer(unittest.TestCase):
                             result = render_png(netcdf_path=self.netcdf_path, output_path=output_path)
 
                             # Verify
-                            self.assertEqual(result, output_path)
+                            assert result == output_path
                             mock_open_dataset.assert_called_with(self.netcdf_path)
                             mock_figure.add_axes.assert_called_once()
                             mock_ax.imshow.assert_called_once()
 
-    def test_render_png_with_custom_colormap(self):
+    def test_render_png_with_custom_colormap(self) -> None:
         """Test rendering with a custom colormap."""
         # Setup mock dataset
         mock_ds = create_mock_dataset()
@@ -156,22 +157,22 @@ class TestNetCDFRenderer(unittest.TestCase):
                             )
 
                             # Verify
-                            self.assertEqual(result, output_path)
+                            assert result == output_path
                             mock_ax.imshow.assert_called_once()
 
     @patch("xarray.open_dataset")
-    def test_render_png_file_not_found(self, mock_open_dataset):
+    def test_render_png_file_not_found(self, mock_open_dataset) -> None:
         """Test error handling when NetCDF file is not found."""
         # Setup
         nonexistent_path = self.base_dir / "nonexistent.nc"
         mock_open_dataset.side_effect = FileNotFoundError("File not found")
 
         # Test
-        with self.assertRaises(FileNotFoundError):
+        with pytest.raises(FileNotFoundError):
             render_png(nonexistent_path)
 
     @patch("xarray.open_dataset")
-    def test_render_png_invalid_band(self, mock_open_dataset):
+    def test_render_png_invalid_band(self, mock_open_dataset) -> None:
         """Test error handling when band ID is incorrect."""
         # Setup
         mock_ds = create_mock_dataset()
@@ -182,34 +183,34 @@ class TestNetCDFRenderer(unittest.TestCase):
         output_path = self.base_dir / "output.png"
 
         # Test - should raise a ValueError for wrong band
-        with self.assertRaises(ValueError) as context:
+        with pytest.raises(ValueError) as context:
             render_png(self.netcdf_path, output_path)
 
         # Verify the error message
-        self.assertIn("Band 13 not found", str(context.exception))
+        assert "Band 13 not found" in str(context.value)
 
     @patch("xarray.open_dataset")
-    def test_render_png_missing_variable(self, mock_open_dataset):
+    def test_render_png_missing_variable(self, mock_open_dataset) -> None:
         """Test error handling when required variable is missing."""
         # Setup
         mock_ds = create_mock_dataset()
         # Remove Rad variable
         del mock_ds.variables["Rad"]
-        mock_ds.__getitem__ = lambda self, key: (mock_ds.variables[key] if key in mock_ds.variables else None)
+        mock_ds.__getitem__ = lambda self, key: (mock_ds.variables.get(key, None))
         mock_open_dataset.return_value.__enter__.return_value = mock_ds
 
         # Output path
         output_path = self.base_dir / "output.png"
 
         # Test - should raise a ValueError when variable missing
-        with self.assertRaises(ValueError) as context:
+        with pytest.raises(ValueError) as context:
             render_png(self.netcdf_path, output_path)
 
         # Verify the error message
-        self.assertIn("Radiance variable 'Rad' not found", str(context.exception))
+        assert "Radiance variable 'Rad' not found" in str(context.value)
 
     @patch("xarray.open_dataset")
-    def test_extract_metadata(self, mock_open_dataset):
+    def test_extract_metadata(self, mock_open_dataset) -> None:
         """Test extracting metadata from a NetCDF file."""
         # Setup
         mock_ds = create_mock_dataset()
@@ -219,33 +220,33 @@ class TestNetCDFRenderer(unittest.TestCase):
         metadata = extract_metadata(self.netcdf_path)
 
         # Verify
-        self.assertEqual(metadata["satellite"], "G16")
-        self.assertEqual(metadata["instrument"], "ABI")
-        self.assertEqual(metadata["timestamp"], "2023-06-15T12:30:00Z")
-        self.assertEqual(metadata["band_id"], 13)
-        self.assertEqual(metadata["band_wavelength"], 10.3)
-        self.assertEqual(metadata["resolution_x"], 100)
-        self.assertEqual(metadata["resolution_y"], 100)
+        assert metadata["satellite"] == "G16"
+        assert metadata["instrument"] == "ABI"
+        assert metadata["timestamp"] == "2023-06-15T12:30:00Z"
+        assert metadata["band_id"] == 13
+        assert metadata["band_wavelength"] == 10.3
+        assert metadata["resolution_x"] == 100
+        assert metadata["resolution_y"] == 100
 
     @patch("xarray.open_dataset")
-    def test_extract_metadata_file_not_found(self, mock_open_dataset):
+    def test_extract_metadata_file_not_found(self, mock_open_dataset) -> None:
         """Test error handling when NetCDF file is not found during metadata extraction."""
         # Setup
         nonexistent_path = self.base_dir / "nonexistent.nc"
         mock_open_dataset.side_effect = FileNotFoundError("File not found")
 
         # Test
-        with self.assertRaises(FileNotFoundError):
+        with pytest.raises(FileNotFoundError):
             extract_metadata(nonexistent_path)
 
     @patch("xarray.open_dataset")
-    def test_extract_metadata_error(self, mock_open_dataset):
+    def test_extract_metadata_error(self, mock_open_dataset) -> None:
         """Test error handling during metadata extraction."""
         # Setup
         mock_open_dataset.side_effect = KeyError("Generic error")
 
         # Test
-        with self.assertRaises(KeyError):
+        with pytest.raises(KeyError):
             extract_metadata(self.netcdf_path)
 
 

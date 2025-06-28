@@ -128,8 +128,9 @@ class DynamicThemeManager(ThemeManager):
         """
         color = QColor(hex_color)
         h, s, lightness, a = color.getHslF()
-        lightness = min(1.0, lightness + (1.0 - lightness) * factor)
-        color.setHslF(h, s, lightness, a)
+        if h is not None and s is not None and lightness is not None and a is not None:
+            lightness = min(1.0, lightness + (1.0 - lightness) * factor)
+            color.setHslF(h, s, lightness, a)
         return str(color.name())
 
     @staticmethod
@@ -141,8 +142,9 @@ class DynamicThemeManager(ThemeManager):
         """
         color = QColor(hex_color)
         h, s, lightness, a = color.getHslF()
-        lightness = max(0.0, lightness - lightness * factor)
-        color.setHslF(h, s, lightness, a)
+        if h is not None and s is not None and lightness is not None and a is not None:
+            lightness = max(0.0, lightness - lightness * factor)
+            color.setHslF(h, s, lightness, a)
         return str(color.name())
 
     @staticmethod
@@ -379,7 +381,7 @@ QLabel.StatusInfo {{
         try:
             # Get all top-level widgets
             for widget in app.allWidgets():
-                if widget.isTopLevel():
+                if (hasattr(widget, "isWindow") and widget.isWindow()) or (hasattr(widget, "isTopLevel") and widget.isTopLevel()):
                     WidgetFactory.update_all_widget_styles(widget)
         except ImportError as e:
             LOGGER.warning("Failed to refresh widget styles: %s", e)

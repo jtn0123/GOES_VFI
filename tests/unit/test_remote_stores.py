@@ -1,9 +1,9 @@
 """Unit tests for the integrity_check remote stores functionality."""
 
-import tempfile
-import unittest
 from datetime import datetime
 from pathlib import Path
+import tempfile
+import unittest
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
 import aiohttp
@@ -18,7 +18,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
 class TestCDNStore(unittest.IsolatedAsyncioTestCase):
     """Test cases for the CDNStore class."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Create a temporary directory
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -61,19 +61,17 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
 
         self.content_mock.iter_chunked.return_value = mock_async_generator()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up temporary directory
         self.temp_dir.cleanup()
 
         # Clean up any AsyncMock references to avoid coroutine warnings
         if hasattr(self, "session_mock"):
-            if hasattr(self.session_mock, "head"):
-                if isinstance(self.session_mock.head, AsyncMock):
-                    self.session_mock.head.reset_mock()
-            if hasattr(self.session_mock, "get"):
-                if isinstance(self.session_mock.get, AsyncMock):
-                    self.session_mock.get.reset_mock()
+            if hasattr(self.session_mock, "head") and isinstance(self.session_mock.head, AsyncMock):
+                self.session_mock.head.reset_mock()
+            if hasattr(self.session_mock, "get") and isinstance(self.session_mock.get, AsyncMock):
+                self.session_mock.get.reset_mock()
             self.session_mock.reset_mock()
 
         if hasattr(self, "content_mock"):
@@ -83,7 +81,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
         if hasattr(self, "cdn_store") and hasattr(self.cdn_store, "_session"):
             self.cdn_store._session = None
 
-    async def test_session_property(self):
+    async def test_session_property(self) -> None:
         """Test the session property creates a new session if needed."""
         # Setup - create a fresh CDNStore to avoid setup conflicts
         cdn_store = CDNStore(resolution="1000m", timeout=5)
@@ -112,7 +110,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
             # Verify ClientSession was only created once
             assert mock_client_session.call_count == 1
 
-    async def test_close(self):
+    async def test_close(self) -> None:
         """Test closing the session."""
         # Setup - create a new CDNStore and mock session
         cdn_store = CDNStore(resolution="1000m", timeout=5)
@@ -129,7 +127,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
         session_mock.close.assert_awaited_once()
         assert cdn_store._session is None
 
-    async def test_exists(self):
+    async def test_exists(self) -> None:
         """Test checking if a file exists in the CDN."""
         # Create a fresh store for cleaner testing
         cdn_store = CDNStore(resolution="1000m", timeout=5)
@@ -174,7 +172,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
                 exists = await cdn_store.check_file_exists(self.test_timestamp, self.test_satellite)
                 assert not exists
 
-    async def test_download_success(self):
+    async def test_download_success(self) -> None:
         """Test successful download from the CDN."""
         # Create a fresh store for cleaner testing
         cdn_store = CDNStore(resolution="1000m", timeout=5)
@@ -235,7 +233,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
             open_patch.assert_called_with(dest_path, "wb")
             open_patch().write.assert_called_with(b"test data")
 
-    async def test_download_not_found(self):
+    async def test_download_not_found(self) -> None:
         """Test file not found case when downloading from CDN."""
         # Create a fresh store for cleaner testing
         cdn_store = CDNStore(resolution="1000m", timeout=5)
@@ -273,7 +271,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
             with patch("builtins.open", open_patch), pytest.raises(FileNotFoundError):
                 await cdn_store.download_file(self.test_timestamp, self.test_satellite, dest_path)
 
-    async def test_download_error(self):
+    async def test_download_error(self) -> None:
         """Test client error case when downloading from CDN."""
         # Create a fresh store for cleaner testing
         cdn_store = CDNStore(resolution="1000m", timeout=5)
@@ -313,7 +311,7 @@ class TestCDNStore(unittest.IsolatedAsyncioTestCase):
 class TestS3Store(unittest.IsolatedAsyncioTestCase):
     """Test cases for the S3Store class."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Create a temporary directory
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -346,7 +344,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         self.session_mock = MagicMock()
         self.session_mock.client.return_value = self.s3_client_mock
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up temporary directory
         self.temp_dir.cleanup()
@@ -367,7 +365,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
             self.s3_store._s3_client = None
 
     @patch("aioboto3.Session")
-    async def test_get_s3_client_with_unsigned_access(self, mock_session_class):
+    async def test_get_s3_client_with_unsigned_access(self, mock_session_class) -> None:
         """Test that S3 client is created with unsigned access configuration."""
         # Setup
         mock_session_class.return_value = self.session_mock
@@ -405,7 +403,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
             assert mock_session_class.call_count == 1
 
     @patch("aioboto3.Session")
-    async def test_close(self, mock_session_class):
+    async def test_close(self, mock_session_class) -> None:
         """Test closing the S3 client."""
         # Setup
         mock_session_class.return_value = self.session_mock
@@ -421,7 +419,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         assert self.s3_store._s3_client is None
 
     @patch.object(S3Store, "_get_s3_client", new_callable=AsyncMock)
-    async def test_get_bucket_and_key(self, mock_get_client):
+    async def test_get_bucket_and_key(self, mock_get_client) -> None:
         """Test getting the bucket and key for a timestamp."""
         # No need to use client for this test
         mock_get_client.return_value = None
@@ -453,7 +451,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
         assert key == expected_key
 
     @patch.object(S3Store, "_get_s3_client", new_callable=AsyncMock)
-    async def test_exists(self, mock_get_client):
+    async def test_exists(self, mock_get_client) -> None:
         """Test checking if a file exists in S3."""
         # Setup
         mock_get_client.return_value = self.s3_client_mock
@@ -493,7 +491,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
 
     @patch.object(S3Store, "_get_s3_client", new_callable=AsyncMock)
     @patch.object(S3Store, "download", new_callable=AsyncMock)
-    async def test_download(self, mock_download, mock_get_client):
+    async def test_download(self, mock_download, mock_get_client) -> None:
         """Test downloading a file from S3."""
         # Setup
         mock_get_client.return_value = self.s3_client_mock
@@ -539,7 +537,7 @@ class TestS3Store(unittest.IsolatedAsyncioTestCase):
 
     @patch("goesvfi.integrity_check.time_index._USE_EXACT_MATCH_IN_TEST", False)  # Allow wildcard testing
     @patch.object(S3Store, "download", new_callable=AsyncMock)
-    async def test_download_with_wildcard(self, mock_download):
+    async def test_download_with_wildcard(self, mock_download) -> None:
         """Test downloading a file from S3 using wildcard pattern when exact match not found."""
         # Setup
         mock_download.return_value = self.base_dir / "test_download.nc"

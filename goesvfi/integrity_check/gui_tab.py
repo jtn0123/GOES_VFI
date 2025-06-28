@@ -32,6 +32,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.gui_components.update_manager import register_update, request_update
 from goesvfi.utils import log
 
 from .time_index import SATELLITE_NAMES, SatellitePattern
@@ -132,6 +133,7 @@ class IntegrityCheckTab(QWidget):
 
         self._setup_ui()
         self._connect_signals()
+        self._setup_update_manager()
 
         # Apply qt-material theme properties
         self.setProperty("class", "IntegrityCheckTab")
@@ -290,6 +292,41 @@ class IntegrityCheckTab(QWidget):
             self.view_model.download_progress_updated.connect(self._on_download_progress_vm)
             self.view_model.download_item_updated.connect(self._on_download_item_updated)
 
+    def _setup_update_manager(self) -> None:
+        """Set up UpdateManager integration for batched UI updates."""
+        # Register update operations
+        register_update("integrity_check_status", self._update_status_display, priority=2)
+        register_update("integrity_check_progress", self._update_progress_display, priority=1)
+        register_update("integrity_check_table", self._update_table_display, priority=3)
+
+        LOGGER.info("IntegrityCheckTab integrated with UpdateManager")
+
+    def _update_status_display(self) -> None:
+        """Update status display elements (called by UpdateManager)."""
+        # This will be called in batches
+
+    def _update_progress_display(self) -> None:
+        """Update progress bar display (called by UpdateManager)."""
+        # This will be called in batches
+
+    def _update_table_display(self) -> None:
+        """Update results table display (called by UpdateManager)."""
+        if hasattr(self, "results_table") and self.results_table:
+            self.results_table.update()
+
+    def request_ui_update(self, update_type: str = "status") -> None:
+        """Request UI updates through UpdateManager.
+
+        Args:
+            update_type: Type of update ('status', 'progress', 'table')
+        """
+        if update_type == "status":
+            request_update("integrity_check_status")
+        elif update_type == "progress":
+            request_update("integrity_check_progress")
+        elif update_type == "table":
+            request_update("integrity_check_table")
+
     def _browse_directory(self) -> None:
         """Browse for a directory."""
         directory = QFileDialog.getExistingDirectory(self, "Select Directory", self.dir_input.text())
@@ -440,8 +477,8 @@ class IntegrityCheckTab(QWidget):
 
     def _on_download_item_updated(self, _index: int, _item: MissingTimestamp) -> None:
         """Handle download item update from view model."""
-        # Refresh the table view
-        self.results_table.update()
+        # Request table update through UpdateManager
+        self.request_ui_update("table")
 
     def _get_selected_items(self) -> list[MissingTimestamp]:
         """Get selected items from the table."""

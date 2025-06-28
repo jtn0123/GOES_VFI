@@ -9,6 +9,7 @@ import logging
 import time
 from typing import Any
 
+from goesvfi.core.base_manager import BaseManager
 from goesvfi.utils.errors import ErrorClassifier
 from goesvfi.utils.validation import ValidationPipeline
 
@@ -275,19 +276,26 @@ class StatsReportBuilder:
     def build_full_report(self, stats: DownloadStats) -> str:
         """Build complete statistics report."""
         report = self.build_summary_section(stats)
-        report += StatsReporter.build_recent_errors_section(stats.errors)
+        report += self.build_recent_errors_section(stats.errors)
         report += self.build_recent_attempts_section(stats.recent_attempts)
-        report += StatsReporter.build_time_since_last_success(stats.last_success_time)
+        report += self.build_time_since_last_success(stats.last_success_time)
         return report
 
 
-class DownloadStatsManager:
+class DownloadStatsManager(BaseManager):
     """Main interface for statistics management."""
 
     def __init__(self) -> None:
+        """Initialize the download stats manager."""
+        super().__init__("DownloadStatsManager")
         self.extractor = StatsExtractor()
         self.calculator = StatsCalculator()
         self.report_builder = StatsReportBuilder(self.calculator)
+
+        # Track components for cleanup
+        self._track_resource(self.extractor)
+        self._track_resource(self.calculator)
+        self._track_resource(self.report_builder)
 
     def log_download_statistics(self, raw_stats: dict[str, Any]) -> None:
         """Log download statistics with reduced complexity.
@@ -299,7 +307,7 @@ class DownloadStatsManager:
             # Early exit for empty stats
             total_attempts = self.extractor.extract_safe_int(raw_stats, "total_attempts")
             if total_attempts == 0:
-                LOGGER.info("No S3 download attempts recorded yet")
+                self.log_info("No S3 download attempts recorded yet")
                 return
 
             # Extract and validate all statistics
@@ -307,11 +315,18 @@ class DownloadStatsManager:
 
             # Build and log the report
             report = self.report_builder.build_full_report(stats)
-            LOGGER.info(report)
+            self.log_info(report)
+
+            # Save key metrics to settings if available
+            if self.settings:
+                self.save_setting("last_success_rate", self.calculator.calculate_success_rate(stats.successful, stats.total_attempts))
+                self.save_setting("last_total_attempts", stats.total_attempts)
+                self.save_setting("last_session_id", stats.session_id)
 
         except Exception as e:
+            self.handle_error(e, "log_statistics")
             error = self.extractor.classifier.create_structured_error(e, "log_statistics", "stats_manager")
-            LOGGER.exception("Failed to log statistics: %s", error.user_message)
+            self.log_error("Failed to log statistics: %s", error.user_message)
 
 
 # Factory function for easy integration

@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import pytest
@@ -17,7 +16,7 @@ def sample_files(tmp_path: Path) -> tuple[Path, Path]:
     return file1, file2
 
 
-def _expected_paths(file1: Path, file2: Path, model_id: str, frame_count: int) -> List[Path]:
+def _expected_paths(file1: Path, file2: Path, model_id: str, frame_count: int) -> list[Path]:
     base_key = cache._hash_pair(file1, file2, model_id, frame_count)
     return [cache._get_cache_filepath(base_key, i, frame_count) for i in range(frame_count)]
 
@@ -39,7 +38,7 @@ def test_save_and_load_arrays(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, s
     loaded = cache.load_cached(file1, file2, model, frame_count)
     assert loaded is not None
     assert len(loaded) == frame_count
-    for orig, result in zip(arrays, loaded):
+    for orig, result in zip(arrays, loaded, strict=False):
         np.testing.assert_array_equal(orig, result)
 
 

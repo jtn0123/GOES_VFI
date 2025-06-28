@@ -91,7 +91,7 @@ class FileSorter:
         :return: A dictionary containing sorting statistics.
         """
         # Initialize the sorting process
-        source_dir, destination_dir = DateSorter._initialize_directories(source, destination)
+        source_dir, destination_dir = self._initialize_directories(source, destination)
         script_start_time = self._reset_counters_and_callbacks(progress_callback, should_cancel)
 
         # Build file processing list
@@ -212,7 +212,7 @@ class FileSorter:
 
     def _build_file_processing_list(self, source_dir: Path) -> list[tuple[Path, str]] | dict[str, str]:
         """Build a list of files to process with their datetime information."""
-        date_folders = DateSorter._get_date_folders(source_dir)
+        date_folders = self._get_date_folders(source_dir)
         files_to_process: list[tuple[Path, str]] = []
         folder_counter = 0
         total_folders = len(date_folders)
@@ -228,15 +228,15 @@ class FileSorter:
             if folder is None:
                 continue
 
-            if not DateSorter._is_valid_date_folder(folder.name):
+            if not self._is_valid_date_folder(folder.name):
                 continue
 
-            folder_datetime = DateSorter._extract_folder_datetime(folder.name)
+            folder_datetime = self._extract_folder_datetime(folder.name)
             if folder_datetime is None:
                 continue
 
             # Add all PNG files from this folder
-            png_files = DateSorter._get_png_files_from_folder(folder)
+            png_files = self._get_png_files_from_folder(folder)
             files_to_process.extend((file_path, folder_datetime) for file_path in png_files)
 
         return files_to_process
@@ -309,7 +309,7 @@ class FileSorter:
             return f"DRY RUN: Would copy to {dest_path.name}"
         source_size = source_path.stat().st_size
         source_mtime = source_path.stat().st_mtime
-        DateSorter.copy_file_with_buffer(source_path, dest_path, source_mtime)
+        self.copy_file_with_buffer(source_path, dest_path, source_mtime)
         self.files_copied += 1
         self.total_bytes_copied += source_size
         return action_msg or f"COPIED to {dest_path.name}"
@@ -319,15 +319,15 @@ class FileSorter:
         file_name = file_path.name
 
         # Extract base name and create target folder
-        base_name = DateSorter._extract_base_name(file_name)
+        base_name = self._extract_base_name(file_name)
         target_folder = self._create_target_folder(destination_dir, base_name)
 
         # Generate new file name and path
-        new_file_name = DateSorter._generate_new_file_name(file_name, base_name, folder_datetime)
+        new_file_name = self._generate_new_file_name(file_name, base_name, folder_datetime)
         new_file_path = target_folder / new_file_name
 
         # Check if files are identical
-        if DateSorter._check_files_identical(file_path, new_file_path):
+        if self._check_files_identical(file_path, new_file_path):
             self.files_skipped += 1
             return
 

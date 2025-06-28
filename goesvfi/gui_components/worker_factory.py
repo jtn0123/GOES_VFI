@@ -118,7 +118,7 @@ class WorkerFactory:
             rife_tta_temporal=args.get("rife_tta_temporal", False),
             model_key=args.get("rife_model_key", "rife-v4.6"),
             # Sanchez settings
-            false_colour=bool(args.get("sanchez_enabled", False)),
+            false_colour=bool(args.get("sanchez_enabled")),
             res_km=int(float(args.get("sanchez_resolution_km", 4.0))),
             # Sanchez GUI temp dir
             sanchez_gui_temp_dir=(str(sanchez_gui_temp_dir) if sanchez_gui_temp_dir else None),

@@ -3,8 +3,9 @@ Test utility to disable all GUI popups and user interactions.
 Import this at the start of any test that uses GUI components.
 """
 
+import contextlib
 import os
-from typing import Any, List
+from typing import Any
 from unittest.mock import patch
 
 # Set Qt to use offscreen platform
@@ -46,7 +47,7 @@ class NoPopupQFileDialog:
     """QFileDialog that returns mock values instead of opening dialogs."""
 
     @staticmethod
-    def getExistingDirectory(*args, **kwargs):
+    def getExistingDirectory(*args, **kwargs) -> str:
         return "/test/mock/directory"
 
     @staticmethod
@@ -84,9 +85,9 @@ class NoPopupQMessageBox:
         return NoPopupQMessageBox.StandardButton.Yes
 
 
-def apply_gui_patches() -> List[Any]:
+def apply_gui_patches() -> list[Any]:
     """Apply patches to prevent GUI popups."""
-    patches: List[Any] = []
+    patches: list[Any] = []
 
     # Store the original QDateTimeEdit class before patching
     global _original_QDateTimeEdit
@@ -96,31 +97,25 @@ def apply_gui_patches() -> List[Any]:
         _original_QDateTimeEdit = QDateTimeEdit
 
     # Patch QFileDialog - only patch PyQt6 directly to avoid import issues
-    patches.extend(
-        [
-            patch("PyQt6.QtWidgets.QFileDialog", NoPopupQFileDialog),
-        ]
-    )
+    patches.extend([
+        patch("PyQt6.QtWidgets.QFileDialog", NoPopupQFileDialog),
+    ])
 
     # Patch QMessageBox
-    patches.extend(
-        [
-            patch("PyQt6.QtWidgets.QMessageBox", NoPopupQMessageBox),
-            patch(
-                "goesvfi.integrity_check.enhanced_gui_tab.QMessageBox",
-                NoPopupQMessageBox,
-            ),
-            patch("goesvfi.integrity_check.gui_tab.QMessageBox", NoPopupQMessageBox),
-            patch("goesvfi.gui_tabs.batch_processing_tab.QMessageBox", NoPopupQMessageBox),
-        ]
-    )
+    patches.extend([
+        patch("PyQt6.QtWidgets.QMessageBox", NoPopupQMessageBox),
+        patch(
+            "goesvfi.integrity_check.enhanced_gui_tab.QMessageBox",
+            NoPopupQMessageBox,
+        ),
+        patch("goesvfi.integrity_check.gui_tab.QMessageBox", NoPopupQMessageBox),
+        patch("goesvfi.gui_tabs.batch_processing_tab.QMessageBox", NoPopupQMessageBox),
+    ])
 
     # Patch QDateTimeEdit to disable calendar popups
-    patches.extend(
-        [
-            patch("PyQt6.QtWidgets.QDateTimeEdit", NoPopupQDateTimeEdit),
-        ]
-    )
+    patches.extend([
+        patch("PyQt6.QtWidgets.QDateTimeEdit", NoPopupQDateTimeEdit),
+    ])
 
     # Start all patches
     for p in patches:
@@ -130,24 +125,22 @@ def apply_gui_patches() -> List[Any]:
 
 
 # Global list to track active patches
-_active_patches: List[Any] = []
+_active_patches: list[Any] = []
 
 
-def disable_all_gui_popups():
+def disable_all_gui_popups() -> None:
     """Main function to disable all GUI popups."""
     global _active_patches
     if not _active_patches:  # Only apply once
         _active_patches = apply_gui_patches()
 
 
-def restore_gui_popups():
+def restore_gui_popups() -> None:
     """Restore normal GUI behavior."""
     global _active_patches
     for p in _active_patches:
-        try:
+        with contextlib.suppress(Exception):
             p.stop()
-        except Exception:
-            pass
     _active_patches = []
 
 

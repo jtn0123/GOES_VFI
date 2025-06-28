@@ -196,7 +196,7 @@ class ProcessingManager(QObject):
                 return False, "No output file specified"
 
             output_path = Path(output_file)
-            if output_path.exists() and not args.get("overwrite", False):
+            if output_path.exists() and not args.get("overwrite"):
                 return False, f"Output file already exists: {output_file}"
 
             # Check model location

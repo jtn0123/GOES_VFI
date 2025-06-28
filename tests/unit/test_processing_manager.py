@@ -1,8 +1,8 @@
 """Unit tests for the ProcessingManager component."""
 
-import unittest
 from pathlib import Path
-from typing import Any, Dict, List, Union, cast
+from typing import Any, cast
+import unittest
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import QApplication
@@ -16,19 +16,19 @@ class TestProcessingManager(unittest.TestCase):
     app: QApplication
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Set up QApplication for all tests."""
         if not QApplication.instance():
             cls.app = QApplication([])
         else:
-            cls.app = cast(QApplication, QApplication.instance())
+            cls.app = cast("QApplication", QApplication.instance())
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         self.processing_manager = ProcessingManager()
 
         # Track emitted signals
-        self.emitted_signals: Dict[str, Union[bool, List[Any], Any]] = {
+        self.emitted_signals: dict[str, bool | list[Any] | Any] = {
             "started": False,
             "progress": [],
             "finished": None,
@@ -45,27 +45,27 @@ class TestProcessingManager(unittest.TestCase):
 
     def _signal_emitted(self, signal_name: str, value: Any) -> None:
         """Helper to track signal emissions."""
-        if signal_name in ["progress", "state_changed"]:
+        if signal_name in {"progress", "state_changed"}:
             signal_list = self.emitted_signals[signal_name]
             if isinstance(signal_list, list):
                 signal_list.append(value)
         else:
             self.emitted_signals[signal_name] = value
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up test fixtures."""
         # Stop any running processing
         if self.processing_manager.is_processing:
             self.processing_manager.stop_processing()
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test ProcessingManager initialization."""
-        self.assertFalse(self.processing_manager.is_processing)
-        self.assertIsNone(self.processing_manager.worker_thread)
-        self.assertIsNone(self.processing_manager.worker)
-        self.assertIsNone(self.processing_manager.current_output_path)
+        assert not self.processing_manager.is_processing
+        assert self.processing_manager.worker_thread is None
+        assert self.processing_manager.worker is None
+        assert self.processing_manager.current_output_path is None
 
-    def test_validate_processing_args_valid(self):
+    def test_validate_processing_args_valid(self) -> None:
         """Test validation with valid arguments."""
         args = {
             "input_dir": str(Path(__file__).parent),  # Use test directory
@@ -76,10 +76,10 @@ class TestProcessingManager(unittest.TestCase):
         }
 
         is_valid, error = self.processing_manager.validate_processing_args(args)
-        self.assertTrue(is_valid)
-        self.assertEqual(error, "")
+        assert is_valid
+        assert error == ""
 
-    def test_validate_processing_args_missing_input(self):
+    def test_validate_processing_args_missing_input(self) -> None:
         """Test validation with missing input directory."""
         args = {
             "output_file": "/tmp/test_output.mp4",
@@ -87,10 +87,10 @@ class TestProcessingManager(unittest.TestCase):
         }
 
         is_valid, error = self.processing_manager.validate_processing_args(args)
-        self.assertFalse(is_valid)
-        self.assertIn("No input directory", error)
+        assert not is_valid
+        assert "No input directory" in error
 
-    def test_validate_processing_args_invalid_input(self):
+    def test_validate_processing_args_invalid_input(self) -> None:
         """Test validation with non-existent input directory."""
         args = {
             "input_dir": "/non/existent/directory",
@@ -99,10 +99,10 @@ class TestProcessingManager(unittest.TestCase):
         }
 
         is_valid, error = self.processing_manager.validate_processing_args(args)
-        self.assertFalse(is_valid)
-        self.assertIn("does not exist", error)
+        assert not is_valid
+        assert "does not exist" in error
 
-    def test_validate_processing_args_invalid_fps(self):
+    def test_validate_processing_args_invalid_fps(self) -> None:
         """Test validation with invalid FPS."""
         args = {
             "input_dir": str(Path(__file__).parent),
@@ -112,10 +112,10 @@ class TestProcessingManager(unittest.TestCase):
         }
 
         is_valid, error = self.processing_manager.validate_processing_args(args)
-        self.assertFalse(is_valid)
-        self.assertIn("FPS must be greater than 0", error)
+        assert not is_valid
+        assert "FPS must be greater than 0" in error
 
-    def test_validate_processing_args_invalid_exp(self):
+    def test_validate_processing_args_invalid_exp(self) -> None:
         """Test validation with invalid interpolation factor."""
         args = {
             "input_dir": str(Path(__file__).parent),
@@ -125,12 +125,12 @@ class TestProcessingManager(unittest.TestCase):
         }
 
         is_valid, error = self.processing_manager.validate_processing_args(args)
-        self.assertFalse(is_valid)
-        self.assertIn("Interpolation factor must be at least 1", error)
+        assert not is_valid
+        assert "Interpolation factor must be at least 1" in error
 
     @patch("goesvfi.gui_components.processing_manager.VfiWorker")
     @patch("goesvfi.gui_components.processing_manager.QThread")
-    def test_start_processing_success(self, mock_qthread, mock_worker):
+    def test_start_processing_success(self, mock_qthread, mock_worker) -> None:
         """Test starting processing successfully."""
         # Setup mocks
         mock_thread_instance = MagicMock()
@@ -148,20 +148,20 @@ class TestProcessingManager(unittest.TestCase):
         result = self.processing_manager.start_processing(args)
 
         # Verify
-        self.assertTrue(result)
-        self.assertTrue(self.processing_manager.is_processing)
-        self.assertEqual(self.processing_manager.current_output_path, Path("/tmp/test_output.mp4"))
+        assert result
+        assert self.processing_manager.is_processing
+        assert self.processing_manager.current_output_path == Path("/tmp/test_output.mp4")
 
         # Verify signals were emitted
-        self.assertTrue(self.emitted_signals["started"])
-        state_changes = cast(List[Any], self.emitted_signals["state_changed"])
-        self.assertIsInstance(state_changes, list)
-        self.assertIn(True, state_changes)
+        assert self.emitted_signals["started"]
+        state_changes = cast("list[Any]", self.emitted_signals["state_changed"])
+        assert isinstance(state_changes, list)
+        assert True in state_changes
 
         # Verify thread was started
         mock_thread_instance.start.assert_called_once()
 
-    def test_start_processing_while_processing(self):
+    def test_start_processing_while_processing(self) -> None:
         """Test starting processing while already processing."""
         # Set processing state
         self.processing_manager.is_processing = True
@@ -176,9 +176,9 @@ class TestProcessingManager(unittest.TestCase):
         result = self.processing_manager.start_processing(args)
 
         # Should fail
-        self.assertFalse(result)
+        assert not result
 
-    def test_start_processing_missing_required_arg(self):
+    def test_start_processing_missing_required_arg(self) -> None:
         """Test starting processing with missing required argument."""
         args = {
             "input_dir": str(Path(__file__).parent),
@@ -190,24 +190,24 @@ class TestProcessingManager(unittest.TestCase):
         result = self.processing_manager.start_processing(args)
 
         # Should fail
-        self.assertFalse(result)
+        assert not result
         error_msg = self.emitted_signals["error"]
-        self.assertIsNotNone(error_msg)
-        self.assertIsInstance(error_msg, str)
-        self.assertIn("Missing required argument", error_msg)
+        assert error_msg is not None
+        assert isinstance(error_msg, str)
+        assert "Missing required argument" in error_msg
 
-    def test_handle_progress(self):
+    def test_handle_progress(self) -> None:
         """Test handling progress updates."""
         # Simulate progress update
         self.processing_manager._handle_progress(50, 100, 60.0)
 
         # Verify signal was emitted
-        progress_list = cast(List[Any], self.emitted_signals["progress"])
-        self.assertIsInstance(progress_list, list)
-        self.assertEqual(len(progress_list), 1)
-        self.assertEqual(progress_list[0], (50, 100, 60.0))
+        progress_list = cast("list[Any]", self.emitted_signals["progress"])
+        assert isinstance(progress_list, list)
+        assert len(progress_list) == 1
+        assert progress_list[0] == (50, 100, 60.0)
 
-    def test_handle_finished(self):
+    def test_handle_finished(self) -> None:
         """Test handling processing completion."""
         # Set processing state
         self.processing_manager.is_processing = True
@@ -216,13 +216,13 @@ class TestProcessingManager(unittest.TestCase):
         self.processing_manager._handle_finished("/tmp/output.mp4")
 
         # Verify state
-        self.assertFalse(self.processing_manager.is_processing)
-        self.assertEqual(self.emitted_signals["finished"], "/tmp/output.mp4")
-        state_changes = cast(List[Any], self.emitted_signals["state_changed"])
-        self.assertIsInstance(state_changes, list)
-        self.assertIn(False, state_changes)
+        assert not self.processing_manager.is_processing
+        assert self.emitted_signals["finished"] == "/tmp/output.mp4"
+        state_changes = cast("list[Any]", self.emitted_signals["state_changed"])
+        assert isinstance(state_changes, list)
+        assert False in state_changes
 
-    def test_handle_error(self):
+    def test_handle_error(self) -> None:
         """Test handling processing error."""
         # Set processing state
         self.processing_manager.is_processing = True
@@ -231,22 +231,22 @@ class TestProcessingManager(unittest.TestCase):
         self.processing_manager._handle_error("Test error message")
 
         # Verify state
-        self.assertFalse(self.processing_manager.is_processing)
-        self.assertEqual(self.emitted_signals["error"], "Test error message")
-        state_changes = cast(List[Any], self.emitted_signals["state_changed"])
-        self.assertIsInstance(state_changes, list)
-        self.assertIn(False, state_changes)
+        assert not self.processing_manager.is_processing
+        assert self.emitted_signals["error"] == "Test error message"
+        state_changes = cast("list[Any]", self.emitted_signals["state_changed"])
+        assert isinstance(state_changes, list)
+        assert False in state_changes
 
-    def test_stop_processing_not_running(self):
+    def test_stop_processing_not_running(self) -> None:
         """Test stopping when not processing."""
         # Should not crash
         self.processing_manager.stop_processing()
 
         # Verify nothing changed
-        self.assertFalse(self.processing_manager.is_processing)
+        assert not self.processing_manager.is_processing
 
     @patch("goesvfi.gui_components.processing_manager.QThread")
-    def test_stop_processing_running(self, mock_qthread):
+    def test_stop_processing_running(self, mock_qthread) -> None:
         """Test stopping active processing."""
         # Setup mock thread
         mock_thread = MagicMock()
@@ -264,19 +264,19 @@ class TestProcessingManager(unittest.TestCase):
         # Verify thread was waited on
         mock_thread.wait.assert_called_once_with(5000)
 
-    def test_get_processing_state(self):
+    def test_get_processing_state(self) -> None:
         """Test getting processing state."""
         # Initially false
-        self.assertFalse(self.processing_manager.get_processing_state())
+        assert not self.processing_manager.get_processing_state()
 
         # Set to true
         self.processing_manager.is_processing = True
-        self.assertTrue(self.processing_manager.get_processing_state())
+        assert self.processing_manager.get_processing_state()
 
-    def test_get_current_output_path(self):
+    def test_get_current_output_path(self) -> None:
         """Test getting current output path."""
         # Initially None
-        self.assertIsNone(self.processing_manager.get_current_output_path())
+        assert self.processing_manager.get_current_output_path() is None
 
         # Set output path and processing state
         test_path = Path("/tmp/test.mp4")
@@ -284,11 +284,11 @@ class TestProcessingManager(unittest.TestCase):
         self.processing_manager.is_processing = True
 
         # Should return path when processing
-        self.assertEqual(self.processing_manager.get_current_output_path(), test_path)
+        assert self.processing_manager.get_current_output_path() == test_path
 
         # Should return None when not processing
         self.processing_manager.is_processing = False
-        self.assertIsNone(self.processing_manager.get_current_output_path())
+        assert self.processing_manager.get_current_output_path() is None
 
 
 if __name__ == "__main__":

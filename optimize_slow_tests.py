@@ -209,8 +209,6 @@ def main() -> None:
             response = input("\n   Create optimized version? (y/n): ")
             if response.lower() == "y":
                 create_optimized_test(test_file)
-        else:
-            pass
 
     if total_issues > 0:
         pass

@@ -9,7 +9,7 @@ def simple_function(x: int, y: int) -> int:
     """Simple function for coverage demonstration."""
     if x > y:
         return x - y
-    elif x < y:
+    if x < y:
         return y - x
     return 0
 
@@ -17,7 +17,8 @@ def simple_function(x: int, y: int) -> int:
 def complex_function(value: str, flag: bool = False) -> str:
     """Complex function with multiple branches."""
     if not value:
-        raise ValueError("Value cannot be empty")
+        msg = "Value cannot be empty"
+        raise ValueError(msg)
 
     if flag:
         # Process with flag enabled
@@ -60,36 +61,36 @@ class ExampleClass:
 class TestSimpleFunction:
     """Test simple_function with full branch coverage."""
 
-    def test_x_greater_than_y(self):
+    def test_x_greater_than_y(self) -> None:
         assert simple_function(10, 5) == 5
 
-    def test_x_less_than_y(self):
+    def test_x_less_than_y(self) -> None:
         assert simple_function(5, 10) == 5
 
-    def test_x_equals_y(self):
+    def test_x_equals_y(self) -> None:
         assert simple_function(5, 5) == 0
 
 
 class TestComplexFunction:
     """Test complex_function with branch coverage."""
 
-    def test_empty_value_raises_error(self):
+    def test_empty_value_raises_error(self) -> None:
         with pytest.raises(ValueError, match="Value cannot be empty"):
             complex_function("")
 
-    def test_flag_enabled_short_string(self):
+    def test_flag_enabled_short_string(self) -> None:
         result = complex_function("hello", flag=True)
         assert result == "HELLO"
 
-    def test_flag_enabled_long_string(self):
+    def test_flag_enabled_long_string(self) -> None:
         result = complex_function("this is a very long string", flag=True)
         assert result == "THIS IS A ..."
 
-    def test_flag_disabled_long_string(self):
+    def test_flag_disabled_long_string(self) -> None:
         result = complex_function("HELLO WORLD", flag=False)
         assert result == "hello world"
 
-    def test_flag_disabled_short_string(self):
+    def test_flag_disabled_short_string(self) -> None:
         result = complex_function("HI", flag=False)
         assert result == "hi___"
 
@@ -97,17 +98,17 @@ class TestComplexFunction:
 class TestExampleClass:
     """Test ExampleClass with coverage."""
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         obj = ExampleClass("test")
         assert obj.name == "test"
         assert obj._cache == {}
 
-    def test_process_without_cache(self):
+    def test_process_without_cache(self) -> None:
         obj = ExampleClass("processor")
         result = obj.process("data")
         assert result == "processor: data"
 
-    def test_process_with_cache(self):
+    def test_process_with_cache(self) -> None:
         obj = ExampleClass("processor")
         # First call
         result1 = obj.process("data")
@@ -116,7 +117,7 @@ class TestExampleClass:
         assert result1 == result2
         assert len(obj._cache) == 1
 
-    def test_clear_cache(self):
+    def test_clear_cache(self) -> None:
         obj = ExampleClass("processor")
         obj.process("data1")
         obj.process("data2")
@@ -127,17 +128,12 @@ class TestExampleClass:
 
 
 # Example of excluding code from coverage
-def debug_function():  # pragma: no cover
+def debug_function() -> str:  # pragma: no cover
     """This function is only for debugging and excluded from coverage."""
-    print("Debug information")
     return "debug"
 
 
 if __name__ == "__main__":  # pragma: no cover
     # This block is excluded from coverage
-    print("Running coverage example...")
-    print(f"Simple function: {simple_function(10, 5)}")
-    print(f"Complex function: {complex_function('test', True)}")
 
     obj = ExampleClass("main")
-    print(f"Class method: {obj.process('example')}")

@@ -316,7 +316,7 @@ def secure_subprocess_call(command: list[str], **kwargs: Any) -> Any:
     secure_kwargs.update(kwargs)
 
     # Ensure shell is never enabled
-    if secure_kwargs.get("shell", False):
+    if secure_kwargs.get("shell"):
         msg = "Shell execution not allowed for security reasons"
         raise SecurityError(msg)
 

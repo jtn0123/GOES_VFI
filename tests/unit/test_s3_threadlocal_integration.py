@@ -7,11 +7,11 @@ proper handling of real GOES satellite file patterns.
 
 import asyncio
 import concurrent.futures
+from datetime import datetime, timedelta
+from pathlib import Path
 import tempfile
 import threading
 import unittest
-from datetime import datetime, timedelta
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from goesvfi.integrity_check.reconcile_manager import ReconcileManager
@@ -29,7 +29,7 @@ from goesvfi.integrity_check.time_index import (
 class TestS3ThreadLocalIntegration(unittest.TestCase):
     """Test cases for ThreadLocalCacheDB integration with S3 downloads."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Create a temporary directory
         self.temp_dir = tempfile.TemporaryDirectory()
@@ -110,10 +110,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
             age_days = (datetime.now() - ts).days
 
             # Use S3 for older files (>7 days), CDN for recent files
-            if age_days > 7:
-                store = self.s3_store
-            else:
-                store = self.cdn_store
+            store = self.s3_store if age_days > 7 else self.cdn_store
 
             # Create destination path
             filename = f"test_file_{ts.strftime('%Y%m%d_%H%M%S')}.nc"
@@ -124,7 +121,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
 
         return list(missing_timestamps)  # Return the processed timestamps
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Close the cache DB
         self.cache_db.close()
@@ -161,11 +158,11 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
             formatted_name = formatted_name.replace("00000", f"{minute:02d}000")
 
             # Write with formatted name as content
-            with open(dest_path, "w") as f:
+            with open(dest_path, "w", encoding="utf-8") as f:
                 f.write(f"S3 test file for {product_type} {ts.isoformat()}: {formatted_name}")
         else:
             # Generic content
-            with open(dest_path, "w") as f:
+            with open(dest_path, "w", encoding="utf-8") as f:
                 f.write(f"S3 test file for {product_type} {ts.isoformat()}")
 
         # Add to cache DB
@@ -199,7 +196,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         # Use the GOES16 CDN format
         cdn_filename = f"{year}{doy:03d}{hour:02d}{minute:02d}_GOES18-ABI-CONUS-13-5424x5424.jpg"
 
-        with open(dest_path, "w") as f:
+        with open(dest_path, "w", encoding="utf-8") as f:
             f.write(f"CDN test file for {ts.isoformat()}: {cdn_filename}")
 
         await self.cache_db.add_timestamp(ts, satellite, str(dest_path), True)
@@ -252,7 +249,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
             loop.close()
 
     @patch.object(ReconcileManager, "fetch_missing_files")
-    def test_concurrent_downloads_with_threadlocal_cache(self, mock_fetch):
+    def test_concurrent_downloads_with_threadlocal_cache(self, mock_fetch) -> None:
         """Test concurrent downloads with ThreadLocalCacheDB."""
         # Set up the mock to use our implementation
         mock_fetch.side_effect = self._mock_fetch_missing_files
@@ -283,8 +280,6 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         assert sum(results) > 0
 
         # Debug: print what we have
-        print(f"thread_id_to_db: {self.thread_id_to_db}")
-        print(f"Number of threads tracked: {len(self.thread_id_to_db)}")
 
         # Since the test is primarily about ThreadLocalCacheDB working with threading,
         # and we can see from the logs that multiple CacheDB instances are being created,
@@ -292,7 +287,6 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         if len(self.thread_id_to_db) <= 1:
             # Allow the test to pass if we processed files (indicating the test structure works)
             # even if thread tracking isn't perfect with the mocked implementation
-            print(f"Results: {results}")
             assert sum(results) > 0
         else:
             # Verify multiple thread IDs were used (ideal case)
@@ -311,17 +305,14 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         try:
             cache_stats = self.cache_db.get_cache_data(self.satellite)
             if cache_stats is not None:
-                print(f"Cache entries found: {len(cache_stats)}")
-            else:
-                print("No cache data returned (which is OK for this test)")
-        except Exception as e:
-            print(f"Cache query error: {e}")
+                pass
+        except Exception:
+            pass
 
         # The test is successful if we processed files in multiple threads without errors
-        print("ThreadLocalCacheDB integration test completed successfully")
 
     @patch.object(ReconcileManager, "fetch_missing_files")
-    def test_different_product_types_with_threadlocal_cache(self, mock_fetch):
+    def test_different_product_types_with_threadlocal_cache(self, mock_fetch) -> None:
         """Test concurrent downloads with different product types."""
         # Set up the mock to use our implementation
         mock_fetch.side_effect = self._mock_fetch_missing_files
@@ -334,17 +325,13 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
 
         # Run concurrent downloads in multiple threads
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(product_types)) as executor:
-            futures = []
-            for product_type in product_types:
-                futures.append(
-                    executor.submit(
+            futures = [executor.submit(
                         self._run_reconcile_in_thread,
                         start_date,
                         end_date,
                         interval_minutes=10,
                         product_type=product_type,
-                    )
-                )
+                    ) for product_type in product_types]
 
             # Wait for all to complete
             results = [future.result() for future in futures]
@@ -357,8 +344,6 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         # Verify multiple thread IDs were used or at least that processing occurred
         if len(self.thread_id_to_db) < len(product_types):
             # Allow the test to pass if we processed files (indicating the test structure works)
-            print(f"Thread tracking: {len(self.thread_id_to_db)} threads, expected {len(product_types)}")
-            print(f"Results: {results}")
             assert sum(results) > 0
         else:
             assert len(self.thread_id_to_db) >= len(product_types)
@@ -370,12 +355,12 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         try:
             cache_stats = self.cache_db.get_cache_data(self.satellite)
             if cache_stats is not None:
-                print(f"Cache entries found: {len(cache_stats)}")
+                pass
         except Exception:
-            print("Cache check skipped (method not available)")
+            pass
 
     @patch.object(ReconcileManager, "fetch_missing_files")
-    def test_threadlocal_cache_stress_test(self, mock_fetch):
+    def test_threadlocal_cache_stress_test(self, mock_fetch) -> None:
         """Stress test the ThreadLocalCacheDB with many concurrent downloads."""
         # Set up the mock to use our implementation
         mock_fetch.side_effect = self._mock_fetch_missing_files
@@ -433,19 +418,18 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         assert len(self.thread_id_to_db) >= 2
 
         # Verify each thread processed some timestamps
-        for _thread_id, timestamps in self.thread_id_to_db.items():
+        for timestamps in self.thread_id_to_db.values():
             assert len(timestamps) > 0
 
         # Check no SQLite thread errors occurred by verifying the cache contains entries
         # Since we're already in an async context from the test setup,
         # we can't create a new event loop. Just verify thread usage instead.
-        total_timestamps_processed = sum(len(ts_list) for ts_list in self.thread_id_to_db.values())
-        print(f"Total timestamps processed across all threads: {total_timestamps_processed}")
+        sum(len(ts_list) for ts_list in self.thread_id_to_db.values())
 
         # The test passes if we successfully processed files in multiple threads
         # without SQLite threading errors
 
-    def test_real_s3_patterns(self):
+    def test_real_s3_patterns(self) -> None:
         """Test with real S3 file patterns for different product types."""
 
         # Create a thread-specific function for each product type
@@ -468,7 +452,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
                 )
 
                 # Verify file was created with the correct content
-                with open(result, "r") as f:
+                with open(result, encoding="utf-8") as f:
                     content = f.read()
 
                 # File content should contain the product type
@@ -486,7 +470,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             futures = {
                 product_type: executor.submit(run_product_test, product_type)
-                for product_type in self.real_patterns.keys()
+                for product_type in self.real_patterns
             }
 
             # Wait for all to complete

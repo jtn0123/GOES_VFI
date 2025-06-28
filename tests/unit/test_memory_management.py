@@ -23,7 +23,7 @@ from goesvfi.utils.memory_manager import (
 class TestMemoryStats:
     """Test MemoryStats dataclass."""
 
-    def test_low_memory_detection(self):
+    def test_low_memory_detection(self) -> None:
         """Test low memory detection."""
         # Normal memory
         stats = MemoryStats(
@@ -59,7 +59,7 @@ class TestMemoryStats:
 class TestMemoryMonitor:
     """Test MemoryMonitor class."""
 
-    def test_get_memory_stats(self):
+    def test_get_memory_stats(self) -> None:
         """Test getting memory statistics."""
         monitor = MemoryMonitor()
         stats = monitor.get_memory_stats()
@@ -70,7 +70,7 @@ class TestMemoryMonitor:
         assert stats.used_mb >= 0
         assert 0 <= stats.percent_used <= 100
 
-    def test_callbacks(self):
+    def test_callbacks(self) -> None:
         """Test callback mechanism."""
         monitor = MemoryMonitor()
         callback_mock = Mock()
@@ -91,7 +91,7 @@ class TestMemoryMonitor:
 
         callback_mock.assert_called_once_with(test_stats)
 
-    def test_get_memory_stats_psutil_mock(self):
+    def test_get_memory_stats_psutil_mock(self) -> None:
         """Memory stats should be retrieved using psutil when available."""
         fake_vm = Mock(total=8 * 1024**3, available=6 * 1024**3, used=2 * 1024**3, percent=25.0)
         fake_proc = Mock()
@@ -115,7 +115,7 @@ class TestMemoryMonitor:
         assert stats.process_mb == 256
         assert stats.process_percent == 1.2
 
-    def test_get_memory_stats_without_psutil(self):
+    def test_get_memory_stats_without_psutil(self) -> None:
         """Fallback path should work when psutil is unavailable."""
         fake_rusage = Mock(ru_maxrss=500000)
 
@@ -132,7 +132,7 @@ class TestMemoryMonitor:
 class TestMemoryOptimizer:
     """Test MemoryOptimizer class."""
 
-    def test_optimize_array_dtype(self):
+    def test_optimize_array_dtype(self) -> None:
         """Test array dtype optimization."""
         optimizer = MemoryOptimizer()
 
@@ -148,7 +148,7 @@ class TestMemoryOptimizer:
         assert optimized.dtype == np.uint8
         assert np.array_equal(optimized, arr_i64)
 
-    def test_chunk_large_array(self):
+    def test_chunk_large_array(self) -> None:
         """Test array chunking."""
         optimizer = MemoryOptimizer()
 
@@ -166,14 +166,14 @@ class TestMemoryOptimizer:
         assert np.array_equal(reconstructed, large_array)
 
     @patch("goesvfi.utils.memory_manager.gc.collect")
-    def test_free_memory(self, mock_gc_collect):
+    def test_free_memory(self, mock_gc_collect) -> None:
         """Test memory freeing."""
         optimizer = MemoryOptimizer()
 
         optimizer.free_memory(force=True)
         mock_gc_collect.assert_called_once()
 
-    def test_check_available_memory(self):
+    def test_check_available_memory(self) -> None:
         """Test memory availability checking."""
         optimizer = MemoryOptimizer()
 
@@ -191,7 +191,7 @@ class TestMemoryOptimizer:
 class TestObjectPool:
     """Test ObjectPool class."""
 
-    def test_acquire_release(self):
+    def test_acquire_release(self) -> None:
         """Test object acquisition and release."""
         factory_mock = Mock(side_effect=object)
         pool = ObjectPool(factory_mock, max_size=2)
@@ -212,7 +212,7 @@ class TestObjectPool:
         assert obj3 is not obj1
         assert factory_mock.call_count == 2
 
-    def test_pool_max_size(self):
+    def test_pool_max_size(self) -> None:
         """Test pool maximum size enforcement."""
         pool = ObjectPool(object, max_size=2)
 
@@ -231,7 +231,7 @@ class TestImageLoaderMemoryIntegration:
 
     @patch("goesvfi.utils.memory_manager.MemoryOptimizer")
     @patch("PIL.Image.open")
-    def test_memory_optimized_loading(self, mock_open, _mock_optimizer_class):
+    def test_memory_optimized_loading(self, mock_open, _mock_optimizer_class) -> None:
         """Test memory-optimized image loading."""
         # Setup mocks
         mock_img = MagicMock()
@@ -250,16 +250,15 @@ class TestImageLoaderMemoryIntegration:
         loader = ImageLoader(optimize_memory=True, max_image_size_mb=10)
 
         # Load image
-        with patch("numpy.array", return_value=mock_array):
-            with patch("os.path.exists", return_value=True):
-                result = loader.load("test.png")
+        with patch("numpy.array", return_value=mock_array), patch("os.path.exists", return_value=True):
+            result = loader.load("test.png")
 
         assert result is not None
         assert result.metadata["memory_optimized"]
         assert "size_mb" in result.metadata
 
     @patch("PIL.Image.open")
-    def test_image_size_limit(self, mock_open):
+    def test_image_size_limit(self, mock_open) -> None:
         """Test image size limit enforcement."""
         # Mock large image
         mock_img = MagicMock()
@@ -278,7 +277,7 @@ class TestImageLoaderMemoryIntegration:
                 loader.load("huge.png")
 
 
-def test_estimate_memory_requirement():
+def test_estimate_memory_requirement() -> None:
     """Test memory requirement estimation."""
     # Test 1000x1000 RGB image
     mb = estimate_memory_requirement((1000, 1000, 3), np.uint8)
@@ -289,7 +288,7 @@ def test_estimate_memory_requirement():
     assert mb == 95  # ~99MB
 
 
-def test_global_memory_monitor():
+def test_global_memory_monitor() -> None:
     """Test global memory monitor singleton."""
     monitor1 = get_memory_monitor()
     monitor2 = get_memory_monitor()
@@ -297,7 +296,7 @@ def test_global_memory_monitor():
     assert monitor1 is monitor2  # Should be same instance
 
 
-def test_optimize_array_chunks_no_shared_memory():
+def test_optimize_array_chunks_no_shared_memory() -> None:
     """Chunks returned by optimize_array_chunks should not share memory."""
     optimizer = MemoryOptimizer()
 
@@ -308,7 +307,7 @@ def test_optimize_array_chunks_no_shared_memory():
     assert all(not np.shares_memory(arr, c) for c in chunks)
 
 
-def test_streaming_processor_low_memory_usage():
+def test_streaming_processor_low_memory_usage() -> None:
     """Processing in chunks should not drastically increase memory usage."""
     processor = StreamingProcessor(chunk_size_mb=1)
     arr = np.ones(2_000_000, dtype=np.float32)  # ~8MB

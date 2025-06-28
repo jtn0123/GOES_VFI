@@ -5,9 +5,9 @@ of the S3Store implementation when faced with network issues.
 """
 
 import asyncio
-import unittest
 from datetime import datetime
 from pathlib import Path
+import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -20,7 +20,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern
 class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
     """Test cases for S3Store retry strategy and network resilience."""
 
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         """Set up test fixtures."""
         # We'll handle our own mocking for specific tests
         # because we need more control over the retry behavior
@@ -29,7 +29,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         self.test_satellite = SatellitePattern.GOES_18
         self.test_dest_path = Path("/tmp/test_download.nc")
 
-    async def test_client_creation_retry(self):
+    async def test_client_creation_retry(self) -> None:
         """Test retry logic for client creation."""
         # We need to mock at the aioboto3.Session level
         with (
@@ -47,7 +47,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
             # First call raises TimeoutError, second returns a client
             mock_client_context.__aenter__.side_effect = [
-                asyncio.TimeoutError("Connection timed out"),
+                TimeoutError("Connection timed out"),
                 mock_client,
             ]
 
@@ -72,7 +72,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
             # Verify client creation was called twice (once for each session)
             assert mock_session.client.call_count == 2
 
-    async def test_client_creation_retry_fails_after_max_retries(self):
+    async def test_client_creation_retry_fails_after_max_retries(self) -> None:
         """Test client creation fails after exceeding max retries."""
         # We need to mock at the aioboto3.Session level
         with patch("aioboto3.Session") as mock_session_class:
@@ -82,7 +82,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
 
             # Setup the client context to always raise TimeoutError
             mock_client_context = MagicMock()
-            mock_client_context.__aenter__ = AsyncMock(side_effect=asyncio.TimeoutError("Connection timed out"))
+            mock_client_context.__aenter__ = AsyncMock(side_effect=TimeoutError("Connection timed out"))
 
             # Configure session.client to return our mock context
             mock_session.client.return_value = mock_client_context
@@ -104,7 +104,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
                 # Verify sleep was called for retries
                 assert mock_sleep.call_count == 2  # Once per retry (before 3rd attempt)
 
-    async def test_download_with_retry_on_transient_error(self):
+    async def test_download_with_retry_on_transient_error(self) -> None:
         """Test download with retry on transient network errors."""
         # Test the retry behavior at the _get_s3_client level
         # which is where the actual retry logic happens
@@ -126,7 +126,8 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
                 nonlocal connection_attempts
                 connection_attempts += 1
                 if connection_attempts <= 2:
-                    raise asyncio.TimeoutError("Connection timed out")
+                    msg = "Connection timed out"
+                    raise TimeoutError(msg)
                 return mock_client
 
             mock_client_context.__aenter__ = mock_aenter
@@ -151,7 +152,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
                 # Verify sleep was called for backoff (2 times - before 2nd and 3rd attempts)
                 assert mock_sleep.call_count == 2
 
-    async def test_concurrent_download_limiter(self):
+    async def test_concurrent_download_limiter(self) -> None:
         """Test that concurrent downloads are limited by the semaphore."""
         # This test verifies concurrent task limiting behavior
         # We'll simulate the concurrency limiting without actual S3 calls
@@ -164,7 +165,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         # Create a semaphore to limit concurrency (similar to S3Store)
         semaphore = asyncio.Semaphore(2)  # Limit to 2 concurrent tasks
 
-        async def simulated_download(task_id: int):
+        async def simulated_download(task_id: int) -> str:
             nonlocal active_tasks, max_active, task_count
 
             async with semaphore:
@@ -197,7 +198,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         # Verify we actually had concurrent execution (max should be 2 if running concurrently)
         assert max_active == 2, "Expected to see 2 concurrent tasks"
 
-    async def test_network_diagnostics_collection(self):
+    async def test_network_diagnostics_collection(self) -> None:
         """Test that network diagnostics are collected on repeated failures."""
         # Mock get_system_network_info
         with patch("goesvfi.integrity_check.remote.s3_store.get_system_network_info") as mock_info:

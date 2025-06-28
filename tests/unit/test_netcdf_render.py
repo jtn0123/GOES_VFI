@@ -25,7 +25,7 @@ from goesvfi.integrity_check.render.netcdf import (
 class TestNetCDFRender:
     """Test NetCDF rendering functions for GOES satellite data."""
 
-    def test_convert_radiance_to_temperature(self):
+    def test_convert_radiance_to_temperature(self) -> None:
         """Test conversion from radiance to brightness temperature."""
         # Test with realistic radiance values
         radiance = np.array([100.0, 150.0, 200.0])  # More realistic values
@@ -47,7 +47,7 @@ class TestNetCDFRender:
         assert np.all(temps >= 0.0)
         assert np.all(temps <= 1.0)
 
-    def test_validate_band_id(self):
+    def test_validate_band_id(self) -> None:
         """Test band ID validation."""
         # Create mock dataset with correct band
         mock_ds = MagicMock()
@@ -66,7 +66,7 @@ class TestNetCDFRender:
 
     @patch("xarray.open_dataset")
     @patch("pathlib.Path.exists", return_value=True)
-    def test_extract_metadata(self, mock_exists, mock_open_dataset):
+    def test_extract_metadata(self, mock_exists, mock_open_dataset) -> None:
         """Test metadata extraction from NetCDF."""
         # Create mock dataset
         mock_ds = MagicMock()
@@ -98,11 +98,11 @@ class TestNetCDFRender:
         def get_item(key):
             if key == BAND_ID_VAR:
                 return mock_band_id
-            elif key == BAND_WAVELENGTH_VAR:
+            if key == BAND_WAVELENGTH_VAR:
                 return mock_band_wavelength
-            elif key == X_VAR:
+            if key == X_VAR:
                 return mock_x
-            elif key == Y_VAR:
+            if key == Y_VAR:
                 return mock_y
             return MagicMock()
 
@@ -125,7 +125,7 @@ class TestNetCDFRender:
     @patch("xarray.open_dataset")
     @patch("goesvfi.integrity_check.render.netcdf._create_figure")
     @patch("pathlib.Path.exists", return_value=True)
-    def test_render_png_success(self, mock_exists, mock_create_figure, mock_open_dataset):
+    def test_render_png_success(self, mock_exists, mock_create_figure, mock_open_dataset) -> None:
         """Test successful rendering to PNG."""
         # Create mock dataset
         mock_ds = MagicMock()
@@ -148,7 +148,7 @@ class TestNetCDFRender:
         def get_item(key):
             if key == BAND_ID_VAR:
                 return mock_band_var
-            elif key == RADIANCE_VAR:
+            if key == RADIANCE_VAR:
                 return mock_radiance
             return MagicMock()
 
@@ -177,7 +177,7 @@ class TestNetCDFRender:
         # Verify figure creation was called
         mock_create_figure.assert_called_once()
 
-    def test_render_png_nonexistent_file(self):
+    def test_render_png_nonexistent_file(self) -> None:
         """Test error handling for non-existent NetCDF file."""
         nc_path = Path("/tmp/nonexistent.nc")
         png_path = Path("/tmp/output.png")
@@ -187,7 +187,7 @@ class TestNetCDFRender:
 
     @patch("xarray.open_dataset")
     @patch("pathlib.Path.exists", return_value=True)
-    def test_render_png_missing_radiance(self, mock_exists, mock_open_dataset):
+    def test_render_png_missing_radiance(self, mock_exists, mock_open_dataset) -> None:
         """Test error handling for NetCDF without radiance data."""
         # Create mock dataset without radiance variable
         mock_ds = MagicMock()
@@ -204,7 +204,7 @@ class TestNetCDFRender:
         ):
             render_png(nc_path, png_path)
 
-    def test_default_temperature_constants(self):
+    def test_default_temperature_constants(self) -> None:
         """Test default temperature constants."""
         assert isinstance(DEFAULT_MIN_TEMP_K, float)
         assert isinstance(DEFAULT_MAX_TEMP_K, float)

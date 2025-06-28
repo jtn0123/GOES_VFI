@@ -10,7 +10,7 @@ from goesvfi.pipeline import encode
 from tests.utils.mocks import create_mock_popen
 
 
-@pytest.fixture
+@pytest.fixture()
 def temp_paths(tmp_path):
     intermediate = tmp_path / "input.mp4"
     intermediate.write_text("dummy input")
@@ -19,7 +19,7 @@ def temp_paths(tmp_path):
 
 
 @patch("goesvfi.pipeline.encode.subprocess.Popen")  # Patch Popen directly
-def test_stream_copy_success(mock_popen_patch, temp_paths):
+def test_stream_copy_success(mock_popen_patch, temp_paths) -> None:
     intermediate, final = temp_paths
 
     # Expected command for stream copy
@@ -44,7 +44,7 @@ def test_stream_copy_success(mock_popen_patch, temp_paths):
 
 
 @patch("goesvfi.pipeline.encode.subprocess.Popen")  # Patch Popen directly
-def test_stream_copy_fallback_rename(mock_popen_patch, temp_paths):
+def test_stream_copy_fallback_rename(mock_popen_patch, temp_paths) -> None:
     intermediate, final = temp_paths
 
     # Expected command for stream copy
@@ -77,7 +77,7 @@ def test_stream_copy_fallback_rename(mock_popen_patch, temp_paths):
 
 @patch("goesvfi.pipeline.encode.subprocess.Popen")  # Patch Popen directly
 @patch("tempfile.NamedTemporaryFile")  # Mock temp file for passlog
-def test_2pass_x265_calls(mock_temp_file, mock_popen_patch, temp_paths):
+def test_2pass_x265_calls(mock_temp_file, mock_popen_patch, temp_paths) -> None:
     intermediate, final = temp_paths
     bitrate = 1000
     pix_fmt = "yuv420p"
@@ -145,7 +145,8 @@ def test_2pass_x265_calls(mock_temp_file, mock_popen_patch, temp_paths):
 
     def popen_side_effect(*args, **kwargs):
         if not factories:
-            raise AssertionError("Popen called more times than expected")
+            msg = "Popen called more times than expected"
+            raise AssertionError(msg)
         factory = factories.pop(0)
         return factory(*args, **kwargs)  # Call the factory and return its result
 
@@ -181,7 +182,7 @@ def test_2pass_x265_calls(mock_temp_file, mock_popen_patch, temp_paths):
         ("Hardware H.264 (VideoToolbox)", "h264_videotoolbox", False),
     ],
 )
-def test_single_pass_encoders(mock_popen_patch, temp_paths, encoder, expected_codec, use_crf):
+def test_single_pass_encoders(mock_popen_patch, temp_paths, encoder, expected_codec, use_crf) -> None:
     intermediate, final = temp_paths
     crf = 23
     bitrate = 500
@@ -241,7 +242,7 @@ def test_single_pass_encoders(mock_popen_patch, temp_paths, encoder, expected_co
     assert final.exists()
 
 
-def test_unsupported_encoder_raises(temp_paths):
+def test_unsupported_encoder_raises(temp_paths) -> None:
     intermediate, final = temp_paths
     with pytest.raises(ValueError):
         encode.encode_with_ffmpeg(

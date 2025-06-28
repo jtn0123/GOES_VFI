@@ -27,8 +27,6 @@ def print_colored(message: str, color: str = RESET, bold: bool = False) -> None:
     """Print a message with color."""
     if bold:
         pass
-    else:
-        pass
 
 
 def run_command(cmd: list[str]) -> tuple[int, str]:
@@ -483,6 +481,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pyright-only", action="store_true", help="Run only Pyright type checker")
     parser.add_argument("--bandit-only", action="store_true", help="Run only Bandit security scanner")
     parser.add_argument("--safety-only", action="store_true", help="Run only Safety dependency scanner")
+    parser.add_argument("--xenon-only", action="store_true", help="Run only Xenon complexity checker")
+    parser.add_argument("--all", action="store_true", help="Run ALL linters (default: primary linters only)")
     parser.add_argument("--strict", action="store_true", help="Run mypy in strict mode")
     parser.add_argument(
         "--check",
@@ -557,10 +557,14 @@ def main() -> int:
     elif args.safety_only:
         exit_code, _, issue_count = run_safety()
         linter_results.append(("Safety", exit_code, issue_count))
-    else:
-        # Run all linters - first run static analyzers, then formatting tools
+    elif args.xenon_only:
+        exit_code, _, issue_count = run_xenon(paths)
+        linter_results.append(("Xenon", exit_code, issue_count))
+    elif args.all:
+        # Run ALL linters (legacy behavior)
         flake8_code, _, flake8_count = run_flake8(paths, args.jobs)
-        ruff_code, _, ruff_count = run_ruff(paths)
+        ruff_code, _, ruff_count = run_ruff(paths, args.fix)
+        ruff_format_code, _, ruff_format_count = run_ruff_format(paths, check_only)
         bugbear_code, _, bugbear_count = run_flake8_bugbear(paths)
         vulture_code, _, vulture_count = run_vulture(paths)
         pylint_code, _, pylint_count = run_pylint(paths, args.jobs)
@@ -568,12 +572,14 @@ def main() -> int:
         pyright_code, _, pyright_count = run_pyright(paths)
         bandit_code, _, bandit_count = run_bandit(paths)
         safety_code, _, safety_count = run_safety()
+        xenon_code, _, xenon_count = run_xenon(paths)
         black_code, _, black_count = run_black(paths, check_only)
         isort_code, _, isort_count = run_isort(paths, check_only)
 
         linter_results.extend([
             ("Flake8", flake8_code, flake8_count),
             ("Ruff", ruff_code, ruff_count),
+            ("Ruff Format", ruff_format_code, ruff_format_count),
             ("Flake8-Bugbear", bugbear_code, bugbear_count),
             ("Vulture", vulture_code, vulture_count),
             ("Pylint", pylint_code, pylint_count),
@@ -581,8 +587,25 @@ def main() -> int:
             ("Pyright", pyright_code, pyright_count),
             ("Bandit", bandit_code, bandit_count),
             ("Safety", safety_code, safety_count),
+            ("Xenon", xenon_code, xenon_count),
             ("Black", black_code, black_count),
             ("isort", isort_code, isort_count),
+        ])
+    else:
+        # Run primary linters by default (matching pre-commit hooks)
+        # For all linters, use --all flag or specific --*-only flags
+        ruff_code, _, ruff_count = run_ruff(paths, args.fix)
+        ruff_format_code, _, ruff_format_count = run_ruff_format(paths, check_only)
+        mypy_code, _, mypy_count = run_mypy(paths, args.strict)
+        bandit_code, _, bandit_count = run_bandit(paths)
+        xenon_code, _, xenon_count = run_xenon(paths)
+
+        linter_results.extend([
+            ("Ruff", ruff_code, ruff_count),
+            ("Ruff Format", ruff_format_code, ruff_format_count),
+            ("Mypy", mypy_code, mypy_count),
+            ("Bandit", bandit_code, bandit_count),
+            ("Xenon", xenon_code, xenon_count),
         ])
 
     # Print summary

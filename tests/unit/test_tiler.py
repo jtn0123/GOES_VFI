@@ -3,7 +3,7 @@ import numpy as np
 from goesvfi.pipeline.tiler import merge_tiles, tile_image
 
 
-def test_tile_image_basic():
+def test_tile_image_basic() -> None:
     # Create a mock image of size 4096x4096 with 3 channels
     img = np.random.rand(4096, 4096, 3).astype(np.float32)
     tile_size = 2048
@@ -14,8 +14,8 @@ def test_tile_image_basic():
     # Check that tiles cover the image approximately
     # Tiles should start at positions 0, 2016 (2048-32), and last tile may be smaller
     expected_starts = [0, tile_size - overlap]
-    xs = sorted(set(x for x, y, t in tiles))
-    ys = sorted(set(y for x, y, t in tiles))
+    xs = sorted({x for x, y, t in tiles})
+    ys = sorted({y for x, y, t in tiles})
 
     # Check x and y start positions
     for start in expected_starts:
@@ -23,7 +23,7 @@ def test_tile_image_basic():
         assert start in ys
 
     # Check tile sizes except possibly last tiles
-    for x, y, tile in tiles:
+    for _x, _y, tile in tiles:
         h, w, c = tile.shape
         assert c == 3
         assert h <= tile_size
@@ -32,7 +32,7 @@ def test_tile_image_basic():
         assert tile.dtype == np.float32
 
 
-def test_tile_image_edge_case():
+def test_tile_image_edge_case() -> None:
     # Image size not divisible by tile size
     img = np.random.rand(4100, 4100, 3).astype(np.float32)
     tile_size = 2048
@@ -49,7 +49,7 @@ def test_tile_image_edge_case():
     assert w == img.shape[1] - tiles[-1][0]
 
 
-def test_merge_tiles_basic():
+def test_merge_tiles_basic() -> None:
     # Create a mock image
     img = np.random.rand(4096, 4096, 3).astype(np.float32)
     tile_size = 2048
@@ -64,7 +64,7 @@ def test_merge_tiles_basic():
     assert np.allclose(merged, img, atol=1e-5)
 
 
-def test_merge_tiles_with_overlap():
+def test_merge_tiles_with_overlap() -> None:
     # Create a small image to test overlap handling
     img = np.ones((100, 100, 3), dtype=np.float32)
     tile_size = 60
@@ -78,7 +78,7 @@ def test_merge_tiles_with_overlap():
     assert np.allclose(merged, img, atol=1e-6)
 
 
-def test_lossless_reconstruction_random():
+def test_lossless_reconstruction_random() -> None:
     """Verify tiling and merging with overlap reconstructs the image exactly."""
     img = np.random.rand(256, 256, 3).astype(np.float32)
     tiles = tile_image(img, tile_size=128, overlap=32)

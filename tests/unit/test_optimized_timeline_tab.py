@@ -7,8 +7,8 @@ These tests focus on the timeline visualization tab's ability to:
 3. Handle user interactions properly
 """
 
-import unittest
 from datetime import datetime
+import unittest
 
 from PyQt6.QtWidgets import QApplication, QMainWindow
 
@@ -23,7 +23,7 @@ from tests.utils.pyqt_async_test import AsyncSignalWaiter, PyQtAsyncTestCase, as
 class TestOptimizedTimelineTab(PyQtAsyncTestCase):
     """Unit tests for the OptimizedTimelineTab."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up the test environment."""
         super().setUp()
 
@@ -41,12 +41,12 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         # Create temporary data for tests
         self._create_test_data()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up resources."""
         self.window.close()
         super().tearDown()
 
-    def _create_test_data(self):
+    def _create_test_data(self) -> None:
         """Create test data for the timeline visualization."""
         self.start_date = datetime(2023, 1, 1)
         self.end_date = datetime(2023, 1, 3, 23, 59, 59)
@@ -81,7 +81,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         self.interval_minutes = 120
 
     @async_test
-    async def test_set_data(self):
+    async def test_set_data(self) -> None:
         """Test that the set_data method properly sets data and updates visualization."""
         # Set the data
         self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
@@ -90,25 +90,13 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify the tab has stored the data
-        self.assertEqual(
-            self.tab.start_timestamp,
-            self.start_date,
-            "Start timestamp not set correctly",
-        )
-        self.assertEqual(self.tab.end_timestamp, self.end_date, "End timestamp not set correctly")
-        self.assertEqual(
-            self.tab.missing_items,
-            self.missing_items,
-            "Missing items not set correctly",
-        )
-        self.assertEqual(
-            self.tab.interval_minutes,
-            self.interval_minutes,
-            "Interval minutes not set correctly",
-        )
+        assert self.tab.start_timestamp == self.start_date, "Start timestamp not set correctly"
+        assert self.tab.end_timestamp == self.end_date, "End timestamp not set correctly"
+        assert self.tab.missing_items == self.missing_items, "Missing items not set correctly"
+        assert self.tab.interval_minutes == self.interval_minutes, "Interval minutes not set correctly"
 
     @async_test
-    async def test_set_date_range(self):
+    async def test_set_date_range(self) -> None:
         """Test that set_date_range updates the visualization without changing the data."""
         # First set initial data
         self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
@@ -127,18 +115,14 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify date range was updated
-        self.assertEqual(self.tab.start_timestamp, new_start, "Start timestamp not updated correctly")
-        self.assertEqual(self.tab.end_timestamp, new_end, "End timestamp not updated correctly")
+        assert self.tab.start_timestamp == new_start, "Start timestamp not updated correctly"
+        assert self.tab.end_timestamp == new_end, "End timestamp not updated correctly"
 
         # The missing items should not change
-        self.assertEqual(
-            self.tab.missing_items,
-            self.missing_items,
-            "Missing items should not change when updating date range",
-        )
+        assert self.tab.missing_items == self.missing_items, "Missing items should not change when updating date range"
 
     @async_test
-    async def test_set_directory(self):
+    async def test_set_directory(self) -> None:
         """Test that set_directory emits the directorySelected signal."""
         # Set up signal waiter
         dir_waiter = AsyncSignalWaiter(self.tab.directorySelected)
@@ -151,14 +135,10 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         received_dir = await dir_waiter.wait(timeout=1.0)
 
         # Verify the signal was emitted with the correct directory
-        self.assertEqual(
-            received_dir,
-            test_dir,
-            "Directory signal not emitted with correct directory",
-        )
+        assert received_dir == test_dir, "Directory signal not emitted with correct directory"
 
     @async_test
-    async def test_timestamp_selection(self):
+    async def test_timestamp_selection(self) -> None:
         """Test that selecting a timestamp emits the correct signal."""
         # Set up the data first
         self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
@@ -174,21 +154,13 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         received_timestamp = await timestamp_waiter.wait(timeout=1.0)
 
         # Verify the signal was emitted with the correct timestamp
-        self.assertEqual(
-            received_timestamp,
-            test_timestamp,
-            "Timestamp signal not emitted with correct timestamp",
-        )
+        assert received_timestamp == test_timestamp, "Timestamp signal not emitted with correct timestamp"
 
         # The selected timestamp should be stored
-        self.assertEqual(
-            self.tab.selected_timestamp,
-            test_timestamp,
-            "Selected timestamp not stored correctly",
-        )
+        assert self.tab.selected_timestamp == test_timestamp, "Selected timestamp not stored correctly"
 
     @async_test
-    async def test_view_switching(self):
+    async def test_view_switching(self) -> None:
         """Test switching between timeline and calendar views."""
         # Set some data first
         self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
@@ -197,7 +169,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Initial state should be timeline view (index 0)
-        self.assertEqual(self.tab.stack.currentIndex(), 0, "Initial view should be timeline")
+        assert self.tab.stack.currentIndex() == 0, "Initial view should be timeline"
 
         # Switch to calendar view
         self.tab._toggle_visualization(1)
@@ -206,14 +178,11 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify the view was switched
-        self.assertEqual(self.tab.stack.currentIndex(), 1, "View not switched to calendar")
+        assert self.tab.stack.currentIndex() == 1, "View not switched to calendar"
 
         # The view buttons should reflect the current state
-        self.assertFalse(
-            self.tab.view_timeline_btn.isChecked(),
-            "Timeline button should not be checked",
-        )
-        self.assertTrue(self.tab.view_calendar_btn.isChecked(), "Calendar button should be checked")
+        assert not self.tab.view_timeline_btn.isChecked(), "Timeline button should not be checked"
+        assert self.tab.view_calendar_btn.isChecked(), "Calendar button should be checked"
 
         # Switch back to timeline view
         self.tab._toggle_visualization(0)
@@ -222,17 +191,14 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Verify the view was switched back
-        self.assertEqual(self.tab.stack.currentIndex(), 0, "View not switched back to timeline")
+        assert self.tab.stack.currentIndex() == 0, "View not switched back to timeline"
 
         # The view buttons should reflect the current state
-        self.assertTrue(self.tab.view_timeline_btn.isChecked(), "Timeline button should be checked")
-        self.assertFalse(
-            self.tab.view_calendar_btn.isChecked(),
-            "Calendar button should not be checked",
-        )
+        assert self.tab.view_timeline_btn.isChecked(), "Timeline button should be checked"
+        assert not self.tab.view_calendar_btn.isChecked(), "Calendar button should not be checked"
 
     @async_test
-    async def test_info_panel_update(self):
+    async def test_info_panel_update(self) -> None:
         """Test that the info panel is updated when a timestamp is selected."""
         # Set some data first
         self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
@@ -241,11 +207,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Initial state should be "No item selected"
-        self.assertIn(
-            "No item selected",
-            self.tab.info_label.text(),
-            "Initial info panel should indicate no selection",
-        )
+        assert "No item selected" in self.tab.info_label.text(), "Initial info panel should indicate no selection"
 
         # Select a timestamp that corresponds to an item
         selected_timestamp = self.missing_items[0].timestamp
@@ -255,18 +217,10 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # The info panel should be updated with the item details
-        self.assertNotIn(
-            "No item selected",
-            self.tab.info_label.text(),
-            "Info panel should be updated with selection",
-        )
+        assert "No item selected" not in self.tab.info_label.text(), "Info panel should be updated with selection"
 
         # The timestamp should be mentioned in the text
-        self.assertIn(
-            selected_timestamp.strftime("%Y-%m-%d"),
-            self.tab.info_label.text(),
-            "Selected timestamp date should appear in info panel",
-        )
+        assert selected_timestamp.strftime("%Y-%m-%d") in self.tab.info_label.text(), "Selected timestamp date should appear in info panel"
 
 
 if __name__ == "__main__":

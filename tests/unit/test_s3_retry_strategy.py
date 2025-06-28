@@ -7,15 +7,14 @@ of the S3Store implementation when faced with network issues.
 # flake8: noqa: PT009,PT027
 
 import asyncio
-import unittest
 from datetime import datetime
 from pathlib import Path
+import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import botocore.exceptions
 
-from goesvfi.integrity_check.remote.base import ConnectionError as RemoteConnectionError
-from goesvfi.integrity_check.remote.base import RemoteStoreError
+from goesvfi.integrity_check.remote.base import ConnectionError as RemoteConnectionError, RemoteStoreError
 from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import SatellitePattern
 
@@ -23,7 +22,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern
 class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
     """Test cases for S3Store retry strategy and network resilience."""
 
-    async def asyncSetUp(self):
+    async def asyncSetUp(self) -> None:
         """Set up test fixtures."""
         self.store = S3Store(timeout=5)  # Short timeout for testing
         self.test_timestamp = datetime(2023, 6, 15, 12, 0, 0)
@@ -114,7 +113,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
     #         error_msg = str(context.exception)
     #         self.assertIn("Connection to AWS S3 timed out", error_msg)
 
-    async def test_download_retries_on_connection_error(self):
+    async def test_download_retries_on_connection_error(self) -> None:
         """Test that download raises appropriate error on connection errors."""
         # Configure head_object to succeed
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
@@ -135,7 +134,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         # Verify download_file was called once (no retry at download level)
         self.assertEqual(self.mock_s3_client.download_file.call_count, 1)
 
-    async def test_wildcard_matching_fallback(self):
+    async def test_wildcard_matching_fallback(self) -> None:
         """Test fallback to wildcard matching when exact file not found."""
         # Setup head_object to fail with 404
         not_found_error = botocore.exceptions.ClientError(
@@ -171,13 +170,13 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         self.mock_s3_client.get_paginator.assert_called_with("list_objects_v2")
 
         # Verify download_file was called with the matched key
-        args, kwargs = self.mock_s3_client.download_file.call_args
+        _args, kwargs = self.mock_s3_client.download_file.call_args
         self.assertEqual(kwargs["Key"], test_key)
 
         # Verify the result is the destination path
         self.assertEqual(result, self.test_dest_path)
 
-    async def test_download_statistics_tracking(self):
+    async def test_download_statistics_tracking(self) -> None:
         """Test that download statistics are properly tracked."""
         # Configure head_object to succeed
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
@@ -191,16 +190,14 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         # Create a spy for update_download_stats
         stats_updates = []
 
-        def mock_update_stats(success, download_time=0, file_size=0, error_type=None, error_message=None):
-            stats_updates.append(
-                {
-                    "success": success,
-                    "download_time": download_time,
-                    "file_size": file_size,
-                    "error_type": error_type,
-                    "error_message": error_message,
-                }
-            )
+        def mock_update_stats(success, download_time=0, file_size=0, error_type=None, error_message=None) -> None:
+            stats_updates.append({
+                "success": success,
+                "download_time": download_time,
+                "file_size": file_size,
+                "error_type": error_type,
+                "error_message": error_message,
+            })
 
         # Execute the download method
         with patch(
@@ -231,35 +228,32 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         # Verify the result is the destination path
         self.assertEqual(result, tmp_dest_path)
 
-    async def test_error_statistics_tracking(self):
+    async def test_error_statistics_tracking(self) -> None:
         """Test that error statistics are properly tracked."""
         # Configure head_object to succeed
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}
 
         # Make download_file fail with a timeout
-        self.mock_s3_client.download_file.side_effect = asyncio.TimeoutError("Download timed out")
+        self.mock_s3_client.download_file.side_effect = TimeoutError("Download timed out")
 
         # Create a spy for update_download_stats
         stats_updates = []
 
-        def mock_update_stats(success, download_time=0, file_size=0, error_type=None, error_message=None):
-            stats_updates.append(
-                {
-                    "success": success,
-                    "download_time": download_time,
-                    "file_size": file_size,
-                    "error_type": error_type,
-                    "error_message": error_message,
-                }
-            )
+        def mock_update_stats(success, download_time=0, file_size=0, error_type=None, error_message=None) -> None:
+            stats_updates.append({
+                "success": success,
+                "download_time": download_time,
+                "file_size": file_size,
+                "error_type": error_type,
+                "error_message": error_message,
+            })
 
         # Execute the download method, expect a ConnectionError
         with patch(
             "goesvfi.integrity_check.remote.s3_store.update_download_stats",
             side_effect=mock_update_stats,
-        ):
-            with self.assertRaises((RemoteConnectionError, ConnectionError)):
-                await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
+        ), self.assertRaises((RemoteConnectionError, ConnectionError)):
+            await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify update_download_stats was called with success=False
         self.assertTrue(len(stats_updates) > 0, f"No stats updates recorded: {stats_updates}")
@@ -269,7 +263,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
         # Note: error_message might be None in some implementations
         # self.assertIsNotNone(stats_updates[0]["error_message"])
 
-    async def test_concurrent_download_limits(self):
+    async def test_concurrent_download_limits(self) -> None:
         """Test that concurrent downloads respect the semaphore limit."""
         # This test requires mocking the ReconcileManager
         from goesvfi.integrity_check.reconcile_manager import ReconcileManager
@@ -331,7 +325,7 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
             # Restore original method
             self.store.download = original_download  # type: ignore[method-assign]
 
-    async def test_network_diagnostics_on_failure(self):
+    async def test_network_diagnostics_on_failure(self) -> None:
         """Test that network diagnostics are collected on failures."""
         # Configure head_object to succeed
         self.mock_s3_client.head_object.return_value = {"ContentLength": 1000}

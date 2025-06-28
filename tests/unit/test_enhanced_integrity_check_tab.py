@@ -6,20 +6,20 @@ missing test coverage areas identified in the improvement plan.
 """
 
 # Disable GUI popups by setting Qt platform
+from datetime import datetime, timedelta
 import os
+from pathlib import Path
 import tempfile
 import unittest
-from datetime import datetime, timedelta
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 # Patch network components before imports to prevent initialization
-import unittest.mock  # noqa: E402
+import unittest.mock
 
-from PyQt6.QtCore import QDateTime  # noqa: E402
-from PyQt6.QtWidgets import QApplication  # noqa: E402
+from PyQt6.QtCore import QDateTime
+from PyQt6.QtWidgets import QApplication
 
 # Import comprehensive mocks from test utils
 from tests.utils.mocks import MockCDNStore, MockS3Store
@@ -55,7 +55,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.S3Store", MockS3Store)
     @patch("goesvfi.integrity_check.enhanced_gui_tab.CDNStore", MockCDNStore)
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Call parent setUp for proper PyQt/asyncio setup
         super().setUp()
@@ -107,7 +107,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         # Mock any cleanup methods
         self.mock_view_model.cleanup = MagicMock()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         try:
             # Clean up widget
@@ -123,17 +123,17 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
             # Call parent tearDown for proper event loop cleanup
             super().tearDown()
-        except Exception as e:
-            print(f"TearDown failed with exception: {e}")
+        except Exception:
+            pass
             # Continue anyway to avoid hanging
 
     @patch.object(EnhancedIntegrityCheckTab, "_browse_directory")
-    def test_directory_selection(self, mock_browse):
+    def test_directory_selection(self, mock_browse) -> None:
         """Test the directory selection functionality."""
         # Set up mock to simulate directory selection
         new_dir = "/test/directory"
 
-        def mock_browse_impl():
+        def mock_browse_impl() -> None:
             # Simulate what the real method does without opening dialog
             self.tab.dir_input.setText(new_dir)
             self.tab.directory_selected.emit(new_dir)
@@ -151,7 +151,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
     @patch.object(EnhancedIntegrityCheckTab, "_browse_directory")
     @async_test
-    async def test_directory_selection_signal(self, mock_browse):
+    async def test_directory_selection_signal(self, mock_browse) -> None:
         """Test that the directory_selected signal is emitted correctly."""
         # Set up signal waiter
         dir_signal_waiter = AsyncSignalWaiter(self.tab.directory_selected)
@@ -159,7 +159,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         # Set up mock to simulate directory selection
         new_dir = "/test/manual/directory"
 
-        def mock_browse_impl():
+        def mock_browse_impl() -> None:
             # Simulate what the real method does without opening dialog
             self.tab.dir_input.setText(new_dir)
             self.tab.directory_selected.emit(new_dir)
@@ -180,7 +180,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
             assert self.tab.dir_input.text() == new_dir
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
-    def test_auto_detect_date_range_success(self, mock_message_box):
+    def test_auto_detect_date_range_success(self, mock_message_box) -> None:
         """Test auto-detecting date range with successful detection."""
         # Create a dummy file to avoid early return
         dummy_file = self.base_dir / "goes16_20230615_000000_band13.png"
@@ -213,7 +213,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
     @patch("goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory")
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
-    def test_auto_detect_date_range_error(self, mock_message_box, mock_auto_detect):
+    def test_auto_detect_date_range_error(self, mock_message_box, mock_auto_detect) -> None:
         """Test auto-detecting date range when an error occurs."""
         # Setup mock to raise an exception
         mock_auto_detect.side_effect = Exception("Test error")
@@ -229,7 +229,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
     @patch("goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory")
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
-    def test_auto_detect_date_range_no_files(self, mock_message_box, mock_auto_detect):
+    def test_auto_detect_date_range_no_files(self, mock_message_box, mock_auto_detect) -> None:
         """Test auto-detecting date range when no files are found."""
         # Setup mock to return None
         mock_auto_detect.return_value = (None, None)
@@ -242,7 +242,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         info_args = mock_message_box.information.call_args[0]
         assert "No Valid Files Found" in info_args[1]
 
-    def test_date_range_selection_ui(self):
+    def test_date_range_selection_ui(self) -> None:
         """Test that date range selection via UI updates the model."""
         # Change the start date
         new_start_date = QDateTime(2023, 2, 1, 0, 0)
@@ -266,7 +266,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         assert actual_end.replace(second=0, microsecond=0) == expected_end
 
     @patch("goesvfi.integrity_check.gui_tab.QMessageBox.warning")
-    def test_start_scan_button(self, mock_warning):
+    def test_start_scan_button(self, mock_warning) -> None:
         """Test the start scan button functionality."""
         # Set the directory in the GUI to match the view model
         self.tab.dir_input.setText(str(self.base_dir))
@@ -283,7 +283,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         # Verify no warning was shown
         mock_warning.assert_not_called()
 
-    def test_cancel_scan_button(self):
+    def test_cancel_scan_button(self) -> None:
         """Test the cancel scan button functionality."""
         # Ensure the button is enabled
         self.tab.cancel_button.setEnabled(True)
@@ -295,7 +295,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         self.mock_view_model.cancel_scan.assert_called_once()
 
     @patch("goesvfi.integrity_check.gui_tab.QMessageBox")
-    def test_download_all_button(self, mock_message_box):
+    def test_download_all_button(self, mock_message_box) -> None:
         """Test the download selected button functionality."""
         # Mock the selection model to indicate items are selected
         mock_selection = MagicMock()
@@ -320,7 +320,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         # First arg is the item list
         assert len(args[0]) == 1
 
-    def test_cancel_download_button(self):
+    def test_cancel_download_button(self) -> None:
         """Test the cancel download button functionality."""
         # Set up view model state to indicate downloading
         self.mock_view_model.is_scanning = False
@@ -335,7 +335,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         # Verify downloads were cancelled on the view model
         self.mock_view_model.cancel_downloads.assert_called_once()
 
-    def test_scan_complete_success_handler(self):
+    def test_scan_complete_success_handler(self) -> None:
         """Test handling of scan completion success."""
         # Create missing items for results
         missing_items = [
@@ -358,7 +358,7 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
         assert self.tab.download_button.isEnabled()
 
     @unittest.skip("Hangs due to Qt event loop issues in teardown")
-    def test_scan_complete_error_handler(self):
+    def test_scan_complete_error_handler(self) -> None:
         """Test handling of scan completion with error."""
         try:
             # Call scan complete handler with error
@@ -366,13 +366,12 @@ class TestEnhancedIntegrityCheckTabFileOperations(PyQtAsyncTestCase):
 
             # Verify download button is disabled
             assert not self.tab.download_button.isEnabled()
-        except Exception as e:
-            print(f"Test failed with exception: {e}")
+        except Exception:
             raise
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox")
     @unittest.skip("Hangs due to S3Store initialization - needs investigation")
-    def test_handle_scan_error(self, mock_message_box):
+    def test_handle_scan_error(self, mock_message_box) -> None:
         """Test handling of scan errors through scan completed handler."""
         # Call scan completed with error
         self.tab._on_scan_completed_vm(False, "Test error message")

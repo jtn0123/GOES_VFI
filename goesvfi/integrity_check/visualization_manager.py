@@ -11,6 +11,7 @@ import numpy as np
 from numpy.typing import NDArray
 from PIL import Image
 
+from goesvfi.core.base_manager import FileBasedManager
 from goesvfi.integrity_check.goes_imagery import ChannelType
 from goesvfi.utils import log
 
@@ -41,7 +42,7 @@ class ExtendedChannelType:
         return str(channel)
 
 
-class VisualizationManager:
+class VisualizationManager(FileBasedManager):
     """Manager for creating visualizations from GOES imagery data.
 
     This is a minimal stub implementation to allow the app to start.
@@ -55,12 +56,14 @@ class VisualizationManager:
             base_dir: Base directory for storing visualizations
             satellite: Satellite identifier (G16 for GOES-16, G18 for GOES-18)
         """
-        LOGGER.warning("Using stub implementation of VisualizationManager")
-        self.base_dir = Path(base_dir) if base_dir else Path.home() / "Downloads" / "goes_imagery"
-        self.satellite = satellite
+        # Use default path if not provided
+        if base_dir is None:
+            base_dir = Path.home() / "Downloads" / "goes_imagery"
 
-        # Create base directory if it doesn't exist
-        self.base_dir.mkdir(parents=True, exist_ok=True)
+        super().__init__("VisualizationManager", base_path=base_dir)
+
+        self.log_warning("Using stub implementation of VisualizationManager")
+        self.satellite = satellite
 
         # Define standard colormaps
         self.colormaps = {
@@ -70,6 +73,12 @@ class VisualizationManager:
             "visible": "gray",
             "true_color": None,  # RGB composite
         }
+
+    def _do_initialize(self) -> None:
+        """Perform actual initialization."""
+        # Create base directory if it doesn't exist
+        self.ensure_base_path_exists()
+        self.log_info("Base directory ensured at: %s", self.base_path)
 
     def create_visualization(
         self,
@@ -91,7 +100,7 @@ class VisualizationManager:
         Returns:
             Visualization image or None
         """
-        LOGGER.warning("Stub: Visualization creation not implemented")
+        self.log_warning("Stub: Visualization creation not implemented")
         # Return a placeholder image
         size = output_size or (512, 512)
         return Image.new("RGB", size, color="gray")
@@ -112,7 +121,7 @@ class VisualizationManager:
         Returns:
             Tuple of (standard_image, colorized_image)
         """
-        LOGGER.warning("Stub: Sample visualization not implemented")
+        self.log_warning("Stub: Sample visualization not implemented")
         # Return placeholder images
         std_img = Image.new("RGB", sample_size, color="gray")
         color_img = Image.new("RGB", sample_size, color="blue")
@@ -134,5 +143,5 @@ class VisualizationManager:
         Returns:
             Comparison image or None
         """
-        LOGGER.warning("Stub: Comparison creation not implemented")
+        self.log_warning("Stub: Comparison creation not implemented")
         return None

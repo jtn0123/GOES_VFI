@@ -5,8 +5,8 @@ Tests the ErrorHandler, ErrorHandlerChain, and related classes to ensure
 proper error handling workflow functionality.
 """
 
-import logging
 from io import StringIO
+import logging
 
 import pytest
 
@@ -22,12 +22,12 @@ from goesvfi.utils.errors.handler import (
 class TestErrorHandler:
     """Test base error handler functionality."""
 
-    def test_error_handler_is_abstract(self):
+    def test_error_handler_is_abstract(self) -> None:
         """Test that ErrorHandler cannot be instantiated directly."""
         with pytest.raises(TypeError):
             ErrorHandler()
 
-    def test_error_handler_methods_are_abstract(self):
+    def test_error_handler_methods_are_abstract(self) -> None:
         """Test that ErrorHandler methods are abstract."""
 
         class IncompleteHandler(ErrorHandler):
@@ -43,14 +43,14 @@ class TestErrorHandler:
 class TestLoggingErrorHandler:
     """Test logging error handler functionality."""
 
-    def test_logging_handler_initialization_default(self):
+    def test_logging_handler_initialization_default(self) -> None:
         """Test logging handler initialization with defaults."""
         handler = LoggingErrorHandler()
 
         assert handler.logger is not None
         assert handler.log_level == logging.ERROR
 
-    def test_logging_handler_initialization_custom(self):
+    def test_logging_handler_initialization_custom(self) -> None:
         """Test logging handler initialization with custom parameters."""
         custom_logger = logging.getLogger("test_logger")
         handler = LoggingErrorHandler(logger=custom_logger, log_level=logging.WARNING)
@@ -58,14 +58,14 @@ class TestLoggingErrorHandler:
         assert handler.logger == custom_logger
         assert handler.log_level == logging.WARNING
 
-    def test_logging_handler_can_handle_any_error(self):
+    def test_logging_handler_can_handle_any_error(self) -> None:
         """Test that logging handler can handle any error."""
         handler = LoggingErrorHandler()
         error = StructuredError("Test error")
 
         assert handler.can_handle(error) is True
 
-    def test_logging_handler_logs_error(self):
+    def test_logging_handler_logs_error(self) -> None:
         """Test that logging handler properly logs errors."""
         # Create a string stream to capture log output
         log_stream = StringIO()
@@ -93,7 +93,7 @@ class TestLoggingErrorHandler:
         log_output = log_stream.getvalue()
         assert "Error in test_comp: Test error message" in log_output
 
-    def test_logging_handler_different_log_levels(self):
+    def test_logging_handler_different_log_levels(self) -> None:
         """Test logging handler with different log levels."""
         log_stream = StringIO()
         log_handler = logging.StreamHandler(log_stream)
@@ -114,7 +114,7 @@ class TestLoggingErrorHandler:
 class TestCategoryErrorHandler:
     """Test category-specific error handler functionality."""
 
-    def test_category_handler_single_category(self):
+    def test_category_handler_single_category(self) -> None:
         """Test category handler with single category."""
         handler = CategoryErrorHandler(ErrorCategory.VALIDATION)
 
@@ -124,7 +124,7 @@ class TestCategoryErrorHandler:
         assert handler.can_handle(validation_error) is True
         assert handler.can_handle(network_error) is False
 
-    def test_category_handler_multiple_categories(self):
+    def test_category_handler_multiple_categories(self) -> None:
         """Test category handler with multiple categories."""
         categories = [ErrorCategory.VALIDATION, ErrorCategory.PERMISSION]
         handler = CategoryErrorHandler(categories)
@@ -137,7 +137,7 @@ class TestCategoryErrorHandler:
         assert handler.can_handle(permission_error) is True
         assert handler.can_handle(network_error) is False
 
-    def test_category_handler_default_handle(self):
+    def test_category_handler_default_handle(self) -> None:
         """Test that default handle method returns False."""
         handler = CategoryErrorHandler(ErrorCategory.VALIDATION)
         error = StructuredError("Test error", category=ErrorCategory.VALIDATION)
@@ -149,7 +149,7 @@ class TestCategoryErrorHandler:
 class CustomErrorHandler(ErrorHandler):
     """Custom error handler for testing."""
 
-    def __init__(self, handled_categories=None, should_stop=False):
+    def __init__(self, handled_categories=None, should_stop=False) -> None:
         self.handled_categories = handled_categories or []
         self.should_stop = should_stop
         self.handled_errors = []
@@ -165,13 +165,13 @@ class CustomErrorHandler(ErrorHandler):
 class TestErrorHandlerChain:
     """Test error handler chain functionality."""
 
-    def test_chain_initialization(self):
+    def test_chain_initialization(self) -> None:
         """Test error handler chain initialization."""
         chain = ErrorHandlerChain()
 
         assert len(chain.handlers) == 0
 
-    def test_chain_add_handler(self):
+    def test_chain_add_handler(self) -> None:
         """Test adding handlers to chain."""
         chain = ErrorHandlerChain()
         handler1 = CustomErrorHandler([ErrorCategory.VALIDATION])
@@ -186,7 +186,7 @@ class TestErrorHandlerChain:
         assert chain.handlers[0] == handler1
         assert chain.handlers[1] == handler2
 
-    def test_chain_fluent_interface(self):
+    def test_chain_fluent_interface(self) -> None:
         """Test fluent interface for adding handlers."""
         handler1 = CustomErrorHandler([ErrorCategory.VALIDATION])
         handler2 = CustomErrorHandler([ErrorCategory.NETWORK])
@@ -195,7 +195,7 @@ class TestErrorHandlerChain:
 
         assert len(chain.handlers) == 2
 
-    def test_chain_handles_error_successfully(self):
+    def test_chain_handles_error_successfully(self) -> None:
         """Test chain handling error with matching handler."""
         # Create handlers
         validation_handler = CustomErrorHandler([ErrorCategory.VALIDATION], should_stop=True)
@@ -216,7 +216,7 @@ class TestErrorHandlerChain:
         assert validation_handler.handled_errors[0] == error
         assert len(network_handler.handled_errors) == 0  # Should not reach second handler
 
-    def test_chain_continues_processing(self):
+    def test_chain_continues_processing(self) -> None:
         """Test chain continues processing when handlers return False."""
         # Create handlers that don't stop processing
         handler1 = CustomErrorHandler([ErrorCategory.VALIDATION], should_stop=False)
@@ -239,7 +239,7 @@ class TestErrorHandlerChain:
         assert len(handler2.handled_errors) == 1
         assert len(handler3.handled_errors) == 1
 
-    def test_chain_no_matching_handler(self):
+    def test_chain_no_matching_handler(self) -> None:
         """Test chain when no handler can handle the error."""
         # Create handlers for different categories
         validation_handler = CustomErrorHandler([ErrorCategory.VALIDATION])
@@ -259,7 +259,7 @@ class TestErrorHandlerChain:
         assert len(validation_handler.handled_errors) == 0
         assert len(permission_handler.handled_errors) == 0
 
-    def test_chain_handler_order_matters(self):
+    def test_chain_handler_order_matters(self) -> None:
         """Test that handler order affects processing."""
         # Create handlers - first one stops processing
         first_handler = CustomErrorHandler([ErrorCategory.VALIDATION], should_stop=True)
@@ -279,7 +279,7 @@ class TestErrorHandlerChain:
         assert len(first_handler.handled_errors) == 1
         assert len(second_handler.handled_errors) == 0
 
-    def test_chain_with_logging_handler(self):
+    def test_chain_with_logging_handler(self) -> None:
         """Test chain with actual logging handler."""
         # Create string stream for logging
         log_stream = StringIO()
@@ -315,7 +315,7 @@ class TestErrorHandlerChain:
 class TestErrorHandlerIntegration:
     """Integration tests for error handler system."""
 
-    def test_realistic_error_handling_scenario(self):
+    def test_realistic_error_handling_scenario(self) -> None:
         """Test realistic error handling scenario."""
         # Setup logging
         log_stream = StringIO()
@@ -326,7 +326,7 @@ class TestErrorHandlerIntegration:
 
         # Create specialized handlers
         class FileErrorHandler(CategoryErrorHandler):
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__([ErrorCategory.FILE_NOT_FOUND, ErrorCategory.PERMISSION])
                 self.recovery_attempts = []
 
@@ -335,13 +335,13 @@ class TestErrorHandlerIntegration:
                 if error.category == ErrorCategory.FILE_NOT_FOUND:
                     # Try to create the file
                     return True  # Successfully recovered
-                elif error.category == ErrorCategory.PERMISSION:
+                if error.category == ErrorCategory.PERMISSION:
                     # Cannot recover from permission errors
                     return False  # Continue to next handler
                 return False
 
         class NetworkErrorHandler(CategoryErrorHandler):
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__([ErrorCategory.NETWORK])
                 self.retry_count = 0
 
@@ -349,8 +349,7 @@ class TestErrorHandlerIntegration:
                 self.retry_count += 1
                 if self.retry_count < 3:
                     return False  # Continue processing (will retry)
-                else:
-                    return True  # Give up after 3 retries
+                return True  # Give up after 3 retries
 
         # Create handlers
         file_handler = FileErrorHandler()
@@ -395,27 +394,25 @@ class TestErrorHandlerIntegration:
         assert "Error in file_loader: File not found" in log_output
         assert "Error in http_client: Connection failed" in log_output
 
-    def test_error_handler_with_structured_error_context(self):
+    def test_error_handler_with_structured_error_context(self) -> None:
         """Test error handlers with rich structured error context."""
 
         class ContextAwareHandler(ErrorHandler):
-            def __init__(self):
+            def __init__(self) -> None:
                 self.processed_contexts = []
 
             def can_handle(self, error: StructuredError) -> bool:
                 return True
 
             def handle(self, error: StructuredError) -> bool:
-                self.processed_contexts.append(
-                    {
-                        "operation": error.context.operation,
-                        "component": error.context.component,
-                        "user_data": error.context.user_data.copy(),
-                        "system_data": error.context.system_data.copy(),
-                        "category": error.category,
-                        "recoverable": error.recoverable,
-                    }
-                )
+                self.processed_contexts.append({
+                    "operation": error.context.operation,
+                    "component": error.context.component,
+                    "user_data": error.context.user_data.copy(),
+                    "system_data": error.context.system_data.copy(),
+                    "category": error.category,
+                    "recoverable": error.recoverable,
+                })
                 return True
 
         handler = ContextAwareHandler()
@@ -446,7 +443,7 @@ class TestErrorHandlerIntegration:
         assert processed_context["category"] == ErrorCategory.PROCESSING
         assert processed_context["recoverable"] is False
 
-    def test_empty_chain_behavior(self):
+    def test_empty_chain_behavior(self) -> None:
         """Test behavior of empty handler chain."""
         chain = ErrorHandlerChain()
         error = StructuredError("Test error")

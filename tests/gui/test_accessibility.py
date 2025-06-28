@@ -357,7 +357,11 @@ class TestAccessibility:
         for widget_path, tooltip_text in tooltip_definitions:
             # Get widget dynamically and skip if it doesn't exist
             try:
-                widget = eval(widget_path)
+                # Parse the widget path safely
+                parts = widget_path.split(".")
+                widget = window
+                for part in parts[1:]:  # Skip 'window'
+                    widget = getattr(widget, part)
                 # Always set our tooltip to ensure consistency
                 widget.setToolTip(tooltip_text)
 
@@ -397,6 +401,18 @@ class TestAccessibility:
 
         # Error message validator
         def validate_error_message(title, message):
+            # Technical jargon to avoid
+            jargon_terms = [
+                "exception",
+                "traceback",
+                "null pointer",
+                "segfault",
+                "malloc",
+                "assertion",
+                "errno",
+                "stdlib",
+            ]
+
             issues = [
                 f"Contains technical jargon: '{term}'" for term in jargon_terms if term.lower() in message.lower()
             ]

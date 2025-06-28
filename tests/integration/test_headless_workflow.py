@@ -7,9 +7,9 @@ import os
 import pathlib
 from unittest.mock import MagicMock, patch
 
-import pytest
 from PIL import Image
 from PyQt6.QtWidgets import QApplication
+import pytest
 
 # Set environment for headless operation
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
@@ -33,7 +33,7 @@ class TestHeadlessWorkflow:
         elif "QT_QPA_PLATFORM" in os.environ:
             del os.environ["QT_QPA_PLATFORM"]
 
-    @pytest.fixture
+    @pytest.fixture()
     def app(self):
         """Create headless QApplication."""
         app = QApplication.instance()
@@ -42,7 +42,7 @@ class TestHeadlessWorkflow:
         yield app
         app.processEvents()
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_gui_window(self, app):
         """Create fully mocked main window."""
         with patch("goesvfi.gui.MainWindow") as MockMainWindow:
@@ -83,7 +83,7 @@ class TestHeadlessWorkflow:
 
             yield window
 
-    def test_basic_workflow_no_display(self, mock_gui_window, tmp_path):
+    def test_basic_workflow_no_display(self, mock_gui_window, tmp_path) -> None:
         """Test basic workflow without any display."""
         # Create test images
         input_dir = tmp_path / "input"
@@ -109,7 +109,7 @@ class TestHeadlessWorkflow:
         # Verify click was called
         mock_gui_window.main_tab.start_button.click.assert_called_once()
 
-    def test_settings_configuration_no_display(self, mock_gui_window):
+    def test_settings_configuration_no_display(self, mock_gui_window) -> None:
         """Test settings configuration without display."""
         # Configure settings
         mock_gui_window.main_tab.fps_spinbox.setValue(60)
@@ -122,7 +122,7 @@ class TestHeadlessWorkflow:
         mock_gui_window.main_tab.rife_tile_checkbox.setChecked.assert_called_with(True)
 
     @patch("goesvfi.pipeline.run_vfi.run_vfi")
-    def test_vfi_processing_mocked(self, mock_run_vfi, tmp_path):
+    def test_vfi_processing_mocked(self, mock_run_vfi, tmp_path) -> None:
         """Test VFI processing with fully mocked pipeline."""
         # Setup
         input_dir = tmp_path / "input"
@@ -161,7 +161,7 @@ class TestHeadlessWorkflow:
         assert call_kwargs["fps"] == 30
 
     @patch("goesvfi.gui.VfiWorker")
-    def test_worker_thread_mocked(self, MockVfiWorker):
+    def test_worker_thread_mocked(self, MockVfiWorker) -> None:
         """Test VFI worker thread with mocking."""
         # Create mock worker
         mock_worker = MagicMock()

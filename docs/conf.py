@@ -1,7 +1,7 @@
 """Sphinx configuration file for GOES_VFI documentation."""
 
-import sys
 from pathlib import Path
+import sys
 
 # Add the project root to the Python path so Sphinx can import modules
 project_root = Path(__file__).parent.parent
@@ -153,7 +153,7 @@ todo_include_todos = True
 
 
 # Add custom CSS
-def setup(app):
+def setup(app) -> None:
     """Custom setup function for Sphinx."""
     app.add_css_file("custom.css")
 

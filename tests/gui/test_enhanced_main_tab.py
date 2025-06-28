@@ -1,88 +1,88 @@
 import sys
 import types
 
-import pytest
 from PyQt6.QtWidgets import QLabel, QLineEdit, QProgressBar, QWidget
+import pytest
 
 
 # Fixture to mock goesvfi.utils.ui_enhancements before importing the tab
-@pytest.fixture
+@pytest.fixture()
 def mock_ui_enhancements(monkeypatch):
     class DummySignal:
-        def __init__(self):
+        def __init__(self) -> None:
             self._slots = []
 
-        def connect(self, slot):
+        def connect(self, slot) -> None:
             self._slots.append(slot)
 
-        def emit(self, *args, **kwargs):
+        def emit(self, *args, **kwargs) -> None:
             for slot in self._slots:
                 slot(*args, **kwargs)
 
     class DummyDragDropWidget:
-        def __init__(self):
+        def __init__(self) -> None:
             self.files_dropped = DummySignal()
 
-        def dragEnterEvent(self, event):
+        def dragEnterEvent(self, event) -> None:
             pass
 
-        def dragLeaveEvent(self, event):
+        def dragLeaveEvent(self, event) -> None:
             pass
 
-        def dropEvent(self, event):
+        def dropEvent(self, event) -> None:
             pass
 
     class DummyFadeInNotification:
-        def __init__(self, parent=None):
+        def __init__(self, parent=None) -> None:
             self.messages = []
 
-        def show_message(self, message, duration=None):
+        def show_message(self, message, duration=None) -> None:
             self.messages.append(message)
 
     class DummyProgressTracker:
-        def __init__(self):
+        def __init__(self) -> None:
             self.started = False
             self.stopped = False
             self.updated = []
             self.stats_updated = DummySignal()
 
-        def start(self):
+        def start(self) -> None:
             self.started = True
 
-        def stop(self):
+        def stop(self) -> None:
             self.stopped = True
 
-        def update_progress(self, items=0, bytes_transferred=0):
+        def update_progress(self, items=0, bytes_transferred=0) -> None:
             self.updated.append((items, bytes_transferred))
 
     class DummyShortcutManager:
-        def __init__(self, parent=None):
+        def __init__(self, parent=None) -> None:
             self.callbacks = None
 
-        def setup_standard_shortcuts(self, callbacks):
+        def setup_standard_shortcuts(self, callbacks) -> None:
             self.callbacks = callbacks
 
-        def show_shortcuts(self):
+        def show_shortcuts(self) -> None:
             pass
 
     class DummyLoadingSpinner:
-        def __init__(self, parent=None):
+        def __init__(self, parent=None) -> None:
             self.started = False
             self.stopped = False
 
-        def start(self):
+        def start(self) -> None:
             self.started = True
 
-        def stop(self):
+        def stop(self) -> None:
             self.stopped = True
 
     class DummyTooltipHelper:
         @staticmethod
-        def add_tooltip(widget, topic, text=None):
+        def add_tooltip(widget, topic, text=None) -> None:
             pass
 
     class DummyStatusWidget(QWidget):
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self.status_label = QLabel()
             self.speed_label = QLabel()
@@ -103,10 +103,10 @@ def mock_ui_enhancements(monkeypatch):
     module.create_status_widget = create_status_widget
 
     monkeypatch.setitem(sys.modules, "goesvfi.utils.ui_enhancements", module)
-    yield module
+    return module
 
 
-@pytest.fixture
+@pytest.fixture()
 def tab(qtbot, mock_ui_enhancements, monkeypatch):
     import importlib
 
@@ -114,7 +114,7 @@ def tab(qtbot, mock_ui_enhancements, monkeypatch):
 
     importlib.reload(m)
 
-    def dummy_init(self):
+    def dummy_init(self) -> None:
         QWidget.__init__(self)
         self.in_dir_edit = QLineEdit()
         self.out_file_edit = QLineEdit()
@@ -129,7 +129,7 @@ def tab(qtbot, mock_ui_enhancements, monkeypatch):
     return t
 
 
-def test_drop_directory_updates_input(tab, tmp_path):
+def test_drop_directory_updates_input(tab, tmp_path) -> None:
     d = tmp_path / "data"
     d.mkdir()
     tab._handle_dropped_files([str(d)])
@@ -137,7 +137,7 @@ def test_drop_directory_updates_input(tab, tmp_path):
     assert "Input directory" in tab._notification.messages[-1]
 
 
-def test_drop_video_updates_output(tab, tmp_path):
+def test_drop_video_updates_output(tab, tmp_path) -> None:
     f = tmp_path / "video.mp4"
     f.touch()
     tab._handle_dropped_files([str(f)])
@@ -145,7 +145,7 @@ def test_drop_video_updates_output(tab, tmp_path):
     assert "Output file" in tab._notification.messages[-1]
 
 
-def test_progress_stats_update(tab):
+def test_progress_stats_update(tab) -> None:
     stats = {"speed_human": "1MB/s", "eta_human": "1m", "progress_percent": 25}
     tab._update_progress_stats(stats)
     assert tab._status_widget.status_label.text() == "Processing..."
@@ -154,7 +154,7 @@ def test_progress_stats_update(tab):
     assert tab._status_widget.progress_bar.value() == 25
 
 
-def test_start_stop_notifications_and_progress(tab):
+def test_start_stop_notifications_and_progress(tab) -> None:
     tab._handle_start_vfi()
     assert tab._progress_tracker.started
     assert tab._loading_spinner.started
@@ -167,7 +167,7 @@ def test_start_stop_notifications_and_progress(tab):
     assert tab._notification.messages[-1] == "Processing stopped"
 
 
-def test_update_progress(tab):
+def test_update_progress(tab) -> None:
     tab.update_progress(5, 10)
     assert tab._progress_tracker.updated[-1] == (1, 0)
     assert tab._status_widget.progress_bar.value() == 50

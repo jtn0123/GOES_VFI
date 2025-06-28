@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
 )
 
 from goesvfi.gui_components.dynamic_theme_manager import AVAILABLE_THEMES, DynamicThemeManager
+from goesvfi.gui_components.icon_manager import get_icon
 from goesvfi.utils import config, log
 
 LOGGER = log.get_logger(__name__)
@@ -52,15 +53,21 @@ class SettingsTab(QWidget):
 
         # Appearance settings tab
         appearance_tab = self._create_appearance_tab()
-        self.settings_tabs.addTab(appearance_tab, "🎨 Appearance")
+        self.settings_tabs.addTab(appearance_tab, "")
+        self.settings_tabs.setTabIcon(0, get_icon("🎨"))
+        self.settings_tabs.setTabText(0, "Appearance")
 
         # Application settings tab
         app_tab = self._create_application_tab()
-        self.settings_tabs.addTab(app_tab, "⚙️ Application")
+        self.settings_tabs.addTab(app_tab, "")
+        self.settings_tabs.setTabIcon(1, get_icon("⚙️"))
+        self.settings_tabs.setTabText(1, "Application")
 
         # Advanced settings tab
         advanced_tab = self._create_advanced_tab()
-        self.settings_tabs.addTab(advanced_tab, "🔧 Advanced")
+        self.settings_tabs.addTab(advanced_tab, "")
+        self.settings_tabs.setTabIcon(2, get_icon("🔧"))
+        self.settings_tabs.setTabText(2, "Advanced")
 
         layout.addWidget(self.settings_tabs)
 
@@ -68,12 +75,24 @@ class SettingsTab(QWidget):
         button_layout = self._create_action_buttons()
         layout.addLayout(button_layout)
 
-    def _create_header(self) -> QLabel:
+    def _create_header(self) -> QWidget:
         """Create the settings header."""
-        header = QLabel("⚙️ Application Settings")
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Icon
+        icon_label = QLabel()
+        icon_label.setPixmap(get_icon("⚙️").pixmap(24, 24))
+        header_layout.addWidget(icon_label)
+
+        # Text
+        header = QLabel("Application Settings")
         header.setProperty("class", "AppHeader")
-        # Header styling handled by AppHeader theme class
-        return header
+        header_layout.addWidget(header)
+
+        header_layout.addStretch()
+        return header_widget
 
     def _create_appearance_tab(self) -> QWidget:
         """Create the appearance settings tab."""
@@ -258,19 +277,22 @@ class SettingsTab(QWidget):
         layout.addStretch()
 
         # Save button
-        save_btn = QPushButton("💾 Save Settings")
+        save_btn = QPushButton("Save Settings")
+        save_btn.setIcon(get_icon("💾"))
         save_btn.setToolTip("Save all settings to configuration files")
         save_btn.clicked.connect(self._save_settings)
         layout.addWidget(save_btn)
 
         # Reset button
-        reset_btn = QPushButton("🔄 Reset to Defaults")
+        reset_btn = QPushButton("Reset to Defaults")
+        reset_btn.setIcon(get_icon("🔄"))
         reset_btn.setToolTip("Reset all settings to their default values")
         reset_btn.clicked.connect(self._reset_to_defaults)
         layout.addWidget(reset_btn)
 
         # Reload button
-        reload_btn = QPushButton("⚡ Reload Settings")
+        reload_btn = QPushButton("Reload Settings")
+        reload_btn.setIcon(get_icon("⚡"))
         reload_btn.setToolTip("Reload settings from configuration files")
         reload_btn.clicked.connect(self._reload_settings)
         layout.addWidget(reload_btn)

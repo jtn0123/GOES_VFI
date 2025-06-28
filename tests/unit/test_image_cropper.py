@@ -10,7 +10,7 @@ from goesvfi.pipeline.image_processing_interfaces import ImageData
 class TestImageCropper:
     """Test image cropping functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_image(self):
         """Create a sample test image array."""
         # Create a 100x100 RGB image with gradient
@@ -20,19 +20,19 @@ class TestImageCropper:
                 img_array[i, j] = [i * 2, j * 2, (i + j)]
         return img_array
 
-    @pytest.fixture
+    @pytest.fixture()
     def cropper(self):
         """Create an ImageCropper instance."""
         return ImageCropper()
 
-    def test_cropper_initialization(self, cropper):
+    def test_cropper_initialization(self, cropper) -> None:
         """Test ImageCropper initialization."""
         assert hasattr(cropper, "crop")
         assert hasattr(cropper, "load")
         assert hasattr(cropper, "save")
         assert hasattr(cropper, "process")
 
-    def test_basic_crop(self, sample_image, cropper):
+    def test_basic_crop(self, sample_image, cropper) -> None:
         """Test basic image cropping."""
         # Create ImageData object
         image_data = ImageData(image_data=sample_image, metadata={"width": 100, "height": 100})

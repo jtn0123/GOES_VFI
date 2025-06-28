@@ -640,8 +640,6 @@ def main() -> int:
 
     if use_json_output:
         pass
-    else:
-        pass
 
     # Track results
     all_results = []
@@ -735,8 +733,6 @@ def main() -> int:
             progress_tracker.stop()
 
         if use_json_output:
-            pass
-        else:
             pass
 
         # Cancel remaining futures

@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.DEBUG)
 class TestTaskProgress:
     """Test TaskProgress dataclass."""
 
-    def test_task_progress_creation(self):
+    def test_task_progress_creation(self) -> None:
         """Test creating TaskProgress instance."""
         progress = TaskProgress(current=5, total=10, eta_seconds=2.5, message="Processing...")
         assert progress.current == 5
@@ -30,7 +30,7 @@ class TestTaskProgress:
         assert progress.eta_seconds == 2.5
         assert progress.message == "Processing..."
 
-    def test_task_progress_defaults(self):
+    def test_task_progress_defaults(self) -> None:
         """Test TaskProgress default values."""
         progress = TaskProgress(current=1, total=10)
         assert progress.eta_seconds == 0.0
@@ -40,7 +40,7 @@ class TestTaskProgress:
 class TestTaskResult:
     """Test TaskResult dataclass."""
 
-    def test_task_result_success(self):
+    def test_task_result_success(self) -> None:
         """Test creating successful TaskResult."""
         result = TaskResult(task_id="test_task", status=TaskStatus.COMPLETED, result="Success!")
         assert result.task_id == "test_task"
@@ -49,7 +49,7 @@ class TestTaskResult:
         assert result.error is None
         assert result.error_traceback is None
 
-    def test_task_result_failure(self):
+    def test_task_result_failure(self) -> None:
         """Test creating failed TaskResult."""
         error = ValueError("Test error")
         result: TaskResult = TaskResult(
@@ -68,7 +68,7 @@ class TestTaskResult:
 class TestTask:
     """Test Task class functionality."""
 
-    def test_task_creation(self):
+    def test_task_creation(self) -> None:
         """Test creating a Task instance."""
 
         def dummy_func(x, y):
@@ -82,7 +82,7 @@ class TestTask:
         assert isinstance(task.signals, TaskSignals)
         assert not task._cancel_requested
 
-    def test_task_successful_execution(self):
+    def test_task_successful_execution(self) -> None:
         """Test successful task execution."""
 
         def test_func(x, y, progress_callback=None, cancel_check=None):
@@ -104,7 +104,7 @@ class TestTask:
         completed_calls = []
         failed_calls = []
 
-        task.signals.started.connect(lambda task_id: started_calls.append(task_id))
+        task.signals.started.connect(started_calls.append)
         task.signals.progress.connect(lambda task_id, p: progress_calls.append((task_id, p)))
         task.signals.completed.connect(lambda task_id, r: completed_calls.append((task_id, r)))
         task.signals.failed.connect(lambda task_id, e, t: failed_calls.append((task_id, e, t)))
@@ -134,7 +134,7 @@ class TestTask:
 class TestTaskStatus:
     """Test TaskStatus enum."""
 
-    def test_task_status_values(self):
+    def test_task_status_values(self) -> None:
         """Test TaskStatus enum values."""
         assert TaskStatus.PENDING
         assert TaskStatus.RUNNING

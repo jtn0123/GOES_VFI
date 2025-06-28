@@ -1,7 +1,7 @@
 """Critical tests for FFmpeg command building functionality."""
 
-import sys
 from pathlib import Path
+import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -13,7 +13,7 @@ from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
 class TestFFmpegCommandBuilder:
     """Test FFmpeg command building logic."""
 
-    def test_basic_ffmpeg_command(self):
+    def test_basic_ffmpeg_command(self) -> None:
         """Test basic FFmpeg command construction."""
         builder = FFmpegCommandBuilder()
 
@@ -31,7 +31,7 @@ class TestFFmpegCommandBuilder:
         assert "/tmp/frames/frame_%04d.png" in cmd
         assert str(Path("/tmp/output.mp4")) in cmd
 
-    def test_ffmpeg_with_two_pass(self):
+    def test_ffmpeg_with_two_pass(self) -> None:
         """Test FFmpeg command with two-pass encoding."""
         builder = FFmpegCommandBuilder()
 
@@ -52,7 +52,7 @@ class TestFFmpegCommandBuilder:
         assert "-passlogfile" in cmd
         assert "passlog" in cmd
 
-    def test_ffmpeg_copy_stream(self):
+    def test_ffmpeg_copy_stream(self) -> None:
         """Test FFmpeg command for stream copy."""
         builder = FFmpegCommandBuilder()
 
@@ -70,7 +70,7 @@ class TestFFmpegCommandBuilder:
         assert "copy" in cmd
         assert "/tmp/output.mp4" in cmd
 
-    def test_invalid_parameters(self):
+    def test_invalid_parameters(self) -> None:
         """Test error handling for invalid parameters."""
         builder = FFmpegCommandBuilder()
 
@@ -89,7 +89,7 @@ class TestFFmpegCommandBuilder:
         with pytest.raises(ValueError, match="Two-pass encoding requires"):
             builder.build()
 
-    def test_pixel_format_setting(self):
+    def test_pixel_format_setting(self) -> None:
         """Test FFmpeg command with pixel format."""
         builder = FFmpegCommandBuilder()
 

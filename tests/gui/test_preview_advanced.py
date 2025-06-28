@@ -3,12 +3,12 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
 from PIL import Image
 from PyQt6.QtCore import QPoint, QRect, Qt, QTimer
 from PyQt6.QtGui import QImage, QPainter, QPixmap, QTransform, QWheelEvent
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QDialog, QLabel, QSlider
+import pytest
 
 from goesvfi.gui import ClickableLabel, MainWindow
 
@@ -16,7 +16,7 @@ from goesvfi.gui import ClickableLabel, MainWindow
 class TestPreviewAdvanced:
     """Test advanced preview and display features."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
@@ -29,7 +29,7 @@ class TestPreviewAdvanced:
 
         return window
 
-    @pytest.fixture
+    @pytest.fixture()
     def sample_image(self, tmp_path):
         """Create a sample image for testing."""
         img = Image.new("RGB", (800, 600), color=(100, 150, 200))
@@ -37,12 +37,12 @@ class TestPreviewAdvanced:
         img.save(img_path)
         return img_path
 
-    def test_live_preview_frame_updates(self, qtbot, window, mocker):
+    def test_live_preview_frame_updates(self, qtbot, window, mocker) -> None:
         """Test live preview updates during processing."""
         # Mock processing updates
         preview_updates = []
 
-        def capture_preview_update(frame_num, total_frames):
+        def capture_preview_update(frame_num, total_frames) -> None:
             preview_updates.append((frame_num, total_frames))
 
             # Simulate frame update
@@ -69,12 +69,12 @@ class TestPreviewAdvanced:
         if hasattr(window, "middle_frame_label"):
             assert window.middle_frame_label.pixmap() is not None
 
-    def test_image_comparison_modes(self, qtbot, window, sample_image):
+    def test_image_comparison_modes(self, qtbot, window, sample_image) -> None:
         """Test different image comparison modes."""
 
         # Create comparison dialog mock
         class ComparisonDialog(QDialog):
-            def __init__(self, img1_path, img2_path, parent=None):
+            def __init__(self, img1_path, img2_path, parent=None) -> None:
                 super().__init__(parent)
                 self.img1_path = img1_path
                 self.img2_path = img2_path
@@ -88,11 +88,11 @@ class TestPreviewAdvanced:
                 self.opacity_slider.setRange(0, 100)
                 self.opacity_slider.setValue(50)
 
-            def set_comparison_mode(self, mode):
+            def set_comparison_mode(self, mode) -> None:
                 self.mode = mode
                 self.update_comparison()
 
-            def update_comparison(self):
+            def update_comparison(self) -> None:
                 # Mock comparison rendering
                 if self.mode == "side-by-side":
                     # Create side-by-side view
@@ -127,19 +127,19 @@ class TestPreviewAdvanced:
         dialog.update_comparison()
         assert dialog.opacity == 0.75
 
-    def test_zoom_pan_interactions(self, qtbot, window, sample_image):
+    def test_zoom_pan_interactions(self, qtbot, window, sample_image) -> None:
         """Test zoom and pan interactions on preview images."""
 
         # Create zoomable label
         class ZoomableLabel(ClickableLabel):
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__()
                 self.zoom_factor = 1.0
                 self.pan_offset = QPoint(0, 0)
                 self.dragging = False
                 self.last_pos = QPoint()
 
-            def wheelEvent(self, event):
+            def wheelEvent(self, event) -> None:
                 # Zoom in/out with mouse wheel
                 delta = event.angleDelta().y()
                 if delta > 0:
@@ -149,22 +149,22 @@ class TestPreviewAdvanced:
                 self.zoom_factor = max(0.1, min(10.0, self.zoom_factor))
                 self.update_display()
 
-            def mousePressEvent(self, event):
+            def mousePressEvent(self, event) -> None:
                 if event.button() == Qt.MouseButton.LeftButton:
                     self.dragging = True
                     self.last_pos = event.pos()
 
-            def mouseMoveEvent(self, event):
+            def mouseMoveEvent(self, event) -> None:
                 if self.dragging:
                     delta = event.pos() - self.last_pos
                     self.pan_offset += delta
                     self.last_pos = event.pos()
                     self.update_display()
 
-            def mouseReleaseEvent(self, event):
+            def mouseReleaseEvent(self, event) -> None:
                 self.dragging = False
 
-            def update_display(self):
+            def update_display(self) -> None:
                 # Mock display update
                 pass
 
@@ -213,12 +213,12 @@ class TestPreviewAdvanced:
         # Verify pan occurred
         assert zoom_label.pan_offset != initial_offset
 
-    def test_video_preview_playback(self, qtbot, window, mocker):
+    def test_video_preview_playback(self, qtbot, window, mocker) -> None:
         """Test video preview playback functionality."""
 
         # Mock video player widget
         class VideoPreviewWidget(QLabel):
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__()
                 self.is_playing = False
                 self.current_frame = 0
@@ -227,32 +227,32 @@ class TestPreviewAdvanced:
                 self.timer = QTimer()
                 self.timer.timeout.connect(self.next_frame)
 
-            def load_video(self, video_path):
+            def load_video(self, video_path) -> bool:
                 # Mock loading video
                 self.video_path = video_path
                 self.current_frame = 0
                 return True
 
-            def play(self):
+            def play(self) -> None:
                 self.is_playing = True
                 self.timer.start(int(1000 / self.fps))
 
-            def pause(self):
+            def pause(self) -> None:
                 self.is_playing = False
                 self.timer.stop()
 
-            def seek(self, frame):
+            def seek(self, frame) -> None:
                 self.current_frame = max(0, min(frame, self.total_frames - 1))
                 self.update_frame()
 
-            def next_frame(self):
+            def next_frame(self) -> None:
                 if self.current_frame < self.total_frames - 1:
                     self.current_frame += 1
                 else:
                     self.current_frame = 0  # Loop
                 self.update_frame()
 
-            def update_frame(self):
+            def update_frame(self) -> None:
                 # Mock frame update
                 pixmap = QPixmap(640, 480)
                 pixmap.fill(Qt.GlobalColor.darkGreen)
@@ -288,7 +288,7 @@ class TestPreviewAdvanced:
         # Cleanup
         video_widget.timer.stop()
 
-    def test_multi_monitor_window_management(self, qtbot, window, mocker):
+    def test_multi_monitor_window_management(self, qtbot, window, mocker) -> None:
         """Test window management across multiple monitors."""
         # Mock QScreen and QApplication.screens()
         mock_screen1 = MagicMock()
@@ -311,7 +311,7 @@ class TestPreviewAdvanced:
         assert window_pos.x() > 1920  # On second monitor
 
         # Test fullscreen on specific monitor
-        def toggle_fullscreen_on_monitor(monitor_index):
+        def toggle_fullscreen_on_monitor(monitor_index) -> None:
             screens = QApplication.screens()
             if monitor_index < len(screens):
                 screen = screens[monitor_index]
@@ -323,7 +323,7 @@ class TestPreviewAdvanced:
         toggle_fullscreen_on_monitor(1)
         window.showFullScreen.assert_called_once()
 
-    def test_thumbnail_generation(self, qtbot, window, tmp_path):
+    def test_thumbnail_generation(self, qtbot, window, tmp_path) -> None:
         """Test thumbnail generation for file lists."""
         # Create test images
         image_files = []
@@ -335,7 +335,7 @@ class TestPreviewAdvanced:
 
         # Mock thumbnail generator
         class ThumbnailGenerator:
-            def __init__(self, size=(128, 128)):
+            def __init__(self, size=(128, 128)) -> None:
                 self.size = size
                 self.cache = {}
 
@@ -382,17 +382,18 @@ class TestPreviewAdvanced:
         cached_thumb = generator.generate_thumbnail(image_files[0])
         assert cached_thumb == thumbnails[0]
 
-    def test_preview_error_fallbacks(self, qtbot, window):
+    def test_preview_error_fallbacks(self, qtbot, window) -> None:
         """Test preview error handling and fallback displays."""
         # Test various error scenarios
         preview_label = window.main_tab.first_frame_label
 
         # Test missing file
-        def load_preview_with_fallback(file_path):
+        def load_preview_with_fallback(file_path) -> bool | None:
             try:
                 pixmap = QPixmap(str(file_path))
                 if pixmap.isNull():
-                    raise ValueError("Failed to load image")
+                    msg = "Failed to load image"
+                    raise ValueError(msg)
                 preview_label.setPixmap(pixmap)
                 return True
             except Exception:
@@ -426,29 +427,29 @@ class TestPreviewAdvanced:
         success = load_preview_with_fallback(corrupted_path)
         assert not success
 
-    def test_image_rotation_controls(self, qtbot, window, sample_image):
+    def test_image_rotation_controls(self, qtbot, window, sample_image) -> None:
         """Test image rotation controls."""
 
         # Create rotation controls
         class RotatableLabel(ClickableLabel):
-            def __init__(self):
+            def __init__(self) -> None:
                 super().__init__()
                 self.rotation = 0
                 self.original_pixmap = None
 
-            def set_image(self, image_path):
+            def set_image(self, image_path) -> None:
                 self.original_pixmap = QPixmap(str(image_path))
                 self.update_rotation()
 
-            def rotate_left(self):
+            def rotate_left(self) -> None:
                 self.rotation = (self.rotation - 90) % 360
                 self.update_rotation()
 
-            def rotate_right(self):
+            def rotate_right(self) -> None:
                 self.rotation = (self.rotation + 90) % 360
                 self.update_rotation()
 
-            def update_rotation(self):
+            def update_rotation(self) -> None:
                 if self.original_pixmap:
                     transform = QTransform()
                     transform.rotate(self.rotation)

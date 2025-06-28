@@ -30,25 +30,32 @@ pip install -e .
 - Debug mode: `source .venv/bin/activate && python -m goesvfi.gui --debug`
 
 ### Linting Commands
-The project uses a comprehensive linting setup with multiple tools:
-- Run all linters: `python run_linters.py`
-- Run specific linters:
-  - Flake8 only: `python run_linters.py --flake8-only`
-  - Flake8-Qt-TR only: `python run_linters.py --flake8-qt-only`
-  - MyPy type checking: `python run_linters.py --mypy-only`
-  - Black code formatter: `python run_linters.py --black-only`
-  - isort import sorter: `python run_linters.py --isort-only`
-  - Pylint: `python run_linters.py --pylint-only`
-- Safe mode options (formatter tools):
-  - Check only (default): `python run_linters.py --check`
-  - Apply formatting: `python run_linters.py --format`
-- Specific paths: `python run_linters.py path/to/file_or_directory`
-- MyPy strict mode: `python run_linters.py --mypy-only --strict`
+The project uses Ruff as the primary linter but maintains all traditional linters as options:
+- Run primary linters (default): `python run_linters.py`
+- Run ALL linters: `python run_linters.py --all`
+- **Primary linters (recommended)**:
+  - **Ruff linter**: `python run_linters.py --ruff-only` (handles most linting needs)
+  - **MyPy type checking**: `python run_linters.py --mypy-only`
+  - **Bandit security scanner**: `python run_linters.py --bandit-only`
+  - **Xenon complexity checker**: Integrated with ruff configuration
+- **Additional/legacy linters (available as options)**:
+  - **Flake8**: `python run_linters.py --flake8-only`
+  - **Flake8-Bugbear**: `python run_linters.py --bugbear-only`
+  - **Black code formatter**: `python run_linters.py --black-only`
+  - **isort import sorter**: `python run_linters.py --isort-only`
+  - **Pylint**: `python run_linters.py --pylint-only`
+  - **Vulture (dead code)**: `python run_linters.py --vulture-only`
+  - **Safety (dependencies)**: `python run_linters.py --safety-only`
+  - **Pyright type checker**: `python run_linters.py --pyright-only`
+- **Format code**:
+  - Check formatting only (default): `python run_linters.py --check`
+  - Apply formatting changes: `python run_linters.py --format`
+- **Options**:
+  - Specific paths: `python run_linters.py path/to/file_or_directory`
+  - MyPy strict mode: `python run_linters.py --mypy-only --strict`
+  - Auto-fix issues: `python run_linters.py --fix`
 
-Note: Some tests may fail due to recent refactoring. When testing new changes:
-- Use `run_working_tests_with_mocks.py` for reliable tests
-- Use `run_non_gui_tests.py` to avoid segmentation faults
-- PyQt GUI tests are prone to segmentation faults - be careful when running all GUI tests at once
+**Note**: While Ruff handles most linting needs efficiently, all traditional linters remain available for specific use cases or team preferences.
 
 ## Project Structure and Organization
 
@@ -102,9 +109,9 @@ These practices should be followed for all new tests:
 
 ### Test Runner Scripts
 Multiple test runners are provided for different testing scenarios:
-- `run_working_tests_with_mocks.py`: Runs reliable tests with missing dependencies mocked
-- `run_non_gui_tests.py`: Executes all tests except the GUI suite
-- `run_all_tests.py`: Complete test suite (use with caution due to GUI test instability)
+- `run_all_tests.py`: Complete test suite for local development (includes GUI tests)
+- `run_non_gui_tests_ci.py`: Non-GUI tests for CI/headless environments
+- `run_coverage.py`: Code coverage analysis and reporting
 
 ## Known Test Issues
 - Some GUI tests may cause segmentation faults when testing FFmpeg controls directly
@@ -234,15 +241,22 @@ For visualization components:
 - Always run linters on changed code before committing:
   - For quick checks: `python run_linters.py path/to/changed_file.py`
   - For comprehensive checks: `python run_linters.py`
-- Use the same linting tools that pre-commit hooks use:
-  - Flake8: Style and static code analysis
-  - Black: Code formatting (line length: 88)
-  - isort: Import sorting
-  - MyPy: Type checking
+- **Primary linting tools** (used by pre-commit hooks):
+  - **Ruff**: Primary linter (style, formatting, import sorting, static analysis)
+  - **MyPy**: Type checking
+  - **Bandit**: Security vulnerability scanning
+  - **Xenon**: Code complexity analysis
+- **Additional linters available** (via run_linters.py):
+  - **Flake8**: Traditional style checker
+  - **Black/isort**: Legacy formatting tools (functionality covered by Ruff)
+  - **Pylint**: Comprehensive static analysis
+  - **Vulture**: Dead code detection
+  - **Safety**: Dependency vulnerability scanning
+  - **Pyright**: Alternative type checker
 - Ensure consistent formatting with pre-commit hooks:
-  - Black for code formatting
-  - isort for import ordering
-  - Flake8 for style checking
+  - Ruff handles formatting, import ordering, and most style checking
+  - MyPy for type checking
+  - Bandit for security scanning
 
 ## Pre-commit Hooks Policy
 
@@ -258,23 +272,19 @@ When pre-commit hooks fail:
 5. **ALWAYS** ensure all hooks pass before committing
 
 ### Active Pre-commit Hooks
-- **Flake8**: Style and static code analysis
-- **Black**: Code formatting (line length: 88)
-- **isort**: Import sorting
+- **Ruff**: Primary linter (style, formatting, import sorting, static analysis)
 - **MyPy**: Type checking
 - **Bandit**: Security vulnerability scanning
-- **Safety**: Dependency vulnerability checking
 - **Xenon**: Code complexity analysis (C grade or better)
 
 ### Common pre-commit hook failures and fixes:
-- **Flake8 violations**: Fix the code style issues identified
-- **Black formatting**: Run `black` to auto-format the code
-- **isort import ordering**: Run `isort` to fix import order
+- **Ruff violations**: Fix code style, formatting, and static analysis issues identified
+- **Ruff formatting**: Run `python run_linters.py --format` to auto-format the code
 - **MyPy type errors**: Add proper type annotations
 - **Bandit security issues**: Fix security vulnerabilities
 - **Xenon complexity**: Refactor overly complex functions (C grade threshold)
-- **Trailing whitespace**: Remove all trailing whitespace
-- **Missing newlines**: Ensure files end with a newline
+- **Trailing whitespace**: Remove all trailing whitespace (handled by Ruff)
+- **Missing newlines**: Ensure files end with a newline (handled by Ruff)
 - **Large files**: Remove or gitignore large files before committing
 
 ### Code Complexity Standards

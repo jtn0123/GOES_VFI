@@ -306,18 +306,18 @@ class RifeCommandBuilder:
             cmd.extend(["-n", str(options.get("num_frames"))])
 
         # Tiling
-        if options.get("tile_enable", False) and self.detector.supports_tiling():
+        if options.get("tile_enable") and self.detector.supports_tiling():
             cmd.extend(["-t", str(options.get("tile_size", 256))])
 
         # UHD mode
-        if options.get("uhd_mode", False) and self.detector.supports_uhd():
+        if options.get("uhd_mode") and self.detector.supports_uhd():
             cmd.append("-u")
 
         # TTA options
-        if options.get("tta_spatial", False) and self.detector.supports_tta_spatial():
+        if options.get("tta_spatial") and self.detector.supports_tta_spatial():
             cmd.append("-x")
 
-        if options.get("tta_temporal", False) and self.detector.supports_tta_temporal():
+        if options.get("tta_temporal") and self.detector.supports_tta_temporal():
             cmd.append("-z")
 
         # Thread specification

@@ -7,8 +7,8 @@ requiring active internet connections or satellite data access.
 """
 
 import logging
-import sys
 from pathlib import Path
+import sys
 
 from goesvfi.integrity_check.goes_imagery import ProductType
 from goesvfi.integrity_check.sample_processor import SampleProcessor
@@ -19,9 +19,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 logger = logging.getLogger(__name__)
 
 
-def test_fallback_strategies():
+def test_fallback_strategies() -> None:
     """Test the fallback strategies in the sample processor."""
-    print("\n===== Testing Fallback Strategies =====")
 
     # Create visualization manager
     viz_manager = VisualizationManager()
@@ -36,21 +35,16 @@ def test_fallback_strategies():
         result = processor.download_sample_data(13, ProductType.FULL_DISK)
 
         # For stub implementation, just verify method completes
-        print("✓ Download sample data method completed (stub implementation)")
 
         # Expected result from stub implementation
         assert result is None or isinstance(result, (str, Path)), "Expected None or path-like result from stub"
 
-    except Exception as e:
-        print(f"✗ Error calling download_sample_data: {e}")
+    except Exception:
         raise
 
-    print("Fallback strategy test completed successfully")
 
-
-def test_web_sample_fallbacks():
+def test_web_sample_fallbacks() -> None:
     """Test the web sample download fallbacks."""
-    print("\n===== Testing Web Sample Fallbacks =====")
 
     # Create visualization manager
     viz_manager = VisualizationManager()
@@ -63,27 +57,20 @@ def test_web_sample_fallbacks():
         # Test basic functionality that actually exists
         result = processor.create_sample_comparison(channel=13, product_type=ProductType.FULL_DISK)
 
-        print("✓ Sample comparison method completed (stub implementation)")
-
         # For stub implementation, result should be an Image (stub returns a gray placeholder)
         assert result is None or hasattr(result, "save"), "Expected PIL Image or None from stub"
 
         # Test another method that exists
         time_estimate = processor.get_estimated_processing_time(13, ProductType.FULL_DISK)
-        print(f"✓ Got processing time estimate: {time_estimate}")
 
         assert isinstance(time_estimate, (int, float)), "Expected numeric time estimate"
 
-    except Exception as e:
-        print(f"✗ Error calling sample processor methods: {e}")
+    except Exception:
         raise
 
-    print("Web sample fallback test completed successfully")
 
-
-def test_error_handling():
+def test_error_handling() -> None:
     """Test error handling in the processor methods."""
-    print("\n===== Testing Error Handling =====")
 
     # Create visualization manager
     viz_manager = VisualizationManager()
@@ -98,31 +85,24 @@ def test_error_handling():
 
         # Stub implementation returns None for invalid input
         assert result is None, "Expected None for invalid file path"
-        print("✓ Handled invalid file path gracefully")
 
         # Test with very large channel number that might not exist
         time_estimate = processor.get_estimated_processing_time(999, ProductType.FULL_DISK)
 
         # Should still return a valid number even for invalid channel
         assert isinstance(time_estimate, (int, float)), "Expected numeric time estimate even for invalid channel"
-        print(f"✓ Handled invalid channel gracefully, got estimate: {time_estimate}")
 
-    except Exception as e:
-        print(f"✗ Error in error handling test: {e}")
+    except Exception:
         raise
 
-    print("Error handling test completed successfully")
 
-
-def main():
+def main() -> int:
     """Run all tests."""
-    print("Starting GOES Imagery Enhancement Tests...")
 
     test_fallback_strategies()
     test_web_sample_fallbacks()
     test_error_handling()
 
-    print("\nAll tests completed successfully!")
     return 0
 
 

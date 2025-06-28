@@ -4,6 +4,8 @@ Tests for core application exceptions.
 Tests the core exception hierarchy and their usage patterns.
 """
 
+from typing import Never
+
 import pytest
 
 from goesvfi.exceptions import (
@@ -19,21 +21,21 @@ from goesvfi.exceptions import (
 class TestGoesVfiError:
     """Test base application error."""
 
-    def test_goesvfi_error_creation(self):
+    def test_goesvfi_error_creation(self) -> None:
         """Test creating base GOES VFI error."""
         error = GoesVfiError("Test error message")
 
         assert str(error) == "Test error message"
         assert isinstance(error, Exception)
 
-    def test_goesvfi_error_inheritance(self):
+    def test_goesvfi_error_inheritance(self) -> None:
         """Test GOES VFI error inheritance."""
         error = GoesVfiError("Test error")
 
         assert isinstance(error, Exception)
         assert isinstance(error, GoesVfiError)
 
-    def test_goesvfi_error_alias(self):
+    def test_goesvfi_error_alias(self) -> None:
         """Test that GoesvfiError alias works."""
         # Both should be the same class
         assert GoesvfiError is GoesVfiError
@@ -49,7 +51,7 @@ class TestGoesVfiError:
 class TestPipelineError:
     """Test pipeline error functionality."""
 
-    def test_pipeline_error_creation(self):
+    def test_pipeline_error_creation(self) -> None:
         """Test creating pipeline error."""
         error = PipelineError("Pipeline processing failed")
 
@@ -58,7 +60,7 @@ class TestPipelineError:
         assert isinstance(error, GoesVfiError)
         assert isinstance(error, Exception)
 
-    def test_pipeline_error_inheritance(self):
+    def test_pipeline_error_inheritance(self) -> None:
         """Test pipeline error inheritance chain."""
         error = PipelineError("Test pipeline error")
 
@@ -66,7 +68,7 @@ class TestPipelineError:
         assert isinstance(error, GoesVfiError)
         assert isinstance(error, Exception)
 
-    def test_pipeline_error_empty_message(self):
+    def test_pipeline_error_empty_message(self) -> None:
         """Test pipeline error with empty message."""
         error = PipelineError("")
         assert str(error) == ""
@@ -75,7 +77,7 @@ class TestPipelineError:
 class TestConfigurationError:
     """Test configuration error functionality."""
 
-    def test_configuration_error_creation(self):
+    def test_configuration_error_creation(self) -> None:
         """Test creating configuration error."""
         error = ConfigurationError("Invalid configuration setting")
 
@@ -83,14 +85,14 @@ class TestConfigurationError:
         assert isinstance(error, ConfigurationError)
         assert isinstance(error, GoesVfiError)
 
-    def test_configuration_error_inheritance(self):
+    def test_configuration_error_inheritance(self) -> None:
         """Test configuration error inheritance."""
         error = ConfigurationError("Config error")
 
         assert isinstance(error, GoesVfiError)
         assert isinstance(error, Exception)
 
-    def test_configuration_error_with_details(self):
+    def test_configuration_error_with_details(self) -> None:
         """Test configuration error with detailed message."""
         error = ConfigurationError("Missing required setting 'database_url' in section 'connection'")
 
@@ -101,7 +103,7 @@ class TestConfigurationError:
 class TestGuiError:
     """Test GUI error functionality."""
 
-    def test_gui_error_creation(self):
+    def test_gui_error_creation(self) -> None:
         """Test creating GUI error."""
         error = GuiError("Widget initialization failed")
 
@@ -109,14 +111,14 @@ class TestGuiError:
         assert isinstance(error, GuiError)
         assert isinstance(error, GoesVfiError)
 
-    def test_gui_error_inheritance(self):
+    def test_gui_error_inheritance(self) -> None:
         """Test GUI error inheritance."""
         error = GuiError("GUI error")
 
         assert isinstance(error, GoesVfiError)
         assert isinstance(error, Exception)
 
-    def test_gui_error_widget_related(self):
+    def test_gui_error_widget_related(self) -> None:
         """Test GUI error for widget-related issues."""
         error = GuiError("Failed to update progress bar widget")
 
@@ -127,7 +129,7 @@ class TestGuiError:
 class TestExternalToolError:
     """Test external tool error functionality."""
 
-    def test_external_tool_error_creation_minimal(self):
+    def test_external_tool_error_creation_minimal(self) -> None:
         """Test creating external tool error with minimal parameters."""
         error = ExternalToolError("ffmpeg", "Encoding failed")
 
@@ -138,7 +140,7 @@ class TestExternalToolError:
         assert isinstance(error, PipelineError)
         assert isinstance(error, GoesVfiError)
 
-    def test_external_tool_error_creation_with_stderr(self):
+    def test_external_tool_error_creation_with_stderr(self) -> None:
         """Test creating external tool error with stderr output."""
         stderr_output = "Error: Invalid codec parameters"
         error = ExternalToolError("ffmpeg", "Encoding failed", stderr=stderr_output)
@@ -147,7 +149,7 @@ class TestExternalToolError:
         assert error.stderr == stderr_output
         assert "Error executing ffmpeg: Encoding failed" in str(error)
 
-    def test_external_tool_error_inheritance(self):
+    def test_external_tool_error_inheritance(self) -> None:
         """Test external tool error inheritance chain."""
         error = ExternalToolError("rife", "Interpolation failed")
 
@@ -156,7 +158,7 @@ class TestExternalToolError:
         assert isinstance(error, GoesVfiError)
         assert isinstance(error, Exception)
 
-    def test_external_tool_error_different_tools(self):
+    def test_external_tool_error_different_tools(self) -> None:
         """Test external tool error with different tools."""
         ffmpeg_error = ExternalToolError("ffmpeg", "Video encoding failed")
         rife_error = ExternalToolError("rife", "Frame interpolation failed")
@@ -170,7 +172,7 @@ class TestExternalToolError:
         assert "rife" in str(rife_error)
         assert "sanchez" in str(sanchez_error)
 
-    def test_external_tool_error_with_complex_stderr(self):
+    def test_external_tool_error_with_complex_stderr(self) -> None:
         """Test external tool error with complex stderr output."""
         stderr_output = """
         ERROR: Invalid input format
@@ -184,13 +186,13 @@ class TestExternalToolError:
         assert "Invalid input format" in error.stderr
         assert "/path/to/input.mp4" in error.stderr
 
-    def test_external_tool_error_empty_stderr(self):
+    def test_external_tool_error_empty_stderr(self) -> None:
         """Test external tool error with empty stderr."""
         error = ExternalToolError("tool", "Failed", stderr="")
 
         assert error.stderr == ""
 
-    def test_external_tool_error_none_stderr(self):
+    def test_external_tool_error_none_stderr(self) -> None:
         """Test external tool error with None stderr."""
         error = ExternalToolError("tool", "Failed", stderr=None)
 
@@ -200,7 +202,7 @@ class TestExternalToolError:
 class TestExceptionHierarchy:
     """Test exception hierarchy and relationships."""
 
-    def test_exception_hierarchy_structure(self):
+    def test_exception_hierarchy_structure(self) -> None:
         """Test that exception hierarchy is properly structured."""
         # Create instances of all exception types
         base_error = GoesVfiError("Base error")
@@ -221,17 +223,20 @@ class TestExceptionHierarchy:
         for exc in exceptions:
             assert isinstance(exc, Exception)
 
-    def test_exception_catching_patterns(self):
+    def test_exception_catching_patterns(self) -> None:
         """Test different exception catching patterns."""
 
-        def raise_pipeline_error():
-            raise PipelineError("Pipeline failed")
+        def raise_pipeline_error() -> Never:
+            msg = "Pipeline failed"
+            raise PipelineError(msg)
 
-        def raise_config_error():
-            raise ConfigurationError("Config failed")
+        def raise_config_error() -> Never:
+            msg = "Config failed"
+            raise ConfigurationError(msg)
 
-        def raise_tool_error():
-            raise ExternalToolError("ffmpeg", "Tool failed")
+        def raise_tool_error() -> Never:
+            msg = "ffmpeg"
+            raise ExternalToolError(msg, "Tool failed")
 
         # Catch specific exception types
         with pytest.raises(PipelineError):
@@ -257,7 +262,7 @@ class TestExceptionHierarchy:
         with pytest.raises(PipelineError):
             raise_tool_error()
 
-    def test_exception_type_checking(self):
+    def test_exception_type_checking(self) -> None:
         """Test exception type checking in exception handlers."""
         errors = [
             GoesVfiError("Base error"),
@@ -293,25 +298,29 @@ class TestExceptionHierarchy:
 class TestExceptionIntegration:
     """Integration tests for exception usage."""
 
-    def test_realistic_error_scenarios(self):
+    def test_realistic_error_scenarios(self) -> None:
         """Test realistic error usage scenarios."""
 
-        def simulate_config_loading():
+        def simulate_config_loading() -> Never:
             """Simulate configuration loading that might fail."""
-            raise ConfigurationError("Missing database configuration in settings.json")
+            msg = "Missing database configuration in settings.json"
+            raise ConfigurationError(msg)
 
-        def simulate_pipeline_processing():
+        def simulate_pipeline_processing() -> Never:
             """Simulate pipeline processing that might fail."""
-            raise PipelineError("Failed to process frame 42 of 100")
+            msg = "Failed to process frame 42 of 100"
+            raise PipelineError(msg)
 
-        def simulate_external_tool_execution():
+        def simulate_external_tool_execution() -> Never:
             """Simulate external tool execution that might fail."""
             stderr = "ffmpeg: error while loading shared libraries: libx264.so"
-            raise ExternalToolError("ffmpeg", "Failed to encode video", stderr=stderr)
+            msg = "ffmpeg"
+            raise ExternalToolError(msg, "Failed to encode video", stderr=stderr)
 
-        def simulate_gui_operation():
+        def simulate_gui_operation() -> Never:
             """Simulate GUI operation that might fail."""
-            raise GuiError("Failed to update progress dialog: widget has been destroyed")
+            msg = "Failed to update progress dialog: widget has been destroyed"
+            raise GuiError(msg)
 
         # Test that we can catch and handle different error types appropriately
         scenarios = [
@@ -329,17 +338,19 @@ class TestExceptionIntegration:
             with pytest.raises(GoesVfiError):
                 scenario_func()
 
-    def test_exception_chaining(self):
+    def test_exception_chaining(self) -> None:
         """Test exception chaining and context preservation."""
 
-        def low_level_function():
-            raise ValueError("Invalid input format")
+        def low_level_function() -> Never:
+            msg = "Invalid input format"
+            raise ValueError(msg)
 
-        def high_level_function():
+        def high_level_function() -> None:
             try:
                 low_level_function()
             except ValueError as e:
-                raise PipelineError("Processing failed") from e
+                msg = "Processing failed"
+                raise PipelineError(msg) from e
 
         with pytest.raises(PipelineError) as exc_info:
             high_level_function()
@@ -349,7 +360,7 @@ class TestExceptionIntegration:
         assert isinstance(exc_info.value.__cause__, ValueError)
         assert "Invalid input format" in str(exc_info.value.__cause__)
 
-    def test_exception_message_formatting(self):
+    def test_exception_message_formatting(self) -> None:
         """Test that exception messages are properly formatted."""
 
         # Test that messages contain relevant information

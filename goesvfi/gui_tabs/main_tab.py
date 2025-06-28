@@ -30,6 +30,9 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.gui_components.icon_manager import get_icon
+from goesvfi.gui_components.main_tab_settings import MainTabSettings
+from goesvfi.gui_components.update_manager import register_update, request_update
 from goesvfi.gui_components.widget_factory import WidgetFactory
 from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
@@ -209,6 +212,10 @@ class MainTab(QWidget):
         self.settings = settings
         # Force settings to sync at initialization to ensure freshest data
         self.settings.sync()
+
+        # Initialize centralized settings manager
+        self.tab_settings = MainTabSettings(settings)
+
         self.main_window_preview_signal = request_previews_update_signal  # Store the signal
         self.main_window_ref = main_window_ref  # Store the MainWindow reference
 
@@ -223,6 +230,12 @@ class MainTab(QWidget):
         self.image_viewer_dialog: ImageViewerDialog | None = None  # Add member to hold viewer reference
         # -----------------------
 
+        # Initialize UpdateManager integration
+        self._setup_update_manager()
+
+        # Enable drag and drop
+        self.setAcceptDrops(True)
+
         self._setup_ui()
         self._connect_signals()
         self._post_init_setup()  # Perform initial state updates
@@ -230,7 +243,20 @@ class MainTab(QWidget):
     @staticmethod
     def _create_header() -> QLabel:
         """Create the enhanced header for the main tab."""
-        return WidgetFactory.create_label("🎬 GOES VFI - Video Frame Interpolation", style="header")
+        # Create header with icon
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+
+        icon_label = QLabel()
+        icon_label.setPixmap(get_icon("🎬").pixmap(32, 32))
+        header_layout.addWidget(icon_label)
+
+        text_label = WidgetFactory.create_label("GOES VFI - Video Frame Interpolation", style="header")
+        header_layout.addWidget(text_label)
+        header_layout.addStretch()
+
+        return header_widget
 
     def _setup_ui(self) -> None:
         """Create the UI elements for the main tab."""
@@ -246,7 +272,9 @@ class MainTab(QWidget):
         layout.addWidget(header)
 
         # Input/Output Group
-        io_group = WidgetFactory.create_group_box(self.tr("📁 Input/Output"))
+        io_group = WidgetFactory.create_group_box(self.tr("Input/Output"))
+        # Add icon to group box title
+        io_group.setStyleSheet("QGroupBox::title { padding-left: 24px; }")
         io_layout = QGridLayout(io_group)
         io_layout.setContentsMargins(10, 15, 10, 10)
         io_layout.setSpacing(8)
@@ -298,11 +326,13 @@ class MainTab(QWidget):
         # Crop Buttons
         crop_buttons_layout = QHBoxLayout()
         crop_buttons_layout.setContentsMargins(10, 0, 10, 0)
-        self.crop_button = SuperButton(self.tr("✂️ Select Crop Region"))
+        self.crop_button = SuperButton(self.tr("Select Crop Region"))
+        self.crop_button.setIcon(get_icon("✂️"))
         self.crop_button.setObjectName("crop_button")
         WidgetFactory.update_widget_style(self.crop_button, "DialogButton")
         self.crop_button.setToolTip("Select a region of the image to crop during processing")
-        self.clear_crop_button = SuperButton(self.tr("❌ Clear Crop"))
+        self.clear_crop_button = SuperButton(self.tr("Clear Crop"))
+        self.clear_crop_button.setIcon(get_icon("❌"))
         self.clear_crop_button.setObjectName("clear_crop_button")
         WidgetFactory.update_widget_style(self.clear_crop_button, "DialogButton")
         self.clear_crop_button.setToolTip("Remove the current crop selection and use full image")
@@ -512,6 +542,99 @@ class MainTab(QWidget):
         self._update_sanchez_options_state(self.current_encoder)
         # Initial preview load trigger removed, handled by MainWindow
         LOGGER.debug("MainTab: Post-init setup complete.")
+
+    def _setup_update_manager(self) -> None:
+        """Initialize UpdateManager integration for efficient UI updates."""
+        # Register common UI update operations with the global UpdateManager
+        register_update("main_tab_preview_update", self._update_preview_displays, priority=1)
+        register_update("main_tab_ui_state", self._update_ui_state_internal, priority=2)
+        register_update("main_tab_crop_buttons", self._update_crop_buttons_state, priority=0)
+        register_update("main_tab_start_button", self._update_start_button_state, priority=2)
+
+        LOGGER.debug("UpdateManager integration set up for MainTab")
+
+    def _update_ui_state_internal(self) -> None:
+        """Internal method for batched UI state updates."""
+        # This replaces multiple individual update calls with a single batched operation
+        self._update_rife_ui_elements()
+        # Could include other related UI updates here
+
+    def _update_preview_displays(self) -> None:
+        """Update preview displays through UpdateManager."""
+        # This would replace direct preview updates with batched ones
+        if self.main_window_preview_signal:
+            self.main_window_preview_signal.emit()
+
+    # Drag and Drop functionality (enhanced features from EnhancedMainTab concepts)
+    def dragEnterEvent(self, event) -> None:
+        """Handle drag enter events for file drops."""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+            # Add visual feedback
+            self.setProperty("drag_active", True)
+            self.setStyleSheet(self.styleSheet() + " MainTab[drag_active='true'] { border: 2px dashed #4CAF50; }")
+
+    def dragLeaveEvent(self, event) -> None:
+        """Handle drag leave events."""
+        self.setProperty("drag_active", False)
+        # Remove visual feedback
+        self.setStyleSheet(self.styleSheet().replace(" MainTab[drag_active='true'] { border: 2px dashed #4CAF50; }", ""))
+
+    def dropEvent(self, event) -> None:
+        """Handle file drop events."""
+        self.setProperty("drag_active", False)
+        self.setStyleSheet(self.styleSheet().replace(" MainTab[drag_active='true'] { border: 2px dashed #4CAF50; }", ""))
+
+        if event.mimeData().hasUrls():
+            urls = event.mimeData().urls()
+            if urls:
+                file_path = Path(urls[0].toLocalFile())
+                self._handle_dropped_file(file_path)
+                event.acceptProposedAction()
+
+    def _handle_dropped_file(self, file_path: Path) -> None:
+        """Handle a dropped file, setting appropriate input/output paths."""
+        if file_path.is_dir():
+            # Directory dropped - set as input directory
+            if hasattr(self.main_window_ref, "in_dir_edit"):
+                self.main_window_ref.in_dir_edit.setText(str(file_path))
+                self.main_window_ref.in_dir = file_path
+                LOGGER.info("Input directory set via drag & drop: %s", file_path)
+
+                # Show notification using UpdateManager for batched updates
+                if hasattr(self.main_window_ref, "status_bar"):
+                    self.main_window_ref.status_bar.showMessage(f"Input directory: {file_path.name}", 3000)
+
+        elif file_path.suffix.lower() in {".mp4", ".avi", ".mov", ".mkv", ".webm"}:
+            # Video file dropped - set as output file
+            self.out_file_path = file_path
+            self.out_file_edit.setText(str(file_path))
+            LOGGER.info("Output file set via drag & drop: %s", file_path)
+
+            # Show notification
+            if hasattr(self.main_window_ref, "status_bar"):
+                self.main_window_ref.status_bar.showMessage(f"Output file: {file_path.name}", 3000)
+
+        elif file_path.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}:
+            # Image file dropped - set parent directory as input
+            parent_dir = file_path.parent
+            if hasattr(self.main_window_ref, "in_dir_edit"):
+                self.main_window_ref.in_dir_edit.setText(str(parent_dir))
+                self.main_window_ref.in_dir = parent_dir
+                LOGGER.info("Input directory set from image file via drag & drop: %s", parent_dir)
+
+                # Show notification
+                if hasattr(self.main_window_ref, "status_bar"):
+                    self.main_window_ref.status_bar.showMessage(f"Input directory: {parent_dir.name}", 3000)
+
+    def request_ui_update(self, update_type: str = "ui_state") -> None:
+        """Request a UI update through the UpdateManager.
+
+        Args:
+            update_type: Type of update to request (ui_state, preview, crop_buttons, start_button)
+        """
+        update_id = f"main_tab_{update_type}"
+        request_update(update_id)
 
     # --- Signal Handlers and UI Update Methods ---
 
@@ -998,7 +1121,9 @@ class MainTab(QWidget):
 
     def _enhance_preview_area(self) -> QGroupBox:
         """Create the group box containing the preview image labels."""
-        previews_group = WidgetFactory.create_group_box(self.tr("🖼️ Previews"))
+        previews_group = WidgetFactory.create_group_box(self.tr("Previews"))
+        # Add icon to group box title
+        previews_group.setStyleSheet("QGroupBox::title { padding-left: 24px; }")
         previews_layout = QHBoxLayout(previews_group)
         previews_layout.setContentsMargins(10, 15, 10, 10)
         previews_layout.setSpacing(10)
@@ -1035,7 +1160,9 @@ class MainTab(QWidget):
 
     def _create_processing_settings_group(self) -> QGroupBox:
         """Create the group box for general processing settings."""
-        group = WidgetFactory.create_group_box(self.tr("⚙️ Processing Settings"))
+        group = WidgetFactory.create_group_box(self.tr("Processing Settings"))
+        # Add icon to group box title
+        group.setStyleSheet("QGroupBox::title { padding-left: 24px; }")
         layout = QGridLayout(group)
         layout.setContentsMargins(10, 15, 10, 10)
         layout.setSpacing(8)
@@ -1686,157 +1813,214 @@ class MainTab(QWidget):
         return base_dir / f"{base_name}_output_{timestamp}.mp4"
 
     def _direct_start_handler(self) -> None:
-        """New simplified handler for the start button that directly calls main processing code.
+        """Simplified handler for the start button that directly calls main processing code.
 
         This handler is more reliable as it avoids complex signal connections and
         directly executes the processing workflow.
         """
-        LOGGER.info("DIRECT START HANDLER CALLED")
-        LOGGER.info("Enhanced start button handler called")
+        LOGGER.info("Direct start handler called")
 
-        # Always generate a fresh timestamped output path for each run
-        # If one already exists, parse it to extract the base parts
-        base_dir = None
-        base_name = None
-
-        if self.out_file_path:
-            # Extract directory and basename from existing path
-            base_dir = self.out_file_path.parent
-
-            # Try to extract the original name before the timestamp
-            filename = self.out_file_path.stem  # Get filename without extension
-            # Check if it matches pattern like "name_output_20230405_123456"
-            match = re.match(r"(.+?)_output_\d{8}_\d{6}", filename)
-            if match:
-                # Extract the original name
-                base_name = match.group(1)
-            # If no timestamp found, try to remove _output suffix
-            elif "_output" in filename:
-                base_name = filename.split("_output")[0]
-            else:
-                # Just use the whole name as base
-                base_name = filename
-
-        # Generate fresh path
-        fresh_output_path = self._generate_timestamped_output_path(base_dir, base_name)
-        self.out_file_path = fresh_output_path
-        self.out_file_edit.setText(str(fresh_output_path))
-        LOGGER.debug("Fresh timestamped output path: %s", fresh_output_path)
-
-        # Show notification if status bar exists
-        main_window = self.main_window_ref
-        if hasattr(main_window, "status_bar"):
-            main_window.status_bar.showMessage(f"Using output file: {fresh_output_path.name}", 5000)
-
-        # If somehow we still don't have a valid output path (very unlikely at this point)
-        if not self.out_file_path:
-            LOGGER.info("No output file selected - auto-generating default output path")
-
-            # Get input directory from main window
-            main_window = self.main_window_ref
-            current_in_dir = getattr(main_window, "in_dir", None)
-
-            if current_in_dir and current_in_dir.is_dir():
-                # Create a default output file path with timestamp to ensure uniqueness
-                from datetime import datetime
-
-                timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
-                default_output = current_in_dir.parent / f"{current_in_dir.name}_output_{timestamp}.mp4"
-                self.out_file_path = default_output
-                self.out_file_edit.setText(str(default_output))
-                LOGGER.debug("Timestamped output file set to: %s", default_output)
-
-                # Show a small notification in the status bar (don't block with a dialog)
-                if hasattr(main_window, "status_bar"):
-                    main_window.status_bar.showMessage(f"Auto-generated output file: {default_output.name}", 5000)
-            else:
-                LOGGER.error("Can't create default output - no input directory")
-                QMessageBox.warning(
-                    self,
-                    "Input Directory Required",
-                    "Please select a valid input directory first.",
-                )
+        try:
+            # Step 1: Ensure valid output path
+            if not self._ensure_valid_output_path():
                 return
 
-        # Get current state from main window
-        main_window = self.main_window_ref
-        current_in_dir = getattr(main_window, "in_dir", None)
+            # Step 2: Validate input directory and get image files
+            current_in_dir, image_files = self._validate_input_directory()
+            if not current_in_dir or not image_files:
+                return
 
-        # Verify we have an input directory
+            # Step 3: Prepare processing arguments
+            args = self._prepare_processing_arguments()
+            if not args:
+                return
+
+            # Step 4: Start the actual processing
+            self._execute_processing(args, current_in_dir, image_files)
+
+        except Exception as e:
+            LOGGER.exception("Error in direct start handler")
+            self._handle_start_error(e)
+
+    def _ensure_valid_output_path(self) -> bool:
+        """Ensure we have a valid output path, generating one if necessary.
+
+        Returns:
+            True if valid output path is available, False otherwise
+        """
+        # Generate fresh timestamped path if we have an existing one
+        if self.out_file_path:
+            base_dir, base_name = self._extract_output_path_components()
+            fresh_output_path = self._generate_timestamped_output_path(base_dir, base_name)
+            self._update_output_path_ui(fresh_output_path)
+            return True
+
+        # Generate default path if none exists
+        return self._generate_default_output_path()
+
+    def _extract_output_path_components(self) -> tuple[Path, str]:
+        """Extract directory and base name from existing output path.
+
+        Returns:
+            Tuple of (directory, base_name)
+        """
+        base_dir = self.out_file_path.parent
+        filename = self.out_file_path.stem
+
+        # Try to extract original name before timestamp
+        match = re.match(r"(.+?)_output_\d{8}_\d{6}", filename)
+        if match:
+            base_name = match.group(1)
+        elif "_output" in filename:
+            base_name = filename.split("_output")[0]
+        else:
+            base_name = filename
+
+        return base_dir, base_name
+
+    def _update_output_path_ui(self, output_path: Path) -> None:
+        """Update UI with new output path."""
+        self.out_file_path = output_path
+        self.out_file_edit.setText(str(output_path))
+        LOGGER.debug("Updated output path: %s", output_path)
+
+        # Show notification in status bar
+        main_window = self.main_window_ref
+        if hasattr(main_window, "status_bar"):
+            main_window.status_bar.showMessage(f"Using output file: {output_path.name}", 5000)
+
+    def _generate_default_output_path(self) -> bool:
+        """Generate a default output path when none exists.
+
+        Returns:
+            True if default path was generated successfully, False otherwise
+        """
+        LOGGER.info("No output file selected - auto-generating default output path")
+
+        current_in_dir = getattr(self.main_window_ref, "in_dir", None)
         if not current_in_dir or not current_in_dir.is_dir():
-            LOGGER.error("No valid input directory selected")
+            QMessageBox.warning(
+                self,
+                "Input Directory Required",
+                "Please select a valid input directory first.",
+            )
+            return False
+
+        # Create timestamped default output path
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+        default_output = current_in_dir.parent / f"{current_in_dir.name}_output_{timestamp}.mp4"
+        self._update_output_path_ui(default_output)
+
+        # Show notification
+        if hasattr(self.main_window_ref, "status_bar"):
+            self.main_window_ref.status_bar.showMessage(f"Auto-generated output file: {default_output.name}", 5000)
+
+        return True
+
+    def _validate_input_directory(self) -> tuple[Path | None, list[Path] | None]:
+        """Validate input directory and return image files.
+
+        Returns:
+            Tuple of (input_directory, image_files) or (None, None) if invalid
+        """
+        current_in_dir = getattr(self.main_window_ref, "in_dir", None)
+
+        # Check if directory exists
+        if not current_in_dir or not current_in_dir.is_dir():
             QMessageBox.warning(
                 self,
                 "Input Directory Required",
                 "Please select a valid input directory containing images.",
             )
-            return
+            return None, None
 
-        # Check for images in input directory
+        # Find image files
         try:
             image_files = sorted([
-                f for f in current_in_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+                f for f in current_in_dir.iterdir()
+                if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
             ])
 
             if not image_files:
-                LOGGER.warning("No image files found in %s", current_in_dir)
                 QMessageBox.warning(
                     self,
                     "No Images Found",
                     f"No image files found in {current_in_dir}.\nPlease select a directory with images.",
                 )
-                return
+                return None, None
 
             LOGGER.info("Found %d image files in %s", len(image_files), current_in_dir)
+            return current_in_dir, image_files
+
         except Exception as e:
             LOGGER.exception("Error checking for images")
             QMessageBox.critical(self, "Error", f"Error checking input directory: {e}")
-            return
+            return None, None
 
-        # Gather processing arguments
+    def _prepare_processing_arguments(self) -> dict | None:
+        """Prepare and validate processing arguments.
+
+        Returns:
+            Processing arguments dict or None if validation failed
+        """
         args = self.get_processing_args()
         if not args:
             LOGGER.error("Failed to generate processing arguments")
-            return  # Error message already shown by get_processing_args
+            return None
+        return args
 
+    def _execute_processing(self, args: dict, input_dir: Path, image_files: list[Path]) -> None:
+        """Execute the actual processing with the given arguments.
+
+        Args:
+            args: Processing arguments
+            input_dir: Input directory path
+            image_files: List of image file paths
+        """
         # Update UI to show processing started
         self.set_processing_state(True)
 
-        # Show processing confirmation to user
+        # Show processing confirmation
         QMessageBox.information(
             self,
             "Processing Started",
             f"Starting video processing with {len(image_files)} images.\n\n"
-            f"Input: {current_in_dir}\n"
+            f"Input: {input_dir}\n"
             f"Output: {self.out_file_path}",
         )
 
-        # Trigger processing via direct MainWindow method call
+        # Start processing
         try:
-            LOGGER.info("STARTING PROCESSING")
-            LOGGER.info("Starting processing via direct handler")
-
-            # Attempt direct emit of signal first
+            LOGGER.info("Starting processing")
             self.processing_started.emit(args)
 
             # Fallback to direct method call if needed
-            if hasattr(main_window, "_handle_processing"):
+            if hasattr(self.main_window_ref, "_handle_processing"):
                 LOGGER.debug("Calling main_window._handle_processing directly as fallback")
-                main_window._handle_processing(args)
+                self.main_window_ref._handle_processing(args)
 
             LOGGER.info("Processing started successfully")
 
-        except Exception as e:
-            LOGGER.exception("Error starting processing")
-            LOGGER.exception("Error in direct start handler")
+        except Exception:
             self.set_processing_state(False)  # Reset UI state
+            raise  # Re-raise to be handled by caller
 
-            # Show detailed error to user
-            error_details = f"An error occurred: {e}\n\n"
-            error_details += f"Input dir: {current_in_dir}\n"
-            error_details += f"Output file: {self.out_file_path}\n"
+    def _handle_start_error(self, error: Exception) -> None:
+        """Handle errors that occur during processing start.
 
-            QMessageBox.critical(self, "Error Starting Process", error_details)
+        Args:
+            error: The exception that occurred
+        """
+        LOGGER.error("Error starting processing")
+        self.set_processing_state(False)  # Reset UI state
+
+        # Show detailed error to user
+        current_in_dir = getattr(self.main_window_ref, "in_dir", "Unknown")
+        error_details = f"An error occurred: {error}\n\n"
+        error_details += f"Input dir: {current_in_dir}\n"
+        error_details += f"Output file: {self.out_file_path}\n"
+
+        QMessageBox.critical(self, "Error Starting Process", error_details)
 
     def _direct_start(self) -> None:
         """Original direct handler for start button click."""
@@ -2143,12 +2327,43 @@ class MainTab(QWidget):
         LOGGER.debug("Populating RIFE models...")
         self.rife_model_combo.clear()
         self.available_models.clear()
-        project_root = config.get_project_root()
+
+        try:
+            # Step 1: Load cached analysis
+            cached_analysis = self._load_model_analysis_cache()
+
+            # Step 2: Get available models
+            found_models = self._get_available_models()
+            if not found_models:
+                return
+
+            # Step 3: Process each model
+            needs_cache_update = self._process_models(found_models, cached_analysis)
+
+            # Step 4: Save cache if needed
+            if needs_cache_update:
+                self._save_model_analysis_cache(cached_analysis)
+
+            # Step 5: Restore last selected model
+            self._restore_selected_model()
+
+            # Step 6: Update UI
+            self._finalize_model_population()
+
+        except Exception:
+            LOGGER.exception("Error populating models")
+            self._handle_model_population_error()
+
+    def _load_model_analysis_cache(self) -> dict[str, RIFEModelDetails]:
+        """Load cached model analysis from file.
+
+        Returns:
+            Dictionary of cached analysis results
+        """
         cache_dir = get_cache_dir()
         analysis_cache_file = cache_dir / "rife_analysis_cache.json"
-
-        # Load cached analysis if available
         cached_analysis: dict[str, RIFEModelDetails] = {}
+
         if analysis_cache_file.exists():
             try:
                 with open(analysis_cache_file, encoding="utf-8") as f:
@@ -2157,84 +2372,153 @@ class MainTab(QWidget):
             except Exception as e:
                 LOGGER.warning("Failed to load RIFE analysis cache: %s", e)
 
+        return cached_analysis
+
+    def _get_available_models(self) -> list[str]:
+        """Get list of available RIFE models.
+
+        Returns:
+            List of model names, or empty list if none found
+        """
         found_models = get_available_rife_models()
+
         if not found_models:
             LOGGER.warning("No RIFE models found in the 'models' directory.")
             self.rife_model_combo.addItem("No Models Found", userData=None)
             self.rife_model_combo.setEnabled(False)
-            return
+            return []
 
         self.rife_model_combo.setEnabled(True)
+        return found_models
+
+    def _process_models(self, found_models: list[str], cached_analysis: dict[str, RIFEModelDetails]) -> bool:
+        """Process each found model and add to combo box.
+
+        Args:
+            found_models: List of model names to process
+            cached_analysis: Cache of previous analysis results
+
+        Returns:
+            True if cache needs updating, False otherwise
+        """
         needs_cache_update = False
-        for key in found_models:  # Iterate directly over the list of model names
+        project_root = config.get_project_root()
+
+        for key in found_models:
             model_dir = project_root / "models" / key
-            rife_exe = config.find_rife_executable(key)  # Pass model key (string) not directory (Path)
+            rife_exe = config.find_rife_executable(key)
+
             if not rife_exe:
                 LOGGER.warning("RIFE executable not found for model %r in %s", key, model_dir)
                 continue
 
-            exe_path_str = str(rife_exe)
-            exe_mtime = os.path.getmtime(rife_exe)
+            # Get or analyze model details
+            details, cache_updated = self._get_model_details(key, rife_exe, cached_analysis)
+            if cache_updated:
+                needs_cache_update = True
 
-            # Check cache
-            if exe_path_str in cached_analysis and cached_analysis[exe_path_str].get("_mtime") == exe_mtime:
-                LOGGER.debug("Using cached analysis for %s (%s)", key, rife_exe.name)
-                details = cached_analysis[exe_path_str]
-            else:
-                LOGGER.info("Analyzing RIFE executable for model %r: %s", key, rife_exe)
-                try:
-                    # Cast the result to the TypedDict
-                    details_raw = analyze_rife_executable(rife_exe)
-                    details = cast("RIFEModelDetails", details_raw)
-                    details["_mtime"] = exe_mtime  # Store modification time for cache validation
-                    cached_analysis[exe_path_str] = details  # Update cache entry
-                    needs_cache_update = True
-                    LOGGER.debug("Analysis complete for %s. Capabilities: %s", key, details.get("capabilities"))
-                except Exception as e:
-                    LOGGER.exception("Failed to analyze RIFE executable for model %r", key)
-                    # Ensure the error dictionary conforms to the TypedDict structure
-                    # (even if values are defaults/errors)
-                    details = cast(
-                        "RIFEModelDetails",
-                        {
-                            "version": "Error",
-                            "capabilities": {},
-                            "supported_args": [],
-                            "help_text": f"Error: {e}",
-                            "_mtime": exe_mtime,
-                        },
-                    )
-                    cached_analysis[exe_path_str] = details  # Cache error state too
-                    needs_cache_update = True
-
+            # Add to available models and combo box
             self.available_models[key] = details
-            display_name = f"{key} (v{details.get('version', 'Unknown')})"
-            if details.get("version") == "Error":
-                display_name = f"{key} (Analysis Error)"
-            self.rife_model_combo.addItem(display_name, userData=key)
+            self._add_model_to_combo(key, details)
 
-        # Save updated cache
-        if needs_cache_update:
-            try:
-                os.makedirs(cache_dir, exist_ok=True)
-                with open(analysis_cache_file, "w", encoding="utf-8") as f:
-                    json.dump(cached_analysis, f, indent=4)
-                LOGGER.debug("Saved updated RIFE analysis cache to %s", analysis_cache_file)
-            except Exception as e:
-                LOGGER.warning("Failed to save RIFE analysis cache: %s", e)
+        return needs_cache_update
 
-        # Try to restore last selected model
-        last_model_key = self.settings.value("rife/modelKey", "rife-v4.6", type=str)
+    def _get_model_details(self, key: str, rife_exe: Path, cached_analysis: dict[str, RIFEModelDetails]) -> tuple[RIFEModelDetails, bool]:
+        """Get model details from cache or by analysis.
+
+        Args:
+            key: Model key/name
+            rife_exe: Path to RIFE executable
+            cached_analysis: Cache dictionary
+
+        Returns:
+            Tuple of (model_details, cache_was_updated)
+        """
+        exe_path_str = str(rife_exe)
+        exe_mtime = os.path.getmtime(rife_exe)
+
+        # Check cache first
+        if exe_path_str in cached_analysis and cached_analysis[exe_path_str].get("_mtime") == exe_mtime:
+            LOGGER.debug("Using cached analysis for %s (%s)", key, rife_exe.name)
+            return cached_analysis[exe_path_str], False
+
+        # Analyze executable
+        LOGGER.info("Analyzing RIFE executable for model %r: %s", key, rife_exe)
+        try:
+            details_raw = analyze_rife_executable(rife_exe)
+            details = cast("RIFEModelDetails", details_raw)
+            details["_mtime"] = exe_mtime
+            cached_analysis[exe_path_str] = details
+            LOGGER.debug("Analysis complete for %s. Capabilities: %s", key, details.get("capabilities"))
+            return details, True
+
+        except Exception as e:
+            LOGGER.exception("Failed to analyze RIFE executable for model %r", key)
+            error_details = cast(
+                "RIFEModelDetails",
+                {
+                    "version": "Error",
+                    "capabilities": {},
+                    "supported_args": [],
+                    "help_text": f"Error: {e}",
+                    "_mtime": exe_mtime,
+                },
+            )
+            cached_analysis[exe_path_str] = error_details
+            return error_details, True
+
+    def _add_model_to_combo(self, key: str, details: RIFEModelDetails) -> None:
+        """Add a model to the combo box with appropriate display name.
+
+        Args:
+            key: Model key/name
+            details: Model analysis details
+        """
+        display_name = f"{key} (v{details.get('version', 'Unknown')})"
+        if details.get("version") == "Error":
+            display_name = f"{key} (Analysis Error)"
+        self.rife_model_combo.addItem(display_name, userData=key)
+
+    def _save_model_analysis_cache(self, cached_analysis: dict[str, RIFEModelDetails]) -> None:
+        """Save updated model analysis cache to file.
+
+        Args:
+            cached_analysis: Cache dictionary to save
+        """
+        try:
+            cache_dir = get_cache_dir()
+            analysis_cache_file = cache_dir / "rife_analysis_cache.json"
+            os.makedirs(cache_dir, exist_ok=True)
+
+            with open(analysis_cache_file, "w", encoding="utf-8") as f:
+                json.dump(cached_analysis, f, indent=4)
+            LOGGER.debug("Saved updated RIFE analysis cache to %s", analysis_cache_file)
+
+        except Exception as e:
+            LOGGER.warning("Failed to save RIFE analysis cache: %s", e)
+
+    def _restore_selected_model(self) -> None:
+        """Restore the last selected model from settings."""
+        last_model_key = self.tab_settings.get_model_key()
         index = self.rife_model_combo.findData(last_model_key)
+
         if index != -1:
             self.rife_model_combo.setCurrentIndex(index)
             LOGGER.debug("Restored last selected RIFE model: %s", last_model_key)
         elif self.rife_model_combo.count() > 0:
-            self.rife_model_combo.setCurrentIndex(0)  # Select first available if last not found
+            self.rife_model_combo.setCurrentIndex(0)
             LOGGER.debug("Last selected RIFE model not found, selecting first available.")
 
-        self._update_rife_ui_elements()  # Update UI based on the initially selected model
-        self._update_start_button_state()  # Update start button state
+    def _finalize_model_population(self) -> None:
+        """Finalize model population by updating UI elements."""
+        self._update_rife_ui_elements()
+        self._update_start_button_state()
+
+    def _handle_model_population_error(self) -> None:
+        """Handle errors during model population."""
+        self.rife_model_combo.clear()
+        self.rife_model_combo.addItem("Error Loading Models", userData=None)
+        self.rife_model_combo.setEnabled(False)
 
     def _on_model_selected(self, index: int) -> None:
         """Handle selection changes in the RIFE model combo box."""
@@ -2486,7 +2770,7 @@ class MainTab(QWidget):
         LOGGER.debug("Loading input directory path...")
 
         try:
-            in_dir_str = self.settings.value("paths/inputDirectory", "", type=str)
+            in_dir_str = self.tab_settings.get_input_directory()
             LOGGER.debug("Raw input directory from settings: %r", in_dir_str)
 
             loaded_in_dir = MainTab._resolve_input_directory_path(in_dir_str)
@@ -2558,7 +2842,7 @@ class MainTab(QWidget):
     def _load_output_file_setting(self) -> None:
         """Load output file setting with fallback logic."""
         LOGGER.debug("Loading output file path...")
-        out_file_str = self.settings.value("paths/outputFile", "", type=str)
+        out_file_str = self.tab_settings.get_output_file()
         LOGGER.debug("Raw output file from settings: %r", out_file_str)
 
         if not out_file_str:
@@ -2593,70 +2877,68 @@ class MainTab(QWidget):
         """Load processing-related settings."""
         LOGGER.debug("Loading processing settings...")
 
-        fps_value = self.settings.value("processing/fps", 60, type=int)
-        LOGGER.debug("Setting FPS: %s", fps_value)
-        self.fps_spinbox.setValue(fps_value)
+        # Load all processing settings at once using batch operation
+        settings = self.tab_settings.load_all_processing_settings()
 
-        multiplier_value = self.settings.value("processing/multiplier", 2, type=int)
-        LOGGER.debug("Setting multiplier: %s", multiplier_value)
-        self.mid_count_spinbox.setValue(multiplier_value)
+        LOGGER.debug("Setting FPS: %s", settings["fps"])
+        self.fps_spinbox.setValue(settings["fps"])
 
-        cpu_cores = os.cpu_count()
-        default_workers = max(1, cpu_cores // 2) if cpu_cores else 1
-        max_workers_value = self.settings.value("processing/maxWorkers", default_workers, type=int)
-        LOGGER.debug("Setting max workers: %s (default was %s)", max_workers_value, default_workers)
-        self.max_workers_spinbox.setValue(max_workers_value)
+        LOGGER.debug("Setting multiplier: %s", settings["multiplier"])
+        self.mid_count_spinbox.setValue(settings["multiplier"])
 
-        encoder_value = self.settings.value("processing/encoder", "RIFE", type=str)
-        LOGGER.debug("Setting encoder: %s", encoder_value)
-        self.encoder_combo.setCurrentText(encoder_value)
+        LOGGER.debug("Setting max workers: %s", settings["max_workers"])
+        self.max_workers_spinbox.setValue(settings["max_workers"])
+
+        LOGGER.debug("Setting encoder: %s", settings["encoder"])
+        self.encoder_combo.setCurrentText(settings["encoder"])
 
     def _load_rife_settings(self) -> None:
         """Load RIFE-specific settings."""
         LOGGER.debug("Loading RIFE options...")
 
-        # Load boolean settings with proper conversion
-        tile_enabled = self._load_boolean_setting("rife/tilingEnabled", False)
-        LOGGER.debug("Setting tiling enabled: %s", tile_enabled)
-        self.rife_tile_checkbox.setChecked(tile_enabled)
+        # Load all RIFE settings at once using batch operation
+        rife_settings = self.tab_settings.load_all_rife_settings()
 
-        tile_size_value = self.settings.value("rife/tileSize", 256, type=int)
-        LOGGER.debug("Setting tile size: %s", tile_size_value)
-        self.rife_tile_size_spinbox.setValue(tile_size_value)
+        LOGGER.debug("Setting model key: %s", rife_settings["model_key"])
+        # Note: model key is handled separately in _populate_models method
 
-        uhd_mode = self._load_boolean_setting("rife/uhdMode", False)
-        LOGGER.debug("Setting UHD mode: %s", uhd_mode)
-        self.rife_uhd_checkbox.setChecked(uhd_mode)
+        LOGGER.debug("Setting tiling enabled: %s", rife_settings["tiling_enabled"])
+        self.rife_tile_checkbox.setChecked(rife_settings["tiling_enabled"])
 
-        thread_spec_value = self.settings.value("rife/threadSpec", "", type=str)
-        LOGGER.debug("Setting thread spec: %r", thread_spec_value)
-        self.rife_thread_spec_edit.setText(thread_spec_value)
+        LOGGER.debug("Setting tile size: %s", rife_settings["tile_size"])
+        self.rife_tile_size_spinbox.setValue(rife_settings["tile_size"])
 
-        tta_spatial = self._load_boolean_setting("rife/ttaSpatial", False)
-        LOGGER.debug("Setting TTA spatial: %s", tta_spatial)
-        self.rife_tta_spatial_checkbox.setChecked(tta_spatial)
+        LOGGER.debug("Setting UHD mode: %s", rife_settings["uhd_mode"])
+        self.rife_uhd_checkbox.setChecked(rife_settings["uhd_mode"])
 
-        tta_temporal = self._load_boolean_setting("rife/ttaTemporal", False)
-        LOGGER.debug("Setting TTA temporal: %s", tta_temporal)
-        self.rife_tta_temporal_checkbox.setChecked(tta_temporal)
+        LOGGER.debug("Setting thread spec: %r", rife_settings["thread_spec"])
+        self.rife_thread_spec_edit.setText(rife_settings["thread_spec"])
+
+        LOGGER.debug("Setting TTA spatial: %s", rife_settings["tta_spatial"])
+        self.rife_tta_spatial_checkbox.setChecked(rife_settings["tta_spatial"])
+
+        LOGGER.debug("Setting TTA temporal: %s", rife_settings["tta_temporal"])
+        self.rife_tta_temporal_checkbox.setChecked(rife_settings["tta_temporal"])
 
     def _load_sanchez_settings(self) -> None:
         """Load Sanchez-specific settings."""
         LOGGER.debug("Loading Sanchez options...")
 
-        false_color = self._load_boolean_setting("sanchez/falseColorEnabled", False)
-        LOGGER.debug("Setting false color: %s", false_color)
-        self.sanchez_false_colour_checkbox.setChecked(false_color)
+        # Load all Sanchez settings at once using batch operation
+        sanchez_settings = self.tab_settings.load_all_sanchez_settings()
 
-        res_km_value = self.settings.value("sanchez/resolutionKm", "4", type=str)
-        LOGGER.debug("Setting resolution km: %r", res_km_value)
+        LOGGER.debug("Setting false color: %s", sanchez_settings["false_color_enabled"])
+        self.sanchez_false_colour_checkbox.setChecked(sanchez_settings["false_color_enabled"])
+
+        LOGGER.debug("Setting resolution km: %r", sanchez_settings["resolution_km"])
+        # Note: Resolution km UI update handled in sanchez combo update method
 
     def _load_crop_settings(self, main_window: QObject) -> None:
         """Load crop rectangle settings."""
         LOGGER.debug("Loading crop rectangle...")
 
         try:
-            crop_rect_str = self.settings.value("preview/cropRectangle", "", type=str)
+            crop_rect_str = self.tab_settings.get_crop_rectangle()
             LOGGER.debug("Raw crop rectangle from settings: %r", crop_rect_str)
 
             loaded_crop_rect = MainTab._parse_crop_rectangle(crop_rect_str)
@@ -2699,7 +2981,7 @@ class MainTab(QWidget):
 
     def _load_boolean_setting(self, key: str, default: bool) -> bool:
         """Load boolean setting with proper type conversion."""
-        raw_value = self.settings.value(key, default)
+        raw_value = self.tab_settings.get_value(key, default, bool)
 
         if isinstance(raw_value, bool):
             return raw_value
@@ -2725,157 +3007,189 @@ class MainTab(QWidget):
         LOGGER.debug("MainTab: Saving settings...")
 
         # Debug settings storage before saving
-        org_name = self.settings.organizationName()
-        app_name = self.settings.applicationName()
-        filename = self.settings.fileName()
-        LOGGER.debug("QSettings save details: org=%s, app=%s, file=%s", org_name, app_name, filename)
-
+        self._log_settings_debug_info()
         main_window = self.parent()
 
         try:
-            # --- Save Paths ---
-            LOGGER.debug("Saving path settings...")
-
-            # First, save directly from the text field - this ensures even the most recent changes are saved
-            # even if they haven't been processed by MainWindow yet
-            in_dir_text = self.in_dir_edit.text().strip()
-            if in_dir_text:
-                try:
-                    text_dir_path = Path(in_dir_text)
-                    if text_dir_path.exists() and text_dir_path.is_dir():
-                        LOGGER.debug("Saving input directory from text field: %r", text_dir_path)
-                        in_dir_str = str(text_dir_path.resolve())
-                        self.settings.setValue("paths/inputDirectory", in_dir_str)
-                        self.settings.setValue("inputDir", in_dir_str)  # Alternate key for redundancy
-                        self.settings.sync()  # Force immediate sync
-                except Exception:
-                    LOGGER.exception("Error saving input directory from text field")
-
-            # Then also try to save from MainWindow's state as a backup
-            current_in_dir = getattr(main_window, "in_dir", None)
-            LOGGER.debug("Got input directory from main window: %s", current_in_dir)
-
-            if current_in_dir:
-                # Get absolute path to ensure it can be restored reliably
-                try:
-                    in_dir_str = str(current_in_dir.resolve())
-                    LOGGER.debug("Saving input directory from MainWindow (absolute): %r", in_dir_str)
-                    self.settings.setValue("paths/inputDirectory", in_dir_str)
-                    self.settings.setValue("inputDir", in_dir_str)  # Alternate key for redundancy
-                    # Force immediate sync after saving this critical value
-                    self.settings.sync()
-                except Exception:
-                    LOGGER.exception("Failed to resolve absolute path for input directory")
-            elif not in_dir_text:
-                LOGGER.debug("No input directory to save (None/empty)")
-                # We don't remove it so we can restore the last value - safer for users
-                # self.settings.remove("paths/inputDirectory") # Clear if None
-
-            # Save output file (still managed locally in MainTab) - ensure we use absolute paths
-            if self.out_file_path:
-                try:
-                    out_file_str = str(self.out_file_path.resolve())
-                    LOGGER.debug("Saving output file path (absolute): %r", out_file_str)
-                    self.settings.setValue("paths/outputFile", out_file_str)
-                except Exception:
-                    LOGGER.exception("Failed to resolve absolute path for output file")
-                    # Fall back to regular path string
-                    out_file_str = str(self.out_file_path)
-                    LOGGER.debug("Saving output file path (non-resolved): %r", out_file_str)
-                    self.settings.setValue("paths/outputFile", out_file_str)
-            else:
-                LOGGER.debug("Removing output file setting (None/empty)")
-                self.settings.remove("paths/outputFile")
-
-            # --- Save Processing Settings ---
-            LOGGER.debug("Saving processing settings...")
-            fps_value = self.fps_spinbox.value()
-            LOGGER.debug("Saving FPS: %s", fps_value)
-            self.settings.setValue("processing/fps", fps_value)
-
-            multiplier_value = self.mid_count_spinbox.value()
-            LOGGER.debug("Saving multiplier: %s", multiplier_value)
-            self.settings.setValue("processing/multiplier", multiplier_value)
-
-            max_workers_value = self.max_workers_spinbox.value()
-            LOGGER.debug("Saving max workers: %s", max_workers_value)
-            self.settings.setValue("processing/maxWorkers", max_workers_value)
-
-            encoder_value = self.encoder_combo.currentText()
-            model_key = self.rife_model_combo.currentData()
-            LOGGER.debug("Saving encoder: '%s' with model: %r", encoder_value, model_key)
-            self.settings.setValue("rife/modelKey", model_key)  # Save model key
-
-            tile_enabled = self.rife_tile_checkbox.isChecked()
-            LOGGER.debug("Saving tiling enabled: %s", tile_enabled)
-            self.settings.setValue("rife/tilingEnabled", tile_enabled)
-
-            tile_size = self.rife_tile_size_spinbox.value()
-            LOGGER.debug("Saving tile size: %s", tile_size)
-            self.settings.setValue("rife/tileSize", tile_size)
-
-            uhd_mode = self.rife_uhd_checkbox.isChecked()
-            LOGGER.debug("Saving UHD mode: %s", uhd_mode)
-            self.settings.setValue("rife/uhdMode", uhd_mode)
-
-            thread_spec = self.rife_thread_spec_edit.text()
-            LOGGER.debug("Saving thread spec: %r", thread_spec)
-            self.settings.setValue("rife/threadSpec", thread_spec)
-
-            tta_spatial = self.rife_tta_spatial_checkbox.isChecked()
-            LOGGER.debug("Saving TTA spatial: %s", tta_spatial)
-            self.settings.setValue("rife/ttaSpatial", tta_spatial)
-
-            tta_temporal = self.rife_tta_temporal_checkbox.isChecked()
-            LOGGER.debug("Saving TTA temporal: %s", tta_temporal)
-            self.settings.setValue("rife/ttaTemporal", tta_temporal)
-
-            # --- Save Sanchez Options ---
-            LOGGER.debug("Saving Sanchez options...")
-
-            false_color = self.sanchez_false_colour_checkbox.isChecked()
-            LOGGER.debug("Saving false color enabled: %s", false_color)
-            self.settings.setValue("sanchez/falseColorEnabled", false_color)
-
-            res_km = self.sanchez_res_combo.currentText()
-            LOGGER.debug("Saving resolution km: %r", res_km)
-            self.settings.setValue("sanchez/resolutionKm", res_km)
-
-            # --- Save Crop State from MainWindow's state ---
-            LOGGER.debug("Saving crop rectangle...")
-            current_crop_rect_mw = getattr(main_window, "current_crop_rect", None)
-            LOGGER.debug("Got crop rectangle from main window: %s", current_crop_rect_mw)
-
-            if current_crop_rect_mw:
-                rect_str = ",".join(map(str, current_crop_rect_mw))
-                LOGGER.debug("Saving crop rectangle: '%s'", rect_str)
-                self.settings.setValue("preview/cropRectangle", rect_str)
-                self.settings.setValue("cropRect", rect_str)  # Alternate key for redundancy
-            else:
-                LOGGER.debug("No crop rectangle to save (None/empty)")
-                # We don't remove it so we can restore the last value - safer for users
-                # self.settings.remove("preview/cropRectangle")
+            self._save_path_settings(main_window)
+            self._save_processing_settings()
+            self._save_rife_settings()
+            self._save_sanchez_settings()
+            self._save_crop_settings(main_window)
 
             # Force settings to sync to disk
             self.settings.sync()
             LOGGER.info("MainTab: Settings saved successfully.")
 
-            # Verify saved settings after sync
-            try:
-                # Check if input directory was actually saved
-                saved_in_dir = self.settings.value("paths/inputDirectory", "", type=str)
-                LOGGER.debug("Verification - Saved input directory: '%s'", saved_in_dir)
-
-                # Check if crop rectangle was actually saved
-                saved_crop_rect = self.settings.value("preview/cropRectangle", "", type=str)
-                LOGGER.debug("Verification - Saved crop rectangle: '%s'", saved_crop_rect)
-
-                # List all keys again to verify
-                all_keys_after = self.settings.allKeys()
-                LOGGER.debug("Verification - Settings keys after save: %s", all_keys_after)
-            except Exception:
-                LOGGER.exception("Error verifying saved settings")
+            self._verify_saved_settings()
 
         except Exception:
             LOGGER.exception("Error saving settings")
             # Continue without failing - don't crash the app if settings saving fails
+
+    def _log_settings_debug_info(self) -> None:
+        """Log debug information about settings storage."""
+        org_name = self.settings.organizationName()
+        app_name = self.settings.applicationName()
+        filename = self.settings.fileName()
+        LOGGER.debug("QSettings save details: org=%s, app=%s, file=%s", org_name, app_name, filename)
+
+    def _save_path_settings(self, main_window: QObject) -> None:
+        """Save file and directory path settings."""
+        LOGGER.debug("Saving path settings...")
+
+        # Save input directory from text field first
+        self._save_input_directory_from_text()
+
+        # Save input directory from MainWindow state as backup
+        self._save_input_directory_from_window(main_window)
+
+        # Save output file path
+        self._save_output_file_path()
+
+    def _save_input_directory_from_text(self) -> None:
+        """Save input directory from the text field."""
+        in_dir_text = self.in_dir_edit.text().strip()
+        if in_dir_text:
+            try:
+                text_dir_path = Path(in_dir_text)
+                if text_dir_path.exists() and text_dir_path.is_dir():
+                    LOGGER.debug("Saving input directory from text field: %r", text_dir_path)
+                    in_dir_str = str(text_dir_path.resolve())
+                    self.tab_settings.set_input_directory(in_dir_str)
+                    self.settings.sync()  # Force immediate sync
+            except Exception:
+                LOGGER.exception("Error saving input directory from text field")
+
+    def _save_input_directory_from_window(self, main_window: QObject) -> None:
+        """Save input directory from MainWindow state."""
+        current_in_dir = getattr(main_window, "in_dir", None)
+        LOGGER.debug("Got input directory from main window: %s", current_in_dir)
+
+        if current_in_dir:
+            try:
+                in_dir_str = str(current_in_dir.resolve())
+                LOGGER.debug("Saving input directory from MainWindow (absolute): %r", in_dir_str)
+                self.tab_settings.set_input_directory(in_dir_str)
+                self.settings.sync()
+            except Exception:
+                LOGGER.exception("Failed to resolve absolute path for input directory")
+        else:
+            LOGGER.debug("No input directory to save (None/empty)")
+
+    def _save_output_file_path(self) -> None:
+        """Save output file path setting."""
+        if self.out_file_path:
+            try:
+                out_file_str = str(self.out_file_path.resolve())
+                LOGGER.debug("Saving output file path (absolute): %r", out_file_str)
+                self.tab_settings.set_output_file(out_file_str)
+            except Exception:
+                LOGGER.exception("Failed to resolve absolute path for output file")
+                # Fall back to regular path string
+                out_file_str = str(self.out_file_path)
+                LOGGER.debug("Saving output file path (non-resolved): %r", out_file_str)
+                self.tab_settings.set_output_file(out_file_str)
+        else:
+            LOGGER.debug("Removing output file setting (None/empty)")
+            self.tab_settings.set_output_file("")
+
+    def _save_processing_settings(self) -> None:
+        """Save processing-related settings."""
+        LOGGER.debug("Saving processing settings...")
+
+        fps_value = self.fps_spinbox.value()
+        multiplier_value = self.mid_count_spinbox.value()
+        max_workers_value = self.max_workers_spinbox.value()
+        encoder_value = self.encoder_combo.currentText()
+
+        LOGGER.debug("Saving FPS: %s, multiplier: %s, max_workers: %s, encoder: %s",
+                    fps_value, multiplier_value, max_workers_value, encoder_value)
+
+        # Use batch operation for efficiency
+        self.tab_settings.save_all_processing_settings(
+            fps=fps_value,
+            multiplier=multiplier_value,
+            max_workers=max_workers_value,
+            encoder=encoder_value
+        )
+
+        # Save model key separately (part of RIFE settings)
+        model_key = self.rife_model_combo.currentData()
+        LOGGER.debug("Saving model key: %r", model_key)
+        self.tab_settings.set_model_key(model_key or "")
+
+    def _save_rife_settings(self) -> None:
+        """Save RIFE-specific settings."""
+        tile_enabled = self.rife_tile_checkbox.isChecked()
+        tile_size = self.rife_tile_size_spinbox.value()
+        uhd_mode = self.rife_uhd_checkbox.isChecked()
+        thread_spec = self.rife_thread_spec_edit.text()
+        tta_spatial = self.rife_tta_spatial_checkbox.isChecked()
+        tta_temporal = self.rife_tta_temporal_checkbox.isChecked()
+        model_key = self.rife_model_combo.currentData() or ""
+
+        LOGGER.debug("Saving RIFE settings - tiling: %s, tile_size: %s, uhd: %s, thread_spec: %r, tta_spatial: %s, tta_temporal: %s",
+                    tile_enabled, tile_size, uhd_mode, thread_spec, tta_spatial, tta_temporal)
+
+        # Use batch operation for efficiency
+        self.tab_settings.save_all_rife_settings(
+            model_key=model_key,
+            tile_enabled=tile_enabled,
+            tile_size=tile_size,
+            uhd_mode=uhd_mode,
+            thread_spec=thread_spec,
+            tta_spatial=tta_spatial,
+            tta_temporal=tta_temporal
+        )
+
+    def _save_sanchez_settings(self) -> None:
+        """Save Sanchez-specific settings."""
+        LOGGER.debug("Saving Sanchez options...")
+
+        false_color = self.sanchez_false_colour_checkbox.isChecked()
+        res_km = self.sanchez_res_combo.currentText()
+
+        LOGGER.debug("Saving false color: %s, resolution km: %r", false_color, res_km)
+
+        # Use batch operation for efficiency
+        self.tab_settings.save_all_sanchez_settings(
+            false_color=false_color,
+            res_km=res_km
+        )
+
+    def _save_crop_settings(self, main_window: QObject) -> None:
+        """Save crop rectangle settings."""
+        LOGGER.debug("Saving crop rectangle...")
+        current_crop_rect_mw = getattr(main_window, "current_crop_rect", None)
+        LOGGER.debug("Got crop rectangle from main window: %s", current_crop_rect_mw)
+
+        if current_crop_rect_mw:
+            rect_str = ",".join(map(str, current_crop_rect_mw))
+            LOGGER.debug("Saving crop rectangle: '%s'", rect_str)
+            self.tab_settings.set_crop_rectangle(rect_str)
+        else:
+            LOGGER.debug("No crop rectangle to save (None/empty)")
+            self.tab_settings.set_crop_rectangle("")
+
+    def _verify_saved_settings(self) -> None:
+        """Verify that settings were actually saved correctly."""
+        try:
+            # Check if input directory was actually saved
+            saved_in_dir = self.tab_settings.get_input_directory()
+            LOGGER.debug("Verification - Saved input directory: '%s'", saved_in_dir)
+
+            # Check if crop rectangle was actually saved
+            saved_crop_rect = self.tab_settings.get_crop_rectangle()
+            LOGGER.debug("Verification - Saved crop rectangle: '%s'", saved_crop_rect)
+
+            # Check some processing settings
+            saved_fps = self.tab_settings.get_fps()
+            saved_encoder = self.tab_settings.get_encoder()
+            LOGGER.debug("Verification - Saved FPS: %s, encoder: '%s'", saved_fps, saved_encoder)
+
+            # List all keys again to verify
+            all_keys_after = self.settings.allKeys()
+            LOGGER.debug("Verification - Settings keys after save: %s", all_keys_after)
+        except Exception:
+            LOGGER.exception("Error verifying saved settings")

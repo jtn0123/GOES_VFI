@@ -16,13 +16,13 @@ import pytest
 # Add the project root to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from goesvfi.utils.rife_analyzer import (  # noqa: E402
+from goesvfi.utils.rife_analyzer import (
     RifeCapabilityDetector,
     RifeCommandBuilder,
 )
 
 # Import the mock utility
-from tests.utils.mocks import create_mock_subprocess_run  # noqa: E402
+from tests.utils.mocks import create_mock_subprocess_run
 
 # Sample help text for different RIFE CLI versions
 SAMPLE_HELP_TEXT_FULL = """
@@ -70,7 +70,7 @@ class TestRifeCapabilityDetector:
     """Test the RifeCapabilityDetector class."""
 
     @patch("goesvfi.utils.rife_analyzer.subprocess.run")  # Patch run within the module
-    def test_detect_capabilities_full(self, mock_run_patch, tmp_path):
+    def test_detect_capabilities_full(self, mock_run_patch, tmp_path) -> None:
         """Test capability detection with full-featured RIFE CLI."""
         # Use tmp_path fixture for dummy executable
         dummy_exe_path = tmp_path / "rife-cli"
@@ -100,7 +100,7 @@ class TestRifeCapabilityDetector:
         mock_run_patch.assert_called_once()
 
     @patch("goesvfi.utils.rife_analyzer.subprocess.run")  # Patch run within the module
-    def test_detect_capabilities_basic(self, mock_run_patch, tmp_path):
+    def test_detect_capabilities_basic(self, mock_run_patch, tmp_path) -> None:
         """Test capability detection with basic RIFE CLI."""
         # Use tmp_path fixture for dummy executable
         dummy_exe_path = tmp_path / "rife-cli"
@@ -130,7 +130,7 @@ class TestRifeCapabilityDetector:
         mock_run_patch.assert_called_once()
 
     @patch("goesvfi.utils.rife_analyzer.subprocess.run")  # Patch run within the module
-    def test_version_detection(self, mock_run_patch, tmp_path):
+    def test_version_detection(self, mock_run_patch, tmp_path) -> None:
         """Test version detection."""
         # Use tmp_path fixture for dummy executable
         dummy_exe_path = tmp_path / "rife-cli"
@@ -152,7 +152,7 @@ class TestRifeCapabilityDetector:
         mock_run_patch.assert_called_once()
 
     @patch("goesvfi.utils.rife_analyzer.subprocess.run")  # Patch run within the module
-    def test_detection_failure(self, mock_run_patch, tmp_path, caplog):
+    def test_detection_failure(self, mock_run_patch, tmp_path, caplog) -> None:
         """Test handling of subprocess failure during detection."""
         # Use tmp_path fixture for dummy executable
         dummy_exe_path = tmp_path / "rife-cli"
@@ -178,10 +178,8 @@ class TestRifeCapabilityDetector:
         def help_side_effect(*args, **kwargs):
             cmd_list = args[0]
             if cmd_list == expected_cmd_help:
-                print("Mocking --help failure")
                 return failing_mock_factory(*args, **kwargs)
-            elif cmd_list == expected_cmd_h:
-                print("Mocking -h failure")
+            if cmd_list == expected_cmd_h:
                 return failing_mock_factory(*args, **kwargs)
             pytest.fail(f"Unexpected command passed to mock run: {cmd_list}")
 
@@ -201,31 +199,29 @@ class TestRifeCapabilityDetector:
 
         # Assert mock was called twice (once for --help, once for -h)
         assert mock_run_patch.call_count == 2
-        mock_run_patch.assert_has_calls(
-            [
-                call(
-                    expected_cmd_help,
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                    check=False,
-                ),
-                call(
-                    expected_cmd_h,
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                    check=False,
-                ),
-            ]
-        )
+        mock_run_patch.assert_has_calls([
+            call(
+                expected_cmd_help,
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            ),
+            call(
+                expected_cmd_h,
+                capture_output=True,
+                text=True,
+                timeout=5,
+                check=False,
+            ),
+        ])
 
 
 class TestRifeCommandBuilder:
     """Test the RifeCommandBuilder class."""
 
     @patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector")
-    def test_build_command_full(self, mock_detector_class):
+    def test_build_command_full(self, mock_detector_class) -> None:
         """Test command building with full-featured RIFE CLI."""
         # Mock the detector to return full capabilities
         mock_detector = MagicMock()
@@ -288,7 +284,7 @@ class TestRifeCommandBuilder:
         assert "0" in cmd
 
     @patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector")
-    def test_build_command_basic(self, mock_detector_class):
+    def test_build_command_basic(self, mock_detector_class) -> None:
         """Test command building with basic RIFE CLI."""
         # Mock the detector to return basic capabilities
         mock_detector = MagicMock()

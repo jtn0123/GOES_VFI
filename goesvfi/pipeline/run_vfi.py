@@ -41,6 +41,12 @@ from goesvfi.pipeline.resource_manager import (
 from goesvfi.pipeline.sanchez_processor import (  # noqa: F401  # pylint: disable=unused-import
     SanchezProcessor,
 )
+from goesvfi.pipeline.vfi_crop_handler import VFICropHandler
+from goesvfi.pipeline.vfi_ffmpeg_builder import VFIFFmpegBuilder
+from goesvfi.pipeline.vfi_image_processor import VFIImageProcessor
+
+# Import focused components
+from goesvfi.pipeline.vfi_input_validator import VFIInputValidator
 
 # --- Add Sanchez Import ---
 from goesvfi.sanchez.runner import colourise
@@ -72,57 +78,21 @@ class VFIProcessor:
         self.rife_config = rife_config
         self.processing_config = processing_config
 
+        # Initialize focused components
+        self.input_validator = VFIInputValidator(fps, num_intermediate_frames)
+        self.crop_handler = VFICropHandler()
+        self.ffmpeg_builder = VFIFFmpegBuilder()
+        self.image_processor = VFIImageProcessor(self.crop_handler)
+
     def validate_inputs(self, folder: pathlib.Path, skip_model: bool) -> list[pathlib.Path]:
         """Validate inputs and return sorted PNG paths."""
-        folder = validate_path_exists(folder, must_be_dir=True, field_name="folder")
-        validate_positive_int(self.fps, "fps")
-        validate_positive_int(self.num_intermediate_frames, "num_intermediate_frames")
-
-        if self.num_intermediate_frames != 1 and not skip_model:
-            msg = "Currently only num_intermediate_frames=1 is supported when not skipping model."
-            raise NotImplementedError(msg)
-
-        paths = sorted(folder.glob("*.png"))
-        if not paths:
-            msg = "No PNG images found in the input folder."
-            raise ValueError(msg)
-        if len(paths) < 2 and not skip_model:
-            msg = "At least two PNG images are required for interpolation."
-            raise ValueError(msg)
-        if len(paths) < 1 and skip_model:
-            msg = "At least one PNG image is required when skipping model."
-            raise ValueError(msg)
-
-        return paths
+        return self.input_validator.validate_inputs(folder, skip_model)
 
     def setup_crop_parameters(
         self, crop_rect_xywh: tuple[int, int, int, int] | None
     ) -> tuple[int, int, int, int] | None:
         """Convert crop rectangle from XYWH to PIL LURB format."""
-        if not crop_rect_xywh:
-            LOGGER.info("No crop rectangle provided.")
-            return None
-
-        try:
-            x, y, w, h = crop_rect_xywh
-            crop_for_pil = (
-                x,
-                y,
-                x + validate_positive_int(w, "crop width"),
-                y + validate_positive_int(h, "crop height"),
-            )
-            LOGGER.info(
-                "Applying crop rectangle (x,y,w,h): %s -> PIL format: %s",
-                crop_rect_xywh,
-                crop_for_pil,
-            )
-            return crop_for_pil
-        except (TypeError, ValueError):
-            LOGGER.exception(
-                "Invalid crop rectangle format provided: %s. Cropping will be disabled.",
-                crop_rect_xywh,
-            )
-            return None
+        return self.crop_handler.validate_crop_parameters(crop_rect_xywh)
 
     def process_first_image(
         self,
@@ -134,8 +104,8 @@ class VFIProcessor:
         """Process the first image and determine target dimensions."""
         LOGGER.info("Processing first image sequentially: %s", first_path.name)
 
-        processed_path_0 = _process_single_image_worker(
-            original_path=first_path,
+        processed_path_0 = self.image_processor.process_single_image(
+            image_path=first_path,
             crop_rect_pil=crop_for_pil,
             false_colour=self.processing_config["false_colour"],
             res_km=self.processing_config["res_km"],
@@ -143,8 +113,7 @@ class VFIProcessor:
             output_dir=processed_img_path,
         )
 
-        with Image.open(processed_path_0) as img0_processed_handle:
-            target_width, target_height = img0_processed_handle.size
+        target_width, target_height = self.image_processor.get_image_dimensions(processed_path_0)
 
         LOGGER.info(
             "Target frame dimensions set by first processed image: %sx%s",
@@ -203,34 +172,12 @@ class VFIProcessor:
 
     def create_ffmpeg_command(self, raw_path: pathlib.Path, skip_model: bool) -> list[str]:
         """Create FFmpeg command for video creation."""
-        effective_input_fps = self.fps * (self.num_intermediate_frames + 1) if not skip_model else self.fps
-
-        return [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "verbose",
-            "-stats",
-            "-y",
-            "-f",
-            "image2pipe",
-            "-framerate",
-            str(effective_input_fps),
-            "-vcodec",
-            "png",
-            "-i",
-            "-",
-            "-an",
-            "-vcodec",
-            "libx264",
-            "-preset",
-            "ultrafast",
-            "-pix_fmt",
-            "yuv420p",
-            "-vf",
-            "scale=trunc(iw/2)*2:trunc(ih/2)*2",
-            str(raw_path),
-        ]
+        return self.ffmpeg_builder.build_raw_video_command(
+            output_path=raw_path,
+            fps=self.fps,
+            num_intermediate_frames=self.num_intermediate_frames,
+            skip_model=skip_model
+        )
 
     def process_video_creation(
         self,
@@ -1269,76 +1216,31 @@ def _process_single_image_worker(
     target_width: int | None = None,
     target_height: int | None = None,
 ) -> pathlib.Path:
-    """Worker function to load, process (Sanchez, crop), validate, and save a single image.
+    """Worker function to process a single image using VFIImageProcessor.
 
-    If target_width/height are provided, validates final size against them.
+    This function creates its own processor instance for multiprocessing compatibility.
 
     Returns:
         Path to the saved, processed image in output_dir.
 
     Raises:
-        ValueError: If processed image dimensions don't match target (when provided).
         Exception: If any processing step fails.
     """
-    try:
-        # 1. Load original image
-        img = Image.open(original_path)
-        orig_w, orig_h = img.size
+    # Create processor instances for this worker
+    crop_handler = VFICropHandler()
+    image_processor = VFIImageProcessor(crop_handler)
 
-        # 2. Apply Sanchez if requested
-        if false_colour:
-            img_stem = original_path.stem
-            temp_in_path = sanchez_temp_dir / f"{img_stem}.png"
-            temp_out_path = sanchez_temp_dir / f"{img_stem}_{time.monotonic_ns()}_fc.png"
-            try:
-                img.save(temp_in_path, "PNG")
-                colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
-                img_colourised = Image.open(temp_out_path)
-                img = img_colourised
-            except Exception:
-                # Log error but return original image if Sanchez fails
-                LOGGER.exception("Worker Sanchez failed for %s", original_path.name)
-                # Keep original 'img' loaded above
-            finally:
-                if temp_in_path.exists():
-                    temp_in_path.unlink(missing_ok=True)
-                if temp_out_path.exists():
-                    temp_out_path.unlink(missing_ok=True)
-
-        # 3. Apply crop if requested
-        if crop_rect_pil:
-            # Validate crop against original dimensions before cropping
-            _left, _upper, right, lower = crop_rect_pil
-            if right > orig_w or lower > orig_h:
-                msg = (
-                    f"Crop rectangle {crop_rect_pil} exceeds original dimensions "
-                    f"({orig_w}x{orig_h}) of image {original_path.name}"
-                )
-                raise ValueError(msg)
-            try:
-                img_cropped = img.crop(crop_rect_pil)
-                img = img_cropped
-            except Exception:
-                LOGGER.exception("Worker failed to crop image %s", original_path.name)
-                raise  # Re-raise cropping errors
-
-        # 4. Validate dimensions - REMOVED
-        # if target_width is not None and target_height is not None:
-        #     if img.size != (target_width, target_height):
-        #          raise ValueError(
-        #              f"Processed {original_path.name} dimensions {img.size} != target {target_width}x{target_height}"
-        #          )
-
-        # 5. Save processed image to unique file in output_dir
-        processed_output_path = output_dir / f"processed_{original_path.stem}_{time.monotonic_ns()}.png"
-        img.save(processed_output_path, "PNG")
-
-        return processed_output_path
-
-    except Exception:
-        # Log any exception from the worker and re-raise
-        LOGGER.exception("Worker failed processing %s", original_path.name)
-        raise
+    # Process the image
+    return image_processor.process_single_image(
+        image_path=original_path,
+        crop_rect_pil=crop_rect_pil,
+        false_colour=false_colour,
+        res_km=res_km,
+        sanchez_temp_dir=sanchez_temp_dir,
+        output_dir=output_dir,
+        target_width=target_width,
+        target_height=target_height
+    )
 
 
 # --- Wrapper for map compatibility --- #

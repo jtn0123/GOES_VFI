@@ -6,8 +6,8 @@ This script is used as a pre-commit hook to ensure coverage doesn't drop.
 """
 
 import json
-import sys
 from pathlib import Path
+import sys
 
 
 def check_coverage_threshold(threshold: float = 80.0) -> bool:
@@ -21,7 +21,7 @@ def check_coverage_threshold(threshold: float = 80.0) -> bool:
         return True
 
     try:
-        with open(coverage_file, "r") as f:
+        with open(coverage_file, encoding="utf-8") as f:
             data = json.load(f)
 
         percentage = data.get("totals", {}).get("percent_covered", 0.0)
@@ -29,11 +29,10 @@ def check_coverage_threshold(threshold: float = 80.0) -> bool:
         if percentage >= threshold:
             print(f"✅ Coverage {percentage:.1f}% meets threshold of {threshold}%")
             return True
-        else:
-            print(f"❌ Coverage {percentage:.1f}% is below threshold of {threshold}%")
-            print("   Please add tests to improve coverage.")
-            print("   Run 'python run_coverage.py --html --open' to see uncovered lines.")
-            return False
+        print(f"❌ Coverage {percentage:.1f}% is below threshold of {threshold}%")
+        print("   Please add tests to improve coverage.")
+        print("   Run 'python run_coverage.py --html --open' to see uncovered lines.")
+        return False
 
     except Exception as e:
         print(f"⚠️  Error checking coverage: {e}")
@@ -41,7 +40,7 @@ def check_coverage_threshold(threshold: float = 80.0) -> bool:
         return True
 
 
-def main():
+def main() -> int:
     """Main function."""
     # Check if we should skip the check (e.g., for quick commits)
     if "--skip" in sys.argv:
@@ -55,9 +54,8 @@ def main():
 
     if check_coverage_threshold(threshold):
         return 0
-    else:
-        print("\n💡 To commit anyway, use: git commit --no-verify")
-        return 1
+    print("\n💡 To commit anyway, use: git commit --no-verify")
+    return 1
 
 
 if __name__ == "__main__":

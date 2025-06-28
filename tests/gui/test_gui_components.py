@@ -23,7 +23,7 @@ class MockMainWindow(QObject):
 
     request_previews_update = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.in_dir = None
         self.out_file_path = None
@@ -40,7 +40,7 @@ class MockMainWindow(QObject):
 class TestSignalBroker:
     """Test SignalBroker component."""
 
-    def test_setup_main_window_connections(self):
+    def test_setup_main_window_connections(self) -> None:
         """Test that SignalBroker connects all required signals."""
         broker = SignalBroker()
         main_window = MockMainWindow()
@@ -67,7 +67,7 @@ class TestSignalBroker:
 class TestStateManager:
     """Test StateManager component."""
 
-    def test_set_input_directory(self):
+    def test_set_input_directory(self) -> None:
         """Test setting input directory updates state correctly."""
         main_window = MockMainWindow()
         main_window._save_input_directory = MagicMock(return_value=True)
@@ -84,7 +84,7 @@ class TestStateManager:
         main_window.request_previews_update.emit.assert_called_once()
         main_window._save_input_directory.assert_called_once_with(test_path)
 
-    def test_set_crop_rect(self):
+    def test_set_crop_rect(self) -> None:
         """Test setting crop rectangle."""
         main_window = MockMainWindow()
         main_window._save_crop_rect = MagicMock(return_value=True)
@@ -100,7 +100,7 @@ class TestStateManager:
         main_window.request_previews_update.emit.assert_called_once()
         main_window._save_crop_rect.assert_called_once_with(test_rect)
 
-    def test_clear_input_directory(self):
+    def test_clear_input_directory(self) -> None:
         """Test clearing input directory."""
         main_window = MockMainWindow()
         main_window.in_dir = Path("/test/input")
@@ -115,7 +115,7 @@ class TestStateManager:
 class TestProcessingCallbacks:
     """Test ProcessingCallbacks component."""
 
-    def test_on_processing_progress(self):
+    def test_on_processing_progress(self) -> None:
         """Test progress callback updates UI correctly."""
         main_window = MockMainWindow()
         main_window.main_tab.progress_bar = MagicMock()
@@ -130,7 +130,7 @@ class TestProcessingCallbacks:
         status_calls = main_window.status_bar.showMessage.call_args_list
         assert any("50%" in str(call) for call in status_calls)
 
-    def test_on_processing_finished(self):
+    def test_on_processing_finished(self) -> None:
         """Test processing finished callback."""
         main_window = MockMainWindow()
         main_window.is_processing = True
@@ -148,7 +148,7 @@ class TestProcessingCallbacks:
         status_calls = main_window.status_bar.showMessage.call_args_list
         assert any("completed" in str(call).lower() for call in status_calls)
 
-    def test_on_processing_error(self):
+    def test_on_processing_error(self) -> None:
         """Test processing error callback."""
         main_window = MockMainWindow()
         main_window.is_processing = True
@@ -165,7 +165,7 @@ class TestProcessingCallbacks:
         # Verify state updated
         assert not main_window.is_processing
 
-    def test_set_processing_state(self):
+    def test_set_processing_state(self) -> None:
         """Test setting processing state updates UI."""
         main_window = MockMainWindow()
         main_window.main_tab.in_dir_button = MagicMock()
@@ -199,7 +199,7 @@ class TestProcessingCallbacks:
 class TestSettingsPersistence:
     """Test SettingsPersistence component."""
 
-    def test_save_input_directory(self):
+    def test_save_input_directory(self) -> None:
         """Test saving input directory to settings."""
         settings = MagicMock(spec=QSettings)
         persistence = SettingsPersistence(settings)
@@ -211,7 +211,7 @@ class TestSettingsPersistence:
         settings.sync.assert_called_once()
         assert result is True
 
-    def test_save_crop_rect(self):
+    def test_save_crop_rect(self) -> None:
         """Test saving crop rectangle to settings."""
         settings = MagicMock(spec=QSettings)
         persistence = SettingsPersistence(settings)
@@ -223,7 +223,7 @@ class TestSettingsPersistence:
         settings.sync.assert_called_once()
         assert result is True
 
-    def test_verify_settings_consistency(self):
+    def test_verify_settings_consistency(self) -> None:
         """Test settings consistency verification."""
         settings = MagicMock(spec=QSettings)
         settings.organizationName.return_value = "TestOrg"
@@ -246,7 +246,7 @@ class TestSettingsPersistence:
 class TestCropHandler:
     """Test CropHandler component."""
 
-    def test_on_crop_clicked_no_input(self):
+    def test_on_crop_clicked_no_input(self) -> None:
         """Test crop click with no input directory."""
         main_window = MockMainWindow()
         main_window.in_dir = None
@@ -259,7 +259,7 @@ class TestCropHandler:
         mock_warning.assert_called_once()
         assert "select an input directory" in str(mock_warning.call_args).lower()
 
-    def test_get_sorted_image_files(self):
+    def test_get_sorted_image_files(self) -> None:
         """Test getting sorted image files."""
         main_window = MockMainWindow()
 
@@ -286,9 +286,9 @@ class TestCropHandler:
 
             # Should only return image files, sorted
             assert len(result) == 3
-            assert all(f.suffix.lower() in [".png", ".jpg", ".jpeg"] for f in result)
+            assert all(f.suffix.lower() in {".png", ".jpg", ".jpeg"} for f in result)
 
-    def test_on_clear_crop_clicked(self):
+    def test_on_clear_crop_clicked(self) -> None:
         """Test clearing crop."""
         main_window = MockMainWindow()
         main_window.current_crop_rect = (10, 20, 100, 50)
@@ -303,7 +303,7 @@ class TestCropHandler:
 class TestFilePickerManager:
     """Test FilePickerManager component."""
 
-    def test_pick_input_directory(self):
+    def test_pick_input_directory(self) -> None:
         """Test input directory picker."""
         main_window = MockMainWindow()
         main_window.set_in_dir = MagicMock()
@@ -317,7 +317,7 @@ class TestFilePickerManager:
 
             main_window.set_in_dir.assert_called_once_with(Path("/test/selected/dir"))
 
-    def test_pick_output_file(self):
+    def test_pick_output_file(self) -> None:
         """Test output file picker."""
         main_window = MockMainWindow()
 
@@ -335,7 +335,7 @@ class TestFilePickerManager:
 class TestModelSelectorManager:
     """Test ModelSelectorManager component."""
 
-    def test_populate_models(self):
+    def test_populate_models(self) -> None:
         """Test populating RIFE models."""
         main_window = MockMainWindow()
         main_window.model_combo = MagicMock(spec=QComboBox)
@@ -353,7 +353,7 @@ class TestModelSelectorManager:
         # Verify current model set
         assert hasattr(main_window, "current_model_key")
 
-    def test_on_model_changed(self):
+    def test_on_model_changed(self) -> None:
         """Test model change handler."""
         main_window = MockMainWindow()
         main_window._update_rife_ui_elements = MagicMock()
@@ -368,7 +368,7 @@ class TestModelSelectorManager:
 class TestThemeManager:
     """Test ThemeManager component."""
 
-    def test_apply_dark_theme(self):
+    def test_apply_dark_theme(self) -> None:
         """Test applying dark theme."""
         widget = QWidget()
         manager = ThemeManager()

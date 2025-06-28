@@ -34,8 +34,5 @@ class SuperButton(QPushButton):
         super().mouseReleaseEvent(event)
 
         # If it's a left-click release, call our callback
-        if event.button() == Qt.MouseButton.LeftButton:
-            if self.click_callback:
-                QTimer.singleShot(10, self.click_callback)  # Small delay to ensure UI updates
-            else:
-                pass
+        if event.button() == Qt.MouseButton.LeftButton and self.click_callback:
+            QTimer.singleShot(10, self.click_callback)  # Small delay to ensure UI updates

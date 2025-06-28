@@ -6,9 +6,7 @@ exceptions into structured errors with appropriate context and suggestions.
 """
 
 import errno
-import socket
 import subprocess
-from typing import Optional
 
 from goesvfi.utils.errors.base import ErrorCategory, ErrorContext, StructuredError
 from goesvfi.utils.errors.classifier import ErrorClassifier, default_classifier
@@ -17,7 +15,7 @@ from goesvfi.utils.errors.classifier import ErrorClassifier, default_classifier
 class TestErrorClassifier:
     """Test error classifier functionality."""
 
-    def test_classifier_initialization(self):
+    def test_classifier_initialization(self) -> None:
         """Test classifier initialization with default mappings."""
         classifier = ErrorClassifier()
 
@@ -29,7 +27,7 @@ class TestErrorClassifier:
         assert ValueError in classifier._type_mappings
         assert classifier._type_mappings[ValueError] == ErrorCategory.VALIDATION
 
-    def test_add_type_mapping(self):
+    def test_add_type_mapping(self) -> None:
         """Test adding custom exception type mappings."""
         classifier = ErrorClassifier()
 
@@ -41,11 +39,11 @@ class TestErrorClassifier:
         assert CustomError in classifier._type_mappings
         assert classifier._type_mappings[CustomError] == ErrorCategory.PROCESSING
 
-    def test_add_custom_classifier(self):
+    def test_add_custom_classifier(self) -> None:
         """Test adding custom classification functions."""
         classifier = ErrorClassifier()
 
-        def custom_classifier(exception: Exception) -> Optional[ErrorCategory]:
+        def custom_classifier(exception: Exception) -> ErrorCategory | None:
             if isinstance(exception, RuntimeError) and "network" in str(exception):
                 return ErrorCategory.NETWORK
             return None
@@ -54,7 +52,7 @@ class TestErrorClassifier:
 
         assert custom_classifier in classifier._custom_classifiers
 
-    def test_classify_exception_direct_mapping(self):
+    def test_classify_exception_direct_mapping(self) -> None:
         """Test classifying exceptions with direct type mappings."""
         classifier = ErrorClassifier()
 
@@ -72,7 +70,7 @@ class TestErrorClassifier:
             category = classifier.classify_exception(exception)
             assert category == expected_category, f"Failed for {type(exception).__name__}"
 
-    def test_classify_exception_inheritance(self):
+    def test_classify_exception_inheritance(self) -> None:
         """Test classifying exceptions using inheritance."""
         classifier = ErrorClassifier()
 
@@ -83,15 +81,15 @@ class TestErrorClassifier:
         assert category == ErrorCategory.NETWORK  # Because socket.error is OSError
 
         # socket.error should also map to NETWORK
-        sock_error = socket.error("Socket error")
+        sock_error = OSError("Socket error")
         category = classifier.classify_exception(sock_error)
         assert category == ErrorCategory.NETWORK
 
-    def test_classify_exception_custom_classifier(self):
+    def test_classify_exception_custom_classifier(self) -> None:
         """Test classification using custom classifiers."""
         classifier = ErrorClassifier()
 
-        def custom_classifier(exception: Exception) -> Optional[ErrorCategory]:
+        def custom_classifier(exception: Exception) -> ErrorCategory | None:
             if isinstance(exception, RuntimeError) and "custom" in str(exception):
                 return ErrorCategory.PROCESSING
             return None
@@ -108,7 +106,7 @@ class TestErrorClassifier:
         category = classifier.classify_exception(regular_error)
         assert category == ErrorCategory.UNKNOWN
 
-    def test_classify_exception_unknown(self):
+    def test_classify_exception_unknown(self) -> None:
         """Test classifying unknown exception types."""
         classifier = ErrorClassifier()
 
@@ -119,7 +117,7 @@ class TestErrorClassifier:
         category = classifier.classify_exception(unknown_error)
         assert category == ErrorCategory.UNKNOWN
 
-    def test_classify_os_error_with_errno(self):
+    def test_classify_os_error_with_errno(self) -> None:
         """Test classifying OSError with specific errno values."""
         classifier = ErrorClassifier()
 
@@ -140,7 +138,7 @@ class TestErrorClassifier:
             category = classifier.classify_exception(os_error)
             assert category == expected_category, f"Failed for errno {errno_code}"
 
-    def test_classify_os_error_unknown_errno(self):
+    def test_classify_os_error_unknown_errno(self) -> None:
         """Test classifying OSError with unknown errno."""
         classifier = ErrorClassifier()
 
@@ -149,7 +147,7 @@ class TestErrorClassifier:
         category = classifier.classify_exception(os_error)
         assert category == ErrorCategory.SYSTEM
 
-    def test_classify_os_error_no_errno(self):
+    def test_classify_os_error_no_errno(self) -> None:
         """Test classifying OSError without errno."""
         classifier = ErrorClassifier()
 
@@ -158,7 +156,7 @@ class TestErrorClassifier:
         # In Python 3, socket.error is OSError, so OSError maps to NETWORK
         assert category == ErrorCategory.NETWORK
 
-    def test_create_structured_error_basic(self):
+    def test_create_structured_error_basic(self) -> None:
         """Test creating structured error from exception."""
         classifier = ErrorClassifier()
 
@@ -177,7 +175,7 @@ class TestErrorClassifier:
         assert structured_error.cause == original_exception
         assert structured_error.recoverable is True
 
-    def test_create_structured_error_with_user_message(self):
+    def test_create_structured_error_with_user_message(self) -> None:
         """Test creating structured error with custom user message."""
         classifier = ErrorClassifier()
 
@@ -191,7 +189,7 @@ class TestErrorClassifier:
 
         assert structured_error.user_message == "The requested file could not be found"
 
-    def test_generate_user_message(self):
+    def test_generate_user_message(self) -> None:
         """Test user message generation for different categories."""
         classifier = ErrorClassifier()
 
@@ -224,7 +222,7 @@ class TestErrorClassifier:
             user_message = classifier._generate_user_message(exception, category)
             assert expected_prefix in user_message
 
-    def test_generate_suggestions(self):
+    def test_generate_suggestions(self) -> None:
         """Test suggestion generation for different categories."""
         classifier = ErrorClassifier()
 
@@ -242,7 +240,7 @@ class TestErrorClassifier:
             for expected in expected_suggestions:
                 assert any(expected in suggestion for suggestion in suggestions)
 
-    def test_is_recoverable(self):
+    def test_is_recoverable(self) -> None:
         """Test recovery determination for different categories."""
         classifier = ErrorClassifier()
 
@@ -268,7 +266,7 @@ class TestErrorClassifier:
         for category in non_recoverable_categories:
             assert classifier._is_recoverable(category, Exception()) is False
 
-    def test_add_context_from_exception_file_errors(self):
+    def test_add_context_from_exception_file_errors(self) -> None:
         """Test adding context data from file-related exceptions."""
         classifier = ErrorClassifier()
         context = ErrorContext(operation="test", component="test")
@@ -280,7 +278,7 @@ class TestErrorClassifier:
 
         assert context.user_data["file_path"] == "/path/to/test.txt"
 
-    def test_add_context_from_exception_os_error(self):
+    def test_add_context_from_exception_os_error(self) -> None:
         """Test adding context data from OSError."""
         classifier = ErrorClassifier()
         context = ErrorContext(operation="test", component="test")
@@ -291,7 +289,7 @@ class TestErrorClassifier:
 
         assert context.system_data["errno"] == errno.ENOENT
 
-    def test_add_context_from_exception_network_errors(self):
+    def test_add_context_from_exception_network_errors(self) -> None:
         """Test adding context data from network exceptions."""
         classifier = ErrorClassifier()
         context = ErrorContext(operation="test", component="test")
@@ -299,7 +297,7 @@ class TestErrorClassifier:
         network_errors = [
             ConnectionError("Connection failed"),
             TimeoutError("Timeout"),
-            socket.error("Socket error"),
+            OSError("Socket error"),
         ]
 
         for error in network_errors:
@@ -311,17 +309,17 @@ class TestErrorClassifier:
 class TestDefaultClassifier:
     """Test the default classifier instance and custom classifiers."""
 
-    def test_default_classifier_exists(self):
+    def test_default_classifier_exists(self) -> None:
         """Test that default classifier is properly initialized."""
         assert isinstance(default_classifier, ErrorClassifier)
 
-    def test_import_error_classification(self):
+    def test_import_error_classification(self) -> None:
         """Test classification of import errors."""
         import_error = ImportError("Module not found")
         category = default_classifier.classify_exception(import_error)
         assert category == ErrorCategory.CONFIGURATION
 
-    def test_subprocess_error_classification(self):
+    def test_subprocess_error_classification(self) -> None:
         """Test classification of subprocess errors."""
         # Test CalledProcessError
         called_process_error = subprocess.CalledProcessError(1, "test_command")
@@ -333,12 +331,12 @@ class TestDefaultClassifier:
         category = default_classifier.classify_exception(timeout_error)
         assert category == ErrorCategory.EXTERNAL_TOOL
 
-    def test_end_to_end_classification(self):
+    def test_end_to_end_classification(self) -> None:
         """Test end-to-end error classification and structured error creation."""
         # Test a realistic scenario
         try:
             # Simulate file operation that fails
-            with open("/nonexistent/path/file.txt", "r") as f:
+            with open("/nonexistent/path/file.txt", encoding="utf-8") as f:
                 f.read()
         except FileNotFoundError as e:
             structured_error = default_classifier.create_structured_error(
@@ -356,13 +354,14 @@ class TestDefaultClassifier:
 class TestErrorClassifierIntegration:
     """Integration tests for error classifier with real exceptions."""
 
-    def test_complex_exception_scenario(self):
+    def test_complex_exception_scenario(self) -> None:
         """Test classifier with complex exception scenario."""
         classifier = ErrorClassifier()
 
         # Create a mock exception that would occur in real usage
         try:
-            raise PermissionError("Access denied to /restricted/config.json")
+            msg = "Access denied to /restricted/config.json"
+            raise PermissionError(msg)
         except PermissionError as e:
             e.filename = "/restricted/config.json"
             structured_error = classifier.create_structured_error(
@@ -383,7 +382,7 @@ class TestErrorClassifierIntegration:
             assert error_dict["category"] == "PERMISSION"
             assert error_dict["recoverable"] is True
 
-    def test_network_exception_scenario(self):
+    def test_network_exception_scenario(self) -> None:
         """Test classifier with network exception scenario."""
         classifier = ErrorClassifier()
 
@@ -397,7 +396,7 @@ class TestErrorClassifierIntegration:
         assert "Check your internet connection" in structured_error.suggestions
         assert "network_error_type" in structured_error.context.system_data
 
-    def test_validation_exception_scenario(self):
+    def test_validation_exception_scenario(self) -> None:
         """Test classifier with validation exception scenario."""
         classifier = ErrorClassifier()
 
@@ -413,12 +412,12 @@ class TestErrorClassifierIntegration:
         assert "Invalid input" in structured_error.user_message
         assert "Check input parameters" in structured_error.suggestions
 
-    def test_multiple_classifier_priority(self):
+    def test_multiple_classifier_priority(self) -> None:
         """Test that custom classifiers take priority over default mappings."""
         classifier = ErrorClassifier()
 
         # Add custom classifier that overrides default behavior
-        def priority_classifier(exception: Exception) -> Optional[ErrorCategory]:
+        def priority_classifier(exception: Exception) -> ErrorCategory | None:
             if isinstance(exception, ValueError) and "special" in str(exception):
                 return ErrorCategory.PROCESSING
             return None

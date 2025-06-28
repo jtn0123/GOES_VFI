@@ -1,11 +1,11 @@
 import pathlib
 import subprocess
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from unittest.mock import ANY, MagicMock, patch
 
 import numpy as np
-import pytest
 from PIL import Image
+import pytest
 
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
@@ -37,14 +37,14 @@ MOCK_FFMPEG_EXE = "ffmpeg"  # Assume ffmpeg is in PATH for command construction
 # --- Mock Fixtures / Setup ---
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_popen():
     """Fixture to patch subprocess.Popen. Side effect configured in helper."""
     with patch("goesvfi.pipeline.run_vfi.subprocess.Popen") as mock_popen_patch:
         yield mock_popen_patch
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_run():
     """Fixture to patch subprocess.run. Side effect configured in helper."""
     # Note: run_vfi uses run for RIFE, Popen for ffmpeg stream
@@ -52,7 +52,7 @@ def mock_run():
         yield mock_run_patch
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_rife_capabilities():
     """Fixture to mock RifeCapabilityDetector."""
     # Define default capabilities for the mock
@@ -77,7 +77,7 @@ def mock_rife_capabilities():
         yield mock_instance  # Yield the instance for potential modification in tests
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_sanchez():
     """Fixture to mock the Sanchez colourise function."""
     # Use the mock factory for colourise
@@ -104,7 +104,7 @@ def run_pipeline_and_collect(
     input_dir: pathlib.Path,
     output_mp4_path: pathlib.Path,
     num_input_frames: int = 2,
-    img_size: Tuple[int, int] = DEFAULT_IMG_SIZE,
+    img_size: tuple[int, int] = DEFAULT_IMG_SIZE,
     rife_exe: pathlib.Path = MOCK_RIFE_EXE,
     fps: int = DEFAULT_FPS,
     num_intermediate: int = DEFAULT_INTERMEDIATE_FRAMES,
@@ -112,22 +112,22 @@ def run_pipeline_and_collect(
     skip_model: bool = False,
     false_colour: bool = False,
     res_km: int = 4,
-    crop_rect_xywh: Optional[Tuple[int, int, int, int]] = None,
-    rife_options: Optional[Dict[str, Any]] = None,
+    crop_rect_xywh: tuple[int, int, int, int] | None = None,
+    rife_options: dict[str, Any] | None = None,
     # --- Mock configurations (NEW) ---
-    expected_rife_cmd: Optional[List[str]] = None,
-    rife_output_to_create: Optional[pathlib.Path] = None,
+    expected_rife_cmd: list[str] | None = None,
+    rife_output_to_create: pathlib.Path | None = None,
     rife_return_code: int = 0,
-    rife_side_effect: Optional[Exception] = None,
-    expected_ffmpeg_cmd: Optional[List[str]] = None,
-    ffmpeg_output_to_create: Optional[pathlib.Path] = None,
+    rife_side_effect: Exception | None = None,
+    expected_ffmpeg_cmd: list[str] | None = None,
+    ffmpeg_output_to_create: pathlib.Path | None = None,
     ffmpeg_return_code: int = 0,
-    ffmpeg_side_effect: Optional[Exception] = None,
-    ffmpeg_stdin_write_limit: Optional[int] = None,  # For BrokenPipeError simulation
+    ffmpeg_side_effect: Exception | None = None,
+    ffmpeg_stdin_write_limit: int | None = None,  # For BrokenPipeError simulation
     # --- Original mock fixtures (still needed for setup) ---
-    _sanchez_mock: Optional[MagicMock] = None,
-    _rife_caps_mock: Optional[MagicMock] = None,
-) -> Tuple[Optional[pathlib.Path], List[Tuple[int, int, float]], MagicMock, MagicMock]:
+    _sanchez_mock: MagicMock | None = None,
+    _rife_caps_mock: MagicMock | None = None,
+) -> tuple[pathlib.Path | None, list[tuple[int, int, float]], MagicMock, MagicMock]:
     """
     Runs the pipeline with specified parameters and mocks, collecting results.
     Uses mock factories to configure subprocess.run and subprocess.Popen.
@@ -251,7 +251,7 @@ def test_basic_interpolation(
     mock_run: MagicMock,
     mock_rife_capabilities: MagicMock,
     mocker,
-):
+) -> None:
     """Test basic interpolation (2 frames -> 1 intermediate)."""
     # Patch the request_previews_update signal on all Qt classes that might use it
     # This prevents "AttributeError: '...' does not have a signal with the signature request_previews_update()"
@@ -344,7 +344,7 @@ def test_basic_interpolation(
 
 # Pass mock_run fixture as well
 # Skip marker removed after resolving the Qt dependency issue
-def test_skip_model(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock):
+def test_skip_model(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock) -> None:
     """Test pipeline with skip_model=True."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -419,7 +419,7 @@ def test_cropping(
     mock_popen: MagicMock,
     mock_run: MagicMock,
     mock_rife_capabilities: MagicMock,
-):
+) -> None:
     """Test pipeline with cropping enabled."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -516,7 +516,7 @@ def test_sanchez(
     mock_run: MagicMock,
     mock_sanchez: MagicMock,
     mock_rife_capabilities: MagicMock,
-):
+) -> None:
     """Test pipeline with Sanchez false colour enabled."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -614,7 +614,7 @@ def test_crop_and_sanchez(
     mock_run: MagicMock,
     mock_sanchez: MagicMock,
     mock_rife_capabilities: MagicMock,
-):
+) -> None:
     """Test pipeline with both cropping and Sanchez enabled."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -707,7 +707,7 @@ def test_crop_and_sanchez(
 # --- Error Handling Tests ---
 
 
-def test_error_insufficient_frames(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock):
+def test_error_insufficient_frames(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock) -> None:
     """Test error handling for fewer than 2 input frames."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -725,7 +725,7 @@ def test_error_insufficient_frames(temp_dir: pathlib.Path, mock_popen: MagicMock
         )
 
 
-def test_error_insufficient_frames_skip_model(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock):
+def test_error_insufficient_frames_skip_model(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock) -> None:
     """Test error handling for < 2 frames when skipping model."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -754,7 +754,7 @@ def test_error_invalid_crop(
     mock_run: MagicMock,
     mock_rife_capabilities: MagicMock,
     caplog,
-):
+) -> None:
     """Test that an invalid crop rectangle logs an error but allows processing to continue without cropping."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -818,22 +818,21 @@ def test_error_invalid_crop(
     ]
 
     # --- Run Test ---
-    with caplog.at_level("ERROR"):
-        with pytest.raises((IOError, RuntimeError)):
-            run_pipeline_and_collect(
-                mock_popen_fixture=mock_popen,
-                mock_run_fixture=mock_run,
-                input_dir=input_dir,
-                output_mp4_path=output_mp4,
-                num_input_frames=num_frames,
-                crop_rect_xywh=crop_rect,
-                _rife_caps_mock=mock_rife_capabilities,
-                expected_rife_cmd=expected_rife_cmd,
-                rife_output_to_create=None,  # Mock won't create RIFE output
-                rife_return_code=0,
-                expected_ffmpeg_cmd=expected_ffmpeg_cmd,
-                ffmpeg_output_to_create=expected_raw_path,
-            )
+    with caplog.at_level("ERROR"), pytest.raises((IOError, RuntimeError)):
+        run_pipeline_and_collect(
+            mock_popen_fixture=mock_popen,
+            mock_run_fixture=mock_run,
+            input_dir=input_dir,
+            output_mp4_path=output_mp4,
+            num_input_frames=num_frames,
+            crop_rect_xywh=crop_rect,
+            _rife_caps_mock=mock_rife_capabilities,
+            expected_rife_cmd=expected_rife_cmd,
+            rife_output_to_create=None,  # Mock won't create RIFE output
+            rife_return_code=0,
+            expected_ffmpeg_cmd=expected_ffmpeg_cmd,
+            ffmpeg_output_to_create=expected_raw_path,
+        )
 
     # --- Assert ---
     # Verify crop error logged and RIFE called using the mock fixture
@@ -851,7 +850,7 @@ def test_error_rife_failure(
     mock_popen: MagicMock,
     mock_run: MagicMock,
     mock_rife_capabilities: MagicMock,
-):
+) -> None:
     """Test RuntimeError is raised if RIFE process returns non-zero exit code."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -923,7 +922,7 @@ def test_error_rife_failure(
         patch("pathlib.Path.exists", return_value=True),
         pytest.raises(RuntimeError) as excinfo,
     ):  # Check for RuntimeError wrapping the CalledProcessError
-        final_path, _, run_mock, popen_mock = run_pipeline_and_collect(
+        _final_path, _, _run_mock, _popen_mock = run_pipeline_and_collect(
             mock_popen_fixture=mock_popen,
             mock_run_fixture=mock_run,
             input_dir=input_dir,
@@ -957,7 +956,7 @@ def test_error_ffmpeg_failure_exit_code(
     mock_popen: MagicMock,
     mock_run: MagicMock,
     mock_rife_capabilities: MagicMock,
-):
+) -> None:
     """Test RuntimeError is raised if FFmpeg process returns non-zero exit code."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -973,7 +972,7 @@ def test_error_ffmpeg_failure_exit_code(
 
     # --- Define side effect for mock_exists --- #
     # Return False only if the path being checked is the expected raw output path
-    def mock_exists_side_effect(self_path_instance):  # Correct signature (only self)
+    def mock_exists_side_effect(self_path_instance) -> bool:  # Correct signature (only self)
         # Need to resolve path_arg in case it's relative or different instance
         # We compare the string representation of the instance
         if str(self_path_instance) == str(expected_raw_path):
@@ -1035,7 +1034,7 @@ def test_error_ffmpeg_failure_exit_code(
     # --- Run Test ---
     # Expect IOError because ffmpeg failure during finalization is critical
     with pytest.raises(IOError, match="Failed to finalize video"):
-        final_path, _, run_mock, popen_mock = run_pipeline_and_collect(
+        _final_path, _, _run_mock, _popen_mock = run_pipeline_and_collect(
             mock_popen_fixture=mock_popen,
             mock_run_fixture=mock_run,
             input_dir=input_dir,
@@ -1067,7 +1066,7 @@ def test_error_ffmpeg_pipe_error(
     mock_popen: MagicMock,
     mock_run: MagicMock,
     mock_rife_capabilities: MagicMock,
-):
+) -> None:
     """Test IOError is raised if writing to FFmpeg stdin fails (BrokenPipeError)."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -1130,7 +1129,7 @@ def test_error_ffmpeg_pipe_error(
 
     # --- Run Test --- (Call outside the context manager)
     # Expect IOError due to the pipe breaking during frame writing
-    def run_action():
+    def run_action() -> None:
         run_pipeline_and_collect(
             mock_popen_fixture=mock_popen,
             mock_run_fixture=mock_run,
@@ -1171,7 +1170,7 @@ def test_error_sanchez_failure(
     mock_sanchez: MagicMock,
     mock_rife_capabilities: MagicMock,
     caplog,
-):
+) -> None:
     """Test that Sanchez failure logs an error but pipeline continues with original images."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"
@@ -1237,7 +1236,7 @@ def test_error_sanchez_failure(
     ]
 
     # --- Run Test --- (Call outside context manager)
-    def run_action():
+    def run_action() -> None:
         run_pipeline_and_collect(
             mock_popen_fixture=mock_popen,
             mock_run_fixture=mock_run,
@@ -1257,9 +1256,8 @@ def test_error_sanchez_failure(
         )
 
     # Expect IOError because pipeline fails when it can't open RIFE output
-    with caplog.at_level("ERROR"):
-        with pytest.raises(IOError, match="Failed to process images"):
-            run_action()
+    with caplog.at_level("ERROR"), pytest.raises(IOError, match="Failed to process images"):
+        run_action()
 
     # --- Assert ---
     assert "Worker Sanchez failed" in caplog.text or "Sanchez colourise failed" in caplog.text
@@ -1271,7 +1269,7 @@ def test_error_sanchez_failure(
     assert mock_sanchez.call_count > 0
 
 
-def test_multiple_intermediate_frames_not_supported(temp_dir, mock_rife_capabilities):
+def test_multiple_intermediate_frames_not_supported(temp_dir, mock_rife_capabilities) -> None:
     """Test that num_intermediate_frames > 1 raises NotImplementedError."""
     input_dir = temp_dir / "input"
     input_dir.mkdir()
@@ -1298,7 +1296,7 @@ def test_multiple_intermediate_frames_not_supported(temp_dir, mock_rife_capabili
 
 
 @patch("pathlib.Path.exists", return_value=True)  # Mock model path existence
-def test_large_image_tiling(mock_exists, temp_dir, mock_popen, mock_run, mock_rife_capabilities):
+def test_large_image_tiling(mock_exists, temp_dir, mock_popen, mock_run, mock_rife_capabilities) -> None:
     """Test pipeline with large images that would benefit from tiling."""
     # Create large 4K test images
     input_dir = temp_dir / "input_4k"
@@ -1371,7 +1369,7 @@ def test_large_image_tiling(mock_exists, temp_dir, mock_popen, mock_run, mock_ri
 
 
 @patch("pathlib.Path.exists", return_value=True)  # Mock model path existence
-def test_max_workers_parameter(mock_exists, temp_dir, mock_popen, mock_run, mock_rife_capabilities):
+def test_max_workers_parameter(mock_exists, temp_dir, mock_popen, mock_run, mock_rife_capabilities) -> None:
     """Test that max_workers parameter is respected for parallel processing."""
     input_dir = temp_dir / "input"
     input_dir.mkdir()
@@ -1431,19 +1429,18 @@ def test_max_workers_parameter(mock_exists, temp_dir, mock_popen, mock_run, mock
         # So we just verify the pipeline completes successfully
 
 
-def test_image_loader_key_error(temp_dir: pathlib.Path):
+def test_image_loader_key_error(temp_dir: pathlib.Path) -> None:
     """ImageLoader should wrap KeyError in ProcessingError."""
     from goesvfi.pipeline.exceptions import ProcessingError
 
     loader = ImageLoader()
     img_path = temp_dir / "img.png"
     img_path.write_bytes(b"data")
-    with patch("PIL.Image.open", side_effect=KeyError("bad key")):
-        with pytest.raises(ProcessingError):
-            loader.load(str(img_path))
+    with patch("PIL.Image.open", side_effect=KeyError("bad key")), pytest.raises(ProcessingError):
+        loader.load(str(img_path))
 
 
-def test_image_saver_runtime_error(temp_dir: pathlib.Path):
+def test_image_saver_runtime_error(temp_dir: pathlib.Path) -> None:
     """ImageSaver should surface runtime errors as ValueError."""
     saver = ImageSaver()
     out_path = temp_dir / "out.png"

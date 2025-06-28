@@ -2,9 +2,9 @@
 Integration tests for GOES Imagery Tab UI
 """
 
+from pathlib import Path
 import sys
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 from PyQt6.QtCore import pyqtSignal
@@ -35,7 +35,7 @@ class ImageSelectionPanel(QWidget):
 
     imageRequested = pyqtSignal(dict)
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         # Add minimal UI elements for tests
         from PyQt6.QtWidgets import QButtonGroup
@@ -77,7 +77,7 @@ class ImageSelectionPanel(QWidget):
         # Set initial state
         self.updateUIState()
 
-    def updateUIState(self):
+    def updateUIState(self) -> None:
         """Update UI state based on mode."""
         if self.image_product_btn.isChecked():
             self.size_combo.setEnabled(True)
@@ -88,7 +88,7 @@ class ImageSelectionPanel(QWidget):
             self.resolution_combo.setEnabled(True)
             self.processing_combo.setEnabled(True)
 
-    def _emit_request(self):
+    def _emit_request(self) -> None:
         """Emit image request signal."""
         from goesvfi.integrity_check.goes_imagery import ChannelType, ImageryMode
 
@@ -104,7 +104,7 @@ class ImageSelectionPanel(QWidget):
 class ImageViewPanel(QWidget):
     """Stub implementation of ImageViewPanel."""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.image_label = QLabel("No imagery loaded")
         self.status_label = QLabel("")
@@ -116,24 +116,24 @@ class ImageViewPanel(QWidget):
         layout.addWidget(self.status_label)
         layout.addWidget(self.progress)
 
-    def showLoading(self, message="Loading..."):
+    def showLoading(self, message="Loading...") -> None:
         """Show loading state."""
         self.status_label.setText(message)
         movie = QMovie()  # Empty movie for testing
         self.image_label.setMovie(movie)
 
-    def clearImage(self):
+    def clearImage(self) -> None:
         """Clear the displayed image."""
         self.image_label.setText("No imagery loaded")
         self.status_label.setText("")
         self.progress.setVisible(False)
 
-    def setProgress(self, value):
+    def setProgress(self, value) -> None:
         """Set progress value."""
         self.progress.setValue(value)
         self.progress.setVisible(True)
 
-    def showImage(self, path):
+    def showImage(self, path) -> None:
         """Show an image from path."""
         self.status_label.setText(f"Loaded: {path.name if hasattr(path, 'name') else str(path)}")
 
@@ -157,7 +157,7 @@ def get_qapp():
 class TestImageSelectionPanel(unittest.TestCase):
     """Tests for the image selection panel."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixture."""
         # Skip GUI tests in CI environment
         import os
@@ -176,11 +176,11 @@ class TestImageSelectionPanel(unittest.TestCase):
         self.request_data = None
         self.panel.imageRequested.connect(self.captureRequest)
 
-    def captureRequest(self, data):
+    def captureRequest(self, data) -> None:
         """Capture request data from signal."""
         self.request_data = data
 
-    def test_initial_state(self):
+    def test_initial_state(self) -> None:
         """Test initial state of the panel."""
         # Check default selection
         assert self.panel.ch13_btn.isChecked()
@@ -191,7 +191,7 @@ class TestImageSelectionPanel(unittest.TestCase):
         assert self.panel.processing_combo.currentData() == ProcessingMode.QUICKLOOK
         assert self.panel.size_combo.currentData() == "1200"
 
-    def test_ui_state_update(self):
+    def test_ui_state_update(self) -> None:
         """Test UI state update based on mode."""
         # Check initial state (Image Product Mode)
         assert self.panel.size_combo.isEnabled()
@@ -207,7 +207,7 @@ class TestImageSelectionPanel(unittest.TestCase):
         assert self.panel.resolution_combo.isEnabled()
         assert self.panel.processing_combo.isEnabled()
 
-    def test_request_image(self):
+    def test_request_image(self) -> None:
         """Test requesting an image."""
         # Set up selections
         self.panel.ch13_btn.setChecked(True)
@@ -229,7 +229,7 @@ class TestImageSelectionPanel(unittest.TestCase):
 class TestImageViewPanel(unittest.TestCase):
     """Tests for the image view panel."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixture."""
         # Skip GUI tests in CI environment
         import os
@@ -244,19 +244,19 @@ class TestImageViewPanel(unittest.TestCase):
 
         self.panel = ImageViewPanel()
 
-    def test_initial_state(self):
+    def test_initial_state(self) -> None:
         """Test initial state of the panel."""
         assert self.panel.image_label.text() == "No imagery loaded"
         assert self.panel.status_label.text() == ""
         assert not self.panel.progress.isVisible()
 
-    def test_show_loading(self):
+    def test_show_loading(self) -> None:
         """Test showing loading state."""
         self.panel.showLoading("Test loading...")
         assert self.panel.status_label.text() == "Test loading..."
         assert self.panel.image_label.movie() is not None
 
-    def test_clear_image(self):
+    def test_clear_image(self) -> None:
         """Test clearing image."""
         # First set some state
         self.panel.showLoading()
@@ -270,7 +270,7 @@ class TestImageViewPanel(unittest.TestCase):
         assert self.panel.status_label.text() == ""
         assert not self.panel.progress.isVisible()
 
-    def test_show_image(self):
+    def test_show_image(self) -> None:
         """Test showing an image (without using QPixmap mock)."""
         # Use a different approach to test the functionality
         # without dealing with Qt's QPixmap internals
@@ -296,7 +296,7 @@ class TestImageViewPanel(unittest.TestCase):
 class TestGOESImageryTab(unittest.TestCase):
     """Integration tests for GOES Imagery Tab."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixture."""
         # Skip GUI tests in CI environment
         import os
@@ -312,7 +312,7 @@ class TestGOESImageryTab(unittest.TestCase):
         # Create tab - no need to mock manager since it doesn't exist
         self.tab = GOESImageryTab()
 
-    def test_initial_state(self):
+    def test_initial_state(self) -> None:
         """Test initial state of the tab."""
         # Verify UI elements exist
         assert hasattr(self.tab, "product_combo")
@@ -320,7 +320,7 @@ class TestGOESImageryTab(unittest.TestCase):
         assert hasattr(self.tab, "load_button")
         assert hasattr(self.tab, "status_label")
 
-    def test_handle_image_request(self):
+    def test_handle_image_request(self) -> None:
         """Test handling an image request."""
         # Since GOESImageryTab is simple and doesn't have processImageRequest,
         # we'll just test the basic UI interactions

@@ -56,26 +56,42 @@ GOES-VFI is a desktop application that creates smooth timelapse videos from sate
 ## Linting and Code Quality
 
 ### Running Linters
-- Run all linters via:
+- Run primary linters (default):
   ```bash
   python run_linters.py
   ```
-- Individual linter options:
-  - `python run_linters.py --flake8-only` - Style and static analysis
-  - `python run_linters.py --black-only` - Code formatting check
-  - `python run_linters.py --isort-only` - Import ordering check
+- Run ALL linters (comprehensive check):
+  ```bash
+  python run_linters.py --all
+  ```
+- **Primary linters (recommended)**:
+  - `python run_linters.py --ruff-only` - Primary linter (handles most needs)
   - `python run_linters.py --mypy-only` - Type checking
-  - `python run_linters.py --pylint-only` - Advanced static analysis
+  - `python run_linters.py --bandit-only` - Security scanning
+  - `python run_linters.py --xenon-only` - Complexity checking
+- **Additional linters (available as options)**:
+  - `python run_linters.py --flake8-only` - Traditional style checker
+  - `python run_linters.py --black-only` - Legacy code formatter
+  - `python run_linters.py --isort-only` - Legacy import sorter
+  - `python run_linters.py --pylint-only` - Comprehensive static analysis
+  - `python run_linters.py --vulture-only` - Dead code detection
+  - `python run_linters.py --safety-only` - Dependency vulnerability scanner
+  - `python run_linters.py --pyright-only` - Alternative type checker
 - Apply formatting automatically:
   ```bash
-  python run_linters.py --format  # Applies Black and isort formatting
+  python run_linters.py --format  # Applies Ruff formatting
   ```
-- Formatting tools use **Black** (line length 88) and **isort**.
+- **Primary tool**: Ruff (replaces Black, isort, Flake8, and most Pylint functionality).
 
 ### Pre-commit Hooks
 - **NEVER skip pre-commit hooks** with `--no-verify`
 - If pre-commit hooks fail, fix the issues before committing
-- Pre-commit hooks run the same linters automatically
+- **Active pre-commit hooks**:
+  - **Ruff**: Primary linter (style, formatting, import sorting, static analysis)
+  - **MyPy**: Type checking
+  - **Bandit**: Security vulnerability scanning
+  - **Xenon**: Code complexity analysis (C grade or better)
+- Pre-commit hooks run the primary linters automatically
 
 ## Testing
 
@@ -176,7 +192,7 @@ That's it! No need to overthink it.
    - Solution: Mock these classes at module level before imports
 
 2. **PyQt segmentation faults:** Common in GUI tests
-   - Solution: Run GUI tests separately or use `run_non_gui_tests.py`
+   - Solution: Run GUI tests separately or use `run_non_gui_tests_ci.py`
 
 3. **Import errors:** Always activate virtual environment first
    - Solution: `source .venv/bin/activate && pip install -e .`

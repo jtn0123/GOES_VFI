@@ -1,5 +1,6 @@
 """Preview management functionality for the main GUI window."""
 
+import contextlib
 import os
 from pathlib import Path
 import tempfile
@@ -10,6 +11,8 @@ from PIL import Image
 from PyQt6.QtCore import QObject, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QImage, QPixmap
 
+from goesvfi.gui_components.thumbnail_manager import THUMBNAIL_LARGE, ThumbnailManager
+from goesvfi.gui_components.update_manager import register_update, request_update
 from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
@@ -60,6 +63,56 @@ class PreviewManager(QObject):
         self.first_frame_data: ImageData | None = None
         self.middle_frame_data: ImageData | None = None
         self.last_frame_data: ImageData | None = None
+
+        # Initialize thumbnail manager for memory efficiency
+        self.thumbnail_manager = ThumbnailManager()
+
+        # Register with UpdateManager for batched preview updates
+        self._setup_update_manager()
+
+    def _setup_update_manager(self) -> None:
+        """Register preview updates with the UpdateManager."""
+        register_update("preview_load", self._load_preview_internal, priority=1)
+        register_update("preview_emit", self._emit_preview_signal, priority=2)
+        LOGGER.debug("PreviewManager registered with UpdateManager")
+
+    def _load_preview_internal(self) -> None:
+        """Internal method for batched preview loading."""
+        # This will be called by the UpdateManager in batches
+        if self.current_input_dir:
+            self.load_preview_images(
+                self.current_input_dir,
+                self.current_crop_rect,
+                apply_sanchez=False  # Can be made configurable
+            )
+
+    def _emit_preview_signal(self) -> None:
+        """Emit preview update signal if data is available."""
+        if all([self.first_frame_data, self.middle_frame_data, self.last_frame_data]):
+            try:
+                first_pixmap = self._convert_image_data_to_pixmap(self.first_frame_data)
+                middle_pixmap = self._convert_image_data_to_pixmap(self.middle_frame_data)
+                last_pixmap = self._convert_image_data_to_pixmap(self.last_frame_data)
+
+                self.preview_updated.emit(first_pixmap, middle_pixmap, last_pixmap)
+            except Exception as e:
+                LOGGER.exception("Error converting preview data to pixmaps")
+                self.preview_error.emit(f"Error creating preview: {e}")
+
+    def request_preview_update(self, input_dir: Path | None = None, crop_rect: tuple[int, int, int, int] | None = None) -> None:
+        """Request a preview update through UpdateManager.
+
+        Args:
+            input_dir: Input directory (if None, uses current)
+            crop_rect: Crop rectangle (if None, uses current)
+        """
+        if input_dir:
+            self.current_input_dir = input_dir
+        if crop_rect is not None:
+            self.current_crop_rect = crop_rect
+
+        # Request batched update instead of immediate
+        request_update("preview_load")
 
     def load_preview_images(
         self,
@@ -129,15 +182,15 @@ class PreviewManager(QObject):
             if isinstance(last_array, Image.Image):
                 last_array = np.array(last_array)
 
-            first_pixmap = self._numpy_to_qpixmap(first_array)
-            last_pixmap = self._numpy_to_qpixmap(last_array)
+            first_pixmap = self.numpy_to_qpixmap(first_array)
+            last_pixmap = self.numpy_to_qpixmap(last_array)
 
             # Handle middle frame
             if self.middle_frame_data and self.middle_frame_data.image_data is not None:
                 middle_array = self.middle_frame_data.image_data
                 if isinstance(middle_array, Image.Image):
                     middle_array = np.array(middle_array)
-                middle_pixmap = self._numpy_to_qpixmap(middle_array)
+                middle_pixmap = self.numpy_to_qpixmap(middle_array)
             else:
                 # Create empty pixmap if no middle frame
                 middle_pixmap = QPixmap()
@@ -151,6 +204,150 @@ class PreviewManager(QObject):
             LOGGER.exception("Error loading preview images")
             self.preview_error.emit(str(e))
             return False
+
+    def load_preview_thumbnails(
+        self,
+        input_dir: Path,
+        crop_rect: tuple[int, int, int, int] | None = None,
+        apply_sanchez: bool = False,
+        sanchez_resolution: tuple[int, int] | None = None,
+        thumbnail_size: QSize = THUMBNAIL_LARGE,
+    ) -> bool:
+        """Load preview images as memory-efficient thumbnails.
+
+        This method generates thumbnails instead of loading full-resolution images,
+        significantly reducing memory usage for preview display.
+
+        Args:
+            input_dir: Directory containing input images
+            crop_rect: Optional crop rectangle (x, y, width, height)
+            apply_sanchez: Whether to apply Sanchez processing
+            sanchez_resolution: Resolution for Sanchez processing
+            thumbnail_size: Size for thumbnail generation
+
+        Returns:
+            True if thumbnails were loaded successfully
+        """
+        try:
+            # Ensure input_dir is a Path object
+            if isinstance(input_dir, str):
+                input_dir = Path(input_dir)
+
+            # Validate that the directory exists
+            if not input_dir.exists() or not input_dir.is_dir():
+                LOGGER.debug("Input directory does not exist or is not a directory: %s", input_dir)
+                self.preview_error.emit("Input directory does not exist")
+                return False
+
+            self.current_input_dir = input_dir
+            self.current_crop_rect = crop_rect
+
+            # Get image paths
+            first_path, middle_path, last_path = self._get_first_middle_last_paths(input_dir)
+
+            if not first_path or not last_path:
+                self.preview_error.emit("No images found in directory")
+                return False
+
+            # For Sanchez processing, we need to generate temporary processed images
+            if apply_sanchez:
+                # Process with Sanchez first, then generate thumbnails
+                first_pixmap = self._load_and_process_sanchez_thumbnail(
+                    first_path, crop_rect, sanchez_resolution, thumbnail_size
+                )
+                last_pixmap = self._load_and_process_sanchez_thumbnail(
+                    last_path, crop_rect, sanchez_resolution, thumbnail_size
+                )
+
+                if middle_path:
+                    middle_pixmap = self._load_and_process_sanchez_thumbnail(
+                        middle_path, crop_rect, sanchez_resolution, thumbnail_size
+                    )
+                else:
+                    middle_pixmap = QPixmap()
+            else:
+                # Generate thumbnails directly without Sanchez
+                first_pixmap = self.thumbnail_manager.get_thumbnail(first_path, thumbnail_size, crop_rect)
+                last_pixmap = self.thumbnail_manager.get_thumbnail(last_path, thumbnail_size, crop_rect)
+
+                if middle_path:
+                    middle_pixmap = self.thumbnail_manager.get_thumbnail(middle_path, thumbnail_size, crop_rect)
+                else:
+                    middle_pixmap = QPixmap()
+
+            # Validate thumbnails
+            if not first_pixmap or first_pixmap.isNull() or not last_pixmap or last_pixmap.isNull():
+                self.preview_error.emit("Failed to generate preview thumbnails")
+                return False
+
+            # Store minimal frame data for compatibility
+            self.first_frame_data = ImageData(first_path, None)  # No full image data
+            self.last_frame_data = ImageData(last_path, None)
+            if middle_path:
+                self.middle_frame_data = ImageData(middle_path, None)
+            else:
+                self.middle_frame_data = None
+
+            # Emit update signal with thumbnails
+            self.preview_updated.emit(first_pixmap, middle_pixmap, last_pixmap)
+
+            LOGGER.info(f"Loaded preview thumbnails (size: {thumbnail_size.width()}x{thumbnail_size.height()})")
+            return True
+
+        except Exception as e:
+            LOGGER.exception("Error loading preview thumbnails")
+            self.preview_error.emit(str(e))
+            return False
+
+    def _load_and_process_sanchez_thumbnail(
+        self,
+        image_path: Path,
+        crop_rect: tuple[int, int, int, int] | None,
+        sanchez_resolution: tuple[int, int] | None,
+        thumbnail_size: QSize,
+    ) -> QPixmap | None:
+        """Load image, process with Sanchez, then generate thumbnail.
+
+        Args:
+            image_path: Path to image file
+            crop_rect: Optional crop rectangle
+            sanchez_resolution: Sanchez processing resolution
+            thumbnail_size: Final thumbnail size
+
+        Returns:
+            QPixmap thumbnail or None if failed
+        """
+        try:
+            # Load and process image with existing method
+            image_data = self._load_and_process_image(
+                image_path, crop_rect, True, sanchez_resolution
+            )
+
+            if not image_data or image_data.image_data is None:
+                return None
+
+            # Save processed image to temp file
+            temp_path = self._temp_dir / f"sanchez_{image_path.stem}.png"
+
+            # Convert to PIL Image if needed
+            img_array = image_data.image_data
+            img = Image.fromarray(img_array) if isinstance(img_array, np.ndarray) else img_array
+
+            # Save temporarily
+            img.save(temp_path, "PNG")
+
+            # Generate thumbnail from processed image
+            thumbnail = self.thumbnail_manager.get_thumbnail(temp_path, thumbnail_size)
+
+            # Clean up temp file
+            with contextlib.suppress(Exception):
+                temp_path.unlink()
+
+            return thumbnail
+
+        except Exception:
+            LOGGER.exception(f"Error processing Sanchez thumbnail for {image_path}")
+            return None
 
     def _get_first_middle_last_paths(self, input_dir: Path) -> tuple[Path | None, Path | None, Path | None]:
         """Get the first, middle, and last image paths from a directory.
@@ -261,7 +458,7 @@ class PreviewManager(QObject):
             LOGGER.exception("Error loading/processing image %s", path)
             return None
 
-    def _numpy_to_qpixmap(self, array: np.ndarray[Any, np.dtype[np.uint8]]) -> QPixmap:
+    def numpy_to_qpixmap(self, array: np.ndarray[Any, np.dtype[np.uint8]]) -> QPixmap:
         """Convert a numpy array to QPixmap.
 
         Args:
@@ -349,6 +546,19 @@ class PreviewManager(QObject):
         self.first_frame_data = None
         self.middle_frame_data = None
         self.last_frame_data = None
-        self.current_input_dir = None
-        self.current_crop_rect = None
-        LOGGER.debug("Preview data cleared")
+
+    def clear_cache(self) -> None:
+        """Clear the thumbnail cache to free memory."""
+        if hasattr(self, "thumbnail_manager"):
+            self.thumbnail_manager.clear_cache()
+            LOGGER.info("Preview thumbnail cache cleared")
+
+    def get_memory_usage_info(self) -> dict[str, int]:
+        """Get information about memory usage.
+
+        Returns:
+            Dictionary with memory statistics
+        """
+        if hasattr(self, "thumbnail_manager"):
+            return self.thumbnail_manager.get_cache_info()
+        return {"cache_limit_mb": 0, "items_cached": 0}

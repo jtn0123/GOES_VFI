@@ -448,8 +448,10 @@ class WidgetFactory:
 
         if refresh:
             # Force style refresh
-            widget.style().unpolish(widget)
-            widget.style().polish(widget)
+            style = widget.style()
+            if style:
+                style.unpolish(widget)
+                style.polish(widget)
             widget.update()
 
     @staticmethod
@@ -462,8 +464,10 @@ class WidgetFactory:
         """
 
         def refresh_widget(widget: QWidget) -> None:
-            widget.style().unpolish(widget)
-            widget.style().polish(widget)
+            style = widget.style()
+            if style:
+                style.unpolish(widget)
+                style.polish(widget)
             widget.update()
 
             # Recursively update child widgets
@@ -484,8 +488,10 @@ class WidgetFactory:
 
         if refresh:
             # Force style refresh
-            widget.style().unpolish(widget)
-            widget.style().polish(widget)
+            style = widget.style()
+            if style:
+                style.unpolish(widget)
+                style.polish(widget)
             widget.update()
 
     @staticmethod

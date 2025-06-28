@@ -1,5 +1,5 @@
+from datetime import UTC, datetime
 import os  # Needed for os.utime
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -16,7 +16,7 @@ from goesvfi.date_sorter.sorter import (  # main as date_sorter_main,  # Removed
 # --- Fixtures ---
 
 
-@pytest.fixture
+@pytest.fixture()
 def date_files_dir(tmp_path):
     """Creates a temporary directory and populates it with test PNG files."""
     test_dir = tmp_path / "converted_files"
@@ -24,15 +24,15 @@ def date_files_dir(tmp_path):
 
     # Define datetimes for test files
     # Regular 30 min interval
-    dt1 = datetime(2023, 5, 1, 10, 0, 0, tzinfo=timezone.utc)
-    dt2 = datetime(2023, 5, 1, 10, 30, 0, tzinfo=timezone.utc)
+    dt1 = datetime(2023, 5, 1, 10, 0, 0, tzinfo=UTC)
+    dt2 = datetime(2023, 5, 1, 10, 30, 0, tzinfo=UTC)
     # Gap here (11:00 missing)
-    dt3 = datetime(2023, 5, 1, 11, 30, 0, tzinfo=timezone.utc)
+    dt3 = datetime(2023, 5, 1, 11, 30, 0, tzinfo=UTC)
     # Different day
-    dt4 = datetime(2023, 5, 2, 8, 0, 0, tzinfo=timezone.utc)
+    dt4 = datetime(2023, 5, 2, 8, 0, 0, tzinfo=UTC)
     # Irregular interval (15 min) - should still detect 30 min as most common
-    dt5 = datetime(2023, 5, 1, 12, 0, 0, tzinfo=timezone.utc)  # 30 min after dt3
-    dt6 = datetime(2023, 5, 1, 12, 15, 0, tzinfo=timezone.utc)  # 15 min after dt5
+    dt5 = datetime(2023, 5, 1, 12, 0, 0, tzinfo=UTC)  # 30 min after dt3
+    dt6 = datetime(2023, 5, 1, 12, 15, 0, tzinfo=UTC)  # 15 min after dt5
 
     datetimes_to_create = [dt1, dt2, dt3, dt4, dt5, dt6]
 
@@ -67,7 +67,7 @@ def extract_datetimes_from_dir(target_dir: Path):
 # --- Test Functions ---
 
 
-def test_detect_interval_regular(date_files_dir):
+def test_detect_interval_regular(date_files_dir) -> None:
     """Test interval detection with mostly regular intervals."""
     _, created_dts_utc = date_files_dir
     # Convert to naive datetimes as used in the sorter's parsing logic
@@ -86,13 +86,13 @@ def test_detect_interval_regular(date_files_dir):
     assert detect_interval(test_dts) == 30
 
 
-def test_detect_interval_insufficient_data():
+def test_detect_interval_insufficient_data() -> None:
     """Test interval detection with less than 2 datetimes."""
     assert detect_interval([]) == 30  # Default
     assert detect_interval([datetime(2023, 1, 1, 12, 0, 0)]) == 30  # Default
 
 
-def test_detect_interval_mixed():
+def test_detect_interval_mixed() -> None:
     """Test interval detection with mixed intervals."""
     test_dts = [
         datetime(2023, 1, 1, 10, 0, 0),  # Start
@@ -106,7 +106,7 @@ def test_detect_interval_mixed():
     assert detect_interval(test_dts) == 10
 
 
-def test_detect_interval_rounds_correctly():
+def test_detect_interval_rounds_correctly() -> None:
     """Test rounding to nearest 5 minutes."""
     test_dts = [
         datetime(2023, 1, 1, 10, 0, 0),
@@ -126,22 +126,20 @@ def test_detect_interval_rounds_correctly():
     assert detect_interval(test_dts_2) == 10
 
 
-def test_core_interval_analysis_logic(date_files_dir):
+def test_core_interval_analysis_logic(date_files_dir) -> None:
     """Test the logic of finding missing intervals from extracted datetimes."""
     test_dir, _ = date_files_dir
     datetimes = extract_datetimes_from_dir(test_dir)
 
     # Manually verify extracted datetimes (naive as per sorter logic)
-    expected_dts_naive = sorted(
-        [
-            datetime(2023, 5, 1, 10, 0, 0),
-            datetime(2023, 5, 1, 10, 30, 0),
-            datetime(2023, 5, 1, 11, 30, 0),
-            datetime(2023, 5, 1, 12, 0, 0),
-            datetime(2023, 5, 1, 12, 15, 0),  # Note: This exists but might be skipped depending on detected interval
-            datetime(2023, 5, 2, 8, 0, 0),
-        ]
-    )
+    expected_dts_naive = sorted([
+        datetime(2023, 5, 1, 10, 0, 0),
+        datetime(2023, 5, 1, 10, 30, 0),
+        datetime(2023, 5, 1, 11, 30, 0),
+        datetime(2023, 5, 1, 12, 0, 0),
+        datetime(2023, 5, 1, 12, 15, 0),  # Note: This exists but might be skipped depending on detected interval
+        datetime(2023, 5, 2, 8, 0, 0),
+    ])
     assert datetimes == expected_dts_naive
     assert len(datetimes) == 6  # Ensure only valid files were parsed
 
@@ -188,7 +186,7 @@ def test_core_interval_analysis_logic(date_files_dir):
     assert day2_records.get("08:00") is True
 
 
-def test_format_calendar_output():
+def test_format_calendar_output() -> None:
     """Test the formatting of the calendar output string."""
     daily_records = {
         "2023-10-26": [("09:00", True), ("09:30", False), ("10:00", True)],
@@ -218,7 +216,7 @@ def test_format_calendar_output():
     assert idx_none > idx_missing2  # Ensure "(none)" appears under the second date's missing section
 
 
-def test_empty_directory(tmp_path):
+def test_empty_directory(tmp_path) -> None:
     """Test analysis with an empty directory."""
     empty_dir = tmp_path / "empty"
     empty_dir.mkdir()
@@ -249,7 +247,7 @@ def test_empty_directory(tmp_path):
     assert ":" not in output.split("===")[-1]  # Check no time format appears after header
 
 
-def test_no_matching_files(tmp_path):
+def test_no_matching_files(tmp_path) -> None:
     """Test analysis with a directory containing no matching PNG files."""
     non_matching_dir = tmp_path / "non_matching"
     non_matching_dir.mkdir()

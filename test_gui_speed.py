@@ -58,8 +58,6 @@ def main() -> None:
         if test_path.exists() or "::" in test:
             duration, status = run_single_gui_test(test)
             results.append((test, duration, status))
-        else:
-            pass
 
     # Summary
 
@@ -74,8 +72,6 @@ def main() -> None:
     # Speed assessment
     avg_time = total_time / len(results) if results else 0
     if avg_time < 10 or avg_time < 30 or avg_time < 60:
-        pass
-    else:
         pass
 
 

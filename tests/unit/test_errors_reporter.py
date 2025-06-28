@@ -5,8 +5,8 @@ Tests the ErrorReporter class and its ability to format and report
 structured errors in both simple and verbose modes.
 """
 
-import sys
 from io import StringIO
+import sys
 
 from goesvfi.utils.errors.base import ErrorCategory, ErrorContext, StructuredError
 from goesvfi.utils.errors.reporter import ErrorReporter
@@ -15,14 +15,14 @@ from goesvfi.utils.errors.reporter import ErrorReporter
 class TestErrorReporter:
     """Test error reporter functionality."""
 
-    def test_error_reporter_initialization_default(self):
+    def test_error_reporter_initialization_default(self) -> None:
         """Test error reporter initialization with defaults."""
         reporter = ErrorReporter()
 
         assert reporter.output == sys.stderr
         assert reporter.verbose is False
 
-    def test_error_reporter_initialization_custom(self):
+    def test_error_reporter_initialization_custom(self) -> None:
         """Test error reporter initialization with custom parameters."""
         custom_output = StringIO()
         reporter = ErrorReporter(output=custom_output, verbose=True)
@@ -30,7 +30,7 @@ class TestErrorReporter:
         assert reporter.output == custom_output
         assert reporter.verbose is True
 
-    def test_simple_error_reporting(self):
+    def test_simple_error_reporting(self) -> None:
         """Test simple error reporting mode."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=False)
@@ -47,7 +47,7 @@ class TestErrorReporter:
         # Should not contain technical details in simple mode
         assert "Technical error message" not in output
 
-    def test_simple_error_reporting_with_suggestions(self):
+    def test_simple_error_reporting_with_suggestions(self) -> None:
         """Test simple error reporting with suggestions."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=False)
@@ -71,7 +71,7 @@ class TestErrorReporter:
         assert "• Verify the file exists" in output
         assert "• Ensure you have read permissions" in output
 
-    def test_simple_error_reporting_no_suggestions(self):
+    def test_simple_error_reporting_no_suggestions(self) -> None:
         """Test simple error reporting without suggestions."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=False)
@@ -84,7 +84,7 @@ class TestErrorReporter:
         assert "Error: Simple user message" in output
         assert "Suggestions:" not in output
 
-    def test_verbose_error_reporting(self):
+    def test_verbose_error_reporting(self) -> None:
         """Test verbose error reporting mode."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=True)
@@ -118,7 +118,7 @@ class TestErrorReporter:
         assert "• Check file path" in output
         assert "• Verify permissions" in output
 
-    def test_verbose_error_reporting_with_cause(self):
+    def test_verbose_error_reporting_with_cause(self) -> None:
         """Test verbose error reporting with underlying cause."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=True)
@@ -138,7 +138,7 @@ class TestErrorReporter:
         output = output_stream.getvalue()
         assert "Caused by: /data/missing.txt" in output
 
-    def test_verbose_error_reporting_no_context_data(self):
+    def test_verbose_error_reporting_no_context_data(self) -> None:
         """Test verbose error reporting without context data."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=True)
@@ -161,7 +161,7 @@ class TestErrorReporter:
         # Should not have Context section if no user data
         assert "Context:" not in output
 
-    def test_verbose_error_reporting_no_suggestions(self):
+    def test_verbose_error_reporting_no_suggestions(self) -> None:
         """Test verbose error reporting without suggestions."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=True)
@@ -181,7 +181,7 @@ class TestErrorReporter:
         # Should not have Suggestions section
         assert "Suggestions:" not in output
 
-    def test_verbose_error_reporting_no_cause(self):
+    def test_verbose_error_reporting_no_cause(self) -> None:
         """Test verbose error reporting without underlying cause."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=True)
@@ -201,7 +201,7 @@ class TestErrorReporter:
         # Should not have Caused by section
         assert "Caused by:" not in output
 
-    def test_error_reporting_mode_selection(self):
+    def test_error_reporting_mode_selection(self) -> None:
         """Test that reporter selects correct mode based on verbose flag."""
         simple_stream = StringIO()
         verbose_stream = StringIO()
@@ -241,7 +241,7 @@ class TestErrorReporter:
 class TestErrorReporterIntegration:
     """Integration tests for error reporter with realistic scenarios."""
 
-    def test_file_error_reporting_scenario(self):
+    def test_file_error_reporting_scenario(self) -> None:
         """Test error reporting for file operation scenarios."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=True)
@@ -283,7 +283,7 @@ class TestErrorReporterIntegration:
         assert "Check file permissions" in output
         assert "Caused by: Permission denied" in output
 
-    def test_network_error_reporting_scenario(self):
+    def test_network_error_reporting_scenario(self) -> None:
         """Test error reporting for network operation scenarios."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=False)  # Simple mode
@@ -322,7 +322,7 @@ class TestErrorReporterIntegration:
         assert "api_request" not in output
         assert "NETWORK" not in output
 
-    def test_processing_error_reporting_scenario(self):
+    def test_processing_error_reporting_scenario(self) -> None:
         """Test error reporting for processing operation scenarios."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=True)
@@ -363,7 +363,7 @@ class TestErrorReporterIntegration:
         assert "processing_time: 15.7" in output
         assert "Try with a smaller target size" in output
 
-    def test_multiple_error_reporting(self):
+    def test_multiple_error_reporting(self) -> None:
         """Test reporting multiple errors to same stream."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=False)
@@ -391,7 +391,7 @@ class TestErrorReporterIntegration:
         assert "• First suggestion" in output
         assert "• Second suggestion" in output
 
-    def test_error_reporting_with_empty_data(self):
+    def test_error_reporting_with_empty_data(self) -> None:
         """Test error reporting with minimal/empty data."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=True)
@@ -409,7 +409,7 @@ class TestErrorReporterIntegration:
         assert "Operation: unknown" in output
         assert "Recoverable: False" in output
 
-    def test_error_reporting_encoding_handling(self):
+    def test_error_reporting_encoding_handling(self) -> None:
         """Test error reporting with special characters."""
         output_stream = StringIO()
         reporter = ErrorReporter(output=output_stream, verbose=True)

@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 )
 
 from goesvfi.file_sorter.view_model import FileSorterViewModel  # Import ViewModel
+from goesvfi.gui_components.update_manager import register_update, request_update
 
 LOGGER = logging.getLogger(__name__)
 
@@ -163,6 +164,9 @@ class FileSorterTab(QWidget):
         source_browse_button.clicked.connect(self._browse_source)
         self.sort_button.clicked.connect(self._start_sorting)
 
+        # Setup UpdateManager integration
+        self._setup_update_manager()
+
         # Set main layout
         self.setLayout(main_layout)
 
@@ -182,6 +186,42 @@ class FileSorterTab(QWidget):
     def _start_sorting(self) -> None:
         """Starts the file sorting process via the ViewModel."""
         self.view_model.start_sorting()  # Delegate to ViewModel
+
+    def _setup_update_manager(self) -> None:
+        """Set up UpdateManager integration for batched UI updates."""
+        # Register UI update operations
+        register_update("file_sorter_ui", self._update_ui_batched, priority=2)
+        register_update("file_sorter_progress", self._update_progress_batched, priority=1)
+        register_update("file_sorter_status", self._update_status_batched, priority=2)
+
+        LOGGER.info("FileSorterTab integrated with UpdateManager")
+
+    def _update_ui_batched(self) -> None:
+        """Batched wrapper for full UI update."""
+        self._update_ui()
+
+    def _update_progress_batched(self) -> None:
+        """Batched wrapper for progress update."""
+        self.progress_bar.setValue(int(self.view_model.progress_percentage))
+
+    def _update_status_batched(self) -> None:
+        """Batched wrapper for status update."""
+        self.status_text.clear()
+        self.status_text.append(self.view_model.status_message)
+        self.sort_button.setEnabled(self.view_model.can_start_sorting)
+
+    def request_ui_update(self, update_type: str = "ui") -> None:
+        """Request UI updates through UpdateManager.
+
+        Args:
+            update_type: Type of update ('ui', 'progress', 'status')
+        """
+        if update_type == "ui":
+            request_update("file_sorter_ui")
+        elif update_type == "progress":
+            request_update("file_sorter_progress")
+        elif update_type == "status":
+            request_update("file_sorter_status")
 
     def _update_ui(self) -> None:
         """Updates UI elements based on ViewModel state."""

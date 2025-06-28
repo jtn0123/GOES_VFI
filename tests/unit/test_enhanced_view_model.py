@@ -1,11 +1,11 @@
 """Unit tests for the integrity_check enhanced view model functionality."""
 
 import asyncio
-import tempfile
-import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Union
+import tempfile
+from typing import Never
+import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from PyQt6.QtCore import QCoreApplication, QThreadPool
@@ -31,7 +31,7 @@ from tests.utils.pyqt_async_test import PyQtAsyncTestCase, async_test
 class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
     """Test cases for the EnhancedIntegrityCheckViewModel class."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Call parent setUp to initialize PyQt/asyncio properly
         super().setUp()
@@ -73,7 +73,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.mock_thread_pool = MagicMock(spec=QThreadPool)
 
         # Override the start method to run tasks directly for testing
-        def direct_execute(runnable):
+        def direct_execute(runnable) -> None:
             # Just run the task directly without threading
             runnable.run()
 
@@ -94,7 +94,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.start_date = datetime(2023, 6, 15, 0, 0, 0)
         self.end_date = datetime(2023, 6, 15, 1, 0, 0)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Stop patches
         if hasattr(self, "mock_get_disk_space"):
@@ -133,7 +133,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         # Call parent tearDown to clean up signal connections and event loop
         super().tearDown()
 
-    def test_init_default_values(self):
+    def test_init_default_values(self) -> None:
         """Test initialization with default values."""
         # Create a fresh view model with default values
         vm = EnhancedIntegrityCheckViewModel()
@@ -149,7 +149,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         assert vm._downloaded_count == 0
         assert vm._failed_count == 0
 
-    def test_property_getters_and_setters(self):
+    def test_property_getters_and_setters(self) -> None:
         """Test property getters and setters."""
         # Test satellite property
         assert self.view_model.satellite == SatellitePattern.GOES_18  # Default
@@ -204,7 +204,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model.max_concurrent_downloads = 10
         assert self.view_model.max_concurrent_downloads == 10
 
-    def test_get_disk_space_info(self):
+    def test_get_disk_space_info(self) -> None:
         """Test getting disk space information."""
         # The view_model.get_disk_space_info is already mocked in setUp
         # Let's just verify it returns our expected values
@@ -238,7 +238,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
             assert round(used_gb - expected_used_gb, 2) == 0
             assert round(total_gb - expected_total_gb, 2) == 0
 
-    def test_reset_database(self):
+    def test_reset_database(self) -> None:
         """Test resetting the database."""
         # Since the enhanced view model wraps the mock CacheDB in a ThreadLocalCacheDB,
         # we can't directly test the mock call. Instead, test that the method works
@@ -257,7 +257,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
 
         # Test passes if no exception was raised and status was updated
 
-    def test_handle_enhanced_scan_progress(self):
+    def test_handle_enhanced_scan_progress(self) -> None:
         """Test handling enhanced scan progress updates."""
         # Mock signals
         self.view_model.status_updated = MagicMock()
@@ -272,7 +272,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model.status_updated.emit.assert_called_once_with("Testing progress")
         self.view_model.progress_updated.emit.assert_called_once_with(50, 100, 0.0)
 
-    def test_handle_enhanced_scan_completed(self):
+    def test_handle_enhanced_scan_completed(self) -> None:
         """Test handling enhanced scan completion."""
         # Mock signals
         self.view_model.status_updated = MagicMock()
@@ -307,9 +307,11 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         existing = {now - timedelta(minutes=1), now - timedelta(minutes=3)}
         missing = {now - timedelta(minutes=2), now - timedelta(minutes=4)}
 
-        self.view_model._handle_enhanced_scan_completed(
-            {"status": "completed", "existing": existing, "missing": missing}
-        )
+        self.view_model._handle_enhanced_scan_completed({
+            "status": "completed",
+            "existing": existing,
+            "missing": missing,
+        })
 
         # Verify
         assert self.view_model._last_scan_time.date() == datetime.now().date()
@@ -327,13 +329,11 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model.missing_items_updated.reset_mock()
         self.view_model.scan_completed.reset_mock()
 
-        self.view_model._handle_enhanced_scan_completed(
-            {
-                "status": "completed",
-                "existing": existing,
-                "missing": set(),  # No missing items
-            }
-        )
+        self.view_model._handle_enhanced_scan_completed({
+            "status": "completed",
+            "existing": existing,
+            "missing": set(),  # No missing items
+        })
 
         # Verify
         assert len(self.view_model._missing_timestamps) == 0
@@ -341,7 +341,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         assert self.view_model.status == ScanStatus.COMPLETED
         self.view_model.scan_completed.emit.assert_called_once()
 
-    def test_handle_enhanced_download_progress(self):
+    def test_handle_enhanced_download_progress(self) -> None:
         """Test handling enhanced download progress updates."""
         # Mock signals
         self.view_model.status_updated = MagicMock()
@@ -356,7 +356,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         self.view_model.status_updated.emit.assert_called_once_with("Downloading: 3/10 files")
         self.view_model.download_progress_updated.emit.assert_called_once_with(3, 10)
 
-    def test_handle_download_item_progress(self):
+    def test_handle_download_item_progress(self) -> None:
         """Test handling download item progress updates."""
         # Setup
         timestamp = datetime.now()
@@ -389,7 +389,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         # Verify no emissions for invalid index
         self.view_model.download_item_progress.emit.assert_not_called()
 
-    def test_handle_enhanced_download_completed(self):
+    def test_handle_enhanced_download_completed(self) -> None:
         """Test handling enhanced download completion."""
         # Setup
         timestamp1 = datetime.now()
@@ -411,7 +411,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
 
         # Create results
         success_path = self.base_dir / "success.png"
-        results: dict[datetime, Union[Path, Exception]] = {
+        results: dict[datetime, Path | Exception] = {
             timestamp1: success_path,  # Success
             timestamp2: FileNotFoundError("Not found"),  # Error
         }
@@ -451,7 +451,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
         # Verify status message
         assert self.view_model.status_message == "Downloads complete: 1 successful, 1 failed"
 
-    def test_cleanup(self):
+    def test_cleanup(self) -> None:
         """Test cleanup method."""
         # Create a fresh view model with mocked components
         mock_cache_db = MagicMock(spec=CacheDB)
@@ -499,7 +499,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
             if hasattr(vm, "_cache_db"):
                 delattr(vm, "_cache_db")
 
-    def test_start_enhanced_scan(self):
+    def test_start_enhanced_scan(self) -> None:
         """Test starting enhanced scan."""
         # Mock AsyncScanTask constructor and instance
         mock_scan_task = MagicMock()
@@ -523,7 +523,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
             mock_scan_task_class.assert_called_once_with(self.view_model)
             self.mock_thread_pool.start.assert_called_once_with(mock_scan_task)
 
-    def test_start_enhanced_downloads(self):
+    def test_start_enhanced_downloads(self) -> None:
         """Test starting enhanced downloads."""
         # Mock AsyncDownloadTask constructor and instance
         mock_download_task = MagicMock()
@@ -571,7 +571,7 @@ class TestEnhancedIntegrityCheckViewModel(PyQtAsyncTestCase):
 class TestAsyncTasks(PyQtAsyncTestCase):
     """Test cases for the async tasks used by the enhanced view model."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Call parent setUp for PyQt/asyncio setup
         super().setUp()
@@ -621,7 +621,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         self.patch_new_event_loop = patch("asyncio.new_event_loop", return_value=self._event_loop)
         self.mock_new_event_loop = self.patch_new_event_loop.start()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Stop patches
         if hasattr(self, "patch_new_event_loop"):
@@ -630,19 +630,17 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         # Clean up AsyncMock references to avoid warnings
         if hasattr(self, "mock_view_model") and hasattr(self.mock_view_model, "_reconcile_manager"):
             if self.mock_view_model._reconcile_manager is not None:
-                if hasattr(self.mock_view_model._reconcile_manager, "scan_directory"):
-                    if hasattr(
-                        self.mock_view_model._reconcile_manager.scan_directory,
-                        "reset_mock",
-                    ):
-                        self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
+                if hasattr(self.mock_view_model._reconcile_manager, "scan_directory") and hasattr(
+                    self.mock_view_model._reconcile_manager.scan_directory,
+                    "reset_mock",
+                ):
+                    self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
                 # Don't try to reset the fetch_missing_files if it's a function
-                if hasattr(self.mock_view_model._reconcile_manager, "fetch_missing_files"):
-                    if hasattr(
-                        self.mock_view_model._reconcile_manager.fetch_missing_files,
-                        "reset_mock",
-                    ):
-                        self.mock_view_model._reconcile_manager.fetch_missing_files.reset_mock()
+                if hasattr(self.mock_view_model._reconcile_manager, "fetch_missing_files") and hasattr(
+                    self.mock_view_model._reconcile_manager.fetch_missing_files,
+                    "reset_mock",
+                ):
+                    self.mock_view_model._reconcile_manager.fetch_missing_files.reset_mock()
 
         # Clean up signal objects to avoid warnings
         if hasattr(self, "scan_task") and hasattr(self.scan_task, "signals"):
@@ -657,7 +655,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         # Call parent tearDown
         super().tearDown()
 
-    def test_scan_task_run(self):
+    def test_scan_task_run(self) -> None:
         """Test scanning task execution."""
         # Simply verify the run method properly calls _run_scan and emits signals
         # Create a spy for the scan_finished signal
@@ -695,7 +693,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
                     assert scan_finished_spy.call_args[0][0] == expected_result
 
     @async_test
-    async def test_run_scan(self):
+    async def test_run_scan(self) -> None:
         """Test the async scan operation."""
         # Mock scan result
         existing = {datetime(2023, 6, 15, 0, 0, 0)}
@@ -736,7 +734,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         assert result["status"] == "error"
         assert result["error"] == "Test error"
 
-    def test_download_task_run(self):
+    def test_download_task_run(self) -> None:
         """Test download task execution."""
         # Simply verify the run method properly calls _run_downloads and emits signals
         # Create a spy for the download_finished signal
@@ -775,7 +773,7 @@ class TestAsyncTasks(PyQtAsyncTestCase):
                     assert download_finished_spy.call_args[0][0] == expected_result
 
     @async_test
-    async def test_run_downloads(self):
+    async def test_run_downloads(self) -> None:
         """Test the async download operation."""
         # Setup test data
         mock_timestamp = datetime(2023, 6, 15, 0, 0, 0)
@@ -801,8 +799,8 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         # We can't assert on the mock directly since we're using a function, so we'll skip that check
 
         # Test cancelled operation
-        async def mock_cancelled(*args, **kwargs):
-            raise asyncio.CancelledError()
+        async def mock_cancelled(*args, **kwargs) -> Never:
+            raise asyncio.CancelledError
 
         self.mock_view_model._reconcile_manager.fetch_missing_files = mock_cancelled
 
@@ -810,8 +808,9 @@ class TestAsyncTasks(PyQtAsyncTestCase):
         assert result == {}
 
         # Test error handling
-        async def mock_error(*args, **kwargs):
-            raise Exception("Test error")
+        async def mock_error(*args, **kwargs) -> Never:
+            msg = "Test error"
+            raise Exception(msg)
 
         self.mock_view_model._reconcile_manager.fetch_missing_files = mock_error
 

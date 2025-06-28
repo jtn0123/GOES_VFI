@@ -3,7 +3,7 @@
 from .pyqt_async_test import AsyncSignalWaiter, PyQtAsyncTestCase, async_test
 
 __all__ = [
-    "PyQtAsyncTestCase",
     "AsyncSignalWaiter",
+    "PyQtAsyncTestCase",
     "async_test",
 ]

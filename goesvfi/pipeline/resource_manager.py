@@ -12,6 +12,8 @@ import os
 import threading
 from typing import Any
 
+from goesvfi.core.base_manager import ConfigurableManager
+from goesvfi.core.global_process_pool import get_global_process_pool
 from goesvfi.pipeline.exceptions import ResourceError
 from goesvfi.utils import log
 from goesvfi.utils.memory_manager import get_memory_monitor
@@ -31,7 +33,7 @@ class ResourceLimits:
     critical_memory_percent: float = 90.0
 
 
-class ResourceManager:
+class ResourceManager(ConfigurableManager):
     """Manages system resources for processing operations."""
 
     def __init__(self, limits: ResourceLimits | None = None) -> None:
@@ -41,27 +43,47 @@ class ResourceManager:
             limits: Resource limits configuration
         """
         self.limits = limits or ResourceLimits()
+
+        # Convert limits to config dict for base class
+        default_config = {
+            "max_workers": self.limits.max_workers,
+            "max_memory_mb": self.limits.max_memory_mb,
+            "max_cpu_percent": self.limits.max_cpu_percent,
+            "chunk_size_mb": self.limits.chunk_size_mb,
+            "warn_memory_percent": self.limits.warn_memory_percent,
+            "critical_memory_percent": self.limits.critical_memory_percent,
+        }
+
+        super().__init__("ResourceManager", default_config=default_config)
+
         self.memory_monitor = get_memory_monitor()
         self._executors: dict[str, ProcessPoolExecutor | ThreadPoolExecutor] = {}
         self._lock = threading.Lock()
 
+        # Track resources for cleanup
+        self._track_resource(self.memory_monitor)
+
+    def _do_initialize(self) -> None:
+        """Perform actual initialization."""
         # Start memory monitoring
         self.memory_monitor.start_monitoring(interval=2.0)
         self.memory_monitor.add_callback(self._memory_callback)
+        self.log_info("Memory monitoring started")
 
     def _memory_callback(self, stats: Any) -> None:
         """Handle memory status updates."""
-        if stats.percent_used > self.limits.critical_memory_percent:
-            LOGGER.critical(
-                "Memory usage critical: %s%% (limit: %s%%)",
-                round(stats.percent_used, 1),
-                self.limits.critical_memory_percent,
-            )
-        elif stats.percent_used > self.limits.warn_memory_percent:
-            LOGGER.warning(
+        critical_percent = self.get_config("critical_memory_percent", 90.0)
+        warn_percent = self.get_config("warn_memory_percent", 75.0)
+
+        if stats.percent_used > critical_percent:
+            msg = f"Memory usage critical: {round(stats.percent_used, 1)}% (limit: {critical_percent}%)"
+            self.log_error(msg)
+            self.error_occurred.emit(msg)
+        elif stats.percent_used > warn_percent:
+            self.log_warning(
                 "Memory usage high: %s%% (warning at: %s%%)",
                 round(stats.percent_used, 1),
-                self.limits.warn_memory_percent,
+                warn_percent,
             )
 
     def check_resources(self, required_memory_mb: int = 0) -> None:
@@ -84,8 +106,9 @@ class ResourceManager:
             )
 
         # Check if we're over the critical threshold
-        if stats.percent_used > self.limits.critical_memory_percent:
-            msg = f"Memory usage too high: {stats.percent_used:.1f}% (limit: {self.limits.critical_memory_percent}%)"
+        critical_percent = self.get_config("critical_memory_percent", 90.0)
+        if stats.percent_used > critical_percent:
+            msg = f"Memory usage too high: {stats.percent_used:.1f}% (limit: {critical_percent}%)"
             raise ResourceError(
                 msg,
                 resource_type="memory",
@@ -110,14 +133,15 @@ class ResourceManager:
         cpu_based_workers = max(1, int(cpu_count * 0.75))
 
         # Take minimum of all constraints
-        optimal = min(self.limits.max_workers, memory_based_workers, cpu_based_workers)
+        max_workers = self.get_config("max_workers", 2)
+        optimal = min(max_workers, memory_based_workers, cpu_based_workers)
 
-        LOGGER.info(
+        self.log_info(
             "Optimal workers: %d (CPU: %d, Memory: %d, Limit: %d)",
             optimal,
             cpu_based_workers,
             memory_based_workers,
-            self.limits.max_workers,
+            max_workers,
         )
 
         return optimal
@@ -135,7 +159,8 @@ class ResourceManager:
         Yields:
             ProcessPoolExecutor instance
         """
-        max_workers = self.get_optimal_workers() if max_workers is None else min(max_workers, self.limits.max_workers)
+        max_workers_limit = self.get_config("max_workers", 2)
+        max_workers = self.get_optimal_workers() if max_workers is None else min(max_workers, max_workers_limit)
 
         # Check resources before creating executor
         self.check_resources()
@@ -146,13 +171,13 @@ class ResourceManager:
             self._executors[executor_id] = executor
 
         try:
-            LOGGER.info("Created ProcessPoolExecutor with %d workers", max_workers)
+            self.log_info("Created ProcessPoolExecutor with %d workers", max_workers)
             yield executor
         finally:
             executor.shutdown(wait=True)
             with self._lock:
                 self._executors.pop(executor_id, None)
-            LOGGER.info("Shut down ProcessPoolExecutor")
+            self.log_info("Shut down ProcessPoolExecutor")
 
     @contextmanager
     def thread_executor(
@@ -167,7 +192,8 @@ class ResourceManager:
         Yields:
             ThreadPoolExecutor instance
         """
-        max_workers = self.get_optimal_workers() if max_workers is None else min(max_workers, self.limits.max_workers)
+        max_workers_limit = self.get_config("max_workers", 2)
+        max_workers = self.get_optimal_workers() if max_workers is None else min(max_workers, max_workers_limit)
 
         # Check resources before creating executor
         self.check_resources()
@@ -178,24 +204,31 @@ class ResourceManager:
             self._executors[executor_id] = executor
 
         try:
-            LOGGER.info("Created ThreadPoolExecutor with %d workers", max_workers)
+            self.log_info("Created ThreadPoolExecutor with %d workers", max_workers)
             yield executor
         finally:
             executor.shutdown(wait=True)
             with self._lock:
                 self._executors.pop(executor_id, None)
-            LOGGER.info("Shut down ThreadPoolExecutor")
+            self.log_info("Shut down ThreadPoolExecutor")
 
-    def shutdown_all(self) -> None:
-        """Shutdown all active executors."""
+    def _do_cleanup(self) -> None:
+        """Perform actual cleanup."""
+        # Shutdown all executors
         with self._lock:
             for executor_id, executor in list(self._executors.items()):
-                LOGGER.info("Shutting down executor: %s", executor_id)
+                self.log_info("Shutting down executor: %s", executor_id)
                 executor.shutdown(wait=False)
             self._executors.clear()
 
         # Stop memory monitoring
-        self.memory_monitor.stop_monitoring()
+        if self.memory_monitor:
+            self.memory_monitor.stop_monitoring()
+            self.log_info("Memory monitoring stopped")
+
+    def shutdown_all(self) -> None:
+        """Shutdown all active executors."""
+        self.cleanup()
 
     def get_chunk_size(self, total_size_mb: int, min_chunks: int = 2) -> int:
         """Calculate optimal chunk size based on available memory.
@@ -213,7 +246,8 @@ class ResourceManager:
         max_chunk = stats.available_mb // 4
 
         # Apply configured limit
-        max_chunk = min(max_chunk, self.limits.chunk_size_mb)
+        chunk_size_mb = self.get_config("chunk_size_mb", 100)
+        max_chunk = min(max_chunk, chunk_size_mb)
 
         # Ensure we have at least min_chunks
         chunk_size = min(max_chunk, total_size_mb // min_chunks)
@@ -221,7 +255,7 @@ class ResourceManager:
         # But at least 10MB per chunk
         chunk_size = max(chunk_size, 10)
 
-        LOGGER.debug(
+        self.log_debug(
             "Calculated chunk size: %dMB (total: %dMB, available: %dMB)",
             chunk_size,
             total_size_mb,
@@ -255,6 +289,7 @@ def managed_executor(
     executor_type: str = "process",
     max_workers: int | None = None,
     check_resources: bool = True,
+    use_global_pool: bool = True,
 ) -> Generator[ProcessPoolExecutor | ThreadPoolExecutor]:
     """Convenience context manager for resource-managed executors.
 
@@ -262,6 +297,7 @@ def managed_executor(
         executor_type: "process" or "thread"
         max_workers: Maximum workers (None for optimal)
         check_resources: Whether to check resources first
+        use_global_pool: Use global process pool for process executors
 
     Yields:
         Executor instance
@@ -272,8 +308,15 @@ def managed_executor(
         manager.check_resources()
 
     if executor_type == "process":
-        with manager.process_executor(max_workers) as executor:
-            yield executor
+        if use_global_pool:
+            # Use the global process pool instead of creating a new one
+            global_pool = get_global_process_pool()
+            with global_pool.batch_context(max_workers):
+                # Return the global pool's executor
+                yield global_pool._executor
+        else:
+            with manager.process_executor(max_workers) as executor:
+                yield executor
     elif executor_type == "thread":
         with manager.thread_executor(max_workers) as executor:
             yield executor

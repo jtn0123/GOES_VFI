@@ -5,11 +5,10 @@ Tests the complete workflow from directory selection through crop processing,
 including image expansion, crop region selection, and preview re-rendering.
 """
 
+from pathlib import Path
 import tempfile
 import time
 import unittest
-from pathlib import Path
-from typing import Tuple
 from unittest.mock import patch
 
 from PIL import Image
@@ -55,8 +54,8 @@ class TestPreviewCropWorkflow(unittest.TestCase):
     def _create_test_image(
         self,
         name: str,
-        size: Tuple[int, int] = (200, 200),
-        color: Tuple[int, int, int] = (255, 0, 0),
+        size: tuple[int, int] = (200, 200),
+        color: tuple[int, int, int] = (255, 0, 0),
     ) -> Path:
         """Create a test image file."""
         img = Image.new("RGB", size, color)
@@ -338,7 +337,7 @@ class TestPreviewCropWorkflow(unittest.TestCase):
         self._process_events_with_timeout(200)
 
         # Verify images are still loaded after preview update
-        first_data_after, middle_data_after, last_data_after = preview_manager.get_current_frame_data()
+        first_data_after, _middle_data_after, _last_data_after = preview_manager.get_current_frame_data()
         assert first_data_after is not None, "First frame should still be loaded"
 
     def test_error_handling_invalid_crop_coordinates(self) -> None:

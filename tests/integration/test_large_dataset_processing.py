@@ -6,8 +6,8 @@ with proper memory management, streaming, and performance optimization.
 
 import asyncio
 import gc
-import tempfile
 from pathlib import Path
+import tempfile
 from unittest.mock import MagicMock, mock_open, patch
 
 import numpy as np
@@ -29,18 +29,18 @@ from goesvfi.utils.memory_manager import (
 class TestLargeDatasetProcessing:
     """Test processing of large satellite datasets with memory constraints."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def memory_monitor(self):
         """Create a memory monitor instance."""
         return MemoryMonitor()
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_dir(self):
         """Create a temporary directory for test files."""
         with tempfile.TemporaryDirectory() as tmpdir:
             yield Path(tmpdir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def large_netcdf_data(self):
         """Create mock large NetCDF data structure."""
         # Simulate GOES-16 full disk data (5424x5424 pixels)
@@ -71,8 +71,8 @@ class TestLargeDatasetProcessing:
 
         return images
 
-    @pytest.mark.asyncio
-    async def test_streaming_large_netcdf(self, temp_dir, large_netcdf_data):
+    @pytest.mark.asyncio()
+    async def test_streaming_large_netcdf(self, temp_dir, large_netcdf_data) -> None:
         """Test streaming processing of large NetCDF files."""
         temp_dir / "large_goes16.nc"
         temp_dir / "processed_output.png"
@@ -80,7 +80,7 @@ class TestLargeDatasetProcessing:
         # Mock xarray to return large dataset
         with patch("xarray.open_dataset") as mock_open_dataset:
             mock_dataset = MagicMock()
-            mock_dataset.__getitem__.side_effect = lambda key: large_netcdf_data.get(key)
+            mock_dataset.__getitem__.side_effect = large_netcdf_data.get
             mock_dataset.dims = {"x": 5424, "y": 5424}
             mock_dataset.attrs = {"spatial_resolution": "2km at nadir"}
 
@@ -124,8 +124,8 @@ class TestLargeDatasetProcessing:
             assert chunks_processed > 1
             assert chunks_processed == (total_pixels + pixels_per_chunk - 1) // pixels_per_chunk
 
-    @pytest.mark.asyncio
-    async def test_batch_processing_with_memory_limits(self, temp_dir, memory_monitor):
+    @pytest.mark.asyncio()
+    async def test_batch_processing_with_memory_limits(self, temp_dir, memory_monitor) -> None:
         """Test batch processing with dynamic memory-based batch sizing."""
         # Create mock image sequence
         self.create_large_image_sequence(temp_dir, count=100)
@@ -148,8 +148,8 @@ class TestLargeDatasetProcessing:
         # Clean up
         del large_array
 
-    @pytest.mark.asyncio
-    async def test_memory_mapped_file_processing(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_memory_mapped_file_processing(self, temp_dir) -> None:
         """Test processing large files using memory mapping."""
         # Create a large binary file
         large_file = temp_dir / "large_data.bin"
@@ -166,23 +166,22 @@ class TestLargeDatasetProcessing:
             chunk_size = 10 * 1024 * 1024  # 10 MB chunks
             chunks_processed = 0
 
-            with patch("builtins.open", mock_open()):
-                with open(large_file, "r+b") as f:
-                    # Create memory map
-                    mm = mock_mmap(f.fileno(), 0)
+            with patch("builtins.open", mock_open()), open(large_file, "r+b") as f:
+                # Create memory map
+                mm = mock_mmap(f.fileno(), 0)
 
-                    # Process chunks
-                    for offset in range(0, file_size, chunk_size):
-                        mm[offset : offset + chunk_size]
-                        chunks_processed += 1
+                # Process chunks
+                for offset in range(0, file_size, chunk_size):
+                    mm[offset : offset + chunk_size]
+                    chunks_processed += 1
 
-                        # Simulate processing
-                        await asyncio.sleep(0.001)
+                    # Simulate processing
+                    await asyncio.sleep(0.001)
 
             assert chunks_processed == 50  # 500MB / 10MB = 50 chunks
 
-    @pytest.mark.asyncio
-    async def test_concurrent_large_file_processing(self, temp_dir, memory_monitor):
+    @pytest.mark.asyncio()
+    async def test_concurrent_large_file_processing(self, temp_dir, memory_monitor) -> None:
         """Test concurrent processing of multiple large files."""
         # Create multiple large files
         num_files = 5
@@ -193,7 +192,7 @@ class TestLargeDatasetProcessing:
             file_paths.append(file_path)
 
         # Mock file processing
-        async def process_large_file(file_path, semaphore):
+        async def process_large_file(file_path, semaphore) -> str:
             async with semaphore:  # Limit concurrent processing
                 # Simulate memory-intensive processing
                 await asyncio.sleep(0.1)
@@ -223,8 +222,8 @@ class TestLargeDatasetProcessing:
         assert len(results) == num_files
         assert all("Processed" in r for r in results)
 
-    @pytest.mark.asyncio
-    async def test_video_encoding_memory_management(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_video_encoding_memory_management(self, temp_dir) -> None:
         """Test memory-efficient video encoding of large image sequences."""
         # Create large image sequence
         self.create_large_image_sequence(temp_dir, count=1000, size=(3840, 2160))  # 4K
@@ -253,8 +252,8 @@ class TestLargeDatasetProcessing:
         # Memory warnings depend on actual system state, so just verify monitoring worked
         assert isinstance(memory_warnings, int)
 
-    @pytest.mark.asyncio
-    async def test_object_pool_for_large_arrays(self):
+    @pytest.mark.asyncio()
+    async def test_object_pool_for_large_arrays(self) -> None:
         """Test object pooling for large array allocations."""
         # Create object pool for large arrays
         array_pool = ObjectPool(
@@ -280,8 +279,8 @@ class TestLargeDatasetProcessing:
         assert unique_arrays <= 5  # Should reuse arrays from pool
         assert unique_arrays < 10  # Should not create new array each time
 
-    @pytest.mark.asyncio
-    async def test_memory_optimizer_dtype_conversion(self):
+    @pytest.mark.asyncio()
+    async def test_memory_optimizer_dtype_conversion(self) -> None:
         """Test memory optimization through dtype conversion."""
         optimizer = MemoryOptimizer()
 
@@ -301,8 +300,8 @@ class TestLargeDatasetProcessing:
         # Verify value preservation (within float32 precision)
         assert np.allclose(large_array, optimized_array, rtol=1e-6)
 
-    @pytest.mark.asyncio
-    async def test_graceful_degradation_on_memory_pressure(self, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_graceful_degradation_on_memory_pressure(self, temp_dir) -> None:
         """Test system gracefully degrades performance under memory pressure."""
         # Mock memory pressure scenarios
         memory_levels = [30, 50, 70, 85, 95]  # Increasing memory usage
@@ -329,13 +328,11 @@ class TestLargeDatasetProcessing:
                 end_time = asyncio.get_event_loop().time()
 
                 throughput = batch_size / (end_time - start_time)
-                performance_metrics.append(
-                    {
-                        "memory_percent": memory_percent,
-                        "batch_size": batch_size,
-                        "throughput": throughput,
-                    }
-                )
+                performance_metrics.append({
+                    "memory_percent": memory_percent,
+                    "batch_size": batch_size,
+                    "throughput": throughput,
+                })
 
         # Verify graceful degradation
         assert performance_metrics[0]["batch_size"] > performance_metrics[-1]["batch_size"]

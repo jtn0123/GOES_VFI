@@ -8,10 +8,10 @@ different tabs in the integrity check system, including:
 3. Selection synchronization (timestamps, items) across tabs
 """
 
-import tempfile
-import unittest
 from datetime import datetime
 from pathlib import Path
+import tempfile
+import unittest
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtCore import QObject, pyqtSignal
@@ -55,7 +55,7 @@ class MockSignalEmitter(QObject):
 class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
     """Integration tests for data flow between integrity check tabs."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Call parent setUp for proper PyQt/asyncio setup
         super().setUp()
@@ -130,14 +130,14 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Add mock cleanup methods
         self.mock_view_model.cleanup = MagicMock()
 
-    def _connect_tab_signals(self):
+    def _connect_tab_signals(self) -> None:
         """Connect signals between tabs for testing the data flow."""
         # Connect directory signals
         self.integrity_tab.directory_selected.connect(self.timeline_tab.set_directory)
         self.integrity_tab.directory_selected.connect(self.results_tab.set_directory)
 
         # Connect date range signals
-        self.integrity_tab.date_range_changed.connect(lambda start, end: self.timeline_tab.set_date_range(start, end))
+        self.integrity_tab.date_range_changed.connect(self.timeline_tab.set_date_range)
 
         # Connect timestamp selection signal
         self.timeline_tab.timestampSelected.connect(self.results_tab.highlight_item)
@@ -148,7 +148,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Connect missing items updated signal
         self.mock_view_model.missing_items_updated.connect(self._handle_mock_missing_items_updated)
 
-    def _handle_mock_scan_completed(self, success, message):
+    def _handle_mock_scan_completed(self, success, message) -> None:
         """Handle the scan completed signal from the view model."""
         # In a real app, this would be handled by the combined tab,
         # but for our test we'll simulate it
@@ -164,7 +164,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
             # Simulate updating the results tab
             self.results_tab.set_items(self.mock_view_model.missing_items, self.mock_view_model.total_expected)
 
-    def _handle_mock_missing_items_updated(self, items):
+    def _handle_mock_missing_items_updated(self, items) -> None:
         """Handle the missing items updated signal from the view model."""
         # Simulate updating the tabs with the new missing items
         self.timeline_tab.set_data(
@@ -176,7 +176,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
 
         self.results_tab.set_items(items, self.mock_view_model.total_expected)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up window
         self.main_window.close()
@@ -197,15 +197,15 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Call parent tearDown for proper event loop cleanup
         super().tearDown()
 
-    def test_directory_propagation_to_all_tabs(self):
+    def test_directory_propagation_to_all_tabs(self) -> None:
         """Test that directory selection propagates to all tabs."""
         # Track signals received
         timeline_dir_received = []
         results_dir_received = []
 
         # Connect to signals to track them
-        self.timeline_tab.directorySelected.connect(lambda d: timeline_dir_received.append(d))
-        self.results_tab.directorySelected.connect(lambda d: results_dir_received.append(d))
+        self.timeline_tab.directorySelected.connect(timeline_dir_received.append)
+        self.results_tab.directorySelected.connect(results_dir_received.append)
 
         # Change the directory in the integrity tab
         test_dir = "/test/directory"
@@ -224,7 +224,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         assert results_dir_received[0] == test_dir, f"Expected {test_dir}, got {results_dir_received[0]}"
 
     @async_test
-    async def test_date_range_propagation_to_timeline_tab(self):
+    async def test_date_range_propagation_to_timeline_tab(self) -> None:
         """Test that date range changes propagate to the timeline tab."""
         # Set up signal waiter for timeline tab
         # The timeline tab doesn't have a direct signal for date range changes,
@@ -255,7 +255,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         assert self.timeline_tab.start_timestamp == new_start
         assert self.timeline_tab.end_timestamp == new_end
 
-    def test_scan_results_propagation(self):
+    def test_scan_results_propagation(self) -> None:
         """Test that scan results propagate to both timeline and results tabs."""
         # Track whether set_data and set_items were called with correct parameters
         timeline_data_received = []
@@ -264,15 +264,13 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Mock the timeline tab's set_data method to track calls
         original_timeline_set_data = self.timeline_tab.set_data
 
-        def mock_timeline_set_data(missing_items, start_time, end_time, interval_minutes):
-            timeline_data_received.append(
-                {
-                    "missing_items": missing_items,
-                    "start_time": start_time,
-                    "end_time": end_time,
-                    "interval": interval_minutes,
-                }
-            )
+        def mock_timeline_set_data(missing_items, start_time, end_time, interval_minutes) -> None:
+            timeline_data_received.append({
+                "missing_items": missing_items,
+                "start_time": start_time,
+                "end_time": end_time,
+                "interval": interval_minutes,
+            })
             # Still call the original method
             original_timeline_set_data(missing_items, start_time, end_time, interval_minutes)
 
@@ -283,7 +281,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Mock the results tab's set_items method to track calls
         original_results_set_items = self.results_tab.set_items
 
-        def mock_results_set_items(items, total_expected):
+        def mock_results_set_items(items, total_expected) -> None:
             results_data_received.append({"items": items, "total_expected": total_expected})
             # Still call the original method
             original_results_set_items(items, total_expected)
@@ -315,7 +313,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         self.patch_timeline_set_data.stop()
         self.patch_results_set_items.stop()
 
-    def test_timestamp_selection_propagation(self):
+    def test_timestamp_selection_propagation(self) -> None:
         """Test that timestamp selection propagates from timeline to results tab."""
         # Track whether highlight_item was called
         highlight_calls = []
@@ -323,11 +321,11 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Mock the highlight_item method on the results tab to track calls
         original_highlight = self.results_tab.highlight_item
 
-        def mock_highlight(timestamp):
+        def mock_highlight(timestamp) -> None:
             highlight_calls.append(timestamp)
             original_highlight(timestamp)
 
-        self.results_tab.highlight_item = mock_highlight  # type: ignore[method-assign] # noqa: B010
+        self.results_tab.highlight_item = mock_highlight  # type: ignore[method-assign]
 
         # Re-connect the signal to our mocked method
         self.timeline_tab.timestampSelected.disconnect()  # Disconnect any existing
@@ -351,7 +349,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         assert highlight_calls[0] == test_timestamp
 
     @async_test
-    async def test_combined_tab_data_flow(self):
+    async def test_combined_tab_data_flow(self) -> None:
         """Test data flow in the combined tab configuration."""
         # This test uses CombinedIntegrityTab which should coordinate
         # between all the individual tabs
@@ -384,7 +382,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         combined_tab.close()
         combined_tab.deleteLater()
 
-    def test_simulated_tab_navigation(self):
+    def test_simulated_tab_navigation(self) -> None:
         """Test tab navigation and data consistency between tabs."""
         # Track data received by tabs
         timeline_has_data = False
@@ -393,7 +391,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Monitor timeline tab data
         original_timeline_set_data = self.timeline_tab.set_data
 
-        def check_timeline_set_data(missing_items, start_time, end_time, interval_minutes):
+        def check_timeline_set_data(missing_items, start_time, end_time, interval_minutes) -> None:
             nonlocal timeline_has_data
             if missing_items == self.mock_missing_items:
                 timeline_has_data = True
@@ -406,7 +404,7 @@ class TestIntegrityTabDataFlow(PyQtAsyncTestCase):
         # Monitor results tab data
         original_results_set_items = self.results_tab.set_items
 
-        def check_results_set_items(items, total_expected):
+        def check_results_set_items(items, total_expected) -> None:
             nonlocal results_has_data
             if items == self.mock_missing_items:
                 results_has_data = True

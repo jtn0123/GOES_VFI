@@ -78,8 +78,7 @@ class DirectoryScanner:
 
     @classmethod
     def _extract_timestamp_from_file(
-        cls,
-        file_path: Path, pattern: SatellitePattern, extractor: TimestampExtractor
+        cls, file_path: Path, pattern: SatellitePattern, extractor: TimestampExtractor
     ) -> datetime | None:
         """Extract timestamp from a single file or its parent directory."""
         try:
@@ -95,8 +94,7 @@ class DirectoryScanner:
 
     @classmethod
     def _extract_timestamps_from_subdirs(
-        cls,
-        directory: Path, start_time: datetime | None, end_time: datetime | None
+        cls, directory: Path, start_time: datetime | None, end_time: datetime | None
     ) -> list[datetime]:
         """Extract timestamps from subdirectory names."""
         timestamps = []
@@ -111,8 +109,7 @@ class DirectoryScanner:
         return timestamps
 
     @classmethod
-    def _is_in_time_range(
-        cls,timestamp: datetime, start_time: datetime | None, end_time: datetime | None) -> bool:
+    def _is_in_time_range(cls, timestamp: datetime, start_time: datetime | None, end_time: datetime | None) -> bool:
         """Check if timestamp is within the specified time range."""
         if start_time and timestamp < start_time:
             return False

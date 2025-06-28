@@ -438,8 +438,6 @@ class TestIntegrityTabPerformance(PyQtAsyncTestCase):
         if event_times:
             sum(event_times) / len(event_times)
             max(event_times)
-        else:
-            pass
 
         # Clean up
         main_window.close()

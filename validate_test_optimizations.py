@@ -196,8 +196,6 @@ def main():
 
     if all_maintained:
         pass
-    else:
-        pass
 
     # Optimization techniques summary
 

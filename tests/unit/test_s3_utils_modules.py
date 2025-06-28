@@ -1,8 +1,7 @@
 """Tests for S3 utilities modules."""
 
-import asyncio
-import socket
 from datetime import datetime
+import socket
 from unittest.mock import patch
 
 import botocore.exceptions
@@ -10,9 +9,7 @@ import pytest
 
 from goesvfi.integrity_check.remote.base import (
     AuthenticationError,
-)
-from goesvfi.integrity_check.remote.base import ConnectionError as RemoteConnectionError
-from goesvfi.integrity_check.remote.base import (
+    ConnectionError as RemoteConnectionError,
     RemoteStoreError,
     ResourceNotFoundError,
 )
@@ -29,7 +26,7 @@ from goesvfi.integrity_check.time_index import SatellitePattern
 class TestDownloadStatsTracker:
     """Test the DownloadStatsTracker class."""
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test tracker initialization."""
         tracker = DownloadStatsTracker()
         stats = tracker.get_stats()
@@ -44,7 +41,7 @@ class TestDownloadStatsTracker:
         assert stats.session_id is not None
         assert stats.hostname == socket.gethostname()
 
-    def test_successful_download(self):
+    def test_successful_download(self) -> None:
         """Test tracking successful download."""
         tracker = DownloadStatsTracker()
 
@@ -74,7 +71,7 @@ class TestDownloadStatsTracker:
         assert attempt["file_size"] == 1024
         assert attempt["satellite"] == "GOES_16"
 
-    def test_failed_download(self):
+    def test_failed_download(self) -> None:
         """Test tracking failed download."""
         tracker = DownloadStatsTracker()
 
@@ -93,7 +90,7 @@ class TestDownloadStatsTracker:
         assert len(stats.errors) == 1
         assert "network: Connection timeout" in stats.errors[0]
 
-    def test_error_type_counters(self):
+    def test_error_type_counters(self) -> None:
         """Test different error type counters."""
         tracker = DownloadStatsTracker()
 
@@ -105,7 +102,7 @@ class TestDownloadStatsTracker:
             ("network", "network_errors"),
         ]
 
-        for error_type, counter_name in error_types:
+        for error_type, _counter_name in error_types:
             tracker.update_attempt(
                 success=False,
                 error_type=error_type,
@@ -119,7 +116,7 @@ class TestDownloadStatsTracker:
         assert stats.timeouts == 1
         assert stats.network_errors == 1
 
-    def test_retry_counter(self):
+    def test_retry_counter(self) -> None:
         """Test retry counter."""
         tracker = DownloadStatsTracker()
 
@@ -129,7 +126,7 @@ class TestDownloadStatsTracker:
         stats = tracker.get_stats()
         assert stats.retry_count == 2
 
-    def test_metrics_calculation(self):
+    def test_metrics_calculation(self) -> None:
         """Test metrics calculation."""
         tracker = DownloadStatsTracker()
 
@@ -149,7 +146,7 @@ class TestDownloadStatsTracker:
         # Check network speed calculation
         assert "KB/s" in metrics["network_speed"] or metrics["network_speed"] == "N/A"
 
-    def test_reset(self):
+    def test_reset(self) -> None:
         """Test resetting statistics."""
         tracker = DownloadStatsTracker()
 
@@ -165,7 +162,7 @@ class TestDownloadStatsTracker:
         assert stats.successful == 0
         assert stats.retry_count == 0
 
-    def test_should_log_stats(self):
+    def test_should_log_stats(self) -> None:
         """Test when to log statistics."""
         tracker = DownloadStatsTracker()
 
@@ -173,7 +170,7 @@ class TestDownloadStatsTracker:
         assert tracker.should_log_stats() is False
 
         # Add 9 attempts - still shouldn't log
-        for i in range(9):
+        for _i in range(9):
             tracker.update_attempt(success=True)
         assert tracker.should_log_stats() is False
 
@@ -181,7 +178,7 @@ class TestDownloadStatsTracker:
         tracker.update_attempt(success=True)
         assert tracker.should_log_stats() is True
 
-    def test_should_collect_diagnostics(self):
+    def test_should_collect_diagnostics(self) -> None:
         """Test when to collect diagnostics."""
         tracker = DownloadStatsTracker()
 
@@ -189,7 +186,7 @@ class TestDownloadStatsTracker:
         assert tracker.should_collect_diagnostics() is False
 
         # Add 4 failures - still shouldn't collect
-        for i in range(4):
+        for _i in range(4):
             tracker.update_attempt(success=False)
         assert tracker.should_collect_diagnostics() is False
 
@@ -201,7 +198,7 @@ class TestDownloadStatsTracker:
 class TestS3ClientConfig:
     """Test S3 client configuration."""
 
-    def test_default_config(self):
+    def test_default_config(self) -> None:
         """Test default configuration."""
         config = S3ClientConfig()
 
@@ -212,7 +209,7 @@ class TestS3ClientConfig:
         assert config.max_retries == 2
         assert config.enable_debug_logging is False
 
-    def test_custom_config(self):
+    def test_custom_config(self) -> None:
         """Test custom configuration."""
         config = S3ClientConfig(
             aws_profile="custom",
@@ -230,7 +227,7 @@ class TestS3ClientConfig:
         assert config.max_retries == 5
         assert config.enable_debug_logging is True
 
-    def test_session_kwargs(self):
+    def test_session_kwargs(self) -> None:
         """Test session kwargs generation."""
         # Without profile
         config = S3ClientConfig(aws_region="us-west-2")
@@ -242,7 +239,7 @@ class TestS3ClientConfig:
         kwargs = config.get_session_kwargs()
         assert kwargs == {"region_name": "us-west-2", "profile_name": "custom"}
 
-    def test_create_s3_config(self):
+    def test_create_s3_config(self) -> None:
         """Test creating botocore config."""
         config = create_s3_config(
             timeout=120,
@@ -264,7 +261,7 @@ class TestS3ClientConfig:
 class TestNetworkDiagnostics:
     """Test network diagnostics functionality."""
 
-    def test_collect_system_info(self):
+    def test_collect_system_info(self) -> None:
         """Test system information collection."""
         info = NetworkDiagnostics.collect_system_info()
 
@@ -275,7 +272,7 @@ class TestNetworkDiagnostics:
         assert info["hostname"] == socket.gethostname()
 
     @patch("socket.gethostbyname")
-    def test_s3_resolution_success(self, mock_gethostbyname):
+    def test_s3_resolution_success(self, mock_gethostbyname) -> None:
         """Test successful S3 hostname resolution."""
         mock_gethostbyname.return_value = "1.2.3.4"
 
@@ -293,7 +290,7 @@ class TestNetworkDiagnostics:
             assert resolution["ip"] == "1.2.3.4"
 
     @patch("socket.gethostbyname")
-    def test_s3_resolution_failure(self, mock_gethostbyname):
+    def test_s3_resolution_failure(self, mock_gethostbyname) -> None:
         """Test failed S3 hostname resolution."""
         mock_gethostbyname.side_effect = socket.gaierror("Name resolution failed")
 
@@ -306,7 +303,7 @@ class TestNetworkDiagnostics:
             assert resolution["success"] is False
             assert "error" in resolution
 
-    def test_create_network_error_details(self):
+    def test_create_network_error_details(self) -> None:
         """Test creating network error details."""
         error = ConnectionError("Connection timeout")
 
@@ -327,7 +324,7 @@ class TestNetworkDiagnostics:
 class TestS3ErrorConverter:
     """Test S3 error conversion."""
 
-    def test_client_error_404(self):
+    def test_client_error_404(self) -> None:
         """Test converting 404 error."""
         error = botocore.exceptions.ClientError(
             {"Error": {"Code": "404", "Message": "Not Found"}},
@@ -344,9 +341,10 @@ class TestS3ErrorConverter:
 
         assert isinstance(result, ResourceNotFoundError)
         assert "Resource not found for GOES_16" in result.message
-        assert result.technical_details is not None and "404" in result.technical_details
+        assert result.technical_details is not None
+        assert "404" in result.technical_details
 
-    def test_client_error_403(self):
+    def test_client_error_403(self) -> None:
         """Test converting 403 error."""
         error = botocore.exceptions.ClientError(
             {"Error": {"Code": "403", "Message": "Access Denied"}},
@@ -362,11 +360,12 @@ class TestS3ErrorConverter:
 
         assert isinstance(result, AuthenticationError)
         assert "Access denied to GOES_16 data" in result.message
-        assert result.technical_details is not None and "publicly accessible" in result.technical_details
+        assert result.technical_details is not None
+        assert "publicly accessible" in result.technical_details
 
-    def test_timeout_error(self):
+    def test_timeout_error(self) -> None:
         """Test converting timeout error."""
-        error = asyncio.TimeoutError("Operation timed out")
+        error = TimeoutError("Operation timed out")
 
         result = S3ErrorConverter.from_generic_error(
             error,
@@ -377,9 +376,10 @@ class TestS3ErrorConverter:
 
         assert isinstance(result, RemoteConnectionError)
         assert "Timeout downloading GOES_16 data" in result.message
-        assert result.technical_details is not None and "internet connection speed" in result.technical_details
+        assert result.technical_details is not None
+        assert "internet connection speed" in result.technical_details
 
-    def test_permission_error(self):
+    def test_permission_error(self) -> None:
         """Test converting permission error."""
         error = PermissionError("Permission denied")
 
@@ -392,9 +392,10 @@ class TestS3ErrorConverter:
 
         assert isinstance(result, AuthenticationError)
         assert "Permission error downloading GOES_16 data" in result.message
-        assert result.technical_details is not None and "file system permissions" in result.technical_details
+        assert result.technical_details is not None
+        assert "file system permissions" in result.technical_details
 
-    def test_generic_error(self):
+    def test_generic_error(self) -> None:
         """Test converting generic error."""
         error = ValueError("Something went wrong")
 
@@ -408,7 +409,7 @@ class TestS3ErrorConverter:
         assert isinstance(result, RemoteStoreError)
         assert "Error downloading GOES_16 data" in result.message
 
-    def test_get_error_type(self):
+    def test_get_error_type(self) -> None:
         """Test error type detection."""
         # Test with our error types
         assert S3ErrorConverter.get_error_type(ResourceNotFoundError("")) == "not_found"
@@ -424,7 +425,7 @@ class TestS3ErrorConverter:
         assert S3ErrorConverter.get_error_type(error_403) == "auth"
 
         # Test with timeout errors
-        assert S3ErrorConverter.get_error_type(asyncio.TimeoutError()) == "timeout"
+        assert S3ErrorConverter.get_error_type(TimeoutError()) == "timeout"
         assert S3ErrorConverter.get_error_type(TimeoutError()) == "timeout"
 
         # Test unknown error

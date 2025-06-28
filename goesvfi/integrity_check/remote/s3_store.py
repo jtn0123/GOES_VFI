@@ -9,7 +9,7 @@ No AWS credentials are required as these buckets are publicly accessible.
 
 import asyncio
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import logging
 from pathlib import Path
 import random
@@ -37,6 +37,9 @@ from goesvfi.integrity_check.time_index import (
     TimeIndex,
 )
 from goesvfi.utils.log import get_logger
+
+from .download_statistics import DownloadStatistics, get_global_stats
+from .s3_connection_pool import S3ConnectionPool, get_global_pool
 
 # Define a type variable for exceptions
 ExcType = TypeVar("ExcType", bound=BaseException)
@@ -66,55 +69,20 @@ if logging.getLogger().level <= logging.DEBUG:
     boto_retry_logger = logging.getLogger("botocore.retryhandler")
     boto_retry_logger.setLevel(logging.DEBUG)
 
-# Define type for download statistics dictionary
-DownloadStatsDict = dict[str, int | float | list[float] | list[dict[str, Any]] | list[str] | str]
 
-# Dictionary to track download statistics
-DOWNLOAD_STATS: DownloadStatsDict = {
-    # Basic counters
-    "total_attempts": 0,
-    "successful": 0,
-    "failed": 0,
-    "retry_count": 0,
-    # Error type counters
-    "not_found": 0,
-    "auth_errors": 0,
-    "timeouts": 0,
-    "network_errors": 0,
-    # Performance metrics
-    "download_times": [],  # List of download times in seconds
-    "download_rates": [],  # List of download rates in bytes per second
-    "start_time": time.time(),
-    "last_success_time": 0,
-    "largest_file_size": 0,
-    "smallest_file_size": float("inf"),
-    "total_bytes": 0,
-    # Recent history
-    "errors": [],  # Track the last 20 errors
-    "recent_attempts": [],  # Track the last 50 attempts with timestamps
-    # Session information
-    "session_id": f"{int(time.time())}-{random.randint(1000, 9999)}",
-    "hostname": socket.gethostname(),
-    "start_timestamp": datetime.now(timezone.utc).isoformat(),
-}
+# Get global download statistics instance
+def get_download_stats() -> DownloadStatistics:
+    """Get global download statistics instance."""
+    return get_global_stats()
 
 
-def _get_safe_int_stat(key: str, default: int = 0) -> int:
-    """Safely extract integer stat value."""
-    value = DOWNLOAD_STATS.get(key, default)
-    return int(value) if isinstance(value, int | float) else default
+# Legacy function for backward compatibility
+def get_download_stats_dict() -> dict[str, Any]:
+    """Get download statistics as dictionary for backward compatibility."""
+    return get_download_stats().get_statistics_dict()
 
 
-def _get_safe_float_stat(key: str, default: float = 0.0) -> float:
-    """Safely extract float stat value."""
-    value = DOWNLOAD_STATS.get(key, default)
-    return float(value) if isinstance(value, int | float) else default
-
-
-def _get_safe_list_stat(key: str) -> list[Any]:
-    """Safely extract list stat value."""
-    value = DOWNLOAD_STATS.get(key, [])
-    return value if isinstance(value, list) else []
+# Legacy statistics helper functions removed - now using DownloadStatistics class
 
 
 def _format_bytes_per_second(speed_bps: float) -> str:
@@ -136,32 +104,27 @@ def _calculate_network_speed(download_times_float: list[float], total_bytes: int
 
 def _get_download_metrics() -> dict[str, Any]:
     """Extract and calculate download metrics."""
-    total_attempts = _get_safe_int_stat("total_attempts")
-    successful = _get_safe_int_stat("successful")
+    stats = get_download_stats()
 
-    download_times = _get_safe_list_stat("download_times")
-    download_times_float = [t for t in download_times if isinstance(t, int | float)]
-
+    download_times_float = [t for t in stats.download_times if isinstance(t, int | float)]
     avg_time = sum(download_times_float) / len(download_times_float) if download_times_float else 0
 
-    total_bytes = _get_safe_int_stat("total_bytes")
-    network_speed = _calculate_network_speed(download_times_float, total_bytes)
+    network_speed = _calculate_network_speed(download_times_float, stats.total_bytes)
 
     # Calculate average download rate
     avg_download_rate = "N/A"
-    download_rates = _get_safe_list_stat("download_rates")
-    download_rates_float = [r for r in download_rates if isinstance(r, int | float)]
+    download_rates_float = [r for r in stats.download_rates if isinstance(r, int | float)]
 
     if download_rates_float:
         rate_bps = sum(download_rates_float) / len(download_rates_float)
         avg_download_rate = _format_bytes_per_second(rate_bps)
 
     return {
-        "total_attempts": total_attempts,
-        "successful": successful,
-        "success_rate": ((successful / total_attempts * 100) if total_attempts > 0 else 0),
+        "total_attempts": stats.total_attempts,
+        "successful": stats.successful,
+        "success_rate": ((stats.successful / stats.total_attempts * 100) if stats.total_attempts > 0 else 0),
         "avg_time": avg_time,
-        "total_bytes": total_bytes,
+        "total_bytes": stats.total_bytes,
         "network_speed": network_speed,
         "avg_download_rate": avg_download_rate,
     }
@@ -169,13 +132,14 @@ def _get_download_metrics() -> dict[str, Any]:
 
 def _get_error_metrics() -> dict[str, int]:
     """Extract error metrics."""
+    stats = get_download_stats()
     return {
-        "failed": _get_safe_int_stat("failed"),
-        "retry_count": _get_safe_int_stat("retry_count"),
-        "not_found": _get_safe_int_stat("not_found"),
-        "auth_errors": _get_safe_int_stat("auth_errors"),
-        "timeouts": _get_safe_int_stat("timeouts"),
-        "network_errors": _get_safe_int_stat("network_errors"),
+        "failed": stats.failed,
+        "retry_count": stats.retry_count,
+        "not_found": stats.not_found,
+        "auth_errors": stats.auth_errors,
+        "timeouts": stats.timeouts,
+        "network_errors": stats.network_errors,
     }
 
 
@@ -230,75 +194,18 @@ def _format_recent_attempts(attempts: list[Any], max_attempts: int = 3) -> str:
 
 def log_download_statistics() -> None:
     """Log detailed statistics about S3 downloads."""
-    metrics = _get_download_metrics()
-
-    if metrics["total_attempts"] == 0:
-        LOGGER.info("No S3 download attempts recorded yet")
-        return
-
-    # Get error metrics
-    error_metrics = _get_error_metrics()
-
-    # Get runtime info
-    start_time = _get_safe_float_stat("start_time", time.time())
-    total_time = time.time() - start_time
-
-    # Get file size stats
-    largest_file_size = _get_safe_int_stat("largest_file_size")
-    smallest_file_size = _get_safe_float_stat("smallest_file_size", float("inf"))
-
-    # Format statistics message
-    stats_msg = (
-        f"\nS3 Download Statistics:\n"
-        f"---------------------\n"
-        f"Session ID: {DOWNLOAD_STATS.get('session_id', 'N/A')}\n"
-        f"Hostname: {DOWNLOAD_STATS.get('hostname', 'N/A')}\n"
-        f"Start time: {DOWNLOAD_STATS.get('start_timestamp', 'N/A')}\n"
-        f"\nPerformance Summary:\n"
-        f"Total attempts: {metrics['total_attempts']}\n"
-        f"Successful: {metrics['successful']} ({metrics['success_rate']:.1f}%)\n"
-        f"Failed: {error_metrics['failed']}\n"
-        f"Retries: {error_metrics['retry_count']}\n"
-        f"Not found errors: {error_metrics['not_found']}\n"
-        f"Auth errors: {error_metrics['auth_errors']}\n"
-        f"Timeouts: {error_metrics['timeouts']}\n"
-        f"Network errors: {error_metrics['network_errors']}\n"
-        f"\nDownload Metrics:\n"
-        f"Average download time: {metrics['avg_time']:.2f} seconds\n"
-        f"Total bytes: {metrics['total_bytes']} bytes\n"
-        f"Average network speed: {metrics['network_speed']}\n"
-        f"Average download rate: {metrics['avg_download_rate']}\n"
-        f"Largest file: {largest_file_size} bytes\n"
-        f"Smallest file: {smallest_file_size if smallest_file_size != float('inf') else 'N/A'} bytes\n"
-        f"Total runtime: {total_time:.1f} seconds\n"
-    )
-
-    # Add recent errors if any
-    errors = _get_safe_list_stat("errors")
-    stats_msg += _format_recent_errors(errors)
-
-    # Add recent attempts if any
-    attempts = _get_safe_list_stat("recent_attempts")
-    stats_msg += _format_recent_attempts(attempts)
-
-    # Add time since last successful download
-    last_success_time = _get_safe_float_stat("last_success_time")
-    if last_success_time > 0:
-        time_since_last = time.time() - last_success_time
-        stats_msg += f"\nTime since last successful download: {time_since_last:.1f} seconds\n"
-
-    LOGGER.info(stats_msg)
+    get_download_stats().log_statistics()
 
 
 def get_system_network_info() -> dict[str, Any]:
     """Collect system and network information for debugging."""
-    from datetime import datetime, timezone
+    from datetime import datetime
     import os
     import platform
     import socket
 
     info: dict[str, Any] = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "platform": platform.platform(),
         "python_version": sys.version,
         "hostname": socket.gethostname(),
@@ -440,7 +347,7 @@ def format_error_message(error_type: str, error_message: str) -> str:
     Returns:
         A formatted error message with timestamp and type prefix
     """
-    timestamp = datetime.now(timezone.utc).isoformat()
+    timestamp = datetime.now(UTC).isoformat()
 
     # Ensure error_type is not duplicated
     if error_message.startswith(f"{error_type}:"):
@@ -470,162 +377,25 @@ def update_download_stats(
         bucket: S3 bucket name for additional tracking
         key: S3 key for additional tracking
     """
-    # Create attempt record with timestamp
-    timestamp = datetime.now(timezone.utc).isoformat()
-    attempt_record: dict[str, Any] = {
-        "timestamp": timestamp,
-        "success": success,
-        "download_time": download_time,
-        "file_size": file_size,
-        "error_type": error_type,
-        "satellite": satellite,
-        "bucket": bucket,
-        "key": key,
-    }
-
-    # Safely get and update recent attempts (limited to 50)
-    recent_attempts_value = DOWNLOAD_STATS.get("recent_attempts", [])
-    if not isinstance(recent_attempts_value, list):
-        recent_attempts_list: list[dict[str, Any]] = []
-    else:
-        # Make sure we have the right type - list of dicts
-        recent_attempts_list = []
-        for item in recent_attempts_value:
-            if isinstance(item, dict):
-                recent_attempts_list.append(item)
-
-    if len(recent_attempts_list) >= 50:
-        recent_attempts_list.pop(0)  # Remove oldest
-    recent_attempts_list.append(attempt_record)
-    DOWNLOAD_STATS["recent_attempts"] = recent_attempts_list
-
-    # Safely update total attempts counter
-    total_attempts = (
-        int(DOWNLOAD_STATS["total_attempts"]) if isinstance(DOWNLOAD_STATS["total_attempts"], int | float) else 0
+    stats = get_download_stats()
+    stats.add_attempt(
+        success=success,
+        download_time=download_time,
+        file_size=file_size,
+        error_type=error_type,
+        error_message=error_message,
+        satellite=satellite,
+        bucket=bucket,
+        key=key,
     )
-    DOWNLOAD_STATS["total_attempts"] = total_attempts + 1
 
-    if success:
-        # Safely update successful counter
-        successful = int(DOWNLOAD_STATS["successful"]) if isinstance(DOWNLOAD_STATS["successful"], int | float) else 0
-        DOWNLOAD_STATS["successful"] = successful + 1
-
-        # Safely update download times list
-        download_times_value = DOWNLOAD_STATS.get("download_times", [])
-        if not isinstance(download_times_value, list):
-            download_times_list: list[float] = []
-        else:
-            # Make sure we have the right type - list of floats
-            download_times_list = []
-            for item in download_times_value:
-                if isinstance(item, int | float):
-                    download_times_list.append(float(item))
-
-        download_times_list.append(download_time)
-        DOWNLOAD_STATS["download_times"] = download_times_list
-
-        # Set last success time
-        DOWNLOAD_STATS["last_success_time"] = time.time()
-
-        # Safely update total bytes counter
-        total_bytes = (
-            int(DOWNLOAD_STATS["total_bytes"]) if isinstance(DOWNLOAD_STATS["total_bytes"], int | float) else 0
-        )
-        DOWNLOAD_STATS["total_bytes"] = total_bytes + file_size
-
-        # Calculate and store download rate if time is non-zero
-        if download_time > 0 and file_size > 0:
-            download_rate = file_size / download_time  # bytes per second
-
-            # Safely get and update download rates list
-            download_rates_value = DOWNLOAD_STATS.get("download_rates", [])
-            if not isinstance(download_rates_value, list):
-                download_rates_list: list[float] = []
-            else:
-                # Make sure we have the right type - list of floats
-                download_rates_list = []
-                for item in download_rates_value:
-                    if isinstance(item, int | float):
-                        download_rates_list.append(float(item))
-
-            download_rates_list.append(download_rate)
-
-            # Limit history to prevent memory growth
-            if len(download_rates_list) > 100:
-                download_rates_list = download_rates_list[-100:]
-            DOWNLOAD_STATS["download_rates"] = download_rates_list
-
-        # Track file size statistics
-        largest_file_size = (
-            int(DOWNLOAD_STATS["largest_file_size"])
-            if isinstance(DOWNLOAD_STATS["largest_file_size"], int | float)
-            else 0
-        )
-        if file_size > largest_file_size:
-            DOWNLOAD_STATS["largest_file_size"] = file_size
-
-        smallest_file_size = (
-            float(DOWNLOAD_STATS["smallest_file_size"])
-            if isinstance(DOWNLOAD_STATS["smallest_file_size"], int | float)
-            else float("inf")
-        )
-        if file_size < smallest_file_size:
-            DOWNLOAD_STATS["smallest_file_size"] = file_size
-    else:
-        # Safely update failed counter
-        failed = int(DOWNLOAD_STATS["failed"]) if isinstance(DOWNLOAD_STATS["failed"], int | float) else 0
-        DOWNLOAD_STATS["failed"] = failed + 1
-
-        if error_type:
-            if error_type == "not_found":
-                not_found = (
-                    int(DOWNLOAD_STATS["not_found"]) if isinstance(DOWNLOAD_STATS["not_found"], int | float) else 0
-                )
-                DOWNLOAD_STATS["not_found"] = not_found + 1
-            elif error_type == "auth":
-                auth_errors = (
-                    int(DOWNLOAD_STATS["auth_errors"]) if isinstance(DOWNLOAD_STATS["auth_errors"], int | float) else 0
-                )
-                DOWNLOAD_STATS["auth_errors"] = auth_errors + 1
-            elif error_type == "timeout":
-                timeouts = int(DOWNLOAD_STATS["timeouts"]) if isinstance(DOWNLOAD_STATS["timeouts"], int | float) else 0
-                DOWNLOAD_STATS["timeouts"] = timeouts + 1
-            elif error_type == "network":
-                network_errors = (
-                    int(DOWNLOAD_STATS["network_errors"])
-                    if isinstance(DOWNLOAD_STATS["network_errors"], int | float)
-                    else 0
-                )
-                DOWNLOAD_STATS["network_errors"] = network_errors + 1
-
-        if error_message:
-            # Format error message consistently
-            formatted_error = format_error_message(error_type or "unknown", error_message)
-
-            # Safely get and update errors list
-            errors_value = DOWNLOAD_STATS.get("errors", [])
-            if not isinstance(errors_value, list):
-                errors_list: list[str] = []
-            else:
-                # Make sure we have the right type - list of strings
-                errors_list = []
-                for item in errors_value:
-                    if isinstance(item, str):
-                        errors_list.append(item)
-
-            if len(errors_list) >= 20:
-                errors_list.pop(0)  # Remove oldest error
-            errors_list.append(formatted_error)
-            DOWNLOAD_STATS["errors"] = errors_list
-
-        # On failures, periodically collect network diagnostics
-        # Every 5 failures, get network info to help diagnose issues
-        if failed % 5 == 0:
-            get_system_network_info()
-
-    # Log statistics every 10 downloads
-    if total_attempts % 10 == 0:
+    # Log statistics every 10 downloads (maintain existing behavior)
+    if stats.total_attempts % 10 == 0:
         log_download_statistics()
+
+    # On failures, periodically collect network diagnostics (maintain existing behavior)
+    if not success and stats.failed % 5 == 0:
+        get_system_network_info()
 
 
 class S3Store(RemoteStore):
@@ -641,6 +411,7 @@ class S3Store(RemoteStore):
         aws_profile: str | None = None,
         aws_region: str = "us-east-1",
         timeout: int = 60,
+        use_connection_pool: bool = True,
     ) -> None:
         """Initialize with optional AWS profile and timeout parameters.
 
@@ -651,45 +422,21 @@ class S3Store(RemoteStore):
             aws_profile: AWS profile name to use (optional, not required for NOAA buckets)
             aws_region: AWS region name (defaults to us-east-1 where NOAA buckets are located)
             timeout: Operation timeout in seconds
+            use_connection_pool: Whether to use the global S3 connection pool
         """
         self.aws_profile: str | None = aws_profile
         self.aws_region: str = aws_region
         self.timeout: int = timeout
+        self.use_connection_pool: bool = use_connection_pool
         self._session: Any | None = None
         self._s3_client: S3ClientType | None = None
+        self._connection_pool: S3ConnectionPool | None = None
 
         # Log diagnostic information at startup
         LOGGER.info("Initializing S3Store: region=%s, timeout=%ss", aws_region, timeout)
 
-        # Reset download statistics - useful if multiple S3Store instances are created
-        global DOWNLOAD_STATS
-        DOWNLOAD_STATS = {
-            # Basic counters
-            "total_attempts": 0,
-            "successful": 0,
-            "failed": 0,
-            "retry_count": 0,
-            # Error type counters
-            "not_found": 0,
-            "auth_errors": 0,
-            "timeouts": 0,
-            "network_errors": 0,
-            # Performance metrics
-            "download_times": [],
-            "download_rates": [],  # Bytes per second
-            "start_time": time.time(),
-            "last_success_time": 0,
-            "largest_file_size": 0,
-            "smallest_file_size": float("inf"),
-            "total_bytes": 0,
-            # Recent history
-            "errors": [],  # Track the last 20 errors
-            "recent_attempts": [],  # Track the last 50 attempts with timestamps
-            # Session information
-            "session_id": f"{int(time.time())}-{random.randint(1000, 9999)}",
-            "hostname": socket.gethostname(),
-            "start_timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        # Initialize download statistics for this S3Store instance
+        # Note: Uses global statistics instance for tracking across all S3 operations
 
         # Get and log system/network info at startup
         try:
@@ -724,6 +471,21 @@ class S3Store(RemoteStore):
             kwargs["profile_name"] = self.aws_profile
         return kwargs
 
+    async def _get_s3_client_from_pool(self) -> Any:
+        """Get S3 client from connection pool.
+
+        Returns:
+            Context manager for S3 client from pool
+        """
+        if self._connection_pool is None:
+            self._connection_pool = get_global_pool(
+                region=self.aws_region,
+                connect_timeout=10,
+                read_timeout=self.timeout,
+                session_kwargs=self.session_kwargs,
+            )
+        return self._connection_pool.acquire()
+
     async def _get_s3_client(self) -> S3ClientType:
         """Get or create an S3 client with improved timeout handling and exponential backoff.
 
@@ -738,14 +500,14 @@ class S3Store(RemoteStore):
             ConnectionError: If connection timeouts occur
             AuthenticationError: If authentication issues occur (unlikely with unsigned access)
         """
+        # If using connection pool, this method is not used directly
+        if self.use_connection_pool:
+            msg = "Should use _get_s3_client_from_pool when connection pooling is enabled"
+            raise RuntimeError(msg)
         retry_count = 0
         max_retries = 3
 
-        # Safely set retry count for reporting
-        retry_count_value = (
-            int(DOWNLOAD_STATS["retry_count"]) if isinstance(DOWNLOAD_STATS["retry_count"], int | float) else 0
-        )
-        DOWNLOAD_STATS["retry_count"] = 0
+        # Initialize retry count for this operation
 
         while retry_count < max_retries:
             try:
@@ -810,15 +572,10 @@ class S3Store(RemoteStore):
                                 "Entered client context, got S3 client: %s",
                                 self._s3_client,
                             )
-                        except TimeoutError:
+                        except TimeoutError as timeout_err:
                             retry_count += 1
-                            # Safely update retry counter
-                            retry_count_value = (
-                                int(DOWNLOAD_STATS["retry_count"])
-                                if isinstance(DOWNLOAD_STATS["retry_count"], int | float)
-                                else 0
-                            )
-                            DOWNLOAD_STATS["retry_count"] = retry_count_value + 1
+                            # Update global retry statistics
+                            get_download_stats().retry_count += 1
 
                             LOGGER.warning(
                                 "Timeout creating S3 client, attempt %s/%s",
@@ -842,7 +599,7 @@ class S3Store(RemoteStore):
                                     message=error_msg,
                                     technical_details=technical_details,
                                     error_code="CONN-TIMEOUT",
-                                )
+                                ) from timeout_err
                             continue
 
                         if self._s3_client is None:
@@ -868,13 +625,8 @@ class S3Store(RemoteStore):
                             )
                         if "endpoint" in str(e).lower() or "connect" in str(e).lower() or "timeout" in str(e).lower():
                             retry_count += 1
-                            # Safely update retry counter
-                            retry_count_value = (
-                                int(DOWNLOAD_STATS["retry_count"])
-                                if isinstance(DOWNLOAD_STATS["retry_count"], int | float)
-                                else 0
-                            )
-                            DOWNLOAD_STATS["retry_count"] = retry_count_value + 1
+                            # Update global retry statistics
+                            get_download_stats().retry_count += 1
 
                             LOGGER.warning(
                                 "Connection error creating S3 client, attempt %s/%s",
@@ -1135,7 +887,7 @@ class S3Store(RemoteStore):
         try:
             # Log system info and network state at download time
             LOGGER.debug("System info: Python %s, Platform: %s", sys.version, sys.platform)
-            LOGGER.debug("Download starting at %s", datetime.now(timezone.utc).isoformat())
+            LOGGER.debug("Download starting at %s", datetime.now(UTC).isoformat())
 
             # Start download with timing
             await s3.download_file(Bucket=bucket, Key=key, Filename=str(dest_path))
@@ -1171,10 +923,7 @@ class S3Store(RemoteStore):
             )
 
             # If this is a significant milestone (every 50 successful downloads), log full stats
-            successful_count = (
-                int(DOWNLOAD_STATS["successful"]) if isinstance(DOWNLOAD_STATS["successful"], int | float) else 0
-            )
-            if download_success and successful_count % 50 == 0:
+            if download_success and get_download_stats().successful % 50 == 0:
                 log_download_statistics()
 
             return dest_path
@@ -1470,7 +1219,7 @@ class S3Store(RemoteStore):
             Path to the downloaded file
 
         Raises:
-            ResourceNotFoundError: If the file doesn't exist
+            ResourceNotFoundError: If the file does not exist
             AuthenticationError: If there are AWS credential issues
             ConnectionError: If there are network connectivity issues
             RemoteStoreError: For other S3 errors

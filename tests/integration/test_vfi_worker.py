@@ -2,9 +2,9 @@
 """Test script for VfiWorker initialization."""
 
 import os
+from pathlib import Path
 import sys
 import tempfile
-from pathlib import Path
 
 # Add the project directory to the Python path
 project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,30 +21,26 @@ try:
     class SignalReceiver(QObject):
         """Helper class to receive signals from VfiWorker."""
 
-        def __init__(self):
+        def __init__(self) -> None:
             super().__init__()
             self.progress_received = False
             self.finished_received = False
             self.error_received = False
 
         @pyqtSlot(int, int, float)
-        def on_progress(self, current, total, elapsed):
-            print(f"Progress: {current}/{total} ({elapsed:.2f}s)")
+        def on_progress(self, current, total, elapsed) -> None:
             self.progress_received = True
 
         @pyqtSlot(str)
-        def on_finished(self, output_path):
-            print(f"Finished: {output_path}")
+        def on_finished(self, output_path) -> None:
             self.finished_received = True
 
         @pyqtSlot(str)
-        def on_error(self, error_message):
-            print(f"Error: {error_message}")
+        def on_error(self, error_message) -> None:
             self.error_received = True
 
-    def test_vfi_worker_init():
+    def test_vfi_worker_init() -> None:
         """Test VfiWorker initialization."""
-        print("Testing VfiWorker initialization...")
 
         # Create test paths
         test_in_dir = Path("/tmp/test_in_dir")
@@ -116,14 +112,12 @@ try:
                 max_workers=int(required_args["max_workers"]),  # type: ignore[call-overload]
                 encoder=str(required_args["encoder"]),
             )
-            print("VfiWorker initialized successfully.")
 
             # Connect signals to test receiver
             receiver = SignalReceiver()
             worker.progress.connect(receiver.on_progress)
             worker.finished.connect(receiver.on_finished)
             worker.error.connect(receiver.on_error)
-            print("Signals connected successfully.")
 
             # Don't actually start the worker as it would try to process files
             # worker.start()
@@ -134,8 +128,7 @@ try:
             assert hasattr(worker, "finished")
             assert hasattr(worker, "error")
 
-        except Exception as e:
-            print(f"Error initializing VfiWorker: {e}")
+        except Exception:
             import traceback
 
             traceback.print_exc()
@@ -146,14 +139,12 @@ try:
         result = test_vfi_worker_init()
         sys.exit(0 if result else 1)
 
-except ImportError as e:
-    print(f"Import error: {e}")
+except ImportError:
     import traceback
 
     traceback.print_exc()
     sys.exit(1)
-except Exception as e:
-    print(f"Unexpected error: {e}")
+except Exception:
     import traceback
 
     traceback.print_exc()

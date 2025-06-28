@@ -32,6 +32,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.gui_components.update_manager import register_update, request_update
 from goesvfi.utils import log
 
 LOGGER = log.get_logger(__name__)
@@ -288,9 +289,10 @@ class OperationHistoryTab(QWidget):
         super().__init__()
         self.refresh_worker: RefreshWorker | None = None
         self.auto_refresh_timer = QTimer()
-        self.auto_refresh_timer.timeout.connect(self.refresh_data)
+        self.auto_refresh_timer.timeout.connect(lambda: request_update("operation_history_refresh"))
 
         self._init_ui()
+        self._setup_update_manager()
         self.refresh_data()
 
     def _init_ui(self) -> None:
@@ -434,6 +436,43 @@ class OperationHistoryTab(QWidget):
         layout.addWidget(splitter)
         self.setLayout(layout)
 
+    def _setup_update_manager(self) -> None:
+        """Set up UpdateManager integration for batched UI updates."""
+        # Register update operations
+        register_update("operation_history_table", self._update_table_display, priority=2)
+        register_update("operation_history_details", self._update_details_display, priority=3)
+        register_update("operation_history_refresh", self._do_refresh_data, priority=1)
+
+        LOGGER.info("OperationHistoryTab integrated with UpdateManager")
+
+    def _update_table_display(self) -> None:
+        """Update table display (called by UpdateManager)."""
+        if hasattr(self, "operations_table") and self.operations_table:
+            # Force table view update
+            self.operations_table.viewport().update()
+
+    def _update_details_display(self) -> None:
+        """Update details display (called by UpdateManager)."""
+        # Details are updated directly when selection changes
+
+    def _do_refresh_data(self) -> None:
+        """Perform data refresh (called by UpdateManager)."""
+        # This allows batching of refresh requests
+        self.refresh_data()
+
+    def request_ui_update(self, update_type: str = "table") -> None:
+        """Request UI updates through UpdateManager.
+
+        Args:
+            update_type: Type of update ('table', 'details', 'refresh')
+        """
+        if update_type == "table":
+            request_update("operation_history_table")
+        elif update_type == "details":
+            request_update("operation_history_details")
+        elif update_type == "refresh":
+            request_update("operation_history_refresh")
+
     def refresh_data(self) -> None:
         """Refresh the operation data."""
         if self.refresh_worker and self.refresh_worker.isRunning():
@@ -485,7 +524,7 @@ class OperationHistoryTab(QWidget):
 
     def _show_operation_details(self, operation: dict[str, Any]) -> None:
         """Show details for selected operation."""
-        details = []
+        details: list[str] = []
         details.extend((
             f"<b>Operation:</b> {operation.get('name', 'N/A')}",
             f"<b>Correlation ID:</b> {operation.get('correlation_id', 'N/A')}",

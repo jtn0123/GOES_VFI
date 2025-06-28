@@ -94,8 +94,6 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
 
             if exists:
                 pass
-            else:
-                pass
 
         # Test should pass regardless of whether file exists - we're testing the functionality
         # not the presence of specific data
@@ -119,8 +117,6 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
             exists_results[band] = exists
 
             if exists:
-                pass
-            else:
                 pass
 
         # Print summary
@@ -148,8 +144,6 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
             exists_results[product_type] = exists
 
             if exists:
-                pass
-            else:
                 pass
 
         # Print summary

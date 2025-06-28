@@ -52,7 +52,7 @@ class TestAccessibilityOptimizedV2:
     @pytest.fixture(scope="class")
     def accessibility_testing_suite(self):
         """Create comprehensive accessibility testing tools."""
-        
+
         # Enhanced Accessibility Tester
         class AccessibilityTester:
             """Helper class for accessibility testing."""
@@ -147,7 +147,7 @@ class TestAccessibilityOptimizedV2:
         # Enhanced High Contrast Theme Creator
         class HighContrastThemeManager:
             """Manager for high contrast themes and accessibility colors."""
-            
+
             def create_high_contrast_palette(self):
                 """Create high contrast palette for accessibility testing."""
                 palette = QPalette()
@@ -156,7 +156,7 @@ class TestAccessibilityOptimizedV2:
                 black = QColor(0, 0, 0)
                 white = QColor(255, 255, 255)
                 yellow = QColor(255, 255, 0)
-                blue = QColor(0, 0, 255)
+                QColor(0, 0, 255)
 
                 # Window colors
                 palette.setColor(QPalette.ColorRole.Window, black)
@@ -202,7 +202,7 @@ class TestAccessibilityOptimizedV2:
         # Enhanced Focus Testing Manager
         class FocusTestingManager:
             """Manager for keyboard focus and navigation testing."""
-            
+
             def check_focus_indicator(self, widget, tester):
                 """Check focus indicator visibility and contrast."""
                 # Check if widget can accept focus
@@ -233,17 +233,12 @@ class TestAccessibilityOptimizedV2:
 
             def validate_tab_order(self, widgets):
                 """Validate logical tab order for widgets."""
-                valid_widgets = []
-                for widget in widgets:
-                    if widget is not None and widget.focusPolicy() != Qt.FocusPolicy.NoFocus:
-                        valid_widgets.append(widget)
-                
-                return valid_widgets
+                return [widget for widget in widgets if widget is not None and widget.focusPolicy() != Qt.FocusPolicy.NoFocus]
 
         return {
             "tester": AccessibilityTester(),
             "theme_manager": HighContrastThemeManager(),
-            "focus_manager": FocusTestingManager()
+            "focus_manager": FocusTestingManager(),
         }
 
     def test_screen_reader_compatibility_comprehensive(self, qtbot, main_window, accessibility_testing_suite) -> None:
@@ -462,16 +457,16 @@ class TestAccessibilityOptimizedV2:
         for policy, description in focus_policy_tests:
             policy_widgets = []
             for scenario in navigation_scenarios:
-                for widget in scenario["widgets"]:
-                    if widget and widget.focusPolicy() == policy:
-                        policy_widgets.append(widget)
-            
+                policy_widgets.extend(widget for widget in scenario["widgets"] if widget and widget.focusPolicy() == policy)
+
             # Some widgets should support each focus type
             # Note: Not all widgets need all focus types, so we just check they exist
             if policy_widgets:
                 assert len(policy_widgets) > 0, f"No widgets support {description}"
 
-    def test_high_contrast_and_theme_support_comprehensive(self, qtbot, main_window, accessibility_testing_suite) -> None:
+    def test_high_contrast_and_theme_support_comprehensive(
+        self, qtbot, main_window, accessibility_testing_suite
+    ) -> None:
         """Test comprehensive high contrast theme support and color accessibility."""
         window = main_window
         tester = accessibility_testing_suite["tester"]
@@ -540,7 +535,9 @@ class TestAccessibilityOptimizedV2:
         assert window.main_tab.start_button.isEnabled() or not window.is_processing
         assert window.main_tab.encoder_combo.count() > 0
 
-    def test_tooltip_accuracy_and_helpfulness_comprehensive(self, qtbot, main_window, accessibility_testing_suite) -> None:
+    def test_tooltip_accuracy_and_helpfulness_comprehensive(
+        self, qtbot, main_window, accessibility_testing_suite
+    ) -> None:
         """Test comprehensive tooltip accuracy and helpfulness."""
         window = main_window
         tester = accessibility_testing_suite["tester"]
@@ -638,7 +635,7 @@ class TestAccessibilityOptimizedV2:
 
         for scenario in contextual_scenarios:
             widget = scenario["widget"]
-            
+
             # Test idle state tooltip
             window._set_processing_state(False)
             widget.setToolTip(scenario["idle_tooltip"])
@@ -657,7 +654,7 @@ class TestAccessibilityOptimizedV2:
     def test_error_message_clarity_comprehensive(self, qtbot, main_window, accessibility_testing_suite, mocker) -> None:
         """Test comprehensive error message clarity and actionability."""
         window = main_window
-        
+
         # Mock message boxes
         mocker.patch.object(QMessageBox, "critical")
         mocker.patch.object(QMessageBox, "warning")
@@ -665,18 +662,21 @@ class TestAccessibilityOptimizedV2:
 
         # Enhanced error message validator
         def validate_error_message(title, message):
-            issues = []
-            
+
             # Technical jargon to avoid
             jargon_terms = [
-                "exception", "traceback", "null pointer", "segfault",
-                "malloc", "assertion", "errno", "stdlib"
+                "exception",
+                "traceback",
+                "null pointer",
+                "segfault",
+                "malloc",
+                "assertion",
+                "errno",
+                "stdlib",
             ]
-            
+
             # Check for technical jargon
-            for term in jargon_terms:
-                if term.lower() in message.lower():
-                    issues.append(f"Contains technical jargon: '{term}'")
+            issues = [f"Contains technical jargon: '{term}'" for term in jargon_terms if term.lower() in message.lower()]
 
             # Check title
             if not title or len(title) < 5:
@@ -736,7 +736,7 @@ class TestAccessibilityOptimizedV2:
         # Test each error scenario
         for scenario in error_scenarios:
             # Mock the error display
-            def show_error(parent, title, message):
+            def show_error(parent, title, message) -> None:
                 # Validate the error message
                 issues = validate_error_message(title, message)
                 assert len(issues) == 0, f"Error message issues for '{title}': {issues}"
@@ -772,7 +772,8 @@ class TestAccessibilityOptimizedV2:
         ]
 
         for scenario in warning_scenarios:
-            def show_warning(parent, title, message):
+
+            def show_warning(parent, title, message) -> None:
                 issues = validate_error_message(title, message)
                 assert len(issues) == 0, f"Warning message issues: {issues}"
 
@@ -823,7 +824,7 @@ class TestAccessibilityOptimizedV2:
                     # Test focus indicator
                     valid, message = focus_manager.check_focus_indicator(widget, tester)
                     assert valid, f"{scenario['name']} - {widget.__class__.__name__}: {message}"
-                    
+
                     scenario_tested += 1
                     total_tested += 1
 
@@ -836,9 +837,7 @@ class TestAccessibilityOptimizedV2:
         # Test focus state changes
         focusable_widgets = []
         for scenario in focus_test_scenarios:
-            for widget in scenario["widgets"]:
-                if widget and widget.isEnabled() and widget.focusPolicy() != Qt.FocusPolicy.NoFocus:
-                    focusable_widgets.append(widget)
+            focusable_widgets.extend(widget for widget in scenario["widgets"] if widget and widget.isEnabled() and widget.focusPolicy() != Qt.FocusPolicy.NoFocus)
 
         # Test focus transitions
         if len(focusable_widgets) >= 2:
@@ -933,8 +932,8 @@ class TestAccessibilityOptimizedV2:
             description = scenario["description"]
 
             # Check existing association
-            has_label, label_text = tester.check_label_association(widget, expected_label)
-            
+            has_label, _label_text = tester.check_label_association(widget, expected_label)
+
             if not has_label:
                 # Set accessible name as fallback
                 widget.setAccessibleName(expected_label)
@@ -950,7 +949,7 @@ class TestAccessibilityOptimizedV2:
                 "description": "Configuration options specific to RIFE AI interpolation method",
             },
             {
-                "group_attr": "sanchez_options_group", 
+                "group_attr": "sanchez_options_group",
                 "description": "Enhancement options for satellite imagery processing",
             },
         ]
@@ -959,7 +958,7 @@ class TestAccessibilityOptimizedV2:
             if hasattr(window.main_tab, scenario["group_attr"]):
                 group = getattr(window.main_tab, scenario["group_attr"])
                 group.setAccessibleDescription(scenario["description"])
-                
+
                 desc = group.accessibleDescription()
                 assert desc and len(desc) > 20, f"Group {scenario['group_attr']} missing adequate description"
 
@@ -974,7 +973,7 @@ class TestAccessibilityOptimizedV2:
 
         for scenario in dynamic_scenarios:
             widget = scenario["widget"]
-            
+
             # Test idle state
             window._set_processing_state(False)
             widget.setAccessibleDescription(scenario["idle_description"])
@@ -991,7 +990,9 @@ class TestAccessibilityOptimizedV2:
             window._set_processing_state(False)
 
         # Verify comprehensive tab order is logical
-        assert len(all_valid_widgets) >= 8, f"Insufficient widgets ({len(all_valid_widgets)}) for comprehensive tab order"
+        assert len(all_valid_widgets) >= 8, (
+            f"Insufficient widgets ({len(all_valid_widgets)}) for comprehensive tab order"
+        )
 
         # Test that tab order can be set without errors
         for i in range(len(all_valid_widgets) - 1):

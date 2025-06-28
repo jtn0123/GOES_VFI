@@ -19,7 +19,7 @@ from goesvfi.pipeline.batch_queue import (
 class TestBatchJob:
     """Test BatchJob class."""
 
-    def test_job_creation(self):
+    def test_job_creation(self) -> None:
         """Test creating a batch job."""
         job = BatchJob(
             id="test_001",
@@ -36,7 +36,7 @@ class TestBatchJob:
         assert job.progress == 0.0
         assert job.error_message is None
 
-    def test_job_comparison(self):
+    def test_job_comparison(self) -> None:
         """Test job priority comparison."""
         high_job = BatchJob(
             id="high",
@@ -60,7 +60,7 @@ class TestBatchJob:
         assert high_job < normal_job
         assert not (normal_job < high_job)
 
-    def test_job_serialization(self):
+    def test_job_serialization(self) -> None:
         """Test job to/from dict conversion."""
         original = BatchJob(
             id="test_002",
@@ -86,12 +86,12 @@ class TestBatchJob:
 class TestBatchQueue:
     """Test BatchQueue class."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_process_function(self):
         """Create a mock process function."""
         return MagicMock()
 
-    @pytest.fixture
+    @pytest.fixture()
     def batch_queue(self, mock_process_function):
         """Create a batch queue for testing."""
         with patch("goesvfi.pipeline.batch_queue.Path.home") as mock_home:
@@ -109,13 +109,13 @@ class TestBatchQueue:
                         if queue._running:
                             queue.stop()
 
-    def test_queue_creation(self, batch_queue):
+    def test_queue_creation(self, batch_queue) -> None:
         """Test creating a batch queue."""
         assert batch_queue.max_concurrent_jobs == 1
         assert not batch_queue._running
         assert len(batch_queue._jobs) == 0
 
-    def test_add_job(self, batch_queue):
+    def test_add_job(self, batch_queue) -> None:
         """Test adding a job to queue."""
         job = BatchJob(
             id="test_add",
@@ -127,7 +127,7 @@ class TestBatchQueue:
 
         # Connect signal spy
         signal_received = []
-        batch_queue.job_added.connect(lambda job_id: signal_received.append(job_id))
+        batch_queue.job_added.connect(signal_received.append)
 
         # Add job
         batch_queue.add_job(job)
@@ -137,7 +137,7 @@ class TestBatchQueue:
         assert batch_queue.get_job(job.id) == job
         assert job.id in signal_received
 
-    def test_cancel_job(self, batch_queue):
+    def test_cancel_job(self, batch_queue) -> None:
         """Test cancelling a job."""
         job = BatchJob(
             id="test_cancel",
@@ -151,7 +151,7 @@ class TestBatchQueue:
 
         # Connect signal spy
         signal_received = []
-        batch_queue.job_cancelled.connect(lambda job_id: signal_received.append(job_id))
+        batch_queue.job_cancelled.connect(signal_received.append)
 
         # Cancel job
         result = batch_queue.cancel_job(job.id)
@@ -163,7 +163,7 @@ class TestBatchQueue:
         # Can't cancel already cancelled job
         assert batch_queue.cancel_job(job.id) is False
 
-    def test_get_pending_jobs(self, batch_queue):
+    def test_get_pending_jobs(self, batch_queue) -> None:
         """Test getting pending jobs sorted by priority."""
         # Add jobs with different priorities
         low_job = BatchJob(
@@ -194,7 +194,7 @@ class TestBatchQueue:
         assert pending[0].id == "high"  # High priority first
         assert pending[1].id == "low"
 
-    def test_clear_completed(self, batch_queue):
+    def test_clear_completed(self, batch_queue) -> None:
         """Test clearing completed jobs."""
         # Add jobs with different statuses
         completed_job = BatchJob(
@@ -226,7 +226,7 @@ class TestBatchQueue:
 
     @patch("goesvfi.pipeline.batch_queue.json.dump")
     @patch("goesvfi.pipeline.batch_queue.open", create=True)
-    def test_save_queue(self, mock_open, mock_json_dump, batch_queue):
+    def test_save_queue(self, mock_open, mock_json_dump, batch_queue) -> None:
         """Test saving queue state."""
         job = BatchJob(
             id="save_test",
@@ -249,7 +249,7 @@ class TestBatchQueue:
 class TestBatchProcessor:
     """Test BatchProcessor class."""
 
-    def test_create_queue(self):
+    def test_create_queue(self) -> None:
         """Test creating a queue through processor."""
         processor = BatchProcessor()
         mock_func = MagicMock()
@@ -260,7 +260,7 @@ class TestBatchProcessor:
         assert queue.max_concurrent_jobs == 2
         assert processor.queue == queue
 
-    def test_create_jobs_from_paths(self):
+    def test_create_jobs_from_paths(self) -> None:
         """Test creating jobs from file paths."""
         processor = BatchProcessor()
 
@@ -288,7 +288,7 @@ class TestBatchProcessor:
         assert jobs[0].output_path == output_dir / "image1_processed.png"
 
     @patch("goesvfi.pipeline.batch_queue.Path.glob")
-    def test_add_directory(self, mock_glob):
+    def test_add_directory(self, mock_glob) -> None:
         """Test adding all files from a directory."""
         processor = BatchProcessor()
         processor.queue = MagicMock()

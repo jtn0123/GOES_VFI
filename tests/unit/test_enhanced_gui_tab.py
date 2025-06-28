@@ -1,9 +1,9 @@
 """Unit tests for the integrity_check enhanced GUI tab functionality."""
 
-import tempfile
-import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
+import tempfile
+import unittest
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import QApplication
@@ -23,7 +23,7 @@ from tests.utils.pyqt_async_test import PyQtAsyncTestCase
 class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
     """Test cases for the EnhancedIntegrityCheckTab class."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Call parent setUp for proper PyQt/asyncio setup
         super().setUp()
@@ -58,7 +58,7 @@ class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
         # Add mock cleanup methods to the view model to avoid real calls
         self.mock_view_model.cleanup = MagicMock()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up widget
         self.tab.close()
@@ -70,7 +70,7 @@ class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
         # Call parent tearDown for proper event loop cleanup
         super().tearDown()
 
-    def test_initialization(self):
+    def test_initialization(self) -> None:
         """Test that the tab initializes correctly."""
         # Check that enhanced UI elements are correctly set up
         assert self.tab.configure_fetchers_btn is not None
@@ -87,7 +87,7 @@ class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
         assert self.tab.fetcher_config["fallback_strategy"] == "CDN first, then S3"
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information")
-    def test_auto_detect_date_range(self, mock_message_box):
+    def test_auto_detect_date_range(self, mock_message_box) -> None:
         """Test the auto-detect date range functionality."""
         # Create some dummy files in the test directory to avoid early return
         dummy_file = self.base_dir / "goes18_20230615_000000_band13.png"
@@ -113,7 +113,7 @@ class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
         # Verify message box was called but without showing the actual popup
         mock_message_box.assert_called_once()
 
-    def test_fetcher_configuration(self):
+    def test_fetcher_configuration(self) -> None:
         """Test the fetcher configuration functionality."""
         # Test default configuration
         default_config = self.tab._default_fetcher_config()
@@ -135,7 +135,7 @@ class TestEnhancedIntegrityCheckTab(PyQtAsyncTestCase):
         # Verify status label was updated
         assert self.tab.fetcher_status_label.text() == "Strategy: S3 only"
 
-    def test_get_scan_summary(self):
+    def test_get_scan_summary(self) -> None:
         """Test the scan summary functionality."""
         # Get summary (should return empty counts since tree_model is not set)
         summary = self.tab.get_scan_summary()

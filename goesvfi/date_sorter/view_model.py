@@ -290,7 +290,7 @@ class DateSorterViewModel:
             self.status_message = "Sorting complete!"
         except FileNotFoundError as e:
             self.status_message = f"Error: {e}"
-        except Exception as e:
+        except (ValueError, TypeError, OSError, PermissionError) as e:
             self.status_message = f"An error occurred: {e}"
         finally:
             self.is_sorting = False

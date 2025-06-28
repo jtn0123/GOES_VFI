@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
+import sys
 from types import ModuleType, SimpleNamespace
-from typing import Optional
 
-import pytest
 from PyQt6.QtWidgets import QApplication
+import pytest
 
 # ---------------------------------------------------------------------------
 # Fixtures to provide stub implementations for the resource manager module.
@@ -22,10 +21,10 @@ def stub_resource_manager(monkeypatch):
 
     @dataclass
     class ResourceLimits:
-        max_memory_mb: Optional[int] = None
-        max_cpu_percent: Optional[int] = None
-        max_processing_time_sec: Optional[int] = None
-        max_open_files: Optional[int] = None
+        max_memory_mb: int | None = None
+        max_cpu_percent: int | None = None
+        max_processing_time_sec: int | None = None
+        max_open_files: int | None = None
         enable_swap_limit: bool = True
 
     class ResourceMonitor:
@@ -66,7 +65,7 @@ def stub_resource_manager(monkeypatch):
     monkeypatch.delitem(sys.modules, "goesvfi.utils.resource_manager", raising=False)
 
 
-@pytest.fixture
+@pytest.fixture()
 def resource_tab(qtbot):
     """Create a ResourceLimitsTab instance with the stub resource manager."""
     from goesvfi.gui_tabs.resource_limits_tab import ResourceLimitsTab
@@ -77,7 +76,7 @@ def resource_tab(qtbot):
     return tab
 
 
-def test_checkboxes_toggle_spinboxes(resource_tab):
+def test_checkboxes_toggle_spinboxes(resource_tab) -> None:
     """Each limit checkbox should enable or disable its spinbox."""
     pairs = [
         (resource_tab.memory_limit_checkbox, resource_tab.memory_limit_spinbox),
@@ -97,18 +96,18 @@ def test_checkboxes_toggle_spinboxes(resource_tab):
         assert not spinbox.isEnabled()
 
 
-def test_limits_changed_emits_expected_values(resource_tab):
+def test_limits_changed_emits_expected_values(resource_tab) -> None:
     """Toggling limits should emit ResourceLimits with expected values."""
 
     emitted = []
-    resource_tab.limits_changed.connect(lambda limits: emitted.append(limits))
+    resource_tab.limits_changed.connect(emitted.append)
 
     # Enable memory limit and set value
     resource_tab.memory_limit_checkbox.setChecked(True)
     resource_tab.memory_limit_spinbox.setValue(1024)
     QApplication.processEvents()
-    assert getattr(emitted[-1], "max_memory_mb") == 1024
-    assert getattr(emitted[-1], "max_processing_time_sec") is None
+    assert emitted[-1].max_memory_mb == 1024
+    assert emitted[-1].max_processing_time_sec is None
 
     # Enable processing time limit
     resource_tab.time_limit_checkbox.setChecked(True)

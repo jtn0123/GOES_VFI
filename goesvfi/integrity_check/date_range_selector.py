@@ -6,7 +6,7 @@ and behavior for date selection.
 """
 
 from collections.abc import Callable
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from PyQt6.QtCore import QDate, QDateTime, Qt, QTime, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -86,7 +86,7 @@ class UnifiedDateRangeSelector(QWidget):
         self._layout_direction = layout_direction  # pylint: disable=attribute-defined-outside-init
 
         # Initialize date range with defaults
-        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
+        yesterday = datetime.now(UTC) - timedelta(days=1)
         self._start_date = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)  # pylint: disable=attribute-defined-outside-init
         self._end_date = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)  # pylint: disable=attribute-defined-outside-init
 
@@ -279,7 +279,7 @@ class UnifiedDateRangeSelector(QWidget):
             preset_name: Name of the preset to apply
         """
         # Get current date and time for reference
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if preset_name == "today":
             # Today (midnight to current time)
@@ -382,7 +382,7 @@ class CompactDateRangeSelector(QWidget):
         super().__init__(parent)
 
         # Initialize date range with defaults (last 7 days)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         self._start_date = now - timedelta(days=7)
         self._end_date = now
 
@@ -456,7 +456,7 @@ class CompactDateRangeSelector(QWidget):
             preset_text: The selected preset text
         """
         # Current date/time for reference
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if preset_text == "Last 7 Days":
             start = now - timedelta(days=7)

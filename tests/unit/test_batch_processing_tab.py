@@ -4,6 +4,7 @@ import pytest
 
 from goesvfi.gui_tabs.batch_processing_tab import BatchProcessingTab
 from goesvfi.pipeline.batch_queue import BatchJob, JobPriority
+
 from tests.utils.disable_popups import disable_all_gui_popups
 
 # Disable GUI popups for testing
@@ -11,7 +12,7 @@ disable_all_gui_popups()
 
 
 class DummySignal:
-    def connect(self, *args, **kwargs):
+    def connect(self, *args, **kwargs) -> None:
         pass
 
 
@@ -33,7 +34,7 @@ class DummyQueue:
         return self.jobs
 
 
-@pytest.fixture
+@pytest.fixture()
 def batch_tab(qtbot):
     dummy_queue = DummyQueue()
     selected_settings = {"target_fps": 24, "interpolation": "RIFE"}
@@ -71,7 +72,7 @@ def batch_tab(qtbot):
     return tab, dummy_queue, selected_settings, proc_instance
 
 
-def test_add_to_queue_uses_current_settings(batch_tab):
+def test_add_to_queue_uses_current_settings(batch_tab) -> None:
     tab, queue, expected_settings, proc = batch_tab
     tab.output_dir_label.setText("/tmp/output")
     tab.input_paths_list.addItem("/tmp/input/file1.png")

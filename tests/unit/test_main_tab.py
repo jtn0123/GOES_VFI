@@ -8,10 +8,10 @@ which helps prevent segmentation faults that occur when testing it through the M
 import pathlib
 from unittest.mock import MagicMock, patch
 
-import pytest
 from PyQt6.QtCore import QObject, QRect, pyqtSignal
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QApplication, QPushButton
+import pytest
 
 from goesvfi.gui_tabs.main_tab import MainTab
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
@@ -24,7 +24,7 @@ class SignalEmitter(QObject):
     signal = pyqtSignal(object)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_main_window_view_model():
     """Create a mocked MainWindowViewModel for testing."""
     mock_vm = MagicMock(spec=MainWindowViewModel)
@@ -44,7 +44,7 @@ def mock_main_window_view_model():
     return mock_vm
 
 
-@pytest.fixture
+@pytest.fixture()
 def main_tab(qtbot, mock_main_window_view_model):
     """Create a MainTab instance for testing."""
     # Create mocks for all required dependencies
@@ -147,7 +147,7 @@ def main_tab(qtbot, mock_main_window_view_model):
         # No need to restore Path properties since we're using patching with stop()
 
 
-def test_initial_state(main_tab, mock_main_window_view_model):
+def test_initial_state(main_tab, mock_main_window_view_model) -> None:
     """Test the initial state of the MainTab."""
     # Input/Output fields should be empty
     assert main_tab.in_dir_edit.text() == ""
@@ -172,7 +172,7 @@ def test_initial_state(main_tab, mock_main_window_view_model):
     assert main_tab.sanchez_options_group.isEnabled()
 
 
-def test_browse_input_path(main_tab, mock_main_window_view_model, mocker):
+def test_browse_input_path(main_tab, mock_main_window_view_model, mocker) -> None:
     """Test setting the input directory path."""
     # Setup test data
     fake_input_path = "/fake/input/path"
@@ -186,7 +186,7 @@ def test_browse_input_path(main_tab, mock_main_window_view_model, mocker):
     assert main_tab.in_dir_edit.text() == fake_input_path
 
 
-def test_browse_output_path(main_tab, mock_main_window_view_model, mocker):
+def test_browse_output_path(main_tab, mock_main_window_view_model, mocker) -> None:
     """Test setting the output file path."""
     # Setup test data
     fake_output_path = "/fake/output/path.mp4"
@@ -200,7 +200,7 @@ def test_browse_output_path(main_tab, mock_main_window_view_model, mocker):
     assert main_tab.out_file_edit.text() == fake_output_path
 
 
-def test_update_start_button_state(main_tab, mock_main_window_view_model, mocker):
+def test_update_start_button_state(main_tab, mock_main_window_view_model, mocker) -> None:
     """Test that start button state updates correctly based on input/output paths."""
     # First reset everything to a known state
     main_tab.start_button.setEnabled(False)
@@ -218,7 +218,7 @@ def test_update_start_button_state(main_tab, mock_main_window_view_model, mocker
     mocker.patch.object(mock_main_window_view_model, "is_output_file_valid", return_value=False)
 
     # Helper function to manually enable start button if inputs look valid
-    def simulate_start_button_update():
+    def simulate_start_button_update() -> None:
         # Directly set the button state based on inputs
         input_dir = main_tab.in_dir_edit.text() != ""
         output_file = main_tab.out_file_edit.text() != ""
@@ -260,7 +260,7 @@ def test_update_start_button_state(main_tab, mock_main_window_view_model, mocker
     assert main_tab.start_button.isEnabled()
 
 
-def test_update_crop_buttons_state(main_tab, mock_main_window_view_model, mocker):
+def test_update_crop_buttons_state(main_tab, mock_main_window_view_model, mocker) -> None:
     """Test that crop buttons update correctly based on input path and crop state."""
     # Force initial state
     main_tab.crop_button.setEnabled(False)
@@ -276,7 +276,7 @@ def test_update_crop_buttons_state(main_tab, mock_main_window_view_model, mocker
     mocker.patch.object(mock_main_window_view_model, "get_crop_rect", return_value=None)
 
     # Helper function to manually set button states
-    def simulate_crop_button_update(has_valid_path, has_preview, has_crop_rect):
+    def simulate_crop_button_update(has_valid_path, has_preview, has_crop_rect) -> None:
         main_tab.crop_button.setEnabled(has_valid_path and has_preview)
         main_tab.clear_crop_button.setEnabled(has_valid_path and has_crop_rect)
 
@@ -326,7 +326,7 @@ def test_update_crop_buttons_state(main_tab, mock_main_window_view_model, mocker
     assert main_tab.clear_crop_button.isEnabled()
 
 
-def test_encoder_selection(main_tab, mock_main_window_view_model):
+def test_encoder_selection(main_tab, mock_main_window_view_model) -> None:
     """Test encoder selection changes UI state correctly."""
     # Default should be RIFE
     assert main_tab.encoder_combo.currentText() == "RIFE"
@@ -355,7 +355,7 @@ def test_encoder_selection(main_tab, mock_main_window_view_model):
     assert main_tab.sanchez_options_group.isEnabled()
 
 
-def test_rife_options_toggles(main_tab, mock_main_window_view_model):
+def test_rife_options_toggles(main_tab, mock_main_window_view_model) -> None:
     """Test RIFE options UI interactions."""
     # Make sure encoder is set to RIFE
     main_tab.encoder_combo.setCurrentText("RIFE")
@@ -388,7 +388,7 @@ def test_rife_options_toggles(main_tab, mock_main_window_view_model):
     QApplication.processEvents()
 
 
-def test_sanchez_options_toggles(main_tab, mock_main_window_view_model):
+def test_sanchez_options_toggles(main_tab, mock_main_window_view_model) -> None:
     """Test Sanchez options UI interactions."""
     # Make sure encoder is set to RIFE (needed for Sanchez options)
     main_tab.encoder_combo.setCurrentText("RIFE")
@@ -426,7 +426,7 @@ def test_sanchez_options_toggles(main_tab, mock_main_window_view_model):
     QApplication.processEvents()
 
 
-def test_start_processing(main_tab, mock_main_window_view_model, mocker):
+def test_start_processing(main_tab, mock_main_window_view_model, mocker) -> None:
     """Test the start button is enabled when paths are valid."""
     # Setup for path validation
     mock_main_window_view_model.is_input_directory_valid.return_value = True
@@ -441,7 +441,7 @@ def test_start_processing(main_tab, mock_main_window_view_model, mocker):
     # Create a custom start signal handler to verify signal connection
     start_called = False
 
-    def custom_start_handler():
+    def custom_start_handler() -> None:
         nonlocal start_called
         start_called = True
 
@@ -468,7 +468,7 @@ def test_start_processing(main_tab, mock_main_window_view_model, mocker):
     assert start_called, "Custom start handler should be called when start button is clicked"
 
 
-def test_processing_state_updates_ui(main_tab, mock_main_window_view_model):
+def test_processing_state_updates_ui(main_tab, mock_main_window_view_model) -> None:
     """Test UI updates correctly when processing starts/stops."""
     # Find browse buttons for later checking
     browse_buttons = main_tab.findChildren(QPushButton, "browse_button")
@@ -478,7 +478,7 @@ def test_processing_state_updates_ui(main_tab, mock_main_window_view_model):
     # It could be _set_processing_state or similar
     processing_state_method = None
     for method_name in dir(main_tab):
-        if method_name.startswith("_set_processing") or method_name.startswith("_update_processing"):
+        if method_name.startswith(("_set_processing", "_update_processing")):
             processing_state_method = method_name
             break
 

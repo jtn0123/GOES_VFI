@@ -114,10 +114,10 @@ def _get_colormap(colormap_name: str) -> Any:
         return LinearSegmentedColormap.from_list("enhanced_gray", [(0, 0, 0), (1, 1, 1)], N=256)
     # Get the colormap - we just need a Colormap,
     # not specifically LinearSegmentedColormap
-    _cmap = plt.get_cmap(colormap_name)
+    cmap = plt.get_cmap(colormap_name)
     # Create a new LinearSegmentedColormap with the data from _cmap
     # This ensures type safety while maintaining the colormap
-    return LinearSegmentedColormap.from_list(colormap_name, _cmap(np.linspace(0, 1, 256)), N=256)
+    return LinearSegmentedColormap.from_list(colormap_name, cmap(np.linspace(0, 1, 256)), N=256)
 
 
 def _create_figure(data: npt.NDArray[np.float64], colormap_name: str, output_path: Path) -> None:

@@ -396,7 +396,7 @@ def get_available_rife_models() -> list[str]:
     """
     project_root = pathlib.Path(__file__).parent.parent
     models_dir = project_root / "models"
-    available_models = []
+    available_models: list[str] = []
     if models_dir.is_dir():
         # Check if it's a directory and potentially contains model files
         # A simple check is just to see if it's a directory.

@@ -101,8 +101,6 @@ def main() -> int:
     # Speed assessment
     if total_time < 10 or total_time < 30:
         pass
-    else:
-        pass
 
     # Coverage assessment
     coverage_areas = [

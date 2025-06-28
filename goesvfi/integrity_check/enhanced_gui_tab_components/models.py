@@ -14,6 +14,7 @@ from goesvfi.integrity_check.view_model import (
 
 class TableColumn(IntEnum):
     """Column indices for the missing timestamps table."""
+
     TIMESTAMP = 0
     SATELLITE = 1
     SOURCE = 2
@@ -50,9 +51,9 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         if role == Qt.ItemDataRole.ToolTipRole:
             return self._get_tooltip_data(item, col)
         if role == Qt.ItemDataRole.BackgroundRole:
-            return EnhancedMissingTimestampModel._get_background_color(item, col)
+            return self._get_background_color(item, col)
         if role == Qt.ItemDataRole.ForegroundRole:
-            return EnhancedMissingTimestampModel._get_foreground_color(item, col)
+            return self._get_foreground_color(item, col)
 
         return None
 
@@ -67,7 +68,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         if col == TableColumn.STATUS:  # Status
             return self._format_status(item)
         if col == TableColumn.PROGRESS:  # Progress
-            return EnhancedMissingTimestampModel._format_progress(item)
+            return self._format_progress(item)
         if col == TableColumn.PATH:  # Path
             return item.local_path or ""
         return None
@@ -85,7 +86,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
     def _format_error_message(self, error_msg: str) -> str:
         """Format error message to be user-friendly."""
         # Extract error code if present
-        error_code = EnhancedMissingTimestampModel._extract_error_code(error_msg)
+        error_code = self._extract_error_code(error_msg)
 
         # Check for specific error types
         if "SQLite objects created in a thread" in error_msg:
@@ -133,7 +134,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
     def _get_tooltip_data(self, item: EnhancedMissingTimestamp, col: int) -> str | None:
         """Get tooltip data for the given item and column."""
         if col == TableColumn.STATUS and item.download_error:  # Status column with error
-            return EnhancedMissingTimestampModel._format_error_tooltip(item.download_error)
+            return self._format_error_tooltip(item.download_error)
         if col == TableColumn.TIMESTAMP:  # Timestamp column
             return item.timestamp.isoformat()
         if col == TableColumn.PATH and item.local_path and item.is_downloaded:  # Path column

@@ -1,9 +1,10 @@
 """Integration tests for the integrity check tab functionality."""
 
-import tempfile
-import unittest
+import contextlib
 from datetime import datetime
 from pathlib import Path
+import tempfile
+import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from PyQt6.QtCore import (
@@ -33,7 +34,7 @@ from tests.utils.pyqt_async_test import PyQtAsyncTestCase
 class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
     """Integration tests for the IntegrityCheckTab with both UI and ViewModel."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up test fixtures."""
         # Call parent setUp
         super().setUp()
@@ -98,7 +99,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         # Don't show the window to avoid UI interference
         # self.window.show()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down test fixtures."""
         # Clean up the window
         if hasattr(self, "window"):
@@ -113,15 +114,13 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
 
         # Clean up view model resources
         if hasattr(self, "view_model"):
-            try:
+            with contextlib.suppress(Exception):
                 self.view_model.cleanup()
-            except Exception:
-                pass
 
         # Call parent tearDown
         super().tearDown()
 
-    def test_satellite_auto_detection(self):
+    def test_satellite_auto_detection(self) -> None:
         """Test that satellite auto-detection works with real files."""
         # Patch the QMessageBox to avoid dialog showing
         with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information"):
@@ -139,7 +138,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
                 assert self.tab.goes18_radio.isChecked()
                 assert not self.tab.goes16_radio.isChecked()
 
-    def test_fetch_source_radio_buttons(self):
+    def test_fetch_source_radio_buttons(self) -> None:
         """Test that fetch source radio buttons correctly update the view model."""
         # Initial state should be AUTO
         assert self.view_model.fetch_source == FetchSource.AUTO
@@ -181,7 +180,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         # Check view model was updated
         assert self.view_model.fetch_source == FetchSource.AUTO
 
-    def test_enhanced_status_updates(self):
+    def test_enhanced_status_updates(self) -> None:
         """Test that status updates correctly format different message types."""
         # Test error message
         self.tab._update_status("Error: something went wrong")
@@ -213,7 +212,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         assert "color: #66aaff" in status_text  # Blue color for in-progress
         assert "Scanning for files..." in status_text
 
-    def test_enhanced_progress_updates(self):
+    def test_enhanced_progress_updates(self) -> None:
         """Test that progress updates include more detailed information."""
         # Test with ETA
         self.tab._update_progress(25, 100, 120.0)  # 25%, ETA: 2min
@@ -232,7 +231,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
         assert "50%" in progress_format
         assert "(50/100)" in progress_format
 
-    def test_setting_date_range_from_ui(self):
+    def test_setting_date_range_from_ui(self) -> None:
         """Test that changes to date range widgets correctly update the view model."""
         # Set start date to 2023-01-01 00:00
         start_date = QDateTime(QDate(2023, 1, 1), QTime(0, 0))
@@ -265,7 +264,7 @@ class TestIntegrityCheckTabIntegration(PyQtAsyncTestCase):
             assert self.view_model.end_date.hour == expected_end.hour
             assert self.view_model.end_date.minute == expected_end.minute
 
-    def test_partial_download_selection(self):
+    def test_partial_download_selection(self) -> None:
         """Test that only selected items are passed to start_downloads."""
 
         # Prepare some missing items

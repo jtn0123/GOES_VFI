@@ -18,10 +18,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.gui_components.update_manager import register_update, request_update
 from goesvfi.gui_components.widget_factory import WidgetFactory
 
 # Setup logger
 from goesvfi.utils import log
+from goesvfi.gui_components.icon_manager import get_icon
 
 # Runtime import for constants defined in gui.py
 from goesvfi.utils.config import (
@@ -63,6 +65,9 @@ class FFmpegSettingsTab(QWidget):
         # Don't update control states here - let MainWindow set the initial state
         # based on the selected encoder
         # self._update_all_control_states()
+
+        # --- Setup UpdateManager Integration ---
+        self._setup_update_manager()
 
     def _create_header(self) -> None:
         """Create the enhanced header for the FFmpeg tab."""
@@ -478,10 +483,11 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_profile_combo.currentTextChanged.connect(self._on_profile_selected)
 
         # Controls that affect dependent control states
-        self.ffmpeg_settings_group.toggled.connect(self._update_interpolation_controls_state)
-        self.ffmpeg_scd_combo.currentTextChanged.connect(self._update_scd_thresh_state)
-        self.ffmpeg_unsharp_group.toggled.connect(self._update_unsharp_controls_state)
-        self.ffmpeg_quality_combo.currentTextChanged.connect(self._update_quality_controls_state)
+        # Use UpdateManager for batched control state updates
+        self.ffmpeg_settings_group.toggled.connect(lambda: request_update("ffmpeg_interpolation_controls"))
+        self.ffmpeg_scd_combo.currentTextChanged.connect(lambda: request_update("ffmpeg_scd_controls"))
+        self.ffmpeg_unsharp_group.toggled.connect(lambda: request_update("ffmpeg_unsharp_controls"))
+        self.ffmpeg_quality_combo.currentTextChanged.connect(lambda: request_update("ffmpeg_quality_controls"))
 
         # All controls that should trigger the "Custom" profile state when changed
         controls_to_monitor = [
@@ -522,6 +528,19 @@ class FFmpegSettingsTab(QWidget):
             elif isinstance(control, QGroupBox) and control.isCheckable():
                 control.toggled.connect(self._on_ffmpeg_setting_changed)
 
+    # --- UpdateManager Integration ---
+
+    def _setup_update_manager(self) -> None:
+        """Set up UpdateManager integration for batched UI updates."""
+        # Register update operations with different priorities
+        register_update("ffmpeg_interpolation_controls", self._update_interpolation_controls_state_batched, priority=2)
+        register_update("ffmpeg_scd_controls", self._update_scd_thresh_state_batched, priority=2)
+        register_update("ffmpeg_unsharp_controls", self._update_unsharp_controls_state_batched, priority=2)
+        register_update("ffmpeg_quality_controls", self._update_quality_controls_state_batched, priority=2)
+        register_update("ffmpeg_all_controls", self._update_all_control_states, priority=1)
+
+        LOGGER.info("FFmpegSettingsTab integrated with UpdateManager")
+
     # --- Control State Update Methods (from gui_backup.py, adapted) ---
 
     def _update_all_control_states(self) -> None:
@@ -530,6 +549,40 @@ class FFmpegSettingsTab(QWidget):
         self._update_scd_thresh_state(self.ffmpeg_scd_combo.currentText())
         self._update_unsharp_controls_state(self.ffmpeg_unsharp_group.isChecked())
         self._update_quality_controls_state(self.ffmpeg_quality_combo.currentText())
+
+    # Batched update wrapper methods for UpdateManager
+    def _update_interpolation_controls_state_batched(self) -> None:
+        """Batched wrapper for interpolation controls update."""
+        self._update_interpolation_controls_state(self.ffmpeg_settings_group.isChecked())
+
+    def _update_scd_thresh_state_batched(self) -> None:
+        """Batched wrapper for SCD threshold update."""
+        self._update_scd_thresh_state(self.ffmpeg_scd_combo.currentText())
+
+    def _update_unsharp_controls_state_batched(self) -> None:
+        """Batched wrapper for unsharp controls update."""
+        self._update_unsharp_controls_state(self.ffmpeg_unsharp_group.isChecked())
+
+    def _update_quality_controls_state_batched(self) -> None:
+        """Batched wrapper for quality controls update."""
+        self._update_quality_controls_state(self.ffmpeg_quality_combo.currentText())
+
+    def request_control_updates(self, update_type: str = "all") -> None:
+        """Request control state updates through UpdateManager.
+
+        Args:
+            update_type: Type of update ('all', 'interpolation', 'scd', 'unsharp', 'quality')
+        """
+        if update_type == "all":
+            request_update("ffmpeg_all_controls")
+        elif update_type == "interpolation":
+            request_update("ffmpeg_interpolation_controls")
+        elif update_type == "scd":
+            request_update("ffmpeg_scd_controls")
+        elif update_type == "unsharp":
+            request_update("ffmpeg_unsharp_controls")
+        elif update_type == "quality":
+            request_update("ffmpeg_quality_controls")
 
     def _update_interpolation_controls_state(self, enable: bool) -> None:
         """Enable/disable interpolation controls based on the group checkbox."""
@@ -630,7 +683,7 @@ class FFmpegSettingsTab(QWidget):
         """Load settings from the selected FFmpeg profile."""
         if profile_name == "Custom":
             # When user explicitly selects "Custom", enable quality controls
-            self._update_quality_controls_state("Custom")
+            self.request_control_updates("quality")
             return  # Don't load any settings
 
         profile_dict = FFMPEG_PROFILES.get(profile_name)
@@ -676,7 +729,7 @@ class FFmpegSettingsTab(QWidget):
             self.ffmpeg_filter_preset_combo.setCurrentText(profile_dict["filter_preset"])
 
             # --- Update control states after applying profile ---
-            self._update_all_control_states()
+            self.request_control_updates("all")
 
         except KeyError as e:
             LOGGER.exception("Profile %r is missing key: %s", profile_name, e)
@@ -713,7 +766,7 @@ class FFmpegSettingsTab(QWidget):
             self.ffmpeg_profile_combo.setCurrentText("Custom")
             self.ffmpeg_profile_combo.blockSignals(False)
             # Ensure quality controls are enabled when switching to Custom this way
-            self._update_quality_controls_state("Custom")
+            self.request_control_updates("quality")
 
     def _on_ffmpeg_setting_changed(self, *args: Any) -> None:
         """Handle changes to FFmpeg settings to set the profile combo to 'Custom' if needed."""
@@ -722,7 +775,7 @@ class FFmpegSettingsTab(QWidget):
         if self.ffmpeg_profile_combo.currentText() == "Custom":
             # If the quality preset was changed *to* "Custom", ensure controls are enabled
             if self.sender() == self.ffmpeg_quality_combo and self.ffmpeg_quality_combo.currentText() == "Custom":
-                self._update_quality_controls_state("Custom")
+                self.request_control_updates("quality")
             return
 
         # Check if the current settings match any known profile *other than* "Custom"

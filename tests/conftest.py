@@ -14,7 +14,7 @@ import pytest
 # More robust solution to prevent pytest-qt segmentation faults
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def temp_dir():
     """
     Pytest fixture to create a temporary directory for a test function.
@@ -45,7 +45,7 @@ def project_root():
 # mocked objects, or application instances.
 
 
-def pytest_configure(config):
+def pytest_configure(config) -> None:
     """Configure pytest with Qt-specific settings."""
     # Set Qt to use a specific font to avoid "Sans Serif" search delay
     import os
@@ -84,6 +84,6 @@ def qapp(qapp_args, pytestconfig):  # noqa: ARG001  # vulture: ignore
         default_font.setFamily("DejaVu Sans")
         app.setFont(default_font)
 
-    yield app
+    return app
 
     # Cleanup handled by pytest-qt

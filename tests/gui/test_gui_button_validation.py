@@ -3,8 +3,8 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 from PyQt6.QtCore import Qt
+import pytest
 
 from goesvfi.gui import MainWindow
 
@@ -12,7 +12,7 @@ from goesvfi.gui import MainWindow
 class TestGUIButtonValidation:
     """Test suite for validating GUI buttons and their interactions."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def window(self, qtbot, mocker):
         """Create a MainWindow instance for testing."""
         # Mock heavy components
@@ -26,7 +26,7 @@ class TestGUIButtonValidation:
 
         return window
 
-    def test_input_directory_button_states(self, qtbot, window, mocker):
+    def test_input_directory_button_states(self, qtbot, window, mocker) -> None:
         """Test input directory button and related UI state changes."""
         # Initial state - no input directory
         assert window.main_tab.in_dir_button.isEnabled()
@@ -47,7 +47,7 @@ class TestGUIButtonValidation:
         assert window.main_tab.crop_button.isEnabled()  # Should be enabled now
         assert not window.main_tab.clear_crop_button.isEnabled()  # Still disabled (no crop)
 
-    def test_output_file_button_interaction(self, qtbot, window, mocker):
+    def test_output_file_button_interaction(self, qtbot, window, mocker) -> None:
         """Test output file selection button."""
         # Initial state
         assert window.main_tab.out_file_button.isEnabled()
@@ -64,7 +64,7 @@ class TestGUIButtonValidation:
         assert window.main_tab.out_file_edit.text() == "/test/output.mp4"
         assert window.out_file_path == Path("/test/output.mp4")
 
-    def test_start_button_state_management(self, qtbot, window):
+    def test_start_button_state_management(self, qtbot, window) -> None:
         """Test start button enable/disable logic based on inputs."""
         # Initial state - button disabled (no inputs)
         assert not window.main_tab.start_button.isEnabled()
@@ -88,7 +88,7 @@ class TestGUIButtonValidation:
         window._set_processing_state(False)
         assert window.main_tab.start_button.text() == "Start Processing"
 
-    def test_crop_button_workflow(self, qtbot, window, mocker):
+    def test_crop_button_workflow(self, qtbot, window, mocker) -> None:
         """Test complete crop button workflow."""
         # Mock components
         mock_crop_dialog = mocker.patch("goesvfi.gui_tabs.main_tab.CropSelectionDialog")
@@ -131,7 +131,7 @@ class TestGUIButtonValidation:
         assert window.current_crop_rect is None
         assert not window.main_tab.clear_crop_button.isEnabled()
 
-    def test_encoder_combo_triggers_ui_updates(self, qtbot, window):
+    def test_encoder_combo_triggers_ui_updates(self, qtbot, window) -> None:
         """Test encoder selection updates UI appropriately."""
         # Initial state - RIFE selected
         assert window.main_tab.encoder_combo.currentText() == "RIFE"
@@ -153,7 +153,7 @@ class TestGUIButtonValidation:
         assert window.main_tab.rife_options_group.isEnabled()
         assert window.main_tab.model_combo.isEnabled()
 
-    def test_sanchez_checkbox_controls(self, qtbot, window):
+    def test_sanchez_checkbox_controls(self, qtbot, window) -> None:
         """Test Sanchez preprocessing checkbox and resolution combo."""
         # Initial state
         assert not window.main_tab.sanchez_checkbox.isChecked()
@@ -173,7 +173,7 @@ class TestGUIButtonValidation:
         # Resolution combo should be disabled
         assert not window.main_tab.sanchez_res_combo.isEnabled()
 
-    def test_tab_switching_preserves_state(self, qtbot, window):
+    def test_tab_switching_preserves_state(self, qtbot, window) -> None:
         """Test that switching tabs preserves state."""
         # Set some state in main tab
         window.set_in_dir(Path("/test/input"))
@@ -199,7 +199,7 @@ class TestGUIButtonValidation:
         assert window.main_tab.crop_button.isEnabled()
         assert window.main_tab.clear_crop_button.isEnabled()
 
-    def test_preview_label_click_interaction(self, qtbot, window, mocker):
+    def test_preview_label_click_interaction(self, qtbot, window, mocker) -> None:
         """Test clicking on preview labels."""
         # Mock the zoom dialog
         mock_zoom = mocker.patch.object(window, "_show_zoom")
@@ -216,7 +216,7 @@ class TestGUIButtonValidation:
         # Verify zoom was called
         mock_zoom.assert_called_once_with(window.main_tab.first_frame_label)
 
-    def test_processing_disables_ui_elements(self, qtbot, window):
+    def test_processing_disables_ui_elements(self, qtbot, window) -> None:
         """Test that processing state disables appropriate UI elements."""
         # Set up valid inputs
         window.set_in_dir(Path("/test/input"))
@@ -247,7 +247,7 @@ class TestGUIButtonValidation:
         assert window.main_tab.encoder_combo.isEnabled()
         assert window.tab_widget.isTabEnabled(1)
 
-    def test_rife_model_selection_updates(self, qtbot, window):
+    def test_rife_model_selection_updates(self, qtbot, window) -> None:
         """Test RIFE model selection updates UI elements."""
         # Ensure RIFE is selected
         window.main_tab.encoder_combo.setCurrentText("RIFE")
@@ -268,7 +268,7 @@ class TestGUIButtonValidation:
             # Verify RIFE UI elements updated
             window._update_rife_ui_elements()
 
-    def test_settings_buttons_functionality(self, qtbot, window, mocker):
+    def test_settings_buttons_functionality(self, qtbot, window, mocker) -> None:
         """Test settings save/load button functionality."""
         # Mock settings methods
         mock_save = mocker.patch.object(window, "saveSettings")
@@ -287,7 +287,7 @@ class TestGUIButtonValidation:
         # Verify save was called
         mock_save.assert_called()
 
-    def test_error_message_displays(self, qtbot, window, mocker):
+    def test_error_message_displays(self, qtbot, window, mocker) -> None:
         """Test that error messages are properly displayed to user."""
         # Mock QMessageBox
         mock_msgbox = mocker.patch("goesvfi.gui.QMessageBox.critical")
@@ -304,16 +304,16 @@ class TestGUIButtonValidation:
         # Verify status bar shows error
         assert "Processing failed!" in window.status_bar.currentMessage()
 
-    def test_keyboard_shortcuts(self, qtbot, window):
+    def test_keyboard_shortcuts(self, qtbot, window) -> None:
         """Test keyboard shortcuts if implemented."""
         # Test Ctrl+O for open directory (if implemented)
         # Test Ctrl+S for start processing (if implemented)
         # Test ESC for stop processing (if implemented)
-        pass  # Add tests based on actual shortcuts
+        # Add tests based on actual shortcuts
 
-    def test_drag_drop_functionality(self, qtbot, window):
+    def test_drag_drop_functionality(self, qtbot, window) -> None:
         """Test drag and drop of files/directories if implemented."""
         # Test dragging a directory to input field
         # Test dragging an image file
         # Test invalid drops are rejected
-        pass  # Add tests if drag-drop is implemented
+        # Add tests if drag-drop is implemented

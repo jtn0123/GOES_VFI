@@ -515,9 +515,6 @@ class WorkerStatusTracker:
                 else:
                     STATUS_COLOR["PASSED"]
 
-            else:
-                pass
-
 
 class TestRunner:
     """Main test runner orchestrator."""
@@ -630,8 +627,6 @@ class TestRunner:
     def _print_initial_info(self, test_files: list[str], use_json_output: bool) -> None:
         """Print initial test run information."""
         if use_json_output:
-            pass
-        else:
             pass
 
     def _run_parallel_tests(self, test_files: list[str], worker_tracker, use_json_output: bool) -> list[TestResult]:

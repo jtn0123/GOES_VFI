@@ -10,19 +10,18 @@ import goesvfi.pipeline.interpolate as interpolate_mod
 from tests.utils.mocks import create_mock_subprocess_run
 
 
-@pytest.fixture
+@pytest.fixture()
 def dummy_img():
     # 4x4 RGB float32 image
     return np.ones((4, 4, 3), dtype=np.float32)
 
 
-@pytest.fixture
+@pytest.fixture()
 def dummy_backend():
-    backend = MagicMock(spec=interpolate_mod.RifeBackend)
-    return backend
+    return MagicMock(spec=interpolate_mod.RifeBackend)
 
 
-def test_interpolate_pair_invokes_command_and_file_ops(tmp_path, dummy_img):
+def test_interpolate_pair_invokes_command_and_file_ops(tmp_path, dummy_img) -> None:
     # Patch all external dependencies in interpolate_pair
     with (
         patch.object(interpolate_mod, "RifeCommandBuilder") as mock_cmd_builder_cls,
@@ -102,7 +101,7 @@ def test_interpolate_pair_invokes_command_and_file_ops(tmp_path, dummy_img):
             assert result.dtype == np.float32
 
 
-def test_interpolate_pair_raises_on_subprocess_error(tmp_path, dummy_img):
+def test_interpolate_pair_raises_on_subprocess_error(tmp_path, dummy_img) -> None:
     # Mock Command Builder needs to be patched *within this test* scope
     with (
         patch.object(interpolate_mod, "RifeCommandBuilder") as mock_cmd_builder_cls,
@@ -144,7 +143,7 @@ def test_interpolate_pair_raises_on_subprocess_error(tmp_path, dummy_img):
         mock_rmtree.assert_called_once()
 
 
-def test_interpolate_three_calls_interpolate_pair_correctly(dummy_img, dummy_backend):
+def test_interpolate_three_calls_interpolate_pair_correctly(dummy_img, dummy_backend) -> None:
     # Setup: interpolate_pair returns dummy frames
     dummy_backend.interpolate_pair.side_effect = [
         np.full((4, 4, 3), 0.25, dtype=np.float32),  # left
