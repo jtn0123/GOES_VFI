@@ -63,7 +63,7 @@ class ErrorClassifier:
         # Special handling for OSError with errno (before checking type mappings)
         # This needs to come first because socket.error is OSError in Python 3
         if isinstance(exception, OSError) and hasattr(exception, "errno") and exception.errno:
-            return self._classify_os_error(exception)
+            return ErrorClassifier._classify_os_error(exception)
             # Return the errno-based classification directly
 
         # Check direct type mappings
@@ -78,7 +78,8 @@ class ErrorClassifier:
 
         return ErrorCategory.UNKNOWN
 
-    def _classify_os_error(self, exception: OSError) -> ErrorCategory:
+    @staticmethod
+    def _classify_os_error(exception: OSError) -> ErrorCategory:
         """Classify OSError based on errno."""
         if hasattr(exception, "errno") and exception.errno:
             errno_mappings = {
@@ -117,17 +118,17 @@ class ErrorClassifier:
 
         # Generate appropriate user message and suggestions
         if user_message is None:
-            user_message = self._generate_user_message(exception, category)
+            user_message = ErrorClassifier._generate_user_message(exception, category)
 
-        suggestions = self._generate_suggestions(exception, category)
+        suggestions = ErrorClassifier._generate_suggestions(exception, category)
 
         # Determine if error is recoverable
-        recoverable = self._is_recoverable(category, exception)
+        recoverable = ErrorClassifier._is_recoverable(category, exception)
 
         from .base import ErrorContext as BaseErrorContext
 
         context = BaseErrorContext(operation=operation, component=component)
-        self._add_context_from_exception(context, exception)
+        ErrorClassifier._add_context_from_exception(context, exception)
 
         return StructuredError(
             message=str(exception),
@@ -139,7 +140,8 @@ class ErrorClassifier:
             suggestions=suggestions,
         )
 
-    def _generate_user_message(self, exception: Exception, category: ErrorCategory) -> str:
+    @staticmethod
+    def _generate_user_message(exception: Exception, category: ErrorCategory) -> str:
         """Generate a user-friendly message based on exception and category."""
         if category == ErrorCategory.FILE_NOT_FOUND:
             return f"File or directory not found: {exception}"
@@ -156,7 +158,8 @@ class ErrorClassifier:
 
         return str(exception)
 
-    def _generate_suggestions(self, _exception: Exception, category: ErrorCategory) -> list[str]:
+    @staticmethod
+    def _generate_suggestions(_exception: Exception, category: ErrorCategory) -> list[str]:
         """Generate helpful suggestions based on exception and category."""
         suggestions = []
 
@@ -199,7 +202,8 @@ class ErrorClassifier:
 
         return suggestions
 
-    def _is_recoverable(self, category: ErrorCategory, _exception: Exception) -> bool:
+    @staticmethod
+    def _is_recoverable(category: ErrorCategory, _exception: Exception) -> bool:
         """Determine if an error is potentially recoverable."""
         recoverable_categories = {
             ErrorCategory.VALIDATION,
@@ -212,7 +216,8 @@ class ErrorClassifier:
         }
         return category in recoverable_categories
 
-    def _add_context_from_exception(self, context: ErrorContext, exception: Exception) -> None:
+    @staticmethod
+    def _add_context_from_exception(context: ErrorContext, exception: Exception) -> None:
         """Add relevant context data from the exception."""
         if isinstance(exception, FileNotFoundError | PermissionError | IsADirectoryError):
             if hasattr(exception, "filename") and exception.filename:
