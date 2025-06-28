@@ -39,9 +39,9 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         if role == Qt.ItemDataRole.ToolTipRole:
             return self._get_tooltip_data(item, col)
         if role == Qt.ItemDataRole.BackgroundRole:
-            return self._get_background_color(item, col)
+            return EnhancedMissingTimestampModel._get_background_color(item, col)
         if role == Qt.ItemDataRole.ForegroundRole:
-            return self._get_foreground_color(item, col)
+            return EnhancedMissingTimestampModel._get_foreground_color(item, col)
 
         return None
 
@@ -56,7 +56,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         if col == 3:  # Status
             return self._format_status(item)
         if col == 4:  # Progress
-            return self._format_progress(item)
+            return EnhancedMissingTimestampModel._format_progress(item)
         if col == 5:  # Path
             return item.local_path or ""
         return None
@@ -74,7 +74,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
     def _format_error_message(self, error_msg: str) -> str:
         """Format error message to be user-friendly."""
         # Extract error code if present
-        error_code = self._extract_error_code(error_msg)
+        error_code = EnhancedMissingTimestampModel._extract_error_code(error_msg)
 
         # Check for specific error types
         if "SQLite objects created in a thread" in error_msg:
@@ -100,7 +100,8 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
             return f"Error: {error_msg[:47]}..."
         return f"Error: {error_msg}"
 
-    def _extract_error_code(self, error_msg: str) -> str:
+    @staticmethod
+    def _extract_error_code(error_msg: str) -> str:
         """Extract error code from error message."""
         if "[Error " in error_msg and "]" in error_msg:
             try:
@@ -109,7 +110,8 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
                 pass
         return "Unknown"
 
-    def _format_progress(self, item: EnhancedMissingTimestamp) -> str:
+    @staticmethod
+    def _format_progress(item: EnhancedMissingTimestamp) -> str:
         """Format the progress column."""
         if item.is_downloading:
             return f"{item.progress}%"
@@ -120,14 +122,15 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
     def _get_tooltip_data(self, item: EnhancedMissingTimestamp, col: int) -> str | None:
         """Get tooltip data for the given item and column."""
         if col == 3 and item.download_error:  # Status column with error
-            return self._format_error_tooltip(item.download_error)
+            return EnhancedMissingTimestampModel._format_error_tooltip(item.download_error)
         if col == 0:  # Timestamp column
             return item.timestamp.isoformat()
         if col == 5 and item.local_path and item.is_downloaded:  # Path column
             return f"Double-click to open folder containing:\n{item.local_path}"
         return None
 
-    def _format_error_tooltip(self, error_msg: str) -> str:
+    @staticmethod
+    def _format_error_tooltip(error_msg: str) -> str:
         """Format error message for tooltip."""
         tooltip = "Double-click for details\n\n"
 
@@ -140,7 +143,8 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         tooltip += "Right-click to show context menu with more options"
         return tooltip
 
-    def _get_background_color(self, item: EnhancedMissingTimestamp, col: int) -> QColor | None:
+    @staticmethod
+    def _get_background_color(item: EnhancedMissingTimestamp, col: int) -> QColor | None:
         """Get background color for the given item and column."""
         if col == 3:  # Status column
             if item.is_downloaded:
@@ -151,7 +155,8 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
                 return QColor(0, 0, 120)  # Dark blue for dark mode
         return None
 
-    def _get_foreground_color(self, item: EnhancedMissingTimestamp, col: int) -> QColor | None:
+    @staticmethod
+    def _get_foreground_color(item: EnhancedMissingTimestamp, col: int) -> QColor | None:
         """Get foreground color for the given item and column."""
         if col == 3:  # Status column
             if item.is_downloaded or item.download_error or item.is_downloading:
