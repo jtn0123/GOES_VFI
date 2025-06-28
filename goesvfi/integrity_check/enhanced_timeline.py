@@ -26,7 +26,7 @@ class EnhancedTimeline(TimelineVisualization):
     The full implementation needs to be restored from the corrupted file.
     """
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the enhanced timeline visualization."""
         super().__init__(parent)
         LOGGER.warning("Using stub implementation of EnhancedTimeline")
@@ -60,7 +60,6 @@ class EnhancedTimeline(TimelineVisualization):
     def _update_animation(self) -> None:
         """Update animation state."""
         # Stub implementation
-        pass
 
     def _paint_timeline(self, painter: QPainter) -> None:
         """Paint the enhanced timeline visualization."""
@@ -70,9 +69,7 @@ class EnhancedTimeline(TimelineVisualization):
     def _draw_grid(self, painter: QPainter) -> None:
         """Draw grid lines on the timeline."""
         # Stub implementation
-        pass
 
     def _draw_highlights(self, painter: QPainter) -> None:
         """Draw selection and hover highlights."""
         # Stub implementation
-        pass

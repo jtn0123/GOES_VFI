@@ -36,15 +36,15 @@ class TimelineVisualization(QWidget):
     timestampSelected = pyqtSignal(datetime)
     rangeSelected = pyqtSignal(datetime, datetime)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the timeline visualization."""
         super().__init__(parent)
         LOGGER.warning("Using stub implementation of TimelineVisualization")
 
         # Data storage
-        self.missing_items: List[MissingTimestamp] = []
-        self.start_timestamp: Optional[datetime] = None
-        self.end_timestamp: Optional[datetime] = None
+        self.missing_items: list[MissingTimestamp] = []
+        self.start_timestamp: datetime | None = None
+        self.end_timestamp: datetime | None = None
         self.interval_minutes: int = 5
 
         # Visual properties
@@ -56,10 +56,10 @@ class TimelineVisualization(QWidget):
         self.axis_color = QColor(180, 180, 180)  # Light gray for axis
 
         # Selection state
-        self.selection_start: Optional[int] = None
-        self.selection_end: Optional[int] = None
+        self.selection_start: int | None = None
+        self.selection_end: int | None = None
         self.is_selecting = False
-        self.hover_timestamp: Optional[datetime] = None
+        self.hover_timestamp: datetime | None = None
 
         # Control panel
         self.control_panel = None
@@ -70,7 +70,7 @@ class TimelineVisualization(QWidget):
 
     def set_data(
         self,
-        missing_items: List[MissingTimestamp],
+        missing_items: list[MissingTimestamp],
         start_time: datetime,
         end_time: datetime,
         interval_minutes: int = 5,
@@ -113,17 +113,14 @@ class TimelineVisualization(QWidget):
     def mousePressEvent(self, event: QMouseEvent | None) -> None:
         """Handle mouse press events."""
         # Stub implementation
-        pass
 
     def mouseMoveEvent(self, event: QMouseEvent | None) -> None:
         """Handle mouse move events."""
         # Stub implementation
-        pass
 
     def mouseReleaseEvent(self, event: QMouseEvent | None) -> None:
         """Handle mouse release events."""
         # Stub implementation
-        pass
 
 
 class MissingDataCalendarView(QWidget):
@@ -136,20 +133,20 @@ class MissingDataCalendarView(QWidget):
     dateSelected = pyqtSignal(datetime)
     rangeSelected = pyqtSignal(datetime, datetime)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the calendar view."""
         super().__init__(parent)
         LOGGER.warning("Using stub implementation of MissingDataCalendarView")
 
         # Data storage
-        self.missing_items: List[MissingTimestamp] = []
-        self.start_timestamp: Optional[datetime] = None
-        self.end_timestamp: Optional[datetime] = None
+        self.missing_items: list[MissingTimestamp] = []
+        self.start_timestamp: datetime | None = None
+        self.end_timestamp: datetime | None = None
         self.interval_minutes: int = 5
 
     def set_data(
         self,
-        missing_items: List[MissingTimestamp],
+        missing_items: list[MissingTimestamp],
         start_time: datetime,
         end_time: datetime,
         interval_minutes: int = 5,

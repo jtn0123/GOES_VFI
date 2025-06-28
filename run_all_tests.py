@@ -27,7 +27,7 @@ STATUS_COLOR = {
 RESET = "\033[0m"
 
 
-def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
+def run_test(test_path: str, debug_mode: bool = False) -> dict[str, Any]:
     """Run a single test file directly with pytest.
 
     Args:
@@ -275,7 +275,7 @@ def run_test(test_path: str, debug_mode: bool = False) -> Dict[str, Any]:
             os.environ.pop("PYTHONVERBOSE", None)
 
 
-def find_test_files(directory: str = "tests") -> List[str]:
+def find_test_files(directory: str = "tests") -> list[str]:
     """Find all test files in the given directory.
 
     Args:
@@ -315,7 +315,7 @@ def find_test_files(directory: str = "tests") -> List[str]:
 
 
 def print_status(
-    result: Dict[str, Any],
+    result: dict[str, Any],
     verbose: bool = False,
     dump_logs: bool = False,
     debug_mode: bool = False,

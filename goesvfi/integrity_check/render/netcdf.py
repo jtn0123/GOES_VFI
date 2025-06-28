@@ -163,7 +163,7 @@ def _create_figure(data: npt.NDArray[np.float64], colormap_name: str, output_pat
     plt.close(fig)
 
 
-def _resize_image(image_path: Path, resolution: Tuple[int, int]) -> None:
+def _resize_image(image_path: Path, resolution: tuple[int, int]) -> None:
     """
     Resize an image to the specified resolution.
 
@@ -179,7 +179,7 @@ def _resize_image(image_path: Path, resolution: Tuple[int, int]) -> None:
     img.save(image_path)
 
 
-def _prepare_output_path(netcdf_path: Path, output_path: Optional[Union[str, Path]]) -> Path:
+def _prepare_output_path(netcdf_path: Path, output_path: Union[str, Path] | None) -> Path:
     """
     Prepare the output path for the rendered image.
 
@@ -199,12 +199,12 @@ def _prepare_output_path(netcdf_path: Path, output_path: Optional[Union[str, Pat
 
 def render_png(
     netcdf_path: Union[str, Path],
-    output_path: Optional[Union[str, Path]] = None,
+    output_path: Union[str, Path] | None = None,
     min_temp_k: float = DEFAULT_MIN_TEMP_K,
     max_temp_k: float = DEFAULT_MAX_TEMP_K,
     colormap: str = DEFAULT_COLORMAP,
-    satellite: Optional[SatellitePattern] = None,
-    resolution: Optional[Tuple[int, int]] = None,
+    satellite: SatellitePattern | None = None,
+    resolution: tuple[int, int] | None = None,
 ) -> Path:
     """Render a PNG image from a GOES NetCDF file.
 
@@ -271,7 +271,7 @@ def render_png(
         raise ValueError(f"Error rendering NetCDF file: {e}") from e
 
 
-def extract_metadata(netcdf_path: Union[str, Path]) -> Dict[str, Any]:
+def extract_metadata(netcdf_path: Union[str, Path]) -> dict[str, Any]:
     """Extract metadata from a GOES NetCDF file.
 
     Args:

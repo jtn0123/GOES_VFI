@@ -19,9 +19,9 @@ class DirectoryScanner:
     def scan_directory_for_timestamps(
         directory: Path,
         pattern: SatellitePattern,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[datetime]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> list[datetime]:
         """
         Scan a directory for files matching the timestamp pattern.
         Also checks directory names for timestamps in format YYYY-MM-DD_HH-MM-SS.
@@ -102,7 +102,7 @@ class DirectoryScanner:
     @staticmethod
     def find_date_range_in_directory(
         directory: Path, pattern: SatellitePattern
-    ) -> Tuple[Optional[datetime], Optional[datetime]]:
+    ) -> tuple[datetime | None, datetime | None]:
         """
         Find the earliest and latest timestamps in the directory.
 

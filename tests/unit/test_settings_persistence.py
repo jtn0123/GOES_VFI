@@ -1,9 +1,10 @@
 """Fast, optimized tests for settings persistence - high business value."""
 
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
+
 from PyQt6.QtCore import QSettings
+import pytest
 
 from goesvfi.gui_components.settings_persistence import SettingsPersistence
 
@@ -11,7 +12,7 @@ from goesvfi.gui_components.settings_persistence import SettingsPersistence
 class TestSettingsPersistence:
     """Test settings persistence with fast, mocked operations."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_settings(self):
         """Mock QSettings to avoid file I/O."""
         settings = MagicMock(spec=QSettings)
@@ -23,7 +24,7 @@ class TestSettingsPersistence:
                 return type(value)
             return value
 
-        def mock_set_value(key, value):
+        def mock_set_value(key, value) -> None:
             settings._storage[key] = value
 
         def mock_all_keys():
@@ -41,7 +42,7 @@ class TestSettingsPersistence:
 
         return settings
 
-    @pytest.fixture
+    @pytest.fixture()
     def settings_manager(self, mock_settings, mocker):
         """Create settings persistence manager with mocked QSettings."""
         # Mock the file existence check to always return True
@@ -55,7 +56,7 @@ class TestSettingsPersistence:
 
         return SettingsPersistence(mock_settings)
 
-    def test_save_input_directory(self, settings_manager, mock_settings):
+    def test_save_input_directory(self, settings_manager, mock_settings) -> None:
         """Test saving input directory."""
         test_path = Path("/test/input/directory")
 
@@ -65,7 +66,7 @@ class TestSettingsPersistence:
         # Verify the setting was saved (actual implementation uses multiple keys)
         mock_settings.setValue.assert_any_call("paths/inputDirectory", str(test_path.resolve()))
 
-    def test_save_crop_rect(self, settings_manager, mock_settings):
+    def test_save_crop_rect(self, settings_manager, mock_settings) -> None:
         """Test saving crop rectangle."""
         test_rect = (10, 20, 100, 200)
 
@@ -75,7 +76,7 @@ class TestSettingsPersistence:
         # Verify the setting was saved
         mock_settings.setValue.assert_any_call("preview/cropRectangle", "10,20,100,200")
 
-    def test_save_crop_rect_validation(self, settings_manager, mock_settings):
+    def test_save_crop_rect_validation(self, settings_manager, mock_settings) -> None:
         """Test crop rectangle validation."""
         # Test with None
         result = settings_manager.save_crop_rect(None)
@@ -86,7 +87,7 @@ class TestSettingsPersistence:
         result = settings_manager.save_crop_rect(valid_rect)
         assert result is True
 
-    def test_save_input_directory_validation(self, settings_manager, mock_settings):
+    def test_save_input_directory_validation(self, settings_manager, mock_settings) -> None:
         """Test input directory validation."""
         # Test with None
         result = settings_manager.save_input_directory(None)
@@ -97,12 +98,9 @@ class TestSettingsPersistence:
         result = settings_manager.save_input_directory(valid_path)
         assert result is True
 
-    def test_path_string_conversion(self, settings_manager, mock_settings):
+    def test_path_string_conversion(self, settings_manager, mock_settings) -> None:
         """Test that paths are properly converted to strings for storage."""
-        test_paths = [
-            Path("/unix/style/path"),
-            Path("relative/path")
-        ]
+        test_paths = [Path("/unix/style/path"), Path("relative/path")]
 
         for path in test_paths:
             result = settings_manager.save_input_directory(path)
@@ -110,7 +108,7 @@ class TestSettingsPersistence:
             # Verify string conversion (actual implementation uses resolved paths)
             mock_settings.setValue.assert_any_call("paths/inputDirectory", str(path.resolve()))
 
-    def test_settings_sync_called(self, settings_manager, mock_settings):
+    def test_settings_sync_called(self, settings_manager, mock_settings) -> None:
         """Test that settings are synced after save operations."""
         test_path = Path("/test/sync/path")
 

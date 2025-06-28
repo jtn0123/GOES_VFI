@@ -8,9 +8,9 @@ Optimizations:
 - Added edge case testing
 """
 
-import pathlib
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from goesvfi.gui_components import PreviewManager, ProcessingManager
 from goesvfi.view_models.processing_view_model import ProcessingViewModel
@@ -19,14 +19,14 @@ from goesvfi.view_models.processing_view_model import ProcessingViewModel
 class TestProcessingViewModelFFmpegV2:
     """Optimized tests for ProcessingViewModel FFmpeg command building."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def view_model(self):
         """Create ProcessingViewModel instance with mocked dependencies."""
         preview_manager = MagicMock(spec=PreviewManager)
         processing_manager = MagicMock(spec=ProcessingManager)
         return ProcessingViewModel(preview_manager, processing_manager)
 
-    @pytest.fixture
+    @pytest.fixture()
     def test_paths(self, tmp_path):
         """Create test paths."""
         return {
@@ -36,7 +36,7 @@ class TestProcessingViewModelFFmpegV2:
             "output_mov": tmp_path / "output.mov",
         }
 
-    def test_build_ffmpeg_command_with_crop(self, view_model, test_paths):
+    def test_build_ffmpeg_command_with_crop(self, view_model, test_paths) -> None:
         """Test building FFmpeg command with crop parameters."""
         output = test_paths["output"]
         settings = {"encoder": "Software x264", "crf": 20, "pix_fmt": "yuv420p"}
@@ -57,7 +57,7 @@ class TestProcessingViewModelFFmpegV2:
         assert "-pix_fmt" in cmd
         assert "yuv420p" in cmd
 
-    def test_build_ffmpeg_command_without_crop(self, view_model, test_paths):
+    def test_build_ffmpeg_command_without_crop(self, view_model, test_paths) -> None:
         """Test building FFmpeg command without crop parameters."""
         output = test_paths["output"]
         settings = {"encoder": "Software x264", "crf": 23}
@@ -72,14 +72,17 @@ class TestProcessingViewModelFFmpegV2:
         assert "-r" in cmd
         assert "24" in cmd
 
-    @pytest.mark.parametrize("encoder,expected_codec", [
-        ("Software x264", ["-c:v", "libx264"]),
-        ("Software x265", ["-c:v", "libx265"]),
-        ("Hardware H.264 (NVENC)", ["-c:v", "h264_nvenc"]),
-        ("Hardware HEVC (NVENC)", ["-c:v", "hevc_nvenc"]),
-        ("None (copy original)", ["-c:v", "copy"]),
-    ])
-    def test_build_ffmpeg_command_encoders(self, view_model, test_paths, encoder, expected_codec):
+    @pytest.mark.parametrize(
+        "encoder,expected_codec",
+        [
+            ("Software x264", ["-c:v", "libx264"]),
+            ("Software x265", ["-c:v", "libx265"]),
+            ("Hardware H.264 (NVENC)", ["-c:v", "h264_nvenc"]),
+            ("Hardware HEVC (NVENC)", ["-c:v", "hevc_nvenc"]),
+            ("None (copy original)", ["-c:v", "copy"]),
+        ],
+    )
+    def test_build_ffmpeg_command_encoders(self, view_model, test_paths, encoder, expected_codec) -> None:
         """Test building FFmpeg command with different encoders."""
         output = test_paths["output"]
         settings = {"encoder": encoder}
@@ -90,11 +93,11 @@ class TestProcessingViewModelFFmpegV2:
         for i, expected in enumerate(expected_codec):
             assert expected in cmd
             if i > 0:  # Check order for codec value
-                idx = cmd.index(expected_codec[i-1])
+                idx = cmd.index(expected_codec[i - 1])
                 assert cmd[idx + 1] == expected
 
     @pytest.mark.parametrize("fps", [24, 25, 30, 48, 50, 60, 120])
-    def test_build_ffmpeg_command_various_fps(self, view_model, test_paths, fps):
+    def test_build_ffmpeg_command_various_fps(self, view_model, test_paths, fps) -> None:
         """Test building FFmpeg command with various frame rates."""
         output = test_paths["output"]
         settings = {"encoder": "Software x264"}
@@ -107,7 +110,7 @@ class TestProcessingViewModelFFmpegV2:
         assert cmd[idx + 1] == str(fps)
 
     @pytest.mark.parametrize("crf", [0, 15, 23, 28, 51])
-    def test_build_ffmpeg_command_crf_values(self, view_model, test_paths, crf):
+    def test_build_ffmpeg_command_crf_values(self, view_model, test_paths, crf) -> None:
         """Test building FFmpeg command with various CRF values."""
         output = test_paths["output"]
         settings = {"encoder": "Software x264", "crf": crf}
@@ -120,7 +123,7 @@ class TestProcessingViewModelFFmpegV2:
         assert cmd[idx + 1] == str(crf)
 
     @pytest.mark.parametrize("pix_fmt", ["yuv420p", "yuv422p", "yuv444p", "rgb24"])
-    def test_build_ffmpeg_command_pixel_formats(self, view_model, test_paths, pix_fmt):
+    def test_build_ffmpeg_command_pixel_formats(self, view_model, test_paths, pix_fmt) -> None:
         """Test building FFmpeg command with various pixel formats."""
         output = test_paths["output"]
         settings = {"encoder": "Software x264", "pix_fmt": pix_fmt}
@@ -132,7 +135,7 @@ class TestProcessingViewModelFFmpegV2:
         idx = cmd.index("-pix_fmt")
         assert cmd[idx + 1] == pix_fmt
 
-    def test_build_ffmpeg_command_with_all_settings(self, view_model, test_paths):
+    def test_build_ffmpeg_command_with_all_settings(self, view_model, test_paths) -> None:
         """Test building FFmpeg command with all possible settings."""
         output = test_paths["output"]
         settings = {
@@ -148,17 +151,23 @@ class TestProcessingViewModelFFmpegV2:
         cmd = view_model.build_ffmpeg_command(output, 60, crop, settings)
 
         # Verify all parameters are present
-        assert "-c:v" in cmd and "libx265" in cmd
-        assert "-crf" in cmd and "28" in cmd
-        assert "-pix_fmt" in cmd and "yuv420p10le" in cmd
-        assert "-preset" in cmd and "medium" in cmd
-        assert "-tune" in cmd and "animation" in cmd
-        assert "-profile:v" in cmd and "main10" in cmd
+        assert "-c:v" in cmd
+        assert "libx265" in cmd
+        assert "-crf" in cmd
+        assert "28" in cmd
+        assert "-pix_fmt" in cmd
+        assert "yuv420p10le" in cmd
+        assert "-preset" in cmd
+        assert "medium" in cmd
+        assert "-tune" in cmd
+        assert "animation" in cmd
+        assert "-profile:v" in cmd
+        assert "main10" in cmd
         assert "-filter:v" in cmd
         assert "crop=1920:1080:50:100" in cmd[cmd.index("-filter:v") + 1]
 
     @pytest.mark.parametrize("output_ext", [".mp4", ".mkv", ".avi", ".mov", ".webm"])
-    def test_build_ffmpeg_command_output_formats(self, view_model, tmp_path, output_ext):
+    def test_build_ffmpeg_command_output_formats(self, view_model, tmp_path, output_ext) -> None:
         """Test building FFmpeg command with different output formats."""
         output = tmp_path / f"output{output_ext}"
         settings = {"encoder": "Software x264"}
@@ -173,7 +182,7 @@ class TestProcessingViewModelFFmpegV2:
             assert "-movflags" in cmd
             assert "+faststart" in cmd
 
-    def test_build_ffmpeg_command_edge_cases(self, view_model, test_paths):
+    def test_build_ffmpeg_command_edge_cases(self, view_model, test_paths) -> None:
         """Test edge cases for FFmpeg command building."""
         # Test with minimal settings
         output = test_paths["output"]
@@ -191,7 +200,7 @@ class TestProcessingViewModelFFmpegV2:
         # Implementation dependent - just verify no crash
         assert isinstance(cmd, list)
 
-    def test_build_ffmpeg_command_order_preservation(self, view_model, test_paths):
+    def test_build_ffmpeg_command_order_preservation(self, view_model, test_paths) -> None:
         """Test that FFmpeg command maintains proper argument order."""
         output = test_paths["output"]
         settings = {

@@ -11,7 +11,7 @@ from goesvfi.utils.log import get_logger
 LOGGER = get_logger(__name__)
 
 
-def patch_main_window(MainWindow_class: Type[Any]) -> None:
+def patch_main_window(MainWindow_class: type[Any]) -> None:
     """Monkey patch the MainWindow class to add UI enhancements.
 
     This function modifies the MainWindow class to integrate all UI/UX improvements.

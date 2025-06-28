@@ -27,7 +27,7 @@ class DateSorterTab(QWidget):
     directory_selected = pyqtSignal(str)  # Signal emitted when a directory is selected
 
     # Modified __init__ to accept a ViewModel instance
-    def __init__(self, view_model: DateSorterViewModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, view_model: DateSorterViewModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         if not isinstance(view_model, DateSorterViewModel):
@@ -170,7 +170,7 @@ class DateSorterTab(QWidget):
         self.scan_button.setEnabled(self.view_model.can_start_sorting)
 
         # Auto-scroll status text to bottom
-        v_scrollbar: Optional[QScrollBar] = self.status_text.verticalScrollBar()
+        v_scrollbar: QScrollBar | None = self.status_text.verticalScrollBar()
         if v_scrollbar:
             v_scrollbar.setValue(v_scrollbar.maximum())
 

@@ -160,7 +160,7 @@ class MainWindowViewModel(QObject):
         LOGGER.info("Quit application action triggered.")
         # In a real application, you might prompt to save, clean up, etc.
         # For now, just log. The actual closing is handled by the View (MainWindow).
-        pass  # The MainWindow's closeEvent will handle the actual closing
+        # The MainWindow's closeEvent will handle the actual closing
 
     def show_about_dialog(self) -> None:
         """

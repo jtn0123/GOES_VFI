@@ -41,7 +41,7 @@ class S3ErrorConverter:
         operation: str,
         satellite: SatellitePattern,
         timestamp: datetime,
-        additional_context: Optional[Dict[str, Any]] = None,
+        additional_context: dict[str, Any] | None = None,
     ) -> RemoteErrorType:
         """Convert a botocore ClientError to appropriate RemoteStoreError.
 
@@ -98,7 +98,7 @@ class S3ErrorConverter:
         operation: str,
         satellite: SatellitePattern,
         timestamp: datetime,
-        additional_context: Optional[Dict[str, Any]] = None,
+        additional_context: dict[str, Any] | None = None,
     ) -> RemoteErrorType:
         """Convert a generic exception to appropriate RemoteStoreError.
 
@@ -154,12 +154,12 @@ class S3ErrorConverter:
 
     @staticmethod
     def _build_technical_details(
-        error_code: Optional[str],
+        error_code: str | None,
         error_message: str,
         operation: str,
         satellite: SatellitePattern,
         timestamp: datetime,
-        context: Dict[str, Any],
+        context: dict[str, Any],
     ) -> str:
         """Build technical details string for error.
 

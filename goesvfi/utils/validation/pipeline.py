@@ -17,7 +17,7 @@ class ValidationPipeline:
     by centralizing validation logic and providing clear error reporting.
     """
 
-    def __init__(self, name: Optional[str] = None, fail_fast: bool = False) -> None:
+    def __init__(self, name: str | None = None, fail_fast: bool = False) -> None:
         """
         Initialize validation pipeline.
 
@@ -27,7 +27,7 @@ class ValidationPipeline:
         """
         self.name = name or "ValidationPipeline"
         self.fail_fast = fail_fast
-        self.validators: List[Tuple[str, ValidatorBase, Any]] = []
+        self.validators: list[tuple[str, ValidatorBase, Any]] = []
 
     def add_validator(self, field_name: str, validator: ValidatorBase, value: Any) -> "ValidationPipeline":
         """
@@ -81,7 +81,7 @@ class ValidationPipeline:
         must_exist: bool = True,
         create_if_missing: bool = False,
         must_be_writable: bool = False,
-        min_free_space_mb: Optional[int] = None,
+        min_free_space_mb: int | None = None,
     ) -> "ValidationPipeline":
         """
         Convenience method to add directory validation.
@@ -105,8 +105,8 @@ class ValidationPipeline:
         field_name: str,
         file_value: Any,
         must_exist: bool = True,
-        allowed_extensions: Optional[list] = None,
-        max_size_mb: Optional[int] = None,
+        allowed_extensions: list | None = None,
+        max_size_mb: int | None = None,
     ) -> "ValidationPipeline":
         """
         Convenience method to add file validation.
@@ -136,7 +136,7 @@ class ValidationPipeline:
         validator = ExecutableValidator(field_name=field_name)
         return self.add_validator(field_name, validator, executable_value)
 
-    def validate(self, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def validate(self, context: dict[str, Any] | None = None) -> ValidationResult:
         """
         Run all validators in the pipeline.
 
@@ -171,7 +171,7 @@ class ValidationPipeline:
 
         return overall_result
 
-    def validate_and_raise(self, context: Optional[Dict[str, Any]] = None) -> None:
+    def validate_and_raise(self, context: dict[str, Any] | None = None) -> None:
         """
         Run validation and raise ValidationError if any validation fails.
 
@@ -230,7 +230,7 @@ class ValidationStepBuilder:
         self,
         path: Any,
         field_name: str = "output_directory",
-        min_free_space_mb: Optional[int] = 100,
+        min_free_space_mb: int | None = 100,
     ) -> "ValidationStepBuilder":
         """Add output directory validation step."""
         self.pipeline.add_directory_validation(
@@ -252,8 +252,8 @@ class ValidationStepBuilder:
         self,
         path: Any,
         field_name: str = "input_file",
-        allowed_extensions: Optional[list] = None,
-        max_size_mb: Optional[int] = None,
+        allowed_extensions: list | None = None,
+        max_size_mb: int | None = None,
     ) -> "ValidationStepBuilder":
         """Add input file validation step."""
         self.pipeline.add_file_validation(
@@ -274,10 +274,10 @@ class ValidationStepBuilder:
         """Build and return the validation pipeline."""
         return self.pipeline
 
-    def validate(self, context: Optional[Dict[str, Any]] = None) -> ValidationResult:
+    def validate(self, context: dict[str, Any] | None = None) -> ValidationResult:
         """Build pipeline and run validation."""
         return self.pipeline.validate(context)
 
-    def validate_and_raise(self, context: Optional[Dict[str, Any]] = None) -> None:
+    def validate_and_raise(self, context: dict[str, Any] | None = None) -> None:
         """Build pipeline and run validation, raising on failure."""
         return self.pipeline.validate_and_raise(context)

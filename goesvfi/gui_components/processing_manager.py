@@ -24,12 +24,12 @@ class ProcessingManager(QObject):
     def __init__(self) -> None:
         """Initialize the processing manager."""
         super().__init__()
-        self.worker_thread: Optional[QThread] = None
-        self.worker: Optional[VfiWorker] = None
+        self.worker_thread: QThread | None = None
+        self.worker: VfiWorker | None = None
         self.is_processing = False
-        self.current_output_path: Optional[Path] = None
+        self.current_output_path: Path | None = None
 
-    def start_processing(self, args: Dict[str, Any]) -> bool:
+    def start_processing(self, args: dict[str, Any]) -> bool:
         """Start video processing with the given arguments.
 
         Args:
@@ -159,7 +159,7 @@ class ProcessingManager(QObject):
         """
         return self.is_processing
 
-    def get_current_output_path(self) -> Optional[Path]:
+    def get_current_output_path(self) -> Path | None:
         """Get the current output file path.
 
         Returns:
@@ -167,7 +167,7 @@ class ProcessingManager(QObject):
         """
         return self.current_output_path if self.is_processing else None
 
-    def validate_processing_args(self, args: Dict[str, Any]) -> tuple[bool, str]:
+    def validate_processing_args(self, args: dict[str, Any]) -> tuple[bool, str]:
         """Validate processing arguments before starting.
 
         Args:

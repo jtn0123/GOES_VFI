@@ -22,7 +22,7 @@ LOGGER = log.get_logger(__name__)
 class GOESImageryTab(QWidget):
     """Tab for GOES satellite imagery display and analysis."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the GOES imagery tab."""
         super().__init__(parent)
         self._setup_ui()
@@ -109,4 +109,3 @@ class GOESImageryTab(QWidget):
 
     def cleanup(self) -> None:
         """Clean up resources."""
-        pass

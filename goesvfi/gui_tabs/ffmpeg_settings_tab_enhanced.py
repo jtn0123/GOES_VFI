@@ -35,7 +35,7 @@ LOGGER = log.get_logger(__name__)
 class EnhancedFFmpegSettingsTab(FFmpegSettingsTab):
     """Enhanced FFmpeg settings tab with improved UI/UX features."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         # Initialize notification widget

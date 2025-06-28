@@ -55,7 +55,7 @@ def load_cached(
     path2: pathlib.Path,
     model_id: str,
     num_intermediate_frames: int,
-) -> Optional[List[NDArray[Any]]]:
+) -> list[NDArray[Any]] | None:
     """Load cached intermediate frames if all ``.npy`` files are present."""
     LOGGER.debug(
         "Attempting to load cache for %s, %s, model=%s, frames=%s",
@@ -69,7 +69,7 @@ def load_cached(
         return None  # Cannot cache zero frames
 
     base_key = _hash_pair(path1, path2, model_id, num_intermediate_frames)
-    frame_paths: List[pathlib.Path] = []
+    frame_paths: list[pathlib.Path] = []
     all_exist = True
 
     # Check if all expected frame files exist
@@ -91,7 +91,7 @@ def load_cached(
     if all_exist:
         # Load all frames if they all exist
         LOGGER.debug("All cache files found, attempting to load %s files", len(frame_paths))
-        loaded_frames: List[NDArray[Any]] = []
+        loaded_frames: list[NDArray[Any]] = []
         try:
             for npy_path in frame_paths:
                 LOGGER.debug("Loading cache file: %s", npy_path)
@@ -113,7 +113,7 @@ def save_cache(
     path2: pathlib.Path,
     model_id: str,
     num_intermediate_frames: int,
-    frames: List[NDArray[Any]],
+    frames: list[NDArray[Any]],
 ) -> None:
     """Persist interpolated frames to ``CACHE_DIR`` for later reuse."""
     LOGGER.debug(

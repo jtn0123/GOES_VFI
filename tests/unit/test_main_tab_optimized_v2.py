@@ -11,10 +11,10 @@ This version maintains 90%+ test coverage while optimizing performance through:
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
-import pytest
 from PyQt6.QtCore import Qt
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QFileDialog, QMessageBox
+import pytest
 
 from goesvfi.gui_tabs.main_tab import MainTab
 from goesvfi.view_models.processing_view_model import ProcessingViewModel
@@ -58,7 +58,7 @@ class TestMainTabOptimizedV2:
                 "run": mock_run,
             }
 
-    @pytest.fixture
+    @pytest.fixture()
     def main_tab(self, shared_app, shared_mocks):
         """Create MainTab instance with proper cleanup."""
         # Create view model and tab
@@ -72,7 +72,7 @@ class TestMainTabOptimizedV2:
 
     # Core functionality tests (maintaining all original scenarios)
 
-    def test_initialization(self, main_tab):
+    def test_initialization(self, main_tab) -> None:
         """Test MainTab initialization."""
         assert main_tab is not None
         assert main_tab.in_dir_edit is not None
@@ -82,7 +82,7 @@ class TestMainTabOptimizedV2:
         assert main_tab.fps_spinbox is not None
         assert main_tab.multiplier_spinbox is not None
 
-    def test_input_directory_path(self, main_tab, shared_app, tmp_path):
+    def test_input_directory_path(self, main_tab, shared_app, tmp_path) -> None:
         """Test setting the input directory path."""
         test_dir = tmp_path / "test_input"
         test_dir.mkdir()
@@ -97,7 +97,7 @@ class TestMainTabOptimizedV2:
         assert main_tab.in_dir_edit.text() == str(test_dir)
         assert main_tab.preview_button.isEnabled()
 
-    def test_output_file_path(self, main_tab, shared_app, tmp_path):
+    def test_output_file_path(self, main_tab, shared_app, tmp_path) -> None:
         """Test setting the output file path."""
         output_file = tmp_path / "output.mp4"
 
@@ -106,7 +106,7 @@ class TestMainTabOptimizedV2:
 
         assert main_tab.out_file_edit.text() == str(output_file)
 
-    def test_browse_paths_functionality(self, main_tab, shared_app, tmp_path):
+    def test_browse_paths_functionality(self, main_tab, shared_app, tmp_path) -> None:
         """Test browse button functionality for both input and output paths."""
         # Test input directory browse
         test_dir = tmp_path / "test_browse_input"
@@ -125,7 +125,7 @@ class TestMainTabOptimizedV2:
             shared_app.processEvents()
             assert main_tab.out_file_edit.text() == str(output_file)
 
-    def test_encoder_selection_and_options(self, main_tab, shared_app):
+    def test_encoder_selection_and_options(self, main_tab, shared_app) -> None:
         """Test encoder selection and related options visibility."""
         # Test RIFE encoder
         main_tab.encoder_combo.setCurrentText("RIFE")
@@ -141,7 +141,7 @@ class TestMainTabOptimizedV2:
         assert main_tab.encoder_combo.currentText() == "FFmpeg"
         # RIFE options should still be accessible but may be disabled
 
-    def test_fps_and_multiplier_settings(self, main_tab, shared_app):
+    def test_fps_and_multiplier_settings(self, main_tab, shared_app) -> None:
         """Test FPS and multiplier spinbox functionality."""
         # Test FPS
         test_fps_values = [24, 30, 60, 120]
@@ -157,7 +157,7 @@ class TestMainTabOptimizedV2:
             shared_app.processEvents()
             assert main_tab.multiplier_spinbox.value() == mult
 
-    def test_rife_options_ui_interactions(self, main_tab, shared_app):
+    def test_rife_options_ui_interactions(self, main_tab, shared_app) -> None:
         """Test RIFE options UI interactions."""
         # Enable RIFE encoder first
         main_tab.encoder_combo.setCurrentText("RIFE")
@@ -183,7 +183,7 @@ class TestMainTabOptimizedV2:
             shared_app.processEvents()
             assert main_tab.rife_model_combo.currentIndex() == 0
 
-    def test_sanchez_options(self, main_tab, shared_app):
+    def test_sanchez_options(self, main_tab, shared_app) -> None:
         """Test Sanchez false color options."""
         # Enable Sanchez
         main_tab.sanchez_false_colour_checkbox.setChecked(True)
@@ -207,7 +207,7 @@ class TestMainTabOptimizedV2:
         assert not main_tab.sanchez_false_colour_checkbox.isChecked()
         assert not main_tab.sanchez_res_combo.isEnabled()
 
-    def test_start_button_state_management(self, main_tab, shared_app, tmp_path):
+    def test_start_button_state_management(self, main_tab, shared_app, tmp_path) -> None:
         """Test start button enable/disable logic."""
         # Initially disabled
         assert not main_tab.start_button.isEnabled()
@@ -236,7 +236,7 @@ class TestMainTabOptimizedV2:
         shared_app.processEvents()
         assert not main_tab.start_button.isEnabled()
 
-    def test_processing_workflow(self, main_tab, shared_app, tmp_path):
+    def test_processing_workflow(self, main_tab, shared_app, tmp_path) -> None:
         """Test complete processing workflow."""
         # Setup valid paths
         input_dir = tmp_path / "process_input"
@@ -287,7 +287,7 @@ class TestMainTabOptimizedV2:
             # Verify worker was started
             mock_worker.start.assert_called_once()
 
-    def test_preview_functionality(self, main_tab, shared_app, tmp_path):
+    def test_preview_functionality(self, main_tab, shared_app, tmp_path) -> None:
         """Test preview button and functionality."""
         # Setup input directory with images
         input_dir = tmp_path / "preview_input"
@@ -316,7 +316,7 @@ class TestMainTabOptimizedV2:
             # Verify preview dialog was created
             mock_preview.assert_called_once()
 
-    def test_crop_functionality(self, main_tab, shared_app, tmp_path):
+    def test_crop_functionality(self, main_tab, shared_app, tmp_path) -> None:
         """Test crop button functionality."""
         # Setup
         input_dir = tmp_path / "crop_input"
@@ -338,7 +338,7 @@ class TestMainTabOptimizedV2:
             main_tab.crop_button.click()
             shared_app.processEvents()
 
-    def test_error_handling(self, main_tab, shared_app, tmp_path):
+    def test_error_handling(self, main_tab, shared_app, tmp_path) -> None:
         """Test error handling in processing."""
         # Setup valid inputs
         input_dir = tmp_path / "error_input"
@@ -355,7 +355,8 @@ class TestMainTabOptimizedV2:
 
             # Set up error callback
             error_callback = None
-            def capture_error_callback(cb):
+
+            def capture_error_callback(cb) -> None:
                 nonlocal error_callback
                 error_callback = cb
 
@@ -377,7 +378,7 @@ class TestMainTabOptimizedV2:
                 # Verify error was shown
                 mock_critical.assert_called_once()
 
-    def test_settings_persistence(self, main_tab, shared_app):
+    def test_settings_persistence(self, main_tab, shared_app) -> None:
         """Test that settings persist during session."""
         # Set various settings
         main_tab.fps_spinbox.setValue(60)

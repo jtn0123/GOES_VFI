@@ -7,11 +7,11 @@ connections.
 
 from __future__ import annotations
 
-import threading
 from datetime import datetime
 from pathlib import Path
+import threading
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any, Self
 
 from goesvfi.integrity_check.cache_db import CacheDB
 from goesvfi.integrity_check.time_index import SatellitePattern
@@ -27,7 +27,7 @@ class ThreadLocalCacheDB:
     separate CacheDB instances for each thread.
     """
 
-    def __init__(self, db_path: Optional[Path] = None) -> None:
+    def __init__(self, db_path: Path | None = None) -> None:
         """Initialize the thread-local cache database.
 
         Args:
@@ -36,22 +36,22 @@ class ThreadLocalCacheDB:
         self.db_path = db_path
         self._lock = threading.Lock()
         self._local = threading.local()
-        self._connections: Dict[int, CacheDB] = {}
+        self._connections: dict[int, CacheDB] = {}
 
         # Create initial connection for the main thread
         self.get_db()
 
         LOGGER.info("ThreadLocalCacheDB initialized with path: %s", db_path)
 
-    def __enter__(self) -> "ThreadLocalCacheDB":
+    def __enter__(self) -> Self:
         """Enter context manager."""
         return self
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Exit context manager."""
         self.close_all()
@@ -86,7 +86,7 @@ class ThreadLocalCacheDB:
                 try:
                     conn.close()
                 except Exception as e:
-                    LOGGER.error("Error closing connection: %s", e)
+                    LOGGER.exception("Error closing connection: %s", e)
             self._connections.clear()
 
         # Also clear thread-local storage if present
@@ -97,15 +97,15 @@ class ThreadLocalCacheDB:
     def set_cache_data(
         self,
         satellite: SatellitePattern,
-        missing_timestamps: List[datetime],
-        remote_files: List[str],
-        local_files: Set[str],
+        missing_timestamps: list[datetime],
+        remote_files: list[str],
+        local_files: set[str],
     ) -> None:
         """Set cache data."""
         db = self.get_db()
         db.set_cache_data(satellite, missing_timestamps, remote_files, local_files)
 
-    def get_cache_data(self, satellite: SatellitePattern) -> Optional[Dict[str, Any]]:
+    def get_cache_data(self, satellite: SatellitePattern) -> dict[str, Any] | None:
         """Get cache data."""
         db = self.get_db()
         return db.get_cache_data(satellite)
@@ -124,7 +124,7 @@ class ThreadLocalCacheDB:
                     self._connections[thread_id].close()
                     del self._connections[thread_id]
                 except Exception as e:
-                    LOGGER.error("Error closing connection: %s", e)
+                    LOGGER.exception("Error closing connection: %s", e)
 
         if hasattr(self._local, "db"):
             del self._local.db
@@ -150,7 +150,7 @@ class ThreadLocalCacheDB:
         satellite: SatellitePattern,
         start_time: datetime,
         end_time: datetime,
-    ) -> List[datetime]:
+    ) -> list[datetime]:
         """Get timestamps via thread-local connection."""
         db = self.get_db()
         result = await db.get_timestamps(satellite, start_time, end_time)
@@ -168,13 +168,13 @@ class ThreadLocalCacheDB:
         file_hash: str,
         file_size: int,
         timestamp: datetime,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Add a general cache entry via thread-local connection."""
         db = self.get_db()
         db.add_entry(filepath, file_hash, file_size, timestamp, metadata)
 
-    def get_entry(self, filepath: str) -> Optional[Dict[str, Any]]:
+    def get_entry(self, filepath: str) -> dict[str, Any] | None:
         """Get a cache entry via thread-local connection."""
         db = self.get_db()
         return db.get_entry(filepath)

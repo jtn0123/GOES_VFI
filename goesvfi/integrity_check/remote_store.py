@@ -30,23 +30,20 @@ class RemoteStore(ABC):
     @abstractmethod
     def construct_url(self, timestamp: datetime, satellite: SatellitePattern) -> str:
         """Construct URL for a specific timestamp and satellite."""
-        pass
 
     @abstractmethod
     def download_file(
         self,
         url: str,
         local_path: Path,
-        progress_callback: Optional[ProgressCallback] = None,
-        should_cancel: Optional[CancelCallback] = None,
+        progress_callback: ProgressCallback | None = None,
+        should_cancel: CancelCallback | None = None,
     ) -> bool:
         """Download a file from the remote store."""
-        pass
 
     @abstractmethod
     def check_exists(self, url: str) -> bool:
         """Check if a file exists at the given URL."""
-        pass
 
 
 class HTTPRemoteStore(RemoteStore):
@@ -71,8 +68,8 @@ class HTTPRemoteStore(RemoteStore):
         self,
         url: str,
         local_path: Path,
-        progress_callback: Optional[ProgressCallback] = None,
-        should_cancel: Optional[CancelCallback] = None,
+        progress_callback: ProgressCallback | None = None,
+        should_cancel: CancelCallback | None = None,
     ) -> bool:
         """Download a file from the remote store.
 

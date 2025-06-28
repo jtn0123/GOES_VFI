@@ -90,7 +90,7 @@ class RifeUIManager:
                 current_model_key,
             )
         except Exception as e:
-            LOGGER.error(
+            LOGGER.exception(
                 "Error checking RIFE capabilities for model '%s': %s",
                 current_model_key,
                 e,

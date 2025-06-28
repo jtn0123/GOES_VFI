@@ -16,17 +16,15 @@ class RecoveryStrategy(ABC):
     @abstractmethod
     def can_recover(self, error: StructuredError) -> bool:
         """Check if this strategy can recover from the error."""
-        pass
 
     @abstractmethod
-    def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+    def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
         """
         Attempt to recover from the error.
 
         Returns:
             Recovery result or raises exception if recovery fails
         """
-        pass
 
 
 class FileRecoveryStrategy(RecoveryStrategy):
@@ -39,7 +37,7 @@ class FileRecoveryStrategy(RecoveryStrategy):
             ErrorCategory.PERMISSION,
         ]
 
-    def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+    def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
         """Attempt file recovery."""
         # This is a placeholder - specific recovery logic would go here
         raise NotImplementedError("File recovery strategy not implemented")
@@ -55,7 +53,7 @@ class RetryRecoveryStrategy(RecoveryStrategy):
         """Can retry network and external tool errors."""
         return error.category in [ErrorCategory.NETWORK, ErrorCategory.EXTERNAL_TOOL]
 
-    def recover(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+    def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
         """Attempt retry recovery."""
         # This is a placeholder - specific retry logic would go here
         raise NotImplementedError("Retry recovery strategy not implemented")
@@ -72,7 +70,7 @@ class RecoveryManager:
         self.strategies.append(strategy)
         return self
 
-    def attempt_recovery(self, error: StructuredError, context: Optional[Dict[str, Any]] = None) -> Any:
+    def attempt_recovery(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
         """
         Attempt to recover from an error using available strategies.
 

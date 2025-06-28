@@ -58,7 +58,7 @@ class S3Store(RemoteStore):
 
     def __init__(
         self,
-        aws_profile: Optional[str] = None,
+        aws_profile: str | None = None,
         aws_region: str = "us-east-1",
         timeout: int = 60,
     ) -> None:
@@ -82,8 +82,8 @@ class S3Store(RemoteStore):
         self._error_converter = S3ErrorConverter()
 
         # Client state
-        self._session: Optional[Any] = None
-        self._s3_client: Optional[S3ClientType] = None
+        self._session: Any | None = None
+        self._s3_client: S3ClientType | None = None
 
         # Setup and initial diagnostics
         self._initialize()
@@ -219,9 +219,9 @@ class S3Store(RemoteStore):
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[ExcType]],
-        exc_val: Optional[ExcType],
-        exc_tb: Optional[Any],
+        exc_type: type[ExcType] | None,
+        exc_val: ExcType | None,
+        exc_tb: Any | None,
     ) -> None:
         """Context manager exit."""
         await self.close()
@@ -233,7 +233,7 @@ class S3Store(RemoteStore):
         product_type: str = "RadC",
         band: int = 13,
         exact_match: bool = False,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Get S3 bucket and key for the given parameters.
 
         Args:
@@ -594,8 +594,8 @@ class S3Store(RemoteStore):
         timestamp: datetime,
         satellite: SatellitePattern,
         destination: Path,
-        progress_callback: Optional[Callable] = None,
-        cancel_check: Optional[Callable] = None,
+        progress_callback: Callable | None = None,
+        cancel_check: Callable | None = None,
     ) -> Path:
         """Download a file for the given timestamp and satellite."""
         return await self.download(timestamp, satellite, destination)

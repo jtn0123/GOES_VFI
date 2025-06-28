@@ -34,9 +34,9 @@ class VisualDateRangePicker(QDialog):
 
     def __init__(
         self,
-        parent: Optional[QWidget] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        parent: QWidget | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
     ) -> None:
         """
         Initialize the visual date picker dialog.
@@ -276,14 +276,12 @@ class VisualDateRangePicker(QDialog):
         self._update_preview()
 
     def _update_preview(self) -> None:
-        pass
         """Update the date range preview text."""
         start_date = self._get_start_datetime()
         end_date = self._get_end_datetime()
 
         # Format dates for preview
         if start_date.date() == end_date.date():
-            pass
             # Same day
             date_str = start_date.strftime("%Y-%m-%d")
             time_str = f"{start_date.strftime('%H:%M')} - {end_date.strftime('%H:%M')}"
@@ -302,10 +300,8 @@ class VisualDateRangePicker(QDialog):
 
         timespan_text = ""
         if days > 0:
-            pass
             timespan_text += f"{days} day{'s' if days != 1 else ''} "
         if hours > 0:
-            pass
             timespan_text += f"{hours} hour{'s' if hours != 1 else ''} "
         if minutes > 0 and days == 0:  # Only show minutes if less than a day
             timespan_text += f"{minutes} minute{'s' if minutes != 1 else ''}"
@@ -313,7 +309,6 @@ class VisualDateRangePicker(QDialog):
         self.timespan_label.setText(f"({timespan_text.strip()})")
 
     def _get_start_datetime(self) -> datetime:
-        pass
         """Get the selected start datetime."""
         selected_date = self.start_calendar.selectedDate()
         selected_time = self.start_time_edit.time()
@@ -348,7 +343,6 @@ class VisualDateRangePicker(QDialog):
 
         # Ensure start date is before end date
         if start_date > end_date:
-            pass
             start_date, end_date = end_date, start_date
 
         # Update stored dates
@@ -407,7 +401,6 @@ class VisualDateRangePicker(QDialog):
 
         # Calculate the end of month
         if today.month == 12:
-            pass
             next_month = today.replace(year=today.year + 1, month=1, day=1)
         else:
             next_month = today.replace(month=today.month + 1, day=1)
@@ -453,7 +446,7 @@ class TimelinePickerWidget(QWidget):
 
     dateRangeSelected = pyqtSignal(datetime, datetime)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the timeline picker widget."""
         super().__init__(parent)
 
@@ -465,21 +458,20 @@ class TimelinePickerWidget(QWidget):
         self.end_date = datetime.now()
 
         # For drawing selection
-        self.selection_start: Optional[datetime] = None
-        self.selection_end: Optional[datetime] = None
+        self.selection_start: datetime | None = None
+        self.selection_end: datetime | None = None
         self.is_selecting = False
 
         # Mock data availability (in a real app, this would come from the model)
         self.data_points = self._generate_mock_data()  # pylint: disable=attribute-defined-outside-init
 
-    def _generate_mock_data(self) -> List[Any]:
+    def _generate_mock_data(self) -> list[Any]:
         """Generate mock data points for demonstration."""
         data_points = []
         current = self.start_date
         while current <= self.end_date:
             # Add data point with 80% probability
             if datetime.now().microsecond % (100 // 80) == 0:
-                pass
                 data_points.append(current)
             current += timedelta(hours=1)
         return data_points
@@ -504,7 +496,6 @@ class TimelinePickerWidget(QWidget):
 
         # Draw data points
         if self.data_points:
-            pass
             total_duration = (self.end_date - self.start_date).total_seconds()
             for point in self.data_points:
                 point_offset = (point - self.start_date).total_seconds() / total_duration
@@ -520,7 +511,6 @@ class TimelinePickerWidget(QWidget):
 
         # Draw selection if active
         if self.selection_start is not None and self.selection_end is not None:
-            pass
             start_offset = (self.selection_start - self.start_date).total_seconds() / total_duration
             end_offset = (self.selection_end - self.start_date).total_seconds() / total_duration
 
@@ -555,7 +545,6 @@ class TimelinePickerWidget(QWidget):
         date = self._pixel_to_date(QPoint(0, 0).x())
         # Initialize both with the same date to avoid None issues
         if date is not None:
-            pass
             self.selection_start = date
             self.selection_end = date
         self.update()
@@ -563,28 +552,22 @@ class TimelinePickerWidget(QWidget):
     def _on_today_clicked(self) -> None:
         """Handle mouse move events for selection."""
         if self.is_selecting and self.selection_start is not None:
-            pass
             date = self._pixel_to_date(QPoint(0, 0).x())
             if date is not None:
-                pass
                 self.selection_end = date
             self.update()
 
     def _on_custom_clicked(self) -> None:
         """Handle mouse release events to finalize selection."""
         if self.is_selecting and self.selection_start is not None:
-            pass
             self.is_selecting = False
             date = self._pixel_to_date(QPoint(0, 0).x())
             if date is not None:
-                pass
                 self.selection_end = date
 
             # Ensure start is before end (only if both are valid)
             if self.selection_start is not None and self.selection_end is not None:
-                pass
                 if self.selection_start > self.selection_end:
-                    pass
                     self.selection_start, self.selection_end = (
                         self.selection_end,
                         self.selection_start,
@@ -599,10 +582,8 @@ class TimelinePickerWidget(QWidget):
         """Convert a pixel position to a date."""
         width = self.width()
         if x_position <= 10:
-            pass
             return self.start_date
         if x_position >= width - 10:
-            pass
             return self.end_date
 
         # Calculate position as a fraction of the timeline

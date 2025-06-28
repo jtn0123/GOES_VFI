@@ -6,6 +6,7 @@ This version maintains ALL original test methods while optimizing performance.
 
 import datetime
 import pathlib
+
 import pytest
 
 from goesvfi.utils.date_utils import (
@@ -20,25 +21,25 @@ from goesvfi.utils.date_utils import (
 class TestDateToDoyV2:
     """Optimized tests for date_to_doy function maintaining all original tests."""
 
-    def test_start_of_year(self):
+    def test_start_of_year(self) -> None:
         """Test conversion for January 1st."""
         date = datetime.date(2023, 1, 1)
         doy = date_to_doy(date)
         assert doy == 1
 
-    def test_end_of_year(self):
+    def test_end_of_year(self) -> None:
         """Test conversion for December 31st in a non-leap year."""
         date = datetime.date(2023, 12, 31)
         doy = date_to_doy(date)
         assert doy == 365
 
-    def test_leap_year(self):
+    def test_leap_year(self) -> None:
         """Test conversion for December 31st in a leap year."""
         date = datetime.date(2024, 12, 31)
         doy = date_to_doy(date)
         assert doy == 366
 
-    def test_date_to_doy_additional_cases(self):
+    def test_date_to_doy_additional_cases(self) -> None:
         """Test additional date_to_doy cases for better coverage."""
         test_cases = [
             (datetime.date(2023, 2, 28), 59, "last day of Feb non-leap"),
@@ -55,37 +56,37 @@ class TestDateToDoyV2:
 class TestDoyToDateV2:
     """Optimized tests for doy_to_date function maintaining all original tests."""
 
-    def test_start_of_year(self):
+    def test_start_of_year(self) -> None:
         """Test conversion for day 1."""
         date = doy_to_date(2023, 1)
         assert date == datetime.date(2023, 1, 1)
 
-    def test_end_of_year(self):
+    def test_end_of_year(self) -> None:
         """Test conversion for day 365 in a non-leap year."""
         date = doy_to_date(2023, 365)
         assert date == datetime.date(2023, 12, 31)
 
-    def test_leap_year(self):
+    def test_leap_year(self) -> None:
         """Test conversion for day 366 in a leap year."""
         date = doy_to_date(2024, 366)
         assert date == datetime.date(2024, 12, 31)
 
-    def test_invalid_doy_too_small(self):
+    def test_invalid_doy_too_small(self) -> None:
         """Test validation for day of year < 1."""
         with pytest.raises(ValueError):
             doy_to_date(2023, 0)
 
-    def test_invalid_doy_too_large(self):
+    def test_invalid_doy_too_large(self) -> None:
         """Test validation for day of year > 366."""
         with pytest.raises(ValueError):
             doy_to_date(2023, 367)
 
-    def test_invalid_doy_leap_year(self):
+    def test_invalid_doy_leap_year(self) -> None:
         """Test validation for day 366 in a non-leap year."""
         with pytest.raises(ValueError):
             doy_to_date(2023, 366)
 
-    def test_doy_to_date_additional_cases(self):
+    def test_doy_to_date_additional_cases(self) -> None:
         """Test additional doy_to_date cases."""
         test_cases = [
             (2023, 59, datetime.date(2023, 2, 28)),
@@ -127,13 +128,13 @@ class TestParseSatellitePathV2:
             ("/path/to/20240229.txt", datetime.date(2024, 2, 29)),
         ],
     )
-    def test_parse_satellite_path_patterns(self, path_str, expected_date):
+    def test_parse_satellite_path_patterns(self, path_str, expected_date) -> None:
         """Test parsing various date patterns from paths."""
         path = pathlib.Path(path_str)
         parsed_date = parse_satellite_path(path)
         assert parsed_date == expected_date
 
-    def test_parse_satellite_path_no_match(self):
+    def test_parse_satellite_path_no_match(self) -> None:
         """Test parse_satellite_path when no date pattern matches."""
         no_date_paths = [
             "random_file.txt",
@@ -148,7 +149,7 @@ class TestParseSatellitePathV2:
             result = parse_satellite_path(path)
             assert result is None
 
-    def test_parse_satellite_path_edge_cases(self):
+    def test_parse_satellite_path_edge_cases(self) -> None:
         """Test edge cases for parse_satellite_path."""
         # Test with string input
         date = parse_satellite_path("2023-10-15")
@@ -163,7 +164,7 @@ class TestParseSatellitePathV2:
 class TestFormatSatellitePathV2:
     """Optimized tests for format_satellite_path function."""
 
-    def test_format_satellite_path(self):
+    def test_format_satellite_path(self) -> None:
         """Test basic format_satellite_path functionality."""
         date = datetime.date(2023, 10, 27)
         base_path = pathlib.Path("/data/satellite")
@@ -173,7 +174,7 @@ class TestFormatSatellitePathV2:
         assert "2023" in str(result)
         assert "300" in str(result)  # Day 300
 
-    def test_format_satellite_path_default_values(self):
+    def test_format_satellite_path_default_values(self) -> None:
         """Test format_satellite_path with default parameters."""
         date = datetime.date(2023, 6, 15)
         base_path = pathlib.Path("/archive")
@@ -183,7 +184,7 @@ class TestFormatSatellitePathV2:
         assert "2023" in str(result)
         assert "166" in str(result)  # Day 166
 
-    def test_format_satellite_path_string_base(self):
+    def test_format_satellite_path_string_base(self) -> None:
         """Test format_satellite_path with string base path."""
         date = datetime.date(2023, 7, 4)
         base_path = "/data/goes"  # String instead of Path
@@ -192,7 +193,7 @@ class TestFormatSatellitePathV2:
         assert isinstance(result, pathlib.Path)
         assert str(result).startswith("/data/goes")
 
-    def test_format_satellite_path_leap_year(self):
+    def test_format_satellite_path_leap_year(self) -> None:
         """Test format_satellite_path with leap year dates."""
         date = datetime.date(2024, 2, 29)
         base_path = pathlib.Path("/data")
@@ -201,7 +202,7 @@ class TestFormatSatellitePathV2:
         assert "2024" in str(result)
         assert "060" in str(result)  # Day 60
 
-    def test_format_satellite_path_end_of_year(self):
+    def test_format_satellite_path_end_of_year(self) -> None:
         """Test format_satellite_path with end of year date."""
         date = datetime.date(2023, 12, 31)
         base_path = pathlib.Path("/data")
@@ -214,7 +215,7 @@ class TestFormatSatellitePathV2:
 class TestGetAllDateFormatsV2:
     """Optimized tests for get_all_date_formats function."""
 
-    def test_get_all_date_formats(self):
+    def test_get_all_date_formats(self) -> None:
         """Test get_all_date_formats returns expected formats."""
         formats = get_all_date_formats()
 
@@ -224,17 +225,17 @@ class TestGetAllDateFormatsV2:
 
         # Verify some expected formats are present
         expected_formats = [
-            "%Y/%j",      # Year/DOY
-            "%Y%j",       # Compact DOY
-            "%Y-%m-%d",   # ISO date
-            "%Y_%m_%d",   # Underscore date
-            "%Y%m%d",     # Compact date
+            "%Y/%j",  # Year/DOY
+            "%Y%j",  # Compact DOY
+            "%Y-%m-%d",  # ISO date
+            "%Y_%m_%d",  # Underscore date
+            "%Y%m%d",  # Compact date
         ]
 
         for fmt in expected_formats:
             assert fmt in formats
 
-    def test_get_all_date_formats_usage(self):
+    def test_get_all_date_formats_usage(self) -> None:
         """Test that returned formats work with strftime/strptime."""
         formats = get_all_date_formats()
         test_date = datetime.date(2023, 10, 27)

@@ -50,13 +50,13 @@ class BatchJob:
     name: str
     input_path: Path
     output_path: Path
-    settings: Dict[str, Any]
+    settings: dict[str, Any]
     priority: JobPriority = JobPriority.NORMAL
     status: JobStatus = JobStatus.PENDING
     created_at: datetime = field(default_factory=datetime.now)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    error_message: Optional[str] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    error_message: str | None = None
     progress: float = 0.0
 
     def __lt__(self, other: "BatchJob") -> bool:
@@ -65,7 +65,7 @@ class BatchJob:
             return self.priority.value < other.priority.value
         return self.created_at < other.created_at
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert job to dictionary for serialization."""
         return {
             "id": self.id,
@@ -83,7 +83,7 @@ class BatchJob:
         }
 
     @classmethod
-    def from_dict(cls: type["BatchJob"], data: Dict[str, Any]) -> "BatchJob":
+    def from_dict(cls: type["BatchJob"], data: dict[str, Any]) -> "BatchJob":
         """Create job from dictionary."""
         job = cls(
             id=data["id"],
@@ -122,7 +122,7 @@ class BatchQueue(QObject):
         self,
         process_function: Callable[[BatchJob], None],
         max_concurrent_jobs: int = 1,
-        resource_manager: Optional[Any] = None,
+        resource_manager: Any | None = None,
     ) -> None:
         """
         Initialize batch queue.
@@ -139,11 +139,11 @@ class BatchQueue(QObject):
         self.resource_manager = resource_manager
 
         self._queue: PriorityQueue[BatchJob] = PriorityQueue()
-        self._jobs: Dict[str, BatchJob] = {}
-        self._active_jobs: Dict[str, threading.Thread] = {}
+        self._jobs: dict[str, BatchJob] = {}
+        self._active_jobs: dict[str, threading.Thread] = {}
         self._lock = threading.Lock()
         self._running = False
-        self._worker_thread: Optional[threading.Thread] = None
+        self._worker_thread: threading.Thread | None = None
 
         # Load persisted queue
         self._load_queue()
@@ -215,16 +215,16 @@ class BatchQueue(QObject):
         LOGGER.info("Job %s cancelled", job_id)
         return True
 
-    def get_job(self, job_id: str) -> Optional[BatchJob]:
+    def get_job(self, job_id: str) -> BatchJob | None:
         """Get job by ID."""
         return self._jobs.get(job_id)
 
-    def get_all_jobs(self) -> List[BatchJob]:
+    def get_all_jobs(self) -> list[BatchJob]:
         """Get all jobs."""
         with self._lock:
             return list(self._jobs.values())
 
-    def get_pending_jobs(self) -> List[BatchJob]:
+    def get_pending_jobs(self) -> list[BatchJob]:
         """Get pending jobs sorted by priority."""
         with self._lock:
             pending = [j for j in self._jobs.values() if j.status == JobStatus.PENDING]
@@ -393,10 +393,10 @@ class BatchQueue(QObject):
 class BatchProcessor:
     """High-level batch processing manager."""
 
-    def __init__(self, resource_manager: Optional[Any] = None) -> None:
+    def __init__(self, resource_manager: Any | None = None) -> None:
         """Initialize batch processor."""
         self.resource_manager = resource_manager
-        self.queue: Optional[BatchQueue] = None
+        self.queue: BatchQueue | None = None
 
     def create_queue(self, process_function: Callable[[BatchJob], None], max_concurrent: int = 1) -> BatchQueue:
         """Create and return a batch queue."""
@@ -409,12 +409,12 @@ class BatchProcessor:
 
     def create_job_from_paths(
         self,
-        input_paths: List[Path],
+        input_paths: list[Path],
         output_dir: Path,
-        settings: Dict[str, Any],
+        settings: dict[str, Any],
         job_name_prefix: str = "Batch",
         priority: JobPriority = JobPriority.NORMAL,
-    ) -> List[BatchJob]:
+    ) -> list[BatchJob]:
         """Create batch jobs from a list of input paths."""
         jobs = []
 
@@ -444,11 +444,11 @@ class BatchProcessor:
         self,
         input_dir: Path,
         output_dir: Path,
-        settings: Dict[str, Any],
+        settings: dict[str, Any],
         pattern: str = "*.png",
         recursive: bool = False,
         priority: JobPriority = JobPriority.NORMAL,
-    ) -> List[str]:
+    ) -> list[str]:
         """Add all matching files from a directory as batch jobs."""
         if not self.queue:
             raise RuntimeError("Queue not initialized")

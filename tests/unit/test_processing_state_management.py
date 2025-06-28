@@ -1,9 +1,9 @@
 """Fast, optimized tests for processing state management - critical workflow coordination."""
 
-import pytest
 from unittest.mock import MagicMock
-from PyQt6.QtCore import QObject, pyqtSignal
 
+from PyQt6.QtCore import QObject, pyqtSignal
+import pytest
 
 
 class MockProcessingViewModel(QObject):
@@ -14,17 +14,18 @@ class MockProcessingViewModel(QObject):
     progress_updated = pyqtSignal(int, str)
     processing_finished = pyqtSignal(bool, str)
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.state = "idle"
         self.progress = 0
         self.is_processing = False
         self.current_operation = None
 
-    def start_processing(self, operation_type="video_interpolation"):
+    def start_processing(self, operation_type="video_interpolation") -> None:
         """Start processing operation."""
         if self.is_processing:
-            raise ValueError("Already processing")
+            msg = "Already processing"
+            raise ValueError(msg)
 
         self.state = "processing"
         self.is_processing = True
@@ -32,18 +33,20 @@ class MockProcessingViewModel(QObject):
         self.progress = 0
         self.state_changed.emit(self.state)
 
-    def update_progress(self, progress, message=""):
+    def update_progress(self, progress, message="") -> None:
         """Update processing progress."""
         if not self.is_processing:
-            raise ValueError("Not currently processing")
+            msg = "Not currently processing"
+            raise ValueError(msg)
 
         self.progress = max(0, min(100, progress))
         self.progress_updated.emit(self.progress, message)
 
-    def finish_processing(self, success=True, message=""):
+    def finish_processing(self, success=True, message="") -> None:
         """Finish processing operation."""
         if not self.is_processing:
-            raise ValueError("Not currently processing")
+            msg = "Not currently processing"
+            raise ValueError(msg)
 
         self.state = "idle"
         self.is_processing = False
@@ -57,23 +60,23 @@ class MockProcessingViewModel(QObject):
 class TestProcessingStateManagement:
     """Test processing state management with fast, mocked operations."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def processing_vm(self):
         """Create mock processing view model."""
         return MockProcessingViewModel()
 
-    def test_initial_state(self, processing_vm):
+    def test_initial_state(self, processing_vm) -> None:
         """Test initial state of processing view model."""
         assert processing_vm.state == "idle"
         assert processing_vm.progress == 0
         assert not processing_vm.is_processing
         assert processing_vm.current_operation is None
 
-    def test_start_processing_state_transition(self, processing_vm):
+    def test_start_processing_state_transition(self, processing_vm) -> None:
         """Test state transition when starting processing."""
         # Track state changes
         state_changes = []
-        processing_vm.state_changed.connect(lambda state: state_changes.append(state))
+        processing_vm.state_changed.connect(state_changes.append)
 
         processing_vm.start_processing("video_interpolation")
 
@@ -82,7 +85,7 @@ class TestProcessingStateManagement:
         assert processing_vm.current_operation == "video_interpolation"
         assert state_changes == ["processing"]
 
-    def test_prevent_concurrent_processing(self, processing_vm):
+    def test_prevent_concurrent_processing(self, processing_vm) -> None:
         """Test that concurrent processing is prevented."""
         processing_vm.start_processing("operation1")
 
@@ -90,15 +93,13 @@ class TestProcessingStateManagement:
         with pytest.raises(ValueError, match="Already processing"):
             processing_vm.start_processing("operation2")
 
-    def test_progress_update_validation(self, processing_vm):
+    def test_progress_update_validation(self, processing_vm) -> None:
         """Test progress update validation and bounds checking."""
         processing_vm.start_processing()
 
         # Track progress updates
         progress_updates = []
-        processing_vm.progress_updated.connect(
-            lambda progress, msg: progress_updates.append((progress, msg))
-        )
+        processing_vm.progress_updated.connect(lambda progress, msg: progress_updates.append((progress, msg)))
 
         # Test normal progress updates
         processing_vm.update_progress(25, "Processing frames")
@@ -110,7 +111,7 @@ class TestProcessingStateManagement:
         assert progress_updates[0] == (25, "Processing frames")
         assert progress_updates[2] == (75, "Encoding")
 
-    def test_progress_bounds_clamping(self, processing_vm):
+    def test_progress_bounds_clamping(self, processing_vm) -> None:
         """Test progress values are clamped to valid range."""
         processing_vm.start_processing()
 
@@ -121,24 +122,22 @@ class TestProcessingStateManagement:
         processing_vm.update_progress(150)  # Should clamp to 100
         assert processing_vm.progress == 100
 
-    def test_progress_update_without_processing(self, processing_vm):
+    def test_progress_update_without_processing(self, processing_vm) -> None:
         """Test progress update fails when not processing."""
         # Should raise error when not processing
         with pytest.raises(ValueError, match="Not currently processing"):
             processing_vm.update_progress(50)
 
-    def test_finish_processing_success(self, processing_vm):
+    def test_finish_processing_success(self, processing_vm) -> None:
         """Test successful processing completion."""
         processing_vm.start_processing()
 
         # Track completion signals
         completion_signals = []
-        processing_vm.processing_finished.connect(
-            lambda success, msg: completion_signals.append((success, msg))
-        )
+        processing_vm.processing_finished.connect(lambda success, msg: completion_signals.append((success, msg)))
 
         state_changes = []
-        processing_vm.state_changed.connect(lambda state: state_changes.append(state))
+        processing_vm.state_changed.connect(state_changes.append)
 
         processing_vm.finish_processing(success=True, message="Completed successfully")
 
@@ -151,14 +150,12 @@ class TestProcessingStateManagement:
         assert completion_signals[0] == (True, "Completed successfully")
         assert "idle" in state_changes
 
-    def test_finish_processing_failure(self, processing_vm):
+    def test_finish_processing_failure(self, processing_vm) -> None:
         """Test failed processing completion."""
         processing_vm.start_processing()
 
         completion_signals = []
-        processing_vm.processing_finished.connect(
-            lambda success, msg: completion_signals.append((success, msg))
-        )
+        processing_vm.processing_finished.connect(lambda success, msg: completion_signals.append((success, msg)))
 
         processing_vm.finish_processing(success=False, message="Processing failed")
 
@@ -169,23 +166,23 @@ class TestProcessingStateManagement:
         assert len(completion_signals) == 1
         assert completion_signals[0] == (False, "Processing failed")
 
-    def test_finish_without_processing(self, processing_vm):
+    def test_finish_without_processing(self, processing_vm) -> None:
         """Test finish fails when not processing."""
         with pytest.raises(ValueError, match="Not currently processing"):
             processing_vm.finish_processing()
 
-    def test_complete_processing_workflow(self, processing_vm):
+    def test_complete_processing_workflow(self, processing_vm) -> None:
         """Test complete processing workflow from start to finish."""
         # Track all signals
         all_signals = []
 
-        def track_state_change(state):
+        def track_state_change(state) -> None:
             all_signals.append(("state_changed", state))
 
-        def track_progress(progress, msg):
+        def track_progress(progress, msg) -> None:
             all_signals.append(("progress_updated", progress, msg))
 
-        def track_finished(success, msg):
+        def track_finished(success, msg) -> None:
             all_signals.append(("processing_finished", success, msg))
 
         processing_vm.state_changed.connect(track_state_change)
@@ -206,12 +203,12 @@ class TestProcessingStateManagement:
             ("progress_updated", 50, "Interpolating"),
             ("progress_updated", 75, "Encoding"),
             ("state_changed", "idle"),
-            ("processing_finished", True, "Video saved")
+            ("processing_finished", True, "Video saved"),
         ]
 
         assert all_signals == expected_signals
 
-    def test_multiple_processing_cycles(self, processing_vm):
+    def test_multiple_processing_cycles(self, processing_vm) -> None:
         """Test multiple processing cycles work correctly."""
         for i in range(3):
             # Start processing
@@ -228,7 +225,7 @@ class TestProcessingStateManagement:
             assert not processing_vm.is_processing
             assert processing_vm.state == "idle"
 
-    def test_error_recovery_state(self, processing_vm):
+    def test_error_recovery_state(self, processing_vm) -> None:
         """Test state recovery after errors."""
         processing_vm.start_processing()
 
@@ -244,13 +241,13 @@ class TestProcessingStateManagement:
         assert processing_vm.is_processing
         assert processing_vm.current_operation == "recovery_operation"
 
-    def test_signal_connection_performance(self, processing_vm):
+    def test_signal_connection_performance(self, processing_vm) -> None:
         """Test performance with many signal connections."""
         import time
 
         # Connect many signal handlers
         handlers = []
-        for i in range(100):
+        for _i in range(100):
             handler = MagicMock()
             processing_vm.state_changed.connect(handler)
             processing_vm.progress_updated.connect(handler)

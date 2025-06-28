@@ -6,8 +6,8 @@ from typing import Dict, List, Optional, TypedDict
 class RIFEModelDetails(TypedDict, total=False):
     """Details about a RIFE model."""
 
-    version: Optional[str]
-    capabilities: Dict[str, bool]
-    supported_args: List[str]
-    help_text: Optional[str]
+    version: str | None
+    capabilities: dict[str, bool]
+    supported_args: list[str]
+    help_text: str | None
     _mtime: float  # Add _mtime used for caching

@@ -1,14 +1,13 @@
 """Fast, optimized tests for error handling chain - critical infrastructure."""
 
-
-from goesvfi.utils.errors.handler import ErrorHandler, ErrorHandlerChain
 from goesvfi.utils.errors.base import ErrorCategory
+from goesvfi.utils.errors.handler import ErrorHandler, ErrorHandlerChain
 
 
 class MockErrorHandler(ErrorHandler):
     """Mock error handler for testing chain logic."""
 
-    def __init__(self, name: str, can_handle_types: list = None, should_handle: bool = True):
+    def __init__(self, name: str, can_handle_types: list | None = None, should_handle: bool = True):
         self.name = name
         self.can_handle_types = can_handle_types or []
         self.should_handle = should_handle
@@ -27,7 +26,7 @@ class MockErrorHandler(ErrorHandler):
 class TestErrorHandlerChain:
     """Test error handler chain with fast, synthetic handlers."""
 
-    def test_chain_handles_error_with_first_capable_handler(self):
+    def test_chain_handles_error_with_first_capable_handler(self) -> None:
         """Test chain stops at first handler that can handle the error."""
         handler1 = MockErrorHandler("handler1", can_handle_types=["ValueError"], should_handle=False)
         handler2 = MockErrorHandler("handler2", can_handle_types=["TypeError"], should_handle=True)
@@ -44,7 +43,7 @@ class TestErrorHandlerChain:
         assert len(handler2.handled_errors) == 1  # Handled the error
         assert len(handler3.handled_errors) == 0  # Not reached
 
-    def test_chain_tries_all_handlers_when_none_can_handle(self):
+    def test_chain_tries_all_handlers_when_none_can_handle(self) -> None:
         """Test chain tries all handlers when none can handle the error."""
         handler1 = MockErrorHandler("handler1", can_handle_types=["ValueError"], should_handle=False)
         handler2 = MockErrorHandler("handler2", can_handle_types=["RuntimeError"], should_handle=False)
@@ -61,7 +60,7 @@ class TestErrorHandlerChain:
         assert len(handler2.handled_errors) == 0
         assert len(handler3.handled_errors) == 0
 
-    def test_chain_execution_order(self):
+    def test_chain_execution_order(self) -> None:
         """Test handlers are tried in the order they were added."""
         execution_order = []
 
@@ -80,7 +79,7 @@ class TestErrorHandlerChain:
 
         assert execution_order == ["first", "second", "third"]
 
-    def test_chain_handles_handler_exceptions(self):
+    def test_chain_handles_handler_exceptions(self) -> None:
         """Test chain with exception-safe handlers."""
         # Since the actual implementation uses `any()` which doesn't handle exceptions,
         # we'll test that working handlers still function correctly
@@ -95,16 +94,16 @@ class TestErrorHandlerChain:
         assert result is True
         assert len(working_handler.handled_errors) == 1
 
-    def test_error_categorization(self):
+    def test_error_categorization(self) -> None:
         """Test error categorization logic."""
         categories = {
             ValueError: ErrorCategory.USER_INPUT,
             FileNotFoundError: ErrorCategory.FILE_NOT_FOUND,
             ConnectionError: ErrorCategory.NETWORK,
-            MemoryError: ErrorCategory.SYSTEM
+            MemoryError: ErrorCategory.SYSTEM,
         }
 
-        for error_type, expected_category in categories.items():
+        for error_type in categories:
             handler = MockErrorHandler("categorizer", should_handle=True)
             chain = ErrorHandlerChain()
             chain.add_handler(handler)
@@ -115,14 +114,14 @@ class TestErrorHandlerChain:
             # Verify categorization (would be part of real handler logic)
             assert len(handler.handled_errors) == 1
 
-    def test_error_severity_assessment(self):
+    def test_error_severity_assessment(self) -> None:
         """Test error severity assessment."""
         # Test that different error types can be handled
         error_cases = [
             ValueError("Invalid input"),
             FileNotFoundError("File missing"),
             MemoryError("Out of memory"),
-            KeyboardInterrupt("User cancelled")
+            KeyboardInterrupt("User cancelled"),
         ]
 
         for error in error_cases:
@@ -133,7 +132,7 @@ class TestErrorHandlerChain:
             result = chain.handle_error(error)
             assert result is True
 
-    def test_chain_with_empty_handler_list(self):
+    def test_chain_with_empty_handler_list(self) -> None:
         """Test chain with no handlers."""
         chain = ErrorHandlerChain()
 
@@ -142,7 +141,7 @@ class TestErrorHandlerChain:
 
         assert result is False  # No handlers to handle the error
 
-    def test_chain_with_single_handler(self):
+    def test_chain_with_single_handler(self) -> None:
         """Test chain with single handler."""
         handler = MockErrorHandler("single", should_handle=True)
         chain = ErrorHandlerChain()
@@ -154,7 +153,7 @@ class TestErrorHandlerChain:
         assert result is True
         assert len(handler.handled_errors) == 1
 
-    def test_error_context_preservation(self):
+    def test_error_context_preservation(self) -> None:
         """Test basic error handling without context (simplified test)."""
         # Since the actual ErrorHandlerChain doesn't support context parameter,
         # we'll test basic functionality
@@ -168,15 +167,12 @@ class TestErrorHandlerChain:
         assert result is True
         assert len(handler.handled_errors) == 1
 
-    def test_chain_performance_with_many_handlers(self):
+    def test_chain_performance_with_many_handlers(self) -> None:
         """Test chain performance with many handlers."""
         import time
 
         # Create 50 handlers that can't handle the error
-        non_handling_handlers = [
-            MockErrorHandler(f"handler_{i}", should_handle=False) 
-            for i in range(50)
-        ]
+        non_handling_handlers = [MockErrorHandler(f"handler_{i}", should_handle=False) for i in range(50)]
 
         # Add one handler at the end that can handle it
         final_handler = MockErrorHandler("final", should_handle=True)

@@ -27,7 +27,7 @@ def get_badge_color(percentage: float) -> str:
         return "red"
 
 
-def get_coverage_percentage() -> Tuple[float, bool]:
+def get_coverage_percentage() -> tuple[float, bool]:
     """Get coverage percentage from coverage.json file."""
     coverage_file = Path(__file__).parent.parent / "coverage.json"
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import pathlib  # Import pathlib
-from typing import TYPE_CHECKING
 
 from PyQt6.QtWidgets import (
     QFrame,
@@ -19,10 +18,6 @@ from PyQt6.QtWidgets import (
 
 from goesvfi.utils import config  # Assuming config is accessible this way
 
-if TYPE_CHECKING:
-    # Import types for type hinting only if needed, avoids circular imports
-    pass
-
 LOGGER = logging.getLogger(__name__)
 
 
@@ -30,8 +25,7 @@ class ModelLibraryTab(QWidget):
     """QWidget tab displaying available RIFE models."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        """
-        Initialize the ModelLibraryTab.
+        """Initialize the ModelLibraryTab.
 
         Args:
             parent: Optional parent widget.

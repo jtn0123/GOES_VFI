@@ -51,7 +51,7 @@ class RifeBackend:
         self,
         img1: NDArray[np.float32],
         img2: NDArray[np.float32],
-        options: Optional[Dict[str, Any]] = None,
+        options: dict[str, Any] | None = None,
     ) -> NDArray[np.float32]:
         """
         Interpolate between two frames using the RIFE CLI.
@@ -131,8 +131,8 @@ def interpolate_three(
     img1: NDArray[np.float32],
     img2: NDArray[np.float32],
     backend: RifeBackend,
-    options: Optional[Dict[str, Any]] = None,
-) -> List[NDArray[np.float32]]:
+    options: dict[str, Any] | None = None,
+) -> list[NDArray[np.float32]]:
     """
     Recursively interpolates three frames between img1 and img2.
 

@@ -1,12 +1,10 @@
-"""
-Error handling utilities.
+"""Error handling utilities.
 
 Provides structured error handling chains to reduce complexity in error management.
 """
 
-import logging
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union
+import logging
 
 from .base import ErrorCategory, StructuredError
 
@@ -17,24 +15,21 @@ class ErrorHandler(ABC):
     @abstractmethod
     def can_handle(self, error: StructuredError) -> bool:
         """Check if this handler can handle the given error."""
-        pass
 
     @abstractmethod
     def handle(self, error: StructuredError) -> bool:
-        """
-        Handle the error.
+        """Handle the error.
 
         Returns:
             True if error was handled and processing should stop,
             False if processing should continue to next handler
         """
-        pass
 
 
 class LoggingErrorHandler(ErrorHandler):
     """Error handler that logs errors."""
 
-    def __init__(self, logger: Optional[logging.Logger] = None, log_level: int = logging.ERROR) -> None:
+    def __init__(self, logger: logging.Logger | None = None, log_level: int = logging.ERROR) -> None:
         self.logger = logger or logging.getLogger(__name__)
         self.log_level = log_level
 
@@ -51,7 +46,7 @@ class LoggingErrorHandler(ErrorHandler):
 class CategoryErrorHandler(ErrorHandler):
     """Error handler for specific error categories."""
 
-    def __init__(self, categories: Union[ErrorCategory, List[ErrorCategory]]) -> None:
+    def __init__(self, categories: ErrorCategory | list[ErrorCategory]) -> None:
         if isinstance(categories, ErrorCategory):
             self.categories = [categories]
         else:
@@ -71,7 +66,7 @@ class ErrorHandlerChain:
     """Chain of error handlers for processing errors."""
 
     def __init__(self) -> None:
-        self.handlers: List[ErrorHandler] = []
+        self.handlers: list[ErrorHandler] = []
 
     def add_handler(self, handler: ErrorHandler) -> "ErrorHandlerChain":
         """Add a handler to the chain."""
@@ -79,14 +74,9 @@ class ErrorHandlerChain:
         return self
 
     def handle_error(self, error: StructuredError) -> bool:
-        """
-        Process error through the handler chain.
+        """Process error through the handler chain.
 
         Returns:
             True if error was handled, False otherwise
         """
-        for handler in self.handlers:
-            if handler.can_handle(error):
-                if handler.handle(error):
-                    return True
-        return False
+        return any(handler.can_handle(error) and handler.handle(error) for handler in self.handlers)

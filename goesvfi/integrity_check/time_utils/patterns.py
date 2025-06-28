@@ -19,7 +19,7 @@ class SatellitePattern(Enum):
 
 
 # Mapping of satellite patterns to regex patterns for extraction
-PATTERN_MAPPING: Dict[SatellitePattern, str] = {
+PATTERN_MAPPING: dict[SatellitePattern, str] = {
     SatellitePattern.GOES_16: r"(?:_G16_|G16_13_)(\d{8}T\d{6})Z\.png$",
     SatellitePattern.GOES_17: r"(?:_G17_|G17_13_)(\d{8}T\d{6})Z\.png$",
     SatellitePattern.GOES_18: r"(?:_G18_|G18_13_)(\d{8}T\d{6})Z\.png$",
@@ -27,22 +27,22 @@ PATTERN_MAPPING: Dict[SatellitePattern, str] = {
 }
 
 # Additional patterns for GOES ABI filenames (CDN/S3)
-GOES_FILENAME_PATTERNS: Dict[SatellitePattern, str] = {
+GOES_FILENAME_PATTERNS: dict[SatellitePattern, str] = {
     SatellitePattern.GOES_16: r"(\d{4})(\d{3})(\d{2})(\d{2})(?:\d{2})?_GOES16-ABI-FD-13",
     SatellitePattern.GOES_18: r"(\d{4})(\d{3})(\d{2})(\d{2})(?:\d{2})?_GOES18-ABI-FD-13",
 }
 
 # Compiled regex patterns for faster matching
-COMPILED_PATTERNS: Dict[SatellitePattern, Pattern[str]] = {
+COMPILED_PATTERNS: dict[SatellitePattern, Pattern[str]] = {
     sat: re.compile(pattern) for sat, pattern in PATTERN_MAPPING.items()
 }
 
-COMPILED_GOES_PATTERNS: Dict[SatellitePattern, Pattern[str]] = {
+COMPILED_GOES_PATTERNS: dict[SatellitePattern, Pattern[str]] = {
     sat: re.compile(pattern) for sat, pattern in GOES_FILENAME_PATTERNS.items()
 }
 
 # Mapping of satellites to their friendly names for UI display
-SATELLITE_NAMES: Dict[SatellitePattern, str] = {
+SATELLITE_NAMES: dict[SatellitePattern, str] = {
     SatellitePattern.GOES_16: "GOES-16 (East)",
     SatellitePattern.GOES_17: "GOES-17 (West)",
     SatellitePattern.GOES_18: "GOES-18 (West)",
@@ -50,20 +50,20 @@ SATELLITE_NAMES: Dict[SatellitePattern, str] = {
 }
 
 # Mapping of satellites to their short names
-SATELLITE_SHORT_NAMES: Dict[SatellitePattern, str] = {
+SATELLITE_SHORT_NAMES: dict[SatellitePattern, str] = {
     SatellitePattern.GOES_16: "GOES16",
     SatellitePattern.GOES_17: "GOES17",
     SatellitePattern.GOES_18: "GOES18",
 }
 
 # Mapping of satellites to their AWS S3 bucket names
-S3_BUCKETS: Dict[SatellitePattern, str] = {
+S3_BUCKETS: dict[SatellitePattern, str] = {
     SatellitePattern.GOES_16: "noaa-goes16",
     SatellitePattern.GOES_18: "noaa-goes18",
 }
 
 # Mapping of satellites to their S3 file pattern codes
-SATELLITE_CODES: Dict[SatellitePattern, str] = {
+SATELLITE_CODES: dict[SatellitePattern, str] = {
     SatellitePattern.GOES_16: "G16",
     SatellitePattern.GOES_18: "G18",
 }
@@ -72,7 +72,7 @@ SATELLITE_CODES: Dict[SatellitePattern, str] = {
 BAND_PATTERN: re.Pattern[str] = re.compile(r"ABI-L1b-(?:RadF|RadC|RadM)-M\d+C(\d+)_")
 
 
-def get_satellite_info(satellite: SatellitePattern) -> Dict[str, Optional[str]]:
+def get_satellite_info(satellite: SatellitePattern) -> dict[str, str | None]:
     """Get all information for a satellite pattern.
 
     Args:

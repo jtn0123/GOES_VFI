@@ -46,7 +46,7 @@ class TimeIndex:
     }
 
     @staticmethod
-    def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: Optional[str] = None) -> str:
+    def to_cdn_url(ts: datetime, satellite: SatellitePattern, resolution: str | None = None) -> str:
         """
         Generate a CDN URL for the given timestamp and satellite.
 
@@ -129,7 +129,7 @@ class TimeIndex:
     @staticmethod
     def ts_from_filename(
         filename: str,
-    ) -> Tuple[Optional[datetime], Optional[SatellitePattern]]:
+    ) -> tuple[datetime | None, SatellitePattern | None]:
         """
         Extract a timestamp and satellite from a filename.
 
@@ -142,7 +142,7 @@ class TimeIndex:
         return TimestampExtractor.extract_timestamp_and_satellite(filename)
 
     @staticmethod
-    def ts_from_directory_name(dirname: str) -> Optional[datetime]:
+    def ts_from_directory_name(dirname: str) -> datetime | None:
         """
         Extract a timestamp from a directory name with format YYYY-MM-DD_HH-MM-SS.
 
@@ -168,7 +168,7 @@ class TimeIndex:
         return TimestampGenerator.is_recent(ts)
 
     @staticmethod
-    def find_nearest_intervals(ts: datetime, product_type: str = "RadF") -> List[datetime]:
+    def find_nearest_intervals(ts: datetime, product_type: str = "RadF") -> list[datetime]:
         """
         Find the nearest standard GOES imagery intervals for a given timestamp and product type.
 
@@ -188,7 +188,7 @@ class TimeIndex:
     @staticmethod
     def find_date_range_in_directory(
         directory: Path, satellite: SatellitePattern
-    ) -> Tuple[Optional[datetime], Optional[datetime]]:
+    ) -> tuple[datetime | None, datetime | None]:
         """
         Find the earliest and latest timestamps in the directory.
 
@@ -205,9 +205,9 @@ class TimeIndex:
     def scan_directory_for_timestamps(
         directory: Path,
         pattern: SatellitePattern,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-    ) -> List[datetime]:
+        start_time: datetime | None = None,
+        end_time: datetime | None = None,
+    ) -> list[datetime]:
         """
         Scan a directory for files matching the timestamp pattern.
 
@@ -223,7 +223,7 @@ class TimeIndex:
         return DirectoryScanner.scan_directory_for_timestamps(directory, pattern, start_time, end_time)
 
     @staticmethod
-    def filter_s3_keys_by_band(keys: List[str], target_band: int = 13) -> List[str]:
+    def filter_s3_keys_by_band(keys: list[str], target_band: int = 13) -> list[str]:
         """
         Filter a list of S3 keys to include only those for the specified band.
 

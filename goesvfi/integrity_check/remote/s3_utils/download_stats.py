@@ -17,8 +17,8 @@ from goesvfi.utils.log import get_logger
 LOGGER = get_logger(__name__)
 
 # Type aliases
-StatsValue = Union[int, float, str, List[Any]]
-StatsDict = Dict[str, StatsValue]
+StatsValue = Union[int, float, str, list[Any]]
+StatsDict = dict[str, StatsValue]
 
 
 @dataclass
@@ -38,8 +38,8 @@ class DownloadStats:
     network_errors: int = 0
 
     # Performance metrics
-    download_times: List[float] = field(default_factory=list)
-    download_rates: List[float] = field(default_factory=list)
+    download_times: list[float] = field(default_factory=list)
+    download_rates: list[float] = field(default_factory=list)
     start_time: float = field(default_factory=time.time)
     last_success_time: float = 0
     largest_file_size: int = 0
@@ -47,8 +47,8 @@ class DownloadStats:
     total_bytes: int = 0
 
     # Recent history
-    errors: List[str] = field(default_factory=list)
-    recent_attempts: List[Dict[str, Any]] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    recent_attempts: list[dict[str, Any]] = field(default_factory=list)
 
     # Session information
     session_id: str = field(default_factory=lambda: f"{int(time.time())}-{random.randint(1000, 9999)}")
@@ -81,11 +81,11 @@ class DownloadStatsTracker:
         success: bool,
         download_time: float = 0,
         file_size: int = 0,
-        error_type: Optional[str] = None,
-        error_message: Optional[str] = None,
-        satellite: Optional[str] = None,
-        bucket: Optional[str] = None,
-        key: Optional[str] = None,
+        error_type: str | None = None,
+        error_message: str | None = None,
+        satellite: str | None = None,
+        bucket: str | None = None,
+        key: str | None = None,
     ) -> None:
         """Update statistics for a download attempt.
 
@@ -151,7 +151,7 @@ class DownloadStatsTracker:
             if len(self._stats.download_rates) > 100:
                 self._stats.download_rates = self._stats.download_rates[-100:]
 
-    def _update_failure_stats(self, error_type: Optional[str], error_message: Optional[str]) -> None:
+    def _update_failure_stats(self, error_type: str | None, error_message: str | None) -> None:
         """Update statistics for failed downloads."""
         self._stats.failed += 1
 
@@ -213,7 +213,7 @@ class DownloadStatsTracker:
                 start_timestamp=self._stats.start_timestamp,
             )
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Calculate and return download metrics.
 
         Returns:
@@ -262,7 +262,7 @@ class DownloadStatsTracker:
                 "avg_download_rate": avg_download_rate,
             }
 
-    def get_error_metrics(self) -> Dict[str, int]:
+    def get_error_metrics(self) -> dict[str, int]:
         """Get error-related metrics.
 
         Returns:

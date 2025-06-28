@@ -1,14 +1,12 @@
-"""
-Combined Integrity Check and Satellite Visualization Tab
+"""Combined Integrity Check and Satellite Visualization Tab.
 
 This module provides a comprehensive tab that includes the enhanced integrity check
 functionality with integrated date selection, timeline visualization, results organization,
 and GOES imagery visualization features in a unified interface.
 """
 
-import logging
 from datetime import datetime
-from typing import List, Optional
+import logging
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
@@ -31,8 +29,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class CombinedIntegrityAndImageryTab(QWidget):
-    """
-    Combined tab that includes file integrity and satellite visualization components.
+    """Combined tab that includes file integrity and satellite visualization components.
 
     This tab contains:
     1. File Integrity - Verify and download missing imagery files with integrated date selection
@@ -48,8 +45,8 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
     def __init__(
         self,
-        view_model: Optional[EnhancedIntegrityCheckViewModel] = None,
-        parent: Optional[QWidget] = None,
+        view_model: EnhancedIntegrityCheckViewModel | None = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.view_model = view_model
@@ -175,7 +172,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
         if hasattr(self.imagery_tab, "loadMissingItem"):
             self.imagery_tab.loadMissingItem(item)
 
-    def getScanResults(self) -> List[MissingTimestamp]:
+    def getScanResults(self) -> list[MissingTimestamp]:
         """Get the current scan results."""
         if self.view_model:
             items = getattr(self.view_model, "missing_items", [])
@@ -184,9 +181,8 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
     def clearResults(self) -> None:
         """Clear all results."""
-        if self.view_model:
-            if hasattr(self.view_model, "clear_results"):
-                self.view_model.clear_results()
+        if self.view_model and hasattr(self.view_model, "clear_results"):
+            self.view_model.clear_results()
         if hasattr(self.results_tab, "clearResults"):
             self.results_tab.clearResults()
         if hasattr(self.timeline_tab, "clearTimeline"):

@@ -12,7 +12,7 @@ from .ffmpeg_builder import FFmpegCommandBuilder
 LOGGER = logging.getLogger(__name__)
 
 
-def _run_ffmpeg_command(cmd: List[str], desc: str, monitor_memory: bool = False) -> None:
+def _run_ffmpeg_command(cmd: list[str], desc: str, monitor_memory: bool = False) -> None:
     """Run an FFmpeg command with logging and error handling.
 
     Args:

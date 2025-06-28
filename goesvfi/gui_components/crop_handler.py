@@ -66,7 +66,7 @@ class CropHandler:
             return []
         return sorted([f for f in main_window.in_dir.iterdir() if f.suffix.lower() in [".png", ".jpg", ".jpeg"]])
 
-    def prepare_image_for_crop_dialog(self, main_window: Any, image_path: Path) -> Optional[QPixmap]:
+    def prepare_image_for_crop_dialog(self, main_window: Any, image_path: Path) -> QPixmap | None:
         """Prepare an image for the crop dialog, applying Sanchez if enabled.
 
         Args:
@@ -101,7 +101,7 @@ class CropHandler:
             LOGGER.exception("Error preparing image for crop dialog: %s", e)
             return None
 
-    def get_processed_preview_pixmap(self, main_window: Any) -> Optional[QPixmap]:
+    def get_processed_preview_pixmap(self, main_window: Any) -> QPixmap | None:
         """Get the processed preview pixmap from the first frame label.
 
         Args:

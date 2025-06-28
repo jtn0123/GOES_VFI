@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 
 def tile_image(
     img: NDArray[np.float32], tile_size: int = 2048, overlap: int = 32
-) -> List[Tuple[int, int, NDArray[np.float32]]]:
+) -> list[tuple[int, int, NDArray[np.float32]]]:
     """Split H×W×3 image into overlapping RGB float32 tiles.
 
     Parameters
@@ -24,7 +24,7 @@ def tile_image(
 
     h, w, _ = img.shape
     step = tile_size - overlap if overlap < tile_size else tile_size
-    tiles: List[Tuple[int, int, NDArray[np.float32]]] = []
+    tiles: list[tuple[int, int, NDArray[np.float32]]] = []
     y = 0
     while y < h:
         x = 0
@@ -39,8 +39,8 @@ def tile_image(
 
 
 def merge_tiles(
-    tiles: List[Tuple[int, int, NDArray[np.float32]]],
-    full_shape: Tuple[int, int],
+    tiles: list[tuple[int, int, NDArray[np.float32]]],
+    full_shape: tuple[int, int],
     overlap: int = 32,
 ) -> NDArray[np.float32]:
     """Merge tiles back into a single image with optional edge blending."""

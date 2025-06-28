@@ -8,11 +8,11 @@ import pathlib
 import time
 from unittest.mock import MagicMock, patch
 
-import pytest
 from PIL import Image
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QMessageBox
+import pytest
 
 from goesvfi.gui import MainWindow
 
@@ -52,7 +52,7 @@ class TestFullApplicationWorkflowOptimized:
             }
             yield
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_vfi_worker(self):
         """Optimized mock for VfiWorker."""
         with (
@@ -80,7 +80,7 @@ class TestFullApplicationWorkflowOptimized:
 
             yield mock_worker_class_tab, mock_instance
 
-    @pytest.fixture
+    @pytest.fixture()
     def main_window(self, app, mock_dependencies, mock_vfi_worker):
         """Create MainWindow instance with all mocks applied."""
         window = MainWindow()
@@ -96,7 +96,7 @@ class TestFullApplicationWorkflowOptimized:
         window.close()
         app.processEvents()
 
-    @pytest.fixture
+    @pytest.fixture()
     def test_environment(self, tmp_path):
         """Create test environment with images and directories."""
         # Input directory with test images
@@ -124,11 +124,9 @@ class TestFullApplicationWorkflowOptimized:
             "output_dir": tmp_path,
         }
 
-    def test_complete_workflows_combined(
-        self, main_window, app, test_environment, mock_vfi_worker
-    ):
+    def test_complete_workflows_combined(self, main_window, app, test_environment, mock_vfi_worker) -> None:
         """Combined test for multiple complete workflows."""
-        mock_worker_class, mock_instance = mock_vfi_worker
+        _mock_worker_class, mock_instance = mock_vfi_worker
 
         # Test data
         test_cases = [
@@ -192,14 +190,18 @@ class TestFullApplicationWorkflowOptimized:
             # Simulate processing
             self._simulate_processing(main_window, app, mock_instance, output_file)
 
-    def test_all_tabs_and_error_handling(self, main_window, app, test_environment):
+    def test_all_tabs_and_error_handling(self, main_window, app, test_environment) -> None:
         """Combined test for tab navigation and error handling."""
         tab_widget = main_window.tab_widget
 
         # Test 1: Navigate all tabs
         expected_tabs = {
-            "Main", "FFmpeg Settings", "Date Sorter", 
-            "File Sorter", "Model Library", "Satellite Integrity"
+            "Main",
+            "FFmpeg Settings",
+            "Date Sorter",
+            "File Sorter",
+            "Model Library",
+            "Satellite Integrity",
         }
         found_tabs = set()
 
@@ -250,7 +252,7 @@ class TestFullApplicationWorkflowOptimized:
         assert main_window.main_tab.rife_tile_checkbox.isChecked()
         assert main_window.main_tab.sanchez_false_colour_checkbox.isChecked()
 
-    def test_ffmpeg_and_file_sorter_integration(self, main_window, app, test_environment):
+    def test_ffmpeg_and_file_sorter_integration(self, main_window, app, test_environment) -> None:
         """Combined test for FFmpeg settings and file sorter functionality."""
         tab_widget = main_window.tab_widget
 
@@ -304,7 +306,7 @@ class TestFullApplicationWorkflowOptimized:
             # Verify UI remains responsive
             assert file_sorter_tab.sort_button is not None
 
-    def test_crop_and_preview_workflow(self, main_window, app, test_environment):
+    def test_crop_and_preview_workflow(self, main_window, app, test_environment) -> None:
         """Test crop selection and preview functionality."""
         output_file = test_environment["output_dir"] / "output_cropped.mp4"
 
@@ -335,12 +337,12 @@ class TestFullApplicationWorkflowOptimized:
             # Click crop button
             QTest.mouseClick(main_window.main_tab.crop_button, Qt.MouseButton.LeftButton)
             app.processEvents()
-            QTimer.singleShot(100, lambda: app.processEvents())
+            QTimer.singleShot(100, app.processEvents)
 
             # Verify no crash
             assert True
 
-    def test_error_recovery_workflow(self, main_window, app, test_environment):
+    def test_error_recovery_workflow(self, main_window, app, test_environment) -> None:
         """Test error handling and recovery during processing."""
         test_dir = test_environment["input_dir"]
         output_file = test_environment["output_dir"] / "output_error.mp4"
@@ -357,11 +359,11 @@ class TestFullApplicationWorkflowOptimized:
             error_callback = None
             finished_callback = None
 
-            def mock_error_connect(callback):
+            def mock_error_connect(callback) -> None:
                 nonlocal error_callback
                 error_callback = callback
 
-            def mock_finished_connect(callback):
+            def mock_finished_connect(callback) -> None:
                 nonlocal finished_callback
                 finished_callback = callback
 
@@ -370,12 +372,12 @@ class TestFullApplicationWorkflowOptimized:
             mock_worker.error.connect = mock_error_connect
 
             # Test error scenario
-            def mock_start_error():
+            def mock_start_error() -> None:
                 if error_callback:
                     error_callback("Test error: Processing failed")
 
             # Test recovery scenario
-            def mock_start_success():
+            def mock_start_success() -> None:
                 if finished_callback:
                     finished_callback(str(output_file))
 
@@ -402,23 +404,23 @@ class TestFullApplicationWorkflowOptimized:
             assert mock_worker.start.called
 
     # Helper methods
-    def _simulate_processing(self, main_window, app, mock_instance, output_file):
+    def _simulate_processing(self, main_window, app, mock_instance, output_file) -> None:
         """Simulate processing workflow."""
         progress_callback = None
         finished_callback = None
 
-        def mock_progress_connect(callback):
+        def mock_progress_connect(callback) -> None:
             nonlocal progress_callback
             progress_callback = callback
 
-        def mock_finished_connect(callback):
+        def mock_finished_connect(callback) -> None:
             nonlocal finished_callback
             finished_callback = callback
 
         mock_instance.progress.connect.side_effect = mock_progress_connect
         mock_instance.finished.connect.side_effect = mock_finished_connect
 
-        def mock_start():
+        def mock_start() -> None:
             # Simulate progress
             if progress_callback:
                 for i in range(1, 11):

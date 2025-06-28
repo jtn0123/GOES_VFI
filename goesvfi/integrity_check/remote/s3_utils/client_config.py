@@ -20,14 +20,14 @@ LOGGER = get_logger(__name__)
 class S3ClientConfig:
     """Configuration for S3 client connections."""
 
-    aws_profile: Optional[str] = None
+    aws_profile: str | None = None
     aws_region: str = "us-east-1"
     timeout: int = 60
     connect_timeout: int = 10
     max_retries: int = 2
     enable_debug_logging: bool = False
 
-    def get_session_kwargs(self) -> Dict[str, Any]:
+    def get_session_kwargs(self) -> dict[str, Any]:
         """Get boto3 session keyword arguments.
 
         Returns:

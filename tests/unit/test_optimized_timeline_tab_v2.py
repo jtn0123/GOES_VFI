@@ -8,8 +8,8 @@ Optimizations:
 - Maintained all 6 test methods plus added coverage tests
 """
 
-import pytest
 from datetime import datetime
+
 from PyQt6.QtWidgets import QApplication, QMainWindow
 
 # Import the components to test
@@ -24,7 +24,7 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
     """Optimized unit tests for the OptimizedTimelineTab."""
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Set up shared resources for all tests."""
         # Create application instance once
         cls.app = QApplication.instance() or QApplication([])
@@ -33,7 +33,7 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
         cls.test_data = cls._create_shared_test_data()
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         """Clean up shared resources."""
         cls.app.processEvents()
 
@@ -74,7 +74,7 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
             "interval_minutes": 120,
         }
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up each test with a fresh tab instance."""
         # Create the tab
         self.tab = OptimizedTimelineTab()
@@ -83,20 +83,20 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
         self.window = QMainWindow()
         self.window.setCentralWidget(self.tab)
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Clean up after each test."""
         self.window.close()
         self.app.processEvents()
 
     @async_test
-    async def test_set_data(self):
+    async def test_set_data(self) -> None:
         """Test that set_data method properly sets data and updates visualization."""
         # Set the data
         self.tab.set_data(
             self.test_data["missing_items"],
             self.test_data["start_date"],
             self.test_data["end_date"],
-            self.test_data["interval_minutes"]
+            self.test_data["interval_minutes"],
         )
 
         # Minimal process events
@@ -109,14 +109,14 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
         assert self.tab.interval_minutes == self.test_data["interval_minutes"]
 
     @async_test
-    async def test_set_date_range(self):
+    async def test_set_date_range(self) -> None:
         """Test that set_date_range updates the visualization without changing data."""
         # First set initial data
         self.tab.set_data(
             self.test_data["missing_items"],
             self.test_data["start_date"],
             self.test_data["end_date"],
-            self.test_data["interval_minutes"]
+            self.test_data["interval_minutes"],
         )
 
         # Now change the date range
@@ -134,7 +134,7 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
         assert self.tab.missing_items == self.test_data["missing_items"]
 
     @async_test
-    async def test_set_directory(self):
+    async def test_set_directory(self) -> None:
         """Test that set_directory emits the directorySelected signal."""
         # Set up signal waiter
         dir_waiter = AsyncSignalWaiter(self.tab.directorySelected)
@@ -150,14 +150,14 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
         assert received_dir == test_dir
 
     @async_test
-    async def test_timestamp_selection(self):
+    async def test_timestamp_selection(self) -> None:
         """Test that selecting a timestamp emits the correct signal."""
         # Set up the data first
         self.tab.set_data(
             self.test_data["missing_items"],
             self.test_data["start_date"],
             self.test_data["end_date"],
-            self.test_data["interval_minutes"]
+            self.test_data["interval_minutes"],
         )
 
         # Set up signal waiter
@@ -175,14 +175,14 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
         assert self.tab.selected_timestamp == test_timestamp
 
     @async_test
-    async def test_view_switching(self):
+    async def test_view_switching(self) -> None:
         """Test switching between timeline and calendar views."""
         # Set some data first
         self.tab.set_data(
             self.test_data["missing_items"],
             self.test_data["start_date"],
             self.test_data["end_date"],
-            self.test_data["interval_minutes"]
+            self.test_data["interval_minutes"],
         )
 
         QApplication.processEvents()
@@ -209,14 +209,14 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
         assert not self.tab.view_calendar_btn.isChecked()
 
     @async_test
-    async def test_info_panel_update(self):
+    async def test_info_panel_update(self) -> None:
         """Test that the info panel is updated when a timestamp is selected."""
         # Set some data first
         self.tab.set_data(
             self.test_data["missing_items"],
             self.test_data["start_date"],
             self.test_data["end_date"],
-            self.test_data["interval_minutes"]
+            self.test_data["interval_minutes"],
         )
 
         QApplication.processEvents()
@@ -235,7 +235,7 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
         assert selected_timestamp.strftime("%Y-%m-%d") in self.tab.info_label.text()
 
     @async_test
-    async def test_empty_data_handling(self):
+    async def test_empty_data_handling(self) -> None:
         """Test handling of empty data sets."""
         # Set empty data
         self.tab.set_data([], datetime.now(), datetime.now(), 60)
@@ -247,14 +247,14 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
         assert self.tab.info_label.text() == "No item selected"
 
     @async_test
-    async def test_multiple_timestamp_selections(self):
+    async def test_multiple_timestamp_selections(self) -> None:
         """Test multiple timestamp selections in sequence."""
         # Set up data
         self.tab.set_data(
             self.test_data["missing_items"],
             self.test_data["start_date"],
             self.test_data["end_date"],
-            self.test_data["interval_minutes"]
+            self.test_data["interval_minutes"],
         )
 
         # Select multiple timestamps
@@ -273,12 +273,12 @@ class TestOptimizedTimelineTabV2(PyQtAsyncTestCase):
             assert self.tab.selected_timestamp == selected_timestamps[-1]
 
     @async_test
-    async def test_date_range_validation(self):
+    async def test_date_range_validation(self) -> None:
         """Test date range validation and edge cases."""
         # Test with reversed date range
         self.tab.set_date_range(
             datetime(2023, 1, 3),  # End before start
-            datetime(2023, 1, 1)
+            datetime(2023, 1, 1),
         )
 
         # Should handle gracefully (implementation dependent)

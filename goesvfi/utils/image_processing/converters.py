@@ -17,11 +17,11 @@ from .base import ImageProcessingResult, ProcessorBase
 class ArrayToImageConverter(ProcessorBase):
     """Converts numpy arrays to QImage objects."""
 
-    def __init__(self, format_hint: Optional[QImage.Format] = None) -> None:
+    def __init__(self, format_hint: QImage.Format | None = None) -> None:
         super().__init__("array_to_image")
         self.format_hint = format_hint
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Convert numpy array to QImage."""
         try:
             if not isinstance(input_data, np.ndarray):
@@ -99,7 +99,7 @@ class ImageToPixmapConverter(ProcessorBase):
 
     def __init__(
         self,
-        target_size: Optional[QSize] = None,
+        target_size: QSize | None = None,
         aspect_ratio_mode: Qt.AspectRatioMode = Qt.AspectRatioMode.KeepAspectRatio,
         transformation_mode: Qt.TransformationMode = Qt.TransformationMode.SmoothTransformation,
     ) -> None:
@@ -108,7 +108,7 @@ class ImageToPixmapConverter(ProcessorBase):
         self.aspect_ratio_mode = aspect_ratio_mode
         self.transformation_mode = transformation_mode
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Convert QImage to QPixmap with optional scaling."""
         try:
             if not isinstance(input_data, QImage):
@@ -155,7 +155,7 @@ class ImageDataConverter(ProcessorBase):
     def __init__(self) -> None:
         super().__init__("imagedata_to_array")
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Convert ImageData to numpy array."""
         try:
             # Import here to avoid circular imports
@@ -198,7 +198,7 @@ class CropProcessor(ProcessorBase):
     def __init__(self) -> None:
         super().__init__("crop")
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Crop numpy array."""
         try:
             if not isinstance(input_data, np.ndarray):

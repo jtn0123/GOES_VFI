@@ -34,11 +34,11 @@ class ImageData:
     """
 
     image_data: ImageType
-    source_path: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    source_path: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
-    def height(self) -> Optional[int]:
+    def height(self) -> int | None:
         """Returns the height of the image if available in metadata or image_data.
 
         Returns:
@@ -51,7 +51,7 @@ class ImageData:
         return None
 
     @property
-    def width(self) -> Optional[int]:
+    def width(self) -> int | None:
         """Returns the width of the image if available in metadata or image_data.
 
         Returns:
@@ -63,7 +63,7 @@ class ImageData:
             return int(self.image_data.shape[1])
         return None
 
-    def update_metadata(self, new_meta: Dict[str, Any]) -> None:
+    def update_metadata(self, new_meta: dict[str, Any]) -> None:
         """Update the metadata dictionary with new values.
 
         Args:
@@ -126,7 +126,7 @@ class ImageProcessor(abc.ABC):
         """
 
     @abc.abstractmethod
-    def crop(self, image_data: ImageData, crop_area: Tuple[int, int, int, int]) -> ImageData:
+    def crop(self, image_data: ImageData, crop_area: tuple[int, int, int, int]) -> ImageData:
         """
         Crops the image data to the specified rectangular area.
 

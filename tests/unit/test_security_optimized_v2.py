@@ -8,10 +8,11 @@ This v2 version maintains all test scenarios while optimizing through:
 - Combined related test scenarios without losing granularity
 """
 
+import math
 import pathlib
 import subprocess
 import tempfile
-from typing import Any, List
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -27,7 +28,7 @@ from goesvfi.utils.security import (
 class TestSecurityErrorOptimizedV2:
     """Test security error exception."""
 
-    def test_security_error_creation(self):
+    def test_security_error_creation(self) -> None:
         """Test creating security error."""
         error = SecurityError("Security validation failed")
         assert str(error) == "Security validation failed"
@@ -52,7 +53,7 @@ class TestInputValidatorOptimizedV2:
         """Shared validator instance."""
         return InputValidator()
 
-    def test_validate_file_path_valid_paths(self, validator):
+    def test_validate_file_path_valid_paths(self, validator) -> None:
         """Test validation of valid file paths."""
         valid_paths = [
             "/home/user/document.txt",
@@ -68,9 +69,9 @@ class TestInputValidatorOptimizedV2:
             result = validator.validate_file_path(path)
             assert result is True, f"Path '{path}' should be valid"
 
-    def test_validate_file_path_invalid_inputs(self, validator):
+    def test_validate_file_path_invalid_inputs(self, validator) -> None:
         """Test validation rejects invalid inputs."""
-        invalid_inputs: List[Any] = [
+        invalid_inputs: list[Any] = [
             "",  # Empty string
             None,  # None value
             123,  # Non-string
@@ -84,7 +85,7 @@ class TestInputValidatorOptimizedV2:
             with pytest.raises(SecurityError, match="Path must be a non-empty string"):
                 validator.validate_file_path(invalid_input)
 
-    def test_validate_file_path_directory_traversal(self, validator):
+    def test_validate_file_path_directory_traversal(self, validator) -> None:
         """Test validation rejects directory traversal attempts."""
         traversal_attempts = [
             "../../../etc/passwd",
@@ -101,7 +102,7 @@ class TestInputValidatorOptimizedV2:
             with pytest.raises(SecurityError, match="directory traversal"):
                 validator.validate_file_path(attempt)
 
-    def test_validate_file_path_with_allowed_extensions(self, validator):
+    def test_validate_file_path_with_allowed_extensions(self, validator) -> None:
         """Test validation with allowed extensions."""
         # Test cases: (filename, allowed_extensions, should_pass)
         test_cases = [
@@ -121,7 +122,7 @@ class TestInputValidatorOptimizedV2:
                 with pytest.raises(SecurityError, match="not allowed"):
                     validator.validate_file_path(filename, allowed_extensions=allowed_ext)
 
-    def test_validate_file_path_must_exist(self, validator):
+    def test_validate_file_path_must_exist(self, validator) -> None:
         """Test validation when file must exist."""
         # Test with temporary file
         with tempfile.NamedTemporaryFile() as temp_file:
@@ -143,7 +144,7 @@ class TestInputValidatorOptimizedV2:
             with pytest.raises(SecurityError, match="File does not exist"):
                 validator.validate_file_path(path, must_exist=True)
 
-    def test_validate_file_path_too_long(self, validator):
+    def test_validate_file_path_too_long(self, validator) -> None:
         """Test validation rejects extremely long paths."""
         # Different length limits to test
         test_cases = [
@@ -160,39 +161,42 @@ class TestInputValidatorOptimizedV2:
         normal_path = "a" * 100 + ".txt"
         assert validator.validate_file_path(normal_path) is True
 
-    @pytest.mark.parametrize("value,min_val,max_val,name,should_pass", [
-        # Valid cases
-        (5, 1, 10, "test_value", True),
-        (1, 1, 10, "lower_boundary", True),
-        (10, 1, 10, "upper_boundary", True),
-        (3.14, 0.0, 5.0, "pi", True),
-        (0.0, 0.0, 1.0, "zero", True),
-        (-5, -10, 0, "negative", True),
-        (1.5, 1.5, 1.5, "exact", True),
-        # Invalid cases are tested separately
-    ])
-    def test_validate_numeric_range_valid_values(self, validator, value, min_val, max_val, name, should_pass):
+    @pytest.mark.parametrize(
+        "value,min_val,max_val,name,should_pass",
+        [
+            # Valid cases
+            (5, 1, 10, "test_value", True),
+            (1, 1, 10, "lower_boundary", True),
+            (10, 1, 10, "upper_boundary", True),
+            (math.pi, 0.0, 5.0, "pi", True),
+            (0.0, 0.0, 1.0, "zero", True),
+            (-5, -10, 0, "negative", True),
+            (1.5, 1.5, 1.5, "exact", True),
+            # Invalid cases are tested separately
+        ],
+    )
+    def test_validate_numeric_range_valid_values(self, validator, value, min_val, max_val, name, should_pass) -> None:
         """Test numeric range validation with valid values."""
         assert validator.validate_numeric_range(value, min_val, max_val, name) == should_pass
 
-    def test_validate_numeric_range_invalid_types(self, validator):
+    def test_validate_numeric_range_invalid_types(self, validator) -> None:
         """Test numeric range validation rejects non-numeric types."""
-        invalid_values: List[Any] = [
+        invalid_values: list[Any] = [
             "5",  # String
             None,  # None
             [],  # List
             {},  # Dict
             True,  # Boolean (could be numeric in some contexts)
             complex(1, 2),  # Complex number
-            float('inf'),  # Infinity
-            float('nan'),  # NaN
+            float("inf"),  # Infinity
+            float("nan"),  # NaN
         ]
 
         for invalid_value in invalid_values:
             with pytest.raises(SecurityError, match="must be a number"):
                 validator.validate_numeric_range(invalid_value, 1, 10, "test")
 
-    def test_validate_numeric_range_out_of_bounds(self, validator):
+    def test_validate_numeric_range_out_of_bounds(self, validator) -> None:
         """Test numeric range validation rejects out-of-bounds values."""
         test_cases = [
             (0, 1, 10, "too_low", "must be between 1 and 10, got 0"),
@@ -205,7 +209,7 @@ class TestInputValidatorOptimizedV2:
             with pytest.raises(SecurityError, match=expected_error):
                 validator.validate_numeric_range(value, min_val, max_val, name)
 
-    def test_sanitize_filename_all_scenarios(self, validator):
+    def test_sanitize_filename_all_scenarios(self, validator) -> None:
         """Test filename sanitization with all scenarios."""
         test_cases = [
             # (input, expected)
@@ -248,7 +252,7 @@ class TestInputValidatorOptimizedV2:
             result = validator.sanitize_filename(input_name)
             assert result == expected, f"Failed for input: {input_name}"
 
-    def test_validate_ffmpeg_encoder(self, validator):
+    def test_validate_ffmpeg_encoder(self, validator) -> None:
         """Test FFmpeg encoder validation."""
         # Allowed encoders
         allowed_encoders = [
@@ -281,7 +285,7 @@ class TestInputValidatorOptimizedV2:
             with pytest.raises(SecurityError, match="not allowed"):
                 validator.validate_ffmpeg_encoder(encoder)
 
-    def test_validate_sanchez_argument(self, validator):
+    def test_validate_sanchez_argument(self, validator) -> None:
         """Test Sanchez argument validation."""
         # Valid arguments
         valid_args = [
@@ -343,7 +347,7 @@ class TestInputValidatorOptimizedV2:
             with pytest.raises(SecurityError, match="invalid value"):
                 validator.validate_sanchez_argument(key, value)
 
-    def test_validate_command_args(self, validator):
+    def test_validate_command_args(self, validator) -> None:
         """Test command argument validation."""
         # Safe commands
         safe_args = [
@@ -403,7 +407,7 @@ class TestSecureFileHandlerOptimizedV2:
         """Shared secure file handler instance."""
         return SecureFileHandler()
 
-    def test_create_secure_temp_file(self, handler):
+    def test_create_secure_temp_file(self, handler) -> None:
         """Test creation of secure temporary files with various options."""
         temp_files = []
 
@@ -442,7 +446,7 @@ class TestSecureFileHandlerOptimizedV2:
 
     @patch("pathlib.Path.mkdir")
     @patch("pathlib.Path.chmod")
-    def test_create_secure_config_dir(self, mock_chmod, mock_mkdir, handler):
+    def test_create_secure_config_dir(self, mock_chmod, mock_mkdir, handler) -> None:
         """Test creation of secure configuration directory."""
         # Test different directory paths
         test_dirs = [
@@ -465,7 +469,7 @@ class TestSecureSubprocessCallOptimizedV2:
     """Optimized secure subprocess execution tests."""
 
     @patch("subprocess.run")
-    def test_secure_subprocess_call_success(self, mock_run):
+    def test_secure_subprocess_call_success(self, mock_run) -> None:
         """Test successful secure subprocess calls."""
         mock_result = Mock(returncode=0, stdout="Success", stderr="")
         mock_run.return_value = mock_result
@@ -493,7 +497,7 @@ class TestSecureSubprocessCallOptimizedV2:
             )
 
     @patch("subprocess.run")
-    def test_secure_subprocess_call_with_custom_timeout(self, mock_run):
+    def test_secure_subprocess_call_with_custom_timeout(self, mock_run) -> None:
         """Test secure subprocess call with custom timeout."""
         mock_result = Mock()
         mock_run.return_value = mock_result
@@ -510,7 +514,7 @@ class TestSecureSubprocessCallOptimizedV2:
             call_kwargs = mock_run.call_args[1]
             assert call_kwargs["timeout"] == timeout
 
-    def test_secure_subprocess_call_dangerous_command(self):
+    def test_secure_subprocess_call_dangerous_command(self) -> None:
         """Test secure subprocess call rejects dangerous commands."""
         dangerous_commands = [
             ["ls", "; rm -rf /"],
@@ -525,7 +529,7 @@ class TestSecureSubprocessCallOptimizedV2:
             with pytest.raises(SecurityError, match="Dangerous pattern found"):
                 secure_subprocess_call(command)
 
-    def test_secure_subprocess_call_shell_not_allowed(self):
+    def test_secure_subprocess_call_shell_not_allowed(self) -> None:
         """Test secure subprocess call prevents shell execution."""
         safe_commands = [
             ["ls", "/"],
@@ -538,7 +542,7 @@ class TestSecureSubprocessCallOptimizedV2:
                 secure_subprocess_call(command, shell=True)
 
     @patch("subprocess.run")
-    def test_secure_subprocess_call_error_handling(self, mock_run):
+    def test_secure_subprocess_call_error_handling(self, mock_run) -> None:
         """Test secure subprocess call error handling."""
         # Test timeout error
         mock_run.side_effect = subprocess.TimeoutExpired("cmd", 30)
@@ -562,17 +566,17 @@ class TestSecureSubprocessCallOptimizedV2:
 class TestSecurityIntegrationOptimizedV2:
     """Optimized integration tests for security functionality."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def validator(self):
         """Create validator instance."""
         return InputValidator()
 
-    @pytest.fixture
+    @pytest.fixture()
     def handler(self):
         """Create handler instance."""
         return SecureFileHandler()
 
-    def test_comprehensive_input_validation(self, validator):
+    def test_comprehensive_input_validation(self, validator) -> None:
         """Test comprehensive input validation scenario."""
         # Simulate validating user inputs for a file processing operation
         test_scenarios = [
@@ -594,15 +598,15 @@ class TestSecurityIntegrationOptimizedV2:
 
         for scenario in test_scenarios:
             # Validate file path
-            assert validator.validate_file_path(
-                scenario["file_path"],
-                allowed_extensions=validator.ALLOWED_IMAGE_EXTENSIONS + [".pdf"]
-            ) is True
+            assert (
+                validator.validate_file_path(
+                    scenario["file_path"], allowed_extensions=[*validator.ALLOWED_IMAGE_EXTENSIONS, ".pdf"]
+                )
+                is True
+            )
 
             # Validate quality
-            assert validator.validate_numeric_range(
-                scenario["quality"], 1, 100, "quality"
-            ) is True
+            assert validator.validate_numeric_range(scenario["quality"], 1, 100, "quality") is True
 
             # Validate encoder
             assert validator.validate_ffmpeg_encoder(scenario["encoder"]) is True
@@ -611,7 +615,7 @@ class TestSecurityIntegrationOptimizedV2:
             safe_filename = validator.sanitize_filename(scenario["filename"])
             assert safe_filename == scenario["expected_filename"]
 
-    def test_attack_scenario_prevention(self, validator):
+    def test_attack_scenario_prevention(self, validator) -> None:
         """Test prevention of various attack scenarios."""
         attack_scenarios = [
             # (attack_function, expected_exception)
@@ -627,7 +631,7 @@ class TestSecurityIntegrationOptimizedV2:
             with pytest.raises(expected_error):
                 attack_func()
 
-    def test_secure_file_operations(self, handler):
+    def test_secure_file_operations(self, handler) -> None:
         """Test secure file operations."""
         temp_files = []
 
@@ -654,7 +658,7 @@ class TestSecurityIntegrationOptimizedV2:
                     temp_file.unlink()
 
     @patch("subprocess.run")
-    def test_secure_external_tool_execution(self, mock_run):
+    def test_secure_external_tool_execution(self, mock_run) -> None:
         """Test secure execution of external tools."""
         mock_run.return_value = Mock(returncode=0, stdout="Success", stderr="")
 
@@ -677,7 +681,7 @@ class TestSecurityIntegrationOptimizedV2:
             assert kwargs["check"] is True
             assert "timeout" in kwargs
 
-    def test_complete_security_workflow(self, validator, handler):
+    def test_complete_security_workflow(self, validator, handler) -> None:
         """Test complete security validation workflow."""
         # Simulate processing user-provided parameters
         user_inputs = {
@@ -693,10 +697,12 @@ class TestSecurityIntegrationOptimizedV2:
         validated_inputs = {}
 
         # Validate input file
-        assert validator.validate_file_path(
-            user_inputs["input_file"],
-            allowed_extensions=validator.ALLOWED_IMAGE_EXTENSIONS
-        ) is True
+        assert (
+            validator.validate_file_path(
+                user_inputs["input_file"], allowed_extensions=validator.ALLOWED_IMAGE_EXTENSIONS
+            )
+            is True
+        )
         validated_inputs["input_file"] = user_inputs["input_file"]
 
         # Sanitize output filename
@@ -726,7 +732,7 @@ class TestSecurityIntegrationOptimizedV2:
 
             # Verify all inputs were validated
             assert len(validated_inputs) == len(user_inputs)
-            assert all(key in validated_inputs for key in user_inputs.keys())
+            assert all(key in validated_inputs for key in user_inputs)
 
         finally:
             if temp_file.exists():

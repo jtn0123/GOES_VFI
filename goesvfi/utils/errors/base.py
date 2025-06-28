@@ -33,9 +33,9 @@ class ErrorContext:
     operation: str
     component: str
     timestamp: datetime = field(default_factory=datetime.now)
-    user_data: Dict[str, Any] = field(default_factory=dict)
-    system_data: Dict[str, Any] = field(default_factory=dict)
-    trace_id: Optional[str] = None
+    user_data: dict[str, Any] = field(default_factory=dict)
+    system_data: dict[str, Any] = field(default_factory=dict)
+    trace_id: str | None = None
 
     def add_user_data(self, key: str, value: Any) -> None:
         """Add user-relevant context data."""
@@ -58,11 +58,11 @@ class StructuredError(Exception):
         self,
         message: str,
         category: ErrorCategory = ErrorCategory.UNKNOWN,
-        context: Optional[ErrorContext] = None,
-        cause: Optional[Exception] = None,
+        context: ErrorContext | None = None,
+        cause: Exception | None = None,
         recoverable: bool = False,
-        user_message: Optional[str] = None,
-        suggestions: Optional[List[str]] = None,
+        user_message: str | None = None,
+        suggestions: list[str] | None = None,
     ) -> None:
         self.message = message
         self.category = category
@@ -77,11 +77,11 @@ class StructuredError(Exception):
 
     @classmethod
     def validation_error(
-        cls: Type["StructuredError"],
+        cls: type["StructuredError"],
         message: str,
-        field_name: Optional[str] = None,
+        field_name: str | None = None,
         value: Any = None,
-        suggestions: Optional[List[str]] = None,
+        suggestions: list[str] | None = None,
     ) -> "StructuredError":
         """Create a validation error."""
         context = ErrorContext(operation="validation", component="input")
@@ -100,11 +100,11 @@ class StructuredError(Exception):
 
     @classmethod
     def file_error(
-        cls: Type["StructuredError"],
+        cls: type["StructuredError"],
         message: str,
-        file_path: Optional[str] = None,
+        file_path: str | None = None,
         operation: str = "file_operation",
-        cause: Optional[Exception] = None,
+        cause: Exception | None = None,
     ) -> "StructuredError":
         """Create a file-related error."""
         context = ErrorContext(operation=operation, component="filesystem")
@@ -123,11 +123,11 @@ class StructuredError(Exception):
 
     @classmethod
     def network_error(
-        cls: Type["StructuredError"],
+        cls: type["StructuredError"],
         message: str,
-        url: Optional[str] = None,
-        status_code: Optional[int] = None,
-        cause: Optional[Exception] = None,
+        url: str | None = None,
+        status_code: int | None = None,
+        cause: Exception | None = None,
     ) -> "StructuredError":
         """Create a network-related error."""
         context = ErrorContext(operation="network_request", component="network")
@@ -147,11 +147,11 @@ class StructuredError(Exception):
 
     @classmethod
     def processing_error(
-        cls: Type["StructuredError"],
+        cls: type["StructuredError"],
         message: str,
-        stage: Optional[str] = None,
-        input_data: Optional[str] = None,
-        cause: Optional[Exception] = None,
+        stage: str | None = None,
+        input_data: str | None = None,
+        cause: Exception | None = None,
     ) -> "StructuredError":
         """Create a processing error."""
         context = ErrorContext(operation="data_processing", component="processor")
@@ -170,11 +170,11 @@ class StructuredError(Exception):
 
     @classmethod
     def configuration_error(
-        cls: Type["StructuredError"],
+        cls: type["StructuredError"],
         message: str,
-        config_key: Optional[str] = None,
+        config_key: str | None = None,
         config_value: Any = None,
-        suggestions: Optional[List[str]] = None,
+        suggestions: list[str] | None = None,
     ) -> "StructuredError":
         """Create a configuration error."""
         context = ErrorContext(operation="configuration", component="config")
@@ -193,12 +193,12 @@ class StructuredError(Exception):
 
     @classmethod
     def external_tool_error(
-        cls: Type["StructuredError"],
+        cls: type["StructuredError"],
         message: str,
         tool_name: str,
-        command: Optional[str] = None,
-        exit_code: Optional[int] = None,
-        cause: Optional[Exception] = None,
+        command: str | None = None,
+        exit_code: int | None = None,
+        cause: Exception | None = None,
     ) -> "StructuredError":
         """Create an external tool error."""
         context = ErrorContext(operation="external_tool", component=tool_name)
@@ -221,7 +221,7 @@ class StructuredError(Exception):
         """Add a suggestion for resolving the error."""
         self.suggestions.append(suggestion)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert error to dictionary for logging/serialization."""
         return {
             "message": self.message,
@@ -258,10 +258,10 @@ class ErrorBuilder:
         self.message = message
         self.category = ErrorCategory.UNKNOWN
         self.context = ErrorContext(operation="unknown", component="unknown")
-        self.cause: Optional[Exception] = None
+        self.cause: Exception | None = None
         self.recoverable = False
-        self.user_message: Optional[str] = None
-        self.suggestions: List[str] = []
+        self.user_message: str | None = None
+        self.suggestions: list[str] = []
 
     def with_category(self, category: ErrorCategory) -> "ErrorBuilder":
         """Set error category."""

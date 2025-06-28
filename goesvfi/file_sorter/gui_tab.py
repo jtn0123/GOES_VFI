@@ -28,7 +28,7 @@ class FileSorterTab(QWidget):
     directory_selected = pyqtSignal(str)  # Signal emitted when a directory is selected
 
     # Modified __init__ to accept a ViewModel instance
-    def __init__(self, view_model: FileSorterViewModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, view_model: FileSorterViewModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         if not isinstance(view_model, FileSorterViewModel):

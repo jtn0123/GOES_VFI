@@ -9,9 +9,7 @@ Key optimizations:
 """
 
 import asyncio
-from datetime import UTC, datetime
 from functools import wraps
-from pathlib import Path
 import random
 import socket
 from typing import Never
@@ -24,7 +22,6 @@ import pytest
 from goesvfi.integrity_check.remote.base import NetworkError
 from goesvfi.integrity_check.remote.composite_store import CompositeStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
-from goesvfi.integrity_check.time_index import SatellitePattern
 
 
 def retry_with_exponential_backoff(max_retries=3, initial_backoff=1.0, jitter_factor=0.0):
@@ -75,7 +72,7 @@ class TestNetworkFailureSimulationOptimized:
     @pytest.fixture(autouse=True)
     def mock_async_sleep(self):
         """Mock asyncio.sleep to speed up all tests."""
-        with patch('asyncio.sleep', new_callable=AsyncMock) as mock_sleep:
+        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
             # Make sleep instant but trackable
             mock_sleep.side_effect = lambda x: None
             yield mock_sleep
@@ -83,15 +80,14 @@ class TestNetworkFailureSimulationOptimized:
     @pytest.fixture()
     def mock_time_module(self):
         """Mock time module for consistent timing."""
-        with patch('time.time') as mock_time, \
-             patch('time.sleep') as mock_sleep:
+        with patch("time.time") as mock_time, patch("time.sleep") as mock_sleep:
             # Start at time 1000
             mock_time.return_value = 1000.0
             mock_sleep.side_effect = lambda x: None
             yield mock_time
 
     @pytest.mark.asyncio()
-    async def test_exponential_backoff_and_jitter(self, mock_async_sleep):
+    async def test_exponential_backoff_and_jitter(self, mock_async_sleep) -> None:
         """Test both exponential backoff and jitter in one test."""
         attempt_count = 0
         attempt_times = []
@@ -117,20 +113,19 @@ class TestNetworkFailureSimulationOptimized:
         assert mock_async_sleep.call_count == 2  # 2 retries = 2 sleeps
 
         # Check that backoff values were passed (with potential jitter)
-        sleep_calls = mock_async_sleep.call_args_list
         # First retry: 0.1 * (1 + jitter)
         # Second retry: 0.2 * (1 + jitter)
         # Just verify they were called
 
     @pytest.mark.asyncio()
-    async def test_non_retryable_and_max_retries(self, mock_async_sleep):
+    async def test_non_retryable_and_max_retries(self, mock_async_sleep) -> None:
         """Test non-retryable errors and max retries exceeded in one test."""
+
         # Test non-retryable error
         @retry_with_exponential_backoff(max_retries=3)
         async def auth_error_operation() -> str:
             error = botocore.exceptions.ClientError(
-                {"Error": {"Code": "AccessDenied", "Message": "Access denied"}},
-                "ListObjects"
+                {"Error": {"Code": "AccessDenied", "Message": "Access denied"}}, "ListObjects"
             )
             raise error
 
@@ -146,7 +141,8 @@ class TestNetworkFailureSimulationOptimized:
         # Test max retries exceeded
         @retry_with_exponential_backoff(max_retries=2, initial_backoff=0.01)
         async def always_failing_operation() -> str:
-            raise aiohttp.ClientError("Persistent failure")
+            msg = "Persistent failure"
+            raise aiohttp.ClientError(msg)
 
         with pytest.raises(aiohttp.ClientError) as exc_info:
             await always_failing_operation()
@@ -155,40 +151,35 @@ class TestNetworkFailureSimulationOptimized:
         assert mock_async_sleep.call_count == 2  # Exactly max_retries sleeps
 
     @pytest.mark.asyncio()
-    async def test_s3_connection_and_dns_failures(self):
+    async def test_s3_connection_and_dns_failures(self) -> None:
         """Test S3 connection timeout and DNS resolution failures together."""
         # Mock S3 client
         mock_client = MagicMock()
 
         # Test connection timeout
-        mock_client.list_objects_v2.side_effect = socket.timeout("Connection timed out")
+        mock_client.list_objects_v2.side_effect = TimeoutError("Connection timed out")
 
-        with patch('boto3.client', return_value=mock_client):
+        with patch("boto3.client", return_value=mock_client):
             store = S3Store()
 
             with pytest.raises(socket.timeout):
-                await store._async_wrapper(
-                    mock_client.list_objects_v2,
-                    Bucket='test-bucket',
-                    Prefix='test-prefix'
-                )
+                await store._async_wrapper(mock_client.list_objects_v2, Bucket="test-bucket", Prefix="test-prefix")
 
         # Test DNS resolution failure
         dns_error = aiohttp.ClientConnectorError(
-            connection_key=None,
-            os_error=socket.gaierror(-2, "Name or service not known")
+            connection_key=None, os_error=socket.gaierror(-2, "Name or service not known")
         )
 
-        async def mock_request(*args, **kwargs):
+        async def mock_request(*args, **kwargs) -> Never:
             raise dns_error
 
-        with patch('aiohttp.ClientSession.request', new=mock_request):
+        with patch("aiohttp.ClientSession.request", new=mock_request):
             with pytest.raises(aiohttp.ClientConnectorError):
                 async with aiohttp.ClientSession() as session:
-                    await session.request('GET', 'https://invalid-domain-xyz.com')
+                    await session.request("GET", "https://invalid-domain-xyz.com")
 
     @pytest.mark.asyncio()
-    async def test_rate_limiting_and_composite_failover(self, mock_async_sleep, mock_time_module):
+    async def test_rate_limiting_and_composite_failover(self, mock_async_sleep, mock_time_module) -> None:
         """Test rate limiting handling and composite store failover together."""
         # Test rate limiting
         call_count = 0
@@ -232,7 +223,7 @@ class TestNetworkFailureSimulationOptimized:
         fallback.get_file_info.assert_called_once_with("test-file")
 
     @pytest.mark.asyncio()
-    async def test_intermittent_and_pool_exhaustion(self, mock_async_sleep):
+    async def test_intermittent_and_pool_exhaustion(self, mock_async_sleep) -> None:
         """Test intermittent network issues and connection pool exhaustion together."""
         # Test intermittent issues
         attempt = 0
@@ -242,7 +233,8 @@ class TestNetworkFailureSimulationOptimized:
             attempt += 1
             if attempt % 2 == 0:  # Succeed on even attempts
                 return {"status": "ok"}
-            raise aiohttp.ClientError("Intermittent failure")
+            msg = "Intermittent failure"
+            raise aiohttp.ClientError(msg)
 
         # Should succeed on second attempt
         try:
@@ -256,7 +248,7 @@ class TestNetworkFailureSimulationOptimized:
         # Test connection pool exhaustion
         exhausted_error = aiohttp.ClientError("Connection pool exhausted")
 
-        async def exhausted_operation():
+        async def exhausted_operation() -> Never:
             raise exhausted_error
 
         with pytest.raises(aiohttp.ClientError) as exc_info:
@@ -265,7 +257,7 @@ class TestNetworkFailureSimulationOptimized:
         assert "Connection pool exhausted" in str(exc_info.value)
 
     @pytest.mark.asyncio()
-    async def test_partial_download_and_diagnostics(self):
+    async def test_partial_download_and_diagnostics(self) -> None:
         """Test partial download recovery and network diagnostics together."""
         # Test partial download recovery
         mock_downloader = AsyncMock()
@@ -276,10 +268,10 @@ class TestNetworkFailureSimulationOptimized:
             if start_byte == 0 and bytes_downloaded == 0:
                 # First attempt fails after 5000 bytes
                 bytes_downloaded = 5000
-                raise aiohttp.ClientError("Connection lost")
-            else:
-                # Resume succeeds
-                return b"x" * (10000 - start_byte)
+                msg = "Connection lost"
+                raise aiohttp.ClientError(msg)
+            # Resume succeeds
+            return b"x" * (10000 - start_byte)
 
         mock_downloader.side_effect = partial_download
 
@@ -292,35 +284,32 @@ class TestNetworkFailureSimulationOptimized:
             assert len(result) == 5000
 
         # Test network diagnostics
-        diag_info = {
-            "dns_resolved": True,
-            "connection_established": False,
-            "error_type": "timeout",
-            "retry_count": 3
-        }
+        diag_info = {"dns_resolved": True, "connection_established": False, "error_type": "timeout", "retry_count": 3}
 
         error = NetworkError("Connection failed", diagnostics=diag_info)
         assert error.diagnostics == diag_info
         assert "timeout" in error.diagnostics["error_type"]
 
     @pytest.mark.asyncio()
-    async def test_concurrent_retry_limiting(self, mock_async_sleep):
+    async def test_concurrent_retry_limiting(self, mock_async_sleep) -> None:
         """Test limiting concurrent retries to prevent resource exhaustion."""
         active_retries = 0
         max_concurrent = 2
 
-        async def limited_operation(op_id: int):
+        async def limited_operation(op_id: int) -> str | None:
             nonlocal active_retries
 
             if active_retries >= max_concurrent:
                 # Don't retry if too many active
-                raise RuntimeError(f"Too many concurrent retries: {active_retries}")
+                msg = f"Too many concurrent retries: {active_retries}"
+                raise RuntimeError(msg)
 
             active_retries += 1
             try:
                 await asyncio.sleep(0.01)  # Simulate work
                 if op_id < 3:
-                    raise aiohttp.ClientError(f"Operation {op_id} failed")
+                    msg = f"Operation {op_id} failed"
+                    raise aiohttp.ClientError(msg)
                 return f"Success {op_id}"
             finally:
                 active_retries -= 1
@@ -330,7 +319,7 @@ class TestNetworkFailureSimulationOptimized:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # Check results
-        errors = [r for r in results if isinstance(r, Exception)]
+        [r for r in results if isinstance(r, Exception)]
         successes = [r for r in results if isinstance(r, str)]
 
         assert len(successes) >= 2  # At least some should succeed

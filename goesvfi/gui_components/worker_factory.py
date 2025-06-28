@@ -14,7 +14,7 @@ class WorkerFactory:
     """Factory class for creating VfiWorker instances."""
 
     @staticmethod
-    def create_worker(args: Dict[str, Any], debug_mode: bool = False) -> VfiWorker:
+    def create_worker(args: dict[str, Any], debug_mode: bool = False) -> VfiWorker:
         """Create a VfiWorker instance from MainTab arguments.
 
         This method handles the complex parameter mapping between MainTab's

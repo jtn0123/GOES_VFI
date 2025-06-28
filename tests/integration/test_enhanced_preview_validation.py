@@ -70,8 +70,10 @@ class TestEnhancedPreviewValidation(unittest.TestCase):
 
         # Verify initial state
         if self.main_window.in_dir is not None:
-            LOGGER.warning("MainWindow already had directory set: %s - this is expected due to settings persistence", 
-                          self.main_window.in_dir)
+            LOGGER.warning(
+                "MainWindow already had directory set: %s - this is expected due to settings persistence",
+                self.main_window.in_dir,
+            )
 
         self._validate_preview_labels_exist()
 

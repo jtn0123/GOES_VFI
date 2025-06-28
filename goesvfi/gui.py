@@ -394,7 +394,7 @@ class MainWindow(QWidget):
                 LOGGER.error("Failed to load preview images")
 
         except Exception as e:
-            LOGGER.exception("Error updating previews: %s", e)
+            LOGGER.exception("Error updating previews")
 
     def _handle_processing(self, args: dict[str, Any]) -> None:
         """Handle the processing_started signal from MainTab."""
@@ -544,7 +544,7 @@ class MainWindow(QWidget):
             LOGGER.debug("Preview images updated successfully")
 
         except Exception as e:
-            LOGGER.exception("Error updating preview labels: %s", e)
+            LOGGER.exception("Error updating preview labels")
 
     def _on_preview_error(self, error_message: str) -> None:
         """Handle preview loading errors.
@@ -609,7 +609,7 @@ class MainWindow(QWidget):
             else:
                 LOGGER.error("No QApplication instance found for theme change")
         except Exception as e:
-            LOGGER.exception("Failed to change theme: %s", e)
+            LOGGER.exception("Failed to change theme")
 
     def _on_settings_changed(self) -> None:
         """Handle general settings changes."""
@@ -621,4 +621,4 @@ class MainWindow(QWidget):
                 if current_settings.get("app", {}).get("auto_save", True):
                     self.saveSettings()
         except Exception as e:
-            LOGGER.exception("Failed to handle settings change: %s", e)
+            LOGGER.exception("Failed to handle settings change")

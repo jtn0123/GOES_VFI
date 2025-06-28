@@ -1,22 +1,22 @@
 """Fast, optimized tests for error classification - critical error handling infrastructure."""
 
 import errno
-import socket
+
 import pytest
 
-from goesvfi.utils.errors.classifier import ErrorClassifier
 from goesvfi.utils.errors.base import ErrorCategory
+from goesvfi.utils.errors.classifier import ErrorClassifier
 
 
 class TestErrorClassifier:
     """Test error classification with fast, synthetic operations."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def classifier(self):
         """Create error classifier for testing."""
         return ErrorClassifier()
 
-    def test_classify_file_not_found_error(self, classifier):
+    def test_classify_file_not_found_error(self, classifier) -> None:
         """Test classification of FileNotFoundError."""
         error = FileNotFoundError("File not found")
 
@@ -24,7 +24,7 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.FILE_NOT_FOUND
 
-    def test_classify_permission_error(self, classifier):
+    def test_classify_permission_error(self, classifier) -> None:
         """Test classification of PermissionError."""
         error = PermissionError("Permission denied")
 
@@ -32,7 +32,7 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.PERMISSION
 
-    def test_classify_validation_errors(self, classifier):
+    def test_classify_validation_errors(self, classifier) -> None:
         """Test classification of validation-related errors."""
         validation_errors = [
             (ValueError("Invalid value"), ErrorCategory.VALIDATION),
@@ -45,7 +45,7 @@ class TestErrorClassifier:
             category = classifier.classify_exception(error)
             assert category == expected_category
 
-    def test_classify_system_errors(self, classifier):
+    def test_classify_system_errors(self, classifier) -> None:
         """Test classification of system-related errors."""
         # Create OSError with errno that maps to SYSTEM
         system_error = OSError(errno.ENOSPC, "No space left on device")
@@ -58,21 +58,21 @@ class TestErrorClassifier:
         category = classifier.classify_exception(generic_error)
         # Note: This will be classified as NETWORK due to socket.error inheritance
         # but that's correct behavior since socket.error is OSError in Python 3
-        assert category in [ErrorCategory.SYSTEM, ErrorCategory.NETWORK]
+        assert category in {ErrorCategory.SYSTEM, ErrorCategory.NETWORK}
 
-    def test_classify_network_errors(self, classifier):
+    def test_classify_network_errors(self, classifier) -> None:
         """Test classification of network-related errors."""
         network_errors = [
             (ConnectionError("Connection failed"), ErrorCategory.NETWORK),
             (TimeoutError("Request timed out"), ErrorCategory.NETWORK),
-            (socket.error("Socket error"), ErrorCategory.NETWORK),
+            (OSError("Socket error"), ErrorCategory.NETWORK),
         ]
 
         for error, expected_category in network_errors:
             category = classifier.classify_exception(error)
             assert category == expected_category
 
-    def test_classify_configuration_errors(self, classifier):
+    def test_classify_configuration_errors(self, classifier) -> None:
         """Test classification of configuration-related errors."""
         config_errors = [
             (KeyError("Missing key"), ErrorCategory.CONFIGURATION),
@@ -83,7 +83,7 @@ class TestErrorClassifier:
             category = classifier.classify_exception(error)
             assert category == expected_category
 
-    def test_classify_os_error_with_errno_file_not_found(self, classifier):
+    def test_classify_os_error_with_errno_file_not_found(self, classifier) -> None:
         """Test OS error classification based on errno - file not found."""
         error = OSError(errno.ENOENT, "No such file or directory")
 
@@ -91,7 +91,7 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.FILE_NOT_FOUND
 
-    def test_classify_os_error_with_errno_permission_denied(self, classifier):
+    def test_classify_os_error_with_errno_permission_denied(self, classifier) -> None:
         """Test OS error classification based on errno - permission denied."""
         permission_errors = [
             OSError(errno.EACCES, "Permission denied"),
@@ -102,7 +102,7 @@ class TestErrorClassifier:
             category = classifier.classify_exception(error)
             assert category == ErrorCategory.PERMISSION
 
-    def test_classify_os_error_with_errno_validation_errors(self, classifier):
+    def test_classify_os_error_with_errno_validation_errors(self, classifier) -> None:
         """Test OS error classification based on errno - validation errors."""
         validation_errors = [
             (OSError(errno.EEXIST, "File exists"), ErrorCategory.VALIDATION),
@@ -115,7 +115,7 @@ class TestErrorClassifier:
             category = classifier.classify_exception(error)
             assert category == expected_category
 
-    def test_classify_os_error_with_errno_system_errors(self, classifier):
+    def test_classify_os_error_with_errno_system_errors(self, classifier) -> None:
         """Test OS error classification based on errno - system errors."""
         error = OSError(errno.ENOSPC, "No space left on device")
 
@@ -123,7 +123,7 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.SYSTEM
 
-    def test_classify_os_error_unknown_errno(self, classifier):
+    def test_classify_os_error_unknown_errno(self, classifier) -> None:
         """Test OS error classification with unknown errno."""
         error = OSError(999, "Unknown error")  # Non-standard errno
 
@@ -131,7 +131,7 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.SYSTEM  # Default for unknown errno
 
-    def test_classify_os_error_no_errno(self, classifier):
+    def test_classify_os_error_no_errno(self, classifier) -> None:
         """Test OS error classification without errno."""
         error = OSError("Error without errno")
         error.errno = None
@@ -142,8 +142,9 @@ class TestErrorClassifier:
         # This is correct behavior in Python 3 where socket.error is OSError
         assert category == ErrorCategory.NETWORK
 
-    def test_classify_unknown_exception(self, classifier):
+    def test_classify_unknown_exception(self, classifier) -> None:
         """Test classification of unknown exception types."""
+
         class CustomException(Exception):
             pass
 
@@ -153,8 +154,9 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.UNKNOWN
 
-    def test_add_type_mapping(self, classifier):
+    def test_add_type_mapping(self, classifier) -> None:
         """Test adding custom exception type mappings."""
+
         class CustomError(Exception):
             pass
 
@@ -165,8 +167,9 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.EXTERNAL_TOOL
 
-    def test_add_custom_classifier_function(self, classifier):
+    def test_add_custom_classifier_function(self, classifier) -> None:
         """Test adding custom classifier functions."""
+
         def custom_classifier(exception):
             if "network" in str(exception).lower():
                 return ErrorCategory.NETWORK
@@ -179,8 +182,9 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.NETWORK
 
-    def test_custom_classifier_priority_over_type_mapping(self, classifier):
+    def test_custom_classifier_priority_over_type_mapping(self, classifier) -> None:
         """Test that custom classifiers have priority over type mappings."""
+
         def priority_classifier(exception):
             if isinstance(exception, ValueError):
                 return ErrorCategory.USER_INPUT  # Override default VALIDATION
@@ -193,8 +197,9 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.USER_INPUT
 
-    def test_multiple_custom_classifiers(self, classifier):
+    def test_multiple_custom_classifiers(self, classifier) -> None:
         """Test multiple custom classifiers are tried in order."""
+
         def first_classifier(exception):
             if "first" in str(exception):
                 return ErrorCategory.NETWORK
@@ -220,8 +225,9 @@ class TestErrorClassifier:
         error3 = Exception("no match")
         assert classifier.classify_exception(error3) == ErrorCategory.UNKNOWN
 
-    def test_inheritance_based_classification(self, classifier):
+    def test_inheritance_based_classification(self, classifier) -> None:
         """Test classification based on exception inheritance."""
+
         class CustomConnectionError(ConnectionError):
             pass
 
@@ -231,7 +237,7 @@ class TestErrorClassifier:
         # Should classify as NETWORK due to inheritance from ConnectionError
         assert category == ErrorCategory.NETWORK
 
-    def test_errno_priority_over_type_mapping(self, classifier):
+    def test_errno_priority_over_type_mapping(self, classifier) -> None:
         """Test that errno-based classification has priority over type mapping."""
         # Create an OSError that would normally be classified as SYSTEM
         # but has errno that should classify it as FILE_NOT_FOUND
@@ -241,16 +247,16 @@ class TestErrorClassifier:
 
         assert category == ErrorCategory.FILE_NOT_FOUND
 
-    def test_socket_error_classification(self, classifier):
+    def test_socket_error_classification(self, classifier) -> None:
         """Test classification of socket errors (which are OSError in Python 3)."""
-        error = socket.error("Socket connection failed")
+        error = OSError("Socket connection failed")
 
         category = classifier.classify_exception(error)
 
         # Should be classified as NETWORK
         assert category == ErrorCategory.NETWORK
 
-    def test_classification_edge_cases(self, classifier):
+    def test_classification_edge_cases(self, classifier) -> None:
         """Test classification edge cases and error conditions."""
         # Test with zero errno (zero evaluates to False, so falls through to type mapping)
         error = OSError("Error")
@@ -269,12 +275,12 @@ class TestErrorClassifier:
         # Will be classified as NETWORK due to socket.error inheritance
         assert category == ErrorCategory.NETWORK
 
-    def test_create_structured_error_method_exists(self, classifier):
+    def test_create_structured_error_method_exists(self, classifier) -> None:
         """Test that create_structured_error method exists (for future extension)."""
         # This tests that the method exists in the class for future implementation
         assert hasattr(classifier, "create_structured_error")
 
-    def test_classifier_initialization(self):
+    def test_classifier_initialization(self) -> None:
         """Test classifier initialization and default mappings."""
         classifier = ErrorClassifier()
 
@@ -291,12 +297,13 @@ class TestErrorClassifier:
         # Test custom classifiers list is empty initially
         assert len(classifier._custom_classifiers) == 0
 
-    def test_performance_with_many_custom_classifiers(self, classifier):
+    def test_performance_with_many_custom_classifiers(self, classifier) -> None:
         """Test performance with many custom classifiers."""
         import time
 
         # Add many classifiers that don't match
         for i in range(100):
+
             def non_matching_classifier(exception, index=i):
                 if f"pattern_{index}" in str(exception):
                     return ErrorCategory.PROCESSING
@@ -315,7 +322,7 @@ class TestErrorClassifier:
         assert (end_time - start_time) < 0.01  # Less than 10ms
         assert category == ErrorCategory.VALIDATION
 
-    def test_error_category_enum_completeness(self):
+    def test_error_category_enum_completeness(self) -> None:
         """Test that all expected error categories exist."""
         expected_categories = [
             ErrorCategory.VALIDATION,

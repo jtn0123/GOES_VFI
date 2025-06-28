@@ -34,7 +34,7 @@ class FFmpegCommandBuilder:
 
     def __init__(self) -> None:
         """Initialize a new FFmpegCommandBuilder with default settings."""
-        self._command: List[str] = [
+        self._command: list[str] = [
             "ffmpeg",
             "-hide_banner",
             "-loglevel",
@@ -42,16 +42,16 @@ class FFmpegCommandBuilder:
             "-stats",
             "-y",
         ]
-        self._input_path: Optional[pathlib.Path] = None
-        self._output_path: Optional[pathlib.Path] = None
-        self._encoder: Optional[str] = None
-        self._crf: Optional[int] = None
-        self._bitrate_kbps: Optional[int] = None
-        self._bufsize_kb: Optional[int] = None
-        self._pix_fmt: Optional[str] = None
+        self._input_path: pathlib.Path | None = None
+        self._output_path: pathlib.Path | None = None
+        self._encoder: str | None = None
+        self._crf: int | None = None
+        self._bitrate_kbps: int | None = None
+        self._bufsize_kb: int | None = None
+        self._pix_fmt: str | None = None
         self._is_two_pass: bool = False
-        self._pass_log_prefix: Optional[str] = None
-        self._pass_number: Optional[int] = None
+        self._pass_log_prefix: str | None = None
+        self._pass_number: int | None = None
 
     def set_input(self, input_path: pathlib.Path) -> "FFmpegCommandBuilder":
         """Set the input file path for the FFmpeg command.
@@ -155,7 +155,7 @@ class FFmpegCommandBuilder:
         self._pass_number = pass_number  # pylint: disable=attribute-defined-outside-init
         return self
 
-    def build(self) -> List[str]:
+    def build(self) -> list[str]:
         """Build and return the FFmpeg command as a list of arguments.
 
         Returns:
@@ -181,7 +181,7 @@ class FFmpegCommandBuilder:
         if not self._input_path or not self._output_path or not self._encoder:
             raise ValueError("Input path, output path, and encoder must be set.")
 
-    def _build_copy_command(self) -> List[str]:
+    def _build_copy_command(self) -> list[str]:
         """Build command for stream copy (no re-encoding)."""
         return [
             "ffmpeg",
@@ -193,7 +193,7 @@ class FFmpegCommandBuilder:
             str(self._output_path),
         ]
 
-    def _add_encoder_specific_args(self, cmd: List[str]) -> None:
+    def _add_encoder_specific_args(self, cmd: list[str]) -> None:
         """Add encoder-specific arguments to the command."""
         if self._encoder == "Software x265 (2-Pass)":
             self._add_x265_two_pass_args(cmd)
@@ -208,7 +208,7 @@ class FFmpegCommandBuilder:
         else:
             raise ValueError(f"Unsupported encoder selected: {self._encoder}")
 
-    def _add_x265_two_pass_args(self, cmd: List[str]) -> None:
+    def _add_x265_two_pass_args(self, cmd: list[str]) -> None:
         """Add arguments for x265 two-pass encoding."""
         self._validate_two_pass_parameters()
 
@@ -226,7 +226,7 @@ class FFmpegCommandBuilder:
         if not self._is_two_pass or self._pass_log_prefix is None or self._pass_number is None:
             raise ValueError("Two-pass encoding requires two_pass flag, log prefix, and pass number.")
 
-    def _add_x265_pass1_args(self, cmd: List[str]) -> None:
+    def _add_x265_pass1_args(self, cmd: list[str]) -> None:
         """Add arguments for x265 pass 1."""
         # Type narrowing: we know _pass_log_prefix is not None here due to validation
         assert self._pass_log_prefix is not None
@@ -244,7 +244,7 @@ class FFmpegCommandBuilder:
             ]
         )
 
-    def _add_x265_pass2_args(self, cmd: List[str]) -> None:
+    def _add_x265_pass2_args(self, cmd: list[str]) -> None:
         """Add arguments for x265 pass 2."""
         # Type narrowing: we know _pass_log_prefix is not None here due to validation
         assert self._pass_log_prefix is not None
@@ -260,7 +260,7 @@ class FFmpegCommandBuilder:
         self._add_common_output_args(args)
         cmd.extend(args)
 
-    def _add_x265_single_pass_args(self, cmd: List[str]) -> None:
+    def _add_x265_single_pass_args(self, cmd: list[str]) -> None:
         """Add arguments for single-pass x265 encoding."""
         if self._crf is None:
             raise ValueError("CRF must be set for single-pass x265.")
@@ -269,22 +269,22 @@ class FFmpegCommandBuilder:
         cmd.extend(["-c:v", "libx265", "-preset", "slower", "-crf", str(self._crf)])
         cmd.extend(["-x265-params", x265_params])
 
-        args: List[str] = []
+        args: list[str] = []
         self._add_common_output_args(args)
         cmd.extend(args)
 
-    def _add_x264_args(self, cmd: List[str]) -> None:
+    def _add_x264_args(self, cmd: list[str]) -> None:
         """Add arguments for x264 encoding."""
         if self._crf is None:
             raise ValueError("CRF must be set for x264.")
 
         cmd.extend(["-c:v", "libx264", "-preset", "slow", "-crf", str(self._crf)])
 
-        args: List[str] = []
+        args: list[str] = []
         self._add_common_output_args(args)
         cmd.extend(args)
 
-    def _add_hardware_hevc_args(self, cmd: List[str]) -> None:
+    def _add_hardware_hevc_args(self, cmd: list[str]) -> None:
         """Add arguments for hardware HEVC encoding."""
         self._validate_hardware_parameters("Hardware HEVC")
 
@@ -292,11 +292,11 @@ class FFmpegCommandBuilder:
         cmd.extend(["-c:v", "hevc_videotoolbox", "-tag:v", "hvc1"])
         cmd.extend(["-b:v", f"{safe_bitrate}k", "-maxrate", f"{safe_bufsize}k"])
 
-        args: List[str] = []
+        args: list[str] = []
         self._add_common_output_args(args)
         cmd.extend(args)
 
-    def _add_hardware_h264_args(self, cmd: List[str]) -> None:
+    def _add_hardware_h264_args(self, cmd: list[str]) -> None:
         """Add arguments for hardware H.264 encoding."""
         self._validate_hardware_parameters("Hardware H.264")
 
@@ -304,7 +304,7 @@ class FFmpegCommandBuilder:
         cmd.extend(["-c:v", "h264_videotoolbox"])
         cmd.extend(["-b:v", f"{safe_bitrate}k", "-maxrate", f"{safe_bufsize}k"])
 
-        args: List[str] = []
+        args: list[str] = []
         self._add_common_output_args(args)
         cmd.extend(args)
 
@@ -322,7 +322,7 @@ class FFmpegCommandBuilder:
         safe_bufsize = max(1, self._bufsize_kb)
         return safe_bitrate, safe_bufsize
 
-    def _add_common_output_args(self, args: List[str]) -> None:
+    def _add_common_output_args(self, args: list[str]) -> None:
         """Add common output arguments (pixel format and output path)."""
         if self._pix_fmt is not None:
             args.extend(["-pix_fmt", self._pix_fmt])

@@ -83,8 +83,8 @@ class CoverageRunner:
 
     def run_coverage(
         self,
-        test_paths: Optional[List[str]] = None,
-        markers: Optional[str] = None,
+        test_paths: list[str] | None = None,
+        markers: str | None = None,
         parallel: bool = False,
     ) -> bool:
         """Run tests with coverage measurement."""
@@ -125,7 +125,7 @@ class CoverageRunner:
 
         return not tests_failed  # Return True if tests didn't fail
 
-    def generate_reports(self) -> Dict[str, Any]:
+    def generate_reports(self) -> dict[str, Any]:
         """Generate coverage reports in various formats."""
         print("📊 Generating coverage reports...")
 

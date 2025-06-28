@@ -1,27 +1,26 @@
 #!/usr/bin/env python3
-"""
-Improved test runner with much better complexity scores.
+"""Improved test runner with much better complexity scores.
 
 This refactored version breaks down the massive functions into smaller,
 focused components to achieve better maintainability and complexity grades.
 """
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
+from enum import Enum
 import glob
-import json
 import os
 import re
 import subprocess
 import sys
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple
-from enum import Enum
+from typing import Any
 
 
 class TestStatus(Enum):
     """Test status enumeration."""
+
     PASSED = "PASSED"
     FAILED = "FAILED"
     ERROR = "ERROR"
@@ -32,6 +31,7 @@ class TestStatus(Enum):
 @dataclass
 class TestCounts:
     """Container for test result counts."""
+
     passed: int = 0
     failed: int = 0
     error: int = 0
@@ -46,25 +46,26 @@ class TestCounts:
 @dataclass
 class TestResult:
     """Container for test execution results."""
+
     path: str
     status: TestStatus
     duration: float
     output: str
     counts: TestCounts
     collected: int = 0
-    failed_details: List[str] = field(default_factory=list)
+    failed_details: list[str] = field(default_factory=list)
 
 
 # Define colors for different statuses
 STATUS_COLOR = {
     "PASSED": "\033[92m",  # Green
     "FAILED": "\033[91m",  # Red
-    "ERROR": "\033[95m",   # Magenta
-    "SKIPPED": "\033[94m", # Blue
-    "CRASHED": "\033[93m", # Yellow
+    "ERROR": "\033[95m",  # Magenta
+    "SKIPPED": "\033[94m",  # Blue
+    "CRASHED": "\033[93m",  # Yellow
 }
 RESET = "\033[0m"
-SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
 
 class TestOutputParser:
@@ -79,18 +80,18 @@ class TestOutputParser:
 
     # Count patterns in parentheses like "(6 passed)"
     COUNT_PATTERNS = {
-        'passed': re.compile(r"\((\d+)\s+passed"),
-        'failed': re.compile(r"\((\d+)\s+failed"),
-        'skipped': re.compile(r"\((\d+)\s+skipped"),
-        'error': re.compile(r"\((\d+)\s+error(?:s)?)", re.IGNORECASE),
+        "passed": re.compile(r"\((\d+)\s+passed"),
+        "failed": re.compile(r"\((\d+)\s+failed"),
+        "skipped": re.compile(r"\((\d+)\s+skipped"),
+        "error": re.compile(r"\((\d+)\s+error(?:s)?)", re.IGNORECASE),
     }
 
     # Summary line patterns like "6 passed"
     SUMMARY_PATTERNS = {
-        'passed': re.compile(r"(\d+)\s+passed"),
-        'failed': re.compile(r"(\d+)\s+failed"),
-        'skipped': re.compile(r"(\d+)\s+skipped"),
-        'error': re.compile(r"(\d+)\s+errors?")
+        "passed": re.compile(r"(\d+)\s+passed"),
+        "failed": re.compile(r"(\d+)\s+failed"),
+        "skipped": re.compile(r"(\d+)\s+skipped"),
+        "error": re.compile(r"(\d+)\s+errors?"),
     }
 
     def parse_collected_count(self, output: str) -> int:
@@ -128,7 +129,7 @@ class TestOutputParser:
     def merge_counts(self, *count_objects: TestCounts) -> TestCounts:
         """Merge multiple TestCounts objects, taking the maximum for each status."""
         result = TestCounts()
-        for status in ['passed', 'failed', 'skipped', 'error']:
+        for status in ["passed", "failed", "skipped", "error"]:
             values = [getattr(counts, status) for counts in count_objects]
             setattr(result, status, max(values))
         return result
@@ -136,58 +137,40 @@ class TestOutputParser:
     def determine_status(self, output: str, counts: TestCounts, collected: int) -> TestStatus:
         """Determine the overall test status based on output and counts."""
         # Check for crashes/segfaults
-        if self._has_crash_indicators(output):
-            if collected > 0 and not self._has_results(output):
-                return TestStatus.CRASHED
+        if self._has_crash_indicators(output) and collected > 0 and not self._has_results(output):
+            return TestStatus.CRASHED
 
         # Prioritize by severity
         if counts.failed > 0:
             return TestStatus.FAILED
-        elif counts.error > 0:
+        if counts.error > 0:
             return TestStatus.ERROR
-        elif counts.passed > 0:
+        if counts.passed > 0:
             return TestStatus.PASSED
-        elif counts.skipped > 0:
+        if counts.skipped > 0:
             return TestStatus.SKIPPED
-        else:
-            return TestStatus.FAILED  # Default fallback
+        return TestStatus.FAILED  # Default fallback
 
     def _has_crash_indicators(self, output: str) -> bool:
         """Check if output contains crash indicators."""
-        crash_indicators = [
-            "Segmentation fault",
-            "Fatal Python error",
-            "Fatal Python error: Aborted"
-        ]
+        crash_indicators = ["Segmentation fault", "Fatal Python error", "Fatal Python error: Aborted"]
         return any(indicator in output for indicator in crash_indicators)
 
     def _has_results(self, output: str) -> bool:
         """Check if output contains any test results."""
         return any(pattern in output for pattern in ["PASSED", "FAILED", "SKIPPED", "ERROR"])
 
-    def extract_failed_details(self, output: str) -> List[str]:
+    def extract_failed_details(self, output: str) -> list[str]:
         """Extract specific failed test details from output."""
-        failed_tests = re.findall(
-            r"^(?:FAILURES|ERRORS)\n_+\s*(.*?)\s*_+", 
-            output, 
-            re.MULTILINE | re.DOTALL
-        )
+        failed_tests = re.findall(r"^(?:FAILURES|ERRORS)\n_+\s*(.*?)\s*_+", output, re.MULTILINE | re.DOTALL)
 
         details = []
         if failed_tests:
-            matches = re.findall(
-                r"^(FAILED|ERROR)\s+.*?::.*?::(.*?)\s+-", 
-                failed_tests[0], 
-                re.MULTILINE
-            )
+            matches = re.findall(r"^(FAILED|ERROR)\s+.*?::.*?::(.*?)\s+-", failed_tests[0], re.MULTILINE)
             details.extend([f"{status} {name}" for status, name in matches])
 
         # Also check summary section
-        summary_match = re.search(
-            r"=+ short test summary info =+\n(.*?)\n=+", 
-            output, 
-            re.DOTALL
-        )
+        summary_match = re.search(r"=+ short test summary info =+\n(.*?)\n=+", output, re.DOTALL)
 
         if summary_match:
             summary_details = re.findall(
@@ -195,15 +178,11 @@ class TestOutputParser:
                 summary_match.group(1),
                 re.MULTILINE,
             )
-            details.extend([
-                f"{status} {name}" 
-                for status, name, _ in summary_details 
-                if status in ["FAILED", "ERROR"]
-            ])
+            details.extend([f"{status} {name}" for status, name, _ in summary_details if status in {"FAILED", "ERROR"}])
 
-        return sorted(list(set(details)))
+        return sorted(set(details))
 
-    def parse_test_output(self, output: str) -> Tuple[TestCounts, int, List[str]]:
+    def parse_test_output(self, output: str) -> tuple[TestCounts, int, list[str]]:
         """Parse test output and return counts, collected count, and failed details."""
         collected = self.parse_collected_count(output)
 
@@ -232,7 +211,7 @@ class TestExecutor:
         self.debug_mode = debug_mode
         self.parser = TestOutputParser()
 
-    def build_command(self, test_path: str) -> List[str]:
+    def build_command(self, test_path: str) -> list[str]:
         """Build the pytest command for a test file."""
         script_dir = os.path.dirname(os.path.abspath(__file__))
         venv_python = os.path.join(script_dir, ".venv", "bin", "python")
@@ -281,7 +260,6 @@ class TestExecutor:
 
             try:
                 output, _ = process.communicate()
-                result_code = process.returncode
             except KeyboardInterrupt:
                 process.terminate()
                 try:
@@ -326,21 +304,20 @@ class TestExecutor:
             failed_details=failed_details,
         )
 
-    def _apply_special_cases(self, test_path: str, output: str, status: TestStatus, 
-                           counts: TestCounts, collected: int) -> TestStatus:
+    def _apply_special_cases(
+        self, test_path: str, output: str, status: TestStatus, counts: TestCounts, collected: int
+    ) -> TestStatus:
         """Apply special case handling for specific test files."""
         # Handle teardown errors that don't affect test success
-        if ("PASSED" in output and not "FAILED " in output and 
-            "Fatal Python error: Aborted" in output):
+        if "PASSED" in output and "FAILED " not in output and "Fatal Python error: Aborted" in output:
             return TestStatus.PASSED
 
         # Handle specific problematic files
-        if test_path == "tests/gui/test_main_window.py":
-            if ("Segmentation fault" in output and 
-                status == TestStatus.PASSED and collected == 12):
-                # Known segfault but tests pass
-                if counts.passed < 12:
-                    counts.passed = 12
+        if test_path == "tests/gui/test_main_window.py" and (
+            "Segmentation fault" in output and status == TestStatus.PASSED and collected == 12
+        ):
+            # Known segfault but tests pass
+            counts.passed = max(counts.passed, 12)
 
         return status
 
@@ -351,13 +328,13 @@ class WorkerStatusTracker:
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
         self.running = False
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.frame = 0
         self.completed = 0
         self.total = 0
-        self.worker_status: Dict[int, Dict[str, Any]] = {}
-        self.completed_tests: List[str] = []
-        self.failed_tests: List[Dict[str, Any]] = []
+        self.worker_status: dict[int, dict[str, Any]] = {}
+        self.completed_tests: list[str] = []
+        self.failed_tests: list[dict[str, Any]] = []
         self.max_display_lines = 15
         self.lock = threading.Lock()
 
@@ -381,22 +358,18 @@ class WorkerStatusTracker:
             self.running = False
         if self.thread:
             self.thread.join()
-        print()
 
     def update_progress(self, completed: int) -> None:
         """Update overall progress."""
         with self.lock:
             self.completed = completed
 
-    def set_worker_status(self, worker_id: int, test_path: str, start_time: Optional[float] = None) -> None:
+    def set_worker_status(self, worker_id: int, test_path: str, start_time: float | None = None) -> None:
         """Set what a worker is currently running."""
         with self.lock:
             if start_time is None:
                 start_time = time.time()
-            self.worker_status[worker_id] = {
-                'test_path': test_path,
-                'start_time': start_time
-            }
+            self.worker_status[worker_id] = {"test_path": test_path, "start_time": start_time}
 
     def clear_worker_status(self, worker_id: int) -> None:
         """Clear a worker's status when test completes."""
@@ -421,12 +394,11 @@ class WorkerStatusTracker:
             color = STATUS_COLOR.get(result.status.value, RESET)
             count_str = self._format_counts(result.counts)
 
-            display_line = (f"{test_number:3d}. {color}{icon} {display_path}"
-                          f"{count_str} {result.duration:.1f}s{RESET}")
+            display_line = f"{test_number:3d}. {color}{icon} {display_path}{count_str} {result.duration:.1f}s{RESET}"
 
             self.completed_tests.append(display_line)
 
-            if result.status in [TestStatus.FAILED, TestStatus.ERROR, TestStatus.CRASHED]:
+            if result.status in {TestStatus.FAILED, TestStatus.ERROR, TestStatus.CRASHED}:
                 self.failed_tests.append({
                     "number": test_number,
                     "path": result.path,
@@ -434,10 +406,10 @@ class WorkerStatusTracker:
                     "duration": result.duration,
                     "output": result.output,
                     "failed_details": result.failed_details,
-                    "counts": result.counts
+                    "counts": result.counts,
                 })
 
-    def get_failed_tests(self) -> List[Dict[str, Any]]:
+    def get_failed_tests(self) -> list[dict[str, Any]]:
         """Get list of failed tests for detailed reporting."""
         with self.lock:
             return list(self.failed_tests)
@@ -445,7 +417,7 @@ class WorkerStatusTracker:
     def _shorten_path(self, path: str, max_length: int) -> str:
         """Shorten a file path for display."""
         if len(path) > max_length:
-            return "..." + path[-(max_length-3):]
+            return "..." + path[-(max_length - 3) :]
         return path
 
     def _format_counts(self, counts: TestCounts) -> str:
@@ -479,8 +451,9 @@ class WorkerStatusTracker:
             self.frame += 1
             time.sleep(0.5)
 
-    def _render_display(self, frame_char: str, completed: int, total: int, 
-                       current_workers: Dict, completed_tests: List[str]) -> None:
+    def _render_display(
+        self, frame_char: str, completed: int, total: int, current_workers: dict, completed_tests: list[str]
+    ) -> None:
         """Render the status display."""
         num_completed = len(completed_tests)
         display_completed = min(num_completed, self.max_display_lines)
@@ -490,74 +463,66 @@ class WorkerStatusTracker:
         self._clear_display(total_lines)
 
         # Completed tests section
-        print(f"📋 Test Results ({num_completed}/{total}):")
         self._display_completed_tests(completed_tests, display_completed, num_completed)
 
         # Separator and progress
-        print(f"{'─' * 80}")
-        progress = f"{completed}/{total}" if total > 0 else "0/0"
-        active_count = len(current_workers)
-        print(f"{frame_char} Running tests ({progress}) - {active_count} active workers")
+        len(current_workers)
 
         # Worker status
         self._display_worker_status(current_workers)
 
         # Move cursor back for next update
         for _ in range(total_lines):
-            print("\033[A", end="")
+            pass
 
     def _clear_display(self, total_lines: int) -> None:
         """Clear the previous display."""
-        print("\r" + " " * 120, end="")
         for _ in range(total_lines - 1):
-            print("\n" + " " * 120, end="")
+            pass
         for _ in range(total_lines - 1):
-            print("\033[A", end="")
-        print("\r", end="")
+            pass
 
-    def _display_completed_tests(self, completed_tests: List[str], 
-                               display_completed: int, num_completed: int) -> None:
+    def _display_completed_tests(self, completed_tests: list[str], display_completed: int, num_completed: int) -> None:
         """Display the completed tests section."""
         start_idx = max(0, num_completed - display_completed)
         for i in range(start_idx, num_completed):
             if i < len(completed_tests):
-                print(f"  {completed_tests[i]}")
+                pass
 
         # Fill remaining lines
         for _ in range(display_completed - (num_completed - start_idx)):
-            print(f"  {' ' * 80}")
+            pass
 
-    def _display_worker_status(self, current_workers: Dict) -> None:
+    def _display_worker_status(self, current_workers: dict) -> None:
         """Display the worker status section."""
         current_time = time.time()
         worker_list = list(current_workers.items())
-        worker_list.sort(key=lambda x: x[1]['start_time'])
+        worker_list.sort(key=lambda x: x[1]["start_time"])
 
         for i in range(self.max_workers):
             if i < len(worker_list):
-                worker_id, status = worker_list[i]
-                test_path = status['test_path']
-                duration = current_time - status['start_time']
+                _worker_id, status = worker_list[i]
+                test_path = status["test_path"]
+                duration = current_time - status["start_time"]
 
-                display_path = self._shorten_path(test_path, 60)
+                self._shorten_path(test_path, 60)
 
                 # Color code based on duration
                 if duration > 30:
-                    color = STATUS_COLOR['FAILED']
+                    STATUS_COLOR["FAILED"]
                 elif duration > 10:
-                    color = STATUS_COLOR['CRASHED']
+                    STATUS_COLOR["CRASHED"]
                 else:
-                    color = STATUS_COLOR['PASSED']
+                    STATUS_COLOR["PASSED"]
 
-                print(f"  Worker {i+1}: {color}{display_path}{RESET} ({duration:.1f}s)")
             else:
-                print(f"  Worker {i+1}: idle")
+                pass
 
 
 class TestRunner:
     """Main test runner orchestrator."""
 
-    def __init__(self, args):
+    def __init__(self, args) -> None:
         self.args = args
         self.executor = TestExecutor(args.debug_mode)
         self.known_problematic_tests = [
@@ -571,7 +536,7 @@ class TestRunner:
             "test_imagery_gui_zoom.py",
         ]
 
-    def find_test_files(self) -> List[str]:
+    def find_test_files(self) -> list[str]:
         """Find all test files in the specified directory."""
         if self.args.file:
             return self.args.file
@@ -587,9 +552,9 @@ class TestRunner:
         result.extend(glob.glob("test_*.py"))
 
         # Remove duplicates
-        return sorted(list(set(result)))
+        return sorted(set(result))
 
-    def filter_problematic_tests(self, test_files: List[str]) -> List[str]:
+    def filter_problematic_tests(self, test_files: list[str]) -> list[str]:
         """Filter out known problematic tests if requested."""
         if not self.args.skip_problematic:
             return test_files
@@ -599,20 +564,26 @@ class TestRunner:
         skipped_count = orig_count - len(filtered)
 
         if skipped_count > 0:
-            print(f"Skipping {skipped_count} known problematic tests")
+            pass
 
         return filtered
 
     def should_use_json_output(self) -> bool:
         """Determine if JSON output should be used."""
-        return (self.args.json_output or 
-                (self._is_ci_environment() and not self._is_interactive_terminal()))
+        return self.args.json_output or (self._is_ci_environment() and not self._is_interactive_terminal())
 
     def _is_ci_environment(self) -> bool:
         """Check if running in CI environment."""
         ci_indicators = [
-            'CI', 'CONTINUOUS_INTEGRATION', 'GITHUB_ACTIONS', 'TRAVIS',
-            'CIRCLECI', 'JENKINS_URL', 'BUILDKITE', 'TF_BUILD', 'GITLAB_CI'
+            "CI",
+            "CONTINUOUS_INTEGRATION",
+            "GITHUB_ACTIONS",
+            "TRAVIS",
+            "CIRCLECI",
+            "JENKINS_URL",
+            "BUILDKITE",
+            "TF_BUILD",
+            "GITLAB_CI",
         ]
         return any(os.getenv(indicator) for indicator in ci_indicators)
 
@@ -630,11 +601,11 @@ class TestRunner:
         if self.args.debug_mode:
             self.args.parallel = 1
             if not use_json_output:
-                print("\033[93mDebug mode enabled - running tests sequentially\033[0m")
+                pass
 
         return self._execute_test_suite(test_files, use_json_output)
 
-    def _execute_test_suite(self, test_files: List[str], use_json_output: bool) -> int:
+    def _execute_test_suite(self, test_files: list[str], use_json_output: bool) -> int:
         """Execute the test suite with parallel workers."""
         self._print_initial_info(test_files, use_json_output)
 
@@ -656,30 +627,20 @@ class TestRunner:
 
         return self._generate_final_report(all_results, start_time, worker_tracker)
 
-    def _print_initial_info(self, test_files: List[str], use_json_output: bool) -> None:
+    def _print_initial_info(self, test_files: list[str], use_json_output: bool) -> None:
         """Print initial test run information."""
         if use_json_output:
-            print(json.dumps({
-                "type": "test_session_start",
-                "total_tests": len(test_files),
-                "workers": self.args.parallel,
-                "mode": "json_output"
-            }))
+            pass
         else:
-            print(f"Found {len(test_files)} test files")
-            print("=" * 80)
-            print(f"RUNNING {len(test_files)} TESTS WITH {self.args.parallel} WORKERS")
-            print("=" * 80)
+            pass
 
-    def _run_parallel_tests(self, test_files: List[str], worker_tracker, 
-                          use_json_output: bool) -> List[TestResult]:
+    def _run_parallel_tests(self, test_files: list[str], worker_tracker, use_json_output: bool) -> list[TestResult]:
         """Run tests in parallel using thread pool."""
         all_results = []
 
         with ThreadPoolExecutor(max_workers=self.args.parallel) as executor:
             future_to_path = {
-                executor.submit(self.executor.execute_test, path, worker_tracker): path 
-                for path in test_files
+                executor.submit(self.executor.execute_test, path, worker_tracker): path for path in test_files
             }
 
             completed_count = 0
@@ -722,13 +683,11 @@ class TestRunner:
                 "error": result.counts.error,
                 "skipped": result.counts.skipped,
             },
-            "progress": f"{completed}/{total}"
+            "progress": f"{completed}/{total}",
         }
 
         if result.failed_details:
             json_result["failed_details"] = result.failed_details
-
-        print(json.dumps(json_result))
 
     def _create_error_result(self, path: str, error: str) -> TestResult:
         """Create a TestResult for an execution error."""
@@ -741,21 +700,19 @@ class TestRunner:
             collected=0,
         )
 
-    def _handle_cancellation(self, worker_tracker, all_results: List[TestResult], 
-                           test_files: List[str], use_json_output: bool) -> int:
+    def _handle_cancellation(
+        self, worker_tracker, all_results: list[TestResult], test_files: list[str], use_json_output: bool
+    ) -> int:
         """Handle keyboard interrupt cancellation."""
         if worker_tracker:
             worker_tracker.stop()
 
         if not use_json_output:
-            print("\033[2J\033[H", end="")  # Clear screen
-            print(f"{STATUS_COLOR['CRASHED']}🛑 Testing cancelled by user (Ctrl+C){RESET}")
-            print(f"Completed {len(all_results)}/{len(test_files)} tests before cancellation")
+            pass
 
         return 130
 
-    def _generate_final_report(self, all_results: List[TestResult], 
-                             start_time: float, worker_tracker) -> int:
+    def _generate_final_report(self, all_results: list[TestResult], start_time: float, worker_tracker) -> int:
         """Generate the final test report."""
         total_duration = time.time() - start_time
 
@@ -773,13 +730,8 @@ class TestRunner:
         # Return exit code
         return self._calculate_exit_code(all_results)
 
-    def _print_complete_results(self, all_results: List[TestResult]) -> None:
+    def _print_complete_results(self, all_results: list[TestResult]) -> None:
         """Print the complete list of test results."""
-        print()
-        print("=" * 80)
-        print("COMPLETE TEST RESULTS")
-        print("=" * 80)
-
         status_icons = {
             TestStatus.PASSED: "✓",
             TestStatus.FAILED: "✗",
@@ -788,9 +740,9 @@ class TestRunner:
             TestStatus.CRASHED: "💥",
         }
 
-        for i, result in enumerate(all_results, 1):
-            icon = status_icons.get(result.status, "?")
-            color = STATUS_COLOR.get(result.status.value, RESET)
+        for result in all_results:
+            status_icons.get(result.status, "?")
+            STATUS_COLOR.get(result.status.value, RESET)
 
             count_parts = []
             if result.counts.passed > 0:
@@ -802,19 +754,12 @@ class TestRunner:
             if result.counts.skipped > 0:
                 count_parts.append(f"{result.counts.skipped} skipped")
 
-            count_str = f" ({', '.join(count_parts)})" if count_parts else ""
+            f" ({', '.join(count_parts)})" if count_parts else ""
 
-            print(f"{i:3d}. {color}{icon} {result.path}{count_str} {result.duration:.1f}s{RESET}")
-
-    def _print_summary(self, all_results: List[TestResult], total_duration: float) -> None:
+    def _print_summary(self, all_results: list[TestResult], total_duration: float) -> None:
         """Print the test summary."""
-        print()
-        print("=" * 80)
-        print(f"SUMMARY ({total_duration:.2f}s)")
-        print("=" * 80)
-
         # Count by file status
-        file_counts = {status: 0 for status in TestStatus}
+        file_counts = dict.fromkeys(TestStatus, 0)
         for result in all_results:
             file_counts[result.status] += 1
 
@@ -826,105 +771,75 @@ class TestRunner:
             test_counts.error += result.counts.error
             test_counts.skipped += result.counts.skipped
 
-        print(f"Test files: {len(all_results)}")
-        print(f"  Passed: {file_counts[TestStatus.PASSED]}")
-        print(f"  Failed: {file_counts[TestStatus.FAILED]}")
-        print(f"  Error: {file_counts[TestStatus.ERROR]}")
-        print(f"  Skipped: {file_counts[TestStatus.SKIPPED]}")
-        print(f"  Crashed: {file_counts[TestStatus.CRASHED]}")
-
-        print("\n📊 Individual Test Results:")
-        print(f"  {STATUS_COLOR['PASSED']}✓ Passed{RESET}:  {test_counts.passed:>4}")
-        print(f"  {STATUS_COLOR['FAILED']}✗ Failed{RESET}:  {test_counts.failed:>4}")
-        print(f"  {STATUS_COLOR['ERROR']}⚠ Errors{RESET}:  {test_counts.error:>4}")
-        print(f"  {STATUS_COLOR['SKIPPED']}○ Skipped{RESET}: {test_counts.skipped:>4}")
-
         # Success rate
         total_tests = test_counts.total()
         if total_tests > 0:
             success_rate = (test_counts.passed / total_tests) * 100
             if success_rate == 100.0:
-                rate_color = STATUS_COLOR['PASSED']
+                STATUS_COLOR["PASSED"]
             elif success_rate >= 80.0:
-                rate_color = STATUS_COLOR['CRASHED']
+                STATUS_COLOR["CRASHED"]
             else:
-                rate_color = STATUS_COLOR['FAILED']
-            print(f"\n🎯 Success Rate: {rate_color}{success_rate:.1f}%{RESET} "
-                  f"({test_counts.passed}/{total_tests})")
+                STATUS_COLOR["FAILED"]
 
-    def _print_detailed_failures(self, failed_tests: List[Dict[str, Any]]) -> None:
+    def _print_detailed_failures(self, failed_tests: list[dict[str, Any]]) -> None:
         """Print detailed failure information."""
-        print(f"\n{'=' * 80}")
-        print("🚨 DETAILED FAILURE AND ERROR LOGS")
-        print(f"{'=' * 80}")
-
         for i, failed_test in enumerate(failed_tests, 1):
             self._print_single_failure(failed_test, i, len(failed_tests))
 
-    def _print_single_failure(self, failed_test: Dict[str, Any], 
-                            current: int, total: int) -> None:
+    def _print_single_failure(self, failed_test: dict[str, Any], current: int, total: int) -> None:
         """Print details for a single failed test."""
-        test_number = failed_test["number"]
-        path = failed_test["path"]
+        failed_test["number"]
+        failed_test["path"]
         status = failed_test["status"]
-        duration = failed_test["duration"]
+        failed_test["duration"]
         output = failed_test["output"]
         failed_details = failed_test["failed_details"]
 
-        status_color = STATUS_COLOR.get(status.split(" ")[0], RESET)
-        print(f"\n{status_color}{'─' * 80}")
-        print(f"TEST #{test_number}: {path}")
-        print(f"Status: {status} | Duration: {duration:.2f}s")
-        print(f"{'─' * 80}{RESET}")
+        STATUS_COLOR.get(status.split(" ")[0], RESET)
 
         if failed_details:
-            print(f"{STATUS_COLOR['FAILED']}Specific Failed Tests:{RESET}")
-            for detail in failed_details:
-                print(f"  • {detail}")
-            print()
+            for _detail in failed_details:
+                pass
 
         if output:
-            print(f"{STATUS_COLOR['ERROR']}Test Output:{RESET}")
-            truncated_output = self._extract_relevant_output(output)
-            print(truncated_output)
-
-        print(f"{status_color}{'─' * 80}{RESET}")
+            self._extract_relevant_output(output)
 
         if current < total:
-            print()
+            pass
 
     def _extract_relevant_output(self, output: str) -> str:
         """Extract the most relevant parts of test output."""
-        lines = output.split('\n')
+        lines = output.split("\n")
         failure_lines = []
 
         in_failure_section = False
         for line in lines:
-            if line.startswith(('FAILURES', 'ERRORS', 'short test summary info')):
+            if line.startswith(("FAILURES", "ERRORS", "short test summary info")):
                 in_failure_section = True
                 failure_lines.append(line)
-            elif line.startswith('=') and len(line) > 10 and in_failure_section:
+            elif line.startswith("=") and len(line) > 10 and in_failure_section:
                 break
             elif in_failure_section:
                 failure_lines.append(line)
 
         if failure_lines:
-            failure_text = '\n'.join(failure_lines)
+            failure_text = "\n".join(failure_lines)
             if len(failure_text) > 2000:
                 failure_text = failure_text[:2000] + "\n... (output truncated)"
             return failure_text
-        else:
-            # Show last 20 lines
-            last_lines = lines[-20:] if len(lines) > 20 else lines
-            return '\n'.join(last_lines)
+        # Show last 20 lines
+        last_lines = lines[-20:] if len(lines) > 20 else lines
+        return "\n".join(last_lines)
 
-    def _calculate_exit_code(self, all_results: List[TestResult]) -> int:
+    def _calculate_exit_code(self, all_results: list[TestResult]) -> int:
         """Calculate the appropriate exit code."""
         if self.args.tolerant:
             return 0
 
-        failed_count = sum(1 for r in all_results 
-                          if r.status in [TestStatus.FAILED, TestStatus.ERROR, TestStatus.CRASHED])
+        failed_count = sum(
+            1 for r in all_results if r.status in {TestStatus.FAILED, TestStatus.ERROR, TestStatus.CRASHED}
+        )
         return 0 if failed_count == 0 else 1
 
 
@@ -937,18 +852,12 @@ def main() -> int:
     parser.add_argument("--parallel", "-p", type=int, default=4, help="Number of parallel workers")
     parser.add_argument("--file", action="append", help="Run specific test file")
     parser.add_argument("--directory", default="tests", help="Directory containing tests")
-    parser.add_argument("--tolerant", action="store_true", 
-                       help="Always return success even if tests fail")
-    parser.add_argument("--dump-logs", action="store_true", 
-                       help="Dump output logs for failed tests")
-    parser.add_argument("--skip-problematic", action="store_true", 
-                       help="Skip known problematic tests")
-    parser.add_argument("--debug-mode", action="store_true", 
-                       help="Run tests with extra debug options")
-    parser.add_argument("--json-output", action="store_true", 
-                       help="Output JSON for automation")
-    parser.add_argument("--debug-parsing", action="store_true", 
-                       help="Show debug info for parsing")
+    parser.add_argument("--tolerant", action="store_true", help="Always return success even if tests fail")
+    parser.add_argument("--dump-logs", action="store_true", help="Dump output logs for failed tests")
+    parser.add_argument("--skip-problematic", action="store_true", help="Skip known problematic tests")
+    parser.add_argument("--debug-mode", action="store_true", help="Run tests with extra debug options")
+    parser.add_argument("--json-output", action="store_true", help="Output JSON for automation")
+    parser.add_argument("--debug-parsing", action="store_true", help="Show debug info for parsing")
 
     args = parser.parse_args()
 

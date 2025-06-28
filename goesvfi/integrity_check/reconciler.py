@@ -4,10 +4,11 @@ This module provides the main business logic for scanning directories,
 finding missing timestamps, and reconciling local data with expectations.
 """
 
-import time
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+import time
+from typing import Any
 
 from goesvfi.utils import log
 
@@ -33,7 +34,7 @@ class Reconciler:
     satellite schedules and actual files found in local directories.
     """
 
-    def __init__(self, cache_db_path: Optional[Path] = None) -> None:
+    def __init__(self, cache_db_path: Path | None = None) -> None:
         """Initialize the Reconciler with optional cache database."""
         self.cache = CacheDB(cache_db_path) if cache_db_path else CacheDB()
         LOGGER.info("Reconciler initialized with cache at %s", cache_db_path)
@@ -45,10 +46,10 @@ class Reconciler:
         satellite_pattern: SatellitePattern,
         base_directory: Path,
         interval_minutes: int = 0,
-        progress_callback: Optional[ProgressCallback] = None,
-        should_cancel: Optional[CancelCallback] = None,
+        progress_callback: ProgressCallback | None = None,
+        should_cancel: CancelCallback | None = None,
         force_rescan: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Scan for missing timestamps within the date range.
 
         Args:
@@ -143,7 +144,7 @@ class Reconciler:
         satellite_pattern: SatellitePattern,
         base_directory: Path,
         interval_minutes: int = 0,
-    ) -> List[datetime]:
+    ) -> list[datetime]:
         """Get a list of missing timestamps.
 
         Args:

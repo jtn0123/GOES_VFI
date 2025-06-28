@@ -25,7 +25,7 @@ class FileOperations:
         """
         self.parent = parent
 
-    def select_input_directory(self) -> Optional[Path]:
+    def select_input_directory(self) -> Path | None:
         """Open a directory dialog to select the input image folder.
 
         Returns:
@@ -41,7 +41,7 @@ class FileOperations:
         LOGGER.debug("Directory selection cancelled")
         return None
 
-    def select_output_file(self) -> Optional[Path]:
+    def select_output_file(self) -> Path | None:
         """Open a file dialog to select the output MP4 file path.
 
         Returns:

@@ -29,9 +29,9 @@ class SampleProcessor:
 
     def __init__(
         self,
-        visualization_manager: Optional[VisualizationManager] = None,
+        visualization_manager: VisualizationManager | None = None,
         satellite: str = "G16",
-        sample_size: Tuple[int, int] = (500, 500),
+        sample_size: tuple[int, int] = (500, 500),
     ) -> None:
         """Initialize the sample processor.
 
@@ -50,7 +50,7 @@ class SampleProcessor:
 
     def create_sample_comparison(
         self, channel: Union[ChannelType, int], product_type: ProductType
-    ) -> Optional[Image.Image]:
+    ) -> Image.Image | None:
         """Create a sample comparison image.
 
         Args:
@@ -82,8 +82,8 @@ class SampleProcessor:
         self,
         channel: Union[ChannelType, int],
         product_type: ProductType,
-        date: Optional[datetime] = None,
-    ) -> Optional[Path]:
+        date: datetime | None = None,
+    ) -> Path | None:
         """Download sample data for a channel.
 
         Args:
@@ -99,7 +99,7 @@ class SampleProcessor:
 
     def process_sample_netcdf(
         self, file_path: Path, channel: Union[ChannelType, int]
-    ) -> Optional[Tuple[NDArray[np.float64], Image.Image, Image.Image]]:
+    ) -> tuple[NDArray[np.float64], Image.Image, Image.Image] | None:
         """Process a sample NetCDF file.
 
         Args:
@@ -116,7 +116,7 @@ class SampleProcessor:
         self,
         channel: Union[ChannelType, int],
         product_type: ProductType,
-    ) -> Optional[Image.Image]:
+    ) -> Image.Image | None:
         """Download a sample image from the web.
 
         Args:

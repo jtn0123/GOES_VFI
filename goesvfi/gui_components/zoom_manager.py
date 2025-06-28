@@ -15,7 +15,7 @@ LOGGER = log.get_logger(__name__)
 class ZoomManager:
     """Manages zoom dialog functionality for preview images."""
 
-    def show_zoom(self, label: ClickableLabel, parent: Optional[object] = None) -> None:
+    def show_zoom(self, label: ClickableLabel, parent: object | None = None) -> None:
         """Show a zoomed view of the processed image associated with the clicked label.
 
         Args:

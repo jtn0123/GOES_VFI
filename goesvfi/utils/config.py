@@ -33,7 +33,7 @@ def get_config_path() -> pathlib.Path:
 # Specify dict key/value types
 # Define default values for configuration settings
 # Use Dict[str, Any] as values can be different types
-DEFAULTS: Dict[str, Any] = {
+DEFAULTS: dict[str, Any] = {
     "output_dir": str(pathlib.Path.home() / "Documents/goesvfi"),
     "cache_dir": str(pathlib.Path.home() / "Documents/goesvfi/cache"),
     "pipeline": {
@@ -177,7 +177,7 @@ DEFAULT_FFMPEG_PROFILE: FfmpegProfile = {
 }
 
 # Store profiles in a dictionary for easy access with type hint
-FFMPEG_PROFILES: Dict[str, FfmpegProfile] = {
+FFMPEG_PROFILES: dict[str, FfmpegProfile] = {
     "Default": DEFAULT_FFMPEG_PROFILE,
     "Optimal": OPTIMAL_FFMPEG_PROFILE,
     "Optimal 2": OPTIMAL_FFMPEG_PROFILE_2,
@@ -185,7 +185,7 @@ FFMPEG_PROFILES: Dict[str, FfmpegProfile] = {
 }
 
 # Expected config schema for validation
-EXPECTED_SCHEMA: Dict[str, Any] = {
+EXPECTED_SCHEMA: dict[str, Any] = {
     "output_dir": str,
     "cache_dir": str,
     "pipeline": {"default_tile_size": int, "supported_extensions": list},
@@ -200,7 +200,7 @@ EXPECTED_SCHEMA: Dict[str, Any] = {
 }
 
 
-def _validate_config(data: Dict[str, Any]) -> None:
+def _validate_config(data: dict[str, Any]) -> None:
     errors: list[str] = []
     for key, expected in EXPECTED_SCHEMA.items():
         if key not in data:
@@ -236,9 +236,9 @@ def _validate_config(data: Dict[str, Any]) -> None:
 
 @lru_cache(maxsize=1)
 # Specify dict return type
-def _load_config() -> Dict[str, Any]:
+def _load_config() -> dict[str, Any]:
     """Load configuration from TOML and validate."""
-    data: Dict[str, Any] = DEFAULTS.copy()
+    data: dict[str, Any] = DEFAULTS.copy()
 
     cfg_path = get_config_path()
     if cfg_path.exists():
@@ -326,14 +326,14 @@ def get_logging_level() -> str:
     return cast(str, level)
 
 
-def get_supported_extensions() -> List[str]:
+def get_supported_extensions() -> list[str]:
     # Access nested config using .get() for safety
     pipeline_config = _load_config().get("pipeline", {})
     extensions = pipeline_config.get("supported_extensions", DEFAULTS["pipeline"]["supported_extensions"])
     # Ensure it's a list of strings
     if not isinstance(extensions, list) or not all(isinstance(ext, str) for ext in extensions):
         extensions = DEFAULTS["pipeline"]["supported_extensions"]  # Fallback to default
-    return cast(List[str], extensions)
+    return cast(list[str], extensions)
 
 
 def get_project_root() -> pathlib.Path:

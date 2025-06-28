@@ -5,9 +5,10 @@ This optimized version combines related tests, uses shared fixtures,
 and reduces redundant validation operations while maintaining full coverage.
 """
 
+import math
 import pathlib
 import tempfile
-from typing import Any, List
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -37,7 +38,7 @@ class OptimizedSecurityTestBase:
 class TestSecurityErrorOptimized(OptimizedSecurityTestBase):
     """Test security error exception."""
 
-    def test_security_error_creation(self):
+    def test_security_error_creation(self) -> None:
         """Test creating security error."""
         error = SecurityError("Security validation failed")
         assert str(error) == "Security validation failed"
@@ -47,7 +48,7 @@ class TestSecurityErrorOptimized(OptimizedSecurityTestBase):
 class TestInputValidatorOptimized(OptimizedSecurityTestBase):
     """Optimized input validation functionality tests."""
 
-    def test_file_path_validation_combined(self, validator):
+    def test_file_path_validation_combined(self, validator) -> None:
         """Combined test for file path validation scenarios."""
         # Valid paths - test multiple at once
         valid_paths = [
@@ -62,7 +63,7 @@ class TestInputValidatorOptimized(OptimizedSecurityTestBase):
         assert all(results), "All valid paths should validate successfully"
 
         # Invalid inputs - test with single assertion block
-        invalid_inputs: List[Any] = ["", None, 123, []]
+        invalid_inputs: list[Any] = ["", None, 123, []]
         for invalid_input in invalid_inputs:
             with pytest.raises(SecurityError, match="Path must be a non-empty string"):
                 validator.validate_file_path(invalid_input)
@@ -79,7 +80,7 @@ class TestInputValidatorOptimized(OptimizedSecurityTestBase):
             with pytest.raises(SecurityError, match="directory traversal"):
                 validator.validate_file_path(attempt)
 
-    def test_file_path_extensions_and_existence(self, validator):
+    def test_file_path_extensions_and_existence(self, validator) -> None:
         """Combined test for extensions and file existence checks."""
         # Test extensions
         test_cases = [
@@ -109,14 +110,14 @@ class TestInputValidatorOptimized(OptimizedSecurityTestBase):
         with pytest.raises(SecurityError, match="Path too long"):
             validator.validate_file_path(long_path)
 
-    def test_numeric_validation_comprehensive(self, validator):
+    def test_numeric_validation_comprehensive(self, validator) -> None:
         """Combined numeric range validation tests."""
         # Valid values - batch test
         valid_cases = [
             (5, 1, 10, "test_value"),
             (1, 1, 10, "lower_boundary"),
             (10, 1, 10, "upper_boundary"),
-            (3.14, 0.0, 5.0, "pi"),
+            (math.pi, 0.0, 5.0, "pi"),
             (0.0, 0.0, 1.0, "zero"),
         ]
 
@@ -124,7 +125,7 @@ class TestInputValidatorOptimized(OptimizedSecurityTestBase):
             assert validator.validate_numeric_range(value, min_val, max_val, name) is True
 
         # Invalid types - batch test
-        invalid_values: List[Any] = ["5", None, [], {}]
+        invalid_values: list[Any] = ["5", None, [], {}]
         for invalid_value in invalid_values:
             with pytest.raises(SecurityError, match="must be a number"):
                 validator.validate_numeric_range(invalid_value, 1, 10, "test")
@@ -136,7 +137,7 @@ class TestInputValidatorOptimized(OptimizedSecurityTestBase):
         with pytest.raises(SecurityError, match="must be between 1 and 10, got 15"):
             validator.validate_numeric_range(15, 1, 10, "too_high")
 
-    def test_filename_sanitization_all_cases(self, validator):
+    def test_filename_sanitization_all_cases(self, validator) -> None:
         """Combined filename sanitization tests."""
         # Test all cases in one method
         test_cases = [
@@ -172,7 +173,7 @@ class TestInputValidatorOptimized(OptimizedSecurityTestBase):
         assert len(result) <= 255
         assert result.endswith(".txt")
 
-    def test_ffmpeg_and_sanchez_validation(self, validator):
+    def test_ffmpeg_and_sanchez_validation(self, validator) -> None:
         """Combined FFmpeg and Sanchez argument validation."""
         # FFmpeg encoders - batch validate allowed
         allowed_encoders = [
@@ -231,7 +232,7 @@ class TestInputValidatorOptimized(OptimizedSecurityTestBase):
             with pytest.raises(SecurityError, match="invalid value"):
                 validator.validate_sanchez_argument(key, value)
 
-    def test_command_validation_comprehensive(self, validator):
+    def test_command_validation_comprehensive(self, validator) -> None:
         """Combined command argument validation tests."""
         # Safe commands - batch validate
         safe_args = [
@@ -270,7 +271,7 @@ class TestInputValidatorOptimized(OptimizedSecurityTestBase):
 class TestSecureFileHandlerOptimized(OptimizedSecurityTestBase):
     """Optimized secure file handling tests."""
 
-    def test_secure_file_operations_combined(self, handler):
+    def test_secure_file_operations_combined(self, handler) -> None:
         """Combined secure file creation and configuration tests."""
         # Test temp file creation with various options
         test_cases = [
@@ -298,7 +299,7 @@ class TestSecureFileHandlerOptimized(OptimizedSecurityTestBase):
 
     @patch("pathlib.Path.mkdir")
     @patch("pathlib.Path.chmod")
-    def test_secure_config_dir(self, mock_chmod, mock_mkdir, handler):
+    def test_secure_config_dir(self, mock_chmod, mock_mkdir, handler) -> None:
         """Test creation of secure configuration directory."""
         config_dir = pathlib.Path("/test/config")
         handler.create_secure_config_dir(config_dir)
@@ -311,7 +312,7 @@ class TestSecureSubprocessCallOptimized(OptimizedSecurityTestBase):
     """Optimized secure subprocess execution tests."""
 
     @patch("subprocess.run")
-    def test_subprocess_execution_scenarios(self, mock_run):
+    def test_subprocess_execution_scenarios(self, mock_run) -> None:
         """Combined subprocess execution tests."""
         # Success case
         mock_result = Mock()
@@ -340,7 +341,7 @@ class TestSecureSubprocessCallOptimized(OptimizedSecurityTestBase):
         with pytest.raises(SecurityError, match="Shell execution not allowed"):
             secure_subprocess_call(["ls", "/"], shell=True)
 
-    def test_dangerous_command_rejection(self):
+    def test_dangerous_command_rejection(self) -> None:
         """Test rejection of dangerous commands."""
         dangerous_commands = [
             ["ls", "; rm -rf /"],
@@ -353,7 +354,7 @@ class TestSecureSubprocessCallOptimized(OptimizedSecurityTestBase):
                 secure_subprocess_call(command)
 
     @patch("subprocess.run")
-    def test_subprocess_error_handling(self, mock_run):
+    def test_subprocess_error_handling(self, mock_run) -> None:
         """Combined subprocess error handling tests."""
         import subprocess
 
@@ -371,7 +372,7 @@ class TestSecureSubprocessCallOptimized(OptimizedSecurityTestBase):
 class TestSecurityIntegrationOptimized(OptimizedSecurityTestBase):
     """Optimized integration tests for security functionality."""
 
-    def test_complete_security_workflow(self, validator, handler):
+    def test_complete_security_workflow(self, validator, handler) -> None:
         """Test complete security validation workflow with all components."""
         # Simulate processing user-provided parameters
         user_inputs = {
@@ -387,10 +388,12 @@ class TestSecurityIntegrationOptimized(OptimizedSecurityTestBase):
         validated_inputs = {}
 
         # File validations
-        assert validator.validate_file_path(
-            user_inputs["input_file"],
-            allowed_extensions=validator.ALLOWED_IMAGE_EXTENSIONS
-        ) is True
+        assert (
+            validator.validate_file_path(
+                user_inputs["input_file"], allowed_extensions=validator.ALLOWED_IMAGE_EXTENSIONS
+            )
+            is True
+        )
         validated_inputs["input_file"] = user_inputs["input_file"]
 
         # Sanitize and validate
@@ -426,9 +429,9 @@ class TestSecurityIntegrationOptimized(OptimizedSecurityTestBase):
 
         # Verify all inputs validated
         assert len(validated_inputs) == len(user_inputs)
-        assert all(key in validated_inputs for key in user_inputs.keys())
+        assert all(key in validated_inputs for key in user_inputs)
 
-    def test_attack_prevention_comprehensive(self, validator):
+    def test_attack_prevention_comprehensive(self, validator) -> None:
         """Test prevention of various attack scenarios in one comprehensive test."""
         attack_scenarios = [
             # Path traversal

@@ -26,13 +26,13 @@ class NetworkDiagnostics:
     ]
 
     @staticmethod
-    def collect_system_info() -> Dict[str, Any]:
+    def collect_system_info() -> dict[str, Any]:
         """Collect system and network information for debugging.
 
         Returns:
             Dictionary containing system and network information
         """
-        info: Dict[str, Any] = {
+        info: dict[str, Any] = {
             "timestamp": datetime.now().isoformat(),
             "platform": platform.platform(),
             "python_version": sys.version,
@@ -51,13 +51,13 @@ class NetworkDiagnostics:
         return info
 
     @staticmethod
-    def _get_dns_servers() -> List[str]:
+    def _get_dns_servers() -> list[str]:
         """Extract DNS server information from system configuration.
 
         Returns:
             List of DNS server addresses
         """
-        dns_servers: List[str] = []
+        dns_servers: list[str] = []
 
         try:
             # Try to get DNS server info on Unix systems
@@ -74,7 +74,7 @@ class NetworkDiagnostics:
         return dns_servers
 
     @staticmethod
-    def _test_s3_resolution() -> List[Dict[str, Any]]:
+    def _test_s3_resolution() -> list[dict[str, Any]]:
         """Test DNS resolution for S3 hostnames.
 
         Returns:
@@ -118,7 +118,7 @@ class NetworkDiagnostics:
                 LOGGER.error("✗ Failed to resolve %s: %s", host, e)
 
     @staticmethod
-    def log_system_info() -> Dict[str, Any]:
+    def log_system_info() -> dict[str, Any]:
         """Collect and log system/network information.
 
         Returns:
@@ -157,7 +157,7 @@ class NetworkDiagnostics:
     def create_network_error_details(
         error: Exception,
         operation: str,
-        additional_info: Optional[Dict[str, Any]] = None,
+        additional_info: dict[str, Any] | None = None,
     ) -> str:
         """Create detailed network error information for troubleshooting.
 

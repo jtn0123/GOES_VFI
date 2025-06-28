@@ -71,7 +71,7 @@ class VFIProcessor:
         self.rife_config = rife_config
         self.processing_config = processing_config
 
-    def validate_inputs(self, folder: pathlib.Path, skip_model: bool) -> List[pathlib.Path]:
+    def validate_inputs(self, folder: pathlib.Path, skip_model: bool) -> list[pathlib.Path]:
         """Validate inputs and return sorted PNG paths."""
         folder = validate_path_exists(folder, must_be_dir=True, field_name="folder")
         validate_positive_int(self.fps, "fps")
@@ -91,8 +91,8 @@ class VFIProcessor:
         return paths
 
     def setup_crop_parameters(
-        self, crop_rect_xywh: Optional[Tuple[int, int, int, int]]
-    ) -> Optional[Tuple[int, int, int, int]]:
+        self, crop_rect_xywh: tuple[int, int, int, int] | None
+    ) -> tuple[int, int, int, int] | None:
         """Convert crop rectangle from XYWH to PIL LURB format."""
         if not crop_rect_xywh:
             LOGGER.info("No crop rectangle provided.")
@@ -123,10 +123,10 @@ class VFIProcessor:
     def process_first_image(
         self,
         first_path: pathlib.Path,
-        crop_for_pil: Optional[Tuple[int, int, int, int]],
+        crop_for_pil: tuple[int, int, int, int] | None,
         sanchez_temp_path: pathlib.Path,
         processed_img_path: pathlib.Path,
-    ) -> Tuple[pathlib.Path, int, int]:
+    ) -> tuple[pathlib.Path, int, int]:
         """Process the first image and determine target dimensions."""
         LOGGER.info("Processing first image sequentially: %s", first_path.name)
 
@@ -152,13 +152,13 @@ class VFIProcessor:
 
     def process_remaining_images(
         self,
-        paths: List[pathlib.Path],
-        crop_for_pil: Optional[Tuple[int, int, int, int]],
+        paths: list[pathlib.Path],
+        crop_for_pil: tuple[int, int, int, int] | None,
         sanchez_temp_path: pathlib.Path,
         processed_img_path: pathlib.Path,
         target_width: int,
         target_height: int,
-    ) -> List[pathlib.Path]:
+    ) -> list[pathlib.Path]:
         """Process remaining images in parallel."""
         LOGGER.info(
             "Processing remaining %s images in parallel (max_workers=%s)...",
@@ -197,7 +197,7 @@ class VFIProcessor:
 
         return processed_paths_rest
 
-    def create_ffmpeg_command(self, raw_path: pathlib.Path, skip_model: bool) -> List[str]:
+    def create_ffmpeg_command(self, raw_path: pathlib.Path, skip_model: bool) -> list[str]:
         """Create FFmpeg command for video creation."""
         effective_input_fps = self.fps * (self.num_intermediate_frames + 1) if not skip_model else self.fps
 
@@ -230,12 +230,12 @@ class VFIProcessor:
 
     def process_video_creation(
         self,
-        all_processed_paths: List[pathlib.Path],
+        all_processed_paths: list[pathlib.Path],
         raw_path: pathlib.Path,
         skip_model: bool,
         target_width: int,
         target_height: int,
-    ) -> Iterator[Union[Tuple[int, int, float], pathlib.Path]]:
+    ) -> Iterator[Union[tuple[int, int, float], pathlib.Path]]:
         """Handle video creation with FFmpeg and RIFE interpolation."""
         ffmpeg_cmd = self.create_ffmpeg_command(raw_path, skip_model)
 
@@ -306,11 +306,11 @@ class VFIProcessor:
     def _process_frames_and_interpolation(
         self,
         ffmpeg_proc: subprocess.Popen[bytes],
-        all_processed_paths: List[pathlib.Path],
+        all_processed_paths: list[pathlib.Path],
         skip_model: bool,
         target_width: int,
         target_height: int,
-    ) -> Iterator[Tuple[int, int, float]]:
+    ) -> Iterator[tuple[int, int, float]]:
         """Process frames with optional RIFE interpolation."""
         # Write first processed frame
         try:
@@ -339,8 +339,8 @@ class VFIProcessor:
             yield from self._process_interpolation_frames(ffmpeg_proc, all_processed_paths, target_width, target_height)
 
     def _process_skip_model_frames(
-        self, ffmpeg_proc: subprocess.Popen[bytes], remaining_paths: List[pathlib.Path]
-    ) -> Iterator[Tuple[int, int, float]]:
+        self, ffmpeg_proc: subprocess.Popen[bytes], remaining_paths: list[pathlib.Path]
+    ) -> Iterator[tuple[int, int, float]]:
         """Process remaining frames when skipping AI model."""
         LOGGER.info(
             "Skip model mode: copying %s remaining frames directly.",
@@ -379,10 +379,10 @@ class VFIProcessor:
     def _process_interpolation_frames(
         self,
         ffmpeg_proc: subprocess.Popen[bytes],
-        all_processed_paths: List[pathlib.Path],
+        all_processed_paths: list[pathlib.Path],
         target_width: int,
         target_height: int,
-    ) -> Iterator[Tuple[int, int, float]]:
+    ) -> Iterator[tuple[int, int, float]]:
         """Process frames with RIFE interpolation."""
         total_pairs = len(all_processed_paths) - 1
         LOGGER.info("AI interpolation mode: processing %s pairs of frames.", total_pairs)
@@ -485,7 +485,7 @@ class InterpolationPipeline:
         """
         self.resource_manager = get_resource_manager()
         self.max_workers = min(max_workers, self.resource_manager.get_optimal_workers())
-        self._executor: Optional[ProcessPoolExecutor] = None
+        self._executor: ProcessPoolExecutor | None = None
         self._active_tasks: set[Any] = set()
         self._lock = threading.Lock()
 
@@ -500,7 +500,7 @@ class InterpolationPipeline:
             self._executor.shutdown(wait=True)
             self._executor = None
 
-    def process(self, images: List[str], task_id: Any) -> str:
+    def process(self, images: list[str], task_id: Any) -> str:
         """Process a list of images.
 
         Args:
@@ -570,22 +570,22 @@ class VfiWorker(QThread):
         unsharp_cy: float = 5.0,
         unsharp_ca: float = 0.0,
         crf: int = 23,
-        bitrate_kbps: Optional[int] = None,
-        bufsize_kb: Optional[int] = None,
+        bitrate_kbps: int | None = None,
+        bufsize_kb: int | None = None,
         pix_fmt: str = "yuv420p",
         skip_model: bool = False,
-        crop_rect: Optional[Tuple[int, int, int, int]] = None,
+        crop_rect: tuple[int, int, int, int] | None = None,
         debug_mode: bool = False,
         rife_tile_enable: bool = False,
         rife_tile_size: int = 256,
         rife_uhd_mode: bool = False,
-        rife_thread_spec: Optional[str] = None,
+        rife_thread_spec: str | None = None,
         rife_tta_spatial: bool = False,
         rife_tta_temporal: bool = False,
-        model_key: Optional[str] = None,
+        model_key: str | None = None,
         false_colour: bool = False,
         res_km: int = 2,
-        sanchez_gui_temp_dir: Optional[str] = None,
+        sanchez_gui_temp_dir: str | None = None,
         **kwargs: Any,  # Catch any extra arguments
     ) -> None:
         """Initialize the VFI worker with processing parameters."""
@@ -737,7 +737,7 @@ class VfiWorker(QThread):
             "pix_fmt": self.pix_fmt,
         }
 
-    def _process_run_vfi_output(self, output_lines: List[Union[str, pathlib.Path, Tuple[int, int, float]]]) -> None:
+    def _process_run_vfi_output(self, output_lines: list[Union[str, pathlib.Path, tuple[int, int, float]]]) -> None:
         """Process output from run_vfi generator and emit appropriate signals."""
         for line in output_lines:
             if isinstance(line, tuple) and len(line) == 3:
@@ -763,17 +763,17 @@ class VfiWorker(QThread):
 
 def _process_with_rife(
     ffmpeg_proc: subprocess.Popen,
-    all_processed_paths: List[pathlib.Path],
+    all_processed_paths: list[pathlib.Path],
     rife_exe_path: pathlib.Path,
     model_key: str,
     processed_img_dir: pathlib.Path,
     rife_tile_enable: bool = False,
     rife_tile_size: int = 256,
     rife_uhd_mode: bool = False,
-    rife_thread_spec: Optional[str] = None,
+    rife_thread_spec: str | None = None,
     rife_tta_spatial: bool = False,
     rife_tta_temporal: bool = False,
-) -> Iterator[Tuple[int, int, float]]:
+) -> Iterator[tuple[int, int, float]]:
     """Process frames with RIFE interpolation.
 
     This function generates interpolated frames using RIFE and yields progress updates.
@@ -928,7 +928,7 @@ def _safe_write(proc: subprocess.Popen[bytes], data: bytes, frame_desc: str) -> 
 # --- Add Sanchez/Crop Helper ---
 def _load_process_image(
     path: pathlib.Path,
-    crop_rect_pil: Optional[Tuple[int, int, int, int]],
+    crop_rect_pil: tuple[int, int, int, int] | None,
     false_colour: bool,
     res_km: int,
     sanchez_temp_dir: pathlib.Path,
@@ -1010,9 +1010,9 @@ def _validate_and_prepare_run_vfi_parameters(
     num_intermediate_frames: int,
     encoder_type: str,
     false_colour: bool,
-    crop_rect_xywh: Optional[Tuple[int, int, int, int]],
+    crop_rect_xywh: tuple[int, int, int, int] | None,
     skip_model: bool,
-) -> Tuple[bool, List[pathlib.Path], Optional[Tuple[int, int, int, int]]]:
+) -> tuple[bool, list[pathlib.Path], tuple[int, int, int, int] | None]:
     """Validate and prepare parameters for run_vfi.
 
     Args:
@@ -1060,7 +1060,7 @@ def _validate_and_prepare_run_vfi_parameters(
     return updated_false_colour, png_paths, crop_for_pil
 
 
-def _build_ffmpeg_command(fps: int, output_path: pathlib.Path) -> List[str]:
+def _build_ffmpeg_command(fps: int, output_path: pathlib.Path) -> list[str]:
     """Build FFmpeg command for video creation.
 
     Args:
@@ -1121,8 +1121,8 @@ def _create_rife_command(
     rife_uhd_mode: bool = False,
     rife_tta_spatial: bool = False,
     rife_tta_temporal: bool = False,
-    rife_thread_spec: Optional[str] = None,
-) -> List[str]:
+    rife_thread_spec: str | None = None,
+) -> list[str]:
     """Create RIFE command with capability checking.
 
     Args:
@@ -1185,7 +1185,7 @@ def _check_rife_capability_warnings(
     rife_uhd_mode: bool = False,
     rife_tta_spatial: bool = False,
     rife_tta_temporal: bool = False,
-    rife_thread_spec: Optional[str] = None,
+    rife_thread_spec: str | None = None,
 ) -> None:
     """Check RIFE capabilities and log warnings for unsupported features.
 
@@ -1215,8 +1215,8 @@ def _check_rife_capability_warnings(
 
 def _process_in_skip_model_mode(
     ffmpeg_proc: subprocess.Popen,
-    image_paths: List[pathlib.Path],
-) -> Iterator[Tuple[int, int, float]]:
+    image_paths: list[pathlib.Path],
+) -> Iterator[tuple[int, int, float]]:
     """Process frames in skip_model mode (no interpolation).
 
     Args:
@@ -1247,14 +1247,14 @@ def _process_in_skip_model_mode(
 # --- Worker function for parallel processing --- #
 def _process_single_image_worker(
     original_path: pathlib.Path,
-    crop_rect_pil: Optional[Tuple[int, int, int, int]],
+    crop_rect_pil: tuple[int, int, int, int] | None,
     false_colour: bool,
     res_km: int,
     sanchez_temp_dir: pathlib.Path,
     output_dir: pathlib.Path,
     # Make target dims optional, only used for validation on subsequent images
-    target_width: Optional[int] = None,
-    target_height: Optional[int] = None,
+    target_width: int | None = None,
+    target_height: int | None = None,
 ) -> pathlib.Path:
     """Worker function to load, process (Sanchez, crop), validate, and save a single image.
 
@@ -1328,9 +1328,9 @@ def _process_single_image_worker(
 
 # --- Wrapper for map compatibility --- #
 def _process_single_image_worker_wrapper(
-    args: Tuple[
+    args: tuple[
         pathlib.Path,
-        Optional[Tuple[int, int, int, int]],
+        tuple[int, int, int, int] | None,
         bool,
         int,
         pathlib.Path,
@@ -1364,10 +1364,10 @@ def run_vfi(
     # --- Add Sanchez/Crop Args --- #
     false_colour: bool = False,
     res_km: int = 4,
-    crop_rect_xywh: Optional[Tuple[int, int, int, int]] = None,
+    crop_rect_xywh: tuple[int, int, int, int] | None = None,
     # --- End Add --- #
     **kwargs: Any,  # Keep kwargs for backward compat or other settings
-) -> Iterator[Union[Tuple[int, int, float], pathlib.Path]]:
+) -> Iterator[Union[tuple[int, int, float], pathlib.Path]]:
     """
     Runs RIFE interpolation or copies original frames to a raw video file.
     Uses parallel processing for Sanchez/cropping if enabled.
@@ -1563,7 +1563,7 @@ def _run_rife_pair(
 
 
 def _encode_frames_for_ffmpeg(
-    frame_paths: List[pathlib.Path], target_dims: Optional[Tuple[int, int]]
+    frame_paths: list[pathlib.Path], target_dims: tuple[int, int] | None
 ) -> Iterator[bytes]:
     """Opens, optionally resizes, and encodes frames as PNG bytes for FFmpeg stdin."""
     LOGGER.debug("_encode_frames_for_ffmpeg called with %s paths.", len(frame_paths))  # Add entry log

@@ -50,7 +50,7 @@ class VisualizationManager:
     The full implementation needs to be restored from the corrupted file.
     """
 
-    def __init__(self, base_dir: Optional[Path] = None, satellite: str = "G16") -> None:
+    def __init__(self, base_dir: Path | None = None, satellite: str = "G16") -> None:
         """Initialize the visualization manager.
 
         Args:
@@ -78,9 +78,9 @@ class VisualizationManager:
         data: NDArray[np.float64],
         channel: Union[ChannelType, int],
         timestamp: datetime,
-        colormap: Optional[str] = None,
-        output_size: Optional[Tuple[int, int]] = None,
-    ) -> Optional[Image.Image]:
+        colormap: str | None = None,
+        output_size: tuple[int, int] | None = None,
+    ) -> Image.Image | None:
         """Create a visualization from satellite data.
 
         Args:
@@ -103,8 +103,8 @@ class VisualizationManager:
         self,
         data: NDArray[np.float64],
         channel: Union[ChannelType, int],
-        sample_size: Tuple[int, int] = (500, 500),
-    ) -> Tuple[Image.Image, Image.Image]:
+        sample_size: tuple[int, int] = (500, 500),
+    ) -> tuple[Image.Image, Image.Image]:
         """Create sample visualizations.
 
         Args:
@@ -123,10 +123,10 @@ class VisualizationManager:
 
     def create_comparison(
         self,
-        images: Dict[str, Image.Image],
+        images: dict[str, Image.Image],
         title: str = "Comparison",
         layout: str = "horizontal",
-    ) -> Optional[Image.Image]:
+    ) -> Image.Image | None:
         """Create a comparison visualization from multiple images.
 
         Args:

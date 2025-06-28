@@ -8,10 +8,9 @@ Key optimizations:
 4. Mock file operations directly
 """
 
-from pathlib import Path
 from typing import ClassVar
 import unittest
-from unittest.mock import MagicMock, Mock, patch, PropertyMock
+from unittest.mock import MagicMock, Mock, patch
 
 from PyQt6.QtCore import QCoreApplication, QSettings
 from PyQt6.QtWidgets import QApplication, QComboBox
@@ -48,37 +47,38 @@ class TestModelManagerOptimized(unittest.TestCase):
         self._mock_fs.clear()
 
         # Mock Path operations
-        self.path_patcher = patch('pathlib.Path')
+        self.path_patcher = patch("pathlib.Path")
         self.mock_path_class = self.path_patcher.start()
 
         # Override Path methods to use mock filesystem
-        def mock_path_init(self, *args):
+        def mock_path_init(self, *args) -> None:
             if args:
                 self._path = str(args[0])
             else:
                 self._path = ""
-            return None
 
         def mock_exists(self):
             return self._path in self._mock_fs
 
         def mock_is_dir(self):
-            return self._mock_fs.get(self._path, {}).get('is_dir', False)
+            return self._mock_fs.get(self._path, {}).get("is_dir", False)
 
         def mock_iterdir(self):
             if self._path not in self._mock_fs:
-                raise FileNotFoundError(f"Directory not found: {self._path}")
+                msg = f"Directory not found: {self._path}"
+                raise FileNotFoundError(msg)
 
-            if not self._mock_fs[self._path].get('is_dir', False):
-                raise NotADirectoryError(f"Not a directory: {self._path}")
+            if not self._mock_fs[self._path].get("is_dir", False):
+                msg = f"Not a directory: {self._path}"
+                raise NotADirectoryError(msg)
 
-            children = self._mock_fs[self._path].get('children', [])
+            children = self._mock_fs[self._path].get("children", [])
             for child_name in children:
                 child_path = f"{self._path}/{child_name}"
                 mock_child = Mock()
                 mock_child._path = child_path
                 mock_child.name = child_name
-                mock_child.is_dir = lambda: self._mock_fs.get(child_path, {}).get('is_dir', False)
+                mock_child.is_dir = lambda: self._mock_fs.get(child_path, {}).get("is_dir", False)
                 mock_child.__truediv__ = lambda s, other: mock_path_instance(f"{s._path}/{other}")
                 yield mock_child
 
@@ -88,7 +88,7 @@ class TestModelManagerOptimized(unittest.TestCase):
             instance.exists = lambda: mock_exists(instance)
             instance.is_dir = lambda: mock_is_dir(instance)
             instance.iterdir = lambda: mock_iterdir(instance)
-            instance.name = path_str.split('/')[-1] if '/' in path_str else path_str
+            instance.name = path_str.split("/")[-1] if "/" in path_str else path_str
             instance.__str__ = lambda: instance._path
             instance.__truediv__ = lambda self, other: mock_path_instance(f"{self._path}/{other}")
             return instance
@@ -99,16 +99,16 @@ class TestModelManagerOptimized(unittest.TestCase):
         """Clean up test fixtures."""
         self.path_patcher.stop()
 
-    def _create_mock_directory(self, path: str, children: list = None):
+    def _create_mock_directory(self, path: str, children: list | None = None) -> None:
         """Helper to create a mock directory in our fake filesystem."""
-        self._mock_fs[path] = {'is_dir': True, 'children': children or []}
+        self._mock_fs[path] = {"is_dir": True, "children": children or []}
         # Also create child entries
-        for child in (children or []):
+        for child in children or []:
             child_path = f"{path}/{child}"
             if child.startswith("rife-"):  # Model directories
-                self._mock_fs[child_path] = {'is_dir': True, 'children': []}
+                self._mock_fs[child_path] = {"is_dir": True, "children": []}
 
-    def test_initialization_and_populate_empty(self):
+    def test_initialization_and_populate_empty(self) -> None:
         """Test initialization and empty directory population together."""
         # Test initialization
         assert self.model_manager.settings == self.settings
@@ -125,7 +125,7 @@ class TestModelManagerOptimized(unittest.TestCase):
         assert combo_box.count() == 0
         assert len(self.model_manager.available_models) == 0
 
-    def test_populate_and_get_models(self):
+    def test_populate_and_get_models(self) -> None:
         """Test populating models and getting model info together."""
         # Create mock model directories
         self._create_mock_directory("/models", ["rife-v4.6", "rife-v4.7", "not-a-model"])
@@ -146,36 +146,36 @@ class TestModelManagerOptimized(unittest.TestCase):
         # Test non-existent model
         assert self.model_manager.get_model_path("non-existent") is None
 
-    def test_capabilities_and_supports_methods(self):
+    def test_capabilities_and_supports_methods(self) -> None:
         """Test model capabilities and all supports_* methods together."""
         # Set up capabilities for multiple models at once
         capabilities = {
             "model1": {"ensemble": True, "fastmode": False, "hd": True},
             "model2": {"ensemble": False, "fastmode": True, "hd": False},
-            "model3": {}  # Empty capabilities
+            "model3": {},  # Empty capabilities
         }
 
         for model, caps in capabilities.items():
             self.model_manager.model_capabilities[model] = caps
 
         # Test all models
-        assert self.model_manager.supports_ensemble("model1") == True
-        assert self.model_manager.supports_fastmode("model1") == False
-        assert self.model_manager.supports_hd_mode("model1") == True
+        assert self.model_manager.supports_ensemble("model1") is True
+        assert self.model_manager.supports_fastmode("model1") is False
+        assert self.model_manager.supports_hd_mode("model1") is True
 
-        assert self.model_manager.supports_ensemble("model2") == False
-        assert self.model_manager.supports_fastmode("model2") == True
-        assert self.model_manager.supports_hd_mode("model2") == False
+        assert self.model_manager.supports_ensemble("model2") is False
+        assert self.model_manager.supports_fastmode("model2") is True
+        assert self.model_manager.supports_hd_mode("model2") is False
 
         # Empty capabilities default to False
-        assert self.model_manager.supports_ensemble("model3") == False
-        assert self.model_manager.supports_fastmode("model3") == False
-        assert self.model_manager.supports_hd_mode("model3") == False
+        assert self.model_manager.supports_ensemble("model3") is False
+        assert self.model_manager.supports_fastmode("model3") is False
+        assert self.model_manager.supports_hd_mode("model3") is False
 
         # Non-existent model
-        assert self.model_manager.supports_ensemble("non-existent") == False
+        assert self.model_manager.supports_ensemble("non-existent") is False
 
-    def test_save_load_selected_model(self):
+    def test_save_load_selected_model(self) -> None:
         """Test saving and loading selected model preferences."""
         model_name = "rife-v4.7"
 
@@ -192,15 +192,15 @@ class TestModelManagerOptimized(unittest.TestCase):
         assert self.model_manager.load_selected_model() is None
 
     @patch("goesvfi.gui_components.model_manager.QMessageBox")
-    def test_error_handling(self, mock_messagebox):
+    def test_error_handling(self, mock_messagebox) -> None:
         """Test error handling during model population."""
         combo_box = QComboBox()
 
         # Directory that will raise permission error
-        self._mock_fs["/restricted"] = {'is_dir': True, 'children': []}
+        self._mock_fs["/restricted"] = {"is_dir": True, "children": []}
 
         # Make iterdir raise PermissionError
-        with patch.object(self.mock_path_class.return_value, 'iterdir', side_effect=PermissionError("Access denied")):
+        with patch.object(self.mock_path_class.return_value, "iterdir", side_effect=PermissionError("Access denied")):
             self.model_manager.populate_models(combo_box, "/restricted")
 
         # Verify error dialog was shown
@@ -208,12 +208,12 @@ class TestModelManagerOptimized(unittest.TestCase):
         assert combo_box.count() == 0
 
     @patch("goesvfi.gui_components.model_manager.RifeCapabilityDetector")
-    def test_refresh_models_with_capabilities(self, mock_detector):
+    def test_refresh_models_with_capabilities(self, mock_detector) -> None:
         """Test refreshing models and detecting capabilities efficiently."""
         # Create models with executables
         self._create_mock_directory("/models", ["model1", "model2"])
-        self._mock_fs["/models/model1/rife-cli"] = {'is_dir': False}
-        self._mock_fs["/models/model2/rife-cli"] = {'is_dir': False}
+        self._mock_fs["/models/model1/rife-cli"] = {"is_dir": False}
+        self._mock_fs["/models/model2/rife-cli"] = {"is_dir": False}
 
         # Mock capability detection for both models
         det1 = MagicMock()
@@ -234,12 +234,13 @@ class TestModelManagerOptimized(unittest.TestCase):
 
         # Override exists for executables
         original_exists = self.mock_path_class.return_value.exists
+
         def mock_exists_with_exe(self):
             if self._path.endswith("/rife-cli"):
                 return True
             return original_exists()
 
-        with patch.object(self.mock_path_class.return_value, 'exists', mock_exists_with_exe):
+        with patch.object(self.mock_path_class.return_value, "exists", mock_exists_with_exe):
             self.model_manager.refresh_models("/models")
 
         # Verify capabilities were detected correctly

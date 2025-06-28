@@ -29,8 +29,8 @@ class FileSorter:
         self.total_bytes_copied = 0
         self.dry_run = dry_run
         self.duplicate_mode = duplicate_mode
-        self._progress_callback: Optional[Callable[[int, int], None]] = None
-        self._should_cancel: Optional[Callable[[], bool]] = None
+        self._progress_callback: Callable[[int, int], None] | None = None
+        self._should_cancel: Callable[[], bool] | None = None
 
     def copy_file_with_buffer(
         self,
@@ -61,7 +61,7 @@ class FileSorter:
         # os.utime expects (atime, mtime) in *epoch seconds*.
         os.utime(dest_path, (source_mtime_utc, source_mtime_utc))
 
-    def _validate_directories(self, source: str, destination: str) -> Tuple[Path, Path]:
+    def _validate_directories(self, source: str, destination: str) -> tuple[Path, Path]:
         """
         Validates the source and destination directories.
 
@@ -146,7 +146,7 @@ class FileSorter:
         except (ValueError, TypeError):
             return False
 
-    def _collect_date_folders(self, source_dir: Path) -> List[Path]:
+    def _collect_date_folders(self, source_dir: Path) -> list[Path]:
         """
         Finds all date/time folders in the source directory.
 
@@ -161,7 +161,7 @@ class FileSorter:
         """
         try:
             # Get all folders in the source directory
-            date_folders: List[Path] = [f for f in source_dir.iterdir() if f.is_dir()]
+            date_folders: list[Path] = [f for f in source_dir.iterdir() if f.is_dir()]
             total_folders = len(date_folders)
             print(f"Found {total_folders} date folders in source directory.")
             return date_folders
@@ -169,7 +169,7 @@ class FileSorter:
             print(f"Error retrieving date folders from source directory: {e}")
             raise
 
-    def _get_folder_datetime(self, folder: Path) -> Optional[str]:
+    def _get_folder_datetime(self, folder: Path) -> str | None:
         """
         Extracts a formatted datetime string from a folder name.
 
@@ -192,7 +192,7 @@ class FileSorter:
         folder_datetime = folder_datetime_raw[:8] + "T" + folder_datetime_raw[8:]
         return folder_datetime
 
-    def _collect_files_to_process(self, date_folders: List[Path]) -> List[Tuple[Path, str]]:
+    def _collect_files_to_process(self, date_folders: list[Path]) -> list[tuple[Path, str]]:
         """
         Collects all files to process from date folders.
 
@@ -202,7 +202,7 @@ class FileSorter:
         Returns:
             List of tuples containing (file_path, folder_datetime)
         """
-        files_to_process: List[Tuple[Path, str]] = []
+        files_to_process: list[tuple[Path, str]] = []
         total_folders = len(date_folders)
         folder_counter = 0
 
@@ -224,7 +224,7 @@ class FileSorter:
 
             # Gather all PNG files
             try:
-                png_files: List[Path] = list(folder.glob("*.png"))
+                png_files: list[Path] = list(folder.glob("*.png"))
             except Exception as e:
                 print(f"Error retrieving files in folder {folder.name!r}: {e}")
                 continue
@@ -238,7 +238,7 @@ class FileSorter:
 
     def _prepare_target_path(
         self, file_path: Path, folder_datetime: str, destination_dir: Path
-    ) -> Tuple[Path, Path, str]:
+    ) -> tuple[Path, Path, str]:
         """
         Prepares the target path for copying.
 
@@ -284,7 +284,7 @@ class FileSorter:
         file_path: Path,
         new_file_path: Path,
         time_tolerance_seconds: float = DEFAULT_TIME_TOLERANCE_SECONDS,
-    ) -> Tuple[bool, int, float]:
+    ) -> tuple[bool, int, float]:
         """
         Checks if source and destination files are identical.
 
@@ -312,7 +312,7 @@ class FileSorter:
 
         return files_are_identical, source_size, source_mtime_utc
 
-    def _handle_duplicate(self, new_file_path: Path) -> Tuple[Optional[Path], str]:
+    def _handle_duplicate(self, new_file_path: Path) -> tuple[Path | None, str]:
         """
         Handles duplicate files based on the configured duplicate mode.
 
@@ -392,7 +392,7 @@ class FileSorter:
 
         return action_msg
 
-    def _process_files(self, files_to_process: List[Tuple[Path, str]], destination_dir: Path) -> None:
+    def _process_files(self, files_to_process: list[tuple[Path, str]], destination_dir: Path) -> None:
         """
         Processes all files by copying or skipping them.
 
@@ -433,7 +433,7 @@ class FileSorter:
             except Exception as e:
                 print(f"\nError processing file {file_path.name!r}: {e}")  # Print error on new line
 
-    def _generate_stats(self, script_start_time: datetime) -> Dict[str, Any]:
+    def _generate_stats(self, script_start_time: datetime) -> dict[str, Any]:
         """
         Generates statistics of the file sorting operation.
 
@@ -478,9 +478,9 @@ class FileSorter:
         self,
         source: str,
         destination: str,
-        progress_callback: Optional[Callable[[int, int], None]] = None,
-        should_cancel: Optional[Callable[[], bool]] = None,
-    ) -> Dict[str, Any]:
+        progress_callback: Callable[[int, int], None] | None = None,
+        should_cancel: Callable[[], bool] | None = None,
+    ) -> dict[str, Any]:
         """
         Sorts files from a source directory into a destination directory based on date/time.
 

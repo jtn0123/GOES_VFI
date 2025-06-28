@@ -52,12 +52,12 @@ class ProcessingViewModel(QObject):
         self._total_frames = 0
         self._time_elapsed = 0.0
         self._status_message = "Ready"
-        self._output_file_path: Optional[Path] = None
+        self._output_file_path: Path | None = None
 
         # Initialize properties for input parameters
-        self._input_directory: Optional[Path] = None
-        self._output_file: Optional[Path] = None
-        self._crop_rect: Optional[Tuple[int, int, int, int]] = None
+        self._input_directory: Path | None = None
+        self._output_file: Path | None = None
+        self._crop_rect: tuple[int, int, int, int] | None = None
         self._current_encoder: str = "RIFE"  # Default encoder
 
     def start_processing(self) -> None:
@@ -227,7 +227,7 @@ class ProcessingViewModel(QObject):
         return self._total_frames
 
     @property
-    def output_file_path(self) -> Optional[Path]:
+    def output_file_path(self) -> Path | None:
         """
         The path to the generated output file.
 
@@ -237,7 +237,7 @@ class ProcessingViewModel(QObject):
         return self._output_file_path
 
     @property
-    def input_directory(self) -> Optional[Path]:
+    def input_directory(self) -> Path | None:
         """
         The input directory for processing.
 
@@ -247,7 +247,7 @@ class ProcessingViewModel(QObject):
         return self._input_directory
 
     @input_directory.setter
-    def input_directory(self, path: Optional[Path]) -> None:
+    def input_directory(self, path: Path | None) -> None:
         """
         Set the input directory.
 
@@ -258,7 +258,7 @@ class ProcessingViewModel(QObject):
         LOGGER.debug("Input directory set to: %s", path)
 
     @property
-    def crop_rect(self) -> Optional[Tuple[int, int, int, int]]:
+    def crop_rect(self) -> tuple[int, int, int, int] | None:
         """
         The current crop rectangle.
 
@@ -268,7 +268,7 @@ class ProcessingViewModel(QObject):
         return self._crop_rect
 
     @crop_rect.setter
-    def crop_rect(self, rect: Optional[Tuple[int, int, int, int]]) -> None:
+    def crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
         """
         Set the crop rectangle.
 
@@ -303,7 +303,7 @@ class ProcessingViewModel(QObject):
         self,
         output_path: Path,
         fps: int,
-        crop_rect: Optional[tuple[int, int, int, int]],
+        crop_rect: tuple[int, int, int, int] | None,
         ffmpeg_settings: dict,
     ) -> list[str]:
         """Build FFmpeg command incorporating crop filter."""

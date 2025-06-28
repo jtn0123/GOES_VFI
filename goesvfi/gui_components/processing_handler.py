@@ -13,7 +13,7 @@ LOGGER = log.get_logger(__name__)
 class ProcessingHandler:
     """Handles VFI processing workflow."""
 
-    def handle_processing(self, main_window: Any, args: Dict[str, Any]) -> None:
+    def handle_processing(self, main_window: Any, args: dict[str, Any]) -> None:
         """Handle the processing_started signal from MainTab.
 
         Creates and starts a VfiWorker with the provided arguments.
@@ -62,7 +62,7 @@ class ProcessingHandler:
             except Exception as e:
                 LOGGER.exception("Error terminating previous worker: %s", e)
 
-    def _create_and_start_worker(self, main_window: Any, args: Dict[str, Any]) -> bool:
+    def _create_and_start_worker(self, main_window: Any, args: dict[str, Any]) -> bool:
         """Create and start a new VFI worker.
 
         Args:

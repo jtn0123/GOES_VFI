@@ -1,32 +1,33 @@
 #!/usr/bin/env python3
-"""
-Fancy test runner for the GOES VFI project with enhanced progress tracking.
+"""Fancy test runner for the GOES VFI project with enhanced progress tracking.
 
 This script runs tests with pytest using JSON reporting and provides
 real-time progress visualization with worker status and test results.
 """
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import contextlib
 import glob
 import json
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class Config:
     """Configuration for test runner."""
+
     # Colors for different statuses
     STATUS_COLORS = {
-        "passed": "\033[92m",   # Green
-        "failed": "\033[91m",   # Red
-        "error": "\033[95m",    # Magenta
+        "passed": "\033[92m",  # Green
+        "failed": "\033[91m",  # Red
+        "error": "\033[95m",  # Magenta
         "skipped": "\033[94m",  # Blue
         "crashed": "\033[93m",  # Yellow
     }
@@ -42,7 +43,7 @@ class Config:
     }
 
     # Spinner animation frames
-    SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+    SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
     # Known problematic tests (configurable)
     PROBLEMATIC_TESTS = [
@@ -52,7 +53,7 @@ class Config:
         "tests/gui/imagery/test_imagery_gui_fixed.py",
         "tests/gui/imagery/test_imagery_zoom.py",
         "test_imagery_gui.py",
-        "test_imagery_gui_fixed.py", 
+        "test_imagery_gui_fixed.py",
         "test_imagery_gui_zoom.py",
     ]
 
@@ -63,12 +64,12 @@ class FancyProgressTracker:
     def __init__(self, max_workers: int = 4):
         self.max_workers = max_workers
         self.running = False
-        self.thread: Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.frame = 0
         self.completed = 0
         self.total = 0
-        self.active_tests: Dict[str, Dict[str, Any]] = {}
-        self.completed_results: List[Dict[str, Any]] = []
+        self.active_tests: dict[str, dict[str, Any]] = {}
+        self.completed_results: list[dict[str, Any]] = []
         self.lock = threading.Lock()
 
         # Terminal optimization
@@ -94,12 +95,9 @@ class FancyProgressTracker:
     def update_active_test(self, worker_id: str, test_path: str) -> None:
         """Update what a worker is currently running."""
         with self.lock:
-            self.active_tests[worker_id] = {
-                'test_path': test_path,
-                'start_time': time.time()
-            }
+            self.active_tests[worker_id] = {"test_path": test_path, "start_time": time.time()}
 
-    def complete_test(self, worker_id: str, result: Dict[str, Any]) -> None:
+    def complete_test(self, worker_id: str, result: dict[str, Any]) -> None:
         """Mark a test as completed."""
         with self.lock:
             self.active_tests.pop(worker_id, None)
@@ -115,12 +113,10 @@ class FancyProgressTracker:
 
         # Clean up display
         if self.current_display_lines > 0:
-            print(f"\033[{self.current_display_lines}A", end="")
             for _ in range(self.current_display_lines):
-                print("\033[2K")  # Clear line
-        print()  # Add final newline
+                pass  # Clear line
 
-    def get_results(self) -> List[Dict[str, Any]]:
+    def get_results(self) -> list[dict[str, Any]]:
         """Get all completed results."""
         with self.lock:
             return list(self.completed_results)
@@ -135,8 +131,10 @@ class FancyProgressTracker:
                     break
 
                 # Check if enough time has passed or if there's significant change
-                if (current_time - self.last_update_time < self.min_update_interval and 
-                    self.last_display_hash is not None):
+                if (
+                    current_time - self.last_update_time < self.min_update_interval
+                    and self.last_display_hash is not None
+                ):
                     time.sleep(0.1)
                     continue
 
@@ -176,9 +174,14 @@ class FancyProgressTracker:
         except:
             return 80, 24  # Fallback defaults
 
-    def _generate_display_content(self, frame_char: str, completed: int, total: int, 
-                                 active_tests: Dict[str, Dict[str, Any]], 
-                                 completed_results: List[Dict[str, Any]]) -> str:
+    def _generate_display_content(
+        self,
+        frame_char: str,
+        completed: int,
+        total: int,
+        active_tests: dict[str, dict[str, Any]],
+        completed_results: list[dict[str, Any]],
+    ) -> str:
         """Generate the complete display content as a string."""
         lines = []
 
@@ -196,37 +199,39 @@ class FancyProgressTracker:
             start_idx = max(0, len(completed_results) - recent_count)
             for i in range(start_idx, len(completed_results)):
                 result = completed_results[i]
-                status = result['status']
-                path = result['path']
-                duration = result['duration']
-                counts = result['counts']
+                status = result["status"]
+                path = result["path"]
+                duration = result["duration"]
+                counts = result["counts"]
                 test_number = i + 1
 
-                icon = Config.STATUS_ICONS.get(status, '?')
+                icon = Config.STATUS_ICONS.get(status, "?")
                 color = Config.STATUS_COLORS.get(status, Config.RESET)
                 display_path = self._shorten_path(path, min(35, self.terminal_width - 45))
 
                 # Build detailed count string
                 count_parts = []
-                for status_name in ['passed', 'failed', 'error', 'skipped']:
+                for status_name in ["passed", "failed", "error", "skipped"]:
                     count = counts.get(status_name, 0)
                     if count > 0:
                         count_parts.append(f"{count} {status_name}")
 
                 count_str = f"({', '.join(count_parts)})" if count_parts else "(0 tests)"
 
-                lines.append(f"  [{test_number:3d}] {color}{icon} {display_path} {count_str} {duration:.1f}s{Config.RESET}")
+                lines.append(
+                    f"  [{test_number:3d}] {color}{icon} {display_path} {count_str} {duration:.1f}s{Config.RESET}"
+                )
 
         # Active workers (condensed)
         if active_tests:
             lines.append(f"🔄 Active ({len(active_tests)}/{self.max_workers}):")
             current_time = time.time()
             worker_list = list(active_tests.items())
-            worker_list.sort(key=lambda x: x[1]['start_time'])
+            worker_list.sort(key=lambda x: x[1]["start_time"])
 
-            for worker_id, test_info in worker_list[:self.max_workers]:
-                test_path = test_info['test_path']
-                duration = current_time - test_info['start_time']
+            for _worker_id, test_info in worker_list[: self.max_workers]:
+                test_path = test_info["test_path"]
+                duration = current_time - test_info["start_time"]
 
                 display_path = self._shorten_path(test_path, min(40, self.terminal_width - 20))
 
@@ -243,25 +248,22 @@ class FancyProgressTracker:
 
     def _update_display(self, content: str) -> None:
         """Update display efficiently with minimal cursor movement."""
-        lines = content.split('\n')
+        lines = content.split("\n")
         new_line_count = len(lines)
 
         # Clear previous content if needed
         if self.current_display_lines > 0:
             # Move cursor up to start of our content
-            print(f"\033[{self.current_display_lines}A", end="")
             # Clear each line
             for _ in range(self.current_display_lines):
-                print(f"\033[2K\n", end="")  # Clear line and move to next
+                pass  # Clear line and move to next
             # Move cursor back to start
-            print(f"\033[{self.current_display_lines}A", end="")
 
         # Print new content
         for line in lines:
             # Truncate line if it's too long for terminal
             if len(line) > self.terminal_width:
-                line = line[:self.terminal_width-3] + "..."
-            print(line)
+                line = line[: self.terminal_width - 3] + "..."
 
         self.current_display_lines = new_line_count
 
@@ -274,23 +276,22 @@ class FancyProgressTracker:
         bar = "█" * filled + "░" * (width - filled)
         return f"[{bar}]"
 
-    def get_status_summary(self, results: List[Dict[str, Any]]) -> str:
+    def get_status_summary(self, results: list[dict[str, Any]]) -> str:
         """Get a compact status summary."""
-        status_counts = {'passed': 0, 'failed': 0, 'error': 0, 'skipped': 0}
+        status_counts = {"passed": 0, "failed": 0, "error": 0, "skipped": 0}
         for result in results:
-            status = result['status']
+            status = result["status"]
             status_counts[status] = status_counts.get(status, 0) + 1
 
         summary_parts = []
-        for status in ['passed', 'failed', 'error', 'skipped']:
+        for status in ["passed", "failed", "error", "skipped"]:
             count = status_counts.get(status, 0)
             if count > 0:
                 color = Config.STATUS_COLORS.get(status, Config.RESET)
-                icon = Config.STATUS_ICONS.get(status, '?')
+                icon = Config.STATUS_ICONS.get(status, "?")
                 summary_parts.append(f"{color}{icon}{count}{Config.RESET}")
 
-        return ' '.join(summary_parts) if summary_parts else 'None'
-
+        return " ".join(summary_parts) if summary_parts else "None"
 
     def _shorten_path(self, path: str, max_length: int) -> str:
         """Intelligently shorten a file path for display."""
@@ -298,31 +299,33 @@ class FancyProgressTracker:
             return path
 
         # Try to keep the filename and relevant parent directories
-        parts = path.split('/')
+        parts = path.split("/")
         if len(parts) > 1:
             filename = parts[-1]
 
             # If just the filename is too long, truncate it
             if len(filename) >= max_length - 3:
-                return "..." + filename[-(max_length-3):]
+                return "..." + filename[-(max_length - 3) :]
 
             # Try to keep meaningful directory structure
             for i in range(len(parts) - 2, -1, -1):
-                candidate_path = '/'.join(parts[i:])
+                candidate_path = "/".join(parts[i:])
                 if len(candidate_path) <= max_length:
                     return candidate_path
                 # Keep tests/ and other important prefixes
-                if parts[i] in ['tests', 'goesvfi', 'src'] and i > 0:
+                if parts[i] in {"tests", "goesvfi", "src"} and i > 0:
                     candidate_with_ellipsis = f".../{'/'.join(parts[i:])}"
                     if len(candidate_with_ellipsis) <= max_length:
                         return candidate_with_ellipsis
 
             return "..." + filename
 
-        return "..." + path[-(max_length-3):]
+        return "..." + path[-(max_length - 3) :]
 
 
-def run_test_with_json(test_path: str, debug_mode: bool = False, progress_tracker: Optional[FancyProgressTracker] = None) -> Dict[str, Any]:
+def run_test_with_json(
+    test_path: str, debug_mode: bool = False, progress_tracker: FancyProgressTracker | None = None
+) -> dict[str, Any]:
     """Run a single test file with pytest JSON reporting.
 
     Args:
@@ -337,17 +340,20 @@ def run_test_with_json(test_path: str, debug_mode: bool = False, progress_tracke
     venv_python = script_dir / ".venv" / "bin" / "python"
 
     # Create temporary file for JSON report
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as json_file:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as json_file:
         json_report_path = json_file.name
 
     # Build pytest command with JSON reporting
     cmd = [
-        str(venv_python), "-m", "pytest", 
-        test_path, 
-        "--json-report", 
+        str(venv_python),
+        "-m",
+        "pytest",
+        test_path,
+        "--json-report",
         f"--json-report-file={json_report_path}",
-        "-v", 
-        "-p", "no:cov"  # Disable coverage to avoid import issues
+        "-v",
+        "-p",
+        "no:cov",  # Disable coverage to avoid import issues
     ]
 
     # Add debug options if requested
@@ -374,14 +380,7 @@ def run_test_with_json(test_path: str, debug_mode: bool = False, progress_tracke
 
     try:
         # Run pytest with JSON reporting
-        result = subprocess.run(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=False,
-            env=env
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
 
         duration = time.time() - start_time
         stdout = result.stdout
@@ -389,68 +388,66 @@ def run_test_with_json(test_path: str, debug_mode: bool = False, progress_tracke
 
         # Parse JSON report
         try:
-            with open(json_report_path, 'r') as f:
+            with open(json_report_path, encoding="utf-8") as f:
                 json_data = json.load(f)
 
             # Extract test results from JSON
-            summary = json_data.get('summary', {})
-            tests = json_data.get('tests', [])
+            summary = json_data.get("summary", {})
+            tests = json_data.get("tests", [])
 
             # Count results
             counts = {
-                'passed': summary.get('passed', 0),
-                'failed': summary.get('failed', 0),
-                'error': summary.get('error', 0),
-                'skipped': summary.get('skipped', 0),
+                "passed": summary.get("passed", 0),
+                "failed": summary.get("failed", 0),
+                "error": summary.get("error", 0),
+                "skipped": summary.get("skipped", 0),
             }
 
             # Determine overall status
-            if counts['failed'] > 0:
-                status = 'failed'
-            elif counts['error'] > 0:
-                status = 'error'
-            elif counts['passed'] > 0:
-                status = 'passed'
-            elif counts['skipped'] > 0:
-                status = 'skipped'
+            if counts["failed"] > 0:
+                status = "failed"
+            elif counts["error"] > 0:
+                status = "error"
+            elif counts["passed"] > 0:
+                status = "passed"
+            elif counts["skipped"] > 0:
+                status = "skipped"
             else:
-                status = 'error'  # Fallback
+                status = "error"  # Fallback
 
             # Extract failed test details
             failed_details = []
             for test in tests:
-                if test.get('outcome') in ['failed', 'error']:
-                    test_name = test.get('nodeid', '').split('::')[-1]
+                if test.get("outcome") in {"failed", "error"}:
+                    test_name = test.get("nodeid", "").split("::")[-1]
                     failed_details.append(f"{test.get('outcome', 'unknown').upper()} {test_name}")
 
             test_result = {
-                'path': test_path,
-                'status': status,
-                'duration': duration,
-                'counts': counts,
-                'failed_details': failed_details,
-                'json_data': json_data,  # Keep full JSON for detailed reporting
-                'stdout': stdout,
-                'stderr': stderr
+                "path": test_path,
+                "status": status,
+                "duration": duration,
+                "counts": counts,
+                "failed_details": failed_details,
+                "json_data": json_data,  # Keep full JSON for detailed reporting
+                "stdout": stdout,
+                "stderr": stderr,
             }
 
         except (json.JSONDecodeError, FileNotFoundError, KeyError) as e:
             # Fallback to basic parsing if JSON fails
             test_result = {
-                'path': test_path,
-                'status': 'error',
-                'duration': duration,
-                'counts': {'error': 1, 'passed': 0, 'failed': 0, 'skipped': 0},
-                'failed_details': [f'JSON parsing error: {str(e)}'],
-                'stdout': stdout,
-                'stderr': stderr
+                "path": test_path,
+                "status": "error",
+                "duration": duration,
+                "counts": {"error": 1, "passed": 0, "failed": 0, "skipped": 0},
+                "failed_details": [f"JSON parsing error: {e!s}"],
+                "stdout": stdout,
+                "stderr": stderr,
             }
 
         # Clean up temporary JSON file
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(json_report_path)
-        except OSError:
-            pass
 
         # Update progress tracker with completed result
         if progress_tracker:
@@ -461,13 +458,13 @@ def run_test_with_json(test_path: str, debug_mode: bool = False, progress_tracke
     except Exception as e:
         duration = time.time() - start_time
         test_result = {
-            'path': test_path,
-            'status': 'error',
-            'duration': duration,
-            'counts': {'error': 1, 'passed': 0, 'failed': 0, 'skipped': 0},
-            'failed_details': [f'Execution error: {str(e)}'],
-            'stdout': '',
-            'stderr': str(e)
+            "path": test_path,
+            "status": "error",
+            "duration": duration,
+            "counts": {"error": 1, "passed": 0, "failed": 0, "skipped": 0},
+            "failed_details": [f"Execution error: {e!s}"],
+            "stdout": "",
+            "stderr": str(e),
         }
 
         # Update progress tracker with error result
@@ -477,7 +474,7 @@ def run_test_with_json(test_path: str, debug_mode: bool = False, progress_tracke
         return test_result
 
 
-def find_test_files(directory: str = "tests") -> List[str]:
+def find_test_files(directory: str = "tests") -> list[str]:
     """Find all test files in the given directory."""
     result = []
 
@@ -500,114 +497,108 @@ def find_test_files(directory: str = "tests") -> List[str]:
     return sorted(unique_result)
 
 
-def print_smart_summary(all_results: List[Dict[str, Any]], terminal_width: int = 80) -> None:
+def print_smart_summary(all_results: list[dict[str, Any]], terminal_width: int = 80) -> None:
     """Print an intelligent summary that adapts to terminal and human needs."""
     if not all_results:
         return
 
     # Calculate statistics
-    failed_results = [r for r in all_results if r['status'] in ['failed', 'error']]
-    total_duration = sum(r['duration'] for r in all_results)
+    failed_results = [r for r in all_results if r["status"] in {"failed", "error"}]
+    sum(r["duration"] for r in all_results)
 
     # Count files by status
-    file_counts = {'passed': 0, 'failed': 0, 'error': 0, 'skipped': 0}
-    test_counts = {'passed': 0, 'failed': 0, 'error': 0, 'skipped': 0}
+    file_counts = {"passed": 0, "failed": 0, "error": 0, "skipped": 0}
+    test_counts = {"passed": 0, "failed": 0, "error": 0, "skipped": 0}
 
     for result in all_results:
-        status = result['status']
+        status = result["status"]
         file_counts[status] = file_counts.get(status, 0) + 1
-        counts = result['counts']
+        counts = result["counts"]
         for key in test_counts:
             test_counts[key] += counts.get(key, 0)
 
     # Header
-    sep_line = "═" * min(terminal_width, 80)
-    print(f"\n{sep_line}")
-    print(f"🏁 TEST SESSION COMPLETE ({total_duration:.1f}s)")
-    print(f"{sep_line}")
+    "═" * min(terminal_width, 80)
 
     # Quick status overview
     total_files = len(all_results)
-    success_files = file_counts['passed']
+    success_files = file_counts["passed"]
     total_tests = sum(test_counts.values())
-    success_tests = test_counts['passed']
+    success_tests = test_counts["passed"]
 
     # File-level summary
     file_success_rate = (success_files / total_files * 100) if total_files > 0 else 0
-    test_success_rate = (success_tests / total_tests * 100) if total_tests > 0 else 0
+    (success_tests / total_tests * 100) if total_tests > 0 else 0
 
     if file_success_rate == 100.0:
-        status_emoji = "🎉"
-        status_color = Config.STATUS_COLORS['passed']
+        Config.STATUS_COLORS["passed"]
     elif file_success_rate >= 80.0:
-        status_emoji = "⚠️"
-        status_color = Config.STATUS_COLORS['crashed']
+        Config.STATUS_COLORS["crashed"]
     else:
-        status_emoji = "❌"
-        status_color = Config.STATUS_COLORS['failed']
-
-    print(f"{status_emoji} {status_color}Files: {success_files}/{total_files} passed ({file_success_rate:.1f}%){Config.RESET}")
-    print(f"📊 Tests: {success_tests}/{total_tests} passed ({test_success_rate:.1f}%)")
+        Config.STATUS_COLORS["failed"]
 
     # Show problem files if any
     if failed_results:
-        print(f"\n🚨 {Config.STATUS_COLORS['failed']}FAILED FILES ({len(failed_results)}):{Config.RESET}")
-        for i, result in enumerate(failed_results[:10], 1):  # Limit to 10 worst
-            path = result['path']
-            status = result['status']
-            duration = result['duration']
-            counts = result['counts']
+        for _i, result in enumerate(failed_results[:10], 1):  # Limit to 10 worst
+            path = result["path"]
+            status = result["status"]
+            result["duration"]
+            counts = result["counts"]
 
             # Show compact failure info
-            icon = Config.STATUS_ICONS.get(status, '?')
-            color = Config.STATUS_COLORS.get(status, Config.RESET)
+            Config.STATUS_ICONS.get(status, "?")
+            Config.STATUS_COLORS.get(status, Config.RESET)
 
             # Build failure summary
             failure_parts = []
-            if counts.get('failed', 0) > 0:
+            if counts.get("failed", 0) > 0:
                 failure_parts.append(f"{counts['failed']} failed")
-            if counts.get('error', 0) > 0:
+            if counts.get("error", 0) > 0:
                 failure_parts.append(f"{counts['error']} errors")
 
-            failure_summary = f" ({', '.join(failure_parts)})" if failure_parts else ""
+            f" ({', '.join(failure_parts)})" if failure_parts else ""
 
             # Shorten path for display
             max_path_len = min(50, terminal_width - 30)
-            display_path = _shorten_path_simple(path, max_path_len)
-
-            print(f"  {i:2d}. {color}{icon} {display_path}{failure_summary} {duration:.1f}s{Config.RESET}")
+            _shorten_path_simple(path, max_path_len)
 
         if len(failed_results) > 10:
-            print(f"  ... and {len(failed_results) - 10} more failed files")
+            pass
 
-    print(f"{sep_line}")
 
 def _shorten_path_simple(path: str, max_length: int) -> str:
     """Simple path shortening for summary display."""
     if len(path) <= max_length:
         return path
 
-    parts = path.split('/')
+    parts = path.split("/")
     if len(parts) > 1:
         filename = parts[-1]
         if len(filename) < max_length - 3:
             # Try to keep important directories
             for i in range(len(parts) - 2, -1, -1):
-                if parts[i] in ['tests', 'goesvfi'] or i == 0:
-                    candidate = '/'.join(parts[i:])
+                if parts[i] in {"tests", "goesvfi"} or i == 0:
+                    candidate = "/".join(parts[i:])
                     if len(candidate) <= max_length:
                         return candidate
                     return f".../{'/'.join(parts[i:])}"
         return "..." + filename
 
-    return "..." + path[-(max_length-3):]
+    return "..." + path[-(max_length - 3) :]
 
 
 def is_ci_environment():
     """Detect if we're running in a CI environment."""
     ci_indicators = [
-        'CI', 'CONTINUOUS_INTEGRATION', 'GITHUB_ACTIONS', 'TRAVIS', 'CIRCLECI',
-        'JENKINS_URL', 'BUILDKITE', 'TF_BUILD', 'GITLAB_CI'
+        "CI",
+        "CONTINUOUS_INTEGRATION",
+        "GITHUB_ACTIONS",
+        "TRAVIS",
+        "CIRCLECI",
+        "JENKINS_URL",
+        "BUILDKITE",
+        "TF_BUILD",
+        "GITLAB_CI",
     ]
     return any(os.getenv(indicator) for indicator in ci_indicators)
 
@@ -617,7 +608,7 @@ def should_use_json_output(args):
     return args.json_output or is_ci_environment()
 
 
-def main():
+def main() -> int:
     """Run all tests with fancy progress visualization."""
     import argparse
 
@@ -634,10 +625,7 @@ def main():
     args = parser.parse_args()
 
     # Find test files
-    if args.file:
-        test_files = args.file
-    else:
-        test_files = find_test_files(args.directory)
+    test_files = args.file or find_test_files(args.directory)
 
     # Filter out problematic tests if requested
     if args.skip_problematic:
@@ -645,20 +633,15 @@ def main():
         test_files = [t for t in test_files if t not in Config.PROBLEMATIC_TESTS]
         skipped_count = orig_count - len(test_files)
         if skipped_count > 0:
-            print(f"Skipping {skipped_count} known problematic tests")
+            pass
 
     # Determine output mode
     use_json_output = should_use_json_output(args)
 
     if use_json_output:
-        print(json.dumps({
-            "type": "test_session_start",
-            "total_tests": len(test_files),
-            "workers": args.parallel,
-            "mode": "json_output"
-        }))
+        pass
     else:
-        print(f"🎯 Found {len(test_files)} test files")
+        pass
 
     # Track results
     all_results = []
@@ -668,7 +651,7 @@ def main():
     if args.debug_mode:
         args.parallel = 1
         if not use_json_output:
-            print(f"{Config.STATUS_COLORS['crashed']}🔧 Debug mode enabled - running tests sequentially{Config.RESET}")
+            pass
 
     if not use_json_output:
         terminal_width = 80
@@ -678,11 +661,7 @@ def main():
         except:
             pass
 
-        sep_line = "═" * min(terminal_width, 80)
-        print(f"{sep_line}")
-        print(f"🚀 RUNNING {len(test_files)} TESTS WITH {args.parallel} WORKERS")
-        print(f"{sep_line}")
-        print()  # Extra space before progress display starts
+        "═" * min(terminal_width, 80)
 
     # Start progress tracker (only for interactive mode)
     progress_tracker = None
@@ -697,7 +676,10 @@ def main():
     try:
         with ThreadPoolExecutor(max_workers=args.parallel) as executor:
             # Submit all tests
-            future_to_path = {executor.submit(run_test_with_json, path, args.debug_mode, progress_tracker): path for path in test_files}
+            future_to_path = {
+                executor.submit(run_test_with_json, path, args.debug_mode, progress_tracker): path
+                for path in test_files
+            }
             running_futures = set(future_to_path.keys())
             completed_count = 0
 
@@ -719,11 +701,10 @@ def main():
                             "status": result["status"],
                             "duration": result["duration"],
                             "counts": result["counts"],
-                            "progress": f"{completed_count}/{len(test_files)}"
+                            "progress": f"{completed_count}/{len(test_files)}",
                         }
                         if result.get("failed_details"):
                             json_result["failed_details"] = result["failed_details"]
-                        print(json.dumps(json_result))
 
                 except Exception as e:
                     error_result = {
@@ -731,9 +712,9 @@ def main():
                         "status": "error",
                         "duration": 0,
                         "counts": {"error": 1, "passed": 0, "failed": 0, "skipped": 0},
-                        "failed_details": [f"Execution error: {str(e)}"],
+                        "failed_details": [f"Execution error: {e!s}"],
                         "stdout": "",
-                        "stderr": str(e)
+                        "stderr": str(e),
                     }
                     all_results.append(error_result)
 
@@ -745,9 +726,8 @@ def main():
                             "status": error_result["status"],
                             "duration": error_result["duration"],
                             "counts": error_result["counts"],
-                            "progress": f"{completed_count}/{len(test_files)}"
+                            "progress": f"{completed_count}/{len(test_files)}",
                         }
-                        print(json.dumps(json_result))
 
     except KeyboardInterrupt:
         cancelled = True
@@ -755,19 +735,13 @@ def main():
             progress_tracker.stop()
 
         if use_json_output:
-            print(json.dumps({
-                "type": "test_session_cancelled",
-                "completed": len(all_results),
-                "total": len(test_files)
-            }))
+            pass
         else:
-            print(f"\n{Config.STATUS_COLORS['crashed']}🛑 Testing cancelled by user (Ctrl+C){Config.RESET}")
-            print(f"Completed {len(all_results)}/{len(test_files)} tests before cancellation")
+            pass
 
         # Cancel remaining futures
         remaining_count = len(running_futures)
         if remaining_count > 0 and not use_json_output:
-            print(f"Cancelling {remaining_count} running tests...")
             for future in running_futures:
                 future.cancel()
 
@@ -778,11 +752,12 @@ def main():
         progress_tracker.stop()
 
     # Extract failed tests from results
-    failed_results = [
-        result for result in all_results 
-        if result["status"] in ["failed", "error"] or 
-           result.get("counts", {}).get("failed", 0) > 0 or 
-           result.get("counts", {}).get("error", 0) > 0
+    [
+        result
+        for result in all_results
+        if result["status"] in {"failed", "error"}
+        or result.get("counts", {}).get("failed", 0) > 0
+        or result.get("counts", {}).get("error", 0) > 0
     ]
 
     # If cancelled, skip the normal summary
@@ -790,18 +765,18 @@ def main():
         return 130
 
     # Calculate summary
-    total_duration = time.time() - start_time
+    time.time() - start_time
 
     # Count files by status
-    file_counts = {'passed': 0, 'failed': 0, 'error': 0, 'skipped': 0}
+    file_counts = {"passed": 0, "failed": 0, "error": 0, "skipped": 0}
     for result in all_results:
-        status = result['status']
+        status = result["status"]
         file_counts[status] = file_counts.get(status, 0) + 1
 
     # Count individual tests
-    test_counts = {'passed': 0, 'failed': 0, 'error': 0, 'skipped': 0}
+    test_counts = {"passed": 0, "failed": 0, "error": 0, "skipped": 0}
     for result in all_results:
-        counts = result['counts']
+        counts = result["counts"]
         for key in test_counts:
             test_counts[key] += counts.get(key, 0)
 
@@ -818,8 +793,7 @@ def main():
     # Return non-zero exit code if there were failures or errors
     if args.tolerant:
         return 0
-    else:
-        return 0 if file_counts['failed'] + file_counts['error'] == 0 else 1
+    return 0 if file_counts["failed"] + file_counts["error"] == 0 else 1
 
 
 if __name__ == "__main__":

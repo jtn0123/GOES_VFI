@@ -233,8 +233,8 @@ class GOESImageryManager:
 
     def __init__(
         self,
-        base_dir: Optional[Path] = None,
-        output_dir: Optional[Path] = None,
+        base_dir: Path | None = None,
+        output_dir: Path | None = None,
         *,
         satellite: str = "G16",
         cache_size: int = 100,
@@ -255,7 +255,7 @@ class GOESImageryManager:
         self.output_dir = self.base_dir  # Alias for compatibility
         self.cache_size = cache_size
         self.default_mode = default_mode
-        self._cache: Dict[str, Any] = {}
+        self._cache: dict[str, Any] = {}
 
         # Create downloader instance
         self.downloader = GOESImageryDownloader(satellite=satellite, output_dir=self.base_dir)
@@ -270,8 +270,8 @@ class GOESImageryManager:
         product_type: ProductType,
         *,
         timestamp: datetime,
-        output_size: Optional[Tuple[int, int]] = None,
-    ) -> Optional[Image.Image]:
+        output_size: tuple[int, int] | None = None,
+    ) -> Image.Image | None:
         """Process GOES imagery data.
 
         Args:
@@ -292,10 +292,10 @@ class GOESImageryManager:
 
     def create_composite(
         self,
-        channels: List[ChannelType],
-        _data_dict: Dict[int, NDArray[np.float64]],
+        channels: list[ChannelType],
+        _data_dict: dict[int, NDArray[np.float64]],
         _composite_type: str = "true_color",
-    ) -> Optional[Image.Image]:
+    ) -> Image.Image | None:
         """Create a composite image from multiple channels.
 
         Args:
@@ -314,10 +314,10 @@ class GOESImageryManager:
         channel: ChannelType,
         product_type: ProductType,
         *,
-        mode: Optional[ImageryMode] = None,
-        date: Optional[datetime] = None,
+        mode: ImageryMode | None = None,
+        date: datetime | None = None,
         size: str = "1200",
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """Get imagery for the specified parameters.
 
         Args:
@@ -371,7 +371,7 @@ class GOESImageryDownloader:
     def __init__(
         self,
         satellite: str = "G16",
-        output_dir: Optional[Path] = None,
+        output_dir: Path | None = None,
         timeout: int = 60,
     ) -> None:
         """Initialize the downloader.
@@ -393,7 +393,7 @@ class GOESImageryDownloader:
         product_type: ProductType,
         timestamp: datetime,
         source: str = "s3",
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """Download imagery for specified parameters.
 
         Args:
@@ -409,8 +409,8 @@ class GOESImageryDownloader:
         return None
 
     def download_batch(
-        self, _download_requests: List[Dict[str, Any]], max_workers: int = 5
-    ) -> Dict[str, Optional[Path]]:
+        self, _download_requests: list[dict[str, Any]], max_workers: int = 5
+    ) -> dict[str, Path | None]:
         """Download multiple files in parallel.
 
         Args:
@@ -427,7 +427,7 @@ class GOESImageryDownloader:
         self,
         channel: ChannelType,
         product_type: ProductType,
-        date: Optional[datetime] = None,
+        date: datetime | None = None,
         size: str = "1200x1200",
     ) -> Optional["DownloadResult"]:
         """Download a pre-colorized image from the CDN.
@@ -469,8 +469,8 @@ class GOESImageryDownloader:
         self,
         channel: ChannelType,
         product_type: ProductType,
-        timestamp: Optional[datetime] = None,
-    ) -> Optional[str]:
+        timestamp: datetime | None = None,
+    ) -> str | None:
         """Find raw data file key in S3.
 
         Args:
@@ -485,7 +485,7 @@ class GOESImageryDownloader:
         # Return a dummy key for testing
         return "test_file_key"
 
-    def download_raw_data(self, s3_key: str, output_path: Optional[Path] = None) -> Optional[Path]:
+    def download_raw_data(self, s3_key: str, output_path: Path | None = None) -> Path | None:
         """Download raw data from S3.
 
         Args:
@@ -539,7 +539,7 @@ class GOESImageProcessor:
         self,
         calibration_type: str = "reflectance",
         enhance: bool = True,
-        output_dir: Optional[Path] = None,
+        output_dir: Path | None = None,
     ) -> None:
         """Initialize the processor.
 
@@ -553,7 +553,7 @@ class GOESImageProcessor:
         self.output_dir = output_dir or Path(tempfile.mkdtemp())
         LOGGER.info("Initialized GOESImageProcessor")
 
-    def process(self, file_path: Path, channel: ChannelType, _output_format: str = "png") -> Optional[Image.Image]:
+    def process(self, file_path: Path, channel: ChannelType, _output_format: str = "png") -> Image.Image | None:
         """Process a GOES NetCDF file.
 
         Args:
@@ -630,9 +630,9 @@ class GOESImageProcessor:
     def process_raw_data(
         self,
         file_path: Path,
-        channel: Optional[ChannelType] = None,
+        channel: ChannelType | None = None,
         _output_format: str = "png",
-    ) -> Optional[Path]:
+    ) -> Path | None:
         """Process raw GOES data file.
 
         Args:

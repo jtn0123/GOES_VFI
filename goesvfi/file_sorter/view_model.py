@@ -245,7 +245,7 @@ class FileSorterViewModel:
             self.status_message = "Sorting complete."
         except Exception as e:
             self.status_message = f"Error during sorting: {e}"
-            LOGGER.exception("Error during sorting: %s", e)
+            LOGGER.exception("Error during sorting")
         finally:
             self.is_sorting = False
             self.progress_percentage = 0.0  # Reset progress on completion or error

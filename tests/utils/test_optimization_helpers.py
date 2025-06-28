@@ -1,7 +1,7 @@
 """Test optimization helpers to speed up slow tests while maintaining coverage."""
 
-import time
 from contextlib import contextmanager
+import time
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import QApplication
@@ -30,7 +30,7 @@ class FastQtTestHelper:
         return mock_window
 
     @staticmethod
-    def fast_qtbot_wait(qtbot, milliseconds):
+    def fast_qtbot_wait(qtbot, milliseconds) -> None:
         """Replace qtbot.wait with a faster alternative for tests."""
         # Instead of real waiting, just process events
         for _ in range(min(5, milliseconds // 10)):
@@ -63,59 +63,61 @@ class FastQtTestHelper:
 class FastTestTimer:
     """Replace QTimer with instant execution for tests."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.callbacks = []
 
     def timeout(self):
         """Fake timeout signal."""
+
         class FakeSignal:
-            def __init__(self, timer):
+            def __init__(self, timer) -> None:
                 self.timer = timer
 
-            def connect(self, callback):
+            def connect(self, callback) -> None:
                 self.timer.callbacks.append(callback)
 
         return FakeSignal(self)
 
-    def start(self, interval=None):
+    def start(self, interval=None) -> None:
         """Execute callbacks immediately instead of waiting."""
         for callback in self.callbacks:
             callback()
 
-    def stop(self):
+    def stop(self) -> None:
         """No-op for tests."""
-        pass
 
-    def isActive(self):
+    def isActive(self) -> bool:
         """Always return False."""
         return False
 
 
 def optimize_test_performance(func):
     """Decorator to automatically optimize common slow patterns."""
+
     def wrapper(*args, **kwargs):
         # Patch common slow operations
         with patch("time.sleep", lambda x: None):  # No sleeping in tests
             with patch("PyQt6.QtCore.QTimer", FastTestTimer):  # Instant timers
                 with patch("PyQt6.QtWidgets.QApplication.processEvents", lambda: None):  # No event processing
                     return func(*args, **kwargs)
+
     return wrapper
 
 
 class MockedSettingsPersistence:
     """Fast mock for SettingsPersistence that avoids file I/O."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.storage = {}
 
-    def save_input_directory(self, path):
+    def save_input_directory(self, path) -> bool:
         """Mock save operation."""
         if path is None:
             return False
         self.storage["input_dir"] = str(path)
         return True
 
-    def save_crop_rect(self, rect):
+    def save_crop_rect(self, rect) -> bool:
         """Mock save operation."""
         if rect is None:
             return False
@@ -131,7 +133,7 @@ class MockedSettingsPersistence:
         return self.storage.get("crop_rect")
 
 
-def assert_mock_called_with_retry(mock_obj, *args, retries=3, delay=0.01):
+def assert_mock_called_with_retry(mock_obj, *args, retries=3, delay=0.01) -> None:
     """Assert mock was called with args, with retries for async operations."""
     for i in range(retries):
         try:

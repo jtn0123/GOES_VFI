@@ -19,7 +19,7 @@ class StateManager:
         """
         self.main_window = main_window
 
-    def set_input_directory(self, path: Optional[Path]) -> None:
+    def set_input_directory(self, path: Path | None) -> None:
         """Set the input directory state, save settings, and clear Sanchez cache.
 
         Args:
@@ -56,7 +56,7 @@ class StateManager:
         if hasattr(self.main_window.main_tab, "_update_crop_buttons_state"):
             self.main_window.main_tab._update_crop_buttons_state()
 
-    def set_crop_rect(self, rect: Optional[Tuple[int, int, int, int]]) -> None:
+    def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
         """Set the current crop rectangle state.
 
         Args:
@@ -104,7 +104,7 @@ class StateManager:
         else:
             LOGGER.warning("Could not call main_tab._update_crop_buttons_state()")
 
-    def _save_all_settings_with_fallback(self, old_path: Optional[Path]) -> None:
+    def _save_all_settings_with_fallback(self, old_path: Path | None) -> None:
         """Save all settings with fallback on failure.
 
         Args:
@@ -127,7 +127,7 @@ class StateManager:
         except Exception as e:
             LOGGER.error("Error saving settings after input directory change: %s", e)
 
-    def _save_all_settings_with_crop_fallback(self, old_rect: Optional[Tuple[int, int, int, int]]) -> None:
+    def _save_all_settings_with_crop_fallback(self, old_rect: tuple[int, int, int, int] | None) -> None:
         """Save all settings with fallback for crop rect.
 
         Args:

@@ -9,7 +9,7 @@ deletion of important files.
 
 import argparse
 import shutil
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import List, Optional, Set, Tuple
 
 
@@ -19,8 +19,8 @@ class CleanupManager:
     def __init__(self, dry_run: bool = True):
         self.dry_run = dry_run
         self.project_root = Path(__file__).parent
-        self.files_to_delete: List[Path] = []
-        self.directories_to_delete: List[Path] = []
+        self.files_to_delete: list[Path] = []
+        self.directories_to_delete: list[Path] = []
         self.total_size = 0
 
         # Define patterns for files to clean
@@ -127,8 +127,6 @@ class CleanupManager:
 
         for pattern in self.protected_patterns:
             # Convert to PurePath for pattern matching
-            from pathlib import PurePosixPath
-
             path_pure = PurePosixPath(path_str)
 
             # Use pathlib's match method which handles ** patterns correctly
@@ -137,7 +135,7 @@ class CleanupManager:
 
         return False
 
-    def find_files_to_clean(self, patterns: List[str]) -> List[Path]:
+    def find_files_to_clean(self, patterns: list[str]) -> list[Path]:
         """Find files matching the given patterns."""
         files = []
         for pattern in patterns:
@@ -146,7 +144,7 @@ class CleanupManager:
                     files.append(path)
         return files
 
-    def find_directories_to_clean(self) -> List[Path]:
+    def find_directories_to_clean(self) -> list[Path]:
         """Find directories that should be cleaned entirely."""
         directories = []
         for pattern in self.directory_patterns:
@@ -155,7 +153,7 @@ class CleanupManager:
                     directories.append(path)
         return directories
 
-    def find_large_files(self) -> List[Tuple[Path, int]]:
+    def find_large_files(self) -> list[tuple[Path, int]]:
         """Find files larger than the threshold."""
         large_files = []
         for ext in ["*.nc", "*.png", "*.jpg", "*.mp4", "*.avi"]:
@@ -175,7 +173,7 @@ class CleanupManager:
             size_float /= 1024
         return f"{size_float:.2f} TB"
 
-    def analyze(self, categories: Optional[Set[str]] = None):
+    def analyze(self, categories: set[str] | None = None):
         """Analyze files to be cleaned."""
         if categories is None:
             categories = set(self.file_patterns.keys())

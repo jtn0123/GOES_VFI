@@ -1,11 +1,11 @@
-"""
-Image processing pipeline for composing multiple processing operations.
+"""Image processing pipeline for composing multiple processing operations.
 
 Provides pipeline utilities that help organize and execute complex image
 processing workflows with proper error handling and logging.
 """
 
-from typing import Any, Callable, Dict, List, Optional, cast
+from collections.abc import Callable
+from typing import Any, cast
 
 from .base import CompositeProcessor, ImageProcessingResult, ProcessorBase
 
@@ -13,10 +13,10 @@ from .base import CompositeProcessor, ImageProcessingResult, ProcessorBase
 class ImageProcessingPipeline(CompositeProcessor):
     """Pipeline for executing multiple image processing steps in sequence."""
 
-    def __init__(self, processors: List[ProcessorBase]) -> None:
+    def __init__(self, processors: list[ProcessorBase]) -> None:
         super().__init__(processors, "image_processing_pipeline")
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Execute all processors in the pipeline."""
         # Import logging here to avoid circular imports
         from goesvfi.utils import log
@@ -26,7 +26,7 @@ class ImageProcessingPipeline(CompositeProcessor):
         logger.debug("Starting image processing pipeline with %s stages", len(self.processors))
 
         current_data = input_data
-        combined_metadata: Dict[str, Any] = {"pipeline_stages": []}
+        combined_metadata: dict[str, Any] = {"pipeline_stages": []}
         combined_warnings = []
 
         for i, processor in enumerate(self.processors):
@@ -84,14 +84,14 @@ class ConditionalPipeline(ProcessorBase):
 
     def __init__(
         self,
-        condition_map: Dict[str, ProcessorBase],
-        default_processor: Optional[ProcessorBase] = None,
+        condition_map: dict[str, ProcessorBase],
+        default_processor: ProcessorBase | None = None,
     ) -> None:
         super().__init__("conditional_pipeline")
         self.condition_map = condition_map
         self.default_processor = default_processor
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Execute processor based on context conditions."""
         if not context:
             if self.default_processor:
@@ -119,14 +119,14 @@ class ParallelPipeline(ProcessorBase):
 
     def __init__(
         self,
-        processors: List[ProcessorBase],
-        combiner_func: Optional[Callable[..., Any]] = None,
+        processors: list[ProcessorBase],
+        combiner_func: Callable[..., Any] | None = None,
     ) -> None:
         super().__init__("parallel_pipeline")
         self.processors = processors
         self.combiner_func = combiner_func or self._default_combiner
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Execute all processors in parallel."""
         # For now, execute sequentially (true parallelism would require threading)
         results = []
@@ -150,9 +150,9 @@ class ParallelPipeline(ProcessorBase):
 
     def _default_combiner(
         self,
-        results: List[ImageProcessingResult],
+        results: list[ImageProcessingResult],
         input_data: Any,
-        context: Optional[Dict[str, Any]],
+        context: dict[str, Any] | None,
     ) -> ImageProcessingResult:
         """Default combiner that returns the first successful result."""
         successful_results = [r for r in results if r.success]

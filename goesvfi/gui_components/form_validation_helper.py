@@ -10,7 +10,7 @@ from typing import Optional
 from PyQt6.QtWidgets import QWidget
 
 
-def apply_validation_state(widget: QWidget, is_valid: bool, error_message: Optional[str] = None) -> None:
+def apply_validation_state(widget: QWidget, is_valid: bool, error_message: str | None = None) -> None:
     """
     Apply validation theme classes to a widget based on validation result.
 

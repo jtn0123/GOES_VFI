@@ -1,8 +1,8 @@
 """Safe test optimization strategies that maintain test coverage."""
 
+from contextlib import contextmanager
 import functools
 import os
-from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtCore import QTimer
@@ -29,13 +29,17 @@ class SafeTestOptimizations:
         else:
             # Speed up event processing without breaking it
             original_process_events = QApplication.processEvents
-            def fast_process_events(flags=None, maxtime=None):
+
+            def fast_process_events(flags=None, maxtime=None) -> None:
                 # Process events but limit iterations
                 original_process_events() if QApplication.instance() else None
+
             patches.append(patch("PyQt6.QtWidgets.QApplication.processEvents", fast_process_events))
 
         # Speed up animations without breaking them
-        patches.append(patch("PyQt6.QtCore.QPropertyAnimation.setDuration", lambda self, ms: self.setDuration(min(ms, 10))))
+        patches.append(
+            patch("PyQt6.QtCore.QPropertyAnimation.setDuration", lambda self, ms: self.setDuration(min(ms, 10)))
+        )
 
         # Apply all patches
         for p in patches:
@@ -50,18 +54,21 @@ class SafeTestOptimizations:
     @staticmethod
     def optimize_file_operations(func):
         """Optimize file operations while maintaining functionality."""
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             # Use temp directory for faster I/O
             import tempfile
-            with tempfile.TemporaryDirectory() as tmpdir:
-                with patch.dict(os.environ, {"TEST_TEMP_DIR": tmpdir}):
-                    return func(*args, **kwargs)
+
+            with tempfile.TemporaryDirectory() as tmpdir, patch.dict(os.environ, {"TEST_TEMP_DIR": tmpdir}):
+                return func(*args, **kwargs)
+
         return wrapper
 
     @staticmethod
     def mock_network_with_realistic_data():
         """Mock network calls with realistic responses."""
+
         def create_mock_s3_client():
             client = MagicMock()
             # Provide realistic S3 responses
@@ -70,36 +77,40 @@ class SafeTestOptimizations:
                     {
                         "Key": "OR_ABI-L2-CMIPF/2023/001/00/file1.nc",
                         "Size": 4194304,
-                        "LastModified": "2023-01-01T00:00:00Z"
+                        "LastModified": "2023-01-01T00:00:00Z",
                     }
                 ],
-                "IsTruncated": False
+                "IsTruncated": False,
             }
-            client.head_object.return_value = {
-                "ContentLength": 4194304,
-                "ContentType": "application/x-netcdf"
-            }
+            client.head_object.return_value = {"ContentLength": 4194304, "ContentType": "application/x-netcdf"}
+
             # Simulate download delay but much shorter
-            def mock_download(bucket, key, filename):
+
+            def mock_download(bucket, key, filename) -> None:
                 import time
+
                 time.sleep(0.01)  # 10ms instead of seconds
                 # Create a small test file
                 with open(filename, "wb") as f:
                     f.write(b"NETCDF_TEST_DATA")
+
             client.download_file.side_effect = mock_download
             return client
 
-        return patch("boto3.client", side_effect=lambda service: create_mock_s3_client() if service == "s3" else MagicMock())
+        return patch(
+            "boto3.client", side_effect=lambda service: create_mock_s3_client() if service == "s3" else MagicMock()
+        )
 
     @staticmethod
     def speed_up_timers_safely():
         """Speed up QTimer without breaking functionality."""
+
         class FastTimer(QTimer):
-            def __init__(self, *args, **kwargs):
+            def __init__(self, *args, **kwargs) -> None:
                 super().__init__(*args, **kwargs)
                 self._original_interval = None
 
-            def setInterval(self, msec):
+            def setInterval(self, msec) -> None:
                 self._original_interval = msec
                 # Speed up by 10x but not instant
                 super().setInterval(max(1, msec // 10))
@@ -112,6 +123,7 @@ class SafeTestOptimizations:
     @staticmethod
     def optimize_heavy_computations():
         """Mock heavy computations with representative samples."""
+
         def mock_interpolation(frames, factor):
             # Return subset instead of full interpolation
             if len(frames) > 2:
@@ -138,9 +150,10 @@ class TestDataFactory:
     def create_test_netcdf():
         """Create minimal valid NetCDF for testing."""
         try:
+            import tempfile
+
             import netCDF4 as nc
             import numpy as np
-            import tempfile
 
             with tempfile.NamedTemporaryFile(suffix=".nc", delete=False) as tmp:
                 with nc.Dataset(tmp.name, "w") as ds:
@@ -162,6 +175,7 @@ def safe_optimization_decorator(integration_test=False):
     Args:
         integration_test: If True, preserves more real behavior
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -192,15 +206,18 @@ def safe_optimization_decorator(integration_test=False):
                     opt.__exit__(None, None, None)
 
         return wrapper
+
     return decorator
 
 
 # Example usage patterns that maintain test integrity:
 
+
 def example_safe_gui_test():
     """Example of safely optimized GUI test."""
+
     @safe_optimization_decorator(integration_test=True)
-    def test_main_window_integration(qtbot):
+    def test_main_window_integration(qtbot) -> None:
         """Test that maintains real GUI behavior but runs faster."""
         from goesvfi.gui import MainWindow
 
@@ -220,8 +237,9 @@ def example_safe_gui_test():
 
 def example_safe_unit_test():
     """Example of safely optimized unit test."""
+
     @safe_optimization_decorator(integration_test=False)
-    def test_s3_download_unit():
+    def test_s3_download_unit() -> None:
         """Unit test with mocked network but realistic behavior."""
         from goesvfi.integrity_check.remote.s3_store import S3Store
 

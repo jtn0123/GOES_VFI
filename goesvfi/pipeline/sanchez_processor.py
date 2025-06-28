@@ -29,7 +29,7 @@ class SanchezProcessor(ImageProcessor):
     def __init__(
         self,
         temp_dir: Path,
-        progress_callback: Optional[Callable[[str, float], None]] = None,
+        progress_callback: Callable[[str, float], None] | None = None,
     ) -> None:
         """Initialize the SanchezProcessor.
 

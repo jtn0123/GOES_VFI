@@ -2,33 +2,33 @@
 
 from unittest.mock import MagicMock, patch
 
+from goesvfi.utils.validation.base import ValidationError, ValidationResult, ValidatorBase
 from goesvfi.utils.validation.pipeline import ValidationPipeline
-from goesvfi.utils.validation.base import ValidationResult, ValidatorBase, ValidationError
 
 
 class MockValidator(ValidatorBase):
     """Mock validator for testing pipeline logic."""
 
-    def __init__(self, field_name: str = None, should_pass: bool = True, should_error: bool = False):
+    def __init__(self, field_name: str | None = None, should_pass: bool = True, should_error: bool = False):
         super().__init__(field_name)
         self.should_pass = should_pass
         self.should_error = should_error
 
     def validate(self, value, context=None) -> ValidationResult:
         if self.should_error:
-            raise ValueError(f"Validator {self.field_name} error")
+            msg = f"Validator {self.field_name} error"
+            raise ValueError(msg)
 
         if self.should_pass:
             return ValidationResult.success()
-        else:
-            error = ValidationError(f"{self.field_name} failed", field=self.field_name, value=value)
-            return ValidationResult.failure(error)
+        error = ValidationError(f"{self.field_name} failed", field=self.field_name, value=value)
+        return ValidationResult.failure(error)
 
 
 class TestValidationPipeline:
     """Test validation pipeline with fast, synthetic validators."""
 
-    def test_pipeline_all_validators_pass(self):
+    def test_pipeline_all_validators_pass(self) -> None:
         """Test pipeline when all validators pass."""
         pipeline = ValidationPipeline("test_pipeline")
 
@@ -42,7 +42,7 @@ class TestValidationPipeline:
         assert len(result.errors) == 0
         assert len(result.warnings) == 0
 
-    def test_pipeline_some_validators_fail(self):
+    def test_pipeline_some_validators_fail(self) -> None:
         """Test pipeline when some validators fail."""
         pipeline = ValidationPipeline("test_pipeline")
 
@@ -61,7 +61,7 @@ class TestValidationPipeline:
         assert "fail1 failed" in error_messages
         assert "fail2 failed" in error_messages
 
-    def test_pipeline_fail_fast_mode(self):
+    def test_pipeline_fail_fast_mode(self) -> None:
         """Test pipeline stops on first failure in fail-fast mode."""
         pipeline = ValidationPipeline("test_pipeline", fail_fast=True)
 
@@ -75,7 +75,7 @@ class TestValidationPipeline:
         assert len(result.errors) == 1
         assert "fail1 failed" in [error.message for error in result.errors]
 
-    def test_pipeline_collect_all_errors_mode(self):
+    def test_pipeline_collect_all_errors_mode(self) -> None:
         """Test pipeline collects all errors in collect-all mode."""
         pipeline = ValidationPipeline("test_pipeline", fail_fast=False)
 
@@ -93,7 +93,7 @@ class TestValidationPipeline:
         assert "fail2 failed" in error_messages
         assert "fail3 failed" in error_messages
 
-    def test_pipeline_handles_validator_exceptions(self):
+    def test_pipeline_handles_validator_exceptions(self) -> None:
         """Test pipeline handles validator exceptions gracefully."""
         pipeline = ValidationPipeline("test_pipeline", fail_fast=False)
 
@@ -110,7 +110,7 @@ class TestValidationPipeline:
         error_messages = [error.message for error in result.errors]
         assert any("error1" in msg for msg in error_messages)
 
-    def test_pipeline_empty_validator_list(self):
+    def test_pipeline_empty_validator_list(self) -> None:
         """Test pipeline with no validators."""
         pipeline = ValidationPipeline("test_pipeline")
         result = pipeline.validate()
@@ -120,7 +120,7 @@ class TestValidationPipeline:
         assert len(result.errors) == 0
         assert len(result.warnings) == 0
 
-    def test_pipeline_validator_execution_order(self):
+    def test_pipeline_validator_execution_order(self) -> None:
         """Test basic validator functionality."""
         pipeline = ValidationPipeline("test_pipeline")
 
@@ -133,7 +133,7 @@ class TestValidationPipeline:
         assert result.is_valid
         assert len(result.errors) == 0
 
-    def test_pipeline_context_passing(self):
+    def test_pipeline_context_passing(self) -> None:
         """Test that context is passed through the pipeline."""
         pipeline = ValidationPipeline("test_pipeline")
 
@@ -145,7 +145,7 @@ class TestValidationPipeline:
 
         assert result.is_valid
 
-    def test_pipeline_with_directory_validation(self):
+    def test_pipeline_with_directory_validation(self) -> None:
         """Test pipeline with convenience methods (mocked for speed)."""
         with patch("goesvfi.utils.validation.path.DirectoryValidator") as mock_dir_validator:
             mock_instance = MagicMock()
@@ -158,7 +158,7 @@ class TestValidationPipeline:
             result = pipeline.validate()
             assert result.is_valid
 
-    def test_pipeline_performance_with_many_validators(self):
+    def test_pipeline_performance_with_many_validators(self) -> None:
         """Test pipeline performance with many fast validators."""
         import time
 

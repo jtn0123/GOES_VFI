@@ -10,17 +10,17 @@ from PyQt6.QtWidgets import QPushButton, QWidget
 class SuperButton(QPushButton):
     """A custom button class that ensures clicks are properly processed."""
 
-    def __init__(self, text: str, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, text: str, parent: QWidget | None = None) -> None:
         super().__init__(text, parent)
-        self.click_callback: Optional[Callable[[], None]] = None
+        self.click_callback: Callable[[], None] | None = None
         print(f"SuperButton created with text: {text}")
 
-    def set_click_callback(self, callback: Optional[Callable[[], None]]) -> None:
+    def set_click_callback(self, callback: Callable[[], None] | None) -> None:
         """Set a direct callback function for click events."""
         self.click_callback = callback
         print(f"SuperButton callback set: {callback.__name__ if callback else None!r}")
 
-    def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
+    def mousePressEvent(self, event: QMouseEvent | None) -> None:
         """Explicitly override mouse press event."""
         if event is None:
             return
@@ -29,7 +29,7 @@ class SuperButton(QPushButton):
         # Call the parent implementation
         super().mousePressEvent(event)
 
-    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
+    def mouseReleaseEvent(self, event: QMouseEvent | None) -> None:
         """Explicitly override mouse release event for better click detection."""
         if event is None:
             return

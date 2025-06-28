@@ -19,7 +19,7 @@ class SanchezWarningOverlay(ProcessorBase):
     def __init__(self) -> None:
         super().__init__("sanchez_warning_overlay")
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Add Sanchez warning overlay to pixmap."""
         try:
             if not isinstance(input_data, QPixmap):
@@ -78,7 +78,7 @@ class PreviewProcessor(ProcessorBase):
     def __init__(self) -> None:
         super().__init__("preview_processor")
 
-    def process(self, input_data: Any, context: Optional[Dict[str, Any]] = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Process input through complete preview pipeline."""
         from .cache import SanchezCacheProcessor
         from .converters import (
@@ -91,7 +91,7 @@ class PreviewProcessor(ProcessorBase):
 
         try:
             # Build processing pipeline based on context
-            pipeline_stages: List[ProcessorBase] = []
+            pipeline_stages: list[ProcessorBase] = []
 
             # 1. Check Sanchez cache first (if applicable)
             if context and context.get("apply_sanchez", False):

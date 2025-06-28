@@ -24,14 +24,14 @@ class SettingsSection(ABC):
     complexity by organizing settings into focused, manageable units.
     """
 
-    def __init__(self, name: str, classifier: Optional[ErrorClassifier] = None) -> None:
+    def __init__(self, name: str, classifier: ErrorClassifier | None = None) -> None:
         self.name = name
         self.classifier = classifier or ErrorClassifier()
-        self._values: Dict[str, Any] = {}
-        self._errors: List[StructuredError] = []
+        self._values: dict[str, Any] = {}
+        self._errors: list[StructuredError] = []
 
     @abstractmethod
-    def extract_values(self, source_object: Any) -> Dict[str, Any]:
+    def extract_values(self, source_object: Any) -> dict[str, Any]:
         """
         Extract settings values from source object (e.g., GUI widgets).
 
@@ -41,10 +41,9 @@ class SettingsSection(ABC):
         Returns:
             Dictionary of setting key -> value pairs
         """
-        pass
 
     @abstractmethod
-    def apply_values(self, target_object: Any, values: Dict[str, Any]) -> None:
+    def apply_values(self, target_object: Any, values: dict[str, Any]) -> None:
         """
         Apply settings values to target object (e.g., GUI widgets).
 
@@ -52,7 +51,6 @@ class SettingsSection(ABC):
             target_object: Object to apply settings to
             values: Dictionary of setting key -> value pairs
         """
-        pass
 
     def save_to_qsettings(self, qsettings: QSettings) -> bool:
         """
@@ -71,7 +69,7 @@ class SettingsSection(ABC):
             LOGGER.warning("Failed to save %s settings: %s", self.name, error.user_message)
             return False
 
-    def load_from_qsettings(self, qsettings: QSettings, defaults: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def load_from_qsettings(self, qsettings: QSettings, defaults: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Load this section's values from QSettings.
 
@@ -97,11 +95,10 @@ class SettingsSection(ABC):
             return defaults
 
     @abstractmethod
-    def get_setting_keys(self) -> List[str]:
+    def get_setting_keys(self) -> list[str]:
         """Get list of setting keys this section handles."""
-        pass
 
-    def get_errors(self) -> List[StructuredError]:
+    def get_errors(self) -> list[StructuredError]:
         """Get any errors that occurred during operations."""
         return self._errors.copy()
 
@@ -122,11 +119,11 @@ class SettingsManager:
     multiple focused sections instead of one monolithic function.
     """
 
-    def __init__(self, qsettings: QSettings, classifier: Optional[ErrorClassifier] = None) -> None:
+    def __init__(self, qsettings: QSettings, classifier: ErrorClassifier | None = None) -> None:
         self.qsettings = qsettings
         self.classifier = classifier or ErrorClassifier()
-        self.sections: Dict[str, SettingsSection] = {}
-        self._global_errors: List[StructuredError] = []
+        self.sections: dict[str, SettingsSection] = {}
+        self._global_errors: list[StructuredError] = []
 
     def add_section(self, section: SettingsSection) -> "SettingsManager":
         """Add a settings section."""
@@ -164,7 +161,7 @@ class SettingsManager:
 
         return all_successful
 
-    def load_all_settings(self, target_object: Any, defaults: Optional[Dict[str, Dict[str, Any]]] = None) -> bool:
+    def load_all_settings(self, target_object: Any, defaults: dict[str, dict[str, Any]] | None = None) -> bool:
         """
         Load all settings sections.
 
@@ -195,7 +192,7 @@ class SettingsManager:
 
         return all_successful
 
-    def get_all_errors(self) -> List[StructuredError]:
+    def get_all_errors(self) -> list[StructuredError]:
         """Get all errors from manager and sections."""
         all_errors = self._global_errors.copy()
 

@@ -10,19 +10,18 @@ Key optimizations:
 import pathlib
 from unittest.mock import MagicMock, patch
 
-from PyQt6.QtCore import QObject, QRect, pyqtSignal
-from PyQt6.QtGui import QPixmap
-from PyQt6.QtWidgets import QApplication, QPushButton
+from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtWidgets import QApplication
 import pytest
 
 from goesvfi.gui_tabs.main_tab import MainTab
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 from goesvfi.view_models.processing_view_model import ProcessingViewModel
-from tests.utils.safe_test_optimizations import SafeTestOptimizations
 
 
 class SignalEmitter(QObject):
     """Helper class to emit signals for testing."""
+
     signal = pyqtSignal(object)
 
 
@@ -40,12 +39,12 @@ def shared_mocks():
     mock_main_window_ref.get_crop_rect = MagicMock(return_value=None)
 
     return {
-        'image_loader': mock_image_loader,
-        'sanchez_processor': mock_sanchez_processor,
-        'image_cropper': mock_image_cropper,
-        'settings': mock_settings,
-        'preview_signal': mock_preview_signal,
-        'main_window_ref': mock_main_window_ref
+        "image_loader": mock_image_loader,
+        "sanchez_processor": mock_sanchez_processor,
+        "image_cropper": mock_image_cropper,
+        "settings": mock_settings,
+        "preview_signal": mock_preview_signal,
+        "main_window_ref": mock_main_window_ref,
     }
 
 
@@ -79,35 +78,36 @@ def mock_main_window_view_model():
 def main_tab(qtbot, mock_main_window_view_model, shared_mocks):
     """Create a MainTab instance for testing with optimized setup."""
     # Apply all patches at once
-    with patch("goesvfi.gui_tabs.main_tab.QFileDialog"), \
-         patch("goesvfi.gui_tabs.main_tab.QMessageBox"), \
-         patch("goesvfi.gui_tabs.main_tab.MainTab._populate_models", MagicMock()), \
-         patch("goesvfi.utils.config.get_project_root", MagicMock(return_value=pathlib.Path("/mock/project/root"))), \
-         patch("goesvfi.utils.config.get_cache_dir", MagicMock(return_value=pathlib.Path("/mock/cache/dir"))), \
-         patch("goesvfi.utils.config.find_rife_executable", MagicMock(return_value=None)):
-
+    with (
+        patch("goesvfi.gui_tabs.main_tab.QFileDialog"),
+        patch("goesvfi.gui_tabs.main_tab.QMessageBox"),
+        patch("goesvfi.gui_tabs.main_tab.MainTab._populate_models", MagicMock()),
+        patch("goesvfi.utils.config.get_project_root", MagicMock(return_value=pathlib.Path("/mock/project/root"))),
+        patch("goesvfi.utils.config.get_cache_dir", MagicMock(return_value=pathlib.Path("/mock/cache/dir"))),
+        patch("goesvfi.utils.config.find_rife_executable", MagicMock(return_value=None)),
+    ):
         # Create the tab with mocked dependencies
         tab = MainTab(
             main_view_model=mock_main_window_view_model,
-            image_loader=shared_mocks['image_loader'],
-            sanchez_processor=shared_mocks['sanchez_processor'],
-            image_cropper=shared_mocks['image_cropper'],
-            settings=shared_mocks['settings'],
-            preview_signal=shared_mocks['preview_signal'],
-            main_window_ref=shared_mocks['main_window_ref'],
+            image_loader=shared_mocks["image_loader"],
+            sanchez_processor=shared_mocks["sanchez_processor"],
+            image_cropper=shared_mocks["image_cropper"],
+            settings=shared_mocks["settings"],
+            preview_signal=shared_mocks["preview_signal"],
+            main_window_ref=shared_mocks["main_window_ref"],
         )
 
         qtbot.addWidget(tab)
 
         # Patch processEvents to be a no-op for speed
-        with patch.object(QApplication, 'processEvents'):
+        with patch.object(QApplication, "processEvents"):
             yield tab
 
 
 class TestMainTabOptimized:
     """Optimized test suite for MainTab."""
 
-    def test_initial_state(self, main_tab, mock_main_window_view_model):
+    def test_initial_state(self, main_tab, mock_main_window_view_model) -> None:
         """Test that MainTab initializes with correct default state."""
         # Check all initial states at once
         assert main_tab.in_dir_edit.text() == ""
@@ -121,7 +121,7 @@ class TestMainTabOptimized:
         assert not main_tab.gk_checkbox.isChecked()
         assert not main_tab.no_gk_checkbox.isChecked()
 
-    def test_browse_paths(self, main_tab, mock_main_window_view_model, mocker):
+    def test_browse_paths(self, main_tab, mock_main_window_view_model, mocker) -> None:
         """Test both input and output path browsing in one test."""
         # Mock file dialog once
         mock_dialog = mocker.patch("goesvfi.gui_tabs.main_tab.QFileDialog")
@@ -138,7 +138,7 @@ class TestMainTabOptimized:
         main_tab.out_file_button.click()
         assert main_tab.out_file_edit.text() == fake_output_path
 
-    def test_button_state_updates(self, main_tab, mock_main_window_view_model, mocker):
+    def test_button_state_updates(self, main_tab, mock_main_window_view_model, mocker) -> None:
         """Test start and crop button state updates together."""
         # Mock validation methods
         mocker.patch.object(mock_main_window_view_model, "is_input_directory_valid", return_value=True)
@@ -157,7 +157,7 @@ class TestMainTabOptimized:
         main_tab.crop_button.setEnabled(True)
         assert main_tab.crop_button.isEnabled()
 
-    def test_encoder_and_options(self, main_tab, mock_main_window_view_model):
+    def test_encoder_and_options(self, main_tab, mock_main_window_view_model) -> None:
         """Test encoder selection and option toggles together."""
         # Test encoder selection
         initial_encoder = main_tab.encoder_combo.currentText()
@@ -177,7 +177,7 @@ class TestMainTabOptimized:
         assert main_tab.gk_checkbox.isChecked()
         assert main_tab.no_gk_checkbox.isChecked()
 
-    def test_processing_workflow(self, main_tab, mock_main_window_view_model, mocker):
+    def test_processing_workflow(self, main_tab, mock_main_window_view_model, mocker) -> None:
         """Test complete processing workflow in one test."""
         # Setup valid state
         mocker.patch.object(mock_main_window_view_model, "is_input_directory_valid", return_value=True)

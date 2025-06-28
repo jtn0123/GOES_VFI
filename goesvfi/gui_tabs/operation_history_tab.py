@@ -36,7 +36,7 @@ from goesvfi.utils import log
 LOGGER = log.get_logger(__name__)
 
 
-def get_operation_store() -> Optional[Any]:
+def get_operation_store() -> Any | None:
     """Get the operation store instance.
 
     Returns:
@@ -51,28 +51,28 @@ class OperationTableModel(QAbstractTableModel):
 
     def __init__(self) -> None:
         super().__init__()
-        self.operations: List[Dict[str, Any]] = []
+        self.operations: list[dict[str, Any]] = []
         self.columns = ["Time", "Operation", "Status", "Duration", "Correlation ID"]
 
-    def update_operations(self, operations: List[Dict[str, Any]]) -> None:
+    def update_operations(self, operations: list[dict[str, Any]]) -> None:
         """Update the operations list."""
         self.beginResetModel()
         self.operations = operations
         self.endResetModel()
 
-    def rowCount(self, parent: Optional[QModelIndex] = None) -> int:
+    def rowCount(self, parent: QModelIndex | None = None) -> int:
         """Get number of rows."""
         if parent is None:
             parent = QModelIndex()
         return len(self.operations)
 
-    def columnCount(self, parent: Optional[QModelIndex] = None) -> int:
+    def columnCount(self, parent: QModelIndex | None = None) -> int:
         """Get number of columns."""
         if parent is None:
             parent = QModelIndex()
         return len(self.columns)
 
-    def data(self, index: QModelIndex, role: Optional[int] = None) -> Any:
+    def data(self, index: QModelIndex, role: int | None = None) -> Any:
         """Get data for a cell."""
         if role is None:
             role = Qt.ItemDataRole.DisplayRole
@@ -124,7 +124,7 @@ class OperationTableModel(QAbstractTableModel):
             return self.columns[section]
         return None
 
-    def get_operation(self, row: int) -> Optional[Dict[str, Any]]:
+    def get_operation(self, row: int) -> dict[str, Any] | None:
         """Get operation at given row."""
         if 0 <= row < len(self.operations):
             return self.operations[row]
@@ -136,7 +136,7 @@ class MetricsModel(QAbstractTableModel):
 
     def __init__(self) -> None:
         super().__init__()
-        self.metrics: List[Dict[str, Any]] = []
+        self.metrics: list[dict[str, Any]] = []
         self.columns = [
             "Operation",
             "Total",
@@ -147,25 +147,25 @@ class MetricsModel(QAbstractTableModel):
             "Max",
         ]
 
-    def update_metrics(self, metrics: List[Dict[str, Any]]) -> None:
+    def update_metrics(self, metrics: list[dict[str, Any]]) -> None:
         """Update the metrics list."""
         self.beginResetModel()
         self.metrics = metrics
         self.endResetModel()
 
-    def rowCount(self, parent: Optional[QModelIndex] = None) -> int:
+    def rowCount(self, parent: QModelIndex | None = None) -> int:
         """Get number of rows."""
         if parent is None:
             parent = QModelIndex()
         return len(self.metrics)
 
-    def columnCount(self, parent: Optional[QModelIndex] = None) -> int:
+    def columnCount(self, parent: QModelIndex | None = None) -> int:
         """Get number of columns."""
         if parent is None:
             parent = QModelIndex()
         return len(self.columns)
 
-    def data(self, index: QModelIndex, role: Optional[int] = None) -> Any:
+    def data(self, index: QModelIndex, role: int | None = None) -> Any:
         """Get data for a cell."""
         if role is None:
             role = Qt.ItemDataRole.DisplayRole
@@ -221,7 +221,7 @@ class RefreshWorker(QThread):
 
     def __init__(self) -> None:
         super().__init__()
-        self.filters: Dict[str, Any] = {}
+        self.filters: dict[str, Any] = {}
         self.load_metrics = True
 
     def run(self) -> None:
@@ -257,7 +257,7 @@ class OperationHistoryTab(QWidget):
 
     def __init__(self) -> None:
         super().__init__()
-        self.refresh_worker: Optional[RefreshWorker] = None
+        self.refresh_worker: RefreshWorker | None = None
         self.auto_refresh_timer = QTimer()
         self.auto_refresh_timer.timeout.connect(self.refresh_data)
 
@@ -431,12 +431,12 @@ class OperationHistoryTab(QWidget):
 
         self.refresh_button.setEnabled(False)
 
-    def _on_operations_loaded(self, operations: List[Dict[str, Any]]) -> None:
+    def _on_operations_loaded(self, operations: list[dict[str, Any]]) -> None:
         """Handle loaded operations."""
         self.operations_model.update_operations(operations)
         self.refresh_button.setEnabled(True)
 
-    def _on_metrics_loaded(self, metrics: List[Dict[str, Any]]) -> None:
+    def _on_metrics_loaded(self, metrics: list[dict[str, Any]]) -> None:
         """Handle loaded metrics."""
         self.metrics_model.update_metrics(metrics)
 
@@ -454,7 +454,7 @@ class OperationHistoryTab(QWidget):
             if operation:
                 self._show_operation_details(operation)
 
-    def _show_operation_details(self, operation: Dict[str, Any]) -> None:
+    def _show_operation_details(self, operation: dict[str, Any]) -> None:
         """Show details for selected operation."""
         details = []
         details.append(f"<b>Operation:</b> {operation.get('name', 'N/A')}")

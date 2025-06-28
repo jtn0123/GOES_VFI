@@ -75,7 +75,7 @@ class MissingTimestamp:
         else:
             self.source = "Unknown"
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
         return {
             "timestamp": self.timestamp,
@@ -107,7 +107,7 @@ class IntegrityCheckViewModel(QObject):
     download_progress_updated = pyqtSignal(int, int)  # current, total
     download_item_updated = pyqtSignal(int, MissingTimestamp)  # index, updated item
 
-    def __init__(self, reconciler: Optional[Reconciler] = None) -> None:
+    def __init__(self, reconciler: Reconciler | None = None) -> None:
         """
         Initialize the IntegrityCheckViewModel.
 
@@ -137,8 +137,8 @@ class IntegrityCheckViewModel(QObject):
         self._auto_download = False  # pylint: disable=attribute-defined-outside-init
 
         # Result data
-        self._missing_timestamps: List[MissingTimestamp] = []
-        self._last_scan_time: Optional[datetime] = None
+        self._missing_timestamps: list[MissingTimestamp] = []
+        self._last_scan_time: datetime | None = None
         self._total_expected = 0  # pylint: disable=attribute-defined-outside-init
         self._total_found = 0  # pylint: disable=attribute-defined-outside-init
         self._detected_interval = 0  # pylint: disable=attribute-defined-outside-init
@@ -280,7 +280,7 @@ class IntegrityCheckViewModel(QObject):
         )
 
     @property
-    def missing_items(self) -> List[MissingTimestamp]:
+    def missing_items(self) -> list[MissingTimestamp]:
         """Get the list of missing timestamps."""
         return self._missing_timestamps
 
@@ -305,7 +305,7 @@ class IntegrityCheckViewModel(QObject):
         return self._total_found
 
     @property
-    def last_scan_time(self) -> Optional[datetime]:
+    def last_scan_time(self) -> datetime | None:
         """Get the time of the last scan."""
         return self._last_scan_time
 
@@ -354,7 +354,7 @@ class IntegrityCheckViewModel(QObject):
             self._cancel_requested = True  # pylint: disable=attribute-defined-outside-init
             LOGGER.info("Scan cancellation requested")
 
-    def start_downloads(self, items: Optional[List[MissingTimestamp]] = None) -> None:
+    def start_downloads(self, items: list[MissingTimestamp] | None = None) -> None:
         """Start downloading missing files.
 
         Args:
@@ -431,7 +431,7 @@ class IntegrityCheckViewModel(QObject):
             LOGGER.error("Error clearing cache: %s", e)
             self.status_message = f"Error clearing cache: {e}"
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get statistics about the cache."""
         try:
             return self._reconciler.cache.get_cache_stats()
@@ -451,7 +451,7 @@ class IntegrityCheckViewModel(QObject):
         self.status_message = f"Scanning: {current}/{total} complete"
         self.progress_updated.emit(current, total, eta)
 
-    def _handle_scan_completed(self, result: Dict[str, Any]) -> None:
+    def _handle_scan_completed(self, result: dict[str, Any]) -> None:
         """Handle scan completion."""
         if result.get("status") == "cancelled":
             self.status = ScanStatus.CANCELLED

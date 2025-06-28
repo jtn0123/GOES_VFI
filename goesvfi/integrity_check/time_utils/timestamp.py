@@ -69,7 +69,7 @@ class TimestampExtractor:
     @staticmethod
     def extract_timestamp_and_satellite(
         filename: str,
-    ) -> Tuple[Optional[datetime], Optional[SatellitePattern]]:
+    ) -> tuple[datetime | None, SatellitePattern | None]:
         """
         Extract a timestamp and satellite from a GOES ABI filename.
 
@@ -108,7 +108,7 @@ class TimestampExtractor:
         return None, None
 
     @staticmethod
-    def extract_timestamp_from_directory_name(dirname: str) -> Optional[datetime]:
+    def extract_timestamp_from_directory_name(dirname: str) -> datetime | None:
         """
         Extract a timestamp from a directory name with various formats.
 
@@ -309,7 +309,7 @@ class TimestampGenerator:
     """Generate timestamp sequences and detect intervals."""
 
     @staticmethod
-    def generate_timestamp_sequence(start_time: datetime, end_time: datetime, interval_minutes: int) -> List[datetime]:
+    def generate_timestamp_sequence(start_time: datetime, end_time: datetime, interval_minutes: int) -> list[datetime]:
         """
         Generate a sequence of timestamps at regular intervals.
 
@@ -329,7 +329,7 @@ class TimestampGenerator:
             LOGGER.warning("Start time is after end time, swapping values")
             start_time, end_time = end_time, start_time
 
-        result: List[datetime] = []
+        result: list[datetime] = []
         current = start_time
 
         # Generate timestamps at regular intervals
@@ -340,7 +340,7 @@ class TimestampGenerator:
         return result
 
     @staticmethod
-    def detect_interval(timestamps: List[datetime]) -> int:
+    def detect_interval(timestamps: list[datetime]) -> int:
         """
         Detect the most common interval between consecutive timestamps.
 

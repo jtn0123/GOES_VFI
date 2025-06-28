@@ -9,11 +9,10 @@ This v2 version maintains all test scenarios while optimizing through:
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
-import pytest
-from PyQt6.QtCore import QSettings
 from PyQt6.QtWidgets import QApplication
+import pytest
 
 from goesvfi.view_models.model_manager import ModelManager
 from goesvfi.view_models.model_preferences import ModelPreferences
@@ -28,9 +27,9 @@ class TestModelManagerOptimizedV2:
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
-        yield app
+        return app
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_filesystem(self):
         """Create mock filesystem that works consistently."""
         mock_fs = {}
@@ -42,40 +41,41 @@ class TestModelManagerOptimizedV2:
         def mock_is_dir(path):
             """Mock Path.is_dir()"""
             entry = mock_fs.get(str(path), {})
-            return isinstance(entry, dict) and entry.get('is_dir', False)
+            return isinstance(entry, dict) and entry.get("is_dir", False)
 
         def mock_is_file(path):
             """Mock Path.is_file()"""
             entry = mock_fs.get(str(path), {})
-            return isinstance(entry, dict) and entry.get('is_file', False)
+            return isinstance(entry, dict) and entry.get("is_file", False)
 
         def mock_iterdir(path):
             """Mock Path.iterdir()"""
             entry = mock_fs.get(str(path), {})
-            if isinstance(entry, dict) and entry.get('is_dir'):
-                children = entry.get('children', [])
+            if isinstance(entry, dict) and entry.get("is_dir"):
+                children = entry.get("children", [])
                 return [Path(child) for child in children]
             return []
 
-        def mock_open(path, mode='r', *args, **kwargs):
+        def mock_open(path, mode="r", *args, **kwargs):
             """Mock Path.open()"""
-            if 'r' in mode:
-                content = mock_fs.get(str(path), {}).get('content', '')
+            if "r" in mode:
+                content = mock_fs.get(str(path), {}).get("content", "")
                 from io import StringIO
+
                 return StringIO(content)
-            else:
-                # For write mode, we'll update our mock
-                from io import StringIO
-                buffer = StringIO()
-                original_close = buffer.close
+            # For write mode, we'll update our mock
+            from io import StringIO
 
-                def close_and_save():
-                    content = buffer.getvalue()
-                    mock_fs[str(path)] = {'is_file': True, 'content': content}
-                    original_close()
+            buffer = StringIO()
+            original_close = buffer.close
 
-                buffer.close = close_and_save
-                return buffer
+            def close_and_save() -> None:
+                content = buffer.getvalue()
+                mock_fs[str(path)] = {"is_file": True, "content": content}
+                original_close()
+
+            buffer.close = close_and_save
+            return buffer
 
         # Create the mock filesystem structure
         self._mock_fs = mock_fs
@@ -85,40 +85,40 @@ class TestModelManagerOptimizedV2:
         self._mock_iterdir = mock_iterdir
         self._mock_open = mock_open
 
-        yield self
+        return self
 
-    @pytest.fixture
+    @pytest.fixture()
     def model_manager(self, shared_app):
         """Create ModelManager instance."""
         return ModelManager()
 
-    def _create_mock_directory(self, mock_fs, path: str, children: list = None):
+    def _create_mock_directory(self, mock_fs, path: str, children: list | None = None) -> None:
         """Helper to create a mock directory."""
-        mock_fs._mock_fs[path] = {'is_dir': True, 'children': children or []}
+        mock_fs._mock_fs[path] = {"is_dir": True, "children": children or []}
 
-    def _create_mock_file(self, mock_fs, path: str, content: str = ""):
+    def _create_mock_file(self, mock_fs, path: str, content: str = "") -> None:
         """Helper to create a mock file."""
-        mock_fs._mock_fs[path] = {'is_file': True, 'content': content}
+        mock_fs._mock_fs[path] = {"is_file": True, "content": content}
 
-    def test_initialization(self, model_manager):
+    def test_initialization(self, model_manager) -> None:
         """Test ModelManager initialization."""
         assert model_manager is not None
-        assert hasattr(model_manager, 'models')
-        assert hasattr(model_manager, 'model_preferences')
+        assert hasattr(model_manager, "models")
+        assert hasattr(model_manager, "model_preferences")
         assert isinstance(model_manager.models, list)
         assert isinstance(model_manager.model_preferences, ModelPreferences)
 
         # Initially should be empty
         assert len(model_manager.models) == 0
 
-    def test_populate_models_scenarios(self, model_manager, mock_filesystem):
+    def test_populate_models_scenarios(self, model_manager, mock_filesystem) -> None:
         """Test all populate_models scenarios."""
         with (
-            patch('pathlib.Path.exists', side_effect=mock_filesystem._mock_exists),
-            patch('pathlib.Path.is_dir', side_effect=mock_filesystem._mock_is_dir),
-            patch('pathlib.Path.is_file', side_effect=mock_filesystem._mock_is_file),
-            patch('pathlib.Path.iterdir', side_effect=mock_filesystem._mock_iterdir),
-            patch('pathlib.Path.open', side_effect=mock_filesystem._mock_open),
+            patch("pathlib.Path.exists", side_effect=mock_filesystem._mock_exists),
+            patch("pathlib.Path.is_dir", side_effect=mock_filesystem._mock_is_dir),
+            patch("pathlib.Path.is_file", side_effect=mock_filesystem._mock_is_file),
+            patch("pathlib.Path.iterdir", side_effect=mock_filesystem._mock_iterdir),
+            patch("pathlib.Path.open", side_effect=mock_filesystem._mock_open),
         ):
             # Test 1: Empty directory
             test_dir = "/test/models/empty"
@@ -150,14 +150,10 @@ class TestModelManagerOptimizedV2:
                     "supports_ensemble": i == 0,  # Only first model
                     "supports_fast_mode": i < 2,  # First two models
                 })
-                self._create_mock_file(
-                    mock_filesystem,
-                    f"{model_path}/model_info.json",
-                    info_content
-                )
+                self._create_mock_file(mock_filesystem, f"{model_path}/model_info.json", info_content)
 
             # Update parent directory children
-            mock_filesystem._mock_fs[test_dir]['children'] = model_dirs
+            mock_filesystem._mock_fs[test_dir]["children"] = model_dirs
 
             # Populate models
             model_manager.populate_models(test_dir)
@@ -174,7 +170,7 @@ class TestModelManagerOptimizedV2:
 
             invalid_model_path = f"{test_dir_invalid}/bad-model"
             self._create_mock_directory(mock_filesystem, invalid_model_path)
-            mock_filesystem._mock_fs[test_dir_invalid]['children'] = [invalid_model_path]
+            mock_filesystem._mock_fs[test_dir_invalid]["children"] = [invalid_model_path]
 
             # Clear and repopulate
             model_manager.models.clear()
@@ -183,12 +179,12 @@ class TestModelManagerOptimizedV2:
             # Should have no models (invalid ones are skipped)
             assert len(model_manager.models) == 0
 
-    def test_get_model_info(self, model_manager, mock_filesystem):
+    def test_get_model_info(self, model_manager, mock_filesystem) -> None:
         """Test get_model_info method."""
         with (
-            patch('pathlib.Path.exists', side_effect=mock_filesystem._mock_exists),
-            patch('pathlib.Path.is_file', side_effect=mock_filesystem._mock_is_file),
-            patch('pathlib.Path.open', side_effect=mock_filesystem._mock_open),
+            patch("pathlib.Path.exists", side_effect=mock_filesystem._mock_exists),
+            patch("pathlib.Path.is_file", side_effect=mock_filesystem._mock_is_file),
+            patch("pathlib.Path.open", side_effect=mock_filesystem._mock_open),
         ):
             # Test valid model info
             model_path = "/test/model/rife-v4.6"
@@ -197,11 +193,7 @@ class TestModelManagerOptimizedV2:
                 "version": "4.6",
                 "description": "Latest RIFE model",
             })
-            self._create_mock_file(
-                mock_filesystem,
-                f"{model_path}/model_info.json",
-                info_content
-            )
+            self._create_mock_file(mock_filesystem, f"{model_path}/model_info.json", info_content)
 
             info = model_manager.get_model_info(model_path)
             assert info is not None
@@ -214,16 +206,12 @@ class TestModelManagerOptimizedV2:
 
             # Test invalid JSON
             bad_model_path = "/test/model/bad"
-            self._create_mock_file(
-                mock_filesystem,
-                f"{bad_model_path}/model_info.json",
-                "invalid json content"
-            )
+            self._create_mock_file(mock_filesystem, f"{bad_model_path}/model_info.json", "invalid json content")
 
             info = model_manager.get_model_info(bad_model_path)
             assert info is None
 
-    def test_get_model_by_name(self, model_manager):
+    def test_get_model_by_name(self, model_manager) -> None:
         """Test get_model_by_name method."""
         # Add test models
         model_manager.models = [
@@ -250,7 +238,7 @@ class TestModelManagerOptimizedV2:
         model = model_manager.get_model_by_name("rife-v4.6")
         assert model is None
 
-    def test_capabilities_methods(self, model_manager):
+    def test_capabilities_methods(self, model_manager) -> None:
         """Test get_model_capabilities and supports methods."""
         # Setup test models with different capabilities
         model_manager.models = [
@@ -304,7 +292,7 @@ class TestModelManagerOptimizedV2:
         assert model_manager.supports_hd("rife-v4.6") is True
         assert model_manager.supports_hd("rife-v4.3") is False
 
-    def test_model_paths(self, model_manager):
+    def test_model_paths(self, model_manager) -> None:
         """Test get_model_path and get_all_model_paths methods."""
         # Setup test models
         model_manager.models = [
@@ -336,10 +324,10 @@ class TestModelManagerOptimizedV2:
         all_paths = model_manager.get_all_model_paths()
         assert all_paths == []
 
-    def test_model_preferences_integration(self, model_manager):
+    def test_model_preferences_integration(self, model_manager) -> None:
         """Test integration with ModelPreferences."""
         # Mock QSettings
-        with patch('PyQt6.QtCore.QSettings') as mock_settings_class:
+        with patch("PyQt6.QtCore.QSettings") as mock_settings_class:
             mock_settings = MagicMock()
             mock_settings_class.return_value = mock_settings
 
@@ -368,12 +356,12 @@ class TestModelManagerOptimizedV2:
             assert info is not None
             assert info["name"] == "rife-v4.3"
 
-    def test_refresh_models(self, model_manager, mock_filesystem):
+    def test_refresh_models(self, model_manager, mock_filesystem) -> None:
         """Test refreshing models list."""
         with (
-            patch('pathlib.Path.exists', side_effect=mock_filesystem._mock_exists),
-            patch('pathlib.Path.is_dir', side_effect=mock_filesystem._mock_is_dir),
-            patch('pathlib.Path.iterdir', side_effect=mock_filesystem._mock_iterdir),
+            patch("pathlib.Path.exists", side_effect=mock_filesystem._mock_exists),
+            patch("pathlib.Path.is_dir", side_effect=mock_filesystem._mock_is_dir),
+            patch("pathlib.Path.iterdir", side_effect=mock_filesystem._mock_iterdir),
         ):
             # Initial population
             test_dir = "/test/models"
@@ -382,7 +370,7 @@ class TestModelManagerOptimizedV2:
             # Start with one model
             model1_path = f"{test_dir}/rife-v4.6"
             self._create_mock_directory(mock_filesystem, model1_path)
-            mock_filesystem._mock_fs[test_dir]['children'] = [model1_path]
+            mock_filesystem._mock_fs[test_dir]["children"] = [model1_path]
 
             model_manager.populate_models(test_dir)
             assert len(model_manager.models) == 1
@@ -390,13 +378,13 @@ class TestModelManagerOptimizedV2:
             # Add another model and refresh
             model2_path = f"{test_dir}/rife-v4.3"
             self._create_mock_directory(mock_filesystem, model2_path)
-            mock_filesystem._mock_fs[test_dir]['children'] = [model1_path, model2_path]
+            mock_filesystem._mock_fs[test_dir]["children"] = [model1_path, model2_path]
 
             # Refresh by calling populate_models again
             model_manager.populate_models(test_dir)
             assert len(model_manager.models) == 2
 
-    def test_edge_cases(self, model_manager):
+    def test_edge_cases(self, model_manager) -> None:
         """Test edge cases and error conditions."""
         # Test with None inputs
         assert model_manager.get_model_by_name(None) is None

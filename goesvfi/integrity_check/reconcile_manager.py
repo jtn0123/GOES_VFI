@@ -21,10 +21,10 @@ class ReconcileManager:
 
     def __init__(
         self,
-        cache_db: Optional[Any] = None,
-        reconciler: Optional[Any] = None,
-        cdn_store: Optional[Any] = None,
-        s3_store: Optional[Any] = None,
+        cache_db: Any | None = None,
+        reconciler: Any | None = None,
+        cdn_store: Any | None = None,
+        s3_store: Any | None = None,
         max_concurrency: int = 5,
         **kwargs: Any,
     ) -> None:
@@ -48,11 +48,11 @@ class ReconcileManager:
 
     async def download_missing_timestamps(
         self,
-        missing_timestamps: List[datetime],
+        missing_timestamps: list[datetime],
         satellite: Any,
-        progress_callback: Optional[Any] = None,
-        error_callback: Optional[Any] = None,
-    ) -> Dict[datetime, Any]:
+        progress_callback: Any | None = None,
+        error_callback: Any | None = None,
+    ) -> dict[datetime, Any]:
         """Download missing timestamps.
 
         Args:
@@ -99,8 +99,8 @@ class ReconcileManager:
         start_time: datetime,
         end_time: datetime,
         interval_minutes: int = 10,
-        progress_callback: Optional[Any] = None,
-    ) -> tuple[Set[datetime], Set[datetime]]:
+        progress_callback: Any | None = None,
+    ) -> tuple[set[datetime], set[datetime]]:
         """Scan directory for existing and missing timestamps.
 
         Args:
@@ -156,12 +156,12 @@ class ReconcileManager:
 
     async def fetch_missing_files(
         self,
-        missing_timestamps: List[datetime],
+        missing_timestamps: list[datetime],
         satellite: Any,
         destination_dir: Any,
-        progress_callback: Optional[Any] = None,
-        _item_progress_callback: Optional[Any] = None,
-    ) -> Dict[datetime, Any]:
+        progress_callback: Any | None = None,
+        _item_progress_callback: Any | None = None,
+    ) -> dict[datetime, Any]:
         """Fetch missing files for the given timestamps.
 
         Args:
@@ -253,8 +253,8 @@ class ReconcileManager:
         start_time: datetime,
         end_time: datetime,
         interval_minutes: int = 10,
-        progress_callback: Optional[Any] = None,
-        file_callback: Optional[Any] = None,
+        progress_callback: Any | None = None,
+        file_callback: Any | None = None,
     ) -> tuple[int, int, int]:
         """Reconcile local files with remote sources.
 

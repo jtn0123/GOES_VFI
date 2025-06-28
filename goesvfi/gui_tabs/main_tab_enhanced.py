@@ -166,23 +166,23 @@ class EnhancedMainTab(MainTab):
         self._original_dragLeaveEvent = self.dragLeaveEvent
         self._original_dropEvent = self.dropEvent
 
-    def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
+    def dragEnterEvent(self, event: QDragEnterEvent | None) -> None:
         """Handle drag enter event."""
         if self._drag_handler:
             self._drag_handler.dragEnterEvent(event)
 
-    def dragLeaveEvent(self, event: Optional[QDragLeaveEvent]) -> None:
+    def dragLeaveEvent(self, event: QDragLeaveEvent | None) -> None:
         """Handle drag leave event."""
         if self._drag_handler:
             self._drag_handler.dragLeaveEvent(event)
 
-    def dropEvent(self, event: Optional[QDropEvent]) -> None:
+    def dropEvent(self, event: QDropEvent | None) -> None:
         """Handle drop event."""
         if self._drag_handler:
             self._drag_handler.dropEvent(event)
 
     @pyqtSlot(list)
-    def _handle_dropped_files(self, file_paths: List[str]) -> None:
+    def _handle_dropped_files(self, file_paths: list[str]) -> None:
         """Handle dropped files."""
         if not file_paths:
             return
@@ -207,7 +207,7 @@ class EnhancedMainTab(MainTab):
                 self._notification.show_message(f"Input directory set to: {first_path.parent.name}")
 
     @pyqtSlot(dict)
-    def _update_progress_stats(self, stats: Dict[str, Any]) -> None:
+    def _update_progress_stats(self, stats: dict[str, Any]) -> None:
         """Update progress statistics in the UI."""
         if hasattr(self, "_status_widget"):
             self._status_widget.status_label.setText("Processing...")

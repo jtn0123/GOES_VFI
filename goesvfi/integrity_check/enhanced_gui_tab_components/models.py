@@ -14,9 +14,9 @@ from goesvfi.integrity_check.view_model import (
 class EnhancedMissingTimestampsModel(MissingTimestampsModel):
     """Enhanced model for displaying missing timestamps with source information."""
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__()
-        self._items: List[Any] = []  # Initialize _items
+        self._items: list[Any] = []  # Initialize _items
         self._headers = [
             "Timestamp",
             "Satellite",
@@ -45,7 +45,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
 
         return None
 
-    def _get_display_data(self, item: EnhancedMissingTimestamp, col: int) -> Optional[str]:
+    def _get_display_data(self, item: EnhancedMissingTimestamp, col: int) -> str | None:
         """Get display data for the given item and column."""
         if col == 0:  # Timestamp
             return item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
@@ -117,7 +117,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
             return "100%"
         return ""
 
-    def _get_tooltip_data(self, item: EnhancedMissingTimestamp, col: int) -> Optional[str]:
+    def _get_tooltip_data(self, item: EnhancedMissingTimestamp, col: int) -> str | None:
         """Get tooltip data for the given item and column."""
         if col == 3 and item.download_error:  # Status column with error
             return self._format_error_tooltip(item.download_error)
@@ -140,7 +140,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
         tooltip += "Right-click to show context menu with more options"
         return tooltip
 
-    def _get_background_color(self, item: EnhancedMissingTimestamp, col: int) -> Optional[QColor]:
+    def _get_background_color(self, item: EnhancedMissingTimestamp, col: int) -> QColor | None:
         """Get background color for the given item and column."""
         if col == 3:  # Status column
             if item.is_downloaded:
@@ -151,7 +151,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
                 return QColor(0, 0, 120)  # Dark blue for dark mode
         return None
 
-    def _get_foreground_color(self, item: EnhancedMissingTimestamp, col: int) -> Optional[QColor]:
+    def _get_foreground_color(self, item: EnhancedMissingTimestamp, col: int) -> QColor | None:
         """Get foreground color for the given item and column."""
         if col == 3:  # Status column
             if item.is_downloaded or item.download_error or item.is_downloading:

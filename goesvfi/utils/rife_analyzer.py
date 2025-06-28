@@ -35,15 +35,15 @@ class RifeCapabilityDetector:
             raise FileNotFoundError(f"RIFE executable not found at: {executable_path}")
 
         self.exe_path = executable_path
-        self._capabilities: Dict[str, bool] = {}
-        self._version: Optional[str] = None
-        self._help_text: Optional[str] = None
-        self._supported_args: Set[str] = set()
+        self._capabilities: dict[str, bool] = {}
+        self._version: str | None = None
+        self._help_text: str | None = None
+        self._supported_args: set[str] = set()
 
         # Run detection
         self._detect_capabilities()
 
-    def _run_help_command(self) -> Tuple[str, bool]:
+    def _run_help_command(self) -> tuple[str, bool]:
         """
         Run the executable with --help flag and capture output.
 
@@ -125,7 +125,7 @@ class RifeCapabilityDetector:
                 help_text_str,
             )
 
-    def _initialize_default_capabilities(self) -> Dict[str, bool]:
+    def _initialize_default_capabilities(self) -> dict[str, bool]:
         """Initialize default capabilities dictionary."""
         return {
             "tiling": False,
@@ -203,17 +203,17 @@ class RifeCapabilityDetector:
         logger.info("RIFE capabilities detected: %s", self._capabilities)
 
     @property
-    def version(self) -> Optional[str]:
+    def version(self) -> str | None:
         """Get the detected version of the RIFE executable."""
         return self._version
 
     @property
-    def help_text(self) -> Optional[str]:
+    def help_text(self) -> str | None:
         """Get the full help text from the RIFE executable."""
         return self._help_text
 
     @property
-    def supported_args(self) -> Set[str]:
+    def supported_args(self) -> set[str]:
         """Get the set of supported argument names."""
         return self._supported_args
 
@@ -277,8 +277,8 @@ class RifeCommandBuilder:
         input_frame1: pathlib.Path,
         input_frame2: pathlib.Path,
         output_path: pathlib.Path,
-        options: Dict[str, Any],
-    ) -> List[str]:
+        options: dict[str, Any],
+    ) -> list[str]:
         """
         Build a RIFE command based on detected capabilities.
 
@@ -339,7 +339,7 @@ class RifeCommandBuilder:
 
         return cmd
 
-    def get_capabilities_summary(self) -> Dict[str, bool]:
+    def get_capabilities_summary(self) -> dict[str, bool]:
         """
         Get a summary of supported capabilities.
 
@@ -359,7 +359,7 @@ class RifeCommandBuilder:
         }
 
 
-def analyze_rife_executable(executable_path: pathlib.Path) -> Dict[str, Any]:
+def analyze_rife_executable(executable_path: pathlib.Path) -> dict[str, Any]:
     """
     Analyze a RIFE executable and return its capabilities.
 

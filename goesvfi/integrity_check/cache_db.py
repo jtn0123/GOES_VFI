@@ -3,12 +3,12 @@
 This module provides SQLite-based caching for scan results to improve performance.
 """
 
-import json
-import sqlite3
 from datetime import datetime
+import json
 from pathlib import Path
+import sqlite3
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Set, Type
+from typing import Any
 
 from goesvfi.utils import config, log
 
@@ -25,7 +25,7 @@ class CacheDB:
     redundant scanning operations.
     """
 
-    def __init__(self, db_path: Optional[Path] = None) -> None:
+    def __init__(self, db_path: Path | None = None) -> None:
         """Initialize the cache database."""
         self.db_path = Path(db_path) if db_path else DEFAULT_CACHE_PATH
 
@@ -33,7 +33,7 @@ class CacheDB:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Connect to database
-        self.conn: Optional[sqlite3.Connection] = sqlite3.connect(str(self.db_path), check_same_thread=False)
+        self.conn: sqlite3.Connection | None = sqlite3.connect(str(self.db_path), check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
 
         # Create tables
@@ -44,9 +44,11 @@ class CacheDB:
     def _create_schema(self) -> None:
         """Create the database schema."""
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
 
         # Scan results table
@@ -129,9 +131,9 @@ class CacheDB:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
     ) -> None:
         """Exit context manager."""
         self.close()
@@ -143,10 +145,10 @@ class CacheDB:
         satellite: Any,
         interval_minutes: int,
         base_dir: Path,
-        missing_timestamps: List[datetime],
+        missing_timestamps: list[datetime],
         expected_count: int,
         found_count: int,
-        options: Optional[Dict[str, Any]] = None,
+        options: dict[str, Any] | None = None,
     ) -> int:
         """Store scan results in cache.
 
@@ -154,7 +156,8 @@ class CacheDB:
             The scan_id of the stored result
         """
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
 
         # Convert satellite to string if needed
@@ -199,7 +202,8 @@ class CacheDB:
 
         scan_id = cursor.lastrowid
         if scan_id is None:
-            raise RuntimeError("Failed to get scan_id from database insert")
+            msg = "Failed to get scan_id from database insert"
+            raise RuntimeError(msg)
 
         # Store missing timestamps
         for ts in missing_timestamps:
@@ -225,15 +229,16 @@ class CacheDB:
         satellite: Any,
         interval_minutes: int,
         base_dir: Path,
-        options: Optional[Dict[str, Any]] = None,
-    ) -> Optional[Dict[str, Any]]:
+        options: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | None:
         """Get cached scan results.
 
         Returns:
             Dictionary with scan results or None if not found
         """
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
 
         # Convert satellite to string if needed
@@ -293,7 +298,8 @@ class CacheDB:
         """
         try:
             if not self.conn:
-                raise RuntimeError("Database connection not established")
+                msg = "Database connection not established"
+                raise RuntimeError(msg)
             cursor = self.conn.cursor()
             cursor.execute("DELETE FROM scan_results")
             cursor.execute("DELETE FROM missing_timestamps")
@@ -303,7 +309,7 @@ class CacheDB:
             LOGGER.info("Cache cleared successfully")
             return True
         except Exception as e:
-            LOGGER.error("Error clearing cache: %s", e)
+            LOGGER.exception("Error clearing cache: %s", e)
             return False
 
     async def add_timestamp(
@@ -320,7 +326,8 @@ class CacheDB:
         """
         try:
             if not self.conn:
-                raise RuntimeError("Database connection not established")
+                msg = "Database connection not established"
+                raise RuntimeError(msg)
             cursor = self.conn.cursor()
             sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
 
@@ -337,7 +344,7 @@ class CacheDB:
                 self.conn.commit()
             return True
         except Exception as e:
-            LOGGER.error("Error adding timestamp: %s", e)
+            LOGGER.exception("Error adding timestamp: %s", e)
             return False
 
     async def timestamp_exists(self, timestamp: datetime, satellite: Any) -> bool:
@@ -347,7 +354,8 @@ class CacheDB:
             True if the timestamp exists and was found
         """
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
         sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
 
@@ -362,14 +370,15 @@ class CacheDB:
         row = cursor.fetchone()
         return bool(row and row["found"])
 
-    async def get_timestamps(self, satellite: Any, start_time: datetime, end_time: datetime) -> Set[datetime]:
+    async def get_timestamps(self, satellite: Any, start_time: datetime, end_time: datetime) -> set[datetime]:
         """Get all timestamps in a time range that were found.
 
         Returns:
             Set of timestamps that exist
         """
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
         sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
 
@@ -383,14 +392,15 @@ class CacheDB:
 
         return {datetime.fromisoformat(row["timestamp"]) for row in cursor.fetchall()}
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get statistics about the cache.
 
         Returns:
             Dictionary with cache statistics
         """
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
 
         # Get scan count
@@ -431,15 +441,16 @@ class CacheDB:
     def set_cache_data(
         self,
         satellite: Any,
-        missing_timestamps: List[datetime],
-        remote_files: List[str],
-        local_files: Set[str],
+        missing_timestamps: list[datetime],
+        remote_files: list[str],
+        local_files: set[str],
     ) -> None:
         """Set cache data for a satellite (ThreadLocalCacheDB compatibility)."""
         # For now, just store the missing timestamps
         sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
 
         for ts in missing_timestamps:
@@ -455,11 +466,12 @@ class CacheDB:
         if self.conn:
             self.conn.commit()
 
-    def get_cache_data(self, satellite: Any) -> Optional[Dict[str, Any]]:
+    def get_cache_data(self, satellite: Any) -> dict[str, Any] | None:
         """Get cache data for a satellite (ThreadLocalCacheDB compatibility)."""
         sat_str = satellite.name if hasattr(satellite, "name") else str(satellite)
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
 
         # Get missing timestamps
@@ -494,7 +506,7 @@ class CacheDB:
         file_hash: str,
         file_size: int,
         timestamp: datetime,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Add a general cache entry.
 
@@ -506,7 +518,8 @@ class CacheDB:
             metadata: Optional metadata dictionary
         """
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
 
         metadata_str = json.dumps(metadata) if metadata else None
@@ -523,7 +536,7 @@ class CacheDB:
         if self.conn:
             self.conn.commit()
 
-    def get_entry(self, filepath: str) -> Optional[Dict[str, Any]]:
+    def get_entry(self, filepath: str) -> dict[str, Any] | None:
         """Get a cache entry by filepath.
 
         Args:
@@ -533,7 +546,8 @@ class CacheDB:
             Dictionary with entry data or None if not found
         """
         if not self.conn:
-            raise RuntimeError("Database connection not established")
+            msg = "Database connection not established"
+            raise RuntimeError(msg)
         cursor = self.conn.cursor()
 
         cursor.execute(

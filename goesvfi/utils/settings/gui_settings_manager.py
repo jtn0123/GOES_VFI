@@ -26,7 +26,7 @@ class GUISettingsManager:
     This replacement: A-grade complexity (~3), ~25 lines of orchestration
     """
 
-    def __init__(self, qsettings: QSettings, classifier: Optional[ErrorClassifier] = None) -> None:
+    def __init__(self, qsettings: QSettings, classifier: ErrorClassifier | None = None) -> None:
         self.classifier = classifier or ErrorClassifier()
 
         # Create the settings manager with organized sections
@@ -68,7 +68,7 @@ class GUISettingsManager:
             LOGGER.error("Failed to save GUI settings: %s", error.user_message)
             return False
 
-    def load_all_settings(self, main_window: Any, defaults: Optional[Dict[str, Any]] = None) -> bool:
+    def load_all_settings(self, main_window: Any, defaults: dict[str, Any] | None = None) -> bool:
         """
         Load all GUI settings with clean error handling.
 
@@ -101,9 +101,9 @@ class GUISettingsManager:
             LOGGER.error("Failed to load GUI settings: %s", error.user_message)
             return False
 
-    def _organize_defaults(self, defaults: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+    def _organize_defaults(self, defaults: dict[str, Any]) -> dict[str, dict[str, Any]]:
         """Organize flat defaults into section-based structure."""
-        section_defaults: Dict[str, Dict[str, Any]] = {
+        section_defaults: dict[str, dict[str, Any]] = {
             "basic": {},
             "main_tab": {},
             "sanchez": {},
@@ -154,7 +154,7 @@ def save_settings_refactored(main_window: Any, qsettings: QSettings) -> bool:
     return manager.save_all_settings(main_window)
 
 
-def load_settings_refactored(main_window: Any, qsettings: QSettings, defaults: Optional[Dict[str, Any]] = None) -> bool:
+def load_settings_refactored(main_window: Any, qsettings: QSettings, defaults: dict[str, Any] | None = None) -> bool:
     """
     Drop-in replacement for complex loadSettings method.
 

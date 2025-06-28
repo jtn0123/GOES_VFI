@@ -48,9 +48,9 @@ class TaskResult[T]:
 
     task_id: str
     status: TaskStatus
-    result: Optional[T] = None
-    error: Optional[Exception] = None
-    error_traceback: Optional[str] = None
+    result: T | None = None
+    error: Exception | None = None
+    error_traceback: str | None = None
 
 
 class TaskSignals(QObject):
@@ -108,7 +108,6 @@ class Task[T, P](QRunnable):
 
             # Check if cancelled after execution
             if self._cancel_requested:
-                pass
                 self.signals.cancelled.emit(self.task_id)
                 return
 
@@ -117,7 +116,6 @@ class Task[T, P](QRunnable):
             self.signals.completed.emit(self.task_id, task_result)
 
         except Exception as e:
-            pass
             # Get traceback
             error_traceback = traceback.format_exc()
 
@@ -153,7 +151,6 @@ class Task[T, P](QRunnable):
         return self._cancel_requested
 
     def cancel(self) -> None:
-        pass
         """Request cancellation of the task."""
         self._cancel_requested = True  # pylint: disable=attribute-defined-outside-init
         LOGGER.debug("Cancellation requested for task %s", self.task_id)
@@ -184,14 +181,12 @@ class TaskManager(QObject):
         # Set thread pool maximum thread count
         thread_pool = QThreadPool.globalInstance()
         if thread_pool is not None:
-            pass
             max_threads = min(16, thread_pool.maxThreadCount())
         if self.thread_pool is not None:
-            pass
             self.thread_pool.setMaxThreadCount(max_threads)
 
         # Store active tasks
-        self._tasks: Dict[str, Task[Any, Any]] = {}
+        self._tasks: dict[str, Task[Any, Any]] = {}
 
         # Configure logging
         LOGGER.info("Task[Any] manager initialized with %d threads", max_threads)
@@ -221,7 +216,6 @@ class TaskManager(QObject):
 
         # Submit task to thread pool
         if self.thread_pool is not None:
-            pass
             self.thread_pool.start(task)
 
         LOGGER.debug("Task[Any] %s submitted", task_id)
@@ -239,7 +233,6 @@ class TaskManager(QObject):
             False if the task wasn't found
         """
         if task_id in self._tasks:
-            pass
             self._tasks[task_id].cancel()
             LOGGER.debug("Cancellation requested for task %s", task_id)
             return True
@@ -269,7 +262,6 @@ class TaskManager(QObject):
         return task_id in self._tasks
 
     def get_active_task_count(self) -> int:
-        pass
         """
         Get the number of active tasks.
 
@@ -311,7 +303,6 @@ class TaskManager(QObject):
         """
         # Remove task from active tasks
         if task_id in self._tasks:
-            pass
             del self._tasks[task_id]
 
         # Emit completed signal
@@ -330,7 +321,6 @@ class TaskManager(QObject):
         """
         # Remove task from active tasks
         if task_id in self._tasks:
-            pass
             del self._tasks[task_id]
 
         # Emit failed signal
@@ -347,7 +337,6 @@ class TaskManager(QObject):
         """
         # Remove task from active tasks
         if task_id in self._tasks:
-            pass
             del self._tasks[task_id]
 
         # Emit cancelled signal
@@ -362,7 +351,6 @@ class TaskManager(QObject):
 
         # Wait for all tasks to complete
         if self.thread_pool is not None:
-            pass
             self.thread_pool.waitForDone()
 
         LOGGER.info("Task[Any] manager cleaned up")
@@ -382,7 +370,7 @@ class UIFreezeMonitor(QObject):
 
     def __init__(
         self,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
         check_interval_ms: int = 100,
         freeze_threshold_ms: int = 500,
     ) -> None:
@@ -432,7 +420,6 @@ class UIFreezeMonitor(QObject):
         return self._is_frozen
 
     def get_freeze_duration(self) -> float:
-        pass
         """
         Get the duration of the current freeze, in milliseconds.
 
@@ -440,7 +427,6 @@ class UIFreezeMonitor(QObject):
             Duration of the current freeze, or 0.0 if not frozen
         """
         if not self._is_frozen:
-            pass
             return 0.0
 
         return (time.time() * 1000) - self._freeze_start_time
@@ -455,17 +441,14 @@ class UIFreezeMonitor(QObject):
 
         # Check if we're experiencing a freeze
         if elapsed > self.freeze_threshold_ms:
-            pass
             # We have a freeze
             if not self._is_frozen:
-                pass
                 # This is a new freeze
                 self._is_frozen = True  # pylint: disable=attribute-defined-outside-init
                 self._freeze_start_time = self._last_check_time  # pylint: disable=attribute-defined-outside-init
                 self.freeze_detected.emit(elapsed)
                 LOGGER.warning("UI freeze detected: %.1fms", elapsed)
         elif self._is_frozen:
-            pass
             # Freeze has resolved
             total_duration = current_time - self._freeze_start_time
             self._is_frozen = False  # pylint: disable=attribute-defined-outside-init
@@ -568,7 +551,7 @@ class BackgroundProcessManager:
 background_manager = BackgroundProcessManager()
 
 
-def get_task_result(task_id: str, timeout: float = 0) -> Optional[TaskResult[Any]]:
+def get_task_result(task_id: str, timeout: float = 0) -> TaskResult[Any] | None:
     """
     Get the result of a background task.
 
@@ -599,7 +582,6 @@ def cancel_background_task(task_id: str) -> bool:
 
 
 def get_task_manager() -> TaskManager:
-    pass
     """
     Get the global task manager instance.
 

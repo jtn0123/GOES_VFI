@@ -21,11 +21,11 @@ class PreviewMetadata:
 
     def __init__(
         self,
-        channel: Optional[Any] = None,
-        product_type: Optional[Any] = None,
-        date_time: Optional[datetime] = None,
-        source: Optional[str] = None,
-        processing_options: Optional[Dict[str, Any]] = None,
+        channel: Any | None = None,
+        product_type: Any | None = None,
+        date_time: datetime | None = None,
+        source: str | None = None,
+        processing_options: dict[str, Any] | None = None,
     ) -> None:
         self.channel = channel
         self.product_type = product_type
@@ -37,7 +37,7 @@ class PreviewMetadata:
 class ItemPreviewWidget(QWidget):
     """Widget for previewing items."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.current_item = None
         self.download_btn = QPushButton("Download")
@@ -69,7 +69,7 @@ class MissingItemsTreeView(QWidget):
 
     itemSelected = pyqtSignal(object)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._items: list[object] = []
         self._grouping = "day"  # Default grouping
@@ -78,7 +78,7 @@ class MissingItemsTreeView(QWidget):
 
         self.model = QStringListModel()
 
-    def set_items(self, items: List[Any]) -> None:
+    def set_items(self, items: list[Any]) -> None:
         """Set items to display."""
         self._items = items
         # Update model based on grouping
@@ -139,21 +139,18 @@ class MissingItemsTreeView(QWidget):
 
     def highlight_timestamp(self, timestamp: datetime) -> None:
         """Highlight item with given timestamp."""
-        pass
 
     def expandAll(self) -> None:
         """Expand all groups."""
-        pass
 
     def collapseAll(self) -> None:
         """Collapse all groups."""
-        pass
 
 
 class ResultsSummaryWidget(QWidget):
     """Widget for displaying results summary."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         from PyQt6.QtWidgets import QLabel
 
@@ -163,7 +160,7 @@ class ResultsSummaryWidget(QWidget):
         self.missing_label = QLabel("0")
         self.errors_label = QLabel("0")
 
-    def update_summary(self, items: List[Any], total_expected: int) -> None:
+    def update_summary(self, items: list[Any], total_expected: int) -> None:
         """Update the summary display."""
         # Update total expected
         self.total_expected_label.setText(str(total_expected))
@@ -183,7 +180,7 @@ class ResultsSummaryWidget(QWidget):
 class CollapsibleSettingsGroup(QWidget):
     """Collapsible settings group widget."""
 
-    def __init__(self, title: str = "Settings", parent: Optional[QWidget] = None) -> None:
+    def __init__(self, title: str = "Settings", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.title = title
         self.collapsed = False

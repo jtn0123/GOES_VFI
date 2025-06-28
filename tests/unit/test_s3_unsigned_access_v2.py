@@ -9,15 +9,15 @@ Optimizations:
 """
 
 import asyncio
-import tempfile
 from datetime import datetime
 from pathlib import Path
+import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import botocore.exceptions
-import pytest
 from botocore import UNSIGNED
 from botocore.config import Config
+import botocore.exceptions
+import pytest
 
 from goesvfi.integrity_check.remote.base import AuthenticationError
 from goesvfi.integrity_check.remote.s3_store import S3Store
@@ -35,13 +35,13 @@ class TestUnsignedS3AccessV2:
         yield loop
         loop.close()
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_dir(self):
         """Create temporary directory."""
         with tempfile.TemporaryDirectory() as temp_dir:
             yield Path(temp_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_s3_setup(self):
         """Shared mock S3 setup."""
         # Create mock S3 client
@@ -60,13 +60,13 @@ class TestUnsignedS3AccessV2:
             "test_satellite": SatellitePattern.GOES_18,
         }
 
-    @pytest.fixture
+    @pytest.fixture()
     def s3_store(self):
         """Create S3Store instance."""
         return S3Store(aws_profile=None, aws_region="us-east-1", timeout=30)
 
-    @pytest.mark.asyncio
-    async def test_unsigned_s3_client_creation(self, s3_store, mock_s3_setup):
+    @pytest.mark.asyncio()
+    async def test_unsigned_s3_client_creation(self, s3_store, mock_s3_setup) -> None:
         """Test that S3 client is created with unsigned access."""
         with patch("aioboto3.Session", return_value=mock_s3_setup["session"]):
             # Create a config spy to verify UNSIGNED is used
@@ -78,15 +78,15 @@ class TestUnsignedS3AccessV2:
 
                 # Verify Config was called with UNSIGNED
                 config_spy.assert_called_once()
-                args, kwargs = config_spy.call_args
+                _args, kwargs = config_spy.call_args
                 assert "signature_version" in kwargs
                 assert kwargs["signature_version"] == UNSIGNED
 
                 # Verify the client was returned
                 assert client == mock_s3_setup["client"]
 
-    @pytest.mark.asyncio
-    async def test_unsigned_access_for_public_buckets(self, s3_store, mock_s3_setup):
+    @pytest.mark.asyncio()
+    async def test_unsigned_access_for_public_buckets(self, s3_store, mock_s3_setup) -> None:
         """Test S3Store correctly accesses public NOAA buckets with unsigned access."""
         mock_head_response = {"ContentLength": 12345, "LastModified": datetime.now()}
         mock_s3_setup["client"].head_object = AsyncMock(return_value=mock_head_response)
@@ -98,8 +98,7 @@ class TestUnsignedS3AccessV2:
 
                 # Call exists method
                 exists = await s3_store.check_file_exists(
-                    mock_s3_setup["test_timestamp"], 
-                    mock_s3_setup["test_satellite"]
+                    mock_s3_setup["test_timestamp"], mock_s3_setup["test_satellite"]
                 )
 
                 # Verify Config was created with UNSIGNED
@@ -118,8 +117,8 @@ class TestUnsignedS3AccessV2:
                 # Verify the exists check succeeded
                 assert exists is True
 
-    @pytest.mark.asyncio
-    async def test_error_handling_for_404(self, s3_store, mock_s3_setup):
+    @pytest.mark.asyncio()
+    async def test_error_handling_for_404(self, s3_store, mock_s3_setup) -> None:
         """Test error handling for 404 Not Found responses."""
         # Simulate a 404 error
         error_response = {"Error": {"Code": "404", "Message": "Not Found"}}
@@ -128,16 +127,13 @@ class TestUnsignedS3AccessV2:
 
         with patch("aioboto3.Session", return_value=mock_s3_setup["session"]):
             # Call the exists method
-            exists = await s3_store.check_file_exists(
-                mock_s3_setup["test_timestamp"], 
-                mock_s3_setup["test_satellite"]
-            )
+            exists = await s3_store.check_file_exists(mock_s3_setup["test_timestamp"], mock_s3_setup["test_satellite"])
 
             # Verify exists returns False for 404
             assert exists is False
 
-    @pytest.mark.asyncio
-    async def test_error_handling_for_auth_errors(self, s3_store, mock_s3_setup):
+    @pytest.mark.asyncio()
+    async def test_error_handling_for_auth_errors(self, s3_store, mock_s3_setup) -> None:
         """Test error handling for authentication errors."""
         # Simulate an authentication error
         error_response = {"Error": {"Code": "InvalidAccessKeyId", "Message": "Invalid Access Key"}}
@@ -147,13 +143,10 @@ class TestUnsignedS3AccessV2:
         with patch("aioboto3.Session", return_value=mock_s3_setup["session"]):
             # Call the exists method - should raise AuthenticationError
             with pytest.raises(AuthenticationError):
-                await s3_store.check_file_exists(
-                    mock_s3_setup["test_timestamp"], 
-                    mock_s3_setup["test_satellite"]
-                )
+                await s3_store.check_file_exists(mock_s3_setup["test_timestamp"], mock_s3_setup["test_satellite"])
 
-    @pytest.mark.asyncio
-    async def test_download_with_unsigned_access(self, s3_store, mock_s3_setup, temp_dir):
+    @pytest.mark.asyncio()
+    async def test_download_with_unsigned_access(self, s3_store, mock_s3_setup, temp_dir) -> None:
         """Test downloading a file with unsigned access."""
         # Mock successful head_object and download
         mock_s3_setup["client"].head_object = AsyncMock(return_value={"ContentLength": 12345})
@@ -167,14 +160,12 @@ class TestUnsignedS3AccessV2:
                 # Call download method
                 dest_path = temp_dir / "test_file.nc"
                 result = await s3_store.download_file(
-                    mock_s3_setup["test_timestamp"], 
-                    mock_s3_setup["test_satellite"], 
-                    dest_path
+                    mock_s3_setup["test_timestamp"], mock_s3_setup["test_satellite"], dest_path
                 )
 
                 # Verify Config was called with UNSIGNED
                 config_spy.assert_called_once()
-                args, kwargs = config_spy.call_args
+                _args, kwargs = config_spy.call_args
                 assert kwargs["signature_version"] == UNSIGNED
 
                 # Verify download_file was called
@@ -183,8 +174,8 @@ class TestUnsignedS3AccessV2:
                 # Verify the result
                 assert result == dest_path
 
-    @pytest.mark.asyncio
-    async def test_noaa_bucket_access(self, s3_store, mock_s3_setup):
+    @pytest.mark.asyncio()
+    async def test_noaa_bucket_access(self, s3_store, mock_s3_setup) -> None:
         """Test S3Store correctly accesses NOAA buckets for both satellites."""
         mock_s3_setup["client"].head_object = AsyncMock(return_value={"ContentLength": 12345})
 
@@ -207,17 +198,14 @@ class TestUnsignedS3AccessV2:
                 args = mock_s3_setup["client"].head_object.call_args
                 assert args[1]["Bucket"] == expected_buckets[satellite]
 
-    @pytest.mark.asyncio
-    async def test_multiple_operations_efficiency(self, s3_store, mock_s3_setup):
+    @pytest.mark.asyncio()
+    async def test_multiple_operations_efficiency(self, s3_store, mock_s3_setup) -> None:
         """Test multiple operations can reuse the same client efficiently."""
         mock_s3_setup["client"].head_object = AsyncMock(return_value={"ContentLength": 12345})
 
-        with patch("aioboto3.Session", return_value=mock_s3_setup["session"]) as mock_session:
+        with patch("aioboto3.Session", return_value=mock_s3_setup["session"]):
             # Perform multiple operations
-            timestamps = [
-                datetime(2023, 1, 1, hour, 0, 0) 
-                for hour in range(0, 6)
-            ]
+            timestamps = [datetime(2023, 1, 1, hour, 0, 0) for hour in range(6)]
 
             results = []
             for ts in timestamps:
@@ -231,19 +219,16 @@ class TestUnsignedS3AccessV2:
             # (In real implementation, this would test client caching)
             assert mock_s3_setup["client"].head_object.call_count == len(timestamps)
 
-    @pytest.mark.asyncio
-    async def test_concurrent_access_handling(self, s3_store, mock_s3_setup):
+    @pytest.mark.asyncio()
+    async def test_concurrent_access_handling(self, s3_store, mock_s3_setup) -> None:
         """Test concurrent access to S3 resources."""
         mock_s3_setup["client"].head_object = AsyncMock(return_value={"ContentLength": 12345})
 
         with patch("aioboto3.Session", return_value=mock_s3_setup["session"]):
             # Create multiple concurrent tasks
             tasks = [
-                s3_store.check_file_exists(
-                    datetime(2023, 1, 1, hour, 0, 0),
-                    SatellitePattern.GOES_16
-                )
-                for hour in range(0, 5)
+                s3_store.check_file_exists(datetime(2023, 1, 1, hour, 0, 0), SatellitePattern.GOES_16)
+                for hour in range(5)
             ]
 
             # Run concurrently

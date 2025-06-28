@@ -13,7 +13,7 @@ from .base import StructuredError
 class ErrorReporter:
     """Formats and reports structured errors."""
 
-    def __init__(self, output: Optional[TextIO] = None, verbose: bool = False) -> None:
+    def __init__(self, output: TextIO | None = None, verbose: bool = False) -> None:
         self.output = output or sys.stderr
         self.verbose = verbose
 

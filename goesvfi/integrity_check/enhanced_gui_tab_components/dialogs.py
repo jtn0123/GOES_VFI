@@ -23,7 +23,7 @@ from goesvfi.integrity_check.enhanced_view_model import EnhancedMissingTimestamp
 class AWSConfigDialog(QDialog):
     """Dialog for configuring AWS S3 settings."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         # Apply material theme dialog class
@@ -94,7 +94,7 @@ class AWSConfigDialog(QDialog):
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
 
-    def get_aws_profile(self) -> Optional[str]:
+    def get_aws_profile(self) -> str | None:
         """Get the AWS profile name."""
         profile = self.profile_edit.text().strip()
         return profile if profile else None
@@ -103,7 +103,7 @@ class AWSConfigDialog(QDialog):
         """Get the AWS region."""
         return str(self.region_combo.currentText())
 
-    def set_aws_profile(self, profile: Optional[str]) -> None:
+    def set_aws_profile(self, profile: str | None) -> None:
         """Set the AWS profile name."""
         self.profile_edit.setText(profile or "")
 
@@ -115,7 +115,7 @@ class AWSConfigDialog(QDialog):
 class CDNConfigDialog(QDialog):
     """Dialog for configuring CDN settings."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         # Apply material theme dialog class
@@ -170,7 +170,7 @@ class CDNConfigDialog(QDialog):
 class AdvancedOptionsDialog(QDialog):
     """Dialog for configuring advanced integrity check options."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         # Apply material theme dialog class
@@ -297,7 +297,7 @@ class AdvancedOptionsDialog(QDialog):
         # Connect signals
         self.throttle_checkbox.toggled.connect(self.throttle_spinbox.setEnabled)
 
-    def get_options(self) -> Dict[str, Any]:
+    def get_options(self) -> dict[str, Any]:
         """Get the options as a dictionary."""
         return {
             "timeout": self.timeout_spinbox.value(),
@@ -313,7 +313,7 @@ class AdvancedOptionsDialog(QDialog):
             "sound_alerts": self.sound_alerts_checkbox.isChecked(),
         }
 
-    def set_options(self, options: Dict[str, Any]) -> None:
+    def set_options(self, options: dict[str, Any]) -> None:
         """Set the options from a dictionary."""
         if "timeout" in options:
             self.timeout_spinbox.setValue(options["timeout"])
@@ -342,7 +342,7 @@ class AdvancedOptionsDialog(QDialog):
 class BatchOperationsDialog(QDialog):
     """Dialog for performing batch operations on integrity check results."""
 
-    def __init__(self, items: List[EnhancedMissingTimestamp], parent: Optional[QWidget] = None) -> None:
+    def __init__(self, items: list[EnhancedMissingTimestamp], parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         # Apply material theme dialog class
@@ -449,7 +449,7 @@ class BatchOperationsDialog(QDialog):
 
         self.summary_label.setText(f"Selected operation will {operation.lower()} {count} items")
 
-    def get_options(self) -> Dict[str, Any]:
+    def get_options(self) -> dict[str, Any]:
         """Get the selected options."""
         operation = "download"
         if self.retry_radio.isChecked():

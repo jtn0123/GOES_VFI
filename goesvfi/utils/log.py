@@ -12,7 +12,7 @@ from goesvfi.utils import config  # Import config module
 try:
     import colorlog
 except ImportError:  # graceful degradation
-    colorlog_module: Optional[ModuleType] = None
+    colorlog_module: ModuleType | None = None
 else:
     colorlog_module = colorlog
 
@@ -34,7 +34,7 @@ def _get_level_from_config() -> int:
 
 _LEVEL = _get_level_from_config()  # Get level from config
 
-_handler: Optional[logging.Handler] = None
+_handler: logging.Handler | None = None
 
 
 def _build_handler() -> logging.Handler:

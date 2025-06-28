@@ -35,7 +35,7 @@ class OptimizedTimelineTab(QWidget):
     rangeSelected = pyqtSignal(datetime, datetime)
     directorySelected = pyqtSignal(str)  # Signal for directory selection
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the optimized timeline tab."""
         super().__init__(parent)
 
@@ -43,15 +43,15 @@ class OptimizedTimelineTab(QWidget):
         self._setup_layout()
 
         # Data for visualization
-        self.start_timestamp: Optional[datetime] = None
-        self.end_timestamp: Optional[datetime] = None
-        self.missing_items: List[MissingTimestamp] = []
-        self.interval_minutes: Optional[int] = None
+        self.start_timestamp: datetime | None = None
+        self.end_timestamp: datetime | None = None
+        self.missing_items: list[MissingTimestamp] = []
+        self.interval_minutes: int | None = None
 
         # Current selection
-        self.selected_timestamp: Optional[datetime] = None
-        self.selected_range: Optional[Tuple[datetime, datetime]] = None
-        self.selected_item: Optional[MissingTimestamp] = None
+        self.selected_timestamp: datetime | None = None
+        self.selected_range: tuple[datetime, datetime] | None = None
+        self.selected_item: MissingTimestamp | None = None
 
     def _setup_layout(self) -> None:
         """Set up the main layout structure."""
@@ -318,10 +318,10 @@ class OptimizedTimelineTab(QWidget):
 
     def set_data(
         self,
-        missing_items: List[MissingTimestamp],
+        missing_items: list[MissingTimestamp],
         start_time: datetime,
         end_time: datetime,
-        interval_minutes: Optional[int] = None,
+        interval_minutes: int | None = None,
     ) -> None:
         """
         Set the data for visualization.
@@ -389,7 +389,6 @@ class OptimizedTimelineTab(QWidget):
         """Zoom in on the timeline visualization."""
         # Only applies to timeline view
         if self.timeline_viz.zoom_level < 10.0:
-            pass
             self.timeline_viz.zoom_level *= 1.5
             self.timeline_viz.update()
 
@@ -401,10 +400,8 @@ class OptimizedTimelineTab(QWidget):
         """Zoom out on the timeline visualization."""
         # Only applies to timeline view
         if self.timeline_viz.zoom_level > 0.5:
-            pass
             self.timeline_viz.zoom_level /= 1.5
             if self.timeline_viz.zoom_level < 1.0:
-                pass
                 self.timeline_viz.zoom_level = 1.0
             self.timeline_viz.update()
 
@@ -466,7 +463,6 @@ class OptimizedTimelineTab(QWidget):
     def _update_info_panel(self) -> None:
         """Update the information panel with current selection details."""
         if self.selected_item:
-            pass
             # Display information about the selected item
             status = self._get_item_status(self.selected_item)
 
@@ -484,7 +480,6 @@ class OptimizedTimelineTab(QWidget):
             )
 
         elif self.selected_timestamp:
-            pass
             # Display information about the selected timestamp (no matching item)
             self.info_label.setText(
                 f"<b>Selected:</b> {self.selected_timestamp.strftime('%Y-%m-%d %H:%M:%S')}<br>"
@@ -496,7 +491,6 @@ class OptimizedTimelineTab(QWidget):
             self.action_download_btn.setEnabled(False)
 
         elif self.selected_range:
-            pass
             # Display information about the selected range
             start, end = self.selected_range
             duration = end - start
@@ -508,13 +502,10 @@ class OptimizedTimelineTab(QWidget):
 
             duration_text = ""
             if days > 0:
-                pass
                 duration_text += f"{days} day{'s' if days != 1 else ''} "
             if hours > 0:
-                pass
                 duration_text += f"{hours} hour{'s' if hours != 1 else ''} "
             if minutes > 0:
-                pass
                 duration_text += f"{minutes} minute{'s' if minutes != 1 else ''}"
 
             self.info_label.setText(
@@ -545,14 +536,11 @@ class OptimizedTimelineTab(QWidget):
             HTML-formatted status string with appropriate styling
         """
         if getattr(item, "is_downloaded", False):
-            pass
             return '<span class="StatusLabel" status="success">Downloaded</span>'
         elif getattr(item, "is_downloading", False):
-            pass
             progress = getattr(item, "progress", 0)
             return f'<span class="StatusLabel" status="processing">Downloading ({progress}%)</span>'
         elif getattr(item, "download_error", ""):
-            pass
             return f'<span class="StatusLabel" status="error">Error</span> {item.download_error}'
         return '<span class="StatusLabel" status="warning">Missing</span>'
 
@@ -560,14 +548,12 @@ class OptimizedTimelineTab(QWidget):
         """Handle action to view item details."""
         # Simply a placeholder for demo purposes
         if self.selected_item and getattr(self.selected_item, "is_downloaded", False):
-            pass
             print(f"Viewing details for {self.selected_item.expected_filename}")
 
     def _action_download(self) -> None:
         """Handle action to download item."""
         # Simply a placeholder for demo purposes
         if self.selected_item and not getattr(self.selected_item, "is_downloaded", False):
-            pass
             print(f"Downloading {self.selected_item.expected_filename}")
 
     def set_directory(self, directory: str) -> None:
@@ -594,11 +580,9 @@ class OptimizedTimelineTab(QWidget):
 
         # Update both visualizations with the new date range
         if hasattr(self.timeline_viz, "set_date_range"):
-            pass
             self.timeline_viz.set_date_range(start_time, end_time)
 
         if hasattr(self.calendar_view, "set_date_range"):
-            pass
             self.calendar_view.set_date_range(start_time, end_time)
 
     def setDateRange(self, start_time: datetime, end_time: datetime) -> None:

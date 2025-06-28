@@ -59,10 +59,10 @@ class FeedbackManager(QObject):
         super().__init__()
 
         # Create message history
-        self._message_history: List[Tuple[str, MessageType, datetime]] = []
+        self._message_history: list[tuple[str, MessageType, datetime]] = []
 
         # Create progress tracking
-        self._current_task: Optional[str] = None
+        self._current_task: str | None = None
         self._progress_current: int = 0
         self._progress_total: int = 0
         self._progress_start_time: float = 0
@@ -148,7 +148,7 @@ class FeedbackManager(QObject):
         self.add_message(f"{title}: {message}", MessageType.ERROR)
         LOGGER.error("%s: %s", title, message)
 
-    def get_message_history(self, limit: Optional[int] = None) -> List[Tuple[str, MessageType, datetime]]:
+    def get_message_history(self, limit: int | None = None) -> list[tuple[str, MessageType, datetime]]:
         """Get message history.
 
         Args:
@@ -165,7 +165,7 @@ class FeedbackManager(QObject):
 class FeedbackWidget(QWidget):
     """Widget for displaying feedback messages with color coding."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the feedback widget."""
         super().__init__(parent)
 
@@ -190,7 +190,7 @@ class FeedbackWidget(QWidget):
         layout.addWidget(self.message_list)
 
         # Connect to feedback manager if available
-        self.feedback_manager: Optional[FeedbackManager] = None
+        self.feedback_manager: FeedbackManager | None = None
 
     def set_feedback_manager(self, manager: FeedbackManager) -> None:
         """Connect to a feedback manager.
@@ -269,8 +269,8 @@ class ErrorDetailsDialog(QDialog):
         self,
         error_title: str,
         error_message: str,
-        traceback: Optional[str] = None,
-        parent: Optional[QWidget] = None,
+        traceback: str | None = None,
+        parent: QWidget | None = None,
     ) -> None:
         """Initialize the error details dialog."""
         super().__init__(parent)
