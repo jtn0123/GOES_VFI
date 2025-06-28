@@ -9,7 +9,7 @@ No AWS credentials are required as these buckets are publicly accessible.
 
 import asyncio
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 from pathlib import Path
 import random
@@ -95,7 +95,7 @@ DOWNLOAD_STATS: DownloadStatsDict = {
     # Session information
     "session_id": f"{int(time.time())}-{random.randint(1000, 9999)}",
     "hostname": socket.gethostname(),
-    "start_timestamp": datetime.now().isoformat(),
+    "start_timestamp": datetime.now(timezone.utc).isoformat(),
 }
 
 
@@ -292,13 +292,13 @@ def log_download_statistics() -> None:
 
 def get_system_network_info() -> dict[str, Any]:
     """Collect system and network information for debugging."""
-    from datetime import datetime
+    from datetime import datetime, timezone
     import os
     import platform
     import socket
 
     info: dict[str, Any] = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "platform": platform.platform(),
         "python_version": sys.version,
         "hostname": socket.gethostname(),
@@ -440,7 +440,7 @@ def format_error_message(error_type: str, error_message: str) -> str:
     Returns:
         A formatted error message with timestamp and type prefix
     """
-    timestamp = datetime.now().isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
 
     # Ensure error_type is not duplicated
     if error_message.startswith(f"{error_type}:"):
@@ -471,7 +471,7 @@ def update_download_stats(
         key: S3 key for additional tracking
     """
     # Create attempt record with timestamp
-    timestamp = datetime.now().isoformat()
+    timestamp = datetime.now(timezone.utc).isoformat()
     attempt_record: dict[str, Any] = {
         "timestamp": timestamp,
         "success": success,
@@ -688,7 +688,7 @@ class S3Store(RemoteStore):
             # Session information
             "session_id": f"{int(time.time())}-{random.randint(1000, 9999)}",
             "hostname": socket.gethostname(),
-            "start_timestamp": datetime.now().isoformat(),
+            "start_timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         # Get and log system/network info at startup
@@ -1135,7 +1135,7 @@ class S3Store(RemoteStore):
         try:
             # Log system info and network state at download time
             LOGGER.debug("System info: Python %s, Platform: %s", sys.version, sys.platform)
-            LOGGER.debug("Download starting at %s", datetime.now().isoformat())
+            LOGGER.debug("Download starting at %s", datetime.now(timezone.utc).isoformat())
 
             # Start download with timing
             await s3.download_file(Bucket=bucket, Key=key, Filename=str(dest_path))

@@ -551,9 +551,9 @@ class MainTab(QWidget):
             current_in_dir = getattr(main_window, "in_dir", None)
             if current_in_dir and current_in_dir.exists():
                 # Use input directory name + timestamped output name for uniqueness
-                from datetime import datetime
+                from datetime import datetime, timezone
 
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
                 dir_name = current_in_dir.name
                 start_dir = str(current_in_dir.parent)
                 suggested_name = f"{dir_name}_output_{timestamp}.mp4"
@@ -1647,7 +1647,7 @@ class MainTab(QWidget):
             Path object with timestamped output file path
         """
         # Import inside function to avoid circular imports
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         # Get the main window reference
         main_window = self.main_window_ref
@@ -1668,7 +1668,7 @@ class MainTab(QWidget):
             base_name = "output"
 
         # Generate timestamp and create path
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         return base_dir / f"{base_name}_output_{timestamp}.mp4"
 
     def _direct_start_handler(self) -> None:
@@ -1724,9 +1724,9 @@ class MainTab(QWidget):
 
             if current_in_dir and current_in_dir.is_dir():
                 # Create a default output file path with timestamp to ensure uniqueness
-                from datetime import datetime
+                from datetime import datetime, timezone
 
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
                 default_output = current_in_dir.parent / f"{current_in_dir.name}_output_{timestamp}.mp4"
                 self.out_file_path = default_output
                 self.out_file_edit.setText(str(default_output))

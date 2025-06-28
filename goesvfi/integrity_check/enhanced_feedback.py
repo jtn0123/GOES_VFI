@@ -4,7 +4,7 @@ This module provides improved user feedback functionality, including detailed
 progress reporting, error messaging, and status updates for the integrity check system.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum, auto
 import logging
 
@@ -75,7 +75,7 @@ class FeedbackManager(QObject):
             message: The message text
             message_type: Type of message
         """
-        timestamp = datetime.now()
+        timestamp = datetime.now(timezone.utc)
         self._message_history.append((message, message_type, timestamp))
         self.message_added.emit(message, message_type)
         LOGGER.debug("Added %s message: %s", message_type.name, message)
@@ -111,7 +111,7 @@ class FeedbackManager(QObject):
             task_name: Name of the task
         """
         self._current_task = task_name
-        self._progress_start_time = datetime.now().timestamp()
+        self._progress_start_time = datetime.now(timezone.utc).timestamp()
         self.task_started.emit(task_name)
         self.add_message(f"Started: {task_name}", MessageType.INFO)
         LOGGER.info("Task started: %s", task_name)
@@ -123,7 +123,7 @@ class FeedbackManager(QObject):
             task_name: Name of the task
             success: Whether the task completed successfully
         """
-        elapsed = datetime.now().timestamp() - self._progress_start_time
+        elapsed = datetime.now(timezone.utc).timestamp() - self._progress_start_time
         self.task_completed.emit(task_name, success)
 
         if success:
@@ -204,7 +204,7 @@ class FeedbackWidget(QWidget):
 
     def _on_message_added(self, message: str, message_type: MessageType) -> None:
         """Handle new message from feedback manager."""
-        item = QListWidgetItem(f"[{datetime.now().strftime('%H:%M:%S')}] {message}")
+        item = QListWidgetItem(f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] {message}")
 
         # Set color based on type
         color_map = {

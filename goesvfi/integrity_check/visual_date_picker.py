@@ -5,7 +5,7 @@ for common date ranges used in satellite data processing.
 """
 
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from PyQt6.QtCore import QDate, QPoint, Qt, QTime, pyqtSignal
@@ -55,8 +55,8 @@ class VisualDateRangePicker(QDialog):
         self.setMinimumHeight(500)
 
         # Store the initial dates
-        self.start_date = start_date or (datetime.now() - timedelta(days=1))
-        self.end_date = end_date or datetime.now()
+        self.start_date = start_date or (datetime.now(timezone.utc) - timedelta(days=1))
+        self.end_date = end_date or datetime.now(timezone.utc)
 
         # Set up the UI
         self._setup_ui()
@@ -358,7 +358,7 @@ class VisualDateRangePicker(QDialog):
 
     def _set_today(self) -> None:
         """Set the date range to today."""
-        today = datetime.now()
+        today = datetime.now(timezone.utc)
         today_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
         today_end = today.replace(hour=23, minute=59, second=59, microsecond=0)
 
@@ -366,7 +366,7 @@ class VisualDateRangePicker(QDialog):
 
     def _set_yesterday(self) -> None:
         """Set the date range to yesterday."""
-        yesterday = datetime.now() - timedelta(days=1)
+        yesterday = datetime.now(timezone.utc) - timedelta(days=1)
         yesterday_start = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
         yesterday_end = yesterday.replace(hour=23, minute=59, second=59, microsecond=0)
 
@@ -374,7 +374,7 @@ class VisualDateRangePicker(QDialog):
 
     def _set_last_week(self) -> None:
         """Set the date range to the last 7 days."""
-        today = datetime.now()
+        today = datetime.now(timezone.utc)
         last_week = today - timedelta(days=7)
 
         last_week_start = last_week.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -384,7 +384,7 @@ class VisualDateRangePicker(QDialog):
 
     def _set_last_month(self) -> None:
         """Set the date range to the last 30 days."""
-        today = datetime.now()
+        today = datetime.now(timezone.utc)
         last_month = today - timedelta(days=30)
 
         last_month_start = last_month.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -394,7 +394,7 @@ class VisualDateRangePicker(QDialog):
 
     def _set_this_month(self) -> None:
         """Set the date range to the current calendar month."""
-        today = datetime.now()
+        today = datetime.now(timezone.utc)
 
         month_start = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
@@ -410,7 +410,7 @@ class VisualDateRangePicker(QDialog):
 
     def _set_last_calendar_month(self) -> None:
         """Set the date range to the previous calendar month."""
-        today = datetime.now()
+        today = datetime.now(timezone.utc)
 
         # Get the first day of the current month
         first_of_month = today.replace(day=1)
@@ -428,7 +428,7 @@ class VisualDateRangePicker(QDialog):
 
     def _set_this_year(self) -> None:
         """Set the date range to the current calendar year."""
-        today = datetime.now()
+        today = datetime.now(timezone.utc)
 
         year_start = today.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
         year_end = today.replace(month=12, day=31, hour=23, minute=59, second=59, microsecond=0)
@@ -453,8 +453,8 @@ class TimelinePickerWidget(QWidget):
         self.setMinimumHeight(80)
 
         # Initialize data
-        self.start_date = datetime.now() - timedelta(days=7)
-        self.end_date = datetime.now()
+        self.start_date = datetime.now(timezone.utc) - timedelta(days=7)
+        self.end_date = datetime.now(timezone.utc)
 
         # For drawing selection
         self.selection_start: datetime | None = None
@@ -470,7 +470,7 @@ class TimelinePickerWidget(QWidget):
         current = self.start_date
         while current <= self.end_date:
             # Add data point with 80% probability
-            if datetime.now().microsecond % (100 // 80) == 0:
+            if datetime.now(timezone.utc).microsecond % (100 // 80) == 0:
                 data_points.append(current)
             current += timedelta(hours=1)
         return data_points
