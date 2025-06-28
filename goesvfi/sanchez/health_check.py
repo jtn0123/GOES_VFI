@@ -27,6 +27,23 @@ from goesvfi.utils.log import get_logger
 
 LOGGER = get_logger(__name__)
 
+# Memory thresholds
+MINIMUM_MEMORY_MB = 500
+MEMORY_WARNING_MB = 1000  # 1GB
+
+# Disk space thresholds
+MINIMUM_DISK_SPACE_MB = 100
+
+# File size thresholds
+LARGE_FILE_SIZE_BYTES = 500 * 1024 * 1024  # 500MB
+
+# Image dimension limits
+MINIMUM_IMAGE_DIMENSION = 100
+MAXIMUM_IMAGE_DIMENSION = 10000
+
+# Return codes
+SUCCESS_RETURN_CODE = 0
+
 
 @dataclass
 class SanchezHealthStatus:
@@ -215,7 +232,7 @@ class SanchezHealthChecker:
             )
             elapsed = time.time() - start_time
 
-            if result.returncode == 0:
+            if result.returncode == SUCCESS_RETURN_CODE:
                 status.version_info = result.stdout.strip()
                 status.execution_time = elapsed
                 status.can_execute = True
@@ -230,7 +247,7 @@ class SanchezHealthChecker:
                     check=False,
                 )
 
-                if result.returncode == 0 or "Usage:" in result.stdout:
+                if result.returncode == SUCCESS_RETURN_CODE or "Usage:" in result.stdout:
                     status.help_available = True
                     status.can_execute = True
                     # Extract version from help if possible
@@ -265,7 +282,7 @@ class SanchezHealthChecker:
             status.memory_available_mb = memory.available // (1024 * 1024)
 
             # Warn if less than 500MB available
-            if status.memory_available_mb < 500:
+            if status.memory_available_mb < MINIMUM_MEMORY_MB:
                 status.warnings.append(f"Low memory available: {status.memory_available_mb}MB")
 
         except ImportError:
@@ -282,7 +299,7 @@ class SanchezHealthChecker:
                 status.disk_space_available_mb = (stat.f_bavail * stat.f_frsize) // (1024 * 1024)
 
                 # Warn if less than 100MB
-                if status.disk_space_available_mb < 100:
+                if status.disk_space_available_mb < MINIMUM_DISK_SPACE_MB:
                     status.warnings.append(f"Low disk space: {status.disk_space_available_mb}MB")
         except (OSError, AttributeError):
             # Windows doesn't have statvfs
@@ -459,7 +476,7 @@ class SanchezProcessMonitor:
                 if self.current_process is None:
                     msg = "Process not started"
                     raise RuntimeError(msg)
-                if self.current_process.returncode != 0:
+                if self.current_process.returncode != SUCCESS_RETURN_CODE:
                     raise ExternalToolError(
                         tool_name="Sanchez",
                         message=f"Sanchez failed with exit code {self.current_process.returncode}",
@@ -544,7 +561,7 @@ class SanchezProcessMonitor:
                         process = psutil.Process(self.current_process.pid)
                         memory_mb = process.memory_info().rss / 1024 / 1024
 
-                        if memory_mb > 1000:  # Warn if > 1GB
+                        if memory_mb > MEMORY_WARNING_MB:  # Warn if > 1GB
                             LOGGER.warning("Sanchez using %.0fMB of memory", memory_mb)
                 except (ImportError, psutil.NoSuchProcess):
                     pass
@@ -580,7 +597,7 @@ def validate_sanchez_input(input_path: Path) -> tuple[bool, str]:
     size = input_path.stat().st_size
     if size == 0:
         return False, "Input file is empty"
-    if size > 500 * 1024 * 1024:  # 500MB
+    if size > LARGE_FILE_SIZE_BYTES:  # 500MB
         return False, f"Input file too large: {size / 1024 / 1024:.1f}MB (max 500MB)"
 
     # Check if it's an image
@@ -592,9 +609,9 @@ def validate_sanchez_input(input_path: Path) -> tuple[bool, str]:
 
             # Check dimensions
             width, height = img.size
-            if width < 100 or height < 100:
+            if width < MINIMUM_IMAGE_DIMENSION or height < MINIMUM_IMAGE_DIMENSION:
                 return False, f"Image too small: {width}x{height} (min 100x100)"
-            if width > 10000 or height > 10000:
+            if width > MAXIMUM_IMAGE_DIMENSION or height > MAXIMUM_IMAGE_DIMENSION:
                 return False, f"Image too large: {width}x{height} (max 10000x10000)"
 
             # Check mode
