@@ -20,19 +20,19 @@ from goesvfi.utils import log
 LOGGER = log.get_logger(__name__)
 
 
-@pytest.fixture
+@pytest.fixture()
 def timestamp():
     """Test timestamp that should have GOES data available."""
     return datetime(2023, 6, 15, 12, 0, 0)
 
 
-@pytest.fixture
+@pytest.fixture()
 def satellite_pattern():
     """Test satellite pattern."""
     return SatellitePattern.GOES_16
 
 
-@pytest.fixture
+@pytest.fixture()
 def dest_dir(tmp_path):
     """Destination directory for downloads."""
     return tmp_path
@@ -52,7 +52,7 @@ def _generate_s3_patterns(timestamp, satellite_pattern, dest_dir):
     results = {}
 
     for product_type in product_types:
-        LOGGER.info(f"Testing {product_type} for {satellite_pattern.name} at {timestamp.isoformat()}")
+        LOGGER.info("Testing %s for %s at %s", product_type, satellite_pattern.name, timestamp.isoformat())
 
         # Generate the S3 bucket name
         sat_code = SATELLITE_CODES.get(satellite_pattern, "G16")
@@ -110,7 +110,7 @@ def _generate_s3_patterns(timestamp, satellite_pattern, dest_dir):
     return results
 
 
-def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
+def test_s3_patterns(timestamp, satellite_pattern, dest_dir) -> None:
     """Test S3 pattern generation for different product types."""
     results = _generate_s3_patterns(timestamp, satellite_pattern, dest_dir)
 
@@ -122,7 +122,7 @@ def test_s3_patterns(timestamp, satellite_pattern, dest_dir):
         assert len(result["attempts"]) > 0, f"Product type {product_type} should have at least one attempt"
 
 
-def test_multiple_satellites(tmp_path):
+def test_multiple_satellites(tmp_path) -> None:
     """Test S3 pattern generation with multiple satellites."""
     # Test with both GOES-16 and GOES-18
     satellites = [SatellitePattern.GOES_16, SatellitePattern.GOES_18]

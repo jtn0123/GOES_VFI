@@ -18,31 +18,31 @@ from goesvfi.utils import date_utils, log
 LOGGER = log.get_logger(__name__)
 
 
-@pytest.fixture
+@pytest.fixture()
 def timestamp():
     """Test timestamp for Band 13 testing."""
     return datetime(2023, 6, 15, 12, 0, 0)
 
 
-@pytest.fixture
+@pytest.fixture()
 def satellite_pattern():
     """Test satellite pattern."""
     return SatellitePattern.GOES_16
 
 
-@pytest.fixture
-def product_type():
+@pytest.fixture()
+def product_type() -> str:
     """Test product type."""
     return "RadC"
 
 
-@pytest.fixture
+@pytest.fixture()
 def dest_dir(tmp_path):
     """Destination directory for downloads."""
     return tmp_path
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_s3_objects():
     """Mock S3 object keys for Band 13."""
     return [
@@ -65,8 +65,8 @@ async def list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10):
     return mock_keys[:limit]
 
 
-@pytest.mark.asyncio
-async def test_list_s3_objects_band13_success(mock_s3_objects):
+@pytest.mark.asyncio()
+async def test_list_s3_objects_band13_success(mock_s3_objects) -> None:
     """Test successful listing of Band 13 S3 objects."""
     bucket = "noaa-goes16"
     prefix = "ABI-L1b-RadC/2023/166/12/"
@@ -83,8 +83,8 @@ async def test_list_s3_objects_band13_success(mock_s3_objects):
         mock_list.assert_called_once_with(bucket, prefix, limit=5)
 
 
-@pytest.mark.asyncio
-async def test_list_s3_objects_band13_no_objects():
+@pytest.mark.asyncio()
+async def test_list_s3_objects_band13_no_objects() -> None:
     """Test listing when no Band 13 objects are found."""
     bucket = "noaa-goes16"
     prefix = "ABI-L1b-RadC/2023/166/12/"
@@ -98,8 +98,8 @@ async def test_list_s3_objects_band13_no_objects():
         mock_list.assert_called_once_with(bucket, prefix, limit=5)
 
 
-@pytest.mark.asyncio
-async def test_download_band13_mocked(timestamp, satellite_pattern, product_type, dest_dir, mock_s3_objects):
+@pytest.mark.asyncio()
+async def test_download_band13_mocked(timestamp, satellite_pattern, product_type, dest_dir, mock_s3_objects) -> None:
     """Test downloading a Band 13 file with mocked S3 operations."""
 
     # Mock S3Store completely
@@ -130,7 +130,10 @@ async def test_download_band13_mocked(timestamp, satellite_pattern, product_type
             s3_store = S3Store(timeout=60)
 
             LOGGER.info(
-                f"Testing download of Band 13 {product_type} for {satellite_pattern.name} at {timestamp.isoformat()}"
+                "Testing download of Band 13 %s for %s at %s",
+                product_type,
+                satellite_pattern.name,
+                timestamp.isoformat(),
             )
 
             try:
@@ -199,14 +202,14 @@ async def test_download_band13_mocked(timestamp, satellite_pattern, product_type
                 file_size = result.stat().st_size
                 assert file_size > 0, "Downloaded file should have content"
 
-                LOGGER.info(f"✓ Successfully downloaded to {result} ({file_size} bytes)")
+                LOGGER.info("✓ Successfully downloaded to %s (%s bytes)", result, file_size)
 
             finally:
                 # Close the S3 store
                 await s3_store.close()
 
 
-def test_band13_filename_parsing():
+def test_band13_filename_parsing() -> None:
     """Test parsing Band 13 filenames for timestamp extraction."""
     test_filename = "OR_ABI-L1b-RadC-M6C13_G16_s20231661201176_e20231661203549_c20231661203597.nc"
 
@@ -230,13 +233,13 @@ def test_band13_filename_parsing():
 
 
 @pytest.mark.parametrize(
-    ("satellite", "expected_bucket"),
+    "satellite, expected_bucket",
     [
         (SatellitePattern.GOES_16, "noaa-goes16"),
         (SatellitePattern.GOES_18, "noaa-goes18"),
     ],
 )
-def test_band13_bucket_patterns(satellite, expected_bucket):
+def test_band13_bucket_patterns(satellite, expected_bucket) -> None:
     """Test that Band 13 operations use correct S3 buckets for different satellites."""
     with patch.object(TimeIndex, "get_s3_bucket") as mock_get_bucket:
         mock_get_bucket.return_value = expected_bucket
@@ -247,7 +250,7 @@ def test_band13_bucket_patterns(satellite, expected_bucket):
 
 
 @pytest.mark.parametrize("product_type", ["RadF", "RadC", "RadM"])
-def test_band13_product_types(product_type):
+def test_band13_product_types(product_type) -> None:
     """Test Band 13 operations work with different product types."""
     timestamp = datetime(2023, 6, 15, 12, 0, 0)
 
