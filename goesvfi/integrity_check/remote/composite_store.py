@@ -1,5 +1,4 @@
-"""
-Composite Store with fallback mechanisms for accessing GOES imagery.
+"""Composite Store with fallback mechanisms for accessing GOES imagery.
 
 This module provides a RemoteStore implementation that tries multiple
 data sources in order, falling back to the next source if one fails.
@@ -8,7 +7,7 @@ data sources in order, falling back to the next source if one fails.
 import asyncio
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from goesvfi.integrity_check.remote.base import (
     AuthenticationError,
@@ -31,8 +30,8 @@ class DataSourceResult:
         self,
         source_name: str,
         success: bool,
-        result_path: Optional[Path] = None,
-        error: Optional[RemoteStoreError] = None,
+        result_path: Path | None = None,
+        error: RemoteStoreError | None = None,
         elapsed_time: float = 0.0,
     ) -> None:
         """Initialize a data source result.
@@ -67,7 +66,7 @@ class CompositeStore(RemoteStore):
         enable_s3: bool = True,
         enable_cdn: bool = True,
         enable_cache: bool = True,
-        cache_dir: Optional[Path] = None,
+        cache_dir: Path | None = None,
         timeout: int = 60,
         prefer_recent_success: bool = True,
     ) -> None:
@@ -85,7 +84,7 @@ class CompositeStore(RemoteStore):
         self.prefer_recent_success = prefer_recent_success
 
         # Initialize data sources
-        self.sources: List[Tuple[str, RemoteStore]] = []
+        self.sources: list[tuple[str, RemoteStore]] = []
 
         if enable_s3:
             self.sources.append(("S3", S3Store(timeout=timeout)))
@@ -98,10 +97,11 @@ class CompositeStore(RemoteStore):
             LOGGER.warning("Local cache store not yet implemented")
 
         if not self.sources:
-            raise ValueError("At least one data source must be enabled")
+            msg = "At least one data source must be enabled"
+            raise ValueError(msg)
 
         # Track source performance
-        self.source_stats: Dict[str, Dict[str, Any]] = {
+        self.source_stats: dict[str, dict[str, Any]] = {
             name: {
                 "attempts": 0,
                 "successes": 0,
@@ -114,9 +114,9 @@ class CompositeStore(RemoteStore):
             for name, _ in self.sources
         }
 
-        LOGGER.info(f"Initialized CompositeStore with sources: {[name for name, _ in self.sources]}")
+        LOGGER.info("Initialized CompositeStore with sources: %s", [name for name, _ in self.sources])
 
-    def _get_ordered_sources(self) -> List[Tuple[str, RemoteStore]]:
+    def _get_ordered_sources(self) -> list[tuple[str, RemoteStore]]:
         """Get sources ordered by priority based on recent performance.
 
         Returns:
@@ -126,7 +126,7 @@ class CompositeStore(RemoteStore):
             return self.sources
 
         # Sort sources by recent success and performance
-        def source_priority(source_tuple: Tuple[str, RemoteStore]) -> Tuple[int, float]:
+        def source_priority(source_tuple: tuple[str, RemoteStore]) -> tuple[int, float]:
             name, _ = source_tuple
             stats = self.source_stats[name]
 
@@ -152,7 +152,7 @@ class CompositeStore(RemoteStore):
 
         # Log if order changed from default
         if [name for name, _ in sorted_sources] != [name for name, _ in self.sources]:
-            LOGGER.debug(f"Source priority reordered: {[name for name, _ in sorted_sources]}")
+            LOGGER.debug("Source priority reordered: %s", [name for name, _ in sorted_sources])
 
         return sorted_sources
 
@@ -161,7 +161,7 @@ class CompositeStore(RemoteStore):
         source_name: str,
         success: bool,
         elapsed_time: float,
-        error: Optional[RemoteStoreError] = None,
+        error: RemoteStoreError | None = None,
     ) -> None:
         """Update performance statistics for a source.
 
@@ -211,7 +211,7 @@ class CompositeStore(RemoteStore):
         Raises:
             RemoteStoreError: If all sources fail
         """
-        results: List[DataSourceResult] = []
+        results: list[DataSourceResult] = []
 
         # Try each source in priority order
         for source_name, store in self._get_ordered_sources():
@@ -241,7 +241,7 @@ class CompositeStore(RemoteStore):
                 self._update_stats(source_name, True, elapsed_time)
 
                 # Success!
-                LOGGER.info(f"Successfully downloaded from {source_name} in {elapsed_time:.2f}s")
+                LOGGER.info("Successfully downloaded from %s in %.2fs", source_name, elapsed_time)
 
                 results.append(
                     DataSourceResult(
@@ -280,22 +280,23 @@ class CompositeStore(RemoteStore):
                 )
 
                 # Log but continue to next source
-                LOGGER.warning(f"{source_name} failed after {elapsed_time:.2f}s: {error.message}")
+                LOGGER.warning("%s failed after %.2fs: %s", source_name, elapsed_time, error.message)
 
                 # For auth errors, skip other sources as they'll likely fail too
                 if isinstance(error, AuthenticationError):
-                    LOGGER.error("Authentication error - skipping remaining sources")
+                    LOGGER.exception("Authentication error - skipping remaining sources")
                     break
 
         # All sources failed - create comprehensive error
         self._create_fallback_error(results, ts, satellite)
         # This line is unreachable as _create_fallback_error always raises,
         # but mypy needs it for type checking
-        raise RemoteStoreError("All sources failed")
+        msg = "All sources failed"
+        raise RemoteStoreError(msg)
 
     def _create_fallback_error(
         self,
-        results: List[DataSourceResult],
+        results: list[DataSourceResult],
         ts: datetime,
         satellite: SatellitePattern,
     ) -> None:
@@ -329,35 +330,31 @@ class CompositeStore(RemoteStore):
                 error_lines.append(f"  {status} {result.source_name} ({time_str})")
 
         # Add troubleshooting tips
-        error_lines.extend(
-            [
-                "",
-                "Troubleshooting tips:",
-                "• Check your internet connection",
-                "• Verify the timestamp is not too recent (15+ minute delay for GOES data)",
-                "• Try a different timestamp or date range",
-                "• Check if the satellite was operational at this time",
-            ]
-        )
+        error_lines.extend([
+            "",
+            "Troubleshooting tips:",
+            "• Check your internet connection",
+            "• Verify the timestamp is not too recent (15+ minute delay for GOES data)",
+            "• Try a different timestamp or date range",
+            "• Check if the satellite was operational at this time",
+        ])
 
         # Add alternative sources
-        error_lines.extend(
-            [
-                "",
-                "Alternative data sources:",
-                "• NOAA CLASS archive: https://www.avl.class.noaa.gov/",
-                "• Google Cloud GOES-16: https://console.cloud.google.com/storage/browser/gcp-public-data-goes-16",
-            ]
-        )
+        error_lines.extend([
+            "",
+            "Alternative data sources:",
+            "• NOAA CLASS archive: https://www.avl.class.noaa.gov/",
+            "• Google Cloud GOES-16: https://console.cloud.google.com/storage/browser/gcp-public-data-goes-16",
+        ])
 
         # Determine primary error type from results
-        primary_error: Optional[RemoteStoreError] = None
+        primary_error: RemoteStoreError | None = None
         for result in results:
             if result.error:
                 if isinstance(result.error, ResourceNotFoundError):
                     primary_error = result.error
                     break
-                elif primary_error is None and result.error is not None:
+                if primary_error is None and result.error is not None:
                     primary_error = result.error
 
         # Find where troubleshooting tips start
@@ -371,13 +368,12 @@ class CompositeStore(RemoteStore):
                 original_exception=(primary_error.original_exception if primary_error else None),
                 troubleshooting_tips="\n".join(error_lines[tips_index:]),
             )
-        else:
-            raise RemoteStoreError(
-                message="\n".join(error_lines[: tips_index - 1]),  # Include all source attempts
-                technical_details="\n".join(error_lines),
-                original_exception=(primary_error.original_exception if primary_error else None),
-                troubleshooting_tips="\n".join(error_lines[tips_index:]),
-            )
+        raise RemoteStoreError(
+            message="\n".join(error_lines[: tips_index - 1]),  # Include all source attempts
+            technical_details="\n".join(error_lines),
+            original_exception=(primary_error.original_exception if primary_error else None),
+            troubleshooting_tips="\n".join(error_lines[tips_index:]),
+        )
 
     async def exists(
         self,
@@ -435,8 +431,8 @@ class CompositeStore(RemoteStore):
         timestamp: datetime,
         satellite: Any,
         destination: Path,
-        progress_callback: Optional[Any] = None,
-        cancel_check: Optional[Any] = None,
+        progress_callback: Any | None = None,
+        cancel_check: Any | None = None,
     ) -> Path:
         """Download a file for the given timestamp and satellite.
 
@@ -455,8 +451,7 @@ class CompositeStore(RemoteStore):
         """
         for source_name, store in self._get_ordered_sources():
             try:
-                url = await store.get_file_url(timestamp, satellite)
-                return url
+                return await store.get_file_url(timestamp, satellite)
             except Exception as e:
                 LOGGER.debug("Error getting URL from %s: %s", source_name, e)
                 continue
@@ -472,9 +467,9 @@ class CompositeStore(RemoteStore):
             try:
                 await store.close()
             except Exception as e:
-                LOGGER.error("Error closing %s: %s", name, e)
+                LOGGER.exception("Error closing %s: %s", name, e)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get performance statistics for all sources.
 
         Returns:

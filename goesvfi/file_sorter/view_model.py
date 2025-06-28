@@ -7,7 +7,6 @@ model and exposes data and commands to the GUI view layer.
 
 import os  # Added for basic path validation
 import threading
-import typing
 
 from PyQt6.QtWidgets import QFileDialog
 
@@ -19,8 +18,7 @@ LOGGER = log.get_logger(__name__)
 
 
 class FileSorterViewModel:
-    """
-    ViewModel for the File Sorter GUI tab.
+    """ViewModel for the File Sorter GUI tab.
 
     This class manages the state and presentation logic for the File Sorter feature,
     acting as an intermediary between the FileSorter model and the GUI view.
@@ -29,13 +27,12 @@ class FileSorterViewModel:
     """
 
     def __init__(self, sorter_model: FileSorter) -> None:
-        """
-                Initializes the FileSorterViewModel with default state.
+        """Initializes the FileSorterViewModel with default state.
 
-                Args:
+        Args:
                     sorter_model (FileSorter): The FileSorter model instance to use for file operations.
 
-                Attributes:
+        Attributes:
                     source_directory (Optional[str]): The currently selected source directory for sorting.
         destination_directory(
                         Optional[str]
@@ -46,8 +43,8 @@ class FileSorterViewModel:
                     _cancel_requested (bool): Internal flag indicating if a cancel operation has been requested.
         """
         self.sorter_model = sorter_model  # Store the FileSorter model instance
-        self.source_directory: typing.Optional[str] = None
-        self.destination_directory: typing.Optional[str] = None
+        self.source_directory: str | None = None
+        self.destination_directory: str | None = None
         self.is_sorting: bool = False
         self.progress_percentage: float = 0.0
         self.status_message: str = "Ready"
@@ -65,8 +62,7 @@ class FileSorterViewModel:
 
     @property
     def can_start_sorting(self) -> bool:
-        """
-        Whether the sorting process can be started.
+        """Whether the sorting process can be started.
 
         Returns:
             bool: True if both source and destination directories are set and valid,
@@ -146,8 +142,7 @@ class FileSorterViewModel:
         self._show_input_error_message = value
 
     def select_source_directory(self) -> None:
-        """
-        Command to select the source directory.
+        """Command to select the source directory.
 
         This method should be triggered by the UI when the user wants to choose
         a source directory for sorting. The actual implementation should open a
@@ -164,8 +159,7 @@ class FileSorterViewModel:
             self.status_message = f"Source directory set to: {directory}"
 
     def select_destination_directory(self) -> None:
-        """
-        Command to select the destination directory.
+        """Command to select the destination directory.
 
         This method should be triggered by the UI when the user wants to choose
         a destination directory for sorted files. The actual implementation should
@@ -182,8 +176,7 @@ class FileSorterViewModel:
             self.status_message = f"Destination directory set to: {directory}"
 
     def start_sorting(self) -> None:
-        """
-        Command to start the sorting process.
+        """Command to start the sorting process.
 
         Initiates the file sorting operation in a separate thread if the
         preconditions are met (valid source/destination directories and not already sorting).
@@ -196,7 +189,7 @@ class FileSorterViewModel:
         If preconditions are not met, updates `status_message` with an error.
         """
         if self.can_start_sorting:
-            LOGGER.info(f"Command: Start Sorting from {self.source_directory} to {self.destination_directory}")
+            LOGGER.info("Command: Start Sorting from %s to %s", self.source_directory, self.destination_directory)
             self.is_sorting = True
             self.status_message = "Sorting started..."
             self.progress_percentage = 0.0
@@ -216,8 +209,7 @@ class FileSorterViewModel:
             # Notify observers about status change
 
     def cancel_sorting(self) -> None:
-        """
-        Command to cancel the ongoing sorting process.
+        """Command to cancel the ongoing sorting process.
 
         If a sorting operation is in progress, sets the cancellation flag and updates
         the status message. The sorting thread should periodically check this flag and
@@ -236,9 +228,7 @@ class FileSorterViewModel:
             LOGGER.info("No sorting process to cancel.")
 
     def _sort_worker(self) -> None:
-        """
-        Worker function executed in a separate thread to perform the sorting.
-        """
+        """Worker function executed in a separate thread to perform the sorting."""
         try:
             # Ensure source and destination directories are not None before calling sort_files
             assert self.source_directory is not None
@@ -255,7 +245,7 @@ class FileSorterViewModel:
             self.status_message = "Sorting complete."
         except Exception as e:
             self.status_message = f"Error during sorting: {e}"
-            LOGGER.error("Error during sorting: %s", e)
+            LOGGER.exception("Error during sorting: %s", e)
         finally:
             self.is_sorting = False
             self.progress_percentage = 0.0  # Reset progress on completion or error
@@ -265,9 +255,7 @@ class FileSorterViewModel:
             LOGGER.info("Sorting worker finished.")
 
     def _update_progress(self, current: int, total: int) -> None:
-        """
-        Callback function to update progress from the sorter model.
-        """
+        """Callback function to update progress from the sorter model."""
         if total > 0:
             self.progress_percentage = (current / total) * 100
             self.status_message = f"Sorting: {current}/{total} files processed."

@@ -397,7 +397,9 @@ class SanchezProcessMonitor:
             raise FileNotFoundError(msg)
 
         input_size = input_path.stat().st_size
-        LOGGER.info(f"Processing {input_path.name} ({input_size / 1024 / 1024:.1f}MB) at {res_km}km/pixel resolution")
+        LOGGER.info(
+            "Processing %s (%.1fMB) at %skm/pixel resolution", input_path.name, input_size / 1024 / 1024, res_km
+        )
 
         # Create output directory
         output_path.parent.mkdir(parents=True, exist_ok=True)

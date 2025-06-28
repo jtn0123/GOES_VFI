@@ -5,7 +5,6 @@ supporting multiple themes and runtime theme switching.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 from PyQt6.QtWidgets import QApplication, QWidget
 
@@ -43,15 +42,16 @@ class ThemeManager:
 
         # Validate theme name
         if self._current_theme not in AVAILABLE_THEMES:
-            LOGGER.warning(f"Invalid theme '{self._current_theme}' in config, using default")
+            LOGGER.warning("Invalid theme '%s' in config, using default", self._current_theme)
             self._current_theme = DEFAULT_THEME
 
         self._custom_overrides = self._create_custom_overrides()
-        LOGGER.info(f"ThemeManager initialized with theme: {self._current_theme}")
+        LOGGER.info("ThemeManager initialized with theme: %s", self._current_theme)
         LOGGER.debug(
-            f"Custom overrides: {self._custom_overrides_enabled}, "
-            f"Fallback: {self._fallback_enabled}, "
-            f"Density scale: {self._density_scale}"
+            "Custom overrides: %s, Fallback: %s, Density scale: %s",
+            self._custom_overrides_enabled,
+            self._fallback_enabled,
+            self._density_scale,
         )
 
     @property
@@ -60,11 +60,11 @@ class ThemeManager:
         return self._current_theme
 
     @property
-    def available_themes(self) -> List[str]:
+    def available_themes(self) -> list[str]:
         """Get list of available theme names."""
         return AVAILABLE_THEMES.copy()
 
-    def apply_theme(self, app: QApplication, theme_name: Optional[str] = None) -> None:
+    def apply_theme(self, app: QApplication, theme_name: str | None = None) -> None:
         """Apply qt-material theme to the application.
 
         Args:
@@ -75,7 +75,7 @@ class ThemeManager:
             theme_name = self._current_theme
 
         if theme_name not in AVAILABLE_THEMES:
-            LOGGER.warning(f"Unknown theme '{theme_name}', using default '{DEFAULT_THEME}'")
+            LOGGER.warning("Unknown theme '%s', using default '%s'", theme_name, DEFAULT_THEME)
             theme_name = DEFAULT_THEME
 
         try:
@@ -89,27 +89,27 @@ class ThemeManager:
             qt_material.apply_stylesheet(app, theme=f"{theme_name}.xml", **extra)
             self._current_theme = theme_name
 
-            LOGGER.info(f"Applied qt-material theme: {theme_name}")
+            LOGGER.info("Applied qt-material theme: %s", theme_name)
             if extra:
-                LOGGER.debug(f"Applied with extra options: {extra}")
+                LOGGER.debug("Applied with extra options: %s", extra)
 
             # Apply custom overrides for brand-specific styling if enabled
             if self._custom_overrides_enabled:
                 self._apply_custom_overrides(app)
 
         except ImportError:
-            LOGGER.error("qt-material not installed")
+            LOGGER.exception("qt-material not installed")
             if self._fallback_enabled:
                 LOGGER.info("Falling back to basic dark theme")
                 self._apply_fallback_theme(app)
             else:
-                LOGGER.error("Fallback disabled, theme application failed")
+                LOGGER.exception("Fallback disabled, theme application failed")
         except Exception as e:
-            LOGGER.error(f"Failed to apply theme '{theme_name}': {e}")
+            LOGGER.exception("Failed to apply theme '%s': %s", theme_name, e)
             if self._fallback_enabled:
                 self._apply_fallback_theme(app)
             else:
-                LOGGER.error("Fallback disabled, theme application failed")
+                LOGGER.exception("Fallback disabled, theme application failed")
 
     def change_theme(self, app: QApplication, theme_name: str) -> bool:
         """Change the current theme at runtime.
@@ -122,15 +122,15 @@ class ThemeManager:
             True if theme was changed successfully, False otherwise
         """
         if theme_name not in AVAILABLE_THEMES:
-            LOGGER.warning(f"Invalid theme name: {theme_name}")
+            LOGGER.warning("Invalid theme name: %s", theme_name)
             return False
 
         try:
             self.apply_theme(app, theme_name)
-            LOGGER.info(f"Theme changed to: {theme_name}")
+            LOGGER.info("Theme changed to: %s", theme_name)
             return True
         except Exception as e:
-            LOGGER.error(f"Failed to change theme: {e}")
+            LOGGER.exception("Failed to change theme: %s", e)
             return False
 
     def _apply_custom_overrides(self, app: QApplication) -> None:
@@ -147,7 +147,7 @@ class ThemeManager:
 
             LOGGER.debug("Applied custom styling overrides")
         except Exception as e:
-            LOGGER.warning(f"Failed to apply custom overrides: {e}")
+            LOGGER.warning("Failed to apply custom overrides: %s", e)
 
     def _create_custom_overrides(self) -> str:
         """Load custom CSS overrides for brand-specific styling."""
@@ -229,7 +229,7 @@ class ThemeManager:
         else:
             LOGGER.error("No QApplication instance found for theme application")
 
-    def validate_theme_config(self) -> Tuple[bool, List[str]]:
+    def validate_theme_config(self) -> tuple[bool, list[str]]:
         """Validate current theme configuration.
 
         Returns:
@@ -347,9 +347,9 @@ class ThemeManager:
                 LOGGER.info("Accessibility mode disabled")
 
         except Exception as e:
-            LOGGER.error(f"Failed to apply accessibility mode: {e}")
+            LOGGER.exception("Failed to apply accessibility mode: %s", e)
 
-    def get_theme_classes_list(self) -> Dict[str, List[str]]:
+    def get_theme_classes_list(self) -> dict[str, list[str]]:
         """Get organized list of all available theme classes.
 
         Returns:
@@ -431,13 +431,12 @@ class ThemeManager:
 
         for category, class_list in classes.items():
             docs.append(f"## {category}\n")
-            for class_name in class_list:
-                docs.append(f"- `{class_name}`")
+            docs.extend(f"- `{class_name}`" for class_name in class_list)
             docs.append("")  # Empty line
 
         return "\n".join(docs)
 
-    def get_theme_config(self) -> Dict[str, str]:
+    def get_theme_config(self) -> dict[str, str]:
         """Get current theme configuration.
 
         Returns:
