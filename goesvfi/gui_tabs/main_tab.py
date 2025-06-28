@@ -1,6 +1,7 @@
 # goesvfi/gui_tabs/main_tab.py
 
 from collections.abc import Callable
+from datetime import UTC
 from enum import Enum
 import json
 import os
@@ -47,6 +48,21 @@ from goesvfi.utils.validation import validate_path_exists, validate_positive_int
 from goesvfi.view_models.main_window_view_model import MainWindowViewModel
 
 LOGGER = log.get_logger(__name__)
+
+# Image channel constants
+RGB_CHANNELS = 3
+RGBA_CHANNELS = 4
+GRAYSCALE_CHANNELS = 1
+
+# Image dimensions
+GRAYSCALE_DIMENSIONS = 2
+COLOR_DIMENSIONS = 3
+
+# Crop rectangle components
+CROP_RECT_COMPONENTS = 4
+
+# Image sampling thresholds
+MINIMUM_IMAGES_FOR_SAMPLING = 2
 
 
 # Custom button class with enhanced event handling
@@ -125,16 +141,16 @@ def numpy_to_qimage(array: NDArray[np.uint8]) -> QImage:
         return QImage()
     try:
         height, width, channel = array.shape
-        if channel == 3:  # RGB
-            bytes_per_line = 3 * width
+        if channel == RGB_CHANNELS:  # RGB
+            bytes_per_line = RGB_CHANNELS * width
             image_format = QImage.Format.Format_RGB888
             # Create QImage from buffer protocol. Make a copy to be safe.
             qimage = QImage(array.data, width, height, bytes_per_line, image_format).copy()
-        elif channel == 4:  # RGBA?
-            bytes_per_line = 4 * width
+        elif channel == RGBA_CHANNELS:  # RGBA?
+            bytes_per_line = RGBA_CHANNELS * width
             image_format = QImage.Format.Format_RGBA8888
             qimage = QImage(array.data, width, height, bytes_per_line, image_format).copy()
-        elif channel == 1 or len(array.shape) == 2:  # Grayscale
+        elif channel == GRAYSCALE_CHANNELS or len(array.shape) == GRAYSCALE_DIMENSIONS:  # Grayscale
             height, width = array.shape[:2]
             bytes_per_line = width
             image_format = QImage.Format.Format_Grayscale8
@@ -551,9 +567,9 @@ class MainTab(QWidget):
             current_in_dir = getattr(main_window, "in_dir", None)
             if current_in_dir and current_in_dir.exists():
                 # Use input directory name + timestamped output name for uniqueness
-                from datetime import datetime, timezone
+                from datetime import datetime
 
-                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
                 dir_name = current_in_dir.name
                 start_dir = str(current_in_dir.parent)
                 suggested_name = f"{dir_name}_output_{timestamp}.mp4"
@@ -873,9 +889,7 @@ class MainTab(QWidget):
             return full_res_image, False
 
     @staticmethod
-    def _apply_crop_to_image(
-        full_res_image: QImage, crop_rect_tuple: tuple[int, int, int, int]
-    ) -> tuple[QImage, bool]:
+    def _apply_crop_to_image(full_res_image: QImage, crop_rect_tuple: tuple[int, int, int, int]) -> tuple[QImage, bool]:
         """Apply crop rectangle to image if valid."""
         x, y, w, h = crop_rect_tuple
         crop_qrect = QRect(x, y, w, h)
@@ -917,7 +931,7 @@ class MainTab(QWidget):
         """Add crop information to dialog title."""
         crop_rect_tuple = getattr(self.main_window_ref, "current_crop_rect", None)
 
-        if is_cropped_view and crop_rect_tuple and len(crop_rect_tuple) >= 4:
+        if is_cropped_view and crop_rect_tuple and len(crop_rect_tuple) >= CROP_RECT_COMPONENTS:
             info_title += f" (Cropped: {crop_rect_tuple[2]}x{crop_rect_tuple[3]})"
         elif crop_rect_tuple is not None:
             info_title += " (Full Image - Crop Disabled)"
@@ -1408,7 +1422,7 @@ class MainTab(QWidget):
 
             # Sample the first, middle, and last image for dimensions
             sample_indices = [0]
-            if len(image_files) > 2:
+            if len(image_files) > MINIMUM_IMAGES_FOR_SAMPLING:
                 sample_indices.append(len(image_files) // 2)
             if len(image_files) > 1:
                 sample_indices.append(len(image_files) - 1)
@@ -1647,7 +1661,7 @@ class MainTab(QWidget):
             Path object with timestamped output file path
         """
         # Import inside function to avoid circular imports
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         # Get the main window reference
         main_window = self.main_window_ref
@@ -1668,7 +1682,7 @@ class MainTab(QWidget):
             base_name = "output"
 
         # Generate timestamp and create path
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         return base_dir / f"{base_name}_output_{timestamp}.mp4"
 
     def _direct_start_handler(self) -> None:
@@ -1724,9 +1738,9 @@ class MainTab(QWidget):
 
             if current_in_dir and current_in_dir.is_dir():
                 # Create a default output file path with timestamp to ensure uniqueness
-                from datetime import datetime, timezone
+                from datetime import datetime
 
-                timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
                 default_output = current_in_dir.parent / f"{current_in_dir.name}_output_{timestamp}.mp4"
                 self.out_file_path = default_output
                 self.out_file_edit.setText(str(default_output))
@@ -2660,7 +2674,7 @@ class MainTab(QWidget):
 
         try:
             coords = [int(c.strip()) for c in crop_rect_str.split(",")]
-            if len(coords) == 4:
+            if len(coords) == CROP_RECT_COMPONENTS:
                 LOGGER.info("Loaded crop rectangle: %s", tuple(coords))
                 return cast("tuple[int, int, int, int]", tuple(coords))
             LOGGER.warning("Invalid crop rectangle format in settings: %s", crop_rect_str)
