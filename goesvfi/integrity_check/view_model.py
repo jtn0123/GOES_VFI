@@ -513,7 +513,7 @@ class IntegrityCheckViewModel(QObject):
         self.status_message = f"Scan error: {error_message}"
         self.scan_completed.emit(False, error_message)
 
-    def _update_download_progress(self, item_index: int, current: int, total: int) -> None:
+    def _update_download_progress(self, item_index: int, _current: int, _total: int) -> None:
         """Update progress during file download."""
         # Update overall progress
         total_items = len(self._missing_timestamps)
@@ -705,7 +705,7 @@ class DownloadTask(QRunnable):
             LOGGER.error("Error in download task: %s", e, exc_info=True)
             self.signals.finished.emit(False, str(e))
 
-    def _progress_callback(self, current: int, total: int, eta: float = 0.0) -> None:
+    def _progress_callback(self, current: int, total: int, _eta: float = 0.0) -> None:
         """Forward progress updates to signals."""
         self.signals.progress.emit(current, total)
 

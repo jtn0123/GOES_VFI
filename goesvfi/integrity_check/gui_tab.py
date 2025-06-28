@@ -54,11 +54,11 @@ class MissingTimestampsModel(QAbstractTableModel):
         self._items = items
         self.endResetModel()
 
-    def rowCount(self, parent: QModelIndex | None = None) -> int:
+    def rowCount(self, _parent: QModelIndex | None = None) -> int:
         """Return the number of rows."""
         return len(self._items)
 
-    def columnCount(self, parent: QModelIndex | None = None) -> int:
+    def columnCount(self, _parent: QModelIndex | None = None) -> int:
         """Return the number of columns."""
         return len(self._headers)
 
@@ -330,7 +330,7 @@ class IntegrityCheckTab(QWidget):
             )
             self.feedback_manager.add_message(f"Satellite: {satellite.name}", MessageType.INFO)
 
-            self.view_model.base_directory = Path(directory)
+            self.view_model.base_directory = str(directory)
             self.view_model.start_date = start_date
             self.view_model.end_date = end_date
             self.view_model.selected_pattern = satellite
@@ -438,7 +438,7 @@ class IntegrityCheckTab(QWidget):
         self.progress_bar.setValue(current)
         self.status_label.setText(f"Downloading: {current}/{total} files")
 
-    def _on_download_item_updated(self, index: int, item: MissingTimestamp) -> None:
+    def _on_download_item_updated(self, _index: int, _item: MissingTimestamp) -> None:
         """Handle download item update from view model."""
         # Refresh the table view
         self.results_table.update()
