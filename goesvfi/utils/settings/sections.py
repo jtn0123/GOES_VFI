@@ -255,7 +255,8 @@ class BasicSettings(SettingsSection):
     def __init__(self, classifier: ErrorClassifier | None = None) -> None:
         super().__init__("basic", classifier)
 
-    def extract_values(self, source_object: Any) -> dict[str, Any]:
+    @staticmethod
+    def extract_values(source_object: Any) -> dict[str, Any]:
         """Extract basic settings that don't require widget access."""
         values = {}
 
@@ -276,7 +277,8 @@ class BasicSettings(SettingsSection):
 
         return values
 
-    def apply_values(self, target_object: Any, values: dict[str, Any]) -> None:
+    @staticmethod
+    def apply_values(target_object: Any, values: dict[str, Any]) -> None:
         """Apply basic settings to object."""
         from pathlib import Path
 
