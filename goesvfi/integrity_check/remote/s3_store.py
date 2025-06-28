@@ -769,7 +769,7 @@ class S3Store(RemoteStore):
                     # Apply delay for retries using exponential backoff
                     if delay > 0:
                         LOGGER.info(
-                            f"Applying exponential backoff delay of {delay:.2f}s before retry {retry_count + 1}"
+                            "Applying exponential backoff delay of %.2fs before retry %s", delay, retry_count + 1
                         )
                         await asyncio.sleep(delay)
 
@@ -781,8 +781,8 @@ class S3Store(RemoteStore):
                         retries={"max_attempts": 2},
                     )
                     LOGGER.debug(
-                        "Created config with UNSIGNED signature version and timeouts "
-                        f"(connect: 10s, read: {self.timeout}s)"
+                        "Created config with UNSIGNED signature version and timeouts (connect: 10s, read: %ss)",
+                        self.timeout,
                     )
 
                     # First, create the Session
@@ -1157,7 +1157,7 @@ class S3Store(RemoteStore):
 
                 LOGGER.info("Verified downloaded file: %s", dest_path)
                 LOGGER.info(
-                    f"File details: Size: {file_size} bytes, Download time: {download_time:.2f}s, Speed: {speed_str}"
+                    "File details: Size: %s bytes, Download time: %.2fs, Speed: %s", file_size, download_time, speed_str
                 )
                 download_success = True
             else:
@@ -1490,8 +1490,11 @@ class S3Store(RemoteStore):
 
         # Log timestamp information for debugging
         LOGGER.debug(
-            f"Timestamp details - ISO: {ts.isoformat()}, Year: {ts.year}, "
-            f"Day of Year: {ts.strftime('%j')}, HHMMSS: {ts.strftime('%H%M%S')}"
+            "Timestamp details - ISO: %s, Year: %s, Day of Year: %s, HHMMSS: %s",
+            ts.isoformat(),
+            ts.year,
+            ts.strftime("%j"),
+            ts.strftime("%H%M%S"),
         )
 
         # Check if exact file exists first

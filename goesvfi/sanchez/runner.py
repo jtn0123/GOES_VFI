@@ -1,7 +1,7 @@
 import logging
+from pathlib import Path
 import platform
 import subprocess
-from pathlib import Path
 
 from goesvfi.utils import config  # Import config module
 
@@ -22,9 +22,11 @@ def _bin() -> Path:
     try:
         path = _LOOKUP[key]
     except KeyError:
-        raise RuntimeError(f"Sanchez not packaged for {key}")
+        msg = f"Sanchez not packaged for {key}"
+        raise RuntimeError(msg)
     if not path.exists():
-        raise RuntimeError(f"Binary missing: {path}")
+        msg = f"Binary missing: {path}"
+        raise RuntimeError(msg)
     return path
 
 
@@ -71,10 +73,10 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
         cmd.extend(["-c", "0.0-1.0", "-g", str(gradient_path)])
         LOGGER.info("Adding false color gradient: %s", gradient_path)
     else:
-        LOGGER.warning(f"Gradient file not found at {gradient_path}, false color may not be applied")
+        LOGGER.warning("Gradient file not found at %s, false color may not be applied", gradient_path)
 
     LOGGER.info(
-        f"Running Sanchez: {' '.join(map(str, cmd))} in directory {binary_dir}"
+        "Running Sanchez: %s in directory %s", " ".join(map(str, cmd)), binary_dir
     )  # Log cwd with better formatting
     try:
         # Use subprocess.run to capture output
@@ -98,18 +100,19 @@ def colourise(ir_png: str | Path, out_png: str | Path, *, res_km: int = 4) -> Pa
 
     except subprocess.CalledProcessError as e:
         # Log detailed error information if check=True fails
-        LOGGER.error(f"Sanchez failed (Exit Code: {e.returncode}) for {Path(ir_png).name}")
+        LOGGER.exception("Sanchez failed (Exit Code: %s) for %s", e.returncode, Path(ir_png).name)
         if e.stdout:
-            LOGGER.error("--> Sanchez stdout:\n%s", e.stdout)
+            LOGGER.exception("--> Sanchez stdout:\n%s", e.stdout)
         if e.stderr:
-            LOGGER.error("--> Sanchez stderr:\n%s", e.stderr)
+            LOGGER.exception("--> Sanchez stderr:\n%s", e.stderr)
         # Re-raise the original exception or a more specific one
-        raise RuntimeError(f"Sanchez execution failed: {e}") from e
+        msg = f"Sanchez execution failed: {e}"
+        raise RuntimeError(msg) from e
     except FileNotFoundError:
-        LOGGER.error("Sanchez executable not found at: %s", bin_path)
+        LOGGER.exception("Sanchez executable not found at: %s", bin_path)
         raise  # Re-raise
     except (OSError, ValueError, KeyError) as e:
-        LOGGER.exception(f"An unexpected error occurred while running Sanchez for {Path(ir_png).name}: {e}")
+        LOGGER.exception("An unexpected error occurred while running Sanchez for %s: %s", Path(ir_png).name, e)
         raise  # Re-raise unexpected errors
 
     # Return the output path as a Path object
