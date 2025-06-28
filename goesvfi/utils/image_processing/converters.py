@@ -58,7 +58,7 @@ class ArrayToImageConverter(ProcessorBase):
                 {"original_shape": array.shape, "original_dtype": str(array.dtype)},
             )
 
-        except Exception as e:
+        except (ValueError, RuntimeError, MemoryError) as e:
             return ImageProcessingResult.failure_result(
                 self._create_error(f"Array to QImage conversion failed: {e}", e)
             )
@@ -142,7 +142,7 @@ class ImageToPixmapConverter(ProcessorBase):
 
             return ImageProcessingResult.success_result(pixmap, metadata)
 
-        except Exception as e:
+        except (ValueError, RuntimeError, MemoryError) as e:
             return ImageProcessingResult.failure_result(
                 self._create_error(f"QImage to QPixmap conversion failed: {e}", e)
             )
@@ -185,7 +185,7 @@ class ImageDataConverter(ProcessorBase):
 
             return ImageProcessingResult.success_result(array, metadata)
 
-        except Exception as e:
+        except (ValueError, RuntimeError, MemoryError) as e:
             return ImageProcessingResult.failure_result(
                 self._create_error(f"ImageData to array conversion failed: {e}", e)
             )
@@ -254,5 +254,5 @@ class CropProcessor(ProcessorBase):
 
             return ImageProcessingResult.success_result(cropped, metadata)
 
-        except Exception as e:
+        except (ValueError, RuntimeError, MemoryError) as e:
             return ImageProcessingResult.failure_result(self._create_error(f"Crop processing failed: {e}", e))

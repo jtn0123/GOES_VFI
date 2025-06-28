@@ -72,7 +72,7 @@ class PathValidator(ValidatorBase):
             return ValidationResult.failure(
                 self._create_error(f"Path must be string or Path object, got {type(value)}", value)
             )
-        except Exception as e:
+        except (TypeError, ValueError, OSError) as e:
             return ValidationResult.failure(self._create_error(f"Invalid path format: {e}", value))
 
     def _check_path_existence(self, path: Path, value: Any) -> ValidationResult:
@@ -97,7 +97,7 @@ class PathValidator(ValidatorBase):
             else:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 result.add_warning(f"Created parent directory: {path.parent}")
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             result.add_error(self._create_error(f"Could not create path {path}: {e}", value))
 
         return result
@@ -190,7 +190,7 @@ class DirectoryValidator(PathValidator):
                             value,
                         )
                     )
-            except Exception as e:
+            except (OSError, PermissionError) as e:
                 result.add_warning(f"Could not check free space: {e}")
 
         return result
@@ -249,7 +249,7 @@ class FileValidator(PathValidator):
                                 value,
                             )
                         )
-            except Exception as e:
+            except (OSError, PermissionError) as e:
                 result.add_warning(f"Could not check file size: {e}")
 
         return result

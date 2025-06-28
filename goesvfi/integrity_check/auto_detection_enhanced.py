@@ -177,7 +177,7 @@ class AutoDetectionWorker(QThread):
                 msg = f"Unknown operation: {self.operation}"
                 raise AutoDetectionError(msg)
 
-        except Exception as e:
+        except (OSError, ValueError, RuntimeError) as e:
             error_traceback = traceback.format_exc()
             self.error.emit(str(e), error_traceback)
 
@@ -210,7 +210,7 @@ class AutoDetectionWorker(QThread):
                 sample_files = ", ".join([f.name for f in jpg_files[:3]])
                 self.progress.emit(40, f"Sample JPG files: {sample_files}", "info")
 
-        except Exception as dir_error:
+        except (OSError, PermissionError) as dir_error:
             self.progress.emit(30, f"Error listing directory contents: {dir_error}", "error")
 
         # Look for GOES-16 files
@@ -219,7 +219,7 @@ class AutoDetectionWorker(QThread):
         try:
             goes16_files = TimeIndex.scan_directory_for_timestamps(self.directory, SatellitePattern.GOES_16)
             self.progress.emit(60, f"Found {len(goes16_files)} GOES-16 files", "info")
-        except Exception as scan_error:
+        except (OSError, ValueError, RuntimeError) as scan_error:
             self.progress.emit(60, f"Error scanning for GOES-16 files: {scan_error}", "error")
 
         # Look for GOES-18 files
@@ -228,7 +228,7 @@ class AutoDetectionWorker(QThread):
         try:
             goes18_files = TimeIndex.scan_directory_for_timestamps(self.directory, SatellitePattern.GOES_18)
             self.progress.emit(80, f"Found {len(goes18_files)} GOES-18 files", "info")
-        except Exception as scan_error:
+        except (OSError, ValueError, RuntimeError) as scan_error:
             self.progress.emit(80, f"Error scanning for GOES-18 files: {scan_error}", "error")
 
         # Select satellite based on file count
@@ -292,7 +292,7 @@ class AutoDetectionWorker(QThread):
                 sample_timestamps = ", ".join([ts.strftime("%Y-%m-%d %H:%M") for ts in timestamps[:3]])
                 self.progress.emit(60, f"Sample timestamps: {sample_timestamps}", "info")
 
-        except Exception as scan_error:
+        except (OSError, ValueError, RuntimeError) as scan_error:
             self.progress.emit(50, f"Error scanning for timestamps: {scan_error}", "error")
             result: dict[str, Any] = {
                 "status": "error",
@@ -346,7 +346,7 @@ class AutoDetectionWorker(QThread):
         timestamps = []
         try:
             timestamps = TimeIndex.scan_directory_for_timestamps(self.directory, satellite)
-        except Exception as e:
+        except (OSError, ValueError, RuntimeError) as e:
             self.error.emit(f"Error scanning directory: {e!s}", "")
             return
 

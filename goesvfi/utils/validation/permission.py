@@ -73,7 +73,7 @@ class PermissionValidator(ValidatorBase):
             # Validate that value can be converted to a Path
             _path = Path(value) if isinstance(value, str) else value
             return ValidationResult.success()
-        except Exception as e:
+        except (TypeError, ValueError, OSError) as e:
             return ValidationResult.failure(self._create_error(f"Invalid path: {e}", value))
 
     def _check_basic_permissions(self, path: Path, value: Any) -> ValidationResult:
@@ -106,7 +106,7 @@ class PermissionValidator(ValidatorBase):
 
             result = result.merge(owner_result).merge(group_result).merge(other_result)
 
-        except Exception as e:
+        except (TypeError, ValueError, OSError) as e:
             result.add_warning(f"Could not check detailed permissions: {e}")
 
         return result
@@ -167,7 +167,7 @@ class ExecutableValidator(ValidatorBase):
 
         try:
             path = Path(value) if isinstance(value, str) else value
-        except Exception as e:
+        except (TypeError, ValueError, OSError) as e:
             return ValidationResult.failure(self._create_error(f"Invalid executable path: {e}", value))
 
         result = ValidationResult.success()
@@ -205,7 +205,7 @@ class WritableDirectoryValidator(ValidatorBase):
 
         try:
             path = Path(value) if isinstance(value, str) else value
-        except Exception as e:
+        except (TypeError, ValueError, OSError) as e:
             return ValidationResult.failure(self._create_error(f"Invalid directory path: {e}", value))
 
         result = ValidationResult.success()
@@ -216,7 +216,7 @@ class WritableDirectoryValidator(ValidatorBase):
                 try:
                     path.mkdir(parents=True, exist_ok=True)
                     result.add_warning(f"Created directory: {path}")
-                except Exception as e:
+                except (TypeError, ValueError, OSError) as e:
                     result.add_error(self._create_error(f"Could not create directory {path}: {e}", value))
                     return result
             else:
@@ -248,7 +248,7 @@ class WritableDirectoryValidator(ValidatorBase):
                             value,
                         )
                     )
-            except Exception as e:
+            except (TypeError, ValueError, OSError) as e:
                 result.add_warning(f"Could not check free space: {e}")
 
         return result
