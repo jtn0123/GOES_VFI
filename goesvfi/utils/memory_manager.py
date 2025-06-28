@@ -26,6 +26,32 @@ except ImportError:
     PSUTIL_AVAILABLE = False
     LOGGER.warning("psutil not available - memory monitoring will be limited")
 
+# Memory thresholds
+LOW_MEMORY_THRESHOLD_MB = 500
+CRITICAL_MEMORY_THRESHOLD_MB = 200
+LOW_MEMORY_PERCENT_THRESHOLD = 85
+CRITICAL_MEMORY_PERCENT_THRESHOLD = 95
+
+# Time intervals
+WARNING_INTERVAL_SECONDS = 30
+CRITICAL_WARNING_INTERVAL_SECONDS = 60
+
+# Garbage collection threshold
+DEFAULT_GC_THRESHOLD_PERCENT = 80
+
+# Numeric type limits for array optimization
+UINT8_MAX = 255
+INT8_MIN = -128
+INT8_MAX = 127
+UINT16_MAX = 65535
+INT16_MIN = -32768
+INT16_MAX = 32767
+INT32_MIN = -2147483648
+INT32_MAX = 2147483647
+
+# Default chunk size for array processing
+DEFAULT_CHUNK_SIZE_MB = 100
+
 
 @dataclass
 class MemoryStats:
@@ -41,18 +67,18 @@ class MemoryStats:
     @property
     def is_low_memory(self) -> bool:
         """Check if memory is running low."""
-        return self.available_mb < 500 or self.percent_used > 85
+        return self.available_mb < LOW_MEMORY_THRESHOLD_MB or self.percent_used > LOW_MEMORY_PERCENT_THRESHOLD
 
     @property
     def is_critical_memory(self) -> bool:
         """Check if memory is critically low."""
-        return self.available_mb < 200 or self.percent_used > 95
+        return self.available_mb < CRITICAL_MEMORY_THRESHOLD_MB or self.percent_used > CRITICAL_MEMORY_PERCENT_THRESHOLD
 
 
 class MemoryMonitor:
     """Monitor system and process memory usage."""
 
-    def __init__(self, warning_threshold_mb: int = 500, critical_threshold_mb: int = 200) -> None:
+    def __init__(self, warning_threshold_mb: int = LOW_MEMORY_THRESHOLD_MB, critical_threshold_mb: int = CRITICAL_MEMORY_THRESHOLD_MB) -> None:
         """Initialize memory monitor.
 
         Args:
@@ -142,7 +168,7 @@ class MemoryMonitor:
                 # Check thresholds
                 current_time = time.time()
                 if stats.is_critical_memory:
-                    if current_time - last_warning_time > 30:  # Warn every 30s max
+                    if current_time - last_warning_time > WARNING_INTERVAL_SECONDS:
                         LOGGER.critical(
                             "CRITICAL: Low memory! Available: %sMB (%s%% used)",
                             stats.available_mb,
@@ -150,7 +176,7 @@ class MemoryMonitor:
                         )
                         last_warning_time = current_time
                 elif stats.is_low_memory:
-                    if current_time - last_warning_time > 60:  # Warn every 60s max
+                    if current_time - last_warning_time > CRITICAL_WARNING_INTERVAL_SECONDS:
                         LOGGER.warning(
                             "Low memory warning: Available: %sMB (%s%% used)",
                             stats.available_mb,
@@ -178,7 +204,7 @@ class MemoryOptimizer:
     def __init__(self) -> None:
         """Initialize memory optimizer."""
         self.monitor = MemoryMonitor()
-        self._gc_threshold = 80  # Trigger GC when memory > 80%
+        self._gc_threshold = DEFAULT_GC_THRESHOLD_PERCENT
         self._last_gc_time = 0.0
         self._gc_interval = 30.0  # Minimum seconds between GC runs
 
@@ -207,26 +233,26 @@ class MemoryOptimizer:
             # Check if smaller int type is sufficient
             min_val, max_val = array.min(), array.max()
 
-            if min_val >= 0 and max_val <= 255:
+            if min_val >= 0 and max_val <= UINT8_MAX:
                 LOGGER.debug("Converting array from int64 to uint8 (saves 87.5%% memory)")
                 return array.astype(np.uint8)
-            if min_val >= -128 and max_val <= 127:
+            if min_val >= INT8_MIN and max_val <= INT8_MAX:
                 LOGGER.debug("Converting array from int64 to int8 (saves 87.5%% memory)")
                 return array.astype(np.int8)
-            if min_val >= 0 and max_val <= 65535:
+            if min_val >= 0 and max_val <= UINT16_MAX:
                 LOGGER.debug("Converting array from int64 to uint16 (saves 75%% memory)")
                 return array.astype(np.uint16)
-            if min_val >= -32768 and max_val <= 32767:
+            if min_val >= INT16_MIN and max_val <= INT16_MAX:
                 LOGGER.debug("Converting array from int64 to int16 (saves 75%% memory)")
                 return array.astype(np.int16)
-            if min_val >= -2147483648 and max_val <= 2147483647:
+            if min_val >= INT32_MIN and max_val <= INT32_MAX:
                 LOGGER.debug("Converting array from int64 to int32 (saves 50%% memory)")
                 return array.astype(np.int32)
 
         return array
 
     @staticmethod
-    def chunk_large_array(array: np.ndarray, max_chunk_mb: int = 100) -> list[np.ndarray]:
+    def chunk_large_array(array: np.ndarray, max_chunk_mb: int = DEFAULT_CHUNK_SIZE_MB) -> list[np.ndarray]:
         """Split large array into chunks for processing.
 
         Args:
