@@ -57,9 +57,8 @@ class ModelManager:
                     }
                 except Exception as e:  # pylint: disable=broad-except
                     LOGGER.exception(
-                        "Failed to analyze model %s capabilities: %s",
+                        "Failed to analyze model %s capabilities",
                         model_name,
-                        e,
                     )
             else:
                 LOGGER.warning("RIFE executable not found in model directory: %s", model_dir)
@@ -86,7 +85,7 @@ class ModelManager:
                 model_combo.setCurrentIndex(0)
 
         except Exception as e:  # pylint: disable=broad-except
-            LOGGER.exception("Error populating models: %s", e)
+            LOGGER.exception("Error populating models")
             parent_widget = cast(QWidget, model_combo.parent()) if model_combo.parent() else model_combo
             QMessageBox.critical(
                 parent_widget,
@@ -176,7 +175,7 @@ class ModelManager:
             self.settings.sync()
             LOGGER.debug("Saved selected model: %s", model_name)
         except Exception as e:
-            LOGGER.exception("Error saving selected model: %s", e)
+            LOGGER.exception("Error saving selected model")
 
     def load_selected_model(self) -> str | None:
         """Load the previously selected model from settings.
@@ -188,5 +187,5 @@ class ModelManager:
             model_name = self.settings.value("selected_model", "", type=str)
             return cast(str | None, model_name or None)
         except Exception as e:
-            LOGGER.exception("Error loading selected model: %s", e)
+            LOGGER.exception("Error loading selected model")
             return None

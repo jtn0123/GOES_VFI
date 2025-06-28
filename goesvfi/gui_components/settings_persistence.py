@@ -70,7 +70,7 @@ class SettingsPersistence:
             # Explicitly cast bool to avoid Any return type
             return bool(saved_dir == in_dir_str)
         except Exception as e:
-            LOGGER.exception("Error directly saving input directory: %s", e)
+            LOGGER.exception("Error directly saving input directory")
             return False
 
     def save_crop_rect(self, rect: tuple[int, int, int, int]) -> bool:
@@ -121,7 +121,7 @@ class SettingsPersistence:
             # Explicitly cast bool to avoid Any return type
             return bool(saved_rect == rect_str)
         except Exception as e:
-            LOGGER.exception("Error directly saving crop rectangle: %s", e)
+            LOGGER.exception("Error directly saving crop rectangle")
             return False
 
     def _verify_settings_consistency(self) -> None:
@@ -170,5 +170,5 @@ class SettingsPersistence:
             LOGGER.warning("Settings file does not exist after save attempt: %s", settings_file)
             return False
         except Exception as file_error:
-            LOGGER.exception("Error checking settings file: %s", file_error)
+            LOGGER.exception("Error checking settings file")
             return False

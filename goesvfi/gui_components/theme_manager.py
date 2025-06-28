@@ -105,7 +105,7 @@ class ThemeManager:
             else:
                 LOGGER.exception("Fallback disabled, theme application failed")
         except Exception as e:
-            LOGGER.exception("Failed to apply theme '%s': %s", theme_name, e)
+            LOGGER.exception("Failed to apply theme '%s'", theme_name)
             if self._fallback_enabled:
                 self._apply_fallback_theme(app)
             else:
@@ -130,7 +130,7 @@ class ThemeManager:
             LOGGER.info("Theme changed to: %s", theme_name)
             return True
         except Exception as e:
-            LOGGER.exception("Failed to change theme: %s", e)
+            LOGGER.exception("Failed to change theme")
             return False
 
     def _apply_custom_overrides(self, app: QApplication) -> None:
@@ -347,7 +347,7 @@ class ThemeManager:
                 LOGGER.info("Accessibility mode disabled")
 
         except Exception as e:
-            LOGGER.exception("Failed to apply accessibility mode: %s", e)
+            LOGGER.exception("Failed to apply accessibility mode")
 
     def get_theme_classes_list(self) -> dict[str, list[str]]:
         """Get organized list of all available theme classes.

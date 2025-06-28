@@ -129,7 +129,7 @@ class PreviewManager(QObject):
             return True
 
         except Exception as e:
-            LOGGER.exception("Error loading preview images: %s", e)
+            LOGGER.exception("Error loading preview images")
             self.preview_error.emit(str(e))
             return False
 
@@ -171,7 +171,7 @@ class PreviewManager(QObject):
             return image_files[0], image_files[middle_index], image_files[-1]
 
         except Exception as e:
-            LOGGER.exception("Error getting first/middle/last paths: %s", e)
+            LOGGER.exception("Error getting first/middle/last paths")
             return None, None, None
 
     def _load_and_process_image(
@@ -239,7 +239,7 @@ class PreviewManager(QObject):
             return image_data
 
         except Exception as e:
-            LOGGER.exception("Error loading/processing image %s: %s", path, e)
+            LOGGER.exception("Error loading/processing image %s", path)
             return None
 
     def _numpy_to_qpixmap(self, array: np.ndarray[Any, np.dtype[np.uint8]]) -> QPixmap:
@@ -291,7 +291,7 @@ class PreviewManager(QObject):
             return QPixmap.fromImage(qimage)
 
         except Exception as e:
-            LOGGER.exception("Error converting numpy array to QPixmap: %s", e)
+            LOGGER.exception("Error converting numpy array to QPixmap")
             LOGGER.exception("Array shape: %s, dtype: %s", array.shape, array.dtype)
             # Return empty pixmap on error
             return QPixmap()
