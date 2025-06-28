@@ -211,7 +211,8 @@ class MainTab(QWidget):
         self._connect_signals()
         self._post_init_setup()  # Perform initial state updates
 
-    def _create_header(self) -> QLabel:
+    @staticmethod
+    def _create_header() -> QLabel:
         """Create the enhanced header for the main tab."""
         return WidgetFactory.create_label("🎬 GOES VFI - Video Frame Interpolation", style="header")
 
@@ -225,7 +226,7 @@ class MainTab(QWidget):
         WidgetFactory.update_widget_style(self, "MainTab")
 
         # Add enhanced header
-        header = self._create_header()
+        header = MainTab._create_header()
         layout.addWidget(header)
 
         # Input/Output Group
@@ -657,7 +658,7 @@ class MainTab(QWidget):
 
         # Fallback to original image if Sanchez failed or wasn't used
         if full_res_qimage is None or full_res_qimage.isNull():
-            full_res_qimage = self._load_original_image_for_crop(first_image_path)
+            full_res_qimage = MainTab._load_original_image_for_crop(first_image_path)
 
         return full_res_qimage
 
@@ -670,11 +671,12 @@ class MainTab(QWidget):
         cached_np_array = sanchez_cache.get(first_image_path)
 
         if cached_np_array is not None:
-            return self._convert_cached_sanchez_to_qimage(cached_np_array, first_image_path)
+            return MainTab._convert_cached_sanchez_to_qimage(cached_np_array, first_image_path)
         return self._process_fresh_sanchez_image(first_image_path)
 
+    @staticmethod
     def _convert_cached_sanchez_to_qimage(
-        self, cached_np_array: NDArray[np.float64], first_image_path: Path
+        cached_np_array: NDArray[np.float64], first_image_path: Path
     ) -> QImage | None:
         """Convert cached Sanchez array to QImage."""
         LOGGER.debug("Found cached Sanchez result for %s.", first_image_path.name)
@@ -725,7 +727,8 @@ class MainTab(QWidget):
             )
             return None
 
-    def _load_original_image_for_crop(self, first_image_path: Path) -> QImage | None:
+    @staticmethod
+    def _load_original_image_for_crop(first_image_path: Path) -> QImage | None:
         """Load original image for cropping."""
         LOGGER.debug("Loading original image for cropping (Sanchez not used or failed).")
 
@@ -831,7 +834,7 @@ class MainTab(QWidget):
         """Show the full-resolution image in a dedicated viewer dialog."""
         LOGGER.debug("Entering _show_zoom...")
 
-        full_res_image = self._extract_image_from_label(label)
+        full_res_image = MainTab._extract_image_from_label(label)
         if not full_res_image:
             self._show_image_unavailable_dialog(label)
             return
@@ -845,7 +848,8 @@ class MainTab(QWidget):
 
         self._display_zoom_dialog(image_to_show, info_title)
 
-    def _extract_image_from_label(self, label: ClickableLabel) -> QImage | None:
+    @staticmethod
+    def _extract_image_from_label(label: ClickableLabel) -> QImage | None:
         """Extract and validate image from label."""
         full_res_image = getattr(label, "processed_image", None)
 
@@ -863,13 +867,14 @@ class MainTab(QWidget):
             return full_res_image, False
 
         try:
-            return self._apply_crop_to_image(full_res_image, crop_rect_tuple)
+            return MainTab._apply_crop_to_image(full_res_image, crop_rect_tuple)
         except Exception:
             LOGGER.exception("Error applying crop in _show_zoom")
             return full_res_image, False
 
+    @staticmethod
     def _apply_crop_to_image(
-        self, full_res_image: QImage, crop_rect_tuple: tuple[int, int, int, int]
+        full_res_image: QImage, crop_rect_tuple: tuple[int, int, int, int]
     ) -> tuple[QImage, bool]:
         """Apply crop rectangle to image if valid."""
         x, y, w, h = crop_rect_tuple
@@ -896,7 +901,7 @@ class MainTab(QWidget):
         info_title = preview_type
 
         info_title = self._add_crop_info_to_title(info_title, is_cropped_view)
-        return self._add_file_info_to_title(info_title, label)
+        return MainTab._add_file_info_to_title(info_title, label)
 
     def _get_preview_type(self, label: ClickableLabel) -> str:
         """Get preview type based on which label was clicked."""
@@ -919,7 +924,8 @@ class MainTab(QWidget):
 
         return info_title
 
-    def _add_file_info_to_title(self, info_title: str, label: ClickableLabel) -> str:
+    @staticmethod
+    def _add_file_info_to_title(info_title: str, label: ClickableLabel) -> str:
         """Add file information to dialog title."""
         file_path = getattr(label, "file_path", None)
         if file_path:
@@ -958,12 +964,13 @@ class MainTab(QWidget):
         LOGGER.warning("No valid full-resolution 'processed_image' found on the clicked label.")
 
         msg = "The full-resolution image is not available for preview yet."
-        msg += self._get_image_unavailable_reason(label)
+        msg += MainTab._get_image_unavailable_reason(label)
         msg += "\n\nTry updating previews or verifying the input directory."
 
         QMessageBox.information(self, "Preview Not Available", msg)
 
-    def _get_image_unavailable_reason(self, label: ClickableLabel) -> str:
+    @staticmethod
+    def _get_image_unavailable_reason(label: ClickableLabel) -> str:
         """Get specific reason why image is unavailable."""
         if not hasattr(label, "processed_image"):
             return "\n\nReason: No processed image data is attached to this preview."
@@ -1244,17 +1251,19 @@ class MainTab(QWidget):
         """Perform a deep verification of processing arguments for debugging."""
         LOGGER.debug("Deep verification of processing arguments...")
 
-        self._verify_critical_paths(args)
-        self._verify_encoder_arguments(args)
+        MainTab._verify_critical_paths(args)
+        MainTab._verify_encoder_arguments(args)
         self._verify_crop_rectangle(args)
-        self._verify_processing_parameters(args)
+        MainTab._verify_processing_parameters(args)
 
-    def _verify_critical_paths(self, args: dict[str, Any]) -> None:
+    @staticmethod
+    def _verify_critical_paths(args: dict[str, Any]) -> None:
         """Verify input and output path arguments."""
-        self._verify_input_directory(args)
-        self._verify_output_file(args)
+        MainTab._verify_input_directory(args)
+        MainTab._verify_output_file(args)
 
-    def _verify_input_directory(self, args: dict[str, Any]) -> None:
+    @staticmethod
+    def _verify_input_directory(args: dict[str, Any]) -> None:
         """Verify input directory exists and is accessible."""
         in_dir = args.get("in_dir")
         if not in_dir:
@@ -1266,9 +1275,10 @@ class MainTab(QWidget):
         LOGGER.debug("in_dir: %s, exists: %s, is_dir: %s", in_dir, exists, is_dir)
 
         if exists and is_dir:
-            self._check_input_directory_contents(in_dir)
+            MainTab._check_input_directory_contents(in_dir)
 
-    def _verify_output_file(self, args: dict[str, Any]) -> None:
+    @staticmethod
+    def _verify_output_file(args: dict[str, Any]) -> None:
         """Verify output file path and directory writability."""
         out_file = args.get("out_file")
         if not out_file:
@@ -1280,17 +1290,19 @@ class MainTab(QWidget):
         dir_writable = os.access(str(out_dir), os.W_OK) if dir_exists else False
         LOGGER.debug("out_file: %s, dir_exists: %s, dir_writable: %s", out_file, dir_exists, dir_writable)
 
-    def _verify_encoder_arguments(self, args: dict[str, Any]) -> None:
+    @staticmethod
+    def _verify_encoder_arguments(args: dict[str, Any]) -> None:
         """Verify encoder-specific arguments."""
         encoder = args.get("encoder")
         LOGGER.debug("encoder: %s", encoder)
 
         if encoder == "RIFE":
-            self._verify_rife_arguments(args)
+            MainTab._verify_rife_arguments(args)
         elif encoder == "FFmpeg":
-            self._verify_ffmpeg_arguments(args)
+            MainTab._verify_ffmpeg_arguments(args)
 
-    def _verify_rife_arguments(self, args: dict[str, Any]) -> None:
+    @staticmethod
+    def _verify_rife_arguments(args: dict[str, Any]) -> None:
         """Verify RIFE-specific arguments."""
         rife_model_key = args.get("rife_model_key")
         rife_model_path = args.get("rife_model_path")
@@ -1307,19 +1319,21 @@ class MainTab(QWidget):
         else:
             LOGGER.error("Missing required RIFE executable path")
 
-    def _verify_ffmpeg_arguments(self, args: dict[str, Any]) -> None:
+    @staticmethod
+    def _verify_ffmpeg_arguments(args: dict[str, Any]) -> None:
         """Verify FFmpeg-specific arguments."""
         LOGGER.debug("Checking FFmpeg-specific arguments...")
         ffmpeg_args = args.get("ffmpeg_args")
 
         if ffmpeg_args:
             LOGGER.debug("FFmpeg arguments provided: %s", ffmpeg_args)
-            self._log_ffmpeg_settings(ffmpeg_args)
+            MainTab._log_ffmpeg_settings(ffmpeg_args)
         else:
             LOGGER.warning("No FFmpeg arguments provided")
-            self._debug_generate_ffmpeg_command(args)
+            MainTab._debug_generate_ffmpeg_command(args)
 
-    def _log_ffmpeg_settings(self, ffmpeg_args: dict[str, Any]) -> None:
+    @staticmethod
+    def _log_ffmpeg_settings(ffmpeg_args: dict[str, Any]) -> None:
         """Log FFmpeg settings for verification."""
         if "profile" in ffmpeg_args:
             profile_name = ffmpeg_args.get("profile")
@@ -1350,20 +1364,22 @@ class MainTab(QWidget):
                 LOGGER.error("Invalid crop rectangle dimensions: width=%s, height=%s", w, h)
                 return
 
-            self._verify_crop_against_input_images(args, crop_rect)
+            MainTab._verify_crop_against_input_images(args, crop_rect)
             self._debug_check_ffmpeg_crop_integration(crop_rect)
 
         except (ValueError, TypeError):
             LOGGER.exception("Invalid crop rectangle format")
 
-    def _verify_crop_against_input_images(self, args: dict[str, Any], crop_rect: tuple[int, int, int, int]) -> None:
+    @staticmethod
+    def _verify_crop_against_input_images(args: dict[str, Any], crop_rect: tuple[int, int, int, int]) -> None:
         """Verify crop rectangle against actual image dimensions."""
         in_dir = args.get("in_dir")
         if in_dir is not None:
             in_dir_path = Path(in_dir) if isinstance(in_dir, str) else in_dir
-            self._verify_crop_against_images(in_dir_path, crop_rect)
+            MainTab._verify_crop_against_images(in_dir_path, crop_rect)
 
-    def _verify_processing_parameters(self, args: dict[str, Any]) -> None:
+    @staticmethod
+    def _verify_processing_parameters(args: dict[str, Any]) -> None:
         """Verify other processing parameters."""
         parameters = {
             "fps": args.get("fps"),
@@ -1376,7 +1392,8 @@ class MainTab(QWidget):
         for param_name, param_value in parameters.items():
             LOGGER.debug("%s: %s", param_name, param_value)
 
-    def _check_input_directory_contents(self, in_dir: Path) -> None:
+    @staticmethod
+    def _check_input_directory_contents(in_dir: Path) -> None:
         """Check images in the input directory and report details for debugging."""
         try:
             image_files = sorted([
@@ -1419,7 +1436,8 @@ class MainTab(QWidget):
         except Exception:
             LOGGER.exception("Error checking input directory contents")
 
-    def _verify_crop_against_images(self, in_dir: Path, crop_rect: tuple[int, int, int, int]) -> None:
+    @staticmethod
+    def _verify_crop_against_images(in_dir: Path, crop_rect: tuple[int, int, int, int]) -> None:
         """Verify that crop rectangle is valid for the images in the directory."""
         try:
             image_files = sorted([
@@ -1509,7 +1527,8 @@ class MainTab(QWidget):
         except Exception:
             LOGGER.exception("Error checking FFmpeg crop integration")
 
-    def _debug_generate_ffmpeg_command(self, args: dict[str, Any]) -> None:
+    @staticmethod
+    def _debug_generate_ffmpeg_command(args: dict[str, Any]) -> None:
         """Generate a sample FFmpeg command for debugging."""
         try:
             from goesvfi.pipeline.ffmpeg_builder import FFmpegCommandBuilder
@@ -2232,7 +2251,7 @@ class MainTab(QWidget):
             return None
 
         args = self._build_base_arguments(current_in_dir, current_crop_rect_mw, encoder, rife_model_key)
-        self._add_encoder_specific_arguments(args, encoder, rife_model_key, main_window)
+        MainTab._add_encoder_specific_arguments(args, encoder, rife_model_key, main_window)
 
         LOGGER.debug("Processing arguments gathered: %s", args)
         return args
@@ -2378,8 +2397,8 @@ class MainTab(QWidget):
                 "rife_thread_spec": None,
             })
 
+    @staticmethod
     def _add_encoder_specific_arguments(
-        self,
         args: dict[str, Any],
         encoder: str,
         rife_model_key: str,
@@ -2387,11 +2406,12 @@ class MainTab(QWidget):
     ) -> None:
         """Add encoder-specific arguments."""
         if encoder == "FFmpeg":
-            args["ffmpeg_args"] = self._get_ffmpeg_arguments(main_window)
+            args["ffmpeg_args"] = MainTab._get_ffmpeg_arguments(main_window)
         else:
             args["ffmpeg_args"] = None
 
-    def _get_ffmpeg_arguments(self, main_window: QObject) -> dict[str, Any]:
+    @staticmethod
+    def _get_ffmpeg_arguments(main_window: QObject) -> dict[str, Any]:
         """Get FFmpeg-specific arguments from FFmpeg tab."""
         ffmpeg_tab = getattr(main_window, "ffmpeg_tab", None)
         if ffmpeg_tab:
@@ -2455,13 +2475,14 @@ class MainTab(QWidget):
             in_dir_str = self.settings.value("paths/inputDirectory", "", type=str)
             LOGGER.debug("Raw input directory from settings: %r", in_dir_str)
 
-            loaded_in_dir = self._resolve_input_directory_path(in_dir_str)
+            loaded_in_dir = MainTab._resolve_input_directory_path(in_dir_str)
             self._update_input_directory_ui(main_window, loaded_in_dir)
         except Exception:
             LOGGER.exception("Error loading input directory setting")
             self._update_input_directory_ui(main_window, None)
 
-    def _resolve_input_directory_path(self, in_dir_str: str) -> Path | None:
+    @staticmethod
+    def _resolve_input_directory_path(in_dir_str: str) -> Path | None:
         """Resolve input directory path with fallback to common locations."""
         if not in_dir_str:
             LOGGER.debug("No input directory string in settings")
@@ -2478,12 +2499,13 @@ class MainTab(QWidget):
                 return in_dir_path
 
             # Try fallback locations
-            return self._find_directory_in_common_locations(in_dir_path.name, in_dir_str)
+            return MainTab._find_directory_in_common_locations(in_dir_path.name, in_dir_str)
         except Exception:
             LOGGER.exception("Error resolving input directory path")
             return None
 
-    def _find_directory_in_common_locations(self, dir_name: str, original_path: str) -> Path | None:
+    @staticmethod
+    def _find_directory_in_common_locations(dir_name: str, original_path: str) -> Path | None:
         """Find directory in common locations when original path doesn't exist."""
         LOGGER.warning("Saved input directory does not exist: %s", original_path)
         LOGGER.debug("Will check if directory exists in other locations...")
@@ -2533,13 +2555,14 @@ class MainTab(QWidget):
 
         try:
             out_file_path = Path(out_file_str)
-            resolved_path = self._resolve_output_file_path(out_file_path, out_file_str)
+            resolved_path = MainTab._resolve_output_file_path(out_file_path, out_file_str)
             self.out_file_edit.setText(str(resolved_path))
         except Exception:
             LOGGER.exception("Error loading output file path")
             self.out_file_path = None
 
-    def _resolve_output_file_path(self, out_file_path: Path, original_str: str) -> Path:
+    @staticmethod
+    def _resolve_output_file_path(out_file_path: Path, original_str: str) -> Path:
         """Resolve output file path with fallback logic."""
         parent_exists = out_file_path.parent.exists() if out_file_path.parent != Path() else True
 
@@ -2622,13 +2645,14 @@ class MainTab(QWidget):
             crop_rect_str = self.settings.value("preview/cropRectangle", "", type=str)
             LOGGER.debug("Raw crop rectangle from settings: %r", crop_rect_str)
 
-            loaded_crop_rect = self._parse_crop_rectangle(crop_rect_str)
-            self._update_crop_rectangle_ui(main_window, loaded_crop_rect)
+            loaded_crop_rect = MainTab._parse_crop_rectangle(crop_rect_str)
+            MainTab._update_crop_rectangle_ui(main_window, loaded_crop_rect)
         except Exception:
             LOGGER.exception("Error loading crop rectangle setting")
-            self._update_crop_rectangle_ui(main_window, None)
+            MainTab._update_crop_rectangle_ui(main_window, None)
 
-    def _parse_crop_rectangle(self, crop_rect_str: str) -> tuple[int, int, int, int] | None:
+    @staticmethod
+    def _parse_crop_rectangle(crop_rect_str: str) -> tuple[int, int, int, int] | None:
         """Parse crop rectangle string into coordinates tuple."""
         if not crop_rect_str:
             LOGGER.debug("No crop rectangle string in settings")
@@ -2645,8 +2669,8 @@ class MainTab(QWidget):
             LOGGER.warning("Could not parse crop rectangle from settings: %s", crop_rect_str)
             return None
 
+    @staticmethod
     def _update_crop_rectangle_ui(
-        self,
         main_window: QObject,
         loaded_crop_rect: tuple[int, int, int, int] | None,
     ) -> None:
