@@ -77,7 +77,7 @@ class SettingsManager:
             LOGGER.debug("Saved setting: %s = %s", key, value)
             return True
         except Exception as e:
-            LOGGER.exception("Error saving setting %s: %s", key, e)
+            LOGGER.exception("Error saving setting %s", key)
             return False
 
     def load_value(self, key: str, default: Any = None, value_type: type | None = None) -> Any:
@@ -96,7 +96,7 @@ class SettingsManager:
                 return self.settings.value(key, default, type=value_type)
             return self.settings.value(key, default)
         except Exception as e:
-            LOGGER.exception("Error loading setting %s: %s", key, e)
+            LOGGER.exception("Error loading setting %s", key)
             return default
 
     def save_window_geometry(self, window_key: str, geometry: dict[str, int]) -> bool:
@@ -117,7 +117,7 @@ class SettingsManager:
             self.settings.sync()
             return True
         except Exception as e:
-            LOGGER.exception("Error saving window geometry for %s: %s", window_key, e)
+            LOGGER.exception("Error saving window geometry for %s", window_key)
             return False
 
     def load_window_geometry(self, window_key: str) -> dict[str, int] | None:
@@ -146,7 +146,7 @@ class SettingsManager:
 
             return geometry
         except Exception as e:
-            LOGGER.exception("Error loading window geometry for %s: %s", window_key, e)
+            LOGGER.exception("Error loading window geometry for %s", window_key)
             return None
 
     def save_recent_paths(self, key: str, paths: list[Path], max_items: int = 10) -> bool:
@@ -171,7 +171,7 @@ class SettingsManager:
             self.settings.sync()
             return True
         except Exception as e:
-            LOGGER.exception("Error saving recent paths for %s: %s", key, e)
+            LOGGER.exception("Error saving recent paths for %s", key)
             return False
 
     def load_recent_paths(self, key: str) -> list[Path]:
@@ -187,7 +187,7 @@ class SettingsManager:
             path_strings = self.settings.value(f"RecentPaths/{key}", [], type=list)
             return [Path(p) for p in path_strings if p]
         except Exception as e:
-            LOGGER.exception("Error loading recent paths for %s: %s", key, e)
+            LOGGER.exception("Error loading recent paths for %s", key)
             return []
 
     def clear_group(self, group_name: str) -> bool:
@@ -207,7 +207,7 @@ class SettingsManager:
             LOGGER.debug("Cleared settings group: %s", group_name)
             return True
         except Exception as e:
-            LOGGER.exception("Error clearing settings group %s: %s", group_name, e)
+            LOGGER.exception("Error clearing settings group %s", group_name)
             return False
 
     def get_all_keys(self) -> list[str]:
@@ -220,7 +220,7 @@ class SettingsManager:
             keys = self.settings.allKeys()
             return [str(key) for key in keys]  # Convert to List[str]
         except Exception as e:
-            LOGGER.exception("Error getting all keys: %s", e)
+            LOGGER.exception("Error getting all keys")
             return []
 
     def remove_key(self, key: str) -> bool:
@@ -238,7 +238,7 @@ class SettingsManager:
             LOGGER.debug("Removed setting key: %s", key)
             return True
         except Exception as e:
-            LOGGER.exception("Error removing key %s: %s", key, e)
+            LOGGER.exception("Error removing key %s", key)
             return False
 
     def sync(self) -> bool:
@@ -251,5 +251,5 @@ class SettingsManager:
             self.settings.sync()
             return True
         except Exception as e:
-            LOGGER.exception("Error syncing settings: %s", e)
+            LOGGER.exception("Error syncing settings")
             return False

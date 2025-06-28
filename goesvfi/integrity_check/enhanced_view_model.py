@@ -175,7 +175,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             used_gb, total_gb = self.get_disk_space_info()
             self.disk_space_updated.emit(used_gb, total_gb)
         except Exception as e:
-            LOGGER.exception("Error in initial disk space check: %s", e)
+            LOGGER.exception("Error in initial disk space check")
 
     # --- Additional property accessors ---
 
@@ -451,7 +451,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
 
             return used_gb, total_gb
         except Exception as e:
-            LOGGER.exception("Error getting disk space info: %s", e)
+            LOGGER.exception("Error getting disk space info")
             return 0.0, 0.0
 
     def reset_database(self) -> None:
@@ -463,7 +463,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             else:
                 self.status_message = "Database reset not supported by current cache implementation"
         except Exception as e:
-            LOGGER.exception("Error resetting database: %s", e)
+            LOGGER.exception("Error resetting database")
             self.status_message = f"Error resetting database: {e}"
 
     # --- Callback handlers and utility methods ---
@@ -479,7 +479,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                 used_gb, total_gb = self.get_disk_space_info()
                 self.disk_space_updated.emit(used_gb, total_gb)
             except Exception as e:
-                LOGGER.exception("Error in disk space check: %s", e)
+                LOGGER.exception("Error in disk space check")
 
             # Sleep for 5 seconds
             time.sleep(5)
@@ -829,7 +829,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                     if not self._disk_space_timer.wait(timeout_ms):
                         LOGGER.warning("Disk space timer thread did not stop in time")
             except Exception as e:
-                LOGGER.exception("Error stopping disk space timer: %s", e)
+                LOGGER.exception("Error stopping disk space timer")
 
         # Close database connection
         if hasattr(self, "_cache_db"):
@@ -840,7 +840,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                     LOGGER.debug("Performing thread-local database cleanup")
                 self._cache_db.close()
             except Exception as e:
-                LOGGER.exception("Error closing cache database: %s", e)
+                LOGGER.exception("Error closing cache database")
 
         # Close base reconciler's cache
         if hasattr(self, "_reconciler") and hasattr(self._reconciler, "cache"):
@@ -848,7 +848,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
                 LOGGER.debug("Closing reconciler cache")
                 self._reconciler.cache.close()
             except Exception as e:
-                LOGGER.exception("Error closing reconciler cache: %s", e)
+                LOGGER.exception("Error closing reconciler cache")
 
         # Store active tasks list locally before removing reference
         active_tasks: list[QRunnable] = []
@@ -940,7 +940,7 @@ class AsyncScanTask(QRunnable):
             # Emit a user-friendly error message
             self.signals.error.emit(e.get_user_message())
         except Exception as e:
-            LOGGER.exception("Error in async scan task: %s", e)
+            LOGGER.exception("Error in async scan task")
             LOGGER.exception(traceback.format_exc())
             self.signals.error.emit(f"Unexpected error: {e!s}")
 
@@ -1005,7 +1005,7 @@ class AsyncScanTask(QRunnable):
         except asyncio.CancelledError:
             return {"status": "cancelled"}
         except Exception as e:
-            LOGGER.exception("Error in scan operation: %s", e)
+            LOGGER.exception("Error in scan operation")
             return {"status": "error", "error": str(e)}
 
 
@@ -1102,7 +1102,7 @@ class AsyncDownloadTask(QRunnable):
 
         except Exception as e:
             # Enhanced error handling for generic exceptions
-            LOGGER.exception("Error in async download task: %s", e)
+            LOGGER.exception("Error in async download task")
             LOGGER.exception(traceback.format_exc())
 
             # Create a detailed error message with stack trace
@@ -1211,5 +1211,5 @@ class AsyncDownloadTask(QRunnable):
         except asyncio.CancelledError:
             return {}
         except Exception as e:
-            LOGGER.exception("Error in download operation: %s", e)
+            LOGGER.exception("Error in download operation")
             return {}
