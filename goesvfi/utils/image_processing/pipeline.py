@@ -151,8 +151,8 @@ class ParallelPipeline(ProcessorBase):
     def _default_combiner(
         self,
         results: list[ImageProcessingResult],
-        input_data: Any,
-        context: dict[str, Any] | None,
+        _input_data: Any,
+        _context: dict[str, Any] | None,
     ) -> ImageProcessingResult:
         """Default combiner that returns the first successful result."""
         successful_results = [r for r in results if r.success]

@@ -33,7 +33,7 @@ class LoggingErrorHandler(ErrorHandler):
         self.logger = logger or logging.getLogger(__name__)
         self.log_level = log_level
 
-    def can_handle(self, error: StructuredError) -> bool:
+    def can_handle(self, _error: StructuredError) -> bool:
         """Can handle any error for logging."""
         return True
 
@@ -56,7 +56,7 @@ class CategoryErrorHandler(ErrorHandler):
         """Check if error category matches."""
         return error.category in self.categories
 
-    def handle(self, error: StructuredError) -> bool:
+    def handle(self, _error: StructuredError) -> bool:
         """Handle category-specific error."""
         # Override in subclasses
         return False

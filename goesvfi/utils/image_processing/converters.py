@@ -20,7 +20,7 @@ class ArrayToImageConverter(ProcessorBase):
         super().__init__("array_to_image")
         self.format_hint = format_hint
 
-    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, _context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Convert numpy array to QImage."""
         try:
             if not isinstance(input_data, np.ndarray):
@@ -154,7 +154,7 @@ class ImageDataConverter(ProcessorBase):
     def __init__(self) -> None:
         super().__init__("imagedata_to_array")
 
-    def process(self, input_data: Any, context: dict[str, Any] | None = None) -> ImageProcessingResult:
+    def process(self, input_data: Any, _context: dict[str, Any] | None = None) -> ImageProcessingResult:
         """Convert ImageData to numpy array."""
         try:
             # Import here to avoid circular imports
