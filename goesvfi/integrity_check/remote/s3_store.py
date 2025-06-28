@@ -1640,8 +1640,8 @@ class S3Store(RemoteStore):
         timestamp: datetime,
         satellite: SatellitePattern,
         destination: Path,
-        progress_callback: Callable | None = None,
-        cancel_check: Callable | None = None,
+        _progress_callback: Callable | None = None,
+        _cancel_check: Callable | None = None,
     ) -> Path:
         """Download a file for the given timestamp and satellite.
 
