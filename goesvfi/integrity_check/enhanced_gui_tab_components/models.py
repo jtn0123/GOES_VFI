@@ -1,5 +1,6 @@
 """Model classes for the enhanced integrity check GUI tab."""
 
+from enum import IntEnum
 from typing import Any, cast
 
 from PyQt6.QtCore import QModelIndex, QObject, Qt
@@ -9,6 +10,16 @@ from goesvfi.integrity_check.enhanced_view_model import EnhancedMissingTimestamp
 from goesvfi.integrity_check.view_model import (
     MissingItemsTreeModel as MissingTimestampsModel,
 )
+
+
+class TableColumn(IntEnum):
+    """Column indices for the missing timestamps table."""
+    TIMESTAMP = 0
+    SATELLITE = 1
+    SOURCE = 2
+    STATUS = 3
+    PROGRESS = 4
+    PATH = 5
 
 
 class EnhancedMissingTimestampsModel(MissingTimestampsModel):
@@ -47,17 +58,17 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
 
     def _get_display_data(self, item: EnhancedMissingTimestamp, col: int) -> str | None:
         """Get display data for the given item and column."""
-        if col == 0:  # Timestamp
+        if col == TableColumn.TIMESTAMP:  # Timestamp
             return item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-        if col == 1:  # Satellite
+        if col == TableColumn.SATELLITE:  # Satellite
             return item.satellite if isinstance(item.satellite, str) else "Unknown"
-        if col == 2:  # Source
+        if col == TableColumn.SOURCE:  # Source
             return item.source.upper() if item.source else "AUTO"
-        if col == 3:  # Status
+        if col == TableColumn.STATUS:  # Status
             return self._format_status(item)
-        if col == 4:  # Progress
+        if col == TableColumn.PROGRESS:  # Progress
             return EnhancedMissingTimestampModel._format_progress(item)
-        if col == 5:  # Path
+        if col == TableColumn.PATH:  # Path
             return item.local_path or ""
         return None
 
@@ -121,11 +132,11 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
 
     def _get_tooltip_data(self, item: EnhancedMissingTimestamp, col: int) -> str | None:
         """Get tooltip data for the given item and column."""
-        if col == 3 and item.download_error:  # Status column with error
+        if col == TableColumn.STATUS and item.download_error:  # Status column with error
             return EnhancedMissingTimestampModel._format_error_tooltip(item.download_error)
-        if col == 0:  # Timestamp column
+        if col == TableColumn.TIMESTAMP:  # Timestamp column
             return item.timestamp.isoformat()
-        if col == 5 and item.local_path and item.is_downloaded:  # Path column
+        if col == TableColumn.PATH and item.local_path and item.is_downloaded:  # Path column
             return f"Double-click to open folder containing:\n{item.local_path}"
         return None
 
@@ -146,7 +157,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
     @staticmethod
     def _get_background_color(item: EnhancedMissingTimestamp, col: int) -> QColor | None:
         """Get background color for the given item and column."""
-        if col == 3:  # Status column
+        if col == TableColumn.STATUS:  # Status column
             if item.is_downloaded:
                 return QColor(0, 120, 0)  # Dark green for dark mode
             if item.download_error:
@@ -158,7 +169,7 @@ class EnhancedMissingTimestampsModel(MissingTimestampsModel):
     @staticmethod
     def _get_foreground_color(item: EnhancedMissingTimestamp, col: int) -> QColor | None:
         """Get foreground color for the given item and column."""
-        if col == 3:  # Status column
+        if col == TableColumn.STATUS:  # Status column
             if item.is_downloaded or item.download_error or item.is_downloading:
                 return QColor(255, 255, 255)  # White text for colored backgrounds
         return None
