@@ -229,7 +229,7 @@ class CacheDB:
         satellite: Any,
         interval_minutes: int,
         base_dir: Path,
-        options: dict[str, Any] | None = None,
+        _options: dict[str, Any] | None = None,
     ) -> dict[str, Any] | None:
         """Get cached scan results.
 
@@ -442,8 +442,8 @@ class CacheDB:
         self,
         satellite: Any,
         missing_timestamps: list[datetime],
-        remote_files: list[str],
-        local_files: set[str],
+        _remote_files: list[str],
+        _local_files: set[str],
     ) -> None:
         """Set cache data for a satellite (ThreadLocalCacheDB compatibility)."""
         # For now, just store the missing timestamps

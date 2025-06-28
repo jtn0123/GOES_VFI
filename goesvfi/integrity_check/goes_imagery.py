@@ -424,7 +424,7 @@ class GOESImageryDownloader:
         self,
         channel: ChannelType,
         product_type: ProductType,
-        date: datetime | None = None,
+        _date: datetime | None = None,
         size: str = "1200x1200",
     ) -> Optional["DownloadResult"]:
         """Download a pre-colorized image from the CDN.
@@ -630,8 +630,8 @@ class GOESImageProcessor:
 
     def process_raw_data(
         self,
-        file_path: Path,
-        channel: ChannelType | None = None,
+        _file_path: Path,
+        _channel: ChannelType | None = None,
         _output_format: str = "png",
     ) -> Path | None:
         """Process raw GOES data file.

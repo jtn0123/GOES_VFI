@@ -68,9 +68,9 @@ class HTTPRemoteStore(RemoteStore):
     def download_file(
         self,
         url: str,
-        local_path: Path,
-        progress_callback: ProgressCallback | None = None,
-        should_cancel: CancelCallback | None = None,
+        _local_path: Path,
+        _progress_callback: ProgressCallback | None = None,
+        _should_cancel: CancelCallback | None = None,
     ) -> bool:
         """Download a file from the remote store.
 
