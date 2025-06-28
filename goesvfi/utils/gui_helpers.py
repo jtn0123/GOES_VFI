@@ -40,6 +40,14 @@ from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
 # Set up logging
 logger = logging.getLogger(__name__)
 
+# UI constants
+MINIMUM_CROP_DIMENSION = 10  # Minimum width/height for crop rectangle
+CROP_RECT_COMPONENTS = 4  # Number of components in crop rectangle tuple
+MINIMUM_SIZE_INFO_WIDTH = 100  # Minimum width to show size info
+MINIMUM_SIZE_INFO_HEIGHT = 50  # Minimum height to show size info
+SIZE_INFO_FONT_SIZE = 12  # Font size for size info text
+ZOOM_EPSILON = 0.001  # Minimum zoom change to trigger update
+
 
 class RifeCapabilityManager:
     """Manages RIFE CLI capabilities and updates UI elements accordingly.
@@ -383,7 +391,7 @@ class CropLabel(QLabel):
             new_rect.setBottom(pos.y())
 
         # Ensure minimum size
-        if new_rect.width() > 10 and new_rect.height() > 10:
+        if new_rect.width() > MINIMUM_CROP_DIMENSION and new_rect.height() > MINIMUM_CROP_DIMENSION:
             # Apply aspect ratio constraint if locked
             if self._should_constrain_aspect():
                 self._apply_aspect_ratio_constraint(new_rect, self.active_handle)
@@ -611,10 +619,10 @@ class CropLabel(QLabel):
                 )
 
             # Draw size info in the selection if it's large enough
-            if rect.width() > 100 and rect.height() > 50:
+            if rect.width() > MINIMUM_SIZE_INFO_WIDTH and rect.height() > MINIMUM_SIZE_INFO_HEIGHT:
                 size_text = f"{rect.width()} × {rect.height()}"
                 font = painter.font()
-                font.setPointSize(12)
+                font.setPointSize(SIZE_INFO_FONT_SIZE)
                 font.setBold(True)
                 painter.setFont(font)
 
@@ -1531,7 +1539,7 @@ class ImageViewerDialog(QDialog):
         new_zoom_factor = max(self.min_zoom_factor, min(new_zoom_factor, self.max_zoom_factor))
 
         # Only update if zoom actually changed
-        if abs(new_zoom_factor - self.zoom_factor) > 0.001:
+        if abs(new_zoom_factor - self.zoom_factor) > ZOOM_EPSILON:
             self.zoom_factor = new_zoom_factor
 
             # Update zoom label
