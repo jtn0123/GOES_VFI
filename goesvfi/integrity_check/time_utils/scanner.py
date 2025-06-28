@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 from goesvfi.utils import log
 
@@ -22,8 +21,7 @@ class DirectoryScanner:
         start_time: datetime | None = None,
         end_time: datetime | None = None,
     ) -> list[datetime]:
-        """
-        Scan a directory for files matching the timestamp pattern.
+        """Scan a directory for files matching the timestamp pattern.
         Also checks directory names for timestamps in format YYYY-MM-DD_HH-MM-SS.
 
         Args:
@@ -45,66 +43,85 @@ class DirectoryScanner:
             LOGGER.error("Unknown satellite pattern: %s", pattern)
             return []
 
-        # Find all PNG files
-        png_files = list(directory.glob("**/*.png"))
-        LOGGER.info("Found %s PNG files in %s", len(png_files), directory)
-
-        # Extract timestamps from filenames
-        timestamps = []
-        extractor = TimestampExtractor()
-
-        for file_path in png_files:
-            try:
-                # First try to extract from filename
-                timestamp = extractor.extract_timestamp(file_path.name, pattern)
-                if not timestamp:
-                    # If that fails, try to extract from parent directory name
-                    parent_dir = file_path.parent.name
-                    extracted_ts = extractor.extract_timestamp_from_directory_name(parent_dir)
-                    if extracted_ts is not None:
-                        timestamp = extracted_ts
-
-                if timestamp:
-                    # Apply time range filtering if provided
-                    if start_time and timestamp < start_time:
-                        continue
-                    if end_time and timestamp > end_time:
-                        continue
-                    timestamps.append(timestamp)
-            except ValueError:
-                # Skip files that don't match the pattern
-                continue
-
-        # If we didn't find any timestamps in files, look at subdirectories themselves
+        # Extract timestamps from PNG files
+        timestamps = Scanner._extract_timestamps_from_files(directory, pattern, start_time, end_time)
+        
+        # If no timestamps found, try subdirectories
         if not timestamps:
-            # Find all subdirectories that might contain timestamp information
-            subdirs = [p for p in directory.iterdir() if p.is_dir()]
-            for subdir in subdirs:
-                # Initialize timestamp as None
-                extracted_ts = extractor.extract_timestamp_from_directory_name(subdir.name)
-                # Skip iterations where we can't extract a timestamp
-                if extracted_ts is None:
-                    continue
-
-                # Now timestamp is guaranteed to be a valid datetime
-                timestamp = extracted_ts
-                if timestamp:
-                    # Apply time range filtering if provided
-                    if start_time and timestamp < start_time:
-                        continue
-                    if end_time and timestamp > end_time:
-                        continue
-                    timestamps.append(timestamp)
+            timestamps = Scanner._extract_timestamps_from_subdirs(directory, start_time, end_time)
 
         LOGGER.info("Found %s timestamps in %s", len(timestamps), directory)
         return sorted(timestamps)
 
     @staticmethod
+    def _extract_timestamps_from_files(
+        directory: Path,
+        pattern: SatellitePattern,
+        start_time: datetime | None,
+        end_time: datetime | None,
+    ) -> list[datetime]:
+        """Extract timestamps from PNG files in directory."""
+        png_files = list(directory.glob("**/*.png"))
+        LOGGER.info("Found %s PNG files in %s", len(png_files), directory)
+        
+        timestamps = []
+        extractor = TimestampExtractor()
+
+        for file_path in png_files:
+            timestamp = Scanner._extract_timestamp_from_file(file_path, pattern, extractor)
+            if timestamp and Scanner._is_in_time_range(timestamp, start_time, end_time):
+                timestamps.append(timestamp)
+                
+        return timestamps
+    
+    @staticmethod
+    def _extract_timestamp_from_file(
+        file_path: Path, pattern: SatellitePattern, extractor: TimestampExtractor
+    ) -> datetime | None:
+        """Extract timestamp from a single file or its parent directory."""
+        try:
+            # First try to extract from filename
+            timestamp = extractor.extract_timestamp(file_path.name, pattern)
+            if not timestamp:
+                # If that fails, try parent directory name
+                parent_dir = file_path.parent.name
+                timestamp = extractor.extract_timestamp_from_directory_name(parent_dir)
+            return timestamp
+        except ValueError:
+            return None
+    
+    @staticmethod
+    def _extract_timestamps_from_subdirs(
+        directory: Path, start_time: datetime | None, end_time: datetime | None
+    ) -> list[datetime]:
+        """Extract timestamps from subdirectory names."""
+        timestamps = []
+        extractor = TimestampExtractor()
+        
+        subdirs = [p for p in directory.iterdir() if p.is_dir()]
+        for subdir in subdirs:
+            timestamp = extractor.extract_timestamp_from_directory_name(subdir.name)
+            if timestamp and Scanner._is_in_time_range(timestamp, start_time, end_time):
+                timestamps.append(timestamp)
+                
+        return timestamps
+    
+    @staticmethod
+    def _is_in_time_range(
+        timestamp: datetime, start_time: datetime | None, end_time: datetime | None
+    ) -> bool:
+        """Check if timestamp is within the specified time range."""
+        if start_time and timestamp < start_time:
+            return False
+        if end_time and timestamp > end_time:
+            return False
+        return True
+
+    @staticmethod
     def find_date_range_in_directory(
         directory: Path, pattern: SatellitePattern
     ) -> tuple[datetime | None, datetime | None]:
-        """
-        Find the earliest and latest timestamps in the directory.
+        """Find the earliest and latest timestamps in the directory.
 
         Args:
             directory: The directory to scan

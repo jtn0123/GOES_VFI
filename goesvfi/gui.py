@@ -393,7 +393,7 @@ class MainWindow(QWidget):
             if not success:
                 LOGGER.error("Failed to load preview images")
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error updating previews")
 
     def _handle_processing(self, args: dict[str, Any]) -> None:
@@ -436,115 +436,68 @@ class MainWindow(QWidget):
         )
 
         try:
-            # Update first frame label
-            if hasattr(self.main_tab, "first_frame_label") and not first_pixmap.isNull():
-                # Use a reasonable minimum size for preview scaling instead of the actual label size
-                # which might be very small at startup
-                from PyQt6.QtCore import QSize
-
-                target_size = QSize(200, 200)  # Minimum preview size
-                current_size = self.main_tab.first_frame_label.size()
-                if current_size.width() > 200 and current_size.height() > 200:
-                    target_size = current_size
-
-                # Scale pixmap to fit target size while maintaining aspect ratio
-                scaled_first_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(
-                    first_pixmap, target_size
-                )
-                self.main_tab.first_frame_label.setPixmap(scaled_first_pixmap)
-
-                # Set file_path attribute for display
-                if self.in_dir and self.in_dir.exists():
-                    image_files = sorted([
-                        f
-                        for f in self.in_dir.iterdir()
-                        if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-                    ])
-                    if image_files:
-                        self.main_tab.first_frame_label.file_path = str(image_files[0])
-                # Store the full resolution image data for preview
-                first_frame_data, _, _ = self.main_view_model.preview_manager.get_current_frame_data()
-                if first_frame_data and first_frame_data.image_data is not None:
-                    # Convert numpy array to QImage using PreviewManager's method
-                    full_res_pixmap = self.main_view_model.preview_manager._numpy_to_qpixmap(
-                        first_frame_data.image_data
-                    )
-                    if not full_res_pixmap.isNull():
-                        self.main_tab.first_frame_label.processed_image = full_res_pixmap.toImage()
-                        LOGGER.debug(
-                            "Set processed_image on first_frame_label: %s",
-                            self.main_tab.first_frame_label.processed_image,
-                        )
-                else:
-                    LOGGER.warning("No first_frame_data available from preview manager")
-
-            # Update middle frame label
-            if hasattr(self.main_tab, "middle_frame_label") and not middle_pixmap.isNull():
-                # Use a reasonable minimum size for preview scaling
-                target_size = QSize(200, 200)  # Minimum preview size
-                current_size = self.main_tab.middle_frame_label.size()
-                if current_size.width() > 200 and current_size.height() > 200:
-                    target_size = current_size
-
-                # Scale pixmap to fit target size while maintaining aspect ratio
-                scaled_middle_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(
-                    middle_pixmap, target_size
-                )
-                self.main_tab.middle_frame_label.setPixmap(scaled_middle_pixmap)
-
-                # Set file_path attribute for display
-                if self.in_dir and self.in_dir.exists():
-                    image_files = sorted([
-                        f
-                        for f in self.in_dir.iterdir()
-                        if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-                    ])
-                    if len(image_files) >= 3:
-                        middle_index = len(image_files) // 2
-                        self.main_tab.middle_frame_label.file_path = str(image_files[middle_index])
-                # Store the full resolution image data for preview
-                _, middle_frame_data, _ = self.main_view_model.preview_manager.get_current_frame_data()
-                if middle_frame_data and middle_frame_data.image_data is not None:
-                    # Convert numpy array to QImage using PreviewManager's method
-                    full_res_pixmap = self.main_view_model.preview_manager._numpy_to_qpixmap(
-                        middle_frame_data.image_data
-                    )
-                    if not full_res_pixmap.isNull():
-                        self.main_tab.middle_frame_label.processed_image = full_res_pixmap.toImage()
-
-            # Update last frame label
-            if hasattr(self.main_tab, "last_frame_label") and not last_pixmap.isNull():
-                # Use a reasonable minimum size for preview scaling
-                target_size = QSize(200, 200)  # Minimum preview size
-                current_size = self.main_tab.last_frame_label.size()
-                if current_size.width() > 200 and current_size.height() > 200:
-                    target_size = current_size
-
-                # Scale pixmap to fit target size while maintaining aspect ratio
-                scaled_last_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(last_pixmap, target_size)
-                self.main_tab.last_frame_label.setPixmap(scaled_last_pixmap)
-
-                # Set file_path attribute for display
-                if self.in_dir and self.in_dir.exists():
-                    image_files = sorted([
-                        f
-                        for f in self.in_dir.iterdir()
-                        if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
-                    ])
-                    if image_files:
-                        self.main_tab.last_frame_label.file_path = str(image_files[-1])
-                # Store the full resolution image data for preview
-                _, _, last_frame_data = self.main_view_model.preview_manager.get_current_frame_data()
-                if last_frame_data and last_frame_data.image_data is not None:
-                    # Convert numpy array to QImage using PreviewManager's method
-                    full_res_pixmap = self.main_view_model.preview_manager._numpy_to_qpixmap(last_frame_data.image_data)
-                    if not full_res_pixmap.isNull():
-                        self.main_tab.last_frame_label.processed_image = full_res_pixmap.toImage()
-
+            # Get image files once for all frames
+            image_files = self._get_image_files_from_input_dir()
+            frame_data = self.main_view_model.preview_manager.get_current_frame_data()
+            
+            # Update each frame label
+            self._update_frame_label("first_frame_label", first_pixmap, image_files, frame_data[0], 0)
+            self._update_frame_label("middle_frame_label", middle_pixmap, image_files, frame_data[1], len(image_files) // 2 if image_files else 0)
+            self._update_frame_label("last_frame_label", last_pixmap, image_files, frame_data[2], -1)
+            
             LOGGER.debug("Preview images updated successfully")
 
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Error updating preview labels")
+            
+    def _get_image_files_from_input_dir(self) -> list[Path]:
+        """Get sorted list of image files from input directory."""
+        if not (self.in_dir and self.in_dir.exists()):
+            return []
+            
+        return sorted([
+            f for f in self.in_dir.iterdir()
+            if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+        ])
+    
+    def _update_frame_label(self, label_name: str, pixmap: QPixmap, image_files: list[Path], frame_data, file_index: int) -> None:
+        """Update a single frame label with pixmap and metadata."""
+        if not (hasattr(self.main_tab, label_name) and not pixmap.isNull()):
+            return
+            
+        label = getattr(self.main_tab, label_name)
+        
+        # Scale and set pixmap
+        target_size = self._get_target_size_for_label(label)
+        scaled_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(pixmap, target_size)
+        label.setPixmap(scaled_pixmap)
+        
+        # Set file path
+        if image_files:
+            if file_index == -1:  # Last file
+                label.file_path = str(image_files[-1])
+            elif file_index < len(image_files):
+                label.file_path = str(image_files[file_index])
+                
+        # Set processed image data
+        if frame_data and frame_data.image_data is not None:
+            full_res_pixmap = self.main_view_model.preview_manager._numpy_to_qpixmap(frame_data.image_data)
+            if not full_res_pixmap.isNull():
+                label.processed_image = full_res_pixmap.toImage()
+                if label_name == "first_frame_label":
+                    LOGGER.debug("Set processed_image on first_frame_label: %s", label.processed_image)
+        elif label_name == "first_frame_label":
+            LOGGER.warning("No first_frame_data available from preview manager")
+    
+    def _get_target_size_for_label(self, label) -> 'QSize':
+        """Get appropriate target size for scaling a label's pixmap."""
+        from PyQt6.QtCore import QSize
+        
+        target_size = QSize(200, 200)  # Minimum preview size
+        current_size = label.size()
+        if current_size.width() > 200 and current_size.height() > 200:
+            target_size = current_size
+        return target_size
 
     def _on_preview_error(self, error_message: str) -> None:
         """Handle preview loading errors.
@@ -608,7 +561,7 @@ class MainWindow(QWidget):
                 LOGGER.info("Theme changed to: %s", theme_name)
             else:
                 LOGGER.error("No QApplication instance found for theme change")
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to change theme")
 
     def _on_settings_changed(self) -> None:
@@ -620,5 +573,5 @@ class MainWindow(QWidget):
                 # Save settings if auto-save is enabled
                 if current_settings.get("app", {}).get("auto_save", True):
                     self.saveSettings()
-        except Exception as e:
+        except Exception:
             LOGGER.exception("Failed to handle settings change")
