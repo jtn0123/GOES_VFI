@@ -12,6 +12,21 @@ from typing import Any
 DEFAULT_TIME_TOLERANCE_SECONDS = 1.0  # Tolerance for "last modified" comparison, in seconds
 DEFAULT_BUFFER_SIZE = 1048576  # 1MB buffer for file copying
 
+# Date/time validation constants
+MIN_MONTH = 1
+MAX_MONTH = 12
+MIN_DAY = 1
+MAX_DAY = 31
+MIN_HOUR = 0
+MAX_HOUR = 23
+MIN_MINUTE = 0
+MAX_MINUTE = 59
+MIN_SECOND = 0
+MAX_SECOND = 59
+
+# Minimum length for datetime string (YYYYMMDDHHMMSS)
+MIN_DATETIME_STRING_LENGTH = 14
+
 
 class DuplicateMode(Enum):
     OVERWRITE = auto()
@@ -130,7 +145,11 @@ class FileSorter:
 
             # Validate components
             if not (
-                1 <= month <= 12 and 1 <= day <= 31 and 0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59
+                MIN_MONTH <= month <= MAX_MONTH
+                and MIN_DAY <= day <= MAX_DAY
+                and MIN_HOUR <= hour <= MAX_HOUR
+                and MIN_MINUTE <= minute <= MAX_MINUTE
+                and MIN_SECOND <= second <= MAX_SECOND
             ):
                 return False
 
@@ -174,7 +193,7 @@ class FileSorter:
 
         # Remove '-' and '_' from folder name: e.g., 2023-05-01_07-32-20 -> 20230501T073220
         folder_datetime_raw = folder.name.replace("-", "").replace("_", "")
-        if len(folder_datetime_raw) < 14:
+        if len(folder_datetime_raw) < MIN_DATETIME_STRING_LENGTH:
             # Just a safety check, skip if not long enough
             return None
 

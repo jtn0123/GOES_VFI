@@ -9,6 +9,24 @@ from pathlib import Path
 import re
 from typing import Any
 
+# Date/time validation constants
+MIN_MONTH = 1
+MAX_MONTH = 12
+MIN_DAY = 1
+MAX_DAY = 31
+MIN_HOUR = 0
+MAX_HOUR = 23
+MIN_MINUTE = 0
+MAX_MINUTE = 59
+MIN_SECOND = 0
+MAX_SECOND = 59
+
+# Default buffer size (1 MB)
+DEFAULT_BUFFER_SIZE = 1048576
+
+# Minimum length for datetime string (YYYYMMDDHHMMSS)
+MIN_DATETIME_STRING_LENGTH = 14
+
 
 class DuplicateMode(Enum):
     OVERWRITE = auto()
@@ -35,7 +53,7 @@ class FileSorter:
         source_path: Path,
         dest_path: Path,
         source_mtime_utc: float,
-        buffer_size: int = 1048576,
+        buffer_size: int = DEFAULT_BUFFER_SIZE,
     ) -> None:
         """Copies a file in chunks (buffered) and preserves its last modified time (UTC).
         :param source_path: The full path to the source file.
@@ -150,7 +168,11 @@ class FileSorter:
 
             # Validate components
             if not (
-                1 <= month <= 12 and 1 <= day <= 31 and 0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59
+                MIN_MONTH <= month <= MAX_MONTH
+                and MIN_DAY <= day <= MAX_DAY
+                and MIN_HOUR <= hour <= MAX_HOUR
+                and MIN_MINUTE <= minute <= MAX_MINUTE
+                and MIN_SECOND <= second <= MAX_SECOND
             ):
                 return False
 
@@ -165,7 +187,7 @@ class FileSorter:
         """Extract datetime string from folder name."""
         # Remove '-' and '_' from folder name: e.g., 2023-05-01_07-32-20 -> 20230501T073220
         folder_datetime_raw = folder_name.replace("-", "").replace("_", "")
-        if len(folder_datetime_raw) < 14:
+        if len(folder_datetime_raw) < MIN_DATETIME_STRING_LENGTH:
             return None
 
         # Insert 'T' between the date part (8 digits) and time part (6 digits)
