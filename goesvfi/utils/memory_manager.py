@@ -65,7 +65,8 @@ class MemoryMonitor:
         self._monitor_thread: threading.Thread | None = None
         self._callbacks: list[Callable[[MemoryStats], None]] = []
 
-    def get_memory_stats(self) -> MemoryStats:
+    @staticmethod
+    def get_memory_stats() -> MemoryStats:
         """Get current memory statistics.
 
         Returns:
@@ -136,7 +137,7 @@ class MemoryMonitor:
 
         while self._monitoring:
             try:
-                stats = self.get_memory_stats()
+                stats = MemoryMonitor.get_memory_stats()
 
                 # Check thresholds
                 current_time = time.time()
@@ -181,7 +182,8 @@ class MemoryOptimizer:
         self._last_gc_time = 0.0
         self._gc_interval = 30.0  # Minimum seconds between GC runs
 
-    def optimize_array_dtype(self, array: np.ndarray, preserve_range: bool = True) -> np.ndarray:
+    @staticmethod
+    def optimize_array_dtype(array: np.ndarray, preserve_range: bool = True) -> np.ndarray:
         """Optimize numpy array dtype to use less memory.
 
         Args:
@@ -223,7 +225,8 @@ class MemoryOptimizer:
 
         return array
 
-    def chunk_large_array(self, array: np.ndarray, max_chunk_mb: int = 100) -> list[np.ndarray]:
+    @staticmethod
+    def chunk_large_array(array: np.ndarray, max_chunk_mb: int = 100) -> list[np.ndarray]:
         """Split large array into chunks for processing.
 
         Args:
@@ -286,7 +289,7 @@ class MemoryOptimizer:
             force: Force immediate GC regardless of thresholds
         """
         current_time = time.time()
-        stats = self.monitor.get_memory_stats()
+        stats = MemoryMonitor.get_memory_stats()
 
         should_gc = (
             force or stats.percent_used > self._gc_threshold or (current_time - self._last_gc_time) > self._gc_interval
@@ -309,7 +312,7 @@ class MemoryOptimizer:
         Returns:
             Tuple of (has_memory, message)
         """
-        stats = self.monitor.get_memory_stats()
+        stats = MemoryMonitor.get_memory_stats()
 
         if stats.available_mb < required_mb:
             return False, (f"Insufficient memory: {stats.available_mb}MB available, {required_mb}MB required")
@@ -356,7 +359,7 @@ def log_memory_usage(context: str = "") -> None:
         context: Optional context string
     """
     monitor = MemoryMonitor()
-    stats = monitor.get_memory_stats()
+    stats = MemoryMonitor.get_memory_stats()
 
     if context:
         LOGGER.info(
@@ -449,7 +452,8 @@ class StreamingProcessor:
 
         return np.concatenate(results)
 
-    def estimate_memory_usage(self, array_shape: tuple, dtype: np.dtype) -> MemoryStats:
+    @staticmethod
+    def estimate_memory_usage(array_shape: tuple, dtype: np.dtype) -> MemoryStats:
         """Estimate memory usage for processing an array.
 
         Args:
@@ -466,7 +470,7 @@ class StreamingProcessor:
 
         # Get current memory stats
         monitor = get_memory_monitor()
-        current_stats = monitor.get_memory_stats()
+        current_stats = MemoryMonitor.get_memory_stats()
 
         # Estimate if processing would fit in memory
         estimated_usage_mb = current_stats.used_mb + array_size_mb
