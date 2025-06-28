@@ -26,7 +26,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main() -> None:
     """Main function."""
     parser = argparse.ArgumentParser(description="Test RIFE CLI capability detection")
     parser.add_argument(
@@ -44,9 +44,9 @@ def main():
 
     try:
         # Find the RIFE executable
-        logger.info(f"Finding RIFE executable for model key: {args.model_key}")
+        logger.info("Finding RIFE executable for model key: %s", args.model_key)
         exe_path = find_rife_executable(args.model_key)
-        logger.info(f"Found RIFE executable: {exe_path}")
+        logger.info("Found RIFE executable: %s", exe_path)
 
         # Create a capability detector
         logger.info("Analyzing RIFE capabilities...")
@@ -110,7 +110,7 @@ def main():
         print("\n" + "=" * 60)
 
     except Exception as e:
-        logger.error(f"Error: {e}")
+        logger.exception("Error: %s", e)
         sys.exit(1)
 
 

@@ -477,7 +477,7 @@ class SanchezProcessMonitor:
                 elapsed = time.time() - self.start_time
 
                 LOGGER.info(
-                    f"Sanchez completed successfully in {elapsed:.1f}s. Output: {output_size / 1024 / 1024:.1f}MB"
+                    "Sanchez completed successfully in %.1fs. Output: %.1fMB", elapsed, output_size / 1024 / 1024
                 )
 
                 self._report_progress("Complete", 1.0)

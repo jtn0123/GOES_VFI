@@ -6,9 +6,9 @@ This script validates the CI/CD setup to ensure all components are properly conf
 """
 
 import json
-import sys
 from pathlib import Path
-from typing import Any, Dict, List
+import sys
+from typing import Any
 
 import yaml
 
@@ -21,18 +21,17 @@ LOGGER = log.get_logger(__name__)
 def simple_yaml_check(file_path: Path) -> bool:
     """Simple YAML syntax check without PyYAML."""
     try:
-        with open(file_path, "r") as f:
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
         # Basic YAML syntax checks
         lines = content.split("\n")
-        for _, line in enumerate(lines):
+        for line in lines:
             stripped = line.strip()
             if stripped and not stripped.startswith("#"):
                 # Check for basic YAML structure
-                if ":" not in line and not stripped.startswith("-"):
-                    if not stripped.endswith(":"):
-                        continue  # Allow multi-line values
+                if ":" not in line and not stripped.startswith("-") and not stripped.endswith(":"):
+                    continue  # Allow multi-line values
         return True
     except Exception:
         return False
@@ -43,8 +42,8 @@ class CICDValidator:
 
     def __init__(self, repo_root: Path):
         self.repo_root = repo_root
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
 
     def validate_all(self) -> bool:
         """Run all validation checks."""
@@ -90,7 +89,7 @@ class CICDValidator:
                 continue
 
             try:
-                with open(workflow_path, "r") as f:
+                with open(workflow_path, encoding="utf-8") as f:
                     workflow_config = yaml.safe_load(f)
 
                 # Validate basic structure
@@ -106,14 +105,14 @@ class CICDValidator:
                 # Validate specific workflow requirements
                 self._validate_specific_workflow(workflow_file, workflow_config)
 
-                LOGGER.info(f"✅ Workflow {workflow_file} is valid")
+                LOGGER.info("✅ Workflow %s is valid", workflow_file)
 
             except yaml.YAMLError as e:
                 self.errors.append(f"Invalid YAML in {workflow_file}: {e}")
             except Exception as e:
                 self.errors.append(f"Error reading {workflow_file}: {e}")
 
-    def _validate_specific_workflow(self, filename: str, config: Dict[str, Any]) -> None:
+    def _validate_specific_workflow(self, filename: str, config: dict[str, Any]) -> None:
         """Validate specific workflow requirements."""
         if filename == "ci.yml":
             # CI workflow should have test and lint jobs
@@ -156,7 +155,7 @@ class CICDValidator:
     def _validate_dockerfile(self, dockerfile_path: Path) -> None:
         """Validate Dockerfile content."""
         try:
-            with open(dockerfile_path, "r") as f:
+            with open(dockerfile_path, encoding="utf-8") as f:
                 content = f.read()
 
             # Check for important instructions
@@ -183,7 +182,7 @@ class CICDValidator:
     def _validate_docker_compose(self, compose_path: Path) -> None:
         """Validate docker-compose configuration."""
         try:
-            with open(compose_path, "r") as f:
+            with open(compose_path, encoding="utf-8") as f:
                 compose_config = yaml.safe_load(f)
 
             # Check version
@@ -198,7 +197,7 @@ class CICDValidator:
             services = compose_config["services"]
 
             # Check for main application service
-            main_services = [name for name in services.keys() if "goes" in name.lower()]
+            main_services = [name for name in services if "goes" in name.lower()]
             if not main_services:
                 self.warnings.append("No main application service found in docker-compose.yml")
 
@@ -240,7 +239,7 @@ class CICDValidator:
     def _validate_prometheus_config(self, config_path: Path) -> None:
         """Validate Prometheus configuration."""
         try:
-            with open(config_path, "r") as f:
+            with open(config_path, encoding="utf-8") as f:
                 config = yaml.safe_load(f)
 
             # Check required sections
@@ -257,7 +256,7 @@ class CICDValidator:
     def _validate_grafana_dashboard(self, dashboard_path: Path) -> None:
         """Validate Grafana dashboard JSON."""
         try:
-            with open(dashboard_path, "r") as f:
+            with open(dashboard_path, encoding="utf-8") as f:
                 dashboard = json.load(f)
 
             # Check basic structure
@@ -272,7 +271,7 @@ class CICDValidator:
                 if field not in dashboard_config:
                     self.warnings.append(f"Dashboard {dashboard_path.name} missing {field}")
 
-            LOGGER.info(f"✅ Dashboard {dashboard_path.name} is valid")
+            LOGGER.info("✅ Dashboard %s is valid", dashboard_path.name)
 
         except Exception as e:
             self.errors.append(f"Error validating dashboard {dashboard_path.name}: {e}")
@@ -309,7 +308,7 @@ class CICDValidator:
         for file_name in required_files:
             file_path = self.repo_root / file_name
             if not file_path.exists():
-                if file_name in ["LICENSE", "CHANGELOG.md"]:
+                if file_name in {"LICENSE", "CHANGELOG.md"}:
                     self.warnings.append(f"Recommended file missing: {file_name}")
                 else:
                     self.errors.append(f"Required file missing: {file_name}")
@@ -342,7 +341,7 @@ class CICDValidator:
         print("\n" + "=" * 60)
 
 
-def main():
+def main() -> int:
     """Main function."""
     print("🔧 GOES_VFI CI/CD Configuration Validator")
     print("=" * 50)
@@ -355,9 +354,8 @@ def main():
     if success:
         print("\n🎉 CI/CD setup is ready for use!")
         return 0
-    else:
-        print("\n💡 Please fix the errors above before using CI/CD")
-        return 1
+    print("\n💡 Please fix the errors above before using CI/CD")
+    return 1
 
 
 if __name__ == "__main__":
