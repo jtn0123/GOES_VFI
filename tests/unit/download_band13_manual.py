@@ -75,7 +75,7 @@ async def list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10):
             # Sort by timestamp
             band13_objects = sorted(band13_objects)
 
-            LOGGER.info(f"Found {len(band13_objects)} Band 13 objects out of {len(all_objects)} total")
+            LOGGER.info("Found %s Band 13 objects out of %s total", len(band13_objects), len(all_objects))
 
             # Return the first 'limit' Band 13 objects
             return band13_objects[:limit]
@@ -97,7 +97,7 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
     Returns:
         Path to downloaded file if successful, None otherwise
     """
-    LOGGER.info(f"Testing download of Band 13 {product_type} for {satellite_pattern.name} at {timestamp.isoformat()}")
+    LOGGER.info("Testing download of Band 13 %s for %s at %s", product_type, satellite_pattern.name, timestamp.isoformat())
 
     # Create S3 store
     s3_store = S3Store(timeout=60)
@@ -114,7 +114,7 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
             LOGGER.warning("No valid scan times found for %s", product_type)
             return None
 
-        LOGGER.info(f"Found {len(nearest_times)} nearest scan times: {[t.isoformat() for t in nearest_times]}")
+        LOGGER.info("Found %s nearest scan times: %s", len(nearest_times), [t.isoformat() for t in nearest_times])
 
         # Convert date to DOY format
         year = timestamp.year
@@ -194,9 +194,9 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
                 if dest_path.exists():
                     pass
                     file_size = dest_path.stat().st_size
-                    LOGGER.info(f"✓ Successfully downloaded to {dest_path} ({file_size} bytes)")
+                    LOGGER.info("✓ Successfully downloaded to %s (%s bytes)", dest_path, file_size)
                     return dest_path
-                LOGGER.error(f"✗ Download failed: File doesn't exist at {dest_path}")
+                LOGGER.error("✗ Download failed: File doesn't exist at %s", dest_path)
                 return None
             else:
                 LOGGER.error("✗ Failed to extract timestamp from filename: %s", test_key)
@@ -269,10 +269,10 @@ async def download_fixed_list():
                 if dest_path.exists():
                     pass
                     file_size = dest_path.stat().st_size
-                    LOGGER.info(f"✓ Successfully downloaded to {dest_path} ({file_size} bytes)")
+                    LOGGER.info("✓ Successfully downloaded to %s (%s bytes)", dest_path, file_size)
                     downloaded_files.append(dest_path)
                 else:
-                    LOGGER.error(f"✗ Download failed: File doesn't exist at {dest_path}")
+                    LOGGER.error("✗ Download failed: File doesn't exist at %s", dest_path)
         except Exception as e:
             pass
             LOGGER.error("✗ Error downloading %s: %s", key, e)
@@ -325,8 +325,8 @@ async def main():
         failed = [p for p, s in products.items() if not s]
 
         LOGGER.info("%s: %s/%s successful", satellite, len(successful), len(products))
-        LOGGER.info(f"  Successful: {', '.join(successful) if successful else 'None'}")
-        LOGGER.info(f"  Failed: {', '.join(failed) if failed else 'None'}")
+        LOGGER.info("  Successful: %s", ', '.join(successful) if successful else 'None')
+        LOGGER.info("  Failed: %s", ', '.join(failed) if failed else 'None')
 
     # List all downloaded files
     LOGGER.info("\n=== DOWNLOADED FILES ===")

@@ -55,7 +55,7 @@ def download_file_from_s3(bucket: str, key: str, local_path: Path) -> Path:
     s3_client.download_file(bucket, key, str(local_path))
 
     if local_path.exists():
-        logger.info(f"Download successful: {local_path} ({local_path.stat().st_size} bytes)")
+        logger.info("Download successful: %s (%s bytes)", local_path, local_path.stat().st_size)
         return local_path
     raise FileNotFoundError(f"Downloaded file not found: {local_path}")
 
@@ -71,7 +71,7 @@ def extract_channel_from_netcdf(netcdf_path: Path, channel_var: str = "Rad") -> 
     Returns:
         NumPy array containing the channel data
     """
-    logger.info(f"Extracting channel '{channel_var}' from {netcdf_path}")
+    logger.info("Extracting channel '%s' from %s", channel_var, netcdf_path)
 
     with xr.open_dataset(netcdf_path) as ds:
         # Log available variables for debugging
@@ -319,7 +319,8 @@ def process_channel_data(ds, channel_num, temp_dir):
         robust_max = np.nanpercentile(data, 99)
 
         logger.info(
-            f"Channel {channel_num}: Min={min_val}, Max={max_val}, Robust Min={robust_min}, Robust Max={robust_max}"
+            "Channel %s: Min=%s, Max=%s, Robust Min=%s, Robust Max=%s",
+            channel_num, min_val, max_val, robust_min, robust_max
         )
 
         # Process with both regular and robust ranges
@@ -427,7 +428,7 @@ def test_download_and_process_channels():
                     matching_files.sort()
                     return matching_files[0]
 
-            logger.warning(f"No files found for channel {channel_num} in {general_prefix}")
+            logger.warning("No files found for channel %s in %s", channel_num, general_prefix)
             return None
 
         except Exception as e:
@@ -444,7 +445,7 @@ def test_download_and_process_channels():
             channel_tests.append((file_key, channel_num))
             logger.info("Found file for channel %s: %s", channel_num, file_key)
         else:
-            logger.warning(f"Could not find file for channel {channel_num}, will be skipped")
+            logger.warning("Could not find file for channel %s, will be skipped", channel_num)
 
     # If we couldn't find any files, use the known channel 1 file as fallback
     if not channel_tests:
@@ -495,7 +496,7 @@ def test_download_and_process_channels():
 
                         # Double-check against expected channel
                         if actual_channel != expected_channel:
-                            logger.warning(f"Expected channel {expected_channel} but found {actual_channel}")
+                            logger.warning("Expected channel %s but found %s", expected_channel, actual_channel)
 
                     # Step 3: Process the channel data
                     logger.info("Processing data for channel %s", channel_num)

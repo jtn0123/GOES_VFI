@@ -67,7 +67,7 @@ def test_basic_call(input_path, res_km=4):
         "-r",
         str(res_km),
     ]
-    logger.info(f"Running basic test: {' '.join(cmd)}")
+    logger.info("Running basic test: %s", ' '.join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
@@ -120,7 +120,7 @@ def test_with_verbose(input_path, res_km=4):
         str(res_km),
         "--verbose",
     ]
-    logger.info(f"Running verbose test: {' '.join(cmd)}")
+    logger.info("Running verbose test: %s", ' '.join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
@@ -173,7 +173,7 @@ def test_with_v_flag(input_path, res_km=4):
         str(res_km),
         "-v",
     ]
-    logger.info(f"Running -v test: {' '.join(cmd)}")
+    logger.info("Running -v test: %s", ' '.join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
@@ -234,7 +234,7 @@ def test_with_renamed_input(input_path, res_km=4):
         "-r",
         str(res_km),
     ]
-    logger.info(f"Running renamed input test: {' '.join(cmd)}")
+    logger.info("Running renamed input test: %s", ' '.join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
@@ -280,7 +280,7 @@ def test_sanchez_help():
     binary_dir = bin_path.parent
 
     cmd = [str(bin_path), "--help"]
-    logger.info(f"Running help command: {' '.join(cmd)}")
+    logger.info("Running help command: %s", ' '.join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
@@ -342,10 +342,10 @@ def main():
 
     # Summary
     logger.info("\n=== Summary ===")
-    logger.info(f"Basic test: {'SUCCESS' if basic_result else 'FAILED'}")
-    logger.info(f"Verbose test: {'SUCCESS' if verbose_result else 'FAILED'}")
-    logger.info(f"v-flag test: {'SUCCESS' if v_flag_result else 'FAILED'}")
-    logger.info(f"Renamed input test: {'SUCCESS' if renamed_result else 'FAILED'}")
+    logger.info("Basic test: %s", 'SUCCESS' if basic_result else 'FAILED')
+    logger.info("Verbose test: %s", 'SUCCESS' if verbose_result else 'FAILED')
+    logger.info("v-flag test: %s", 'SUCCESS' if v_flag_result else 'FAILED')
+    logger.info("Renamed input test: %s", 'SUCCESS' if renamed_result else 'FAILED')
 
     return 0
 
