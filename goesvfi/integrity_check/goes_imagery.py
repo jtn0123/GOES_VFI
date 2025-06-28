@@ -263,8 +263,8 @@ class GOESImageryManager:
         # Create processor instance
         self.processor = GOESImageProcessor(output_dir=self.base_dir)
 
+    @staticmethod
     def process_image(
-        self,
         data: NDArray[np.float64],
         channel: ChannelType,
         product_type: ProductType,
@@ -289,8 +289,8 @@ class GOESImageryManager:
         size = output_size or (512, 512)
         return Image.new("RGB", size, color="gray")
 
+    @staticmethod
     def create_composite(
-        self,
         channels: list[ChannelType],
         _data_dict: dict[int, NDArray[np.float64]],
         _composite_type: str = "true_color",
@@ -385,8 +385,8 @@ class GOESImageryDownloader:
         self.s3_client = None  # Will be set externally or created as needed
         LOGGER.info("Initialized GOESImageryDownloader for %s", satellite)
 
+    @staticmethod
     def download(
-        self,
         channel: ChannelType,
         product_type: ProductType,
         timestamp: datetime,
@@ -406,7 +406,8 @@ class GOESImageryDownloader:
         LOGGER.warning("Stub: Download functionality not implemented")
         return None
 
-    def download_batch(self, _download_requests: list[dict[str, Any]], max_workers: int = 5) -> dict[str, Path | None]:
+    @staticmethod
+    def download_batch(_download_requests: list[dict[str, Any]], max_workers: int = 5) -> dict[str, Path | None]:
         """Download multiple files in parallel.
 
         Args:
@@ -461,8 +462,8 @@ class GOESImageryDownloader:
             LOGGER.exception("Failed to download precolorized image: %s", e)
             return None
 
+    @staticmethod
     def find_raw_data(
-        self,
         channel: ChannelType,
         product_type: ProductType,
         timestamp: datetime | None = None,
@@ -481,7 +482,8 @@ class GOESImageryDownloader:
         # Return a dummy key for testing
         return "test_file_key"
 
-    def download_raw_data(self, s3_key: str, output_path: Path | None = None) -> Path | None:
+    @staticmethod
+    def download_raw_data(s3_key: str, output_path: Path | None = None) -> Path | None:
         """Download raw data from S3.
 
         Args:
@@ -549,7 +551,8 @@ class GOESImageProcessor:
         self.output_dir = output_dir or Path(tempfile.mkdtemp())
         LOGGER.info("Initialized GOESImageProcessor")
 
-    def process(self, file_path: Path, channel: ChannelType, _output_format: str = "png") -> Image.Image | None:
+    @staticmethod
+    def process(file_path: Path, channel: ChannelType, _output_format: str = "png") -> Image.Image | None:
         """Process a GOES NetCDF file.
 
         Args:
@@ -564,7 +567,8 @@ class GOESImageProcessor:
         # Return a placeholder image
         return Image.new("RGB", (512, 512), color="gray")
 
-    def apply_calibration(self, data: NDArray[np.float64], channel: ChannelType) -> NDArray[np.float64]:
+    @staticmethod
+    def apply_calibration(data: NDArray[np.float64], channel: ChannelType) -> NDArray[np.float64]:
         """Apply calibration to raw data.
 
         Args:
@@ -577,7 +581,8 @@ class GOESImageProcessor:
         LOGGER.warning("Stub: Calibration not implemented")
         return data
 
-    def enhance_image(self, image: Image.Image, channel: ChannelType) -> Image.Image:
+    @staticmethod
+    def enhance_image(image: Image.Image, channel: ChannelType) -> Image.Image:
         """Apply enhancement to an image.
 
         Args:
@@ -590,7 +595,8 @@ class GOESImageProcessor:
         LOGGER.warning("Stub: Enhancement not implemented")
         return image
 
-    def _extract_timestamp_from_filename(self, filename: str) -> str:
+    @staticmethod
+    def _extract_timestamp_from_filename(filename: str) -> str:
         """Extract timestamp from GOES filename.
 
         Args:

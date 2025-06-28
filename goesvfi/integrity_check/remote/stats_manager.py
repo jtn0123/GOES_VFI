@@ -132,16 +132,19 @@ class StatsExtractor:
 class StatsCalculator:
     """Calculate derived statistics with clear separation of concerns."""
 
-    def calculate_success_rate(self, successful: int, total: int) -> float:
+    @staticmethod
+    def calculate_success_rate(successful: int, total: int) -> float:
         """Calculate success rate percentage."""
         return (successful / total) * 100 if total > 0 else 0
 
-    def calculate_average_time(self, times: list[float]) -> float:
+    @staticmethod
+    def calculate_average_time(times: list[float]) -> float:
         """Calculate average time from list of times."""
         valid_times = [t for t in times if isinstance(t, int | float) and t > 0]
         return sum(valid_times) / len(valid_times) if valid_times else 0
 
-    def calculate_network_speed(self, total_bytes: int, total_time: float) -> str:
+    @staticmethod
+    def calculate_network_speed(total_bytes: int, total_time: float) -> str:
         """Calculate and format network speed."""
         if total_bytes <= 0 or total_time <= 0:
             return "N/A"
@@ -151,7 +154,8 @@ class StatsCalculator:
             return f"{speed_bps / 1024 / 1024:.2f} MB/s"
         return f"{speed_bps / 1024:.2f} KB/s"
 
-    def calculate_average_download_rate(self, rates: list[float]) -> str:
+    @staticmethod
+    def calculate_average_download_rate(rates: list[float]) -> str:
         """Calculate and format average download rate."""
         valid_rates = [r for r in rates if isinstance(r, int | float) and r > 0]
         if not valid_rates:
@@ -162,7 +166,8 @@ class StatsCalculator:
             return f"{avg_rate / 1024 / 1024:.2f} MB/s"
         return f"{avg_rate / 1024:.2f} KB/s"
 
-    def format_file_size(self, size_bytes: float) -> str:
+    @staticmethod
+    def format_file_size(size_bytes: float) -> str:
         """Format file size for display."""
         if size_bytes == float("inf"):
             return "N/A"
@@ -212,7 +217,8 @@ class StatsReportBuilder:
             f"Total runtime: {total_time:.1f} seconds\n"
         )
 
-    def build_recent_errors_section(self, errors: list[str]) -> str:
+    @staticmethod
+    def build_recent_errors_section(errors: list[str]) -> str:
         """Build recent errors section."""
         if not errors:
             return ""
@@ -257,7 +263,8 @@ class StatsReportBuilder:
 
         return section
 
-    def build_time_since_last_success(self, last_success_time: float) -> str:
+    @staticmethod
+    def build_time_since_last_success(last_success_time: float) -> str:
         """Build time since last success section."""
         if last_success_time <= 0:
             return ""
@@ -268,9 +275,9 @@ class StatsReportBuilder:
     def build_full_report(self, stats: DownloadStats) -> str:
         """Build complete statistics report."""
         report = self.build_summary_section(stats)
-        report += self.build_recent_errors_section(stats.errors)
+        report += StatsReporter.build_recent_errors_section(stats.errors)
         report += self.build_recent_attempts_section(stats.recent_attempts)
-        report += self.build_time_since_last_success(stats.last_success_time)
+        report += StatsReporter.build_time_since_last_success(stats.last_success_time)
         return report
 
 

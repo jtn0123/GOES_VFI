@@ -30,8 +30,8 @@ class FileSorter:
         self._progress_callback: Callable[[int, int], None] | None = None
         self._should_cancel: Callable[[], bool] | None = None
 
+    @staticmethod
     def copy_file_with_buffer(
-        self,
         source_path: Path,
         dest_path: Path,
         source_mtime_utc: float,
@@ -73,7 +73,7 @@ class FileSorter:
         :return: A dictionary containing sorting statistics.
         """
         # Initialize the sorting process
-        source_dir, destination_dir = self._initialize_directories(source, destination)
+        source_dir, destination_dir = DateSorter._initialize_directories(source, destination)
         script_start_time = self._reset_counters_and_callbacks(progress_callback, should_cancel)
 
         # Build file processing list
@@ -89,7 +89,8 @@ class FileSorter:
         # Generate final statistics
         return self._generate_final_statistics(script_start_time, len(files_to_process))
 
-    def _initialize_directories(self, source: str, destination: str) -> tuple[Path, Path]:
+    @staticmethod
+    def _initialize_directories(source: str, destination: str) -> tuple[Path, Path]:
         """Initialize and validate source and destination directories."""
         source_dir = Path(source)
         destination_dir = Path(destination)
@@ -124,7 +125,8 @@ class FileSorter:
 
         return script_start_time
 
-    def _get_date_folders(self, source_dir: Path) -> list[Path]:
+    @staticmethod
+    def _get_date_folders(source_dir: Path) -> list[Path]:
         """Get all date/time folders from source directory."""
         try:
             date_folders: list[Path] = [f for f in source_dir.iterdir() if f.is_dir()]
@@ -133,7 +135,8 @@ class FileSorter:
 
         return date_folders
 
-    def _is_valid_date_folder(self, folder_name: str) -> bool:
+    @staticmethod
+    def _is_valid_date_folder(folder_name: str) -> bool:
         """Validate if folder name contains valid date and time components."""
         folder_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$")
         if not folder_pattern.match(folder_name):
@@ -157,7 +160,8 @@ class FileSorter:
         except (ValueError, TypeError):
             return False
 
-    def _extract_folder_datetime(self, folder_name: str) -> str | None:
+    @staticmethod
+    def _extract_folder_datetime(folder_name: str) -> str | None:
         """Extract datetime string from folder name."""
         # Remove '-' and '_' from folder name: e.g., 2023-05-01_07-32-20 -> 20230501T073220
         folder_datetime_raw = folder_name.replace("-", "").replace("_", "")
@@ -167,7 +171,8 @@ class FileSorter:
         # Insert 'T' between the date part (8 digits) and time part (6 digits)
         return folder_datetime_raw[:8] + "T" + folder_datetime_raw[8:]
 
-    def _get_png_files_from_folder(self, folder: Path) -> list[Path]:
+    @staticmethod
+    def _get_png_files_from_folder(folder: Path) -> list[Path]:
         """Get all PNG files from a folder."""
         try:
             return list(folder.glob("*.png"))
@@ -185,7 +190,7 @@ class FileSorter:
 
     def _build_file_processing_list(self, source_dir: Path) -> list[tuple[Path, str]] | dict[str, str]:
         """Build a list of files to process with their datetime information."""
-        date_folders = self._get_date_folders(source_dir)
+        date_folders = DateSorter._get_date_folders(source_dir)
         files_to_process: list[tuple[Path, str]] = []
         folder_counter = 0
         total_folders = len(date_folders)
@@ -201,20 +206,21 @@ class FileSorter:
             if folder is None:
                 continue
 
-            if not self._is_valid_date_folder(folder.name):
+            if not DateSorter._is_valid_date_folder(folder.name):
                 continue
 
-            folder_datetime = self._extract_folder_datetime(folder.name)
+            folder_datetime = DateSorter._extract_folder_datetime(folder.name)
             if folder_datetime is None:
                 continue
 
             # Add all PNG files from this folder
-            png_files = self._get_png_files_from_folder(folder)
+            png_files = DateSorter._get_png_files_from_folder(folder)
             files_to_process.extend((file_path, folder_datetime) for file_path in png_files)
 
         return files_to_process
 
-    def _extract_base_name(self, file_name: str) -> str:
+    @staticmethod
+    def _extract_base_name(file_name: str) -> str:
         """Extract base name from file name, removing datetime suffix if present."""
         # If it matches "_YYYYMMDDThhmmssZ.png" (20 chars from end), strip that part:
         if re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
@@ -233,14 +239,16 @@ class FileSorter:
                 raise
         return target_folder
 
-    def _generate_new_file_name(self, file_name: str, base_name: str, folder_datetime: str) -> str:
+    @staticmethod
+    def _generate_new_file_name(file_name: str, base_name: str, folder_datetime: str) -> str:
         """Generate new file name with datetime suffix if not already present."""
         if not re.search(r"_\d{8}T\d{6}Z\.png$", file_name):
             return f"{base_name}_{folder_datetime}Z.png"
         # Already has date/time suffix, keep it
         return file_name
 
-    def _check_files_identical(self, source_path: Path, dest_path: Path, time_tolerance: float = 1.0) -> bool:
+    @staticmethod
+    def _check_files_identical(source_path: Path, dest_path: Path, time_tolerance: float = 1.0) -> bool:
         """Check if source and destination files are identical."""
         if not dest_path.exists():
             return False
@@ -279,7 +287,7 @@ class FileSorter:
             return f"DRY RUN: Would copy to {dest_path.name}"
         source_size = source_path.stat().st_size
         source_mtime = source_path.stat().st_mtime
-        self.copy_file_with_buffer(source_path, dest_path, source_mtime)
+        DateSorter.copy_file_with_buffer(source_path, dest_path, source_mtime)
         self.files_copied += 1
         self.total_bytes_copied += source_size
         return action_msg or f"COPIED to {dest_path.name}"
@@ -289,15 +297,15 @@ class FileSorter:
         file_name = file_path.name
 
         # Extract base name and create target folder
-        base_name = self._extract_base_name(file_name)
+        base_name = DateSorter._extract_base_name(file_name)
         target_folder = self._create_target_folder(destination_dir, base_name)
 
         # Generate new file name and path
-        new_file_name = self._generate_new_file_name(file_name, base_name, folder_datetime)
+        new_file_name = DateSorter._generate_new_file_name(file_name, base_name, folder_datetime)
         new_file_path = target_folder / new_file_name
 
         # Check if files are identical
-        if self._check_files_identical(file_path, new_file_path):
+        if DateSorter._check_files_identical(file_path, new_file_path):
             self.files_skipped += 1
             return
 
