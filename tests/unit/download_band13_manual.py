@@ -6,9 +6,9 @@ This script saves the downloaded files to a fixed directory for inspection.
 """
 
 import asyncio
+from datetime import datetime
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
 
 from goesvfi.integrity_check.remote.s3_store import S3Store
@@ -62,9 +62,7 @@ async def list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10):
 
             async for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
                 if "Contents" in page:
-                    pass
-                    for obj in page["Contents"]:
-                        all_objects.append(obj["Key"])
+                    all_objects.extend(obj["Key"] for obj in page["Contents"])
 
             # Filter objects for Band 13 (C13)
             import re
@@ -80,8 +78,7 @@ async def list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10):
             # Return the first 'limit' Band 13 objects
             return band13_objects[:limit]
         except Exception as e:
-            pass
-            LOGGER.error("Error listing objects: %s", e)
+            LOGGER.exception("Error listing objects: %s", e)
             return []
 
 
@@ -97,20 +94,20 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
     Returns:
         Path to downloaded file if successful, None otherwise
     """
-    LOGGER.info("Testing download of Band 13 %s for %s at %s", product_type, satellite_pattern.name, timestamp.isoformat())
+    LOGGER.info(
+        "Testing download of Band 13 %s for %s at %s", product_type, satellite_pattern.name, timestamp.isoformat()
+    )
 
     # Create S3 store
     s3_store = S3Store(timeout=60)
 
     try:
-        pass
         # Get bucket name
         bucket = TimeIndex.get_s3_bucket(satellite_pattern)
 
         # Find the nearest valid timestamps for this product
         nearest_times = TimeIndex.find_nearest_intervals(timestamp, product_type)
         if not nearest_times:
-            pass
             LOGGER.warning("No valid scan times found for %s", product_type)
             return None
 
@@ -127,7 +124,6 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
         band13_keys = await list_s3_objects_band13(bucket, prefix, limit=5)
 
         if not band13_keys:
-            pass
             LOGGER.warning("No Band 13 files found for s3://%s/%s", bucket, prefix)
             return None
 
@@ -155,7 +151,6 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
             match = re.search(pattern, test_key)
 
             if match:
-                pass
                 # Extract components
                 file_year = int(match.group(1))
                 file_doy = int(match.group(2))
@@ -192,22 +187,19 @@ async def test_download_band13(timestamp, satellite_pattern, product_type, dest_
                 )
 
                 if dest_path.exists():
-                    pass
                     file_size = dest_path.stat().st_size
                     LOGGER.info("✓ Successfully downloaded to %s (%s bytes)", dest_path, file_size)
                     return dest_path
                 LOGGER.error("✗ Download failed: File doesn't exist at %s", dest_path)
                 return None
-            else:
-                LOGGER.error("✗ Failed to extract timestamp from filename: %s", test_key)
-                return None
+            LOGGER.error("✗ Failed to extract timestamp from filename: %s", test_key)
+            return None
         except Exception as e:
-            pass
-            LOGGER.error("✗ Error during download: %s", e)
+            LOGGER.exception("✗ Error during download: %s", e)
             return None
 
     except Exception as e:
-        LOGGER.error("✗ Error: %s", e)
+        LOGGER.exception("✗ Error: %s", e)
         return None
     finally:
         # Close the S3 store
@@ -233,7 +225,6 @@ async def download_fixed_list():
     downloaded_files = []
 
     for bucket, key in KNOWN_FILES:
-        pass
         LOGGER.info("Downloading known file: s3://%s/%s", bucket, key)
 
         # Create S3 store
@@ -262,27 +253,24 @@ async def download_fixed_list():
 
             # Create S3 client and download
             async with session.client("s3", config=config) as s3:
-                pass
                 LOGGER.info("Downloading to %s", dest_path)
                 await s3.download_file(Bucket=bucket, Key=key, Filename=str(dest_path))
 
                 if dest_path.exists():
-                    pass
                     file_size = dest_path.stat().st_size
                     LOGGER.info("✓ Successfully downloaded to %s (%s bytes)", dest_path, file_size)
                     downloaded_files.append(dest_path)
                 else:
                     LOGGER.error("✗ Download failed: File doesn't exist at %s", dest_path)
         except Exception as e:
-            pass
-            LOGGER.error("✗ Error downloading %s: %s", key, e)
+            LOGGER.exception("✗ Error downloading %s: %s", key, e)
         finally:
             await s3_store.close()
 
     return downloaded_files
 
 
-async def main():
+async def main() -> None:
     """Main entry point for the script."""
     LOGGER.info("Downloading files to: %s", DOWNLOAD_DIR)
 
@@ -309,12 +297,10 @@ async def main():
             downloaded_path = await test_download_band13(test_time, satellite, product_type, DOWNLOAD_DIR)
             results[sat_name][product_type] = downloaded_path is not None
             if downloaded_path:
-                pass
                 downloaded_files.append(downloaded_path)
 
     # If dynamic approach didn't work well, try direct downloads
     if not downloaded_files:
-        pass
         LOGGER.info("Dynamic approach failed, trying direct downloads of known files")
         downloaded_files = await download_fixed_list()
 
@@ -325,13 +311,12 @@ async def main():
         failed = [p for p, s in products.items() if not s]
 
         LOGGER.info("%s: %s/%s successful", satellite, len(successful), len(products))
-        LOGGER.info("  Successful: %s", ', '.join(successful) if successful else 'None')
-        LOGGER.info("  Failed: %s", ', '.join(failed) if failed else 'None')
+        LOGGER.info("  Successful: %s", ", ".join(successful) if successful else "None")
+        LOGGER.info("  Failed: %s", ", ".join(failed) if failed else "None")
 
     # List all downloaded files
     LOGGER.info("\n=== DOWNLOADED FILES ===")
     for i, path in enumerate(downloaded_files):
-        pass
         LOGGER.info("%s. %s (%s bytes)", i + 1, path, path.stat().st_size)
 
     LOGGER.info("\nDownloaded files are saved in: %s", DOWNLOAD_DIR)
@@ -339,6 +324,5 @@ async def main():
 
 
 if __name__ == "__main__":
-    pass
     # Run the async main function
     asyncio.run(main())

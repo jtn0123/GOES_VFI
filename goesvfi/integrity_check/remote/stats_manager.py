@@ -57,7 +57,7 @@ class StatsExtractor:
             return default
         except Exception as e:
             error = self.classifier.create_structured_error(e, f"extract_{key}", "stats_extractor")
-            LOGGER.warning(f"Failed to extract {key}: {error.user_message}")
+            LOGGER.warning("Failed to extract %s: %s", key, error.user_message)
             return default
 
     def extract_safe_float(self, data: Dict[str, Any], key: str, default: float = 0.0) -> float:
@@ -69,7 +69,7 @@ class StatsExtractor:
             return default
         except Exception as e:
             error = self.classifier.create_structured_error(e, f"extract_{key}", "stats_extractor")
-            LOGGER.warning(f"Failed to extract {key}: {error.user_message}")
+            LOGGER.warning("Failed to extract %s: %s", key, error.user_message)
             return default
 
     def extract_safe_list(self, data: Dict[str, Any], key: str, default: Optional[List] = None) -> List:
@@ -83,7 +83,7 @@ class StatsExtractor:
             return default
         except Exception as e:
             error = self.classifier.create_structured_error(e, f"extract_{key}", "stats_extractor")
-            LOGGER.warning(f"Failed to extract {key}: {error.user_message}")
+            LOGGER.warning("Failed to extract %s: %s", key, error.user_message)
             return default
 
     def extract_stats(self, raw_stats: Dict[str, Any]) -> DownloadStats:
@@ -126,7 +126,7 @@ class StatsExtractor:
 
         except Exception as e:
             error = self.classifier.create_structured_error(e, "extract_all_stats", "stats_extractor")
-            LOGGER.error(f"Failed to extract statistics: {error.user_message}")
+            LOGGER.error("Failed to extract statistics: %s", error.user_message)
             return DownloadStats()
 
 
@@ -309,7 +309,7 @@ class DownloadStatsManager:
 
         except Exception as e:
             error = self.extractor.classifier.create_structured_error(e, "log_statistics", "stats_manager")
-            LOGGER.error(f"Failed to log statistics: {error.user_message}")
+            LOGGER.error("Failed to log statistics: %s", error.user_message)
 
 
 # Factory function for easy integration

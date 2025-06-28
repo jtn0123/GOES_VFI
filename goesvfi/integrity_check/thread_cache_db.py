@@ -41,7 +41,7 @@ class ThreadLocalCacheDB:
         # Create initial connection for the main thread
         self.get_db()
 
-        LOGGER.info(f"ThreadLocalCacheDB initialized with path: {db_path}")
+        LOGGER.info("ThreadLocalCacheDB initialized with path: %s", db_path)
 
     def __enter__(self) -> "ThreadLocalCacheDB":
         """Enter context manager."""

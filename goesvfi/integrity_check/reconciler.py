@@ -89,13 +89,13 @@ class Reconciler:
                 }
 
         # Scan directory for existing files
-        LOGGER.info(f"Scanning directory: {base_directory}")
+        LOGGER.info("Scanning directory: %s", base_directory)
         found_timestamps = scan_directory_for_timestamps(base_directory, satellite_pattern)
 
         # Auto-detect interval if not specified
         if interval_minutes == 0:
             interval_minutes = detect_interval(found_timestamps) or 30
-            LOGGER.info(f"Auto-detected interval: {interval_minutes} minutes")
+            LOGGER.info("Auto-detected interval: %s minutes", interval_minutes)
 
         # Generate expected timestamps
         expected_timestamps = list(generate_timestamp_sequence(start_date, end_date, interval_minutes))

@@ -638,4 +638,4 @@ class SatelliteIntegrityTabGroup(QWidget):
             params: Image request parameters
         """
         # This would be connected to the main application's image loading system
-        LOGGER.info(f"Image requested with parameters: {params}")
+        LOGGER.info("Image requested with parameters: %s", params)

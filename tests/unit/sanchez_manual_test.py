@@ -10,11 +10,11 @@ Usage: python test_sanchez.py path/to/input/image.png
 import argparse
 import logging
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -42,17 +42,17 @@ def get_sanchez_binary():
     try:
         path = lookup[key]
     except KeyError:
-        pass
-        raise RuntimeError(f"Sanchez not packaged for {key}")
+        msg = f"Sanchez not packaged for {key}"
+        raise RuntimeError(msg)
 
     if not path.exists():
-        pass
-        raise RuntimeError(f"Binary missing: {path}")
+        msg = f"Binary missing: {path}"
+        raise RuntimeError(msg)
 
     return path
 
 
-def test_basic_call(input_path, res_km=4):
+def test_basic_call(input_path, res_km=4) -> bool | None:
     """Basic test of Sanchez with default options."""
     bin_path = get_sanchez_binary()
     binary_dir = bin_path.parent
@@ -67,26 +67,23 @@ def test_basic_call(input_path, res_km=4):
         "-r",
         str(res_km),
     ]
-    logger.info("Running basic test: %s", ' '.join(cmd))
+    logger.info("Running basic test: %s", " ".join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            pass
             logger.info("Stdout: %s", result.stdout)
         else:
             logger.info("No stdout output")
 
         if result.stderr:
-            pass
             logger.info("Stderr: %s", result.stderr)
         else:
             logger.info("No stderr output")
 
         if temp_output.exists():
-            pass
             logger.info("Output file created successfully: %s", temp_output)
             logger.info("Output file size: %s bytes", temp_output.stat().st_size)
             return True
@@ -95,16 +92,14 @@ def test_basic_call(input_path, res_km=4):
     except Exception:
         pass
     except Exception as e:
-        pass
-        logger.error("Error running Sanchez: %s", e)
+        logger.exception("Error running Sanchez: %s", e)
         return False
     finally:
         if temp_output.exists():
-            pass
             os.remove(temp_output)
 
 
-def test_with_verbose(input_path, res_km=4):
+def test_with_verbose(input_path, res_km=4) -> bool | None:
     """Test Sanchez with verbose flag."""
     bin_path = get_sanchez_binary()
     binary_dir = bin_path.parent
@@ -120,26 +115,23 @@ def test_with_verbose(input_path, res_km=4):
         str(res_km),
         "--verbose",
     ]
-    logger.info("Running verbose test: %s", ' '.join(cmd))
+    logger.info("Running verbose test: %s", " ".join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            pass
             logger.info("Stdout: %s", result.stdout)
         else:
             logger.info("No stdout output")
 
         if result.stderr:
-            pass
             logger.info("Stderr: %s", result.stderr)
         else:
             logger.info("No stderr output")
 
         if temp_output.exists():
-            pass
             logger.info("Output file created successfully: %s", temp_output)
             logger.info("Output file size: %s bytes", temp_output.stat().st_size)
             return True
@@ -148,16 +140,14 @@ def test_with_verbose(input_path, res_km=4):
     except Exception:
         pass
     except Exception as e:
-        pass
-        logger.error("Error running Sanchez: %s", e)
+        logger.exception("Error running Sanchez: %s", e)
         return False
     finally:
         if temp_output.exists():
-            pass
             os.remove(temp_output)
 
 
-def test_with_v_flag(input_path, res_km=4):
+def test_with_v_flag(input_path, res_km=4) -> bool | None:
     """Test Sanchez with -v flag."""
     bin_path = get_sanchez_binary()
     binary_dir = bin_path.parent
@@ -173,26 +163,23 @@ def test_with_v_flag(input_path, res_km=4):
         str(res_km),
         "-v",
     ]
-    logger.info("Running -v test: %s", ' '.join(cmd))
+    logger.info("Running -v test: %s", " ".join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            pass
             logger.info("Stdout: %s", result.stdout)
         else:
             logger.info("No stdout output")
 
         if result.stderr:
-            pass
             logger.info("Stderr: %s", result.stderr)
         else:
             logger.info("No stderr output")
 
         if temp_output.exists():
-            pass
             logger.info("Output file created successfully: %s", temp_output)
             logger.info("Output file size: %s bytes", temp_output.stat().st_size)
             return True
@@ -201,16 +188,14 @@ def test_with_v_flag(input_path, res_km=4):
     except Exception:
         pass
     except Exception as e:
-        pass
-        logger.error("Error running Sanchez: %s", e)
+        logger.exception("Error running Sanchez: %s", e)
         return False
     finally:
         if temp_output.exists():
-            pass
             os.remove(temp_output)
 
 
-def test_with_renamed_input(input_path, res_km=4):
+def test_with_renamed_input(input_path, res_km=4) -> bool | None:
     """Test Sanchez with input renamed to .ir.png."""
     bin_path = get_sanchez_binary()
     binary_dir = bin_path.parent
@@ -234,26 +219,23 @@ def test_with_renamed_input(input_path, res_km=4):
         "-r",
         str(res_km),
     ]
-    logger.info("Running renamed input test: %s", ' '.join(cmd))
+    logger.info("Running renamed input test: %s", " ".join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            pass
             logger.info("Stdout: %s", result.stdout)
         else:
             logger.info("No stdout output")
 
         if result.stderr:
-            pass
             logger.info("Stderr: %s", result.stderr)
         else:
             logger.info("No stderr output")
 
         if temp_output.exists():
-            pass
             logger.info("Output file created successfully: %s", temp_output)
             logger.info("Output file size: %s bytes", temp_output.stat().st_size)
             return True
@@ -262,50 +244,44 @@ def test_with_renamed_input(input_path, res_km=4):
     except Exception:
         pass
     except Exception as e:
-        pass
-        logger.error("Error running Sanchez: %s", e)
+        logger.exception("Error running Sanchez: %s", e)
         return False
     finally:
         if temp_input.exists():
-            pass
             os.remove(temp_input)
         if temp_output.exists():
-            pass
             os.remove(temp_output)
 
 
-def test_sanchez_help():
+def test_sanchez_help() -> bool | None:
     """Test Sanchez help command to check available options."""
     bin_path = get_sanchez_binary()
     binary_dir = bin_path.parent
 
     cmd = [str(bin_path), "--help"]
-    logger.info("Running help command: %s", ' '.join(cmd))
+    logger.info("Running help command: %s", " ".join(cmd))
 
     try:
         result = subprocess.run(cmd, check=False, capture_output=True, text=True, cwd=binary_dir)
 
         logger.info("Return code: %s", result.returncode)
         if result.stdout:
-            pass
             logger.info("Help output: %s", result.stdout)
         else:
             logger.info("No stdout output from help command")
 
         if result.stderr:
-            pass
             logger.info("Stderr from help: %s", result.stderr)
         else:
             logger.info("No stderr output from help command")
 
         return True
     except Exception as e:
-        pass
-        logger.error("Error running Sanchez help: %s", e)
+        logger.exception("Error running Sanchez help: %s", e)
         return False
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(description="Test Sanchez binary with different options")
     parser.add_argument("input_file", help="Path to input image file to test with Sanchez")
     parser.add_argument("--res", type=int, default=4, help="Resolution in km (default: 4)")
@@ -313,7 +289,6 @@ def main():
     args = parser.parse_args()
 
     if not os.path.exists(args.input_file):
-        pass
         logger.error("Input file does not exist: %s", args.input_file)
         return 1
 
@@ -342,14 +317,13 @@ def main():
 
     # Summary
     logger.info("\n=== Summary ===")
-    logger.info("Basic test: %s", 'SUCCESS' if basic_result else 'FAILED')
-    logger.info("Verbose test: %s", 'SUCCESS' if verbose_result else 'FAILED')
-    logger.info("v-flag test: %s", 'SUCCESS' if v_flag_result else 'FAILED')
-    logger.info("Renamed input test: %s", 'SUCCESS' if renamed_result else 'FAILED')
+    logger.info("Basic test: %s", "SUCCESS" if basic_result else "FAILED")
+    logger.info("Verbose test: %s", "SUCCESS" if verbose_result else "FAILED")
+    logger.info("v-flag test: %s", "SUCCESS" if v_flag_result else "FAILED")
+    logger.info("Renamed input test: %s", "SUCCESS" if renamed_result else "FAILED")
 
     return 0
 
 
 if __name__ == "__main__":
-    pass
     sys.exit(main())

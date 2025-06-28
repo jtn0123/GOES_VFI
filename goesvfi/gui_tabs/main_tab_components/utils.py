@@ -33,7 +33,7 @@ def numpy_to_qimage(array: NDArray[np.uint8]) -> QImage:
             gray_array = np.ascontiguousarray(array.squeeze())
             qimage = QImage(gray_array.data, width, height, bytes_per_line, image_format).copy()
         else:
-            LOGGER.error(f"Unsupported NumPy array shape for QImage conversion: {array.shape}")
+            LOGGER.error("Unsupported NumPy array shape for QImage conversion: %s", array.shape)
             return QImage()
 
         if qimage.isNull():

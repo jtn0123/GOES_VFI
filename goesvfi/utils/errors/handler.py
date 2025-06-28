@@ -44,7 +44,7 @@ class LoggingErrorHandler(ErrorHandler):
 
     def handle(self, error: StructuredError) -> bool:
         """Log the error and continue processing."""
-        self.logger.log(self.log_level, f"Error in {error.context.component}: {error.message}")
+        self.logger.log(self.log_level, "Error in %s: %s", error.context.component, error.message)
         return False  # Continue to next handler
 
 

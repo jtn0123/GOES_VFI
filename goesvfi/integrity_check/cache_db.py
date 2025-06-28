@@ -39,7 +39,7 @@ class CacheDB:
         # Create tables
         self._create_schema()
 
-        LOGGER.info(f"CacheDB initialized at {self.db_path}")
+        LOGGER.info("CacheDB initialized at %s", self.db_path)
 
     def _create_schema(self) -> None:
         """Create the database schema."""
@@ -215,7 +215,7 @@ class CacheDB:
 
         if self.conn:
             self.conn.commit()
-        LOGGER.debug(f"Stored scan results with ID {scan_id}")
+        LOGGER.debug("Stored scan results with ID %s", scan_id)
         return scan_id
 
     def get_cached_scan(
@@ -303,7 +303,7 @@ class CacheDB:
             LOGGER.info("Cache cleared successfully")
             return True
         except Exception as e:
-            LOGGER.error(f"Error clearing cache: {e}")
+            LOGGER.error("Error clearing cache: %s", e)
             return False
 
     async def add_timestamp(
@@ -337,7 +337,7 @@ class CacheDB:
                 self.conn.commit()
             return True
         except Exception as e:
-            LOGGER.error(f"Error adding timestamp: {e}")
+            LOGGER.error("Error adding timestamp: %s", e)
             return False
 
     async def timestamp_exists(self, timestamp: datetime, satellite: Any) -> bool:

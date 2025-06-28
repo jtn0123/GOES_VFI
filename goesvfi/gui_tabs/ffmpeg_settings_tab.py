@@ -730,7 +730,7 @@ class FFmpegSettingsTab(QWidget):
         for name, profile_dict in FFMPEG_PROFILES.items():
             if self._check_settings_match_profile(profile_dict):
                 matching_profile_name = name
-                LOGGER.debug(f"Current settings match profile: {name}")
+                LOGGER.debug("Current settings match profile: %s", name)
                 break
 
         # If settings no longer match the currently selected profile, switch to "Custom"
@@ -932,7 +932,7 @@ class FFmpegSettingsTab(QWidget):
 
     def set_enabled(self, enabled: bool) -> None:
         """Enable or disable the entire tab content."""
-        LOGGER.debug(f"FFmpegSettingsTab.set_enabled called with enabled={enabled}")
+        LOGGER.debug("FFmpegSettingsTab.set_enabled called with enabled=%s", enabled)
 
         # Enable/disable the main group boxes first
         self.ffmpeg_settings_group.setEnabled(enabled)
@@ -940,7 +940,7 @@ class FFmpegSettingsTab(QWidget):
         self.ffmpeg_quality_group.setEnabled(enabled)
         self.ffmpeg_profile_combo.setEnabled(enabled)  # Also enable/disable profile selection
 
-        LOGGER.debug(f"Set ffmpeg_profile_combo.isEnabled() = {self.ffmpeg_profile_combo.isEnabled()}")
+        LOGGER.debug("Set ffmpeg_profile_combo.isEnabled() = %s", self.ffmpeg_profile_combo.isEnabled())
 
         # If enabling, restore the individual control states based on selections
         if enabled:
@@ -1136,7 +1136,7 @@ class FFmpegSettingsTab(QWidget):
             self._update_all_control_states()
 
         except Exception as e:
-            LOGGER.error(f"Error loading FFmpeg settings into UI: {e}", exc_info=True)
+            LOGGER.error("Error loading FFmpeg settings into UI: %s", e, exc_info=True)
         finally:
             # Unblock signals
             for widget in all_controls:

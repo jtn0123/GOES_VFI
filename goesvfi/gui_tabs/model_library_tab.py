@@ -177,7 +177,7 @@ class ModelLibraryTab(QWidget):
                 )
                 self.status_label.setText(f"✅ {available_count} of {len(available_models)} models available")
         except Exception as e:
-            LOGGER.error(f"Failed to populate model table: {e}", exc_info=True)
+            LOGGER.error("Failed to populate model table: %s", e, exc_info=True)
             # Enhanced error display
             error_item = QTableWidgetItem(f"⚠️ Error loading models: {e}")
             status_item = QTableWidgetItem("❌ Failed")

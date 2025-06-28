@@ -23,14 +23,14 @@ class ImageProcessingPipeline(CompositeProcessor):
 
         logger = log.get_logger(__name__)
 
-        logger.debug(f"Starting image processing pipeline with {len(self.processors)} stages")
+        logger.debug("Starting image processing pipeline with %s stages", len(self.processors))
 
         current_data = input_data
         combined_metadata: Dict[str, Any] = {"pipeline_stages": []}
         combined_warnings = []
 
         for i, processor in enumerate(self.processors):
-            logger.debug(f"Executing stage {i + 1}/{len(self.processors)}: {processor.stage_name}")
+            logger.debug("Executing stage %s/%s: %s", i + 1, len(self.processors), processor.stage_name)
 
             try:
                 result = processor.process(current_data, context)
@@ -45,7 +45,7 @@ class ImageProcessingPipeline(CompositeProcessor):
                 combined_metadata["pipeline_stages"].append(stage_info)
 
                 if not result.success:
-                    logger.error(f"Pipeline failed at stage {processor.stage_name}: {result.errors}")
+                    logger.error("Pipeline failed at stage %s: %s", processor.stage_name, result.errors)
                     # Add pipeline context to the error
                     for error in result.errors:
                         error.message = (
@@ -58,12 +58,12 @@ class ImageProcessingPipeline(CompositeProcessor):
                 combined_warnings.extend(result.warnings)
 
                 if result.warnings:
-                    logger.warning(f"Stage {processor.stage_name} completed with warnings: {result.warnings}")
+                    logger.warning("Stage %s completed with warnings: %s", processor.stage_name, result.warnings)
                 else:
-                    logger.debug(f"Stage {processor.stage_name} completed successfully")
+                    logger.debug("Stage %s completed successfully", processor.stage_name)
 
             except Exception as e:
-                logger.exception(f"Unhandled exception in pipeline stage {processor.stage_name}")
+                logger.exception("Unhandled exception in pipeline stage %s", processor.stage_name)
                 return ImageProcessingResult.failure_result(
                     self._create_error(f"Unhandled exception in stage {processor.stage_name}: {e}", e)
                 )

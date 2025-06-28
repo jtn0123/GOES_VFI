@@ -12,9 +12,9 @@ Usage:
 """
 
 import logging
+from pathlib import Path
 import sys
 import tempfile
-from pathlib import Path
 
 import boto3
 import botocore
@@ -57,7 +57,8 @@ def download_file_from_s3(bucket: str, key: str, local_path: Path) -> Path:
     if local_path.exists():
         logger.info("Download successful: %s (%s bytes)", local_path, local_path.stat().st_size)
         return local_path
-    raise FileNotFoundError(f"Downloaded file not found: {local_path}")
+    msg = f"Downloaded file not found: {local_path}"
+    raise FileNotFoundError(msg)
 
 
 def extract_channel_from_netcdf(netcdf_path: Path, channel_var: str = "Rad") -> np.ndarray:
@@ -102,7 +103,8 @@ def extract_channel_from_netcdf(netcdf_path: Path, channel_var: str = "Rad") -> 
             logger.info("Extracted metadata: %s", metadata)
 
             return data
-        raise ValueError(f"Variable '{channel_var}' not found in dataset")
+        msg = f"Variable '{channel_var}' not found in dataset"
+        raise ValueError(msg)
 
 
 def process_and_save_image(
@@ -110,8 +112,8 @@ def process_and_save_image(
     output_path: Path,
     colormap: str = "gray",
     invert: bool = True,
-    min_val: float = None,
-    max_val: float = None,
+    min_val: float | None = None,
+    max_val: float | None = None,
     scale_factor: float = 0.25,
 ) -> Path:
     """
@@ -225,7 +227,7 @@ def explore_netcdf_structure(netcdf_path: Path) -> dict:
                 "file_size": netcdf_path.stat().st_size,
             }
     except Exception as e:
-        logger.error("Error exploring NetCDF structure: %s", e)
+        logger.exception("Error exploring NetCDF structure: %s", e)
         return {"error": str(e)}
 
 
@@ -320,7 +322,11 @@ def process_channel_data(ds, channel_num, temp_dir):
 
         logger.info(
             "Channel %s: Min=%s, Max=%s, Robust Min=%s, Robust Max=%s",
-            channel_num, min_val, max_val, robust_min, robust_max
+            channel_num,
+            min_val,
+            max_val,
+            robust_min,
+            robust_max,
         )
 
         # Process with both regular and robust ranges
@@ -371,7 +377,7 @@ def process_channel_data(ds, channel_num, temp_dir):
 
             logger.info("Comparison saved to %s", comparison_path)
         except Exception as e:
-            logger.error("Error creating comparison image: %s", e)
+            logger.exception("Error creating comparison image: %s", e)
 
         return {
             "channel": channel_num,
@@ -385,14 +391,13 @@ def process_channel_data(ds, channel_num, temp_dir):
             "robust_output_path": str(robust_output_path),
             "comparison_path": (str(comparison_path) if "comparison_path" in locals() else None),
         }
-    else:
-        return {
-            "channel": channel_num,
-            "error": f"Variable '{var_name}' not found in dataset",
-        }
+    return {
+        "channel": channel_num,
+        "error": f"Variable '{var_name}' not found in dataset",
+    }
 
 
-def test_download_and_process_channels():
+def test_download_and_process_channels() -> bool:
     """
     Test downloading NetCDF files for different channels and processing them.
 
@@ -432,7 +437,7 @@ def test_download_and_process_channels():
             return None
 
         except Exception as e:
-            logger.error("Error searching for channel %s file: %s", channel_num, e)
+            logger.exception("Error searching for channel %s file: %s", channel_num, e)
             return None
 
     # Try to find files for different channels
@@ -481,7 +486,7 @@ def test_download_and_process_channels():
                 try:
                     download_file_from_s3(bucket, file_key, netcdf_path)
                 except Exception as e:
-                    logger.error("Failed to download %s: %s", file_key, e)
+                    logger.exception("Failed to download %s: %s", file_key, e)
                     continue
 
                 # Step 2: Explore the NetCDF structure
@@ -519,7 +524,7 @@ def test_download_and_process_channels():
                         plt.close()
                         logger.info("Saved %s", dest_path)
                     except Exception as e:
-                        logger.error("Error saving %s: %s", img_path, e)
+                        logger.exception("Error saving %s: %s", img_path, e)
 
             except Exception as e:
                 logger.exception("Error processing channel %s: %s", expected_channel, e)
@@ -527,7 +532,7 @@ def test_download_and_process_channels():
 
         # Save a summary report
         summary_path = permanent_output / "channel_processing_summary.txt"
-        with open(summary_path, "w") as f:
+        with open(summary_path, "w", encoding="utf-8") as f:
             f.write("# GOES Channel Processing Summary\n\n")
 
             for channel, result in sorted(channel_results.items()):

@@ -69,7 +69,7 @@ class RefactoredPreviewProcessor:
             result = self._process_through_pipeline(initial_data, context)
 
             if not result.success:
-                LOGGER.error(f"Preview processing failed: {result.errors}")
+                LOGGER.error("Preview processing failed: %s", result.errors)
                 return None
 
             # Update label state with results
@@ -78,7 +78,7 @@ class RefactoredPreviewProcessor:
             return cast(Optional[QPixmap], result.data)
 
         except Exception:
-            LOGGER.exception(f"Unhandled error in preview processing for {image_path}")
+            LOGGER.exception("Unhandled error in preview processing for %s", image_path)
             self._clear_label_state(target_label)
             return None
 
@@ -130,7 +130,7 @@ class RefactoredPreviewProcessor:
         if apply_sanchez:
             # Try cache first
             if image_path in self.sanchez_cache:
-                LOGGER.debug(f"Using cached Sanchez result for {image_path.name}")
+                LOGGER.debug("Using cached Sanchez result for %s", image_path.name)
                 return self._create_cached_image_data(image_path)
             else:
                 # Process with Sanchez
@@ -161,7 +161,7 @@ class RefactoredPreviewProcessor:
             # Load original first
             original_data = image_loader.load(str(image_path))
             if not original_data or original_data.image_data is None:
-                LOGGER.error(f"Failed to load original image: {image_path}")
+                LOGGER.error("Failed to load original image: %s", image_path)
                 return None
 
             # Get resolution setting (simplified)
@@ -181,7 +181,7 @@ class RefactoredPreviewProcessor:
                 return original_data
 
         except Exception as e:
-            LOGGER.error(f"Sanchez processing failed for {image_path}: {e}")
+            LOGGER.error("Sanchez processing failed for %s: %s", image_path, e)
             context["draw_sanchez_warning"] = True
             context["sanchez_error_message"] = str(e)
             # Return original data as fallback
@@ -192,7 +192,7 @@ class RefactoredPreviewProcessor:
         try:
             return image_loader.load(str(image_path))
         except Exception as e:
-            LOGGER.error(f"Failed to load original image {image_path}: {e}")
+            LOGGER.error("Failed to load original image %s: %s", image_path, e)
             return None
 
     def _process_through_pipeline(self, input_data: Any, context: Dict[str, Any]) -> Any:

@@ -151,7 +151,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
     def onDateRangeSelected(self, start: datetime, end: datetime) -> None:
         """Handle date range selection from integrity tab."""
-        LOGGER.info(f"Date range selected: {start} to {end}")
+        LOGGER.info("Date range selected: %s to %s", start, end)
         self.dateRangeSelected.emit(start, end)
 
         # Update timeline tab
@@ -159,7 +159,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
     def onTimestampSelected(self, timestamp: datetime) -> None:
         """Handle timestamp selection from timeline."""
-        LOGGER.info(f"Timestamp selected: {timestamp}")
+        LOGGER.info("Timestamp selected: %s", timestamp)
         self.timestampSelected.emit(timestamp)
 
         # Update imagery tab
@@ -167,7 +167,7 @@ class CombinedIntegrityAndImageryTab(QWidget):
 
     def onItemSelected(self, item: MissingTimestamp) -> None:
         """Handle item selection from results."""
-        LOGGER.info(f"Item selected: {item}")
+        LOGGER.info("Item selected: %s", item)
         self.itemSelected.emit(item)
 
         # Switch to imagery tab and load the item
