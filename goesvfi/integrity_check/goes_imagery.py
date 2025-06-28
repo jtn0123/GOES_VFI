@@ -19,6 +19,19 @@ from goesvfi.utils import log
 
 LOGGER = log.get_logger(__name__)
 
+# Channel number ranges
+VISIBLE_CHANNEL_MAX = 6
+IR_CHANNEL_MIN = 7
+IR_CHANNEL_MAX = 16
+NEAR_IR_CHANNEL_MIN = 4
+NEAR_IR_CHANNEL_MAX = 6
+WATER_VAPOR_CHANNEL_MIN = 8
+WATER_VAPOR_CHANNEL_MAX = 10
+COMPOSITE_CHANNEL_MIN = 100
+
+# Default cache size
+DEFAULT_CACHE_SIZE = 100
+
 
 class ProductType(Enum):
     """GOES product types."""
@@ -188,17 +201,17 @@ class ChannelType(Enum):
     @property
     def is_visible(self) -> bool:
         """Check if this is a visible channel."""
-        return self.number <= 6
+        return self.number <= VISIBLE_CHANNEL_MAX
 
     @property
     def is_ir(self) -> bool:
         """Check if this is an IR channel."""
-        return 7 <= self.number <= 16
+        return IR_CHANNEL_MIN <= self.number <= IR_CHANNEL_MAX
 
     @property
     def is_composite(self) -> bool:
         """Check if this is a composite channel."""
-        return self.number >= 100
+        return self.number >= COMPOSITE_CHANNEL_MIN
 
     @property
     def is_infrared(self) -> bool:
@@ -208,12 +221,12 @@ class ChannelType(Enum):
     @property
     def is_near_ir(self) -> bool:
         """Check if this is a near-IR channel."""
-        return 4 <= self.number <= 6
+        return NEAR_IR_CHANNEL_MIN <= self.number <= NEAR_IR_CHANNEL_MAX
 
     @property
     def is_water_vapor(self) -> bool:
         """Check if this is a water vapor channel."""
-        return 8 <= self.number <= 10
+        return WATER_VAPOR_CHANNEL_MIN <= self.number <= WATER_VAPOR_CHANNEL_MAX
 
     @classmethod
     def from_number(cls: type["ChannelType"], number: int) -> Optional["ChannelType"]:
@@ -237,7 +250,7 @@ class GOESImageryManager:
         output_dir: Path | None = None,
         *,
         satellite: str = "G16",
-        cache_size: int = 100,
+        cache_size: int = DEFAULT_CACHE_SIZE,
         default_mode: ImageryMode = ImageryMode.IMAGE_PRODUCT,
     ) -> None:
         """Initialize the imagery manager.

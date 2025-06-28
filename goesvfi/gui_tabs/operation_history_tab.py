@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from enum import IntEnum
 from typing import Any
 
 from PyQt6.QtCore import (
@@ -34,6 +35,34 @@ from PyQt6.QtWidgets import (
 from goesvfi.utils import log
 
 LOGGER = log.get_logger(__name__)
+
+
+# Column indices for operation table
+class OperationTableColumn(IntEnum):
+    """Column indices for the operation history table."""
+
+    TIME = 0
+    OPERATION = 1
+    STATUS = 2
+    DURATION = 3
+    CORRELATION_ID = 4
+
+
+# Column indices for metrics table
+class MetricsTableColumn(IntEnum):
+    """Column indices for the metrics table."""
+
+    OPERATION = 0
+    TOTAL = 1
+    SUCCESS = 2
+    FAILURE = 3
+    AVG_DURATION = 4
+    MIN = 5
+    MAX = 6
+
+
+# Default values
+DEFAULT_OPERATIONS_LIMIT = 500
 
 
 def get_operation_store() -> Any | None:
@@ -83,26 +112,26 @@ class OperationTableModel(QAbstractTableModel):
         col = index.column()
 
         if role == Qt.ItemDataRole.DisplayRole:
-            if col == 0:  # Time
+            if col == OperationTableColumn.TIME:  # Time
                 timestamp = operation.get("start_time", 0)
                 return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
-            if col == 1:  # Operation
+            if col == OperationTableColumn.OPERATION:  # Operation
                 return operation.get("name", "")
-            if col == 2:  # Status
+            if col == OperationTableColumn.STATUS:  # Status
                 return operation.get("status", "")
-            if col == 3:  # Duration
+            if col == OperationTableColumn.DURATION:  # Duration
                 duration = operation.get("duration")
                 if duration is not None:
                     return f"{duration:.3f}s"
                 return "N/A"
-            if col == 4:  # Correlation ID
+            if col == OperationTableColumn.CORRELATION_ID:  # Correlation ID
                 return operation.get("correlation_id", "")[:8] + "..."
 
         elif role == Qt.ItemDataRole.TextAlignmentRole:
-            if col in {2, 3}:  # Center align status and duration
+            if col in {OperationTableColumn.STATUS, OperationTableColumn.DURATION}:  # Center align status and duration
                 return Qt.AlignmentFlag.AlignCenter
 
-        elif role == Qt.ItemDataRole.ForegroundRole and col == 2:  # Color code status
+        elif role == Qt.ItemDataRole.ForegroundRole and col == OperationTableColumn.STATUS:  # Color code status
             status = operation.get("status", "")
             if status == "success":
                 return Qt.GlobalColor.darkGreen
@@ -175,25 +204,27 @@ class MetricsModel(QAbstractTableModel):
         col = index.column()
 
         if role == Qt.ItemDataRole.DisplayRole:
-            if col == 0:  # Operation
+            if col == MetricsTableColumn.OPERATION:  # Operation
                 return metric.get("operation_name", "")
-            if col == 1:  # Total
+            if col == MetricsTableColumn.TOTAL:  # Total
                 return str(metric.get("total_count", 0))
-            if col == 2:  # Success
+            if col == MetricsTableColumn.SUCCESS:  # Success
                 return str(metric.get("success_count", 0))
-            if col == 3:  # Failure
+            if col == MetricsTableColumn.FAILURE:  # Failure
                 return str(metric.get("failure_count", 0))
-            if col == 4:  # Avg Duration
+            if col == MetricsTableColumn.AVG_DURATION:  # Avg Duration
                 avg = metric.get("avg_duration", 0)
                 return f"{avg:.3f}s" if avg else "N/A"
-            if col == 5:  # Min
+            if col == MetricsTableColumn.MIN:  # Min
                 min_dur = metric.get("min_duration", 0)
                 return f"{min_dur:.3f}s" if min_dur else "N/A"
-            if col == 6:  # Max
+            if col == MetricsTableColumn.MAX:  # Max
                 max_dur = metric.get("max_duration", 0)
                 return f"{max_dur:.3f}s" if max_dur else "N/A"
 
-        elif role == Qt.ItemDataRole.TextAlignmentRole and col > 0:  # Right align numeric columns
+        elif (
+            role == Qt.ItemDataRole.TextAlignmentRole and col > MetricsTableColumn.OPERATION
+        ):  # Right align numeric columns
             return Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
 
         return None
@@ -232,7 +263,7 @@ class RefreshWorker(QThread):
                 if self.filters:
                     operations = store.search_operations(**self.filters)
                 else:
-                    operations = store.get_recent_operations(limit=500)
+                    operations = store.get_recent_operations(limit=DEFAULT_OPERATIONS_LIMIT)
                 self.operations_loaded.emit(operations)
 
                 # Load metrics if requested

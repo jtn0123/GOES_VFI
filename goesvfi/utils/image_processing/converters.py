@@ -12,6 +12,17 @@ from PyQt6.QtGui import QImage, QPixmap
 
 from .base import ImageProcessingResult, ProcessorBase
 
+# Image dimensions
+GRAYSCALE_DIMENSIONS = 2
+COLOR_DIMENSIONS = 3
+
+# Channel counts
+RGB_CHANNELS = 3
+RGBA_CHANNELS = 4
+
+# Crop rectangle components
+CROP_RECT_COMPONENTS = 4
+
 
 class ArrayToImageConverter(ProcessorBase):
     """Converts numpy arrays to QImage objects."""
@@ -31,14 +42,14 @@ class ArrayToImageConverter(ProcessorBase):
             array = input_data
 
             # Handle different array shapes and types
-            if array.ndim == 2:
+            if array.ndim == GRAYSCALE_DIMENSIONS:
                 # Grayscale image
                 qimage = self._array_to_qimage_grayscale(array)
-            elif array.ndim == 3:
-                if array.shape[2] == 3:
+            elif array.ndim == COLOR_DIMENSIONS:
+                if array.shape[2] == RGB_CHANNELS:
                     # RGB image
                     qimage = self._array_to_qimage_rgb(array)
-                elif array.shape[2] == 4:
+                elif array.shape[2] == RGBA_CHANNELS:
                     # RGBA image
                     qimage = self._array_to_qimage_rgba(array)
                 else:
@@ -217,7 +228,7 @@ class CropProcessor(ProcessorBase):
                 return ImageProcessingResult.success_result(array, {"cropped": False})
 
             # Extract crop coordinates
-            if isinstance(crop_rect, tuple | list) and len(crop_rect) == 4:
+            if isinstance(crop_rect, tuple | list) and len(crop_rect) == CROP_RECT_COMPONENTS:
                 x, y, width, height = crop_rect
             else:
                 return ImageProcessingResult.failure_result(
@@ -225,9 +236,9 @@ class CropProcessor(ProcessorBase):
                 )
 
             # Validate crop bounds
-            if array.ndim == 2:
+            if array.ndim == GRAYSCALE_DIMENSIONS:
                 img_height, img_width = array.shape
-            elif array.ndim == 3:
+            elif array.ndim == COLOR_DIMENSIONS:
                 img_height, img_width = array.shape[:2]
             else:
                 return ImageProcessingResult.failure_result(

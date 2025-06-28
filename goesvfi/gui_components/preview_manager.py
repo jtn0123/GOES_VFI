@@ -18,6 +18,25 @@ from goesvfi.utils.log import get_logger
 
 LOGGER = get_logger(__name__)
 
+# Image dimensions
+GRAYSCALE_DIMENSIONS = 2
+COLOR_DIMENSIONS = 3
+RGB_CHANNELS = 3
+RGBA_CHANNELS = 4
+
+# Image count thresholds
+SINGLE_IMAGE_COUNT = 1
+TWO_IMAGE_COUNT = 2
+
+# Sanchez resolution thresholds (in pixels)
+HIGH_RESOLUTION_THRESHOLD = 1000
+MEDIUM_RESOLUTION_THRESHOLD = 500
+
+# Sanchez km/pixel values
+SANCHEZ_LOW_RES_KM = 4  # Lower resolution for high pixel values
+SANCHEZ_MEDIUM_RES_KM = 2  # Medium resolution
+SANCHEZ_HIGH_RES_KM = 1  # Higher resolution for smaller values
+
 
 class PreviewManager(QObject):
     """Manages preview image functionality for the main window."""
@@ -160,10 +179,10 @@ class PreviewManager(QObject):
             image_files.sort()
 
             # Calculate middle index
-            if len(image_files) == 1:
+            if len(image_files) == SINGLE_IMAGE_COUNT:
                 # Only one image - use it for all three
                 return image_files[0], image_files[0], image_files[0]
-            if len(image_files) == 2:
+            if len(image_files) == TWO_IMAGE_COUNT:
                 # Two images - no middle
                 return image_files[0], None, image_files[1]
             # Three or more images - calculate middle
@@ -220,17 +239,17 @@ class PreviewManager(QObject):
                 # Sanchez expects km per pixel, valid values: 0.5, 1, 2, 4
                 if isinstance(sanchez_resolution, tuple | list):
                     # If tuple/list provided, use a default valid value
-                    res_km = 2  # 2 km/pixel default
+                    res_km = SANCHEZ_MEDIUM_RES_KM  # 2 km/pixel default
                 elif isinstance(sanchez_resolution, int | float):
                     # Map common pixel values to km/pixel values
-                    if sanchez_resolution >= 1000:
-                        res_km = 4  # Lower resolution for high pixel values
-                    elif sanchez_resolution >= 500:
-                        res_km = 2  # Medium resolution
+                    if sanchez_resolution >= HIGH_RESOLUTION_THRESHOLD:
+                        res_km = SANCHEZ_LOW_RES_KM  # Lower resolution for high pixel values
+                    elif sanchez_resolution >= MEDIUM_RESOLUTION_THRESHOLD:
+                        res_km = SANCHEZ_MEDIUM_RES_KM  # Medium resolution
                     else:
-                        res_km = 1  # Higher resolution for smaller values
+                        res_km = SANCHEZ_HIGH_RES_KM  # Higher resolution for smaller values
                 else:
-                    res_km = 2  # Default fallback
+                    res_km = SANCHEZ_MEDIUM_RES_KM  # Default fallback
 
                 image_data = self.sanchez_processor.process(image_data, res_km=res_km)
                 if not image_data:
@@ -255,7 +274,7 @@ class PreviewManager(QObject):
             height, width = array.shape[:2]
 
             # Handle different channel counts
-            if array.ndim == 2:
+            if array.ndim == GRAYSCALE_DIMENSIONS:
                 # Grayscale
                 qimage = QImage(
                     array.data.tobytes(),
@@ -264,7 +283,7 @@ class PreviewManager(QObject):
                     width,
                     QImage.Format.Format_Grayscale8,
                 )
-            elif array.ndim == 3 and array.shape[2] == 3:
+            elif array.ndim == COLOR_DIMENSIONS and array.shape[2] == RGB_CHANNELS:
                 # RGB
                 bytes_per_line = 3 * width
                 qimage = QImage(
@@ -274,7 +293,7 @@ class PreviewManager(QObject):
                     bytes_per_line,
                     QImage.Format.Format_RGB888,
                 )
-            elif array.ndim == 3 and array.shape[2] == 4:
+            elif array.ndim == COLOR_DIMENSIONS and array.shape[2] == RGBA_CHANNELS:
                 # RGBA
                 bytes_per_line = 4 * width
                 qimage = QImage(
