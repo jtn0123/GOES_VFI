@@ -47,7 +47,7 @@ class SampleProcessor:
         # Create visualization manager if not provided
         self.viz_manager = visualization_manager or VisualizationManager(base_dir=self.temp_dir, satellite=satellite)
 
-    def create_sample_comparison(self, channel: ChannelType | int, product_type: ProductType) -> Image.Image | None:
+    def create_sample_comparison(self, _channel: ChannelType | int, _product_type: ProductType) -> Image.Image | None:
         """Create a sample comparison image.
 
         Args:
@@ -61,7 +61,7 @@ class SampleProcessor:
         # Return a placeholder image
         return Image.new("RGB", self.sample_size, color="gray")
 
-    def get_estimated_processing_time(self, channel: ChannelType | int, product_type: ProductType) -> float:
+    def get_estimated_processing_time(self, _channel: ChannelType | int, _product_type: ProductType) -> float:
         """Get estimated processing time for a channel/product combination.
 
         Args:
@@ -76,9 +76,9 @@ class SampleProcessor:
 
     def download_sample_data(
         self,
-        channel: ChannelType | int,
-        product_type: ProductType,
-        date: datetime | None = None,
+        _channel: ChannelType | int,
+        _product_type: ProductType,
+        _date: datetime | None = None,
     ) -> Path | None:
         """Download sample data for a channel.
 
@@ -94,7 +94,7 @@ class SampleProcessor:
         return None
 
     def process_sample_netcdf(
-        self, file_path: Path, channel: ChannelType | int
+        self, _file_path: Path, _channel: ChannelType | int
     ) -> tuple[NDArray[np.float64], Image.Image, Image.Image] | None:
         """Process a sample NetCDF file.
 
@@ -110,8 +110,8 @@ class SampleProcessor:
 
     def download_web_sample(
         self,
-        channel: ChannelType | int,
-        product_type: ProductType,
+        _channel: ChannelType | int,
+        _product_type: ProductType,
     ) -> Image.Image | None:
         """Download a sample image from the web.
 

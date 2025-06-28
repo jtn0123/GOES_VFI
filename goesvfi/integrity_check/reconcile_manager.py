@@ -48,10 +48,10 @@ class ReconcileManager:
 
     async def download_missing_timestamps(
         self,
-        missing_timestamps: list[datetime],
-        satellite: Any,
-        progress_callback: Any | None = None,
-        error_callback: Any | None = None,
+        _missing_timestamps: list[datetime],
+        _satellite: Any,
+        _progress_callback: Any | None = None,
+        _error_callback: Any | None = None,
     ) -> dict[datetime, Any]:
         """Download missing timestamps.
 
@@ -69,12 +69,12 @@ class ReconcileManager:
 
     async def fetch_single(
         self,
-        timestamp: datetime,
-        store: Any,
-        is_recent: bool,
-        source_name: str,
-        idx: int,
-        total: int,
+        _timestamp: datetime,
+        _store: Any,
+        _is_recent: bool,
+        _source_name: str,
+        _idx: int,
+        _total: int,
     ) -> Any:
         """Fetch a single timestamp.
 
@@ -157,8 +157,8 @@ class ReconcileManager:
     async def fetch_missing_files(
         self,
         missing_timestamps: list[datetime],
-        satellite: Any,
-        destination_dir: Any,
+        _satellite: Any,
+        _destination_dir: Any,
         progress_callback: Any | None = None,
         _item_progress_callback: Any | None = None,
     ) -> dict[datetime, Any]:
@@ -234,7 +234,7 @@ class ReconcileManager:
         filename = f"{satellite.name}_{timestamp.strftime('%Y%m%d_%H%M%S')}.png"
         return base / filename
 
-    def _get_store_for_timestamp(self, timestamp: datetime) -> Any:
+    def _get_store_for_timestamp(self, _timestamp: datetime) -> Any:
         """Get appropriate store for a timestamp.
 
         Args:
@@ -254,7 +254,7 @@ class ReconcileManager:
         end_time: datetime,
         interval_minutes: int = 10,
         progress_callback: Any | None = None,
-        file_callback: Any | None = None,
+        _file_callback: Any | None = None,
     ) -> tuple[int, int, int]:
         """Reconcile local files with remote sources.
 
