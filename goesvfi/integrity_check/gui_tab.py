@@ -6,7 +6,7 @@ from the stub and backup files.
 
 import os
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
 from PyQt6.QtCore import (
     QAbstractTableModel,
@@ -43,22 +43,22 @@ LOGGER = log.get_logger(__name__)
 class MissingTimestampsModel(QAbstractTableModel):
     """Model for displaying missing timestamps in a table."""
 
-    def __init__(self, parent: Optional[QObject] = None) -> None:
+    def __init__(self, parent: QObject | None = None) -> None:
         super().__init__(parent)
-        self._items: List[MissingTimestamp] = []
+        self._items: list[MissingTimestamp] = []
         self._headers = ["Timestamp", "Satellite", "Status", "Expected Filename"]
 
-    def set_items(self, items: List[MissingTimestamp]) -> None:
+    def set_items(self, items: list[MissingTimestamp]) -> None:
         """Set the items to display."""
         self.beginResetModel()
         self._items = items
         self.endResetModel()
 
-    def rowCount(self, parent: Optional[QModelIndex] = None) -> int:
+    def rowCount(self, parent: QModelIndex | None = None) -> int:
         """Return the number of rows."""
         return len(self._items)
 
-    def columnCount(self, parent: Optional[QModelIndex] = None) -> int:
+    def columnCount(self, parent: QModelIndex | None = None) -> int:
         """Return the number of columns."""
         return len(self._headers)
 
@@ -73,27 +73,26 @@ class MissingTimestampsModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             if col == 0:  # Timestamp
                 return item.timestamp.strftime("%Y-%m-%d %H:%M:%S")
-            elif col == 1:  # Satellite
+            if col == 1:  # Satellite
                 return item.satellite
-            elif col == 2:  # Status
+            if col == 2:  # Status
                 if item.is_downloaded:
                     return "Downloaded"
-                elif item.is_downloading:
+                if item.is_downloading:
                     return "Downloading..."
-                elif item.download_error:
+                if item.download_error:
                     return f"Error: {item.download_error[:50]}..."
                 return "Missing"
-            elif col == 3:  # Expected Filename
+            if col == 3:  # Expected Filename
                 return item.expected_filename
 
-        elif role == Qt.ItemDataRole.BackgroundRole:
-            if col == 2:  # Status column - use theme-based colors
-                if item.is_downloaded:
-                    return QColor("#ccffcc")  # Success color from theme
-                if item.is_downloading:
-                    return QColor("#ffffcc")  # Warning color from theme
-                if item.download_error:
-                    return QColor("#ffcccc")  # Error color from theme
+        elif role == Qt.ItemDataRole.BackgroundRole and col == 2:  # Status column - use theme-based colors
+            if item.is_downloaded:
+                return QColor("#ccffcc")  # Success color from theme
+            if item.is_downloading:
+                return QColor("#ffffcc")  # Warning color from theme
+            if item.download_error:
+                return QColor("#ffcccc")  # Error color from theme
 
         return None
 
@@ -120,8 +119,8 @@ class IntegrityCheckTab(QWidget):
 
     def __init__(
         self,
-        view_model: Optional[IntegrityCheckViewModel] = None,
-        parent: Optional[QWidget] = None,
+        view_model: IntegrityCheckViewModel | None = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.view_model = view_model
@@ -388,12 +387,7 @@ class IntegrityCheckTab(QWidget):
             self.cancel_button.setEnabled(True)
             self.progress_bar.setVisible(True)
             self.download_started.emit()
-        elif status == ScanStatus.COMPLETED:
-            self.scan_button.setEnabled(True)
-            self.download_button.setEnabled(True)
-            self.cancel_button.setEnabled(False)
-            self.progress_bar.setVisible(False)
-        elif status == ScanStatus.ERROR or status == ScanStatus.CANCELLED:
+        elif status in {ScanStatus.COMPLETED, ScanStatus.ERROR, ScanStatus.CANCELLED}:
             self.scan_button.setEnabled(True)
             self.download_button.setEnabled(True)
             self.cancel_button.setEnabled(False)
@@ -414,7 +408,7 @@ class IntegrityCheckTab(QWidget):
             else:
                 self.progress_bar.setFormat(f"{percentage:.1f}%")
 
-    def _on_missing_items_updated(self, items: List[MissingTimestamp]) -> None:
+    def _on_missing_items_updated(self, items: list[MissingTimestamp]) -> None:
         """Handle missing items update from view model."""
         self.results_model.set_items(items)
         self.download_button.setEnabled(len(items) > 0)
@@ -449,7 +443,7 @@ class IntegrityCheckTab(QWidget):
         # Refresh the table view
         self.results_table.update()
 
-    def _get_selected_items(self) -> List[MissingTimestamp]:
+    def _get_selected_items(self) -> list[MissingTimestamp]:
         """Get selected items from the table."""
         selection = self.results_table.selectionModel()
         if not selection or not selection.hasSelection():
@@ -536,7 +530,7 @@ class IntegrityCheckTab(QWidget):
             worker.quit()
             worker.wait()
 
-            LOGGER.error(f"Auto-detection error: {error_msg}\n{traceback}")
+            LOGGER.error("Auto-detection error: %s\n%s", error_msg, traceback)
             QMessageBox.critical(
                 self,
                 "Auto-Detection Error",

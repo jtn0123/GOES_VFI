@@ -592,7 +592,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
 
         try:
             # Log the scan start
-            LOGGER.info(f"Auto-detect satellite: Starting scan of directory {self.view_model.base_directory}")
+            LOGGER.info("Auto-detect satellite: Starting scan of directory %s", self.view_model.base_directory)
 
             # Simple file counting approach to avoid TimeIndex complexity
             base_path = Path(self.view_model.base_directory)
@@ -602,7 +602,7 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             goes18_count = 0
 
             # Log scanning for each satellite
-            LOGGER.info(f"Auto-detect satellite: Scanning for GOES-16 files in {base_path}")
+            LOGGER.info("Auto-detect satellite: Scanning for GOES-16 files in %s", base_path)
 
             # Scan all PNG files in the directory and subdirectories
             for png_file in base_path.rglob("*.png"):
@@ -619,7 +619,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                     return
 
             # Log found counts
-            LOGGER.info(f"Auto-detect satellite: Found {goes16_count} GOES-16 files and {goes18_count} GOES-18 files")
+            LOGGER.info(
+                "Auto-detect satellite: Found %s GOES-16 files and %s GOES-18 files", goes16_count, goes18_count
+            )
 
             if progress_dialog:
                 progress_dialog.close()
@@ -651,9 +653,9 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
             goes_count = goes16_count if detected == "GOES-16" else goes18_count
             other_count = goes18_count if detected == "GOES-16" else goes16_count
             LOGGER.info(
-                f"Auto-detect satellite: Selected {detected} based on file count ({goes_count} vs {other_count})"
+                "Auto-detect satellite: Selected %s based on file count (%s vs %s)", detected, goes_count, other_count
             )
-            LOGGER.info(f"Auto-detect satellite: Completed successfully, selected {detected_full}")
+            LOGGER.info("Auto-detect satellite: Completed successfully, selected %s", detected_full)
 
             # Show result
             QMessageBox.information(

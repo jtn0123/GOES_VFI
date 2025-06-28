@@ -759,8 +759,11 @@ class S3Store(RemoteStore):
 
                 if self._s3_client is None:
                     LOGGER.debug(
-                        f"Creating new S3 client with unsigned access (attempt {retry_count + 1}/{max_retries}, "
-                        f"region: {self.aws_region}, delay: {delay:.2f}s)"
+                        "Creating new S3 client with unsigned access (attempt %s/%s, region: %s, delay: %.2fs)",
+                        retry_count + 1,
+                        max_retries,
+                        self.aws_region,
+                        delay,
                     )
 
                     # Apply delay for retries using exponential backoff
@@ -1362,7 +1365,9 @@ class S3Store(RemoteStore):
         timestamp_part = f"s{year}{doy}{hour}{minute}"
 
         # Log search parameters for debugging
-        LOGGER.info(f"Search parameters: base_path={base_path}, sat_code={sat_code}, timestamp_part={timestamp_part}")
+        LOGGER.info(
+            "Search parameters: base_path=%s, sat_code=%s, timestamp_part=%s", base_path, sat_code, timestamp_part
+        )
 
         # Generate regex pattern to match the wildcard key
         import re
