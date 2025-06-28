@@ -156,7 +156,7 @@ class ErrorClassifier:
 
         return str(exception)
 
-    def _generate_suggestions(self, exception: Exception, category: ErrorCategory) -> list[str]:
+    def _generate_suggestions(self, _exception: Exception, category: ErrorCategory) -> list[str]:
         """Generate helpful suggestions based on exception and category."""
         suggestions = []
 
@@ -199,7 +199,7 @@ class ErrorClassifier:
 
         return suggestions
 
-    def _is_recoverable(self, category: ErrorCategory, exception: Exception) -> bool:
+    def _is_recoverable(self, category: ErrorCategory, _exception: Exception) -> bool:
         """Determine if an error is potentially recoverable."""
         recoverable_categories = {
             ErrorCategory.VALIDATION,
