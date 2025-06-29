@@ -10,7 +10,7 @@ This v2 version maintains all test scenarios while optimizing through:
 
 import pathlib
 import subprocess
-from typing import Never
+from typing import Any, Never
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -24,8 +24,13 @@ class TestVideoProcessingPipelineOptimizedV2:
     """Optimized complete video processing pipeline tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def pipeline_mock_suite(self):
-        """Create comprehensive mock suite for pipeline testing."""
+    @staticmethod
+    def pipeline_mock_suite() -> dict[str, Any]:  # noqa: C901
+        """Create comprehensive mock suite for pipeline testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing pipeline test components.
+        """
 
         # Enhanced RIFE Mock Manager
         class RifeMockManager:
@@ -39,7 +44,7 @@ class TestVideoProcessingPipelineOptimizedV2:
                     "model_not_found": self._create_model_not_found_mocks,
                 }
 
-            def _create_success_mocks(self):
+            def _create_success_mocks(self) -> dict[str, Any]:
                 return {
                     "find_executable": pathlib.Path("/mock/rife-cli"),
                     "subprocess_run": MagicMock(returncode=0, stdout="", stderr=""),
@@ -51,7 +56,7 @@ class TestVideoProcessingPipelineOptimizedV2:
                     },
                 }
 
-            def _create_failure_mocks(self):
+            def _create_failure_mocks(self) -> dict[str, Any]:
                 return {
                     "find_executable": pathlib.Path("/mock/rife-cli"),
                     "subprocess_run": MagicMock(returncode=1, stdout="", stderr="RIFE processing failed"),
@@ -63,8 +68,8 @@ class TestVideoProcessingPipelineOptimizedV2:
                     },
                 }
 
-            def _create_timeout_mocks(self):
-                import subprocess
+            def _create_timeout_mocks(self) -> dict[str, Any]:
+                import subprocess  # noqa: PLC0415, S404
 
                 return {
                     "find_executable": pathlib.Path("/mock/rife-cli"),
