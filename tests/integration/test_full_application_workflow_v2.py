@@ -8,6 +8,7 @@ This v2 version maintains all test scenarios while optimizing through:
 - Maintained all edge cases and error scenarios
 """
 
+from collections.abc import Callable, Generator
 import pathlib
 import time
 from unittest.mock import MagicMock, patch
@@ -25,8 +26,13 @@ class TestFullApplicationWorkflowOptimizedV2:
     """Optimized integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def app(self):
-        """Shared QApplication instance."""
+    @staticmethod
+    def app() -> Generator[QApplication]:
+        """Shared QApplication instance.
+
+        Yields:
+            QApplication: The application instance for testing.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -34,8 +40,13 @@ class TestFullApplicationWorkflowOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def mock_dependencies(self):
-        """Shared mock setup for common dependencies."""
+    @staticmethod
+    def mock_dependencies() -> Generator[None]:
+        """Shared mock setup for common dependencies.
+
+        Yields:
+            None: Mock context manager for dependencies.
+        """
         with (
             patch("goesvfi.utils.config.get_available_rife_models") as mock_models,
             patch("goesvfi.utils.config.find_rife_executable") as mock_find_rife,
@@ -57,8 +68,13 @@ class TestFullApplicationWorkflowOptimizedV2:
             yield
 
     @pytest.fixture()
-    def mock_vfi_worker(self):
-        """Mock VfiWorker for all tests."""
+    @staticmethod
+    def mock_vfi_worker() -> Generator[tuple[MagicMock, MagicMock]]:
+        """Mock VfiWorker for all tests.
+
+        Yields:
+            tuple[MagicMock, MagicMock]: Mock worker class and instance.
+        """
         with (
             patch("goesvfi.pipeline.run_vfi.VfiWorker") as mock_worker_class,
             patch("goesvfi.gui_tabs.main_tab.VfiWorker") as mock_worker_class_tab,
@@ -85,8 +101,20 @@ class TestFullApplicationWorkflowOptimizedV2:
             yield mock_worker_class_tab, mock_instance
 
     @pytest.fixture()
-    def main_window(self, app, mock_dependencies, mock_vfi_worker):
-        """Create MainWindow instance."""
+    @staticmethod
+    def main_window(
+        app: QApplication, _mock_dependencies: None, _mock_vfi_worker: tuple[MagicMock, MagicMock]
+    ) -> Generator[MainWindow]:
+        """Create MainWindow instance.
+
+        Args:
+            app: QApplication instance.
+            mock_dependencies: Mock dependencies fixture.
+            mock_vfi_worker: Mock VfiWorker fixture.
+
+        Yields:
+            MainWindow: Configured main window instance.
+        """
         window = MainWindow()
         app.processEvents()
 
@@ -101,8 +129,16 @@ class TestFullApplicationWorkflowOptimizedV2:
         app.processEvents()
 
     @pytest.fixture()
-    def test_environment(self, tmp_path):
-        """Create comprehensive test environment."""
+    @staticmethod
+    def test_environment(tmp_path: pathlib.Path) -> dict[str, pathlib.Path]:
+        """Create comprehensive test environment.
+
+        Args:
+            tmp_path: Pytest temporary path fixture.
+
+        Returns:
+            Dict[str, pathlib.Path]: Test environment paths.
+        """
         # Input directory with various image types
         input_dir = tmp_path / "input"
         input_dir.mkdir()
@@ -132,7 +168,13 @@ class TestFullApplicationWorkflowOptimizedV2:
             "output_dir": tmp_path,
         }
 
-    def test_complete_workflow_main_tab_to_video(self, main_window, app, test_environment, mock_vfi_worker) -> None:
+    @staticmethod
+    def test_complete_workflow_main_tab_to_video(
+        main_window: MainWindow,
+        app: QApplication,
+        test_environment: dict[str, pathlib.Path],
+        mock_vfi_worker: tuple[MagicMock, MagicMock],
+    ) -> None:
         """Test complete workflow from main tab setup to video generation."""
         _mock_worker_class, mock_instance = mock_vfi_worker
         output_file = test_environment["output_dir"] / "output.mp4"
@@ -165,11 +207,11 @@ class TestFullApplicationWorkflowOptimizedV2:
         progress_callback = None
         finished_callback = None
 
-        def mock_progress_connect(callback) -> None:
+        def mock_progress_connect(callback: Callable[[int, int, int], None]) -> None:
             nonlocal progress_callback
             progress_callback = callback
 
-        def mock_finished_connect(callback) -> None:
+        def mock_finished_connect(callback: Callable[[str], None]) -> None:
             nonlocal finished_callback
             finished_callback = callback
 
@@ -208,7 +250,10 @@ class TestFullApplicationWorkflowOptimizedV2:
         assert not main_window.main_tab.is_processing
         assert main_window.main_tab.start_button.isEnabled()
 
-    def test_complete_workflow_with_crop(self, main_window, app, test_environment) -> None:
+    @staticmethod
+    def test_complete_workflow_with_crop(
+        main_window: MainWindow, app: QApplication, test_environment: dict[str, pathlib.Path]
+    ) -> None:
         """Test workflow with crop selection."""
         output_file = test_environment["output_dir"] / "output_cropped.mp4"
 
@@ -228,7 +273,7 @@ class TestFullApplicationWorkflowOptimizedV2:
             mock_dialog.return_value = mock_dialog_instance
 
             # Mock set_crop_rect
-            main_window.set_crop_rect = MagicMock()
+            main_window.set_crop_rect = MagicMock()  # type: ignore[assignment]
             main_window.current_crop_rect = None
 
             # Click crop button
@@ -239,7 +284,8 @@ class TestFullApplicationWorkflowOptimizedV2:
             # Verify no crash
             assert True
 
-    def test_workflow_with_ffmpeg_settings(self, main_window, app, test_environment) -> None:
+    @staticmethod
+    def test_workflow_with_ffmpeg_settings(main_window: MainWindow, app: QApplication) -> None:
         """Test workflow including FFmpeg settings configuration."""
         # Find FFmpeg tab
         tab_widget = main_window.tab_widget
@@ -281,7 +327,10 @@ class TestFullApplicationWorkflowOptimizedV2:
         if hasattr(ffmpeg_tab, "quality_slider"):
             assert ffmpeg_tab.quality_slider.value() == 25
 
-    def test_workflow_with_file_sorter(self, main_window, app, test_environment) -> None:
+    @staticmethod
+    def test_workflow_with_file_sorter(
+        main_window: MainWindow, app: QApplication, test_environment: dict[str, pathlib.Path]
+    ) -> None:
         """Test workflow using file sorter to organize images."""
         # Find File Sorter tab
         tab_widget = main_window.tab_widget
@@ -308,7 +357,13 @@ class TestFullApplicationWorkflowOptimizedV2:
             # Verify UI remains responsive
             assert file_sorter_tab.sort_button is not None
 
-    def test_workflow_with_sanchez_processing(self, main_window, app, test_environment, mock_vfi_worker) -> None:
+    @staticmethod
+    def test_workflow_with_sanchez_processing(
+        main_window: MainWindow,
+        app: QApplication,
+        test_environment: dict[str, pathlib.Path],
+        mock_vfi_worker: tuple[MagicMock, MagicMock],
+    ) -> None:
         """Test workflow with Sanchez false color processing enabled."""
         mock_worker_class, _mock_instance = mock_vfi_worker
         output_file = test_environment["output_dir"] / "output_sanchez.mp4"
@@ -336,7 +391,8 @@ class TestFullApplicationWorkflowOptimizedV2:
         assert call_args["false_colour"] is True
         assert call_args["res_km"] == 2
 
-    def test_all_tab_navigation(self, main_window, app) -> None:
+    @staticmethod
+    def test_all_tab_navigation(main_window: MainWindow, app: QApplication) -> None:
         """Test navigation through all tabs."""
         tab_widget = main_window.tab_widget
         tab_count = tab_widget.count()
@@ -372,7 +428,10 @@ class TestFullApplicationWorkflowOptimizedV2:
         # Verify all expected tabs are present
         assert expected_tabs.issubset(found_tabs)
 
-    def test_error_handling_workflow(self, main_window, app, test_environment) -> None:
+    @staticmethod
+    def test_error_handling_workflow(
+        main_window: MainWindow, app: QApplication, test_environment: dict[str, pathlib.Path]
+    ) -> None:
         """Test error handling across the workflow."""
         # Test 1: Invalid input directory
         main_window.main_tab.in_dir_edit.setText("/nonexistent/directory")
@@ -402,7 +461,7 @@ class TestFullApplicationWorkflowOptimizedV2:
 
             error_callback = None
 
-            def mock_error_connect(callback) -> None:
+            def mock_error_connect(callback: Callable[[str], None]) -> None:
                 nonlocal error_callback
                 error_callback = callback
 
@@ -426,7 +485,8 @@ class TestFullApplicationWorkflowOptimizedV2:
                 # Verify error was handled
                 assert mock_worker.start.called
 
-    def test_settings_persistence_workflow(self, main_window, app) -> None:
+    @staticmethod
+    def test_settings_persistence_workflow(main_window: MainWindow, app: QApplication) -> None:
         """Test that settings persist across tab switches."""
         # Configure settings in main tab
         main_window.main_tab.fps_spinbox.setValue(60)
@@ -451,7 +511,14 @@ class TestFullApplicationWorkflowOptimizedV2:
         assert main_window.main_tab.sanchez_false_colour_checkbox.isChecked()
 
     @pytest.mark.parametrize("encoder", ["RIFE", "FFmpeg"])
-    def test_different_encoders_workflow(self, main_window, app, test_environment, encoder, mock_vfi_worker) -> None:
+    @staticmethod
+    def test_different_encoders_workflow(
+        main_window: MainWindow,
+        app: QApplication,
+        test_environment: dict[str, pathlib.Path],
+        encoder: str,
+        mock_vfi_worker: tuple[MagicMock, MagicMock],
+    ) -> None:
         """Test workflow with different encoders."""
         mock_worker_class, _mock_instance = mock_vfi_worker
         output_file = test_environment["output_dir"] / f"output_{encoder}.mp4"
@@ -489,7 +556,10 @@ class TestFullApplicationWorkflowOptimizedV2:
             call_args = mock_worker_class.call_args[1]
             assert call_args["encoder"] == encoder
 
-    def test_preview_functionality(self, main_window, app, test_environment) -> None:
+    @staticmethod
+    def test_preview_functionality(
+        main_window: MainWindow, app: QApplication, test_environment: dict[str, pathlib.Path]
+    ) -> None:
         """Test preview dialog functionality."""
         # Set input directory
         main_window.main_tab.in_dir_edit.setText(str(test_environment["input_dir"]))
@@ -511,7 +581,8 @@ class TestFullApplicationWorkflowOptimizedV2:
             # Verify preview dialog was created
             mock_preview.assert_called_once()
 
-    def test_model_library_integration(self, main_window, app) -> None:
+    @staticmethod
+    def test_model_library_integration(main_window: MainWindow, app: QApplication) -> None:
         """Test Model Library tab integration."""
         tab_widget = main_window.tab_widget
 
@@ -534,7 +605,8 @@ class TestFullApplicationWorkflowOptimizedV2:
             model_lib_tab = tab_widget.currentWidget()
             assert model_lib_tab is not None
 
-    def test_satellite_integrity_integration(self, main_window, app) -> None:
+    @staticmethod
+    def test_satellite_integrity_integration(main_window: MainWindow, app: QApplication) -> None:
         """Test Satellite Integrity tab integration."""
         tab_widget = main_window.tab_widget
 
@@ -557,7 +629,8 @@ class TestFullApplicationWorkflowOptimizedV2:
             integrity_tab = tab_widget.currentWidget()
             assert integrity_tab is not None
 
-    def test_date_sorter_integration(self, main_window, app) -> None:
+    @staticmethod
+    def test_date_sorter_integration(main_window: MainWindow, app: QApplication) -> None:
         """Test Date Sorter tab integration."""
         tab_widget = main_window.tab_widget
 
