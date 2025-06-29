@@ -7,7 +7,7 @@ These tests focus on the timeline visualization tab's ability to:
 3. Handle user interactions properly
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 import unittest
 
 from PyQt6.QtWidgets import QApplication, QMainWindow
@@ -48,14 +48,14 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
 
     def _create_test_data(self) -> None:
         """Create test data for the timeline visualization."""
-        self.start_date = datetime(2023, 1, 1)
-        self.end_date = datetime(2023, 1, 3, 23, 59, 59)
+        self.start_date = datetime(2023, 1, 1, tzinfo=UTC)
+        self.end_date = datetime(2023, 1, 3, 23, 59, 59, tzinfo=UTC)
 
         # Create a list of mock missing timestamps
         self.missing_items = []
 
         # Day 1: Some missing, some available
-        day1 = datetime(2023, 1, 1)
+        day1 = datetime(2023, 1, 1, tzinfo=UTC)
         for hour in range(0, 24, 2):
             # Create a missing timestamp every 2 hours
             ts = day1.replace(hour=hour)
@@ -69,7 +69,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
             self.missing_items.append(item)
 
         # Day 2: All missing
-        day2 = datetime(2023, 1, 2)
+        day2 = datetime(2023, 1, 2, tzinfo=UTC)
         for hour in range(0, 24, 2):
             ts = day2.replace(hour=hour)
             item = MissingTimestamp(ts, f"test_file_{ts.strftime('%Y%m%d%H%M%S')}.nc")
@@ -105,8 +105,8 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         QApplication.processEvents()
 
         # Now change the date range
-        new_start = datetime(2023, 1, 2)  # Day 2 only
-        new_end = datetime(2023, 1, 2, 23, 59, 59)
+        new_start = datetime(2023, 1, 2, tzinfo=UTC)  # Day 2 only
+        new_end = datetime(2023, 1, 2, 23, 59, 59, tzinfo=UTC)
 
         # Set the new date range
         self.tab.set_date_range(new_start, new_end)
@@ -147,8 +147,8 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         timestamp_waiter = AsyncSignalWaiter(self.tab.timestampSelected)
 
         # Simulate selecting a timestamp by calling the handler directly
-        test_timestamp = datetime(2023, 1, 1, 12, 0)
-        self.tab._handle_timestamp_selected(test_timestamp)
+        test_timestamp = datetime(2023, 1, 1, 12, 0, tzinfo=UTC)
+        self.tab._handle_timestamp_selected(test_timestamp)  # noqa: SLF001
 
         # Wait for the signal
         received_timestamp = await timestamp_waiter.wait(timeout=1.0)
@@ -172,7 +172,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         assert self.tab.stack.currentIndex() == 0, "Initial view should be timeline"
 
         # Switch to calendar view
-        self.tab._toggle_visualization(1)
+        self.tab._toggle_visualization(1)  # noqa: SLF001
 
         # Process events
         QApplication.processEvents()
@@ -185,7 +185,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         assert self.tab.view_calendar_btn.isChecked(), "Calendar button should be checked"
 
         # Switch back to timeline view
-        self.tab._toggle_visualization(0)
+        self.tab._toggle_visualization(0)  # noqa: SLF001
 
         # Process events
         QApplication.processEvents()
@@ -211,7 +211,7 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
 
         # Select a timestamp that corresponds to an item
         selected_timestamp = self.missing_items[0].timestamp
-        self.tab._handle_timestamp_selected(selected_timestamp)
+        self.tab._handle_timestamp_selected(selected_timestamp)  # noqa: SLF001
 
         # Process events
         QApplication.processEvents()
