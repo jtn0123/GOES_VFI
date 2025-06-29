@@ -12,7 +12,7 @@ import contextlib
 from pathlib import Path
 import subprocess  # noqa: S404
 import types
-from typing import Any
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -364,45 +364,41 @@ class TestRawEncoderOptimizedV2:
                 ]
 
                 for fps_test in fps_test_cases:
-                    test_workspace = self._create_test_workspace(temp_workspace, fps_test["name"])
+                    fps_value: int = cast("int", fps_test["fps"])
+                    test_name: str = cast("str", fps_test["name"])
+                    test_workspace = self._create_test_workspace(temp_workspace, test_name)
 
                     expected_cmd = self._build_expected_command(
-                        test_workspace["temp_dir_path"], test_workspace["raw_path"], fps_test["fps"]
+                        test_workspace["temp_dir_path"], test_workspace["raw_path"], fps_value
                     )
 
                     with self._setup_command_validation_mocks(test_workspace, expected_cmd) as mock_context:
-                        raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=fps_test["fps"])
+                        raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=fps_value)
 
                         # Get the actual command that was called
                         actual_cmd = mock_context["mock_run"].call_args[0][0]
 
                         # Verify command structure
-                        assert "ffmpeg" in actual_cmd, f"Command should contain ffmpeg for FPS {fps_test['fps']}"
-                        assert "-y" in actual_cmd, f"Command should contain overwrite flag for FPS {fps_test['fps']}"
-                        assert "-framerate" in actual_cmd, (
-                            f"Command should contain framerate flag for FPS {fps_test['fps']}"
-                        )
-                        assert str(fps_test["fps"]) in actual_cmd, (
-                            f"Command should contain FPS value for FPS {fps_test['fps']}"
-                        )
-                        assert "-i" in actual_cmd, f"Command should contain input flag for FPS {fps_test['fps']}"
-                        assert "-c:v" in actual_cmd, (
-                            f"Command should contain video codec flag for FPS {fps_test['fps']}"
-                        )
-                        assert "ffv1" in actual_cmd, f"Command should contain ffv1 codec for FPS {fps_test['fps']}"
+                        assert "ffmpeg" in actual_cmd, f"Command should contain ffmpeg for FPS {fps_value}"
+                        assert "-y" in actual_cmd, f"Command should contain overwrite flag for FPS {fps_value}"
+                        assert "-framerate" in actual_cmd, f"Command should contain framerate flag for FPS {fps_value}"
+                        assert str(fps_value) in actual_cmd, f"Command should contain FPS value for FPS {fps_value}"
+                        assert "-i" in actual_cmd, f"Command should contain input flag for FPS {fps_value}"
+                        assert "-c:v" in actual_cmd, f"Command should contain video codec flag for FPS {fps_value}"
+                        assert "ffv1" in actual_cmd, f"Command should contain ffv1 codec for FPS {fps_value}"
                         assert str(test_workspace["raw_path"]) in actual_cmd, (
-                            f"Command should contain output path for FPS {fps_test['fps']}"
+                            f"Command should contain output path for FPS {fps_value}"
                         )
 
                         # Verify command order and structure
                         framerate_index = actual_cmd.index("-framerate")
-                        assert actual_cmd[framerate_index + 1] == str(fps_test["fps"]), (
-                            f"FPS value should follow framerate flag for FPS {fps_test['fps']}"
+                        assert actual_cmd[framerate_index + 1] == str(fps_value), (
+                            f"FPS value should follow framerate flag for FPS {fps_value}"
                         )
 
-                        command_tests[fps_test["name"]] = {
+                        command_tests[test_name] = {
                             "success": True,
-                            "fps": fps_test["fps"],
+                            "fps": fps_value,
                             "command_valid": True,
                             "actual_command": actual_cmd,
                             "expected_command": expected_cmd,
@@ -449,30 +445,33 @@ class TestRawEncoderOptimizedV2:
                 ]
 
                 for edge_case in edge_cases:
-                    frames = self.frame_templates[edge_case["frames"]]
-                    test_workspace = self._create_test_workspace(temp_workspace, edge_case["name"])
+                    frames_key: str = cast("str", edge_case["frames"])
+                    case_name: str = cast("str", edge_case["name"])
+                    fps_value: float = cast("float", edge_case["fps"])
+                    frames = self.frame_templates[frames_key]
+                    test_workspace = self._create_test_workspace(temp_workspace, case_name)
 
                     expected_cmd = self._build_expected_command(
-                        test_workspace["temp_dir_path"], test_workspace["raw_path"], edge_case["fps"]
+                        test_workspace["temp_dir_path"], test_workspace["raw_path"], fps_value
                     )
 
                     try:
                         with self._setup_successful_mocks(test_workspace, expected_cmd):
                             result_path = raw_encoder.write_raw_mp4(
-                                frames, test_workspace["raw_path"], fps=edge_case["fps"]
+                                frames, test_workspace["raw_path"], fps=int(fps_value)
                             )
 
-                            edge_case_tests[edge_case["name"]] = {
+                            edge_case_tests[case_name] = {
                                 "success": True,
-                                "fps": edge_case["fps"],
+                                "fps": fps_value,
                                 "frames_count": len(frames),
                                 "result_path": str(result_path),
                                 "expected_behavior": edge_case["expected"],
                             }
                     except Exception as e:  # noqa: BLE001
-                        edge_case_tests[edge_case["name"]] = {
+                        edge_case_tests[case_name] = {
                             "success": edge_case["expected"] == "error_or_success",
-                            "fps": edge_case["fps"],
+                            "fps": fps_value,
                             "frames_count": len(frames),
                             "exception": str(e),
                             "exception_type": type(e).__name__,
@@ -511,14 +510,16 @@ class TestRawEncoderOptimizedV2:
                 ]
 
                 for perf_case in performance_cases:
+                    case_name: str = cast("str", perf_case["name"])
+                    test_func: Callable[[], dict[str, Any]] = cast("Callable[[], dict[str, Any]]", perf_case["test"])
                     try:
-                        result = perf_case["test"]()
-                        performance_tests[perf_case["name"]] = {
+                        result = test_func()
+                        performance_tests[case_name] = {
                             "success": True,
                             "result": result,
                         }
                     except Exception as e:  # noqa: BLE001
-                        performance_tests[perf_case["name"]] = {
+                        performance_tests[case_name] = {
                             "success": False,
                             "exception": str(e),
                         }
@@ -718,6 +719,7 @@ class TestRawEncoderOptimizedV2:
                 class MockContext:
                     def __enter__(self) -> dict[str, Any]:
                         # Create appropriate error
+                        error: Exception
                         if error_type == "called_process_error":
                             error = subprocess.CalledProcessError(1, expected_cmd, stderr="ffmpeg fail")
                         elif error_type == "file_not_found_error":
@@ -985,7 +987,7 @@ class TestRawEncoderOptimizedV2:
         analyzer = components["analyzer"]
 
         # Define comprehensive raw encoder test scenarios
-        encoder_scenarios = [
+        encoder_scenarios: list[dict[str, Any]] = [
             {
                 "name": "Successful Encoding",
                 "test_type": "successful_encoding",
@@ -1038,11 +1040,11 @@ class TestRawEncoderOptimizedV2:
                     scenario_results["analysis"] = analysis_results
 
                 # Verify scenario-specific expectations
-                if scenario["name"] == "Successful Encoding":
+                scenario_name: str = scenario["name"]
+                expected_count: int = scenario.get("expected_tests", scenario.get("expected_errors", 0))
+                if scenario_name == "Successful Encoding":
                     # Should successfully encode all test cases
-                    assert len(scenario_results) >= scenario["expected_tests"], (
-                        f"Should test {scenario['expected_tests']} encoding scenarios"
-                    )
+                    assert len(scenario_results) >= expected_count, f"Should test {expected_count} encoding scenarios"
 
                     # All encoding tests should succeed
                     for test_name, test_result in scenario_results.items():
@@ -1061,11 +1063,9 @@ class TestRawEncoderOptimizedV2:
                         frame_analysis = scenario_results["analysis"]["frame_processing"]
                         assert frame_analysis["fromarray_accuracy"] == 1.0, "All frames should be processed correctly"
 
-                elif scenario["name"] == "Error Handling":
+                elif scenario_name == "Error Handling":
                     # Should handle different error types correctly
-                    assert len(scenario_results) >= scenario["expected_errors"], (
-                        f"Should test {scenario['expected_errors']} error types"
-                    )
+                    assert len(scenario_results) >= expected_count, f"Should test {expected_count} error types"
 
                     # Check specific error types
                     error_types = ["ffmpeg_called_process_error", "ffmpeg_file_not_found", "image_processing_error"]
@@ -1078,10 +1078,10 @@ class TestRawEncoderOptimizedV2:
                                     f"Should raise correct error for {error_type}"
                                 )
 
-                elif scenario["name"] == "Frame Processing":
+                elif scenario_name == "Frame Processing":
                     # Should handle different frame types
-                    assert len(scenario_results) >= scenario["expected_tests"], (
-                        f"Should test {scenario['expected_tests']} frame processing scenarios"
+                    assert len(scenario_results) >= expected_count, (
+                        f"Should test {expected_count} frame processing scenarios"
                     )
 
                     # Check specific frame processing scenarios
@@ -1089,10 +1089,10 @@ class TestRawEncoderOptimizedV2:
                         if test_name != "analysis":
                             assert test_result["success"], f"Frame processing test {test_name} should succeed"
 
-                elif scenario["name"] == "Command Validation":
+                elif scenario_name == "Command Validation":
                     # Should validate commands for different FPS values
-                    assert len(scenario_results) >= scenario["expected_tests"], (
-                        f"Should test {scenario['expected_tests']} command validation scenarios"
+                    assert len(scenario_results) >= expected_count, (
+                        f"Should test {expected_count} command validation scenarios"
                     )
 
                     # All command validation tests should succeed
@@ -1101,11 +1101,9 @@ class TestRawEncoderOptimizedV2:
                             assert test_result["success"], f"Command validation test {test_name} should succeed"
                             assert test_result["command_valid"], f"Command should be valid for {test_name}"
 
-                elif scenario["name"] == "Edge Cases":
+                elif scenario_name == "Edge Cases":
                     # Should handle edge cases appropriately
-                    assert len(scenario_results) >= scenario["expected_tests"], (
-                        f"Should test {scenario['expected_tests']} edge cases"
-                    )
+                    assert len(scenario_results) >= expected_count, f"Should test {expected_count} edge cases"
 
                     # Edge cases may succeed or fail depending on the specific case
                     edge_case_names = ["very_high_fps", "zero_fps", "negative_fps", "float_fps"]
@@ -1115,10 +1113,10 @@ class TestRawEncoderOptimizedV2:
                             # Edge cases should either succeed or handle errors gracefully
                             assert "success" in edge_result, f"Edge case {edge_case} should have success indicator"
 
-                elif scenario["name"] == "Performance Tests":
+                elif scenario_name == "Performance Tests":
                     # Should complete performance tests
-                    assert len(scenario_results) >= scenario["expected_tests"], (
-                        f"Should test {scenario['expected_tests']} performance scenarios"
+                    assert len(scenario_results) >= expected_count, (
+                        f"Should test {expected_count} performance scenarios"
                     )
 
                     # Performance tests should provide meaningful results
@@ -1129,10 +1127,10 @@ class TestRawEncoderOptimizedV2:
                                 f"Performance test {test_name} should have success indicator"
                             )
 
-                all_results[scenario["name"]] = scenario_results
+                all_results[scenario_name] = scenario_results
 
             except Exception as e:  # noqa: BLE001
-                pytest.fail(f"Unexpected error in {scenario['name']}: {e}")
+                pytest.fail(f"Unexpected error in {scenario_name}: {e}")
 
         # Overall validation
         assert len(all_results) == len(encoder_scenarios), "Not all encoder scenarios completed"
@@ -1169,19 +1167,20 @@ class TestRawEncoderOptimizedV2:
 
         # Test each original scenario
         for original_test in original_tests:
-            frames = test_manager.frame_templates[original_test["frames"]]
-            test_workspace = test_manager._create_test_workspace(temp_workspace, original_test["name"])  # noqa: SLF001
+            frames_key: str = cast("str", original_test["frames"])
+            test_name: str = cast("str", original_test["name"])
+            fps_value: int = cast("int", original_test["fps"])
+            frames = test_manager.frame_templates[frames_key]
+            test_workspace = test_manager._create_test_workspace(temp_workspace, test_name)  # noqa: SLF001
 
             expected_cmd = test_manager._build_expected_command(  # noqa: SLF001
-                test_workspace["temp_dir_path"], test_workspace["raw_path"], original_test["fps"]
+                test_workspace["temp_dir_path"], test_workspace["raw_path"], fps_value
             )
 
             if original_test.get("expect_success"):
                 # Test successful scenario
                 with test_manager._setup_successful_mocks(test_workspace, expected_cmd) as mock_context:  # noqa: SLF001
-                    result_path = raw_encoder.write_raw_mp4(
-                        frames, test_workspace["raw_path"], fps=original_test["fps"]
-                    )
+                    result_path = raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=fps_value)
 
                     # Verify original test expectations
                     assert mock_context["mock_fromarray"].call_count == len(frames), "Should convert all frames"
@@ -1201,7 +1200,7 @@ class TestRawEncoderOptimizedV2:
                     test_workspace, expected_cmd, error_type
                 ) as mock_context:
                     with pytest.raises(original_test["expect_error"]):
-                        raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=original_test["fps"])
+                        raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=fps_value)
 
                     # Verify mock was called despite error
                     mock_context["mock_run"].assert_called_once(), "Should call FFmpeg even when it fails"
@@ -1235,17 +1234,19 @@ class TestRawEncoderOptimizedV2:
 
         # Test each stress scenario
         for scenario in stress_scenarios:
+            scenario_name: str = cast("str", scenario["name"])
+            test_func: Callable[[], dict[str, Any]] = cast("Callable[[], dict[str, Any]]", scenario["test"])
             # Use pytest.raises for expected errors
-            if scenario["name"] in {"Extreme Parameter Values", "Error Recovery Patterns"}:
+            if scenario_name in {"Extreme Parameter Values", "Error Recovery Patterns"}:
                 # These scenarios may have expected errors
-                result = scenario["test"]()
-                assert result is not None, f"Stress test {scenario['name']} returned None"
-                assert result.get("success", False), f"Stress test {scenario['name']} failed"
+                result = test_func()
+                assert result is not None, f"Stress test {scenario_name} returned None"
+                assert result.get("success", False), f"Stress test {scenario_name} failed"
             else:
                 # Standard execution for other scenarios
-                result = scenario["test"]()
-                assert result is not None, f"Stress test {scenario['name']} returned None"
-                assert result.get("success", False), f"Stress test {scenario['name']} failed"
+                result = test_func()
+                assert result is not None, f"Stress test {scenario_name} returned None"
+                assert result.get("success", False), f"Stress test {scenario_name} failed"
 
     @staticmethod
     def _test_concurrent_encoding_simulation(temp_workspace: dict[str, Any], test_manager: Any) -> dict[str, Any]:
@@ -1295,13 +1296,15 @@ class TestRawEncoderOptimizedV2:
         successful_tests = 0
 
         for extreme_test in extreme_values:
-            test_workspace = test_manager._create_test_workspace(temp_workspace, extreme_test["name"])  # noqa: SLF001
+            test_name: str = cast("str", extreme_test["name"])
+            fps_value: float = cast("float", extreme_test["fps"])
+            test_workspace = test_manager._create_test_workspace(temp_workspace, test_name)  # noqa: SLF001
             expected_cmd = test_manager._build_expected_command(  # noqa: SLF001
-                test_workspace["temp_dir_path"], test_workspace["raw_path"], extreme_test["fps"]
+                test_workspace["temp_dir_path"], test_workspace["raw_path"], fps_value
             )
 
             with contextlib.suppress(Exception), test_manager._setup_successful_mocks(test_workspace, expected_cmd):  # noqa: SLF001
-                raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=extreme_test["fps"])
+                raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=int(fps_value))
                 successful_tests += 1
 
         return {
