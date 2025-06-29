@@ -13,13 +13,14 @@ We are fixing linting issues in all test files ending with `_v2.py`. The work is
 
 ## File Allocation
 
-### Lead Agent Files (Claude Code - Primary)
-- [⚠️] tests/unit/test_encode_v2.py (CORRUPTED FILE - massive embedded \\n chars, needs complete rewrite)
-- [✅] tests/unit/test_interpolate_v2.py (COMPLETED - committed as 540c553)
-- [⚠️] tests/unit/test_run_vfi_param_v2.py (CORRUPTED FILE - thousands of embedded \\\" chars, needs complete rewrite)
-- [ ] tests/unit/test_raw_encoder_v2.py (SYNTAX ERRORS - HIGH PRIORITY)
-- [ ] tests/unit/test_run_ffmpeg_v2.py (SYNTAX ERRORS - HIGH PRIORITY)
-- [ ] tests/unit/test_pipeline_exceptions_v2.py (73 issues)
+### Lead Agent Files (Claude Code - Primary) - Core Unit Tests
+- [✅] tests/unit/test_encode_v2.py (COMPLETED - committed bd031ed)
+- [✅] tests/unit/test_interpolate_v2.py (COMPLETED - committed 540c553)
+- [✅] tests/unit/test_run_vfi_param_v2.py (COMPLETED - committed 4804c05)
+- [✅] tests/unit/test_main_tab_v2.py (COMPLETED - committed 531f67f)
+- [✅] tests/unit/test_raw_encoder_v2.py (COMPLETED - committed 62a171d)
+- [ ] tests/unit/test_run_ffmpeg_v2.py (HIGH PRIORITY)
+- [ ] tests/unit/test_pipeline_exceptions_v2.py
 - [ ] tests/unit/test_processing_handler_v2.py
 - [ ] tests/unit/test_processing_manager_v2.py
 - [ ] tests/unit/test_cache_utils_v2.py
@@ -30,7 +31,6 @@ We are fixing linting issues in all test files ending with `_v2.py`. The work is
 - [ ] tests/unit/test_real_s3_path_v2.py
 - [ ] tests/unit/test_real_s3_patterns_v2.py
 - [ ] tests/unit/test_remote_stores_v2.py
-- [ ] tests/unit/test_run_ffmpeg_v2.py
 - [ ] tests/unit/test_s3_band13_v2.py
 - [ ] tests/unit/test_s3_download_stats_param_v2.py
 - [ ] tests/unit/test_s3_error_handling_v2.py
@@ -40,26 +40,40 @@ We are fixing linting issues in all test files ending with `_v2.py`. The work is
 - [ ] tests/unit/test_time_index_v2.py
 - [ ] tests/unit/test_validation_v2.py
 
-### Worker Agent Files (Secondary Agent)
-- [x] tests/integration/test_full_application_workflow_v2.py (COMPLETED - 164→0 issues)
-- [x] tests/unit/test_main_tab_v2.py (COMPLETED - 133→19 issues)
-- [x] tests/unit/test_model_manager_v2.py (COMPLETED - 165→0 issues)
-- [x] tests/unit/test_network_failure_simulation_v2.py (COMPLETED - 175→0 issues)
-- [x] tests/unit/test_security_v2.py (COMPLETED - 159→0 issues)
-- [x] tests/integration/test_end_to_end_satellite_download_v2.py (COMPLETED - 343→171 issues)
-- [x] tests/integration/test_goes_imagery_tab_v2.py (COMPLETED - 125→minimal issues)
-- [x] tests/integration/test_headless_workflow_v2.py (COMPLETED - 274→88 issues)
+### **NEW DISCOVERY**: Many More V2 Files Found!
+We discovered 126+ v2 test files total! The original coordination was incomplete.
+
+### Worker Agent Files - Recommended Next Batch (Integration & GUI Tests)
+
+**High Priority Integration Tests (good for Worker Agent)**:
 - [ ] tests/integration/test_integrity_check_tab_v2.py
-- [ ] tests/integration/test_integrity_tab_integration_v2.py
+- [ ] tests/integration/test_integrity_tab_integration_v2.py  
 - [ ] tests/integration/test_pipeline_v2.py
 - [ ] tests/integration/test_preview_functionality_v2.py
 - [ ] tests/integration/test_preview_integration_v2.py
 - [ ] tests/integration/test_vfi_worker_v2.py
 - [ ] tests/integration/test_video_processing_pipeline_v2.py
+- [ ] tests/integration/test_all_gui_elements_v2.py
+- [ ] tests/integration/test_crop_dialog_integration_v2.py
+- [ ] tests/integration/test_enhanced_preview_validation_v2.py
+
+**GUI Test Files (good for Worker Agent)**:
+- [ ] tests/gui/test_main_window_v2.py
+- [ ] tests/gui/test_gui_components_v2.py  
+- [ ] tests/gui/test_enhanced_main_tab_v2.py
+- [ ] tests/gui/test_settings_advanced_v2.py
+- [ ] tests/gui/test_accessibility_v2.py
+- [ ] tests/gui/test_error_handling_ui_v2.py
+- [ ] tests/gui/test_performance_ui_v2.py
+- [ ] tests/gui/test_workflows_integration_v2.py
+
+**Specialized Unit Tests (good for Worker Agent)**:
 - [ ] tests/unit/test_date_utils_v2.py
 - [ ] tests/unit/test_processing_view_model_ffmpeg_v2.py
 - [ ] tests/unit/test_rife_analyzer_v2.py
 - [ ] tests/unit/test_s3_unsigned_access_v2.py
+- [ ] tests/unit/test_network_failure_simulation_v2.py
+- [ ] tests/unit/test_security_v2.py
 
 ## Instructions for Worker Agent
 1. You are the **Worker Agent** handling the files listed in your section above
@@ -101,16 +115,20 @@ We are fixing linting issues in all test files ending with `_v2.py`. The work is
 - [x] tests/integration/test_goes_imagery_tab_v2.py (125→minimal issues - major improvement)
 - [x] tests/integration/test_headless_workflow_v2.py (274→88 issues - 68% reduction)
 
-### Current Work In Progress
-- Lead Agent:
-  - ✅ Completed full rewrite of test_interpolate_v2.py - COMMITTED (commit 540c553)
-  - 🔄 Working on remaining assigned files (test_run_vfi_param_v2.py, test_encode_v2.py, etc.)
-- Worker Agent: ✅ **ALL ASSIGNED FILES COMPLETED!** 8/8 files successfully fixed and committed
-  - Total issues resolved: ~1,200+ across 8 files
-  - 5 files achieved ZERO critical issues
-  - 3 files achieved 50-68% reduction
-  - All files have comprehensive type annotations
-  - All commits successfully pushed to GitHub
+### Current Progress Status
+
+**Lead Agent - 5 Core Unit Test Files COMPLETED! 🎉**
+- ✅ tests/unit/test_interpolate_v2.py (COMPLETED - commit 540c553)
+- ✅ tests/unit/test_encode_v2.py (COMPLETED - commit bd031ed) 
+- ✅ tests/unit/test_run_vfi_param_v2.py (COMPLETED - commit 4804c05)
+- ✅ tests/unit/test_main_tab_v2.py (COMPLETED - commit 531f67f)
+- ✅ tests/unit/test_raw_encoder_v2.py (COMPLETED - commit 62a171d)
+
+**Next Priority for Lead Agent**: Continue with core unit test files:
+- 🔄 tests/unit/test_run_ffmpeg_v2.py (HIGH PRIORITY)
+- 📋 tests/unit/test_pipeline_exceptions_v2.py
+- 📋 tests/unit/test_processing_handler_v2.py
+- 📋 And remaining core unit test files...
 
 ### Major Issues Discovered & Status
 - ✅ RESOLVED: test_interpolate_v2.py and test_run_vfi_param_v2.py massive corruption (completely rewritten)
