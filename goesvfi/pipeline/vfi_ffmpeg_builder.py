@@ -29,7 +29,7 @@ class VFIFFmpegBuilder:
         skip_model: bool,
         encoder: str | None = None,
         preset: str | None = None,
-        pix_fmt: str | None = None
+        pix_fmt: str | None = None,
     ) -> list[str]:
         """Build FFmpeg command for creating raw video from image pipe.
 
@@ -55,35 +55,43 @@ class VFIFFmpegBuilder:
 
         cmd = [
             "ffmpeg",
-            "-hide_banner",           # Hide FFmpeg banner
-            "-loglevel", "verbose",   # Verbose logging
-            "-stats",                 # Show encoding progress
-            "-y",                     # Overwrite output file
-            "-f", "image2pipe",       # Input format is piped images
-            "-framerate", str(effective_input_fps),  # Input framerate
-            "-vcodec", "png",         # Input codec is PNG
-            "-i", "-",                # Read from stdin
-            "-an",                    # No audio
-            "-vcodec", encoder,       # Output video codec
-            "-preset", preset,        # Encoding preset
-            "-pix_fmt", pix_fmt,      # Pixel format
-            "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",  # Ensure even dimensions
-            str(output_path)          # Output file
+            "-hide_banner",  # Hide FFmpeg banner
+            "-loglevel",
+            "verbose",  # Verbose logging
+            "-stats",  # Show encoding progress
+            "-y",  # Overwrite output file
+            "-f",
+            "image2pipe",  # Input format is piped images
+            "-framerate",
+            str(effective_input_fps),  # Input framerate
+            "-vcodec",
+            "png",  # Input codec is PNG
+            "-i",
+            "-",  # Read from stdin
+            "-an",  # No audio
+            "-vcodec",
+            encoder,  # Output video codec
+            "-preset",
+            preset,  # Encoding preset
+            "-pix_fmt",
+            pix_fmt,  # Pixel format
+            "-vf",
+            "scale=trunc(iw/2)*2:trunc(ih/2)*2",  # Ensure even dimensions
+            str(output_path),  # Output file
         ]
 
         LOGGER.info(
             "Built FFmpeg command: fps=%d, effective_fps=%d, encoder=%s, preset=%s",
-            fps, effective_input_fps, encoder, preset
+            fps,
+            effective_input_fps,
+            encoder,
+            preset,
         )
 
         return cmd
 
     def build_final_video_command(
-        self,
-        input_path: pathlib.Path,
-        output_path: pathlib.Path,
-        fps: int,
-        ffmpeg_args: dict[str, Any]
+        self, input_path: pathlib.Path, output_path: pathlib.Path, fps: int, ffmpeg_args: dict[str, Any]
     ) -> list[str]:
         """Build FFmpeg command for final video with all settings.
 
@@ -109,11 +117,13 @@ class VFIFFmpegBuilder:
         cmd = [
             "ffmpeg",
             "-hide_banner",
-            "-loglevel", "verbose",
+            "-loglevel",
+            "verbose",
             "-stats",
             "-y",
-            "-i", str(input_path),
-            "-an"  # No audio
+            "-i",
+            str(input_path),
+            "-an",  # No audio
         ]
 
         # Add video filter chain if needed
@@ -164,10 +174,7 @@ class VFIFFmpegBuilder:
         # Add output path
         cmd.append(str(output_path))
 
-        LOGGER.info(
-            "Built final FFmpeg command: encoder=%s, crf=%s, filters=%d",
-            encoder, crf, len(vf_filters)
-        )
+        LOGGER.info("Built final FFmpeg command: encoder=%s, crf=%s, filters=%d", encoder, crf, len(vf_filters))
 
         return cmd
 
@@ -255,7 +262,7 @@ class VFIFFmpegBuilder:
             "output_path": None,
             "framerate": None,
             "encoder": None,
-            "filters": []
+            "filters": [],
         }
 
         # Parse command arguments

@@ -87,13 +87,16 @@ class TestCacheOperations:
         hash3 = cache._hash_pair(file2, file1, model_id, num_frames)
         assert hash1 != hash3
 
-    @pytest.mark.parametrize("total_frames,frame_index", [
-        (5, 0),     # First frame
-        (5, 2),     # Middle frame
-        (5, 4),     # Last frame
-        (100, 42),  # Large cache
-        (1, 0),     # Single frame
-    ])
+    @pytest.mark.parametrize(
+        "total_frames,frame_index",
+        [
+            (5, 0),  # First frame
+            (5, 2),  # Middle frame
+            (5, 4),  # Last frame
+            (100, 42),  # Large cache
+            (1, 0),  # Single frame
+        ],
+    )
     def test_get_cache_filepath_formatting(self, tmp_path, total_frames: int, frame_index: int) -> None:
         """Test cache filepath formatting with different parameters."""
         base_key = "abc123"
@@ -103,13 +106,17 @@ class TestCacheOperations:
         path = cache._get_cache_filepath(base_key, frame_index, total_frames)
         assert path.name == expected_filename
 
-    @pytest.mark.parametrize("num_frames,should_return_none", [
-        (0, True),   # Zero frames should return None
-        (1, False),  # One frame should work
-        (5, False),  # Multiple frames should work
-    ])
-    def test_load_cached_frame_count_validation(self, sample_paths, mock_cache_dir,
-                                              num_frames: int, should_return_none: bool) -> None:
+    @pytest.mark.parametrize(
+        "num_frames,should_return_none",
+        [
+            (0, True),  # Zero frames should return None
+            (1, False),  # One frame should work
+            (5, False),  # Multiple frames should work
+        ],
+    )
+    def test_load_cached_frame_count_validation(
+        self, sample_paths, mock_cache_dir, num_frames: int, should_return_none: bool
+    ) -> None:
         """Test load_cached behavior with different frame counts."""
         file1, file2 = sample_paths["basic"]
         result = cache.load_cached(file1, file2, "modelA", num_frames)
@@ -128,8 +135,9 @@ class TestCacheOperations:
         assert result is None
 
     @pytest.mark.parametrize("scenario", ["basic", "minimal"])
-    def test_save_and_load_cache_roundtrip(self, sample_paths, mock_cache_dir,
-                                         cache_test_scenarios, scenario: str) -> None:
+    def test_save_and_load_cache_roundtrip(
+        self, sample_paths, mock_cache_dir, cache_test_scenarios, scenario: str
+    ) -> None:
         """Test complete save and load roundtrip for different scenarios."""
         file1, file2 = sample_paths[scenario]
         scenario_data = cache_test_scenarios[scenario]
@@ -155,14 +163,18 @@ class TestCacheOperations:
         for original, loaded in zip(frames, loaded_frames, strict=False):
             np.testing.assert_array_equal(original, loaded)
 
-    @pytest.mark.parametrize("num_frames,frame_count,should_warn", [
-        (3, 1, True),   # Mismatch - should warn
-        (3, 3, False),  # Match - should not warn
-        (1, 1, False),  # Single frame match
-        (5, 2, True),   # Large mismatch
-    ])
-    def test_save_cache_mismatch_validation(self, sample_paths, mock_cache_dir, caplog,
-                                          num_frames: int, frame_count: int, should_warn: bool) -> None:
+    @pytest.mark.parametrize(
+        "num_frames,frame_count,should_warn",
+        [
+            (3, 1, True),  # Mismatch - should warn
+            (3, 3, False),  # Match - should not warn
+            (1, 1, False),  # Single frame match
+            (5, 2, True),  # Large mismatch
+        ],
+    )
+    def test_save_cache_mismatch_validation(
+        self, sample_paths, mock_cache_dir, caplog, num_frames: int, frame_count: int, should_warn: bool
+    ) -> None:
         """Test save cache validation with frame count mismatches."""
         file1, file2 = sample_paths["basic"]
         model_id = "modelA"
@@ -202,11 +214,14 @@ class TestCacheOperations:
         assert result is None
         assert "Error loading cache files" in caplog.text
 
-    @pytest.mark.parametrize("operation_sequence", [
-        [("save", "modelA", 3), ("load", "modelA", 3), ("save", "modelB", 2)],
-        [("load", "missing", 1), ("save", "test", 1), ("load", "test", 1)],
-        [("save", "bulk", 5), ("load", "bulk", 5), ("load", "bulk", 5)],  # Multiple loads
-    ])
+    @pytest.mark.parametrize(
+        "operation_sequence",
+        [
+            [("save", "modelA", 3), ("load", "modelA", 3), ("save", "modelB", 2)],
+            [("load", "missing", 1), ("save", "test", 1), ("load", "test", 1)],
+            [("save", "bulk", 5), ("load", "bulk", 5), ("load", "bulk", 5)],  # Multiple loads
+        ],
+    )
     def test_cache_operation_sequences(self, sample_paths, mock_cache_dir, operation_sequence: list[tuple]) -> None:
         """Test sequences of cache operations for robustness."""
         file1, file2 = sample_paths["basic"]

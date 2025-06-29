@@ -40,6 +40,7 @@ class TestCorruptFileHandling:
 
         async def render_with_error(*args, **kwargs) -> None:
             import xarray
+
             try:
                 xarray.open_dataset(kwargs.get("file_path"))
             except ValueError as e:
@@ -63,6 +64,7 @@ class TestCorruptFileHandling:
     @pytest.fixture()
     def corrupt_file_factory(self, temp_dir):
         """Factory fixture for creating various types of corrupt files."""
+
         def create_file(filename: str, corruption_type: str) -> Path:
             path = temp_dir / filename
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -84,18 +86,21 @@ class TestCorruptFileHandling:
                 path.write_bytes(corruption_data.get(corruption_type, b""))
 
             return path
+
         return create_file
 
-    @pytest.mark.parametrize("corruption_type,error_type,error_message", [
-        ("empty", ValueError, "Unable to read file"),
-        ("truncated", OSError, "Truncated file"),
-        ("wrong_format", ValueError, "Not a valid NetCDF file"),
-        ("invalid_structure", KeyError, "Variable 'Rad' not found"),
-    ])
+    @pytest.mark.parametrize(
+        "corruption_type,error_type,error_message",
+        [
+            ("empty", ValueError, "Unable to read file"),
+            ("truncated", OSError, "Truncated file"),
+            ("wrong_format", ValueError, "Not a valid NetCDF file"),
+            ("invalid_structure", KeyError, "Variable 'Rad' not found"),
+        ],
+    )
     @pytest.mark.asyncio()
     async def test_netcdf_corruption_handling(
-        self, temp_dir, netcdf_renderer, corrupt_file_factory,
-        corruption_type, error_type, error_message
+        self, temp_dir, netcdf_renderer, corrupt_file_factory, corruption_type, error_type, error_message
     ) -> None:
         """Test handling of various NetCDF file corruptions."""
         corrupt_file = corrupt_file_factory(f"test_{corruption_type}.nc", corruption_type)
@@ -124,20 +129,23 @@ class TestCorruptFileHandling:
 
             assert "Cannot identify image file" in str(exc_info.value)
 
-    @pytest.mark.parametrize("test_case", [
-        {
-            "name": "checksum_mismatch",
-            "data": b"corrupted data",
-            "expected_checksum": "a1b2c3d4e5f6",
-            "error_pattern": "Checksum mismatch",
-        },
-        {
-            "name": "partial_download",
-            "expected_size": 1024 * 1024,
-            "actual_size": 512 * 1024,
-            "error_pattern": "Incomplete download",
-        },
-    ])
+    @pytest.mark.parametrize(
+        "test_case",
+        [
+            {
+                "name": "checksum_mismatch",
+                "data": b"corrupted data",
+                "expected_checksum": "a1b2c3d4e5f6",
+                "error_pattern": "Checksum mismatch",
+            },
+            {
+                "name": "partial_download",
+                "expected_size": 1024 * 1024,
+                "actual_size": 512 * 1024,
+                "error_pattern": "Incomplete download",
+            },
+        ],
+    )
     @pytest.mark.asyncio()
     async def test_download_validation(self, temp_dir, test_case) -> None:
         """Test various download validation scenarios."""
@@ -149,13 +157,8 @@ class TestCorruptFileHandling:
 
             with pytest.raises(RemoteStoreError) as exc_info:
                 if actual_checksum != test_case["expected_checksum"]:
-                    msg = (
-                        f"Checksum mismatch: expected {test_case['expected_checksum']}, "
-                        f"got {actual_checksum}"
-                    )
-                    raise RemoteStoreError(
-                        msg
-                    )
+                    msg = f"Checksum mismatch: expected {test_case['expected_checksum']}, got {actual_checksum}"
+                    raise RemoteStoreError(msg)
 
         elif test_case["name"] == "partial_download":
             partial_file = temp_dir / "partial.nc"
@@ -167,9 +170,7 @@ class TestCorruptFileHandling:
                         f"Incomplete download: expected {test_case['expected_size']} bytes, "
                         f"got {test_case['actual_size']} bytes"
                     )
-                    raise RemoteStoreError(
-                        msg
-                    )
+                    raise RemoteStoreError(msg)
 
         assert test_case["error_pattern"] in str(exc_info.value)
 
@@ -250,6 +251,7 @@ class TestCorruptFileHandling:
 
         async def concurrent_writes() -> None:
             """Simulate concurrent file writes."""
+
             async def write1() -> None:
                 test_file.write_bytes(b"Writer 1 data")
                 await asyncio.sleep(0.01)
@@ -287,20 +289,18 @@ class TestCorruptFileHandling:
                 decompressed_size += len(chunk)
 
                 if decompressed_size > max_decompressed_size:
-                    msg = (
-                        f"Decompressed size exceeds limit: "
-                        f"{decompressed_size} > {max_decompressed_size}"
-                    )
-                    raise ValueError(
-                        msg
-                    )
+                    msg = f"Decompressed size exceeds limit: {decompressed_size} > {max_decompressed_size}"
+                    raise ValueError(msg)
 
-    @pytest.mark.parametrize("file_info", [
-        ("test.nc", b"CDF\x01", True, "NetCDF"),
-        ("test.jpg", b"\xff\xd8\xff", False, "JPEG"),
-        ("test.png", b"\x89PNG", False, "PNG"),
-        ("test.txt", b"Hello", False, "Text"),
-    ])
+    @pytest.mark.parametrize(
+        "file_info",
+        [
+            ("test.nc", b"CDF\x01", True, "NetCDF"),
+            ("test.jpg", b"\xff\xd8\xff", False, "JPEG"),
+            ("test.png", b"\x89PNG", False, "PNG"),
+            ("test.txt", b"Hello", False, "Text"),
+        ],
+    )
     @pytest.mark.asyncio()
     async def test_file_format_validation(self, temp_dir, file_info) -> None:
         """Test validation of file formats before processing."""
@@ -316,28 +316,31 @@ class TestCorruptFileHandling:
         is_netcdf = file_header.startswith(b"CDF")
         assert is_netcdf == is_valid_netcdf
 
-    @pytest.mark.parametrize("error_scenario", [
-        {
-            "corruption": "empty",
-            "detection": lambda f: f.stat().st_size == 0,
-            "message": "File is empty. Please ensure the download completed successfully.",
-        },
-        {
-            "corruption": "truncated",
-            "detection": lambda f: len(f.read_bytes()) < 100,
-            "message": "File appears to be truncated. Try downloading again.",
-        },
-        {
-            "corruption": "wrong_format",
-            "detection": lambda f: not f.read_bytes()[:4].startswith(b"CDF"),
-            "message": "File format not recognized. Expected NetCDF format.",
-        },
-        {
-            "corruption": "corrupted_data",
-            "detection": lambda f: True,  # Always detected after other checks
-            "message": "File data is corrupted. Please verify the source.",
-        },
-    ])
+    @pytest.mark.parametrize(
+        "error_scenario",
+        [
+            {
+                "corruption": "empty",
+                "detection": lambda f: f.stat().st_size == 0,
+                "message": "File is empty. Please ensure the download completed successfully.",
+            },
+            {
+                "corruption": "truncated",
+                "detection": lambda f: len(f.read_bytes()) < 100,
+                "message": "File appears to be truncated. Try downloading again.",
+            },
+            {
+                "corruption": "wrong_format",
+                "detection": lambda f: not f.read_bytes()[:4].startswith(b"CDF"),
+                "message": "File format not recognized. Expected NetCDF format.",
+            },
+            {
+                "corruption": "corrupted_data",
+                "detection": lambda f: True,  # Always detected after other checks
+                "message": "File data is corrupted. Please verify the source.",
+            },
+        ],
+    )
     def test_graceful_error_messages(self, temp_dir, corrupt_file_factory, error_scenario) -> None:
         """Test that error messages are helpful for corrupt files."""
         corrupt_file = corrupt_file_factory("bad_data.nc", error_scenario["corruption"])
@@ -349,13 +352,16 @@ class TestCorruptFileHandling:
 
             assert error_scenario["message"] == str(exc_info.value)
 
-    @pytest.mark.parametrize("image_size,expected_valid", [
-        ((100, 100), True),     # Small image - valid
-        ((500, 500), True),     # Medium image - valid
-        ((10000, 10000), True),  # Large but within limit - valid
-        ((10001, 10001), False),  # Just over limit - invalid
-        ((20000, 20000), False),  # Way over limit - invalid
-    ])
+    @pytest.mark.parametrize(
+        "image_size,expected_valid",
+        [
+            ((100, 100), True),  # Small image - valid
+            ((500, 500), True),  # Medium image - valid
+            ((10000, 10000), True),  # Large but within limit - valid
+            ((10001, 10001), False),  # Just over limit - invalid
+            ((20000, 20000), False),  # Way over limit - invalid
+        ],
+    )
     def test_validate_image_size_limits(self, temp_dir, image_size, expected_valid) -> None:
         """Test validation of image size limits."""
         test_image = temp_dir / f"test_{image_size[0]}x{image_size[1]}.png"

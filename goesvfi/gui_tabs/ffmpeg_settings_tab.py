@@ -23,7 +23,6 @@ from goesvfi.gui_components.widget_factory import WidgetFactory
 
 # Setup logger
 from goesvfi.utils import log
-from goesvfi.gui_components.icon_manager import get_icon
 
 # Runtime import for constants defined in gui.py
 from goesvfi.utils.config import (

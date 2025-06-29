@@ -42,7 +42,7 @@ class TestEdgeCaseTimezoneV2:
             "summer_utc": datetime.datetime(2023, 7, 15, 18, 30, 0, tzinfo=datetime.UTC),
             "winter_utc": datetime.datetime(2023, 1, 15, 18, 30, 0, tzinfo=datetime.UTC),
             "dst_spring_before": datetime.datetime(2023, 3, 12, 1, 59, 0),  # Before DST
-            "dst_fall_first": datetime.datetime(2023, 11, 5, 1, 30, 0),    # Fall back
+            "dst_fall_first": datetime.datetime(2023, 11, 5, 1, 30, 0),  # Fall back
             "midnight_before": datetime.datetime(2023, 7, 15, 23, 59, 59, tzinfo=datetime.UTC),
             "midnight_after": datetime.datetime(2023, 7, 16, 0, 0, 1, tzinfo=datetime.UTC),
             "leap_year_feb29": datetime.datetime(2024, 2, 29, 12, 0, 0, tzinfo=datetime.UTC),
@@ -57,15 +57,19 @@ class TestEdgeCaseTimezoneV2:
         """Create a TimeIndex instance for testing."""
         return TimeIndex()
 
-    @pytest.mark.parametrize("test_time_key,timezone_key,expected_hour,expected_day_offset", [
-        ("summer_utc", "eastern", 14, 0),   # UTC-4 in summer
-        ("summer_utc", "pacific", 11, 0),   # UTC-7 in summer
-        ("summer_utc", "tokyo", 3, 1),      # UTC+9, next day
-        ("winter_utc", "eastern", 13, 0),   # UTC-5 in winter
-        ("winter_utc", "pacific", 10, 0),   # UTC-8 in winter
-    ])
-    def test_utc_to_local_conversion_comprehensive(self, shared_test_times, shared_timezones,
-                                                  test_time_key, timezone_key, expected_hour, expected_day_offset) -> None:
+    @pytest.mark.parametrize(
+        "test_time_key,timezone_key,expected_hour,expected_day_offset",
+        [
+            ("summer_utc", "eastern", 14, 0),  # UTC-4 in summer
+            ("summer_utc", "pacific", 11, 0),  # UTC-7 in summer
+            ("summer_utc", "tokyo", 3, 1),  # UTC+9, next day
+            ("winter_utc", "eastern", 13, 0),  # UTC-5 in winter
+            ("winter_utc", "pacific", 10, 0),  # UTC-8 in winter
+        ],
+    )
+    def test_utc_to_local_conversion_comprehensive(
+        self, shared_test_times, shared_timezones, test_time_key, timezone_key, expected_hour, expected_day_offset
+    ) -> None:
         """Test UTC to local timezone conversion with various combinations."""
         utc_time = shared_test_times[test_time_key]
         target_timezone = shared_timezones[timezone_key]
@@ -81,10 +85,13 @@ class TestEdgeCaseTimezoneV2:
             expected_day = utc_time.day + expected_day_offset
             assert local_time.day == expected_day
 
-    @pytest.mark.parametrize("dst_scenario,test_description", [
-        ("spring_forward", "Spring DST transition handling"),
-        ("fall_back", "Fall DST transition handling"),
-    ])
+    @pytest.mark.parametrize(
+        "dst_scenario,test_description",
+        [
+            ("spring_forward", "Spring DST transition handling"),
+            ("fall_back", "Fall DST transition handling"),
+        ],
+    )
     def test_dst_transitions_comprehensive(self, shared_timezones, dst_scenario, test_description) -> None:
         """Test DST transitions comprehensively."""
         eastern = shared_timezones["eastern"]
@@ -108,11 +115,14 @@ class TestEdgeCaseTimezoneV2:
             assert first_130am.minute == 30
             assert second_130am.hour == 2  # Continuous time progression
 
-    @pytest.mark.parametrize("satellite,product_type", [
-        (SatellitePattern.GOES_16, "RadC"),
-        (SatellitePattern.GOES_18, "RadF"),
-        (SatellitePattern.GOES_16, "RadF"),
-    ])
+    @pytest.mark.parametrize(
+        "satellite,product_type",
+        [
+            (SatellitePattern.GOES_16, "RadC"),
+            (SatellitePattern.GOES_18, "RadF"),
+            (SatellitePattern.GOES_16, "RadF"),
+        ],
+    )
     def test_goes_timestamp_parsing_with_timezone(self, time_index, shared_test_times, satellite, product_type) -> None:
         """Test timezone-aware datetime objects with existing methods."""
         utc_time = shared_test_times["summer_utc"]
@@ -126,19 +136,22 @@ class TestEdgeCaseTimezoneV2:
 
         # Verify key components
         assert "196" in s3_key  # Day 196 is July 15, 2023
-        assert "18" in s3_key   # Hour 18
+        assert "18" in s3_key  # Hour 18
         assert f"ABI-L1b-{product_type}" in s3_key
 
         # Verify satellite code
         expected_code = "G16" if satellite == SatellitePattern.GOES_16 else "G18"
         assert expected_code in s3_key
 
-    @pytest.mark.parametrize("test_date_key,expected_day_of_year", [
-        ("dec_31_regular", 365),  # 2023 is not a leap year
-        ("jan_1", 1),             # January 1st
-        ("leap_year_feb29", 60),  # Feb 29 in leap year
-        ("dec_31_leap", 366),     # Dec 31 in leap year
-    ])
+    @pytest.mark.parametrize(
+        "test_date_key,expected_day_of_year",
+        [
+            ("dec_31_regular", 365),  # 2023 is not a leap year
+            ("jan_1", 1),  # January 1st
+            ("leap_year_feb29", 60),  # Feb 29 in leap year
+            ("dec_31_leap", 366),  # Dec 31 in leap year
+        ],
+    )
     def test_day_of_year_edge_cases(self, shared_test_times, test_date_key, expected_day_of_year) -> None:
         """Test day-of-year calculations around year boundaries."""
         test_date = shared_test_times[test_date_key]
@@ -165,7 +178,7 @@ class TestEdgeCaseTimezoneV2:
 
         # Verify different days are represented
         assert "196/23" in key_before  # Day 196, hour 23
-        assert "197/00" in key_after   # Day 197, hour 00
+        assert "197/00" in key_after  # Day 197, hour 00
 
     def test_international_date_line_handling(self, shared_test_times, shared_timezones) -> None:
         """Test handling around international date line."""
@@ -175,9 +188,9 @@ class TestEdgeCaseTimezoneV2:
         hawaii_time = utc_time.astimezone(shared_timezones["hawaii"])
 
         # Verify date line crossing
-        assert fiji_time.day == 16    # Next day in Fiji
+        assert fiji_time.day == 16  # Next day in Fiji
         assert hawaii_time.day == 15  # Same day in Hawaii
-        assert fiji_time.hour == 0   # Midnight in Fiji
+        assert fiji_time.hour == 0  # Midnight in Fiji
         assert hawaii_time.hour == 2  # 2 AM in Hawaii
 
     def test_goes_scan_schedule_timezone_consistency(self, shared_test_times, shared_timezones) -> None:
@@ -227,7 +240,7 @@ class TestEdgeCaseTimezoneV2:
 
         # Range spanning spring DST transition
         start = datetime.datetime(2023, 3, 11, 22, 0, 0, tzinfo=datetime.UTC)  # 5 PM EST
-        end = datetime.datetime(2023, 3, 12, 22, 0, 0, tzinfo=datetime.UTC)    # 6 PM EDT
+        end = datetime.datetime(2023, 3, 12, 22, 0, 0, tzinfo=datetime.UTC)  # 6 PM EDT
 
         # Convert to local times
         start_local = start.astimezone(eastern)
@@ -235,7 +248,7 @@ class TestEdgeCaseTimezoneV2:
 
         # Verify DST transition
         assert start_local.hour == 17  # 5 PM EST
-        assert end_local.hour == 18    # 6 PM EDT
+        assert end_local.hour == 18  # 6 PM EDT
 
         # Duration should be exactly 24 hours
         duration = end - start
@@ -264,7 +277,7 @@ class TestEdgeCaseTimezoneV2:
         china_time = utc_time.astimezone(shared_timezones["china"])
 
         # Very different times despite both being "CST"
-        assert us_time.hour == 7   # 7 AM CDT (summer)
+        assert us_time.hour == 7  # 7 AM CDT (summer)
         assert china_time.hour == 20  # 8 PM CST
 
     def test_sub_second_timestamp_precision(self, time_index, shared_test_times) -> None:
@@ -280,7 +293,7 @@ class TestEdgeCaseTimezoneV2:
 
         # Verify timestamp components are represented
         assert "196" in s3_key  # Day of year
-        assert "12" in s3_key   # Hour
+        assert "12" in s3_key  # Hour
         assert "ABI-L1b-RadC" in s3_key
         assert "G16" in s3_key
 
@@ -301,13 +314,16 @@ class TestEdgeCaseTimezoneV2:
         assert isinstance(old_local.hour, int)
         assert isinstance(new_local.hour, int)
 
-    @pytest.mark.parametrize("hour,expected_scan_count", [
-        (0, 4),   # Midnight UTC
-        (6, 4),   # 6 AM UTC
-        (12, 4),  # Noon UTC
-        (18, 4),  # 6 PM UTC
-        (23, 4),  # 11 PM UTC
-    ])
+    @pytest.mark.parametrize(
+        "hour,expected_scan_count",
+        [
+            (0, 4),  # Midnight UTC
+            (6, 4),  # 6 AM UTC
+            (12, 4),  # Noon UTC
+            (18, 4),  # 6 PM UTC
+            (23, 4),  # 11 PM UTC
+        ],
+    )
     def test_hourly_scan_consistency(self, shared_test_times, hour, expected_scan_count) -> None:
         """Test that scan counts are consistent regardless of hour."""
         base_time = shared_test_times["summer_utc"].replace(hour=hour, minute=0, second=0)

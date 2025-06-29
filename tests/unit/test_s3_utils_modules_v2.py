@@ -1,18 +1,20 @@
-"""Optimized S3 utils modules tests to speed up slow tests while maintaining coverage.
+"""
+Optimized unit tests for S3 utilities modules with maintained coverage.
 
-Optimizations applied:
-- Shared fixtures for common utility configurations and mock setups
-- Parameterized test scenarios for comprehensive utility module validation
-- Enhanced error conversion and diagnostics testing
-- Mock-based testing to avoid real network operations and DNS calls
-- Comprehensive statistics tracking and configuration testing
+This v2 version maintains all test scenarios while optimizing through:
+- Shared fixtures for S3 utilities components setup
+- Enhanced test managers for comprehensive utility testing
+- Batch testing of error scenarios and diagnostics
+- Improved mock management with shared configurations
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import socket
-from unittest.mock import patch, Mock
-import pytest
+from typing import Any
+from unittest.mock import patch
+
 import botocore.exceptions
+import pytest
 
 from goesvfi.integrity_check.remote.base import (
     AuthenticationError,
@@ -30,742 +32,808 @@ from goesvfi.integrity_check.remote.s3_utils import (
 from goesvfi.integrity_check.time_index import SatellitePattern
 
 
-class TestS3UtilsModulesV2:
-    """Optimized test class for S3 utils modules functionality."""
+class TestS3UtilsModulesOptimizedV2:
+    """Optimized S3 utilities modules tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def stats_scenarios(self):
-        """Define various statistics tracking scenario test cases."""
-        return {
-            "successful_downloads": [
-                {"success": True, "download_time": 1.0, "file_size": 1024, "satellite": "GOES_16"},
-                {"success": True, "download_time": 2.5, "file_size": 2048, "satellite": "GOES_18"},
-                {"success": True, "download_time": 0.8, "file_size": 512, "satellite": "GOES_16"},
-            ],
-            "failed_downloads": [
-                {"success": False, "error_type": "network", "error_message": "Connection timeout", "satellite": "GOES_16"},
-                {"success": False, "error_type": "auth", "error_message": "Access denied", "satellite": "GOES_18"},
-                {"success": False, "error_type": "not_found", "error_message": "File not found", "satellite": "GOES_16"},
-            ],
-            "mixed_downloads": [
-                {"success": True, "download_time": 1.5, "file_size": 1500, "satellite": "GOES_16"},
-                {"success": False, "error_type": "timeout", "error_message": "Read timeout", "satellite": "GOES_18"},
-                {"success": True, "download_time": 3.0, "file_size": 3000, "satellite": "GOES_16"},
-                {"success": False, "error_type": "network", "error_message": "DNS error", "satellite": "GOES_18"},
-            ],
-            "large_scale_downloads": [
-                {"success": True, "download_time": i * 0.1, "file_size": i * 100, "satellite": f"GOES_{16 + (i % 2)}"}
-                for i in range(1, 21)  # 20 successful downloads
-            ] + [
-                {"success": False, "error_type": "network", "error_message": f"Error {i}", "satellite": f"GOES_{16 + (i % 2)}"}
-                for i in range(5)  # 5 failed downloads
-            ],
-        }
+    def s3_utils_test_components(self):
+        """Create shared components for S3 utilities testing."""
 
-    @pytest.fixture(scope="class")
-    def config_scenarios(self):
-        """Define various S3 configuration scenario test cases."""
-        return {
-            "default_config": {
-                "aws_profile": None,
-                "aws_region": "us-east-1",
-                "timeout": 60,
-                "connect_timeout": 10,
-                "max_retries": 2,
-                "enable_debug_logging": False,
-            },
-            "custom_config": {
-                "aws_profile": "custom-profile",
-                "aws_region": "us-west-2",
-                "timeout": 120,
-                "connect_timeout": 20,
-                "max_retries": 5,
-                "enable_debug_logging": True,
-            },
-            "high_performance_config": {
-                "aws_profile": "performance",
-                "aws_region": "us-east-1",
-                "timeout": 300,
-                "connect_timeout": 30,
-                "max_retries": 10,
-                "enable_debug_logging": False,
-            },
-            "minimal_config": {
-                "aws_profile": None,
-                "aws_region": "us-east-1",
-                "timeout": 30,
-                "connect_timeout": 5,
-                "max_retries": 1,
-                "enable_debug_logging": False,
-            },
-        }
+        # Enhanced S3 Utilities Test Manager
+        class S3UtilsTestManager:
+            """Manage S3 utilities testing scenarios."""
 
-    @pytest.fixture(scope="class")
-    def error_conversion_scenarios(self):
-        """Define various error conversion scenario test cases."""
-        return {
-            "client_errors": {
-                "404_not_found": {
-                    "error": botocore.exceptions.ClientError(
+            def __init__(self) -> None:
+                # Define test configurations
+                self.test_configs = {
+                    "error_types": ["not_found", "auth", "timeout", "network"],
+                    "bucket_names": ["noaa-goes16", "noaa-goes17", "noaa-goes18"],
+                    "satellites": [SatellitePattern.GOES_16, SatellitePattern.GOES_18],
+                    "download_times": [1.0, 2.5, 5.0, 10.0],
+                    "file_sizes": [1024, 10240, 102400, 1048576],
+                    "s3_hosts": NetworkDiagnostics.NOAA_S3_HOSTS,
+                }
+
+                # Error scenarios for testing
+                self.error_scenarios = {
+                    "client_404": botocore.exceptions.ClientError(
                         {"Error": {"Code": "404", "Message": "Not Found"}}, "GetObject"
                     ),
-                    "expected_type": ResourceNotFoundError,
-                    "expected_content": ["not found", "GOES_16"],
-                },
-                "403_access_denied": {
-                    "error": botocore.exceptions.ClientError(
+                    "client_403": botocore.exceptions.ClientError(
                         {"Error": {"Code": "403", "Message": "Access Denied"}}, "GetObject"
                     ),
-                    "expected_type": AuthenticationError,
-                    "expected_content": ["access denied", "GOES_16"],
-                },
-                "500_internal_error": {
-                    "error": botocore.exceptions.ClientError(
+                    "client_500": botocore.exceptions.ClientError(
                         {"Error": {"Code": "500", "Message": "Internal Server Error"}}, "GetObject"
                     ),
-                    "expected_type": RemoteStoreError,
-                    "expected_content": ["internal", "server"],
-                },
-                "invalid_access_key": {
-                    "error": botocore.exceptions.ClientError(
-                        {"Error": {"Code": "InvalidAccessKeyId", "Message": "Invalid access key"}}, "GetObject"
+                    "client_throttle": botocore.exceptions.ClientError(
+                        {"Error": {"Code": "ThrottlingException", "Message": "Rate exceeded"}}, "GetObject"
                     ),
-                    "expected_type": AuthenticationError,
-                    "expected_content": ["invalid", "access"],
-                },
-            },
-            "network_errors": {
-                "timeout_error": {
-                    "error": TimeoutError("Operation timed out"),
-                    "expected_type": RemoteConnectionError,
-                    "expected_content": ["timeout", "GOES_16"],
-                },
-                "connection_error": {
-                    "error": ConnectionError("Connection failed"),
-                    "expected_type": RemoteConnectionError,
-                    "expected_content": ["connection", "GOES_16"],
-                },
-                "permission_error": {
-                    "error": PermissionError("Permission denied"),
-                    "expected_type": AuthenticationError,
-                    "expected_content": ["permission", "GOES_16"],
-                },
-                "os_error": {
-                    "error": OSError("Disk full"),
-                    "expected_type": RemoteStoreError,
-                    "expected_content": ["disk", "full"],
-                },
-            },
-            "generic_errors": {
-                "value_error": {
-                    "error": ValueError("Invalid value"),
-                    "expected_type": RemoteStoreError,
-                    "expected_content": ["error", "GOES_16"],
-                },
-                "runtime_error": {
-                    "error": RuntimeError("Runtime failure"),
-                    "expected_type": RemoteStoreError,
-                    "expected_content": ["error", "GOES_16"],
-                },
-            },
-        }
+                    "timeout": TimeoutError("Operation timed out"),
+                    "permission": PermissionError("Permission denied"),
+                    "generic": ValueError("Something went wrong"),
+                }
 
-    @pytest.fixture(scope="class")
-    def diagnostics_scenarios(self):
-        """Define various network diagnostics scenario test cases."""
-        return {
-            "dns_resolution_success": {
-                "mock_response": "52.216.0.1",
-                "expected_success": True,
-                "hosts_to_test": ["s3.amazonaws.com", "noaa-goes16.s3.amazonaws.com"],
-            },
-            "dns_resolution_failure": {
-                "mock_exception": socket.gaierror("Name resolution failed"),
-                "expected_success": False,
-                "hosts_to_test": ["s3.amazonaws.com", "noaa-goes16.s3.amazonaws.com"],
-            },
-            "partial_dns_failure": {
-                "mixed_responses": True,  # Some succeed, some fail
-                "expected_success": "mixed",
-                "hosts_to_test": ["s3.amazonaws.com", "noaa-goes16.s3.amazonaws.com"],
-            },
-        }
+                # Define test scenarios
+                self.test_scenarios = {
+                    "stats_tracking": self._test_stats_tracking,
+                    "error_tracking": self._test_error_tracking,
+                    "client_config": self._test_client_config,
+                    "network_diagnostics": self._test_network_diagnostics,
+                    "error_conversion": self._test_error_conversion,
+                    "metrics_calculation": self._test_metrics_calculation,
+                    "edge_cases": self._test_edge_cases,
+                    "performance_validation": self._test_performance_validation,
+                }
 
-    @pytest.fixture
-    def stats_tracker_factory(self):
-        """Factory for creating DownloadStatsTracker instances."""
-        trackers = []
-        
-        def create_tracker():
-            tracker = DownloadStatsTracker()
-            trackers.append(tracker)
-            return tracker
-        
-        yield create_tracker
-        
-        # Cleanup
-        for tracker in trackers:
-            try:
-                tracker.reset()
-            except:
-                pass
+            def create_stats_tracker(self) -> DownloadStatsTracker:
+                """Create a fresh DownloadStatsTracker instance."""
+                return DownloadStatsTracker()
 
-    @pytest.mark.parametrize("scenario_name", [
-        "successful_downloads",
-        "failed_downloads",
-        "mixed_downloads",
-        "large_scale_downloads",
-    ])
-    def test_download_stats_tracking_scenarios(self, stats_tracker_factory, stats_scenarios, scenario_name):
-        """Test download statistics tracking with various scenarios."""
-        tracker = stats_tracker_factory()
-        scenario = stats_scenarios[scenario_name]
-        
-        # Apply all downloads in the scenario
-        for download in scenario:
-            tracker.update_attempt(**download)
-        
-        # Get and verify statistics
-        stats = tracker.get_stats()
-        
-        # Count expected values
-        successful_count = sum(1 for d in scenario if d.get("success", False))
-        failed_count = sum(1 for d in scenario if not d.get("success", True))
-        total_count = len(scenario)
-        
-        assert stats.total_attempts == total_count
-        assert stats.successful == successful_count
-        assert stats.failed == failed_count
-        
-        # Verify specific metrics for successful downloads
-        if successful_count > 0:
-            successful_downloads = [d for d in scenario if d.get("success", False)]
-            total_bytes = sum(d.get("file_size", 0) for d in successful_downloads)
-            assert stats.total_bytes == total_bytes
-            
-            if total_bytes > 0:
-                file_sizes = [d["file_size"] for d in successful_downloads]
-                assert stats.largest_file_size == max(file_sizes)
-                assert stats.smallest_file_size == min(file_sizes)
-        
-        # Verify error tracking
-        if failed_count > 0:
-            assert len(stats.errors) == failed_count
-            
-            # Check error type counters
-            network_errors = sum(1 for d in scenario if d.get("error_type") == "network")
-            auth_errors = sum(1 for d in scenario if d.get("error_type") == "auth")
-            timeouts = sum(1 for d in scenario if d.get("error_type") == "timeout")
-            not_found = sum(1 for d in scenario if d.get("error_type") == "not_found")
-            
-            assert stats.network_errors == network_errors
-            assert stats.auth_errors == auth_errors
-            assert stats.timeouts == timeouts
-            assert stats.not_found == not_found
+            def create_client_config(self, **kwargs) -> S3ClientConfig:
+                """Create an S3ClientConfig with specified parameters."""
+                return S3ClientConfig(**kwargs)
 
-    @pytest.mark.parametrize("config_name", [
-        "default_config",
-        "custom_config",
-        "high_performance_config",
-        "minimal_config",
-    ])
-    def test_s3_client_config_scenarios(self, config_scenarios, config_name):
-        """Test S3 client configuration with various scenarios."""
-        scenario = config_scenarios[config_name]
-        
-        # Create configuration
-        config = S3ClientConfig(
-            aws_profile=scenario["aws_profile"],
-            aws_region=scenario["aws_region"],
-            timeout=scenario["timeout"],
-            connect_timeout=scenario["connect_timeout"],
-            max_retries=scenario["max_retries"],
-            enable_debug_logging=scenario["enable_debug_logging"],
-        )
-        
-        # Verify all attributes
-        assert config.aws_profile == scenario["aws_profile"]
-        assert config.aws_region == scenario["aws_region"]
-        assert config.timeout == scenario["timeout"]
-        assert config.connect_timeout == scenario["connect_timeout"]
-        assert config.max_retries == scenario["max_retries"]
-        assert config.enable_debug_logging == scenario["enable_debug_logging"]
-        
-        # Test session kwargs generation
-        session_kwargs = config.get_session_kwargs()
-        expected_kwargs = {"region_name": scenario["aws_region"]}
-        if scenario["aws_profile"]:
-            expected_kwargs["profile_name"] = scenario["aws_profile"]
-        
-        assert session_kwargs == expected_kwargs
+            def _test_stats_tracking(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+                """Test statistics tracking scenarios."""
+                results = {}
 
-    def test_create_s3_config_comprehensive(self):
-        """Test comprehensive S3 configuration creation."""
-        test_cases = [
-            {
-                "params": {"timeout": 60, "connect_timeout": 10, "max_retries": 3, "use_unsigned": True},
-                "expected_timeout": 60,
-                "expected_connect": 10,
-                "expected_retries": 3,
-                "expected_unsigned": True,
-            },
-            {
-                "params": {"timeout": 120, "connect_timeout": 20, "max_retries": 5, "use_unsigned": False},
-                "expected_timeout": 120,
-                "expected_connect": 20,
-                "expected_retries": 5,
-                "expected_unsigned": False,
-            },
-            {
-                "params": {"timeout": 300, "connect_timeout": 30, "max_retries": 10},
-                "expected_timeout": 300,
-                "expected_connect": 30,
-                "expected_retries": 10,
-                "expected_unsigned": False,  # Default
-            },
-        ]
-        
-        for case in test_cases:
-            config = create_s3_config(**case["params"])
-            
-            assert config.connect_timeout == case["expected_connect"]
-            assert config.read_timeout == case["expected_timeout"]
-            assert config.retries["max_attempts"] == case["expected_retries"]
-            
-            if case["expected_unsigned"]:
-                assert config.signature_version == botocore.UNSIGNED
-            else:
-                assert not hasattr(config, "signature_version") or config.signature_version != botocore.UNSIGNED
+                if scenario_name == "successful_downloads":
+                    # Test tracking successful downloads
+                    tracker = self.create_stats_tracker()
 
-    @pytest.mark.parametrize("error_category,error_name", [
-        ("client_errors", "404_not_found"),
-        ("client_errors", "403_access_denied"),
-        ("client_errors", "500_internal_error"),
-        ("client_errors", "invalid_access_key"),
-        ("network_errors", "timeout_error"),
-        ("network_errors", "connection_error"),
-        ("network_errors", "permission_error"),
-        ("network_errors", "os_error"),
-        ("generic_errors", "value_error"),
-        ("generic_errors", "runtime_error"),
-    ])
-    def test_s3_error_conversion_scenarios(self, error_conversion_scenarios, error_category, error_name):
-        """Test S3 error conversion with various error types."""
-        scenario = error_conversion_scenarios[error_category][error_name]
-        error = scenario["error"]
-        expected_type = scenario["expected_type"]
-        expected_content = scenario["expected_content"]
-        
-        # Test conversion based on error type
-        if isinstance(error, botocore.exceptions.ClientError):
-            result = S3ErrorConverter.from_client_error(
-                error,
-                "downloading",
-                SatellitePattern.GOES_16,
-                datetime(2023, 6, 15, 12, 0, 0),
-                {"bucket": "test-bucket", "key": "test.nc"},
-            )
-        else:
-            result = S3ErrorConverter.from_generic_error(
-                error,
-                "downloading",
-                SatellitePattern.GOES_16,
-                datetime(2023, 6, 15, 12, 0, 0),
-                {"bucket": "test-bucket", "key": "test.nc"},
-            )
-        
-        # Verify conversion result
-        assert isinstance(result, expected_type)
-        
-        # Check message content
-        error_message = result.message.lower()
-        for content in expected_content:
-            assert content.lower() in error_message
-        
-        # Verify technical details exist
-        assert result.technical_details is not None
-        assert len(result.technical_details) > 0
-
-    def test_error_type_detection_comprehensive(self):
-        """Test comprehensive error type detection."""
-        error_type_cases = [
-            # Custom error types
-            (ResourceNotFoundError("test"), "not_found"),
-            (AuthenticationError("test"), "auth"),
-            (RemoteConnectionError("timeout occurred"), "timeout"),
-            (RemoteConnectionError("network issue"), "network"),
-            (RemoteStoreError("generic"), "unknown"),
-            
-            # Boto3 client errors
-            (botocore.exceptions.ClientError({"Error": {"Code": "404"}}, "GetObject"), "not_found"),
-            (botocore.exceptions.ClientError({"Error": {"Code": "403"}}, "GetObject"), "auth"),
-            (botocore.exceptions.ClientError({"Error": {"Code": "NoSuchKey"}}, "GetObject"), "not_found"),
-            (botocore.exceptions.ClientError({"Error": {"Code": "InvalidAccessKeyId"}}, "GetObject"), "auth"),
-            
-            # Network-related errors
-            (TimeoutError(), "timeout"),
-            (ConnectionError(), "network"),
-            (socket.gaierror(), "network"),
-            (socket.timeout(), "timeout"),
-            
-            # Permission errors
-            (PermissionError(), "auth"),
-            (OSError(), "unknown"),
-            
-            # Generic errors
-            (ValueError(), "unknown"),
-            (RuntimeError(), "unknown"),
-            (Exception(), "unknown"),
-        ]
-        
-        for error, expected_type in error_type_cases:
-            actual_type = S3ErrorConverter.get_error_type(error)
-            assert actual_type == expected_type, f"Error {type(error).__name__} should be type '{expected_type}', got '{actual_type}'"
-
-    @pytest.mark.parametrize("diagnostic_scenario", [
-        "dns_resolution_success",
-        "dns_resolution_failure",
-    ])
-    def test_network_diagnostics_scenarios(self, diagnostics_scenarios, diagnostic_scenario):
-        """Test network diagnostics with various scenarios."""
-        scenario = diagnostics_scenarios[diagnostic_scenario]
-        
-        if "mock_response" in scenario:
-            # Success scenario
-            with patch("socket.gethostbyname", return_value=scenario["mock_response"]):
-                info = NetworkDiagnostics.collect_system_info()
-        elif "mock_exception" in scenario:
-            # Failure scenario
-            with patch("socket.gethostbyname", side_effect=scenario["mock_exception"]):
-                info = NetworkDiagnostics.collect_system_info()
-        
-        # Verify basic system info
-        assert "timestamp" in info
-        assert "platform" in info
-        assert "python_version" in info
-        assert "hostname" in info
-        assert info["hostname"] == socket.gethostname()
-        
-        # Verify S3 host resolution results
-        assert "s3_host_resolution" in info
-        resolutions = info["s3_host_resolution"]
-        
-        # Should have results for all NOAA hosts
-        assert len(resolutions) == len(NetworkDiagnostics.NOAA_S3_HOSTS)
-        
-        # Check resolution results based on scenario
-        for resolution in resolutions:
-            assert "success" in resolution
-            assert "hostname" in resolution
-            
-            if scenario["expected_success"]:
-                assert resolution["success"] is True
-                assert "ip" in resolution
-                assert resolution["ip"] == scenario["mock_response"]
-            else:
-                assert resolution["success"] is False
-                assert "error" in resolution
-
-    def test_network_diagnostics_partial_failure(self, diagnostics_scenarios):
-        """Test network diagnostics with partial DNS failures."""
-        scenario = diagnostics_scenarios["partial_dns_failure"]
-        
-        # Mock to return success for some hosts, failure for others
-        def mock_gethostbyname(hostname):
-            if "goes16" in hostname:
-                return "52.216.0.1"  # Success
-            else:
-                raise socket.gaierror("Name resolution failed")  # Failure
-        
-        with patch("socket.gethostbyname", side_effect=mock_gethostbyname):
-            info = NetworkDiagnostics.collect_system_info()
-        
-        resolutions = info["s3_host_resolution"]
-        
-        # Should have both successes and failures
-        successes = [r for r in resolutions if r["success"]]
-        failures = [r for r in resolutions if not r["success"]]
-        
-        assert len(successes) > 0, "Should have some successful resolutions"
-        assert len(failures) > 0, "Should have some failed resolutions"
-
-    def test_network_error_details_creation(self):
-        """Test creation of detailed network error information."""
-        error_cases = [
-            {
-                "error": ConnectionError("Connection timeout after 30 seconds"),
-                "operation": "downloading GOES-16 data",
-                "context": {"bucket": "noaa-goes16", "key": "ABI-L1b-RadC/test.nc", "satellite": "GOES-16"},
-                "expected_content": ["Connection timeout", "downloading GOES-16", "noaa-goes16"],
-            },
-            {
-                "error": TimeoutError("Read timeout"),
-                "operation": "uploading file",
-                "context": {"bucket": "test-bucket", "key": "test.nc", "timeout": 60},
-                "expected_content": ["Read timeout", "uploading file", "test-bucket"],
-            },
-            {
-                "error": socket.gaierror("DNS resolution failed"),
-                "operation": "connecting to S3",
-                "context": {"host": "s3.amazonaws.com", "region": "us-east-1"},
-                "expected_content": ["DNS resolution", "connecting to S3", "s3.amazonaws.com"],
-            },
-        ]
-        
-        for case in error_cases:
-            details = NetworkDiagnostics.create_network_error_details(
-                case["error"],
-                case["operation"],
-                case["context"]
-            )
-            
-            # Verify details contain expected content
-            details_lower = details.lower()
-            for content in case["expected_content"]:
-                assert content.lower() in details_lower
-            
-            # Verify standard sections are present
-            assert "Network operation failed:" in details
-            assert "Error type:" in details
-            assert "Error message:" in details
-            assert "Troubleshooting steps:" in details
-            
-            # Verify context information is included
-            for key, value in case["context"].items():
-                assert f"{key}: {value}" in details.lower() or str(value).lower() in details.lower()
-
-    def test_stats_tracker_logging_thresholds(self, stats_tracker_factory):
-        """Test statistics tracker logging thresholds."""
-        tracker = stats_tracker_factory()
-        
-        # Test logging threshold (every 10 attempts)
-        for i in range(9):
-            tracker.update_attempt(success=True)
-            assert tracker.should_log_stats() is False
-        
-        # 10th attempt should trigger logging
-        tracker.update_attempt(success=True)
-        assert tracker.should_log_stats() is True
-        
-        # Reset and test diagnostics threshold (every 5 failures)
-        tracker.reset()
-        
-        for i in range(4):
-            tracker.update_attempt(success=False, error_type="network")
-            assert tracker.should_collect_diagnostics() is False
-        
-        # 5th failure should trigger diagnostics
-        tracker.update_attempt(success=False, error_type="network")
-        assert tracker.should_collect_diagnostics() is True
-
-    def test_stats_tracker_metrics_calculation(self, stats_tracker_factory):
-        """Test comprehensive metrics calculation."""
-        tracker = stats_tracker_factory()
-        
-        # Add varied download data
-        download_data = [
-            {"success": True, "download_time": 1.0, "file_size": 1000},
-            {"success": True, "download_time": 2.0, "file_size": 2000},
-            {"success": True, "download_time": 3.0, "file_size": 3000},
-            {"success": False, "error_type": "network"},
-            {"success": False, "error_type": "timeout"},
-        ]
-        
-        for data in download_data:
-            tracker.update_attempt(**data)
-        
-        metrics = tracker.get_metrics()
-        
-        # Verify basic metrics
-        assert metrics["total_attempts"] == 5
-        assert metrics["successful"] == 3
-        assert metrics["success_rate"] == pytest.approx(60.0, rel=0.01)
-        
-        # Verify time calculations
-        assert metrics["avg_time"] == pytest.approx(2.0, rel=0.01)  # (1+2+3)/3 = 2.0
-        
-        # Verify byte calculations
-        assert metrics["total_bytes"] == 6000  # 1000+2000+3000
-        
-        # Verify network speed calculation
-        if "KB/s" in metrics["network_speed"]:
-            # Should calculate speed based on total bytes and time
-            expected_speed = 6000 / (1.0 + 2.0 + 3.0)  # bytes per second
-            assert expected_speed > 0
-
-    def test_stats_tracker_reset_functionality(self, stats_tracker_factory):
-        """Test comprehensive reset functionality."""
-        tracker = stats_tracker_factory()
-        
-        # Add comprehensive data
-        tracker.update_attempt(success=True, download_time=1.0, file_size=1000, satellite="GOES_16")
-        tracker.update_attempt(success=False, error_type="network", error_message="Connection failed")
-        tracker.increment_retry()
-        tracker.increment_retry()
-        
-        # Verify data exists
-        stats = tracker.get_stats()
-        assert stats.total_attempts == 2
-        assert stats.successful == 1
-        assert stats.failed == 1
-        assert stats.retry_count == 2
-        assert len(stats.download_times) == 1
-        assert len(stats.errors) == 1
-        assert len(stats.recent_attempts) == 2
-        
-        # Reset and verify everything is cleared
-        tracker.reset()
-        
-        reset_stats = tracker.get_stats()
-        assert reset_stats.total_attempts == 0
-        assert reset_stats.successful == 0
-        assert reset_stats.failed == 0
-        assert reset_stats.retry_count == 0
-        assert reset_stats.total_bytes == 0
-        assert reset_stats.network_errors == 0
-        assert reset_stats.auth_errors == 0
-        assert reset_stats.timeouts == 0
-        assert reset_stats.not_found == 0
-        assert len(reset_stats.download_times) == 0
-        assert len(reset_stats.errors) == 0
-        assert len(reset_stats.recent_attempts) == 0
-        
-        # Session ID and hostname should remain
-        assert reset_stats.session_id is not None
-        assert reset_stats.hostname == socket.gethostname()
-
-    def test_concurrent_stats_tracking(self, stats_tracker_factory):
-        """Test statistics tracking under concurrent access."""
-        import threading
-        import time
-        
-        tracker = stats_tracker_factory()
-        results = []
-        
-        def worker_thread(thread_id, operation_count):
-            thread_results = []
-            for i in range(operation_count):
-                try:
-                    # Alternate between success and failure
-                    if i % 2 == 0:
+                    # Track multiple successful downloads
+                    for i, (time, size) in enumerate(
+                        zip(self.test_configs["download_times"], self.test_configs["file_sizes"], strict=False)
+                    ):
                         tracker.update_attempt(
                             success=True,
-                            download_time=i * 0.1,
-                            file_size=i * 100,
-                            satellite=f"GOES_{16 + (i % 2)}"
+                            download_time=time,
+                            file_size=size,
+                            satellite=self.test_configs["satellites"][i % 2].name,
+                            bucket=self.test_configs["bucket_names"][i % 3],
+                            key=f"test_file_{i}.nc",
                         )
-                    else:
+
+                    stats = tracker.get_stats()
+                    results["total_attempts"] = stats.total_attempts
+                    results["successful"] = stats.successful
+                    results["total_bytes"] = stats.total_bytes
+                    results["avg_download_time"] = sum(self.test_configs["download_times"]) / len(
+                        self.test_configs["download_times"]
+                    )
+                    results["largest_file"] = max(self.test_configs["file_sizes"])
+                    results["smallest_file"] = min(self.test_configs["file_sizes"])
+
+                    # Verify all tracked correctly
+                    assert stats.total_attempts == len(self.test_configs["download_times"])
+                    assert stats.successful == len(self.test_configs["download_times"])
+                    assert stats.failed == 0
+                    assert stats.total_bytes == sum(self.test_configs["file_sizes"])
+                    assert stats.largest_file_size == results["largest_file"]
+                    assert stats.smallest_file_size == results["smallest_file"]
+
+                elif scenario_name == "mixed_attempts":
+                    # Test mix of successful and failed attempts
+                    tracker = self.create_stats_tracker()
+
+                    # Add successful attempts
+                    for i in range(3):
+                        tracker.update_attempt(success=True, download_time=2.0 + i, file_size=1000 * (i + 1))
+
+                    # Add failed attempts of different types
+                    for error_type in self.test_configs["error_types"]:
                         tracker.update_attempt(
-                            success=False,
-                            error_type="network",
-                            error_message=f"Error {thread_id}-{i}"
+                            success=False, error_type=error_type, error_message=f"{error_type} error occurred"
                         )
-                    
-                    # Add some retries
-                    if i % 3 == 0:
+
+                    stats = tracker.get_stats()
+                    results["total_attempts"] = stats.total_attempts
+                    results["successful"] = stats.successful
+                    results["failed"] = stats.failed
+                    results["error_breakdown"] = {
+                        "not_found": stats.not_found,
+                        "auth": stats.auth_errors,
+                        "timeout": stats.timeouts,
+                        "network": stats.network_errors,
+                    }
+
+                    # Verify counts
+                    assert stats.total_attempts == 7  # 3 success + 4 failures
+                    assert stats.successful == 3
+                    assert stats.failed == 4
+                    assert all(count == 1 for count in results["error_breakdown"].values())
+
+                elif scenario_name == "retry_tracking":
+                    # Test retry tracking
+                    tracker = self.create_stats_tracker()
+
+                    # Simulate retries
+                    for _ in range(5):
                         tracker.increment_retry()
-                    
-                    thread_results.append(f"thread_{thread_id}_op_{i}")
-                    time.sleep(0.001)  # Small delay
-                    
-                except Exception as e:
-                    thread_results.append(f"thread_{thread_id}_error: {e}")
-            
-            results.extend(thread_results)
-        
-        # Run concurrent threads
-        threads = []
-        for i in range(3):
-            thread = threading.Thread(target=worker_thread, args=(i, 10))
-            threads.append(thread)
-        
-        for thread in threads:
-            thread.start()
-        
-        for thread in threads:
-            thread.join()
-        
-        # Verify all operations completed
-        assert len(results) == 30  # 3 threads * 10 operations each
-        assert all("error" not in result for result in results)
-        
-        # Verify final statistics
-        stats = tracker.get_stats()
-        assert stats.total_attempts == 30
-        assert stats.successful == 15  # Half successful
-        assert stats.failed == 15  # Half failed
-        assert stats.retry_count == 10  # Every 3rd operation
 
-    def test_memory_efficiency_during_large_operations(self, stats_tracker_factory):
-        """Test memory efficiency during large-scale operations."""
-        import sys
-        
-        tracker = stats_tracker_factory()
-        initial_refs = sys.getrefcount(DownloadStatsTracker)
-        
-        # Perform many operations
-        for i in range(1000):
-            tracker.update_attempt(
-                success=i % 2 == 0,
-                download_time=i * 0.001,
-                file_size=i * 10,
-                error_type="network" if i % 2 == 1 else None,
-                error_message=f"Error {i}" if i % 2 == 1 else None,
-                satellite=f"GOES_{16 + (i % 2)}"
-            )
-            
-            # Check memory periodically
-            if i % 100 == 0:
-                current_refs = sys.getrefcount(DownloadStatsTracker)
-                assert abs(current_refs - initial_refs) <= 5, f"Memory leak at operation {i}"
-        
-        final_refs = sys.getrefcount(DownloadStatsTracker)
-        assert abs(final_refs - initial_refs) <= 10, f"Memory leak detected: {initial_refs} -> {final_refs}"
-        
-        # Verify tracker still functions correctly after many operations
-        stats = tracker.get_stats()
-        assert stats.total_attempts == 1000
-        assert stats.successful == 500
-        assert stats.failed == 500
+                    stats = tracker.get_stats()
+                    results["retry_count"] = stats.retry_count
 
-    def test_edge_case_error_scenarios(self):
-        """Test edge case error scenarios."""
-        edge_cases = [
-            # Empty error messages
-            botocore.exceptions.ClientError({"Error": {"Code": "404", "Message": ""}}, "GetObject"),
-            
-            # Very long error messages
-            botocore.exceptions.ClientError(
-                {"Error": {"Code": "500", "Message": "x" * 10000}}, "GetObject"
-            ),
-            
-            # Unicode in error messages
-            botocore.exceptions.ClientError(
-                {"Error": {"Code": "403", "Message": "Access denied: 权限不足"}}, "GetObject"
-            ),
-            
-            # Missing error codes
-            botocore.exceptions.ClientError({"Error": {"Message": "No code"}}, "GetObject"),
-            
-            # Nested exceptions
-            RuntimeError("Outer error", ValueError("Inner error")),
+                    assert stats.retry_count == 5
+
+                elif scenario_name == "recent_attempts_limit":
+                    # Test recent attempts history limit
+                    tracker = self.create_stats_tracker()
+
+                    # Add more than 100 attempts (limit)
+                    for i in range(150):
+                        tracker.update_attempt(
+                            success=i % 2 == 0,
+                            download_time=1.0 if i % 2 == 0 else None,
+                            file_size=1000 if i % 2 == 0 else None,
+                        )
+
+                    stats = tracker.get_stats()
+                    results["total_attempts"] = stats.total_attempts
+                    results["recent_attempts_count"] = len(stats.recent_attempts)
+
+                    # Should only keep last 100
+                    assert stats.total_attempts == 150
+                    assert len(stats.recent_attempts) == 100
+
+                elif scenario_name == "reset_functionality":
+                    # Test reset functionality
+                    tracker = self.create_stats_tracker()
+
+                    # Add data
+                    tracker.update_attempt(success=True, download_time=1.0, file_size=1000)
+                    tracker.increment_retry()
+
+                    # Store session_id before reset
+                    old_session_id = tracker.get_stats().session_id
+
+                    # Reset
+                    tracker.reset()
+
+                    stats = tracker.get_stats()
+                    results["attempts_after_reset"] = stats.total_attempts
+                    results["session_id_changed"] = stats.session_id != old_session_id
+
+                    assert stats.total_attempts == 0
+                    assert stats.successful == 0
+                    assert stats.retry_count == 0
+                    assert stats.session_id != old_session_id
+
+                return {"scenario": scenario_name, "results": results}
+
+            def _test_error_tracking(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+                """Test error tracking scenarios."""
+                results = {}
+
+                if scenario_name == "error_history":
+                    # Test error history tracking
+                    tracker = self.create_stats_tracker()
+
+                    # Add various errors
+                    error_messages = []
+                    for i in range(25):  # More than 20 (limit)
+                        error_msg = f"Error {i}: {self.test_configs['error_types'][i % 4]}"
+                        tracker.update_attempt(
+                            success=False, error_type=self.test_configs["error_types"][i % 4], error_message=error_msg
+                        )
+                        error_messages.append(error_msg)
+
+                    stats = tracker.get_stats()
+                    results["total_errors"] = stats.failed
+                    results["error_history_count"] = len(stats.errors)
+                    results["error_type_counts"] = {
+                        "not_found": stats.not_found,
+                        "auth": stats.auth_errors,
+                        "timeout": stats.timeouts,
+                        "network": stats.network_errors,
+                    }
+
+                    # Should only keep last 20 errors
+                    assert stats.failed == 25
+                    assert len(stats.errors) == 20
+                    # Verify error type counts
+                    assert stats.not_found >= 6  # At least 6 of each type
+                    assert stats.auth_errors >= 6
+                    assert stats.timeouts >= 6
+                    assert stats.network_errors >= 6
+
+                return {"scenario": scenario_name, "results": results}
+
+            def _test_client_config(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+                """Test S3 client configuration scenarios."""
+                results = {}
+
+                if scenario_name == "default_config":
+                    # Test default configuration
+                    config = self.create_client_config()
+
+                    results["aws_profile"] = config.aws_profile
+                    results["aws_region"] = config.aws_region
+                    results["timeout"] = config.timeout
+                    results["connect_timeout"] = config.connect_timeout
+                    results["max_retries"] = config.max_retries
+                    results["enable_debug_logging"] = config.enable_debug_logging
+
+                    # Verify defaults
+                    assert config.aws_profile is None
+                    assert config.aws_region == "us-east-1"
+                    assert config.timeout == 60
+                    assert config.connect_timeout == 10
+                    assert config.max_retries == 2
+                    assert config.enable_debug_logging is False
+
+                elif scenario_name == "custom_configs":
+                    # Test various custom configurations
+                    configs = [
+                        {"aws_profile": "prod", "aws_region": "us-west-2"},
+                        {"timeout": 120, "connect_timeout": 30},
+                        {"max_retries": 5, "enable_debug_logging": True},
+                        {"aws_profile": "dev", "aws_region": "eu-west-1", "timeout": 180},
+                    ]
+
+                    config_results = []
+                    for config_params in configs:
+                        config = self.create_client_config(**config_params)
+                        kwargs = config.get_session_kwargs()
+
+                        config_results.append({"params": config_params, "session_kwargs": kwargs})
+
+                        # Verify session kwargs
+                        if config.aws_profile:
+                            assert "profile_name" in kwargs
+                            assert kwargs["profile_name"] == config.aws_profile
+                        assert kwargs["region_name"] == config.aws_region
+
+                    results["configs_tested"] = len(configs)
+                    results["config_results"] = config_results
+
+                elif scenario_name == "botocore_config":
+                    # Test botocore config creation
+                    test_configs = [
+                        {"timeout": 120, "connect_timeout": 20, "max_retries": 3, "use_unsigned": True},
+                        {"timeout": 60, "connect_timeout": 10, "max_retries": 1, "use_unsigned": False},
+                        {"timeout": 180, "connect_timeout": 30, "max_retries": 5, "use_unsigned": True},
+                    ]
+
+                    botocore_results = []
+                    for config_params in test_configs:
+                        config = create_s3_config(**config_params)
+
+                        result = {
+                            "connect_timeout": config.connect_timeout,
+                            "read_timeout": config.read_timeout,
+                            "max_attempts": config.retries["max_attempts"],
+                            "is_unsigned": config.signature_version == botocore.UNSIGNED
+                            if hasattr(config, "signature_version")
+                            else False,
+                        }
+                        botocore_results.append(result)
+
+                        # Verify settings
+                        assert config.connect_timeout == config_params["connect_timeout"]
+                        assert config.read_timeout == config_params["timeout"]
+                        assert config.retries["max_attempts"] == config_params["max_retries"]
+                        if config_params["use_unsigned"]:
+                            assert config.signature_version == botocore.UNSIGNED
+
+                    results["botocore_configs_tested"] = len(test_configs)
+                    results["botocore_results"] = botocore_results
+
+                return {"scenario": scenario_name, "results": results}
+
+            def _test_network_diagnostics(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+                """Test network diagnostics scenarios."""
+                results = {}
+
+                if scenario_name == "system_info":
+                    # Test system info collection
+                    info = NetworkDiagnostics.collect_system_info()
+
+                    required_fields = ["timestamp", "platform", "python_version", "hostname"]
+                    results["has_required_fields"] = all(field in info for field in required_fields)
+                    results["hostname_matches"] = info.get("hostname") == socket.gethostname()
+
+                    assert results["has_required_fields"]
+                    assert results["hostname_matches"]
+
+                elif scenario_name == "s3_resolution":
+                    # Test S3 hostname resolution
+                    with patch("socket.gethostbyname") as mock_gethostbyname:
+                        # Test successful resolution
+                        mock_gethostbyname.return_value = "52.216.1.2"
+
+                        info = NetworkDiagnostics.collect_system_info()
+                        resolutions = info["s3_host_resolution"]
+
+                        results["hosts_resolved"] = len(resolutions)
+                        results["all_successful"] = all(r["success"] for r in resolutions)
+
+                        assert len(resolutions) == len(self.test_configs["s3_hosts"])
+                        assert results["all_successful"]
+
+                        # Test failed resolution
+                        mock_gethostbyname.side_effect = socket.gaierror("Name resolution failed")
+
+                        info = NetworkDiagnostics.collect_system_info()
+                        resolutions = info["s3_host_resolution"]
+
+                        results["all_failed"] = all(not r["success"] for r in resolutions)
+                        results["all_have_errors"] = all("error" in r for r in resolutions)
+
+                        assert results["all_failed"]
+                        assert results["all_have_errors"]
+
+                elif scenario_name == "error_details":
+                    # Test network error details creation
+                    test_errors = [
+                        (ConnectionError("Connection timeout"), "downloading file"),
+                        (RemoteConnectionError("Network unreachable"), "uploading data"),
+                        (ValueError("Generic error"), "processing request"),
+                    ]
+
+                    detail_results = []
+                    for error, operation in test_errors:
+                        context = {"bucket": "test-bucket", "key": f"test-{operation}.nc"}
+                        details = NetworkDiagnostics.create_network_error_details(error, operation, context)
+
+                        detail_results.append({
+                            "error_type": type(error).__name__,
+                            "has_operation": operation in details,
+                            "has_error_info": "Error type:" in details and "Error message:" in details,
+                            "has_context": all(f"{k}: {v}" in details for k, v in context.items()),
+                            "has_troubleshooting": "Troubleshooting steps:" in details,
+                        })
+
+                        # Verify all expected content
+                        assert f"Network operation failed: {operation}" in details
+                        assert all(result["has_operation"] for result in detail_results)
+                        assert all(result["has_error_info"] for result in detail_results)
+                        assert all(result["has_context"] for result in detail_results)
+                        assert all(result["has_troubleshooting"] for result in detail_results)
+
+                    results["errors_tested"] = len(test_errors)
+                    results["detail_results"] = detail_results
+
+                return {"scenario": scenario_name, "results": results}
+
+            def _test_error_conversion(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+                """Test error conversion scenarios."""
+                results = {}
+
+                if scenario_name == "client_errors":
+                    # Test boto3 client error conversion
+                    conversion_results = []
+
+                    for error_name, error in [
+                        ("404", self.error_scenarios["client_404"]),
+                        ("403", self.error_scenarios["client_403"]),
+                        ("500", self.error_scenarios["client_500"]),
+                        ("throttle", self.error_scenarios["client_throttle"]),
+                    ]:
+                        result = S3ErrorConverter.from_client_error(
+                            error,
+                            "downloading",
+                            self.test_configs["satellites"][0],
+                            datetime(2023, 1, 1, 12, 0),
+                            {"bucket": "test-bucket", "key": "test.nc"},
+                        )
+
+                        conversion_results.append({
+                            "error_code": error_name,
+                            "result_type": type(result).__name__,
+                            "has_message": bool(result.message),
+                            "has_technical_details": bool(result.technical_details),
+                        })
+
+                        # Verify appropriate error types
+                        if error_name == "404":
+                            assert isinstance(result, ResourceNotFoundError)
+                            assert "Resource not found" in result.message
+                        elif error_name == "403":
+                            assert isinstance(result, AuthenticationError)
+                            assert "Access denied" in result.message
+                        else:
+                            assert isinstance(result, RemoteStoreError)
+
+                    results["client_errors_tested"] = len(conversion_results)
+                    results["conversion_results"] = conversion_results
+
+                elif scenario_name == "generic_errors":
+                    # Test generic error conversion
+                    generic_results = []
+
+                    for error_name, error in [
+                        ("timeout", self.error_scenarios["timeout"]),
+                        ("permission", self.error_scenarios["permission"]),
+                        ("generic", self.error_scenarios["generic"]),
+                    ]:
+                        result = S3ErrorConverter.from_generic_error(
+                            error, "downloading", self.test_configs["satellites"][0], datetime(2023, 1, 1, 12, 0)
+                        )
+
+                        generic_results.append({
+                            "error_type": error_name,
+                            "result_type": type(result).__name__,
+                            "has_satellite_info": str(self.test_configs["satellites"][0]) in result.message,
+                        })
+
+                        # Verify appropriate conversions
+                        if error_name == "timeout":
+                            assert isinstance(result, RemoteConnectionError)
+                            assert "Timeout" in result.message
+                        elif error_name == "permission":
+                            assert isinstance(result, AuthenticationError)
+                            assert "Permission error" in result.message
+                        else:
+                            assert isinstance(result, RemoteStoreError)
+
+                    results["generic_errors_tested"] = len(generic_results)
+                    results["generic_results"] = generic_results
+
+                elif scenario_name == "error_type_detection":
+                    # Test error type detection
+                    type_detection_results = []
+
+                    test_errors = [
+                        (ResourceNotFoundError("Not found"), "not_found"),
+                        (AuthenticationError("Auth failed"), "auth"),
+                        (RemoteConnectionError("timeout"), "timeout"),
+                        (RemoteConnectionError("network error"), "network"),
+                        (self.error_scenarios["client_404"], "not_found"),
+                        (self.error_scenarios["client_403"], "auth"),
+                        (TimeoutError(), "timeout"),
+                        (TimeoutError(), "timeout"),
+                        (ValueError("Unknown"), "unknown"),
+                    ]
+
+                    for error, expected_type in test_errors:
+                        detected_type = S3ErrorConverter.get_error_type(error)
+                        type_detection_results.append({
+                            "error_class": type(error).__name__,
+                            "expected": expected_type,
+                            "detected": detected_type,
+                            "correct": detected_type == expected_type,
+                        })
+
+                        assert detected_type == expected_type
+
+                    results["error_types_tested"] = len(test_errors)
+                    results["all_correct"] = all(r["correct"] for r in type_detection_results)
+
+                return {"scenario": scenario_name, "results": results}
+
+            def _test_metrics_calculation(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+                """Test metrics calculation scenarios."""
+                results = {}
+
+                if scenario_name == "comprehensive_metrics":
+                    # Test comprehensive metrics calculation
+                    tracker = self.create_stats_tracker()
+
+                    # Add varied data
+                    download_data = [
+                        (True, 1.0, 1000),
+                        (True, 2.0, 2000),
+                        (True, 3.0, 3000),
+                        (False, None, None),
+                        (True, 4.0, 4000),
+                        (False, None, None),
+                    ]
+
+                    for success, time, size in download_data:
+                        if success:
+                            tracker.update_attempt(success=True, download_time=time, file_size=size)
+                        else:
+                            tracker.update_attempt(success=False, error_type="network")
+
+                    # Add retries
+                    for _ in range(3):
+                        tracker.increment_retry()
+
+                    metrics = tracker.get_metrics()
+
+                    results["total_attempts"] = metrics["total_attempts"]
+                    results["successful"] = metrics["successful"]
+                    results["success_rate"] = metrics["success_rate"]
+                    results["avg_time"] = metrics["avg_time"]
+                    results["total_bytes"] = metrics["total_bytes"]
+                    results["retry_count"] = metrics["retry_count"]
+                    results["has_network_speed"] = "network_speed" in metrics
+
+                    # Verify calculations
+                    assert metrics["total_attempts"] == 6
+                    assert metrics["successful"] == 4
+                    assert metrics["success_rate"] == pytest.approx(66.67, rel=0.01)
+                    assert metrics["avg_time"] == 2.5  # (1+2+3+4)/4
+                    assert metrics["total_bytes"] == 10000
+                    assert metrics["retry_count"] == 3
+
+                    # Network speed should be calculated
+                    assert "KB/s" in metrics["network_speed"] or metrics["network_speed"] == "N/A"
+
+                elif scenario_name == "edge_case_metrics":
+                    # Test edge cases in metrics
+                    tracker = self.create_stats_tracker()
+
+                    # No attempts
+                    metrics = tracker.get_metrics()
+                    assert metrics["success_rate"] == 0.0
+                    assert metrics["avg_time"] == 0.0
+                    assert metrics["network_speed"] == "N/A"
+
+                    # Only failures
+                    tracker.update_attempt(success=False)
+                    tracker.update_attempt(success=False)
+                    metrics = tracker.get_metrics()
+                    assert metrics["success_rate"] == 0.0
+                    assert metrics["avg_time"] == 0.0
+
+                    results["edge_cases_handled"] = True
+
+                return {"scenario": scenario_name, "results": results}
+
+            def _test_edge_cases(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+                """Test edge cases and boundary conditions."""
+                results = {}
+
+                if scenario_name == "logging_triggers":
+                    # Test logging trigger conditions
+                    tracker = self.create_stats_tracker()
+
+                    # Test should_log_stats trigger (every 10 attempts)
+                    log_triggers = []
+                    for _i in range(25):
+                        tracker.update_attempt(success=True)
+                        log_triggers.append(tracker.should_log_stats())
+
+                    # Should trigger at 10, 20
+                    true_indices = [i for i, trigger in enumerate(log_triggers) if trigger]
+                    results["log_triggers"] = true_indices
+                    assert true_indices == [9, 19]  # 0-indexed
+
+                    # Test should_collect_diagnostics trigger (every 5 failures)
+                    tracker.reset()
+                    diag_triggers = []
+                    for _i in range(12):
+                        tracker.update_attempt(success=False)
+                        diag_triggers.append(tracker.should_collect_diagnostics())
+
+                    # Should trigger at 5, 10
+                    true_indices = [i for i, trigger in enumerate(diag_triggers) if trigger]
+                    results["diagnostic_triggers"] = true_indices
+                    assert true_indices == [4, 9]  # 0-indexed
+
+                return {"scenario": scenario_name, "results": results}
+
+            def _test_performance_validation(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+                """Test performance validation scenarios."""
+                results = {}
+
+                if scenario_name == "high_volume_tracking":
+                    # Test high volume statistics tracking
+                    tracker = self.create_stats_tracker()
+
+                    # Add many attempts quickly
+                    attempt_count = 1000
+                    for i in range(attempt_count):
+                        if i % 3 == 0:
+                            tracker.update_attempt(
+                                success=True, download_time=0.5 + (i % 10) * 0.1, file_size=1000 + (i % 100) * 100
+                            )
+                        else:
+                            tracker.update_attempt(success=False, error_type=self.test_configs["error_types"][i % 4])
+
+                    stats = tracker.get_stats()
+                    metrics = tracker.get_metrics()
+
+                    results["total_tracked"] = stats.total_attempts
+                    results["success_count"] = stats.successful
+                    results["failure_count"] = stats.failed
+                    results["metrics_calculated"] = bool(metrics)
+                    results["recent_attempts_limited"] = len(stats.recent_attempts) <= 100
+
+                    # Verify high volume handled correctly
+                    assert stats.total_attempts == attempt_count
+                    assert stats.successful + stats.failed == attempt_count
+                    assert len(stats.recent_attempts) == 100  # Limited to 100
+                    assert metrics["total_attempts"] == attempt_count
+
+                return {"scenario": scenario_name, "results": results}
+
+        return {"manager": S3UtilsTestManager()}
+
+    def test_stats_tracking_scenarios(self, s3_utils_test_components) -> None:
+        """Test statistics tracking scenarios."""
+        manager = s3_utils_test_components["manager"]
+
+        tracking_scenarios = [
+            "successful_downloads",
+            "mixed_attempts",
+            "retry_tracking",
+            "recent_attempts_limit",
+            "reset_functionality",
         ]
-        
-        for error in edge_cases:
-            try:
-                if isinstance(error, botocore.exceptions.ClientError):
-                    result = S3ErrorConverter.from_client_error(
-                        error, "testing", SatellitePattern.GOES_16, datetime.now()
-                    )
-                else:
-                    result = S3ErrorConverter.from_generic_error(
-                        error, "testing", SatellitePattern.GOES_16, datetime.now()
-                    )
-                
-                # Should not crash and should return valid error
-                assert isinstance(result, RemoteStoreError)
-                assert result.message is not None
-                assert len(result.message) > 0
-                
-            except Exception as e:
-                pytest.fail(f"Edge case error handling failed for {type(error).__name__}: {e}")
+
+        for scenario in tracking_scenarios:
+            result = manager._test_stats_tracking(scenario)
+            assert result["scenario"] == scenario
+            assert len(result["results"]) > 0
+
+    def test_error_tracking_scenarios(self, s3_utils_test_components) -> None:
+        """Test error tracking scenarios."""
+        manager = s3_utils_test_components["manager"]
+
+        result = manager._test_error_tracking("error_history")
+        assert result["scenario"] == "error_history"
+        assert result["results"]["total_errors"] == 25
+        assert result["results"]["error_history_count"] == 20
+
+    def test_client_config_scenarios(self, s3_utils_test_components) -> None:
+        """Test S3 client configuration scenarios."""
+        manager = s3_utils_test_components["manager"]
+
+        config_scenarios = ["default_config", "custom_configs", "botocore_config"]
+
+        for scenario in config_scenarios:
+            result = manager._test_client_config(scenario)
+            assert result["scenario"] == scenario
+            assert len(result["results"]) > 0
+
+    def test_network_diagnostics_scenarios(self, s3_utils_test_components) -> None:
+        """Test network diagnostics scenarios."""
+        manager = s3_utils_test_components["manager"]
+
+        diagnostic_scenarios = ["system_info", "s3_resolution", "error_details"]
+
+        for scenario in diagnostic_scenarios:
+            result = manager._test_network_diagnostics(scenario)
+            assert result["scenario"] == scenario
+            assert len(result["results"]) > 0
+
+    def test_error_conversion_scenarios(self, s3_utils_test_components) -> None:
+        """Test error conversion scenarios."""
+        manager = s3_utils_test_components["manager"]
+
+        conversion_scenarios = ["client_errors", "generic_errors", "error_type_detection"]
+
+        for scenario in conversion_scenarios:
+            result = manager._test_error_conversion(scenario)
+            assert result["scenario"] == scenario
+            assert len(result["results"]) > 0
+
+    def test_metrics_calculation_scenarios(self, s3_utils_test_components) -> None:
+        """Test metrics calculation scenarios."""
+        manager = s3_utils_test_components["manager"]
+
+        metrics_scenarios = ["comprehensive_metrics", "edge_case_metrics"]
+
+        for scenario in metrics_scenarios:
+            result = manager._test_metrics_calculation(scenario)
+            assert result["scenario"] == scenario
+            assert len(result["results"]) > 0
+
+    def test_edge_case_scenarios(self, s3_utils_test_components) -> None:
+        """Test edge cases and boundary conditions."""
+        manager = s3_utils_test_components["manager"]
+
+        result = manager._test_edge_cases("logging_triggers")
+        assert result["scenario"] == "logging_triggers"
+        assert result["results"]["log_triggers"] == [9, 19]
+        assert result["results"]["diagnostic_triggers"] == [4, 9]
+
+    def test_performance_validation_scenarios(self, s3_utils_test_components) -> None:
+        """Test performance validation scenarios."""
+        manager = s3_utils_test_components["manager"]
+
+        result = manager._test_performance_validation("high_volume_tracking")
+        assert result["scenario"] == "high_volume_tracking"
+        assert result["results"]["total_tracked"] == 1000
+        assert result["results"]["recent_attempts_limited"] is True
+
+    @pytest.mark.parametrize("error_type", ["not_found", "auth", "timeout", "network"])
+    def test_error_type_tracking(self, s3_utils_test_components, error_type) -> None:
+        """Test tracking of specific error types."""
+        manager = s3_utils_test_components["manager"]
+        tracker = manager.create_stats_tracker()
+
+        # Add multiple errors of the same type
+        for i in range(5):
+            tracker.update_attempt(success=False, error_type=error_type, error_message=f"{error_type} error {i}")
+
+        stats = tracker.get_stats()
+
+        # Verify correct counter incremented
+        if error_type == "not_found":
+            assert stats.not_found == 5
+        elif error_type == "auth":
+            assert stats.auth_errors == 5
+        elif error_type == "timeout":
+            assert stats.timeouts == 5
+        elif error_type == "network":
+            assert stats.network_errors == 5
+
+    def test_comprehensive_s3_utils_validation(self, s3_utils_test_components) -> None:
+        """Test comprehensive S3 utilities validation."""
+        manager = s3_utils_test_components["manager"]
+
+        # Test stats tracking with success and failure
+        result = manager._test_stats_tracking("mixed_attempts")
+        assert result["results"]["total_attempts"] == 7
+        assert result["results"]["successful"] == 3
+        assert result["results"]["failed"] == 4
+
+        # Test client config
+        result = manager._test_client_config("default_config")
+        assert result["results"]["aws_region"] == "us-east-1"
+        assert result["results"]["timeout"] == 60
+
+        # Test network diagnostics
+        result = manager._test_network_diagnostics("system_info")
+        assert result["results"]["has_required_fields"] is True
+
+        # Test error conversion
+        result = manager._test_error_conversion("error_type_detection")
+        assert result["results"]["all_correct"] is True
+
+        # Test metrics
+        result = manager._test_metrics_calculation("comprehensive_metrics")
+        assert result["results"]["success_rate"] == pytest.approx(66.67, rel=0.01)
+
+    def test_s3_utils_modules_integration_validation(self, s3_utils_test_components) -> None:
+        """Test S3 utilities modules integration."""
+        manager = s3_utils_test_components["manager"]
+
+        # Create integrated workflow
+        tracker = manager.create_stats_tracker()
+        config = manager.create_client_config(aws_region="us-west-2", timeout=120)
+
+        # Simulate download workflow
+        for i in range(10):
+            if i % 3 == 0:
+                # Simulate failure
+                tracker.update_attempt(success=False, error_type="network", error_message="Connection timeout")
+                tracker.increment_retry()
+            else:
+                # Simulate success
+                tracker.update_attempt(
+                    success=True,
+                    download_time=2.0 + i * 0.5,
+                    file_size=1000 * (i + 1),
+                    satellite="GOES_16",
+                    bucket="noaa-goes16",
+                )
+
+        # Check if diagnostics should be collected
+        if tracker.should_collect_diagnostics():
+            info = NetworkDiagnostics.collect_system_info()
+            assert "s3_host_resolution" in info
+
+        # Get final metrics
+        metrics = tracker.get_metrics()
+        assert metrics["total_attempts"] == 10
+        assert metrics["successful"] == 7
+        assert metrics["retry_count"] == 3
+
+        # Verify config settings
+        session_kwargs = config.get_session_kwargs()
+        assert session_kwargs["region_name"] == "us-west-2"

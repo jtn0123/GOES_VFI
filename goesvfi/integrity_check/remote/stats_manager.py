@@ -319,7 +319,9 @@ class DownloadStatsManager(BaseManager):
 
             # Save key metrics to settings if available
             if self.settings:
-                self.save_setting("last_success_rate", self.calculator.calculate_success_rate(stats.successful, stats.total_attempts))
+                self.save_setting(
+                    "last_success_rate", self.calculator.calculate_success_rate(stats.successful, stats.total_attempts)
+                )
                 self.save_setting("last_total_attempts", stats.total_attempts)
                 self.save_setting("last_session_id", stats.session_id)
 

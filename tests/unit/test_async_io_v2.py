@@ -39,6 +39,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_read_file_text(self) -> None:
         """Test reading text files."""
+
         async def run_test() -> None:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as f:
                 f.write("test content")
@@ -55,6 +56,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_read_file_binary(self) -> None:
         """Test reading binary files."""
+
         async def run_test() -> None:
             test_data = b"binary test data"
             with tempfile.NamedTemporaryFile(mode="wb", delete=False) as f:
@@ -72,6 +74,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_write_file_text(self) -> None:
         """Test writing text files."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 test_path = Path(temp_dir) / "test.txt"
@@ -87,6 +90,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_write_file_binary(self) -> None:
         """Test writing binary files."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 test_path = Path(temp_dir) / "test.bin"
@@ -102,6 +106,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_write_file_create_parents(self) -> None:
         """Test writing files with parent directory creation."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 test_path = Path(temp_dir) / "subdir" / "nested" / "test.txt"
@@ -117,6 +122,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_copy_file(self) -> None:
         """Test copying files."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Create source file
@@ -136,6 +142,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_copy_file_large(self) -> None:
         """Test copying large files in chunks."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Create large source file
@@ -156,6 +163,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_move_file(self) -> None:
         """Test moving files."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 # Create source file
@@ -175,6 +183,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_delete_file(self) -> None:
         """Test deleting files."""
+
         async def run_test() -> None:
             with tempfile.NamedTemporaryFile(delete=False) as f:
                 temp_path = Path(f.name)
@@ -191,6 +200,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_delete_file_missing_ok(self) -> None:
         """Test deleting non-existent files with missing_ok=True."""
+
         async def run_test() -> None:
             non_existent = Path("/tmp/non_existent_file_test.txt")
 
@@ -201,6 +211,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_delete_file_missing_not_ok(self) -> None:
         """Test deleting non-existent files with missing_ok=False."""
+
         async def run_test() -> None:
             non_existent = Path("/tmp/non_existent_file_test.txt")
 
@@ -211,6 +222,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_ensure_directory(self) -> None:
         """Test ensuring directories exist."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 new_dir = Path(temp_dir) / "new" / "nested" / "directory"
@@ -224,6 +236,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_list_directory(self) -> None:
         """Test listing directory contents."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
@@ -250,6 +263,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_get_file_info(self) -> None:
         """Test getting file information."""
+
         async def run_test() -> None:
             with tempfile.NamedTemporaryFile(delete=False) as f:
                 f.write(b"test content")
@@ -270,6 +284,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_get_file_info_non_existent(self) -> None:
         """Test getting info for non-existent files."""
+
         async def run_test() -> None:
             non_existent = Path("/tmp/non_existent_file_test.txt")
             info = await self.manager.get_file_info(non_existent)
@@ -280,6 +295,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_batch_read(self) -> None:
         """Test batch reading multiple files."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
@@ -302,6 +318,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_batch_write(self) -> None:
         """Test batch writing multiple files."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
@@ -326,6 +343,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
     def test_concurrency_limit(self) -> None:
         """Test that semaphore limits concurrent operations."""
+
         async def run_test() -> None:
             # Create a manager with very low concurrency
             limited_manager = AsyncFileManager(max_concurrent=1)
@@ -354,6 +372,7 @@ class TestAsyncContextManagers(unittest.TestCase):
 
     def test_async_open(self) -> None:
         """Test async_open context manager."""
+
         async def run_test() -> None:
             with tempfile.NamedTemporaryFile(mode="w", delete=False, encoding="utf-8") as f:
                 f.write("test content")
@@ -370,6 +389,7 @@ class TestAsyncContextManagers(unittest.TestCase):
 
     def test_async_temporary_file(self) -> None:
         """Test async_temporary_file context manager."""
+
         async def run_test() -> None:
             temp_file_path = None
 
@@ -395,6 +415,7 @@ class TestHighLevelAsyncOperations(unittest.TestCase):
 
     def test_async_read_json(self) -> None:
         """Test async JSON reading."""
+
         async def run_test() -> None:
             test_data = {"key": "value", "number": 42, "list": [1, 2, 3]}
 
@@ -412,6 +433,7 @@ class TestHighLevelAsyncOperations(unittest.TestCase):
 
     def test_async_write_json(self) -> None:
         """Test async JSON writing."""
+
         async def run_test() -> None:
             test_data = {"async": True, "data": [1, 2, 3]}
 
@@ -432,6 +454,7 @@ class TestHighLevelAsyncOperations(unittest.TestCase):
 
     def test_async_read_lines(self) -> None:
         """Test async line reading."""
+
         async def run_test() -> None:
             test_lines = ["line 1", "line 2", "line 3"]
 
@@ -449,6 +472,7 @@ class TestHighLevelAsyncOperations(unittest.TestCase):
 
     def test_async_write_lines(self) -> None:
         """Test async line writing."""
+
         async def run_test() -> None:
             test_lines = ["async line 1", "async line 2", "async line 3"]
 
@@ -477,6 +501,7 @@ class TestGlobalAsyncManager(unittest.TestCase):
 
     def test_convenience_read_write(self) -> None:
         """Test convenience functions for read/write."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 test_path = Path(temp_dir) / "convenience.txt"
@@ -494,6 +519,7 @@ class TestGlobalAsyncManager(unittest.TestCase):
 
     def test_convenience_copy_move(self) -> None:
         """Test convenience functions for copy/move."""
+
         async def run_test() -> None:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_path = Path(temp_dir)
@@ -524,6 +550,7 @@ class TestErrorHandling(unittest.TestCase):
 
     def test_read_non_existent_file(self) -> None:
         """Test reading non-existent file raises appropriate error."""
+
         async def run_test() -> None:
             manager = AsyncFileManager()
             non_existent = Path("/tmp/definitely_does_not_exist.txt")
@@ -535,6 +562,7 @@ class TestErrorHandling(unittest.TestCase):
 
     def test_write_to_read_only_directory(self) -> None:
         """Test writing to read-only directory handles error gracefully."""
+
         async def run_test() -> None:
             manager = AsyncFileManager()
 
@@ -548,6 +576,7 @@ class TestErrorHandling(unittest.TestCase):
 
     def test_batch_operations_with_errors(self) -> None:
         """Test batch operations handle partial failures gracefully."""
+
         async def run_test() -> None:
             manager = AsyncFileManager()
 

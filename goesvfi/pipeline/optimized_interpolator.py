@@ -46,7 +46,7 @@ class ImageCache:
         # Sample a few pixels to create hash (much faster than hashing entire array)
         if img.size > 1000:
             # For large images, sample strategic pixels
-            samples = img.flat[::max(1, img.size // 100)]  # Sample ~100 pixels
+            samples = img.flat[:: max(1, img.size // 100)]  # Sample ~100 pixels
         else:
             samples = img.flat
 
@@ -97,7 +97,7 @@ class ImageCache:
         return {
             "size": len(self._cache),
             "max_size": self.max_size,
-            "memory_usage_mb": sum(arr.nbytes for arr in self._cache.values()) / (1024 * 1024)
+            "memory_usage_mb": sum(arr.nbytes for arr in self._cache.values()) / (1024 * 1024),
         }
 
 
@@ -180,14 +180,11 @@ class OptimizedRifeBackend:
             "cache_misses": 0,
             "total_interpolations": 0,
             "total_io_time": 0.0,
-            "total_rife_time": 0.0
+            "total_rife_time": 0.0,
         }
 
     def interpolate_pair(
-        self,
-        img1: NDArray[np.float32],
-        img2: NDArray[np.float32],
-        options: dict[str, Any] | None = None
+        self, img1: NDArray[np.float32], img2: NDArray[np.float32], options: dict[str, Any] | None = None
     ) -> NDArray[np.float32]:
         """Interpolate between two images with caching optimization.
 
@@ -254,10 +251,7 @@ class OptimizedRifeBackend:
             raise
 
     def _create_pair_cache_key(
-        self,
-        img1: NDArray[np.float32],
-        img2: NDArray[np.float32],
-        options: dict[str, Any]
+        self, img1: NDArray[np.float32], img2: NDArray[np.float32], options: dict[str, Any]
     ) -> str:
         """Create cache key for image pair with options."""
         # Create hash of both images
@@ -316,11 +310,7 @@ class OptimizedRifeBackend:
             return np.array(pil_img).astype(np.float32) / 255.0
 
     def _run_rife_command(
-        self,
-        input1: pathlib.Path,
-        input2: pathlib.Path,
-        output: pathlib.Path,
-        options: dict[str, Any]
+        self, input1: pathlib.Path, input2: pathlib.Path, output: pathlib.Path, options: dict[str, Any]
     ) -> None:
         """Run RIFE command with error handling."""
         # Build command
@@ -341,13 +331,7 @@ class OptimizedRifeBackend:
         logger.debug("Running optimized RIFE command: %s", " ".join(cmd))
 
         try:
-            result = subprocess.run(
-                cmd,
-                check=True,
-                capture_output=True,
-                text=True,
-                timeout=120
-            )
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120)
 
             if result.stdout:
                 logger.debug("RIFE stdout: %s", result.stdout)
@@ -376,7 +360,7 @@ class OptimizedRifeBackend:
             "total_time": total_time,
             "avg_io_time": self.stats["total_io_time"] / max(1, self.stats["cache_misses"]),
             "avg_rife_time": self.stats["total_rife_time"] / max(1, self.stats["cache_misses"]),
-            "cache_stats": self.cache.get_stats()
+            "cache_stats": self.cache.get_stats(),
         }
 
     def cleanup(self) -> None:
@@ -396,10 +380,7 @@ class OptimizedRifeBackend:
 
 # Legacy interface compatibility
 def interpolate_three(
-    img1: NDArray[np.float32],
-    img2: NDArray[np.float32],
-    backend: Any,
-    options: dict[str, Any] | None = None
+    img1: NDArray[np.float32], img2: NDArray[np.float32], backend: Any, options: dict[str, Any] | None = None
 ) -> list[NDArray[np.float32]]:
     """Generate three interpolated frames with optimized backend support.
 

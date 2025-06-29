@@ -21,12 +21,15 @@ from goesvfi.exceptions import (
 class TestGoesVfiError:
     """Test base application error - optimized with parameterization."""
 
-    @pytest.mark.parametrize("error_class,message", [
-        (GoesVfiError, "Test error message"),
-        (GoesvfiError, "Test with alias"),
-        (GoesVfiError, ""),  # Empty message
-        (GoesvfiError, "Very long " * 100),  # Long message
-    ])
+    @pytest.mark.parametrize(
+        "error_class,message",
+        [
+            (GoesVfiError, "Test error message"),
+            (GoesvfiError, "Test with alias"),
+            (GoesVfiError, ""),  # Empty message
+            (GoesvfiError, "Very long " * 100),  # Long message
+        ],
+    )
     def test_goesvfi_error_creation(self, error_class, message) -> None:
         """Test creating base GOES VFI error with various messages."""
         error = error_class(message)
@@ -62,13 +65,16 @@ class TestExceptionHierarchy:
             "tool": ExternalToolError("tool", "Tool error"),
         }
 
-    @pytest.mark.parametrize("error_type,parent_types", [
-        ("pipeline", [PipelineError, GoesVfiError, Exception]),
-        ("config", [ConfigurationError, GoesVfiError, Exception]),
-        ("gui", [GuiError, GoesVfiError, Exception]),
-        ("tool", [ExternalToolError, PipelineError, GoesVfiError, Exception]),
-        ("base", [GoesVfiError, Exception]),
-    ])
+    @pytest.mark.parametrize(
+        "error_type,parent_types",
+        [
+            ("pipeline", [PipelineError, GoesVfiError, Exception]),
+            ("config", [ConfigurationError, GoesVfiError, Exception]),
+            ("gui", [GuiError, GoesVfiError, Exception]),
+            ("tool", [ExternalToolError, PipelineError, GoesVfiError, Exception]),
+            ("base", [GoesVfiError, Exception]),
+        ],
+    )
     def test_exception_inheritance(self, all_exceptions, error_type, parent_types) -> None:
         """Test exception inheritance chains."""
         error = all_exceptions[error_type]
@@ -76,12 +82,15 @@ class TestExceptionHierarchy:
         for parent_type in parent_types:
             assert isinstance(error, parent_type)
 
-    @pytest.mark.parametrize("exception_class,message,expected_str", [
-        (PipelineError, "Pipeline processing failed", "Pipeline processing failed"),
-        (ConfigurationError, "Invalid configuration setting", "Invalid configuration setting"),
-        (GuiError, "Widget initialization failed", "Widget initialization failed"),
-        (PipelineError, "", ""),
-    ])
+    @pytest.mark.parametrize(
+        "exception_class,message,expected_str",
+        [
+            (PipelineError, "Pipeline processing failed", "Pipeline processing failed"),
+            (ConfigurationError, "Invalid configuration setting", "Invalid configuration setting"),
+            (GuiError, "Widget initialization failed", "Widget initialization failed"),
+            (PipelineError, "", ""),
+        ],
+    )
     def test_exception_string_representation(self, exception_class, message, expected_str) -> None:
         """Test exception string representations."""
         error = exception_class(message)
@@ -91,12 +100,15 @@ class TestExceptionHierarchy:
 class TestExternalToolError:
     """Test external tool error functionality - optimized."""
 
-    @pytest.mark.parametrize("tool_name,message,stderr,expected_str", [
-        ("ffmpeg", "Encoding failed", None, "Error executing ffmpeg: Encoding failed"),
-        ("rife", "Interpolation failed", "GPU error", "Error executing rife: Interpolation failed"),
-        ("sanchez", "Processing failed", "", "Error executing sanchez: Processing failed"),
-        ("tool", "Failed", "Multi\nline\nerror", "Error executing tool: Failed"),
-    ])
+    @pytest.mark.parametrize(
+        "tool_name,message,stderr,expected_str",
+        [
+            ("ffmpeg", "Encoding failed", None, "Error executing ffmpeg: Encoding failed"),
+            ("rife", "Interpolation failed", "GPU error", "Error executing rife: Interpolation failed"),
+            ("sanchez", "Processing failed", "", "Error executing sanchez: Processing failed"),
+            ("tool", "Failed", "Multi\nline\nerror", "Error executing tool: Failed"),
+        ],
+    )
     def test_external_tool_error_creation(self, tool_name, message, stderr, expected_str) -> None:
         """Test creating external tool errors with various parameters."""
         error = ExternalToolError(tool_name, message, stderr=stderr)
@@ -129,23 +141,26 @@ class TestExternalToolError:
 class TestExceptionUsagePatterns:
     """Test common exception usage patterns - optimized."""
 
-    @pytest.mark.parametrize("exception_info", [
-        {
-            "class": ConfigurationError,
-            "message": "Missing required setting 'database_url' in section 'connection'",
-            "expected_content": ["database_url", "connection"],
-        },
-        {
-            "class": PipelineError,
-            "message": "Frame interpolation failed at step 3 of 5",
-            "expected_content": ["interpolation", "step 3 of 5"],
-        },
-        {
-            "class": GuiError,
-            "message": "Failed to update progress bar widget",
-            "expected_content": ["progress bar", "widget"],
-        },
-    ])
+    @pytest.mark.parametrize(
+        "exception_info",
+        [
+            {
+                "class": ConfigurationError,
+                "message": "Missing required setting 'database_url' in section 'connection'",
+                "expected_content": ["database_url", "connection"],
+            },
+            {
+                "class": PipelineError,
+                "message": "Frame interpolation failed at step 3 of 5",
+                "expected_content": ["interpolation", "step 3 of 5"],
+            },
+            {
+                "class": GuiError,
+                "message": "Failed to update progress bar widget",
+                "expected_content": ["progress bar", "widget"],
+            },
+        ],
+    )
     def test_exception_message_content(self, exception_info) -> None:
         """Test that exception messages contain expected information."""
         error = exception_info["class"](exception_info["message"])
@@ -154,12 +169,18 @@ class TestExceptionUsagePatterns:
         for content in exception_info["expected_content"]:
             assert content in error_str
 
-    @pytest.mark.parametrize("raise_func,catch_types", [
-        (lambda: PipelineError("Pipeline failed"), [PipelineError, GoesVfiError, Exception]),
-        (lambda: ConfigurationError("Config failed"), [ConfigurationError, GoesVfiError, Exception]),
-        (lambda: ExternalToolError("ffmpeg", "Tool failed"), [ExternalToolError, PipelineError, GoesVfiError, Exception]),
-        (lambda: GuiError("GUI failed"), [GuiError, GoesVfiError, Exception]),
-    ])
+    @pytest.mark.parametrize(
+        "raise_func,catch_types",
+        [
+            (lambda: PipelineError("Pipeline failed"), [PipelineError, GoesVfiError, Exception]),
+            (lambda: ConfigurationError("Config failed"), [ConfigurationError, GoesVfiError, Exception]),
+            (
+                lambda: ExternalToolError("ffmpeg", "Tool failed"),
+                [ExternalToolError, PipelineError, GoesVfiError, Exception],
+            ),
+            (lambda: GuiError("GUI failed"), [GuiError, GoesVfiError, Exception]),
+        ],
+    )
     def test_exception_catching_hierarchy(self, raise_func, catch_types) -> None:
         """Test exception catching at different hierarchy levels."""
         for catch_type in catch_types:
@@ -215,36 +236,39 @@ class TestExceptionUsagePatterns:
 class TestExceptionIntegration:
     """Integration tests for exception usage - optimized."""
 
-    @pytest.mark.parametrize("scenario", [
-        {
-            "name": "config_loading",
-            "function": lambda: ConfigurationError("Missing database configuration in settings.json"),
-            "expected_type": ConfigurationError,
-            "expected_content": ["database", "settings.json"],
-        },
-        {
-            "name": "pipeline_processing",
-            "function": lambda: PipelineError("Failed to process frame 42 of 100"),
-            "expected_type": PipelineError,
-            "expected_content": ["frame 42", "100"],
-        },
-        {
-            "name": "external_tool",
-            "function": lambda: ExternalToolError(
-                "ffmpeg",
-                "Failed to encode video",
-                stderr="ffmpeg: error while loading shared libraries: libx264.so"
-            ),
-            "expected_type": ExternalToolError,
-            "expected_content": ["ffmpeg", "encode video"],
-        },
-        {
-            "name": "gui_operation",
-            "function": lambda: GuiError("Failed to update progress dialog: widget has been destroyed"),
-            "expected_type": GuiError,
-            "expected_content": ["progress dialog", "widget", "destroyed"],
-        },
-    ])
+    @pytest.mark.parametrize(
+        "scenario",
+        [
+            {
+                "name": "config_loading",
+                "function": lambda: ConfigurationError("Missing database configuration in settings.json"),
+                "expected_type": ConfigurationError,
+                "expected_content": ["database", "settings.json"],
+            },
+            {
+                "name": "pipeline_processing",
+                "function": lambda: PipelineError("Failed to process frame 42 of 100"),
+                "expected_type": PipelineError,
+                "expected_content": ["frame 42", "100"],
+            },
+            {
+                "name": "external_tool",
+                "function": lambda: ExternalToolError(
+                    "ffmpeg",
+                    "Failed to encode video",
+                    stderr="ffmpeg: error while loading shared libraries: libx264.so",
+                ),
+                "expected_type": ExternalToolError,
+                "expected_content": ["ffmpeg", "encode video"],
+            },
+            {
+                "name": "gui_operation",
+                "function": lambda: GuiError("Failed to update progress dialog: widget has been destroyed"),
+                "expected_type": GuiError,
+                "expected_content": ["progress dialog", "widget", "destroyed"],
+            },
+        ],
+    )
     def test_realistic_error_scenarios(self, scenario) -> None:
         """Test realistic error usage scenarios."""
         error = scenario["function"]()
@@ -266,6 +290,7 @@ class TestExceptionIntegration:
 
     def test_exception_context_managers(self) -> None:
         """Test using exceptions with context managers."""
+
         class MockResource:
             def __enter__(self):
                 return self

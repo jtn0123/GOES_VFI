@@ -77,14 +77,17 @@ def resource_tab(qtbot):
 class TestResourceLimitsTab:
     """Test ResourceLimitsTab GUI component with optimized patterns."""
 
-    @pytest.mark.parametrize("checkbox_spinbox_pairs", [
+    @pytest.mark.parametrize(
+        "checkbox_spinbox_pairs",
         [
-            ("memory_limit_checkbox", "memory_limit_spinbox"),
-            ("time_limit_checkbox", "time_limit_spinbox"),
-            ("cpu_limit_checkbox", "cpu_limit_spinbox"),
-            ("files_limit_checkbox", "files_limit_spinbox"),
-        ]
-    ])
+            [
+                ("memory_limit_checkbox", "memory_limit_spinbox"),
+                ("time_limit_checkbox", "time_limit_spinbox"),
+                ("cpu_limit_checkbox", "cpu_limit_spinbox"),
+                ("files_limit_checkbox", "files_limit_spinbox"),
+            ]
+        ],
+    )
     def test_checkbox_spinbox_interactions(self, resource_tab, checkbox_spinbox_pairs: list[tuple[str, str]]) -> None:
         """Test that checkboxes properly enable/disable their corresponding spinboxes."""
         for checkbox_name, spinbox_name in checkbox_spinbox_pairs:
@@ -102,20 +105,23 @@ class TestResourceLimitsTab:
             checkbox.setChecked(False)
             assert not spinbox.isEnabled()
 
-    @pytest.mark.parametrize("limit_config", [
-        {
-            "memory": {"enabled": True, "value": 1024, "expected_attr": "max_memory_mb"},
-            "time": {"enabled": False, "value": 600, "expected_attr": "max_processing_time_sec"},
-        },
-        {
-            "memory": {"enabled": True, "value": 2048, "expected_attr": "max_memory_mb"},
-            "time": {"enabled": True, "value": 300, "expected_attr": "max_processing_time_sec"},
-        },
-        {
-            "memory": {"enabled": False, "value": 512, "expected_attr": "max_memory_mb"},
-            "time": {"enabled": True, "value": 900, "expected_attr": "max_processing_time_sec"},
-        },
-    ])
+    @pytest.mark.parametrize(
+        "limit_config",
+        [
+            {
+                "memory": {"enabled": True, "value": 1024, "expected_attr": "max_memory_mb"},
+                "time": {"enabled": False, "value": 600, "expected_attr": "max_processing_time_sec"},
+            },
+            {
+                "memory": {"enabled": True, "value": 2048, "expected_attr": "max_memory_mb"},
+                "time": {"enabled": True, "value": 300, "expected_attr": "max_processing_time_sec"},
+            },
+            {
+                "memory": {"enabled": False, "value": 512, "expected_attr": "max_memory_mb"},
+                "time": {"enabled": True, "value": 900, "expected_attr": "max_processing_time_sec"},
+            },
+        ],
+    )
     def test_limits_changed_signal_emission(self, resource_tab, limit_config: dict[str, Any]) -> None:
         """Test that limits_changed signal emits correct ResourceLimits values."""
         emitted_limits = []

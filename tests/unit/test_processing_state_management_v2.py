@@ -116,11 +116,14 @@ class TestProcessingStateManagement:
         with pytest.raises(ValueError, match="Already processing"):
             processing_vm.start_processing("operation2")
 
-    @pytest.mark.parametrize("progress_sequence", [
-        "normal",
-        "simple",
-        "detailed",
-    ])
+    @pytest.mark.parametrize(
+        "progress_sequence",
+        [
+            "normal",
+            "simple",
+            "detailed",
+        ],
+    )
     def test_progress_update_sequences(self, processing_vm, progress_sequences, progress_sequence: str) -> None:
         """Test progress update with different sequences."""
         processing_vm.start_processing()
@@ -139,13 +142,16 @@ class TestProcessingStateManagement:
         for i, (expected_progress, expected_msg) in enumerate(sequence):
             assert progress_updates[i] == (expected_progress, expected_msg)
 
-    @pytest.mark.parametrize("progress_value,expected_clamped", [
-        (-10, 0),    # Negative should clamp to 0
-        (50, 50),    # Normal value should remain
-        (150, 100),  # Over 100 should clamp to 100
-        (0, 0),      # Zero should remain
-        (100, 100),  # Max should remain
-    ])
+    @pytest.mark.parametrize(
+        "progress_value,expected_clamped",
+        [
+            (-10, 0),  # Negative should clamp to 0
+            (50, 50),  # Normal value should remain
+            (150, 100),  # Over 100 should clamp to 100
+            (0, 0),  # Zero should remain
+            (100, 100),  # Max should remain
+        ],
+    )
     def test_progress_bounds_clamping(self, processing_vm, progress_value: int, expected_clamped: int) -> None:
         """Test progress values are clamped to valid range."""
         processing_vm.start_processing()
@@ -159,10 +165,13 @@ class TestProcessingStateManagement:
         with pytest.raises(ValueError, match="Not currently processing"):
             processing_vm.update_progress(50)
 
-    @pytest.mark.parametrize("success,expected_progress", [
-        (True, 100),   # Successful completion sets progress to 100
-        (False, 0),    # Failed completion resets progress to 0
-    ])
+    @pytest.mark.parametrize(
+        "success,expected_progress",
+        [
+            (True, 100),  # Successful completion sets progress to 100
+            (False, 0),  # Failed completion resets progress to 0
+        ],
+    )
     def test_finish_processing_outcomes(self, processing_vm, success: bool, expected_progress: int) -> None:
         """Test processing completion with different outcomes."""
         processing_vm.start_processing()
@@ -191,25 +200,28 @@ class TestProcessingStateManagement:
         with pytest.raises(ValueError, match="Not currently processing"):
             processing_vm.finish_processing()
 
-    @pytest.mark.parametrize("workflow_steps", [
+    @pytest.mark.parametrize(
+        "workflow_steps",
         [
-            ("start", "video_interpolation"),
-            ("progress", 25, "Loading frames"),
-            ("progress", 50, "Interpolating"),
-            ("progress", 75, "Encoding"),
-            ("finish", True, "Video saved"),
+            [
+                ("start", "video_interpolation"),
+                ("progress", 25, "Loading frames"),
+                ("progress", 50, "Interpolating"),
+                ("progress", 75, "Encoding"),
+                ("finish", True, "Video saved"),
+            ],
+            [
+                ("start", "image_processing"),
+                ("progress", 100, "Complete"),
+                ("finish", True, "Success"),
+            ],
+            [
+                ("start", "batch_operation"),
+                ("progress", 30, "Processing"),
+                ("finish", False, "Error occurred"),
+            ],
         ],
-        [
-            ("start", "image_processing"),
-            ("progress", 100, "Complete"),
-            ("finish", True, "Success"),
-        ],
-        [
-            ("start", "batch_operation"),
-            ("progress", 30, "Processing"),
-            ("finish", False, "Error occurred"),
-        ],
-    ])
+    )
     def test_complete_processing_workflows(self, processing_vm, workflow_steps: list[tuple]) -> None:
         """Test complete processing workflows from start to finish."""
         # Track all signals
@@ -309,18 +321,26 @@ class TestProcessingStateManagement:
         for handler in handlers:
             assert handler.call_count > 0
 
-    @pytest.mark.parametrize("stress_operations", [
-        10,   # Light stress test
-        25,   # Medium stress test
-        50,   # Heavy stress test
-    ])
+    @pytest.mark.parametrize(
+        "stress_operations",
+        [
+            10,  # Light stress test
+            25,  # Medium stress test
+            50,  # Heavy stress test
+        ],
+    )
     def test_state_management_stress(self, processing_vm, stress_operations: int) -> None:
         """Test state management under stress conditions."""
         signal_counts = {"state": 0, "progress": 0, "finished": 0}
 
-        def count_state(_) -> None: signal_counts["state"] += 1
-        def count_progress(_, __) -> None: signal_counts["progress"] += 1
-        def count_finished(_, __) -> None: signal_counts["finished"] += 1
+        def count_state(_) -> None:
+            signal_counts["state"] += 1
+
+        def count_progress(_, __) -> None:
+            signal_counts["progress"] += 1
+
+        def count_finished(_, __) -> None:
+            signal_counts["finished"] += 1
 
         processing_vm.state_changed.connect(count_state)
         processing_vm.progress_updated.connect(count_progress)

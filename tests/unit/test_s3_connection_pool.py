@@ -45,12 +45,7 @@ class TestS3ConnectionPool:
 
     def test_pool_initialization(self) -> None:
         """Test connection pool initializes correctly."""
-        pool = S3ConnectionPool(
-            max_connections=5,
-            region="us-west-2",
-            connect_timeout=20,
-            read_timeout=120
-        )
+        pool = S3ConnectionPool(max_connections=5, region="us-west-2", connect_timeout=20, read_timeout=120)
 
         assert pool.max_connections == 5
         assert pool.region == "us-west-2"

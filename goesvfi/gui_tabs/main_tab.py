@@ -1,7 +1,7 @@
 # goesvfi/gui_tabs/main_tab.py
 
 from collections.abc import Callable
-from datetime import UTC
+from datetime import UTC, datetime
 from enum import Enum
 import json
 import os
@@ -578,12 +578,16 @@ class MainTab(QWidget):
         """Handle drag leave events."""
         self.setProperty("drag_active", False)
         # Remove visual feedback
-        self.setStyleSheet(self.styleSheet().replace(" MainTab[drag_active='true'] { border: 2px dashed #4CAF50; }", ""))
+        self.setStyleSheet(
+            self.styleSheet().replace(" MainTab[drag_active='true'] { border: 2px dashed #4CAF50; }", "")
+        )
 
     def dropEvent(self, event) -> None:
         """Handle file drop events."""
         self.setProperty("drag_active", False)
-        self.setStyleSheet(self.styleSheet().replace(" MainTab[drag_active='true'] { border: 2px dashed #4CAF50; }", ""))
+        self.setStyleSheet(
+            self.styleSheet().replace(" MainTab[drag_active='true'] { border: 2px dashed #4CAF50; }", "")
+        )
 
         if event.mimeData().hasUrls():
             urls = event.mimeData().urls()
@@ -1937,8 +1941,7 @@ class MainTab(QWidget):
         # Find image files
         try:
             image_files = sorted([
-                f for f in current_in_dir.iterdir()
-                if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
+                f for f in current_in_dir.iterdir() if f.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
             ])
 
             if not image_files:
@@ -2423,7 +2426,9 @@ class MainTab(QWidget):
 
         return needs_cache_update
 
-    def _get_model_details(self, key: str, rife_exe: Path, cached_analysis: dict[str, RIFEModelDetails]) -> tuple[RIFEModelDetails, bool]:
+    def _get_model_details(
+        self, key: str, rife_exe: Path, cached_analysis: dict[str, RIFEModelDetails]
+    ) -> tuple[RIFEModelDetails, bool]:
         """Get model details from cache or by analysis.
 
         Args:
@@ -3103,15 +3108,17 @@ class MainTab(QWidget):
         max_workers_value = self.max_workers_spinbox.value()
         encoder_value = self.encoder_combo.currentText()
 
-        LOGGER.debug("Saving FPS: %s, multiplier: %s, max_workers: %s, encoder: %s",
-                    fps_value, multiplier_value, max_workers_value, encoder_value)
+        LOGGER.debug(
+            "Saving FPS: %s, multiplier: %s, max_workers: %s, encoder: %s",
+            fps_value,
+            multiplier_value,
+            max_workers_value,
+            encoder_value,
+        )
 
         # Use batch operation for efficiency
         self.tab_settings.save_all_processing_settings(
-            fps=fps_value,
-            multiplier=multiplier_value,
-            max_workers=max_workers_value,
-            encoder=encoder_value
+            fps=fps_value, multiplier=multiplier_value, max_workers=max_workers_value, encoder=encoder_value
         )
 
         # Save model key separately (part of RIFE settings)
@@ -3129,8 +3136,15 @@ class MainTab(QWidget):
         tta_temporal = self.rife_tta_temporal_checkbox.isChecked()
         model_key = self.rife_model_combo.currentData() or ""
 
-        LOGGER.debug("Saving RIFE settings - tiling: %s, tile_size: %s, uhd: %s, thread_spec: %r, tta_spatial: %s, tta_temporal: %s",
-                    tile_enabled, tile_size, uhd_mode, thread_spec, tta_spatial, tta_temporal)
+        LOGGER.debug(
+            "Saving RIFE settings - tiling: %s, tile_size: %s, uhd: %s, thread_spec: %r, tta_spatial: %s, tta_temporal: %s",
+            tile_enabled,
+            tile_size,
+            uhd_mode,
+            thread_spec,
+            tta_spatial,
+            tta_temporal,
+        )
 
         # Use batch operation for efficiency
         self.tab_settings.save_all_rife_settings(
@@ -3140,7 +3154,7 @@ class MainTab(QWidget):
             uhd_mode=uhd_mode,
             thread_spec=thread_spec,
             tta_spatial=tta_spatial,
-            tta_temporal=tta_temporal
+            tta_temporal=tta_temporal,
         )
 
     def _save_sanchez_settings(self) -> None:
@@ -3153,10 +3167,7 @@ class MainTab(QWidget):
         LOGGER.debug("Saving false color: %s, resolution km: %r", false_color, res_km)
 
         # Use batch operation for efficiency
-        self.tab_settings.save_all_sanchez_settings(
-            false_color=false_color,
-            res_km=res_km
-        )
+        self.tab_settings.save_all_sanchez_settings(false_color=false_color, res_km=res_km)
 
     def _save_crop_settings(self, main_window: QObject) -> None:
         """Save crop rectangle settings."""

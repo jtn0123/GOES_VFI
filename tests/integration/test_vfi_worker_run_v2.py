@@ -11,10 +11,11 @@ Optimizations applied:
 import pathlib
 import sys
 from types import ModuleType
-from unittest.mock import MagicMock, patch
-import pytest
+from typing import Never
+from unittest.mock import MagicMock
 
 from PIL import Image
+import pytest
 
 from goesvfi.pipeline.run_vfi import VfiWorker
 
@@ -34,46 +35,46 @@ class TestVfiWorkerRunV2:
 
         sys.modules.setdefault("PyQt6", pyqt6)
         sys.modules.setdefault("PyQt6.QtCore", qtcore)
-        
+
         return {"qtcore": qtcore, "pyqt6": pyqt6}
 
-    @pytest.fixture
+    @pytest.fixture()
     def dummy_image_factory(self):
         """Factory for creating dummy PNG images."""
-        def create_dummy_png(path: pathlib.Path, size=(10, 10), color=(0, 0, 0)):
+
+        def create_dummy_png(path: pathlib.Path, size=(10, 10), color=(0, 0, 0)) -> None:
             img = Image.new("RGB", size, color=color)
             path.parent.mkdir(parents=True, exist_ok=True)
             img.save(path, format="PNG")
+
         return create_dummy_png
 
-    @pytest.fixture
+    @pytest.fixture()
     def test_input_setup(self, tmp_path, dummy_image_factory):
         """Set up test input directory with sample images."""
         input_dir = tmp_path / "input"
         input_dir.mkdir()
-        
+
         # Create test images with different colors
         test_images = [
-            ("frame_0.png", (255, 0, 0)),    # Red
-            ("frame_1.png", (0, 255, 0)),    # Green
-            ("frame_2.png", (0, 0, 255)),    # Blue
+            ("frame_0.png", (255, 0, 0)),  # Red
+            ("frame_1.png", (0, 255, 0)),  # Green
+            ("frame_2.png", (0, 0, 255)),  # Blue
         ]
-        
+
         for filename, color in test_images:
             dummy_image_factory(input_dir / filename, color=color)
-        
+
         return input_dir
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_signal_handlers(self):
         """Create mock signal handlers for testing."""
-        return {
-            "progress": MagicMock(),
-            "finished": MagicMock(),
-            "error": MagicMock()
-        }
+        return {"progress": MagicMock(), "finished": MagicMock(), "error": MagicMock()}
 
-    def test_vfi_worker_successful_run(self, mock_pyqt_setup, test_input_setup, tmp_path, mock_signal_handlers, monkeypatch):
+    def test_vfi_worker_successful_run(
+        self, mock_pyqt_setup, test_input_setup, tmp_path, mock_signal_handlers, monkeypatch
+    ) -> None:
         """Test successful VFI worker execution."""
         output_file = tmp_path / "output.mp4"
 
@@ -109,12 +110,10 @@ class TestVfiWorkerRunV2:
         mock_signal_handlers["finished"].assert_called_once_with(str(output_file))
         mock_signal_handlers["error"].assert_not_called()
 
-    @pytest.mark.parametrize("error_scenario", [
-        "rife_not_found",
-        "processing_failure",
-        "invalid_input_dir"
-    ])
-    def test_vfi_worker_error_scenarios(self, mock_pyqt_setup, test_input_setup, tmp_path, mock_signal_handlers, monkeypatch, error_scenario):
+    @pytest.mark.parametrize("error_scenario", ["rife_not_found", "processing_failure", "invalid_input_dir"])
+    def test_vfi_worker_error_scenarios(
+        self, mock_pyqt_setup, test_input_setup, tmp_path, mock_signal_handlers, monkeypatch, error_scenario
+    ) -> None:
         """Test VFI worker error handling scenarios."""
         output_file = tmp_path / "output.mp4"
 
@@ -130,11 +129,12 @@ class TestVfiWorkerRunV2:
                 "goesvfi.pipeline.run_vfi.VfiWorker._get_rife_executable",
                 lambda self: pathlib.Path("/fake/rife"),
             )
-            
+
             # Mock run_vfi to raise exception
-            def failing_run_vfi(**kwargs):
-                raise RuntimeError("Processing failed")
-            
+            def failing_run_vfi(**kwargs) -> Never:
+                msg = "Processing failed"
+                raise RuntimeError(msg)
+
             monkeypatch.setattr("goesvfi.pipeline.run_vfi.run_vfi", failing_run_vfi)
         elif error_scenario == "invalid_input_dir":
             # Use non-existent input directory
@@ -152,11 +152,13 @@ class TestVfiWorkerRunV2:
         worker.run()
 
         # Verify error handling
-        if error_scenario in ["rife_not_found", "processing_failure"]:
+        if error_scenario in {"rife_not_found", "processing_failure"}:
             mock_signal_handlers["error"].assert_called_once()
             mock_signal_handlers["finished"].assert_not_called()
 
-    def test_vfi_worker_partial_progress(self, mock_pyqt_setup, test_input_setup, tmp_path, mock_signal_handlers, monkeypatch):
+    def test_vfi_worker_partial_progress(
+        self, mock_pyqt_setup, test_input_setup, tmp_path, mock_signal_handlers, monkeypatch
+    ) -> None:
         """Test VFI worker with partial progress updates."""
         output_file = tmp_path / "output.mp4"
 
@@ -190,7 +192,7 @@ class TestVfiWorkerRunV2:
         mock_signal_handlers["finished"].assert_called_once()
         mock_signal_handlers["error"].assert_not_called()
 
-    def test_vfi_worker_signal_connections(self, mock_pyqt_setup, test_input_setup, tmp_path):
+    def test_vfi_worker_signal_connections(self, mock_pyqt_setup, test_input_setup, tmp_path) -> None:
         """Test VFI worker signal connection functionality."""
         output_file = tmp_path / "output.mp4"
 
@@ -205,11 +207,11 @@ class TestVfiWorkerRunV2:
         # Test signal connection
         test_handler = MagicMock()
         worker.progress.connect(test_handler)
-        
+
         # Verify connection works
         assert worker.progress is not None
 
-    def test_vfi_worker_input_validation(self, mock_pyqt_setup, tmp_path):
+    def test_vfi_worker_input_validation(self, mock_pyqt_setup, tmp_path) -> None:
         """Test VFI worker input validation."""
         # Test with various input scenarios
         test_cases = [
@@ -219,12 +221,12 @@ class TestVfiWorkerRunV2:
 
         for case in test_cases:
             worker = VfiWorker(in_dir=case["in_dir"], out_file_path=case["out_file"])
-            
+
             # Verify worker creation doesn't fail
             assert worker is not None
             assert hasattr(worker, "run")
 
-    def test_vfi_worker_resource_cleanup(self, mock_pyqt_setup, test_input_setup, tmp_path, monkeypatch):
+    def test_vfi_worker_resource_cleanup(self, mock_pyqt_setup, test_input_setup, tmp_path, monkeypatch) -> None:
         """Test VFI worker resource cleanup after completion."""
         output_file = tmp_path / "output.mp4"
 
@@ -243,12 +245,12 @@ class TestVfiWorkerRunV2:
 
         # Create and run worker
         worker = VfiWorker(in_dir=str(test_input_setup), out_file_path=str(output_file))
-        
+
         # Connect mock handlers
         progress_handler = MagicMock()
         finished_handler = MagicMock()
         error_handler = MagicMock()
-        
+
         worker.progress.connect(progress_handler)
         worker.finished.connect(finished_handler)
         worker.error.connect(error_handler)
@@ -260,9 +262,11 @@ class TestVfiWorkerRunV2:
         finished_handler.assert_called_once()
         error_handler.assert_not_called()
 
-    def test_vfi_worker_concurrent_execution_safety(self, mock_pyqt_setup, test_input_setup, tmp_path, monkeypatch):
+    def test_vfi_worker_concurrent_execution_safety(
+        self, mock_pyqt_setup, test_input_setup, tmp_path, monkeypatch
+    ) -> None:
         """Test VFI worker behavior with concurrent execution concerns."""
-        output_file = tmp_path / "output.mp4"
+        tmp_path / "output.mp4"
 
         # Mock RIFE executable
         monkeypatch.setattr(
@@ -282,18 +286,15 @@ class TestVfiWorkerRunV2:
         # Create multiple workers (simulating potential concurrent usage)
         workers = []
         handlers = []
-        
+
         for i in range(2):
-            worker = VfiWorker(
-                in_dir=str(test_input_setup), 
-                out_file_path=str(tmp_path / f"output_{i}.mp4")
-            )
+            worker = VfiWorker(in_dir=str(test_input_setup), out_file_path=str(tmp_path / f"output_{i}.mp4"))
             handler = {"progress": MagicMock(), "finished": MagicMock(), "error": MagicMock()}
-            
+
             worker.progress.connect(handler["progress"])
             worker.finished.connect(handler["finished"])
             worker.error.connect(handler["error"])
-            
+
             workers.append(worker)
             handlers.append(handler)
 

@@ -91,9 +91,7 @@ class TestVFICropHandler:
         image_height = 400
 
         # Should not raise any exception
-        crop_handler.validate_crop_against_image(
-            crop_rect_pil, image_width, image_height, "test_image"
-        )
+        crop_handler.validate_crop_against_image(crop_rect_pil, image_width, image_height, "test_image")
 
     def test_validate_crop_against_image_exceeds_width(self, crop_handler) -> None:
         """Test crop validation when crop exceeds image width."""
@@ -102,9 +100,7 @@ class TestVFICropHandler:
         image_height = 400
 
         with pytest.raises(ValueError, match="exceeds image dimensions"):
-            crop_handler.validate_crop_against_image(
-                crop_rect_pil, image_width, image_height, "test_image"
-            )
+            crop_handler.validate_crop_against_image(crop_rect_pil, image_width, image_height, "test_image")
 
     def test_validate_crop_against_image_exceeds_height(self, crop_handler) -> None:
         """Test crop validation when crop exceeds image height."""
@@ -113,9 +109,7 @@ class TestVFICropHandler:
         image_height = 400
 
         with pytest.raises(ValueError, match="exceeds image dimensions"):
-            crop_handler.validate_crop_against_image(
-                crop_rect_pil, image_width, image_height, "test_image"
-            )
+            crop_handler.validate_crop_against_image(crop_rect_pil, image_width, image_height, "test_image")
 
     def test_validate_crop_against_image_negative_coordinates(self, crop_handler) -> None:
         """Test crop validation with negative coordinates."""
@@ -124,9 +118,7 @@ class TestVFICropHandler:
         image_height = 400
 
         with pytest.raises(ValueError, match="negative coordinates"):
-            crop_handler.validate_crop_against_image(
-                crop_rect_pil, image_width, image_height, "test_image"
-            )
+            crop_handler.validate_crop_against_image(crop_rect_pil, image_width, image_height, "test_image")
 
     def test_validate_crop_against_image_invalid_rectangle(self, crop_handler) -> None:
         """Test crop validation with invalid rectangle (right <= left)."""
@@ -135,9 +127,7 @@ class TestVFICropHandler:
         image_height = 400
 
         with pytest.raises(ValueError, match="right <= left"):
-            crop_handler.validate_crop_against_image(
-                crop_rect_pil, image_width, image_height, "test_image"
-            )
+            crop_handler.validate_crop_against_image(crop_rect_pil, image_width, image_height, "test_image")
 
     def test_validate_crop_against_image_zero_height(self, crop_handler) -> None:
         """Test crop validation with zero height rectangle."""
@@ -146,20 +136,13 @@ class TestVFICropHandler:
         image_height = 400
 
         with pytest.raises(ValueError, match="bottom <= upper"):
-            crop_handler.validate_crop_against_image(
-                crop_rect_pil, image_width, image_height, "test_image"
-            )
+            crop_handler.validate_crop_against_image(crop_rect_pil, image_width, image_height, "test_image")
 
     def test_get_crop_info_none(self, crop_handler) -> None:
         """Test get_crop_info with None input."""
         result = crop_handler.get_crop_info(None)
 
-        expected = {
-            "enabled": False,
-            "rectangle": None,
-            "width": None,
-            "height": None
-        }
+        expected = {"enabled": False, "rectangle": None, "width": None, "height": None}
         assert result == expected
 
     def test_get_crop_info_valid_crop(self, crop_handler) -> None:
@@ -176,7 +159,7 @@ class TestVFICropHandler:
             "right": 110,
             "bottom": 220,
             "width": 100,
-            "height": 200
+            "height": 200,
         }
         assert result == expected
 

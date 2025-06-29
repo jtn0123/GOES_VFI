@@ -650,7 +650,9 @@ class TestSettingsAdvancedOptimizedV2:
             def get_statistics(self):
                 """Get usage statistics."""
                 total_items = sum(len(items) for items in self.categories.values())
-                most_accessed = max(self.access_counts.items(), key=operator.itemgetter(1)) if self.access_counts else None
+                most_accessed = (
+                    max(self.access_counts.items(), key=operator.itemgetter(1)) if self.access_counts else None
+                )
 
                 return {
                     "total_items": total_items,

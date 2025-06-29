@@ -203,10 +203,13 @@ class TestMockPopenTermination:
         assert proc.poll() == -9  # SIGKILL signal
         assert proc.wait() == -9
 
-    @pytest.mark.parametrize("signal_method,expected_code", [
-        ("terminate", -15),
-        ("kill", -9),
-    ])
+    @pytest.mark.parametrize(
+        "signal_method,expected_code",
+        [
+            ("terminate", -15),
+            ("kill", -9),
+        ],
+    )
     def test_signal_handling(self, mock_qt_modules, signal_method, expected_code) -> None:
         """Test different signal handling methods."""
         proc = MockPopen(["cmd"], complete_after=5.0)

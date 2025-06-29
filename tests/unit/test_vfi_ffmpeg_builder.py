@@ -1,6 +1,5 @@
 """Tests for VFI FFmpeg command building."""
 
-
 import pytest
 
 from goesvfi.pipeline.vfi_ffmpeg_builder import VFIFFmpegBuilder
@@ -38,9 +37,7 @@ class TestVFIFFmpegBuilder:
         num_intermediate_frames = 1
         skip_model = True
 
-        cmd = ffmpeg_builder.build_raw_video_command(
-            output_path, fps, num_intermediate_frames, skip_model
-        )
+        cmd = ffmpeg_builder.build_raw_video_command(output_path, fps, num_intermediate_frames, skip_model)
 
         # Check basic structure
         assert cmd[0] == "ffmpeg"
@@ -66,9 +63,7 @@ class TestVFIFFmpegBuilder:
         num_intermediate_frames = 1
         skip_model = False
 
-        cmd = ffmpeg_builder.build_raw_video_command(
-            output_path, fps, num_intermediate_frames, skip_model
-        )
+        cmd = ffmpeg_builder.build_raw_video_command(output_path, fps, num_intermediate_frames, skip_model)
 
         # Check framerate (should be fps * (num_intermediate_frames + 1))
         framerate_idx = cmd.index("-framerate")
@@ -96,15 +91,9 @@ class TestVFIFFmpegBuilder:
 
     def test_build_final_video_command_basic(self, ffmpeg_builder, input_path, output_path) -> None:
         """Test building final video command with basic settings."""
-        ffmpeg_args = {
-            "crf": 23,
-            "pix_fmt": "yuv420p",
-            "encoder": "libx264"
-        }
+        ffmpeg_args = {"crf": 23, "pix_fmt": "yuv420p", "encoder": "libx264"}
 
-        cmd = ffmpeg_builder.build_final_video_command(
-            input_path, output_path, 30, ffmpeg_args
-        )
+        cmd = ffmpeg_builder.build_final_video_command(input_path, output_path, 30, ffmpeg_args)
 
         # Check basic structure
         assert cmd[0] == "ffmpeg"
@@ -119,15 +108,9 @@ class TestVFIFFmpegBuilder:
 
     def test_build_final_video_command_with_bitrate(self, ffmpeg_builder, input_path, output_path) -> None:
         """Test building final video command with bitrate settings."""
-        ffmpeg_args = {
-            "crf": 23,
-            "bitrate_kbps": 5000,
-            "bufsize_kb": 10000
-        }
+        ffmpeg_args = {"crf": 23, "bitrate_kbps": 5000, "bufsize_kb": 10000}
 
-        cmd = ffmpeg_builder.build_final_video_command(
-            input_path, output_path, 30, ffmpeg_args
-        )
+        cmd = ffmpeg_builder.build_final_video_command(input_path, output_path, 30, ffmpeg_args)
 
         # Check bitrate settings
         assert "-b:v" in cmd
@@ -144,12 +127,10 @@ class TestVFIFFmpegBuilder:
             "unsharp_la": 1.0,
             "unsharp_cx": 5.0,
             "unsharp_cy": 5.0,
-            "unsharp_ca": 0.0
+            "unsharp_ca": 0.0,
         }
 
-        cmd = ffmpeg_builder.build_final_video_command(
-            input_path, output_path, 30, ffmpeg_args
-        )
+        cmd = ffmpeg_builder.build_final_video_command(input_path, output_path, 30, ffmpeg_args)
 
         # Check for unsharp filter
         assert "-vf" in cmd
@@ -173,12 +154,10 @@ class TestVFIFFmpegBuilder:
             "search_param": 64,
             "minter_vsbmc": 1,
             "scd_mode": "fdiff",
-            "scd_threshold": 10.0
+            "scd_threshold": 10.0,
         }
 
-        cmd = ffmpeg_builder.build_final_video_command(
-            input_path, output_path, 60, ffmpeg_args
-        )
+        cmd = ffmpeg_builder.build_final_video_command(input_path, output_path, 60, ffmpeg_args)
 
         # Check for motion interpolation filter
         assert "-vf" in cmd
@@ -197,12 +176,10 @@ class TestVFIFFmpegBuilder:
             "unsharp_la": 0.5,
             "use_ffmpeg_interp": True,
             "fps": 60,
-            "filter_preset": "full"
+            "filter_preset": "full",
         }
 
-        cmd = ffmpeg_builder.build_final_video_command(
-            input_path, output_path, 60, ffmpeg_args
-        )
+        cmd = ffmpeg_builder.build_final_video_command(input_path, output_path, 60, ffmpeg_args)
 
         # Check for combined filters (scale, unsharp, minterpolate)
         assert "-vf" in cmd
@@ -223,7 +200,7 @@ class TestVFIFFmpegBuilder:
             "unsharp_la": 1.5,
             "unsharp_cx": 3.0,
             "unsharp_cy": 3.0,
-            "unsharp_ca": 0.5
+            "unsharp_ca": 0.5,
         }
 
         result = ffmpeg_builder._build_unsharp_filter(ffmpeg_args)
@@ -251,7 +228,7 @@ class TestVFIFFmpegBuilder:
             "search_param": 32,
             "minter_vsbmc": 0,
             "scd_mode": "none",
-            "scd_threshold": 5.0
+            "scd_threshold": 5.0,
         }
 
         result = ffmpeg_builder._build_motion_interpolation_filter(ffmpeg_args)
@@ -263,9 +240,7 @@ class TestVFIFFmpegBuilder:
 
     def test_build_motion_interpolation_filter_disabled(self, ffmpeg_builder) -> None:
         """Test building motion interpolation filter when disabled."""
-        ffmpeg_args = {
-            "filter_preset": "none"
-        }
+        ffmpeg_args = {"filter_preset": "none"}
 
         result = ffmpeg_builder._build_motion_interpolation_filter(ffmpeg_args)
 
@@ -286,14 +261,9 @@ class TestVFIFFmpegBuilder:
 
     def test_get_command_info_final_video(self, ffmpeg_builder, input_path, output_path) -> None:
         """Test getting command info for final video command."""
-        ffmpeg_args = {
-            "encoder": "libx265",
-            "apply_unsharp": True
-        }
+        ffmpeg_args = {"encoder": "libx265", "apply_unsharp": True}
 
-        cmd = ffmpeg_builder.build_final_video_command(
-            input_path, output_path, 30, ffmpeg_args
-        )
+        cmd = ffmpeg_builder.build_final_video_command(input_path, output_path, 30, ffmpeg_args)
 
         info = ffmpeg_builder.get_command_info(cmd)
 

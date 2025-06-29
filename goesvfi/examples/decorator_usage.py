@@ -17,12 +17,7 @@ from goesvfi.core.error_decorators import (
 
 
 # Example 1: Simple error handling for file operations
-@with_error_handling(
-    operation_name="load_config",
-    component_name="config_loader",
-    reraise=False,
-    default_return={}
-)
+@with_error_handling(operation_name="load_config", component_name="config_loader", reraise=False, default_return={})
 def load_config_file(path: Path) -> dict:
     """Load configuration from JSON file."""
     import json
@@ -32,12 +27,7 @@ def load_config_file(path: Path) -> dict:
 
 
 # Example 2: Retry logic for network operations
-@with_retry(
-    max_attempts=3,
-    delay=1.0,
-    backoff_factor=2.0,
-    exceptions=(ConnectionError, TimeoutError)
-)
+@with_retry(max_attempts=3, delay=1.0, backoff_factor=2.0, exceptions=(ConnectionError, TimeoutError))
 def download_file(url: str, dest: Path) -> None:
     """Download file with automatic retry."""
     import urllib.request
@@ -49,7 +39,7 @@ def download_file(url: str, dest: Path) -> None:
 @with_logging(
     log_args=True,
     log_result=False,  # Don't log large results
-    log_time=True
+    log_time=True,
 )
 def process_large_dataset(data_path: Path, output_path: Path) -> int:
     """Process dataset and return count of processed items."""
@@ -60,11 +50,7 @@ def process_large_dataset(data_path: Path, output_path: Path) -> int:
 
 
 # Example 4: Robust operation for critical functions
-@robust_operation(
-    operation_name="s3_download",
-    max_retries=5,
-    retry_delay=2.0
-)
+@robust_operation(operation_name="s3_download", max_retries=5, retry_delay=2.0)
 def download_from_s3(bucket: str, key: str, local_path: Path) -> None:
     """Download file from S3 with retry and error handling."""
     import boto3
@@ -74,10 +60,7 @@ def download_from_s3(bucket: str, key: str, local_path: Path) -> None:
 
 
 # Example 5: Safe async operations
-@async_safe(
-    timeout=30.0,
-    default_return=None
-)
+@async_safe(timeout=30.0, default_return=None)
 async def fetch_remote_data(url: str) -> dict | None:
     """Fetch data from remote API with timeout protection."""
     import aiohttp
@@ -88,19 +71,9 @@ async def fetch_remote_data(url: str) -> dict | None:
 
 # Example 6: Combining decorators for complex operations
 @with_logging(log_time=True)
-@with_error_handling(
-    operation_name="batch_process",
-    reraise=True
-)
-@with_retry(
-    max_attempts=3,
-    exceptions=(IOError, OSError)
-)
-def batch_process_images(
-    input_dir: Path,
-    output_dir: Path,
-    processor_func: callable
-) -> list[Path]:
+@with_error_handling(operation_name="batch_process", reraise=True)
+@with_retry(max_attempts=3, exceptions=(IOError, OSError))
+def batch_process_images(input_dir: Path, output_dir: Path, processor_func: callable) -> list[Path]:
     """Process all images in a directory with full error handling."""
     processed_files = []
 
@@ -122,10 +95,7 @@ class DataProcessor:
         self.cache_dir = cache_dir
 
     @with_error_handling(
-        operation_name="load_cache",
-        component_name="DataProcessor",
-        reraise=False,
-        default_return=None
+        operation_name="load_cache", component_name="DataProcessor", reraise=False, default_return=None
     )
     def load_from_cache(self, key: str) -> dict | None:
         """Load data from cache with error handling."""
@@ -135,10 +105,7 @@ class DataProcessor:
         with open(cache_file, "rb") as f:
             return pickle.load(f)
 
-    @robust_operation(
-        operation_name="save_cache",
-        max_retries=3
-    )
+    @robust_operation(operation_name="save_cache", max_retries=3)
     def save_to_cache(self, key: str, data: dict) -> None:
         """Save data to cache with retry logic."""
         import pickle
@@ -151,22 +118,13 @@ class DataProcessor:
 
 
 # Example 8: Custom error handling patterns
-def create_s3_downloader(
-    max_retries: int = 5,
-    timeout: float = 30.0
-):
+def create_s3_downloader(max_retries: int = 5, timeout: float = 30.0):
     """Factory function creating decorated S3 downloader."""
 
     @with_logging(log_args=True, log_time=True)
-    @with_error_handling(
-        operation_name="s3_download",
-        component_name="S3Downloader"
-    )
+    @with_error_handling(operation_name="s3_download", component_name="S3Downloader")
     @with_retry(
-        max_attempts=max_retries,
-        delay=2.0,
-        backoff_factor=2.0,
-        exceptions=(ConnectionError, TimeoutError, OSError)
+        max_attempts=max_retries, delay=2.0, backoff_factor=2.0, exceptions=(ConnectionError, TimeoutError, OSError)
     )
     def download(bucket: str, key: str, dest: Path) -> bool:
         """Download with configured retry and timeout."""
@@ -176,7 +134,7 @@ def create_s3_downloader(
         config = Config(
             read_timeout=timeout,
             connect_timeout=timeout,
-            retries={"max_attempts": 0}  # We handle retries
+            retries={"max_attempts": 0},  # We handle retries
         )
 
         s3 = boto3.client("s3", config=config)
@@ -193,16 +151,10 @@ if __name__ == "__main__":
 
     # Example 2: Download with retry
     with contextlib.suppress(Exception):
-        download_file(
-            "https://example.com/data.zip",
-            Path("data.zip")
-        )
+        download_file("https://example.com/data.zip", Path("data.zip"))
 
     # Example 3: Process with timing
-    count = process_large_dataset(
-        Path("input_data"),
-        Path("output_data")
-    )
+    count = process_large_dataset(Path("input_data"), Path("output_data"))
 
     # Example 4: Create custom downloader
     s3_download = create_s3_downloader(max_retries=10, timeout=60.0)

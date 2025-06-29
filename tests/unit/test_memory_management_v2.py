@@ -50,12 +50,7 @@ def memory_stats_scenarios():
 def mock_psutil_data():
     """Mock psutil data for consistent testing."""
     return {
-        "virtual_memory": Mock(
-            total=8 * 1024**3,
-            available=6 * 1024**3,
-            used=2 * 1024**3,
-            percent=25.0
-        ),
+        "virtual_memory": Mock(total=8 * 1024**3, available=6 * 1024**3, used=2 * 1024**3, percent=25.0),
         "process": Mock(),
     }
 
@@ -75,13 +70,17 @@ def memory_optimizer():
 class TestMemoryStats:
     """Test MemoryStats dataclass with parameterized scenarios."""
 
-    @pytest.mark.parametrize("scenario,expected_low,expected_critical", [
-        ("normal", False, False),
-        ("low_memory", True, False),
-        ("critical_memory", True, True),
-    ])
-    def test_memory_detection_properties(self, memory_stats_scenarios,
-                                       scenario: str, expected_low: bool, expected_critical: bool) -> None:
+    @pytest.mark.parametrize(
+        "scenario,expected_low,expected_critical",
+        [
+            ("normal", False, False),
+            ("low_memory", True, False),
+            ("critical_memory", True, True),
+        ],
+    )
+    def test_memory_detection_properties(
+        self, memory_stats_scenarios, scenario: str, expected_low: bool, expected_critical: bool
+    ) -> None:
         """Test low and critical memory detection properties."""
         stats = memory_stats_scenarios[scenario]
 
@@ -118,7 +117,9 @@ class TestMemoryMonitor:
         assert test_stats in callback_results
 
     @pytest.mark.parametrize("psutil_available", [True, False])
-    def test_memory_stats_with_psutil_availability(self, memory_monitor, mock_psutil_data, psutil_available: bool) -> None:
+    def test_memory_stats_with_psutil_availability(
+        self, memory_monitor, mock_psutil_data, psutil_available: bool
+    ) -> None:
         """Test memory stats retrieval with and without psutil."""
         if psutil_available:
             fake_proc = Mock()
@@ -155,11 +156,14 @@ class TestMemoryMonitor:
 class TestMemoryOptimizer:
     """Test MemoryOptimizer class with parameterized scenarios."""
 
-    @pytest.mark.parametrize("input_dtype,expected_dtype", [
-        (np.float64, np.float32),
-        (np.int64, np.uint8),
-        (np.float32, np.float32),  # Should remain unchanged
-    ])
+    @pytest.mark.parametrize(
+        "input_dtype,expected_dtype",
+        [
+            (np.float64, np.float32),
+            (np.int64, np.uint8),
+            (np.float32, np.float32),  # Should remain unchanged
+        ],
+    )
     def test_optimize_array_dtype(self, memory_optimizer, input_dtype, expected_dtype) -> None:
         """Test array dtype optimization for different input types."""
         if input_dtype == np.float64:
@@ -171,12 +175,16 @@ class TestMemoryOptimizer:
         assert optimized.dtype == expected_dtype
         assert np.array_equal(optimized, arr.astype(expected_dtype))
 
-    @pytest.mark.parametrize("array_size,max_chunk_mb,expected_chunks", [
-        ((1000, 1000), 1, "> 1"),    # Should create multiple chunks
-        ((100, 100), 10, "== 1"),    # Should fit in one chunk
-    ])
-    def test_chunk_large_array(self, memory_optimizer, array_size: tuple[int, int],
-                              max_chunk_mb: int, expected_chunks: str) -> None:
+    @pytest.mark.parametrize(
+        "array_size,max_chunk_mb,expected_chunks",
+        [
+            ((1000, 1000), 1, "> 1"),  # Should create multiple chunks
+            ((100, 100), 10, "== 1"),  # Should fit in one chunk
+        ],
+    )
+    def test_chunk_large_array(
+        self, memory_optimizer, array_size: tuple[int, int], max_chunk_mb: int, expected_chunks: str
+    ) -> None:
         """Test array chunking with different sizes and limits."""
         large_array = np.zeros(array_size, dtype=np.float32)
         chunks = memory_optimizer.chunk_large_array(large_array, max_chunk_mb=max_chunk_mb)
@@ -197,10 +205,13 @@ class TestMemoryOptimizer:
         memory_optimizer.free_memory(force=True)
         mock_gc_collect.assert_called_once()
 
-    @pytest.mark.parametrize("required_mb,expected_result", [
-        (10, True),      # Small requirement should pass
-        (1000000, False),  # Huge requirement should fail
-    ])
+    @pytest.mark.parametrize(
+        "required_mb,expected_result",
+        [
+            (10, True),  # Small requirement should pass
+            (1000000, False),  # Huge requirement should fail
+        ],
+    )
     def test_check_available_memory(self, memory_optimizer, required_mb: int, expected_result: bool) -> None:
         """Test memory availability checking with different requirements."""
         has_memory, msg = memory_optimizer.check_available_memory(required_mb)
@@ -223,11 +234,14 @@ class TestMemoryOptimizer:
 class TestObjectPool:
     """Test ObjectPool class with optimized patterns."""
 
-    @pytest.mark.parametrize("max_size,operations", [
-        (2, ["acquire", "release", "acquire"]),    # Test reuse
-        (2, ["acquire", "acquire", "acquire"]),    # Test creation
-        (1, ["acquire", "release", "release"]),    # Test max size limit
-    ])
+    @pytest.mark.parametrize(
+        "max_size,operations",
+        [
+            (2, ["acquire", "release", "acquire"]),  # Test reuse
+            (2, ["acquire", "acquire", "acquire"]),  # Test creation
+            (1, ["acquire", "release", "release"]),  # Test max size limit
+        ],
+    )
     def test_object_pool_operations(self, max_size: int, operations: list[str]) -> None:
         """Test object pool operations with different scenarios."""
         factory_mock = Mock(side_effect=object)
@@ -295,13 +309,17 @@ class TestImageLoaderMemoryIntegration:
         assert result.metadata["memory_optimized"]
         assert "size_mb" in result.metadata
 
-    @pytest.mark.parametrize("image_size,size_limit,should_raise", [
-        ((1000, 1000), 10, False),     # Within limit
-        ((10000, 10000), 10, True),    # Exceeds limit
-    ])
+    @pytest.mark.parametrize(
+        "image_size,size_limit,should_raise",
+        [
+            ((1000, 1000), 10, False),  # Within limit
+            ((10000, 10000), 10, True),  # Exceeds limit
+        ],
+    )
     @patch("PIL.Image.open")
-    def test_image_size_limit_enforcement(self, mock_open, image_size: tuple[int, int],
-                                        size_limit: int, should_raise: bool) -> None:
+    def test_image_size_limit_enforcement(
+        self, mock_open, image_size: tuple[int, int], size_limit: int, should_raise: bool
+    ) -> None:
         """Test image size limit enforcement."""
         # Mock image with specified size
         mock_img = MagicMock()
@@ -332,11 +350,14 @@ class TestImageLoaderMemoryIntegration:
 class TestMemoryEstimationAndUtilities:
     """Test memory estimation and utility functions."""
 
-    @pytest.mark.parametrize("shape,dtype,expected_mb", [
-        ((1000, 1000, 3), np.uint8, 3),       # Basic RGB image
-        ((3840, 2160, 3), np.float32, 95),    # 4K float32 image
-        ((1000, 1000, 4), np.uint8, 4),       # RGBA image
-    ])
+    @pytest.mark.parametrize(
+        "shape,dtype,expected_mb",
+        [
+            ((1000, 1000, 3), np.uint8, 3),  # Basic RGB image
+            ((3840, 2160, 3), np.float32, 95),  # 4K float32 image
+            ((1000, 1000, 4), np.uint8, 4),  # RGBA image
+        ],
+    )
     def test_estimate_memory_requirement(self, shape: tuple[int, ...], dtype, expected_mb: int) -> None:
         """Test memory requirement estimation for various scenarios."""
         mb = estimate_memory_requirement(shape, dtype)

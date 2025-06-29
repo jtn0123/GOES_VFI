@@ -36,11 +36,13 @@ class TestErrorHandlerV2(unittest.TestCase):
         class MissingHandleMethod(ErrorHandler):
             def can_handle(self, error: StructuredError) -> bool:
                 return True
+
             # Missing handle method
 
         class MissingCanHandleMethod(ErrorHandler):
             def handle(self, error: StructuredError) -> bool:
                 return True
+
             # Missing can_handle method
 
         class NoMethods(ErrorHandler):
@@ -71,6 +73,7 @@ class TestErrorHandlerV2(unittest.TestCase):
 
     def test_error_handler_interface_comprehensive(self) -> None:
         """Test comprehensive error handler interface scenarios."""
+
         class TestHandler(ErrorHandler):
             def __init__(self) -> None:
                 self.can_handle_calls = []
@@ -97,7 +100,7 @@ class TestErrorHandlerV2(unittest.TestCase):
                 context=ErrorContext("net_op", "net_comp"),
                 recoverable=True,
                 user_message="User friendly message",
-                suggestions=["Try again", "Check connection"]
+                suggestions=["Try again", "Check connection"],
             ),
         ]
 
@@ -106,12 +109,12 @@ class TestErrorHandlerV2(unittest.TestCase):
                 # Test can_handle
                 can_handle = handler.can_handle(error)
                 assert can_handle
-                assert len(handler.can_handle_calls) == len(errors[:errors.index(error) + 1])
+                assert len(handler.can_handle_calls) == len(errors[: errors.index(error) + 1])
 
                 # Test handle
                 handled = handler.handle(error)
                 assert handled
-                assert len(handler.handle_calls) == len(errors[:errors.index(error) + 1])
+                assert len(handler.handle_calls) == len(errors[: errors.index(error) + 1])
 
 
 class TestLoggingErrorHandlerV2(unittest.TestCase):
@@ -195,17 +198,14 @@ class TestLoggingErrorHandlerV2(unittest.TestCase):
         # Test various error scenarios
         test_cases = [
             {
-                "error": StructuredError(
-                    "Simple error",
-                    context=ErrorContext("simple_op", "simple_comp")
-                ),
+                "error": StructuredError("Simple error", context=ErrorContext("simple_op", "simple_comp")),
                 "expected_log": "Error in simple_comp: Simple error",
             },
             {
                 "error": StructuredError(
                     "Error with category",
                     category=ErrorCategory.VALIDATION,
-                    context=ErrorContext("validate", "validator")
+                    context=ErrorContext("validate", "validator"),
                 ),
                 "expected_log": "Error in validator: Error with category",
             },
@@ -214,14 +214,14 @@ class TestLoggingErrorHandlerV2(unittest.TestCase):
                     "Error with details",
                     context=ErrorContext("process", "processor"),
                     user_message="User friendly message",
-                    suggestions=["Try this", "Or that"]
+                    suggestions=["Try this", "Or that"],
                 ),
                 "expected_log": "Error in processor: Error with details",
             },
             {
                 "error": StructuredError(
                     "",  # Empty message
-                    context=ErrorContext("empty", "handler")
+                    context=ErrorContext("empty", "handler"),
                 ),
                 "expected_log": "Error in handler: ",
             },
@@ -264,10 +264,7 @@ class TestLoggingErrorHandlerV2(unittest.TestCase):
                 handler = LoggingErrorHandler(logger=self.test_logger, log_level=log_level)
 
                 # Create error
-                error = StructuredError(
-                    f"{level_name} level error",
-                    context=ErrorContext("test_op", "test_comp")
-                )
+                error = StructuredError(f"{level_name} level error", context=ErrorContext("test_op", "test_comp"))
 
                 # Handle error
                 handler.handle(error)
@@ -286,11 +283,7 @@ class TestLoggingErrorHandlerV2(unittest.TestCase):
             msg = "Original error"
             raise ValueError(msg)
         except ValueError as e:
-            error = StructuredError(
-                "Wrapped error",
-                context=ErrorContext("wrap", "wrapper"),
-                cause=e
-            )
+            error = StructuredError("Wrapped error", context=ErrorContext("wrap", "wrapper"), cause=e)
 
         # Handle error
         result = handler.handle(error)
@@ -308,10 +301,7 @@ class TestLoggingErrorHandlerV2(unittest.TestCase):
 
         def log_error(error_id: int) -> None:
             try:
-                error = StructuredError(
-                    f"Error {error_id}",
-                    context=ErrorContext(f"op_{error_id}", f"comp_{error_id}")
-                )
+                error = StructuredError(f"Error {error_id}", context=ErrorContext(f"op_{error_id}", f"comp_{error_id}"))
                 result = handler.handle(error)
                 results.append((error_id, result))
             except Exception as e:
@@ -378,7 +368,7 @@ class TestCategoryErrorHandlerV2(unittest.TestCase):
         handler = CategoryErrorHandler([
             ErrorCategory.VALIDATION,
             ErrorCategory.PERMISSION,
-            ErrorCategory.FILE_NOT_FOUND
+            ErrorCategory.FILE_NOT_FOUND,
         ])
 
         test_cases = [
@@ -409,6 +399,7 @@ class TestCategoryErrorHandlerV2(unittest.TestCase):
 
     def test_category_handler_subclass_comprehensive(self) -> None:
         """Test comprehensive category handler subclassing."""
+
         class CustomCategoryHandler(CategoryErrorHandler):
             def __init__(self, categories) -> None:
                 super().__init__(categories)
@@ -422,10 +413,7 @@ class TestCategoryErrorHandlerV2(unittest.TestCase):
                 return error.category == ErrorCategory.VALIDATION
 
         # Test custom handler
-        handler = CustomCategoryHandler([
-            ErrorCategory.VALIDATION,
-            ErrorCategory.PERMISSION
-        ])
+        handler = CustomCategoryHandler([ErrorCategory.VALIDATION, ErrorCategory.PERMISSION])
 
         # Test handling different categories
         validation_error = StructuredError("Valid", category=ErrorCategory.VALIDATION)
@@ -464,8 +452,9 @@ class TestCategoryErrorHandlerV2(unittest.TestCase):
 class CustomErrorHandlerV2(ErrorHandler):
     """Enhanced custom error handler for testing."""
 
-    def __init__(self, handled_categories=None, should_stop=False,
-                 handle_delay=0, raise_on_handle=None, max_handles=None) -> None:
+    def __init__(
+        self, handled_categories=None, should_stop=False, handle_delay=0, raise_on_handle=None, max_handles=None
+    ) -> None:
         self.handled_categories = handled_categories or []
         self.should_stop = should_stop
         self.handled_errors = []
@@ -556,18 +545,17 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         handler2 = CustomErrorHandlerV2([ErrorCategory.NETWORK])
         handler3 = CustomErrorHandlerV2([ErrorCategory.PERMISSION])
 
-        chain = (ErrorHandlerChain()
-                .add_handler(handler1)
-                .add_handler(handler2)
-                .add_handler(handler3))
+        chain = ErrorHandlerChain().add_handler(handler1).add_handler(handler2).add_handler(handler3)
 
         assert len(chain.handlers) == 3
 
         # Test chaining with different handler types
-        chain = (ErrorHandlerChain()
-                .add_handler(LoggingErrorHandler())
-                .add_handler(CategoryErrorHandler(ErrorCategory.VALIDATION))
-                .add_handler(CustomErrorHandlerV2([ErrorCategory.NETWORK])))
+        chain = (
+            ErrorHandlerChain()
+            .add_handler(LoggingErrorHandler())
+            .add_handler(CategoryErrorHandler(ErrorCategory.VALIDATION))
+            .add_handler(CustomErrorHandlerV2([ErrorCategory.NETWORK]))
+        )
 
         assert len(chain.handlers) == 3
         assert isinstance(chain.handlers[0], LoggingErrorHandler)
@@ -706,16 +694,16 @@ class TestErrorHandlerChainV2(unittest.TestCase):
             category_handler = CategoryErrorHandler([ErrorCategory.VALIDATION, ErrorCategory.NETWORK])
             custom_handler = CustomErrorHandlerV2([ErrorCategory.VALIDATION], should_stop=True)
 
-            chain = (ErrorHandlerChain()
-                    .add_handler(logging_handler)
-                    .add_handler(category_handler)
-                    .add_handler(custom_handler))
+            chain = (
+                ErrorHandlerChain()
+                .add_handler(logging_handler)
+                .add_handler(category_handler)
+                .add_handler(custom_handler)
+            )
 
             # Test with matching error
             error = StructuredError(
-                "Validation failed",
-                category=ErrorCategory.VALIDATION,
-                context=ErrorContext("validate", "validator")
+                "Validation failed", category=ErrorCategory.VALIDATION, context=ErrorContext("validate", "validator")
             )
 
             result = chain.handle_error(error)
@@ -732,9 +720,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
             log_stream.seek(0)
 
             network_error = StructuredError(
-                "Network timeout",
-                category=ErrorCategory.NETWORK,
-                context=ErrorContext("request", "http_client")
+                "Network timeout", category=ErrorCategory.NETWORK, context=ErrorContext("request", "http_client")
             )
 
             result = chain.handle_error(network_error)
@@ -759,10 +745,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
             StructuredError("With category", category=ErrorCategory.VALIDATION),
             StructuredError("With context", context=ErrorContext("op", "comp")),
             StructuredError(
-                "Complex",
-                category=ErrorCategory.NETWORK,
-                context=ErrorContext("net", "client"),
-                recoverable=True
+                "Complex", category=ErrorCategory.NETWORK, context=ErrorContext("net", "client"), recoverable=True
             ),
         ]
 
@@ -778,7 +761,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         for i in range(3):
             handler = CustomErrorHandlerV2(
                 list(ErrorCategory),  # Handle all categories
-                should_stop=(i == 2)  # Last handler stops
+                should_stop=(i == 2),  # Last handler stops
             )
             handlers.append(handler)
 
@@ -795,9 +778,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
                 category = categories[error_id % len(categories)]
 
                 error = StructuredError(
-                    f"Error {error_id}",
-                    category=category,
-                    context=ErrorContext(f"op_{error_id}", f"comp_{error_id}")
+                    f"Error {error_id}", category=category, context=ErrorContext(f"op_{error_id}", f"comp_{error_id}")
                 )
 
                 result = chain.handle_error(error)
@@ -848,10 +829,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
     def test_chain_memory_efficiency(self) -> None:
         """Test chain memory efficiency with large errors."""
         # Create handler that can process large errors
-        handler = CustomErrorHandlerV2(
-            list(ErrorCategory),
-            should_stop=True
-        )
+        handler = CustomErrorHandlerV2(list(ErrorCategory), should_stop=True)
 
         chain = ErrorHandlerChain().add_handler(handler)
 
@@ -862,7 +840,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
             error = StructuredError(
                 large_message,
                 category=list(ErrorCategory)[i % len(ErrorCategory)],
-                context=ErrorContext("large_op", "large_comp")
+                context=ErrorContext("large_op", "large_comp"),
             )
 
             result = chain.handle_error(error)
@@ -872,6 +850,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
     def test_chain_handler_exceptions(self) -> None:
         """Test chain behavior when handlers raise exceptions."""
+
         # Create handler that raises exception
         class FaultyHandler(ErrorHandler):
             def can_handle(self, error) -> Never:
@@ -920,11 +899,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
             # Create specialized handlers
             class FileErrorHandlerV2(CategoryErrorHandler):
                 def __init__(self) -> None:
-                    super().__init__([
-                        ErrorCategory.FILE_NOT_FOUND,
-                        ErrorCategory.PERMISSION,
-                        ErrorCategory.VALIDATION
-                    ])
+                    super().__init__([ErrorCategory.FILE_NOT_FOUND, ErrorCategory.PERMISSION, ErrorCategory.VALIDATION])
                     self.recovery_attempts = []
                     self.created_files = []
 
@@ -968,7 +943,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
                     self.validation_errors.append({
                         "message": error.message,
                         "suggestions": error.suggestions,
-                        "field": error.context.user_data.get("field", "unknown")
+                        "field": error.context.user_data.get("field", "unknown"),
                     })
                     return True  # User must fix input
 
@@ -979,11 +954,13 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
             logging_handler = LoggingErrorHandler(logger=test_logger, log_level=logging.INFO)
 
             # Create chain
-            chain = (ErrorHandlerChain()
-                    .add_handler(logging_handler)
-                    .add_handler(file_handler)
-                    .add_handler(network_handler)
-                    .add_handler(user_handler))
+            chain = (
+                ErrorHandlerChain()
+                .add_handler(logging_handler)
+                .add_handler(file_handler)
+                .add_handler(network_handler)
+                .add_handler(user_handler)
+            )
 
             # Test various error scenarios
 
@@ -994,7 +971,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
                 "File not found: /tmp/test.txt",
                 category=ErrorCategory.FILE_NOT_FOUND,
                 context=file_context,
-                recoverable=True
+                recoverable=True,
             )
 
             result = chain.handle_error(file_error)
@@ -1007,7 +984,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
                 "Connection timeout",
                 category=ErrorCategory.NETWORK,
                 context=ErrorContext("api_call", "http_client"),
-                recoverable=True
+                recoverable=True,
             )
 
             # First attempts should continue
@@ -1028,7 +1005,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
                 category=ErrorCategory.VALIDATION,
                 context=validation_context,
                 recoverable=True,
-                suggestions=["Use format: user@example.com"]
+                suggestions=["Use format: user@example.com"],
             )
 
             result = chain.handle_error(validation_error)
@@ -1048,6 +1025,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
 
     def test_error_handler_with_structured_error_context_comprehensive(self) -> None:
         """Test comprehensive error handlers with rich structured error context."""
+
         class ContextAwareHandlerV2(ErrorHandler):
             def __init__(self) -> None:
                 self.processed_contexts = []
@@ -1082,12 +1060,14 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
                     self.error_statistics["recoverable"] += 1
 
                 category_name = error.category.name
-                self.error_statistics["by_category"][category_name] = \
+                self.error_statistics["by_category"][category_name] = (
                     self.error_statistics["by_category"].get(category_name, 0) + 1
+                )
 
                 component = error.context.component
-                self.error_statistics["by_component"][component] = \
+                self.error_statistics["by_component"][component] = (
                     self.error_statistics["by_component"].get(component, 0) + 1
+                )
 
                 return True
 
@@ -1154,10 +1134,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
 
         for scenario in test_scenarios:
             # Create context
-            context = ErrorContext(
-                operation=scenario["operation"],
-                component=scenario["component"]
-            )
+            context = ErrorContext(operation=scenario["operation"], component=scenario["component"])
 
             # Add user data
             for key, value in scenario["user_data"].items():
@@ -1176,7 +1153,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
                 category=scenario["category"],
                 context=context,
                 recoverable=scenario["recoverable"],
-                suggestions=["Check logs", "Contact support", "Retry operation"]
+                suggestions=["Check logs", "Contact support", "Retry operation"],
             )
 
             # Handle error
@@ -1211,9 +1188,11 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
 
     def test_complex_handler_chain_scenarios(self) -> None:
         """Test complex handler chain scenarios with multiple handler types."""
+
         # Create a complex chain with different handler behaviors
         class PriorityHandler(ErrorHandler):
             """Handler that processes based on error priority."""
+
             def __init__(self, min_priority=0) -> None:
                 self.min_priority = min_priority
                 self.handled = []
@@ -1229,6 +1208,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
 
         class RateLimitHandler(ErrorHandler):
             """Handler that enforces rate limiting."""
+
             def __init__(self, max_errors_per_second=10) -> None:
                 self.max_errors_per_second = max_errors_per_second
                 self.handled_times = []
@@ -1258,23 +1238,21 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
         fallback = CustomErrorHandlerV2(list(ErrorCategory), should_stop=True)
 
         # Create chain
-        chain = (ErrorHandlerChain()
-                .add_handler(rate_limiter)
-                .add_handler(priority_high)
-                .add_handler(priority_medium)
-                .add_handler(priority_low)
-                .add_handler(fallback))
+        chain = (
+            ErrorHandlerChain()
+            .add_handler(rate_limiter)
+            .add_handler(priority_high)
+            .add_handler(priority_medium)
+            .add_handler(priority_low)
+            .add_handler(fallback)
+        )
 
         # Test various scenarios
 
         # High priority error - should stop at priority_high
         context = ErrorContext("critical_op", "core_system")
         context.add_system_data("priority", 9)
-        high_priority_error = StructuredError(
-            "Critical system failure",
-            category=ErrorCategory.SYSTEM,
-            context=context
-        )
+        high_priority_error = StructuredError("Critical system failure", category=ErrorCategory.SYSTEM, context=context)
 
         result = chain.handle_error(high_priority_error)
         assert result
@@ -1286,11 +1264,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
         for i in range(10):
             context = ErrorContext("api_call", "client")
             context.add_system_data("priority", 3)
-            error = StructuredError(
-                f"Network error {i}",
-                category=ErrorCategory.NETWORK,
-                context=context
-            )
+            error = StructuredError(f"Network error {i}", category=ErrorCategory.NETWORK, context=context)
             network_errors.append(error)
 
         # First 5 should continue processing

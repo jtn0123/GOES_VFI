@@ -16,12 +16,15 @@ from typing import Any, TypeVar
 
 try:
     from pydantic import BaseModel, Field, validator
+
     PYDANTIC_AVAILABLE = True
 except ImportError:
     PYDANTIC_AVAILABLE = False
     BaseModel = object
+
     def Field(default=None, description="", **kwargs):
         return default
+
 
 import contextlib
 
@@ -36,6 +39,7 @@ T = TypeVar("T")
 # Configuration schemas using Pydantic if available, dataclasses otherwise
 
 if PYDANTIC_AVAILABLE:
+
     class ProcessingConfig(BaseModel):
         """Configuration for video processing operations."""
 
@@ -133,6 +137,7 @@ else:
     @dataclass
     class ProcessingConfig:
         """Configuration for video processing operations."""
+
         max_workers: int = 4
         buffer_size: int = 64 * 1024
         temp_directory: str | None = None
@@ -142,6 +147,7 @@ else:
     @dataclass
     class NetworkConfig:
         """Configuration for network operations."""
+
         connection_timeout: float = 30.0
         read_timeout: float = 300.0
         max_retries: int = 3
@@ -151,6 +157,7 @@ else:
     @dataclass
     class StorageConfig:
         """Configuration for storage operations."""
+
         data_directory: str = "./data"
         output_directory: str = "./output"
         log_directory: str = "./logs"
@@ -160,6 +167,7 @@ else:
     @dataclass
     class UIConfig:
         """Configuration for user interface."""
+
         theme: str = "light"
         window_width: int = 1200
         window_height: int = 800
@@ -169,6 +177,7 @@ else:
     @dataclass
     class ApplicationConfig:
         """Main application configuration."""
+
         processing: ProcessingConfig = field(default_factory=ProcessingConfig)
         network: NetworkConfig = field(default_factory=NetworkConfig)
         storage: StorageConfig = field(default_factory=StorageConfig)
@@ -233,6 +242,7 @@ class ConfigurationManager(ConfigurableManager):
             return ApplicationConfig().dict()
         # Convert dataclass to dict
         import dataclasses
+
         config = ApplicationConfig()
         result = {}
         for section_name in ["processing", "network", "storage", "ui"]:
@@ -243,7 +253,7 @@ class ConfigurationManager(ConfigurableManager):
         result.update({
             "debug_mode": config.debug_mode,
             "log_level": config.log_level,
-            "profile_performance": config.profile_performance
+            "profile_performance": config.profile_performance,
         })
         return result
 
@@ -318,7 +328,7 @@ class ConfigurationManager(ConfigurableManager):
             ui=ui,
             debug_mode=config_dict.get("debug_mode", False),
             log_level=config_dict.get("log_level", "INFO"),
-            profile_performance=config_dict.get("profile_performance", False)
+            profile_performance=config_dict.get("profile_performance", False),
         )
 
     def get_config(self) -> ApplicationConfig:
@@ -554,6 +564,7 @@ def remove_config_watcher(callback: callable) -> None:
 
 # Convenience functions for common configuration patterns
 
+
 def is_debug_mode() -> bool:
     """Check if debug mode is enabled."""
     return get_config().debug_mode
@@ -570,6 +581,7 @@ def get_temp_directory() -> Path:
     if temp_dir:
         return Path(temp_dir)
     import tempfile
+
     return Path(tempfile.gettempdir()) / "goesvfi"
 
 

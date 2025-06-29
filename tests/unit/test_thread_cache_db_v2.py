@@ -65,7 +65,7 @@ def test_data_sets():
             "satellite": SatellitePattern.GOES_16,
             "timestamps": [base_time + timedelta(minutes=i * 15) for i in range(10)],
             "filepaths": [f"/test/path/medium_{i}.nc" for i in range(10)],
-        }
+        },
     }
 
 
@@ -221,7 +221,7 @@ class TestThreadLocalCacheDB:
             connection_info[thread_id] = {
                 "thread_ident": thread_ident,
                 "connection": conn,
-                "operations_successful": False
+                "operations_successful": False,
             }
 
             try:
@@ -312,8 +312,9 @@ class TestThreadLocalCacheDB:
         total_expected = 3 * operation_count  # 3 workers * operation_count each
 
         # Allow for some variability in concurrent operations
-        assert successful_operations >= total_expected * 0.8, \
+        assert successful_operations >= total_expected * 0.8, (
             f"Too many failed operations: {successful_operations}/{total_expected}"
+        )
 
     def test_database_error_handling(self, temp_db_path) -> None:
         """Test database error handling and recovery."""

@@ -111,10 +111,13 @@ class TestUnifiedDateRangeSelectorV2(PyQtAsyncTestCase):
         # Verify signal was emitted
         assert len(self.emitted_ranges) == 2  # Two changes should emit two signals
 
-    @pytest.mark.parametrize("preset,expected_start_key", [
-        ("today", "today_start"),
-        ("last_week", "week_ago_start"),
-    ])
+    @pytest.mark.parametrize(
+        "preset,expected_start_key",
+        [
+            ("today", "today_start"),
+            ("last_week", "week_ago_start"),
+        ],
+    )
     def test_preset_applications_parametrized(self, preset: str, expected_start_key: str) -> None:
         """Test applying different date presets using parametrization."""
         initial_signal_count = len(self.emitted_ranges)
@@ -233,10 +236,13 @@ class TestCompactDateRangeSelectorV2(PyQtAsyncTestCase):
         assert start.date() == expected_start.date()
         assert end.date() == expected_end.date()
 
-    @pytest.mark.parametrize("preset_text,expected_hour", [
-        ("Today", 0),
-        ("Yesterday", 0),
-    ])
+    @pytest.mark.parametrize(
+        "preset_text,expected_hour",
+        [
+            ("Today", 0),
+            ("Yesterday", 0),
+        ],
+    )
     def test_preset_change_parametrized(self, preset_text: str, expected_hour: int) -> None:
         """Test changing presets via dropdown using parametrization."""
         initial_count = len(self.emitted_ranges)
@@ -279,10 +285,7 @@ class TestCompactDateRangeSelectorV2(PyQtAsyncTestCase):
 
     def test_preset_combo_population(self) -> None:
         """Test that preset combo is properly populated with expected options."""
-        combo_items = [
-            self.selector.preset_combo.itemText(i)
-            for i in range(self.selector.preset_combo.count())
-        ]
+        combo_items = [self.selector.preset_combo.itemText(i) for i in range(self.selector.preset_combo.count())]
 
         # Verify expected presets are available
         expected_presets = ["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "Custom..."]

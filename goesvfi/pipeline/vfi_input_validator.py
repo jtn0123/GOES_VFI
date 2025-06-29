@@ -38,7 +38,7 @@ class VFIInputValidator:
         LOGGER.debug(
             "Processing parameters validated: fps=%d, num_intermediate_frames=%d",
             self.fps,
-            self.num_intermediate_frames
+            self.num_intermediate_frames,
         )
 
     def validate_input_folder(self, folder: pathlib.Path) -> pathlib.Path:
@@ -131,11 +131,7 @@ class VFIInputValidator:
         # Find and validate images
         image_paths = self.find_and_validate_images(validated_folder, skip_model)
 
-        LOGGER.info(
-            "Input validation complete: %d images found in %s",
-            len(image_paths),
-            validated_folder
-        )
+        LOGGER.info("Input validation complete: %d images found in %s", len(image_paths), validated_folder)
 
         return image_paths
 
@@ -150,5 +146,5 @@ class VFIInputValidator:
             "num_intermediate_frames": self.num_intermediate_frames,
             "max_supported_intermediate_frames": 1,
             "required_images_with_model": 2,
-            "required_images_skip_model": 1
+            "required_images_skip_model": 1,
         }

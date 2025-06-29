@@ -133,7 +133,8 @@ class DummyOperationStore:
         statuses = ["success", "failure", "warning", "pending"]
         operation_names = ["test_op", "batch_process", "data_sync", "file_convert"]
 
-        return [{
+        return [
+            {
                 "name": f"{operation_names[i % len(operation_names)]}_{i}",
                 "status": statuses[i % len(statuses)],
                 "start_time": 1000 + i,
@@ -141,7 +142,9 @@ class DummyOperationStore:
                 "duration": float(i % 10),
                 "correlation_id": f"corr_{i:06d}",
                 "metadata": {"test_id": i, "batch": i // 100},
-            } for i in range(count)]
+            }
+            for i in range(count)
+        ]
 
     def get_recent_operations(self, limit: int = 500) -> list:
         """Get recent operations with limit."""
@@ -215,6 +218,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -289,7 +293,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
         # Test with malformed operations
         malformed_operations = [
             {"name": "test", "status": "success"},  # Missing some fields
-            {"name": None, "status": "failure"},    # None name
+            {"name": None, "status": "failure"},  # None name
             {},  # Empty operation
             {"name": "test", "status": "success", "extra_field": "value"},  # Extra fields
         ]
@@ -499,7 +503,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
                 if operation_id % 3 == 0:
                     # Test OperationTableModel
                     model = oh_tab.OperationTableModel()
-                    test_ops = self.dummy_store.operations[:operation_id % 3 + 1]
+                    test_ops = self.dummy_store.operations[: operation_id % 3 + 1]
                     model.update_operations(test_ops)
                     row_count = model.rowCount()
                     results.append(("operations", operation_id, row_count))
@@ -507,14 +511,16 @@ class TestOperationHistoryTabV2(unittest.TestCase):
                 elif operation_id % 3 == 1:
                     # Test MetricsModel
                     model = oh_tab.MetricsModel()
-                    test_metrics = self.dummy_store.metrics[:operation_id % 3 + 1]
+                    test_metrics = self.dummy_store.metrics[: operation_id % 3 + 1]
                     model.update_metrics(test_metrics)
                     row_count = model.rowCount()
                     results.append(("metrics", operation_id, row_count))
 
                 else:
                     # Test RefreshWorker
-                    with patch("goesvfi.gui_tabs.operation_history_tab.get_operation_store", return_value=self.dummy_store):
+                    with patch(
+                        "goesvfi.gui_tabs.operation_history_tab.get_operation_store", return_value=self.dummy_store
+                    ):
                         worker = oh_tab.RefreshWorker()
                         worker.filters = {"limit": operation_id % 5 + 1}
 
@@ -603,7 +609,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
 
         # Test multiple updates
         for i in range(5):
-            test_ops = self.dummy_store.operations[:i + 1]
+            test_ops = self.dummy_store.operations[: i + 1]
             model.update_operations(test_ops)
 
             assert model.rowCount() == len(test_ops)
@@ -753,7 +759,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
 
         # Test rapid updates
         for i in range(100):
-            test_ops = self.dummy_store.operations[:i % 5 + 1]
+            test_ops = self.dummy_store.operations[: i % 5 + 1]
 
             try:
                 model.update_operations(test_ops)
@@ -763,7 +769,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
 
         # Test rapid data access during updates
         for i in range(50):
-            test_ops = self.dummy_store.operations[:i % 3 + 1]
+            test_ops = self.dummy_store.operations[: i % 3 + 1]
             model.update_operations(test_ops)
 
             # Access data immediately after update
@@ -807,13 +813,18 @@ def test_table_models_populate_pytest(history_tab_models_pytest, dummy_store_pyt
 
     if history_tab_models_pytest.operations_model.rowCount() > 0:
         first_op_index = history_tab_models_pytest.operations_model.index(0, 1)
-        assert history_tab_models_pytest.operations_model.data(first_op_index) == dummy_store_pytest.operations[0]["name"]
+        assert (
+            history_tab_models_pytest.operations_model.data(first_op_index) == dummy_store_pytest.operations[0]["name"]
+        )
 
     assert history_tab_models_pytest.metrics_model.rowCount() == len(dummy_store_pytest.metrics)
 
     if history_tab_models_pytest.metrics_model.rowCount() > 0:
         first_metric_index = history_tab_models_pytest.metrics_model.index(0, 0)
-        assert history_tab_models_pytest.metrics_model.data(first_metric_index) == dummy_store_pytest.metrics[0]["operation_name"]
+        assert (
+            history_tab_models_pytest.metrics_model.data(first_metric_index)
+            == dummy_store_pytest.metrics[0]["operation_name"]
+        )
 
 
 def test_refresh_worker_functionality_pytest(dummy_store_pytest) -> None:

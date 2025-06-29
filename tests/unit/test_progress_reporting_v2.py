@@ -89,6 +89,7 @@ def test_date_ranges():
 @pytest.fixture()
 def progress_collector():
     """Create a progress collector for testing."""
+
     class ProgressCollector:
         def __init__(self) -> None:
             self.messages = []
@@ -117,7 +118,9 @@ class TestProgressReporting:
     """Test suite for the enhanced progress reporting functionality."""
 
     @pytest.mark.asyncio()
-    async def test_scan_directory_progress_structure(self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path) -> None:
+    async def test_scan_directory_progress_structure(
+        self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path
+    ) -> None:
         """Test the overall structure of scan_directory progress reporting."""
         start_date, end_date = test_date_ranges["short_range"]
         satellite = SatellitePattern.GOES_16
@@ -138,15 +141,20 @@ class TestProgressReporting:
         for step in expected_steps:
             assert progress_collector.has_step_pattern(step), f"{step} message not found"
 
-    @pytest.mark.parametrize("step_info", [
-        ("Step 1/5", "Generating expected timestamps"),
-        ("Step 2/5", "Checking cache"),
-        ("Step 3/5", "Checking filesystem"),
-        ("Step 4/5", "Finalizing"),
-        ("Step 5/5", "Scan complete"),
-    ])
+    @pytest.mark.parametrize(
+        "step_info",
+        [
+            ("Step 1/5", "Generating expected timestamps"),
+            ("Step 2/5", "Checking cache"),
+            ("Step 3/5", "Checking filesystem"),
+            ("Step 4/5", "Finalizing"),
+            ("Step 5/5", "Scan complete"),
+        ],
+    )
     @pytest.mark.asyncio()
-    async def test_scan_directory_step_content(self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path, step_info) -> None:
+    async def test_scan_directory_step_content(
+        self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path, step_info
+    ) -> None:
         """Test specific step content in scan_directory progress reporting."""
         step_pattern, content_text = step_info
         start_date, end_date = test_date_ranges["short_range"]
@@ -165,7 +173,9 @@ class TestProgressReporting:
         assert progress_collector.has_message_containing(content_text)
 
     @pytest.mark.asyncio()
-    async def test_scan_directory_progress_sequence(self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path) -> None:
+    async def test_scan_directory_progress_sequence(
+        self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path
+    ) -> None:
         """Test that progress sequence is logical and complete."""
         start_date, end_date = test_date_ranges["short_range"]
 
@@ -190,7 +200,9 @@ class TestProgressReporting:
         assert len(unique_steps) >= 3, "Should have multiple distinct progress steps"
 
     @pytest.mark.asyncio()
-    async def test_fetch_missing_files_progress_structure(self, mock_async_operations, reconcile_manager, mock_stores, progress_collector) -> None:
+    async def test_fetch_missing_files_progress_structure(
+        self, mock_async_operations, reconcile_manager, mock_stores, progress_collector
+    ) -> None:
         """Test fetch_missing_files progress reporting structure."""
         _mock_cdn_store, _mock_s3_store = mock_stores
 
@@ -226,15 +238,20 @@ class TestProgressReporting:
         for step in expected_steps:
             assert progress_collector.has_step_pattern(step), f"{step} message not found"
 
-    @pytest.mark.parametrize("content_check", [
-        "Analyzing missing files",
-        "Preparing download strategy",
-        "from CDN",
-        "from S3",
-        "Download complete",
-    ])
+    @pytest.mark.parametrize(
+        "content_check",
+        [
+            "Analyzing missing files",
+            "Preparing download strategy",
+            "from CDN",
+            "from S3",
+            "Download complete",
+        ],
+    )
     @pytest.mark.asyncio()
-    async def test_fetch_missing_files_content(self, mock_async_operations, reconcile_manager, progress_collector, content_check) -> None:
+    async def test_fetch_missing_files_content(
+        self, mock_async_operations, reconcile_manager, progress_collector, content_check
+    ) -> None:
         """Test specific content in fetch_missing_files progress messages."""
         # Setup minimal test data
         now = datetime.now()
@@ -258,7 +275,9 @@ class TestProgressReporting:
         assert progress_collector.has_message_containing(content_check)
 
     @pytest.mark.asyncio()
-    async def test_reconcile_phase_based_progress_structure(self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path) -> None:
+    async def test_reconcile_phase_based_progress_structure(
+        self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path
+    ) -> None:
         """Test phase-based progress reporting in the reconcile method."""
         start_date, end_date = test_date_ranges["short_range"]
         satellite = SatellitePattern.GOES_16
@@ -297,12 +316,17 @@ class TestProgressReporting:
         assert progress_collector.has_step_pattern("Phase 1/2"), "Phase 1 message not found"
         assert progress_collector.has_step_pattern("Phase 2/2"), "Phase 2 message not found"
 
-    @pytest.mark.parametrize("phase_content", [
-        ("Phase 1", "scan"),
-        ("Phase 2", "download"),
-    ])
+    @pytest.mark.parametrize(
+        "phase_content",
+        [
+            ("Phase 1", "scan"),
+            ("Phase 2", "download"),
+        ],
+    )
     @pytest.mark.asyncio()
-    async def test_reconcile_phase_content(self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path, phase_content) -> None:
+    async def test_reconcile_phase_content(
+        self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path, phase_content
+    ) -> None:
         """Test phase content in reconcile progress messages."""
         phase_pattern, content_text = phase_content
         start_date, end_date = test_date_ranges["short_range"]
@@ -330,11 +354,14 @@ class TestProgressReporting:
 
         # Check for phase pattern and content
         phase_messages = [msg for msg in progress_collector.messages if phase_pattern in msg]
-        assert any(content_text.lower() in msg.lower() for msg in phase_messages), \
+        assert any(content_text.lower() in msg.lower() for msg in phase_messages), (
             f"Phase {phase_pattern} should contain '{content_text}'"
+        )
 
     @pytest.mark.asyncio()
-    async def test_reconcile_completion_message(self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path) -> None:
+    async def test_reconcile_completion_message(
+        self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path
+    ) -> None:
         """Test final completion message in reconcile method."""
         start_date, end_date = test_date_ranges["short_range"]
 
@@ -364,7 +391,9 @@ class TestProgressReporting:
         assert any("existing" in msg and "downloaded" in msg for msg in completion_messages)
 
     @pytest.mark.asyncio()
-    async def test_progress_sequence_integrity(self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path) -> None:
+    async def test_progress_sequence_integrity(
+        self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path
+    ) -> None:
         """Test that progress sequences maintain proper ordering and completion."""
         start_date, end_date = test_date_ranges["short_range"]
 
@@ -403,12 +432,17 @@ class TestProgressReporting:
         assert len(step_messages) > 0, "Should have step-based progress messages"
         assert len(phase_messages) > 0, "Should have phase-based progress messages"
 
-    @pytest.mark.parametrize("satellite", [
-        SatellitePattern.GOES_16,
-        SatellitePattern.GOES_18,
-    ])
+    @pytest.mark.parametrize(
+        "satellite",
+        [
+            SatellitePattern.GOES_16,
+            SatellitePattern.GOES_18,
+        ],
+    )
     @pytest.mark.asyncio()
-    async def test_progress_reporting_with_different_satellites(self, mock_async_operations, reconcile_manager, test_date_ranges, satellite, tmp_path) -> None:
+    async def test_progress_reporting_with_different_satellites(
+        self, mock_async_operations, reconcile_manager, test_date_ranges, satellite, tmp_path
+    ) -> None:
         """Test progress reporting works with different satellite patterns."""
         start_date, end_date = test_date_ranges["short_range"]
         collector = progress_collector()
@@ -428,7 +462,9 @@ class TestProgressReporting:
         assert len(collector.messages) > 0
 
     @pytest.mark.asyncio()
-    async def test_error_handling_in_progress_reporting(self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path) -> None:
+    async def test_error_handling_in_progress_reporting(
+        self, mock_async_operations, reconcile_manager, test_date_ranges, progress_collector, tmp_path
+    ) -> None:
         """Test that progress reporting handles errors gracefully."""
         start_date, end_date = test_date_ranges["short_range"]
 

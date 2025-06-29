@@ -277,7 +277,7 @@ class TestOptimizedRifeBackend:
             "cache_hits": 3,
             "cache_misses": 7,
             "total_io_time": 2.0,
-            "total_rife_time": 8.0
+            "total_rife_time": 8.0,
         })
 
         stats = optimized_backend.get_performance_stats()
@@ -323,7 +323,7 @@ def test_interpolate_three_with_optimized_backend(dummy_img, different_img) -> N
 
     # Verify values match expected order: [left, mid, right]
     np.testing.assert_array_equal(result[0], 0.25)  # left
-    np.testing.assert_array_equal(result[1], 0.5)   # mid
+    np.testing.assert_array_equal(result[1], 0.5)  # mid
     np.testing.assert_array_equal(result[2], 0.75)  # right
 
 

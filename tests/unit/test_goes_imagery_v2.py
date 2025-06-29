@@ -240,7 +240,9 @@ class TestGOESImageryV2(unittest.TestCase):
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.find_raw_data")
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_raw_data")
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageProcessor.process_raw_data")
-    def test_get_imagery_mode_switching(self, mock_process, mock_download_raw, mock_find_raw, mock_download_pre) -> None:
+    def test_get_imagery_mode_switching(
+        self, mock_process, mock_download_raw, mock_find_raw, mock_download_pre
+    ) -> None:
         """Test imagery manager mode switching."""
         # Setup mocks
         mock_download_pre.return_value = MagicMock(file_path=self.test_dir / "pre.jpg")
@@ -357,9 +359,10 @@ class TestGOESImageryV2(unittest.TestCase):
         manager.downloader.s3_client = MagicMock()
 
         # Test with all operations failing
-        with patch(
-            "goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_precolorized_image"
-        ) as mock_pre, patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.find_raw_data") as mock_find:
+        with (
+            patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_precolorized_image") as mock_pre,
+            patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.find_raw_data") as mock_find,
+        ):
             mock_pre.return_value = None
             mock_find.return_value = None
 

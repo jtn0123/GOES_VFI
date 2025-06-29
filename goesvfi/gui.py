@@ -573,6 +573,7 @@ class MainWindow(QWidget):
         if hasattr(self, "_sanchez_gui_temp_dir") and self._sanchez_gui_temp_dir.exists():
             try:
                 import shutil
+
                 shutil.rmtree(self._sanchez_gui_temp_dir)
                 LOGGER.debug("Cleaned up temporary Sanchez directory")
             except Exception as e:

@@ -145,6 +145,7 @@ class ThumbnailManager:
                 if img.mode == "RGBA":
                     bytes_per_line = 4 * width
                     from PyQt6.QtGui import QImage
+
                     qimage = QImage(
                         img_array.data.tobytes(),
                         width,
@@ -155,6 +156,7 @@ class ThumbnailManager:
                 else:
                     bytes_per_line = 3 * width
                     from PyQt6.QtGui import QImage
+
                     qimage = QImage(
                         img_array.data.tobytes(),
                         width,

@@ -192,7 +192,9 @@ class TestConfigManagement:
                 [logging]
                 level = "INFO"
                 """
-                mock_file.open.return_value.__enter__.return_value = mock_open(read_data=toml_content.encode()).return_value
+                mock_file.open.return_value.__enter__.return_value = mock_open(
+                    read_data=toml_content.encode()
+                ).return_value
 
             with patch("pathlib.Path.mkdir"):  # Mock directory creation
                 config = _load_config()
@@ -241,10 +243,13 @@ class TestConfigManagement:
             with pytest.raises(ValueError, match="Invalid TOML"):
                 _load_config()
 
-    @pytest.mark.parametrize("config_key,getter_func", [
-        ("output_dir", get_output_dir),
-        ("cache_dir", get_cache_dir),
-    ])
+    @pytest.mark.parametrize(
+        "config_key,getter_func",
+        [
+            ("output_dir", get_output_dir),
+            ("cache_dir", get_cache_dir),
+        ],
+    )
     def test_directory_getters(self, config_key: str, getter_func) -> None:
         """Test output and cache directory getter functions."""
         test_path = f"/test/{config_key}"
@@ -257,11 +262,14 @@ class TestConfigManagement:
             assert isinstance(result, Path)
             assert str(result) == test_path
 
-    @pytest.mark.parametrize("malformed_value,expected_fallback", [
-        (123, DEFAULTS["output_dir"]),      # Wrong type
-        (None, DEFAULTS["output_dir"]),     # None value
-        ("", DEFAULTS["output_dir"]),       # Empty string
-    ])
+    @pytest.mark.parametrize(
+        "malformed_value,expected_fallback",
+        [
+            (123, DEFAULTS["output_dir"]),  # Wrong type
+            (None, DEFAULTS["output_dir"]),  # None value
+            ("", DEFAULTS["output_dir"]),  # Empty string
+        ],
+    )
     def test_directory_getters_fallback(self, malformed_value: Any, expected_fallback: str) -> None:
         """Test directory getters fallback when config is malformed."""
         with patch("goesvfi.utils.config._load_config") as mock_load:
@@ -313,7 +321,10 @@ class TestConfigManagement:
 
     def test_config_schema_completeness(self) -> None:
         """Test that expected schema covers all defaults."""
-        def check_schema_coverage(defaults_section: dict[str, Any], schema_section: dict[str, Any], path: str = "") -> None:
+
+        def check_schema_coverage(
+            defaults_section: dict[str, Any], schema_section: dict[str, Any], path: str = ""
+        ) -> None:
             for key, value in defaults_section.items():
                 full_path = f"{path}.{key}" if path else key
                 assert key in schema_section, f"Schema missing key: {full_path}"

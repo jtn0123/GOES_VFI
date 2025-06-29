@@ -88,12 +88,15 @@ class TestSettingsManager:
 
             assert loaded == value
 
-    @pytest.mark.parametrize("key,default,expected_type", [
-        ("non_existent_string", "default", str),
-        ("non_existent_int", 99, int),
-        ("non_existent_bool", True, bool),
-        ("non_existent_list", ["default"], list),
-    ])
+    @pytest.mark.parametrize(
+        "key,default,expected_type",
+        [
+            ("non_existent_string", "default", str),
+            ("non_existent_int", 99, int),
+            ("non_existent_bool", True, bool),
+            ("non_existent_list", ["default"], list),
+        ],
+    )
     def test_load_nonexistent_values(self, settings_manager, key: str, default: Any, expected_type: type) -> None:
         """Test loading values that don't exist returns defaults."""
         if expected_type != list:
@@ -155,12 +158,17 @@ class TestSettingsManager:
         for original, loaded_path in zip(paths, loaded, strict=False):
             assert loaded_path == original
 
-    @pytest.mark.parametrize("total_paths,max_items,expected_count", [
-        (15, 10, 10),  # Should limit to max_items
-        (5, 10, 5),    # Should keep all if under limit
-        (0, 10, 0),    # Should handle empty list
-    ])
-    def test_recent_paths_max_items_limit(self, settings_manager, total_paths: int, max_items: int, expected_count: int) -> None:
+    @pytest.mark.parametrize(
+        "total_paths,max_items,expected_count",
+        [
+            (15, 10, 10),  # Should limit to max_items
+            (5, 10, 5),  # Should keep all if under limit
+            (0, 10, 0),  # Should handle empty list
+        ],
+    )
+    def test_recent_paths_max_items_limit(
+        self, settings_manager, total_paths: int, max_items: int, expected_count: int
+    ) -> None:
         """Test that recent paths are limited to max_items."""
         # Create paths
         paths = [Path(f"/path/to/file{i}.txt") for i in range(total_paths)]
@@ -182,11 +190,14 @@ class TestSettingsManager:
         loaded = settings_manager.load_recent_paths("non_existent")
         assert loaded == []
 
-    @pytest.mark.parametrize("group_operations", [
-        [("TestGroup/key1", "value1"), ("TestGroup/key2", "value2")],
-        [("AnotherGroup/setting", 42), ("AnotherGroup/flag", True)],
-        [("EmptyGroup/test", "test")],  # Single item group
-    ])
+    @pytest.mark.parametrize(
+        "group_operations",
+        [
+            [("TestGroup/key1", "value1"), ("TestGroup/key2", "value2")],
+            [("AnotherGroup/setting", 42), ("AnotherGroup/flag", True)],
+            [("EmptyGroup/test", "test")],  # Single item group
+        ],
+    )
     def test_clear_group_operations(self, settings_manager, group_operations: list[tuple[str, Any]]) -> None:
         """Test clearing settings groups with different configurations."""
         # Save settings in the group

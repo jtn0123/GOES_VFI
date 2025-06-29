@@ -94,11 +94,7 @@ class TestDateSorterV2:
         non_matching_dir.mkdir()
 
         # Create non-matching files efficiently
-        non_matching_files = [
-            "some_text.txt",
-            "image.jpg",
-            "archive.zip"
-        ]
+        non_matching_files = ["some_text.txt", "image.jpg", "archive.zip"]
         for filename in non_matching_files:
             (non_matching_dir / filename).touch()
 
@@ -109,48 +105,69 @@ class TestDateSorterV2:
         files = find_png_files(target_dir)
         return extract_timestamps_from_files(files)
 
-    @pytest.mark.parametrize("test_intervals,expected_result", [
-        ([
-            datetime(2023, 5, 1, 10, 0, 0),
-            datetime(2023, 5, 1, 10, 30, 0),
-            datetime(2023, 5, 1, 11, 30, 0),  # 60 min gap
-            datetime(2023, 5, 1, 12, 0, 0),   # 30 min
-            datetime(2023, 5, 1, 12, 15, 0),  # 15 min
-        ], 30),  # Most common is 30
-        ([
-            datetime(2023, 1, 1, 10, 0, 0),
-            datetime(2023, 1, 1, 10, 10, 0),  # 10 min
-            datetime(2023, 1, 1, 10, 20, 0),  # 10 min
-            datetime(2023, 1, 1, 10, 50, 0),  # 30 min
-            datetime(2023, 1, 1, 11, 0, 0),   # 10 min
-            datetime(2023, 1, 1, 11, 15, 0),  # 15 min
-        ], 10),  # Most common is 10
-    ])
+    @pytest.mark.parametrize(
+        "test_intervals,expected_result",
+        [
+            (
+                [
+                    datetime(2023, 5, 1, 10, 0, 0),
+                    datetime(2023, 5, 1, 10, 30, 0),
+                    datetime(2023, 5, 1, 11, 30, 0),  # 60 min gap
+                    datetime(2023, 5, 1, 12, 0, 0),  # 30 min
+                    datetime(2023, 5, 1, 12, 15, 0),  # 15 min
+                ],
+                30,
+            ),  # Most common is 30
+            (
+                [
+                    datetime(2023, 1, 1, 10, 0, 0),
+                    datetime(2023, 1, 1, 10, 10, 0),  # 10 min
+                    datetime(2023, 1, 1, 10, 20, 0),  # 10 min
+                    datetime(2023, 1, 1, 10, 50, 0),  # 30 min
+                    datetime(2023, 1, 1, 11, 0, 0),  # 10 min
+                    datetime(2023, 1, 1, 11, 15, 0),  # 15 min
+                ],
+                10,
+            ),  # Most common is 10
+        ],
+    )
     def test_detect_interval_various_patterns(self, test_intervals, expected_result) -> None:
         """Test interval detection with various patterns."""
         assert detect_interval(test_intervals) == expected_result
 
-    @pytest.mark.parametrize("input_data,expected_default", [
-        ([], 30),  # Empty list
-        ([datetime(2023, 1, 1, 12, 0, 0)], 30),  # Single datetime
-    ])
+    @pytest.mark.parametrize(
+        "input_data,expected_default",
+        [
+            ([], 30),  # Empty list
+            ([datetime(2023, 1, 1, 12, 0, 0)], 30),  # Single datetime
+        ],
+    )
     def test_detect_interval_insufficient_data(self, input_data, expected_default) -> None:
         """Test interval detection with insufficient data."""
         assert detect_interval(input_data) == expected_default
 
-    @pytest.mark.parametrize("test_intervals,expected_rounded", [
-        ([
-            datetime(2023, 1, 1, 10, 0, 0),
-            datetime(2023, 1, 1, 10, 7, 0),  # 7 min
-            datetime(2023, 1, 1, 10, 14, 0),  # 7 min
-            datetime(2023, 1, 1, 10, 21, 0),  # 7 min
-        ], 5),  # round(7/5)*5 = 5
-        ([
-            datetime(2023, 1, 1, 10, 0, 0),
-            datetime(2023, 1, 1, 10, 8, 0),  # 8 min
-            datetime(2023, 1, 1, 10, 16, 0),  # 8 min
-        ], 10),  # round(8/5)*5 = 10
-    ])
+    @pytest.mark.parametrize(
+        "test_intervals,expected_rounded",
+        [
+            (
+                [
+                    datetime(2023, 1, 1, 10, 0, 0),
+                    datetime(2023, 1, 1, 10, 7, 0),  # 7 min
+                    datetime(2023, 1, 1, 10, 14, 0),  # 7 min
+                    datetime(2023, 1, 1, 10, 21, 0),  # 7 min
+                ],
+                5,
+            ),  # round(7/5)*5 = 5
+            (
+                [
+                    datetime(2023, 1, 1, 10, 0, 0),
+                    datetime(2023, 1, 1, 10, 8, 0),  # 8 min
+                    datetime(2023, 1, 1, 10, 16, 0),  # 8 min
+                ],
+                10,
+            ),  # round(8/5)*5 = 10
+        ],
+    )
     def test_detect_interval_rounding(self, test_intervals, expected_rounded) -> None:
         """Test interval detection rounding to nearest 5 minutes."""
         assert detect_interval(test_intervals) == expected_rounded
@@ -229,10 +246,7 @@ class TestDateSorterV2:
         idx_none = output.find("  (none)", idx_missing2)
         assert idx_none > idx_missing2
 
-    @pytest.mark.parametrize("test_dir_fixture", [
-        "empty_test_dir",
-        "non_matching_test_dir"
-    ])
+    @pytest.mark.parametrize("test_dir_fixture", ["empty_test_dir", "non_matching_test_dir"])
     def test_empty_and_non_matching_directories(self, test_dir_fixture, request) -> None:
         """Test behavior with empty and non-matching directories."""
         test_dir = request.getfixturevalue(test_dir_fixture)

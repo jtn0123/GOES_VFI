@@ -28,10 +28,7 @@ class TestBasicTimeIndexV2(unittest.TestCase):
         cls.test_date_old = datetime(2022, 1, 1, 0, 0, 0)  # Old date
 
         # Test satellites - shared across all tests
-        cls.satellites = {
-            "goes16": SatellitePattern.GOES_16,
-            "goes18": SatellitePattern.GOES_18
-        }
+        cls.satellites = {"goes16": SatellitePattern.GOES_16, "goes18": SatellitePattern.GOES_18}
 
         # Expected URL patterns - pre-computed for efficiency
         cls.expected_urls = {
@@ -42,7 +39,7 @@ class TestBasicTimeIndexV2(unittest.TestCase):
             "goes18": (
                 f"https://cdn.star.nesdis.noaa.gov/GOES18/ABI/FD/13/"
                 f"2023166123000_GOES18-ABI-FD-13-{DEFAULT_CDN_RESOLUTION}.jpg"
-            )
+            ),
         }
 
         # Pre-computed S3 key prefixes for faster validation
@@ -52,10 +49,9 @@ class TestBasicTimeIndexV2(unittest.TestCase):
             ("goes16", "RadC"): "ABI-L1b-RadC/2022/001/00/OR_ABI-L1b-RadC-M6C13_G16_s20220010",
         }
 
-    @pytest.mark.parametrize("satellite_key,expected_url", [
-        ("goes16", 'expected_urls["goes16"]'),
-        ("goes18", 'expected_urls["goes18"]')
-    ])
+    @pytest.mark.parametrize(
+        "satellite_key,expected_url", [("goes16", 'expected_urls["goes16"]'), ("goes18", 'expected_urls["goes18"]')]
+    )
     def test_to_cdn_url_parametrized(self, satellite_key: str, expected_url: str) -> None:
         """Test generating CDN URLs for different satellites using parametrization."""
         satellite = self.satellites[satellite_key]
@@ -71,11 +67,14 @@ class TestBasicTimeIndexV2(unittest.TestCase):
         expected = f"https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/13/2023166123000_GOES16-ABI-FD-13-{custom_res}.jpg"
         assert url == expected
 
-    @pytest.mark.parametrize("satellite_key,product_type", [
-        ("goes16", "RadF"),
-        ("goes18", "RadF"),
-        ("goes16", "RadC"),
-    ])
+    @pytest.mark.parametrize(
+        "satellite_key,product_type",
+        [
+            ("goes16", "RadF"),
+            ("goes18", "RadF"),
+            ("goes16", "RadC"),
+        ],
+    )
     def test_to_s3_key_patterns(self, satellite_key: str, product_type: str) -> None:
         """Test generating S3 keys for different satellite/product combinations."""
         satellite = self.satellites[satellite_key]
@@ -91,10 +90,13 @@ class TestBasicTimeIndexV2(unittest.TestCase):
         assert key_band1.startswith("ABI-L1b-RadF/2022/001/00/OR_ABI-L1b-RadF-M6C01_G16_s20220010")
         assert key_band1.endswith("*_e*_c*.nc")
 
-    @pytest.mark.parametrize("satellite_key,expected_prefix", [
-        ("goes16", "2023/06/15/goes16_20230615_123000_band13.png"),
-        ("goes18", "2023/06/15/goes18_20230615_123000_band13.png")
-    ])
+    @pytest.mark.parametrize(
+        "satellite_key,expected_prefix",
+        [
+            ("goes16", "2023/06/15/goes16_20230615_123000_band13.png"),
+            ("goes18", "2023/06/15/goes18_20230615_123000_band13.png"),
+        ],
+    )
     def test_to_local_path_parametrized(self, satellite_key: str, expected_prefix: str) -> None:
         """Test generating local paths for different satellites."""
         satellite = self.satellites[satellite_key]
@@ -133,7 +135,7 @@ class TestBasicTimeIndexV2(unittest.TestCase):
             "GOES16",
             "ABI/FD/13",
             "2023166123000",  # Julian date format
-            DEFAULT_CDN_RESOLUTION
+            DEFAULT_CDN_RESOLUTION,
         ]
 
         for component in expected_components:
@@ -154,10 +156,7 @@ class TestBasicTimeIndexV2(unittest.TestCase):
     def test_path_generation_consistency(self) -> None:
         """Test that local path generation is consistent across multiple calls."""
         # Generate paths multiple times to ensure consistency
-        paths = [
-            to_local_path(self.test_date_recent, self.satellites["goes16"])
-            for _ in range(5)
-        ]
+        paths = [to_local_path(self.test_date_recent, self.satellites["goes16"]) for _ in range(5)]
 
         # All paths should be identical
         assert all(path == paths[0] for path in paths), "Path generation should be deterministic"

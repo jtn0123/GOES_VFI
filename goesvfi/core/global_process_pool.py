@@ -151,8 +151,9 @@ class GlobalProcessPool(ConfigurableManager):
 
         return future
 
-    def map(self, fn: Callable[..., T], *iterables: Any,
-            timeout: float | None = None, chunksize: int = 1) -> Generator[T]:
+    def map(
+        self, fn: Callable[..., T], *iterables: Any, timeout: float | None = None, chunksize: int = 1
+    ) -> Generator[T]:
         """Map a function across iterables using the process pool.
 
         Args:
@@ -223,8 +224,7 @@ class GlobalProcessPool(ConfigurableManager):
         stats = self._usage_stats.copy()
         stats["active_tasks"] = len(self._active_futures)
         stats["success_rate"] = (
-            (stats["completed_tasks"] / stats["total_tasks"] * 100)
-            if stats["total_tasks"] > 0 else 0
+            (stats["completed_tasks"] / stats["total_tasks"] * 100) if stats["total_tasks"] > 0 else 0
         )
         return stats
 
@@ -306,8 +306,7 @@ def submit_to_pool[T](fn: Callable[..., T], *args: Any, **kwargs: Any) -> Future
     return pool.submit(fn, *args, **kwargs)
 
 
-def map_in_pool[T](fn: Callable[..., T], *iterables: Any,
-                timeout: float | None = None, chunksize: int = 1) -> list[T]:
+def map_in_pool[T](fn: Callable[..., T], *iterables: Any, timeout: float | None = None, chunksize: int = 1) -> list[T]:
     """Map a function using the global process pool.
 
     Args:

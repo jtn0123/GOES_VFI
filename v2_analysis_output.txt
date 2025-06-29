@@ -1,0 +1,231 @@
+Found 153 v2 test files
+
+Tracking document claims 134 v2 files exist
+
+Error analyzing tests/unit/test_encode_v2.py: unexpected character after line continuation character (<unknown>, line 259)
+Error analyzing tests/unit/test_interpolate_v2.py: unexpected character after line continuation character (<unknown>, line 84)
+Error analyzing tests/unit/test_raw_encoder_v2.py: unexpected character after line continuation character (<unknown>, line 65)
+Error analyzing tests/unit/test_run_ffmpeg_v2.py: unexpected character after line continuation character (<unknown>, line 118)
+Error analyzing tests/unit/test_run_vfi_param_v2.py: unexpected character after line continuation character (<unknown>, line 136)
+================================================================================
+V2 TEST FILE ANALYSIS REPORT
+================================================================================
+
+## Files with Both V2 and Original Versions
+--------------------------------------------------------------------------------
+V2 File                                            Original   V2         Diff       %
+--------------------------------------------------------------------------------
+test_netcdf_channel_extraction_v2.py               1          27                +26 2700.0
+test_optimization_helpers_v2.py                    0          21                +21 0.0
+test_image_cropper_v2.py                           2          22                +20 1100.0
+test_operation_history_tab_v2.py                   2          19                +17 950.0
+test_download_real_v2.py                           1          16                +15 1600.0
+test_main_window_view_model_v2.py                  3          18                +15 600.0
+test_netcdf_render_v2.py                           7          22                +15 314.3
+test_enhanced_gui_tab_v2.py                        4          18                +14 450.0
+test_file_sorter_view_model_v2.py                  2          16                +14 800.0
+test_goes_imagery_v2.py                            6          20                +14 333.3
+test_mock_popen_v2.py                              2          15                +13 750.0
+test_batch_processing_tab_v2.py                    1          13                +12 1300.0
+test_crop_manager_v2.py                            11         23                +12 209.1
+test_errors_handler_v2.py                          21         33                +12 157.1
+test_image_saver_v2.py                             11         22                +11 200.0
+test_time_utils_modules_v2.py                      23         34                +11 147.8
+test_netcdf_renderer_v2.py                         8          18                +10 225.0
+test_crop_dialog_integration_v2.py                 5          14                 +9 280.0
+test_reconcile_manager_integration_v2.py           3          12                 +9 400.0
+test_errors_recovery_v2.py                         20         29                 +9 145.0
+test_loader_v2.py                                  4          13                 +9 325.0
+test_processing_view_model_ffmpeg_v2.py            2          11                 +9 550.0
+test_real_s3_path_v2.py                            2          11                 +9 550.0
+test_operation_history_tab_v2.py                   1          9                  +8 900.0
+test_run_ffmpeg_interpolation_v2.py                2          10                 +8 500.0
+test_enhanced_view_model_v2.py                     16         24                 +8 150.0
+test_error_handler_chain_v2.py                     10         18                 +8 180.0
+test_errors_base_v2.py                             27         35                 +8 129.6
+test_progress_reporting_v2.py                      4          12                 +8 300.0
+test_results_tab_v2.py                             12         20                 +8 166.7
+test_s3_band13_v2.py                               6          14                 +8 233.3
+test_s3_download_stats_param_v2.py                 5          13                 +8 260.0
+test_validation_v2.py                              4          12                 +8 300.0
+test_imagery_enhancement_v2.py                     3          10                 +7 333.3
+test_enhanced_main_tab_v2.py                       5          12                 +7 240.0
+test_vfi_worker_run_v2.py                          1          8                  +7 800.0
+test_basic_time_index_v2.py                        4          11                 +7 275.0
+test_enhanced_gui_dialogs_v2.py                    18         25                 +7 138.9
+test_s3_threadlocal_integration_v2.py              4          11                 +7 275.0
+test_tiler_v2.py                                   5          12                 +7 240.0
+test_improved_enhanced_tab_v2.py                   7          13                 +6 185.7
+test_rife_analyzer_v2.py                           6          12                 +6 200.0
+test_cache_utils_v2.py                             3          9                  +6 300.0
+test_enhanced_integrity_check_tab_v2.py            13         19                 +6 146.2
+test_ffmpeg_settings_tab_v2.py                     6          12                 +6 200.0
+test_preview_scaling_fixes_v2.py                   8          14                 +6 175.0
+test_enhanced_preview_validation_v2.py             3          8                  +5 266.7
+test_date_range_selector_v2.py                     7          12                 +5 171.4
+test_errors_classifier_v2.py                       26         31                 +5 119.2
+test_log_v2.py                                     5          10                 +5 200.0
+test_s3_error_handling_v2.py                       6          11                 +5 183.3
+test_settings_persistence_v2.py                    6          11                 +5 183.3
+test_time_index_v2.py                              9          14                 +5 155.6
+test_button_advanced_v2.py                         8          12                 +4 150.0
+test_vfi_worker_v2.py                              1          5                  +4 500.0
+test_crop_handler_v2.py                            26         30                 +4 115.4
+test_error_classifier_v2.py                        25         29                 +4 116.0
+test_s3_store_critical_v2.py                       7          11                 +4 157.1
+test_thread_cache_db_v2.py                         5          9                  +4 180.0
+test_settings_density_v2.py                        11         14                 +3 127.3
+test_integrity_tab_data_flow_v2.py                 6          9                  +3 150.0
+test_integrity_tab_performance_v2.py               5          8                  +3 160.0
+test_background_worker_v2.py                       8          11                 +3 137.5
+test_batch_queue_v2.py                             12         15                 +3 125.0
+test_cache_v2.py                                   7          10                 +3 142.9
+test_concurrent_operations_v2.py                   9          12                 +3 133.3
+test_remote_stores_v2.py                           12         15                 +3 125.0
+test_settings_manager_v2.py                        13         16                 +3 123.1
+test_signal_broker_v2.py                           17         20                 +3 117.6
+test_validation_pipeline_v2.py                     10         13                 +3 130.0
+test_tab_coordination_v2.py                        8          10                 +2 125.0
+test_workflows_integration_v2.py                   9          11                 +2 122.2
+test_preview_visual_validation_v2.py               8          10                 +2 125.0
+test_date_sorter_v2.py                             8          10                 +2 125.0
+test_edge_case_timezone_v2.py                      15         17                 +2 113.3
+test_gui_helpers_v2.py                             26         28                 +2 107.7
+test_s3_unsigned_access_v2.py                      6          8                  +2 133.3
+test_main_window_v2.py                             13         14                 +1 107.7
+test_preview_advanced_v2.py                        8          9                  +1 112.5
+test_large_dataset_processing_v2.py                8          9                  +1 112.5
+test_preview_functionality_v2.py                   3          4                  +1 133.3
+test_date_utils_v2.py                              20         21                 +1 105.0
+test_preview_manager_v2.py                         18         19                 +1 105.6
+test_resource_limits_tab_v2.py                     2          3                  +1 150.0
+test_rife_analyzer_v2.py                           13         14                 +1 107.7
+test_gui_button_validation_v2.py                   14         14                 +0 100.0
+test_performance_ui_v2.py                          8          8                  +0 100.0
+test_headless_workflow_v2.py                       4          4                  +0 100.0
+test_auto_detect_features_v2.py                    8          8                  +0 100.0
+test_processing_state_management_v2.py             13         13                 +0 100.0
+test_real_s3_patterns_v2.py                        12         12                 +0 100.0
+test_accessibility_v2.py                           8          7                  -1 87.5
+test_super_button_v2.py                            25         24                 -1 96.0
+test_all_gui_elements_v2.py                        13         12                 -1 92.3
+test_integrity_tab_integration_v2.py               4          3                  -1 75.0
+test_coverage_example_v2.py                        12         11                 -1 91.7
+test_memory_management_v2.py                       17         16                 -1 94.1
+test_error_handling_ui_v2.py                       8          6                  -2 75.0
+test_settings_advanced_v2.py                       8          6                  -2 75.0
+test_integrity_check_tab_v2.py                     6          4                  -2 66.7
+test_config_management_v2.py                       19         17                 -2 89.5
+test_ffmpeg_builder_critical_v2.py                 5          3                  -2 60.0
+test_processing_manager_v2.py                      16         14                 -2 87.5
+test_worker_factory_v2.py                          17         15                 -2 88.2
+test_gui_component_validation_v2.py                15         12                 -3 80.0
+test_end_to_end_satellite_download_v2.py           7          4                  -3 57.1
+test_preview_crop_workflow_v2.py                   10         7                  -3 70.0
+test_corrupt_file_handling_v2.py                   15         12                 -3 80.0
+test_processing_handler_v2.py                      17         14                 -3 82.4
+test_full_application_workflow_v2.py               10         6                  -4 60.0
+test_config_v2.py                                  14         10                 -4 71.4
+test_sanchez_health_v2.py                          23         19                 -4 82.6
+test_goes_imagery_tab_v2.py                        9          4                  -5 44.4
+test_main_tab_v2.py                                10         5                  -5 50.0
+test_network_failure_simulation_v2.py              13         7                  -6 53.8
+test_zoom_manager_v2.py                            18         12                 -6 66.7
+test_model_manager_v2.py                           13         6                  -7 46.2
+test_resource_manager_fast_v2.py                   18         11                 -7 61.1
+test_gui_components_v2.py                          19         11                 -8 57.9
+test_video_processing_pipeline_v2.py               12         4                  -8 33.3
+test_state_manager_v2.py                           21         13                 -8 61.9
+test_errors_reporter_v2.py                         17         8                  -9 47.1
+test_preview_integration_v2.py                     15         5                 -10 33.3
+test_main_tab_utils_v2.py                          30         20                -10 66.7
+test_ffmpeg_builder_v2.py                          15         4                 -11 26.7
+test_core_exceptions_v2.py                         25         13                -12 52.0
+test_s3_utils_modules_v2.py                        23         11                -12 47.8
+test_pipeline_v2.py                                17         4                 -13 23.5
+test_pipeline_exceptions_v2.py                     34         13                -21 38.2
+test_resource_manager_v2.py                        33         10                -23 30.3
+test_security_v2.py                                37         14                -23 37.8
+
+Total: 1427 original functions → 2041 v2 functions (+614, 143.0% coverage)
+
+## V2 Files Without Corresponding Original Files
+--------------------------------------------------------------------------------
+test_full_application_workflow_optimized_v2.py     (14 test functions)
+test_full_application_workflow_optimized_v2.py     (14 test functions)
+test_async_io_v2.py                                (31 test functions)
+test_configuration_v2.py                           (30 test functions)
+test_error_decorators_v2.py                        (22 test functions)
+test_global_process_pool_v2.py                     (15 test functions)
+test_main_tab_optimized_v2.py                      (14 test functions)
+test_main_tab_optimized_v2.py                      (14 test functions)
+test_model_manager_optimized_v2.py                 (9 test functions)
+test_model_manager_optimized_v2.py                 (9 test functions)
+test_modern_resources_v2.py                        (25 test functions)
+test_network_failure_simulation_optimized_v2.py    (11 test functions)
+test_network_failure_simulation_optimized_v2.py    (11 test functions)
+test_security_optimized_v2.py                      (26 test functions)
+test_security_optimized_v2.py                      (26 test functions)
+test_simple_example_v2.py                          (3 test functions)
+test_timeline_tab_v2.py                            (6 test functions)
+
+## Files Claimed in Tracking Document but NOT FOUND
+--------------------------------------------------------------------------------
+  ❌ test_error_classifier_fast_v2.py
+  ❌ test_optimized_results_tab_v2.py
+  ❌ test_optimized_timeline_tab_v2.py
+
+Total missing: 3 files
+
+## Summary Statistics
+--------------------------------------------------------------------------------
+Total v2 test files found: 153
+Files with original counterparts: 131
+V2 files without originals: 17
+Files claimed but missing: 3
+
+V2 files with MORE tests than original: 85
+V2 files with SAME number of tests: 6
+V2 files with FEWER tests than original: 40
+
+⚠️  WARNING: The following v2 files have FEWER tests than originals:
+  - test_accessibility_v2.py: 8 → 7 (-1)
+  - test_error_handling_ui_v2.py: 8 → 6 (-2)
+  - test_gui_component_validation_v2.py: 15 → 12 (-3)
+  - test_gui_components_v2.py: 19 → 11 (-8)
+  - test_settings_advanced_v2.py: 8 → 6 (-2)
+  - test_super_button_v2.py: 25 → 24 (-1)
+  - test_all_gui_elements_v2.py: 13 → 12 (-1)
+  - test_end_to_end_satellite_download_v2.py: 7 → 4 (-3)
+  - test_full_application_workflow_v2.py: 10 → 6 (-4)
+  - test_goes_imagery_tab_v2.py: 9 → 4 (-5)
+  - test_integrity_check_tab_v2.py: 6 → 4 (-2)
+  - test_integrity_tab_integration_v2.py: 4 → 3 (-1)
+  - test_pipeline_v2.py: 17 → 4 (-13)
+  - test_preview_crop_workflow_v2.py: 10 → 7 (-3)
+  - test_preview_integration_v2.py: 15 → 5 (-10)
+  - test_video_processing_pipeline_v2.py: 12 → 4 (-8)
+  - test_coverage_example_v2.py: 12 → 11 (-1)
+  - test_config_management_v2.py: 19 → 17 (-2)
+  - test_config_v2.py: 14 → 10 (-4)
+  - test_core_exceptions_v2.py: 25 → 13 (-12)
+  - test_corrupt_file_handling_v2.py: 15 → 12 (-3)
+  - test_errors_reporter_v2.py: 17 → 8 (-9)
+  - test_ffmpeg_builder_critical_v2.py: 5 → 3 (-2)
+  - test_ffmpeg_builder_v2.py: 15 → 4 (-11)
+  - test_main_tab_utils_v2.py: 30 → 20 (-10)
+  - test_main_tab_v2.py: 10 → 5 (-5)
+  - test_memory_management_v2.py: 17 → 16 (-1)
+  - test_model_manager_v2.py: 13 → 6 (-7)
+  - test_network_failure_simulation_v2.py: 13 → 7 (-6)
+  - test_pipeline_exceptions_v2.py: 34 → 13 (-21)
+  - test_processing_handler_v2.py: 17 → 14 (-3)
+  - test_processing_manager_v2.py: 16 → 14 (-2)
+  - test_resource_manager_fast_v2.py: 18 → 11 (-7)
+  - test_resource_manager_v2.py: 33 → 10 (-23)
+  - test_s3_utils_modules_v2.py: 23 → 11 (-12)
+  - test_sanchez_health_v2.py: 23 → 19 (-4)
+  - test_security_v2.py: 37 → 14 (-23)
+  - test_state_manager_v2.py: 21 → 13 (-8)
+  - test_worker_factory_v2.py: 17 → 15 (-2)
+  - test_zoom_manager_v2.py: 18 → 12 (-6)

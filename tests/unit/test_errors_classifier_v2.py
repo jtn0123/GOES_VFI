@@ -29,8 +29,10 @@ class TestErrorClassifierV2(unittest.TestCase):
         # Create custom exception types for testing
         self.custom_exceptions = []
         for i in range(10):
+
             class CustomTestException(Exception):
                 pass
+
             CustomTestException.__name__ = f"CustomException{i}"
             self.custom_exceptions.append(CustomTestException)
 
@@ -107,6 +109,7 @@ class TestErrorClassifierV2(unittest.TestCase):
                 if pattern in str(exception):
                     return category
                 return None
+
             return classifier
 
         patterns_and_categories = [
@@ -145,15 +148,12 @@ class TestErrorClassifierV2(unittest.TestCase):
             (TimeoutError("Operation timed out"), ErrorCategory.NETWORK),
             (ImportError("Import failed"), ErrorCategory.CONFIGURATION),
             (ModuleNotFoundError("Module not found"), ErrorCategory.CONFIGURATION),
-
             # Subprocess errors
             (subprocess.CalledProcessError(1, "cmd"), ErrorCategory.EXTERNAL_TOOL),
             (subprocess.TimeoutExpired("cmd", 30), ErrorCategory.EXTERNAL_TOOL),
-
             # Directory errors
             (IsADirectoryError("Is a directory"), ErrorCategory.VALIDATION),
             (NotADirectoryError("Not a directory"), ErrorCategory.VALIDATION),
-
             # Edge cases
             (ValueError(), ErrorCategory.VALIDATION),  # No message
             (TypeError(None), ErrorCategory.VALIDATION),  # None message
@@ -167,6 +167,7 @@ class TestErrorClassifierV2(unittest.TestCase):
 
     def test_classify_exception_inheritance_comprehensive(self) -> None:
         """Test comprehensive inheritance-based classification."""
+
         # Create custom exception hierarchies
         class BaseCustomError(Exception):
             pass
@@ -200,6 +201,7 @@ class TestErrorClassifierV2(unittest.TestCase):
 
     def test_classify_exception_custom_classifier_comprehensive(self) -> None:
         """Test comprehensive custom classifier scenarios."""
+
         # Add multiple custom classifiers with different logic
         def error_code_classifier(exception: Exception) -> ErrorCategory | None:
             if hasattr(exception, "code"):
@@ -277,8 +279,10 @@ class TestErrorClassifierV2(unittest.TestCase):
         unknown_exceptions = []
 
         for i in range(5):
+
             class UnknownError(Exception):
                 pass
+
             UnknownError.__name__ = f"UnknownError{i}"
             unknown_exceptions.append(UnknownError(f"Unknown error {i}"))
 
@@ -301,27 +305,22 @@ class TestErrorClassifierV2(unittest.TestCase):
         errno_test_cases = [
             # File errors
             (errno.ENOENT, "No such file", ErrorCategory.FILE_NOT_FOUND),
-
             # Permission errors
             (errno.EACCES, "Permission denied", ErrorCategory.PERMISSION),
             (errno.EPERM, "Operation not permitted", ErrorCategory.PERMISSION),
-
             # Validation errors
             (errno.EEXIST, "File exists", ErrorCategory.VALIDATION),
             (errno.ENOTDIR, "Not a directory", ErrorCategory.VALIDATION),
             (errno.EISDIR, "Is a directory", ErrorCategory.VALIDATION),
             (errno.ENOTEMPTY, "Directory not empty", ErrorCategory.VALIDATION),
-
             # System errors
             (errno.ENOSPC, "No space left", ErrorCategory.SYSTEM),
             (errno.ENOMEM, "Out of memory", ErrorCategory.SYSTEM),
             (errno.EIO, "I/O error", ErrorCategory.SYSTEM),
-
             # Network errors (platform specific)
             (errno.ECONNREFUSED, "Connection refused", ErrorCategory.NETWORK),
             (errno.ETIMEDOUT, "Connection timed out", ErrorCategory.NETWORK),
             (errno.ECONNRESET, "Connection reset", ErrorCategory.NETWORK),
-
             # Unknown errno
             (999999, "Unknown error", ErrorCategory.SYSTEM),
             (0, "Success", ErrorCategory.NETWORK),  # errno 0 falls through
@@ -432,7 +431,6 @@ class TestErrorClassifierV2(unittest.TestCase):
             (MemoryError("OOM"), ErrorCategory.SYSTEM, "System error"),
             (ValueError("Bad input"), ErrorCategory.USER_INPUT, "Invalid user input"),
             (Exception("Unknown"), ErrorCategory.UNKNOWN, "An unexpected error occurred"),
-
             # Edge cases
             (ValueError(""), ErrorCategory.VALIDATION, "Invalid input"),  # Empty message
             (TypeError(None), ErrorCategory.VALIDATION, "Invalid input"),  # None message
@@ -632,9 +630,7 @@ class TestErrorClassifierV2(unittest.TestCase):
 
                 # Create structured error
                 structured = self.classifier.create_structured_error(
-                    exception=error,
-                    operation=f"operation_{error_id}",
-                    component=f"component_{error_id}"
+                    exception=error, operation=f"operation_{error_id}", component=f"component_{error_id}"
                 )
 
                 results.append((error_id, type(error).__name__, category, structured))
@@ -674,11 +670,13 @@ class TestErrorClassifierV2(unittest.TestCase):
         classifier_count = 100
 
         for i in range(classifier_count):
+
             def make_classifier(index=i):
                 def classifier(exception) -> ErrorCategory | None:
                     if f"pattern_{index}" in str(exception):
                         return ErrorCategory.PROCESSING
                     return None
+
                 return classifier
 
             self.classifier.add_custom_classifier(make_classifier())
@@ -728,9 +726,7 @@ class TestErrorClassifierV2(unittest.TestCase):
 
             # Create structured error
             structured = self.classifier.create_structured_error(
-                exception=error,
-                operation="large_op",
-                component="large_comp"
+                exception=error, operation="large_op", component="large_comp"
             )
 
             # Verify classification still works
@@ -791,7 +787,7 @@ class TestErrorClassifierV2(unittest.TestCase):
                 exception=e,
                 operation="database_connect",
                 component="db_pool",
-                user_message="Unable to connect to the database"
+                user_message="Unable to connect to the database",
             )
 
             assert structured.category == ErrorCategory.NETWORK
@@ -806,9 +802,7 @@ class TestErrorClassifierV2(unittest.TestCase):
             raise error
         except PermissionError as e:
             structured = self.classifier.create_structured_error(
-                exception=e,
-                operation="api_auth",
-                component="auth_middleware"
+                exception=e, operation="api_auth", component="auth_middleware"
             )
 
             assert structured.category == ErrorCategory.PERMISSION
@@ -832,9 +826,7 @@ class TestErrorClassifierV2(unittest.TestCase):
             self.classifier.add_custom_classifier(pipeline_classifier)
 
             structured = self.classifier.create_structured_error(
-                exception=e,
-                operation="data_pipeline",
-                component="validator"
+                exception=e, operation="data_pipeline", component="validator"
             )
 
             assert structured.category == ErrorCategory.PROCESSING
@@ -946,9 +938,7 @@ class TestDefaultClassifierV2(unittest.TestCase):
                     exception = scenario["exception"]
 
                 structured_error = default_classifier.create_structured_error(
-                    exception=exception,
-                    operation=scenario["operation_name"],
-                    component=scenario["component_name"]
+                    exception=exception, operation=scenario["operation_name"], component=scenario["component_name"]
                 )
 
                 assert structured_error.category == scenario["expected_category"]
@@ -983,9 +973,7 @@ class TestErrorClassifierIntegrationV2(unittest.TestCase):
             e.filename = "/restricted/config.json"
             e.errno = errno.EACCES
             structured_error = classifier.create_structured_error(
-                exception=e,
-                operation="config_load",
-                component="configuration_manager"
+                exception=e, operation="config_load", component="configuration_manager"
             )
 
             assert structured_error.category == ErrorCategory.PERMISSION
@@ -1019,9 +1007,7 @@ class TestErrorClassifierIntegrationV2(unittest.TestCase):
         for exception, operation in network_scenarios:
             with self.subTest(exception=type(exception).__name__):
                 structured_error = classifier.create_structured_error(
-                    exception=exception,
-                    operation=operation,
-                    component="network_client"
+                    exception=exception, operation=operation, component="network_client"
                 )
 
                 assert structured_error.category == ErrorCategory.NETWORK
@@ -1043,9 +1029,7 @@ class TestErrorClassifierIntegrationV2(unittest.TestCase):
         for exception, field, value in validation_scenarios:
             with self.subTest(field=field):
                 structured_error = classifier.create_structured_error(
-                    exception=exception,
-                    operation="input_validation",
-                    component="validator"
+                    exception=exception, operation="input_validation", component="validator"
                 )
 
                 # Add field context
@@ -1142,9 +1126,7 @@ class TestErrorClassifierIntegrationV2(unittest.TestCase):
         for exception, expected_category in test_cases:
             with self.subTest(exception=str(exception)):
                 structured_error = classifier.create_structured_error(
-                    exception=exception,
-                    operation="business_logic",
-                    component="rules_engine"
+                    exception=exception, operation="business_logic", component="rules_engine"
                 )
 
                 assert structured_error.category == expected_category
@@ -1172,6 +1154,7 @@ def test_basic_classification_pytest(classifier_pytest) -> None:
 
 def test_custom_classifier_pytest(classifier_pytest) -> None:
     """Test custom classifier using pytest style."""
+
     def custom_classifier(exception):
         if "timeout" in str(exception).lower():
             return ErrorCategory.NETWORK
@@ -1187,11 +1170,7 @@ def test_custom_classifier_pytest(classifier_pytest) -> None:
 def test_structured_error_creation_pytest(classifier_pytest) -> None:
     """Test structured error creation using pytest style."""
     error = FileNotFoundError("test.txt not found")
-    structured = classifier_pytest.create_structured_error(
-        exception=error,
-        operation="file_read",
-        component="loader"
-    )
+    structured = classifier_pytest.create_structured_error(exception=error, operation="file_read", component="loader")
 
     assert isinstance(structured, StructuredError)
     assert structured.category == ErrorCategory.FILE_NOT_FOUND

@@ -151,7 +151,12 @@ class TestPreviewManagerV2(unittest.TestCase):
         """Test path selection with case-sensitive extensions."""
         # Create images with various case extensions
         paths = []
-        paths.extend((self._create_test_image("001.PNG"), self._create_test_image("002.jpg"), self._create_test_image("003.JPEG"), self._create_test_image("004.Png")))
+        paths.extend((
+            self._create_test_image("001.PNG"),
+            self._create_test_image("002.jpg"),
+            self._create_test_image("003.JPEG"),
+            self._create_test_image("004.Png"),
+        ))
 
         first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
 
@@ -378,7 +383,8 @@ class TestPreviewManagerV2(unittest.TestCase):
 
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = [
-                executor.submit(load_previews, manager, test_dir) for manager, test_dir in zip(managers, test_dirs, strict=False)
+                executor.submit(load_previews, manager, test_dir)
+                for manager, test_dir in zip(managers, test_dirs, strict=False)
             ]
             for future in futures:
                 future.result()

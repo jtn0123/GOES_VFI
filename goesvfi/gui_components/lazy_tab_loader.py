@@ -41,6 +41,7 @@ class LazyTabLoader:
             # Create a simple placeholder
             from PyQt6.QtCore import Qt
             from PyQt6.QtWidgets import QLabel
+
             placeholder = QLabel("Loading...")
             placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
             placeholder.setProperty("class", "PlaceholderLabel")
@@ -129,6 +130,7 @@ class LazyTabLoader:
             # Show error in placeholder
             if index in self.placeholder_widgets:
                 from PyQt6.QtWidgets import QLabel
+
                 error_widget = QLabel("Error loading tab")
                 error_widget.setProperty("class", "ErrorLabel")
 

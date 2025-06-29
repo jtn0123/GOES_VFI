@@ -130,6 +130,7 @@ class TestManagedResource(unittest.TestCase):
 
     def test_managed_async_resource(self) -> None:
         """Test async managed resource context manager."""
+
         async def run_test() -> None:
             resource = MockAsyncResource("async_managed")
 
@@ -142,6 +143,7 @@ class TestManagedResource(unittest.TestCase):
 
     def test_managed_async_resource_custom_cleanup(self) -> None:
         """Test async managed resource with custom cleanup."""
+
         async def run_test() -> None:
             resource = MagicMock()
             cleanup_called = False
@@ -189,6 +191,7 @@ class TestTemporaryResources(unittest.TestCase):
 
         # Manual cleanup
         import shutil
+
         shutil.rmtree(temp_dir_path)
 
     def test_temporary_file(self) -> None:
@@ -227,6 +230,7 @@ class TestResourceManager(unittest.TestCase):
         """Set up test fixtures."""
         # Reset singleton
         import goesvfi.core.modern_resources
+
         goesvfi.core.modern_resources._resource_manager = None
 
     def test_singleton_pattern(self) -> None:

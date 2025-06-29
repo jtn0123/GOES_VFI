@@ -38,6 +38,7 @@ def with_error_handling(
     Returns:
         Decorated function with error handling
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T | Any]:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T | Any:
@@ -53,12 +54,7 @@ def with_error_handling(
 
                 # Log the error
                 log_func = getattr(LOGGER, log_level, LOGGER.exception)
-                log_func(
-                    "[%s] %s failed: %s",
-                    comp_name,
-                    op_name,
-                    error.user_message
-                )
+                log_func("[%s] %s failed: %s", comp_name, op_name, error.user_message)
 
                 # Re-raise or return default
                 if reraise:
@@ -66,6 +62,7 @@ def with_error_handling(
                 return default_return
 
         return wrapper
+
     return decorator
 
 
@@ -88,6 +85,7 @@ def with_retry(
     Returns:
         Decorated function with retry logic
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -112,7 +110,7 @@ def with_retry(
                             max_attempts,
                             func.__name__,
                             str(e),
-                            current_delay
+                            current_delay,
                         )
 
                         # Wait before retry
@@ -120,11 +118,7 @@ def with_retry(
                         current_delay *= backoff_factor
                     else:
                         # Final attempt failed
-                        LOGGER.exception(
-                            "All %d attempts failed for %s",
-                            max_attempts,
-                            func.__name__
-                        )
+                        LOGGER.exception("All %d attempts failed for %s", max_attempts, func.__name__)
 
             # Re-raise the last exception
             if last_exception:
@@ -135,6 +129,7 @@ def with_retry(
             raise RuntimeError(msg)
 
         return wrapper
+
     return decorator
 
 
@@ -161,13 +156,11 @@ def with_timeout(
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         # Check if function is async
         if asyncio.iscoroutinefunction(func):
+
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
                 try:
-                    return await asyncio.wait_for(
-                        func(*args, **kwargs),
-                        timeout=timeout
-                    )
+                    return await asyncio.wait_for(func(*args, **kwargs), timeout=timeout)
                 except TimeoutError as e:
                     if timeout_error:
                         msg = f"Function {func.__name__} timed out after {timeout}s"
@@ -219,6 +212,7 @@ def with_logging(
     Returns:
         Decorated function with logging
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -227,12 +221,8 @@ def with_logging(
 
             # Log function call
             if log_args:
-                args_str = ", ".join(
-                    str(arg)[:max_arg_length] for arg in args
-                )
-                kwargs_str = ", ".join(
-                    f"{k}={str(v)[:max_arg_length]}" for k, v in kwargs.items()
-                )
+                args_str = ", ".join(str(arg)[:max_arg_length] for arg in args)
+                kwargs_str = ", ".join(f"{k}={str(v)[:max_arg_length]}" for k, v in kwargs.items())
                 all_args = ", ".join(filter(None, [args_str, kwargs_str]))
                 LOGGER.debug("Calling %s(%s)", func_name, all_args)
             else:
@@ -245,11 +235,7 @@ def with_logging(
 
                 # Log result
                 if log_result:
-                    LOGGER.debug(
-                        "%s returned: %s",
-                        func_name,
-                        str(result)[:max_arg_length]
-                    )
+                    LOGGER.debug("%s returned: %s", func_name, str(result)[:max_arg_length])
 
                 return result
             finally:
@@ -259,6 +245,7 @@ def with_logging(
                     LOGGER.debug("%s took %.3fs", func_name, elapsed)
 
         return wrapper
+
     return decorator
 
 
@@ -275,6 +262,7 @@ def with_validation(
     Returns:
         Decorated function with validation
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -292,6 +280,7 @@ def with_validation(
             return result
 
         return wrapper
+
     return decorator
 
 
@@ -310,6 +299,7 @@ def deprecated(
     Returns:
         Decorated function with deprecation warning
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
@@ -333,10 +323,12 @@ def deprecated(
             wrapper.__doc__ = f"DEPRECATED: {reason}"
 
         return wrapper
+
     return decorator
 
 
 # Composite decorators for common patterns
+
 
 def robust_operation(
     operation_name: str | None = None,
@@ -357,6 +349,7 @@ def robust_operation(
     Returns:
         Decorated function
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         # Apply decorators in order
         func = with_logging(log_args=log_args, log_time=True)(func)
@@ -386,6 +379,7 @@ def async_safe(
     Returns:
         Decorated function
     """
+
     def decorator(func: Callable[P, T]) -> Callable[P, T]:
         # Apply timeout if specified
         if timeout:

@@ -111,11 +111,7 @@ class TestErrorContextV2(unittest.TestCase):
 
         # Test with custom timestamp
         custom_time = datetime.now() - timedelta(hours=1)
-        context = ErrorContext(
-            operation="op",
-            component="comp",
-            timestamp=custom_time
-        )
+        context = ErrorContext(operation="op", component="comp", timestamp=custom_time)
         assert context.timestamp == custom_time
 
         # Test with all parameters
@@ -129,7 +125,7 @@ class TestErrorContextV2(unittest.TestCase):
             timestamp=custom_time,
             user_data=user_data,
             system_data=system_data,
-            trace_id=trace_id
+            trace_id=trace_id,
         )
 
         assert context.operation == "complex_op"
@@ -192,10 +188,7 @@ class TestErrorContextV2(unittest.TestCase):
         assert context.component == long_comp
 
         # Test with special characters
-        context = ErrorContext(
-            operation="test/operation@123",
-            component="component-with-special_chars!"
-        )
+        context = ErrorContext(operation="test/operation@123", component="component-with-special_chars!")
         assert "@" in context.operation
         assert "!" in context.component
 
@@ -226,11 +219,7 @@ class TestStructuredErrorV2(unittest.TestCase):
         assert error.traceback_str is None
 
         # Test with all parameters
-        context = ErrorContext(
-            operation="test_op",
-            component="test_comp",
-            trace_id="trace123"
-        )
+        context = ErrorContext(operation="test_op", component="test_comp", trace_id="trace123")
         cause = ValueError("Original error")
         suggestions = ["Try this", "Try that", "Check logs"]
 
@@ -241,7 +230,7 @@ class TestStructuredErrorV2(unittest.TestCase):
             cause=cause,
             recoverable=True,
             user_message="Something went wrong with your input",
-            suggestions=suggestions
+            suggestions=suggestions,
         )
 
         assert error.message == "Complex error"
@@ -278,7 +267,7 @@ class TestStructuredErrorV2(unittest.TestCase):
                 message=f"Invalid {scenario['field']}",
                 field_name=scenario["field"],
                 value=scenario["value"],
-                suggestions=scenario["suggestions"]
+                suggestions=scenario["suggestions"],
             )
 
             assert error.category == ErrorCategory.VALIDATION
@@ -313,9 +302,7 @@ class TestStructuredErrorV2(unittest.TestCase):
 
         for scenario in file_scenarios:
             error = StructuredError.file_error(
-                message=scenario["message"],
-                file_path=scenario["path"],
-                operation=scenario["operation"]
+                message=scenario["message"], file_path=scenario["path"], operation=scenario["operation"]
             )
 
             assert error.category == scenario["category"]
@@ -349,7 +336,7 @@ class TestStructuredErrorV2(unittest.TestCase):
                 message="Network request failed",
                 url=scenario["url"],
                 status_code=scenario["status_code"],
-                timeout=scenario["timeout"]
+                timeout=scenario["timeout"],
             )
 
             assert error.category == ErrorCategory.NETWORK
@@ -390,7 +377,7 @@ class TestStructuredErrorV2(unittest.TestCase):
                 message=f"Processing failed at {scenario['stage']}",
                 stage=scenario["stage"],
                 input_data=scenario["input"],
-                metadata=scenario["metadata"]
+                metadata=scenario["metadata"],
             )
 
             assert error.category == ErrorCategory.PROCESSING
@@ -428,7 +415,7 @@ class TestStructuredErrorV2(unittest.TestCase):
                 message=f"Invalid config: {scenario['key']}",
                 config_key=scenario["key"],
                 config_value=scenario["value"],
-                suggestions=scenario["suggestions"]
+                suggestions=scenario["suggestions"],
             )
 
             assert error.category == ErrorCategory.CONFIGURATION
@@ -468,7 +455,7 @@ class TestStructuredErrorV2(unittest.TestCase):
                 tool_name=scenario["tool"],
                 command=scenario["command"],
                 exit_code=scenario["exit_code"],
-                stderr=scenario["stderr"]
+                stderr=scenario["stderr"],
             )
 
             assert error.category == ErrorCategory.EXTERNAL_TOOL
@@ -512,11 +499,7 @@ class TestStructuredErrorV2(unittest.TestCase):
     def test_error_serialization(self) -> None:
         """Test comprehensive error serialization."""
         # Create complex error with all fields
-        context = ErrorContext(
-            operation="complex_operation",
-            component="test_component",
-            trace_id="trace-123"
-        )
+        context = ErrorContext(operation="complex_operation", component="test_component", trace_id="trace-123")
         context.add_user_data("user_field", "user_value")
         context.add_user_data("user_number", 42)
         context.add_system_data("system_field", "system_value")
@@ -531,7 +514,7 @@ class TestStructuredErrorV2(unittest.TestCase):
             cause=cause,
             recoverable=True,
             user_message="User-friendly message",
-            suggestions=["Suggestion 1", "Suggestion 2"]
+            suggestions=["Suggestion 1", "Suggestion 2"],
         )
 
         # Test to_dict
@@ -563,7 +546,7 @@ class TestStructuredErrorV2(unittest.TestCase):
         error = StructuredError(
             "Technical error",
             user_message="Something went wrong",
-            suggestions=["Try refreshing", "Check your connection", "Contact support"]
+            suggestions=["Try refreshing", "Check your connection", "Contact support"],
         )
 
         friendly = error.get_user_friendly_message()
@@ -573,10 +556,7 @@ class TestStructuredErrorV2(unittest.TestCase):
         assert "• Contact support" in friendly
 
         # Test without suggestions
-        error = StructuredError(
-            "Technical error",
-            user_message="Operation failed"
-        )
+        error = StructuredError("Technical error", user_message="Operation failed")
 
         friendly = error.get_user_friendly_message()
         assert friendly == "Operation failed"
@@ -616,25 +596,16 @@ class TestStructuredErrorV2(unittest.TestCase):
             try:
                 if error_id % 5 == 0:
                     error = StructuredError.validation_error(
-                        f"Validation error {error_id}",
-                        field_name=f"field_{error_id}",
-                        value=error_id
+                        f"Validation error {error_id}", field_name=f"field_{error_id}", value=error_id
                     )
                 elif error_id % 5 == 1:
-                    error = StructuredError.file_error(
-                        f"File error {error_id}",
-                        file_path=f"/path/file_{error_id}"
-                    )
+                    error = StructuredError.file_error(f"File error {error_id}", file_path=f"/path/file_{error_id}")
                 elif error_id % 5 == 2:
                     error = StructuredError.network_error(
-                        f"Network error {error_id}",
-                        url=f"http://example.com/{error_id}"
+                        f"Network error {error_id}", url=f"http://example.com/{error_id}"
                     )
                 elif error_id % 5 == 3:
-                    error = StructuredError.processing_error(
-                        f"Processing error {error_id}",
-                        stage=f"stage_{error_id}"
-                    )
+                    error = StructuredError.processing_error(f"Processing error {error_id}", stage=f"stage_{error_id}")
                 else:
                     error = StructuredError(f"Generic error {error_id}")
 
@@ -755,12 +726,7 @@ class TestErrorBuilderV2(unittest.TestCase):
         assert error.message == ""
 
         # Test with None values
-        error = (
-            ErrorBuilder("Test")
-            .with_cause(None)
-            .with_user_message(None)
-            .build()
-        )
+        error = ErrorBuilder("Test").with_cause(None).with_user_message(None).build()
         assert error.cause is None
         assert error.user_message is None
 
@@ -838,11 +804,7 @@ class TestErrorIntegrationV2(unittest.TestCase):
                     return process_file(file_path)
                 except RuntimeError as e:
                     # Create structured error
-                    context = ErrorContext(
-                        operation="file_processing",
-                        component="request_handler",
-                        trace_id="req-123"
-                    )
+                    context = ErrorContext(operation="file_processing", component="request_handler", trace_id="req-123")
                     context.add_user_data("requested_file", file_path)
                     context.add_user_data("user_id", "user-456")
                     context.add_system_data("server_id", "srv-001")
@@ -859,8 +821,8 @@ class TestErrorIntegrationV2(unittest.TestCase):
                             "Verify the file exists",
                             "Check file permissions",
                             "Ensure the file path is correct",
-                            "Try uploading the file again"
-                        ]
+                            "Try uploading the file again",
+                        ],
                     )
                     raise error
 
@@ -900,7 +862,7 @@ class TestErrorIntegrationV2(unittest.TestCase):
             category=ErrorCategory.NETWORK,
             cause=root_cause,
             context=ErrorContext("db_connect", "database"),
-            recoverable=True
+            recoverable=True,
         )
 
         service_error = StructuredError(
@@ -909,7 +871,7 @@ class TestErrorIntegrationV2(unittest.TestCase):
             cause=db_error,
             context=ErrorContext("get_user", "user_service"),
             recoverable=True,
-            user_message="Cannot retrieve user information"
+            user_message="Cannot retrieve user information",
         )
 
         api_error = StructuredError(
@@ -919,7 +881,7 @@ class TestErrorIntegrationV2(unittest.TestCase):
             context=ErrorContext("handle_request", "api"),
             recoverable=False,
             user_message="Request could not be completed",
-            suggestions=["Try again later", "Contact support"]
+            suggestions=["Try again later", "Contact support"],
         )
 
         # Verify the error chain
@@ -1004,11 +966,7 @@ class TestStructuredErrorPytest:
 
     def test_validation_error_pytest(self) -> None:
         """Test validation error using pytest style."""
-        error = StructuredError.validation_error(
-            "Invalid input",
-            field_name="username",
-            value="test@"
-        )
+        error = StructuredError.validation_error("Invalid input", field_name="username", value="test@")
         assert error.category == ErrorCategory.VALIDATION
         assert error.recoverable is True
         assert error.context.user_data["field"] == "username"
@@ -1025,12 +983,7 @@ class TestErrorBuilderPytest:
 
     def test_builder_fluent_pytest(self) -> None:
         """Test fluent interface using pytest style."""
-        error = (
-            ErrorBuilder("Test")
-            .with_category(ErrorCategory.NETWORK)
-            .as_recoverable(True)
-            .build()
-        )
+        error = ErrorBuilder("Test").with_category(ErrorCategory.NETWORK).as_recoverable(True).build()
         assert error.category == ErrorCategory.NETWORK
         assert error.recoverable is True
 

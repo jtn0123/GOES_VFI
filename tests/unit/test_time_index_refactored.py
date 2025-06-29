@@ -118,12 +118,15 @@ class TestExtractTimestampFromDirectoryName(unittest.TestCase):
                 mock_primary.assert_called_once()
 
             # Test with valid satellite-specific pattern
-            with patch(
-                "goesvfi.integrity_check.time_index_refactored._try_primary_datetime_patterns",
-                return_value=None,
-            ), patch(
-                "goesvfi.integrity_check.time_index_refactored._try_satellite_specific_patterns"
-            ) as mock_satellite:
+            with (
+                patch(
+                    "goesvfi.integrity_check.time_index_refactored._try_primary_datetime_patterns",
+                    return_value=None,
+                ),
+                patch(
+                    "goesvfi.integrity_check.time_index_refactored._try_satellite_specific_patterns"
+                ) as mock_satellite,
+            ):
                 mock_satellite.return_value = datetime(2023, 6, 15, 12, 30, 0)
 
                 result = extract_timestamp_from_directory_name("GOES18/FD/13/2023/166")
@@ -131,12 +134,15 @@ class TestExtractTimestampFromDirectoryName(unittest.TestCase):
                 mock_satellite.assert_called_once()
 
             # Test with no pattern matching
-            with patch(
-                "goesvfi.integrity_check.time_index_refactored._try_primary_datetime_patterns",
-                return_value=None,
-            ), patch(
-                "goesvfi.integrity_check.time_index_refactored._try_satellite_specific_patterns",
-                return_value=None,
+            with (
+                patch(
+                    "goesvfi.integrity_check.time_index_refactored._try_primary_datetime_patterns",
+                    return_value=None,
+                ),
+                patch(
+                    "goesvfi.integrity_check.time_index_refactored._try_satellite_specific_patterns",
+                    return_value=None,
+                ),
             ):
                 result = extract_timestamp_from_directory_name("invalid_format")
                 assert result is None
@@ -372,10 +378,13 @@ class TestToS3Key(unittest.TestCase):
         mock_detect_env.return_value = (False, False, False)  # Not in test env
 
         # Test with default parameters (RadC, band 13)
-        with patch(
-            "goesvfi.integrity_check.time_index_refactored._find_nearest_valid_scan_minute",
-            return_value=30,
-        ) as mock_find, patch("goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern") as mock_pattern:
+        with (
+            patch(
+                "goesvfi.integrity_check.time_index_refactored._find_nearest_valid_scan_minute",
+                return_value=30,
+            ) as mock_find,
+            patch("goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern") as mock_pattern,
+        ):
             mock_pattern.return_value = "test_pattern.nc"
 
             result = to_s3_key(ts, satellite)
@@ -388,10 +397,13 @@ class TestToS3Key(unittest.TestCase):
             assert result == "ABI-L1b-RadC/2023/166/12/test_pattern.nc"
 
         # Test with custom parameters (RadF, band 2)
-        with patch(
-            "goesvfi.integrity_check.time_index_refactored._find_nearest_valid_scan_minute",
-            return_value=30,
-        ) as mock_find, patch("goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern") as mock_pattern:
+        with (
+            patch(
+                "goesvfi.integrity_check.time_index_refactored._find_nearest_valid_scan_minute",
+                return_value=30,
+            ) as mock_find,
+            patch("goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern") as mock_pattern,
+        ):
             mock_pattern.return_value = "test_pattern.nc"
 
             result = to_s3_key(ts, satellite, product_type="RadF", band=2)
@@ -404,10 +416,13 @@ class TestToS3Key(unittest.TestCase):
             assert result == "ABI-L1b-RadF/2023/166/12/test_pattern.nc"
 
         # Test with exact_match=True
-        with patch(
-            "goesvfi.integrity_check.time_index_refactored._find_nearest_valid_scan_minute",
-            return_value=30,
-        ) as mock_find, patch("goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern") as mock_pattern:
+        with (
+            patch(
+                "goesvfi.integrity_check.time_index_refactored._find_nearest_valid_scan_minute",
+                return_value=30,
+            ) as mock_find,
+            patch("goesvfi.integrity_check.time_index_refactored._get_s3_filename_pattern") as mock_pattern,
+        ):
             mock_pattern.return_value = "test_pattern.nc"
 
             result = to_s3_key(ts, satellite, exact_match=True)

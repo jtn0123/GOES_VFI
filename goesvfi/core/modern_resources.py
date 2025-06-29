@@ -76,10 +76,7 @@ class ResourceTracker:
                     elif hasattr(resource, "__exit__"):
                         resource.__exit__(None, None, None)
                 except Exception as e:
-                    LOGGER.warning(
-                        "Failed to cleanup resource %s in tracker %s: %s",
-                        resource, self.name, e
-                    )
+                    LOGGER.warning("Failed to cleanup resource %s in tracker %s: %s", resource, self.name, e)
             self._resources.clear()
 
     def _cleanup_all(self) -> None:
@@ -135,10 +132,7 @@ def managed_resource(resource: Any, cleanup_fn: Any | None = None) -> Generator[
 
 
 @asynccontextmanager
-async def managed_async_resource(
-    resource: Any,
-    cleanup_fn: Any | None = None
-) -> AsyncGenerator[Any]:
+async def managed_async_resource(resource: Any, cleanup_fn: Any | None = None) -> AsyncGenerator[Any]:
     """Async context manager for automatic resource cleanup.
 
     Args:
@@ -179,11 +173,7 @@ async def managed_async_resource(
 
 
 @contextmanager
-def temporary_directory(
-    prefix: str = "goes_vfi_",
-    suffix: str = "",
-    cleanup: bool = True
-) -> Generator[Path]:
+def temporary_directory(prefix: str = "goes_vfi_", suffix: str = "", cleanup: bool = True) -> Generator[Path]:
     """Context manager for temporary directories with automatic cleanup.
 
     Args:
@@ -203,6 +193,7 @@ def temporary_directory(
         if temp_dir and cleanup and temp_dir.exists():
             try:
                 import shutil
+
                 shutil.rmtree(temp_dir)
                 LOGGER.debug("Cleaned up temporary directory: %s", temp_dir)
             except Exception as e:
@@ -211,10 +202,7 @@ def temporary_directory(
 
 @contextmanager
 def temporary_file(
-    suffix: str = "",
-    prefix: str = "goes_vfi_",
-    text: bool = False,
-    cleanup: bool = True
+    suffix: str = "", prefix: str = "goes_vfi_", text: bool = False, cleanup: bool = True
 ) -> Generator[Path]:
     """Context manager for temporary files with automatic cleanup.
 
@@ -232,6 +220,7 @@ def temporary_file(
         fd, temp_path = tempfile.mkstemp(suffix=suffix, prefix=prefix, text=text)
         # Close the file descriptor since we only want the path
         import os
+
         os.close(fd)
 
         temp_file = Path(temp_path)
@@ -323,13 +312,9 @@ def get_resource_manager() -> ResourceManager:
 
 # Modern file operation utilities
 
+
 @contextmanager
-def atomic_write(
-    path: Path,
-    mode: str = "w",
-    encoding: str = "utf-8",
-    backup: bool = False
-) -> Generator[Any]:
+def atomic_write(path: Path, mode: str = "w", encoding: str = "utf-8", backup: bool = False) -> Generator[Any]:
     """Context manager for atomic file writing.
 
     Writes to a temporary file first, then moves to target location.
@@ -351,6 +336,7 @@ def atomic_write(
         # Create backup if requested and file exists
         if backup and path.exists():
             import shutil
+
             shutil.copy2(path, backup_path)
             LOGGER.debug("Created backup: %s", backup_path)
 
@@ -425,6 +411,7 @@ def file_lock(path: Path, timeout: float = 10.0) -> Generator[None]:
 
 # Memory management utilities
 
+
 class MemoryMonitor:
     """Monitor memory usage and provide warnings."""
 
@@ -436,6 +423,7 @@ class MemoryMonitor:
         """Get current memory usage information."""
         try:
             import psutil
+
             memory = psutil.virtual_memory()
             return {
                 "total": memory.total,
@@ -447,6 +435,7 @@ class MemoryMonitor:
         except ImportError:
             # Fallback without psutil
             import sys
+
             if hasattr(sys, "getsizeof"):
                 return {"available": "unknown", "percent": 0}
             return {}
@@ -485,10 +474,7 @@ class MemoryMonitor:
             final_percent = final_usage.get("percent", 0)
 
             if final_percent > initial_percent + 10:  # 10% increase
-                LOGGER.warning(
-                    "Significant memory increase: %.1f%% -> %.1f%%",
-                    initial_percent, final_percent
-                )
+                LOGGER.warning("Significant memory increase: %.1f%% -> %.1f%%", initial_percent, final_percent)
 
 
 # Global memory monitor
@@ -512,6 +498,7 @@ def temporary_env(**env_vars: str) -> Generator[None]:
         None
     """
     import os
+
     original_values = {}
 
     try:

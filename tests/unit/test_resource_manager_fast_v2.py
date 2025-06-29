@@ -13,6 +13,7 @@ from goesvfi.pipeline.resource_manager import ResourceLimits, ResourceManager
 @dataclass
 class MockMemoryStats:
     """Mock memory statistics for testing."""
+
     percent_used: float
     available_mb: int = 2048
     total_mb: int = 4096
@@ -83,13 +84,22 @@ class TestResourceManager:
             mock_memory_monitor.start_monitoring.assert_called_once()
             mock_memory_monitor.add_callback.assert_called_once()
 
-    @pytest.mark.parametrize("memory_scenario,should_warn,should_critical", [
-        ("normal", False, False),
-        ("warning", True, False),
-        ("critical", False, True),
-    ])
-    def test_memory_callback_levels(self, mock_memory_monitor, memory_stats_scenarios,
-                                  memory_scenario: str, should_warn: bool, should_critical: bool) -> None:
+    @pytest.mark.parametrize(
+        "memory_scenario,should_warn,should_critical",
+        [
+            ("normal", False, False),
+            ("warning", True, False),
+            ("critical", False, True),
+        ],
+    )
+    def test_memory_callback_levels(
+        self,
+        mock_memory_monitor,
+        memory_stats_scenarios,
+        memory_scenario: str,
+        should_warn: bool,
+        should_critical: bool,
+    ) -> None:
         """Test memory callback at different warning levels."""
         stats = memory_stats_scenarios[memory_scenario]
 
@@ -113,13 +123,22 @@ class TestResourceManager:
                 else:
                     mock_logger.critical.assert_not_called()
 
-    @pytest.mark.parametrize("memory_scenario,required_memory,should_raise", [
-        ("normal", 1000, False),      # Sufficient memory
-        ("insufficient", 1000, True),  # Insufficient memory
-        ("critical", None, True),     # Critical memory usage
-    ])
-    def test_check_resources(self, mock_memory_monitor, memory_stats_scenarios,
-                           memory_scenario: str, required_memory: int, should_raise: bool) -> None:
+    @pytest.mark.parametrize(
+        "memory_scenario,required_memory,should_raise",
+        [
+            ("normal", 1000, False),  # Sufficient memory
+            ("insufficient", 1000, True),  # Insufficient memory
+            ("critical", None, True),  # Critical memory usage
+        ],
+    )
+    def test_check_resources(
+        self,
+        mock_memory_monitor,
+        memory_stats_scenarios,
+        memory_scenario: str,
+        required_memory: int,
+        should_raise: bool,
+    ) -> None:
         """Test resource checking with different memory conditions."""
         mock_memory_monitor.get_memory_stats.return_value = memory_stats_scenarios[memory_scenario]
 
@@ -135,15 +154,25 @@ class TestResourceManager:
                 # Should not raise exception
                 manager.check_resources(required_memory_mb=required_memory)
 
-    @pytest.mark.parametrize("cpu_count,memory_available,expected_constraint", [
-        (8, 8000, "max_workers"),    # Limited by configuration
-        (8, 1000, "memory"),         # Limited by memory
-        (2, 8000, "cpu"),           # Limited by CPU
-        (None, 8000, "fallback"),   # CPU count unavailable
-    ])
+    @pytest.mark.parametrize(
+        "cpu_count,memory_available,expected_constraint",
+        [
+            (8, 8000, "max_workers"),  # Limited by configuration
+            (8, 1000, "memory"),  # Limited by memory
+            (2, 8000, "cpu"),  # Limited by CPU
+            (None, 8000, "fallback"),  # CPU count unavailable
+        ],
+    )
     @patch("os.cpu_count")
-    def test_get_optimal_workers_constraints(self, mock_cpu_count, mock_memory_monitor, memory_stats_scenarios,
-                                           cpu_count: int, memory_available: int, expected_constraint: str) -> None:
+    def test_get_optimal_workers_constraints(
+        self,
+        mock_cpu_count,
+        mock_memory_monitor,
+        memory_stats_scenarios,
+        cpu_count: int,
+        memory_available: int,
+        expected_constraint: str,
+    ) -> None:
         """Test optimal worker calculation under different constraints."""
         mock_cpu_count.return_value = cpu_count
 
@@ -173,13 +202,12 @@ class TestResourceManager:
                 assert optimal >= 1  # Should have sensible fallback
 
     @pytest.mark.parametrize("limits_scenario", ["default", "strict", "generous"])
-    def test_get_optimal_workers_with_limits(self, mock_memory_monitor, resource_limits_scenarios,
-                                           limits_scenario: str) -> None:
+    def test_get_optimal_workers_with_limits(
+        self, mock_memory_monitor, resource_limits_scenarios, limits_scenario: str
+    ) -> None:
         """Test optimal worker calculation with different resource limits."""
         limits = resource_limits_scenarios[limits_scenario]
-        mock_memory_monitor.get_memory_stats.return_value = MockMemoryStats(
-            percent_used=30.0, available_mb=8000
-        )
+        mock_memory_monitor.get_memory_stats.return_value = MockMemoryStats(percent_used=30.0, available_mb=8000)
 
         with (
             patch("goesvfi.pipeline.resource_manager.get_memory_monitor") as mock_get_monitor,
@@ -194,11 +222,16 @@ class TestResourceManager:
             assert optimal <= limits.max_workers
             assert optimal >= 1
 
-    @pytest.mark.parametrize("max_workers,uses_optimal", [
-        (None, True),    # Should use optimal calculation
-        (3, False),      # Should use specified value
-    ])
-    def test_process_executor_worker_configuration(self, mock_memory_monitor, max_workers: int, uses_optimal: bool) -> None:
+    @pytest.mark.parametrize(
+        "max_workers,uses_optimal",
+        [
+            (None, True),  # Should use optimal calculation
+            (3, False),  # Should use specified value
+        ],
+    )
+    def test_process_executor_worker_configuration(
+        self, mock_memory_monitor, max_workers: int, uses_optimal: bool
+    ) -> None:
         """Test process executor worker configuration logic."""
         with patch("goesvfi.pipeline.resource_manager.get_memory_monitor") as mock_get_monitor:
             mock_get_monitor.return_value = mock_memory_monitor

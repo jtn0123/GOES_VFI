@@ -47,7 +47,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
                 "goes_no_timestamp.png",
                 "goes16_invalid_date.png",
                 "goes18_2023_01_01.png",  # Missing time component
-            ]
+            ],
         }
 
         # Expected date ranges for different satellites
@@ -64,7 +64,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
                 "start_day": 15,
                 "end_day": 14,  # July 14 (30 days later)
                 "end_month": 7,
-            }
+            },
         }
 
     def setUp(self) -> None:
@@ -127,14 +127,20 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             directory.mkdir(parents=True)
 
         # Batch create GOES-16 files (7 days, 6-hour intervals)
-        self.create_satellite_files(goes16_dir, "goes16",
-                                   self.expected_ranges["goes16"]["days"],
-                                   self.expected_ranges["goes16"]["interval_hours"])
+        self.create_satellite_files(
+            goes16_dir,
+            "goes16",
+            self.expected_ranges["goes16"]["days"],
+            self.expected_ranges["goes16"]["interval_hours"],
+        )
 
         # Batch create GOES-18 files (30 days, 4-hour intervals)
-        self.create_satellite_files(goes18_dir, "goes18",
-                                   self.expected_ranges["goes18"]["days"],
-                                   self.expected_ranges["goes18"]["interval_hours"])
+        self.create_satellite_files(
+            goes18_dir,
+            "goes18",
+            self.expected_ranges["goes18"]["days"],
+            self.expected_ranges["goes18"]["interval_hours"],
+        )
 
         # Create date directory structure
         for i in range(10):
@@ -162,12 +168,16 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
         for filepath in files_to_create:
             filepath.touch()
 
-    @pytest.mark.parametrize("satellite,expected_start_day,expected_end_day,expected_end_month", [
-        (SatellitePattern.GOES_16, 15, 21, 6),
-        (SatellitePattern.GOES_18, 15, 14, 7),
-    ])
-    def test_auto_detect_date_range_comprehensive(self, satellite, expected_start_day,
-                                                 expected_end_day, expected_end_month) -> None:
+    @pytest.mark.parametrize(
+        "satellite,expected_start_day,expected_end_day,expected_end_month",
+        [
+            (SatellitePattern.GOES_16, 15, 21, 6),
+            (SatellitePattern.GOES_18, 15, 14, 7),
+        ],
+    )
+    def test_auto_detect_date_range_comprehensive(
+        self, satellite, expected_start_day, expected_end_day, expected_end_month
+    ) -> None:
         """Test auto-detecting date range for different satellites."""
         # Set satellite
         self.mock_view_model.satellite = satellite
@@ -235,10 +245,13 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
 
         return start_py_date, end_py_date
 
-    @pytest.mark.parametrize("directory_type,expected_message", [
-        ("empty", "No Valid Files Found"),
-        ("non_matching", "No Valid Files Found"),
-    ])
+    @pytest.mark.parametrize(
+        "directory_type,expected_message",
+        [
+            ("empty", "No Valid Files Found"),
+            ("non_matching", "No Valid Files Found"),
+        ],
+    )
     def test_auto_detect_date_range_error_cases(self, directory_type, expected_message) -> None:
         """Test auto-detecting date range with various error conditions."""
         # Create appropriate test directory
@@ -286,7 +299,9 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
                 end_date_spy = self.create_datetime_spy(self.tab.end_date_edit)
 
                 # Mock find_date_range_in_directory for consistent results
-                with patch("goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory") as mock_find_range:
+                with patch(
+                    "goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory"
+                ) as mock_find_range:
                     mock_find_range.return_value = (datetime(2023, 1, 1), datetime(2023, 1, 31))
 
                     # Step 3: Auto-detect date range
@@ -301,11 +316,14 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
                 assert self.mock_view_model.satellite == SatellitePattern.GOES_18
                 assert mock_message_box.information.call_count == 1
 
-    @pytest.mark.parametrize("error_scenario,expected_dialog", [
-        ("satellite_detection", "critical"),
-        ("date_range_detection", "critical"),
-        ("no_files_found", "information"),
-    ])
+    @pytest.mark.parametrize(
+        "error_scenario,expected_dialog",
+        [
+            ("satellite_detection", "critical"),
+            ("date_range_detection", "critical"),
+            ("no_files_found", "information"),
+        ],
+    )
     def test_error_handling_comprehensive(self, error_scenario, expected_dialog) -> None:
         """Test comprehensive error handling for auto-detection features."""
         if error_scenario == "satellite_detection":
@@ -325,10 +343,13 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
                         assert "Auto-Detection Failed" in critical_args[1]
 
         elif error_scenario == "date_range_detection":
-            with patch(
-                "goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory",
-                side_effect=Exception("Date range error")
-            ), patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box:
+            with (
+                patch(
+                    "goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory",
+                    side_effect=Exception("Date range error"),
+                ),
+                patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box,
+            ):
                 self.tab._auto_detect_date_range()
                 QCoreApplication.processEvents()
 

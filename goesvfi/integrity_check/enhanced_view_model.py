@@ -480,6 +480,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         """Schedule the next disk space check."""
         if self._disk_space_check_count < 100:  # Limit to 100 checks
             from PyQt6.QtCore import QTimer
+
             QTimer.singleShot(5000, self._request_disk_space_update)  # 5 seconds
 
     def _request_disk_space_update(self) -> None:

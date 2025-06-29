@@ -16,9 +16,14 @@ from goesvfi.utils.errors.handler import ErrorHandler, ErrorHandlerChain
 class MockErrorHandler(ErrorHandler):
     """Enhanced mock error handler for comprehensive testing."""
 
-    def __init__(self, name: str, can_handle_types: list | None = None,
-                 should_handle: bool = True, handle_delay: float = 0,
-                 raise_on_handle: Exception | None = None):
+    def __init__(
+        self,
+        name: str,
+        can_handle_types: list | None = None,
+        should_handle: bool = True,
+        handle_delay: float = 0,
+        raise_on_handle: Exception | None = None,
+    ):
         self.name = name
         self.can_handle_types = can_handle_types or []
         self.should_handle = should_handle
@@ -286,10 +291,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         ]
 
         for error_type, category in error_categories:
-            handler = MockErrorHandler(
-                f"{category.name}_handler",
-                can_handle_types=[error_type.__name__]
-            )
+            handler = MockErrorHandler(f"{category.name}_handler", can_handle_types=[error_type.__name__])
             category_handlers[category] = handler
 
         # Test each error type
@@ -319,15 +321,12 @@ class TestErrorHandlerChainV2(unittest.TestCase):
             (MemoryError("Out of memory"), "critical"),
             (SystemError("System failure"), "critical"),
             (KeyboardInterrupt("User abort"), "critical"),
-
             # High severity
             (PermissionError("Access denied"), "high"),
             (FileNotFoundError("Missing file"), "high"),
-
             # Medium severity
             (ConnectionError("Network issue"), "medium"),
             (TimeoutError("Request timeout"), "medium"),
-
             # Low severity
             (ValueError("Invalid input"), "low"),
             (TypeError("Type mismatch"), "low"),
@@ -335,14 +334,12 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
         # Create severity-based handlers
         severity_handlers = {
-            "critical": MockErrorHandler("critical_handler",
-                                       can_handle_types=["MemoryError", "SystemError", "KeyboardInterrupt"]),
-            "high": MockErrorHandler("high_handler",
-                                   can_handle_types=["PermissionError", "FileNotFoundError"]),
-            "medium": MockErrorHandler("medium_handler",
-                                     can_handle_types=["ConnectionError", "TimeoutError"]),
-            "low": MockErrorHandler("low_handler",
-                                  can_handle_types=["ValueError", "TypeError"]),
+            "critical": MockErrorHandler(
+                "critical_handler", can_handle_types=["MemoryError", "SystemError", "KeyboardInterrupt"]
+            ),
+            "high": MockErrorHandler("high_handler", can_handle_types=["PermissionError", "FileNotFoundError"]),
+            "medium": MockErrorHandler("medium_handler", can_handle_types=["ConnectionError", "TimeoutError"]),
+            "low": MockErrorHandler("low_handler", can_handle_types=["ValueError", "TypeError"]),
         }
 
         for error, expected_severity in severity_errors:
@@ -393,10 +390,11 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         chain = ErrorHandlerChain()
 
         # Test fluent interface
-        result = (chain
-                 .add_handler(MockErrorHandler("h1"))
-                 .add_handler(MockErrorHandler("h2"))
-                 .add_handler(MockErrorHandler("h3")))
+        result = (
+            chain.add_handler(MockErrorHandler("h1"))
+            .add_handler(MockErrorHandler("h2"))
+            .add_handler(MockErrorHandler("h3"))
+        )
 
         assert result is chain  # Should return self for chaining
 
@@ -491,6 +489,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
     def test_custom_error_types(self) -> None:
         """Test handling of custom error types."""
+
         # Create custom exception hierarchy
         class CustomBaseError(Exception):
             pass
@@ -506,14 +505,10 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
         # Create handlers for custom types
         custom_handlers = [
-            MockErrorHandler("network_handler",
-                           can_handle_types=["CustomNetworkError"]),
-            MockErrorHandler("validation_handler",
-                           can_handle_types=["CustomValidationError"]),
-            MockErrorHandler("system_handler",
-                           can_handle_types=["CustomSystemError"]),
-            MockErrorHandler("base_handler",
-                           can_handle_types=["CustomBaseError"]),
+            MockErrorHandler("network_handler", can_handle_types=["CustomNetworkError"]),
+            MockErrorHandler("validation_handler", can_handle_types=["CustomValidationError"]),
+            MockErrorHandler("system_handler", can_handle_types=["CustomSystemError"]),
+            MockErrorHandler("base_handler", can_handle_types=["CustomBaseError"]),
         ]
 
         chain = ErrorHandlerChain()

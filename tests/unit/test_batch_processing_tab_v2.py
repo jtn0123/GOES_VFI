@@ -96,27 +96,26 @@ def mock_batch_processor():
 @pytest.fixture()
 def test_settings():
     """Standard test settings for batch processing."""
-    return {
-        "target_fps": 24,
-        "interpolation": "RIFE",
-        "encoder": "libx264",
-        "quality": "high"
-    }
+    return {"target_fps": 24, "interpolation": "RIFE", "encoder": "libx264", "quality": "high"}
 
 
 @pytest.fixture()
 def settings_provider(test_settings):
     """Mock settings provider function."""
+
     def provider():
         return test_settings
+
     return provider
 
 
 @pytest.fixture()
 def mock_process_function():
     """Mock process function for batch processing."""
+
     def process_fn(*args, **kwargs) -> str:
         return "Processing completed"
+
     return process_fn
 
 
@@ -279,13 +278,19 @@ class TestBatchProcessingTab:
         priority = call_args.kwargs.get("priority", JobPriority.NORMAL)
         assert priority == JobPriority.NORMAL
 
-    @pytest.mark.parametrize("settings_variant", [
-        {"target_fps": 30, "interpolation": "RIFE"},
-        {"target_fps": 60, "interpolation": "FFmpeg"},
-        {"target_fps": 24, "interpolation": "RIFE", "encoder": "libx265"},
-    ])
-    def test_different_settings_configurations(self, qtbot, mock_batch_processor, mock_process_function, settings_variant) -> None:
+    @pytest.mark.parametrize(
+        "settings_variant",
+        [
+            {"target_fps": 30, "interpolation": "RIFE"},
+            {"target_fps": 60, "interpolation": "FFmpeg"},
+            {"target_fps": 24, "interpolation": "RIFE", "encoder": "libx265"},
+        ],
+    )
+    def test_different_settings_configurations(
+        self, qtbot, mock_batch_processor, mock_process_function, settings_variant
+    ) -> None:
         """Test different settings configurations."""
+
         def settings_provider():
             return settings_variant
 

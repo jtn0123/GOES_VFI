@@ -34,8 +34,8 @@ class TestLoaderV2:
                 "goes16_20230615_123000_band13.png",
                 "satellite_data_2023_06_15.jpg",
                 "frame_001_processed.jpeg",
-                "final_output_v2.png"
-            ]
+                "final_output_v2.png",
+            ],
         }
 
     @pytest.fixture()
@@ -43,11 +43,11 @@ class TestLoaderV2:
         """Create temporary directory with various file types."""
         # Create all test files efficiently
         all_files = (
-            shared_file_data["supported_files"] +
-            shared_file_data["unsupported_files"] +
-            shared_file_data["case_variations"] +
-            shared_file_data["timestamp_files"] +
-            shared_file_data["complex_names"]
+            shared_file_data["supported_files"]
+            + shared_file_data["unsupported_files"]
+            + shared_file_data["case_variations"]
+            + shared_file_data["timestamp_files"]
+            + shared_file_data["complex_names"]
         )
 
         for filename in all_files:
@@ -55,13 +55,17 @@ class TestLoaderV2:
 
         return tmp_path
 
-    @pytest.mark.parametrize("file_group,should_be_included", [
-        ("supported_files", True),
-        ("unsupported_files", False),
-        ("case_variations", True),  # Should handle case insensitive
-    ])
-    def test_discover_frames_extension_filtering(self, temp_dir_with_files, shared_file_data,
-                                               file_group, should_be_included) -> None:
+    @pytest.mark.parametrize(
+        "file_group,should_be_included",
+        [
+            ("supported_files", True),
+            ("unsupported_files", False),
+            ("case_variations", True),  # Should handle case insensitive
+        ],
+    )
+    def test_discover_frames_extension_filtering(
+        self, temp_dir_with_files, shared_file_data, file_group, should_be_included
+    ) -> None:
         """Test that only supported extensions are returned."""
         result = loader.discover_frames(temp_dir_with_files)
         result_filenames = [p.name for p in result]
@@ -82,7 +86,7 @@ class TestLoaderV2:
             "20230101_0000.png",
             "20230101_0001.png",
             "20230102_0000.png",
-            "20221231_2359.png"
+            "20221231_2359.png",
         ]
 
         for filename in unsorted_files:
@@ -95,11 +99,7 @@ class TestLoaderV2:
         expected_order = sorted(unsorted_files)
         assert result_filenames == expected_order
 
-    @pytest.mark.parametrize("directory_scenario", [
-        "empty",
-        "only_directories",
-        "mixed_content"
-    ])
+    @pytest.mark.parametrize("directory_scenario", ["empty", "only_directories", "mixed_content"])
     def test_discover_frames_edge_cases(self, tmp_path, directory_scenario) -> None:
         """Test edge cases for frame discovery."""
         if directory_scenario == "empty":
@@ -133,7 +133,7 @@ class TestLoaderV2:
             "frame5.jPeG",
             "frame6.Jpg",
             "invalid.BMP",  # Unsupported even with case variation
-            "invalid.TXT"   # Unsupported even with case variation
+            "invalid.TXT",  # Unsupported even with case variation
         ]
 
         for filename in case_variations:
@@ -143,8 +143,7 @@ class TestLoaderV2:
         result_filenames = [p.name for p in result]
 
         # Should include all supported extensions regardless of case
-        expected_supported = ["frame1.PNG", "frame2.Png", "frame3.pNg",
-                            "frame4.JPG", "frame5.jPeG", "frame6.Jpg"]
+        expected_supported = ["frame1.PNG", "frame2.Png", "frame3.pNg", "frame4.JPG", "frame5.jPeG", "frame6.Jpg"]
 
         for filename in expected_supported:
             assert filename in result_filenames
@@ -191,14 +190,17 @@ class TestLoaderV2:
         # Should be sorted
         assert result_filenames == sorted(supported_files)
 
-    @pytest.mark.parametrize("special_characters,should_work", [
-        ("frame with spaces.png", True),
-        ("frame-with-dashes.jpg", True),
-        ("frame_with_underscores.jpeg", True),
-        ("frame.with.dots.png", True),
-        ("frame(with)parentheses.jpg", True),
-        ("frame[with]brackets.png", True),
-    ])
+    @pytest.mark.parametrize(
+        "special_characters,should_work",
+        [
+            ("frame with spaces.png", True),
+            ("frame-with-dashes.jpg", True),
+            ("frame_with_underscores.jpeg", True),
+            ("frame.with.dots.png", True),
+            ("frame(with)parentheses.jpg", True),
+            ("frame[with]brackets.png", True),
+        ],
+    )
     def test_discover_frames_special_filenames(self, tmp_path, special_characters, should_work) -> None:
         """Test handling of filenames with special characters."""
         # Create file with special characters
@@ -331,11 +333,14 @@ class TestLoaderV2:
         result_names = [p.name for p in result1]
         assert len(result_names) == len(set(result_names))
 
-    @pytest.mark.parametrize("extension_case,expected_count", [
-        ([".png", ".jpg"], 2),
-        ([".PNG", ".JPG"], 2),  # Should work with uppercase
-        ([".pNg", ".JpG"], 2),  # Should work with mixed case
-    ])
+    @pytest.mark.parametrize(
+        "extension_case,expected_count",
+        [
+            ([".png", ".jpg"], 2),
+            ([".PNG", ".JPG"], 2),  # Should work with uppercase
+            ([".pNg", ".JpG"], 2),  # Should work with mixed case
+        ],
+    )
     def test_discover_frames_extension_case_matrix(self, tmp_path, extension_case, expected_count) -> None:
         """Test extension matching with various case combinations."""
         # Create files with specific extensions

@@ -41,6 +41,7 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -85,16 +86,13 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
             # Missing items - Day 1
             {"date": datetime(2023, 1, 1, 0), "satellite": "GOES-16", "status": "missing", "count": 3},
             {"date": datetime(2023, 1, 1, 6), "satellite": "GOES-17", "status": "missing", "count": 2},
-
             # Downloaded items - Day 2
             {"date": datetime(2023, 1, 2, 0), "satellite": "GOES-16", "status": "downloaded", "count": 4},
             {"date": datetime(2023, 1, 2, 6), "satellite": "GOES-17", "status": "downloaded", "count": 3},
             {"date": datetime(2023, 1, 2, 12), "satellite": "GOES-18", "status": "downloaded", "count": 2},
-
             # Error items - Day 3
             {"date": datetime(2023, 1, 3, 0), "satellite": "GOES-16", "status": "error", "count": 2},
             {"date": datetime(2023, 1, 3, 6), "satellite": "GOES-17", "status": "error", "count": 3},
-
             # Downloading items - Day 4
             {"date": datetime(2023, 1, 4, 0), "satellite": "GOES-16", "status": "downloading", "count": 1},
             {"date": datetime(2023, 1, 4, 6), "satellite": "GOES-17", "status": "downloading", "count": 2},
@@ -205,7 +203,9 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
 
                 # Verify expected number of groups
                 row_count = self.tab.tree_view.rowCount()
-                assert row_count == scenario["expected_groups"], f"Tree view should show {scenario['expected_groups']} groups for {scenario['name']}"
+                assert row_count == scenario["expected_groups"], (
+                    f"Tree view should show {scenario['expected_groups']} groups for {scenario['name']}"
+                )
 
     @async_test
     async def test_expand_collapse_comprehensive(self) -> None:
@@ -269,7 +269,9 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
                 assert result.args[0] == test_item, "Item signal not emitted with correct item"
 
                 # Verify preview widget was updated
-                assert self.tab.preview_widget.current_item == test_item, "Preview widget not updated with selected item"
+                assert self.tab.preview_widget.current_item == test_item, (
+                    "Preview widget not updated with selected item"
+                )
 
     @async_test
     async def test_download_request_comprehensive(self) -> None:
@@ -312,7 +314,9 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
                     assert result.args[0] == test_item, "Download signal not emitted with correct item"
                 else:
                     # Verify download button is disabled
-                    assert not self.tab.preview_widget.download_btn.isEnabled(), "Download button should be disabled for downloaded items"
+                    assert not self.tab.preview_widget.download_btn.isEnabled(), (
+                        "Download button should be disabled for downloaded items"
+                    )
 
     @async_test
     async def test_view_request_comprehensive(self) -> None:
@@ -355,7 +359,9 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
                     assert result.args[0] == test_item, "View signal not emitted with correct item"
                 else:
                     # Verify view button is disabled
-                    assert not self.tab.preview_widget.view_btn.isEnabled(), "View button should be disabled for non-downloaded items"
+                    assert not self.tab.preview_widget.view_btn.isEnabled(), (
+                        "View button should be disabled for non-downloaded items"
+                    )
 
     @async_test
     async def test_highlight_item_comprehensive(self) -> None:
@@ -468,7 +474,9 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
                 download_enabled = self.tab.preview_widget.download_btn.isEnabled()
                 view_enabled = self.tab.preview_widget.view_btn.isEnabled()
 
-                assert download_enabled == scenario["download_enabled"], f"Download button state incorrect for {scenario['name']}"
+                assert download_enabled == scenario["download_enabled"], (
+                    f"Download button state incorrect for {scenario['name']}"
+                )
                 assert view_enabled == scenario["view_enabled"], f"View button state incorrect for {scenario['name']}"
 
     @async_test
@@ -513,7 +521,7 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
             try:
                 if operation_id % 4 == 0:
                     # Test set_items
-                    test_items = self.missing_items[:operation_id % 5 + 1]
+                    test_items = self.missing_items[: operation_id % 5 + 1]
                     self.tab.set_items(test_items, operation_id + 10)
                     results.append(("set_items", operation_id, len(test_items)))
 
@@ -718,7 +726,7 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
 
                 # Occasionally update data
                 if i % 10 == 0:
-                    subset_items = self.missing_items[:i % 10 + 5]
+                    subset_items = self.missing_items[: i % 10 + 5]
                     self.tab.set_items(subset_items, len(subset_items))
 
                 # Process events periodically

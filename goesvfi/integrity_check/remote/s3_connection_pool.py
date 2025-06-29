@@ -73,10 +73,7 @@ class S3ConnectionPool:
             region_name=self.region,
         )
 
-        LOGGER.info(
-            "Initialized S3 connection pool: max_connections=%d, region=%s",
-            self.max_connections, self.region
-        )
+        LOGGER.info("Initialized S3 connection pool: max_connections=%d, region=%s", self.max_connections, self.region)
 
     async def _create_connection(self) -> S3ClientType:
         """Create a new S3 client connection.
@@ -93,10 +90,7 @@ class S3ConnectionPool:
             client = await client_context.__aenter__()
 
             self._stats["connections_created"] += 1
-            LOGGER.debug(
-                "Created new S3 connection (total created: %d)",
-                self._stats["connections_created"]
-            )
+            LOGGER.debug("Created new S3 connection (total created: %d)", self._stats["connections_created"])
 
             return client
 
@@ -117,10 +111,7 @@ class S3ConnectionPool:
                 await client.close()
 
             self._stats["connections_closed"] += 1
-            LOGGER.debug(
-                "Closed S3 connection (total closed: %d)",
-                self._stats["connections_closed"]
-            )
+            LOGGER.debug("Closed S3 connection (total closed: %d)", self._stats["connections_closed"])
 
         except Exception as e:
             LOGGER.warning("Error closing S3 connection: %s", e)
@@ -172,7 +163,8 @@ class S3ConnectionPool:
 
                         LOGGER.debug(
                             "Reused connection from pool (age: %.1fs, pool size: %d)",
-                            age, len(self._available_connections)
+                            age,
+                            len(self._available_connections),
                         )
                         break
                     else:
@@ -189,10 +181,7 @@ class S3ConnectionPool:
                         self._stats["pool_misses"] += 1
                     else:
                         # Pool is full, need to wait
-                        LOGGER.warning(
-                            "Connection pool full (%d connections), waiting...",
-                            self.max_connections
-                        )
+                        LOGGER.warning("Connection pool full (%d connections), waiting...", self.max_connections)
                         # In a real implementation, we'd wait for a connection
                         # For now, create a new one anyway
                         client = await self._create_connection()
@@ -214,10 +203,7 @@ class S3ConnectionPool:
                     # Check if connection is still healthy before returning to pool
                     if await self._check_connection_health(client):
                         self._available_connections.append((client, time.time()))
-                        LOGGER.debug(
-                            "Returned connection to pool (pool size: %d)",
-                            len(self._available_connections)
-                        )
+                        LOGGER.debug("Returned connection to pool (pool size: %d)", len(self._available_connections))
                     else:
                         # Connection unhealthy, close it
                         await self._close_connection(client)
@@ -233,10 +219,7 @@ class S3ConnectionPool:
 
             # Note: in-use connections should be closed by their users
             if self._in_use_connections:
-                LOGGER.warning(
-                    "Closing pool with %d connections still in use",
-                    len(self._in_use_connections)
-                )
+                LOGGER.warning("Closing pool with %d connections still in use", len(self._in_use_connections))
 
         LOGGER.info("Closed all connections in pool")
 
@@ -273,7 +256,7 @@ class S3ConnectionPool:
             stats["total_connections"],
             stats["max_connections"],
             stats["hit_rate"] * 100,
-            stats["avg_wait_time"]
+            stats["avg_wait_time"],
         )
 
 

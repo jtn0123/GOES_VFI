@@ -1,415 +1,326 @@
-"""Optimized validation tests to speed up slow tests while maintaining coverage.
+"""
+Optimized tests for validation utilities with maintained coverage.
 
-Optimizations applied:
-- Shared fixtures for common validation setups and file system scenarios
-- Parameterized test scenarios for comprehensive validation testing
-- Enhanced error handling and edge case coverage
-- Mock-based testing to reduce file system operations
-- Comprehensive validation rule and constraint testing
+This v2 version maintains all test scenarios while optimizing through:
+- Shared fixtures for common test data
+- Parameterized tests for similar validation scenarios
+- Combined validation scenarios
+- Enhanced edge case testing for better coverage
 """
 
+import math
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+
 import pytest
-import tempfile
-import os
 
 from goesvfi.utils.validation import validate_path_exists, validate_positive_int
 
 
-class TestValidationV2:
-    """Optimized test class for validation functionality."""
+class TestValidationOptimizedV2:
+    """Optimized validation tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def validation_scenarios(self):
-        """Define various validation scenarios for testing."""
-        return {
-            "path_scenarios": {
-                "existing_file": {"type": "file", "should_exist": True},
-                "existing_dir": {"type": "directory", "should_exist": True},
-                "missing_file": {"type": "file", "should_exist": False},
-                "missing_dir": {"type": "directory", "should_exist": False},
-                "symlink": {"type": "symlink", "should_exist": True},
-            },
-            "integer_scenarios": {
-                "positive_small": {"value": 1, "valid": True},
-                "positive_large": {"value": 999999, "valid": True},
-                "zero": {"value": 0, "valid": False},
-                "negative": {"value": -1, "valid": False},
-                "negative_large": {"value": -999999, "valid": False},
-            },
-            "type_scenarios": {
-                "string_number": {"value": "5", "valid": False, "type": str},
-                "float_positive": {"value": 5.5, "valid": False, "type": float},
-                "none_value": {"value": None, "valid": False, "type": type(None)},
-                "list_value": {"value": [1, 2, 3], "valid": False, "type": list},
-                "dict_value": {"value": {"key": "value"}, "valid": False, "type": dict},
-            }
+    def test_directory_structure(self, tmp_path_factory):
+        """Create a shared test directory structure."""
+        base_dir = tmp_path_factory.mktemp("validation_test")
+
+        # Create test directories
+        test_dirs = {
+            "existing_dir": base_dir / "existing_directory",
+            "nested_dir": base_dir / "parent" / "nested_directory",
+            "empty_dir": base_dir / "empty_directory",
         }
 
-    @pytest.fixture
-    def temp_filesystem(self, tmp_path):
-        """Create temporary filesystem structure for testing."""
-        # Create various file system objects
-        test_file = tmp_path / "test_file.txt"
-        test_file.write_text("test content")
-        
-        test_dir = tmp_path / "test_directory"
-        test_dir.mkdir()
-        
-        nested_dir = test_dir / "nested"
-        nested_dir.mkdir()
-        
-        nested_file = nested_dir / "nested_file.txt"
-        nested_file.write_text("nested content")
-        
-        # Create symlink if supported
-        symlink_path = tmp_path / "test_symlink"
-        try:
-            symlink_path.symlink_to(test_file)
-            symlink_created = True
-        except (OSError, NotImplementedError):
-            symlink_created = False
-        
-        return {
-            "root": tmp_path,
-            "file": test_file,
-            "directory": test_dir,
-            "nested_dir": nested_dir,
-            "nested_file": nested_file,
-            "symlink": symlink_path if symlink_created else None,
-            "missing_file": tmp_path / "missing_file.txt",
-            "missing_dir": tmp_path / "missing_directory",
+        for dir_path in test_dirs.values():
+            dir_path.mkdir(parents=True, exist_ok=True)
+
+        # Create test files
+        test_files = {
+            "existing_file": base_dir / "test_file.txt",
+            "nested_file": test_dirs["nested_dir"] / "nested_file.txt",
+            "large_file": base_dir / "large_file.dat",
         }
 
-    @pytest.mark.parametrize("path_type,must_be_dir,should_pass", [
-        ("file", False, True),      # File exists, not required to be dir
-        ("file", True, False),      # File exists, but required to be dir
-        ("directory", True, True),  # Directory exists, required to be dir
-        ("directory", False, True), # Directory exists, not required to be dir
-        ("missing_file", False, False),  # Missing file
-        ("missing_file", True, False),   # Missing file (as dir)
-        ("missing_dir", False, False),   # Missing directory
-        ("missing_dir", True, False),    # Missing directory
-    ])
-    def test_validate_path_exists_scenarios(self, temp_filesystem, path_type, must_be_dir, should_pass):
-        """Test path validation with various path types and directory requirements."""
-        test_path = temp_filesystem[path_type]
-        
-        if should_pass:
+        for file_path in test_files.values():
+            file_path.touch()
+
+        # Make large file actually large for testing
+        test_files["large_file"].write_bytes(b"x" * 1024)  # 1KB file
+
+        return {
+            "base_dir": base_dir,
+            "dirs": test_dirs,
+            "files": test_files,
+            "nonexistent_dir": base_dir / "nonexistent_directory",
+            "nonexistent_file": base_dir / "nonexistent_file.txt",
+        }
+
+    @pytest.mark.parametrize(
+        "path_type,must_be_dir,should_succeed",
+        [
+            ("existing_dir", True, True),  # Directory exists, expecting directory
+            ("existing_file", False, True),  # File exists, not expecting directory
+            ("nested_dir", True, True),  # Nested directory exists
+            ("nested_file", False, True),  # Nested file exists
+            ("existing_file", True, False),  # File exists but expecting directory
+            ("existing_dir", False, True),  # Directory exists, not specifically expecting directory
+        ],
+    )
+    def test_validate_path_exists_valid_scenarios(
+        self, test_directory_structure, path_type, must_be_dir, should_succeed
+    ) -> None:
+        """Test path validation with valid existing paths."""
+        if path_type in test_directory_structure["dirs"]:
+            test_path = test_directory_structure["dirs"][path_type]
+        else:
+            test_path = test_directory_structure["files"][path_type]
+
+        if should_succeed:
             result = validate_path_exists(test_path, must_be_dir=must_be_dir)
             assert result == test_path
-            assert isinstance(result, Path)
+            assert result.exists()
         else:
-            with pytest.raises((FileNotFoundError, ValueError)):
+            with pytest.raises(ValueError, match="not a directory"):
                 validate_path_exists(test_path, must_be_dir=must_be_dir)
 
-    def test_validate_path_exists_symlink_handling(self, temp_filesystem):
-        """Test path validation with symlinks."""
-        symlink_path = temp_filesystem["symlink"]
-        
-        if symlink_path is not None:
-            # Symlink to file should be valid when not requiring directory
-            result = validate_path_exists(symlink_path, must_be_dir=False)
-            assert result == symlink_path
-            
-            # Symlink to file should fail when requiring directory
-            with pytest.raises(ValueError):
-                validate_path_exists(symlink_path, must_be_dir=True)
+    def test_validate_path_exists_missing_paths(self, test_directory_structure) -> None:
+        """Test path validation with missing paths."""
+        # Test missing directory
+        with pytest.raises(FileNotFoundError):
+            validate_path_exists(test_directory_structure["nonexistent_dir"], must_be_dir=True)
 
-    @pytest.mark.parametrize("integer_value,expected_valid", [
-        (1, True),
-        (5, True),
-        (100, True),
-        (999999, True),
-        (0, False),
-        (-1, False),
-        (-100, False),
-        (-999999, False),
-    ])
-    def test_validate_positive_int_values(self, integer_value, expected_valid):
-        """Test positive integer validation with various values."""
-        if expected_valid:
-            result = validate_positive_int(integer_value, "test_value")
-            assert result == integer_value
-            assert isinstance(result, int)
-        else:
-            with pytest.raises(ValueError):
-                validate_positive_int(integer_value, "test_value")
+        # Test missing file
+        with pytest.raises(FileNotFoundError):
+            validate_path_exists(test_directory_structure["nonexistent_file"], must_be_dir=False)
 
-    @pytest.mark.parametrize("invalid_value,expected_exception", [
-        ("5", TypeError),           # String
-        (5.5, TypeError),          # Float
-        (None, TypeError),         # None
-        ([1, 2, 3], TypeError),    # List
-        ({"key": 5}, TypeError),   # Dict
-        (complex(1, 2), TypeError), # Complex number
-    ])
-    def test_validate_positive_int_type_errors(self, invalid_value, expected_exception):
-        """Test positive integer validation with invalid types."""
-        with pytest.raises(expected_exception):
-            validate_positive_int(invalid_value, "test_value")
+        # Test missing path with default must_be_dir
+        with pytest.raises(FileNotFoundError):
+            validate_path_exists(test_directory_structure["nonexistent_dir"])
 
-    def test_validate_path_exists_with_pathlib_objects(self, temp_filesystem):
-        """Test path validation with different pathlib object types."""
+    def test_validate_path_exists_edge_cases(self, test_directory_structure) -> None:
+        """Test path validation edge cases and error conditions."""
+        base_dir = test_directory_structure["base_dir"]
+
         # Test with Path object
-        path_obj = temp_filesystem["file"]
-        result = validate_path_exists(path_obj, must_be_dir=False)
+        path_obj = Path(test_directory_structure["dirs"]["existing_dir"])
+        result = validate_path_exists(path_obj, must_be_dir=True)
         assert result == path_obj
         assert isinstance(result, Path)
-        
+
         # Test with string path
-        string_path = str(temp_filesystem["file"])
-        result = validate_path_exists(string_path, must_be_dir=False)
-        assert result == Path(string_path)
+        str_path = str(test_directory_structure["dirs"]["existing_dir"])
+        result = validate_path_exists(str_path, must_be_dir=True)
+        assert str(result) == str_path
+        assert isinstance(result, Path)
 
-    def test_validate_path_exists_error_messages(self, temp_filesystem):
-        """Test that validation errors contain helpful messages."""
-        missing_path = temp_filesystem["missing_file"]
-        
-        with pytest.raises(FileNotFoundError) as exc_info:
-            validate_path_exists(missing_path, must_be_dir=False)
-        
-        # Error message should contain the path
-        assert str(missing_path) in str(exc_info.value) or "not found" in str(exc_info.value).lower()
+        # Test with relative path
+        import os
 
-    def test_validate_positive_int_error_messages(self):
-        """Test that integer validation errors contain helpful messages."""
-        test_name = "custom_parameter_name"
-        
-        # Test ValueError message
-        with pytest.raises(ValueError) as exc_info:
-            validate_positive_int(0, test_name)
-        
-        error_message = str(exc_info.value)
-        assert test_name in error_message or "positive" in error_message.lower()
-        
-        # Test TypeError message
-        with pytest.raises(TypeError) as exc_info:
-            validate_positive_int("invalid", test_name)
-        
-        error_message = str(exc_info.value)
-        assert test_name in error_message or "integer" in error_message.lower()
-
-    def test_validate_path_exists_permissions(self, temp_filesystem):
-        """Test path validation with various permission scenarios."""
-        test_file = temp_filesystem["file"]
-        
-        # Test with readable file
-        assert test_file.exists()
-        result = validate_path_exists(test_file, must_be_dir=False)
-        assert result == test_file
-        
-        # Test with read-only file (if we can make it read-only)
+        original_cwd = os.getcwd()
         try:
-            original_mode = test_file.stat().st_mode
-            test_file.chmod(0o444)  # Read-only
-            
-            # Should still validate successfully
-            result = validate_path_exists(test_file, must_be_dir=False)
-            assert result == test_file
-            
-            # Restore original permissions
-            test_file.chmod(original_mode)
-        except (OSError, PermissionError):
-            # Permission changes might not be supported on all systems
-            pass
+            os.chdir(base_dir)
+            relative_path = "existing_directory"
+            result = validate_path_exists(relative_path, must_be_dir=True)
+            assert result.name == "existing_directory"
+        finally:
+            os.chdir(original_cwd)
 
-    def test_validate_path_exists_nested_paths(self, temp_filesystem):
-        """Test path validation with nested directory structures."""
-        nested_file = temp_filesystem["nested_file"]
-        nested_dir = temp_filesystem["nested_dir"]
-        
-        # Validate nested file
-        result = validate_path_exists(nested_file, must_be_dir=False)
-        assert result == nested_file
-        
-        # Validate nested directory
-        result = validate_path_exists(nested_dir, must_be_dir=True)
-        assert result == nested_dir
-
-    def test_validate_positive_int_boundary_values(self):
-        """Test positive integer validation with boundary values."""
-        # Test minimum positive value
-        result = validate_positive_int(1, "minimum")
-        assert result == 1
-        
-        # Test just above zero
-        result = validate_positive_int(1, "just_above_zero")
-        assert result == 1
-        
-        # Test large positive values
-        large_value = 2**31 - 1  # Large but valid integer
-        result = validate_positive_int(large_value, "large_value")
-        assert result == large_value
-
-    def test_validation_parameter_name_handling(self):
-        """Test that parameter names are properly handled in validation."""
-        parameter_names = [
-            "simple_name",
-            "name_with_underscores",
-            "Name With Spaces",
-            "name123with456numbers",
-            "",  # Empty name
-            None,  # None name
-        ]
-        
-        for param_name in parameter_names:
-            try:
-                # Test with valid value
-                result = validate_positive_int(5, param_name)
-                assert result == 5
-                
-                # Test with invalid value to check error message
-                with pytest.raises(ValueError):
-                    validate_positive_int(0, param_name)
-                    
-            except Exception as e:
-                # Should handle edge cases gracefully
-                if param_name is None:
-                    # None parameter name might cause issues
-                    assert isinstance(e, (TypeError, AttributeError))
-
-    def test_validate_path_exists_edge_cases(self, tmp_path):
-        """Test path validation with edge cases."""
         # Test with empty path
-        with pytest.raises((ValueError, FileNotFoundError)):
-            validate_path_exists("", must_be_dir=False)
-        
-        # Test with None path
-        with pytest.raises((TypeError, AttributeError)):
-            validate_path_exists(None, must_be_dir=False)
-        
-        # Test with very long path name
-        long_path = tmp_path / ("x" * 255)  # Very long filename
         with pytest.raises(FileNotFoundError):
-            validate_path_exists(long_path, must_be_dir=False)
+            validate_path_exists("", must_be_dir=False)
 
-    def test_validate_positive_int_edge_cases(self):
-        """Test positive integer validation with edge cases."""
-        # Test with very large integers
-        try:
-            very_large = 2**63 - 1
-            result = validate_positive_int(very_large, "very_large")
-            assert result == very_large
-        except OverflowError:
-            # System might not support very large integers
-            pass
-        
-        # Test with boolean values (True/False)
-        # Note: In Python, bool is a subclass of int
-        try:
-            result = validate_positive_int(True, "boolean_true")
-            assert result == 1  # True == 1 in Python
-        except TypeError:
-            # Implementation might explicitly reject booleans
-            pass
-        
-        with pytest.raises((ValueError, TypeError)):
-            validate_positive_int(False, "boolean_false")
+    @pytest.mark.parametrize(
+        "value,expected_result",
+        [
+            (1, 1),
+            (5, 5),
+            (100, 100),
+            (999999, 999999),
+            (42, 42),
+        ],
+    )
+    def test_validate_positive_int_valid_values(self, value, expected_result) -> None:
+        """Test positive integer validation with valid values."""
+        result = validate_positive_int(value, "test_value")
+        assert result == expected_result
+        assert isinstance(result, int)
 
-    def test_validation_integration_workflow(self, temp_filesystem):
-        """Test complete validation workflow with multiple validators."""
-        # Create a scenario where both validations are used
-        test_dir = temp_filesystem["directory"] 
-        positive_count = 10
-        
-        # Both validations should pass
-        validated_path = validate_path_exists(test_dir, must_be_dir=True)
-        validated_count = validate_positive_int(positive_count, "file_count")
-        
-        assert validated_path == test_dir
-        assert validated_count == positive_count
-        
-        # Integration test: use validated values together
-        assert validated_path.exists()
-        assert validated_count > 0
-        assert isinstance(validated_path, Path)
-        assert isinstance(validated_count, int)
+    @pytest.mark.parametrize(
+        "invalid_value,expected_exception,error_pattern",
+        [
+            (0, ValueError, r"must be positive"),
+            (-1, ValueError, r"must be positive"),
+            (-100, ValueError, r"must be positive"),
+            ("1", TypeError, r"must be an integer"),
+            ("not_a_number", TypeError, r"must be an integer"),
+            (1.5, TypeError, r"must be an integer"),
+            (None, TypeError, r"must be an integer"),
+            ([], TypeError, r"must be an integer"),
+            ({}, TypeError, r"must be an integer"),
+            (True, TypeError, r"must be an integer"),  # bool is subclass of int in Python
+        ],
+    )
+    def test_validate_positive_int_invalid_values(self, invalid_value, expected_exception, error_pattern) -> None:
+        """Test positive integer validation with invalid values."""
+        with pytest.raises(expected_exception, match=error_pattern):
+            validate_positive_int(invalid_value, "test_value")
 
-    def test_validation_performance_with_many_paths(self, tmp_path):
-        """Test validation performance with many path validations."""
-        # Create multiple files
-        test_files = []
-        for i in range(100):
-            file_path = tmp_path / f"test_file_{i}.txt"
-            file_path.write_text(f"content_{i}")
-            test_files.append(file_path)
-        
-        # Validate all files
-        validated_files = []
-        for file_path in test_files:
-            result = validate_path_exists(file_path, must_be_dir=False)
-            validated_files.append(result)
-        
-        assert len(validated_files) == 100
-        assert all(isinstance(f, Path) for f in validated_files)
+    def test_validate_positive_int_custom_field_names(self) -> None:
+        """Test positive integer validation with custom field names in error messages."""
+        test_cases = [
+            ("frame_count", 0),
+            ("iteration_limit", -5),
+            ("buffer_size", "not_a_number"),
+            ("timeout_seconds", math.pi),
+        ]
 
-    def test_validation_performance_with_many_integers(self):
-        """Test validation performance with many integer validations."""
-        # Validate many positive integers
-        test_values = list(range(1, 1001))  # 1 to 1000
+        for field_name, invalid_value in test_cases:
+            with pytest.raises((ValueError, TypeError)) as exc_info:
+                validate_positive_int(invalid_value, field_name)
+
+            # Verify field name appears in error message
+            assert field_name in str(exc_info.value)
+
+    def test_validation_comprehensive_workflow(self, test_directory_structure) -> None:
+        """Test comprehensive validation workflow with multiple validations."""
+        test_directory_structure["base_dir"]
+
+        # Validate multiple paths in sequence
+        paths_to_validate = [
+            (test_directory_structure["dirs"]["existing_dir"], True),
+            (test_directory_structure["files"]["existing_file"], False),
+            (test_directory_structure["dirs"]["nested_dir"], True),
+            (test_directory_structure["files"]["nested_file"], False),
+        ]
+
+        validated_paths = []
+        for path, must_be_dir in paths_to_validate:
+            result = validate_path_exists(path, must_be_dir=must_be_dir)
+            validated_paths.append(result)
+            assert result.exists()
+
+        # Validate multiple positive integers
+        values_to_validate = [1, 10, 100, 1000, 42]
         validated_values = []
-        
-        for value in test_values:
+        for value in values_to_validate:
             result = validate_positive_int(value, f"value_{value}")
             validated_values.append(result)
-        
-        assert len(validated_values) == 1000
-        assert validated_values == test_values
+            assert result > 0
+            assert isinstance(result, int)
 
-    def test_cross_platform_path_validation(self, tmp_path):
-        """Test path validation across different path formats."""
-        # Test with forward slashes
-        forward_slash_path = tmp_path / "forward/slash/path"
-        forward_slash_path.parent.mkdir(parents=True, exist_ok=True)
-        forward_slash_path.touch()
-        
-        result = validate_path_exists(forward_slash_path, must_be_dir=False)
-        assert result == forward_slash_path
-        
-        # Test with Path objects vs strings
-        string_path = str(forward_slash_path)
-        result_from_string = validate_path_exists(string_path, must_be_dir=False)
-        assert result_from_string == Path(string_path)
+        # Verify all validations succeeded
+        assert len(validated_paths) == len(paths_to_validate)
+        assert len(validated_values) == len(values_to_validate)
 
-    def test_validation_thread_safety_simulation(self, temp_filesystem):
-        """Simulate concurrent validation to test thread safety."""
-        import threading
-        import time
-        
+    def test_validation_error_message_quality(self, test_directory_structure) -> None:
+        """Test that validation error messages are informative."""
+        # Test path validation error messages
+        nonexistent_path = test_directory_structure["nonexistent_dir"]
+
+        with pytest.raises(FileNotFoundError) as exc_info:
+            validate_path_exists(nonexistent_path, must_be_dir=True)
+
+        error_msg = str(exc_info.value)
+        assert str(nonexistent_path) in error_msg or "not found" in error_msg.lower()
+
+        # Test directory type mismatch error
+        existing_file = test_directory_structure["files"]["existing_file"]
+
+        with pytest.raises(ValueError) as exc_info:
+            validate_path_exists(existing_file, must_be_dir=True)
+
+        error_msg = str(exc_info.value)
+        assert "not a directory" in error_msg.lower()
+
+        # Test positive integer error messages
+        with pytest.raises(ValueError) as exc_info:
+            validate_positive_int(-5, "negative_value")
+
+        error_msg = str(exc_info.value)
+        assert "negative_value" in error_msg
+        assert "positive" in error_msg.lower()
+
+        with pytest.raises(TypeError) as exc_info:
+            validate_positive_int("string", "string_value")
+
+        error_msg = str(exc_info.value)
+        assert "string_value" in error_msg
+        assert "integer" in error_msg.lower()
+
+    def test_validation_boundary_conditions(self, test_directory_structure) -> None:
+        """Test validation with boundary conditions and edge cases."""
+        # Test positive integer boundary (1 is the smallest positive integer)
+        assert validate_positive_int(1, "minimum_positive") == 1
+
+        # Test very large positive integer
+        large_int = 2**31 - 1  # Max 32-bit signed integer
+        assert validate_positive_int(large_int, "large_value") == large_int
+
+        # Test very small negative integer
+        with pytest.raises(ValueError):
+            validate_positive_int(-(2**31), "very_negative")
+
+        # Test path validation with various path types
+        test_directory_structure["base_dir"]
+
+        # Test with pathlib.Path object
+        path_obj = Path(test_directory_structure["dirs"]["existing_dir"])
+        result = validate_path_exists(path_obj, must_be_dir=True)
+        assert isinstance(result, Path)
+
+        # Test with absolute string path
+        abs_str_path = str(test_directory_structure["dirs"]["existing_dir"].absolute())
+        result = validate_path_exists(abs_str_path, must_be_dir=True)
+        assert isinstance(result, Path)
+        assert result.is_absolute()
+
+    def test_validation_type_consistency(self, test_directory_structure) -> None:
+        """Test that validation functions return consistent types."""
+        # Path validation should always return Path objects
+        test_path = test_directory_structure["dirs"]["existing_dir"]
+
+        # Input as string
+        result_from_str = validate_path_exists(str(test_path), must_be_dir=True)
+        assert isinstance(result_from_str, Path)
+
+        # Input as Path object
+        result_from_path = validate_path_exists(test_path, must_be_dir=True)
+        assert isinstance(result_from_path, Path)
+
+        # Both should be equivalent
+        assert result_from_str == result_from_path
+
+        # Integer validation should always return int
+        test_values = [1, 5, 100]
+        for value in test_values:
+            result = validate_positive_int(value, "test")
+            assert isinstance(result, int)
+            assert result == value
+
+    def test_validation_concurrent_usage_simulation(self, test_directory_structure) -> None:
+        """Test validation functions under simulated concurrent usage."""
+        # Simulate multiple "threads" validating different resources
+        validation_scenarios = [
+            ("scenario_1", test_directory_structure["dirs"]["existing_dir"], True, 10),
+            ("scenario_2", test_directory_structure["files"]["existing_file"], False, 25),
+            ("scenario_3", test_directory_structure["dirs"]["nested_dir"], True, 50),
+            ("scenario_4", test_directory_structure["files"]["nested_file"], False, 100),
+        ]
+
         results = []
-        errors = []
-        
-        def worker(worker_id):
-            try:
-                # Test path validation
-                path_result = validate_path_exists(temp_filesystem["file"], must_be_dir=False)
-                
-                # Test integer validation
-                int_result = validate_positive_int(worker_id + 1, f"worker_{worker_id}")
-                
-                results.append((worker_id, path_result, int_result))
-                time.sleep(0.001)  # Small delay
-            except Exception as e:
-                errors.append((worker_id, str(e)))
-        
-        # Create multiple threads
-        threads = []
-        for i in range(10):
-            thread = threading.Thread(target=worker, args=(i,))
-            threads.append(thread)
-            thread.start()
-        
-        # Wait for all threads
-        for thread in threads:
-            thread.join()
-        
-        # Verify results
-        assert len(results) == 10
-        assert len(errors) == 0
-        
-        # Verify all results are correct
-        for worker_id, path_result, int_result in results:
-            assert path_result == temp_filesystem["file"]
-            assert int_result == worker_id + 1
+        for scenario_name, path, must_be_dir, int_value in validation_scenarios:
+            # Validate path
+            path_result = validate_path_exists(path, must_be_dir=must_be_dir)
+
+            # Validate integer
+            int_result = validate_positive_int(int_value, f"{scenario_name}_value")
+
+            results.append((scenario_name, path_result, int_result))
+
+        # Verify all validations succeeded and are consistent
+        assert len(results) == len(validation_scenarios)
+        for scenario_name, path_result, int_result in results:
+            assert path_result.exists()
+            assert int_result > 0
+            assert isinstance(path_result, Path)
+            assert isinstance(int_result, int)

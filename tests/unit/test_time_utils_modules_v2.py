@@ -108,11 +108,14 @@ class SharedTimeUtilsTestCase(unittest.TestCase):
 class TestPatternsV2(SharedTimeUtilsTestCase):
     """Test the patterns module functionality - optimized v2."""
 
-    @pytest.mark.parametrize("satellite,expected_key", [
-        (SatellitePattern.GOES_16, SatellitePattern.GOES_16),
-        (SatellitePattern.GOES_18, SatellitePattern.GOES_18),
-        (SatellitePattern.GENERIC, SatellitePattern.GENERIC),
-    ])
+    @pytest.mark.parametrize(
+        "satellite,expected_key",
+        [
+            (SatellitePattern.GOES_16, SatellitePattern.GOES_16),
+            (SatellitePattern.GOES_18, SatellitePattern.GOES_18),
+            (SatellitePattern.GENERIC, SatellitePattern.GENERIC),
+        ],
+    )
     def test_get_satellite_info_comprehensive(self, satellite, expected_key) -> None:
         """Test getting satellite information for all satellites."""
         info = get_satellite_info(satellite)
@@ -134,10 +137,13 @@ class TestPatternsV2(SharedTimeUtilsTestCase):
 class TestTimestampExtractorV2(SharedTimeUtilsTestCase):
     """Test the TimestampExtractor class - optimized v2."""
 
-    @pytest.mark.parametrize("filename_key,satellite,expected_datetime", [
-        ("simple_goes16", SatellitePattern.GOES_16, datetime(2023, 6, 15, 12, 30, 0)),
-        ("legacy_goes16", SatellitePattern.GOES_16, datetime(2023, 6, 15, 12, 30, 0)),
-    ])
+    @pytest.mark.parametrize(
+        "filename_key,satellite,expected_datetime",
+        [
+            ("simple_goes16", SatellitePattern.GOES_16, datetime(2023, 6, 15, 12, 30, 0)),
+            ("legacy_goes16", SatellitePattern.GOES_16, datetime(2023, 6, 15, 12, 30, 0)),
+        ],
+    )
     def test_extract_timestamp_patterns(self, filename_key, satellite, expected_datetime) -> None:
         """Test extracting timestamps from various filename patterns."""
         filename = self.test_filenames[filename_key]
@@ -157,12 +163,15 @@ class TestTimestampExtractorV2(SharedTimeUtilsTestCase):
         assert ts == datetime(2023, 6, 15, 12, 30)
         assert sat == SatellitePattern.GOES_16
 
-    @pytest.mark.parametrize("dirname,expected_result", [
-        ("2024-12-21_18-00-22", datetime(2024, 12, 21, 18, 0, 22)),
-        ("20241221_180022", datetime(2024, 12, 21, 18, 0, 22)),
-        ("GOES18/FD/13/2023/166", datetime(2023, 6, 15, 0, 0, 0)),
-        ("invalid_directory", None),
-    ])
+    @pytest.mark.parametrize(
+        "dirname,expected_result",
+        [
+            ("2024-12-21_18-00-22", datetime(2024, 12, 21, 18, 0, 22)),
+            ("20241221_180022", datetime(2024, 12, 21, 18, 0, 22)),
+            ("GOES18/FD/13/2023/166", datetime(2023, 6, 15, 0, 0, 0)),
+            ("invalid_directory", None),
+        ],
+    )
     def test_extract_timestamp_from_directory_name(self, dirname, expected_result) -> None:
         """Test extracting timestamp from directory names."""
         result = TimestampExtractor.extract_timestamp_from_directory_name(dirname)
@@ -188,11 +197,14 @@ class TestTimestampFormatterV2(SharedTimeUtilsTestCase):
         formatted = TimestampFormatter.format_timestamp(dt)
         assert formatted == "20230615T123000"
 
-    @pytest.mark.parametrize("satellite,base_name,expected_pattern", [
-        (SatellitePattern.GOES_16, None, "image_G16_{timestamp}Z.png"),
-        (SatellitePattern.GOES_18, "test", "test_G18_{timestamp}Z.png"),
-        (SatellitePattern.GENERIC, None, "image_{timestamp}Z.png"),
-    ])
+    @pytest.mark.parametrize(
+        "satellite,base_name,expected_pattern",
+        [
+            (SatellitePattern.GOES_16, None, "image_G16_{timestamp}Z.png"),
+            (SatellitePattern.GOES_18, "test", "test_G18_{timestamp}Z.png"),
+            (SatellitePattern.GENERIC, None, "image_{timestamp}Z.png"),
+        ],
+    )
     def test_get_filename_pattern(self, satellite, base_name, expected_pattern) -> None:
         """Test getting filename patterns for various satellites."""
         if base_name:
@@ -201,11 +213,14 @@ class TestTimestampFormatterV2(SharedTimeUtilsTestCase):
             pattern = TimestampFormatter.get_filename_pattern(satellite)
         assert pattern == expected_pattern
 
-    @pytest.mark.parametrize("satellite,expected_filename", [
-        (SatellitePattern.GOES_16, "image_G16_20230615T123000Z.png"),
-        (SatellitePattern.GOES_18, "image_G18_20230615T123000Z.png"),
-        (SatellitePattern.GENERIC, "image_20230615T123000Z.png"),
-    ])
+    @pytest.mark.parametrize(
+        "satellite,expected_filename",
+        [
+            (SatellitePattern.GOES_16, "image_G16_20230615T123000Z.png"),
+            (SatellitePattern.GOES_18, "image_G18_20230615T123000Z.png"),
+            (SatellitePattern.GENERIC, "image_20230615T123000Z.png"),
+        ],
+    )
     def test_generate_expected_filename(self, satellite, expected_filename) -> None:
         """Test generating expected filenames for various satellites."""
         dt = self.test_dates["standard"]
@@ -241,10 +256,13 @@ class TestTimestampGeneratorV2(SharedTimeUtilsTestCase):
         ]
         assert sequence == expected
 
-    @pytest.mark.parametrize("sequence_key,expected_interval", [
-        ("regular_10min", 10),
-        ("irregular_mixed", 5),  # Most common difference
-    ])
+    @pytest.mark.parametrize(
+        "sequence_key,expected_interval",
+        [
+            ("regular_10min", 10),
+            ("irregular_mixed", 5),  # Most common difference
+        ],
+    )
     def test_detect_interval(self, sequence_key, expected_interval) -> None:
         """Test detecting intervals for various timestamp sequences."""
         timestamps = self.test_sequences[sequence_key]
@@ -295,10 +313,13 @@ class TestTimestampGeneratorV2(SharedTimeUtilsTestCase):
 class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
     """Test the S3KeyGenerator class - optimized v2."""
 
-    @pytest.mark.parametrize("satellite,resolution,expected_parts", [
-        (SatellitePattern.GOES_16, None, ["cdn.star.nesdis.noaa.gov/GOES16", "2023166"]),
-        (SatellitePattern.GOES_18, "1808x1808", ["cdn.star.nesdis.noaa.gov/GOES18", "1808x1808"]),
-    ])
+    @pytest.mark.parametrize(
+        "satellite,resolution,expected_parts",
+        [
+            (SatellitePattern.GOES_16, None, ["cdn.star.nesdis.noaa.gov/GOES16", "2023166"]),
+            (SatellitePattern.GOES_18, "1808x1808", ["cdn.star.nesdis.noaa.gov/GOES18", "1808x1808"]),
+        ],
+    )
     def test_to_cdn_url(self, satellite, resolution, expected_parts) -> None:
         """Test generating CDN URLs with various parameters."""
         ts = self.test_dates["standard"]
@@ -311,10 +332,13 @@ class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
         for part in expected_parts:
             assert part in url
 
-    @pytest.mark.parametrize("product_type,expected_parts", [
-        ("RadC", ["ABI-L1b-RadC/2023/166/12/", "M6C13_G16"]),
-        ("RadF", ["ABI-L1b-RadF/2023/166/12/", "M6C13_G16"]),
-    ])
+    @pytest.mark.parametrize(
+        "product_type,expected_parts",
+        [
+            ("RadC", ["ABI-L1b-RadC/2023/166/12/", "M6C13_G16"]),
+            ("RadF", ["ABI-L1b-RadF/2023/166/12/", "M6C13_G16"]),
+        ],
+    )
     def test_to_s3_key(self, product_type, expected_parts) -> None:
         """Test generating S3 keys for different product types."""
         ts = self.test_dates["standard"].replace(minute=1)  # Ensure minute=1 for RadC
@@ -324,10 +348,13 @@ class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
         for part in expected_parts:
             assert part in key
 
-    @pytest.mark.parametrize("satellite,expected_bucket", [
-        (SatellitePattern.GOES_16, "noaa-goes16"),
-        (SatellitePattern.GOES_18, "noaa-goes18"),
-    ])
+    @pytest.mark.parametrize(
+        "satellite,expected_bucket",
+        [
+            (SatellitePattern.GOES_16, "noaa-goes16"),
+            (SatellitePattern.GOES_18, "noaa-goes18"),
+        ],
+    )
     def test_get_s3_bucket(self, satellite, expected_bucket) -> None:
         """Test getting S3 bucket names."""
         bucket = S3KeyGenerator.get_s3_bucket(satellite)
@@ -354,10 +381,13 @@ class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
         expected = Path("2023/06/15/goes16_20230615_123000_band13.png")
         assert path == expected
 
-    @pytest.mark.parametrize("product_type,expected_count", [
-        ("RadF", 2),  # 10-minute intervals: before and after
-        ("RadC", 2),  # 5-minute intervals: before and after
-    ])
+    @pytest.mark.parametrize(
+        "product_type,expected_count",
+        [
+            ("RadF", 2),  # 10-minute intervals: before and after
+            ("RadC", 2),  # 5-minute intervals: before and after
+        ],
+    )
     def test_find_nearest_goes_intervals(self, product_type, expected_count) -> None:
         """Test finding nearest GOES intervals."""
         ts = self.test_dates["standard"].replace(minute=5)  # 12:05
@@ -392,12 +422,15 @@ class TestFilterS3KeysV2(SharedTimeUtilsTestCase):
             "OR_ABI-L1b-RadF-M6C15_G16_s20230101200000_e20230101205959_c20230101210030.nc",
         ]
 
-    @pytest.mark.parametrize("band,expected_count,expected_content", [
-        (13, 1, "C13"),
-        (1, 1, "C01"),
-        (15, 1, "C15"),
-        (99, 0, None),  # Invalid band
-    ])
+    @pytest.mark.parametrize(
+        "band,expected_count,expected_content",
+        [
+            (13, 1, "C13"),
+            (1, 1, "C01"),
+            (15, 1, "C15"),
+            (99, 0, None),  # Invalid band
+        ],
+    )
     def test_filter_s3_keys_by_band(self, band, expected_count, expected_content) -> None:
         """Test filtering S3 keys by band number."""
         filtered = filter_s3_keys_by_band(self.test_keys, band)
@@ -496,11 +529,14 @@ class TestTimeIndexV2(SharedTimeUtilsTestCase):
         assert TimeIndex.STANDARD_INTERVALS["RadF"] == RADF_MINUTES
         assert TimeIndex.STANDARD_INTERVALS["RadC"] == RADC_MINUTES
 
-    @pytest.mark.parametrize("method_name,expected_type", [
-        ("to_cdn_url", str),
-        ("to_s3_key", str),
-        ("get_s3_bucket", str),
-    ])
+    @pytest.mark.parametrize(
+        "method_name,expected_type",
+        [
+            ("to_cdn_url", str),
+            ("to_s3_key", str),
+            ("get_s3_bucket", str),
+        ],
+    )
     def test_delegated_methods(self, method_name, expected_type) -> None:
         """Test that TimeIndex properly delegates to other classes."""
         ts = self.test_dates["standard"]

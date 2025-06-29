@@ -249,10 +249,13 @@ class TestS3RetryStrategy(unittest.IsolatedAsyncioTestCase):
             })
 
         # Execute the download method, expect a ConnectionError
-        with patch(
-            "goesvfi.integrity_check.remote.s3_store.update_download_stats",
-            side_effect=mock_update_stats,
-        ), self.assertRaises((RemoteConnectionError, ConnectionError)):
+        with (
+            patch(
+                "goesvfi.integrity_check.remote.s3_store.update_download_stats",
+                side_effect=mock_update_stats,
+            ),
+            self.assertRaises((RemoteConnectionError, ConnectionError)),
+        ):
             await self.store.download_file(self.test_timestamp, self.test_satellite, self.test_dest_path)
 
         # Verify update_download_stats was called with success=False

@@ -198,8 +198,13 @@ class FileBasedManager(BaseManager):
     Provides common file handling functionality.
     """
 
-    def __init__(self, name: str, base_path: Path | str | None = None,
-                 settings: QSettings | None = None, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        base_path: Path | str | None = None,
+        settings: QSettings | None = None,
+        parent: QObject | None = None,
+    ) -> None:
         """Initialize the file-based manager.
 
         Args:
@@ -272,8 +277,13 @@ class ConfigurableManager(BaseManager):
     Provides configuration management functionality.
     """
 
-    def __init__(self, name: str, default_config: dict[str, Any] | None = None,
-                 settings: QSettings | None = None, parent: QObject | None = None) -> None:
+    def __init__(
+        self,
+        name: str,
+        default_config: dict[str, Any] | None = None,
+        settings: QSettings | None = None,
+        parent: QObject | None = None,
+    ) -> None:
         """Initialize the configurable manager.
 
         Args:

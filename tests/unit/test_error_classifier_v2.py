@@ -26,8 +26,10 @@ class TestErrorClassifierV2(unittest.TestCase):
         # Create custom exceptions for testing
         self.custom_exceptions = []
         for i in range(5):
+
             class CustomTestException(Exception):
                 pass
+
             CustomTestException.__name__ = f"CustomException{i}"
             self.custom_exceptions.append(CustomTestException)
 
@@ -76,12 +78,10 @@ class TestErrorClassifierV2(unittest.TestCase):
             (TypeError("Wrong type"), ErrorCategory.VALIDATION),
             (IsADirectoryError("Expected file"), ErrorCategory.VALIDATION),
             (NotADirectoryError("Expected directory"), ErrorCategory.VALIDATION),
-
             # Edge cases
             (ValueError(), ErrorCategory.VALIDATION),  # No message
             (TypeError(None), ErrorCategory.VALIDATION),  # None message
             (ValueError({"complex": "object"}), ErrorCategory.VALIDATION),  # Complex message
-
             # Subclasses
             (type("CustomValueError", (ValueError,), {})("Custom"), ErrorCategory.VALIDATION),
             (type("CustomTypeError", (TypeError,), {})("Custom"), ErrorCategory.VALIDATION),
@@ -100,10 +100,8 @@ class TestErrorClassifierV2(unittest.TestCase):
             (OSError(errno.ENOSPC, "No space left on device"), ErrorCategory.SYSTEM),
             (OSError(errno.ENOMEM, "Out of memory"), ErrorCategory.SYSTEM),
             (OSError(errno.EIO, "I/O error"), ErrorCategory.SYSTEM),
-
             # System errors without errno (will be classified as NETWORK due to socket.error)
             (OSError("Generic system error"), ErrorCategory.NETWORK),
-
             # System errors with zero errno
             (OSError(0, "Zero errno error"), ErrorCategory.NETWORK),
         ]
@@ -128,10 +126,8 @@ class TestErrorClassifierV2(unittest.TestCase):
             (ConnectionResetError("Connection reset by peer"), ErrorCategory.NETWORK),
             (ConnectionAbortedError("Connection aborted"), ErrorCategory.NETWORK),
             (BrokenPipeError("Broken pipe"), ErrorCategory.NETWORK),
-
             # OSError (treated as network due to socket.error inheritance)
             (OSError("Socket error"), ErrorCategory.NETWORK),
-
             # Subclasses
             (type("CustomConnectionError", (ConnectionError,), {})("Custom"), ErrorCategory.NETWORK),
         ]
@@ -147,12 +143,10 @@ class TestErrorClassifierV2(unittest.TestCase):
             # Standard configuration errors
             (KeyError("Missing key"), ErrorCategory.CONFIGURATION),
             (AttributeError("Missing attribute"), ErrorCategory.CONFIGURATION),
-
             # Edge cases
             (KeyError(), ErrorCategory.CONFIGURATION),  # No key specified
             (AttributeError(), ErrorCategory.CONFIGURATION),  # No attribute specified
             (KeyError(""), ErrorCategory.CONFIGURATION),  # Empty key
-
             # Complex keys
             (KeyError(("tuple", "key")), ErrorCategory.CONFIGURATION),
             (KeyError({"dict": "key"}), ErrorCategory.CONFIGURATION),
@@ -168,26 +162,21 @@ class TestErrorClassifierV2(unittest.TestCase):
         errno_scenarios = [
             # File not found errors
             (errno.ENOENT, "No such file or directory", ErrorCategory.FILE_NOT_FOUND),
-
             # Permission errors
             (errno.EACCES, "Permission denied", ErrorCategory.PERMISSION),
             (errno.EPERM, "Operation not permitted", ErrorCategory.PERMISSION),
-
             # Validation errors
             (errno.EEXIST, "File exists", ErrorCategory.VALIDATION),
             (errno.ENOTDIR, "Not a directory", ErrorCategory.VALIDATION),
             (errno.EISDIR, "Is a directory", ErrorCategory.VALIDATION),
             (errno.ENOTEMPTY, "Directory not empty", ErrorCategory.VALIDATION),
-
             # System errors
             (errno.ENOSPC, "No space left on device", ErrorCategory.SYSTEM),
             (errno.ENOMEM, "Out of memory", ErrorCategory.SYSTEM),
             (errno.EIO, "I/O error", ErrorCategory.SYSTEM),
-
             # Network errors (some errno codes can indicate network issues)
             (errno.ECONNREFUSED, "Connection refused", ErrorCategory.NETWORK),
             (errno.ETIMEDOUT, "Connection timed out", ErrorCategory.NETWORK),
-
             # Unknown errno
             (999999, "Unknown error", ErrorCategory.SYSTEM),  # Non-standard errno
         ]
@@ -227,8 +216,10 @@ class TestErrorClassifierV2(unittest.TestCase):
         unknown_scenarios = []
 
         for i in range(5):
+
             class UnknownException(Exception):
                 pass
+
             UnknownException.__name__ = f"UnknownException{i}"
             unknown_scenarios.append(UnknownException(f"Unknown error {i}"))
 
@@ -272,6 +263,7 @@ class TestErrorClassifierV2(unittest.TestCase):
 
     def test_add_custom_classifier_function_comprehensive(self) -> None:
         """Test comprehensive custom classifier function functionality."""
+
         # Test various custom classifiers
         def network_classifier(exception):
             if "network" in str(exception).lower():
@@ -324,6 +316,7 @@ class TestErrorClassifierV2(unittest.TestCase):
 
     def test_custom_classifier_priority_comprehensive(self) -> None:
         """Test comprehensive custom classifier priority scenarios."""
+
         # Add multiple classifiers with overlapping logic
         def high_priority_classifier(exception):
             if isinstance(exception, ValueError) and "priority" in str(exception):
@@ -360,6 +353,7 @@ class TestErrorClassifierV2(unittest.TestCase):
 
     def test_inheritance_based_classification_comprehensive(self) -> None:
         """Test comprehensive inheritance-based classification."""
+
         # Create inheritance hierarchies
         class CustomConnectionError(ConnectionError):
             pass
@@ -438,11 +432,13 @@ class TestErrorClassifierV2(unittest.TestCase):
         classifier_count = 200
 
         for i in range(classifier_count):
+
             def make_classifier(index=i):
                 def classifier(exception):
                     if f"pattern_{index}" in str(exception):
                         return ErrorCategory.PROCESSING
                     return None
+
                 return classifier
 
             self.classifier.add_custom_classifier(make_classifier())
@@ -640,6 +636,7 @@ class TestErrorClassifierV2(unittest.TestCase):
                         if f"pattern{op_id}" in str(exc):
                             return ErrorCategory.USER_INPUT
                         return None
+
                     shared_classifier.add_custom_classifier(custom)
                     results.append(("classifier", op_id))
                 else:
@@ -711,6 +708,7 @@ def test_classify_network_errors_pytest(classifier_pytest) -> None:
 
 def test_add_custom_classifier_pytest(classifier_pytest) -> None:
     """Test custom classifier using pytest style."""
+
     def custom_classifier(exception):
         if "network" in str(exception).lower():
             return ErrorCategory.NETWORK
@@ -738,10 +736,12 @@ def test_performance_pytest(classifier_pytest) -> None:
     """Test classification performance using pytest style."""
     # Add many classifiers
     for i in range(100):
+
         def non_matching_classifier(exception, index=i):
             if f"pattern_{index}" in str(exception):
                 return ErrorCategory.PROCESSING
             return None
+
         classifier_pytest.add_custom_classifier(non_matching_classifier)
 
     # Test classification speed

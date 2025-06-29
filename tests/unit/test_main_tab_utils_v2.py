@@ -36,6 +36,7 @@ class TestMainTabUtilsV2(unittest.TestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -185,9 +186,7 @@ class TestMainTabUtilsV2(unittest.TestCase):
 
         for scenario in path_scenarios:
             with self.subTest(scenario=scenario):
-                result = self.main_tab._generate_timestamped_output_path(
-                    scenario["base_dir"], scenario["base_name"]
-                )
+                result = self.main_tab._generate_timestamped_output_path(scenario["base_dir"], scenario["base_name"])
                 assert result == scenario["expected"]
 
     @patch("datetime.datetime")
@@ -396,8 +395,7 @@ class TestMainTabUtilsV2(unittest.TestCase):
 
                 # Should log errors for corrupt images
                 error_calls = [
-                    call for call in mock_logger.error.call_args_list
-                    if "Error analyzing image" in str(call)
+                    call for call in mock_logger.error.call_args_list if "Error analyzing image" in str(call)
                 ]
                 assert len(error_calls) >= 2  # At least 2 corrupt images
 
@@ -644,14 +642,16 @@ class TestMainTabUtilsV2(unittest.TestCase):
                     if scenario["should_warn"]:
                         # Should log warning about crop exceeding bounds
                         warning_calls = [
-                            call for call in mock_logger.warning.call_args_list
+                            call
+                            for call in mock_logger.warning.call_args_list
                             if "exceeds image dimensions" in str(call)
                         ]
                         assert len(warning_calls) > 0
                     else:
                         # Should log debug info about valid crop
                         debug_calls = [
-                            call for call in mock_logger.debug.call_args_list
+                            call
+                            for call in mock_logger.debug.call_args_list
                             if "Crop rectangle:" in str(call) or "Crop within bounds:" in str(call)
                         ]
                         assert len(debug_calls) > 0
@@ -765,7 +765,9 @@ class TestMainTabUtilsV2(unittest.TestCase):
                     mock_path = scenario["in_dir"]
                 else:
                     mock_path = MagicMock(spec=Path)
-                    mock_path.is_dir.return_value = scenario["in_dir"] is not None and scenario["in_dir"] != Path("/nonexistent")
+                    mock_path.is_dir.return_value = scenario["in_dir"] is not None and scenario["in_dir"] != Path(
+                        "/nonexistent"
+                    )
 
                 self.main_tab.main_window_ref.in_dir = mock_path if scenario["in_dir"] else None
                 self.main_tab.out_file_path = scenario["out_file"]
@@ -906,7 +908,9 @@ class TestMainTabUtilsV2(unittest.TestCase):
         self.main_tab.encoder_combo.currentText.return_value = "RIFE" if operation_id % 2 == 0 else "FFmpeg"
 
         self.main_tab.rife_model_combo = Mock()
-        self.main_tab.rife_model_combo.currentData.return_value = f"model_{operation_id}" if operation_id % 3 != 0 else None
+        self.main_tab.rife_model_combo.currentData.return_value = (
+            f"model_{operation_id}" if operation_id % 3 != 0 else None
+        )
 
         self.main_tab.is_processing = operation_id % 5 == 0  # Some are processing
 

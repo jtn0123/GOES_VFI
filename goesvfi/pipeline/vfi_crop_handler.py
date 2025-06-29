@@ -55,27 +55,18 @@ class VFICropHandler:
             crop_for_pil = (x, y, x + w, y + h)
 
             LOGGER.info(
-                "Converted crop rectangle (x,y,w,h): %s -> PIL format (l,u,r,b): %s",
-                crop_rect_xywh,
-                crop_for_pil
+                "Converted crop rectangle (x,y,w,h): %s -> PIL format (l,u,r,b): %s", crop_rect_xywh, crop_for_pil
             )
 
             return crop_for_pil
 
         except (TypeError, ValueError):
-            LOGGER.exception(
-                "Invalid crop rectangle format provided: %s. Cropping will be disabled.",
-                crop_rect_xywh
-            )
+            LOGGER.exception("Invalid crop rectangle format provided: %s. Cropping will be disabled.", crop_rect_xywh)
             # Return None to disable cropping rather than raising
             return None
 
     def validate_crop_against_image(
-        self,
-        crop_rect_pil: tuple[int, int, int, int],
-        image_width: int,
-        image_height: int,
-        image_name: str = "image"
+        self, crop_rect_pil: tuple[int, int, int, int], image_width: int, image_height: int, image_name: str = "image"
     ) -> None:
         """Validate crop rectangle against image dimensions.
 
@@ -114,12 +105,14 @@ class VFICropHandler:
 
         LOGGER.debug(
             "Crop validation passed for %s: crop size %dx%d within image %dx%d",
-            image_name, crop_width, crop_height, image_width, image_height
+            image_name,
+            crop_width,
+            crop_height,
+            image_width,
+            image_height,
         )
 
-    def get_crop_info(
-        self, crop_rect_pil: tuple[int, int, int, int] | None
-    ) -> dict[str, Any]:
+    def get_crop_info(self, crop_rect_pil: tuple[int, int, int, int] | None) -> dict[str, Any]:
         """Get information about the crop configuration.
 
         Args:
@@ -129,12 +122,7 @@ class VFICropHandler:
             Dictionary with crop information
         """
         if crop_rect_pil is None:
-            return {
-                "enabled": False,
-                "rectangle": None,
-                "width": None,
-                "height": None
-            }
+            return {"enabled": False, "rectangle": None, "width": None, "height": None}
 
         left, upper, right, bottom = crop_rect_pil
         return {
@@ -145,12 +133,10 @@ class VFICropHandler:
             "right": right,
             "bottom": bottom,
             "width": right - left,
-            "height": bottom - upper
+            "height": bottom - upper,
         }
 
-    def format_crop_for_logging(
-        self, crop_rect_pil: tuple[int, int, int, int] | None
-    ) -> str:
+    def format_crop_for_logging(self, crop_rect_pil: tuple[int, int, int, int] | None) -> str:
         """Format crop rectangle for logging output.
 
         Args:

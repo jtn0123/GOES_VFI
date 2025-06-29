@@ -55,22 +55,19 @@ class AsyncFileManager(BaseManager):
             try:
                 async with aiofiles.open(path, mode=mode, encoding=encoding if "b" not in mode else None) as f:
                     content = await f.read()
-                    self.log_debug("Read %d %s from %s",
-                                 len(content),
-                                 "bytes" if isinstance(content, bytes) else "characters",
-                                 path)
+                    self.log_debug(
+                        "Read %d %s from %s",
+                        len(content),
+                        "bytes" if isinstance(content, bytes) else "characters",
+                        path,
+                    )
                     return content
             except Exception as e:
                 self.handle_error(e, f"read_file({path})")
                 raise
 
     async def write_file(
-        self,
-        path: Path,
-        content: str | bytes,
-        mode: str = "w",
-        encoding: str = "utf-8",
-        create_parents: bool = True
+        self, path: Path, content: str | bytes, mode: str = "w", encoding: str = "utf-8", create_parents: bool = True
     ) -> None:
         """Write a file asynchronously.
 
@@ -90,10 +87,9 @@ class AsyncFileManager(BaseManager):
 
                 async with aiofiles.open(path, mode=mode, encoding=encoding if "b" not in mode else None) as f:
                     await f.write(content)
-                    self.log_debug("Wrote %d %s to %s",
-                                 len(content),
-                                 "bytes" if isinstance(content, bytes) else "characters",
-                                 path)
+                    self.log_debug(
+                        "Wrote %d %s to %s", len(content), "bytes" if isinstance(content, bytes) else "characters", path
+                    )
             except Exception as e:
                 self.handle_error(e, f"write_file({path})")
                 raise
@@ -283,11 +279,7 @@ class AsyncFileManager(BaseManager):
         return success_results
 
     async def batch_write(
-        self,
-        data: dict[Path, str | bytes],
-        mode: str = "w",
-        encoding: str = "utf-8",
-        create_parents: bool = True
+        self, data: dict[Path, str | bytes], mode: str = "w", encoding: str = "utf-8", create_parents: bool = True
     ) -> list[Path]:
         """Write multiple files concurrently.
 
@@ -332,13 +324,9 @@ class AsyncFileManager(BaseManager):
 
 # Context managers for async file operations
 
+
 @asynccontextmanager
-async def async_open(
-    path: Path,
-    mode: str = "r",
-    encoding: str = "utf-8",
-    **kwargs: Any
-) -> AsyncGenerator[Any]:
+async def async_open(path: Path, mode: str = "r", encoding: str = "utf-8", **kwargs: Any) -> AsyncGenerator[Any]:
     """Async context manager for file operations.
 
     Args:
@@ -359,10 +347,7 @@ async def async_open(
 
 @asynccontextmanager
 async def async_temporary_file(
-    suffix: str = "",
-    prefix: str = "goes_vfi_",
-    dir: Path | None = None,
-    mode: str = "w+b"
+    suffix: str = "", prefix: str = "goes_vfi_", dir: Path | None = None, mode: str = "w+b"
 ) -> AsyncGenerator[tuple[Any, Path]]:
     """Async temporary file context manager.
 
@@ -376,11 +361,7 @@ async def async_temporary_file(
         Tuple of (file_object, file_path)
     """
     async with aiofiles.tempfile.NamedTemporaryFile(
-        suffix=suffix,
-        prefix=prefix,
-        dir=str(dir) if dir else None,
-        mode=mode,
-        delete=False
+        suffix=suffix, prefix=prefix, dir=str(dir) if dir else None, mode=mode, delete=False
     ) as temp_file:
         temp_path = Path(temp_file.name)
 
@@ -394,6 +375,7 @@ async def async_temporary_file(
 
 
 # High-level async file operations for common patterns
+
 
 async def async_read_json(path: Path) -> dict[str, Any]:
     """Read JSON file asynchronously.
@@ -464,17 +446,13 @@ def get_async_file_manager() -> AsyncFileManager:
 
 # Convenience functions using the global manager
 
+
 async def read_file_async(path: Path, mode: str = "r", encoding: str = "utf-8") -> str | bytes:
     """Read file using global async manager."""
     return await get_async_file_manager().read_file(path, mode, encoding)
 
 
-async def write_file_async(
-    path: Path,
-    content: str | bytes,
-    mode: str = "w",
-    encoding: str = "utf-8"
-) -> None:
+async def write_file_async(path: Path, content: str | bytes, mode: str = "w", encoding: str = "utf-8") -> None:
     """Write file using global async manager."""
     await get_async_file_manager().write_file(path, content, mode, encoding)
 

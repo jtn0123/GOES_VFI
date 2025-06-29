@@ -35,6 +35,7 @@ class TestFileSorterViewModelV2(unittest.TestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:

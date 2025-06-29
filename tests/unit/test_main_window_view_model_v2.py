@@ -39,6 +39,7 @@ class TestMainWindowViewModelV2(unittest.TestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -155,10 +156,10 @@ class TestMainWindowViewModelV2(unittest.TestCase):
         """Test comprehensive active tab signal emission scenarios."""
         # Test various tab indices
         tab_scenarios = [
-            0,   # First tab
-            1,   # Second tab
-            2,   # Third tab
-            5,   # Higher index
+            0,  # First tab
+            1,  # Second tab
+            2,  # Third tab
+            5,  # Higher index
             -1,  # Negative index (edge case)
             100,  # Very high index (edge case)
         ]
@@ -416,6 +417,7 @@ class TestMainWindowViewModelV2(unittest.TestCase):
 
     def test_error_handling_in_signal_emission(self) -> None:
         """Test error handling when signal receivers raise exceptions."""
+
         # Create a receiver that raises an exception
         def error_receiver(value) -> Never:
             msg = f"Test exception for value: {value}"

@@ -49,7 +49,7 @@ def sample_job_data():
             "output_path": Path("/tmp/test.mp4"),
             "settings": {"key": "value"},
             "priority": JobPriority.HIGH,
-        }
+        },
     }
 
 
@@ -109,12 +109,15 @@ class TestBatchJob:
         assert job.priority == JobPriority.HIGH
         assert job.id == job_data["id"]
 
-    @pytest.mark.parametrize("priority1,priority2,expected_order", [
-        (JobPriority.HIGH, JobPriority.NORMAL, True),
-        (JobPriority.NORMAL, JobPriority.LOW, True),
-        (JobPriority.HIGH, JobPriority.LOW, True),
-        (JobPriority.NORMAL, JobPriority.HIGH, False),
-    ])
+    @pytest.mark.parametrize(
+        "priority1,priority2,expected_order",
+        [
+            (JobPriority.HIGH, JobPriority.NORMAL, True),
+            (JobPriority.NORMAL, JobPriority.LOW, True),
+            (JobPriority.HIGH, JobPriority.LOW, True),
+            (JobPriority.NORMAL, JobPriority.HIGH, False),
+        ],
+    )
     def test_job_priority_comparison(self, sample_job_data, priority1, priority2, expected_order) -> None:
         """Test job priority comparison with parameterized priorities."""
         job1_data = sample_job_data["basic"].copy()
@@ -318,7 +321,7 @@ class TestBatchProcessor:
                 "job_name_prefix": "Single",
                 "priority": JobPriority.NORMAL,
                 "expected_count": 1,
-            }
+            },
         ]
 
         for config in test_configs:
@@ -359,7 +362,7 @@ class TestBatchProcessor:
                 "pattern": "*.mp4",
                 "found_files": [],
                 "expected_jobs": 0,
-            }
+            },
         ]
 
         for case in test_cases:
@@ -408,11 +411,14 @@ class TestBatchProcessor:
         # Verify queue interactions
         assert mock_queue.add_job.call_count == 2
 
-    @pytest.mark.parametrize("file_extension,expected_output_ext", [
-        (".png", "_processed.png"),
-        (".jpg", "_processed.jpg"),
-        (".tiff", "_processed.tiff"),
-    ])
+    @pytest.mark.parametrize(
+        "file_extension,expected_output_ext",
+        [
+            (".png", "_processed.png"),
+            (".jpg", "_processed.jpg"),
+            (".tiff", "_processed.tiff"),
+        ],
+    )
     def test_output_file_naming(self, file_extension, expected_output_ext) -> None:
         """Test output file naming for different input file types."""
         processor = BatchProcessor()

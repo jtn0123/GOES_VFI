@@ -163,11 +163,14 @@ class TestWorkerFactory:
         with pytest.raises(ValueError, match=f"Missing required argument: {missing_arg}"):
             WorkerFactory.create_worker(incomplete_args)
 
-    @pytest.mark.parametrize("mb_size_input,expected_output", [
-        ("64", 64),
-        ("32", 32),
-        ("invalid", 16),  # default
-    ])
+    @pytest.mark.parametrize(
+        "mb_size_input,expected_output",
+        [
+            ("64", 64),
+            ("32", 32),
+            ("invalid", 16),  # default
+        ],
+    )
     def test_mb_size_conversion(self, base_worker_args, mocked_worker_creation, mb_size_input, expected_output) -> None:
         """Test mb_size string to int conversion."""
         mock_vfi_worker, _ = mocked_worker_creation
@@ -180,10 +183,13 @@ class TestWorkerFactory:
         call_kwargs = mock_vfi_worker.call_args[1]
         assert call_kwargs["minter_mb_size"] == expected_output
 
-    @pytest.mark.parametrize("vsbmc_input,expected_output", [
-        (True, 1),
-        (False, 0),
-    ])
+    @pytest.mark.parametrize(
+        "vsbmc_input,expected_output",
+        [
+            (True, 1),
+            (False, 0),
+        ],
+    )
     def test_vsbmc_conversion(self, base_worker_args, mocked_worker_creation, vsbmc_input, expected_output) -> None:
         """Test vsbmc boolean to int conversion."""
         mock_vfi_worker, _ = mocked_worker_creation
@@ -196,12 +202,17 @@ class TestWorkerFactory:
         call_kwargs = mock_vfi_worker.call_args[1]
         assert call_kwargs["minter_vsbmc"] == expected_output
 
-    @pytest.mark.parametrize("scd_mode,threshold_input,expected_threshold", [
-        ("none", 25.0, 10.0),  # Should use default
-        ("fdi", 25.0, 25.0),   # Should use provided
-        ("fdiff", 30.0, 30.0),  # Should use provided
-    ])
-    def test_scd_threshold_handling(self, base_worker_args, mocked_worker_creation, scd_mode, threshold_input, expected_threshold) -> None:
+    @pytest.mark.parametrize(
+        "scd_mode,threshold_input,expected_threshold",
+        [
+            ("none", 25.0, 10.0),  # Should use default
+            ("fdi", 25.0, 25.0),  # Should use provided
+            ("fdiff", 30.0, 30.0),  # Should use provided
+        ],
+    )
+    def test_scd_threshold_handling(
+        self, base_worker_args, mocked_worker_creation, scd_mode, threshold_input, expected_threshold
+    ) -> None:
         """Test scd_threshold handling based on scd_mode."""
         mock_vfi_worker, _ = mocked_worker_creation
 
@@ -244,13 +255,18 @@ class TestWorkerFactory:
         assert call_kwargs["in_dir"] == "/test/input"
         assert call_kwargs["out_file_path"] == "/test/output.mp4"
 
-    @pytest.mark.parametrize("multiplier,expected_mid_count", [
-        (1, 0),
-        (2, 1),
-        (4, 3),
-        (10, 9),
-    ])
-    def test_multiplier_to_mid_count_conversion(self, base_worker_args, mocked_worker_creation, multiplier, expected_mid_count) -> None:
+    @pytest.mark.parametrize(
+        "multiplier,expected_mid_count",
+        [
+            (1, 0),
+            (2, 1),
+            (4, 3),
+            (10, 9),
+        ],
+    )
+    def test_multiplier_to_mid_count_conversion(
+        self, base_worker_args, mocked_worker_creation, multiplier, expected_mid_count
+    ) -> None:
         """Test edge case multiplier values."""
         mock_vfi_worker, _ = mocked_worker_creation
 

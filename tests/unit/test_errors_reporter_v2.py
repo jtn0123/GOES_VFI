@@ -45,11 +45,14 @@ class TestErrorReporter:
             cause=ValueError("Original error"),
         )
 
-    @pytest.mark.parametrize("output,verbose,expected", [
-        (None, None, (sys.stderr, False)),  # Default initialization
-        (sys.stdout, True, (sys.stdout, True)),  # Custom output and verbose
-        (sys.stderr, False, (sys.stderr, False)),  # Explicit stderr
-    ])
+    @pytest.mark.parametrize(
+        "output,verbose,expected",
+        [
+            (None, None, (sys.stderr, False)),  # Default initialization
+            (sys.stdout, True, (sys.stdout, True)),  # Custom output and verbose
+            (sys.stderr, False, (sys.stderr, False)),  # Explicit stderr
+        ],
+    )
     def test_error_reporter_initialization(self, output, verbose, expected) -> None:
         """Test error reporter initialization with various parameters."""
         kwargs = {}
@@ -63,12 +66,15 @@ class TestErrorReporter:
         assert reporter.output == expected[0]
         assert reporter.verbose == expected[1]
 
-    @pytest.mark.parametrize("has_suggestions,suggestions,expected_suggestions", [
-        (True, ["Check file", "Verify path", "Try again"], 3),
-        (True, ["Single suggestion"], 1),
-        (False, [], 0),
-        (False, None, 0),
-    ])
+    @pytest.mark.parametrize(
+        "has_suggestions,suggestions,expected_suggestions",
+        [
+            (True, ["Check file", "Verify path", "Try again"], 3),
+            (True, ["Single suggestion"], 1),
+            (False, [], 0),
+            (False, None, 0),
+        ],
+    )
     def test_simple_error_reporting_variations(
         self, output_stream, has_suggestions, suggestions, expected_suggestions
     ) -> None:
@@ -96,20 +102,24 @@ class TestErrorReporter:
         else:
             assert "Suggestions:" not in output
 
-    @pytest.mark.parametrize("context_data,cause,expected_sections", [
-        # Full verbose output with all sections
-        ({"file": "/data.txt", "size": 1024}, ValueError("Cause"),
-         ["Error in", "Message:", "Operation:", "Recoverable:", "Context:", "Suggestions:", "Caused by:"]),
-        # No context data
-        ({}, None, ["Error in", "Message:", "Operation:", "Recoverable:"]),
-        # Context but no cause
-        ({"key": "value"}, None, ["Error in", "Message:", "Operation:", "Recoverable:", "Context:"]),
-        # Cause but no context
-        ({}, FileNotFoundError("Missing"), ["Error in", "Message:", "Operation:", "Caused by:"]),
-    ])
-    def test_verbose_error_reporting_sections(
-        self, output_stream, context_data, cause, expected_sections
-    ) -> None:
+    @pytest.mark.parametrize(
+        "context_data,cause,expected_sections",
+        [
+            # Full verbose output with all sections
+            (
+                {"file": "/data.txt", "size": 1024},
+                ValueError("Cause"),
+                ["Error in", "Message:", "Operation:", "Recoverable:", "Context:", "Suggestions:", "Caused by:"],
+            ),
+            # No context data
+            ({}, None, ["Error in", "Message:", "Operation:", "Recoverable:"]),
+            # Context but no cause
+            ({"key": "value"}, None, ["Error in", "Message:", "Operation:", "Recoverable:", "Context:"]),
+            # Cause but no context
+            ({}, FileNotFoundError("Missing"), ["Error in", "Message:", "Operation:", "Caused by:"]),
+        ],
+    )
+    def test_verbose_error_reporting_sections(self, output_stream, context_data, cause, expected_sections) -> None:
         """Test verbose error reporting with different section combinations."""
         reporter = ErrorReporter(output=output_stream, verbose=True)
 
@@ -183,14 +193,15 @@ class TestErrorReporter:
             assert f"Error: User message {i}" in output
             assert f"• Suggestion {i}" in output
 
-    @pytest.mark.parametrize("encoding_test", [
-        ("测试错误", "用户消息", ["建议一", "建议二"], "中文字符"),
-        ("Error with émojis 🚫", "Message with ñ", ["Café", "Résumé"], "特殊字符"),
-        ("Plain ASCII", "Simple message", ["Basic suggestion"], "ASCII"),
-    ])
-    def test_error_reporting_encoding_handling(
-        self, output_stream, encoding_test
-    ) -> None:
+    @pytest.mark.parametrize(
+        "encoding_test",
+        [
+            ("测试错误", "用户消息", ["建议一", "建议二"], "中文字符"),
+            ("Error with émojis 🚫", "Message with ñ", ["Café", "Résumé"], "特殊字符"),
+            ("Plain ASCII", "Simple message", ["Basic suggestion"], "ASCII"),
+        ],
+    )
+    def test_error_reporting_encoding_handling(self, output_stream, encoding_test) -> None:
         """Test error reporting with various character encodings."""
         message, user_message, suggestions, test_name = encoding_test
 
@@ -230,74 +241,77 @@ class TestErrorReporterIntegration:
         """Create a verbose mode reporter."""
         return ErrorReporter(output=StringIO(), verbose=True)
 
-    @pytest.mark.parametrize("scenario", [
-        {
-            "name": "file_permission",
-            "operation": "config_load",
-            "component": "config_manager",
-            "category": ErrorCategory.PERMISSION,
-            "message": "Failed to read configuration file",
-            "user_message": "Cannot access the configuration file",
-            "user_data": {
-                "config_file": "/app/config/settings.json",
-                "expected_format": "JSON",
+    @pytest.mark.parametrize(
+        "scenario",
+        [
+            {
+                "name": "file_permission",
+                "operation": "config_load",
+                "component": "config_manager",
+                "category": ErrorCategory.PERMISSION,
+                "message": "Failed to read configuration file",
+                "user_message": "Cannot access the configuration file",
+                "user_data": {
+                    "config_file": "/app/config/settings.json",
+                    "expected_format": "JSON",
+                },
+                "system_data": {
+                    "file_size": 1024,
+                    "permissions": "644",
+                },
+                "cause": PermissionError("Permission denied"),
+                "suggestions": [
+                    "Check file permissions",
+                    "Run with elevated privileges",
+                    "Verify file ownership",
+                ],
             },
-            "system_data": {
-                "file_size": 1024,
-                "permissions": "644",
+            {
+                "name": "network_timeout",
+                "operation": "api_request",
+                "component": "http_client",
+                "category": ErrorCategory.NETWORK,
+                "message": "Connection timeout after 30 seconds",
+                "user_message": "Unable to connect to the server",
+                "user_data": {
+                    "url": "https://api.example.com/data",
+                    "method": "GET",
+                    "timeout": 30,
+                },
+                "system_data": {},
+                "cause": None,
+                "suggestions": [
+                    "Check your internet connection",
+                    "Verify the server is running",
+                    "Try again later",
+                ],
             },
-            "cause": PermissionError("Permission denied"),
-            "suggestions": [
-                "Check file permissions",
-                "Run with elevated privileges",
-                "Verify file ownership",
-            ],
-        },
-        {
-            "name": "network_timeout",
-            "operation": "api_request",
-            "component": "http_client",
-            "category": ErrorCategory.NETWORK,
-            "message": "Connection timeout after 30 seconds",
-            "user_message": "Unable to connect to the server",
-            "user_data": {
-                "url": "https://api.example.com/data",
-                "method": "GET",
-                "timeout": 30,
+            {
+                "name": "processing_memory",
+                "operation": "image_resize",
+                "component": "image_processor",
+                "category": ErrorCategory.PROCESSING,
+                "message": "Image processing failed due to insufficient memory",
+                "user_message": "Unable to resize the image due to memory constraints",
+                "user_data": {
+                    "input_file": "/images/large_photo.jpg",
+                    "target_size": "1920x1080",
+                    "format": "JPEG",
+                },
+                "system_data": {
+                    "memory_used": "512MB",
+                    "processing_time": 15.7,
+                    "temp_files_created": 3,
+                },
+                "cause": None,
+                "suggestions": [
+                    "Try with a smaller target size",
+                    "Close other applications to free memory",
+                    "Use a different image format",
+                ],
             },
-            "system_data": {},
-            "cause": None,
-            "suggestions": [
-                "Check your internet connection",
-                "Verify the server is running",
-                "Try again later",
-            ],
-        },
-        {
-            "name": "processing_memory",
-            "operation": "image_resize",
-            "component": "image_processor",
-            "category": ErrorCategory.PROCESSING,
-            "message": "Image processing failed due to insufficient memory",
-            "user_message": "Unable to resize the image due to memory constraints",
-            "user_data": {
-                "input_file": "/images/large_photo.jpg",
-                "target_size": "1920x1080",
-                "format": "JPEG",
-            },
-            "system_data": {
-                "memory_used": "512MB",
-                "processing_time": 15.7,
-                "temp_files_created": 3,
-            },
-            "cause": None,
-            "suggestions": [
-                "Try with a smaller target size",
-                "Close other applications to free memory",
-                "Use a different image format",
-            ],
-        },
-    ])
+        ],
+    )
     def test_realistic_error_scenarios(self, scenario) -> None:
         """Test realistic error reporting scenarios with parameterization."""
         output_stream = StringIO()

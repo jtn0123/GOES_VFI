@@ -233,7 +233,11 @@ class TestAccessibilityOptimizedV2:
 
             def validate_tab_order(self, widgets):
                 """Validate logical tab order for widgets."""
-                return [widget for widget in widgets if widget is not None and widget.focusPolicy() != Qt.FocusPolicy.NoFocus]
+                return [
+                    widget
+                    for widget in widgets
+                    if widget is not None and widget.focusPolicy() != Qt.FocusPolicy.NoFocus
+                ]
 
         return {
             "tester": AccessibilityTester(),
@@ -457,7 +461,9 @@ class TestAccessibilityOptimizedV2:
         for policy, description in focus_policy_tests:
             policy_widgets = []
             for scenario in navigation_scenarios:
-                policy_widgets.extend(widget for widget in scenario["widgets"] if widget and widget.focusPolicy() == policy)
+                policy_widgets.extend(
+                    widget for widget in scenario["widgets"] if widget and widget.focusPolicy() == policy
+                )
 
             # Some widgets should support each focus type
             # Note: Not all widgets need all focus types, so we just check they exist
@@ -662,7 +668,6 @@ class TestAccessibilityOptimizedV2:
 
         # Enhanced error message validator
         def validate_error_message(title, message):
-
             # Technical jargon to avoid
             jargon_terms = [
                 "exception",
@@ -676,7 +681,9 @@ class TestAccessibilityOptimizedV2:
             ]
 
             # Check for technical jargon
-            issues = [f"Contains technical jargon: '{term}'" for term in jargon_terms if term.lower() in message.lower()]
+            issues = [
+                f"Contains technical jargon: '{term}'" for term in jargon_terms if term.lower() in message.lower()
+            ]
 
             # Check title
             if not title or len(title) < 5:
@@ -837,7 +844,11 @@ class TestAccessibilityOptimizedV2:
         # Test focus state changes
         focusable_widgets = []
         for scenario in focus_test_scenarios:
-            focusable_widgets.extend(widget for widget in scenario["widgets"] if widget and widget.isEnabled() and widget.focusPolicy() != Qt.FocusPolicy.NoFocus)
+            focusable_widgets.extend(
+                widget
+                for widget in scenario["widgets"]
+                if widget and widget.isEnabled() and widget.focusPolicy() != Qt.FocusPolicy.NoFocus
+            )
 
         # Test focus transitions
         if len(focusable_widgets) >= 2:

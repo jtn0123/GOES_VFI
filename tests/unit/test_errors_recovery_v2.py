@@ -34,11 +34,13 @@ class TestRecoveryStrategyV2(unittest.TestCase):
         class MissingRecoverMethod(RecoveryStrategy):
             def can_recover(self, error: StructuredError) -> bool:
                 return True
+
             # Missing recover method
 
         class MissingCanRecoverMethod(RecoveryStrategy):
             def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
                 return "recovered"
+
             # Missing can_recover method
 
         class NoMethods(RecoveryStrategy):
@@ -69,6 +71,7 @@ class TestRecoveryStrategyV2(unittest.TestCase):
 
     def test_recovery_strategy_interface_comprehensive(self) -> None:
         """Test comprehensive recovery strategy interface scenarios."""
+
         class TestStrategy(RecoveryStrategy):
             def __init__(self) -> None:
                 self.can_recover_calls = []
@@ -95,7 +98,7 @@ class TestRecoveryStrategyV2(unittest.TestCase):
                 context=ErrorContext("net_op", "net_comp"),
                 recoverable=True,
                 user_message="User friendly message",
-                suggestions=["Try again", "Check connection"]
+                suggestions=["Try again", "Check connection"],
             ),
         ]
 
@@ -153,10 +156,7 @@ class TestFileRecoveryStrategyV2(unittest.TestCase):
         context.add_system_data("errno", 2)
 
         error_with_context = StructuredError(
-            "File not found with context",
-            category=ErrorCategory.FILE_NOT_FOUND,
-            context=context,
-            recoverable=True
+            "File not found with context", category=ErrorCategory.FILE_NOT_FOUND, context=context, recoverable=True
         )
 
         assert strategy.can_recover(error_with_context)
@@ -173,7 +173,7 @@ class TestFileRecoveryStrategyV2(unittest.TestCase):
                 "Complex file error",
                 category=ErrorCategory.FILE_NOT_FOUND,
                 context=ErrorContext("read", "loader"),
-                recoverable=True
+                recoverable=True,
             ),
         ]
 
@@ -205,9 +205,7 @@ class TestFileRecoveryStrategyV2(unittest.TestCase):
 
         # Test with file error but no file path in context
         error_no_path = StructuredError(
-            "File error without path",
-            category=ErrorCategory.FILE_NOT_FOUND,
-            context=ErrorContext("unknown", "unknown")
+            "File error without path", category=ErrorCategory.FILE_NOT_FOUND, context=ErrorContext("unknown", "unknown")
         )
 
         assert strategy.can_recover(error_no_path)
@@ -279,7 +277,7 @@ class TestRetryRecoveryStrategyV2(unittest.TestCase):
                 "Complex network error",
                 category=ErrorCategory.NETWORK,
                 context=ErrorContext("api_call", "http_client"),
-                recoverable=True
+                recoverable=True,
             ),
         ]
 
@@ -315,8 +313,9 @@ class TestRetryRecoveryStrategyV2(unittest.TestCase):
 class CustomRecoveryStrategyV2(RecoveryStrategy):
     """Enhanced custom recovery strategy for testing."""
 
-    def __init__(self, recoverable_categories=None, recovery_result=None,
-                 should_fail=False, fail_after_attempts=None, delay=0) -> None:
+    def __init__(
+        self, recoverable_categories=None, recovery_result=None, should_fail=False, fail_after_attempts=None, delay=0
+    ) -> None:
         self.recoverable_categories = recoverable_categories or []
         self.recovery_result = recovery_result
         self.should_fail = should_fail
@@ -330,11 +329,7 @@ class CustomRecoveryStrategyV2(RecoveryStrategy):
 
     def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
         self._attempt_count += 1
-        self.recovery_attempts.append({
-            "error": error,
-            "context": context,
-            "attempt_number": self._attempt_count
-        })
+        self.recovery_attempts.append({"error": error, "context": context, "attempt_number": self._attempt_count})
 
         if self.delay > 0:
             time.sleep(self.delay)
@@ -431,8 +426,7 @@ class TestRecoveryManagerV2(unittest.TestCase):
         """Test comprehensive successful recovery scenarios."""
         # Test single matching strategy
         strategy = CustomRecoveryStrategyV2(
-            recoverable_categories=[ErrorCategory.VALIDATION],
-            recovery_result="Successfully recovered"
+            recoverable_categories=[ErrorCategory.VALIDATION], recovery_result="Successfully recovered"
         )
 
         manager = RecoveryManager().add_strategy(strategy)
@@ -450,12 +444,11 @@ class TestRecoveryManagerV2(unittest.TestCase):
         # Test multiple strategies, first matches
         strategies = [
             CustomRecoveryStrategyV2(
-                recoverable_categories=[ErrorCategory.VALIDATION],
-                recovery_result="First strategy result"
+                recoverable_categories=[ErrorCategory.VALIDATION], recovery_result="First strategy result"
             ),
             CustomRecoveryStrategyV2(
                 recoverable_categories=[ErrorCategory.VALIDATION, ErrorCategory.NETWORK],
-                recovery_result="Second strategy result"
+                recovery_result="Second strategy result",
             ),
         ]
 
@@ -504,14 +497,10 @@ class TestRecoveryManagerV2(unittest.TestCase):
     def test_recovery_manager_strategy_failure_comprehensive(self) -> None:
         """Test comprehensive strategy failure scenarios."""
         # Test single failing strategy with fallback
-        failing_strategy = CustomRecoveryStrategyV2(
-            recoverable_categories=[ErrorCategory.VALIDATION],
-            should_fail=True
-        )
+        failing_strategy = CustomRecoveryStrategyV2(recoverable_categories=[ErrorCategory.VALIDATION], should_fail=True)
 
         backup_strategy = CustomRecoveryStrategyV2(
-            recoverable_categories=[ErrorCategory.VALIDATION],
-            recovery_result="Backup recovery successful"
+            recoverable_categories=[ErrorCategory.VALIDATION], recovery_result="Backup recovery successful"
         )
 
         manager = RecoveryManager()
@@ -525,16 +514,16 @@ class TestRecoveryManagerV2(unittest.TestCase):
         assert len(backup_strategy.recovery_attempts) == 1
 
         # Test multiple failing strategies with eventual success
-        strategies = [CustomRecoveryStrategyV2(
-                recoverable_categories=[ErrorCategory.NETWORK],
-                should_fail=True
-            ) for i in range(3)]
+        strategies = [
+            CustomRecoveryStrategyV2(recoverable_categories=[ErrorCategory.NETWORK], should_fail=True) for i in range(3)
+        ]
 
         # Last strategy succeeds
-        strategies.append(CustomRecoveryStrategyV2(
-            recoverable_categories=[ErrorCategory.NETWORK],
-            recovery_result="Finally recovered"
-        ))
+        strategies.append(
+            CustomRecoveryStrategyV2(
+                recoverable_categories=[ErrorCategory.NETWORK], recovery_result="Finally recovered"
+            )
+        )
 
         manager = RecoveryManager()
         for s in strategies:
@@ -555,10 +544,10 @@ class TestRecoveryManagerV2(unittest.TestCase):
     def test_recovery_manager_all_strategies_fail_comprehensive(self) -> None:
         """Test comprehensive all strategies fail scenarios."""
         # Create multiple failing strategies
-        strategies = [CustomRecoveryStrategyV2(
-                recoverable_categories=[ErrorCategory.VALIDATION],
-                should_fail=True
-            ) for i in range(5)]
+        strategies = [
+            CustomRecoveryStrategyV2(recoverable_categories=[ErrorCategory.VALIDATION], should_fail=True)
+            for i in range(5)
+        ]
 
         manager = RecoveryManager()
         for strategy in strategies:
@@ -580,18 +569,15 @@ class TestRecoveryManagerV2(unittest.TestCase):
         """Test comprehensive strategy priority scenarios."""
         # Create strategies with different priorities
         high_priority = CustomRecoveryStrategyV2(
-            recoverable_categories=[ErrorCategory.VALIDATION],
-            recovery_result="High priority result"
+            recoverable_categories=[ErrorCategory.VALIDATION], recovery_result="High priority result"
         )
 
         medium_priority = CustomRecoveryStrategyV2(
-            recoverable_categories=[ErrorCategory.VALIDATION],
-            recovery_result="Medium priority result"
+            recoverable_categories=[ErrorCategory.VALIDATION], recovery_result="Medium priority result"
         )
 
         low_priority = CustomRecoveryStrategyV2(
-            recoverable_categories=[ErrorCategory.VALIDATION],
-            recovery_result="Low priority result"
+            recoverable_categories=[ErrorCategory.VALIDATION], recovery_result="Low priority result"
         )
 
         # Add in priority order
@@ -619,10 +605,7 @@ class TestRecoveryManagerV2(unittest.TestCase):
             StructuredError("With category", category=ErrorCategory.VALIDATION),
             StructuredError("With context", context=ErrorContext("op", "comp")),
             StructuredError(
-                "Complex",
-                category=ErrorCategory.NETWORK,
-                context=ErrorContext("net", "client"),
-                recoverable=True
+                "Complex", category=ErrorCategory.NETWORK, context=ErrorContext("net", "client"), recoverable=True
             ),
         ]
 
@@ -635,10 +618,7 @@ class TestRecoveryManagerV2(unittest.TestCase):
     def test_recovery_manager_concurrent_recovery(self) -> None:
         """Test concurrent recovery operations."""
         # Create thread-safe strategy
-        strategy = CustomRecoveryStrategyV2(
-            recoverable_categories=list(ErrorCategory),
-            recovery_result="Recovered"
-        )
+        strategy = CustomRecoveryStrategyV2(recoverable_categories=list(ErrorCategory), recovery_result="Recovered")
 
         manager = RecoveryManager().add_strategy(strategy)
 
@@ -653,7 +633,7 @@ class TestRecoveryManagerV2(unittest.TestCase):
                 error = StructuredError(
                     f"Error {recovery_id}",
                     category=category,
-                    context=ErrorContext(f"op_{recovery_id}", f"comp_{recovery_id}")
+                    context=ErrorContext(f"op_{recovery_id}", f"comp_{recovery_id}"),
                 )
 
                 context = {"recovery_id": recovery_id, "thread_id": recovery_id}
@@ -689,8 +669,7 @@ class TestRecoveryManagerV2(unittest.TestCase):
 
         # Add final matching strategy
         final_strategy = CustomRecoveryStrategyV2(
-            recoverable_categories=[ErrorCategory.VALIDATION],
-            recovery_result="Found it"
+            recoverable_categories=[ErrorCategory.VALIDATION], recovery_result="Found it"
         )
         manager.add_strategy(final_strategy)
 
@@ -711,8 +690,7 @@ class TestRecoveryManagerV2(unittest.TestCase):
         """Test recovery manager memory efficiency with large errors."""
         # Create strategy that can handle large errors
         strategy = CustomRecoveryStrategyV2(
-            recoverable_categories=list(ErrorCategory),
-            recovery_result="Recovered large error"
+            recoverable_categories=list(ErrorCategory), recovery_result="Recovered large error"
         )
 
         manager = RecoveryManager().add_strategy(strategy)
@@ -724,7 +702,7 @@ class TestRecoveryManagerV2(unittest.TestCase):
             error = StructuredError(
                 large_message,
                 category=list(ErrorCategory)[i % len(ErrorCategory)],
-                context=ErrorContext("large_op", "large_comp")
+                context=ErrorContext("large_op", "large_comp"),
             )
 
             context = {"large_data": "y" * (1024 * 1024)}  # 1MB context
@@ -834,11 +812,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         context1 = ErrorContext("file_read", "loader")
         context1.add_user_data("file_path", "/data/missing.txt")
 
-        error1 = StructuredError(
-            "File not found",
-            category=ErrorCategory.FILE_NOT_FOUND,
-            context=context1
-        )
+        error1 = StructuredError("File not found", category=ErrorCategory.FILE_NOT_FOUND, context=context1)
 
         result1 = manager.attempt_recovery(error1)
         assert result1 == "Created file: /data/missing.txt"
@@ -848,11 +822,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         context2 = ErrorContext("file_write", "writer")
         context2.add_user_data("file_path", "/new/dir/file.txt")
 
-        error2 = StructuredError(
-            "File not found: dir_missing",
-            category=ErrorCategory.FILE_NOT_FOUND,
-            context=context2
-        )
+        error2 = StructuredError("File not found: dir_missing", category=ErrorCategory.FILE_NOT_FOUND, context=context2)
 
         result2 = manager.attempt_recovery(error2)
         assert result2 == "Created directory: /new/dir"
@@ -862,11 +832,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         context3 = ErrorContext("file_write", "saver")
         context3.add_user_data("file_path", "/restricted/config.json")
 
-        error3 = StructuredError(
-            "Permission denied",
-            category=ErrorCategory.PERMISSION,
-            context=context3
-        )
+        error3 = StructuredError("Permission denied", category=ErrorCategory.PERMISSION, context=context3)
 
         recovery_context = {"permission_mode": "755"}
         result3 = manager.attempt_recovery(error3, recovery_context)
@@ -877,11 +843,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         context4 = ErrorContext("file_create", "creator")
         context4.add_user_data("file_path", "/readonly/test.txt")
 
-        error4 = StructuredError(
-            "File not found",
-            category=ErrorCategory.FILE_NOT_FOUND,
-            context=context4
-        )
+        error4 = StructuredError("File not found", category=ErrorCategory.FILE_NOT_FOUND, context=context4)
 
         with pytest.raises(StructuredError):
             manager.attempt_recovery(error4)
@@ -913,12 +875,10 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
                 # Check if max retries exceeded
                 if current_count >= self.max_retries:
                     msg = f"Max retries ({self.max_retries}) exceeded for {operation_id}"
-                    raise RuntimeError(
-                        msg
-                    )
+                    raise RuntimeError(msg)
 
                 # Calculate delay with exponential backoff
-                delay = (self.backoff_factor ** current_count) * 0.01  # Small delays for testing
+                delay = (self.backoff_factor**current_count) * 0.01  # Small delays for testing
                 self.retry_delays.append(delay)
                 time.sleep(delay)
 
@@ -972,11 +932,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
 
         # Scenario 1: Timeout that succeeds on retry
         timeout_context = ErrorContext("api_call", "http_client")
-        timeout_error = StructuredError(
-            "Request timeout",
-            category=ErrorCategory.NETWORK,
-            context=timeout_context
-        )
+        timeout_error = StructuredError("Request timeout", category=ErrorCategory.NETWORK, context=timeout_context)
 
         result = manager.attempt_recovery(timeout_error)
         assert "Retry 2 succeeded" in result
@@ -984,11 +940,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
 
         # Scenario 2: Connection refused that succeeds on third try
         refused_context = ErrorContext("service_connect", "grpc_client")
-        refused_error = StructuredError(
-            "Connection refused",
-            category=ErrorCategory.NETWORK,
-            context=refused_context
-        )
+        refused_error = StructuredError("Connection refused", category=ErrorCategory.NETWORK, context=refused_context)
 
         result = manager.attempt_recovery(refused_error)
         assert "Retry 3 succeeded" in result
@@ -1000,9 +952,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         breaker_manager.add_strategy(retry_strategy)  # Fallback
 
         network_error = StructuredError(
-            "Network failure",
-            category=ErrorCategory.NETWORK,
-            context=ErrorContext("test_op", "test_comp")
+            "Network failure", category=ErrorCategory.NETWORK, context=ErrorContext("test_op", "test_comp")
         )
 
         # First attempts should use circuit breaker until it opens
@@ -1086,11 +1036,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
 
             def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
                 self.attempts += 1
-                self.handled_errors.append({
-                    "error": error,
-                    "context": context,
-                    "attempt": self.attempts
-                })
+                self.handled_errors.append({"error": error, "context": context, "attempt": self.attempts})
 
                 # Check for special conditions
                 if context and "no_last_resort" in context:
@@ -1120,7 +1066,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         error1 = StructuredError(
             "Processing failed",
             category=ErrorCategory.PROCESSING,
-            context=ErrorContext("standard_process", "processor")
+            context=ErrorContext("standard_process", "processor"),
         )
 
         result1 = manager.attempt_recovery(error1)
@@ -1145,7 +1091,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         critical_error = StructuredError(
             "Critical processing failed",
             category=ErrorCategory.PROCESSING,
-            context=ErrorContext("critical_process", "critical_processor")
+            context=ErrorContext("critical_process", "critical_processor"),
         )
 
         # First attempt - all fail except last resort
@@ -1159,9 +1105,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
 
         # Path 5: Forced failure with no last resort
         forced_error = StructuredError(
-            "Forced failure",
-            category=ErrorCategory.PROCESSING,
-            context=ErrorContext("forced_op", "forced_comp")
+            "Forced failure", category=ErrorCategory.PROCESSING, context=ErrorContext("forced_op", "forced_comp")
         )
 
         primary.attempts = 0
@@ -1220,11 +1164,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
 
                         decision = {
                             "action": "resize_with_lower_quality",
-                            "parameters": {
-                                "quality": 0.8,
-                                "max_dimension": 1920,
-                                "memory_limit": memory_limit
-                            }
+                            "parameters": {"quality": 0.8, "max_dimension": 1920, "memory_limit": memory_limit},
                         }
                     elif processing_type == "video_transcode":
                         # Adjust encoding parameters
@@ -1233,14 +1173,11 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
                             "parameters": {
                                 "codec": "h264",  # Fallback from h265
                                 "bitrate": "2M",  # Reduced from original
-                                "preset": "fast"  # Faster encoding
-                            }
+                                "preset": "fast",  # Faster encoding
+                            },
                         }
                     else:
-                        decision = {
-                            "action": "generic_retry",
-                            "parameters": {"delay": 1.0}
-                        }
+                        decision = {"action": "generic_retry", "parameters": {"delay": 1.0}}
 
                     self.recovery_decisions.append(decision)
                     return f"Recovered with strategy: {decision['action']}"
@@ -1278,14 +1215,10 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
             category=ErrorCategory.PROCESSING,
             context=image_context,
             recoverable=True,
-            suggestions=["Reduce image dimensions", "Increase memory allocation"]
+            suggestions=["Reduce image dimensions", "Increase memory allocation"],
         )
 
-        recovery_params = {
-            "memory_limit": "400MB",
-            "allow_quality_reduction": True,
-            "max_retries": 3
-        }
+        recovery_params = {"memory_limit": "400MB", "allow_quality_reduction": True, "max_retries": 3}
 
         result = manager.attempt_recovery(image_error, recovery_params)
         assert result == "Recovered with strategy: resize_with_lower_quality"
@@ -1306,10 +1239,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         video_context.add_system_data("gpu_available", False)
 
         video_error = StructuredError(
-            "Codec not supported",
-            category=ErrorCategory.PROCESSING,
-            context=video_context,
-            recoverable=True
+            "Codec not supported", category=ErrorCategory.PROCESSING, context=video_context, recoverable=True
         )
 
         result = manager.attempt_recovery(video_error)
@@ -1323,10 +1253,7 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         network_context.add_system_data("status_code", 503)
 
         network_error = StructuredError(
-            "Service temporarily unavailable",
-            category=ErrorCategory.NETWORK,
-            context=network_context,
-            recoverable=True
+            "Service temporarily unavailable", category=ErrorCategory.NETWORK, context=network_context, recoverable=True
         )
 
         cdn_context = {"use_cdn": True, "cdn_endpoint": "https://cdn.example.com"}
@@ -1368,8 +1295,7 @@ class TestRecoveryPytest:
     def test_recovery_manager_pytest(self) -> None:
         """Test recovery manager using pytest style."""
         strategy = CustomRecoveryStrategyV2(
-            recoverable_categories=[ErrorCategory.VALIDATION],
-            recovery_result="Recovered"
+            recoverable_categories=[ErrorCategory.VALIDATION], recovery_result="Recovered"
         )
 
         manager = RecoveryManager().add_strategy(strategy)

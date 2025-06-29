@@ -34,9 +34,15 @@ def comprehensive_main_window_mock():
 
     # Mock all required methods
     methods = [
-        "_update_previews", "_on_tab_changed", "_set_in_dir_from_sorter",
-        "_update_rife_ui_elements", "_handle_processing", "_connect_model_combo",
-        "_on_processing_progress", "_on_processing_finished", "_on_processing_error"
+        "_update_previews",
+        "_on_tab_changed",
+        "_set_in_dir_from_sorter",
+        "_update_rife_ui_elements",
+        "_handle_processing",
+        "_connect_model_combo",
+        "_on_processing_progress",
+        "_on_processing_finished",
+        "_on_processing_error",
     ]
     for method in methods:
         setattr(main_window, method, Mock())
@@ -106,10 +112,13 @@ class TestSignalBrokerCore:
         assert hasattr(signal_broker, "moveToThread")  # QObject method
         assert hasattr(signal_broker, "deleteLater")  # QObject method
 
-    @pytest.mark.parametrize("connection_type", [
-        "main_window_connections",
-        "worker_connections",
-    ])
+    @pytest.mark.parametrize(
+        "connection_type",
+        [
+            "main_window_connections",
+            "worker_connections",
+        ],
+    )
     def test_signal_broker_methods_exist(self, signal_broker, connection_type) -> None:
         """Test that SignalBroker has all required methods."""
         if connection_type == "main_window_connections":
@@ -140,9 +149,7 @@ class TestMainWindowConnections:
         signal_broker.setup_main_window_connections(main_window)
 
         # Verify view model connections
-        main_window.main_view_model.status_updated.connect.assert_called_once_with(
-            main_window.status_bar.showMessage
-        )
+        main_window.main_view_model.status_updated.connect.assert_called_once_with(main_window.status_bar.showMessage)
         main_window.main_view_model.processing_vm.status_updated.connect.assert_called_once_with(
             main_window.main_view_model.update_global_status_from_child
         )
@@ -185,9 +192,7 @@ class TestMainWindowConnections:
         signal_broker.setup_main_window_connections(main_window)
 
         # Verify processing started connection
-        main_window.main_tab.processing_started.connect.assert_called_once_with(
-            main_window._handle_processing
-        )
+        main_window.main_tab.processing_started.connect.assert_called_once_with(main_window._handle_processing)
 
     def test_model_combo_connection_when_present(self, signal_broker, comprehensive_main_window_mock) -> None:
         """Test model combo connection when method is present."""
@@ -224,7 +229,9 @@ class TestMainWindowConnections:
 class TestWorkerConnections:
     """Test VFI worker signal connections."""
 
-    def test_complete_worker_connections(self, signal_broker, comprehensive_main_window_mock, comprehensive_worker_mock) -> None:
+    def test_complete_worker_connections(
+        self, signal_broker, comprehensive_main_window_mock, comprehensive_worker_mock
+    ) -> None:
         """Test all VFI worker signal connections."""
         main_window = comprehensive_main_window_mock
         worker = comprehensive_worker_mock
@@ -237,7 +244,9 @@ class TestWorkerConnections:
         worker.error.connect.assert_called_once_with(main_window._on_processing_error)
 
     @pytest.mark.parametrize("missing_signal", ["progress", "finished", "error"])
-    def test_worker_connections_with_missing_signals(self, signal_broker, comprehensive_main_window_mock, missing_signal) -> None:
+    def test_worker_connections_with_missing_signals(
+        self, signal_broker, comprehensive_main_window_mock, missing_signal
+    ) -> None:
         """Test worker connections with missing signals."""
         main_window = comprehensive_main_window_mock
         worker = Mock()
@@ -252,8 +261,12 @@ class TestWorkerConnections:
         with pytest.raises(AttributeError):
             signal_broker.setup_worker_connections(main_window, worker)
 
-    @pytest.mark.parametrize("missing_method", ["_on_processing_progress", "_on_processing_finished", "_on_processing_error"])
-    def test_worker_connections_with_missing_main_window_methods(self, signal_broker, comprehensive_worker_mock, missing_method) -> None:
+    @pytest.mark.parametrize(
+        "missing_method", ["_on_processing_progress", "_on_processing_finished", "_on_processing_error"]
+    )
+    def test_worker_connections_with_missing_main_window_methods(
+        self, signal_broker, comprehensive_worker_mock, missing_method
+    ) -> None:
         """Test worker connections with missing main window methods."""
         worker = comprehensive_worker_mock
         main_window = Mock()
@@ -296,7 +309,9 @@ class TestSignalBrokerRobustness:
             signal_broker.setup_main_window_connections(partial_main_window)
 
     @patch("goesvfi.gui_components.signal_broker.LOGGER")
-    def test_logging_during_main_window_connections(self, mock_logger, signal_broker, comprehensive_main_window_mock) -> None:
+    def test_logging_during_main_window_connections(
+        self, mock_logger, signal_broker, comprehensive_main_window_mock
+    ) -> None:
         """Test that appropriate logging occurs during main window connection setup."""
         main_window = comprehensive_main_window_mock
 
@@ -309,7 +324,9 @@ class TestSignalBrokerRobustness:
         mock_logger.info.assert_called()
 
     @patch("goesvfi.gui_components.signal_broker.LOGGER")
-    def test_logging_during_worker_connections(self, mock_logger, signal_broker, comprehensive_main_window_mock, comprehensive_worker_mock) -> None:
+    def test_logging_during_worker_connections(
+        self, mock_logger, signal_broker, comprehensive_main_window_mock, comprehensive_worker_mock
+    ) -> None:
         """Test logging during worker connection setup."""
         main_window = comprehensive_main_window_mock
         worker = comprehensive_worker_mock
@@ -319,7 +336,9 @@ class TestSignalBrokerRobustness:
         # Should have debug log calls
         assert mock_logger.debug.call_count >= 2
 
-    def test_concurrent_connection_setup(self, signal_broker, comprehensive_main_window_mock, comprehensive_worker_mock) -> None:
+    def test_concurrent_connection_setup(
+        self, signal_broker, comprehensive_main_window_mock, comprehensive_worker_mock
+    ) -> None:
         """Test that signal broker can handle concurrent setup calls."""
         import threading
 
@@ -346,12 +365,17 @@ class TestSignalBrokerRobustness:
         assert main_window.request_previews_update.connect.called
         assert worker.progress.connect.called
 
-    @pytest.mark.parametrize("setup_order", [
-        "main_window_first",
-        "worker_first",
-        "both_together",
-    ])
-    def test_setup_order_independence(self, signal_broker, comprehensive_main_window_mock, comprehensive_worker_mock, setup_order) -> None:
+    @pytest.mark.parametrize(
+        "setup_order",
+        [
+            "main_window_first",
+            "worker_first",
+            "both_together",
+        ],
+    )
+    def test_setup_order_independence(
+        self, signal_broker, comprehensive_main_window_mock, comprehensive_worker_mock, setup_order
+    ) -> None:
         """Test that setup order doesn't matter."""
         main_window = comprehensive_main_window_mock
         worker = comprehensive_worker_mock

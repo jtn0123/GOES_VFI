@@ -197,6 +197,7 @@ class MainTabSettings:
             Dictionary with all processing settings
         """
         import multiprocessing
+
         default_workers = max(1, multiprocessing.cpu_count() - 1)
 
         return {
@@ -236,8 +237,16 @@ class MainTabSettings:
             "tta_temporal": self.get_tta_temporal(),
         }
 
-    def save_all_rife_settings(self, model_key: str, tile_enabled: bool, tile_size: int,
-                              uhd_mode: bool, thread_spec: str, tta_spatial: bool, tta_temporal: bool) -> None:
+    def save_all_rife_settings(
+        self,
+        model_key: str,
+        tile_enabled: bool,
+        tile_size: int,
+        uhd_mode: bool,
+        thread_spec: str,
+        tta_spatial: bool,
+        tta_temporal: bool,
+    ) -> None:
         """Save all RIFE settings at once.
 
         Args:

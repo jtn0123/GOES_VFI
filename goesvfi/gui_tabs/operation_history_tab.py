@@ -94,19 +94,19 @@ class OperationTableModel(QAbstractTableModel):
         self.operations = operations
         self.endResetModel()
 
-    def rowCount(self, parent: QModelIndex | None = None) -> int:  # noqa: N802, DOC201
+    def rowCount(self, parent: QModelIndex | None = None) -> int:  # noqa: N802
         """Get number of rows."""
         if parent is None:
             parent = QModelIndex()
         return len(self.operations)
 
-    def columnCount(self, parent: QModelIndex | None = None) -> int:  # noqa: N802, DOC201
+    def columnCount(self, parent: QModelIndex | None = None) -> int:  # noqa: N802
         """Get number of columns."""
         if parent is None:
             parent = QModelIndex()
         return len(self.columns)
 
-    def data(self, index: QModelIndex, role: int | None = None) -> Any:  # noqa: C901, PLR0911, PLR0912, DOC201
+    def data(self, index: QModelIndex, role: int | None = None) -> Any:  # noqa: C901, PLR0911, PLR0912
         """Get data for a cell."""
         if role is None:
             role = Qt.ItemDataRole.DisplayRole

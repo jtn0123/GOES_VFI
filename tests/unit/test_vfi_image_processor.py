@@ -68,7 +68,7 @@ class TestVFIImageProcessor:
             false_colour=False,
             res_km=2,
             sanchez_temp_dir=sanchez_temp_dir,
-            output_dir=output_dir
+            output_dir=output_dir,
         )
 
         # Check result
@@ -81,7 +81,9 @@ class TestVFIImageProcessor:
         with Image.open(result) as img:
             assert img.size == (200, 150)  # Same as input
 
-    def test_process_single_image_with_crop(self, image_processor, test_image_path, output_dir, sanchez_temp_dir) -> None:
+    def test_process_single_image_with_crop(
+        self, image_processor, test_image_path, output_dir, sanchez_temp_dir
+    ) -> None:
         """Test image processing with cropping."""
         crop_rect = (10, 20, 110, 120)  # 100x100 crop
 
@@ -91,7 +93,7 @@ class TestVFIImageProcessor:
             false_colour=False,
             res_km=2,
             sanchez_temp_dir=sanchez_temp_dir,
-            output_dir=output_dir
+            output_dir=output_dir,
         )
 
         # Check output image is cropped
@@ -99,7 +101,9 @@ class TestVFIImageProcessor:
             assert img.size == (100, 100)
 
     @patch("goesvfi.pipeline.vfi_image_processor.colourise")
-    def test_process_single_image_with_sanchez(self, mock_colourise, image_processor, test_image_path, output_dir, sanchez_temp_dir) -> None:
+    def test_process_single_image_with_sanchez(
+        self, mock_colourise, image_processor, test_image_path, output_dir, sanchez_temp_dir
+    ) -> None:
         """Test image processing with Sanchez false coloring."""
         sanchez_temp_dir.mkdir(parents=True)
 
@@ -116,7 +120,7 @@ class TestVFIImageProcessor:
             false_colour=True,
             res_km=4,
             sanchez_temp_dir=sanchez_temp_dir,
-            output_dir=output_dir
+            output_dir=output_dir,
         )
 
         # Check colourise was called
@@ -130,7 +134,9 @@ class TestVFIImageProcessor:
         assert result.exists()
 
     @patch("goesvfi.pipeline.vfi_image_processor.colourise")
-    def test_process_single_image_sanchez_failure(self, mock_colourise, image_processor, test_image_path, output_dir, sanchez_temp_dir) -> None:
+    def test_process_single_image_sanchez_failure(
+        self, mock_colourise, image_processor, test_image_path, output_dir, sanchez_temp_dir
+    ) -> None:
         """Test image processing when Sanchez fails."""
         sanchez_temp_dir.mkdir(parents=True)
 
@@ -144,7 +150,7 @@ class TestVFIImageProcessor:
             false_colour=True,
             res_km=4,
             sanchez_temp_dir=sanchez_temp_dir,
-            output_dir=output_dir
+            output_dir=output_dir,
         )
 
         # Check result exists (should have original color)
@@ -153,7 +159,9 @@ class TestVFIImageProcessor:
             # Should have original dimensions
             assert img.size == (200, 150)
 
-    def test_process_single_image_invalid_crop(self, image_processor, test_image_path, output_dir, sanchez_temp_dir) -> None:
+    def test_process_single_image_invalid_crop(
+        self, image_processor, test_image_path, output_dir, sanchez_temp_dir
+    ) -> None:
         """Test image processing with invalid crop rectangle."""
         # Crop exceeds image bounds
         crop_rect = (10, 20, 300, 200)  # Right edge > image width
@@ -165,10 +173,12 @@ class TestVFIImageProcessor:
                 false_colour=False,
                 res_km=2,
                 sanchez_temp_dir=sanchez_temp_dir,
-                output_dir=output_dir
+                output_dir=output_dir,
             )
 
-    def test_process_single_image_nonexistent_file(self, image_processor, tmp_path, output_dir, sanchez_temp_dir) -> None:
+    def test_process_single_image_nonexistent_file(
+        self, image_processor, tmp_path, output_dir, sanchez_temp_dir
+    ) -> None:
         """Test processing nonexistent image file."""
         bad_path = tmp_path / "nonexistent.png"
 
@@ -179,7 +189,7 @@ class TestVFIImageProcessor:
                 false_colour=False,
                 res_km=2,
                 sanchez_temp_dir=sanchez_temp_dir,
-                output_dir=output_dir
+                output_dir=output_dir,
             )
 
     def test_apply_sanchez_coloring(self, image_processor, test_image_path, sanchez_temp_dir) -> None:
@@ -196,9 +206,7 @@ class TestVFIImageProcessor:
 
             # Test
             img = Image.open(test_image_path)
-            result = image_processor._apply_sanchez_coloring(
-                img, test_image_path, 2, sanchez_temp_dir
-            )
+            result = image_processor._apply_sanchez_coloring(img, test_image_path, 2, sanchez_temp_dir)
 
             # Should return a PIL Image
             assert isinstance(result, Image.Image)
@@ -229,9 +237,7 @@ class TestVFIImageProcessor:
         """Test saving processed image."""
         img = create_test_image(100, 100)
 
-        result = image_processor._save_processed_image(
-            img, "test_stem", output_dir
-        )
+        result = image_processor._save_processed_image(img, "test_stem", output_dir)
 
         assert result.exists()
         assert result.parent == output_dir

@@ -36,7 +36,7 @@ class VFIImageProcessor:
         sanchez_temp_dir: pathlib.Path,
         output_dir: pathlib.Path,
         target_width: int | None = None,
-        target_height: int | None = None
+        target_height: int | None = None,
     ) -> pathlib.Path:
         """Process a single image with optional Sanchez coloring and cropping.
 
@@ -62,34 +62,22 @@ class VFIImageProcessor:
             img = Image.open(image_path)
             orig_width, orig_height = img.size
 
-            LOGGER.debug(
-                "Processing image %s (size: %dx%d)",
-                image_path.name, orig_width, orig_height
-            )
+            LOGGER.debug("Processing image %s (size: %dx%d)", image_path.name, orig_width, orig_height)
 
             # Apply Sanchez false coloring if requested
             if false_colour:
-                img = self._apply_sanchez_coloring(
-                    img, image_path, res_km, sanchez_temp_dir
-                )
+                img = self._apply_sanchez_coloring(img, image_path, res_km, sanchez_temp_dir)
 
             # Apply crop if requested
             if crop_rect_pil:
                 # Validate crop against image dimensions
-                self.crop_handler.validate_crop_against_image(
-                    crop_rect_pil, orig_width, orig_height, image_path.name
-                )
+                self.crop_handler.validate_crop_against_image(crop_rect_pil, orig_width, orig_height, image_path.name)
                 img = self._apply_crop(img, crop_rect_pil, image_path.name)
 
             # Save processed image
-            processed_path = self._save_processed_image(
-                img, image_path.stem, output_dir
-            )
+            processed_path = self._save_processed_image(img, image_path.stem, output_dir)
 
-            LOGGER.info(
-                "Processed %s: output size %s, saved to %s",
-                image_path.name, img.size, processed_path.name
-            )
+            LOGGER.info("Processed %s: output size %s, saved to %s", image_path.name, img.size, processed_path.name)
 
             return processed_path
 
@@ -98,11 +86,7 @@ class VFIImageProcessor:
             raise
 
     def _apply_sanchez_coloring(
-        self,
-        img: Image.Image,
-        original_path: pathlib.Path,
-        res_km: int,
-        sanchez_temp_dir: pathlib.Path
+        self, img: Image.Image, original_path: pathlib.Path, res_km: int, sanchez_temp_dir: pathlib.Path
     ) -> Image.Image:
         """Apply Sanchez false coloring to an image.
 
@@ -126,10 +110,7 @@ class VFIImageProcessor:
             img.save(temp_in_path, "PNG")
 
             # Run Sanchez coloring
-            LOGGER.info(
-                "Running Sanchez on %s (res=%skm) -> %s",
-                temp_in_path.name, res_km, temp_out_path.name
-            )
+            LOGGER.info("Running Sanchez on %s (res=%skm) -> %s", temp_in_path.name, res_km, temp_out_path.name)
             colourise(str(temp_in_path), str(temp_out_path), res_km=res_km)
 
             # Load colored result
@@ -139,10 +120,7 @@ class VFIImageProcessor:
             return img_colored
 
         except Exception as e:
-            LOGGER.error(
-                "Sanchez coloring failed for %s: %s",
-                original_path.name, e, exc_info=True
-            )
+            LOGGER.error("Sanchez coloring failed for %s: %s", original_path.name, e, exc_info=True)
             # Return original image on failure
             return img
 
@@ -153,12 +131,7 @@ class VFIImageProcessor:
             if temp_out_path.exists():
                 temp_out_path.unlink(missing_ok=True)
 
-    def _apply_crop(
-        self,
-        img: Image.Image,
-        crop_rect_pil: tuple[int, int, int, int],
-        image_name: str
-    ) -> Image.Image:
+    def _apply_crop(self, img: Image.Image, crop_rect_pil: tuple[int, int, int, int], image_name: str) -> Image.Image:
         """Apply crop to an image.
 
         Args:
@@ -174,34 +147,21 @@ class VFIImageProcessor:
         """
         try:
             LOGGER.debug(
-                "Applying crop %s to image %s",
-                self.crop_handler.format_crop_for_logging(crop_rect_pil),
-                image_name
+                "Applying crop %s to image %s", self.crop_handler.format_crop_for_logging(crop_rect_pil), image_name
             )
 
             img_cropped = img.crop(crop_rect_pil)
 
-            LOGGER.debug(
-                "Crop successful: %s -> %s for %s",
-                img.size, img_cropped.size, image_name
-            )
+            LOGGER.debug("Crop successful: %s -> %s for %s", img.size, img_cropped.size, image_name)
 
             return img_cropped
 
         except Exception as e:
-            LOGGER.error(
-                "Failed to crop image %s with rect %s: %s",
-                image_name, crop_rect_pil, e, exc_info=True
-            )
+            LOGGER.error("Failed to crop image %s with rect %s: %s", image_name, crop_rect_pil, e, exc_info=True)
             msg = f"Crop failed for {image_name}: {e}"
             raise ValueError(msg) from e
 
-    def _save_processed_image(
-        self,
-        img: Image.Image,
-        original_stem: str,
-        output_dir: pathlib.Path
-    ) -> pathlib.Path:
+    def _save_processed_image(self, img: Image.Image, original_stem: str, output_dir: pathlib.Path) -> pathlib.Path:
         """Save processed image to output directory.
 
         Args:

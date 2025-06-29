@@ -325,13 +325,16 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
 
         # Run concurrent downloads in multiple threads
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(product_types)) as executor:
-            futures = [executor.submit(
-                        self._run_reconcile_in_thread,
-                        start_date,
-                        end_date,
-                        interval_minutes=10,
-                        product_type=product_type,
-                    ) for product_type in product_types]
+            futures = [
+                executor.submit(
+                    self._run_reconcile_in_thread,
+                    start_date,
+                    end_date,
+                    interval_minutes=10,
+                    product_type=product_type,
+                )
+                for product_type in product_types
+            ]
 
             # Wait for all to complete
             results = [future.result() for future in futures]
@@ -469,8 +472,7 @@ class TestS3ThreadLocalIntegration(unittest.TestCase):
         # Test each product type in a separate thread
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             futures = {
-                product_type: executor.submit(run_product_test, product_type)
-                for product_type in self.real_patterns
+                product_type: executor.submit(run_product_test, product_type) for product_type in self.real_patterns
             }
 
             # Wait for all to complete

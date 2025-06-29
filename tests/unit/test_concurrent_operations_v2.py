@@ -161,6 +161,7 @@ class TestConcurrentOperations:
 
     def test_thread_pool_cache_operations(self, mock_time_functions, thread_safe_db) -> None:
         """Test cache operations from multiple threads."""
+
         # Operations to run in threads
         def write_operation(thread_id, count) -> None:
             for i in range(count):
@@ -289,6 +290,7 @@ class TestConcurrentOperations:
             # Track start time
             with processing_lock:
                 import time
+
                 start_time = time.time()
                 processing_times.append((task_id, start_time))
 
@@ -326,6 +328,7 @@ class TestConcurrentOperations:
             def sample_task(task_id, duration, progress_callback=None, cancel_check=None) -> str:
                 with task_lock:
                     import time
+
                     task_results.append((task_id, time.time()))
                 return f"Task {task_id} completed"
 
@@ -388,7 +391,7 @@ class TestConcurrentOperations:
         # Should complete without deadlock
         results = await asyncio.wait_for(
             asyncio.gather(*tasks, return_exceptions=True),
-            timeout=2.0  # Reduced timeout
+            timeout=2.0,  # Reduced timeout
         )
 
         # At least some should succeed
@@ -438,7 +441,9 @@ class TestConcurrentOperations:
 
     @pytest.mark.parametrize("num_clients", [2, 3, 5])
     @pytest.mark.asyncio()
-    async def test_concurrent_client_access_patterns(self, mock_time_functions, mock_s3_components, num_clients) -> None:
+    async def test_concurrent_client_access_patterns(
+        self, mock_time_functions, mock_s3_components, num_clients
+    ) -> None:
         """Test various concurrent client access patterns."""
         _mock_s3_client, mock_session = mock_s3_components
 

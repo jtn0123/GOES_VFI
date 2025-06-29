@@ -42,6 +42,7 @@ class TestEnhancedGUIDialogsV2(unittest.TestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -115,8 +116,7 @@ class TestEnhancedGUIDialogsV2(unittest.TestCase):
 
         for scenario in timestamp_scenarios:
             timestamp = EnhancedMissingTimestamp(
-                timestamp=scenario["timestamp"],
-                expected_filename=scenario["filename"]
+                timestamp=scenario["timestamp"], expected_filename=scenario["filename"]
             )
             timestamp.satellite = scenario["satellite"]
             timestamp.source = scenario["source"]
@@ -374,7 +374,9 @@ class TestEnhancedGUIDialogsV2(unittest.TestCase):
                 retrieved_options = dialog.get_options()
 
                 for key, expected in scenario["options"].items():
-                    assert retrieved_options.get(key) == expected, f"Option {key} not set correctly in {scenario['name']}"
+                    assert retrieved_options.get(key) == expected, (
+                        f"Option {key} not set correctly in {scenario['name']}"
+                    )
 
         dialog.deleteLater()
 
@@ -487,8 +489,7 @@ class TestEnhancedGUIDialogsV2(unittest.TestCase):
         states = ["pending", "downloading", "completed", "error", "timeout", "cancelled"]
         for i, state in enumerate(states):
             timestamp = EnhancedMissingTimestamp(
-                timestamp=datetime(2024, 1, 1, 12, i * 15, 0),
-                expected_filename=f"test_{state}.nc"
+                timestamp=datetime(2024, 1, 1, 12, i * 15, 0), expected_filename=f"test_{state}.nc"
             )
             timestamp.status = state
             timestamp.satellite = "GOES-16"
@@ -667,7 +668,9 @@ class TestEnhancedGUIDialogsV2(unittest.TestCase):
                 assert dialog.windowTitle() is not None
 
                 # Test that dialog is focusable
-                assert dialog.focusPolicy() != Qt.FocusPolicy.NoFocus or dialog.focusPolicy() == Qt.FocusPolicy.NoFocus  # Allow both
+                assert (
+                    dialog.focusPolicy() != Qt.FocusPolicy.NoFocus or dialog.focusPolicy() == Qt.FocusPolicy.NoFocus
+                )  # Allow both
 
                 # Test that dialog can handle standard dialog operations
                 # (Escape, Enter, etc. are typically handled by Qt automatically)
@@ -759,8 +762,7 @@ class TestEnhancedGUIDialogsV2(unittest.TestCase):
         large_dataset = []
         for i in range(1000):
             timestamp = EnhancedMissingTimestamp(
-                timestamp=datetime(2024, 1, 1, 12, i % 60, 0),
-                expected_filename=f"large_test_{i}.nc"
+                timestamp=datetime(2024, 1, 1, 12, i % 60, 0), expected_filename=f"large_test_{i}.nc"
             )
             timestamp.satellite = f"GOES-{16 + (i % 3)}"
             timestamp.source = "s3" if i % 2 == 0 else "cdn"
@@ -833,20 +835,14 @@ def app_pytest():
 @pytest.fixture()
 def test_items_pytest():
     """Create test timestamp items for pytest tests."""
-    timestamp1 = EnhancedMissingTimestamp(
-        timestamp=datetime(2024, 1, 1, 12, 0, 0),
-        expected_filename="path1.nc"
-    )
+    timestamp1 = EnhancedMissingTimestamp(timestamp=datetime(2024, 1, 1, 12, 0, 0), expected_filename="path1.nc")
     timestamp1.satellite = "GOES-16"
     timestamp1.source = "s3"
     timestamp1.status = "pending"
     timestamp1.progress = 0
     timestamp1.path = Path("/test/path1.nc")
 
-    timestamp2 = EnhancedMissingTimestamp(
-        timestamp=datetime(2024, 1, 1, 12, 15, 0),
-        expected_filename="path2.nc"
-    )
+    timestamp2 = EnhancedMissingTimestamp(timestamp=datetime(2024, 1, 1, 12, 15, 0), expected_filename="path2.nc")
     timestamp2.satellite = "GOES-17"
     timestamp2.source = "cdn"
     timestamp2.status = "error"

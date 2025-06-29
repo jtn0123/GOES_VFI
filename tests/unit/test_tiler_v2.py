@@ -37,12 +37,15 @@ class TestTilerV2:
         """Create tiny test image for edge cases."""
         return np.random.rand(100, 100, 3).astype(np.float32)
 
-    @pytest.mark.parametrize("tile_size,overlap", [
-        (2048, 32),
-        (1024, 16),
-        (512, 8),
-    ])
-    def test_tile_image_basic_parametrized(self, base_image, tile_size, overlap):
+    @pytest.mark.parametrize(
+        "tile_size,overlap",
+        [
+            (2048, 32),
+            (1024, 16),
+            (512, 8),
+        ],
+    )
+    def test_tile_image_basic_parametrized(self, base_image, tile_size, overlap) -> None:
         """Test basic tiling with different tile sizes and overlaps."""
         tiles = tile_image(base_image, tile_size=tile_size, overlap=overlap)
 
@@ -69,7 +72,7 @@ class TestTilerV2:
             assert w <= tile_size
             assert tile.dtype == np.float32
 
-    def test_tile_image_edge_case_dimensions(self, edge_case_image):
+    def test_tile_image_edge_case_dimensions(self, edge_case_image) -> None:
         """Test tiling with image dimensions not divisible by tile size."""
         tile_size = 2048
         overlap = 32
@@ -87,12 +90,15 @@ class TestTilerV2:
         assert h == edge_case_image.shape[0] - tiles[-1][1]
         assert w == edge_case_image.shape[1] - tiles[-1][0]
 
-    @pytest.mark.parametrize("tile_size,overlap", [
-        (2048, 32),
-        (1024, 16),
-        (512, 8),
-    ])
-    def test_merge_tiles_lossless_reconstruction(self, base_image, tile_size, overlap):
+    @pytest.mark.parametrize(
+        "tile_size,overlap",
+        [
+            (2048, 32),
+            (1024, 16),
+            (512, 8),
+        ],
+    )
+    def test_merge_tiles_lossless_reconstruction(self, base_image, tile_size, overlap) -> None:
         """Test that tiling and merging produces lossless reconstruction."""
         tiles = tile_image(base_image, tile_size=tile_size, overlap=overlap)
         merged = merge_tiles(tiles, full_shape=(base_image.shape[0], base_image.shape[1]), overlap=overlap)
@@ -101,7 +107,7 @@ class TestTilerV2:
         assert merged.shape == base_image.shape
         assert np.allclose(merged, base_image, atol=1e-5)
 
-    def test_merge_tiles_with_overlap_uniform_image(self, small_image):
+    def test_merge_tiles_with_overlap_uniform_image(self, small_image) -> None:
         """Test overlap handling with uniform (all ones) image."""
         tile_size = 128
         overlap = 32
@@ -113,12 +119,15 @@ class TestTilerV2:
         assert merged.shape == small_image.shape
         assert np.allclose(merged, small_image, atol=1e-6)
 
-    @pytest.mark.parametrize("image_size,tile_size,overlap", [
-        ((256, 256, 3), 128, 32),
-        ((100, 100, 3), 60, 20),
-        ((512, 512, 3), 256, 64),
-    ])
-    def test_lossless_reconstruction_parametrized(self, image_size, tile_size, overlap):
+    @pytest.mark.parametrize(
+        "image_size,tile_size,overlap",
+        [
+            ((256, 256, 3), 128, 32),
+            ((100, 100, 3), 60, 20),
+            ((512, 512, 3), 256, 64),
+        ],
+    )
+    def test_lossless_reconstruction_parametrized(self, image_size, tile_size, overlap) -> None:
         """Test lossless reconstruction with various image and tile sizes."""
         img = np.random.rand(*image_size).astype(np.float32)
         tiles = tile_image(img, tile_size=tile_size, overlap=overlap)
@@ -127,7 +136,7 @@ class TestTilerV2:
         assert merged.shape == img.shape
         assert np.allclose(merged, img, atol=1e-6)
 
-    def test_tile_image_minimal_overlap(self, tiny_image):
+    def test_tile_image_minimal_overlap(self, tiny_image) -> None:
         """Test tiling with minimal overlap."""
         tile_size = 64
         overlap = 4
@@ -140,7 +149,7 @@ class TestTilerV2:
             assert tile.shape[2] == 3
             assert tile.dtype == np.float32
 
-    def test_tile_image_large_overlap(self, tiny_image):
+    def test_tile_image_large_overlap(self, tiny_image) -> None:
         """Test tiling with large overlap relative to tile size."""
         tile_size = 64
         overlap = 32  # 50% overlap
@@ -153,7 +162,7 @@ class TestTilerV2:
             assert tile.shape[2] == 3
             assert tile.dtype == np.float32
 
-    def test_tile_boundaries_comprehensive(self, base_image):
+    def test_tile_boundaries_comprehensive(self, base_image) -> None:
         """Test that tile boundaries are calculated correctly."""
         tile_size = 1024
         overlap = 64
@@ -168,16 +177,16 @@ class TestTilerV2:
             assert y + tile.shape[0] <= base_image.shape[0]
 
             # Verify tile content matches original image
-            original_patch = base_image[y:y+tile.shape[0], x:x+tile.shape[1], :]
+            original_patch = base_image[y : y + tile.shape[0], x : x + tile.shape[1], :]
             assert np.allclose(tile, original_patch, atol=1e-6)
 
-    def test_merge_tiles_exact_reconstruction(self, small_image):
+    def test_merge_tiles_exact_reconstruction(self, small_image) -> None:
         """Test exact reconstruction with known pattern."""
         # Create a gradient pattern for testing
-        h, w, c = small_image.shape
+        h, w, _c = small_image.shape
         for i in range(h):
             for j in range(w):
-                small_image[i, j, :] = [i/h, j/w, (i+j)/(h+w)]
+                small_image[i, j, :] = [i / h, j / w, (i + j) / (h + w)]
 
         tile_size = 128
         overlap = 16
@@ -189,7 +198,7 @@ class TestTilerV2:
         assert merged.shape == small_image.shape
         assert np.allclose(merged, small_image, atol=1e-6)
 
-    def test_single_tile_case(self):
+    def test_single_tile_case(self) -> None:
         """Test edge case where image is smaller than tile size."""
         small_img = np.random.rand(64, 64, 3).astype(np.float32)
         tile_size = 128
@@ -205,7 +214,7 @@ class TestTilerV2:
         assert tile.shape == small_img.shape
         assert np.allclose(tile, small_img, atol=1e-6)
 
-    def test_merge_tiles_performance_validation(self, base_image):
+    def test_merge_tiles_performance_validation(self, base_image) -> None:
         """Test merge tiles performance with larger image."""
         tile_size = 1024
         overlap = 32
@@ -218,7 +227,7 @@ class TestTilerV2:
         assert merged.dtype == base_image.dtype
         assert np.allclose(merged, base_image, atol=1e-5)
 
-    def test_zero_overlap_case(self, tiny_image):
+    def test_zero_overlap_case(self, tiny_image) -> None:
         """Test tiling with zero overlap."""
         tile_size = 64
         overlap = 0

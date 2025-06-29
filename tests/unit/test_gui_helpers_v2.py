@@ -43,6 +43,7 @@ class TestGUIHelpersV2(unittest.TestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -459,13 +460,25 @@ class TestGUIHelpersV2(unittest.TestCase):
         summary_scenarios = [
             {
                 "version": "4.6",
-                "capabilities": {"tiling": True, "uhd": True, "tta_spatial": False, "tta_temporal": False, "thread_spec": True},
+                "capabilities": {
+                    "tiling": True,
+                    "uhd": True,
+                    "tta_spatial": False,
+                    "tta_temporal": False,
+                    "thread_spec": True,
+                },
                 "expected_support_count": 3,
                 "total_count": 5,
             },
             {
                 "version": "4.0",
-                "capabilities": {"tiling": False, "uhd": True, "tta_spatial": False, "tta_temporal": False, "thread_spec": False},
+                "capabilities": {
+                    "tiling": False,
+                    "uhd": True,
+                    "tta_spatial": False,
+                    "tta_temporal": False,
+                    "thread_spec": False,
+                },
                 "expected_support_count": 1,
                 "total_count": 5,
             },
@@ -487,7 +500,9 @@ class TestGUIHelpersV2(unittest.TestCase):
 
                 if scenario["version"]:
                     assert f"v{scenario['version']}" in summary
-                    assert f"{scenario['expected_support_count']}/{scenario['total_count']} features supported" in summary
+                    assert (
+                        f"{scenario['expected_support_count']}/{scenario['total_count']} features supported" in summary
+                    )
                 else:
                     assert "Not detected" in summary
 
@@ -550,7 +565,11 @@ class TestGUIHelpersV2(unittest.TestCase):
         panning_scenarios = [
             {"start": QPointF(100, 100), "moves": [QPointF(150, 150), QPointF(200, 200)], "end": QPointF(200, 200)},
             {"start": QPointF(50, 50), "moves": [QPointF(25, 25)], "end": QPointF(25, 25)},
-            {"start": QPointF(300, 200), "moves": [QPointF(350, 250), QPointF(400, 300), QPointF(450, 350)], "end": QPointF(450, 350)},
+            {
+                "start": QPointF(300, 200),
+                "moves": [QPointF(350, 250), QPointF(400, 300), QPointF(450, 350)],
+                "end": QPointF(450, 350),
+            },
         ]
 
         for i, scenario in enumerate(panning_scenarios):
@@ -999,8 +1018,7 @@ class TestGUIHelpersV2(unittest.TestCase):
 
             # Should handle empty capabilities gracefully
             manager.update_ui_elements(
-                tile_cb, tile_spin, uhd_cb, thread_edit, thread_label,
-                tta_spatial_cb, tta_temporal_cb
+                tile_cb, tile_spin, uhd_cb, thread_edit, thread_label, tta_spatial_cb, tta_temporal_cb
             )
 
         except Exception as e:

@@ -19,44 +19,59 @@ from goesvfi.sanchez.health_check import (
 class TestSanchezHealthStatus:
     """Test SanchezHealthStatus data class - optimized."""
 
-    @pytest.mark.parametrize("status_params,expected_healthy", [
-        # All good
-        ({
-            "binary_exists": True,
-            "binary_executable": True,
-            "resources_exist": True,
-            "can_execute": True,
-            "temp_dir_writable": True,
-            "errors": [],
-        }, True),
-        # Has errors
-        ({
-            "binary_exists": True,
-            "binary_executable": True,
-            "resources_exist": True,
-            "can_execute": True,
-            "temp_dir_writable": True,
-            "errors": ["Some error"],
-        }, False),
-        # Missing binary
-        ({
-            "binary_exists": False,
-            "binary_executable": True,
-            "resources_exist": True,
-            "can_execute": True,
-            "temp_dir_writable": True,
-            "errors": [],
-        }, False),
-        # Not executable
-        ({
-            "binary_exists": True,
-            "binary_executable": False,
-            "resources_exist": True,
-            "can_execute": True,
-            "temp_dir_writable": True,
-            "errors": [],
-        }, False),
-    ])
+    @pytest.mark.parametrize(
+        "status_params,expected_healthy",
+        [
+            # All good
+            (
+                {
+                    "binary_exists": True,
+                    "binary_executable": True,
+                    "resources_exist": True,
+                    "can_execute": True,
+                    "temp_dir_writable": True,
+                    "errors": [],
+                },
+                True,
+            ),
+            # Has errors
+            (
+                {
+                    "binary_exists": True,
+                    "binary_executable": True,
+                    "resources_exist": True,
+                    "can_execute": True,
+                    "temp_dir_writable": True,
+                    "errors": ["Some error"],
+                },
+                False,
+            ),
+            # Missing binary
+            (
+                {
+                    "binary_exists": False,
+                    "binary_executable": True,
+                    "resources_exist": True,
+                    "can_execute": True,
+                    "temp_dir_writable": True,
+                    "errors": [],
+                },
+                False,
+            ),
+            # Not executable
+            (
+                {
+                    "binary_exists": True,
+                    "binary_executable": False,
+                    "resources_exist": True,
+                    "can_execute": True,
+                    "temp_dir_writable": True,
+                    "errors": [],
+                },
+                False,
+            ),
+        ],
+    )
     def test_health_status_conditions(self, status_params, expected_healthy) -> None:
         """Test health status under various conditions."""
         status = SanchezHealthStatus(**status_params)
@@ -131,13 +146,16 @@ class TestSanchezHealthChecker:
 
         return resources
 
-    @pytest.mark.parametrize("platform_info,expected_path_pattern", [
-        (("Darwin", "x86_64"), "osx-x64/Sanchez"),
-        (("Darwin", "arm64"), "osx-arm64/Sanchez"),
-        (("Linux", "x86_64"), "linux-x64/Sanchez"),
-        (("Windows", "AMD64"), "win-x64/Sanchez.exe"),
-        (("Windows", "x86"), "win-x86/Sanchez.exe"),
-    ])
+    @pytest.mark.parametrize(
+        "platform_info,expected_path_pattern",
+        [
+            (("Darwin", "x86_64"), "osx-x64/Sanchez"),
+            (("Darwin", "arm64"), "osx-arm64/Sanchez"),
+            (("Linux", "x86_64"), "linux-x64/Sanchez"),
+            (("Windows", "AMD64"), "win-x64/Sanchez.exe"),
+            (("Windows", "x86"), "win-x86/Sanchez.exe"),
+        ],
+    )
     def test_binary_path_detection(self, platform_info, expected_path_pattern) -> None:
         """Test binary path detection for different platforms."""
         system, machine = platform_info
@@ -189,32 +207,35 @@ class TestSanchezHealthChecker:
         assert "Test.json" in status.gradient_files
         assert len(status.missing_resources) == 0
 
-    @pytest.mark.parametrize("execution_result", [
-        {
-            "returncode": 0,
-            "stdout": "Sanchez v1.0.0\nColourise weather satellite images",
-            "stderr": "",
-            "can_execute": True,
-            "has_error": False,
-        },
-        {
-            "returncode": 1,
-            "stdout": "",
-            "stderr": "Error: Missing required argument",
-            "can_execute": False,
-            "has_error": True,
-        },
-        {
-            "side_effect": subprocess.TimeoutExpired("sanchez", 5),
-            "can_execute": False,
-            "has_error": True,
-        },
-        {
-            "side_effect": FileNotFoundError("Sanchez not found"),
-            "can_execute": False,
-            "has_error": True,
-        },
-    ])
+    @pytest.mark.parametrize(
+        "execution_result",
+        [
+            {
+                "returncode": 0,
+                "stdout": "Sanchez v1.0.0\nColourise weather satellite images",
+                "stderr": "",
+                "can_execute": True,
+                "has_error": False,
+            },
+            {
+                "returncode": 1,
+                "stdout": "",
+                "stderr": "Error: Missing required argument",
+                "can_execute": False,
+                "has_error": True,
+            },
+            {
+                "side_effect": subprocess.TimeoutExpired("sanchez", 5),
+                "can_execute": False,
+                "has_error": True,
+            },
+            {
+                "side_effect": FileNotFoundError("Sanchez not found"),
+                "can_execute": False,
+                "has_error": True,
+            },
+        ],
+    )
     @patch("subprocess.run")
     def test_check_execution_scenarios(self, mock_run, execution_result) -> None:
         """Test execution checking under various scenarios."""
@@ -334,39 +355,44 @@ class TestSanchezInputValidation:
     @pytest.fixture()
     def create_test_image(self, tmp_path):
         """Factory fixture to create test images."""
+
         def _create(filename: str, size: tuple[int, int], format: str = "PNG") -> Path:
             image_path = tmp_path / filename
             img = Image.new("RGB", size, color="red")
             img.save(image_path, format)
             return image_path
+
         return _create
 
-    @pytest.mark.parametrize("test_case", [
-        {
-            "name": "valid_small",
-            "size": (500, 500),
-            "expected_valid": True,
-            "expected_msg": "OK",
-        },
-        {
-            "name": "valid_medium",
-            "size": (2000, 2000),
-            "expected_valid": True,
-            "expected_msg": "OK",
-        },
-        {
-            "name": "valid_large",
-            "size": (10000, 10000),
-            "expected_valid": True,
-            "expected_msg": "OK",
-        },
-        {
-            "name": "too_large",
-            "size": (10001, 10001),
-            "expected_valid": False,
-            "expected_msg": "too large",
-        },
-    ])
+    @pytest.mark.parametrize(
+        "test_case",
+        [
+            {
+                "name": "valid_small",
+                "size": (500, 500),
+                "expected_valid": True,
+                "expected_msg": "OK",
+            },
+            {
+                "name": "valid_medium",
+                "size": (2000, 2000),
+                "expected_valid": True,
+                "expected_msg": "OK",
+            },
+            {
+                "name": "valid_large",
+                "size": (10000, 10000),
+                "expected_valid": True,
+                "expected_msg": "OK",
+            },
+            {
+                "name": "too_large",
+                "size": (10001, 10001),
+                "expected_valid": False,
+                "expected_msg": "too large",
+            },
+        ],
+    )
     def test_validate_sanchez_input_sizes(self, create_test_image, test_case) -> None:
         """Test input validation with various image sizes."""
         try:

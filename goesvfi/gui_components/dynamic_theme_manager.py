@@ -381,7 +381,9 @@ QLabel.StatusInfo {{
         try:
             # Get all top-level widgets
             for widget in app.allWidgets():
-                if (hasattr(widget, "isWindow") and widget.isWindow()) or (hasattr(widget, "isTopLevel") and widget.isTopLevel()):
+                if (hasattr(widget, "isWindow") and widget.isWindow()) or (
+                    hasattr(widget, "isTopLevel") and widget.isTopLevel()
+                ):
                     WidgetFactory.update_all_widget_styles(widget)
         except ImportError as e:
             LOGGER.warning("Failed to refresh widget styles: %s", e)

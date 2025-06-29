@@ -19,8 +19,13 @@ T = TypeVar("T", bound=QWidget)
 class WidgetPool:
     """Manages a pool of reusable widgets to reduce allocation overhead."""
 
-    def __init__(self, widget_type: type[T], factory: Callable[[], T],
-                 max_size: int = 10, cleanup_func: Callable[[T], None] | None = None) -> None:
+    def __init__(
+        self,
+        widget_type: type[T],
+        factory: Callable[[], T],
+        max_size: int = 10,
+        cleanup_func: Callable[[T], None] | None = None,
+    ) -> None:
         """Initialize widget pool.
 
         Args:
@@ -119,8 +124,14 @@ class WidgetPoolManager:
         """Initialize the widget pool manager."""
         self.pools: dict[str, WidgetPool] = {}
 
-    def register_pool(self, name: str, widget_type: type[T], factory: Callable[[], T],
-                     max_size: int = 10, cleanup_func: Callable[[T], None] | None = None) -> None:
+    def register_pool(
+        self,
+        name: str,
+        widget_type: type[T],
+        factory: Callable[[], T],
+        max_size: int = 10,
+        cleanup_func: Callable[[T], None] | None = None,
+    ) -> None:
         """Register a new widget pool.
 
         Args:
@@ -193,8 +204,13 @@ def get_pool_manager() -> WidgetPoolManager:
     return _pool_manager
 
 
-def register_widget_pool(name: str, widget_type: type[T], factory: Callable[[], T],
-                        max_size: int = 10, cleanup_func: Callable[[T], None] | None = None) -> None:
+def register_widget_pool(
+    name: str,
+    widget_type: type[T],
+    factory: Callable[[], T],
+    max_size: int = 10,
+    cleanup_func: Callable[[T], None] | None = None,
+) -> None:
     """Convenience function to register a widget pool.
 
     Args:
@@ -233,6 +249,7 @@ def release_widget(pool_name: str, widget: QWidget) -> None:
 def cleanup_label(label) -> None:
     """Clean up a QLabel for reuse."""
     from PyQt6.QtWidgets import QLabel
+
     if isinstance(label, QLabel):
         label.clear()
         label.setPixmap(None)
@@ -244,6 +261,7 @@ def cleanup_label(label) -> None:
 def cleanup_button(button) -> None:
     """Clean up a QPushButton for reuse."""
     from PyQt6.QtWidgets import QPushButton
+
     if isinstance(button, QPushButton):
         button.setText("")
         button.setIcon(None)
@@ -260,6 +278,7 @@ def cleanup_button(button) -> None:
 def cleanup_progress_bar(progress_bar) -> None:
     """Clean up a QProgressBar for reuse."""
     from PyQt6.QtWidgets import QProgressBar
+
     if isinstance(progress_bar, QProgressBar):
         progress_bar.setMinimum(0)
         progress_bar.setMaximum(100)

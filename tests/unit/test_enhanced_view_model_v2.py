@@ -46,6 +46,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -837,6 +838,7 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -1135,6 +1137,7 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
 
         for error in error_scenarios:
             with self.subTest(error=type(error).__name__):
+
                 async def mock_error(*args, **kwargs) -> Never:
                     raise error
 

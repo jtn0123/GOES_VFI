@@ -60,6 +60,7 @@ class DownloadStatistics:
         # Session information
         import random
         import socket
+
         self.session_id: str = f"{int(time.time())}-{random.randint(1000, 9999)}"
         self.hostname: str = socket.gethostname()
         self.start_timestamp: str = datetime.now(UTC).isoformat()
@@ -209,7 +210,9 @@ class DownloadStatistics:
 
             # Session duration
             session_duration = time.time() - self.start_time
-            duration_str = f"{session_duration / 60:.1f} minutes" if session_duration > 60 else f"{session_duration:.1f} seconds"
+            duration_str = (
+                f"{session_duration / 60:.1f} minutes" if session_duration > 60 else f"{session_duration:.1f} seconds"
+            )
 
             log_lines = [
                 "Download Statistics Summary:",

@@ -49,6 +49,7 @@ def sample_task_data():
 @pytest.fixture()
 def dummy_functions():
     """Shared dummy functions for task testing."""
+
     def simple_add(x, y):
         return x + y
 
@@ -125,12 +126,7 @@ class TestTask:
         task = Task("test_task", dummy_functions["task_with_progress"], 5, 3)
 
         # Track signals manually
-        signal_calls = {
-            "started": [],
-            "progress": [],
-            "completed": [],
-            "failed": []
-        }
+        signal_calls = {"started": [], "progress": [], "completed": [], "failed": []}
 
         task.signals.started.connect(signal_calls["started"].append)
         task.signals.progress.connect(lambda task_id, p: signal_calls["progress"].append((task_id, p)))
@@ -162,13 +158,16 @@ class TestTask:
 class TestTaskStatus:
     """Test TaskStatus enum."""
 
-    @pytest.mark.parametrize("status", [
-        TaskStatus.PENDING,
-        TaskStatus.RUNNING,
-        TaskStatus.COMPLETED,
-        TaskStatus.FAILED,
-        TaskStatus.CANCELLED,
-    ])
+    @pytest.mark.parametrize(
+        "status",
+        [
+            TaskStatus.PENDING,
+            TaskStatus.RUNNING,
+            TaskStatus.COMPLETED,
+            TaskStatus.FAILED,
+            TaskStatus.CANCELLED,
+        ],
+    )
     def test_task_status_values(self, status) -> None:
         """Test TaskStatus enum values exist."""
         assert status is not None
@@ -190,6 +189,7 @@ class TestBackgroundProcessManager:
 
         # Create worker
         from goesvfi.integrity_check.background_worker import BackgroundProcessManager
+
         worker = BackgroundProcessManager()
 
         # Define test task
@@ -229,6 +229,7 @@ class TestBackgroundProcessManager:
         mock_executor_class.return_value = mock_executor
 
         from goesvfi.integrity_check.background_worker import BackgroundProcessManager
+
         worker = BackgroundProcessManager()
 
         # Submit multiple tasks

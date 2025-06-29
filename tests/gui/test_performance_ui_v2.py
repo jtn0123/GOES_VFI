@@ -851,7 +851,9 @@ class TestPerformanceUIOptimizedV2:
                     "total_load_time": sum(self.load_times.values()),
                     "total_memory_used": sum(self.memory_usage.values()),
                     "avg_load_time": sum(self.load_times.values()) / len(self.load_times) if self.load_times else 0,
-                    "most_accessed": max(self.access_count.items(), key=operator.itemgetter(1)) if self.access_count else None,
+                    "most_accessed": max(self.access_count.items(), key=operator.itemgetter(1))
+                    if self.access_count
+                    else None,
                 }
 
         # Test different component types

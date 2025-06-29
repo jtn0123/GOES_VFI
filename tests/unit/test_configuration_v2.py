@@ -112,6 +112,7 @@ class TestConfigurationManager(unittest.TestCase):
 
         # Clean up temp directory
         import shutil
+
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
     def test_initialization(self) -> None:
@@ -143,11 +144,7 @@ class TestConfigurationManager(unittest.TestCase):
 
     def test_update_config(self) -> None:
         """Test updating configuration."""
-        updates = {
-            "processing": {"max_workers": 8},
-            "debug_mode": True,
-            "log_level": "DEBUG"
-        }
+        updates = {"processing": {"max_workers": 8}, "debug_mode": True, "log_level": "DEBUG"}
 
         self.manager.update_config(updates, save=False)
 
@@ -162,7 +159,7 @@ class TestConfigurationManager(unittest.TestCase):
         updates = {
             "processing": {"max_workers": 6, "cache_size": 200},
             "network": {"connection_timeout": 60.0},
-            "debug_mode": True
+            "debug_mode": True,
         }
 
         self.manager.update_config(updates, save=True)
@@ -188,7 +185,7 @@ class TestConfigurationManager(unittest.TestCase):
             "GOESVFI_STORAGE_DATA_DIR": "/custom/data",
             "GOESVFI_UI_THEME": "dark",
             "GOESVFI_DEBUG": "true",
-            "GOESVFI_LOG_LEVEL": "WARNING"
+            "GOESVFI_LOG_LEVEL": "WARNING",
         }
 
         with patch.dict(os.environ, env_vars):
@@ -206,20 +203,13 @@ class TestConfigurationManager(unittest.TestCase):
     def test_configuration_precedence(self) -> None:
         """Test configuration precedence: env vars > file > defaults."""
         # Create config file
-        file_config = {
-            "processing": {"max_workers": 8},
-            "debug_mode": True,
-            "log_level": "ERROR"
-        }
+        file_config = {"processing": {"max_workers": 8}, "debug_mode": True, "log_level": "ERROR"}
 
         with open(self.config_file, "w", encoding="utf-8") as f:
             json.dump(file_config, f)
 
         # Set environment variables (should override file)
-        env_vars = {
-            "GOESVFI_PROCESSING_MAX_WORKERS": "16",
-            "GOESVFI_LOG_LEVEL": "DEBUG"
-        }
+        env_vars = {"GOESVFI_PROCESSING_MAX_WORKERS": "16", "GOESVFI_LOG_LEVEL": "DEBUG"}
 
         with patch.dict(os.environ, env_vars):
             manager = ConfigurationManager(self.config_file)
@@ -321,11 +311,7 @@ class TestConfigurationManager(unittest.TestCase):
     def test_reset_to_defaults(self) -> None:
         """Test resetting configuration to defaults."""
         # Modify configuration
-        updates = {
-            "processing": {"max_workers": 16},
-            "debug_mode": True,
-            "log_level": "DEBUG"
-        }
+        updates = {"processing": {"max_workers": 16}, "debug_mode": True, "log_level": "DEBUG"}
         self.manager.update_config(updates, save=False)
 
         # Verify changes
@@ -351,6 +337,7 @@ class TestConfigurationManager(unittest.TestCase):
         # Test with invalid values (for dataclass version)
         try:
             import goesvfi.core.configuration
+
             if not goesvfi.core.configuration.PYDANTIC_AVAILABLE:
                 # Manually set invalid values for testing
                 config = self.manager.get_config()
@@ -384,6 +371,7 @@ class TestGlobalConfigurationFunctions(unittest.TestCase):
         """Set up test fixtures."""
         # Reset global configuration manager
         import goesvfi.core.configuration
+
         goesvfi.core.configuration._config_manager = None
 
     def test_get_config_manager_singleton(self) -> None:
@@ -459,12 +447,15 @@ class TestGlobalConfigurationFunctions(unittest.TestCase):
         assert isinstance(get_output_directory(), Path)
 
         # Update config and test again
-        update_config({
-            "debug_mode": True,
-            "log_level": "DEBUG",
-            "processing": {"max_workers": 8},
-            "network": {"connection_timeout": 60.0}
-        }, save=False)
+        update_config(
+            {
+                "debug_mode": True,
+                "log_level": "DEBUG",
+                "processing": {"max_workers": 8},
+                "network": {"connection_timeout": 60.0},
+            },
+            save=False,
+        )
 
         assert is_debug_mode()
         assert get_log_level() == "DEBUG"
@@ -495,6 +486,7 @@ class TestConfigurationErrors(unittest.TestCase):
 
         finally:
             import shutil
+
             shutil.rmtree(temp_dir, ignore_errors=True)
 
     def test_config_update_validation_error(self) -> None:
@@ -503,9 +495,7 @@ class TestConfigurationErrors(unittest.TestCase):
 
         # Try to update with invalid data (this depends on validation implementation)
         try:
-            invalid_updates = {
-                "processing": {"max_workers": "invalid"}
-            }
+            invalid_updates = {"processing": {"max_workers": "invalid"}}
 
             # Should raise exception for invalid data
             with pytest.raises(Exception):

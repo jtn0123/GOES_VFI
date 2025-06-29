@@ -48,12 +48,7 @@ class UpdateManager(QObject):
         self.update_timer.setSingleShot(True)
 
         # Statistics
-        self.stats = {
-            "total_requests": 0,
-            "total_batches": 0,
-            "total_updates_processed": 0,
-            "avg_batch_size": 0.0
-        }
+        self.stats = {"total_requests": 0, "total_batches": 0, "total_updates_processed": 0, "avg_batch_size": 0.0}
 
         LOGGER.debug("UpdateManager initialized with %sms batch delay", batch_delay_ms)
 
@@ -138,10 +133,7 @@ class UpdateManager(QObject):
         self.pending_updates.clear()
 
         # Sort by priority (highest first)
-        updates_to_process.sort(
-            key=lambda uid: self.update_priorities.get(uid, 0),
-            reverse=True
-        )
+        updates_to_process.sort(key=lambda uid: self.update_priorities.get(uid, 0), reverse=True)
 
         current_time = time.time()
         processed_count = 0
@@ -161,11 +153,7 @@ class UpdateManager(QObject):
         if self.stats["total_batches"] > 0:
             self.stats["avg_batch_size"] = self.stats["total_updates_processed"] / self.stats["total_batches"]
 
-        LOGGER.debug(
-            "Processed batch: %s updates, avg batch size: %.1f",
-            processed_count,
-            self.stats["avg_batch_size"]
-        )
+        LOGGER.debug("Processed batch: %s updates, avg batch size: %.1f", processed_count, self.stats["avg_batch_size"])
 
         # Emit signal for any components that want to know about batch processing
         self.batch_update.emit()

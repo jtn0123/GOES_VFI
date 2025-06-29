@@ -25,6 +25,7 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_with_error_handling_success(self) -> None:
         """Test error handling decorator with successful execution."""
+
         @with_error_handling(operation_name="test_op", component_name="test_comp")
         def successful_func(x: int) -> int:
             return x * 2
@@ -34,11 +35,8 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_with_error_handling_exception_reraise(self) -> None:
         """Test error handling decorator with exception and reraise."""
-        @with_error_handling(
-            operation_name="test_op",
-            component_name="test_comp",
-            reraise=True
-        )
+
+        @with_error_handling(operation_name="test_op", component_name="test_comp", reraise=True)
         def failing_func() -> Never:
             msg = "Test error"
             raise ValueError(msg)
@@ -48,12 +46,8 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_with_error_handling_exception_no_reraise(self) -> None:
         """Test error handling decorator without reraising."""
-        @with_error_handling(
-            operation_name="test_op",
-            component_name="test_comp",
-            reraise=False,
-            default_return=-1
-        )
+
+        @with_error_handling(operation_name="test_op", component_name="test_comp", reraise=False, default_return=-1)
         def failing_func() -> Never:
             msg = "Test error"
             raise ValueError(msg)
@@ -111,11 +105,8 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_with_retry_specific_exceptions(self) -> None:
         """Test retry decorator with specific exceptions."""
-        @with_retry(
-            max_attempts=3,
-            delay=0.01,
-            exceptions=(IOError, OSError)
-        )
+
+        @with_retry(max_attempts=3, delay=0.01, exceptions=(IOError, OSError))
         def func_with_specific_error() -> Never:
             msg = "Should not retry this"
             raise ValueError(msg)
@@ -131,11 +122,7 @@ class TestErrorDecorators(unittest.TestCase):
         def on_retry(attempt: int, exception: Exception) -> None:
             retry_calls.append((attempt, str(exception)))
 
-        @with_retry(
-            max_attempts=3,
-            delay=0.01,
-            on_retry=on_retry
-        )
+        @with_retry(max_attempts=3, delay=0.01, on_retry=on_retry)
         def failing_func() -> Never:
             msg = "Test error"
             raise ValueError(msg)
@@ -149,6 +136,7 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_with_timeout_async(self) -> None:
         """Test timeout decorator with async function."""
+
         @with_timeout(timeout=0.1)
         async def slow_async_func() -> str:
             await asyncio.sleep(0.5)
@@ -163,6 +151,7 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_with_timeout_async_success(self) -> None:
         """Test timeout decorator with async function that completes in time."""
+
         @with_timeout(timeout=0.5)
         async def fast_async_func() -> str:
             await asyncio.sleep(0.1)
@@ -178,6 +167,7 @@ class TestErrorDecorators(unittest.TestCase):
     @patch("goesvfi.core.error_decorators.LOGGER")
     def test_with_logging_basic(self, mock_logger) -> None:
         """Test logging decorator with basic function."""
+
         @with_logging(log_args=True, log_result=True, log_time=True)
         def test_func(x: int, y: int = 2) -> int:
             return x * y
@@ -194,6 +184,7 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_with_validation_success(self) -> None:
         """Test validation decorator with valid inputs/outputs."""
+
         def validate_inputs(args, kwargs) -> None:
             if args[0] < 0:
                 msg = "Input must be non-negative"
@@ -214,6 +205,7 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_with_validation_input_failure(self) -> None:
         """Test validation decorator with invalid input."""
+
         def validate_inputs(args, kwargs) -> None:
             if args[0] < 0:
                 msg = "Input must be non-negative"
@@ -231,6 +223,7 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_with_validation_output_failure(self) -> None:
         """Test validation decorator with invalid output."""
+
         def validate_output(result) -> None:
             if result > 100:
                 msg = "Output too large"
@@ -248,11 +241,8 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_deprecated_decorator(self) -> None:
         """Test deprecated decorator."""
-        @deprecated(
-            reason="Use new_func instead",
-            version="2.0",
-            alternative="new_func"
-        )
+
+        @deprecated(reason="Use new_func instead", version="2.0", alternative="new_func")
         def old_func() -> str:
             return "old"
 
@@ -276,11 +266,7 @@ class TestErrorDecorators(unittest.TestCase):
         """Test robust operation composite decorator with success."""
         call_count = 0
 
-        @robust_operation(
-            operation_name="test_op",
-            max_retries=3,
-            retry_delay=0.01
-        )
+        @robust_operation(operation_name="test_op", max_retries=3, retry_delay=0.01)
         def robust_func(x: int) -> int:
             nonlocal call_count
             call_count += 1
@@ -294,11 +280,7 @@ class TestErrorDecorators(unittest.TestCase):
         """Test robust operation with retryable error."""
         call_count = 0
 
-        @robust_operation(
-            operation_name="test_op",
-            max_retries=3,
-            retry_delay=0.01
-        )
+        @robust_operation(operation_name="test_op", max_retries=3, retry_delay=0.01)
         def flaky_func() -> str:
             nonlocal call_count
             call_count += 1
@@ -313,6 +295,7 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_async_safe_success(self) -> None:
         """Test async safe decorator with successful execution."""
+
         @async_safe(timeout=1.0, default_return="default")
         async def safe_async_func() -> str:
             await asyncio.sleep(0.1)
@@ -327,6 +310,7 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_async_safe_timeout(self) -> None:
         """Test async safe decorator with timeout."""
+
         @async_safe(timeout=0.1, default_return="timeout_default")
         async def slow_func() -> str:
             await asyncio.sleep(0.5)
@@ -341,6 +325,7 @@ class TestErrorDecorators(unittest.TestCase):
 
     def test_async_safe_error(self) -> None:
         """Test async safe decorator with error."""
+
         @async_safe(default_return="error_default")
         async def error_func() -> Never:
             msg = "Test error"

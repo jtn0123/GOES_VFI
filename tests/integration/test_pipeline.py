@@ -725,7 +725,9 @@ def test_error_insufficient_frames(temp_dir: pathlib.Path, mock_popen: MagicMock
         )
 
 
-def test_error_insufficient_frames_skip_model(temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock) -> None:
+def test_error_insufficient_frames_skip_model(
+    temp_dir: pathlib.Path, mock_popen: MagicMock, mock_run: MagicMock
+) -> None:
     """Test error handling for < 2 frames when skipping model."""
     input_dir = temp_dir / "input"
     output_dir = temp_dir / "output"

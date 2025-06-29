@@ -39,8 +39,10 @@ class MockValidator(ValidatorBase):
 @pytest.fixture()
 def validator_factory():
     """Factory for creating mock validators with different configurations."""
+
     def create_validator(field_name: str, should_pass: bool = True, should_error: bool = False):
         return MockValidator(field_name, should_pass, should_error)
+
     return create_validator
 
 
@@ -68,13 +70,14 @@ def sample_validation_configs():
             {"field": "good1", "should_pass": True},
             {"field": "error1", "should_pass": False, "should_error": True},
             {"field": "good2", "should_pass": True},
-        ]
+        ],
     }
 
 
 @pytest.fixture()
 def pipeline_factory(validator_factory):
     """Factory for creating validation pipelines with configured validators."""
+
     def create_pipeline(pipeline_name: str, config_list: list[dict[str, Any]], fail_fast: bool = False):
         pipeline = ValidationPipeline(pipeline_name, fail_fast=fail_fast)
 
@@ -104,12 +107,17 @@ class TestValidationPipelineCore:
         assert len(result.errors) == 0
         assert len(result.warnings) == 0
 
-    @pytest.mark.parametrize("config_name,expected_valid,expected_error_count", [
-        ("all_pass", True, 0),
-        ("mixed_results", False, 2),
-        ("all_fail", False, 3),
-    ])
-    def test_pipeline_validation_outcomes(self, pipeline_factory, sample_validation_configs, config_name, expected_valid, expected_error_count) -> None:
+    @pytest.mark.parametrize(
+        "config_name,expected_valid,expected_error_count",
+        [
+            ("all_pass", True, 0),
+            ("mixed_results", False, 2),
+            ("all_fail", False, 3),
+        ],
+    )
+    def test_pipeline_validation_outcomes(
+        self, pipeline_factory, sample_validation_configs, config_name, expected_valid, expected_error_count
+    ) -> None:
         """Test pipeline validation with different validator configurations."""
         config = sample_validation_configs[config_name]
         pipeline = pipeline_factory("test_pipeline", config)
@@ -217,8 +225,8 @@ class TestValidationPipelineAdvanced:
             ("critical_field", True, False),  # Pass
             ("optional_field", False, False),  # Fail
             ("validated_field", True, False),  # Pass
-            ("broken_field", False, True),     # Error
-            ("final_field", True, False),      # Pass
+            ("broken_field", False, True),  # Error
+            ("final_field", True, False),  # Pass
         ]
 
         for field_name, should_pass, should_error in scenarios:
@@ -273,10 +281,10 @@ class TestValidationPipelineIntegration:
 
         # Add validators that will fail at different points
         configs = [
-            ("validator_1", True),   # Pass
+            ("validator_1", True),  # Pass
             ("validator_2", False),  # Fail
             ("validator_3", False),  # Fail
-            ("validator_4", True),   # Pass
+            ("validator_4", True),  # Pass
         ]
 
         for field_name, should_pass in configs:

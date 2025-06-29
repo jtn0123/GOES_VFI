@@ -63,6 +63,7 @@ class TestEnhancedIntegrityCheckTabFileOperationsV2(PyQtAsyncTestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.S3Store", MockS3Store)
@@ -152,6 +153,7 @@ class TestEnhancedIntegrityCheckTabFileOperationsV2(PyQtAsyncTestCase):
 
         for test_dir in test_directories:
             with self.subTest(directory=test_dir):
+
                 def mock_browse_impl() -> None:
                     if test_dir:  # Only set if not empty (not cancelled)
                         self.tab.dir_input.setText(test_dir)

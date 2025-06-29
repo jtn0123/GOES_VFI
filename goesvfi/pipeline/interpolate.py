@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # Import optimized backend (optional, falls back if not available)
 try:
     from .optimized_interpolator import OptimizedRifeBackend
+
     OPTIMIZED_BACKEND_AVAILABLE = True
 except ImportError:
     OPTIMIZED_BACKEND_AVAILABLE = False
@@ -212,7 +213,7 @@ def get_backend_performance_info(backend: Any) -> dict[str, Any]:
     return {
         "backend_type": "standard",
         "optimization_available": OPTIMIZED_BACKEND_AVAILABLE,
-        "message": "Standard backend - no performance stats available"
+        "message": "Standard backend - no performance stats available",
     }
 
 

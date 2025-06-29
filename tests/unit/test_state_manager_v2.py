@@ -73,13 +73,23 @@ class TestStateManager:
         manager = StateManager(mock_main_window)
         assert manager.main_window is mock_main_window
 
-    @pytest.mark.parametrize("path_scenario,should_clear_cache,should_update_ui", [
-        ("new_path", True, True),        # New path - full update
-        ("existing_path", False, False),  # Same path - minimal update
-        ("none_path", True, False),      # Clear path - cache clear only
-    ])
-    def test_set_input_directory(self, state_manager, mock_main_window, path_scenarios,
-                                path_scenario: str, should_clear_cache: bool, should_update_ui: bool) -> None:
+    @pytest.mark.parametrize(
+        "path_scenario,should_clear_cache,should_update_ui",
+        [
+            ("new_path", True, True),  # New path - full update
+            ("existing_path", False, False),  # Same path - minimal update
+            ("none_path", True, False),  # Clear path - cache clear only
+        ],
+    )
+    def test_set_input_directory(
+        self,
+        state_manager,
+        mock_main_window,
+        path_scenarios,
+        path_scenario: str,
+        should_clear_cache: bool,
+        should_update_ui: bool,
+    ) -> None:
         """Test setting input directory with different scenarios."""
         path = path_scenarios[path_scenario]
 
@@ -118,7 +128,9 @@ class TestStateManager:
             mock_main_window.main_tab.in_dir_edit.setText.assert_not_called()
 
     @pytest.mark.parametrize("save_success", [True, False])
-    def test_set_input_directory_save_handling(self, state_manager, mock_main_window, path_scenarios, save_success: bool) -> None:
+    def test_set_input_directory_save_handling(
+        self, state_manager, mock_main_window, path_scenarios, save_success: bool
+    ) -> None:
         """Test input directory save success/failure handling."""
         path = path_scenarios["new_path"]
         mock_main_window._save_input_directory.return_value = save_success
@@ -131,13 +143,23 @@ class TestStateManager:
             else:
                 mock_logger.error.assert_called_once()
 
-    @pytest.mark.parametrize("crop_scenario,should_update_ui,should_save", [
-        ("new_rect", True, True),        # New rect - full update
-        ("existing_rect", False, False),  # Same rect - no update
-        ("none_rect", True, False),      # Clear rect - update but no save
-    ])
-    def test_set_crop_rect(self, state_manager, mock_main_window, crop_rect_scenarios,
-                          crop_scenario: str, should_update_ui: bool, should_save: bool) -> None:
+    @pytest.mark.parametrize(
+        "crop_scenario,should_update_ui,should_save",
+        [
+            ("new_rect", True, True),  # New rect - full update
+            ("existing_rect", False, False),  # Same rect - no update
+            ("none_rect", True, False),  # Clear rect - update but no save
+        ],
+    )
+    def test_set_crop_rect(
+        self,
+        state_manager,
+        mock_main_window,
+        crop_rect_scenarios,
+        crop_scenario: str,
+        should_update_ui: bool,
+        should_save: bool,
+    ) -> None:
         """Test setting crop rectangle with different scenarios."""
         rect = crop_rect_scenarios[crop_scenario]
 
@@ -166,7 +188,9 @@ class TestStateManager:
             mock_main_window._save_crop_rect.assert_not_called()
 
     @pytest.mark.parametrize("save_success", [True, False])
-    def test_set_crop_rect_save_handling(self, state_manager, mock_main_window, crop_rect_scenarios, save_success: bool) -> None:
+    def test_set_crop_rect_save_handling(
+        self, state_manager, mock_main_window, crop_rect_scenarios, save_success: bool
+    ) -> None:
         """Test crop rect save success/failure handling."""
         rect = crop_rect_scenarios["new_rect"]
         mock_main_window._save_crop_rect.return_value = save_success
@@ -179,13 +203,18 @@ class TestStateManager:
             else:
                 mock_logger.error.assert_called_once()
 
-    @pytest.mark.parametrize("missing_components", [
-        ["in_dir_edit"],
-        ["_update_start_button_state"],
-        ["ffmpeg_settings_tab"],
-        ["in_dir_edit", "_update_start_button_state"],
-    ])
-    def test_missing_ui_components_handling(self, state_manager, mock_main_window, path_scenarios, missing_components: list[str]) -> None:
+    @pytest.mark.parametrize(
+        "missing_components",
+        [
+            ["in_dir_edit"],
+            ["_update_start_button_state"],
+            ["ffmpeg_settings_tab"],
+            ["in_dir_edit", "_update_start_button_state"],
+        ],
+    )
+    def test_missing_ui_components_handling(
+        self, state_manager, mock_main_window, path_scenarios, missing_components: list[str]
+    ) -> None:
         """Test handling when UI components are missing."""
         # Remove specified components
         for component in missing_components:
@@ -217,13 +246,17 @@ class TestStateManager:
             # Should log warning
             mock_logger.warning.assert_called_once()
 
-    @pytest.mark.parametrize("settings_save_success,verification_success", [
-        (True, True),    # Normal save and verify
-        (True, False),   # Save appears to work but verify fails
-        (False, False),  # Save fails immediately
-    ])
-    def test_save_all_settings_with_fallback(self, state_manager, mock_main_window, path_scenarios,
-                                            settings_save_success: bool, verification_success: bool) -> None:
+    @pytest.mark.parametrize(
+        "settings_save_success,verification_success",
+        [
+            (True, True),  # Normal save and verify
+            (True, False),  # Save appears to work but verify fails
+            (False, False),  # Save fails immediately
+        ],
+    )
+    def test_save_all_settings_with_fallback(
+        self, state_manager, mock_main_window, path_scenarios, settings_save_success: bool, verification_success: bool
+    ) -> None:
         """Test settings save with fallback handling."""
         old_path = path_scenarios["existing_path"]
         new_path = path_scenarios["new_path"]
@@ -251,13 +284,22 @@ class TestStateManager:
                 # Should log error for save failure
                 mock_logger.error.assert_called_once()
 
-    @pytest.mark.parametrize("settings_save_success,verification_success", [
-        (True, True),    # Normal save and verify
-        (True, False),   # Save appears to work but verify fails
-        (False, False),  # Save fails immediately
-    ])
-    def test_save_all_settings_with_crop_fallback(self, state_manager, mock_main_window, crop_rect_scenarios,
-                                                 settings_save_success: bool, verification_success: bool) -> None:
+    @pytest.mark.parametrize(
+        "settings_save_success,verification_success",
+        [
+            (True, True),  # Normal save and verify
+            (True, False),  # Save appears to work but verify fails
+            (False, False),  # Save fails immediately
+        ],
+    )
+    def test_save_all_settings_with_crop_fallback(
+        self,
+        state_manager,
+        mock_main_window,
+        crop_rect_scenarios,
+        settings_save_success: bool,
+        verification_success: bool,
+    ) -> None:
         """Test crop settings save with fallback handling."""
         old_rect = crop_rect_scenarios["existing_rect"]
         new_rect = crop_rect_scenarios["new_rect"]
@@ -330,13 +372,17 @@ class TestStateManager:
         assert mock_main_window.in_dir == Path("/test")
         assert mock_main_window.current_crop_rect == (10, 20, 300, 400)
 
-    @pytest.mark.parametrize("operation_sequence", [
-        ["set_input", "set_crop", "set_input_none", "set_crop_none"],
-        ["set_crop", "set_input", "set_crop", "set_input"],
-        ["set_input", "set_input", "set_crop", "set_crop"],
-    ])
-    def test_operation_sequence_robustness(self, state_manager, mock_main_window,
-                                         path_scenarios, crop_rect_scenarios, operation_sequence: list[str]) -> None:
+    @pytest.mark.parametrize(
+        "operation_sequence",
+        [
+            ["set_input", "set_crop", "set_input_none", "set_crop_none"],
+            ["set_crop", "set_input", "set_crop", "set_input"],
+            ["set_input", "set_input", "set_crop", "set_crop"],
+        ],
+    )
+    def test_operation_sequence_robustness(
+        self, state_manager, mock_main_window, path_scenarios, crop_rect_scenarios, operation_sequence: list[str]
+    ) -> None:
         """Test robustness with different operation sequences."""
         for operation in operation_sequence:
             if operation == "set_input":

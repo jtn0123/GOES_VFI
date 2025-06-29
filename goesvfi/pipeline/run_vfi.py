@@ -176,7 +176,7 @@ class VFIProcessor:
             output_path=raw_path,
             fps=self.fps,
             num_intermediate_frames=self.num_intermediate_frames,
-            skip_model=skip_model
+            skip_model=skip_model,
         )
 
     def process_video_creation(
@@ -1239,7 +1239,7 @@ def _process_single_image_worker(
         sanchez_temp_dir=sanchez_temp_dir,
         output_dir=output_dir,
         target_width=target_width,
-        target_height=target_height
+        target_height=target_height,
     )
 
 

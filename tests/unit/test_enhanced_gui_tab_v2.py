@@ -39,6 +39,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
             import shutil
+
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -134,7 +135,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     "s3": {"enabled": False, "max_retries": 2, "timeout": 45},
                     "fallback_strategy": "CDN only",
                 },
-                "expected_status": "Strategy: CDN only"
+                "expected_status": "Strategy: CDN only",
             },
             {
                 "name": "S3 only",
@@ -143,7 +144,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     "s3": {"enabled": True, "max_retries": 4, "timeout": 90},
                     "fallback_strategy": "S3 only",
                 },
-                "expected_status": "Strategy: S3 only"
+                "expected_status": "Strategy: S3 only",
             },
             {
                 "name": "S3 first fallback",
@@ -152,7 +153,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     "s3": {"enabled": True, "max_retries": 3, "timeout": 60},
                     "fallback_strategy": "S3 first, then CDN",
                 },
-                "expected_status": "Strategy: S3 first, then CDN"
+                "expected_status": "Strategy: S3 first, then CDN",
             },
         ]
 
