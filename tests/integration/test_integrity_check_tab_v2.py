@@ -8,8 +8,9 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced mock management and error handling
 """
 
+from collections.abc import Iterator
 import contextlib
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -34,8 +35,13 @@ class TestIntegrityCheckTabOptimizedV2:
     """Optimized integrity check tab integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_qt_app(self):
-        """Shared QApplication instance for all integrity check tests."""
+    @staticmethod
+    def shared_qt_app() -> Iterator[QApplication]:
+        """Shared QApplication instance for all integrity check tests.
+
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -43,8 +49,14 @@ class TestIntegrityCheckTabOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def integrity_test_components(self):
-        """Create shared components for integrity check testing."""
+    @staticmethod
+    def integrity_test_components() -> dict[str, Any]:  # type: ignore[misc]  # noqa: C901
+        """Create shared components for integrity check testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing test components including data_manager,
+                           mock_factory, and tab_manager.
+        """
 
         # Enhanced Test Data Manager
         class TestDataManager:
@@ -58,7 +70,11 @@ class TestIntegrityCheckTabOptimizedV2:
                 }
 
             def create_test_files(self, base_dir: Path, config: str) -> dict[str, list[Path]]:
-                """Create test files for different satellite configurations."""
+                """Create test files for different satellite configurations.
+
+                Returns:
+                    dict[str, list[Path]]: Dictionary mapping satellite names to lists of file paths.
+                """
                 files = {"goes16": [], "goes18": []}
 
                 if config == "mixed":
@@ -68,7 +84,7 @@ class TestIntegrityCheckTabOptimizedV2:
                         sat_dir.mkdir(parents=True, exist_ok=True)
 
                         for i in range(count):
-                            ts = datetime(2023, 1, 1, 12, i * 5, 0)
+                            ts = datetime(2023, 1, 1, 12, i * 5, 0, tzinfo=UTC)
                             filename = f"{satellite}_{ts.strftime('%Y%m%d_%H%M%S')}_band13.png"
                             file_path = sat_dir / filename
                             file_path.touch()
@@ -80,7 +96,7 @@ class TestIntegrityCheckTabOptimizedV2:
 
                     sat_config = self.satellite_configs[config]
                     for i in range(sat_config["count"]):
-                        ts = datetime(2023, 1, 1, 12, i * 5, 0)
+                        ts = datetime(2023, 1, 1, 12, i * 5, 0, tzinfo=UTC)
                         filename = sat_config["pattern"].format(ts.strftime("%Y%m%d_%H%M%S"))
                         file_path = sat_dir / filename
                         file_path.touch()
@@ -88,10 +104,16 @@ class TestIntegrityCheckTabOptimizedV2:
 
                 return files
 
-            def create_missing_timestamps(self, count: int = 5) -> list[EnhancedMissingTimestamp]:
-                """Create test missing timestamp objects."""
+            @staticmethod
+            def create_missing_timestamps(count: int = 5) -> list[EnhancedMissingTimestamp]:
+                """Create test missing timestamp objects.
+
+                Returns:
+                    list[EnhancedMissingTimestamp]: List of missing timestamp objects.
+                """
                 return [
-                    EnhancedMissingTimestamp(datetime(2023, 1, 1, 0, i * 5), f"file_{i:03d}.nc") for i in range(count)
+                    EnhancedMissingTimestamp(datetime(2023, 1, 1, 0, i * 5, tzinfo=UTC), f"file_{i:03d}.nc")
+                    for i in range(count)
                 ]
 
         # Enhanced Mock Factory
@@ -100,14 +122,19 @@ class TestIntegrityCheckTabOptimizedV2:
 
             def __init__(self) -> None:
                 self.mock_scenarios = {
-                    "success": self._create_success_mocks,
-                    "partial_failure": self._create_partial_failure_mocks,
-                    "network_error": self._create_network_error_mocks,
-                    "database_error": self._create_database_error_mocks,
+                    "success": IntegrityMockFactory._create_success_mocks,
+                    "partial_failure": IntegrityMockFactory._create_partial_failure_mocks,
+                    "network_error": IntegrityMockFactory._create_network_error_mocks,
+                    "database_error": IntegrityMockFactory._create_database_error_mocks,
                 }
 
-            def _create_success_mocks(self, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for successful scenarios."""
+            @staticmethod
+            def _create_success_mocks(temp_dir: Path) -> dict[str, Any]:
+                """Create mocks for successful scenarios.
+
+                Returns:
+                    dict[str, Any]: Dictionary containing mock objects.
+                """
                 mock_cache_db = MagicMock(spec=CacheDB)
                 mock_cache_db.reset_database = AsyncMock()
                 mock_cache_db.close = AsyncMock()
@@ -129,9 +156,14 @@ class TestIntegrityCheckTabOptimizedV2:
                     "s3_store": mock_s3_store,
                 }
 
-            def _create_partial_failure_mocks(self, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for partial failure scenarios."""
-                mocks = self._create_success_mocks(temp_dir)
+            @staticmethod
+            def _create_partial_failure_mocks(temp_dir: Path) -> dict[str, Any]:
+                """Create mocks for partial failure scenarios.
+
+                Returns:
+                    dict[str, Any]: Dictionary containing mock objects.
+                """
+                mocks = IntegrityMockFactory._create_success_mocks(temp_dir)
 
                 # CDN fails but S3 succeeds
                 mocks["cdn_store"].download = AsyncMock(side_effect=Exception("CDN download failed"))
@@ -139,9 +171,14 @@ class TestIntegrityCheckTabOptimizedV2:
 
                 return mocks
 
-            def _create_network_error_mocks(self, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for network error scenarios."""
-                mocks = self._create_success_mocks(temp_dir)
+            @staticmethod
+            def _create_network_error_mocks(temp_dir: Path) -> dict[str, Any]:
+                """Create mocks for network error scenarios.
+
+                Returns:
+                    dict[str, Any]: Dictionary containing mock objects.
+                """
+                mocks = IntegrityMockFactory._create_success_mocks(temp_dir)
 
                 # Both CDN and S3 fail
                 mocks["cdn_store"].download = AsyncMock(side_effect=Exception("Network timeout"))
@@ -151,9 +188,14 @@ class TestIntegrityCheckTabOptimizedV2:
 
                 return mocks
 
-            def _create_database_error_mocks(self, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for database error scenarios."""
-                mocks = self._create_success_mocks(temp_dir)
+            @staticmethod
+            def _create_database_error_mocks(temp_dir: Path) -> dict[str, Any]:
+                """Create mocks for database error scenarios.
+
+                Returns:
+                    dict[str, Any]: Dictionary containing mock objects.
+                """
+                mocks = IntegrityMockFactory._create_success_mocks(temp_dir)
 
                 # Database operations fail
                 mocks["cache_db"].reset_database = AsyncMock(side_effect=Exception("Database error"))
@@ -162,7 +204,11 @@ class TestIntegrityCheckTabOptimizedV2:
                 return mocks
 
             def create_mocks(self, scenario: str, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for specified scenario."""
+                """Create mocks for specified scenario.
+
+                Returns:
+                    dict[str, Any]: Dictionary containing mock objects.
+                """
                 return self.mock_scenarios[scenario](temp_dir)
 
         # Enhanced Tab Test Manager
@@ -179,8 +225,9 @@ class TestIntegrityCheckTabOptimizedV2:
                     "download_selection": self._test_download_selection,
                 }
 
+            @staticmethod
             def _test_satellite_selection(
-                self, tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
+                tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
             ) -> None:
                 """Test satellite radio button selection."""
                 # Test GOES-16 selection
@@ -197,8 +244,9 @@ class TestIntegrityCheckTabOptimizedV2:
                 assert tab.goes18_radio.isChecked()
                 assert not tab.goes16_radio.isChecked()
 
+            @staticmethod
             def _test_fetch_source_selection(
-                self, tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
+                tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
             ) -> None:
                 """Test fetch source radio button selection."""
                 # Test AUTO (initial state)
@@ -225,8 +273,9 @@ class TestIntegrityCheckTabOptimizedV2:
                 QCoreApplication.processEvents()
                 assert view_model.fetch_source == FetchSource.AUTO
 
+            @staticmethod
             def _test_date_range_setting(
-                self, tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
+                tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
             ) -> None:
                 """Test date range widget functionality."""
                 # Set start date
@@ -241,11 +290,11 @@ class TestIntegrityCheckTabOptimizedV2:
 
                 # Trigger view model update by starting scan
                 with patch.object(view_model, "start_enhanced_scan", autospec=True):
-                    tab._start_enhanced_scan()
+                    tab._start_enhanced_scan()  # noqa: SLF001
 
                     # Verify view model was updated
-                    expected_start = datetime(2023, 1, 1, 0, 0, 0)
-                    expected_end = datetime(2023, 1, 2, 23, 59, 0)
+                    expected_start = datetime(2023, 1, 1, 0, 0, 0, tzinfo=UTC)
+                    expected_end = datetime(2023, 1, 2, 23, 59, 0, tzinfo=UTC)
 
                     assert view_model.start_date.year == expected_start.year
                     assert view_model.start_date.month == expected_start.month
@@ -254,57 +303,65 @@ class TestIntegrityCheckTabOptimizedV2:
                     assert view_model.end_date.month == expected_end.month
                     assert view_model.end_date.day == expected_end.day
 
+            @staticmethod
             def _test_status_formatting(
-                self, tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
+                tab: EnhancedIntegrityCheckTab,
+                view_model: EnhancedIntegrityCheckViewModel,  # noqa: ARG004
             ) -> None:
                 """Test status message formatting."""
                 # Test error message formatting
-                tab._update_status("Error: something went wrong")
+                tab._update_status("Error: something went wrong")  # noqa: SLF001
                 status_text = tab.status_label.text()
                 assert "color: #ff6666" in status_text  # Red color for errors
                 assert "Error: something went wrong" in status_text
 
                 # Test success message formatting
-                tab._update_status("Completed successfully")
+                tab._update_status("Completed successfully")  # noqa: SLF001
                 status_text = tab.status_label.text()
                 assert "color: #66ff66" in status_text  # Green color for success
                 assert "Completed successfully" in status_text
 
                 # Test in-progress message formatting
-                tab._update_status("Scanning for files...")
+                tab._update_status("Scanning for files...")  # noqa: SLF001
                 status_text = tab.status_label.text()
                 assert "color: #66aaff" in status_text  # Blue color for in-progress
                 assert "Scanning for files..." in status_text
 
+            @staticmethod
             def _test_progress_updates(
-                self, tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
+                tab: EnhancedIntegrityCheckTab,
+                view_model: EnhancedIntegrityCheckViewModel,  # noqa: ARG004
             ) -> None:
                 """Test progress bar updates and formatting."""
                 # Test with ETA
-                tab._update_progress(25, 100, 120.0)  # 25%, ETA: 2min
+                tab._update_progress(25, 100, 120.0)  # noqa: SLF001  # 25%, ETA: 2min
                 progress_format = tab.progress_bar.format()
                 assert "25%" in progress_format
                 assert "ETA: 2m 0s" in progress_format
                 assert "(25/100)" in progress_format
 
                 # Test without ETA
-                tab._update_progress(50, 100, 0.0)  # 50%, no ETA
+                tab._update_progress(50, 100, 0.0)  # noqa: SLF001  # 50%, no ETA
                 progress_format = tab.progress_bar.format()
                 assert "50%" in progress_format
                 assert "(50/100)" in progress_format
 
                 # Test completion
-                tab._update_progress(100, 100, 0.0)
+                tab._update_progress(100, 100, 0.0)  # noqa: SLF001
                 progress_format = tab.progress_bar.format()
                 assert "100%" in progress_format
                 assert "(100/100)" in progress_format
 
+            @staticmethod
             def _test_download_selection(
-                self, tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
+                tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
             ) -> None:
                 """Test partial download selection functionality."""
                 # Prepare missing items
-                items = [EnhancedMissingTimestamp(datetime(2023, 1, 1, 0, i * 5), f"file_{i}.nc") for i in range(3)]
+                items = [
+                    EnhancedMissingTimestamp(datetime(2023, 1, 1, 0, i * 5, tzinfo=UTC), f"file_{i}.nc")
+                    for i in range(3)
+                ]
                 tab.results_model.set_items(items)
 
                 # Select first and third rows
@@ -321,7 +378,7 @@ class TestIntegrityCheckTabOptimizedV2:
                 )
 
                 with patch.object(view_model, "start_downloads", autospec=True) as mock_dl:
-                    tab._download_selected()
+                    tab._download_selected()  # noqa: SLF001
                     QCoreApplication.processEvents()
 
                     assert mock_dl.call_count == 1
@@ -332,7 +389,7 @@ class TestIntegrityCheckTabOptimizedV2:
 
             def run_ui_scenario(
                 self, scenario: str, tab: EnhancedIntegrityCheckTab, view_model: EnhancedIntegrityCheckViewModel
-            ):
+            ) -> None:
                 """Run specified UI interaction scenario."""
                 return self.ui_interaction_scenarios[scenario](tab, view_model)
 
@@ -343,17 +400,29 @@ class TestIntegrityCheckTabOptimizedV2:
         }
 
     @pytest.fixture()
-    def temp_workspace(self, tmp_path):
-        """Create temporary workspace for integrity check testing."""
+    @staticmethod
+    def temp_workspace(tmp_path: Path) -> dict[str, Any]:
+        """Create temporary workspace for integrity check testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing base directory and temp directory object.
+        """
         return {
             "base_dir": tmp_path,
             "temp_dir_obj": None,  # Will be created if needed
         }
 
-    def test_integrity_check_comprehensive_scenarios(
-        self, shared_qt_app, integrity_test_components, temp_workspace
+    def test_integrity_check_comprehensive_scenarios(  # noqa: PLR6301
+        self,
+        shared_qt_app: QApplication,  # noqa: ARG002
+        integrity_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
-        """Test comprehensive integrity check tab scenarios."""
+        """Test comprehensive integrity check tab scenarios.
+
+        Raises:
+            AssertionError: If test expectations are not met.
+        """
         components = integrity_test_components
         workspace = temp_workspace
         data_manager = components["data_manager"]
@@ -431,15 +500,17 @@ class TestIntegrityCheckTabOptimizedV2:
 
             try:
                 # Test satellite auto-detection
-                with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information"):
-                    with patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog"):
-                        tab._auto_detect_satellite()
-                        QCoreApplication.processEvents()
+                with (
+                    patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information"),
+                    patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog"),
+                ):
+                    tab._auto_detect_satellite()  # noqa: SLF001
+                    QCoreApplication.processEvents()
 
-                        # Verify correct satellite was detected
-                        assert view_model.satellite == scenario["expected_satellite"], (
-                            f"Expected {scenario['expected_satellite']}, got {view_model.satellite} for {scenario['name']}"
-                        )
+                    # Verify correct satellite was detected
+                    assert view_model.satellite == scenario["expected_satellite"], (
+                        f"Expected {scenario['expected_satellite']}, got {view_model.satellite} for {scenario['name']}"
+                    )
 
                 # Run UI interaction tests
                 for ui_test in scenario["ui_tests"]:
@@ -451,7 +522,7 @@ class TestIntegrityCheckTabOptimizedV2:
                             # Expected to have some failures in error scenarios
                             continue
                         msg = f"UI test {ui_test} failed in {scenario['name']}: {e}"
-                        raise AssertionError(msg)
+                        raise AssertionError(msg) from e
 
                 # Verify tab is in expected state
                 assert tab.isVisible() or True  # Tab should be properly initialized
@@ -467,8 +538,11 @@ class TestIntegrityCheckTabOptimizedV2:
                 window.deleteLater()
                 QCoreApplication.processEvents()
 
-    def test_integrity_check_error_handling_comprehensive(
-        self, shared_qt_app, integrity_test_components, temp_workspace
+    def test_integrity_check_error_handling_comprehensive(  # noqa: PLR0915, PLR6301
+        self,
+        shared_qt_app: QApplication,  # noqa: ARG002
+        integrity_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
         """Test comprehensive error handling in integrity check scenarios."""
         components = integrity_test_components
@@ -549,42 +623,46 @@ class TestIntegrityCheckTabOptimizedV2:
                 # Test error handling behavior
                 if scenario["expected_behavior"] == "graceful_fallback":
                     # Should handle empty directory gracefully
-                    with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information"):
-                        with patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog"):
-                            tab._auto_detect_satellite()
-                            QCoreApplication.processEvents()
+                    with (
+                        patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information"),
+                        patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog"),
+                    ):
+                        tab._auto_detect_satellite()  # noqa: SLF001
+                        QCoreApplication.processEvents()
 
-                            # Should show appropriate message or handle gracefully
-                            assert True  # Did not crash
+                        # Should show appropriate message or handle gracefully
+                        assert True  # Did not crash
 
                 elif scenario["expected_behavior"] == "error_reporting":
                     # Should report errors appropriately
                     with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.warning"):
                         try:
                             # Attempt operations that should trigger errors
-                            tab._auto_detect_satellite()
+                            tab._auto_detect_satellite()  # noqa: SLF001
                             QCoreApplication.processEvents()
 
                             # May or may not show warning, but should not crash
                             assert True  # Error was handled
-                        except Exception:
+                        except Exception:  # noqa: BLE001
                             # Errors are acceptable for error scenarios
                             assert True  # Error was properly propagated
 
                 elif scenario["expected_behavior"] == "partial_success":
                     # Should handle partial failures
-                    with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information"):
-                        with patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog"):
-                            tab._auto_detect_satellite()
-                            QCoreApplication.processEvents()
+                    with (
+                        patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information"),
+                        patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog"),
+                    ):
+                        tab._auto_detect_satellite()  # noqa: SLF001
+                        QCoreApplication.processEvents()
 
-                            # Should detect available files despite partial failures
-                            assert view_model.satellite in {SatellitePattern.GOES_16, SatellitePattern.GOES_18}
+                        # Should detect available files despite partial failures
+                        assert view_model.satellite in {SatellitePattern.GOES_16, SatellitePattern.GOES_18}
 
                 elif scenario["expected_behavior"] == "validation_error":
                     # Should validate file formats
                     with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.warning"):
-                        tab._auto_detect_satellite()
+                        tab._auto_detect_satellite()  # noqa: SLF001
                         QCoreApplication.processEvents()
 
                         # Should handle validation gracefully
@@ -602,8 +680,11 @@ class TestIntegrityCheckTabOptimizedV2:
                 window.deleteLater()
                 QCoreApplication.processEvents()
 
-    def test_integrity_check_ui_interaction_comprehensive(
-        self, shared_qt_app, integrity_test_components, temp_workspace
+    def test_integrity_check_ui_interaction_comprehensive(  # noqa: PLR6301
+        self,
+        shared_qt_app: QApplication,  # noqa: ARG002
+        integrity_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
         """Test comprehensive UI interaction scenarios for integrity check tab."""
         components = integrity_test_components
@@ -683,8 +764,11 @@ class TestIntegrityCheckTabOptimizedV2:
             window.deleteLater()
             QCoreApplication.processEvents()
 
-    def test_integrity_check_download_workflow_comprehensive(
-        self, shared_qt_app, integrity_test_components, temp_workspace
+    def test_integrity_check_download_workflow_comprehensive(  # noqa: PLR6301
+        self,
+        shared_qt_app: QApplication,  # noqa: ARG002
+        integrity_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
         """Test comprehensive download workflow scenarios."""
         components = integrity_test_components
@@ -790,7 +874,7 @@ class TestIntegrityCheckTabOptimizedV2:
 
                 # Test download initiation
                 with patch.object(view_model, "start_downloads", autospec=True) as mock_dl:
-                    tab._download_selected()
+                    tab._download_selected()  # noqa: SLF001
                     QCoreApplication.processEvents()
 
                     if scenario["expected_downloads"] > 0:
