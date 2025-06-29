@@ -21,13 +21,23 @@ class TestCacheUtilsOptimizedV2:
     """Optimized cache utilities tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_cache_dir(self, tmp_path_factory):
-        """Shared cache directory for all tests."""
-        return tmp_path_factory.mktemp("cache_test")
+    @staticmethod
+    def shared_cache_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
+        """Shared cache directory for all tests.
+
+        Returns:
+            Path: Temporary directory for cache testing.
+        """
+        return tmp_path_factory.mktemp("cache_test")  # type: ignore[no-any-return]
 
     @pytest.fixture()
-    def sample_files(self, tmp_path: Path) -> tuple[Path, Path]:
-        """Create sample test files."""
+    @staticmethod
+    def sample_files(tmp_path: Path) -> tuple[Path, Path]:
+        """Create sample test files.
+
+        Returns:
+            tuple[Path, Path]: Two test files for cache testing.
+        """
         file1 = tmp_path / "a.txt"
         file2 = tmp_path / "b.txt"
         file1.write_text("a")
@@ -35,18 +45,27 @@ class TestCacheUtilsOptimizedV2:
         return file1, file2
 
     @pytest.fixture()
-    def cache_setup(self, shared_cache_dir, monkeypatch):
-        """Setup cache configuration for tests."""
+    @staticmethod
+    def cache_setup(shared_cache_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+        """Setup cache configuration for tests.
+
+        Returns:
+            Path: Configured cache directory.
+        """
         monkeypatch.setattr(cache, "CACHE_DIR", shared_cache_dir)
         monkeypatch.setattr(config, "get_cache_dir", lambda: shared_cache_dir)
         return shared_cache_dir
 
-    def _expected_paths(self, file1: Path, file2: Path, model_id: str, frame_count: int) -> list[Path]:
-        """Helper to get expected cache file paths."""
-        base_key = cache._hash_pair(file1, file2, model_id, frame_count)
-        return [cache._get_cache_filepath(base_key, i, frame_count) for i in range(frame_count)]
+    def _expected_paths(self, file1: Path, file2: Path, model_id: str, frame_count: int) -> list[Path]:  # noqa: PLR6301
+        """Helper to get expected cache file paths.
 
-    def test_save_and_load_cache_complete_workflow(self, cache_setup, sample_files) -> None:
+        Returns:
+            list[Path]: List of expected cache file paths.
+        """
+        base_key = cache._hash_pair(file1, file2, model_id, frame_count)  # noqa: SLF001
+        return [cache._get_cache_filepath(base_key, i, frame_count) for i in range(frame_count)]  # noqa: SLF001
+
+    def test_save_and_load_cache_complete_workflow(self, cache_setup: Path, sample_files: tuple[Path, Path]) -> None:  # noqa: ARG002
         """Test complete cache save and load workflow with multiple scenarios."""
         file1, file2 = sample_files
 
@@ -70,7 +89,8 @@ class TestCacheUtilsOptimizedV2:
         # Test scenario 2: Different model and frame count
         model2 = "different_model"
         frame_count2 = 5
-        arrays2 = [np.random.rand(3, 3).astype(np.float32) for _ in range(frame_count2)]
+        rng = np.random.default_rng(42)
+        arrays2 = [rng.random((3, 3)).astype(np.float32) for _ in range(frame_count2)]
 
         cache.save_cache(file1, file2, model2, frame_count2, arrays2)
 
@@ -89,7 +109,7 @@ class TestCacheUtilsOptimizedV2:
         assert loaded_original is not None
         assert len(loaded_original) == frame_count
 
-    def test_cache_different_array_types_and_shapes(self, cache_setup, sample_files) -> None:
+    def test_cache_different_array_types_and_shapes(self, cache_setup: Path, sample_files: tuple[Path, Path]) -> None:  # noqa: ARG002
         """Test caching with different array types and shapes."""
         file1, file2 = sample_files
 
@@ -128,9 +148,13 @@ class TestCacheUtilsOptimizedV2:
             for orig, result in zip(arrays, loaded, strict=False):
                 np.testing.assert_array_equal(orig, result)
 
-    def test_cache_error_scenarios(self, cache_setup, sample_files, caplog) -> None:
+    def test_cache_error_scenarios(
+        self, cache_setup: Path, sample_files: tuple[Path, Path], caplog: pytest.LogCaptureFixture
+    ) -> None:
         """Test cache error handling scenarios."""
         file1, file2 = sample_files
+        # Use cache_setup to ensure cache directory is configured
+        assert cache_setup.exists()
 
         # Test 1: Array count mismatch
         arrays_mismatch = [np.zeros((2, 2))]
@@ -152,7 +176,7 @@ class TestCacheUtilsOptimizedV2:
         loaded_nonexistent = cache.load_cached(file1, file2, "nonexistent_model", 5)
         assert loaded_nonexistent is None
 
-    def test_cache_corruption_and_recovery(self, cache_setup, sample_files) -> None:
+    def test_cache_corruption_and_recovery(self, cache_setup: Path, sample_files: tuple[Path, Path]) -> None:  # noqa: PLR6301, ARG002
         """Test cache corruption handling and recovery."""
         file1, file2 = sample_files
         model = "corruption_test"
@@ -168,7 +192,7 @@ class TestCacheUtilsOptimizedV2:
         assert len(loaded) == frame_count
 
         # Corrupt the first file
-        first_path = cache._get_cache_filepath(cache._hash_pair(file1, file2, model, frame_count), 0, frame_count)
+        first_path = cache._get_cache_filepath(cache._hash_pair(file1, file2, model, frame_count), 0, frame_count)  # noqa: SLF001
         assert first_path.exists()
         first_path.write_text("corrupt data")
 
@@ -182,7 +206,7 @@ class TestCacheUtilsOptimizedV2:
         assert loaded_recovered is not None
         assert len(loaded_recovered) == frame_count
 
-    def test_cache_hash_uniqueness(self, cache_setup, sample_files) -> None:
+    def test_cache_hash_uniqueness(self, cache_setup: Path, sample_files: tuple[Path, Path]) -> None:  # noqa: PLR6301, ARG002
         """Test that cache hashing creates unique keys for different inputs."""
         file1, file2 = sample_files
 
@@ -191,33 +215,33 @@ class TestCacheUtilsOptimizedV2:
         file3.write_text("c")
 
         # Test different file combinations
-        hash1 = cache._hash_pair(file1, file2, "model", 3)
-        hash2 = cache._hash_pair(file1, file3, "model", 3)  # Different file2
-        hash3 = cache._hash_pair(file2, file1, "model", 3)  # Swapped files
-        hash4 = cache._hash_pair(file1, file2, "different_model", 3)  # Different model
-        hash5 = cache._hash_pair(file1, file2, "model", 5)  # Different frame count
+        hash1 = cache._hash_pair(file1, file2, "model", 3)  # noqa: SLF001
+        hash2 = cache._hash_pair(file1, file3, "model", 3)  # Different file2  # noqa: SLF001
+        hash3 = cache._hash_pair(file2, file1, "model", 3)  # Swapped files  # noqa: SLF001
+        hash4 = cache._hash_pair(file1, file2, "different_model", 3)  # Different model  # noqa: SLF001
+        hash5 = cache._hash_pair(file1, file2, "model", 5)  # Different frame count  # noqa: SLF001
 
         # All hashes should be unique
         hashes = [hash1, hash2, hash3, hash4, hash5]
         assert len(set(hashes)) == len(hashes), "All cache hashes should be unique"
 
         # Test that same inputs produce same hash
-        hash1_repeat = cache._hash_pair(file1, file2, "model", 3)
+        hash1_repeat = cache._hash_pair(file1, file2, "model", 3)  # noqa: SLF001
         assert hash1 == hash1_repeat
 
-    def test_cache_file_path_generation(self, cache_setup, sample_files) -> None:
+    def test_cache_file_path_generation(self, cache_setup: Path, sample_files: tuple[Path, Path]) -> None:  # noqa: PLR6301
         """Test cache file path generation for different scenarios."""
         file1, file2 = sample_files
         model = "path_test"
 
         # Test different frame counts
         for frame_count in [1, 5, 10, 100]:
-            base_key = cache._hash_pair(file1, file2, model, frame_count)
+            base_key = cache._hash_pair(file1, file2, model, frame_count)  # noqa: SLF001
 
             # Generate all expected paths
             paths = []
             for i in range(frame_count):
-                path = cache._get_cache_filepath(base_key, i, frame_count)
+                path = cache._get_cache_filepath(base_key, i, frame_count)  # noqa: SLF001
                 paths.append(path)
 
                 # Verify path format
@@ -227,16 +251,17 @@ class TestCacheUtilsOptimizedV2:
             # All paths should be unique
             assert len(set(paths)) == frame_count
 
-    def test_cache_large_array_handling(self, cache_setup, sample_files) -> None:
+    def test_cache_large_array_handling(self, cache_setup: Path, sample_files: tuple[Path, Path]) -> None:  # noqa: ARG002
         """Test cache handling of larger arrays."""
         file1, file2 = sample_files
         model = "large_array_test"
 
         # Create larger arrays
+        rng = np.random.default_rng(42)
         large_arrays = [
-            np.random.rand(100, 100).astype(np.float32),
-            np.random.rand(150, 80).astype(np.float32),
-            np.random.rand(200, 50).astype(np.float32),
+            rng.random((100, 100)).astype(np.float32),
+            rng.random((150, 80)).astype(np.float32),
+            rng.random((200, 50)).astype(np.float32),
         ]
         frame_count = len(large_arrays)
 
@@ -260,7 +285,7 @@ class TestCacheUtilsOptimizedV2:
             assert orig.shape == result.shape
             assert orig.dtype == result.dtype
 
-    def test_cache_edge_cases(self, cache_setup, sample_files) -> None:
+    def test_cache_edge_cases(self, cache_setup: Path, sample_files: tuple[Path, Path]) -> None:  # noqa: PLR6301, ARG002
         """Test cache edge cases and boundary conditions."""
         file1, file2 = sample_files
 
@@ -293,7 +318,7 @@ class TestCacheUtilsOptimizedV2:
         assert np.isinf(loaded_special[0][0, 0])
         assert np.isnan(loaded_special[1][0, 0])
 
-    def test_cache_concurrent_access_simulation(self, cache_setup, sample_files) -> None:
+    def test_cache_concurrent_access_simulation(self, cache_setup: Path, sample_files: tuple[Path, Path]) -> None:  # noqa: PLR6301, ARG002
         """Test cache behavior under simulated concurrent access scenarios."""
         file1, file2 = sample_files
 
@@ -301,11 +326,11 @@ class TestCacheUtilsOptimizedV2:
         scenarios = [
             ("process1", "model_a", 2, [np.ones((2, 2)) * 1, np.ones((2, 2)) * 2]),
             ("process2", "model_b", 3, [np.ones((3, 3)) * i for i in range(3)]),
-            ("process3", "model_c", 4, [np.random.rand(4, 4) for _ in range(4)]),
+            ("process3", "model_c", 4, [np.random.default_rng(i + 10).random((4, 4)) for i in range(4)]),
         ]
 
         # Save all caches
-        for process_name, model, frame_count, arrays in scenarios:
+        for _process_name, model, frame_count, arrays in scenarios:
             cache.save_cache(file1, file2, model, frame_count, arrays)
 
         # Verify all caches can be loaded independently
