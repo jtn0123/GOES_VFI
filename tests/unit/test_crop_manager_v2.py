@@ -3,7 +3,7 @@
 from pathlib import Path
 import tempfile
 import threading
-from typing import ClassVar
+from typing import Any, ClassVar
 import unittest
 from unittest.mock import patch
 
@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import QApplication
 from goesvfi.gui_components.crop_manager import CropManager
 
 
-class TestCropManagerV2(unittest.TestCase):
+class TestCropManagerV2(unittest.TestCase):  # noqa: PLR0904
     """Test cases for CropManager with comprehensive coverage."""
 
     app: ClassVar[QCoreApplication | None] = None
@@ -29,7 +29,7 @@ class TestCropManagerV2(unittest.TestCase):
     def setUp(self) -> None:
         """Set up test fixtures."""
         # Create temporary settings file
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".ini")
+        self.temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".ini")  # noqa: SIM115
         self.temp_file.close()
 
         # Create QSettings with test file
@@ -57,7 +57,7 @@ class TestCropManagerV2(unittest.TestCase):
 
     def test_save_crop_rect_comprehensive(self) -> None:
         """Test saving crop rectangles with various valid formats."""
-        test_cases = [
+        test_cases: list[tuple[tuple[float, float, float, float], bool]] = [
             ((10, 20, 100, 200), True),
             ((0, 0, 1, 1), True),  # Minimum valid rect
             ((0, 0, 10000, 10000), True),  # Large rect
@@ -67,7 +67,7 @@ class TestCropManagerV2(unittest.TestCase):
 
         for rect, expected in test_cases:
             with self.subTest(rect=rect):
-                result = self.crop_manager.save_crop_rect(rect)
+                result = self.crop_manager.save_crop_rect(rect)  # type: ignore[arg-type]
                 assert result == expected
 
                 if expected:
@@ -78,7 +78,7 @@ class TestCropManagerV2(unittest.TestCase):
 
     def test_save_crop_rect_invalid_inputs(self) -> None:
         """Test saving with various invalid inputs."""
-        invalid_inputs = [
+        invalid_inputs: list[Any] = [
             None,
             (),  # Empty tuple
             (10,),  # Too few values
@@ -94,7 +94,7 @@ class TestCropManagerV2(unittest.TestCase):
 
         for invalid_input in invalid_inputs:
             with self.subTest(input=invalid_input):
-                result = self.crop_manager.save_crop_rect(invalid_input)
+                result = self.crop_manager.save_crop_rect(invalid_input)  # type: ignore[arg-type]
                 assert not result
 
     def test_set_and_get_crop_rect_edge_cases(self) -> None:
@@ -161,7 +161,7 @@ class TestCropManagerV2(unittest.TestCase):
 
     def test_load_crop_rect_error_handling(self) -> None:
         """Test loading with various error conditions."""
-        error_values = [
+        error_values: list[str] = [
             "invalid,format",  # Too few values
             "a,b,c,d",  # Non-numeric values
             "10,20,30,40,50",  # Too many values
@@ -192,7 +192,7 @@ class TestCropManagerV2(unittest.TestCase):
 
         # Verify settings are cleared
         saved_rect = self.settings.value("preview/cropRectangle", "", type=str)
-        assert saved_rect == ""
+        assert saved_rect == ""  # noqa: PLC1901
 
         # Clear when already None
         self.crop_manager.clear_crop_rect()
@@ -233,11 +233,11 @@ class TestCropManagerV2(unittest.TestCase):
         results = []
         errors = []
 
-        def save_rect(rect, thread_id) -> None:
+        def save_rect(rect: tuple[int, int, int, int], thread_id: int) -> None:
             try:
                 result = self.crop_manager.save_crop_rect(rect)
                 results.append((thread_id, result, rect))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((thread_id, e))
 
         # Create threads
@@ -314,7 +314,7 @@ class TestCropManagerV2(unittest.TestCase):
 
             # Test save error logging
             mock_logger.reset_mock()
-            self.crop_manager.save_crop_rect(None)
+            self.crop_manager.save_crop_rect(None)  # type: ignore[arg-type]
             mock_logger.error.assert_called()
 
     def test_special_cases(self) -> None:
@@ -414,7 +414,7 @@ class TestCropManagerV2(unittest.TestCase):
 
     def test_performance(self) -> None:
         """Test performance of crop operations."""
-        import time
+        import time  # noqa: PLC0415
 
         # Time save operations
         rect = (10, 20, 100, 200)
@@ -444,7 +444,7 @@ class TestCropManagerV2(unittest.TestCase):
     def test_validation_logic(self) -> None:
         """Test any validation logic in crop manager."""
         # Test that crop manager accepts various valid formats
-        valid_rects = [
+        valid_rects: list[tuple[float, float, float, float]] = [
             (0, 0, 1, 1),  # Minimum
             (0, 0, 10000, 10000),  # Large
             (-100, -100, 200, 200),  # Negative start
@@ -453,11 +453,11 @@ class TestCropManagerV2(unittest.TestCase):
 
         for rect in valid_rects:
             with self.subTest(rect=rect):
-                result = self.crop_manager.save_crop_rect(rect)
+                result = self.crop_manager.save_crop_rect(rect)  # type: ignore[arg-type]
                 assert result
 
     @patch("goesvfi.gui_components.crop_manager.QSettings")
-    def test_settings_initialization_error(self, mock_settings_class) -> None:
+    def test_settings_initialization_error(self, mock_settings_class: Any) -> None:  # noqa: PLR6301
         """Test handling of settings initialization errors."""
         # Mock settings to raise exception
         mock_settings_class.side_effect = Exception("Settings init failed")
@@ -468,7 +468,7 @@ class TestCropManagerV2(unittest.TestCase):
                 manager = CropManager(None)
                 # Should still create manager
                 assert manager is not None
-            except:
+            except Exception:  # noqa: BLE001, S110
                 # If it does fail, that's also acceptable
                 pass
 
