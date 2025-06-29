@@ -58,128 +58,106 @@ def complex_function() -> None:  # noqa: C901
     """Complex test function."""
 ```
 
-## Current Status Summary
+## CLEAR TASK DIVISION
 
-### Lead Agent - Completed Files (6)
-1. ✅ tests/unit/test_interpolate_v2.py (commit 540c553) - CLEAN
-2. ✅ tests/unit/test_encode_v2.py (commit bd031ed) - CLEAN
-3. ✅ tests/unit/test_run_vfi_param_v2.py (commit 4804c05) - CLEAN
-4. ✅ tests/unit/test_main_tab_v2.py (commit 531f67f) - CLEAN
-5. ✅ tests/unit/test_raw_encoder_v2.py (commit 62a171d) - CLEAN
-6. ✅ tests/unit/test_run_ffmpeg_v2.py (commit e648b07) - CLEAN
+### Lead Agent - Responsible for Unit Tests (94 files total)
+**Completed (6):**
+1. ✅ tests/unit/test_interpolate_v2.py (commit 540c553)
+2. ✅ tests/unit/test_encode_v2.py (commit bd031ed)
+3. ✅ tests/unit/test_run_vfi_param_v2.py (commit 4804c05)
+4. ✅ tests/unit/test_main_tab_v2.py (commit 531f67f)
+5. ✅ tests/unit/test_raw_encoder_v2.py (commit 62a171d)
+6. ✅ tests/unit/test_run_ffmpeg_v2.py (commit e648b07)
 
-### Worker Agent - Actually Completed Files (5)
-1. ✅ tests/integration/test_goes_imagery_tab_v2.py (commit bea0bf5) - VERIFIED CLEAN
-2. ✅ tests/integration/test_integrity_check_tab_v2.py (commit a3eda6c) - VERIFIED CLEAN
-3. ✅ tests/integration/test_integrity_tab_integration_v2.py (commit 9ca9244) - VERIFIED CLEAN
-4. ✅ tests/unit/test_model_manager_v2.py - VERIFIED CLEAN
-5. ✅ tests/unit/test_network_failure_simulation_v2.py - VERIFIED CLEAN
+**Remaining (88 files):** All other files in tests/unit/ ending with _v2.py, including but not limited to:
+- test_pipeline_exceptions_v2.py (152 issues)
+- test_processing_handler_v2.py (211 issues)
+- test_processing_manager_v2.py (222 issues)
+- test_cache_utils_v2.py (121 issues)
+- test_config_v2.py (143 issues)
+- test_ffmpeg_builder_critical_v2.py (212 issues)
+- test_ffmpeg_builder_v2.py (252 issues)
+- test_log_v2.py (105 issues)
+- test_validation_v2.py (80 issues - partially attempted)
+- All S3-related test files
+- All other unit test files
 
-### Files Needing Work
+### Worker Agent - Responsible for Integration + GUI Tests (47 files total)
+**Completed (5):**
+1. ✅ tests/integration/test_goes_imagery_tab_v2.py (commit bea0bf5)
+2. ✅ tests/integration/test_integrity_check_tab_v2.py (commit a3eda6c)
+3. ✅ tests/integration/test_integrity_tab_integration_v2.py (commit 9ca9244)
+4. ✅ tests/unit/test_model_manager_v2.py (EXCEPTION - was handled by Worker)
+5. ✅ tests/unit/test_network_failure_simulation_v2.py (EXCEPTION - was handled by Worker)
 
-**High Priority - Files with Remaining Issues:**
-- ❌ tests/integration/test_end_to_end_satellite_download_v2.py (44 issues - ARG, BLE, RUF, TRY, S324)
-- ❌ tests/integration/test_headless_workflow_v2.py (27 issues - ARG, PLR, PLC, PT, B, F, S, W, C, DOC)
+**High Priority - Need Rework (2):**
+- ❌ tests/integration/test_end_to_end_satellite_download_v2.py (44 issues remaining)
+- ❌ tests/integration/test_headless_workflow_v2.py (27 issues remaining)
 
-**Lead Agent - Unit Tests Needing Manual Fixes (19 files, ~3,600 issues):**
-1. test_pipeline_exceptions_v2.py (152 issues)
-2. test_processing_handler_v2.py (211 issues)
-3. test_processing_manager_v2.py (222 issues)
-4. test_cache_utils_v2.py (121 issues)
-5. test_config_v2.py (143 issues)
-6. test_ffmpeg_builder_critical_v2.py (212 issues)
-7. test_ffmpeg_builder_v2.py (252 issues)
-8. test_log_v2.py (105 issues)
-9. test_real_s3_path_v2.py (222 issues)
-10. test_real_s3_patterns_v2.py (203 issues)
-11. test_remote_stores_v2.py (263 issues)
-12. test_s3_band13_v2.py (223 issues)
-13. test_s3_download_stats_param_v2.py (158 issues)
-14. test_s3_error_handling_v2.py (260 issues)
-15. test_s3_store_critical_v2.py (274 issues)
-16. test_s3_threadlocal_integration_v2.py (517 issues)
-17. test_s3_utils_modules_v2.py (148 issues)
-18. test_time_index_v2.py (215 issues)
-19. test_validation_v2.py (80 issues)
+**Remaining Integration Tests (14 files):**
+- tests/integration/test_full_application_workflow_v2.py
+- tests/integration/test_preview_functionality_v2.py
+- tests/integration/test_pipeline_v2.py
+- tests/integration/test_preview_integration_v2.py
+- tests/integration/test_vfi_worker_v2.py
+- tests/integration/test_video_processing_pipeline_v2.py
+- tests/integration/test_all_gui_elements_v2.py
+- tests/integration/test_crop_dialog_integration_v2.py
+- tests/integration/test_enhanced_preview_validation_v2.py
+- All other integration test files
 
-**Worker Agent - Remaining Files to Check/Fix:**
+**All GUI Tests (17 files):**
+- tests/gui/test_main_window_v2.py
+- tests/gui/test_gui_components_v2.py
+- tests/gui/test_enhanced_main_tab_v2.py
+- tests/gui/test_settings_advanced_v2.py
+- tests/gui/test_accessibility_v2.py
+- tests/gui/test_error_handling_ui_v2.py
+- tests/gui/test_performance_ui_v2.py
+- tests/gui/test_workflows_integration_v2.py
+- tests/gui/imagery/test_band_selector_v2.py
+- tests/gui/imagery/test_imagery_dialog_v2.py
+- tests/gui/imagery/test_imagery_loader_v2.py
+- tests/gui/imagery/test_imagery_manager_v2.py
+- tests/gui/tabs/test_about_tab_v2.py
+- tests/gui/tabs/test_main_tab_v2.py
+- tests/gui/tabs/test_preview_tab_v2.py
+- tests/gui/tabs/test_render_tab_v2.py
+- tests/gui/tabs/test_settings_tab_v2.py
 
-Integration Tests (need verification):
-- [ ] tests/integration/test_full_application_workflow_v2.py
-- [ ] tests/integration/test_preview_functionality_v2.py
-- [ ] tests/integration/test_pipeline_v2.py
-- [ ] tests/integration/test_preview_integration_v2.py
-- [ ] tests/integration/test_vfi_worker_v2.py
-- [ ] tests/integration/test_video_processing_pipeline_v2.py
-- [ ] tests/integration/test_all_gui_elements_v2.py
-- [ ] tests/integration/test_crop_dialog_integration_v2.py
-- [ ] tests/integration/test_enhanced_preview_validation_v2.py
-
-GUI Tests (all 17 untouched):
-- [ ] tests/gui/test_main_window_v2.py
-- [ ] tests/gui/test_gui_components_v2.py
-- [ ] tests/gui/test_enhanced_main_tab_v2.py
-- [ ] tests/gui/test_settings_advanced_v2.py
-- [ ] tests/gui/test_accessibility_v2.py
-- [ ] tests/gui/test_error_handling_ui_v2.py
-- [ ] tests/gui/test_performance_ui_v2.py
-- [ ] tests/gui/test_workflows_integration_v2.py
-- [ ] tests/gui/imagery/test_band_selector_v2.py
-- [ ] tests/gui/imagery/test_imagery_dialog_v2.py
-- [ ] tests/gui/imagery/test_imagery_loader_v2.py
-- [ ] tests/gui/imagery/test_imagery_manager_v2.py
-- [ ] tests/gui/tabs/test_about_tab_v2.py
-- [ ] tests/gui/tabs/test_main_tab_v2.py
-- [ ] tests/gui/tabs/test_preview_tab_v2.py
-- [ ] tests/gui/tabs/test_render_tab_v2.py
-- [ ] tests/gui/tabs/test_settings_tab_v2.py
-
-Remaining Unit Tests (need verification):
-- [ ] tests/unit/test_date_utils_v2.py
-- [ ] tests/unit/test_processing_view_model_ffmpeg_v2.py
-- [ ] tests/unit/test_rife_analyzer_v2.py
-- [ ] tests/unit/test_s3_unsigned_access_v2.py
-- [ ] tests/unit/test_security_v2.py
-- [ ] tests/unit/test_main_tab_optimized_v2.py
-- [ ] tests/unit/test_model_manager_optimized_v2.py
-- [ ] tests/unit/test_network_failure_simulation_optimized_v2.py
-- [ ] tests/unit/test_security_optimized_v2.py
+**Other/Special Cases (9 files):**
+- tests/unit/test_date_utils_v2.py
+- tests/unit/test_processing_view_model_ffmpeg_v2.py
+- tests/unit/test_rife_analyzer_v2.py
+- tests/unit/test_s3_unsigned_access_v2.py
+- tests/unit/test_security_v2.py
+- tests/unit/test_main_tab_optimized_v2.py
+- tests/unit/test_model_manager_optimized_v2.py
+- tests/unit/test_network_failure_simulation_optimized_v2.py
+- tests/unit/test_security_optimized_v2.py
 
 ## Summary Statistics
 - **Total v2 files**: 141
 - **Completed and clean**: 11 files (8%)
-- **Need rework**: 2 files
-- **Remaining**: 128 files (91%)
+- **Lead Agent**: 6 completed, 88 remaining
+- **Worker Agent**: 5 completed, 42 remaining
 
-## Recommended Next Steps
+## Next Actions
 
 ### For Lead Agent:
-1. Start with test_validation_v2.py (smallest file, 80 issues)
-2. Work through unit test files from smallest to largest
-3. Focus on systematic fixes:
-   - First pass: Add all type annotations
-   - Second pass: Add @staticmethod decorators
-   - Third pass: Fix docstrings
-   - Fourth pass: Add noqa comments
+1. Continue with unit test files, starting with smallest (test_validation_v2.py - 80 issues)
+2. Work systematically through all 88 remaining unit test files
+3. Focus on core functionality tests first (pipeline, processing, etc.)
 
 ### For Worker Agent:
-1. Fix the 2 files that need rework (test_end_to_end_satellite_download_v2.py and test_headless_workflow_v2.py)
-2. Verify status of claimed complete files
-3. Continue with remaining integration tests
-4. Move to GUI tests after integration tests
+1. **FIRST**: Fix the 2 files with remaining issues
+2. Complete all remaining integration tests (14 files)
+3. Move to GUI tests (17 files)
+4. Handle the 9 special case files last
 
 ## Important Notes
-- DO NOT claim files are fixed without verification using `ruff check`
-- Test files after fixing to ensure they still work
-- Update this file with accurate status only
-- The auto-fix tool is nearly useless for v2 files - expect manual work
-- Pre-commit hooks will catch additional issues (mypy type checking) - files need to pass ALL checks
-- Even after manual fixes, expect 10-25 remaining issues that may need noqa comments
-
-## Example Progress
-Lead Agent attempted test_validation_v2.py:
-- Started with 80 issues
-- Added type annotations, @staticmethod, Returns docs, noqa comments
-- After manual work: ~25 issues remain (mostly FBT001 boolean args)
-- Pre-commit found additional mypy type errors
-- This represents ~70% reduction but still not clean
+- Each file requires extensive manual work
+- Expect 70-90% reduction in issues with manual fixes
+- Pre-commit hooks will catch additional mypy issues
+- Some issues may require # noqa comments as acceptable
+- Test files after fixing to ensure functionality
