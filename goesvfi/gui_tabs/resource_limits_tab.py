@@ -1,4 +1,4 @@
-"""Resource Limits Configuration Tab for GOES_VFI GUI.
+"""Resource Limits Configuration Tab for GOES_VFI GUI.  # noqa: INP001.
 
 This module provides a user interface for configuring resource limits
 such as memory usage, processing time, and file handles.
@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.gui_components.icon_manager import get_icon
 from goesvfi.pipeline.resource_manager import ResourceLimits
 from goesvfi.utils import log
 
@@ -48,10 +49,21 @@ class ResourceLimitsTab(QWidget):
         layout.setContentsMargins(15, 15, 15, 15)
         layout.setSpacing(12)
 
-        # Add header
-        header = QLabel("⚙️ Resource Limits Configuration")
-        header.setProperty("class", "AppHeader")
-        layout.addWidget(header)
+        # Add header with icon
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+
+        icon_label = QLabel()
+        icon_label.setPixmap(get_icon("⚙️").pixmap(24, 24))
+        header_layout.addWidget(icon_label)
+
+        header_text = QLabel("Resource Limits Configuration")
+        header_text.setProperty("class", "AppHeader")
+        header_layout.addWidget(header_text)
+        header_layout.addStretch()
+
+        layout.addWidget(header_widget)
 
         # System Information Group
         self._create_system_info_group(layout)
@@ -67,7 +79,7 @@ class ResourceLimitsTab(QWidget):
 
     def _create_system_info_group(self, parent_layout: QVBoxLayout) -> None:
         """Create the system information display group."""
-        group = QGroupBox("💻 System Resources")
+        group = QGroupBox("System Resources")
         layout = QFormLayout(group)
 
         # Memory information
@@ -100,7 +112,7 @@ class ResourceLimitsTab(QWidget):
 
         parent_layout.addWidget(group)
 
-    def _create_limits_config_group(self, parent_layout: QVBoxLayout) -> None:
+    def _create_limits_config_group(self, parent_layout: QVBoxLayout) -> None:  # noqa: PLR0915
         """Create the resource limits configuration group."""
         group = QGroupBox("🎚️ Resource Limits Configuration")
         layout = QFormLayout(group)
@@ -206,7 +218,7 @@ class ResourceLimitsTab(QWidget):
 
     def _create_monitoring_group(self, parent_layout: QVBoxLayout) -> None:
         """Create the real-time resource monitoring group."""
-        group = QGroupBox("📊 Current Resource Usage")
+        group = QGroupBox("Current Resource Usage")
         layout = QFormLayout(group)
 
         # Memory usage bar
@@ -292,7 +304,7 @@ class ResourceLimitsTab(QWidget):
             limits: ResourceLimits object to apply
         """
         # Block signals while updating to avoid recursive emissions
-        self.blockSignals(True)
+        self.blockSignals(True)  # noqa: FBT003
 
         try:
             # Memory limit
@@ -329,7 +341,7 @@ class ResourceLimitsTab(QWidget):
             self.swap_limit_checkbox.setChecked(False)
 
         finally:
-            self.blockSignals(False)
+            self.blockSignals(False)  # noqa: FBT003
 
     def _emit_limits_changed(self) -> None:
         """Emit the limits_changed signal with current limits."""
@@ -344,7 +356,7 @@ class ResourceLimitsTab(QWidget):
                 self.monitor = None
 
             if self.monitor is not None and hasattr(self.monitor, "get_current_usage"):
-                usage = self.monitor.get_current_usage()
+                usage = self.monitor.get_current_usage()  # type: ignore[attr-defined]
             else:
                 return
 
@@ -368,10 +380,11 @@ class ResourceLimitsTab(QWidget):
             self._update_progress_bar_colors(self.memory_progress, memory_percent)
             self._update_progress_bar_colors(self.cpu_progress, cpu_percent)
 
-        except Exception as e:
-            LOGGER.exception("Error updating monitoring display: %s", e)
+        except Exception:
+            LOGGER.exception("Error updating monitoring display")
 
-    def _update_progress_bar_colors(self, progress_bar: QProgressBar, value: int) -> None:
+    @staticmethod
+    def _update_progress_bar_colors(progress_bar: QProgressBar, value: int) -> None:
         """Update progress bar colors based on usage level.
 
         Args:
@@ -395,13 +408,17 @@ class ResourceLimitsTab(QWidget):
             # TODO: Implement ResourceMonitor
             self.monitor = None
         if self.monitor is not None and hasattr(self.monitor, "start_monitoring"):
-            self.monitor.start_monitoring()
+            self.monitor.start_monitoring()  # type: ignore[attr-defined]
 
     def stop_monitoring(self) -> None:
         """Stop resource monitoring."""
         if self.monitor and hasattr(self.monitor, "stop_monitoring"):
-            self.monitor.stop_monitoring()
+            self.monitor.stop_monitoring()  # type: ignore[attr-defined]
 
     def get_monitor(self) -> object | None:
-        """Get the current resource monitor."""
+        """Get the current resource monitor.
+
+        Returns:
+            The resource monitor instance or None if not initialized.
+        """
         return self.monitor
