@@ -1,7 +1,7 @@
 """Tests for GOES Satellite Imagery functionality - Optimized V2 with 100%+ coverage."""
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 import tempfile
 import unittest
@@ -23,7 +23,7 @@ with patch("boto3.client"), patch("botocore.UNSIGNED", create=True):
     )
 
 
-class TestGOESImageryV2(unittest.TestCase):
+class TestGOESImageryV2(unittest.TestCase):  # noqa: PLR0904
     """Tests for GOES Imagery functionality with comprehensive coverage."""
 
     def setUp(self) -> None:
@@ -64,12 +64,12 @@ class TestGOESImageryV2(unittest.TestCase):
 
         # Test composite channels
         assert ChannelType.TRUE_COLOR.is_composite
-        assert ChannelType.GEOCOLOR.is_composite
+        assert ChannelType.GEOCOLOR.is_composite  # type: ignore[attr-defined]
         assert not ChannelType.CH01.is_composite
 
         # Test from_number with all valid numbers
         for i in range(1, 17):
-            channel = ChannelType.from_number(i)
+            channel = ChannelType.from_number(i)  # type: ignore[assignment]
             if i != 12:  # Channel 12 doesn't exist
                 assert channel is not None
                 assert channel.number == i
@@ -78,8 +78,8 @@ class TestGOESImageryV2(unittest.TestCase):
 
         # Test from_number with invalid numbers
         invalid_numbers = [0, -1, 17, 100, 999, None]
-        for num in invalid_numbers:
-            assert ChannelType.from_number(num) is None
+        for num in invalid_numbers:  # type: ignore[assignment]
+            assert ChannelType.from_number(num) is None  # type: ignore[arg-type]
 
     def test_product_type_mapping_comprehensive(self) -> None:
         """Test ProductType mapping functions comprehensively."""
@@ -97,13 +97,13 @@ class TestGOESImageryV2(unittest.TestCase):
 
         # Test with invalid input
         with pytest.raises(KeyError):
-            ProductType.to_s3_prefix("INVALID")
+            ProductType.to_s3_prefix("INVALID")  # type: ignore[arg-type]
 
         with pytest.raises(KeyError):
-            ProductType.to_web_path("INVALID")
+            ProductType.to_web_path("INVALID")  # type: ignore[arg-type]
 
     @patch("goesvfi.integrity_check.goes_imagery.requests.get")
-    def test_download_precolorized_image_comprehensive(self, mock_get) -> None:
+    def test_download_precolorized_image_comprehensive(self, mock_get: MagicMock) -> None:
         """Test downloading pre-colorized images with various scenarios."""
         # Test different channels and products
         test_cases = [
@@ -123,7 +123,7 @@ class TestGOESImageryV2(unittest.TestCase):
 
                 # Create downloader
                 downloader = GOESImageryDownloader(output_dir=self.test_dir)
-                downloader.s3_client = MagicMock()
+                downloader.s3_client = MagicMock()  # type: ignore[assignment]  # type: ignore[assignment]
 
                 # Test download
                 result = downloader.download_precolorized_image(channel=channel, product_type=product, size=size)
@@ -133,13 +133,13 @@ class TestGOESImageryV2(unittest.TestCase):
                 assert result.check_file_exists()
 
     @patch("goesvfi.integrity_check.goes_imagery.requests.get")
-    def test_download_precolorized_image_error_handling(self, mock_get) -> None:
+    def test_download_precolorized_image_error_handling(self, mock_get: MagicMock) -> None:
         """Test error handling in pre-colorized image download."""
         # Test connection error
         mock_get.side_effect = requests.ConnectionError("Connection failed")
 
         downloader = GOESImageryDownloader(output_dir=self.test_dir)
-        downloader.s3_client = MagicMock()
+        downloader.s3_client = MagicMock()  # type: ignore[assignment]
 
         result = downloader.download_precolorized_image(channel=ChannelType.CH13, product_type=ProductType.FULL_DISK)
 
@@ -172,7 +172,7 @@ class TestGOESImageryV2(unittest.TestCase):
 
         for filename, expected in test_cases:
             with self.subTest(filename=filename):
-                result = processor._extract_timestamp_from_filename(filename)
+                result = processor._extract_timestamp_from_filename(filename)  # noqa: SLF001
                 assert result == expected
 
         # Test invalid filenames
@@ -184,15 +184,15 @@ class TestGOESImageryV2(unittest.TestCase):
             None,
         ]
 
-        for filename in invalid_filenames:
-            result = processor._extract_timestamp_from_filename(filename)
+        for filename in invalid_filenames:  # type: ignore[assignment]
+            result = processor._extract_timestamp_from_filename(filename)  # noqa: SLF001  # type: ignore[arg-type, assignment]
             assert result is None
 
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.find_raw_data")
-    def test_find_raw_data_scenarios(self, mock_find) -> None:
+    def test_find_raw_data_scenarios(self, mock_find: MagicMock) -> None:
         """Test various scenarios for finding raw data."""
         downloader = GOESImageryDownloader(output_dir=self.test_dir)
-        downloader.s3_client = MagicMock()
+        downloader.s3_client = MagicMock()  # type: ignore[assignment]
 
         # Test successful find
         mock_find.return_value = "path/to/file.nc"
@@ -205,14 +205,14 @@ class TestGOESImageryV2(unittest.TestCase):
         assert result is None
 
     @patch("goesvfi.integrity_check.goes_imagery.xarray.open_dataset")
-    def test_process_raw_data_comprehensive(self, mock_xr_open) -> None:
+    def test_process_raw_data_comprehensive(self, mock_xr_open: MagicMock) -> None:
         """Test raw data processing with various scenarios."""
         processor = GOESImageProcessor(output_dir=self.test_dir)
 
         # Create mock dataset
         mock_ds = MagicMock()
         mock_ds.variables = {"Rad": MagicMock()}
-        mock_ds["Rad"].values = np.random.rand(1000, 1000) * 100
+        mock_ds["Rad"].values = np.random.rand(1000, 1000) * 100  # noqa: NPY002
         mock_ds.attrs = {"platform_ID": "G16", "instrument_type": "ABI", "date_created": "2023-10-27T15:50:21Z"}
 
         mock_xr_open.return_value.__enter__.return_value = mock_ds
@@ -222,12 +222,12 @@ class TestGOESImageryV2(unittest.TestCase):
         test_nc.write_text("mock content")
 
         # Test processing
-        result = processor.process_raw_data(test_nc, channel=ChannelType.CH13, product_type=ProductType.FULL_DISK)
+        result = processor.process_raw_data(test_nc, channel=ChannelType.CH13, product_type=ProductType.FULL_DISK)  # type: ignore[call-arg]
 
         assert result is not None
         assert result.exists()
 
-    def test_imagery_mode_enum(self) -> None:
+    def test_imagery_mode_enum(self) -> None:  # noqa: PLR6301
         """Test ImageryMode enum values."""
         assert ImageryMode.IMAGE_PRODUCT.value == "image_product"
         assert ImageryMode.RAW_DATA.value == "raw_data"
@@ -241,7 +241,11 @@ class TestGOESImageryV2(unittest.TestCase):
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageryDownloader.download_raw_data")
     @patch("goesvfi.integrity_check.goes_imagery.GOESImageProcessor.process_raw_data")
     def test_get_imagery_mode_switching(
-        self, mock_process, mock_download_raw, mock_find_raw, mock_download_pre
+        self,
+        mock_process: MagicMock,
+        mock_download_raw: MagicMock,
+        mock_find_raw: MagicMock,
+        mock_download_pre: MagicMock,
     ) -> None:
         """Test imagery manager mode switching."""
         # Setup mocks
@@ -251,7 +255,7 @@ class TestGOESImageryV2(unittest.TestCase):
         mock_process.return_value = self.test_dir / "processed.png"
 
         manager = GOESImageryManager(output_dir=self.test_dir)
-        manager.downloader.s3_client = MagicMock()
+        manager.downloader.s3_client = MagicMock()  # type: ignore[assignment]
 
         # Test IMAGE_PRODUCT mode
         result = manager.get_imagery(
@@ -281,16 +285,16 @@ class TestGOESImageryV2(unittest.TestCase):
             mock_get.return_value = mock_response
 
             downloader = GOESImageryDownloader(output_dir=self.test_dir)
-            downloader.s3_client = MagicMock()
+            downloader.s3_client = MagicMock()  # type: ignore[assignment]
 
             results = []
             errors = []
 
-            def download_channel(channel) -> None:
+            def download_channel(channel: ChannelType) -> None:
                 try:
                     result = downloader.download_precolorized_image(channel=channel, product_type=ProductType.FULL_DISK)
                     results.append(result)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     errors.append((channel, e))
 
             # Download multiple channels concurrently
@@ -340,23 +344,27 @@ class TestGOESImageryV2(unittest.TestCase):
             mock_download.return_value = mock_result
 
             downloader = GOESImageryDownloader(output_dir=self.test_dir)
-            downloader.s3_client = MagicMock()
+            downloader.s3_client = MagicMock()  # type: ignore[assignment]
 
             # Test with specific date
-            test_date = datetime(2023, 10, 27)
+            test_date = datetime(2023, 10, 27, tzinfo=UTC)
             downloader.download_precolorized_image(
-                channel=ChannelType.CH13, product_type=ProductType.FULL_DISK, date=test_date
+                channel=ChannelType.CH13,
+                product_type=ProductType.FULL_DISK,
+                date=test_date,  # type: ignore[call-arg]
             )
 
             # Verify date was passed correctly
             mock_download.assert_called_with(
-                channel=ChannelType.CH13, product_type=ProductType.FULL_DISK, date=test_date
+                channel=ChannelType.CH13,
+                product_type=ProductType.FULL_DISK,
+                date=test_date,  # type: ignore[call-arg]
             )
 
     def test_error_recovery(self) -> None:
         """Test error recovery mechanisms."""
         manager = GOESImageryManager(output_dir=self.test_dir)
-        manager.downloader.s3_client = MagicMock()
+        manager.downloader.s3_client = MagicMock()  # type: ignore[assignment]
 
         # Test with all operations failing
         with (
@@ -377,7 +385,7 @@ class TestGOESImageryV2(unittest.TestCase):
         GOESImageryDownloader(output_dir=non_existent_dir)
         assert non_existent_dir.exists()
 
-    def test_channel_type_string_representations(self) -> None:
+    def test_channel_type_string_representations(self) -> None:  # noqa: PLR6301
         """Test string representations of enums."""
         # Test __str__ method if implemented
         for channel in ChannelType:
@@ -392,9 +400,9 @@ class TestGOESImageryV2(unittest.TestCase):
         """Test handling of composite channels."""
         composite_channels = [
             ChannelType.TRUE_COLOR,
-            ChannelType.GEOCOLOR,
-            ChannelType.NATURAL_COLOR,
-            ChannelType.RGB_AIRMASS,
+            ChannelType.GEOCOLOR,  # type: ignore[attr-defined]
+            ChannelType.NATURAL_COLOR,  # type: ignore[attr-defined]
+            ChannelType.RGB_AIRMASS,  # type: ignore[attr-defined]
         ]
 
         for channel in composite_channels:
@@ -413,7 +421,7 @@ class TestGOESImageryV2(unittest.TestCase):
             mock_get.return_value = mock_response
 
             downloader = GOESImageryDownloader(output_dir=self.test_dir)
-            downloader.s3_client = MagicMock()
+            downloader.s3_client = MagicMock()  # type: ignore[assignment]
 
             for size in valid_sizes:
                 result = downloader.download_precolorized_image(
@@ -438,18 +446,18 @@ class TestGOESImageryV2(unittest.TestCase):
 
             # Process should complete without memory errors
             with patch("matplotlib.pyplot.savefig"):
-                processor.process_raw_data(test_file, channel=ChannelType.CH13, product_type=ProductType.FULL_DISK)
+                processor.process_raw_data(test_file, channel=ChannelType.CH13, product_type=ProductType.FULL_DISK)  # type: ignore[call-arg]
 
     def test_edge_cases(self) -> None:
         """Test various edge cases."""
         # Test with empty output directory name
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError):  # noqa: PT011
             GOESImageryDownloader(output_dir=Path())
 
         # Test with very long filenames
         long_filename = "OR_" + "A" * 200 + "_s20233001550210.nc"
         processor = GOESImageProcessor(output_dir=self.test_dir)
-        processor._extract_timestamp_from_filename(long_filename)
+        processor._extract_timestamp_from_filename(long_filename)  # noqa: SLF001
         # Should handle gracefully
 
 
