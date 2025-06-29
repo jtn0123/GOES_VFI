@@ -13,8 +13,12 @@ import pytest
 
 # Optimized stub implementation with session-scoped fixture
 @pytest.fixture(scope="session", autouse=True)
-def stub_resource_manager(monkeypatch):
-    """Provide a minimal goesvfi.utils.resource_manager module for testing."""
+def stub_resource_manager(monkeypatch) -> Any:  # noqa: ANN001
+    """Provide a minimal goesvfi.utils.resource_manager module for testing.
+
+    Yields:
+        None: This fixture provides a module stub for the test session.
+    """
     module = ModuleType("goesvfi.utils.resource_manager")
 
     @dataclass
@@ -26,7 +30,7 @@ def stub_resource_manager(monkeypatch):
         enable_swap_limit: bool = True
 
     class ResourceMonitor:
-        def __init__(self, limits: ResourceLimits, check_interval: float = 1.0) -> None:
+        def __init__(self, limits: ResourceLimits, check_interval: float = 1.0) -> None:  # noqa: ARG002
             self.limits = limits
             self.started = False
 
@@ -36,7 +40,7 @@ def stub_resource_manager(monkeypatch):
         def stop_monitoring(self) -> None:
             self.started = False
 
-        def get_current_usage(self) -> SimpleNamespace:
+        def get_current_usage(self) -> SimpleNamespace:  # noqa: PLR6301
             return SimpleNamespace(
                 memory_percent=0.0,
                 cpu_percent=0.0,
@@ -52,9 +56,9 @@ def stub_resource_manager(monkeypatch):
             "disk": {"total_gb": 256, "free_gb": 128, "percent_used": 50.0},
         }
 
-    module.ResourceLimits = ResourceLimits  # type: ignore
-    module.ResourceMonitor = ResourceMonitor  # type: ignore
-    module.get_system_resource_info = get_system_resource_info  # type: ignore
+    module.ResourceLimits = ResourceLimits  # type: ignore[attr-defined]
+    module.ResourceMonitor = ResourceMonitor  # type: ignore[attr-defined]
+    module.get_system_resource_info = get_system_resource_info  # type: ignore[attr-defined]
 
     monkeypatch.setitem(sys.modules, "goesvfi.utils.resource_manager", module)
 
@@ -64,9 +68,13 @@ def stub_resource_manager(monkeypatch):
 
 
 @pytest.fixture()
-def resource_tab(qtbot):
-    """Create a ResourceLimitsTab instance with the stub resource manager."""
-    from goesvfi.gui_tabs.resource_limits_tab import ResourceLimitsTab
+def resource_tab(qtbot) -> Any:  # noqa: ANN001
+    """Create a ResourceLimitsTab instance with the stub resource manager.
+
+    Returns:
+        ResourceLimitsTab: The created tab instance.
+    """
+    from goesvfi.gui_tabs.resource_limits_tab import ResourceLimitsTab  # noqa: PLC0415
 
     tab = ResourceLimitsTab()
     qtbot.addWidget(tab)
@@ -88,7 +96,9 @@ class TestResourceLimitsTab:
             ]
         ],
     )
-    def test_checkbox_spinbox_interactions(self, resource_tab, checkbox_spinbox_pairs: list[tuple[str, str]]) -> None:
+    def test_checkbox_spinbox_interactions(  # noqa: PLR6301
+        self, resource_tab: Any, checkbox_spinbox_pairs: list[tuple[str, str]]
+    ) -> None:
         """Test that checkboxes properly enable/disable their corresponding spinboxes."""
         for checkbox_name, spinbox_name in checkbox_spinbox_pairs:
             checkbox = getattr(resource_tab, checkbox_name)
@@ -122,9 +132,9 @@ class TestResourceLimitsTab:
             },
         ],
     )
-    def test_limits_changed_signal_emission(self, resource_tab, limit_config: dict[str, Any]) -> None:
+    def test_limits_changed_signal_emission(self, resource_tab: Any, limit_config: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test that limits_changed signal emits correct ResourceLimits values."""
-        emitted_limits = []
+        emitted_limits: list[Any] = []
         resource_tab.limits_changed.connect(emitted_limits.append)
 
         # Configure memory limit
@@ -153,9 +163,9 @@ class TestResourceLimitsTab:
         expected_time = time_config["value"] if time_config["enabled"] else None
         assert getattr(last_limits, time_config["expected_attr"]) == expected_time
 
-    def test_limit_workflow_sequence(self, resource_tab) -> None:
+    def test_limit_workflow_sequence(self, resource_tab: Any) -> None:  # noqa: PLR6301
         """Test complete workflow of enabling, configuring, and disabling limits."""
-        emitted_limits = []
+        emitted_limits: list[Any] = []
         resource_tab.limits_changed.connect(emitted_limits.append)
 
         # Step 1: Enable memory limit and set value
