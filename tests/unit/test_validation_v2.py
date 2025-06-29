@@ -10,6 +10,7 @@ This v2 version maintains all test scenarios while optimizing through:
 
 import math
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -21,7 +22,7 @@ class TestValidationOptimizedV2:
 
     @pytest.fixture(scope="class")
     @staticmethod
-    def test_directory_structure(tmp_path_factory: pytest.TempPathFactory) -> dict[str, dict[str, Path]]:
+    def test_directory_structure(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Any]:
         """Create a shared test directory structure.
 
         Returns:
@@ -73,10 +74,10 @@ class TestValidationOptimizedV2:
     )
     def test_validate_path_exists_valid_scenarios(  # noqa: PLR6301
         self,
-        test_directory_structure: dict[str, dict[str, Path]],
+        test_directory_structure: dict[str, Any],
         path_type: str,
-        must_be_dir: bool,
-        should_succeed: bool,
+        must_be_dir: bool,  # noqa: FBT001
+        should_succeed: bool,  # noqa: FBT001
     ) -> None:
         """Test path validation with valid existing paths."""
         if path_type in test_directory_structure["dirs"]:
@@ -92,7 +93,7 @@ class TestValidationOptimizedV2:
             with pytest.raises(ValueError, match="not a directory"):
                 validate_path_exists(test_path, must_be_dir=must_be_dir)
 
-    def test_validate_path_exists_missing_paths(self, test_directory_structure: dict[str, dict[str, Path]]) -> None:  # noqa: PLR6301
+    def test_validate_path_exists_missing_paths(self, test_directory_structure: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test path validation with missing paths."""
         # Test missing directory
         with pytest.raises(FileNotFoundError):
@@ -106,7 +107,7 @@ class TestValidationOptimizedV2:
         with pytest.raises(FileNotFoundError):
             validate_path_exists(test_directory_structure["nonexistent_dir"])
 
-    def test_validate_path_exists_edge_cases(self, test_directory_structure: dict[str, dict[str, Path]]) -> None:  # noqa: PLR6301
+    def test_validate_path_exists_edge_cases(self, test_directory_structure: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test path validation edge cases and error conditions."""
         base_dir = test_directory_structure["base_dir"]
 
@@ -169,9 +170,9 @@ class TestValidationOptimizedV2:
             (True, TypeError, r"must be an integer"),  # bool is subclass of int in Python
         ],
     )
-    def test_validate_positive_int_invalid_values(
+    def test_validate_positive_int_invalid_values(  # noqa: PLR6301
         self,
-        invalid_value: str | float | list | dict | bool | None,
+        invalid_value: str | float | list | dict | bool | None,  # noqa: FBT001
         expected_exception: type[Exception],
         error_pattern: str,
     ) -> None:
@@ -195,7 +196,7 @@ class TestValidationOptimizedV2:
             # Verify field name appears in error message
             assert field_name in str(exc_info.value)
 
-    def test_validation_comprehensive_workflow(self, test_directory_structure: dict[str, dict[str, Path]]) -> None:  # noqa: PLR6301
+    def test_validation_comprehensive_workflow(self, test_directory_structure: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test comprehensive validation workflow with multiple validations."""
         test_directory_structure["base_dir"]
 
@@ -209,24 +210,24 @@ class TestValidationOptimizedV2:
 
         validated_paths = []
         for path, must_be_dir in paths_to_validate:
-            result = validate_path_exists(path, must_be_dir=must_be_dir)
-            validated_paths.append(result)
-            assert result.exists()
+            path_result = validate_path_exists(path, must_be_dir=must_be_dir)
+            validated_paths.append(path_result)
+            assert path_result.exists()
 
         # Validate multiple positive integers
         values_to_validate = [1, 10, 100, 1000, 42]
         validated_values = []
         for value in values_to_validate:
-            result = validate_positive_int(value, f"value_{value}")
-            validated_values.append(result)
-            assert result > 0
-            assert isinstance(result, int)
+            int_result = validate_positive_int(value, f"value_{value}")
+            validated_values.append(int_result)
+            assert int_result > 0
+            assert isinstance(int_result, int)
 
         # Verify all validations succeeded
         assert len(validated_paths) == len(paths_to_validate)
         assert len(validated_values) == len(values_to_validate)
 
-    def test_validation_error_message_quality(self, test_directory_structure: dict[str, dict[str, Path]]) -> None:  # noqa: PLR6301
+    def test_validation_error_message_quality(self, test_directory_structure: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test that validation error messages are informative."""
         # Test path validation error messages
         nonexistent_path = test_directory_structure["nonexistent_dir"]
@@ -261,7 +262,7 @@ class TestValidationOptimizedV2:
         assert "string_value" in error_msg
         assert "integer" in error_msg.lower()
 
-    def test_validation_boundary_conditions(self, test_directory_structure: dict[str, dict[str, Path]]) -> None:  # noqa: PLR6301
+    def test_validation_boundary_conditions(self, test_directory_structure: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test validation with boundary conditions and edge cases."""
         # Test positive integer boundary (1 is the smallest positive integer)
         assert validate_positive_int(1, "minimum_positive") == 1
@@ -288,7 +289,7 @@ class TestValidationOptimizedV2:
         assert isinstance(result, Path)
         assert result.is_absolute()
 
-    def test_validation_type_consistency(self, test_directory_structure: dict[str, dict[str, Path]]) -> None:  # noqa: PLR6301
+    def test_validation_type_consistency(self, test_directory_structure: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test that validation functions return consistent types."""
         # Path validation should always return Path objects
         test_path = test_directory_structure["dirs"]["existing_dir"]
@@ -311,7 +312,7 @@ class TestValidationOptimizedV2:
             assert isinstance(result, int)
             assert result == value
 
-    def test_validation_concurrent_usage_simulation(self, test_directory_structure: dict[str, dict[str, Path]]) -> None:  # noqa: PLR6301
+    def test_validation_concurrent_usage_simulation(self, test_directory_structure: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test validation functions under simulated concurrent usage."""
         # Simulate multiple "threads" validating different resources
         validation_scenarios = [
