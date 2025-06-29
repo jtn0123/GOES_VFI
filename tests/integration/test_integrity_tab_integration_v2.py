@@ -8,8 +8,9 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced mock management and data propagation testing
 """
 
+from collections.abc import Iterator
 import contextlib
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
@@ -33,8 +34,13 @@ class TestIntegrityTabsIntegrationOptimizedV2:
     """Optimized integrity check tabs integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_qt_app(self):
-        """Shared QApplication instance for all integration tests."""
+    @staticmethod
+    def shared_qt_app() -> Iterator[QApplication]:
+        """Shared QApplication instance for all integration tests.
+
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -42,8 +48,13 @@ class TestIntegrityTabsIntegrationOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def tab_integration_components(self):
-        """Create shared components for tab integration testing."""
+    @staticmethod
+    def tab_integration_components() -> dict[str, Any]:  # noqa: C901
+        """Create shared components for tab integration testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing file_manager, mock_manager, and tab_manager.
+        """
 
         # Enhanced Test File Manager
         class TestFileManager:
@@ -55,15 +66,24 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                     "goes18": "OR_ABI-L1b-RadF-M6C13_G18_{}.nc",
                 }
                 self.date_ranges = {
-                    "single_day": [datetime(2023, 1, 1, h, 0, 0) for h in range(0, 24, 3)],
-                    "multi_day": [datetime(2023, 1, 1, h, 0, 0) for h in range(0, 24, 3)]
-                    + [datetime(2023, 1, 2, h, 0, 0) for h in range(0, 24, 3)]
-                    + [datetime(2023, 1, 3, h, 0, 0) for h in range(0, 24, 3)],
-                    "sparse": [datetime(2023, 1, 1, h, 0, 0) for h in [0, 6, 12, 18]],
+                    "single_day": [datetime(2023, 1, 1, h, 0, 0, tzinfo=UTC) for h in range(0, 24, 3)],
+                    "multi_day": [datetime(2023, 1, 1, h, 0, 0, tzinfo=UTC) for h in range(0, 24, 3)]
+                    + [datetime(2023, 1, 2, h, 0, 0, tzinfo=UTC) for h in range(0, 24, 3)]
+                    + [datetime(2023, 1, 3, h, 0, 0, tzinfo=UTC) for h in range(0, 24, 3)],
+                    "sparse": [datetime(2023, 1, 1, h, 0, 0, tzinfo=UTC) for h in [0, 6, 12, 18]],
                 }
 
             def create_satellite_files(self, base_dir: Path, satellite: str, date_range: str) -> list[Path]:
-                """Create test files for specified satellite and date range."""
+                """Create test files for specified satellite and date range.
+
+                Args:
+                    base_dir: Base directory for file creation.
+                    satellite: Satellite identifier (goes16, goes18).
+                    date_range: Date range identifier (single_day, multi_day, sparse).
+
+                Returns:
+                    list[Path]: List of created file paths.
+                """
                 sat_dir = base_dir / satellite
                 sat_dir.mkdir(parents=True, exist_ok=True)
 
@@ -80,7 +100,14 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 return created_files
 
             def create_comprehensive_test_data(self, base_dir: Path) -> dict[str, list[Path]]:
-                """Create comprehensive test data for all scenarios."""
+                """Create comprehensive test data for all scenarios.
+
+                Args:
+                    base_dir: Base directory for file creation.
+
+                Returns:
+                    dict[str, list[Path]]: Dictionary mapping satellite names to file paths.
+                """
                 files = {}
 
                 # Create GOES-16 files with multi-day range
@@ -97,14 +124,22 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
             def __init__(self) -> None:
                 self.mock_configs = {
-                    "full_success": self._create_full_success_mocks,
+                    "full_success": IntegrationMockManager._create_full_success_mocks,
                     "partial_failure": self._create_partial_failure_mocks,
                     "async_operations": self._create_async_operation_mocks,
                     "signal_handling": self._create_signal_handling_mocks,
                 }
 
-            def _create_full_success_mocks(self, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for full success scenarios."""
+            @staticmethod
+            def _create_full_success_mocks(temp_dir: Path) -> dict[str, Any]:
+                """Create mocks for full success scenarios.
+
+                Args:
+                    temp_dir: Temporary directory for testing.
+
+                Returns:
+                    dict[str, Any]: Dictionary of configured mock objects.
+                """
                 cache_db_mock = MagicMock()
                 cache_db_mock.reset_database = AsyncMock()
                 cache_db_mock.close = AsyncMock()
@@ -130,8 +165,15 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 }
 
             def _create_partial_failure_mocks(self, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for partial failure scenarios."""
-                mocks = self._create_full_success_mocks(temp_dir)
+                """Create mocks for partial failure scenarios.
+
+                Args:
+                    temp_dir: Temporary directory for testing.
+
+                Returns:
+                    dict[str, Any]: Dictionary of configured mock objects with failures.
+                """
+                mocks = IntegrationMockManager._create_full_success_mocks(temp_dir)
 
                 # CDN fails but S3 succeeds
                 mocks["cdn_store"].exists = AsyncMock(return_value=False)
@@ -140,11 +182,18 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 return mocks
 
             def _create_async_operation_mocks(self, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for async operation testing."""
-                mocks = self._create_full_success_mocks(temp_dir)
+                """Create mocks for async operation testing.
+
+                Args:
+                    temp_dir: Temporary directory for testing.
+
+                Returns:
+                    dict[str, Any]: Dictionary of async-enabled mock objects.
+                """
+                mocks = IntegrationMockManager._create_full_success_mocks(temp_dir)
 
                 # Add delays to simulate async operations
-                async def delayed_download(*args, **kwargs) -> bool:
+                async def delayed_download(*args: Any, **kwargs: Any) -> bool:
                     import asyncio
 
                     await asyncio.sleep(0.01)  # Small delay
@@ -156,14 +205,21 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 return mocks
 
             def _create_signal_handling_mocks(self, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for signal handling testing."""
-                mocks = self._create_full_success_mocks(temp_dir)
+                """Create mocks for signal handling testing.
+
+                Args:
+                    temp_dir: Temporary directory for testing.
+
+                Returns:
+                    dict[str, Any]: Dictionary of signal-tracking mock objects.
+                """
+                mocks = IntegrationMockManager._create_full_success_mocks(temp_dir)
 
                 # Track signal emissions
                 mocks["signal_tracker"] = MagicMock()
                 mocks["signal_tracker"].signals_emitted = []
 
-                def track_signal(signal_name, *args) -> None:
+                def track_signal(signal_name: str, *args: Any) -> None:
                     mocks["signal_tracker"].signals_emitted.append((signal_name, args))
 
                 mocks["signal_tracker"].track = track_signal
@@ -171,7 +227,15 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 return mocks
 
             def create_mocks(self, config: str, temp_dir: Path) -> dict[str, Any]:
-                """Create mocks for specified configuration."""
+                """Create mocks for specified configuration.
+
+                Args:
+                    config: Configuration name (full_success, partial_failure, etc.).
+                    temp_dir: Temporary directory for testing.
+
+                Returns:
+                    dict[str, Any]: Dictionary of configured mock objects.
+                """
                 return self.mock_configs[config](temp_dir)
 
         # Enhanced Tab Manager
@@ -180,18 +244,25 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
             def __init__(self) -> None:
                 self.test_scenarios = {
-                    "directory_propagation": self._test_directory_propagation,
-                    "date_range_synchronization": self._test_date_range_synchronization,
-                    "satellite_selection_sync": self._test_satellite_selection_sync,
-                    "fetch_source_sync": self._test_fetch_source_sync,
-                    "data_flow_validation": self._test_data_flow_validation,
-                    "tab_visibility_management": self._test_tab_visibility_management,
+                    "directory_propagation": TabIntegrationManager._test_directory_propagation,
+                    "date_range_synchronization": TabIntegrationManager._test_date_range_synchronization,
+                    "satellite_selection_sync": TabIntegrationManager._test_satellite_selection_sync,
+                    "fetch_source_sync": TabIntegrationManager._test_fetch_source_sync,
+                    "data_flow_validation": TabIntegrationManager._test_data_flow_validation,
+                    "tab_visibility_management": TabIntegrationManager._test_tab_visibility_management,
                 }
 
+            @staticmethod
             def _test_directory_propagation(
-                self, tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
             ) -> None:
-                """Test directory selection propagation across tabs."""
+                """Test directory selection propagation across tabs.
+
+                Args:
+                    tabs: Dictionary of tab instances to test.
+                    view_model: Enhanced integrity check view model.
+                    test_dir: Test directory path.
+                """
                 # Set directory in view model
                 view_model.base_directory = test_dir
                 QCoreApplication.processEvents()
@@ -210,12 +281,19 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
                 assert view_model.base_directory == new_dir
 
+            @staticmethod
             def _test_date_range_synchronization(
-                self, tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
             ) -> None:
-                """Test date range synchronization across tabs."""
-                start_date = datetime(2023, 1, 1, 0, 0, 0)
-                end_date = datetime(2023, 1, 3, 23, 59, 59)
+                """Test date range synchronization across tabs.
+
+                Args:
+                    tabs: Dictionary of tab instances to test.
+                    view_model: Enhanced integrity check view model.
+                    test_dir: Test directory path.
+                """
+                start_date = datetime(2023, 1, 1, 0, 0, 0, tzinfo=UTC)
+                end_date = datetime(2023, 1, 3, 23, 59, 59, tzinfo=UTC)
 
                 # Set dates in view model
                 view_model.start_date = start_date
@@ -227,17 +305,24 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 assert view_model.end_date == end_date
 
                 # Test date range validation
-                invalid_end = datetime(2022, 12, 31)  # Before start date
+                invalid_end = datetime(2022, 12, 31, tzinfo=UTC)  # Before start date
                 view_model.end_date = invalid_end
                 QCoreApplication.processEvents()
 
                 # View model should handle invalid ranges gracefully
                 assert view_model.end_date == invalid_end  # Set but may be validated later
 
+            @staticmethod
             def _test_satellite_selection_sync(
-                self, tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
             ) -> None:
-                """Test satellite selection synchronization."""
+                """Test satellite selection synchronization.
+
+                Args:
+                    tabs: Dictionary of tab instances to test.
+                    view_model: Enhanced integrity check view model.
+                    test_dir: Test directory path.
+                """
                 # Test GOES-16 selection
                 view_model.satellite = SatellitePattern.GOES_16
                 QCoreApplication.processEvents()
@@ -255,10 +340,17 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                     QCoreApplication.processEvents()
                     # UI updates should be reflected in view model through signals
 
+            @staticmethod
             def _test_fetch_source_sync(
-                self, tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
             ) -> None:
-                """Test fetch source synchronization."""
+                """Test fetch source synchronization.
+
+                Args:
+                    tabs: Dictionary of tab instances to test.
+                    view_model: Enhanced integrity check view model.
+                    test_dir: Test directory path.
+                """
                 # Test different fetch sources
                 sources = [FetchSource.AUTO, FetchSource.CDN, FetchSource.S3, FetchSource.LOCAL]
 
@@ -278,8 +370,9 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
                 assert view_model.fetch_source == FetchSource.AUTO
 
+            @staticmethod
             def _test_data_flow_validation(
-                self, tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
             ) -> None:
                 """Test data flow between tabs and view model."""
                 # Verify view model exists and has expected attributes
@@ -305,8 +398,9 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 assert satellite is not None
                 assert fetch_source is not None
 
+            @staticmethod
             def _test_tab_visibility_management(
-                self, tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
             ) -> None:
                 """Test tab visibility and management."""
                 # Verify all expected tabs exist
@@ -329,8 +423,12 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
             def run_integration_test(
                 self, scenario: str, tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
-            ):
-                """Run specified integration test scenario."""
+            ) -> None:
+                """Run specified integration test scenario.
+
+                Returns:
+                    None: Test runs but doesn't return a value.
+                """
                 return self.test_scenarios[scenario](tabs, view_model, test_dir)
 
         return {
@@ -340,15 +438,22 @@ class TestIntegrityTabsIntegrationOptimizedV2:
         }
 
     @pytest.fixture()
-    def temp_workspace(self, tmp_path):
-        """Create temporary workspace for integration testing."""
+    def temp_workspace(self, tmp_path: Path) -> dict[str, Any]:
+        """Create temporary workspace for integration testing.
+
+        Args:
+            tmp_path: Pytest temporary path fixture.
+
+        Returns:
+            dict[str, Any]: Workspace configuration with base_dir and temp_dir_obj.
+        """
         return {
             "base_dir": tmp_path,
             "temp_dir_obj": None,
         }
 
     def test_integrity_tabs_integration_comprehensive_scenarios(
-        self, shared_qt_app, tab_integration_components, temp_workspace
+        self, shared_qt_app: QApplication, tab_integration_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:
         """Test comprehensive tab integration scenarios."""
         components = tab_integration_components
@@ -420,8 +525,8 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
             # Set initial view model state
             view_model.base_directory = workspace["base_dir"]
-            view_model.start_date = datetime(2023, 1, 1)
-            view_model.end_date = datetime(2023, 1, 3, 23, 59, 59)
+            view_model.start_date = datetime(2023, 1, 1, tzinfo=UTC)
+            view_model.end_date = datetime(2023, 1, 3, 23, 59, 59, tzinfo=UTC)
             view_model.satellite = SatellitePattern.GOES_16
             view_model.fetch_source = FetchSource.AUTO
 
@@ -477,7 +582,7 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 QCoreApplication.processEvents()
 
     def test_tab_synchronization_stress_testing(
-        self, shared_qt_app, tab_integration_components, temp_workspace
+        self, shared_qt_app: QApplication, tab_integration_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:
         """Test tab synchronization under stress conditions."""
         components = tab_integration_components
@@ -570,19 +675,21 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
     def _rapid_date_range_changes(self, view_model: EnhancedIntegrityCheckViewModel) -> None:
         """Perform rapid date range changes."""
-        view_model.start_date = datetime(2023, 1, 1)
-        view_model.end_date = datetime(2023, 1, 2)
-        view_model.start_date = datetime(2023, 1, 2)
-        view_model.end_date = datetime(2023, 1, 3)
+        view_model.start_date = datetime(2023, 1, 1, tzinfo=UTC)
+        view_model.end_date = datetime(2023, 1, 2, tzinfo=UTC)
+        view_model.start_date = datetime(2023, 1, 2, tzinfo=UTC)
+        view_model.end_date = datetime(2023, 1, 3, tzinfo=UTC)
 
     def _concurrent_property_updates(self, view_model: EnhancedIntegrityCheckViewModel) -> None:
         """Perform concurrent property updates."""
         view_model.satellite = SatellitePattern.GOES_18
         view_model.fetch_source = FetchSource.S3
-        view_model.start_date = datetime(2023, 1, 1, 12, 0, 0)
-        view_model.end_date = datetime(2023, 1, 1, 18, 0, 0)
+        view_model.start_date = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
+        view_model.end_date = datetime(2023, 1, 1, 18, 0, 0, tzinfo=UTC)
 
-    def test_tab_lifecycle_management(self, shared_qt_app, tab_integration_components, temp_workspace) -> None:
+    def test_tab_lifecycle_management(
+        self, shared_qt_app: QApplication, tab_integration_components: dict[str, Any], temp_workspace: dict[str, Any]
+    ) -> None:
         """Test tab lifecycle management scenarios."""
         components = tab_integration_components
         workspace = temp_workspace
@@ -675,8 +782,8 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                             view_model = view_models_created[0]
                             view_model.satellite = SatellitePattern.GOES_18
                             view_model.fetch_source = FetchSource.S3
-                            view_model.start_date = datetime(2023, 1, 15)
-                            view_model.end_date = datetime(2023, 1, 20)
+                            view_model.start_date = datetime(2023, 1, 15, tzinfo=UTC)
+                            view_model.end_date = datetime(2023, 1, 20, tzinfo=UTC)
 
                     elif operation == "cross_reference":
                         # Test cross-referencing between tabs
