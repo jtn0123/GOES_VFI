@@ -8,7 +8,9 @@ Optimizations applied:
 - Comprehensive preview state validation
 """
 
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import QApplication
@@ -24,16 +26,26 @@ class TestEnhancedPreviewValidationV2:
     """Optimized enhanced test for preview images with detailed validation."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for all tests."""
+    @staticmethod
+    def shared_app() -> QApplication:
+        """Create shared QApplication for all tests.
+
+        Returns:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture()
-    def mock_main_window(self, shared_app):
-        """Create mock MainWindow with preview validation capabilities."""
+    @staticmethod
+    def mock_main_window(shared_app: QApplication) -> MagicMock:  # noqa: ARG004
+        """Create mock MainWindow with preview validation capabilities.
+
+        Returns:
+            MagicMock: The mock main window instance.
+        """
         with patch("goesvfi.gui.MainWindow") as mock_window_class:
             mock_window = MagicMock(spec=MainWindow)
             mock_window.preview_tab = MagicMock()
@@ -49,10 +61,17 @@ class TestEnhancedPreviewValidationV2:
             return mock_window
 
     @pytest.fixture()
-    def test_image_factory(self):
-        """Factory for creating test images with validation properties."""
+    @staticmethod
+    def test_image_factory() -> Callable[..., dict[str, Any]]:
+        """Factory for creating test images with validation properties.
 
-        def create_test_image(filename, color=(255, 0, 0), size=(300, 200)):
+        Returns:
+            Callable[..., dict[str, Any]]: Function to create test image data.
+        """
+
+        def create_test_image(
+            filename: str, color: tuple[int, int, int] = (255, 0, 0), size: tuple[int, int] = (300, 200)
+        ) -> dict[str, Any]:
             return {
                 "path": Path(f"/mock/{filename}"),
                 "color": color,
@@ -64,8 +83,13 @@ class TestEnhancedPreviewValidationV2:
         return create_test_image
 
     @pytest.fixture()
-    def issue_tracker(self):
-        """Create issue tracker for validation problems."""
+    @staticmethod
+    def issue_tracker() -> dict[str, list[str]]:
+        """Create issue tracker for validation problems.
+
+        Returns:
+            dict[str, list[str]]: Dictionary tracking different issue types.
+        """
         return {"issues_found": [], "validation_errors": [], "performance_issues": []}
 
     @pytest.mark.parametrize(
@@ -77,8 +101,13 @@ class TestEnhancedPreviewValidationV2:
             {"filename": "004_frame.png", "color": (128, 128, 128), "size": (400, 300)},  # Gray
         ],
     )
+    @staticmethod
     def test_enhanced_preview_validation_scenarios(
-        self, shared_app, mock_main_window, test_image_factory, issue_tracker, image_config
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+        issue_tracker: dict[str, list[str]],
+        image_config: dict[str, Any],
     ) -> None:
         """Test enhanced preview validation with comprehensive scenarios."""
         # Create test image
@@ -92,7 +121,9 @@ class TestEnhancedPreviewValidationV2:
             mock_pil_open.return_value = mock_img
 
             # Perform enhanced validation
-            validation_result = self._perform_enhanced_validation(mock_main_window, test_image, issue_tracker)
+            validation_result = TestEnhancedPreviewValidationV2._perform_enhanced_validation(
+                mock_main_window, test_image, issue_tracker
+            )
 
             # Verify validation results
             assert validation_result["image_loaded"] is True
@@ -100,8 +131,15 @@ class TestEnhancedPreviewValidationV2:
             assert validation_result["color_correct"] is True
             assert validation_result["visible"] is True
 
-    def _perform_enhanced_validation(self, main_window, test_image, issue_tracker):
-        """Perform comprehensive preview validation."""
+    @staticmethod
+    def _perform_enhanced_validation(
+        main_window: MagicMock, test_image: dict[str, Any], issue_tracker: dict[str, list[str]]
+    ) -> dict[str, bool]:
+        """Perform comprehensive preview validation.
+
+        Returns:
+            dict[str, bool]: Validation results for different aspects.
+        """
         validation_result = {
             "image_loaded": False,
             "size_correct": False,
@@ -142,11 +180,17 @@ class TestEnhancedPreviewValidationV2:
 
         except Exception as e:
             issue_tracker["validation_errors"].append(f"Validation error for {test_image['filename']}: {e!s}")
-            LOGGER.exception(f"Preview validation failed: {e}")
+            LOGGER.exception("Preview validation failed: %s", e)  # noqa: TRY401
 
         return validation_result
 
-    def test_preview_state_consistency(self, shared_app, mock_main_window, test_image_factory, issue_tracker) -> None:
+    @staticmethod
+    def test_preview_state_consistency(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+        issue_tracker: dict[str, list[str]],
+    ) -> None:
         """Test preview state consistency across multiple operations."""
         # Create multiple test images
         test_images = [
@@ -159,7 +203,9 @@ class TestEnhancedPreviewValidationV2:
         states = []
 
         for test_image in test_images:
-            validation_result = self._perform_enhanced_validation(mock_main_window, test_image, issue_tracker)
+            validation_result = TestEnhancedPreviewValidationV2._perform_enhanced_validation(
+                mock_main_window, test_image, issue_tracker
+            )
             states.append(validation_result)
 
         # Verify consistency
@@ -167,8 +213,12 @@ class TestEnhancedPreviewValidationV2:
         assert all(state["image_loaded"] for state in states)
         assert all(state["visible"] for state in states)
 
+    @staticmethod
     def test_preview_performance_validation(
-        self, shared_app, mock_main_window, test_image_factory, issue_tracker
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+        issue_tracker: dict[str, list[str]],
     ) -> None:
         """Test preview performance validation and monitoring."""
         test_image = test_image_factory("performance_test.png", size=(1920, 1080))
@@ -184,7 +234,9 @@ class TestEnhancedPreviewValidationV2:
         with patch("time.time") as mock_time:
             mock_time.side_effect = [0.0, 0.05, 0.07]  # Start, after load, after render
 
-            validation_result = self._perform_enhanced_validation(mock_main_window, test_image, issue_tracker)
+            validation_result = TestEnhancedPreviewValidationV2._perform_enhanced_validation(
+                mock_main_window, test_image, issue_tracker
+            )
 
             # Check performance thresholds
             max_load_time = 0.1  # 100ms
@@ -206,8 +258,12 @@ class TestEnhancedPreviewValidationV2:
                     f"render={performance_metrics['render_time']:.3f}s"
                 )
 
+    @staticmethod
     def test_preview_error_recovery_validation(
-        self, shared_app, mock_main_window, test_image_factory, issue_tracker
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+        issue_tracker: dict[str, list[str]],
     ) -> None:
         """Test preview error recovery and validation."""
         test_image = test_image_factory("error_recovery_test.png")
@@ -222,18 +278,25 @@ class TestEnhancedPreviewValidationV2:
         for scenario_name, error in error_scenarios:
             with patch("PIL.Image.open", side_effect=error):
                 try:
-                    validation_result = self._perform_enhanced_validation(mock_main_window, test_image, issue_tracker)
+                    validation_result = TestEnhancedPreviewValidationV2._perform_enhanced_validation(
+                        mock_main_window, test_image, issue_tracker
+                    )
 
                     # Verify error handling
                     assert not validation_result["image_loaded"]
 
-                except Exception:
+                except Exception:  # noqa: BLE001
                     # Error was handled gracefully
                     issue_tracker["validation_errors"].append(
                         f"Error handling test for {scenario_name}: graceful recovery"
                     )
 
-    def test_preview_logging_validation(self, shared_app, mock_main_window, test_image_factory) -> None:
+    @staticmethod
+    def test_preview_logging_validation(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+    ) -> None:
         """Test preview logging and validation reporting."""
         test_image = test_image_factory("logging_test.png")
 
@@ -244,14 +307,22 @@ class TestEnhancedPreviewValidationV2:
             patch.object(LOGGER, "error"),
         ):
             # Perform validation with logging
-            issue_tracker = {"issues_found": [], "validation_errors": [], "performance_issues": []}
-            self._perform_enhanced_validation(mock_main_window, test_image, issue_tracker)
+            issue_tracker: dict[str, list[str]] = {
+                "issues_found": [],
+                "validation_errors": [],
+                "performance_issues": [],
+            }
+            TestEnhancedPreviewValidationV2._perform_enhanced_validation(mock_main_window, test_image, issue_tracker)
 
             # Verify logging was called for validation
-            main_window.log_preview_metrics.assert_called_once()
+            mock_main_window.log_preview_metrics.assert_called_once()
 
+    @staticmethod
     def test_preview_detailed_metrics_collection(
-        self, shared_app, mock_main_window, test_image_factory, issue_tracker
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+        issue_tracker: dict[str, list[str]],
     ) -> None:
         """Test detailed metrics collection during preview validation."""
         test_image = test_image_factory("metrics_test.png", size=(800, 600))
@@ -268,7 +339,9 @@ class TestEnhancedPreviewValidationV2:
         }
 
         # Perform validation with metrics collection
-        validation_result = self._perform_enhanced_validation(mock_main_window, test_image, issue_tracker)
+        validation_result = TestEnhancedPreviewValidationV2._perform_enhanced_validation(
+            mock_main_window, test_image, issue_tracker
+        )
 
         # Verify metrics are reasonable
         assert validation_result["image_loaded"] is True
@@ -280,7 +353,13 @@ class TestEnhancedPreviewValidationV2:
         ]
         assert len(critical_issues) == 0
 
-    def test_preview_batch_validation(self, shared_app, mock_main_window, test_image_factory, issue_tracker) -> None:
+    @staticmethod
+    def test_preview_batch_validation(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+        issue_tracker: dict[str, list[str]],
+    ) -> None:
         """Test batch validation of multiple preview images."""
         # Create batch of test images
         batch_size = 10
@@ -297,7 +376,9 @@ class TestEnhancedPreviewValidationV2:
         validation_results = []
 
         for test_image in test_images:
-            result = self._perform_enhanced_validation(mock_main_window, test_image, issue_tracker)
+            result = TestEnhancedPreviewValidationV2._perform_enhanced_validation(
+                mock_main_window, test_image, issue_tracker
+            )
             validation_results.append(result)
 
         # Verify batch results
