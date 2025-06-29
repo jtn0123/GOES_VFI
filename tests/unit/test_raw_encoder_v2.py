@@ -1,5 +1,4 @@
-"""
-Optimized unit tests for raw encoder functionality with maintained coverage.
+"""Optimized unit tests for raw encoder functionality with maintained coverage.
 
 This v2 version maintains all test scenarios while optimizing through:
 - Shared fixtures for raw encoder setup and mock configurations
@@ -8,11 +7,16 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced error handling and edge case coverage
 """
 
-import subprocess
+from collections.abc import Callable
+import contextlib
+from pathlib import Path
+import subprocess  # noqa: S404
+import types
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+from numpy.typing import NDArray
 import pytest
 
 from goesvfi.pipeline import raw_encoder
@@ -23,26 +27,32 @@ from tests.utils.mocks import create_mock_subprocess_run
 class TestRawEncoderOptimizedV2:
     """Optimized raw encoder tests with full coverage."""
 
+    @staticmethod
     @pytest.fixture(scope="class")
-    def raw_encoder_test_components(self):
-        """Create shared components for raw encoder testing."""
+    def raw_encoder_test_components() -> dict[str, Any]:  # noqa: C901
+        """Create shared components for raw encoder testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing test manager and analyzer components.
+        """
 
         # Enhanced Raw Encoder Test Manager
         class RawEncoderTestManager:
             """Manage raw encoder testing scenarios."""
 
             def __init__(self) -> None:
-                self.frame_templates = {
+                rng = np.random.default_rng()
+                self.frame_templates: dict[str, list[NDArray[np.float32]]] = {
                     "small": [np.ones((4, 4, 3), dtype=np.float32) * i for i in range(3)],
                     "medium": [np.ones((8, 8, 3), dtype=np.float32) * i for i in range(5)],
                     "large": [np.ones((16, 16, 3), dtype=np.float32) * i for i in range(10)],
                     "single": [np.ones((4, 4, 3), dtype=np.float32)],
-                    "varied_values": [np.random.rand(4, 4, 3).astype(np.float32) * i for i in range(4)],
+                    "varied_values": [rng.random((4, 4, 3), dtype=np.float32) * i for i in range(4)],
                     "grayscale": [np.ones((4, 4, 1), dtype=np.float32) * i for i in range(3)],
                     "empty": [],
                 }
 
-                self.encoding_configs = {
+                self.encoding_configs: dict[str, dict[str, Any]] = {
                     "standard": {
                         "fps": 30,
                         "codec": "ffv1",
@@ -65,7 +75,7 @@ class TestRawEncoderOptimizedV2:
                     },
                 }
 
-                self.test_scenarios = {
+                self.test_scenarios: dict[str, Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]]] = {
                     "successful_encoding": self._test_successful_encoding,
                     "error_handling": self._test_error_handling,
                     "frame_processing": self._test_frame_processing,
@@ -74,9 +84,15 @@ class TestRawEncoderOptimizedV2:
                     "performance_tests": self._test_performance_tests,
                 }
 
-            def _test_successful_encoding(self, temp_workspace, mock_registry):
-                """Test successful raw MP4 encoding scenarios."""
-                results = {}
+            def _test_successful_encoding(
+                self, temp_workspace: dict[str, Any], mock_registry: dict[str, Any]
+            ) -> dict[str, Any]:
+                """Test successful raw MP4 encoding scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results dictionary.
+                """
+                results: dict[str, Any] = {}
 
                 # Test different frame sets and configurations
                 test_cases = [
@@ -103,14 +119,14 @@ class TestRawEncoderOptimizedV2:
                 ]
 
                 for test_case in test_cases:
-                    frames = self.frame_templates[test_case["frames"]]
-                    config = self.encoding_configs[test_case["config"]]
+                    frames: list[NDArray[np.float32]] = self.frame_templates[test_case["frames"]]
+                    config: dict[str, Any] = self.encoding_configs[test_case["config"]]
 
                     # Create test-specific workspace
                     test_workspace = self._create_test_workspace(temp_workspace, test_case["name"])
 
                     # Build expected FFmpeg command
-                    expected_cmd = self._build_expected_command(
+                    expected_cmd: list[str] = self._build_expected_command(
                         test_workspace["temp_dir_path"], test_workspace["raw_path"], config["fps"]
                     )
 
@@ -148,16 +164,22 @@ class TestRawEncoderOptimizedV2:
                 mock_registry["successful_encoding"] = results
                 return results
 
-            def _test_error_handling(self, temp_workspace, mock_registry):
-                """Test error handling scenarios."""
-                error_tests = {}
+            def _test_error_handling(
+                self, temp_workspace: dict[str, Any], mock_registry: dict[str, Any]
+            ) -> dict[str, Any]:
+                """Test error handling scenarios.
 
-                frames = self.frame_templates["small"]
-                config = self.encoding_configs["standard"]
+                Returns:
+                    dict[str, Any]: Test results dictionary.
+                """
+                error_tests: dict[str, Any] = {}
+
+                frames: list[NDArray[np.float32]] = self.frame_templates["small"]
+                config: dict[str, Any] = self.encoding_configs["standard"]
 
                 # Test FFmpeg CalledProcessError
-                test_workspace = self._create_test_workspace(temp_workspace, "ffmpeg_error")
-                expected_cmd = self._build_expected_command(
+                test_workspace: dict[str, Any] = self._create_test_workspace(temp_workspace, "ffmpeg_error")
+                expected_cmd: list[str] = self._build_expected_command(
                     test_workspace["temp_dir_path"], test_workspace["raw_path"], config["fps"]
                 )
 
@@ -174,7 +196,7 @@ class TestRawEncoderOptimizedV2:
                             "raises_correct_error": True,
                             "mock_called": True,
                         }
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         error_tests["ffmpeg_called_process_error"] = {
                             "success": False,
                             "unexpected_error": str(e),
@@ -199,7 +221,7 @@ class TestRawEncoderOptimizedV2:
                             "raises_correct_error": True,
                             "mock_called": True,
                         }
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         error_tests["ffmpeg_file_not_found"] = {
                             "success": False,
                             "unexpected_error": str(e),
@@ -213,14 +235,14 @@ class TestRawEncoderOptimizedV2:
 
                 with self._setup_image_error_mocks(test_workspace, expected_cmd) as mock_context:
                     try:
-                        with pytest.raises(ValueError):
+                        with pytest.raises(ValueError, match="Invalid image data"):
                             raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=config["fps"])
 
                         error_tests["image_processing_error"] = {
                             "success": True,
                             "raises_correct_error": True,
                         }
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         error_tests["image_processing_error"] = {
                             "success": False,
                             "unexpected_error": str(e),
@@ -229,11 +251,17 @@ class TestRawEncoderOptimizedV2:
                 mock_registry["error_handling"] = error_tests
                 return error_tests
 
-            def _test_frame_processing(self, temp_workspace, mock_registry):
-                """Test frame processing with different frame types."""
-                frame_tests = {}
+            def _test_frame_processing(
+                self, temp_workspace: dict[str, Any], mock_registry: dict[str, Any]
+            ) -> dict[str, Any]:
+                """Test frame processing with different frame types.
 
-                config = self.encoding_configs["standard"]
+                Returns:
+                    dict[str, Any]: Test results dictionary.
+                """
+                frame_tests: dict[str, Any] = {}
+
+                config: dict[str, Any] = self.encoding_configs["standard"]
 
                 # Test different frame configurations
                 frame_test_cases = [
@@ -260,8 +288,8 @@ class TestRawEncoderOptimizedV2:
                 ]
 
                 for frame_test in frame_test_cases:
-                    frames = self.frame_templates[frame_test["frames"]]
-                    test_workspace = self._create_test_workspace(temp_workspace, frame_test["name"])
+                    frames: list[NDArray[np.float32]] = self.frame_templates[frame_test["frames"]]
+                    test_workspace: dict[str, Any] = self._create_test_workspace(temp_workspace, frame_test["name"])
 
                     expected_cmd = self._build_expected_command(
                         test_workspace["temp_dir_path"], test_workspace["raw_path"], config["fps"]
@@ -281,7 +309,7 @@ class TestRawEncoderOptimizedV2:
                                     "handled_gracefully": True,
                                     "result_path": str(result_path),
                                 }
-                        except Exception as e:
+                        except Exception as e:  # noqa: BLE001
                             frame_tests[frame_test["name"]] = {
                                 "success": True,
                                 "frames_count": len(frames),
@@ -314,11 +342,17 @@ class TestRawEncoderOptimizedV2:
                 mock_registry["frame_processing"] = frame_tests
                 return frame_tests
 
-            def _test_command_validation(self, temp_workspace, mock_registry):
-                """Test FFmpeg command construction validation."""
-                command_tests = {}
+            def _test_command_validation(
+                self, temp_workspace: dict[str, Any], mock_registry: dict[str, Any]
+            ) -> dict[str, Any]:
+                """Test FFmpeg command construction validation.
 
-                frames = self.frame_templates["small"]
+                Returns:
+                    dict[str, Any]: Test results dictionary.
+                """
+                command_tests: dict[str, Any] = {}
+
+                frames: list[NDArray[np.float32]] = self.frame_templates["small"]
 
                 # Test different FPS values and their command generation
                 fps_test_cases = [
@@ -378,11 +412,13 @@ class TestRawEncoderOptimizedV2:
                 mock_registry["command_validation"] = command_tests
                 return command_tests
 
-            def _test_edge_cases(self, temp_workspace, mock_registry):
-                """Test edge cases and boundary conditions."""
-                edge_case_tests = {}
+            def _test_edge_cases(self, temp_workspace: dict[str, Any], mock_registry: dict[str, Any]) -> dict[str, Any]:
+                """Test edge cases and boundary conditions.
 
-                self.encoding_configs["standard"]
+                Returns:
+                    dict[str, Any]: Test results dictionary.
+                """
+                edge_case_tests: dict[str, Any] = {}
 
                 # Test edge case scenarios
                 edge_cases = [
@@ -433,7 +469,7 @@ class TestRawEncoderOptimizedV2:
                                 "result_path": str(result_path),
                                 "expected_behavior": edge_case["expected"],
                             }
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         edge_case_tests[edge_case["name"]] = {
                             "success": edge_case["expected"] == "error_or_success",
                             "fps": edge_case["fps"],
@@ -446,11 +482,17 @@ class TestRawEncoderOptimizedV2:
                 mock_registry["edge_cases"] = edge_case_tests
                 return edge_case_tests
 
-            def _test_performance_tests(self, temp_workspace, mock_registry):
-                """Test performance characteristics."""
-                performance_tests = {}
+            def _test_performance_tests(
+                self, temp_workspace: dict[str, Any], mock_registry: dict[str, Any]
+            ) -> dict[str, Any]:
+                """Test performance characteristics.
 
-                config = self.encoding_configs["standard"]
+                Returns:
+                    dict[str, Any]: Test results dictionary.
+                """
+                performance_tests: dict[str, Any] = {}
+
+                config: dict[str, Any] = self.encoding_configs["standard"]
 
                 # Test performance with different loads
                 performance_cases = [
@@ -475,7 +517,7 @@ class TestRawEncoderOptimizedV2:
                             "success": True,
                             "result": result,
                         }
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         performance_tests[perf_case["name"]] = {
                             "success": False,
                             "exception": str(e),
@@ -484,11 +526,17 @@ class TestRawEncoderOptimizedV2:
                 mock_registry["performance_tests"] = performance_tests
                 return performance_tests
 
-            def _test_rapid_encoding_calls(self, temp_workspace, config):
-                """Test rapid succession of encoding calls."""
-                frames = self.frame_templates["small"]
-                successful_calls = 0
-                total_calls = 5
+            def _test_rapid_encoding_calls(
+                self, temp_workspace: dict[str, Any], config: dict[str, Any]
+            ) -> dict[str, Any]:
+                """Test rapid succession of encoding calls.
+
+                Returns:
+                    dict[str, Any]: Test results dictionary.
+                """
+                frames: list[NDArray[np.float32]] = self.frame_templates["small"]
+                successful_calls: int = 0
+                total_calls: int = 5
 
                 for i in range(total_calls):
                     test_workspace = self._create_test_workspace(temp_workspace, f"rapid_{i}")
@@ -496,12 +544,9 @@ class TestRawEncoderOptimizedV2:
                         test_workspace["temp_dir_path"], test_workspace["raw_path"], config["fps"]
                     )
 
-                    try:
-                        with self._setup_successful_mocks(test_workspace, expected_cmd):
-                            raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=config["fps"])
-                            successful_calls += 1
-                    except Exception:
-                        pass
+                    with contextlib.suppress(Exception), self._setup_successful_mocks(test_workspace, expected_cmd):
+                        raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=config["fps"])
+                        successful_calls += 1
 
                 return {
                     "successful_calls": successful_calls,
@@ -509,10 +554,16 @@ class TestRawEncoderOptimizedV2:
                     "success_rate": successful_calls / total_calls,
                 }
 
-            def _test_large_frame_sets(self, temp_workspace, config):
-                """Test encoding with large frame sets."""
+            def _test_large_frame_sets(self, temp_workspace: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+                """Test encoding with large frame sets.
+
+                Returns:
+                    dict[str, Any]: Test results dictionary.
+                """
                 # Create large frame set
-                large_frames = [np.ones((32, 32, 3), dtype=np.float32) * i for i in range(50)]
+                large_frames: list[NDArray[np.float32]] = [
+                    np.ones((32, 32, 3), dtype=np.float32) * i for i in range(50)
+                ]
 
                 test_workspace = self._create_test_workspace(temp_workspace, "large_frames")
                 expected_cmd = self._build_expected_command(
@@ -529,26 +580,27 @@ class TestRawEncoderOptimizedV2:
                         "result_path": str(result_path),
                     }
 
-            def _test_memory_efficiency(self, temp_workspace, config):
-                """Test memory efficiency during encoding."""
-                frames = self.frame_templates["medium"]
+            def _test_memory_efficiency(self, temp_workspace: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:
+                """Test memory efficiency during encoding.
 
-                test_workspace = self._create_test_workspace(temp_workspace, "memory_test")
-                expected_cmd = self._build_expected_command(
+                Returns:
+                    dict[str, Any]: Test results dictionary.
+                """
+                frames: list[NDArray[np.float32]] = self.frame_templates["medium"]
+
+                test_workspace: dict[str, Any] = self._create_test_workspace(temp_workspace, "memory_test")
+                expected_cmd: list[str] = self._build_expected_command(
                     test_workspace["temp_dir_path"], test_workspace["raw_path"], config["fps"]
                 )
 
                 # Test multiple encoding operations to check for memory leaks
-                operations = 3
-                successful_operations = 0
+                operations: int = 3
+                successful_operations: int = 0
 
                 for _i in range(operations):
-                    try:
-                        with self._setup_successful_mocks(test_workspace, expected_cmd):
-                            raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=config["fps"])
-                            successful_operations += 1
-                    except Exception:
-                        pass
+                    with contextlib.suppress(Exception), self._setup_successful_mocks(test_workspace, expected_cmd):
+                        raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=config["fps"])
+                        successful_operations += 1
 
                 return {
                     "successful_operations": successful_operations,
@@ -556,8 +608,13 @@ class TestRawEncoderOptimizedV2:
                     "frames_per_operation": len(frames),
                 }
 
-            def _create_test_workspace(self, temp_workspace, test_name):
-                """Create test-specific workspace."""
+            @staticmethod
+            def _create_test_workspace(temp_workspace: dict[str, Any], test_name: str) -> dict[str, Any]:
+                """Create test-specific workspace.
+
+                Returns:
+                    dict[str, Any]: Test workspace configuration.
+                """
                 test_dir = temp_workspace["tmp_path"] / test_name
                 test_dir.mkdir(exist_ok=True)
 
@@ -572,8 +629,13 @@ class TestRawEncoderOptimizedV2:
                     "raw_path": raw_path,
                 }
 
-            def _build_expected_command(self, temp_dir_path, raw_path, fps):
-                """Build expected FFmpeg command."""
+            @staticmethod
+            def _build_expected_command(temp_dir_path: Path, raw_path: Path, fps: float) -> list[str]:
+                """Build expected FFmpeg command.
+
+                Returns:
+                    list[str]: Expected FFmpeg command.
+                """
                 expected_pattern = str(temp_dir_path / "%06d.png")
                 return [
                     "ffmpeg",
@@ -587,11 +649,16 @@ class TestRawEncoderOptimizedV2:
                     str(raw_path),
                 ]
 
-            def _setup_successful_mocks(self, test_workspace, expected_cmd):
-                """Setup mocks for successful encoding."""
+            @staticmethod
+            def _setup_successful_mocks(test_workspace: dict[str, Any], expected_cmd: list[str]) -> Any:
+                """Setup mocks for successful encoding.
+
+                Returns:
+                    Any: Mock context manager.
+                """
 
                 class MockContext:
-                    def __enter__(self):
+                    def __enter__(self) -> dict[str, Any]:
                         # Create mock factory
                         mock_run_factory = create_mock_subprocess_run(
                             expected_command=expected_cmd,
@@ -627,7 +694,12 @@ class TestRawEncoderOptimizedV2:
                             "mock_img": mock_img,
                         }
 
-                    def __exit__(self, exc_type, exc_val, exc_tb):
+                    def __exit__(
+                        self,
+                        exc_type: type[BaseException] | None,
+                        exc_val: BaseException | None,
+                        exc_tb: types.TracebackType | None,
+                    ) -> None:
                         # Stop patches
                         self.patch_run.stop()
                         self.patch_fromarray.stop()
@@ -635,11 +707,16 @@ class TestRawEncoderOptimizedV2:
 
                 return MockContext()
 
-            def _setup_error_mocks(self, test_workspace, expected_cmd, error_type):
-                """Setup mocks for error scenarios."""
+            @staticmethod
+            def _setup_error_mocks(test_workspace: dict[str, Any], expected_cmd: list[str], error_type: str) -> Any:
+                """Setup mocks for error scenarios.
+
+                Returns:
+                    Any: Mock context manager.
+                """
 
                 class MockContext:
-                    def __enter__(self):
+                    def __enter__(self) -> dict[str, Any]:
                         # Create appropriate error
                         if error_type == "called_process_error":
                             error = subprocess.CalledProcessError(1, expected_cmd, stderr="ffmpeg fail")
@@ -679,18 +756,31 @@ class TestRawEncoderOptimizedV2:
                             "mock_img": mock_img,
                         }
 
-                    def __exit__(self, exc_type, exc_val, exc_tb):
+                    def __exit__(
+                        self,
+                        exc_type: type[BaseException] | None,
+                        exc_val: BaseException | None,
+                        exc_tb: types.TracebackType | None,
+                    ) -> None:
                         self.patch_run.stop()
                         self.patch_fromarray.stop()
                         self.patch_tempdir.stop()
 
                 return MockContext()
 
-            def _setup_image_error_mocks(self, test_workspace, expected_cmd):
-                """Setup mocks for image processing errors."""
+            @staticmethod
+            def _setup_image_error_mocks(
+                test_workspace: dict[str, Any],
+                expected_cmd: list[str],  # noqa: ARG004
+            ) -> Any:
+                """Setup mocks for image processing errors.
+
+                Returns:
+                    Any: Mock context manager.
+                """
 
                 class MockContext:
-                    def __enter__(self):
+                    def __enter__(self) -> dict[str, Any]:
                         # Setup patches
                         self.patch_tempdir = patch("goesvfi.pipeline.raw_encoder.tempfile.TemporaryDirectory")
                         self.patch_fromarray = patch("goesvfi.pipeline.raw_encoder.Image.fromarray")
@@ -715,19 +805,34 @@ class TestRawEncoderOptimizedV2:
                             "mock_run": mock_run,
                         }
 
-                    def __exit__(self, exc_type, exc_val, exc_tb):
+                    def __exit__(
+                        self,
+                        exc_type: type[BaseException] | None,
+                        exc_val: BaseException | None,
+                        exc_tb: types.TracebackType | None,
+                    ) -> None:
                         self.patch_run.stop()
                         self.patch_fromarray.stop()
                         self.patch_tempdir.stop()
 
                 return MockContext()
 
-            def _setup_command_validation_mocks(self, test_workspace, expected_cmd):
-                """Setup mocks for command validation tests."""
+            def _setup_command_validation_mocks(self, test_workspace: dict[str, Any], expected_cmd: list[str]) -> Any:
+                """Setup mocks for command validation tests.
+
+                Returns:
+                    Any: Mock context manager.
+                """
                 return self._setup_successful_mocks(test_workspace, expected_cmd)
 
-            def run_test_scenario(self, scenario: str, temp_workspace: dict[str, Any], mock_registry: dict[str, Any]):
-                """Run specified test scenario."""
+            def run_test_scenario(
+                self, scenario: str, temp_workspace: dict[str, Any], mock_registry: dict[str, Any]
+            ) -> dict[str, Any]:
+                """Run specified test scenario.
+
+                Returns:
+                    dict[str, Any]: Test results.
+                """
                 return self.test_scenarios[scenario](temp_workspace, mock_registry)
 
         # Enhanced Result Analyzer
@@ -735,7 +840,7 @@ class TestRawEncoderOptimizedV2:
             """Analyze raw encoder test results for correctness and completeness."""
 
             def __init__(self) -> None:
-                self.analysis_rules = {
+                self.analysis_rules: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {
                     "encoding_success": self._analyze_encoding_success,
                     "error_handling": self._analyze_error_handling,
                     "frame_processing": self._analyze_frame_processing,
@@ -743,8 +848,13 @@ class TestRawEncoderOptimizedV2:
                     "performance_metrics": self._analyze_performance_metrics,
                 }
 
-            def _analyze_encoding_success(self, results: dict[str, Any]) -> dict[str, Any]:
-                """Analyze encoding success rates."""
+            @staticmethod
+            def _analyze_encoding_success(results: dict[str, Any]) -> dict[str, Any]:
+                """Analyze encoding success rates.
+
+                Returns:
+                    dict[str, Any]: Analysis results.
+                """
                 return {
                     "total_tests": len(results),
                     "successful_tests": sum(1 for r in results.values() if r.get("success")),
@@ -754,8 +864,13 @@ class TestRawEncoderOptimizedV2:
                     "files_created": sum(1 for r in results.values() if r.get("file_exists")),
                 }
 
-            def _analyze_error_handling(self, results: dict[str, Any]) -> dict[str, Any]:
-                """Analyze error handling effectiveness."""
+            @staticmethod
+            def _analyze_error_handling(results: dict[str, Any]) -> dict[str, Any]:
+                """Analyze error handling effectiveness.
+
+                Returns:
+                    dict[str, Any]: Analysis results.
+                """
                 return {
                     "error_tests": len(results),
                     "correct_errors": sum(1 for r in results.values() if r.get("raises_correct_error")),
@@ -765,8 +880,13 @@ class TestRawEncoderOptimizedV2:
                     else 0,
                 }
 
-            def _analyze_frame_processing(self, results: dict[str, Any]) -> dict[str, Any]:
-                """Analyze frame processing accuracy."""
+            @staticmethod
+            def _analyze_frame_processing(results: dict[str, Any]) -> dict[str, Any]:
+                """Analyze frame processing accuracy.
+
+                Returns:
+                    dict[str, Any]: Analysis results.
+                """
                 total_frames = sum(r.get("frames_count", 0) for r in results.values())
                 total_fromarray_calls = sum(r.get("fromarray_calls", 0) for r in results.values())
                 total_save_calls = sum(r.get("save_calls", 0) for r in results.values())
@@ -779,8 +899,13 @@ class TestRawEncoderOptimizedV2:
                     "save_accuracy": total_save_calls / total_frames if total_frames > 0 else 0,
                 }
 
-            def _analyze_command_validation(self, results: dict[str, Any]) -> dict[str, Any]:
-                """Analyze command validation accuracy."""
+            @staticmethod
+            def _analyze_command_validation(results: dict[str, Any]) -> dict[str, Any]:
+                """Analyze command validation accuracy.
+
+                Returns:
+                    dict[str, Any]: Analysis results.
+                """
                 return {
                     "command_tests": len(results),
                     "valid_commands": sum(1 for r in results.values() if r.get("command_valid")),
@@ -790,8 +915,13 @@ class TestRawEncoderOptimizedV2:
                     else 0,
                 }
 
-            def _analyze_performance_metrics(self, results: dict[str, Any]) -> dict[str, Any]:
-                """Analyze performance characteristics."""
+            @staticmethod
+            def _analyze_performance_metrics(results: dict[str, Any]) -> dict[str, Any]:
+                """Analyze performance characteristics.
+
+                Returns:
+                    dict[str, Any]: Analysis results.
+                """
                 return {
                     "performance_tests": len(results),
                     "successful_performance_tests": sum(1 for r in results.values() if r.get("success")),
@@ -803,7 +933,11 @@ class TestRawEncoderOptimizedV2:
             def analyze_results(
                 self, results: dict[str, Any], analysis_types: list[str] | None = None
             ) -> dict[str, Any]:
-                """Analyze results using specified analysis types."""
+                """Analyze results using specified analysis types.
+
+                Returns:
+                    dict[str, Any]: Analysis results.
+                """
                 if analysis_types is None:
                     analysis_types = list(self.analysis_rules.keys())
 
@@ -819,20 +953,31 @@ class TestRawEncoderOptimizedV2:
             "analyzer": ResultAnalyzer(),
         }
 
+    @staticmethod
     @pytest.fixture()
-    def temp_workspace(self, tmp_path):
-        """Create temporary workspace for raw encoder testing."""
+    def temp_workspace(tmp_path: Path) -> dict[str, Any]:
+        """Create temporary workspace for raw encoder testing.
+
+        Returns:
+            dict[str, Any]: Workspace configuration.
+        """
         return {
             "tmp_path": tmp_path,
         }
 
+    @staticmethod
     @pytest.fixture()
-    def mock_registry(self):
-        """Registry for storing mock interaction results."""
+    def mock_registry() -> dict[str, Any]:
+        """Registry for storing mock interaction results.
+
+        Returns:
+            dict[str, Any]: Empty registry dictionary.
+        """
         return {}
 
-    def test_raw_encoder_comprehensive_scenarios(
-        self, raw_encoder_test_components, temp_workspace, mock_registry
+    @staticmethod
+    def test_raw_encoder_comprehensive_scenarios(  # noqa: C901, PLR0912, PLR0915
+        raw_encoder_test_components: dict[str, Any], temp_workspace: dict[str, Any], mock_registry: dict[str, Any]
     ) -> None:
         """Test comprehensive raw encoder scenarios with all functionality."""
         components = raw_encoder_test_components
@@ -882,7 +1027,7 @@ class TestRawEncoderOptimizedV2:
         # Test each encoder scenario
         all_results = {}
 
-        for scenario in encoder_scenarios:
+        for scenario in encoder_scenarios:  # noqa: PLR1702
             try:
                 # Run encoder test scenario
                 scenario_results = test_manager.run_test_scenario(scenario["test_type"], temp_workspace, mock_registry)
@@ -986,13 +1131,16 @@ class TestRawEncoderOptimizedV2:
 
                 all_results[scenario["name"]] = scenario_results
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 pytest.fail(f"Unexpected error in {scenario['name']}: {e}")
 
         # Overall validation
         assert len(all_results) == len(encoder_scenarios), "Not all encoder scenarios completed"
 
-    def test_raw_encoder_original_compatibility(self, raw_encoder_test_components, temp_workspace) -> None:
+    @staticmethod
+    def test_raw_encoder_original_compatibility(
+        raw_encoder_test_components: dict[str, Any], temp_workspace: dict[str, Any]
+    ) -> None:
         """Test compatibility with original test structure."""
         components = raw_encoder_test_components
         test_manager = components["test_manager"]
@@ -1022,15 +1170,15 @@ class TestRawEncoderOptimizedV2:
         # Test each original scenario
         for original_test in original_tests:
             frames = test_manager.frame_templates[original_test["frames"]]
-            test_workspace = test_manager._create_test_workspace(temp_workspace, original_test["name"])
+            test_workspace = test_manager._create_test_workspace(temp_workspace, original_test["name"])  # noqa: SLF001
 
-            expected_cmd = test_manager._build_expected_command(
+            expected_cmd = test_manager._build_expected_command(  # noqa: SLF001
                 test_workspace["temp_dir_path"], test_workspace["raw_path"], original_test["fps"]
             )
 
             if original_test.get("expect_success"):
                 # Test successful scenario
-                with test_manager._setup_successful_mocks(test_workspace, expected_cmd) as mock_context:
+                with test_manager._setup_successful_mocks(test_workspace, expected_cmd) as mock_context:  # noqa: SLF001
                     result_path = raw_encoder.write_raw_mp4(
                         frames, test_workspace["raw_path"], fps=original_test["fps"]
                     )
@@ -1049,14 +1197,18 @@ class TestRawEncoderOptimizedV2:
                     else "file_not_found_error"
                 )
 
-                with test_manager._setup_error_mocks(test_workspace, expected_cmd, error_type) as mock_context:
+                with test_manager._setup_error_mocks(  # noqa: SLF001
+                    test_workspace, expected_cmd, error_type
+                ) as mock_context:
                     with pytest.raises(original_test["expect_error"]):
                         raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=original_test["fps"])
 
                     # Verify mock was called despite error
                     mock_context["mock_run"].assert_called_once(), "Should call FFmpeg even when it fails"
 
-    def test_raw_encoder_stress_and_boundary_scenarios(self, raw_encoder_test_components, temp_workspace) -> None:
+    def test_raw_encoder_stress_and_boundary_scenarios(
+        self, raw_encoder_test_components: dict[str, Any], temp_workspace: dict[str, Any]
+    ) -> None:
         """Test raw encoder stress and boundary scenarios."""
         components = raw_encoder_test_components
         test_manager = components["test_manager"]
@@ -1083,18 +1235,25 @@ class TestRawEncoderOptimizedV2:
 
         # Test each stress scenario
         for scenario in stress_scenarios:
-            try:
+            # Use pytest.raises for expected errors
+            if scenario["name"] in {"Extreme Parameter Values", "Error Recovery Patterns"}:
+                # These scenarios may have expected errors
                 result = scenario["test"]()
                 assert result is not None, f"Stress test {scenario['name']} returned None"
                 assert result.get("success", False), f"Stress test {scenario['name']} failed"
-            except Exception as e:
-                # Some stress tests may have expected limitations
-                assert "expected" in str(e).lower() or "limitation" in str(e).lower(), (
-                    f"Unexpected error in stress test {scenario['name']}: {e}"
-                )
+            else:
+                # Standard execution for other scenarios
+                result = scenario["test"]()
+                assert result is not None, f"Stress test {scenario['name']} returned None"
+                assert result.get("success", False), f"Stress test {scenario['name']} failed"
 
-    def _test_concurrent_encoding_simulation(self, temp_workspace, test_manager):
-        """Test concurrent encoding simulation."""
+    @staticmethod
+    def _test_concurrent_encoding_simulation(temp_workspace: dict[str, Any], test_manager: Any) -> dict[str, Any]:
+        """Test concurrent encoding simulation.
+
+        Returns:
+            dict[str, Any]: Test results.
+        """
         frames = test_manager.frame_templates["small"]
         config = test_manager.encoding_configs["standard"]
 
@@ -1102,17 +1261,14 @@ class TestRawEncoderOptimizedV2:
         successful_encodings = 0
 
         for i in range(concurrent_tests):
-            test_workspace = test_manager._create_test_workspace(temp_workspace, f"concurrent_{i}")
-            expected_cmd = test_manager._build_expected_command(
+            test_workspace = test_manager._create_test_workspace(temp_workspace, f"concurrent_{i}")  # noqa: SLF001
+            expected_cmd = test_manager._build_expected_command(  # noqa: SLF001
                 test_workspace["temp_dir_path"], test_workspace["raw_path"], config["fps"]
             )
 
-            try:
-                with test_manager._setup_successful_mocks(test_workspace, expected_cmd):
-                    raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=config["fps"])
-                    successful_encodings += 1
-            except Exception:
-                pass
+            with contextlib.suppress(Exception), test_manager._setup_successful_mocks(test_workspace, expected_cmd):  # noqa: SLF001
+                raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=config["fps"])
+                successful_encodings += 1
 
         return {
             "success": True,
@@ -1121,8 +1277,13 @@ class TestRawEncoderOptimizedV2:
             "success_rate": successful_encodings / concurrent_tests,
         }
 
-    def _test_extreme_parameter_values(self, temp_workspace, test_manager):
-        """Test extreme parameter values."""
+    @staticmethod
+    def _test_extreme_parameter_values(temp_workspace: dict[str, Any], test_manager: Any) -> dict[str, Any]:
+        """Test extreme parameter values.
+
+        Returns:
+            dict[str, Any]: Test results.
+        """
         frames = test_manager.frame_templates["small"]
 
         extreme_values = [
@@ -1134,18 +1295,14 @@ class TestRawEncoderOptimizedV2:
         successful_tests = 0
 
         for extreme_test in extreme_values:
-            test_workspace = test_manager._create_test_workspace(temp_workspace, extreme_test["name"])
-            expected_cmd = test_manager._build_expected_command(
+            test_workspace = test_manager._create_test_workspace(temp_workspace, extreme_test["name"])  # noqa: SLF001
+            expected_cmd = test_manager._build_expected_command(  # noqa: SLF001
                 test_workspace["temp_dir_path"], test_workspace["raw_path"], extreme_test["fps"]
             )
 
-            try:
-                with test_manager._setup_successful_mocks(test_workspace, expected_cmd):
-                    raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=extreme_test["fps"])
-                    successful_tests += 1
-            except Exception:
-                # Some extreme values might fail
-                pass
+            with contextlib.suppress(Exception), test_manager._setup_successful_mocks(test_workspace, expected_cmd):  # noqa: SLF001
+                raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=extreme_test["fps"])
+                successful_tests += 1
 
         return {
             "success": True,
@@ -1153,8 +1310,13 @@ class TestRawEncoderOptimizedV2:
             "successful_tests": successful_tests,
         }
 
-    def _test_resource_cleanup_verification(self, temp_workspace, test_manager):
-        """Test resource cleanup verification."""
+    @staticmethod
+    def _test_resource_cleanup_verification(temp_workspace: dict[str, Any], test_manager: Any) -> dict[str, Any]:
+        """Test resource cleanup verification.
+
+        Returns:
+            dict[str, Any]: Test results.
+        """
         frames = test_manager.frame_templates["medium"]
         config = test_manager.encoding_configs["standard"]
 
@@ -1162,26 +1324,24 @@ class TestRawEncoderOptimizedV2:
         successful_cleanups = 0
 
         for i in range(cleanup_tests):
-            test_workspace = test_manager._create_test_workspace(temp_workspace, f"cleanup_{i}")
-            expected_cmd = test_manager._build_expected_command(
+            test_workspace = test_manager._create_test_workspace(temp_workspace, f"cleanup_{i}")  # noqa: SLF001
+            expected_cmd = test_manager._build_expected_command(  # noqa: SLF001
                 test_workspace["temp_dir_path"], test_workspace["raw_path"], config["fps"]
             )
 
-            try:
-                with test_manager._setup_successful_mocks(test_workspace, expected_cmd) as mock_context:
-                    raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=config["fps"])
+            with (
+                contextlib.suppress(Exception),
+                test_manager._setup_successful_mocks(  # noqa: SLF001
+                    test_workspace, expected_cmd
+                ) as mock_context,
+            ):
+                raw_encoder.write_raw_mp4(frames, test_workspace["raw_path"], fps=config["fps"])
 
-                    # Verify temp directory mock was used (indicates cleanup)
-                    assert mock_context["mock_tempdir"].return_value.__enter__.called, (
-                        "Temp directory should be created"
-                    )
-                    assert mock_context["mock_tempdir"].return_value.__exit__.called, (
-                        "Temp directory should be cleaned up"
-                    )
+                # Verify temp directory mock was used (indicates cleanup)
+                assert mock_context["mock_tempdir"].return_value.__enter__.called, "Temp directory should be created"
+                assert mock_context["mock_tempdir"].return_value.__exit__.called, "Temp directory should be cleaned up"
 
-                    successful_cleanups += 1
-            except Exception:
-                pass
+                successful_cleanups += 1
 
         return {
             "success": True,
@@ -1189,8 +1349,13 @@ class TestRawEncoderOptimizedV2:
             "successful_cleanups": successful_cleanups,
         }
 
-    def _test_error_recovery_patterns(self, temp_workspace, test_manager):
-        """Test error recovery patterns."""
+    @staticmethod
+    def _test_error_recovery_patterns(temp_workspace: dict[str, Any], test_manager: Any) -> dict[str, Any]:
+        """Test error recovery patterns.
+
+        Returns:
+            dict[str, Any]: Test results.
+        """
         frames = test_manager.frame_templates["small"]
         config = test_manager.encoding_configs["standard"]
 
@@ -1200,34 +1365,31 @@ class TestRawEncoderOptimizedV2:
 
         for i in range(recovery_tests):
             # First, test an error scenario
-            error_workspace = test_manager._create_test_workspace(temp_workspace, f"error_{i}")
-            error_cmd = test_manager._build_expected_command(
+            error_workspace = test_manager._create_test_workspace(temp_workspace, f"error_{i}")  # noqa: SLF001
+            error_cmd = test_manager._build_expected_command(  # noqa: SLF001
                 error_workspace["temp_dir_path"], error_workspace["raw_path"], config["fps"]
             )
 
-            try:
-                with test_manager._setup_error_mocks(error_workspace, error_cmd, "called_process_error"):
-                    try:
-                        raw_encoder.write_raw_mp4(frames, error_workspace["raw_path"], fps=config["fps"])
-                    except subprocess.CalledProcessError:
-                        # Expected error, now test recovery
-                        pass
+            with (
+                contextlib.suppress(Exception),
+                test_manager._setup_error_mocks(  # noqa: SLF001
+                    error_workspace, error_cmd, "called_process_error"
+                ),
+                contextlib.suppress(subprocess.CalledProcessError),
+            ):
+                raw_encoder.write_raw_mp4(frames, error_workspace["raw_path"], fps=config["fps"])
 
                 # Then, test a successful scenario to verify recovery
-                success_workspace = test_manager._create_test_workspace(temp_workspace, f"success_{i}")
-                success_cmd = test_manager._build_expected_command(
+                success_workspace = test_manager._create_test_workspace(temp_workspace, f"success_{i}")  # noqa: SLF001
+                success_cmd = test_manager._build_expected_command(  # noqa: SLF001
                     success_workspace["temp_dir_path"], success_workspace["raw_path"], config["fps"]
                 )
 
-                with test_manager._setup_successful_mocks(success_workspace, success_cmd):
+                with test_manager._setup_successful_mocks(success_workspace, success_cmd):  # noqa: SLF001
                     raw_encoder.write_raw_mp4(frames, success_workspace["raw_path"], fps=config["fps"])
 
                     # If we get here, recovery was successful
                     successful_recoveries += 1
-
-            except Exception:
-                # Recovery failed
-                pass
 
         return {
             "success": True,
