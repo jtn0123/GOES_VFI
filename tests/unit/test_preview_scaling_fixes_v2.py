@@ -80,7 +80,7 @@ class TestPreviewScalingFixesV2(unittest.TestCase):
                 # Verify aspect ratio preservation
                 src_ratio = src_w / src_h
                 scaled_ratio = scaled_pixmap.width() / scaled_pixmap.height()
-                self.assertAlmostEqual(src_ratio, scaled_ratio, places=1)
+                assert abs(src_ratio - scaled_ratio) < 0.1
 
     def test_gui_scaling_logic_with_various_label_states(self) -> None:
         """Test GUI scaling logic with different label states and sizes."""
@@ -100,15 +100,14 @@ class TestPreviewScalingFixesV2(unittest.TestCase):
         ]
 
         for label_size, description, expected_size in label_size_scenarios:
-            with self.subTest(scenario=description):
-                with patch.object(first_label, "size", return_value=label_size):
-                    # Simulate the GUI scaling logic
-                    target_size = QSize(200, 200)  # Minimum preview size
-                    current_size = first_label.size()
-                    if current_size.width() > 200 and current_size.height() > 200:
-                        target_size = current_size
+            with self.subTest(scenario=description), patch.object(first_label, "size", return_value=label_size):
+                # Simulate the GUI scaling logic
+                target_size = QSize(200, 200)  # Minimum preview size
+                current_size = first_label.size()
+                if current_size.width() > 200 and current_size.height() > 200:
+                    target_size = current_size
 
-                    assert target_size == expected_size
+                assert target_size == expected_size
 
     def test_label_minimum_size_policy_comprehensive(self) -> None:
         """Test comprehensive label size policies and constraints."""
@@ -180,11 +179,8 @@ class TestPreviewScalingFixesV2(unittest.TestCase):
                     scaled_ratio = scaled_pixmap.width() / scaled_pixmap.height()
 
                     # Verify aspect ratio preserved
-                    self.assertAlmostEqual(
-                        source_ratio,
-                        scaled_ratio,
-                        places=2,
-                        msg=f"Aspect ratio not preserved for {description} to {target_size}",
+                    assert abs(source_ratio - scaled_ratio) < 0.01, (
+                        f"Aspect ratio not preserved for {description} to {target_size}"
                     )
 
                     # Verify fits within target
@@ -224,7 +220,7 @@ class TestPreviewScalingFixesV2(unittest.TestCase):
                 try:
                     preview_manager.scale_preview_pixmap(valid_pixmap, invalid_target)
                     # Result depends on implementation
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     self.fail(f"Should handle invalid target size gracefully: {e}")
 
     def test_edge_case_sizes_comprehensive(self) -> None:
@@ -295,14 +291,14 @@ class TestPreviewScalingFixesV2(unittest.TestCase):
         results = []
         errors = []
 
-        def scale_pixmap(size_tuple, target_tuple) -> None:
+        def scale_pixmap(size_tuple: tuple[int, int], target_tuple: tuple[int, int]) -> None:
             try:
                 pixmap = QPixmap(*size_tuple)
                 pixmap.fill()
                 target = QSize(*target_tuple)
                 scaled = preview_manager.scale_preview_pixmap(pixmap, target)
                 results.append((size_tuple, target_tuple, scaled.size()))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((size_tuple, target_tuple, e))
 
         # Test concurrent scaling
