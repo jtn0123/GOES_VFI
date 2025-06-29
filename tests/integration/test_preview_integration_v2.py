@@ -8,7 +8,9 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced crop, zoom, and state management coverage
 """
 
+from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 from PyQt6.QtCore import QRect
@@ -23,8 +25,13 @@ class TestPreviewWorkflowIntegrationOptimizedV2:
     """Optimized complete preview workflow integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_qt_app(self):
-        """Shared QApplication instance for all integration tests."""
+    @staticmethod
+    def shared_qt_app() -> Iterator[QApplication]:
+        """Shared QApplication instance for all integration tests.
+
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -32,8 +39,13 @@ class TestPreviewWorkflowIntegrationOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def integration_test_suite(self):
-        """Create comprehensive integration test suite."""
+    @staticmethod
+    def integration_test_suite() -> dict[str, Any]:
+        """Create comprehensive integration test suite.
+
+        Returns:
+            dict[str, Any]: Dictionary containing integration test components.
+        """
 
         # Enhanced Mock Main Window Factory
         class MockMainWindowFactory:
@@ -48,8 +60,12 @@ class TestPreviewWorkflowIntegrationOptimizedV2:
                     "tab_widget_enabled": True,
                 }
 
-            def create_mock_main_window(self, config=None):
-                """Create comprehensive mock main window."""
+            def create_mock_main_window(self, config: dict[str, Any] | None = None) -> Mock:
+                """Create comprehensive mock main window.
+
+                Returns:
+                    Mock: Comprehensive mock main window.
+                """
                 if config is None:
                     config = self.base_config.copy()
 
@@ -71,19 +87,19 @@ class TestPreviewWorkflowIntegrationOptimizedV2:
                 main_window.request_previews_update.connect = Mock()
 
                 # State management methods
-                main_window._update_previews = Mock()
-                main_window._update_crop_buttons_state = Mock()
-                main_window._on_tab_changed = Mock()
-                main_window._save_input_directory = Mock(return_value=True)
-                main_window._save_crop_rect = Mock(return_value=True)
-                main_window._save_output_file = Mock(return_value=True)
+                main_window._update_previews = Mock()  # noqa: SLF001
+                main_window._update_crop_buttons_state = Mock()  # noqa: SLF001
+                main_window._on_tab_changed = Mock()  # noqa: SLF001
+                main_window._save_input_directory = Mock(return_value=True)  # noqa: SLF001
+                main_window._save_crop_rect = Mock(return_value=True)  # noqa: SLF001
+                main_window._save_output_file = Mock(return_value=True)  # noqa: SLF001
 
                 # Main tab setup
-                main_tab = self._create_mock_main_tab()
+                main_tab = MockMainWindowFactory._create_mock_main_tab()
                 main_window.main_tab = main_tab
 
                 # Tab widget
-                tab_widget = self._create_mock_tab_widget()
+                tab_widget = MockMainWindowFactory._create_mock_tab_widget()
                 main_window.tab_widget = tab_widget
 
                 # Settings
@@ -93,8 +109,13 @@ class TestPreviewWorkflowIntegrationOptimizedV2:
 
                 return main_window
 
-            def _create_mock_main_tab(self):
-                """Create comprehensive mock main tab."""
+            @staticmethod
+            def _create_mock_main_tab() -> Mock:
+                """Create comprehensive mock main tab.
+
+                Returns:
+                    Mock: Comprehensive mock main tab.
+                """
                 main_tab = Mock()
 
                 # Sanchez checkbox
@@ -106,8 +127,8 @@ class TestPreviewWorkflowIntegrationOptimizedV2:
                 main_tab.sanchez_false_colour_checkbox = sanchez_checkbox
 
                 # Preview labels with comprehensive mock setup
-                first_frame_label = self._create_mock_preview_label("first")
-                last_frame_label = self._create_mock_preview_label("last")
+                first_frame_label = MockMainWindowFactory._create_mock_preview_label("first")
+                last_frame_label = MockMainWindowFactory._create_mock_preview_label("last")
 
                 main_tab.first_frame_label = first_frame_label
                 main_tab.last_frame_label = last_frame_label
@@ -134,8 +155,13 @@ class TestPreviewWorkflowIntegrationOptimizedV2:
 
                 return main_tab
 
-            def _create_mock_preview_label(self, label_type):
-                """Create comprehensive mock preview label."""
+            @staticmethod
+            def _create_mock_preview_label(label_type: str) -> Mock:  # noqa: ARG004
+                """Create comprehensive mock preview label.
+
+                Returns:
+                    Mock: Comprehensive mock preview label.
+                """
                 label = Mock()
 
                 # Image attributes
