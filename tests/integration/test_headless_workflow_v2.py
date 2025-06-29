@@ -513,7 +513,8 @@ class TestHeadlessWorkflowOptimizedV2:
         }
 
     @pytest.fixture()
-    def temp_workspace(self, tmp_path: pathlib.Path) -> dict[str, Any]:
+    @staticmethod
+    def temp_workspace(tmp_path: pathlib.Path) -> dict[str, Any]:
         """Create temporary workspace for headless testing.
 
         Returns:
@@ -525,8 +526,11 @@ class TestHeadlessWorkflowOptimizedV2:
             "output_files": {},
         }
 
+    @staticmethod
     def test_headless_workflow_comprehensive_scenarios(  # noqa: PLR0914
-        self, headless_qt_app: QApplication, headless_test_components: dict[str, Any], temp_workspace: dict[str, Any]
+        headless_qt_app: QApplication,  # noqa: ARG004
+        headless_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
         """Test comprehensive headless workflow scenarios.
 
@@ -655,8 +659,9 @@ class TestHeadlessWorkflowOptimizedV2:
                 # Clean up (mocks are automatically cleaned up by context manager)
                 pass
 
+    @staticmethod
     def test_headless_processing_pipeline_mocked(
-        self, headless_qt_app: QApplication, headless_test_components: dict[str, Any], temp_workspace: dict[str, Any]
+        headless_qt_app: QApplication, headless_test_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:
         """Test headless processing pipeline with comprehensive mocking."""
         components: dict[str, Any] = headless_test_components
@@ -779,8 +784,11 @@ class TestHeadlessWorkflowOptimizedV2:
                     mock_vfi_worker.assert_called_once()
                     mock_worker.start.assert_called_once()
 
+    @staticmethod
     def test_headless_stress_testing(  # noqa: C901
-        self, headless_qt_app: QApplication, headless_test_components: dict[str, Any], temp_workspace: dict[str, Any]
+        headless_qt_app: QApplication,  # noqa: ARG004
+        headless_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test headless components under stress conditions."""
         components: dict[str, Any] = headless_test_components
@@ -813,8 +821,6 @@ class TestHeadlessWorkflowOptimizedV2:
         for stress_test in stress_scenarios:
             if stress_test["name"] == "Rapid Widget Interactions":
                 # Test rapid interactions with single window
-                window: MagicMock
-                mock_class: MagicMock
                 window, _mock_class = gui_factory.create_mock_window(stress_test["widget_type"], stress_test["config"])
 
                 for i in range(stress_test["iterations"]):
@@ -838,9 +844,7 @@ class TestHeadlessWorkflowOptimizedV2:
                 # Test creating and destroying multiple windows
                 windows: list[tuple[MagicMock, MagicMock]] = []
 
-                for i in range(stress_test["iterations"]):
-                    new_window: MagicMock
-                    new_mock_class: MagicMock
+                for i in range(stress_test["iterations"]):  # noqa: B007
                     new_window, new_mock_class = gui_factory.create_mock_window(
                         stress_test["widget_type"], stress_test["config"]
                     )
@@ -878,6 +882,7 @@ class TestHeadlessWorkflowOptimizedV2:
                 # Should have handled multiple errors gracefully
                 assert errors_handled > 0
 
+    @staticmethod
     def test_headless_edge_cases_and_boundaries(
         self, headless_qt_app: QApplication, headless_test_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:

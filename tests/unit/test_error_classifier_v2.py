@@ -16,7 +16,7 @@ from goesvfi.utils.errors.base import ErrorCategory
 from goesvfi.utils.errors.classifier import ErrorClassifier
 
 
-class TestErrorClassifierV2(unittest.TestCase):
+class TestErrorClassifierV2(unittest.TestCase):  # noqa: PLR0904
     """Test cases for error classification with comprehensive coverage."""
 
     def setUp(self) -> None:
@@ -27,7 +27,7 @@ class TestErrorClassifierV2(unittest.TestCase):
         self.custom_exceptions = []
         for i in range(5):
 
-            class CustomTestException(Exception):
+            class CustomTestException(Exception):  # noqa: N818
                 pass
 
             CustomTestException.__name__ = f"CustomException{i}"
@@ -37,7 +37,7 @@ class TestErrorClassifierV2(unittest.TestCase):
         """Tear down test fixtures."""
         # Clean up any custom mappings
         if hasattr(self.classifier, "_custom_classifiers"):
-            self.classifier._custom_classifiers.clear()
+            self.classifier._custom_classifiers.clear()  # noqa: SLF001
 
     def test_classify_file_not_found_error_comprehensive(self) -> None:
         """Test comprehensive FileNotFoundError classification scenarios."""
@@ -217,7 +217,7 @@ class TestErrorClassifierV2(unittest.TestCase):
 
         for i in range(5):
 
-            class UnknownException(Exception):
+            class UnknownException(Exception):  # noqa: N818
                 pass
 
             UnknownException.__name__ = f"UnknownException{i}"
@@ -261,21 +261,21 @@ class TestErrorClassifierV2(unittest.TestCase):
         category = self.classifier.classify_exception(error)
         assert category == ErrorCategory.USER_INPUT
 
-    def test_add_custom_classifier_function_comprehensive(self) -> None:
+    def test_add_custom_classifier_function_comprehensive(self) -> None:  # noqa: C901
         """Test comprehensive custom classifier function functionality."""
 
         # Test various custom classifiers
-        def network_classifier(exception):
+        def network_classifier(exception: Exception) -> ErrorCategory | None:
             if "network" in str(exception).lower():
                 return ErrorCategory.NETWORK
             return None
 
-        def processing_classifier(exception):
+        def processing_classifier(exception: Exception) -> ErrorCategory | None:
             if hasattr(exception, "processing_error") and exception.processing_error:
                 return ErrorCategory.PROCESSING
             return None
 
-        def complex_classifier(exception):
+        def complex_classifier(exception: Exception) -> ErrorCategory | None:
             # More complex classification logic
             message = str(exception).lower()
             if "timeout" in message and "connection" in message:
@@ -305,8 +305,8 @@ class TestErrorClassifierV2(unittest.TestCase):
                 assert category == expected_category
 
         # Test with custom attribute
-        class ProcessingException(Exception):
-            def __init__(self, message, processing_error=False) -> None:
+        class ProcessingException(Exception):  # noqa: N818
+            def __init__(self, message: str, processing_error: bool = False) -> None:  # noqa: FBT001, FBT002
                 super().__init__(message)
                 self.processing_error = processing_error
 
@@ -318,17 +318,17 @@ class TestErrorClassifierV2(unittest.TestCase):
         """Test comprehensive custom classifier priority scenarios."""
 
         # Add multiple classifiers with overlapping logic
-        def high_priority_classifier(exception):
+        def high_priority_classifier(exception: Exception) -> ErrorCategory | None:
             if isinstance(exception, ValueError) and "priority" in str(exception):
                 return ErrorCategory.USER_INPUT
             return None
 
-        def medium_priority_classifier(exception):
+        def medium_priority_classifier(exception: Exception) -> ErrorCategory | None:
             if isinstance(exception, ValueError):
                 return ErrorCategory.CONFIGURATION
             return None
 
-        def low_priority_classifier(exception):
+        def low_priority_classifier(exception: Exception) -> ErrorCategory | None:
             if "error" in str(exception).lower():
                 return ErrorCategory.UNKNOWN
             return None
@@ -380,7 +380,7 @@ class TestErrorClassifierV2(unittest.TestCase):
                 category = self.classifier.classify_exception(error)
                 assert category == expected_category
 
-    def test_concurrent_classification(self) -> None:
+    def test_concurrent_classification(self) -> None:  # noqa: C901
         """Test concurrent error classification operations."""
         results = []
         errors = []
@@ -401,7 +401,7 @@ class TestErrorClassifierV2(unittest.TestCase):
                 category = self.classifier.classify_exception(error)
                 results.append((error_id, type(error).__name__, category))
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((error_id, e))
 
         # Run concurrent classifications
@@ -433,8 +433,8 @@ class TestErrorClassifierV2(unittest.TestCase):
 
         for i in range(classifier_count):
 
-            def make_classifier(index=i):
-                def classifier(exception):
+            def make_classifier(index: int = i) -> callable:
+                def classifier(exception: Exception) -> ErrorCategory | None:
                     if f"pattern_{index}" in str(exception):
                         return ErrorCategory.PROCESSING
                     return None
@@ -501,7 +501,7 @@ class TestErrorClassifierV2(unittest.TestCase):
             category = self.classifier.classify_exception(None)
             # Should handle None gracefully, likely returning UNKNOWN
             assert isinstance(category, ErrorCategory)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             # Or it might raise, which is also acceptable
             pass
 
@@ -518,7 +518,7 @@ class TestErrorClassifierV2(unittest.TestCase):
                 category = self.classifier.classify_exception(obj)
                 # Should handle gracefully
                 assert isinstance(category, ErrorCategory)
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 # Or might raise, which is acceptable
                 pass
 
@@ -538,13 +538,13 @@ class TestErrorClassifierV2(unittest.TestCase):
             # Method might not be implemented yet
             pass
 
-    def test_classifier_initialization_comprehensive(self) -> None:
+    def test_classifier_initialization_comprehensive(self) -> None:  # noqa: PLR6301
         """Test comprehensive classifier initialization."""
         classifier = ErrorClassifier()
 
         # Test internal state
-        assert isinstance(classifier._type_mappings, dict)
-        assert isinstance(classifier._custom_classifiers, list)
+        assert isinstance(classifier._type_mappings, dict)  # noqa: SLF001
+        assert isinstance(classifier._custom_classifiers, list)  # noqa: SLF001
 
         # Test default type mappings
         expected_mappings = {
@@ -559,13 +559,13 @@ class TestErrorClassifierV2(unittest.TestCase):
         }
 
         for exc_type, expected_category in expected_mappings.items():
-            assert exc_type in classifier._type_mappings
-            assert classifier._type_mappings[exc_type] == expected_category
+            assert exc_type in classifier._type_mappings  # noqa: SLF001
+            assert classifier._type_mappings[exc_type] == expected_category  # noqa: SLF001
 
         # Test empty custom classifiers
-        assert len(classifier._custom_classifiers) == 0
+        assert len(classifier._custom_classifiers) == 0  # noqa: SLF001
 
-    def test_error_category_enum_comprehensive(self) -> None:
+    def test_error_category_enum_comprehensive(self) -> None:  # noqa: PLR6301
         """Test comprehensive ErrorCategory enum functionality."""
         # Test all expected categories exist and are unique
         expected_categories = {
@@ -616,7 +616,7 @@ class TestErrorClassifierV2(unittest.TestCase):
                 category = self.classifier.classify_exception(error)
                 assert category == expected_category
 
-    def test_classifier_thread_safety(self) -> None:
+    def test_classifier_thread_safety(self) -> None:  # noqa: PLR6301
         """Test classifier thread safety."""
         # Create a shared classifier
         shared_classifier = ErrorClassifier()
@@ -632,7 +632,7 @@ class TestErrorClassifierV2(unittest.TestCase):
                     results.append(("mapping", op_id))
                 elif op_id % 3 == 1:
                     # Add custom classifier
-                    def custom(exc):
+                    def custom(exc: Exception) -> ErrorCategory | None:
                         if f"pattern{op_id}" in str(exc):
                             return ErrorCategory.USER_INPUT
                         return None
@@ -645,7 +645,7 @@ class TestErrorClassifierV2(unittest.TestCase):
                     category = shared_classifier.classify_exception(error)
                     results.append(("classify", op_id, category))
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((op_id, e))
 
         # Run concurrent operations
@@ -660,26 +660,30 @@ class TestErrorClassifierV2(unittest.TestCase):
 
 # Compatibility tests using pytest style for existing test coverage
 @pytest.fixture()
-def classifier_pytest():
-    """Create error classifier for pytest testing."""
+def classifier_pytest() -> ErrorClassifier:
+    """Create error classifier for pytest testing.
+
+    Returns:
+        ErrorClassifier: An instance of ErrorClassifier for testing.
+    """
     return ErrorClassifier()
 
 
-def test_classify_file_not_found_error_pytest(classifier_pytest) -> None:
+def test_classify_file_not_found_error_pytest(classifier_pytest: ErrorClassifier) -> None:
     """Test FileNotFoundError classification using pytest style."""
     error = FileNotFoundError("File not found")
     category = classifier_pytest.classify_exception(error)
     assert category == ErrorCategory.FILE_NOT_FOUND
 
 
-def test_classify_permission_error_pytest(classifier_pytest) -> None:
+def test_classify_permission_error_pytest(classifier_pytest: ErrorClassifier) -> None:
     """Test PermissionError classification using pytest style."""
     error = PermissionError("Permission denied")
     category = classifier_pytest.classify_exception(error)
     assert category == ErrorCategory.PERMISSION
 
 
-def test_classify_validation_errors_pytest(classifier_pytest) -> None:
+def test_classify_validation_errors_pytest(classifier_pytest: ErrorClassifier) -> None:
     """Test validation error classification using pytest style."""
     validation_errors = [
         (ValueError("Invalid value"), ErrorCategory.VALIDATION),
@@ -693,7 +697,7 @@ def test_classify_validation_errors_pytest(classifier_pytest) -> None:
         assert category == expected_category
 
 
-def test_classify_network_errors_pytest(classifier_pytest) -> None:
+def test_classify_network_errors_pytest(classifier_pytest: ErrorClassifier) -> None:
     """Test network error classification using pytest style."""
     network_errors = [
         (ConnectionError("Connection failed"), ErrorCategory.NETWORK),
@@ -706,10 +710,10 @@ def test_classify_network_errors_pytest(classifier_pytest) -> None:
         assert category == expected_category
 
 
-def test_add_custom_classifier_pytest(classifier_pytest) -> None:
+def test_add_custom_classifier_pytest(classifier_pytest: ErrorClassifier) -> None:
     """Test custom classifier using pytest style."""
 
-    def custom_classifier(exception):
+    def custom_classifier(exception: Exception) -> ErrorCategory | None:
         if "network" in str(exception).lower():
             return ErrorCategory.NETWORK
         return None
@@ -721,7 +725,7 @@ def test_add_custom_classifier_pytest(classifier_pytest) -> None:
     assert category == ErrorCategory.NETWORK
 
 
-def test_errno_classification_pytest(classifier_pytest) -> None:
+def test_errno_classification_pytest(classifier_pytest: ErrorClassifier) -> None:
     """Test errno-based classification using pytest style."""
     error = OSError(errno.ENOENT, "No such file or directory")
     category = classifier_pytest.classify_exception(error)
@@ -732,12 +736,12 @@ def test_errno_classification_pytest(classifier_pytest) -> None:
     assert category == ErrorCategory.PERMISSION
 
 
-def test_performance_pytest(classifier_pytest) -> None:
+def test_performance_pytest(classifier_pytest: ErrorClassifier) -> None:
     """Test classification performance using pytest style."""
     # Add many classifiers
     for i in range(100):
 
-        def non_matching_classifier(exception, index=i):
+        def non_matching_classifier(exception: Exception, index: int = i) -> ErrorCategory | None:
             if f"pattern_{index}" in str(exception):
                 return ErrorCategory.PROCESSING
             return None
