@@ -8,24 +8,28 @@ This version maintains 90%+ test coverage while optimizing performance through:
 - Maintained all test scenarios
 """
 
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QSettings, Qt
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QFileDialog, QMessageBox
 import pytest
 
 from goesvfi.gui_tabs.main_tab import MainTab
-from goesvfi.view_models.processing_view_model import ProcessingViewModel
 
 
 class TestMainTabOptimizedV2:
     """Optimized tests for MainTab functionality."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Shared QApplication instance."""
+    def shared_app(self) -> Iterator[QApplication]:
+        """Shared QApplication instance.
+
+        Yields:
+            QApplication: The application instance for testing.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -33,8 +37,12 @@ class TestMainTabOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def shared_mocks(self):
-        """Create shared mocks that persist across tests."""
+    def shared_mocks(self) -> Iterator[dict[str, MagicMock]]:
+        """Create shared mocks that persist across tests.
+
+        Yields:
+            dict[str, MagicMock]: Dictionary of mock objects.
+        """
         with (
             patch("goesvfi.utils.config.get_available_rife_models") as mock_models,
             patch("goesvfi.utils.config.find_rife_executable") as mock_rife,
@@ -59,20 +67,44 @@ class TestMainTabOptimizedV2:
             }
 
     @pytest.fixture()
-    def main_tab(self, shared_app, shared_mocks):
-        """Create MainTab instance with proper cleanup."""
-        # Create view model and tab
-        view_model = ProcessingViewModel()
-        tab = MainTab(view_model)
+    def main_tab(self, shared_app: QApplication, shared_mocks: dict[str, MagicMock]) -> Iterator[MainTab]:
+        """Create MainTab instance with proper cleanup.
+
+        Args:
+            shared_app: QApplication instance.
+            shared_mocks: Dictionary of mock objects.
+
+        Yields:
+            MainTab: Configured main tab instance.
+        """
+        # Create mock dependencies for MainTab constructor
+        mock_main_view_model = MagicMock()
+        mock_image_loader = MagicMock()
+        mock_sanchez_processor = MagicMock()
+        mock_image_cropper = MagicMock()
+        mock_settings = MagicMock(spec=QSettings)
+        mock_preview_signal = MagicMock()
+        mock_main_window_ref = MagicMock()
+
+        tab = MainTab(
+            main_view_model=mock_main_view_model,
+            image_loader=mock_image_loader,
+            sanchez_processor=mock_sanchez_processor,
+            image_cropper=mock_image_cropper,
+            settings=mock_settings,
+            request_previews_update_signal=mock_preview_signal,
+            main_window_ref=mock_main_window_ref,
+        )
 
         yield tab
 
         # Cleanup
-        tab.cleanup()
+        if hasattr(tab, "cleanup"):
+            tab.cleanup()
 
     # Core functionality tests (maintaining all original scenarios)
 
-    def test_initialization(self, main_tab) -> None:
+    def test_initialization(self, main_tab: MainTab) -> None:
         """Test MainTab initialization."""
         assert main_tab is not None
         assert main_tab.in_dir_edit is not None
@@ -82,7 +114,7 @@ class TestMainTabOptimizedV2:
         assert main_tab.fps_spinbox is not None
         assert main_tab.multiplier_spinbox is not None
 
-    def test_input_directory_path(self, main_tab, shared_app, tmp_path) -> None:
+    def test_input_directory_path(self, main_tab: MainTab, shared_app: QApplication, tmp_path: Path) -> None:
         """Test setting the input directory path."""
         test_dir = tmp_path / "test_input"
         test_dir.mkdir()
@@ -97,7 +129,7 @@ class TestMainTabOptimizedV2:
         assert main_tab.in_dir_edit.text() == str(test_dir)
         assert main_tab.preview_button.isEnabled()
 
-    def test_output_file_path(self, main_tab, shared_app, tmp_path) -> None:
+    def test_output_file_path(self, main_tab: MainTab, shared_app: QApplication, tmp_path: Path) -> None:
         """Test setting the output file path."""
         output_file = tmp_path / "output.mp4"
 
@@ -106,7 +138,7 @@ class TestMainTabOptimizedV2:
 
         assert main_tab.out_file_edit.text() == str(output_file)
 
-    def test_browse_paths_functionality(self, main_tab, shared_app, tmp_path) -> None:
+    def test_browse_paths_functionality(self, main_tab: MainTab, shared_app: QApplication, tmp_path: Path) -> None:
         """Test browse button functionality for both input and output paths."""
         # Test input directory browse
         test_dir = tmp_path / "test_browse_input"
@@ -125,7 +157,7 @@ class TestMainTabOptimizedV2:
             shared_app.processEvents()
             assert main_tab.out_file_edit.text() == str(output_file)
 
-    def test_encoder_selection_and_options(self, main_tab, shared_app) -> None:
+    def test_encoder_selection_and_options(self, main_tab: MainTab, shared_app: QApplication) -> None:
         """Test encoder selection and related options visibility."""
         # Test RIFE encoder
         main_tab.encoder_combo.setCurrentText("RIFE")
@@ -141,7 +173,7 @@ class TestMainTabOptimizedV2:
         assert main_tab.encoder_combo.currentText() == "FFmpeg"
         # RIFE options should still be accessible but may be disabled
 
-    def test_fps_and_multiplier_settings(self, main_tab, shared_app) -> None:
+    def test_fps_and_multiplier_settings(self, main_tab: MainTab, shared_app: QApplication) -> None:
         """Test FPS and multiplier spinbox functionality."""
         # Test FPS
         test_fps_values = [24, 30, 60, 120]
@@ -157,7 +189,7 @@ class TestMainTabOptimizedV2:
             shared_app.processEvents()
             assert main_tab.multiplier_spinbox.value() == mult
 
-    def test_rife_options_ui_interactions(self, main_tab, shared_app) -> None:
+    def test_rife_options_ui_interactions(self, main_tab: MainTab, shared_app: QApplication) -> None:
         """Test RIFE options UI interactions."""
         # Enable RIFE encoder first
         main_tab.encoder_combo.setCurrentText("RIFE")
@@ -183,7 +215,7 @@ class TestMainTabOptimizedV2:
             shared_app.processEvents()
             assert main_tab.rife_model_combo.currentIndex() == 0
 
-    def test_sanchez_options(self, main_tab, shared_app) -> None:
+    def test_sanchez_options(self, main_tab: MainTab, shared_app: QApplication) -> None:
         """Test Sanchez false color options."""
         # Enable Sanchez
         main_tab.sanchez_false_colour_checkbox.setChecked(True)
@@ -207,7 +239,7 @@ class TestMainTabOptimizedV2:
         assert not main_tab.sanchez_false_colour_checkbox.isChecked()
         assert not main_tab.sanchez_res_combo.isEnabled()
 
-    def test_start_button_state_management(self, main_tab, shared_app, tmp_path) -> None:
+    def test_start_button_state_management(self, main_tab: MainTab, shared_app: QApplication, tmp_path: Path) -> None:
         """Test start button enable/disable logic."""
         # Initially disabled
         assert not main_tab.start_button.isEnabled()
@@ -236,7 +268,7 @@ class TestMainTabOptimizedV2:
         shared_app.processEvents()
         assert not main_tab.start_button.isEnabled()
 
-    def test_processing_workflow(self, main_tab, shared_app, tmp_path) -> None:
+    def test_processing_workflow(self, main_tab: MainTab, shared_app: QApplication, tmp_path: Path) -> None:
         """Test complete processing workflow."""
         # Setup valid paths
         input_dir = tmp_path / "process_input"
@@ -287,7 +319,7 @@ class TestMainTabOptimizedV2:
             # Verify worker was started
             mock_worker.start.assert_called_once()
 
-    def test_preview_functionality(self, main_tab, shared_app, tmp_path) -> None:
+    def test_preview_functionality(self, main_tab: MainTab, shared_app: QApplication, tmp_path: Path) -> None:
         """Test preview button and functionality."""
         # Setup input directory with images
         input_dir = tmp_path / "preview_input"
@@ -316,7 +348,7 @@ class TestMainTabOptimizedV2:
             # Verify preview dialog was created
             mock_preview.assert_called_once()
 
-    def test_crop_functionality(self, main_tab, shared_app, tmp_path) -> None:
+    def test_crop_functionality(self, main_tab: MainTab, shared_app: QApplication, tmp_path: Path) -> None:
         """Test crop button functionality."""
         # Setup
         input_dir = tmp_path / "crop_input"
@@ -338,7 +370,7 @@ class TestMainTabOptimizedV2:
             main_tab.crop_button.click()
             shared_app.processEvents()
 
-    def test_error_handling(self, main_tab, shared_app, tmp_path) -> None:
+    def test_error_handling(self, main_tab: MainTab, shared_app: QApplication, tmp_path: Path) -> None:
         """Test error handling in processing."""
         # Setup valid inputs
         input_dir = tmp_path / "error_input"
@@ -356,7 +388,7 @@ class TestMainTabOptimizedV2:
             # Set up error callback
             error_callback = None
 
-            def capture_error_callback(cb) -> None:
+            def capture_error_callback(cb: Callable[[str], None]) -> None:
                 nonlocal error_callback
                 error_callback = cb
 
@@ -378,7 +410,7 @@ class TestMainTabOptimizedV2:
                 # Verify error was shown
                 mock_critical.assert_called_once()
 
-    def test_settings_persistence(self, main_tab, shared_app) -> None:
+    def test_settings_persistence(self, main_tab: MainTab, shared_app: QApplication) -> None:
         """Test that settings persist during session."""
         # Set various settings
         main_tab.fps_spinbox.setValue(60)
