@@ -10,6 +10,7 @@ Optimizations applied:
 
 import asyncio
 import operator
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -22,8 +23,13 @@ class TestIntegrityTabDataFlowV2:
     """Optimized test class for integrity tab data flow functionality."""
 
     @pytest.fixture()
-    def mock_data_fetcher(self):
-        """Create mock data fetcher with comprehensive capabilities."""
+    @staticmethod
+    def mock_data_fetcher() -> MagicMock:
+        """Create mock data fetcher with comprehensive capabilities.
+
+        Returns:
+            MagicMock: Mocked DataFetcher instance.
+        """
         fetcher = MagicMock(spec=DataFetcher)
 
         # Mock async methods
@@ -39,8 +45,13 @@ class TestIntegrityTabDataFlowV2:
         return fetcher
 
     @pytest.fixture()
-    def mock_date_selector(self):
-        """Create mock date range selector."""
+    @staticmethod
+    def mock_date_selector() -> MagicMock:
+        """Create mock date range selector.
+
+        Returns:
+            MagicMock: Mocked CompactDateRangeSelector instance.
+        """
         selector = MagicMock(spec=CompactDateRangeSelector)
 
         # Mock date selection methods
@@ -51,10 +62,15 @@ class TestIntegrityTabDataFlowV2:
         return selector
 
     @pytest.fixture()
-    def data_flow_factory(self):
-        """Factory for creating data flow test scenarios."""
+    @staticmethod
+    def data_flow_factory() -> Any:
+        """Factory for creating data flow test scenarios.
 
-        def create_scenario(scenario_type="basic"):
+        Returns:
+            Callable: Factory function for creating test scenarios.
+        """
+
+        def create_scenario(scenario_type: str = "basic") -> dict[str, Any]:
             if scenario_type == "basic":
                 return {
                     "date_range": ("2023-01-01", "2023-01-07"),
@@ -83,8 +99,12 @@ class TestIntegrityTabDataFlowV2:
 
     @pytest.mark.asyncio()
     @pytest.mark.parametrize("scenario_type", ["basic", "large", "empty"])
+    @staticmethod
     async def test_complete_data_flow_pipeline(
-        self, mock_data_fetcher, mock_date_selector, data_flow_factory, scenario_type
+        mock_data_fetcher: MagicMock,
+        mock_date_selector: MagicMock,
+        data_flow_factory: Any,
+        scenario_type: str,
     ) -> None:
         """Test complete data flow pipeline with various scenarios."""
         scenario = data_flow_factory(scenario_type)
@@ -101,7 +121,9 @@ class TestIntegrityTabDataFlowV2:
         }
 
         # Execute data flow pipeline
-        flow_result = await self._execute_data_flow_pipeline(mock_data_fetcher, mock_date_selector, scenario)
+        flow_result = await TestIntegrityTabDataFlowV2._execute_data_flow_pipeline(
+            mock_data_fetcher, mock_date_selector, scenario
+        )
 
         # Verify pipeline execution
         assert flow_result["date_selection_success"] is True
@@ -109,8 +131,17 @@ class TestIntegrityTabDataFlowV2:
         assert flow_result["validation_success"] is True
         assert flow_result["total_files"] == scenario["expected_files"]
 
-    async def _execute_data_flow_pipeline(self, data_fetcher, date_selector, scenario):
-        """Execute the complete data flow pipeline."""
+    @staticmethod
+    async def _execute_data_flow_pipeline(
+        data_fetcher: MagicMock,
+        date_selector: MagicMock,
+        scenario: dict[str, Any],  # noqa: ARG004
+    ) -> dict[str, Any]:
+        """Execute the complete data flow pipeline.
+
+        Returns:
+            dict[str, Any]: Flow execution results.
+        """
         flow_result = {
             "date_selection_success": False,
             "data_fetch_success": False,
@@ -143,13 +174,18 @@ class TestIntegrityTabDataFlowV2:
             if validation_result is not None:
                 flow_result["validation_success"] = True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             flow_result["error"] = str(e)
 
         return flow_result
 
     @pytest.mark.asyncio()
-    async def test_data_flow_error_handling(self, mock_data_fetcher, mock_date_selector, data_flow_factory) -> None:
+    @staticmethod
+    async def test_data_flow_error_handling(
+        mock_data_fetcher: MagicMock,
+        mock_date_selector: MagicMock,
+        data_flow_factory: Any,
+    ) -> None:
         """Test data flow error handling and recovery."""
         scenario = data_flow_factory("basic")
 
@@ -165,13 +201,19 @@ class TestIntegrityTabDataFlowV2:
             mock_data_fetcher.fetch_available_dates.side_effect = error
 
             # Execute pipeline with error handling
-            flow_result = await self._execute_data_flow_pipeline(mock_data_fetcher, mock_date_selector, scenario)
+            flow_result = await TestIntegrityTabDataFlowV2._execute_data_flow_pipeline(
+                mock_data_fetcher, mock_date_selector, scenario
+            )
 
             # Verify error handling
             assert "error" in flow_result
             assert error_name.split("_")[0] in flow_result["error"].lower()
 
-    def test_data_flow_state_management(self, mock_data_fetcher, mock_date_selector) -> None:
+    @staticmethod
+    def test_data_flow_state_management(
+        mock_data_fetcher: MagicMock,
+        mock_date_selector: MagicMock,  # noqa: ARG004
+    ) -> None:
         """Test data flow state management and persistence."""
         # Mock state data
         flow_state = {
@@ -194,14 +236,17 @@ class TestIntegrityTabDataFlowV2:
         assert loaded_state["validation_status"] == "completed"
 
     @pytest.mark.asyncio()
+    @staticmethod
     async def test_concurrent_data_flow_operations(
-        self, mock_data_fetcher, mock_date_selector, data_flow_factory
+        mock_data_fetcher: MagicMock,
+        mock_date_selector: MagicMock,
+        data_flow_factory: Any,
     ) -> None:
         """Test concurrent data flow operations."""
         scenarios = [data_flow_factory("basic"), data_flow_factory("large"), data_flow_factory("empty")]
 
         # Configure mock for concurrent operations
-        async def mock_fetch_with_delay(delay=0.1) -> int:
+        async def mock_fetch_with_delay(delay: float = 0.1) -> int:
             await asyncio.sleep(delay)
             return 100  # Mock file count
 
@@ -210,7 +255,9 @@ class TestIntegrityTabDataFlowV2:
         # Execute concurrent operations
         tasks = []
         for scenario in scenarios:
-            task = self._execute_data_flow_pipeline(mock_data_fetcher, mock_date_selector, scenario)
+            task = TestIntegrityTabDataFlowV2._execute_data_flow_pipeline(
+                mock_data_fetcher, mock_date_selector, scenario
+            )
             tasks.append(task)
 
         # Wait for all operations to complete
@@ -221,7 +268,8 @@ class TestIntegrityTabDataFlowV2:
         successful_results = [r for r in results if not isinstance(r, Exception)]
         assert len(successful_results) >= 1  # At least one should succeed
 
-    def test_data_flow_caching_mechanism(self, mock_data_fetcher) -> None:
+    @staticmethod
+    def test_data_flow_caching_mechanism(mock_data_fetcher: MagicMock) -> None:
         """Test data flow caching mechanism for performance."""
         # Mock cache operations
         mock_data_fetcher.cache_data = MagicMock()
@@ -247,14 +295,19 @@ class TestIntegrityTabDataFlowV2:
         mock_data_fetcher.invalidate_cache.assert_called_with(cache_key)
 
     @pytest.mark.asyncio()
-    async def test_data_flow_progress_tracking(self, mock_data_fetcher, mock_date_selector, data_flow_factory) -> None:
+    @staticmethod
+    async def test_data_flow_progress_tracking(
+        mock_data_fetcher: MagicMock,
+        mock_date_selector: MagicMock,
+        data_flow_factory: Any,
+    ) -> None:
         """Test data flow progress tracking and reporting."""
         scenario = data_flow_factory("large")
 
         # Mock progress tracking
         progress_updates = []
 
-        async def mock_fetch_with_progress():
+        async def mock_fetch_with_progress() -> int:
             for i in range(5):
                 progress = (i + 1) * 20  # 20%, 40%, 60%, 80%, 100%
                 progress_updates.append(progress)
@@ -264,13 +317,14 @@ class TestIntegrityTabDataFlowV2:
         mock_data_fetcher.fetch_available_dates.side_effect = mock_fetch_with_progress
 
         # Execute with progress tracking
-        await self._execute_data_flow_pipeline(mock_data_fetcher, mock_date_selector, scenario)
+        await TestIntegrityTabDataFlowV2._execute_data_flow_pipeline(mock_data_fetcher, mock_date_selector, scenario)
 
         # Verify progress tracking
         assert len(progress_updates) == 5
         assert progress_updates[-1] == 100  # Final progress should be 100%
 
-    def test_data_flow_filtering_and_sorting(self, mock_data_fetcher) -> None:
+    @staticmethod
+    def test_data_flow_filtering_and_sorting(mock_data_fetcher: MagicMock) -> None:
         """Test data flow filtering and sorting capabilities."""
         # Mock file data
         mock_files = [
@@ -299,14 +353,15 @@ class TestIntegrityTabDataFlowV2:
         assert len(sorted_result) == len(mock_files)
 
     @pytest.mark.asyncio()
-    async def test_data_flow_batch_processing(self, mock_data_fetcher, data_flow_factory) -> None:
+    @staticmethod
+    async def test_data_flow_batch_processing(mock_data_fetcher: MagicMock, data_flow_factory: Any) -> None:
         """Test data flow batch processing capabilities."""
         # Create multiple scenarios for batch processing
         scenarios = [data_flow_factory("basic"), data_flow_factory("large"), data_flow_factory("empty")]
 
         # Mock batch processing
 
-        async def mock_process_batch(scenarios_batch):
+        async def mock_process_batch(scenarios_batch: list[dict[str, Any]]) -> list[dict[str, Any]]:  # noqa: RUF029
             results = []
             for scenario in scenarios_batch:
                 result = {
@@ -326,7 +381,8 @@ class TestIntegrityTabDataFlowV2:
         assert len(batch_result) == len(scenarios)
         assert all(result["success"] for result in batch_result)
 
-    def test_data_flow_configuration_management(self, mock_data_fetcher) -> None:
+    @staticmethod
+    def test_data_flow_configuration_management(mock_data_fetcher: MagicMock) -> None:
         """Test data flow configuration management."""
         # Mock configuration
         flow_config = {
