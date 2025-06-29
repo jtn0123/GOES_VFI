@@ -173,3 +173,13 @@ Remaining Unit Tests (need verification):
 - Test files after fixing to ensure they still work
 - Update this file with accurate status only
 - The auto-fix tool is nearly useless for v2 files - expect manual work
+- Pre-commit hooks will catch additional issues (mypy type checking) - files need to pass ALL checks
+- Even after manual fixes, expect 10-25 remaining issues that may need noqa comments
+
+## Example Progress
+Lead Agent attempted test_validation_v2.py:
+- Started with 80 issues
+- Added type annotations, @staticmethod, Returns docs, noqa comments
+- After manual work: ~25 issues remain (mostly FBT001 boolean args)
+- Pre-commit found additional mypy type errors
+- This represents ~70% reduction but still not clean
