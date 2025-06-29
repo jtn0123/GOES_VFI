@@ -8,10 +8,11 @@ Optimizations applied:
 - Comprehensive signal validation
 """
 
+from collections.abc import Callable
 import pathlib
 import sys
 from types import ModuleType
-from typing import Never
+from typing import Any, Never
 from unittest.mock import MagicMock
 
 from PIL import Image
@@ -24,14 +25,19 @@ class TestVfiWorkerRunV2:
     """Optimized test class for VFI worker run functionality."""
 
     @pytest.fixture(scope="class")
-    def mock_pyqt_setup(self):
-        """Set up minimal PyQt6 mocks for headless test execution."""
+    @staticmethod
+    def mock_pyqt_setup() -> dict[str, ModuleType]:
+        """Set up minimal PyQt6 mocks for headless test execution.
+
+        Returns:
+            dict[str, ModuleType]: Dictionary containing mock Qt modules.
+        """
         qtcore = ModuleType("PyQt6.QtCore")
-        qtcore.QThread = object  # type: ignore
-        qtcore.pyqtSignal = lambda *_a, **_k: MagicMock()  # type: ignore
+        qtcore.QThread = object  # type: ignore[attr-defined]
+        qtcore.pyqtSignal = lambda *_a, **_k: MagicMock()  # type: ignore[attr-defined]
 
         pyqt6 = ModuleType("PyQt6")
-        pyqt6.QtCore = qtcore  # type: ignore
+        pyqt6.QtCore = qtcore  # type: ignore[attr-defined]
 
         sys.modules.setdefault("PyQt6", pyqt6)
         sys.modules.setdefault("PyQt6.QtCore", qtcore)
@@ -39,10 +45,17 @@ class TestVfiWorkerRunV2:
         return {"qtcore": qtcore, "pyqt6": pyqt6}
 
     @pytest.fixture()
-    def dummy_image_factory(self):
-        """Factory for creating dummy PNG images."""
+    @staticmethod
+    def dummy_image_factory() -> Callable[..., None]:
+        """Factory for creating dummy PNG images.
 
-        def create_dummy_png(path: pathlib.Path, size=(10, 10), color=(0, 0, 0)) -> None:
+        Returns:
+            Callable[..., None]: Function to create dummy PNG images.
+        """
+
+        def create_dummy_png(
+            path: pathlib.Path, size: tuple[int, int] = (10, 10), color: tuple[int, int, int] = (0, 0, 0)
+        ) -> None:
             img = Image.new("RGB", size, color=color)
             path.parent.mkdir(parents=True, exist_ok=True)
             img.save(path, format="PNG")
@@ -50,8 +63,13 @@ class TestVfiWorkerRunV2:
         return create_dummy_png
 
     @pytest.fixture()
-    def test_input_setup(self, tmp_path, dummy_image_factory):
-        """Set up test input directory with sample images."""
+    @staticmethod
+    def test_input_setup(tmp_path: pathlib.Path, dummy_image_factory: Callable[..., None]) -> pathlib.Path:
+        """Set up test input directory with sample images.
+
+        Returns:
+            pathlib.Path: Path to the test input directory.
+        """
         input_dir = tmp_path / "input"
         input_dir.mkdir()
 
@@ -68,12 +86,22 @@ class TestVfiWorkerRunV2:
         return input_dir
 
     @pytest.fixture()
-    def mock_signal_handlers(self):
-        """Create mock signal handlers for testing."""
+    @staticmethod
+    def mock_signal_handlers() -> dict[str, MagicMock]:
+        """Create mock signal handlers for testing.
+
+        Returns:
+            dict[str, MagicMock]: Dictionary of mock signal handlers.
+        """
         return {"progress": MagicMock(), "finished": MagicMock(), "error": MagicMock()}
 
+    @staticmethod
     def test_vfi_worker_successful_run(
-        self, mock_pyqt_setup, test_input_setup, tmp_path, mock_signal_handlers, monkeypatch
+        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        test_input_setup: pathlib.Path,
+        tmp_path: pathlib.Path,
+        mock_signal_handlers: dict[str, MagicMock],
+        monkeypatch: Any,
     ) -> None:
         """Test successful VFI worker execution."""
         output_file = tmp_path / "output.mp4"
@@ -81,11 +109,11 @@ class TestVfiWorkerRunV2:
         # Mock RIFE executable
         monkeypatch.setattr(
             "goesvfi.pipeline.run_vfi.VfiWorker._get_rife_executable",
-            lambda self: pathlib.Path("/fake/rife"),
+            lambda self: pathlib.Path("/fake/rife"),  # noqa: ARG005
         )
 
         # Mock run_vfi function to simulate successful processing
-        def fake_run_vfi(**kwargs):
+        def fake_run_vfi(**kwargs: Any) -> Any:
             yield (1, 2, 50.0)  # progress: current, total, percentage
             yield (2, 2, 100.0)  # final progress
             yield pathlib.Path(kwargs["output_mp4_path"])  # result
@@ -111,8 +139,14 @@ class TestVfiWorkerRunV2:
         mock_signal_handlers["error"].assert_not_called()
 
     @pytest.mark.parametrize("error_scenario", ["rife_not_found", "processing_failure", "invalid_input_dir"])
+    @staticmethod
     def test_vfi_worker_error_scenarios(
-        self, mock_pyqt_setup, test_input_setup, tmp_path, mock_signal_handlers, monkeypatch, error_scenario
+        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        test_input_setup: pathlib.Path,
+        tmp_path: pathlib.Path,
+        mock_signal_handlers: dict[str, MagicMock],
+        monkeypatch: Any,
+        error_scenario: str,
     ) -> None:
         """Test VFI worker error handling scenarios."""
         output_file = tmp_path / "output.mp4"
@@ -121,17 +155,17 @@ class TestVfiWorkerRunV2:
             # Mock RIFE executable not found
             monkeypatch.setattr(
                 "goesvfi.pipeline.run_vfi.VfiWorker._get_rife_executable",
-                lambda self: None,
+                lambda self: None,  # noqa: ARG005
             )
         elif error_scenario == "processing_failure":
             # Mock RIFE executable exists
             monkeypatch.setattr(
                 "goesvfi.pipeline.run_vfi.VfiWorker._get_rife_executable",
-                lambda self: pathlib.Path("/fake/rife"),
+                lambda self: pathlib.Path("/fake/rife"),  # noqa: ARG005
             )
 
             # Mock run_vfi to raise exception
-            def failing_run_vfi(**kwargs) -> Never:
+            def failing_run_vfi(**kwargs: Any) -> Never:
                 msg = "Processing failed"
                 raise RuntimeError(msg)
 
@@ -156,8 +190,13 @@ class TestVfiWorkerRunV2:
             mock_signal_handlers["error"].assert_called_once()
             mock_signal_handlers["finished"].assert_not_called()
 
+    @staticmethod
     def test_vfi_worker_partial_progress(
-        self, mock_pyqt_setup, test_input_setup, tmp_path, mock_signal_handlers, monkeypatch
+        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        test_input_setup: pathlib.Path,
+        tmp_path: pathlib.Path,
+        mock_signal_handlers: dict[str, MagicMock],
+        monkeypatch: Any,
     ) -> None:
         """Test VFI worker with partial progress updates."""
         output_file = tmp_path / "output.mp4"
@@ -165,11 +204,11 @@ class TestVfiWorkerRunV2:
         # Mock RIFE executable
         monkeypatch.setattr(
             "goesvfi.pipeline.run_vfi.VfiWorker._get_rife_executable",
-            lambda self: pathlib.Path("/fake/rife"),
+            lambda self: pathlib.Path("/fake/rife"),  # noqa: ARG005
         )
 
         # Mock run_vfi with multiple progress updates
-        def progressive_run_vfi(**kwargs):
+        def progressive_run_vfi(**kwargs: Any) -> Any:
             for i in range(1, 6):  # 5 progress updates
                 yield (i, 5, i * 20.0)
             yield pathlib.Path(kwargs["output_mp4_path"])
@@ -192,7 +231,12 @@ class TestVfiWorkerRunV2:
         mock_signal_handlers["finished"].assert_called_once()
         mock_signal_handlers["error"].assert_not_called()
 
-    def test_vfi_worker_signal_connections(self, mock_pyqt_setup, test_input_setup, tmp_path) -> None:
+    @staticmethod
+    def test_vfi_worker_signal_connections(
+        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        test_input_setup: pathlib.Path,
+        tmp_path: pathlib.Path,
+    ) -> None:
         """Test VFI worker signal connection functionality."""
         output_file = tmp_path / "output.mp4"
 
@@ -211,7 +255,11 @@ class TestVfiWorkerRunV2:
         # Verify connection works
         assert worker.progress is not None
 
-    def test_vfi_worker_input_validation(self, mock_pyqt_setup, tmp_path) -> None:
+    @staticmethod
+    def test_vfi_worker_input_validation(
+        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        tmp_path: pathlib.Path,
+    ) -> None:
         """Test VFI worker input validation."""
         # Test with various input scenarios
         test_cases = [
@@ -226,18 +274,24 @@ class TestVfiWorkerRunV2:
             assert worker is not None
             assert hasattr(worker, "run")
 
-    def test_vfi_worker_resource_cleanup(self, mock_pyqt_setup, test_input_setup, tmp_path, monkeypatch) -> None:
+    @staticmethod
+    def test_vfi_worker_resource_cleanup(
+        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        test_input_setup: pathlib.Path,
+        tmp_path: pathlib.Path,
+        monkeypatch: Any,
+    ) -> None:
         """Test VFI worker resource cleanup after completion."""
         output_file = tmp_path / "output.mp4"
 
         # Mock RIFE executable
         monkeypatch.setattr(
             "goesvfi.pipeline.run_vfi.VfiWorker._get_rife_executable",
-            lambda self: pathlib.Path("/fake/rife"),
+            lambda self: pathlib.Path("/fake/rife"),  # noqa: ARG005
         )
 
         # Mock run_vfi
-        def simple_run_vfi(**kwargs):
+        def simple_run_vfi(**kwargs: Any) -> Any:
             yield (1, 1, 100.0)
             yield pathlib.Path(kwargs["output_mp4_path"])
 
@@ -262,8 +316,12 @@ class TestVfiWorkerRunV2:
         finished_handler.assert_called_once()
         error_handler.assert_not_called()
 
+    @staticmethod
     def test_vfi_worker_concurrent_execution_safety(
-        self, mock_pyqt_setup, test_input_setup, tmp_path, monkeypatch
+        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        test_input_setup: pathlib.Path,
+        tmp_path: pathlib.Path,
+        monkeypatch: Any,
     ) -> None:
         """Test VFI worker behavior with concurrent execution concerns."""
         tmp_path / "output.mp4"
@@ -271,11 +329,11 @@ class TestVfiWorkerRunV2:
         # Mock RIFE executable
         monkeypatch.setattr(
             "goesvfi.pipeline.run_vfi.VfiWorker._get_rife_executable",
-            lambda self: pathlib.Path("/fake/rife"),
+            lambda self: pathlib.Path("/fake/rife"),  # noqa: ARG005
         )
 
         # Mock run_vfi with delay simulation
-        def delayed_run_vfi(**kwargs):
+        def delayed_run_vfi(**kwargs: Any) -> Any:
             yield (1, 3, 33.3)
             yield (2, 3, 66.6)
             yield (3, 3, 100.0)
