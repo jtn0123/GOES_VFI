@@ -11,6 +11,7 @@ Optimizations applied:
 import asyncio
 import operator
 import time
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -23,8 +24,13 @@ class TestIntegrityTabPerformanceV2:
     """Optimized test class for integrity tab performance functionality."""
 
     @pytest.fixture()
-    def mock_performance_monitor(self):
-        """Create mock performance monitor with comprehensive capabilities."""
+    @staticmethod
+    def mock_performance_monitor() -> MagicMock:
+        """Create mock performance monitor with comprehensive capabilities.
+
+        Returns:
+            MagicMock: Mocked PerformanceMonitor instance.
+        """
         monitor = MagicMock(spec=PerformanceMonitor)
 
         # Mock performance monitoring methods
@@ -45,8 +51,13 @@ class TestIntegrityTabPerformanceV2:
         return monitor
 
     @pytest.fixture()
-    def mock_data_fetcher_perf(self):
-        """Create mock data fetcher with performance capabilities."""
+    @staticmethod
+    def mock_data_fetcher_perf() -> MagicMock:
+        """Create mock data fetcher with performance capabilities.
+
+        Returns:
+            MagicMock: Mocked DataFetcher instance with performance features.
+        """
         fetcher = MagicMock(spec=DataFetcher)
 
         # Mock async methods with performance simulation
@@ -65,10 +76,15 @@ class TestIntegrityTabPerformanceV2:
         return fetcher
 
     @pytest.fixture()
-    def performance_scenario_factory(self):
-        """Factory for creating performance test scenarios."""
+    @staticmethod
+    def performance_scenario_factory() -> Any:
+        """Factory for creating performance test scenarios.
 
-        def create_scenario(scenario_type="standard"):
+        Returns:
+            Callable: Factory function for creating performance scenarios.
+        """
+
+        def create_scenario(scenario_type: str = "standard") -> dict[str, Any]:
             if scenario_type == "standard":
                 return {
                     "request_count": 100,
@@ -100,8 +116,12 @@ class TestIntegrityTabPerformanceV2:
 
     @pytest.mark.asyncio()
     @pytest.mark.parametrize("scenario_type", ["minimal", "standard", "stress"])
+    @staticmethod
     async def test_integrity_tab_performance_scenarios(
-        self, mock_performance_monitor, mock_data_fetcher_perf, performance_scenario_factory, scenario_type
+        mock_performance_monitor: MagicMock,
+        mock_data_fetcher_perf: MagicMock,
+        performance_scenario_factory: Any,
+        scenario_type: str,
     ) -> None:
         """Test integrity tab performance with various load scenarios."""
         scenario = performance_scenario_factory(scenario_type)
@@ -115,7 +135,9 @@ class TestIntegrityTabPerformanceV2:
         }
 
         # Execute performance test
-        perf_result = await self._execute_performance_test(mock_performance_monitor, mock_data_fetcher_perf, scenario)
+        perf_result = await TestIntegrityTabPerformanceV2._execute_performance_test(
+            mock_performance_monitor, mock_data_fetcher_perf, scenario
+        )
 
         # Verify performance metrics
         assert perf_result["test_completed"] is True
@@ -123,8 +145,17 @@ class TestIntegrityTabPerformanceV2:
         assert perf_result["error_rate"] <= scenario["acceptable_error_rate"]
         assert perf_result["memory_usage"] <= scenario["memory_limit"]
 
-    async def _execute_performance_test(self, performance_monitor, data_fetcher, scenario):
-        """Execute comprehensive performance test."""
+    @staticmethod
+    async def _execute_performance_test(
+        performance_monitor: MagicMock,
+        data_fetcher: MagicMock,  # noqa: ARG004
+        scenario: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Execute comprehensive performance test.
+
+        Returns:
+            dict[str, Any]: Performance test results.
+        """
         perf_result = {
             "test_completed": False,
             "average_response_time": 0.0,
@@ -179,13 +210,17 @@ class TestIntegrityTabPerformanceV2:
             # Stop monitoring
             performance_monitor.stop_monitoring()
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             perf_result["error"] = str(e)
 
         return perf_result
 
     @pytest.mark.asyncio()
-    async def test_concurrent_request_performance(self, mock_performance_monitor, mock_data_fetcher_perf) -> None:
+    @staticmethod
+    async def test_concurrent_request_performance(
+        mock_performance_monitor: MagicMock,  # noqa: ARG004
+        mock_data_fetcher_perf: MagicMock,
+    ) -> None:
         """Test performance under concurrent request load."""
         # Configure concurrent request scenario
         concurrent_levels = [1, 5, 10, 20]
@@ -193,7 +228,7 @@ class TestIntegrityTabPerformanceV2:
 
         for concurrency in concurrent_levels:
             # Mock concurrent requests
-            async def mock_concurrent_request():
+            async def mock_concurrent_request() -> dict[str, str]:
                 await asyncio.sleep(0.05)  # 50ms simulated processing
                 return {"status": "success", "data": "mock_data"}
 
@@ -226,7 +261,8 @@ class TestIntegrityTabPerformanceV2:
         min_throughput = min(r["throughput"] for r in performance_results)
         assert max_throughput > min_throughput  # Some improvement expected
 
-    def test_memory_usage_monitoring(self, mock_performance_monitor) -> None:
+    @staticmethod
+    def test_memory_usage_monitoring(mock_performance_monitor: MagicMock) -> None:
         """Test memory usage monitoring and optimization."""
         # Mock memory monitoring
         memory_snapshots = [
@@ -252,7 +288,11 @@ class TestIntegrityTabPerformanceV2:
         assert final_usage < peak_usage  # Memory was optimized
 
     @pytest.mark.asyncio()
-    async def test_response_time_optimization(self, mock_performance_monitor, mock_data_fetcher_perf) -> None:
+    @staticmethod
+    async def test_response_time_optimization(
+        mock_performance_monitor: MagicMock,  # noqa: ARG004
+        mock_data_fetcher_perf: MagicMock,
+    ) -> None:
         """Test response time optimization strategies."""
         # Mock different optimization strategies
         optimization_strategies = [
@@ -266,7 +306,7 @@ class TestIntegrityTabPerformanceV2:
 
         for strategy in optimization_strategies:
             # Configure mock with strategy-specific delay
-            async def mock_optimized_request():
+            async def mock_optimized_request() -> dict[str, str]:
                 await asyncio.sleep(strategy["base_delay"])
                 return {"status": "success", "strategy": strategy["name"]}
 
@@ -295,7 +335,8 @@ class TestIntegrityTabPerformanceV2:
 
         assert cached_time < no_opt_time  # Caching should improve performance
 
-    def test_error_rate_monitoring(self, mock_performance_monitor) -> None:
+    @staticmethod
+    def test_error_rate_monitoring(mock_performance_monitor: MagicMock) -> None:
         """Test error rate monitoring and alerting."""
         # Mock error tracking
         error_scenarios = [
@@ -322,7 +363,11 @@ class TestIntegrityTabPerformanceV2:
         assert average_rate < 0.03  # Overall rate should be low
 
     @pytest.mark.asyncio()
-    async def test_throughput_optimization(self, mock_performance_monitor, mock_data_fetcher_perf) -> None:
+    @staticmethod
+    async def test_throughput_optimization(
+        mock_performance_monitor: MagicMock,  # noqa: ARG004
+        mock_data_fetcher_perf: MagicMock,
+    ) -> None:
         """Test throughput optimization and scaling."""
         # Test different batch sizes for throughput optimization
         batch_sizes = [1, 5, 10, 25, 50]
@@ -330,7 +375,7 @@ class TestIntegrityTabPerformanceV2:
 
         for batch_size in batch_sizes:
             # Mock batch processing
-            async def mock_batch_processing(batch):
+            async def mock_batch_processing(batch: list[Any]) -> list[dict[str, str]]:
                 # Simulate processing time that improves with batching
                 processing_time = 0.1 + (0.01 * len(batch))  # Small overhead per item
                 await asyncio.sleep(processing_time)
@@ -361,8 +406,13 @@ class TestIntegrityTabPerformanceV2:
         optimal_result = max(throughput_results, key=operator.itemgetter("throughput"))
         assert optimal_result["batch_size"] > 1  # Batching should improve throughput
 
-    def test_resource_utilization_monitoring(self, mock_performance_monitor) -> None:
-        """Test comprehensive resource utilization monitoring."""
+    @staticmethod
+    def test_resource_utilization_monitoring(mock_performance_monitor: MagicMock) -> None:
+        """Test comprehensive resource utilization monitoring.
+
+        Raises:
+            AssertionError: If resource usage exceeds acceptable limits.
+        """
         # Mock resource utilization data
         resource_data = {
             "cpu_usage": 0.65,  # 65%
@@ -394,7 +444,8 @@ class TestIntegrityTabPerformanceV2:
             msg = "CPU usage too high - optimization needed"
             raise AssertionError(msg)
 
-    def test_performance_regression_detection(self, mock_performance_monitor) -> None:
+    @staticmethod
+    def test_performance_regression_detection(mock_performance_monitor: MagicMock) -> None:
         """Test performance regression detection and alerting."""
         # Mock historical performance data
         historical_data = [
