@@ -8,7 +8,7 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced error handling and edge case coverage
 """
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 import os
 import time
 from typing import Any
@@ -44,7 +44,7 @@ class TestPreviewFunctionalityOptimizedV2:
 
     @pytest.fixture(scope="class")
     @staticmethod
-    def preview_test_components() -> dict[str, Any]:
+    def preview_test_components() -> dict[str, Any]:  # noqa: C901
         """Create shared components for preview functionality testing.
 
         Returns:
@@ -56,7 +56,7 @@ class TestPreviewFunctionalityOptimizedV2:
             """Generate various test images for preview testing."""
 
             def __init__(self) -> None:
-                self.image_patterns = {
+                self.image_patterns: dict[str, Callable[[tuple[int, int], tuple[int, int, int]], Image.Image]] = {
                     "solid": TestImageGenerator._create_solid_color,
                     "gradient": TestImageGenerator._create_gradient,
                     "checkerboard": TestImageGenerator._create_checkerboard,
@@ -66,12 +66,20 @@ class TestPreviewFunctionalityOptimizedV2:
 
             @staticmethod
             def _create_solid_color(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
-                """Create solid color image."""
+                """Create solid color image.
+
+                Returns:
+                    Image.Image: The created solid color image.
+                """
                 return Image.new("RGB", size, color)
 
             @staticmethod
             def _create_gradient(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
-                """Create gradient image."""
+                """Create gradient image.
+
+                Returns:
+                    Image.Image: The created gradient image.
+                """
                 img_array = np.zeros((*size[::-1], 3), dtype=np.uint8)
                 for x in range(size[0]):
                     intensity = int(255 * x / size[0])
@@ -82,7 +90,11 @@ class TestPreviewFunctionalityOptimizedV2:
 
             @staticmethod
             def _create_checkerboard(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
-                """Create checkerboard pattern."""
+                """Create checkerboard pattern.
+
+                Returns:
+                    Image.Image: The created checkerboard image.
+                """
                 img_array = np.zeros((*size[::-1], 3), dtype=np.uint8)
                 checker_size = min(size) // 8
                 for y in range(size[1]):
@@ -95,7 +107,11 @@ class TestPreviewFunctionalityOptimizedV2:
 
             @staticmethod
             def _create_noise(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
-                """Create noise pattern."""
+                """Create noise pattern.
+
+                Returns:
+                    Image.Image: The created noise image.
+                """
                 rng = np.random.default_rng()
                 img_array = rng.integers(0, 256, (*size[::-1], 3), dtype=np.uint8)
                 # Tint with specified color
@@ -105,7 +121,11 @@ class TestPreviewFunctionalityOptimizedV2:
 
             @staticmethod
             def _create_circles(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
-                """Create circles pattern."""
+                """Create circles pattern.
+
+                Returns:
+                    Image.Image: The created circles image.
+                """
                 img_array = np.zeros((*size[::-1], 3), dtype=np.uint8)
                 center_x, center_y = size[0] // 2, size[1] // 2
 
@@ -118,12 +138,20 @@ class TestPreviewFunctionalityOptimizedV2:
                             img_array[y, x] = [128, 128, 128]
                 return Image.fromarray(img_array)
 
-            def create_image(self, pattern, size, color):
-                """Create image with specified pattern."""
+            def create_image(self, pattern: str, size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
+                """Create image with specified pattern.
+
+                Returns:
+                    Image.Image: The created image.
+                """
                 return self.image_patterns[pattern](size, color)
 
-            def create_test_sequence(self, temp_dir, count=5, pattern="gradient"):
-                """Create a sequence of test images."""
+            def create_test_sequence(self, temp_dir: Any, count: int = 5, pattern: str = "gradient") -> list[Any]:
+                """Create a sequence of test images.
+
+                Returns:
+                    list[Any]: List of created image paths.
+                """
                 images = []
                 colors = [
                     (255, 0, 0),  # Red
@@ -151,15 +179,20 @@ class TestPreviewFunctionalityOptimizedV2:
             """Manage preview testing scenarios."""
 
             def __init__(self) -> None:
-                self.scenarios = {
-                    "basic_loading": self._setup_basic_loading,
-                    "error_handling": self._setup_error_handling,
-                    "performance": self._setup_performance_test,
-                    "memory_management": self._setup_memory_test,
+                self.scenarios: dict[str, Callable[[Any, Any], Any]] = {
+                    "basic_loading": PreviewTestManager._setup_basic_loading,
+                    "error_handling": PreviewTestManager._setup_error_handling,
+                    "performance": PreviewTestManager._setup_performance_test,
+                    "memory_management": PreviewTestManager._setup_memory_test,
                 }
 
-            def _setup_basic_loading(self, main_window, test_dir):
-                """Setup basic preview loading scenario."""
+            @staticmethod
+            def _setup_basic_loading(main_window: Any, test_dir: Any) -> Any:
+                """Setup basic preview loading scenario.
+
+                Returns:
+                    Any: Mock object for data retrieval.
+                """
                 # Mock successful preview loading
                 with patch.object(
                     main_window.main_view_model.preview_manager, "get_current_frame_data"
@@ -172,16 +205,26 @@ class TestPreviewFunctionalityOptimizedV2:
                     mock_get_data.return_value = mock_data
                     return mock_get_data
 
-            def _setup_error_handling(self, main_window, test_dir):
-                """Setup error handling scenario."""
+            @staticmethod
+            def _setup_error_handling(main_window: Any, test_dir: Any) -> Any:  # noqa: ARG004
+                """Setup error handling scenario.
+
+                Returns:
+                    Any: Mock object for error simulation.
+                """
                 with patch.object(
                     main_window.main_view_model.preview_manager, "get_current_frame_data"
                 ) as mock_get_data:
                     mock_get_data.side_effect = Exception("Preview loading failed")
                     return mock_get_data
 
-            def _setup_performance_test(self, main_window, test_dir):
-                """Setup performance testing scenario."""
+            @staticmethod
+            def _setup_performance_test(main_window: Any, test_dir: Any) -> Any:
+                """Setup performance testing scenario.
+
+                Returns:
+                    Any: Mock object for performance testing.
+                """
                 # Mock fast preview loading
                 with patch.object(
                     main_window.main_view_model.preview_manager, "get_current_frame_data"
@@ -194,8 +237,13 @@ class TestPreviewFunctionalityOptimizedV2:
                     mock_get_data.return_value = large_data
                     return mock_get_data
 
-            def _setup_memory_test(self, main_window, test_dir):
-                """Setup memory management testing scenario."""
+            @staticmethod
+            def _setup_memory_test(main_window: Any, test_dir: Any) -> Any:
+                """Setup memory management testing scenario.
+
+                Returns:
+                    Any: Mock object for memory testing.
+                """
                 with patch.object(
                     main_window.main_view_model.preview_manager, "get_current_frame_data"
                 ) as mock_get_data:
@@ -217,8 +265,12 @@ class TestPreviewFunctionalityOptimizedV2:
                     mock_get_data.return_value = memory_data
                     return mock_get_data
 
-            def setup_scenario(self, scenario, main_window, test_dir):
-                """Setup specified testing scenario."""
+            def setup_scenario(self, scenario: str, main_window: Any, test_dir: Any) -> Any:
+                """Setup specified testing scenario.
+
+                Returns:
+                    Any: Mock object for the scenario.
+                """
                 return self.scenarios[scenario](main_window, test_dir)
 
         # Enhanced Click Handler
@@ -226,33 +278,48 @@ class TestPreviewFunctionalityOptimizedV2:
             """Handle click testing scenarios."""
 
             def __init__(self) -> None:
-                self.click_scenarios = {
-                    "valid_click": self._setup_valid_click,
-                    "invalid_click": self._setup_invalid_click,
-                    "error_click": self._setup_error_click,
+                self.click_scenarios: dict[str, Callable[[Any], Any]] = {
+                    "valid_click": ClickTestHandler._setup_valid_click,
+                    "invalid_click": ClickTestHandler._setup_invalid_click,
+                    "error_click": ClickTestHandler._setup_error_click,
                 }
 
-            def _setup_valid_click(self, label):
-                """Setup valid click scenario."""
+            @staticmethod
+            def _setup_valid_click(label: Any) -> Any:
+                """Setup valid click scenario.
+
+                Returns:
+                    Any: Mock image object.
+                """
                 # Mock processed_image attribute
                 mock_image = MagicMock()
                 mock_image.size = (200, 150)
                 label.processed_image = mock_image
                 return mock_image
 
-            def _setup_invalid_click(self, label) -> None:
+            @staticmethod
+            def _setup_invalid_click(label: Any) -> None:
                 """Setup invalid click scenario (no processed_image)."""
                 label.processed_image = None
 
-            def _setup_error_click(self, label):
-                """Setup error click scenario."""
+            @staticmethod
+            def _setup_error_click(label: Any) -> Any:
+                """Setup error click scenario.
+
+                Returns:
+                    Any: Mock image object with invalid size.
+                """
                 mock_image = MagicMock()
                 mock_image.size = (0, 0)  # Invalid size
                 label.processed_image = mock_image
                 return mock_image
 
-            def setup_click_scenario(self, scenario, label):
-                """Setup specified click scenario."""
+            def setup_click_scenario(self, scenario: str, label: Any) -> Any:
+                """Setup specified click scenario.
+
+                Returns:
+                    Any: Mock object for the click scenario.
+                """
                 return self.click_scenarios[scenario](label)
 
         return {
@@ -262,8 +329,13 @@ class TestPreviewFunctionalityOptimizedV2:
         }
 
     @pytest.fixture()
-    def temp_workspace(self, tmp_path):
-        """Create temporary workspace for preview testing."""
+    @staticmethod
+    def temp_workspace(tmp_path: Any) -> dict[str, Any]:
+        """Create temporary workspace for preview testing.
+
+        Returns:
+            dict[str, Any]: Workspace configuration dictionary.
+        """
         workspace = {
             "base_dir": tmp_path,
             "input_dirs": {},
@@ -287,8 +359,9 @@ class TestPreviewFunctionalityOptimizedV2:
 
         return workspace
 
+    @staticmethod
     def test_preview_functionality_comprehensive_scenarios(
-        self, shared_qt_app, preview_test_components, temp_workspace
+        shared_qt_app: QApplication, preview_test_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:
         """Test comprehensive preview functionality scenarios."""
         components = preview_test_components
@@ -409,7 +482,8 @@ class TestPreviewFunctionalityOptimizedV2:
                     # Clean up
                     main_window.close()
 
-    def test_preview_error_handling_comprehensive(self, shared_qt_app, preview_test_components, temp_workspace) -> None:
+    @staticmethod
+    def test_preview_error_handling_comprehensive(shared_qt_app: QApplication, preview_test_components: dict[str, Any], temp_workspace: dict[str, Any]) -> None:  # noqa: C901, PLR0915
         """Test comprehensive preview error handling scenarios."""
         components = preview_test_components
         workspace = temp_workspace
@@ -508,7 +582,7 @@ class TestPreviewFunctionalityOptimizedV2:
                             # Error should be handled gracefully
                             assert main_window.in_dir == test_dir, "Directory should still be set despite preview error"
 
-                        except Exception as e:
+                        except Exception as e:  # noqa: BLE001
                             # If error propagates, verify it's expected
                             assert "Preview loading failed" in str(e), f"Unexpected error: {e}"
 
@@ -566,14 +640,15 @@ class TestPreviewFunctionalityOptimizedV2:
                             # Should handle corrupted files gracefully
                             assert main_window.in_dir == corrupted_dir, "Directory with corrupted files should be set"
 
-                        except Exception:
+                        except Exception:  # noqa: BLE001
                             # Corrupted files may cause exceptions, but shouldn't crash the app
                             assert True  # Handled gracefully
 
                         main_window.close()
 
+    @staticmethod
     def test_preview_performance_and_memory_management(
-        self, shared_qt_app, preview_test_components, temp_workspace
+        shared_qt_app: QApplication, preview_test_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:
         """Test preview performance characteristics and memory management."""
         components = preview_test_components
@@ -688,8 +763,9 @@ class TestPreviewFunctionalityOptimizedV2:
 
                         main_window.close()
 
+    @staticmethod
     def test_preview_integration_with_gui_components(
-        self, shared_qt_app, preview_test_components, temp_workspace
+        shared_qt_app: QApplication, preview_test_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:
         """Test preview integration with other GUI components."""
         components = preview_test_components
@@ -774,14 +850,14 @@ class TestPreviewFunctionalityOptimizedV2:
                         # Test processing state changes
                         if hasattr(main_window, "_set_processing_state"):
                             # Set processing state
-                            main_window._set_processing_state(True)
+                            main_window._set_processing_state(True)  # noqa: SLF001, FBT003
                             shared_qt_app.processEvents()
 
                             # Previews should remain but UI should reflect processing state
                             assert main_window.is_processing, "Processing state not set"
 
                             # Clear processing state
-                            main_window._set_processing_state(False)
+                            main_window._set_processing_state(False)  # noqa: SLF001, FBT003
                             shared_qt_app.processEvents()
 
                             assert not main_window.is_processing, "Processing state not cleared"
