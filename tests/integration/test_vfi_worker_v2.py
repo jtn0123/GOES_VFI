@@ -8,8 +8,10 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced error handling and timeout testing
 """
 
+from collections.abc import Iterator
 import os
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtCore import QEventLoop, QObject, QTimer, pyqtSlot
@@ -23,8 +25,13 @@ class TestVfiWorkerOptimizedV2:
     """Optimized VfiWorker integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_qt_app(self):
-        """Shared QApplication instance for all worker tests."""
+    @staticmethod
+    def shared_qt_app() -> Iterator[QApplication]:
+        """Shared QApplication instance for all worker tests.
+
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -32,8 +39,13 @@ class TestVfiWorkerOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def worker_test_components(self):
-        """Create shared components for VfiWorker testing."""
+    @staticmethod
+    def worker_test_components() -> dict[str, Any]:  # noqa: C901
+        """Create shared components for VfiWorker testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing test components.
+        """
 
         # Enhanced Signal Receiver
         class ComprehensiveSignalReceiver(QObject):
@@ -55,18 +67,18 @@ class TestVfiWorkerOptimizedV2:
                 self.error_occurred = False
 
             @pyqtSlot(int, int, float)
-            def on_progress(self, current, total, elapsed) -> None:
+            def on_progress(self, current: int, total: int, elapsed: float) -> None:
                 self.signals_received["progress"].append((current, total, elapsed))
                 self.last_progress = (current, total, elapsed)
 
             @pyqtSlot(str)
-            def on_finished(self, output_path) -> None:
+            def on_finished(self, output_path: str) -> None:
                 self.signals_received["finished"].append(output_path)
                 self.last_output = output_path
                 self.processing_complete = True
 
             @pyqtSlot(str)
-            def on_error(self, error_message) -> None:
+            def on_error(self, error_message: str) -> None:
                 self.signals_received["error"].append(error_message)
                 self.last_error = error_message
                 self.error_occurred = True
@@ -76,7 +88,7 @@ class TestVfiWorkerOptimizedV2:
                 self.signals_received["started"].append(True)
 
             @pyqtSlot(int, str)
-            def on_frame_processed(self, frame_num, frame_path) -> None:
+            def on_frame_processed(self, frame_num: int, frame_path: str) -> None:
                 self.signals_received["frame_processed"].append((frame_num, frame_path))
 
             def reset(self) -> None:
@@ -94,12 +106,20 @@ class TestVfiWorkerOptimizedV2:
                 self.processing_complete = False
                 self.error_occurred = False
 
-            def get_signal_count(self, signal_type):
-                """Get count of received signals of given type."""
+            def get_signal_count(self, signal_type: str) -> int:
+                """Get count of received signals of given type.
+
+                Returns:
+                    int: Number of signals received.
+                """
                 return len(self.signals_received.get(signal_type, []))
 
-            def has_received_signal(self, signal_type):
-                """Check if signal type has been received."""
+            def has_received_signal(self, signal_type: str) -> bool:
+                """Check if signal type has been received.
+
+                Returns:
+                    bool: True if signal has been received.
+                """
                 return len(self.signals_received.get(signal_type, [])) > 0
 
         # Enhanced Worker Configuration Manager
@@ -151,8 +171,12 @@ class TestVfiWorkerOptimizedV2:
                     "sanchez_parallel": True,
                 }
 
-            def get_config(self, config_type="basic"):
-                """Get configuration for different test scenarios."""
+            def get_config(self, config_type: str = "basic") -> dict[str, Any]:
+                """Get configuration for different test scenarios.
+
+                Returns:
+                    dict[str, Any]: Configuration dictionary for the specified type.
+                """
                 configs = {
                     "basic": self.base_config.copy(),
                     "high_performance": {
@@ -188,8 +212,12 @@ class TestVfiWorkerOptimizedV2:
                 }
                 return configs.get(config_type, self.base_config)
 
-            def create_worker_args(self, in_dir, out_file, config_type="basic"):
-                """Create complete worker arguments."""
+            def create_worker_args(self, in_dir: Any, out_file: Any, config_type: str = "basic") -> dict[str, Any]:
+                """Create complete worker arguments.
+
+                Returns:
+                    dict[str, Any]: Complete worker configuration.
+                """
                 config = self.get_config(config_type)
                 return {"in_dir": in_dir, "out_file_path": out_file, **config}
 
@@ -206,8 +234,12 @@ class TestVfiWorkerOptimizedV2:
                     "permission_error": self._setup_permission_error_mocks,
                 }
 
-            def _setup_success_mocks(self):
-                """Setup mocks for successful processing."""
+            def _setup_success_mocks(self) -> dict[str, Any]:
+                """Setup mocks for successful processing.
+
+                Returns:
+                    dict[str, Any]: Mock configuration for success scenario.
+                """
                 return {
                     "subprocess_run": MagicMock(returncode=0, stdout="", stderr=""),
                     "subprocess_popen": self._create_success_popen_mock(),
@@ -215,8 +247,12 @@ class TestVfiWorkerOptimizedV2:
                     "sanchez_colourise": lambda *args, **kwargs: 0,
                 }
 
-            def _setup_rife_failure_mocks(self):
-                """Setup mocks for RIFE processing failure."""
+            def _setup_rife_failure_mocks(self) -> dict[str, Any]:
+                """Setup mocks for RIFE processing failure.
+
+                Returns:
+                    dict[str, Any]: Mock configuration for RIFE failure scenario.
+                """
                 return {
                     "subprocess_run": MagicMock(returncode=1, stdout="", stderr="RIFE error"),
                     "subprocess_popen": self._create_success_popen_mock(),
