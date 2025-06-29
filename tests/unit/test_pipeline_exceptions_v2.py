@@ -203,7 +203,7 @@ class TestPipelineExceptionsOptimizedV2:
                 config["has_attributes"]
                 test_message = config["test_messages"][0]
 
-                results = {}
+                results: dict[str, Any] = {}
 
                 if exception_name == "ffmpeg_error":
                     # Test with command
@@ -246,7 +246,7 @@ class TestPipelineExceptionsOptimizedV2:
                 exception_class = config["class"]
                 config["test_messages"]
 
-                results = {}
+                results: dict[str, Any] = {}
 
                 if exception_name == "rife_error":
                     # Test RIFE-specific scenarios
@@ -362,7 +362,8 @@ class TestPipelineExceptionsOptimizedV2:
                 instances = {}
                 for name, config in self.exception_configs.items():
                     exception_class = config["class"]
-                    message = config["test_messages"][0]
+                    test_messages = config.get("test_messages", [])
+                    message = test_messages[0] if test_messages else "Test error"
 
                     if name == "ffmpeg_error":
                         instances[name] = exception_class(message, command="test", stderr="test")
@@ -395,7 +396,7 @@ class TestPipelineExceptionsOptimizedV2:
                 Returns:
                     dict[str, Any]: Dictionary with catching patterns validation status.
                 """
-                results = {}
+                results: dict[str, Any] = {}
 
                 def raise_ffmpeg_error() -> Never:
                     msg = "FFmpeg failed"
@@ -469,7 +470,7 @@ class TestPipelineExceptionsOptimizedV2:
                 Returns:
                     dict[str, Any]: Dictionary with realistic scenario test results.
                 """
-                results = {}
+                results: dict[str, Any] = {}
 
                 def simulate_ffmpeg_encoding() -> Never:
                     command = "ffmpeg -i satellite_data.mp4 -c:v libx265 -crf 23 output.mp4"
