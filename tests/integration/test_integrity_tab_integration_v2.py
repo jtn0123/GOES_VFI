@@ -8,6 +8,7 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced mock management and data propagation testing
 """
 
+import asyncio
 from collections.abc import Iterator
 import contextlib
 from datetime import UTC, datetime
@@ -125,13 +126,13 @@ class TestIntegrityTabsIntegrationOptimizedV2:
             def __init__(self) -> None:
                 self.mock_configs = {
                     "full_success": IntegrationMockManager._create_full_success_mocks,
-                    "partial_failure": self._create_partial_failure_mocks,
-                    "async_operations": self._create_async_operation_mocks,
-                    "signal_handling": self._create_signal_handling_mocks,
+                    "partial_failure": IntegrationMockManager._create_partial_failure_mocks,
+                    "async_operations": IntegrationMockManager._create_async_operation_mocks,
+                    "signal_handling": IntegrationMockManager._create_signal_handling_mocks,
                 }
 
             @staticmethod
-            def _create_full_success_mocks(temp_dir: Path) -> dict[str, Any]:
+            def _create_full_success_mocks(temp_dir: Path) -> dict[str, Any]:  # noqa: ARG004
                 """Create mocks for full success scenarios.
 
                 Args:
@@ -164,7 +165,8 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                     "s3_store": s3_store_mock,
                 }
 
-            def _create_partial_failure_mocks(self, temp_dir: Path) -> dict[str, Any]:
+            @staticmethod
+            def _create_partial_failure_mocks(temp_dir: Path) -> dict[str, Any]:
                 """Create mocks for partial failure scenarios.
 
                 Args:
@@ -181,7 +183,8 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
                 return mocks
 
-            def _create_async_operation_mocks(self, temp_dir: Path) -> dict[str, Any]:
+            @staticmethod
+            def _create_async_operation_mocks(temp_dir: Path) -> dict[str, Any]:
                 """Create mocks for async operation testing.
 
                 Args:
@@ -194,8 +197,6 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
                 # Add delays to simulate async operations
                 async def delayed_download(*args: Any, **kwargs: Any) -> bool:
-                    import asyncio
-
                     await asyncio.sleep(0.01)  # Small delay
                     return True
 
@@ -204,7 +205,8 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
                 return mocks
 
-            def _create_signal_handling_mocks(self, temp_dir: Path) -> dict[str, Any]:
+            @staticmethod
+            def _create_signal_handling_mocks(temp_dir: Path) -> dict[str, Any]:
                 """Create mocks for signal handling testing.
 
                 Args:
@@ -283,7 +285,9 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
             @staticmethod
             def _test_date_range_synchronization(
-                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any],  # noqa: ARG004
+                view_model: EnhancedIntegrityCheckViewModel,
+                test_dir: Path,  # noqa: ARG004
             ) -> None:
                 """Test date range synchronization across tabs.
 
@@ -314,7 +318,9 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
             @staticmethod
             def _test_satellite_selection_sync(
-                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any],
+                view_model: EnhancedIntegrityCheckViewModel,
+                test_dir: Path,  # noqa: ARG004
             ) -> None:
                 """Test satellite selection synchronization.
 
@@ -342,7 +348,9 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
             @staticmethod
             def _test_fetch_source_sync(
-                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any],  # noqa: ARG004
+                view_model: EnhancedIntegrityCheckViewModel,
+                test_dir: Path,  # noqa: ARG004
             ) -> None:
                 """Test fetch source synchronization.
 
@@ -372,7 +380,9 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
             @staticmethod
             def _test_data_flow_validation(
-                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any],  # noqa: ARG004
+                view_model: EnhancedIntegrityCheckViewModel,
+                test_dir: Path,  # noqa: ARG004
             ) -> None:
                 """Test data flow between tabs and view model."""
                 # Verify view model exists and has expected attributes
@@ -400,7 +410,9 @@ class TestIntegrityTabsIntegrationOptimizedV2:
 
             @staticmethod
             def _test_tab_visibility_management(
-                tabs: dict[str, Any], view_model: EnhancedIntegrityCheckViewModel, test_dir: Path
+                tabs: dict[str, Any],
+                view_model: EnhancedIntegrityCheckViewModel,  # noqa: ARG004
+                test_dir: Path,  # noqa: ARG004
             ) -> None:
                 """Test tab visibility and management."""
                 # Verify all expected tabs exist
@@ -438,7 +450,7 @@ class TestIntegrityTabsIntegrationOptimizedV2:
         }
 
     @pytest.fixture()
-    def temp_workspace(self, tmp_path: Path) -> dict[str, Any]:
+    def temp_workspace(self, tmp_path: Path) -> dict[str, Any]:  # noqa: PLR6301
         """Create temporary workspace for integration testing.
 
         Args:
@@ -452,10 +464,17 @@ class TestIntegrityTabsIntegrationOptimizedV2:
             "temp_dir_obj": None,
         }
 
-    def test_integrity_tabs_integration_comprehensive_scenarios(
-        self, shared_qt_app: QApplication, tab_integration_components: dict[str, Any], temp_workspace: dict[str, Any]
+    def test_integrity_tabs_integration_comprehensive_scenarios(  # noqa: PLR6301, PLR0914
+        self,
+        shared_qt_app: QApplication,  # noqa: ARG002
+        tab_integration_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
-        """Test comprehensive tab integration scenarios."""
+        """Test comprehensive tab integration scenarios.
+
+        Raises:
+            AssertionError: If integration tests fail.
+        """
         components = tab_integration_components
         workspace = temp_workspace
         file_manager = components["file_manager"]
@@ -563,7 +582,7 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                             # Some failures are expected in these scenarios
                             continue
                         msg = f"Integration test {test_name} failed in {scenario['name']}: {e}"
-                        raise AssertionError(msg)
+                        raise AssertionError(msg) from e
 
                 # Verify overall tab state after integration tests
                 assert view_model is not None, f"View model corrupted in {scenario['name']}"
@@ -581,8 +600,11 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 window.deleteLater()
                 QCoreApplication.processEvents()
 
-    def test_tab_synchronization_stress_testing(
-        self, shared_qt_app: QApplication, tab_integration_components: dict[str, Any], temp_workspace: dict[str, Any]
+    def test_tab_synchronization_stress_testing(  # noqa: PLR6301
+        self,
+        shared_qt_app: QApplication,  # noqa: ARG002
+        tab_integration_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
         """Test tab synchronization under stress conditions."""
         components = tab_integration_components
@@ -616,22 +638,22 @@ class TestIntegrityTabsIntegrationOptimizedV2:
                 {
                     "name": "Rapid Satellite Switching",
                     "iterations": 20,
-                    "action": lambda: self._rapid_satellite_switching(view_model),
+                    "action": lambda: TestIntegrityTabsIntegrationOptimizedV2._rapid_satellite_switching(view_model),
                 },
                 {
                     "name": "Rapid Fetch Source Switching",
                     "iterations": 15,
-                    "action": lambda: self._rapid_fetch_source_switching(view_model),
+                    "action": lambda: TestIntegrityTabsIntegrationOptimizedV2._rapid_fetch_source_switching(view_model),
                 },
                 {
                     "name": "Rapid Date Range Changes",
                     "iterations": 10,
-                    "action": lambda: self._rapid_date_range_changes(view_model),
+                    "action": lambda: TestIntegrityTabsIntegrationOptimizedV2._rapid_date_range_changes(view_model),
                 },
                 {
                     "name": "Concurrent Property Updates",
                     "iterations": 25,
-                    "action": lambda: self._concurrent_property_updates(view_model),
+                    "action": lambda: TestIntegrityTabsIntegrationOptimizedV2._concurrent_property_updates(view_model),
                 },
             ]
 
@@ -660,35 +682,42 @@ class TestIntegrityTabsIntegrationOptimizedV2:
             window.deleteLater()
             QCoreApplication.processEvents()
 
-    def _rapid_satellite_switching(self, view_model: EnhancedIntegrityCheckViewModel) -> None:
+    @staticmethod
+    def _rapid_satellite_switching(view_model: EnhancedIntegrityCheckViewModel) -> None:
         """Perform rapid satellite switching."""
         view_model.satellite = SatellitePattern.GOES_16
         view_model.satellite = SatellitePattern.GOES_18
         view_model.satellite = SatellitePattern.GOES_16
 
-    def _rapid_fetch_source_switching(self, view_model: EnhancedIntegrityCheckViewModel) -> None:
+    @staticmethod
+    def _rapid_fetch_source_switching(view_model: EnhancedIntegrityCheckViewModel) -> None:
         """Perform rapid fetch source switching."""
         view_model.fetch_source = FetchSource.CDN
         view_model.fetch_source = FetchSource.S3
         view_model.fetch_source = FetchSource.LOCAL
         view_model.fetch_source = FetchSource.AUTO
 
-    def _rapid_date_range_changes(self, view_model: EnhancedIntegrityCheckViewModel) -> None:
+    @staticmethod
+    def _rapid_date_range_changes(view_model: EnhancedIntegrityCheckViewModel) -> None:
         """Perform rapid date range changes."""
         view_model.start_date = datetime(2023, 1, 1, tzinfo=UTC)
         view_model.end_date = datetime(2023, 1, 2, tzinfo=UTC)
         view_model.start_date = datetime(2023, 1, 2, tzinfo=UTC)
         view_model.end_date = datetime(2023, 1, 3, tzinfo=UTC)
 
-    def _concurrent_property_updates(self, view_model: EnhancedIntegrityCheckViewModel) -> None:
+    @staticmethod
+    def _concurrent_property_updates(view_model: EnhancedIntegrityCheckViewModel) -> None:
         """Perform concurrent property updates."""
         view_model.satellite = SatellitePattern.GOES_18
         view_model.fetch_source = FetchSource.S3
         view_model.start_date = datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC)
         view_model.end_date = datetime(2023, 1, 1, 18, 0, 0, tzinfo=UTC)
 
-    def test_tab_lifecycle_management(
-        self, shared_qt_app: QApplication, tab_integration_components: dict[str, Any], temp_workspace: dict[str, Any]
+    def test_tab_lifecycle_management(  # noqa: PLR6301, C901, PLR0912, PLR0915
+        self,
+        shared_qt_app: QApplication,  # noqa: ARG002
+        tab_integration_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
         """Test tab lifecycle management scenarios."""
         components = tab_integration_components
@@ -713,7 +742,7 @@ class TestIntegrityTabsIntegrationOptimizedV2:
         ]
 
         # Test each lifecycle scenario
-        for scenario in lifecycle_scenarios:
+        for scenario in lifecycle_scenarios:  # noqa: PLR1702
             tabs_created = []
             view_models_created = []
             windows_created = []
