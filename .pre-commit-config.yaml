@@ -42,7 +42,7 @@ repos:
         entry: pyright
         language: python
         files: ^goesvfi/.*\.py$
-        additional_dependencies: [pyright>=1.1.390]
+        additional_dependencies: [pyright>=1.1.390, PyQt6>=6.0.0]
         exclude: ^(legacy_tests/)
 
 -   repo: https://github.com/PyCQA/bandit

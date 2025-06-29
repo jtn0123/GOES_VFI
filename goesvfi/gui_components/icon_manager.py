@@ -1,6 +1,7 @@
 """Icon management system for replacing emoji icons with proper resources."""
 
 from pathlib import Path
+from typing import cast
 
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QFont, QIcon, QPainter, QPixmap
@@ -26,7 +27,7 @@ ICON_MAPPINGS = {
     "🤖": "robot",
     "📊": "chart",
     "💾": "save",
-    "➕": "plus",
+    "➕": "plus",  # noqa: RUF001
     "🔢": "numbers",
     "⏱️": "timer",
     "✨": "sparkles",
@@ -58,7 +59,7 @@ class IconManager:
         if not self.icon_path:
             self._find_icon_directory()
 
-        LOGGER.info(f"IconManager initialized with path: {self.icon_path}")
+        LOGGER.info("IconManager initialized with path: %s", self.icon_path)
 
     def _find_icon_directory(self) -> None:
         """Try to find the icon resources directory."""
@@ -74,7 +75,7 @@ class IconManager:
         for path in possible_paths:
             if path.exists() and path.is_dir():
                 self.icon_path = path
-                LOGGER.debug(f"Found icon directory: {path}")
+                LOGGER.debug("Found icon directory: %s", path)
                 return
 
         LOGGER.warning("No icon directory found, will use fallbacks")
@@ -92,7 +93,7 @@ class IconManager:
         # Check if it's an emoji that needs mapping
         if icon_name in ICON_MAPPINGS:
             mapped_name = ICON_MAPPINGS[icon_name]
-            LOGGER.debug(f"Mapped emoji {icon_name} to icon {mapped_name}")
+            LOGGER.debug("Mapped emoji %s to icon %s", icon_name, mapped_name)
             icon_name = mapped_name
 
         # Check cache
@@ -143,7 +144,7 @@ class IconManager:
         # Final fallback - create text icon
         return self._create_text_icon(icon_name, size)
 
-    def _load_file_icon(self, icon_name: str, size: QSize) -> QIcon:
+    def _load_file_icon(self, icon_name: str, size: QSize) -> QIcon:  # noqa: ARG002
         """Load icon from file.
 
         Args:
@@ -162,12 +163,12 @@ class IconManager:
         for fmt in formats:
             icon_file = self.icon_path / f"{icon_name}{fmt}"
             if icon_file.exists():
-                LOGGER.debug(f"Loading icon from file: {icon_file}")
+                LOGGER.debug("Loading icon from file: %s", icon_file)
                 return QIcon(str(icon_file))
 
         return QIcon()
 
-    def _load_theme_icon(self, icon_name: str) -> QIcon:
+    def _load_theme_icon(self, icon_name: str) -> QIcon:  # noqa: PLR6301
         """Load icon from system theme.
 
         Args:
@@ -204,11 +205,11 @@ class IconManager:
         icon = QIcon.fromTheme(theme_name)
 
         if not icon.isNull():
-            LOGGER.debug(f"Loaded theme icon: {theme_name}")
+            LOGGER.debug("Loaded theme icon: %s", theme_name)
 
         return icon
 
-    def _load_standard_icon(self, icon_name: str) -> QIcon:
+    def _load_standard_icon(self, icon_name: str) -> QIcon:  # noqa: PLR6301
         """Load standard application icon.
 
         Args:
@@ -221,7 +222,12 @@ class IconManager:
         if not app:
             return QIcon()
 
-        style = app.style()
+        # QApplication.instance() returns QCoreApplication, cast to QApplication
+        qapp = cast(QApplication, app) if isinstance(app, QApplication) else None
+        if not qapp:
+            return QIcon()
+
+        style = qapp.style()
         if not style:
             return QIcon()
 
@@ -237,12 +243,12 @@ class IconManager:
         }
 
         if icon_name in standard_mappings:
-            LOGGER.debug(f"Using standard pixmap for: {icon_name}")
+            LOGGER.debug("Using standard pixmap for: %s", icon_name)
             return style.standardIcon(standard_mappings[icon_name])
 
         return QIcon()
 
-    def _create_emoji_icon(self, emoji: str, size: QSize) -> QIcon:
+    def _create_emoji_icon(self, emoji: str, size: QSize) -> QIcon:  # noqa: PLR6301
         """Create icon from emoji text.
 
         Args:
@@ -253,7 +259,7 @@ class IconManager:
             QIcon with rendered emoji
         """
         pixmap = QPixmap(size)
-        pixmap.fill(QPixmap().toImage().pixelColor(0, 0))  # Transparent
+        pixmap.fill()  # Transparent
 
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -269,7 +275,7 @@ class IconManager:
 
         return QIcon(pixmap)
 
-    def _create_text_icon(self, text: str, size: QSize) -> QIcon:
+    def _create_text_icon(self, text: str, size: QSize) -> QIcon:  # noqa: PLR6301
         """Create icon from text abbreviation.
 
         Args:
@@ -285,7 +291,7 @@ class IconManager:
             abbrev = text[:2].upper()
 
         pixmap = QPixmap(size)
-        pixmap.fill(QPixmap().toImage().pixelColor(0, 0))  # Transparent
+        pixmap.fill()  # Transparent
 
         painter = QPainter(pixmap)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -305,7 +311,7 @@ class IconManager:
         self.icon_cache.clear()
         LOGGER.debug("Icon cache cleared")
 
-    def set_fallback_to_emoji(self, enabled: bool) -> None:
+    def set_fallback_to_emoji(self, *, enabled: bool) -> None:
         """Enable or disable emoji fallback.
 
         Args:
@@ -320,8 +326,12 @@ _icon_manager: IconManager | None = None
 
 
 def get_icon_manager() -> IconManager:
-    """Get the global icon manager instance."""
-    global _icon_manager
+    """Get the global icon manager instance.
+
+    Returns:
+        The global IconManager instance
+    """
+    global _icon_manager  # noqa: PLW0603
     if _icon_manager is None:
         _icon_manager = IconManager()
     return _icon_manager

@@ -5,9 +5,11 @@ and ensure proper cleanup of widgets, threads, files, and other resources.
 """
 
 import atexit
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
+import os
 from pathlib import Path
+import shutil
 import tempfile
 import threading
 import weakref
@@ -30,7 +32,7 @@ class ResourceTracker:
         self.worker_threads: dict[str, QThread] = {}
         self.timers: dict[str, QTimer] = {}
         self.widgets: weakref.WeakSet = weakref.WeakSet()
-        self.cleanup_callbacks: list[Callable[[], None]] = []
+        self._cleanup_callbacks: list[Callable[[], None]] = []
         self._lock = threading.Lock()
 
         # Register cleanup at exit
@@ -44,7 +46,7 @@ class ResourceTracker:
         """
         with self._lock:
             self.temp_files.add(file_path)
-        LOGGER.debug(f"Tracking temp file: {file_path}")
+        LOGGER.debug("Tracking temp file: %s", file_path)
 
     def track_temp_dir(self, dir_path: Path) -> None:
         """Track a temporary directory for cleanup.
@@ -54,7 +56,7 @@ class ResourceTracker:
         """
         with self._lock:
             self.temp_dirs.add(dir_path)
-        LOGGER.debug(f"Tracking temp directory: {dir_path}")
+        LOGGER.debug("Tracking temp directory: %s", dir_path)
 
     def track_worker_thread(self, name: str, thread: QThread) -> None:
         """Track a worker thread for proper termination.
@@ -65,9 +67,9 @@ class ResourceTracker:
         """
         with self._lock:
             if name in self.worker_threads:
-                LOGGER.warning(f"Thread '{name}' already tracked, replacing")
+                LOGGER.warning("Thread '%s' already tracked, replacing", name)
             self.worker_threads[name] = thread
-        LOGGER.debug(f"Tracking worker thread: {name}")
+        LOGGER.debug("Tracking worker thread: %s", name)
 
     def track_timer(self, name: str, timer: QTimer) -> None:
         """Track a timer for proper cleanup.
@@ -78,9 +80,9 @@ class ResourceTracker:
         """
         with self._lock:
             if name in self.timers:
-                LOGGER.warning(f"Timer '{name}' already tracked, replacing")
+                LOGGER.warning("Timer '%s' already tracked, replacing", name)
             self.timers[name] = timer
-        LOGGER.debug(f"Tracking timer: {name}")
+        LOGGER.debug("Tracking timer: %s", name)
 
     def track_widget(self, widget: QWidget) -> None:
         """Track a widget for cleanup monitoring.
@@ -89,7 +91,7 @@ class ResourceTracker:
             widget: Widget to track
         """
         self.widgets.add(widget)
-        LOGGER.debug(f"Tracking widget: {type(widget).__name__}")
+        LOGGER.debug("Tracking widget: %s", type(widget).__name__)
 
     def register_cleanup_callback(self, callback: Callable[[], None]) -> None:
         """Register a cleanup callback to be called during shutdown.
@@ -98,8 +100,8 @@ class ResourceTracker:
             callback: Function to call during cleanup
         """
         with self._lock:
-            self.cleanup_callbacks.append(callback)
-        LOGGER.debug(f"Registered cleanup callback: {callback.__name__}")
+            self._cleanup_callbacks.append(callback)
+        LOGGER.debug("Registered cleanup callback: %s", callback.__name__)
 
     def untrack_temp_file(self, file_path: Path) -> None:
         """Stop tracking a temporary file.
@@ -109,7 +111,7 @@ class ResourceTracker:
         """
         with self._lock:
             self.temp_files.discard(file_path)
-        LOGGER.debug(f"Untracked temp file: {file_path}")
+        LOGGER.debug("Untracked temp file: %s", file_path)
 
     def untrack_worker_thread(self, name: str) -> None:
         """Stop tracking a worker thread.
@@ -120,7 +122,7 @@ class ResourceTracker:
         with self._lock:
             if name in self.worker_threads:
                 del self.worker_threads[name]
-        LOGGER.debug(f"Untracked worker thread: {name}")
+        LOGGER.debug("Untracked worker thread: %s", name)
 
     def untrack_timer(self, name: str) -> None:
         """Stop tracking a timer.
@@ -131,7 +133,17 @@ class ResourceTracker:
         with self._lock:
             if name in self.timers:
                 del self.timers[name]
-        LOGGER.debug(f"Untracked timer: {name}")
+        LOGGER.debug("Untracked timer: %s", name)
+
+    def untrack_temp_dir(self, dir_path: Path) -> None:
+        """Stop tracking a temporary directory.
+
+        Args:
+            dir_path: Path to temporary directory
+        """
+        with self._lock:
+            self.temp_dirs.discard(dir_path)
+        LOGGER.debug("Untracked temp directory: %s", dir_path)
 
     def cleanup_temp_files(self) -> None:
         """Clean up all tracked temporary files."""
@@ -142,10 +154,10 @@ class ResourceTracker:
             try:
                 if file_path.exists():
                     file_path.unlink()
-                    LOGGER.debug(f"Removed temp file: {file_path}")
+                    LOGGER.debug("Removed temp file: %s", file_path)
                 self.temp_files.discard(file_path)
             except Exception:
-                LOGGER.exception(f"Failed to remove temp file: {file_path}")
+                LOGGER.exception("Failed to remove temp file: %s", file_path)
 
     def cleanup_temp_dirs(self) -> None:
         """Clean up all tracked temporary directories."""
@@ -155,12 +167,11 @@ class ResourceTracker:
         for dir_path in dirs_to_remove:
             try:
                 if dir_path.exists():
-                    import shutil
                     shutil.rmtree(dir_path)
-                    LOGGER.debug(f"Removed temp directory: {dir_path}")
+                    LOGGER.debug("Removed temp directory: %s", dir_path)
                 self.temp_dirs.discard(dir_path)
             except Exception:
-                LOGGER.exception(f"Failed to remove temp directory: {dir_path}")
+                LOGGER.exception("Failed to remove temp directory: %s", dir_path)
 
     def cleanup_worker_threads(self) -> None:
         """Clean up all tracked worker threads."""
@@ -170,13 +181,13 @@ class ResourceTracker:
         for name, thread in threads_to_cleanup.items():
             try:
                 if thread.isRunning():
-                    LOGGER.info(f"Terminating worker thread: {name}")
+                    LOGGER.info("Terminating worker thread: %s", name)
                     thread.terminate()
                     if not thread.wait(3000):  # Wait 3 seconds
-                        LOGGER.warning(f"Thread {name} did not terminate gracefully")
+                        LOGGER.warning("Thread %s did not terminate gracefully", name)
                 self.untrack_worker_thread(name)
             except Exception:
-                LOGGER.exception(f"Failed to cleanup worker thread: {name}")
+                LOGGER.exception("Failed to cleanup worker thread: %s", name)
 
     def cleanup_timers(self) -> None:
         """Clean up all tracked timers."""
@@ -187,22 +198,22 @@ class ResourceTracker:
             try:
                 if timer.isActive():
                     timer.stop()
-                    LOGGER.debug(f"Stopped timer: {name}")
+                    LOGGER.debug("Stopped timer: %s", name)
                 self.untrack_timer(name)
             except Exception:
-                LOGGER.exception(f"Failed to cleanup timer: {name}")
+                LOGGER.exception("Failed to cleanup timer: %s", name)
 
     def cleanup_callbacks(self) -> None:
         """Execute all registered cleanup callbacks."""
         with self._lock:
-            callbacks = list(self.cleanup_callbacks)
+            callbacks = list(self._cleanup_callbacks)
 
         for callback in callbacks:
             try:
                 callback()
-                LOGGER.debug(f"Executed cleanup callback: {callback.__name__}")
+                LOGGER.debug("Executed cleanup callback: %s", callback.__name__)
             except Exception:
-                LOGGER.exception(f"Error in cleanup callback: {callback.__name__}")
+                LOGGER.exception("Error in cleanup callback: %s", callback.__name__)
 
     def cleanup_all(self) -> None:
         """Clean up all tracked resources."""
@@ -217,7 +228,7 @@ class ResourceTracker:
 
         # Clear tracking collections
         with self._lock:
-            self.cleanup_callbacks.clear()
+            self._cleanup_callbacks.clear()
 
         LOGGER.info("Resource cleanup complete")
 
@@ -234,7 +245,7 @@ class ResourceTracker:
                 "worker_threads": len(self.worker_threads),
                 "timers": len(self.timers),
                 "widgets": len(self.widgets),
-                "cleanup_callbacks": len(self.cleanup_callbacks),
+                "cleanup_callbacks": len(self._cleanup_callbacks),
             }
 
 
@@ -243,8 +254,12 @@ _resource_tracker: ResourceTracker | None = None
 
 
 def get_resource_tracker() -> ResourceTracker:
-    """Get the global resource tracker instance."""
-    global _resource_tracker
+    """Get the global resource tracker instance.
+
+    Returns:
+        The global ResourceTracker instance
+    """
+    global _resource_tracker  # noqa: PLW0603
     if _resource_tracker is None:
         _resource_tracker = ResourceTracker()
     return _resource_tracker
@@ -252,7 +267,7 @@ def get_resource_tracker() -> ResourceTracker:
 
 # Context managers for automatic resource management
 @contextmanager
-def managed_temp_file(suffix: str = "", prefix: str = "goes_vfi_"):
+def managed_temp_file(suffix: str = "", prefix: str = "goes_vfi_") -> Generator[Path]:
     """Context manager for temporary files with automatic cleanup.
 
     Args:
@@ -262,13 +277,10 @@ def managed_temp_file(suffix: str = "", prefix: str = "goes_vfi_"):
     Yields:
         Path to temporary file
     """
-    import tempfile
-
     temp_file = None
     try:
         # Create temporary file
         fd, temp_path = tempfile.mkstemp(suffix=suffix, prefix=prefix)
-        import os
         os.close(fd)  # Close file descriptor
 
         temp_file = Path(temp_path)
@@ -283,11 +295,11 @@ def managed_temp_file(suffix: str = "", prefix: str = "goes_vfi_"):
                     temp_file.unlink()
                 get_resource_tracker().untrack_temp_file(temp_file)
             except Exception:
-                LOGGER.exception(f"Failed to cleanup temp file: {temp_file}")
+                LOGGER.exception("Failed to cleanup temp file: %s", temp_file)
 
 
 @contextmanager
-def managed_temp_dir(suffix: str = "", prefix: str = "goes_vfi_"):
+def managed_temp_dir(suffix: str = "", prefix: str = "goes_vfi_") -> Generator[Path]:
     """Context manager for temporary directories with automatic cleanup.
 
     Args:
@@ -309,15 +321,14 @@ def managed_temp_dir(suffix: str = "", prefix: str = "goes_vfi_"):
         if temp_dir:
             try:
                 if temp_dir.exists():
-                    import shutil
                     shutil.rmtree(temp_dir)
                 get_resource_tracker().untrack_temp_dir(temp_dir)
             except Exception:
-                LOGGER.exception(f"Failed to cleanup temp directory: {temp_dir}")
+                LOGGER.exception("Failed to cleanup temp directory: %s", temp_dir)
 
 
 @contextmanager
-def managed_worker_thread(name: str, thread: QThread):
+def managed_worker_thread(name: str, thread: QThread) -> Generator[QThread]:
     """Context manager for worker threads with automatic cleanup.
 
     Args:
@@ -338,7 +349,7 @@ def managed_worker_thread(name: str, thread: QThread):
                 thread.wait(3000)
             get_resource_tracker().untrack_worker_thread(name)
         except Exception:
-            LOGGER.exception(f"Failed to cleanup worker thread: {name}")
+            LOGGER.exception("Failed to cleanup worker thread: %s", name)
 
 
 # Convenience functions
