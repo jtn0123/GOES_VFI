@@ -84,7 +84,8 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     "instrument_type": "GOES-16 ABI",
                 }
 
-            def _create_goes18_template(self) -> dict[str, Any]:  # noqa: PLR6301
+            @staticmethod
+            def _create_goes18_template() -> dict[str, Any]:
                 """Create GOES-18 NetCDF data template.
 
                 Returns:
@@ -174,7 +175,10 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 cdn_store = AsyncMock(spec=CDNStore)
 
                 async def mock_download(  # noqa: RUF029
-                    ts: datetime, satellite: SatellitePattern, dest_path: Path, **kwargs: Any  # noqa: ARG001
+                    ts: datetime,  # noqa: ARG001
+                    satellite: SatellitePattern,  # noqa: ARG001
+                    dest_path: Path,
+                    **kwargs: Any,
                 ) -> Path:
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
                     dest_path.write_bytes(data)
@@ -193,7 +197,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
             @staticmethod
-            def _create_retry_success_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+            def _create_retry_success_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:  # noqa: ARG004
                 """Create mocks for retry then success scenario.
 
                 Returns:
@@ -205,8 +209,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 # S3 fails twice then succeeds
                 call_count = 0
 
-                async def mock_s3_download(
-                    ts: datetime, satellite: SatellitePattern, dest_path: Path, **kwargs: Any
+                async def mock_s3_download(  # noqa: RUF029
+                    ts: datetime,  # noqa: ARG001
+                    satellite: SatellitePattern,  # noqa: ARG001
+                    dest_path: Path,
+                    **kwargs: Any,
                 ) -> Path:
                     nonlocal call_count
                     call_count += 1
@@ -223,8 +230,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 s3_store.__aexit__ = AsyncMock(return_value=None)
 
                 # CDN as backup
-                async def mock_cdn_download(
-                    ts: datetime, satellite: SatellitePattern, dest_path: Path, **kwargs: Any
+                async def mock_cdn_download(  # noqa: RUF029
+                    ts: datetime,  # noqa: ARG001
+                    satellite: SatellitePattern,  # noqa: ARG001
+                    dest_path: Path,
+                    **kwargs: Any,
                 ) -> Path:
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
                     dest_path.write_bytes(data)
@@ -238,7 +248,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
             @staticmethod
-            def _create_s3_fail_cdn_success_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+            def _create_s3_fail_cdn_success_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:  # noqa: ARG004
                 """Create mocks for S3 fail, CDN success scenario.
 
                 Returns:
@@ -254,8 +264,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 s3_store.__aexit__ = AsyncMock(return_value=None)
 
                 # CDN succeeds
-                async def mock_cdn_download(
-                    ts: datetime, satellite: SatellitePattern, dest_path: Path, **kwargs: Any
+                async def mock_cdn_download(  # noqa: RUF029
+                    ts: datetime,  # noqa: ARG001
+                    satellite: SatellitePattern,  # noqa: ARG001
+                    dest_path: Path,
+                    **kwargs: Any,
                 ) -> Path:
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
                     dest_path.write_bytes(data)
@@ -269,7 +282,10 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
             @staticmethod
-            def _create_all_fail_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+            def _create_all_fail_mocks(
+                data: bytes,  # noqa: ARG004
+                download_path: Path,  # noqa: ARG004
+            ) -> dict[str, AsyncMock]:
                 """Create mocks for all sources fail scenario.
 
                 Returns:
@@ -381,7 +397,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
             async def _test_complete_success_workflow(  # noqa: PLR6301
                 self,
                 mocks: dict[str, AsyncMock],
-                data: bytes,
+                data: bytes,  # noqa: ARG002
                 temp_dir: Path,
                 timestamp: datetime,
                 satellite: SatellitePattern,
@@ -436,11 +452,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
             async def _test_retry_and_fallback_workflow(  # noqa: PLR6301
                 self,
                 mocks: dict[str, AsyncMock],
-                data: bytes,
+                data: bytes,  # noqa: ARG002
                 temp_dir: Path,
                 timestamp: datetime,
                 satellite: SatellitePattern,
-                channel: ChannelType,
+                channel: ChannelType,  # noqa: ARG002
             ) -> dict[str, Any]:
                 """Test retry and fallback workflow.
 
@@ -457,7 +473,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 for i in range(max_retries):
                     try:
                         await mocks["s3_store"].download(ts=timestamp, satellite=satellite, dest_path=download_path)
-                        return {"success": True, "retries": retry_count, "source": "s3"}
+                        return {"success": True, "retries": retry_count, "source": "s3"}  # noqa: TRY300
                     except TemporaryError as e:
                         retry_count += 1
                         errors.append(str(e))
@@ -470,8 +486,8 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                             await mocks["cdn_store"].download(
                                 ts=timestamp, satellite=satellite, dest_path=download_path
                             )
-                            return {"success": True, "retries": retry_count, "source": "cdn"}
-                        except Exception as cdn_error:
+                            return {"success": True, "retries": retry_count, "source": "cdn"}  # noqa: TRY300
+                        except Exception as cdn_error:  # noqa: BLE001
                             errors.append(str(cdn_error))
                             break
 
@@ -480,11 +496,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
             async def _test_all_sources_fail_workflow(  # noqa: PLR6301
                 self,
                 mocks: dict[str, AsyncMock],
-                data: bytes,
+                data: bytes,  # noqa: ARG002
                 temp_dir: Path,
                 timestamp: datetime,
                 satellite: SatellitePattern,
-                channel: ChannelType,
+                channel: ChannelType,  # noqa: ARG002
             ) -> dict[str, Any]:
                 """Test workflow when all sources fail.
 
@@ -497,13 +513,13 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 # Try S3
                 try:
                     await mocks["s3_store"].download(ts=timestamp, satellite=satellite, dest_path=download_path)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     errors.append(f"S3: {e!s}")
 
                 # Try CDN
                 try:
                     await mocks["cdn_store"].download(ts=timestamp, satellite=satellite, dest_path=download_path)
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     errors.append(f"CDN: {e!s}")
 
                 return {"success": False, "errors": errors}
@@ -594,13 +610,13 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     dict[str, Any]: Workflow results.
                 """
                 download_path = temp_dir / "test_file.nc"
-                expected_checksum = hashlib.md5(data).hexdigest()
+                expected_checksum = hashlib.md5(data).hexdigest()  # noqa: S324
 
                 result = await mocks["s3_store"].download(ts=timestamp, satellite=satellite, dest_path=download_path)
 
                 # Validate checksum
                 downloaded_data = result.read_bytes()
-                actual_checksum = hashlib.md5(downloaded_data).hexdigest()
+                actual_checksum = hashlib.md5(downloaded_data).hexdigest()  # noqa: S324
 
                 return {
                     "success": actual_checksum == expected_checksum,
@@ -798,7 +814,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     assert "errors" in result, f"Error info missing for {scenario['name']}"
                     assert len(result["errors"]) > 0, f"No error details for {scenario['name']}"
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 if scenario["expected_success"]:
                     pytest.fail(f"Unexpected exception in {scenario['name']}: {e}")
                 # Expected failures are acceptable
@@ -976,7 +992,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     else:
                         assert not result["success"], f"Expected failure for {scenario['name']}, got: {result}"
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Some exceptions are expected for error scenarios
                 if "expected_error_types" in scenario:
                     error_type = type(e).__name__
@@ -987,8 +1003,10 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     pytest.fail(f"Unexpected exception in {scenario['name']}: {e}")
 
     @pytest.mark.asyncio()
-    async def test_download_validation_and_integrity(  # noqa: PLR6301
-        self, download_test_components: dict[str, Any], temp_workspace: dict[str, Path]
+    async def test_download_validation_and_integrity(  # noqa: PLR6301, PLR0914
+        self,
+        download_test_components: dict[str, Any],
+        temp_workspace: dict[str, Path],
     ) -> None:
         """Test download validation and data integrity scenarios."""
         components = download_test_components
