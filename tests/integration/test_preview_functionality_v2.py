@@ -9,12 +9,14 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 from collections.abc import Iterator
+import os
 import time
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import numpy as np
 from PIL import Image
+import psutil
 from PyQt6.QtCore import QEventLoop, QTimer
 from PyQt6.QtWidgets import QApplication
 import pytest
@@ -78,7 +80,8 @@ class TestPreviewFunctionalityOptimizedV2:
                     img_array[:, x, 2] = color[2] * intensity // 255
                 return Image.fromarray(img_array)
 
-            def _create_checkerboard(self, size, color):
+            @staticmethod
+            def _create_checkerboard(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
                 """Create checkerboard pattern."""
                 img_array = np.zeros((*size[::-1], 3), dtype=np.uint8)
                 checker_size = min(size) // 8
@@ -90,15 +93,18 @@ class TestPreviewFunctionalityOptimizedV2:
                             img_array[y, x] = [255 - c for c in color]
                 return Image.fromarray(img_array)
 
-            def _create_noise(self, size, color):
+            @staticmethod
+            def _create_noise(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
                 """Create noise pattern."""
-                img_array = np.random.randint(0, 256, (*size[::-1], 3), dtype=np.uint8)
+                rng = np.random.default_rng()
+                img_array = rng.integers(0, 256, (*size[::-1], 3), dtype=np.uint8)
                 # Tint with specified color
                 for i in range(3):
                     img_array[:, :, i] = (img_array[:, :, i] * color[i] // 255).astype(np.uint8)
                 return Image.fromarray(img_array)
 
-            def _create_circles(self, size, color):
+            @staticmethod
+            def _create_circles(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
                 """Create circles pattern."""
                 img_array = np.zeros((*size[::-1], 3), dtype=np.uint8)
                 center_x, center_y = size[0] // 2, size[1] // 2
@@ -196,15 +202,15 @@ class TestPreviewFunctionalityOptimizedV2:
                     # Create large image data
                     memory_data = [
                         ImageData(
-                            array=np.random.randint(0, 256, (500, 500, 3), dtype=np.uint8),
+                            array=np.random.default_rng().integers(0, 256, (500, 500, 3), dtype=np.uint8),
                             path=test_dir / "mem_001.png",
                         ),
                         ImageData(
-                            array=np.random.randint(0, 256, (500, 500, 3), dtype=np.uint8),
+                            array=np.random.default_rng().integers(0, 256, (500, 500, 3), dtype=np.uint8),
                             path=test_dir / "mem_002.png",
                         ),
                         ImageData(
-                            array=np.random.randint(0, 256, (500, 500, 3), dtype=np.uint8),
+                            array=np.random.default_rng().integers(0, 256, (500, 500, 3), dtype=np.uint8),
                             path=test_dir / "mem_003.png",
                         ),
                     ]
@@ -604,10 +610,6 @@ class TestPreviewFunctionalityOptimizedV2:
         ]
 
         # Test each performance scenario
-        import os
-
-        import psutil
-
         for scenario in performance_scenarios:
             if scenario["test_type"] == "performance":
                 # Test loading performance
