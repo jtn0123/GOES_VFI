@@ -9,6 +9,7 @@ Optimizations applied:
 """
 
 import pathlib
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import (
@@ -26,16 +27,26 @@ class TestAllGUIElementsV2:
     """Optimized test for all GUI elements across the application."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for all tests."""
+    @staticmethod
+    def shared_app() -> QApplication:
+        """Create shared QApplication for all tests.
+
+        Returns:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture()
-    def mock_main_window(self, shared_app):
-        """Create comprehensive mock MainWindow instance."""
+    @staticmethod
+    def mock_main_window(shared_app: QApplication) -> MainWindow:  # noqa: ARG004
+        """Create comprehensive mock MainWindow instance.
+
+        Returns:
+            MainWindow: Mock main window instance.
+        """
         with (
             patch("goesvfi.utils.config.get_available_rife_models") as mock_models,
             patch("goesvfi.utils.config.find_rife_executable") as mock_find_rife,
@@ -68,8 +79,13 @@ class TestAllGUIElementsV2:
             return mock_window
 
     @pytest.fixture()
-    def mock_ui_elements(self):
-        """Create mock UI elements for testing."""
+    @staticmethod
+    def mock_ui_elements() -> dict[str, list[Any]]:
+        """Create mock UI elements for testing.
+
+        Returns:
+            dict[str, list[Any]]: Dictionary of mock UI elements.
+        """
         elements = {
             "buttons": [
                 MagicMock(spec=QPushButton, objectName="start_button"),
@@ -111,8 +127,12 @@ class TestAllGUIElementsV2:
         return elements
 
     @pytest.mark.parametrize("element_type", ["buttons", "checkboxes", "combos"])
+    @staticmethod
     def test_gui_element_basic_functionality(
-        self, shared_app, mock_main_window, mock_ui_elements, element_type
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,
+        mock_ui_elements: dict[str, list[Any]],
+        element_type: str,
     ) -> None:
         """Test basic functionality of GUI elements by type."""
         elements = mock_ui_elements[element_type]
@@ -132,12 +152,17 @@ class TestAllGUIElementsV2:
                 element.click.assert_called()
             elif element_type == "checkboxes":
                 element.setChecked(True)
-                element.setChecked.assert_called_with(True)
+                element.setChecked.assert_called_with(True)  # noqa: FBT003
             elif element_type == "combos":
                 element.setCurrentText("Test")
                 element.setCurrentText.assert_called_with("Test")
 
-    def test_button_interaction_scenarios(self, shared_app, mock_main_window, mock_ui_elements) -> None:
+    @staticmethod
+    def test_button_interaction_scenarios(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,  # noqa: ARG004
+        mock_ui_elements: dict[str, list[Any]],
+    ) -> None:
         """Test comprehensive button interaction scenarios."""
         buttons = mock_ui_elements["buttons"]
 
@@ -146,7 +171,7 @@ class TestAllGUIElementsV2:
             # Test enabling/disabling
             button.setEnabled = MagicMock()
             button.setEnabled(False)
-            button.setEnabled.assert_called_with(False)
+            button.setEnabled.assert_called_with(False)  # noqa: FBT003
 
             # Test text changes
             button.setText = MagicMock()
@@ -162,7 +187,12 @@ class TestAllGUIElementsV2:
             button.clicked.connect(handler)
             button.clicked.connect.assert_called_with(handler)
 
-    def test_checkbox_state_management(self, shared_app, mock_main_window, mock_ui_elements) -> None:
+    @staticmethod
+    def test_checkbox_state_management(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,  # noqa: ARG004
+        mock_ui_elements: dict[str, list[Any]],
+    ) -> None:
         """Test checkbox state management and validation."""
         checkboxes = mock_ui_elements["checkboxes"]
 
@@ -187,7 +217,12 @@ class TestAllGUIElementsV2:
             checkbox.stateChanged.connect(handler)
             checkbox.stateChanged.connect.assert_called_with(handler)
 
-    def test_combo_box_functionality(self, shared_app, mock_main_window, mock_ui_elements) -> None:
+    @staticmethod
+    def test_combo_box_functionality(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,  # noqa: ARG004
+        mock_ui_elements: dict[str, list[Any]],
+    ) -> None:
         """Test combo box functionality and item management."""
         combos = mock_ui_elements["combos"]
 
@@ -214,7 +249,12 @@ class TestAllGUIElementsV2:
             combo.currentTextChanged = MagicMock()
             combo.currentTextChanged.connect = MagicMock()
 
-    def test_super_button_specific_functionality(self, shared_app, mock_main_window, mock_ui_elements) -> None:
+    @staticmethod
+    def test_super_button_specific_functionality(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,  # noqa: ARG004
+        mock_ui_elements: dict[str, list[Any]],
+    ) -> None:
         """Test SuperButton specific functionality."""
         super_buttons = [
             btn
@@ -232,7 +272,7 @@ class TestAllGUIElementsV2:
 
             # Test state changes
             super_button.set_processing_state(True)
-            super_button.set_processing_state.assert_called_with(True)
+            super_button.set_processing_state.assert_called_with(True)  # noqa: FBT003
 
             super_button.set_error_state("Error message")
             super_button.set_error_state.assert_called_with("Error message")
@@ -243,7 +283,13 @@ class TestAllGUIElementsV2:
     @pytest.mark.parametrize(
         "tab_name", ["main_tab", "preview_tab", "batch_processing_tab", "operation_history_tab", "integrity_check_tab"]
     )
-    def test_tab_specific_elements(self, shared_app, mock_main_window, mock_ui_elements, tab_name) -> None:
+    @staticmethod
+    def test_tab_specific_elements(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,
+        mock_ui_elements: dict[str, list[Any]],
+        tab_name: str,
+    ) -> None:
         """Test elements specific to each tab."""
         mock_tab = getattr(mock_main_window, tab_name)
 
@@ -265,7 +311,12 @@ class TestAllGUIElementsV2:
             assert element.isEnabled() is True
             assert element.isVisible() is True
 
-    def test_ui_element_error_handling(self, shared_app, mock_main_window, mock_ui_elements) -> None:
+    @staticmethod
+    def test_ui_element_error_handling(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,  # noqa: ARG004
+        mock_ui_elements: dict[str, list[Any]],
+    ) -> None:
         """Test error handling for UI element interactions."""
         buttons = mock_ui_elements["buttons"]
 
@@ -274,14 +325,15 @@ class TestAllGUIElementsV2:
             # Mock button that raises exception
             button.click.side_effect = Exception("Button click failed")
 
-            try:
+            with pytest.raises(Exception, match="Button click failed"):
                 button.click()
-                msg = "Expected exception was not raised"
-                raise AssertionError(msg)
-            except Exception as e:
-                assert "Button click failed" in str(e)
 
-    def test_ui_element_accessibility(self, shared_app, mock_main_window, mock_ui_elements) -> None:
+    @staticmethod
+    def test_ui_element_accessibility(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,  # noqa: ARG004
+        mock_ui_elements: dict[str, list[Any]],
+    ) -> None:
         """Test UI element accessibility features."""
         all_elements = []
         for element_list in mock_ui_elements.values():
@@ -301,7 +353,12 @@ class TestAllGUIElementsV2:
             element.setToolTip.assert_called_with("Test tooltip")
             element.setAccessibleName.assert_called_with("Test element")
 
-    def test_ui_element_performance(self, shared_app, mock_main_window, mock_ui_elements) -> None:
+    @staticmethod
+    def test_ui_element_performance(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,  # noqa: ARG004
+        mock_ui_elements: dict[str, list[Any]],
+    ) -> None:
         """Test UI element performance characteristics."""
         all_elements = []
         for element_list in mock_ui_elements.values():
@@ -319,7 +376,11 @@ class TestAllGUIElementsV2:
         # Verify performance is acceptable (no exceptions raised)
         assert True  # If we reach here, performance was acceptable
 
-    def test_ui_layout_validation(self, shared_app, mock_main_window) -> None:
+    @staticmethod
+    def test_ui_layout_validation(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,
+    ) -> None:
         """Test UI layout and positioning validation."""
         # Mock layout properties
         mock_main_window.geometry = MagicMock()
@@ -335,7 +396,12 @@ class TestAllGUIElementsV2:
         assert width >= 800  # Minimum width
         assert height >= 600  # Minimum height
 
-    def test_ui_theme_compatibility(self, shared_app, mock_main_window, mock_ui_elements) -> None:
+    @staticmethod
+    def test_ui_theme_compatibility(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,  # noqa: ARG004
+        mock_ui_elements: dict[str, list[Any]],
+    ) -> None:
         """Test UI element compatibility with different themes."""
         all_elements = []
         for element_list in mock_ui_elements.values():
@@ -351,7 +417,12 @@ class TestAllGUIElementsV2:
                 element.setStyleSheet(f"/* {theme} theme */")
                 element.setStyleSheet.assert_called_with(f"/* {theme} theme */")
 
-    def test_ui_element_memory_management(self, shared_app, mock_main_window, mock_ui_elements) -> None:
+    @staticmethod
+    def test_ui_element_memory_management(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MainWindow,  # noqa: ARG004
+        mock_ui_elements: dict[str, list[Any]],  # noqa: ARG004
+    ) -> None:
         """Test UI element memory management and cleanup."""
         # Create temporary elements
         temp_elements = []
