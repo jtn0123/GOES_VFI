@@ -9,6 +9,7 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 import logging
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -20,43 +21,53 @@ class TestLogOptimizedV2:
     """Optimized logging tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def mock_colorlog_classes(self):
-        """Create mock colorlog classes for testing."""
+    @staticmethod
+    def mock_colorlog_classes() -> tuple[type[logging.StreamHandler], type[logging.Formatter]]:
+        """Create mock colorlog classes for testing.
+
+        Returns:
+            tuple[type[logging.StreamHandler], type[logging.Formatter]]: Mock handler and formatter classes.
+        """
 
         class MockStreamHandler(logging.StreamHandler):
             pass
 
         class MockColoredFormatter(logging.Formatter):
-            def __init__(self, *args, **kwargs) -> None:
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
                 # Accept unexpected args for colorlog compatibility
                 super().__init__(*args)
 
         return MockStreamHandler, MockColoredFormatter
 
     @pytest.fixture(autouse=True)
-    def reset_log_state(self):
-        """Reset log state before each test."""
+    @staticmethod
+    def reset_log_state() -> Any:
+        """Reset log state before each test.
+
+        Yields:
+            None: Yields control back to test.
+        """
         # Store original state
-        original_handler = log._handler
-        original_level = log._LEVEL
+        original_handler = log._handler  # noqa: SLF001
+        original_level = log._LEVEL  # noqa: SLF001
 
         yield
 
         # Restore original state
-        log._handler = original_handler
-        log._LEVEL = original_level
+        log._handler = original_handler  # noqa: SLF001
+        log._LEVEL = original_level  # noqa: SLF001
 
-    def test_get_logger_default_configuration(self) -> None:
+    def test_get_logger_default_configuration(self) -> None:  # noqa: PLR6301
         """Test logger creation with default configuration."""
         logger = log.get_logger("test_logger")
 
         # Verify basic logger properties
-        assert logger.level == log._LEVEL
+        assert logger.level == log._LEVEL  # noqa: SLF001
         assert len(logger.handlers) > 0
 
         # Verify handler configuration
         handler_types = [type(h) for h in logger.handlers]
-        assert type(log._handler) in handler_types
+        assert type(log._handler) in handler_types  # noqa: SLF001
 
         # Verify formatter is set
         for handler in logger.handlers:
@@ -73,16 +84,16 @@ class TestLogOptimizedV2:
             (False, logging.INFO),
         ],
     )
-    def test_set_level_configurations(self, debug_mode, expected_level) -> None:
+    def test_set_level_configurations(self, debug_mode: bool, expected_level: int) -> None:  # noqa: PLR6301, FBT001
         """Test level setting with different debug configurations."""
         log.set_level(debug_mode=debug_mode)
 
-        assert expected_level == log._LEVEL
+        assert expected_level == log._LEVEL  # noqa: SLF001
 
-        if log._handler:
-            assert log._handler.level == expected_level
+        if log._handler:  # noqa: SLF001
+            assert log._handler.level == expected_level  # noqa: SLF001
 
-    def test_logger_handler_management(self) -> None:
+    def test_logger_handler_management(self) -> None:  # noqa: PLR6301
         """Test that handlers are managed correctly across multiple calls."""
         # Create first logger
         logger1 = log.get_logger("handler_test_logger")
@@ -102,64 +113,66 @@ class TestLogOptimizedV2:
         handler_types_3 = [type(h) for h in logger3.handlers]
         assert handler_types_1 == handler_types_3
 
-    def test_colorlog_integration_scenarios(self, mock_colorlog_classes) -> None:
+    def test_colorlog_integration_scenarios(  # noqa: PLR6301
+        self, mock_colorlog_classes: tuple[type[logging.StreamHandler], type[logging.Formatter]]
+    ) -> None:
         """Test logging behavior with colorlog available and unavailable."""
-        MockStreamHandler, MockColoredFormatter = mock_colorlog_classes
+        mock_stream_handler, mock_colored_formatter = mock_colorlog_classes
 
         # Test 1: With colorlog available
         with patch("goesvfi.utils.log.colorlog_module") as mock_colorlog_module:
-            mock_colorlog_module.StreamHandler = MockStreamHandler
-            mock_colorlog_module.ColoredFormatter = MockColoredFormatter
+            mock_colorlog_module.StreamHandler = mock_stream_handler
+            mock_colorlog_module.ColoredFormatter = mock_colored_formatter
 
             # Reset handler to force rebuild
-            log._handler = None
+            log._handler = None  # noqa: SLF001
             logger = log.get_logger("colorlog_test_logger")
-            handler = log._handler
+            handler = log._handler  # noqa: SLF001
 
-            assert isinstance(handler, MockStreamHandler)
-            assert isinstance(handler.formatter, MockColoredFormatter)
+            assert isinstance(handler, mock_stream_handler)
+            assert isinstance(handler.formatter, mock_colored_formatter)
             assert handler in logger.handlers
 
         # Test 2: Without colorlog available
         with patch("goesvfi.utils.log.colorlog_module", None):
             # Reset handler to force rebuild
-            log._handler = None
+            log._handler = None  # noqa: SLF001
             logger = log.get_logger("no_colorlog_test_logger")
-            handler = log._handler
+            handler = log._handler  # noqa: SLF001
 
             assert isinstance(handler, logging.StreamHandler)
             assert isinstance(handler.formatter, logging.Formatter)
-            assert not isinstance(handler.formatter, MockColoredFormatter)
+            assert not isinstance(handler.formatter, mock_colored_formatter)
             assert handler in logger.handlers
 
-    def test_level_transitions_and_persistence(self) -> None:
+    def test_level_transitions_and_persistence(self) -> None:  # noqa: PLR6301
         """Test level changes and their persistence across operations."""
         # Start with default
 
         # Test debug mode activation
         log.set_level(debug_mode=True)
-        assert log._LEVEL == logging.DEBUG
+        assert log._LEVEL == logging.DEBUG  # noqa: SLF001
 
         # Create logger in debug mode
         debug_logger = log.get_logger("debug_transition_logger")
         assert debug_logger.level == logging.DEBUG
-        if log._handler:
-            assert log._handler.level == logging.DEBUG
+        if log._handler:  # noqa: SLF001
+            assert log._handler.level == logging.DEBUG  # noqa: SLF001
 
         # Switch to info mode
         log.set_level(debug_mode=False)
-        assert log._LEVEL == logging.INFO
+        assert log._LEVEL == logging.INFO  # noqa: SLF001
 
         # Create new logger in info mode
         info_logger = log.get_logger("info_transition_logger")
         assert info_logger.level == logging.INFO
-        if log._handler:
-            assert log._handler.level == logging.INFO
+        if log._handler:  # noqa: SLF001
+            assert log._handler.level == logging.INFO  # noqa: SLF001
 
         # Verify previous logger properties
         assert debug_logger.level == logging.INFO  # Should update existing loggers
 
-    def test_multiple_logger_consistency(self) -> None:
+    def test_multiple_logger_consistency(self) -> None:  # noqa: PLR6301
         """Test consistency across multiple loggers."""
         logger_names = ["logger1", "logger2", "logger3", "logger4", "logger5"]
         loggers = []
@@ -170,7 +183,7 @@ class TestLogOptimizedV2:
             loggers.append(logger)
 
             # Verify each logger has expected properties
-            assert logger.level == log._LEVEL
+            assert logger.level == log._LEVEL  # noqa: SLF001
             assert len(logger.handlers) > 0
 
         # Verify all loggers have consistent handler setup
@@ -185,16 +198,16 @@ class TestLogOptimizedV2:
         for logger in loggers:
             assert logger.level == logging.DEBUG
 
-    def test_handler_formatter_configuration(self) -> None:
+    def test_handler_formatter_configuration(self) -> None:  # noqa: PLR6301
         """Test handler and formatter configuration details."""
         logger = log.get_logger("formatter_test_logger")
 
         # Verify handler exists and is properly configured
-        assert log._handler is not None
-        assert log._handler in logger.handlers
+        assert log._handler is not None  # noqa: SLF001
+        assert log._handler in logger.handlers  # noqa: SLF001
 
         # Verify formatter configuration
-        formatter = log._handler.formatter
+        formatter = log._handler.formatter  # noqa: SLF001
         assert formatter is not None
         assert isinstance(formatter, logging.Formatter)
 
@@ -214,7 +227,7 @@ class TestLogOptimizedV2:
             assert isinstance(formatted, str)
             assert len(formatted) > 0
 
-    def test_logger_edge_cases_and_robustness(self) -> None:
+    def test_logger_edge_cases_and_robustness(self) -> None:  # noqa: PLR6301
         """Test edge cases and robustness of logger functionality."""
         # Test with empty logger name
         empty_logger = log.get_logger("")
@@ -235,28 +248,30 @@ class TestLogOptimizedV2:
         for i in range(10):
             log.set_level(debug_mode=(i % 2 == 0))
             expected_level = logging.DEBUG if i % 2 == 0 else logging.INFO
-            assert expected_level == log._LEVEL
+            assert expected_level == log._LEVEL  # noqa: SLF001
 
         # Test logger creation after rapid level changes
         rapid_logger = log.get_logger("rapid_change_logger")
-        assert rapid_logger.level == log._LEVEL
+        assert rapid_logger.level == log._LEVEL  # noqa: SLF001
 
-    def test_colorlog_fallback_behavior(self, mock_colorlog_classes) -> None:
+    def test_colorlog_fallback_behavior(  # noqa: PLR6301
+        self, mock_colorlog_classes: tuple[type[logging.StreamHandler], type[logging.Formatter]]
+    ) -> None:
         """Test colorlog fallback behavior in various scenarios."""
-        MockStreamHandler, _MockColoredFormatter = mock_colorlog_classes
+        mock_stream_handler, _mock_colored_formatter = mock_colorlog_classes
 
         # Test with colorlog module that raises exceptions
         class FailingColoredFormatter:
-            def __init__(self, *args, **kwargs) -> None:
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
                 msg = "Simulated colorlog failure"
                 raise ImportError(msg)
 
         with patch("goesvfi.utils.log.colorlog_module") as mock_colorlog_module:
-            mock_colorlog_module.StreamHandler = MockStreamHandler
+            mock_colorlog_module.StreamHandler = mock_stream_handler
             mock_colorlog_module.ColoredFormatter = FailingColoredFormatter
 
             # Reset handler to force rebuild
-            log._handler = None
+            log._handler = None  # noqa: SLF001
 
             # Should fall back to standard logging without crashing
             logger = log.get_logger("fallback_test_logger")
@@ -264,10 +279,10 @@ class TestLogOptimizedV2:
             assert len(logger.handlers) > 0
 
             # Handler should be standard handler, not mock
-            handler = log._handler
+            handler = log._handler  # noqa: SLF001
             assert handler is not None
 
-    def test_complete_logging_workflow(self) -> None:
+    def test_complete_logging_workflow(self) -> None:  # noqa: PLR6301
         """Test complete logging workflow with all components."""
         # Initialize with debug mode
         log.set_level(debug_mode=True)
@@ -297,6 +312,6 @@ class TestLogOptimizedV2:
         workflow_logger.info("Final test message")
 
         # Verify handler state is consistent
-        assert log._handler is not None
-        assert log._handler.level == logging.INFO
-        assert log._handler.formatter is not None
+        assert log._handler is not None  # noqa: SLF001
+        assert log._handler.level == logging.INFO  # noqa: SLF001
+        assert log._handler.formatter is not None  # noqa: SLF001
