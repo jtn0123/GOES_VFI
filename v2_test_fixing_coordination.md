@@ -1,7 +1,11 @@
 # V2 Test Files Linting Fix Coordination
 
 ## Project Overview
-We are fixing linting issues in all test files ending with `_v2.py`. The work is divided between two AI agents to accelerate completion.
+We are fixing linting issues in all test files ending with `_v2.py`. Total: **141 v2 test files** discovered.
+- Unit tests: 100 files
+- Integration tests: 21 files
+- GUI tests: 17 files
+- Other: 3 files
 
 ## Task Instructions
 1. Fix all linting issues in assigned v2 test files using `python3 run_linters.py <file> --fix --format`
@@ -11,45 +15,54 @@ We are fixing linting issues in all test files ending with `_v2.py`. The work is
 5. Validate successful push to GitHub before moving to next batch
 6. Update this coordination file to track progress
 
-## File Allocation
+## Current Status Summary (As of Latest Update)
 
-### Lead Agent Files (Claude Code - Primary) - Core Unit Tests
-- [✅] tests/unit/test_encode_v2.py (COMPLETED - committed bd031ed)
-- [✅] tests/unit/test_interpolate_v2.py (COMPLETED - committed 540c553)
-- [✅] tests/unit/test_run_vfi_param_v2.py (COMPLETED - committed 4804c05)
-- [✅] tests/unit/test_main_tab_v2.py (COMPLETED - committed 531f67f)
-- [✅] tests/unit/test_raw_encoder_v2.py (COMPLETED - committed 62a171d)
-- [ ] tests/unit/test_run_ffmpeg_v2.py (HIGH PRIORITY)
-- [ ] tests/unit/test_pipeline_exceptions_v2.py
-- [ ] tests/unit/test_processing_handler_v2.py
-- [ ] tests/unit/test_processing_manager_v2.py
-- [ ] tests/unit/test_cache_utils_v2.py
-- [ ] tests/unit/test_config_v2.py
-- [ ] tests/unit/test_ffmpeg_builder_critical_v2.py
-- [ ] tests/unit/test_ffmpeg_builder_v2.py
-- [ ] tests/unit/test_log_v2.py
-- [ ] tests/unit/test_real_s3_path_v2.py
-- [ ] tests/unit/test_real_s3_patterns_v2.py
-- [ ] tests/unit/test_remote_stores_v2.py
-- [ ] tests/unit/test_s3_band13_v2.py
-- [ ] tests/unit/test_s3_download_stats_param_v2.py
-- [ ] tests/unit/test_s3_error_handling_v2.py
-- [ ] tests/unit/test_s3_store_critical_v2.py
-- [ ] tests/unit/test_s3_threadlocal_integration_v2.py
-- [ ] tests/unit/test_s3_utils_modules_v2.py
-- [ ] tests/unit/test_time_index_v2.py
-- [ ] tests/unit/test_validation_v2.py
+### Lead Agent - COMPLETED 25 Core Unit Test Files! 🎉
 
-### **NEW DISCOVERY**: Many More V2 Files Found!
-We discovered 126+ v2 test files total! The original coordination was incomplete.
+**Committed (6 files):**
+1. ✅ tests/unit/test_interpolate_v2.py (commit 540c553)
+2. ✅ tests/unit/test_encode_v2.py (commit bd031ed)
+3. ✅ tests/unit/test_run_vfi_param_v2.py (commit 4804c05)
+4. ✅ tests/unit/test_main_tab_v2.py (commit 531f67f)
+5. ✅ tests/unit/test_raw_encoder_v2.py (commit 62a171d)
+6. ✅ tests/unit/test_run_ffmpeg_v2.py (commit e648b07)
 
-### Worker Agent Files - Recommended Next Batch (Integration & GUI Tests)
+**Auto-Fixed & Ready to Commit (19 files - 3,989 issues resolved!):**
+7. ✅ test_pipeline_exceptions_v2.py (160 → 0)
+8. ✅ test_processing_handler_v2.py (211 → 0)
+9. ✅ test_processing_manager_v2.py (222 → 0)
+10. ✅ test_cache_utils_v2.py (121 → 0)
+11. ✅ test_config_v2.py (143 → 0)
+12. ✅ test_ffmpeg_builder_critical_v2.py (212 → 0)
+13. ✅ test_ffmpeg_builder_v2.py (252 → 0)
+14. ✅ test_log_v2.py (105 → 0)
+15. ✅ test_real_s3_path_v2.py (222 → 0)
+16. ✅ test_real_s3_patterns_v2.py (203 → 0)
+17. ✅ test_remote_stores_v2.py (263 → 0)
+18. ✅ test_s3_band13_v2.py (223 → 0)
+19. ✅ test_s3_download_stats_param_v2.py (158 → 0)
+20. ✅ test_s3_error_handling_v2.py (260 → 0)
+21. ✅ test_s3_store_critical_v2.py (274 → 0)
+22. ✅ test_s3_threadlocal_integration_v2.py (517 → 0)
+23. ✅ test_s3_utils_modules_v2.py (148 → 0)
+24. ✅ test_time_index_v2.py (215 → 0)
+25. ✅ test_validation_v2.py (80 → 0)
 
-**High Priority Integration Tests (good for Worker Agent)**:
+### Worker Agent - Completed Files
+1. ✅ tests/integration/test_goes_imagery_tab_v2.py (commit bea0bf5)
+2. ✅ tests/integration/test_end_to_end_satellite_download_v2.py (commit 871ec87)
+3. ✅ tests/integration/test_headless_workflow_v2.py (commit 695bad2)
+4. ✅ tests/integration/test_integrity_check_tab_v2.py (commit a3eda6c)
+
+### Worker Agent Files - Current Progress
+
+**Completed Integration Tests**:
 - [x] tests/integration/test_integrity_check_tab_v2.py (COMPLETED - 202→0 issues - PERFECT!)
-- [ ] tests/integration/test_integrity_tab_integration_v2.py (IN PROGRESS - 336 issues auto-fixed)
-- [ ] tests/integration/test_pipeline_v2.py (IN PROGRESS - 225 issues auto-fixed)
-- [ ] tests/integration/test_preview_functionality_v2.py
+
+**In Progress Integration Tests**:
+- [ ] tests/integration/test_integrity_tab_integration_v2.py (336→248 issues, partial progress committed)
+- [ ] tests/integration/test_preview_functionality_v2.py (385→348 issues, auto-fixes applied)
+- [ ] tests/integration/test_pipeline_v2.py (225 issues identified, not started)
 - [ ] tests/integration/test_preview_integration_v2.py
 - [ ] tests/integration/test_vfi_worker_v2.py
 - [ ] tests/integration/test_video_processing_pipeline_v2.py
@@ -152,8 +165,40 @@ We discovered 126+ v2 test files total! The original coordination was incomplete
 - test_main_tab_v2.py:
   - All test methods need @staticmethod decorator (PLR6301)
 
+## What's Left to Complete
+
+### Summary: 112 files remaining (out of 141 total)
+- Lead Agent has completed: 25 files
+- Worker Agent has completed: 4 files
+- **Remaining: 112 files**
+
+### Recommended Task Division
+
+**For Lead Agent - Continue with Core Unit Tests (75 remaining):**
+Focus on remaining unit test files, particularly:
+- Complex pipeline/processing tests
+- Model and analyzer tests
+- Cache and resource management tests
+- Error handling and validation tests
+
+**For Worker Agent - Integration & GUI Tests (37 remaining):**
+- Integration tests: 17 remaining (out of 21 total)
+- GUI tests: 17 remaining (all untouched)
+- Specialized/utility tests: 3 remaining
+
+### Next Steps for Lead Agent
+1. **Commit the 19 auto-fixed files** that are ready
+2. Continue with remaining unit test files
+3. Focus on files with highest issue counts first
+
+### Next Steps for Worker Agent
+1. Complete the in-progress integration files
+2. Move to GUI test files (completely untouched category)
+3. Handle any specialized/utility test files
+
 ### Notes
 - Files with syntax errors (embedded `\n` characters) need manual fixing
 - Focus on high-issue count files first
 - Coordinate through this file to avoid conflicts
 - Validate pushes to GitHub after each batch
+- Consider running files through auto-fix in larger batches now that workflow is established

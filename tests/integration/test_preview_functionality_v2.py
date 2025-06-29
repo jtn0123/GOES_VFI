@@ -8,7 +8,9 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced error handling and edge case coverage
 """
 
+from collections.abc import Iterator
 import time
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -25,8 +27,13 @@ class TestPreviewFunctionalityOptimizedV2:
     """Optimized preview functionality integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_qt_app(self):
-        """Shared QApplication instance for all preview tests."""
+    @staticmethod
+    def shared_qt_app() -> Iterator[QApplication]:
+        """Shared QApplication instance for all preview tests.
+
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -34,8 +41,13 @@ class TestPreviewFunctionalityOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def preview_test_components(self):
-        """Create shared components for preview functionality testing."""
+    @staticmethod
+    def preview_test_components() -> dict[str, Any]:
+        """Create shared components for preview functionality testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing test components.
+        """
 
         # Enhanced Image Generator
         class TestImageGenerator:
@@ -43,18 +55,20 @@ class TestPreviewFunctionalityOptimizedV2:
 
             def __init__(self) -> None:
                 self.image_patterns = {
-                    "solid": self._create_solid_color,
-                    "gradient": self._create_gradient,
-                    "checkerboard": self._create_checkerboard,
-                    "noise": self._create_noise,
-                    "circles": self._create_circles,
+                    "solid": TestImageGenerator._create_solid_color,
+                    "gradient": TestImageGenerator._create_gradient,
+                    "checkerboard": TestImageGenerator._create_checkerboard,
+                    "noise": TestImageGenerator._create_noise,
+                    "circles": TestImageGenerator._create_circles,
                 }
 
-            def _create_solid_color(self, size, color):
+            @staticmethod
+            def _create_solid_color(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
                 """Create solid color image."""
                 return Image.new("RGB", size, color)
 
-            def _create_gradient(self, size, color):
+            @staticmethod
+            def _create_gradient(size: tuple[int, int], color: tuple[int, int, int]) -> Image.Image:
                 """Create gradient image."""
                 img_array = np.zeros((*size[::-1], 3), dtype=np.uint8)
                 for x in range(size[0]):
