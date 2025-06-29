@@ -8,12 +8,15 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced mock and subprocess handling
 """
 
+import os
 import pathlib
-import subprocess
-from typing import Never
+import subprocess  # noqa: S404
+import time
+from typing import Any, Never
 from unittest.mock import MagicMock, patch
 
 from PIL import Image
+import psutil
 import pytest
 
 from goesvfi.pipeline.image_loader import ImageLoader
@@ -26,8 +29,13 @@ class TestPipelineOptimizedV2:
     """Optimized pipeline integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def pipeline_test_constants(self):
-        """Shared constants for pipeline testing."""
+    @staticmethod
+    def pipeline_test_constants() -> dict[str, Any]:
+        """Shared constants for pipeline testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing pipeline test constants.
+        """
         return {
             "default_img_size": (64, 32),
             "default_fps": 30,
@@ -37,8 +45,13 @@ class TestPipelineOptimizedV2:
         }
 
     @pytest.fixture(scope="class")
-    def comprehensive_mock_suite(self):
-        """Create comprehensive mock suite for pipeline testing."""
+    @staticmethod
+    def comprehensive_mock_suite() -> dict[str, Any]:  # noqa: C901
+        """Create comprehensive mock suite for pipeline testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing mock managers for different testing scenarios.
+        """
 
         # Enhanced Mock Popen Manager
         class MockPopenManager:
@@ -46,14 +59,15 @@ class TestPipelineOptimizedV2:
 
             def __init__(self) -> None:
                 self.scenarios = {
-                    "success": self._create_success_mock,
-                    "failure": self._create_failure_mock,
-                    "timeout": self._create_timeout_mock,
-                    "partial_output": self._create_partial_output_mock,
+                    "success": MockPopenManager._create_success_mock,
+                    "failure": MockPopenManager._create_failure_mock,
+                    "timeout": MockPopenManager._create_timeout_mock,
+                    "partial_output": MockPopenManager._create_partial_output_mock,
                 }
                 self.active_scenario = "success"
 
-            def _create_success_mock(self):
+            @staticmethod
+            def _create_success_mock() -> MagicMock:
                 mock_process = MagicMock()
                 mock_process.stdin = MagicMock()
                 mock_process.stdout = MagicMock()
@@ -64,7 +78,8 @@ class TestPipelineOptimizedV2:
                 mock_process.communicate.return_value = (b"success output", b"")
                 return mock_process
 
-            def _create_failure_mock(self):
+            @staticmethod
+            def _create_failure_mock() -> MagicMock:
                 mock_process = MagicMock()
                 mock_process.wait.return_value = 1
                 mock_process.poll.return_value = 1
@@ -72,13 +87,15 @@ class TestPipelineOptimizedV2:
                 mock_process.communicate.return_value = (b"", b"error output")
                 return mock_process
 
-            def _create_timeout_mock(self):
+            @staticmethod
+            def _create_timeout_mock() -> MagicMock:
                 mock_process = MagicMock()
                 mock_process.wait.side_effect = subprocess.TimeoutExpired("cmd", 30)
                 mock_process.poll.return_value = None
                 return mock_process
 
-            def _create_partial_output_mock(self):
+            @staticmethod
+            def _create_partial_output_mock() -> MagicMock:
                 mock_process = MagicMock()
                 mock_process.wait.return_value = 0
                 mock_process.returncode = 0
@@ -86,7 +103,7 @@ class TestPipelineOptimizedV2:
                 mock_process.communicate.return_value = (b"partial output", b"warning")
                 return mock_process
 
-            def get_mock(self, scenario="success"):
+            def get_mock(self, scenario: str = "success") -> MagicMock:
                 return self.scenarios[scenario]()
 
         # Enhanced Mock Run Manager
@@ -101,7 +118,7 @@ class TestPipelineOptimizedV2:
                     "file_not_found": MagicMock(side_effect=FileNotFoundError("Command not found")),
                 }
 
-            def get_mock(self, scenario="success"):
+            def get_mock(self, scenario: str = "success") -> MagicMock:
                 return self.scenarios[scenario]
 
         # Enhanced RIFE Capabilities Manager
@@ -142,7 +159,7 @@ class TestPipelineOptimizedV2:
                     },
                 }
 
-            def create_mock_detector(self, capability_set="full"):
+            def create_mock_detector(self, capability_set: str = "full") -> MagicMock:
                 capabilities = self.capability_sets[capability_set]
                 mock_instance = MagicMock(spec=RifeCapabilityDetector)
 
@@ -157,28 +174,31 @@ class TestPipelineOptimizedV2:
 
             def __init__(self) -> None:
                 self.scenarios = {
-                    "success": self._create_success_mock,
-                    "failure": self._create_failure_mock,
-                    "file_exists": self._create_file_exists_mock,
-                    "permission_error": self._create_permission_error_mock,
+                    "success": SanchezMockManager._create_success_mock,
+                    "failure": SanchezMockManager._create_failure_mock,
+                    "file_exists": SanchezMockManager._create_file_exists_mock,
+                    "permission_error": SanchezMockManager._create_permission_error_mock,
                 }
 
-            def _create_success_mock(self, output_path):
-                def mock_colourise(*args, **kwargs) -> int:
+            @staticmethod
+            def _create_success_mock(output_path: pathlib.Path) -> Any:
+                def mock_colourise(*args: Any, **kwargs: Any) -> int:
                     output_path.write_bytes(b"mock sanchez output")
                     return 0
 
                 return mock_colourise
 
-            def _create_failure_mock(self, output_path):
-                def mock_colourise(*args, **kwargs) -> Never:
+            @staticmethod
+            def _create_failure_mock(output_path: pathlib.Path) -> Any:  # noqa: ARG004
+                def mock_colourise(*args: Any, **kwargs: Any) -> Never:
                     msg = "Sanchez processing failed"
                     raise RuntimeError(msg)
 
                 return mock_colourise
 
-            def _create_file_exists_mock(self, output_path):
-                def mock_colourise(*args, **kwargs) -> int:
+            @staticmethod
+            def _create_file_exists_mock(output_path: pathlib.Path) -> Any:
+                def mock_colourise(*args: Any, **kwargs: Any) -> int:
                     if output_path.exists():
                         msg = f"Output file {output_path} already exists"
                         raise FileExistsError(msg)
@@ -187,14 +207,15 @@ class TestPipelineOptimizedV2:
 
                 return mock_colourise
 
-            def _create_permission_error_mock(self, output_path):
-                def mock_colourise(*args, **kwargs) -> Never:
+            @staticmethod
+            def _create_permission_error_mock(output_path: pathlib.Path) -> Any:  # noqa: ARG004
+                def mock_colourise(*args: Any, **kwargs: Any) -> Never:
                     msg = "Permission denied writing output file"
                     raise PermissionError(msg)
 
                 return mock_colourise
 
-            def get_mock_factory(self, scenario="success"):
+            def get_mock_factory(self, scenario: str = "success") -> Any:
                 return self.scenarios[scenario]
 
         return {
@@ -205,8 +226,13 @@ class TestPipelineOptimizedV2:
         }
 
     @pytest.fixture()
-    def temp_workspace(self, tmp_path):
-        """Create temporary workspace with test images."""
+    @staticmethod
+    def temp_workspace(tmp_path: pathlib.Path) -> dict[str, Any]:
+        """Create temporary workspace with test images.
+
+        Returns:
+            dict[str, Any]: Dictionary containing paths to workspace directories and files.
+        """
         input_dir = tmp_path / "input"
         output_dir = tmp_path / "output"
         input_dir.mkdir()
@@ -235,8 +261,11 @@ class TestPipelineOptimizedV2:
             "output_file": output_dir / "output.mp4",
         }
 
+    @staticmethod
     def test_pipeline_comprehensive_scenarios(
-        self, temp_workspace, comprehensive_mock_suite, pipeline_test_constants
+        temp_workspace: dict[str, Any],
+        comprehensive_mock_suite: dict[str, Any],
+        pipeline_test_constants: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test comprehensive pipeline scenarios with different configurations."""
         workspace = temp_workspace
@@ -318,7 +347,7 @@ class TestPipelineOptimizedV2:
                     mock_colourise.side_effect = mock_factory(workspace["output_dir"] / "sanchez_output.png")
 
                 # Create output file mock
-                def create_output_file(*args, **kwargs):
+                def create_output_file(*args: Any, **kwargs: Any) -> MagicMock:
                     workspace["output_file"].write_bytes(b"mock video content")
                     return mock_popen.return_value
 
@@ -354,13 +383,16 @@ class TestPipelineOptimizedV2:
                         # Verify output file exists (mocked)
                         assert workspace["output_file"].exists(), f"Output file missing for {scenario['name']}"
 
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     if scenario["expected_success"]:
                         pytest.fail(f"Unexpected failure in {scenario['name']}: {e}")
                     # Expected failure scenarios would be handled here
 
+    @staticmethod
     def test_pipeline_error_handling_comprehensive(
-        self, temp_workspace, comprehensive_mock_suite, pipeline_test_constants
+        temp_workspace: dict[str, Any],
+        comprehensive_mock_suite: dict[str, Any],
+        pipeline_test_constants: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test comprehensive error handling in pipeline scenarios."""
         workspace = temp_workspace
@@ -449,7 +481,7 @@ class TestPipelineOptimizedV2:
 
                 # Run pipeline and expect error
                 if scenario["should_raise"]:
-                    with pytest.raises((
+                    with pytest.raises((  # noqa: PT012
                         RuntimeError,
                         subprocess.CalledProcessError,
                         FileNotFoundError,
@@ -481,7 +513,11 @@ class TestPipelineOptimizedV2:
                     results = list(result_gen)
                     assert len(results) >= 0
 
-    def test_image_processing_workflow_comprehensive(self, temp_workspace, comprehensive_mock_suite) -> None:
+    @staticmethod
+    def test_image_processing_workflow_comprehensive(  # noqa: C901, PLR0914
+        temp_workspace: dict[str, Any],
+        comprehensive_mock_suite: dict[str, Any],  # noqa: ARG004
+    ) -> None:
         """Test comprehensive image processing workflows within pipeline."""
         workspace = temp_workspace
 
@@ -574,7 +610,11 @@ class TestPipelineOptimizedV2:
                                 f"Cropped size mismatch: expected {(h, w)}, got {cropped.shape[:2]}"
                             )
 
-    def test_pipeline_performance_and_optimization(self, temp_workspace, comprehensive_mock_suite) -> None:
+    @staticmethod
+    def test_pipeline_performance_and_optimization(
+        temp_workspace: dict[str, Any],
+        comprehensive_mock_suite: dict[str, Any],
+    ) -> None:
         """Test pipeline performance characteristics and optimizations."""
         workspace = temp_workspace
         mock_suite = comprehensive_mock_suite
@@ -604,11 +644,6 @@ class TestPipelineOptimizedV2:
         ]
 
         # Test each performance scenario
-        import os
-        import time
-
-        import psutil
-
         for scenario in performance_scenarios:
             if scenario["test_type"] == "memory":
                 # Monitor memory usage
@@ -627,7 +662,7 @@ class TestPipelineOptimizedV2:
                     mock_detector_class.return_value = mock_detector
 
                     # Create output file
-                    def create_output(*args, **kwargs):
+                    def create_output(*args: Any, **kwargs: Any) -> MagicMock:
                         workspace["output_file"].write_bytes(b"mock output")
                         return mock_popen.return_value
 
@@ -665,7 +700,7 @@ class TestPipelineOptimizedV2:
                     mock_detector = mock_suite["rife_manager"].create_mock_detector("full")
                     mock_detector_class.return_value = mock_detector
 
-                    def quick_output(*args, **kwargs):
+                    def quick_output(*args: Any, **kwargs: Any) -> MagicMock:
                         workspace["output_file"].write_bytes(b"quick output")
                         return mock_popen.return_value
 
@@ -707,7 +742,7 @@ class TestPipelineOptimizedV2:
                     mock_detector = mock_suite["rife_manager"].create_mock_detector("full")
                     mock_detector_class.return_value = mock_detector
 
-                    def cleanup_output(*args, **kwargs):
+                    def cleanup_output(*args: Any, **kwargs: Any) -> MagicMock:
                         workspace["output_file"].write_bytes(b"cleanup test")
                         return mock_popen.return_value
 
