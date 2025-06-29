@@ -18,6 +18,9 @@ from PIL import Image
 from PyQt6.QtWidgets import QApplication
 import pytest
 
+from goesvfi.gui import VfiWorker
+from goesvfi.pipeline.run_vfi import run_vfi
+
 # Set environment for headless operation
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
@@ -76,7 +79,8 @@ class TestHeadlessWorkflowOptimizedV2:
                     "error_prone": self._apply_error_prone_config,
                 }
 
-            def _create_basic_widgets(self) -> dict[str, MagicMock]:  # noqa: PLR6301
+            @staticmethod
+            def _create_basic_widgets() -> dict[str, MagicMock]:
                 """Create basic widget mocks.
 
                 Returns:
@@ -494,7 +498,7 @@ class TestHeadlessWorkflowOptimizedV2:
                 scenario_config: dict[str, Any] | None = None,
             ) -> dict[str, Any]:
                 """Run specified workflow scenario.
-                
+
                 Returns:
                     dict[str, Any]: Workflow execution results.
                 """
@@ -521,10 +525,14 @@ class TestHeadlessWorkflowOptimizedV2:
             "output_files": {},
         }
 
-    def test_headless_workflow_comprehensive_scenarios(
+    def test_headless_workflow_comprehensive_scenarios(  # noqa: PLR0914
         self, headless_qt_app: QApplication, headless_test_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:
-        """Test comprehensive headless workflow scenarios."""
+        """Test comprehensive headless workflow scenarios.
+
+        Raises:
+            AssertionError: If test expectations are not met.
+        """
         components: dict[str, Any] = headless_test_components
         workspace: dict[str, Any] = temp_workspace
         gui_factory: Any = components["gui_factory"]
@@ -620,13 +628,13 @@ class TestHeadlessWorkflowOptimizedV2:
                             workflow, window, test_data, scenario["scenario_config"]
                         )
                         workflow_results[workflow] = result
-                    except Exception as e:  # noqa: BLE001
+                    except Exception as e:
                         # For error_prone config, exceptions are expected
                         if scenario["config"] == "error_prone":
                             workflow_results[workflow] = {"success": True, "expected_error": str(e)}
                         else:
                             msg = f"Unexpected error in {workflow} for {scenario['name']}: {e}"
-                            raise AssertionError(msg)
+                            raise AssertionError(msg) from e
 
                 # Verify overall results
                 successful_workflows: list[str] = [w for w, r in workflow_results.items() if r["success"]]
@@ -695,10 +703,8 @@ class TestHeadlessWorkflowOptimizedV2:
                 with patch(scenario["mock_target"]) as mock_run_vfi:
                     mock_run_vfi.return_value = scenario["mock_return"](test_data["output_file"])
 
-                    # Import and test
-                    from goesvfi.pipeline.run_vfi import run_vfi
-
-                    result = run_vfi(  # type: ignore[no-redef]
+                    # Test VFI processing
+                    result = run_vfi(
                         folder=test_data["input_dir"],
                         output_mp4_path=test_data["output_file"],
                         rife_exe_path=pathlib.Path("/mock/rife"),
@@ -727,9 +733,7 @@ class TestHeadlessWorkflowOptimizedV2:
                 with patch(scenario["mock_target"]) as mock_run_vfi:
                     mock_run_vfi.side_effect = scenario["mock_side_effect"]
 
-                    # Import and test
-                    from goesvfi.pipeline.run_vfi import run_vfi
-
+                    # Test with expected exception
                     with pytest.raises(Exception) as exc_info:
                         run_vfi(
                             folder=test_data["input_dir"],
@@ -758,10 +762,8 @@ class TestHeadlessWorkflowOptimizedV2:
                     mock_worker.error = MagicMock()
                     mock_worker.start = MagicMock()
 
-                    # Import and create worker
-                    from goesvfi.gui import VfiWorker  # type: ignore[attr-defined]
-
-                    worker: VfiWorker = VfiWorker(
+                    # Create worker
+                    worker = VfiWorker(
                         in_dir=str(test_data["input_dir"]),
                         out_file_path=str(test_data["output_file"]),
                         fps=30,
@@ -777,7 +779,7 @@ class TestHeadlessWorkflowOptimizedV2:
                     mock_vfi_worker.assert_called_once()
                     mock_worker.start.assert_called_once()
 
-    def test_headless_stress_testing(
+    def test_headless_stress_testing(  # noqa: C901
         self, headless_qt_app: QApplication, headless_test_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:
         """Test headless components under stress conditions."""
@@ -826,8 +828,8 @@ class TestHeadlessWorkflowOptimizedV2:
                         window.main_tab.browse_input_button.click()
 
                     # Text changes
-                    window.main_tab.in_dir_edit.setText(f"/tmp/input_{i}")
-                    window.main_tab.out_file_edit.setText(f"/tmp/output_{i}.mp4")
+                    window.main_tab.in_dir_edit.setText(f"/tmp/input_{i}")  # noqa: S108
+                    window.main_tab.out_file_edit.setText(f"/tmp/output_{i}.mp4")  # noqa: S108
 
                 # Verify window survived
                 assert window.main_tab is not None
