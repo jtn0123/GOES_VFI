@@ -5,8 +5,9 @@ GUI interaction testing, error handling, and concurrent operations.
 """
 
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
@@ -26,7 +27,7 @@ from goesvfi.integrity_check.view_model import ScanStatus
 from tests.utils.pyqt_async_test import PyQtAsyncTestCase
 
 
-class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
+class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):  # noqa: PLR0904
     """Test cases for the EnhancedIntegrityCheckTab class with comprehensive coverage."""
 
     @classmethod
@@ -38,8 +39,6 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
     def tearDownClass(cls) -> None:
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
-            import shutil
-
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -63,8 +62,8 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
         self.mock_view_model.status_message = "Ready"
 
         # Setup dates with various scenarios
-        self.start_date = datetime.now() - timedelta(days=1)
-        self.end_date = datetime.now()
+        self.start_date = datetime.now(UTC) - timedelta(days=1)
+        self.end_date = datetime.now(UTC)
         self.mock_view_model.start_date = self.start_date
         self.mock_view_model.end_date = self.end_date
 
@@ -119,7 +118,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
     def test_fetcher_configuration_comprehensive(self) -> None:
         """Test comprehensive fetcher configuration scenarios."""
         # Test default configuration
-        default_config = self.tab._default_fetcher_config()
+        default_config = self.tab._default_fetcher_config()  # noqa: SLF001
         assert default_config["cdn"]["enabled"]
         assert default_config["s3"]["enabled"]
         assert default_config["cdn"]["max_retries"] == 3
@@ -160,11 +159,11 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
         for test_case in test_configs:
             with self.subTest(config=test_case["name"]):
                 self.tab.fetcher_config = test_case["config"]
-                self.tab._update_fetcher_config()
+                self.tab._update_fetcher_config()  # noqa: SLF001
                 assert self.tab.fetcher_status_label.text() == test_case["expected_status"]
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox.information")
-    def test_auto_detect_date_range_comprehensive(self, mock_message_box) -> None:
+    def test_auto_detect_date_range_comprehensive(self, mock_message_box: MagicMock) -> None:
         """Test auto-detect date range with various file scenarios."""
         # Test scenarios with different file patterns
         test_scenarios = [
@@ -174,8 +173,8 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     "goes18_20230615_120000_band13.png",
                     "goes18_20230620_180000_band02.png",
                 ],
-                "expected_start": datetime(2023, 6, 15),
-                "expected_end": datetime(2023, 7, 14),
+                "expected_start": datetime(2023, 6, 15, tzinfo=UTC),
+                "expected_end": datetime(2023, 7, 14, tzinfo=UTC),
             },
             {
                 "name": "GOES-16 files",
@@ -183,8 +182,8 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     "goes16_20230701_060000_band13.png",
                     "goes16_20230705_120000_band13.png",
                 ],
-                "expected_start": datetime(2023, 7, 1),
-                "expected_end": datetime(2023, 7, 31),
+                "expected_start": datetime(2023, 7, 1, tzinfo=UTC),
+                "expected_end": datetime(2023, 7, 31, tzinfo=UTC),
             },
             {
                 "name": "Mixed satellite files",
@@ -192,8 +191,8 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     "goes16_20230801_000000_band13.png",
                     "goes18_20230815_120000_band13.png",
                 ],
-                "expected_start": datetime(2023, 8, 1),
-                "expected_end": datetime(2023, 8, 31),
+                "expected_start": datetime(2023, 8, 1, tzinfo=UTC),
+                "expected_end": datetime(2023, 8, 31, tzinfo=UTC),
             },
         ]
 
@@ -209,7 +208,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     test_file.touch()
 
                 # Call auto-detect
-                self.tab._auto_detect_date_range()
+                self.tab._auto_detect_date_range()  # noqa: SLF001
 
                 # Verify dates were set correctly
                 start_datetime = self.tab.start_date_edit.dateTime().toPyDateTime()
@@ -230,13 +229,13 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
     def test_auto_detect_date_range_edge_cases(self) -> None:
         """Test auto-detect with edge cases and error conditions."""
         # Test with empty directory
-        self.tab._auto_detect_date_range()
+        self.tab._auto_detect_date_range()  # noqa: SLF001
         # Should handle gracefully without errors
 
         # Test with non-image files
         (self.test_dir / "readme.txt").write_text("test")
         (self.test_dir / "data.json").write_text('{"test": true}')
-        self.tab._auto_detect_date_range()
+        self.tab._auto_detect_date_range()  # noqa: SLF001
         # Should ignore non-image files
 
         # Test with malformed filenames
@@ -250,7 +249,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
             (self.test_dir / filename).touch()
 
         # Should handle malformed files gracefully
-        self.tab._auto_detect_date_range()
+        self.tab._auto_detect_date_range()  # noqa: SLF001
 
     def test_get_scan_summary_comprehensive(self) -> None:
         """Test scan summary with various data scenarios."""
@@ -277,7 +276,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
             {"satellite": "goes16", "product": "FD", "status": "downloaded"},
         ]
 
-        def mock_data(index, role=None):
+        def mock_data(index: MagicMock, role: int | None = None) -> str | None:  # noqa: ARG001
             if index.row() < len(mock_items):
                 item = mock_items[index.row()]
                 if index.column() == 0:  # Satellite column
@@ -313,7 +312,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
         for strategy, _expected_prefix in status_scenarios:
             with self.subTest(strategy=strategy):
                 # Update configuration
-                config = self.tab._default_fetcher_config()
+                config = self.tab._default_fetcher_config()  # noqa: SLF001
                 config["fallback_strategy"] = strategy
 
                 if strategy == "CDN only":
@@ -325,7 +324,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     config["s3"]["enabled"] = False
 
                 self.tab.fetcher_config = config
-                self.tab._update_fetcher_config()
+                self.tab._update_fetcher_config()  # noqa: SLF001
 
                 # Verify status reflects the strategy
                 status_text = self.tab.fetcher_status_label.text()
@@ -335,7 +334,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     assert "Strategy:" in status_text
 
     @patch("goesvfi.integrity_check.enhanced_gui_tab.QFileDialog.getExistingDirectory")
-    def test_directory_selection_comprehensive(self, mock_file_dialog) -> None:
+    def test_directory_selection_comprehensive(self, mock_file_dialog: MagicMock) -> None:
         """Test directory selection with various scenarios."""
         # Test successful directory selection
         test_directory = str(self.test_dir / "selected_dir")
@@ -344,14 +343,14 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
 
         # Simulate directory selection (if method exists)
         if hasattr(self.tab, "_select_directory"):
-            self.tab._select_directory()
+            self.tab._select_directory()  # noqa: SLF001
             # Verify directory was set
             self.mock_view_model.set_base_directory.assert_called_with(Path(test_directory))
 
         # Test cancelled directory selection
         mock_file_dialog.return_value = ""
         if hasattr(self.tab, "_select_directory"):
-            self.tab._select_directory()
+            self.tab._select_directory()  # noqa: SLF001
             # Should not update directory when cancelled
 
     def test_widget_state_management(self) -> None:
@@ -361,17 +360,17 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
 
         # Test state during scanning (if applicable)
         if hasattr(self.tab, "_set_scanning_state"):
-            self.tab._set_scanning_state(True)
+            self.tab._set_scanning_state(True)  # noqa: SLF001, FBT003
             # Verify appropriate widgets are disabled during scanning
 
-            self.tab._set_scanning_state(False)
+            self.tab._set_scanning_state(False)  # noqa: SLF001, FBT003
             # Verify widgets are re-enabled after scanning
 
     def test_date_range_validation(self) -> None:
         """Test date range validation with various scenarios."""
         # Test valid date range
-        start_date = datetime(2023, 6, 1)
-        end_date = datetime(2023, 6, 30)
+        start_date = datetime(2023, 6, 1, tzinfo=UTC)
+        end_date = datetime(2023, 6, 30, tzinfo=UTC)
 
         start_qdatetime = QDateTime(start_date)
         end_qdatetime = QDateTime(end_date)
@@ -384,13 +383,13 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
         assert self.tab.end_date_edit.dateTime().toPyDateTime().date() == end_date.date()
 
         # Test invalid date range (end before start)
-        invalid_end = datetime(2023, 5, 30)
+        invalid_end = datetime(2023, 5, 30, tzinfo=UTC)
         invalid_qdatetime = QDateTime(invalid_end)
         self.tab.end_date_edit.setDateTime(invalid_qdatetime)
 
         # Should handle invalid ranges appropriately
         if hasattr(self.tab, "_validate_date_range"):
-            is_valid = self.tab._validate_date_range()
+            is_valid = self.tab._validate_date_range()  # noqa: SLF001
             assert not is_valid
 
     def test_concurrent_operations(self) -> None:
@@ -405,13 +404,13 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     summary = self.tab.get_scan_summary()
                     results.append(("summary", summary))
                 elif operation_id % 3 == 1:
-                    config = self.tab._default_fetcher_config()
+                    config = self.tab._default_fetcher_config()  # noqa: SLF001
                     results.append(("config", config))
                 else:
                     # Test status updates
-                    self.tab._update_fetcher_config()
+                    self.tab._update_fetcher_config()  # noqa: SLF001
                     results.append(("status_update", True))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((operation_id, e))
 
         # Run concurrent operations
@@ -432,7 +431,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                 "satellite": f"goes{16 + (i % 2)}",
                 "product": ["FD", "CONUS", "M1"][i % 3],
                 "status": ["downloaded", "missing", "failed"][i % 3],
-                "timestamp": datetime.now() - timedelta(hours=i),
+                "timestamp": datetime.now(UTC) - timedelta(hours=i),
             }
             large_scan_results.append(result)
 
@@ -446,9 +445,9 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
 
         # Test configuration operations
         for _ in range(10):
-            config = self.tab._default_fetcher_config()
+            config = self.tab._default_fetcher_config()  # noqa: SLF001
             self.tab.fetcher_config = config
-            self.tab._update_fetcher_config()
+            self.tab._update_fetcher_config()  # noqa: SLF001
 
     def test_error_handling_comprehensive(self) -> None:
         """Test comprehensive error handling scenarios."""
@@ -462,7 +461,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
             broken_tab = EnhancedIntegrityCheckTab(broken_view_model)
             broken_tab.close()
             broken_tab.deleteLater()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle broken view model gracefully: {e}")
 
         # Test with missing directories
@@ -470,7 +469,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
         self.mock_view_model.base_directory = missing_dir
 
         # Should handle missing directories gracefully
-        self.tab._auto_detect_date_range()  # Should not crash
+        self.tab._auto_detect_date_range()  # noqa: SLF001  # Should not crash
 
     def test_ui_component_interactions(self) -> None:
         """Test interactions between UI components."""
@@ -511,7 +510,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                 test_file.touch()
 
                 # Test auto-detection with this satellite
-                self.tab._auto_detect_date_range()
+                self.tab._auto_detect_date_range()  # noqa: SLF001
 
     def test_fetch_source_integration(self) -> None:
         """Test integration with different fetch sources."""
@@ -526,7 +525,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                 self.mock_view_model.fetch_source = source
 
                 # Update configuration based on fetch source
-                config = self.tab._default_fetcher_config()
+                config = self.tab._default_fetcher_config()  # noqa: SLF001
                 if source == FetchSource.CDN_ONLY:
                     config["s3"]["enabled"] = False
                     config["fallback_strategy"] = "CDN only"
@@ -535,7 +534,7 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
                     config["fallback_strategy"] = "S3 only"
 
                 self.tab.fetcher_config = config
-                self.tab._update_fetcher_config()
+                self.tab._update_fetcher_config()  # noqa: SLF001
 
                 # Verify status reflects the source
                 status_text = self.tab.fetcher_status_label.text()
@@ -557,14 +556,14 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
             new_tab = EnhancedIntegrityCheckTab(self.mock_view_model)
             new_tab.close()
             new_tab.deleteLater()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle cleanup errors gracefully: {e}")
 
     def test_edge_cases(self) -> None:
         """Test various edge cases and boundary conditions."""
         # Test with very old dates
-        old_start = datetime(1990, 1, 1)
-        old_end = datetime(1990, 12, 31)
+        old_start = datetime(1990, 1, 1, tzinfo=UTC)
+        old_end = datetime(1990, 12, 31, tzinfo=UTC)
 
         self.tab.start_date_edit.setDateTime(QDateTime(old_start))
         self.tab.end_date_edit.setDateTime(QDateTime(old_end))
@@ -574,14 +573,14 @@ class TestEnhancedIntegrityCheckTabV2(PyQtAsyncTestCase):
         assert isinstance(summary, dict)
 
         # Test with future dates
-        future_start = datetime(2030, 1, 1)
-        future_end = datetime(2030, 12, 31)
+        future_start = datetime(2030, 1, 1, tzinfo=UTC)
+        future_end = datetime(2030, 12, 31, tzinfo=UTC)
 
         self.tab.start_date_edit.setDateTime(QDateTime(future_start))
         self.tab.end_date_edit.setDateTime(QDateTime(future_end))
 
         # Should handle future dates gracefully
-        self.tab._auto_detect_date_range()
+        self.tab._auto_detect_date_range()  # noqa: SLF001
 
         # Test with zero disk space
         self.mock_view_model.get_disk_space_info.return_value = (0.0, 0.0)
