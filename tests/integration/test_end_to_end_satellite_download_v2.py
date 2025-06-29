@@ -9,6 +9,7 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 import asyncio
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 import hashlib
 from pathlib import Path
@@ -33,31 +34,41 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
     """Optimized end-to-end satellite data download integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def download_test_components(self):
-        """Create shared components for download testing."""
+    @staticmethod
+    def download_test_components() -> dict[str, Any]:  # noqa: C901
+        """Create shared components for download testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing data manager, mock manager, and workflow manager.
+        """
 
         # Enhanced Mock Data Manager
         class MockDataManager:
             """Manage mock data creation for different satellite scenarios."""
 
             def __init__(self) -> None:
-                self.netcdf_templates = {
-                    "goes16": self._create_goes16_template,
+                self.netcdf_templates: dict[str, Callable[[], dict[str, Any]]] = {
+                    "goes16": MockDataManager._create_goes16_template,
                     "goes18": self._create_goes18_template,
                     "large": self._create_large_template,
-                    "minimal": self._create_minimal_template,
+                    "minimal": MockDataManager._create_minimal_template,
                 }
-                self.test_files = {
+                self.test_files: dict[str, bytes] = {
                     "small": b"Test satellite data content",
                     "medium": b"x" * (256 * 1024),  # 256KB
                     "large": b"x" * (1024 * 1024),  # 1MB
                     "corrupted": b"corrupted data",
                 }
 
-            def _create_goes16_template(self):
-                """Create GOES-16 NetCDF data template."""
+            @staticmethod
+            def _create_goes16_template() -> dict[str, Any]:
+                """Create GOES-16 NetCDF data template.
+
+                Returns:
+                    dict[str, Any]: NetCDF data template for GOES-16.
+                """
                 return {
-                    "Rad": np.random.rand(1000, 1000).astype(np.float32),
+                    "Rad": np.random.default_rng().random((1000, 1000)).astype(np.float32),
                     "t": np.array([0]),
                     "band_id": np.array([13]),
                     "band_wavelength": np.array([10.35]),
@@ -73,64 +84,98 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     "instrument_type": "GOES-16 ABI",
                 }
 
-            def _create_goes18_template(self):
-                """Create GOES-18 NetCDF data template."""
-                template = self._create_goes16_template()
+            def _create_goes18_template(self) -> dict[str, Any]:  # noqa: PLR6301
+                """Create GOES-18 NetCDF data template.
+
+                Returns:
+                    dict[str, Any]: NetCDF data template for GOES-18.
+                """
+                template = MockDataManager._create_goes16_template()
                 template.update({
                     "platform_ID": "G18",
                     "instrument_type": "GOES-18 ABI",
                 })
                 return template
 
-            def _create_large_template(self):
-                """Create large NetCDF data template."""
-                template = self._create_goes16_template()
+            @staticmethod
+            def _create_large_template() -> dict[str, Any]:
+                """Create large NetCDF data template.
+
+                Returns:
+                    dict[str, Any]: Large NetCDF data template.
+                """
+                template = MockDataManager._create_goes16_template()
                 template.update({
-                    "Rad": np.random.rand(2000, 2000).astype(np.float32),
+                    "Rad": np.random.default_rng().random((2000, 2000)).astype(np.float32),
                 })
                 return template
 
-            def _create_minimal_template(self):
-                """Create minimal NetCDF data template."""
+            @staticmethod
+            def _create_minimal_template() -> dict[str, Any]:
+                """Create minimal NetCDF data template.
+
+                Returns:
+                    dict[str, Any]: Minimal NetCDF data template.
+                """
                 return {
-                    "Rad": np.random.rand(100, 100).astype(np.float32),
+                    "Rad": np.random.default_rng().random((100, 100)).astype(np.float32),
                     "t": np.array([0]),
                     "band_id": np.array([13]),
                     "platform_ID": "G16",
                 }
 
             def get_netcdf_data(self, data_type: str) -> dict[str, Any]:
-                """Get NetCDF data for specified type."""
+                """Get NetCDF data for specified type.
+
+                Returns:
+                    dict[str, Any]: NetCDF data for the specified type.
+                """
                 return self.netcdf_templates[data_type]()
 
             def get_test_file_data(self, file_type: str) -> bytes:
-                """Get test file data for specified type."""
+                """Get test file data for specified type.
+
+                Returns:
+                    bytes: Test file data for the specified type.
+                """
                 return self.test_files[file_type]
 
-            def create_checksum(self, data: bytes) -> str:
-                """Create MD5 checksum for data."""
-                return hashlib.md5(data).hexdigest()
+            @staticmethod
+            def create_checksum(data: bytes) -> str:
+                """Create MD5 checksum for data.
+
+                Returns:
+                    str: MD5 checksum hex digest.
+                """
+                return hashlib.md5(data).hexdigest()  # noqa: S324
 
         # Enhanced Download Mock Manager
         class DownloadMockManager:
             """Manage download mocks for different scenarios."""
 
             def __init__(self) -> None:
-                self.mock_scenarios = {
-                    "success": self._create_success_mocks,
-                    "retry_then_success": self._create_retry_success_mocks,
-                    "s3_fail_cdn_success": self._create_s3_fail_cdn_success_mocks,
-                    "all_fail": self._create_all_fail_mocks,
-                    "network_timeout": self._create_network_timeout_mocks,
-                    "progress_tracking": self._create_progress_tracking_mocks,
+                self.mock_scenarios: dict[str, Callable[[bytes, Path], dict[str, AsyncMock]]] = {
+                    "success": DownloadMockManager._create_success_mocks,
+                    "retry_then_success": DownloadMockManager._create_retry_success_mocks,
+                    "s3_fail_cdn_success": DownloadMockManager._create_s3_fail_cdn_success_mocks,
+                    "all_fail": DownloadMockManager._create_all_fail_mocks,
+                    "network_timeout": DownloadMockManager._create_network_timeout_mocks,
+                    "progress_tracking": DownloadMockManager._create_progress_tracking_mocks,
                 }
 
-            def _create_success_mocks(self, data: bytes, download_path: Path) -> dict[str, AsyncMock]:
-                """Create mocks for successful download scenario."""
+            @staticmethod
+            def _create_success_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:  # noqa: ARG004
+                """Create mocks for successful download scenario.
+
+                Returns:
+                    dict[str, AsyncMock]: Dictionary with s3_store and cdn_store mocks.
+                """
                 s3_store = AsyncMock(spec=S3Store)
                 cdn_store = AsyncMock(spec=CDNStore)
 
-                async def mock_download(ts, satellite, dest_path, **kwargs):
+                async def mock_download(  # noqa: RUF029
+                    ts: datetime, satellite: SatellitePattern, dest_path: Path, **kwargs: Any  # noqa: ARG001
+                ) -> Path:
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
                     dest_path.write_bytes(data)
                     return dest_path
@@ -147,15 +192,22 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
 
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
-            def _create_retry_success_mocks(self, data: bytes, download_path: Path) -> dict[str, AsyncMock]:
-                """Create mocks for retry then success scenario."""
+            @staticmethod
+            def _create_retry_success_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+                """Create mocks for retry then success scenario.
+
+                Returns:
+                    dict[str, AsyncMock]: Dictionary with s3_store and cdn_store mocks.
+                """
                 s3_store = AsyncMock(spec=S3Store)
                 cdn_store = AsyncMock(spec=CDNStore)
 
                 # S3 fails twice then succeeds
                 call_count = 0
 
-                async def mock_s3_download(ts, satellite, dest_path, **kwargs):
+                async def mock_s3_download(
+                    ts: datetime, satellite: SatellitePattern, dest_path: Path, **kwargs: Any
+                ) -> Path:
                     nonlocal call_count
                     call_count += 1
                     if call_count <= 2:
@@ -171,7 +223,9 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 s3_store.__aexit__ = AsyncMock(return_value=None)
 
                 # CDN as backup
-                async def mock_cdn_download(ts, satellite, dest_path, **kwargs):
+                async def mock_cdn_download(
+                    ts: datetime, satellite: SatellitePattern, dest_path: Path, **kwargs: Any
+                ) -> Path:
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
                     dest_path.write_bytes(data)
                     return dest_path
@@ -183,8 +237,13 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
 
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
-            def _create_s3_fail_cdn_success_mocks(self, data: bytes, download_path: Path) -> dict[str, AsyncMock]:
-                """Create mocks for S3 fail, CDN success scenario."""
+            @staticmethod
+            def _create_s3_fail_cdn_success_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+                """Create mocks for S3 fail, CDN success scenario.
+
+                Returns:
+                    dict[str, AsyncMock]: Dictionary with s3_store and cdn_store mocks.
+                """
                 s3_store = AsyncMock(spec=S3Store)
                 cdn_store = AsyncMock(spec=CDNStore)
 
@@ -195,7 +254,9 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 s3_store.__aexit__ = AsyncMock(return_value=None)
 
                 # CDN succeeds
-                async def mock_cdn_download(ts, satellite, dest_path, **kwargs):
+                async def mock_cdn_download(
+                    ts: datetime, satellite: SatellitePattern, dest_path: Path, **kwargs: Any
+                ) -> Path:
                     dest_path.parent.mkdir(parents=True, exist_ok=True)
                     dest_path.write_bytes(data)
                     return dest_path
@@ -207,8 +268,13 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
 
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
-            def _create_all_fail_mocks(self, data: bytes, download_path: Path) -> dict[str, AsyncMock]:
-                """Create mocks for all sources fail scenario."""
+            @staticmethod
+            def _create_all_fail_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+                """Create mocks for all sources fail scenario.
+
+                Returns:
+                    dict[str, AsyncMock]: Dictionary with s3_store and cdn_store mocks.
+                """
                 s3_store = AsyncMock(spec=S3Store)
                 cdn_store = AsyncMock(spec=CDNStore)
 
@@ -225,8 +291,13 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
 
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
-            def _create_network_timeout_mocks(self, data: bytes, download_path: Path) -> dict[str, AsyncMock]:
-                """Create mocks for network timeout scenario."""
+            @staticmethod
+            def _create_network_timeout_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+                """Create mocks for network timeout scenario.
+
+                Returns:
+                    dict[str, AsyncMock]: Dictionary with s3_store and cdn_store mocks.
+                """
                 s3_store = AsyncMock(spec=S3Store)
                 cdn_store = AsyncMock(spec=CDNStore)
 
@@ -243,12 +314,23 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
 
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
-            def _create_progress_tracking_mocks(self, data: bytes, download_path: Path) -> dict[str, AsyncMock]:
-                """Create mocks for progress tracking scenario."""
+            @staticmethod
+            def _create_progress_tracking_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+                """Create mocks for progress tracking scenario.
+
+                Returns:
+                    dict[str, AsyncMock]: Dictionary with s3_store and cdn_store mocks.
+                """
                 s3_store = AsyncMock(spec=S3Store)
                 cdn_store = AsyncMock(spec=CDNStore)
 
-                async def mock_download_with_progress(ts, satellite, dest_path, progress_callback=None, **kwargs):
+                async def mock_download_with_progress(
+                    ts: datetime,
+                    satellite: SatellitePattern,
+                    dest_path: Path,
+                    progress_callback: Callable[[int, int], None] | None = None,
+                    **kwargs: Any,
+                ) -> Path:
                     total_size = len(data)
                     chunk_size = max(1, total_size // 4)  # 4 progress updates
 
@@ -274,7 +356,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
             def create_mocks(self, scenario: str, data: bytes, download_path: Path) -> dict[str, AsyncMock]:
-                """Create mocks for specified scenario."""
+                """Create mocks for specified scenario.
+
+                Returns:
+                    dict[str, AsyncMock]: Dictionary with store mocks.
+                """
                 return self.mock_scenarios[scenario](data, download_path)
 
         # Enhanced Workflow Manager
@@ -292,15 +378,29 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     "recent_data_handling": self._test_recent_data_handling_workflow,
                 }
 
-            async def _test_complete_success_workflow(self, mocks, data, temp_dir, timestamp, satellite, channel):
-                """Test complete successful workflow."""
+            async def _test_complete_success_workflow(  # noqa: PLR6301
+                self,
+                mocks: dict[str, AsyncMock],
+                data: bytes,
+                temp_dir: Path,
+                timestamp: datetime,
+                satellite: SatellitePattern,
+                channel: ChannelType,
+            ) -> dict[str, Any]:
+                """Test complete successful workflow.
+
+                Returns:
+                    dict[str, Any]: Workflow results.
+                """
                 download_path = temp_dir / "test_file.nc"
                 output_path = temp_dir / "processed_image.png"
 
                 # Mock NetCDF processing
                 with patch("xarray.open_dataset") as mock_open_dataset:
                     mock_dataset = MagicMock()
-                    mock_dataset.__getitem__.side_effect = lambda key: {"Rad": np.random.rand(100, 100)}
+                    mock_dataset.__getitem__.side_effect = lambda key: {
+                        "Rad": np.random.default_rng().random((100, 100))
+                    }
                     mock_dataset.attrs = {
                         "time_coverage_start": "2023-01-01T12:00:00Z",
                         "platform_ID": "G16",
@@ -333,8 +433,20 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
 
                         return {"success": True, "file_path": result}
 
-            async def _test_retry_and_fallback_workflow(self, mocks, data, temp_dir, timestamp, satellite, channel):
-                """Test retry and fallback workflow."""
+            async def _test_retry_and_fallback_workflow(  # noqa: PLR6301
+                self,
+                mocks: dict[str, AsyncMock],
+                data: bytes,
+                temp_dir: Path,
+                timestamp: datetime,
+                satellite: SatellitePattern,
+                channel: ChannelType,
+            ) -> dict[str, Any]:
+                """Test retry and fallback workflow.
+
+                Returns:
+                    dict[str, Any]: Workflow results.
+                """
                 download_path = temp_dir / "test_file.nc"
 
                 errors = []
@@ -365,8 +477,20 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
 
                 return {"success": False, "retries": retry_count, "errors": errors}
 
-            async def _test_all_sources_fail_workflow(self, mocks, data, temp_dir, timestamp, satellite, channel):
-                """Test workflow when all sources fail."""
+            async def _test_all_sources_fail_workflow(  # noqa: PLR6301
+                self,
+                mocks: dict[str, AsyncMock],
+                data: bytes,
+                temp_dir: Path,
+                timestamp: datetime,
+                satellite: SatellitePattern,
+                channel: ChannelType,
+            ) -> dict[str, Any]:
+                """Test workflow when all sources fail.
+
+                Returns:
+                    dict[str, Any]: Workflow results.
+                """
                 download_path = temp_dir / "test_file.nc"
                 errors = []
 
@@ -384,8 +508,20 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
 
                 return {"success": False, "errors": errors}
 
-            async def _test_parallel_downloads_workflow(self, mocks, data, temp_dir, timestamp, satellite, channel):
-                """Test parallel downloads workflow."""
+            async def _test_parallel_downloads_workflow(  # noqa: PLR6301
+                self,
+                mocks: dict[str, AsyncMock],
+                data: bytes,
+                temp_dir: Path,
+                timestamp: datetime,
+                satellite: SatellitePattern,
+                channel: ChannelType,
+            ) -> dict[str, Any]:
+                """Test parallel downloads workflow.
+
+                Returns:
+                    dict[str, Any]: Workflow results.
+                """
                 # Setup multiple timestamps
                 base_time = timestamp
                 timestamps = [base_time + timedelta(minutes=15 * i) for i in range(4)]
@@ -410,12 +546,24 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     "results": results,
                 }
 
-            async def _test_progress_reporting_workflow(self, mocks, data, temp_dir, timestamp, satellite, channel):
-                """Test progress reporting workflow."""
+            async def _test_progress_reporting_workflow(  # noqa: PLR6301
+                self,
+                mocks: dict[str, AsyncMock],
+                data: bytes,
+                temp_dir: Path,
+                timestamp: datetime,
+                satellite: SatellitePattern,
+                channel: ChannelType,
+            ) -> dict[str, Any]:
+                """Test progress reporting workflow.
+
+                Returns:
+                    dict[str, Any]: Workflow results.
+                """
                 download_path = temp_dir / "test_file.nc"
                 progress_updates = []
 
-                def progress_callback(downloaded, total) -> None:
+                def progress_callback(downloaded: int, total: int) -> None:
                     progress_updates.append((downloaded, total))
 
                 result = await mocks["s3_store"].download(
@@ -431,8 +579,20 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     "final_size": result.stat().st_size if result.exists() else 0,
                 }
 
-            async def _test_checksum_validation_workflow(self, mocks, data, temp_dir, timestamp, satellite, channel):
-                """Test checksum validation workflow."""
+            async def _test_checksum_validation_workflow(  # noqa: PLR6301
+                self,
+                mocks: dict[str, AsyncMock],
+                data: bytes,
+                temp_dir: Path,
+                timestamp: datetime,
+                satellite: SatellitePattern,
+                channel: ChannelType,
+            ) -> dict[str, Any]:
+                """Test checksum validation workflow.
+
+                Returns:
+                    dict[str, Any]: Workflow results.
+                """
                 download_path = temp_dir / "test_file.nc"
                 expected_checksum = hashlib.md5(data).hexdigest()
 
@@ -449,8 +609,20 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     "data_matches": downloaded_data == data,
                 }
 
-            async def _test_recent_data_handling_workflow(self, mocks, data, temp_dir, timestamp, satellite, channel):
-                """Test recent data handling workflow."""
+            async def _test_recent_data_handling_workflow(  # noqa: PLR6301
+                self,
+                mocks: dict[str, AsyncMock],
+                data: bytes,
+                temp_dir: Path,
+                timestamp: datetime,
+                satellite: SatellitePattern,
+                channel: ChannelType,
+            ) -> dict[str, Any]:
+                """Test recent data handling workflow.
+
+                Returns:
+                    dict[str, Any]: Workflow results.
+                """
                 # Use recent timestamp
                 recent_timestamp = datetime.now(UTC) - timedelta(minutes=5)
                 download_path = temp_dir / "recent_file.nc"
@@ -474,8 +646,21 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                         "helpful_message": "15-20 minutes" in str(e),
                     }
 
-            async def run_workflow(self, scenario: str, mocks, data, temp_dir, timestamp, satellite, channel):
-                """Run specified workflow scenario."""
+            async def run_workflow(
+                self,
+                scenario: str,
+                mocks: dict[str, AsyncMock],
+                data: bytes,
+                temp_dir: Path,
+                timestamp: datetime,
+                satellite: SatellitePattern,
+                channel: ChannelType,
+            ) -> dict[str, Any]:
+                """Run specified workflow scenario.
+
+                Returns:
+                    dict[str, Any]: Workflow results.
+                """
                 return await self.workflow_scenarios[scenario](mocks, data, temp_dir, timestamp, satellite, channel)
 
         return {
@@ -485,8 +670,12 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
         }
 
     @pytest.fixture()
-    def temp_workspace(self, tmp_path):
-        """Create temporary workspace for download testing."""
+    def temp_workspace(self, tmp_path: Path) -> dict[str, Path]:  # noqa: PLR6301
+        """Create temporary workspace for download testing.
+
+        Returns:
+            dict[str, Path]: Dictionary with workspace paths.
+        """
         workspace = {
             "base_dir": tmp_path,
             "downloads_dir": tmp_path / "downloads",
@@ -500,7 +689,9 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
         return workspace
 
     @pytest.mark.asyncio()
-    async def test_end_to_end_download_comprehensive_scenarios(self, download_test_components, temp_workspace) -> None:
+    async def test_end_to_end_download_comprehensive_scenarios(  # noqa: PLR6301
+        self, download_test_components: dict[str, Any], temp_workspace: dict[str, Path]
+    ) -> None:
         """Test comprehensive end-to-end download scenarios."""
         components = download_test_components
         workspace = temp_workspace
@@ -613,7 +804,9 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 # Expected failures are acceptable
 
     @pytest.mark.asyncio()
-    async def test_parallel_and_concurrent_downloads(self, download_test_components, temp_workspace) -> None:
+    async def test_parallel_and_concurrent_downloads(  # noqa: PLR6301
+        self, download_test_components: dict[str, Any], temp_workspace: dict[str, Path]
+    ) -> None:
         """Test parallel and concurrent download scenarios."""
         components = download_test_components
         workspace = temp_workspace
@@ -692,7 +885,9 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
             assert result["success"], f"Parallel download failed for {scenario['name']}"
 
     @pytest.mark.asyncio()
-    async def test_error_handling_and_edge_cases(self, download_test_components, temp_workspace) -> None:
+    async def test_error_handling_and_edge_cases(  # noqa: PLR6301
+        self, download_test_components: dict[str, Any], temp_workspace: dict[str, Path]
+    ) -> None:
         """Test error handling and edge case scenarios."""
         components = download_test_components
         workspace = temp_workspace
@@ -792,7 +987,9 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     pytest.fail(f"Unexpected exception in {scenario['name']}: {e}")
 
     @pytest.mark.asyncio()
-    async def test_download_validation_and_integrity(self, download_test_components, temp_workspace) -> None:
+    async def test_download_validation_and_integrity(  # noqa: PLR6301
+        self, download_test_components: dict[str, Any], temp_workspace: dict[str, Path]
+    ) -> None:
         """Test download validation and data integrity scenarios."""
         components = download_test_components
         workspace = temp_workspace
