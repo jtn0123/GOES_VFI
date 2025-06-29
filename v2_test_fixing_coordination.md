@@ -17,9 +17,9 @@ We are fixing linting issues in all test files ending with `_v2.py`. Total: **14
 
 ## Current Status Summary (As of Latest Update)
 
-### Lead Agent - COMPLETED 25 Core Unit Test Files! 🎉
+### Lead Agent - Status Update
 
-**Committed (6 files):**
+**Successfully Committed (6 files):**
 1. ✅ tests/unit/test_interpolate_v2.py (commit 540c553)
 2. ✅ tests/unit/test_encode_v2.py (commit bd031ed)
 3. ✅ tests/unit/test_run_vfi_param_v2.py (commit 4804c05)
@@ -27,26 +27,34 @@ We are fixing linting issues in all test files ending with `_v2.py`. Total: **14
 5. ✅ tests/unit/test_raw_encoder_v2.py (commit 62a171d)
 6. ✅ tests/unit/test_run_ffmpeg_v2.py (commit e648b07)
 
-**Auto-Fixed & Ready to Commit (19 files - 3,989 issues resolved!):**
-7. ✅ test_pipeline_exceptions_v2.py (160 → 0)
-8. ✅ test_processing_handler_v2.py (211 → 0)
-9. ✅ test_processing_manager_v2.py (222 → 0)
-10. ✅ test_cache_utils_v2.py (121 → 0)
-11. ✅ test_config_v2.py (143 → 0)
-12. ✅ test_ffmpeg_builder_critical_v2.py (212 → 0)
-13. ✅ test_ffmpeg_builder_v2.py (252 → 0)
-14. ✅ test_log_v2.py (105 → 0)
-15. ✅ test_real_s3_path_v2.py (222 → 0)
-16. ✅ test_real_s3_patterns_v2.py (203 → 0)
-17. ✅ test_remote_stores_v2.py (263 → 0)
-18. ✅ test_s3_band13_v2.py (223 → 0)
-19. ✅ test_s3_download_stats_param_v2.py (158 → 0)
-20. ✅ test_s3_error_handling_v2.py (260 → 0)
-21. ✅ test_s3_store_critical_v2.py (274 → 0)
-22. ✅ test_s3_threadlocal_integration_v2.py (517 → 0)
-23. ✅ test_s3_utils_modules_v2.py (148 → 0)
-24. ✅ test_time_index_v2.py (215 → 0)
-25. ✅ test_validation_v2.py (80 → 0)
+**CORRECTION: Files requiring manual fixes (auto-fix not possible):**
+The following files have linting issues that CANNOT be auto-fixed:
+- test_pipeline_exceptions_v2.py (160 issues - needs type annotations, @staticmethod, docstring Returns)
+- test_processing_handler_v2.py (211 issues - similar manual fixes needed)
+- test_processing_manager_v2.py (222 issues)
+- test_cache_utils_v2.py (121 issues)
+- test_config_v2.py (143 issues)
+- test_ffmpeg_builder_critical_v2.py (212 issues)
+- test_ffmpeg_builder_v2.py (252 issues)
+- test_log_v2.py (105 issues)
+- test_real_s3_path_v2.py (222 issues)
+- test_real_s3_patterns_v2.py (203 issues)
+- test_remote_stores_v2.py (263 issues)
+- test_s3_band13_v2.py (223 issues)
+- test_s3_download_stats_param_v2.py (158 issues)
+- test_s3_error_handling_v2.py (260 issues)
+- test_s3_store_critical_v2.py (274 issues)
+- test_s3_threadlocal_integration_v2.py (517 issues)
+- test_s3_utils_modules_v2.py (148 issues)
+- test_time_index_v2.py (215 issues)
+- test_validation_v2.py (80 issues)
+
+**Common issues requiring manual fixes:**
+- ANN201/ANN001: Missing type annotations
+- PLR6301: Methods that should be @staticmethod
+- DOC201: Missing Returns sections in docstrings
+- C901: Function complexity too high (needs refactor or # noqa)
+- SLF001: Private member access (needs # noqa)
 
 ### Worker Agent - Completed Files
 1. ✅ tests/integration/test_goes_imagery_tab_v2.py (commit bea0bf5)
