@@ -1,6 +1,6 @@
 """Unit tests for TimeIndex core functionality - Optimized Version 2."""
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -24,8 +24,8 @@ class TestBasicTimeIndexV2(unittest.TestCase):
     def setUpClass(cls) -> None:
         """Set up class-level fixtures for all test methods."""
         # Sample dates for testing - shared across all tests
-        cls.test_date_recent = datetime(2023, 6, 15, 12, 30, 0)  # Recent date
-        cls.test_date_old = datetime(2022, 1, 1, 0, 0, 0)  # Old date
+        cls.test_date_recent = datetime(2023, 6, 15, 12, 30, 0, tzinfo=UTC)  # Recent date
+        cls.test_date_old = datetime(2022, 1, 1, 0, 0, 0, tzinfo=UTC)  # Old date
 
         # Test satellites - shared across all tests
         cls.satellites = {"goes16": SatellitePattern.GOES_16, "goes18": SatellitePattern.GOES_18}
@@ -52,7 +52,7 @@ class TestBasicTimeIndexV2(unittest.TestCase):
     @pytest.mark.parametrize(
         "satellite_key,expected_url", [("goes16", 'expected_urls["goes16"]'), ("goes18", 'expected_urls["goes18"]')]
     )
-    def test_to_cdn_url_parametrized(self, satellite_key: str, expected_url: str) -> None:
+    def test_to_cdn_url_parametrized(self, satellite_key: str, expected_url: str) -> None:  # noqa: ARG002
         """Test generating CDN URLs for different satellites using parametrization."""
         satellite = self.satellites[satellite_key]
         expected = self.expected_urls[satellite_key]
@@ -105,10 +105,10 @@ class TestBasicTimeIndexV2(unittest.TestCase):
         assert path == expected
 
     @patch("goesvfi.integrity_check.time_utils.timestamp.datetime")
-    def test_is_recent_comprehensive(self, mock_datetime) -> None:
+    def test_is_recent_comprehensive(self, mock_datetime) -> None:  # noqa: ANN001
         """Test the is_recent function with comprehensive scenarios using mocked time."""
         # Set up a known reference time
-        reference_time = datetime(2023, 6, 20, 0, 0, 0)
+        reference_time = datetime(2023, 6, 20, 0, 0, 0, tzinfo=UTC)
         mock_datetime.now.return_value = reference_time
         mock_datetime.side_effect = datetime
 
@@ -171,7 +171,7 @@ class TestBasicTimeIndexV2(unittest.TestCase):
 
     def test_edge_case_midnight_handling(self) -> None:
         """Test handling of edge cases around midnight."""
-        midnight = datetime(2023, 6, 15, 0, 0, 0)
+        midnight = datetime(2023, 6, 15, 0, 0, 0, tzinfo=UTC)
 
         # Test URL generation at midnight
         url = to_cdn_url(midnight, self.satellites["goes16"])
@@ -184,14 +184,14 @@ class TestBasicTimeIndexV2(unittest.TestCase):
     def test_year_boundary_handling(self) -> None:
         """Test handling of year boundaries in date formatting."""
         # Test New Year's Eve
-        nye = datetime(2022, 12, 31, 23, 59, 59)
+        nye = datetime(2022, 12, 31, 23, 59, 59, tzinfo=UTC)
         url = to_cdn_url(nye, self.satellites["goes16"])
 
         # Should be day 365 of 2022 (not leap year)
         assert "2022365" in url, "New Year's Eve should be day 365"
 
         # Test New Year's Day
-        nyd = datetime(2023, 1, 1, 0, 0, 0)
+        nyd = datetime(2023, 1, 1, 0, 0, 0, tzinfo=UTC)
         url = to_cdn_url(nyd, self.satellites["goes16"])
 
         # Should be day 001 of 2023
