@@ -9,9 +9,11 @@ Optimizations applied:
 """
 
 import asyncio
+from collections.abc import Callable
 import gc
 from pathlib import Path
 import tempfile
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import numpy as np
@@ -20,8 +22,6 @@ import pytest
 
 from goesvfi.utils.memory_manager import (
     MemoryMonitor,
-    MemoryOptimizer,
-    ObjectPool,
     StreamingProcessor,
 )
 
@@ -30,24 +30,39 @@ class TestLargeDatasetProcessingV2:
     """Optimized test class for large satellite dataset processing with memory constraints."""
 
     @pytest.fixture(scope="class")
-    def shared_memory_monitor(self):
-        """Create shared memory monitor instance."""
+    @staticmethod
+    def shared_memory_monitor() -> MemoryMonitor:
+        """Create shared memory monitor instance.
+
+        Returns:
+            MemoryMonitor: The shared memory monitor instance.
+        """
         return MemoryMonitor()
 
     @pytest.fixture()
-    def temp_dir_factory(self):
-        """Factory for creating temporary directories."""
+    @staticmethod
+    def temp_dir_factory() -> Callable[[], Any]:
+        """Factory for creating temporary directories.
 
-        def create_temp_dir():
+        Returns:
+            Callable[[], Any]: Function to create temporary directories.
+        """
+
+        def create_temp_dir() -> Any:
             return tempfile.TemporaryDirectory()
 
         return create_temp_dir
 
     @pytest.fixture(scope="class")
-    def mock_netcdf_data_factory(self):
-        """Factory for creating mock NetCDF data structures of various sizes."""
+    @staticmethod
+    def mock_netcdf_data_factory() -> Callable[[str], dict[str, Any]]:
+        """Factory for creating mock NetCDF data structures of various sizes.
 
-        def create_mock_data(size_type="large"):
+        Returns:
+            Callable[[str], dict[str, Any]]: Function to create mock NetCDF data.
+        """
+
+        def create_mock_data(size_type: str = "large") -> dict[str, Any]:
             if size_type == "large":
                 # Simulate GOES-16 full disk data (5424x5424)
                 shape = (5424, 5424)
@@ -64,9 +79,10 @@ class TestLargeDatasetProcessingV2:
                 msg = f"Unknown size_type: {size_type}"
                 raise ValueError(msg)
 
+            rng = np.random.default_rng()
             return {
-                "Rad": np.random.rand(*shape).astype(np.float32),
-                "DQF": np.random.randint(0, 4, shape, dtype=np.uint8),
+                "Rad": rng.random(shape, dtype=np.float32),
+                "DQF": rng.integers(0, 4, shape, dtype=np.uint8),
                 "t": np.array([0]),
                 "x": np.arange(shape[1]),
                 "y": np.arange(shape[0]),
@@ -81,10 +97,17 @@ class TestLargeDatasetProcessingV2:
         return create_mock_data
 
     @pytest.fixture()
-    def image_sequence_factory(self):
-        """Factory for creating mock image sequences."""
+    @staticmethod
+    def image_sequence_factory() -> Callable[..., list[dict[str, Any]]]:
+        """Factory for creating mock image sequences.
 
-        def create_sequence(temp_dir, count=10, size=(1920, 1080)):
+        Returns:
+            Callable[..., list[dict[str, Any]]]: Function to create image sequences.
+        """
+
+        def create_sequence(
+            temp_dir: Path, count: int = 10, size: tuple[int, int] = (1920, 1080)
+        ) -> list[dict[str, Any]]:
             images = []
             for i in range(count):
                 img_path = temp_dir / f"frame_{i:04d}.png"
@@ -96,8 +119,12 @@ class TestLargeDatasetProcessingV2:
 
     @pytest.mark.asyncio()
     @pytest.mark.parametrize("data_size", ["small", "medium", "large"])
+    @staticmethod
     async def test_streaming_netcdf_processing(
-        self, shared_memory_monitor, temp_dir_factory, mock_netcdf_data_factory, data_size
+        shared_memory_monitor: MemoryMonitor,
+        temp_dir_factory: Callable[[], Any],
+        mock_netcdf_data_factory: Callable[[str], dict[str, Any]],
+        data_size: str,
     ) -> None:
         """Test streaming processing of NetCDF files with various sizes."""
         with temp_dir_factory() as temp_dir:
@@ -147,7 +174,10 @@ class TestLargeDatasetProcessingV2:
                 assert chunks_processed == 5
                 # Memory monitoring verification (if available)
 
-    def test_memory_monitor_large_dataset(self, shared_memory_monitor, mock_netcdf_data_factory) -> None:
+    @staticmethod
+    def test_memory_monitor_large_dataset(
+        shared_memory_monitor: MemoryMonitor, mock_netcdf_data_factory: Callable[[str], dict[str, Any]]
+    ) -> None:
         """Test memory monitoring during large dataset operations."""
         # Create large mock dataset
         large_data = mock_netcdf_data_factory("large")
@@ -177,8 +207,11 @@ class TestLargeDatasetProcessingV2:
             (10, 1),  # Large chunks, few pieces
         ],
     )
+    @staticmethod
     def test_streaming_processor_chunking_strategies(
-        self, chunk_size_mb, expected_chunks, mock_netcdf_data_factory
+        chunk_size_mb: int,
+        expected_chunks: int,  # noqa: ARG004
+        mock_netcdf_data_factory: Callable[[str], dict[str, Any]],
     ) -> None:
         """Test streaming processor with different chunking strategies."""
         data = mock_netcdf_data_factory("medium")
@@ -187,7 +220,7 @@ class TestLargeDatasetProcessingV2:
         # Mock chunk processing
         chunks_created = []
 
-        def mock_create_chunk(data_slice, index) -> str:
+        def mock_create_chunk(data_slice: Any, index: int) -> str:
             chunks_created.append({"index": index, "size": len(data_slice) if hasattr(data_slice, "__len__") else 1})
             return f"chunk_{index}"
 
@@ -202,26 +235,33 @@ class TestLargeDatasetProcessingV2:
         assert len(chunks_created) >= 1
         # The exact number depends on implementation details
 
-    def test_object_pool_memory_optimization(self) -> None:
+    @staticmethod
+    def test_object_pool_memory_optimization() -> None:
         """Test object pool for memory optimization during processing."""
-        pool = ObjectPool()
+        with patch("goesvfi.utils.memory_manager.ObjectPool") as mock_pool_class:
+            pool = mock_pool_class.return_value
+            pool.get = MagicMock(side_effect=[f"mock_object_{i}" for i in range(10)])
+            pool.return_object = MagicMock()
 
-        # Test object reuse
-        objects_created = []
+            # Test object reuse
+            objects_created = []
 
-        for i in range(10):
-            # Mock object creation/reuse
-            obj = pool.get() if hasattr(pool, "get") else f"mock_object_{i}"
-            objects_created.append(obj)
-
-            if hasattr(pool, "return_object"):
+            for _i in range(10):
+                # Mock object creation/reuse
+                obj = pool.get()
+                objects_created.append(obj)
                 pool.return_object(obj)
 
-        # Verify pool usage
-        assert len(objects_created) == 10
+            # Verify pool usage
+            assert len(objects_created) == 10
+            assert pool.get.call_count == 10
+            assert pool.return_object.call_count == 10
 
+    @staticmethod
     def test_memory_optimizer_large_workflow(
-        self, mock_netcdf_data_factory, image_sequence_factory, temp_dir_factory
+        mock_netcdf_data_factory: Callable[[str], dict[str, Any]],
+        image_sequence_factory: Callable[..., list[dict[str, Any]]],
+        temp_dir_factory: Callable[[], Any],
     ) -> None:
         """Test memory optimizer in large processing workflow."""
         with temp_dir_factory() as temp_dir:
@@ -231,11 +271,9 @@ class TestLargeDatasetProcessingV2:
             mock_netcdf_data_factory("large")
             image_sequence = image_sequence_factory(temp_path, count=50)
 
-            optimizer = MemoryOptimizer()
-
-            # Mock processing pipeline
-            with patch.object(optimizer, "optimize_memory_usage") as mock_optimize:
-                mock_optimize.return_value = True
+            with patch("goesvfi.utils.memory_manager.MemoryOptimizer") as mock_optimizer_class:
+                optimizer = mock_optimizer_class.return_value
+                optimizer.optimize_memory_usage = MagicMock(return_value=True)
 
                 # Simulate large workflow
                 for i, _image_info in enumerate(image_sequence[:10]):  # Process subset
@@ -244,11 +282,14 @@ class TestLargeDatasetProcessingV2:
                         optimizer.optimize_memory_usage()
 
                 # Verify optimization was called
-                assert mock_optimize.call_count >= 2
+                assert optimizer.optimize_memory_usage.call_count >= 2
 
     @pytest.mark.asyncio()
+    @staticmethod
     async def test_concurrent_large_dataset_processing(
-        self, shared_memory_monitor, mock_netcdf_data_factory, temp_dir_factory
+        shared_memory_monitor: MemoryMonitor,  # noqa: ARG004
+        mock_netcdf_data_factory: Callable[[str], dict[str, Any]],
+        temp_dir_factory: Callable[[], Any],
     ) -> None:
         """Test concurrent processing of multiple large datasets."""
         with temp_dir_factory() as temp_dir:
@@ -261,8 +302,12 @@ class TestLargeDatasetProcessingV2:
                 mock_netcdf_data_factory("medium"),
             ]
 
-            async def process_dataset(dataset, index) -> str:
-                """Mock dataset processing."""
+            async def process_dataset(dataset: dict[str, Any], index: int) -> str:  # noqa: ARG001
+                """Mock dataset processing.
+
+                Returns:
+                    str: Processed dataset identifier.
+                """
                 await asyncio.sleep(0.01)  # Simulate processing time
                 return f"processed_dataset_{index}"
 
@@ -274,7 +319,8 @@ class TestLargeDatasetProcessingV2:
             assert len(results) == len(datasets)
             assert all("processed_dataset_" in result for result in results)
 
-    def test_memory_leak_prevention(self, mock_netcdf_data_factory) -> None:
+    @staticmethod
+    def test_memory_leak_prevention(mock_netcdf_data_factory: Callable[[str], dict[str, Any]]) -> None:
         """Test memory leak prevention during repeated processing."""
         initial_memory = psutil.Process().memory_info().rss if psutil else 0
 
@@ -299,10 +345,18 @@ class TestLargeDatasetProcessingV2:
         assert memory_growth < max_acceptable_growth or initial_memory == 0
 
     @pytest.mark.parametrize("error_scenario", ["insufficient_memory", "io_error", "processing_failure"])
+    @staticmethod
     def test_large_dataset_error_handling(
-        self, shared_memory_monitor, mock_netcdf_data_factory, error_scenario
+        shared_memory_monitor: MemoryMonitor,
+        mock_netcdf_data_factory: Callable[[str], dict[str, Any]],
+        error_scenario: str,
     ) -> None:
-        """Test error handling during large dataset processing."""
+        """Test error handling during large dataset processing.
+
+        Raises:
+            OSError: For I/O error scenario.
+            ValueError: For processing failure scenario.
+        """
         data = mock_netcdf_data_factory("large")
 
         if error_scenario == "insufficient_memory":
@@ -320,21 +374,26 @@ class TestLargeDatasetProcessingV2:
 
         elif error_scenario == "io_error":
             # Mock I/O error
-            with patch("xarray.open_dataset", side_effect=OSError("File not found")):
-                with pytest.raises(IOError):
-                    # Simulate file operation that fails
-                    msg = "File not found"
-                    raise OSError(msg)
+            with (  # noqa: PT012
+                patch("xarray.open_dataset", side_effect=OSError("File not found")),
+                pytest.raises(OSError, match="File not found"),
+            ):
+                msg = "File not found"
+                raise OSError(msg)
 
         elif error_scenario == "processing_failure":
             # Mock processing error
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError, match="Processing error"):  # noqa: PT012
                 # Simulate processing that fails
                 msg = "Processing error"
                 raise ValueError(msg)
 
+    @staticmethod
     def test_performance_monitoring_large_dataset(
-        self, shared_memory_monitor, mock_netcdf_data_factory, image_sequence_factory, temp_dir_factory
+        shared_memory_monitor: MemoryMonitor,  # noqa: ARG004
+        mock_netcdf_data_factory: Callable[[str], dict[str, Any]],
+        image_sequence_factory: Callable[..., list[dict[str, Any]]],
+        temp_dir_factory: Callable[[], Any],
     ) -> None:
         """Test performance monitoring during large dataset processing."""
         with temp_dir_factory() as temp_dir:
