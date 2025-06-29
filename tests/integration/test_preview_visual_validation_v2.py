@@ -8,8 +8,10 @@ Optimizations applied:
 - Comprehensive size and color validation
 """
 
+from collections.abc import Callable
 from pathlib import Path
 import tempfile
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from PIL import Image
@@ -24,27 +26,47 @@ class TestPreviewVisualValidationV2:
     """Optimized test class for preview visual validation."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for all tests."""
+    @staticmethod
+    def shared_app() -> QApplication:
+        """Create shared QApplication for all tests.
+
+        Returns:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture()
-    def temp_dir_factory(self):
-        """Factory for creating temporary directories."""
+    @staticmethod
+    def temp_dir_factory() -> Callable[[], Any]:
+        """Factory for creating temporary directories.
 
-        def create_temp_dir():
+        Returns:
+            Callable[[], Any]: Function to create temporary directories.
+        """
+
+        def create_temp_dir() -> Any:
             return tempfile.TemporaryDirectory()
 
         return create_temp_dir
 
     @pytest.fixture()
-    def test_image_factory(self):
-        """Factory for creating test images with various properties."""
+    @staticmethod
+    def test_image_factory() -> Callable[..., dict[str, Any]]:
+        """Factory for creating test images with various properties.
 
-        def create_test_image(filename, size=(800, 600), color=(255, 0, 0), test_dir=None):
+        Returns:
+            Callable[..., dict[str, Any]]: Function to create test image data.
+        """
+
+        def create_test_image(
+            filename: str,
+            size: tuple[int, int] = (800, 600),
+            color: tuple[int, int, int] = (255, 0, 0),
+            test_dir: Path | None = None,
+        ) -> dict[str, Any]:
             if test_dir is None:
                 # Use a temporary path for mock testing
                 return {"path": Path(f"/mock/{filename}"), "size": size, "color": color, "mock_data": True}
@@ -58,13 +80,18 @@ class TestPreviewVisualValidationV2:
         return create_test_image
 
     @pytest.fixture()
-    def mock_main_window_setup(self, shared_app):
-        """Set up mock MainWindow with minimal GUI dependencies."""
+    @staticmethod
+    def mock_main_window_setup(shared_app: QApplication) -> Callable[[], MagicMock]:  # noqa: ARG004
+        """Set up mock MainWindow with minimal GUI dependencies.
 
-        def create_mock_window():
+        Returns:
+            Callable[[], MagicMock]: Function to create mock window.
+        """
+
+        def create_mock_window() -> MagicMock:
             with patch("goesvfi.utils.settings.sections.BasicSettings.apply_values") as mock_apply:
 
-                def mock_apply_values(target_object, values) -> None:
+                def mock_apply_values(target_object: Any, values: dict[str, Any]) -> None:
                     # Only apply non-directory settings
                     for key, value in values.items():
                         if key != "in_dir" and hasattr(target_object, key):
@@ -91,8 +118,12 @@ class TestPreviewVisualValidationV2:
             {"filename": "test_large.png", "size": (2048, 1536), "color": (128, 128, 128)},
         ],
     )
+    @staticmethod
     def test_preview_image_visibility_scenarios(
-        self, shared_app, test_image_factory, mock_main_window_setup, image_config
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., dict[str, Any]],
+        mock_main_window_setup: Callable[[], MagicMock],
+        image_config: dict[str, Any],
     ) -> None:
         """Test preview image visibility with various image configurations."""
         # Create test image
@@ -115,15 +146,20 @@ class TestPreviewVisualValidationV2:
                 mock_pixmap.return_value = mock_qpixmap
 
                 # Simulate preview display
-                result = self._simulate_preview_display(mock_window, test_image)
+                result = TestPreviewVisualValidationV2._simulate_preview_display(mock_window, test_image)
 
                 # Verify visibility properties
                 assert result["displayed"] is True
                 assert result["size"] == test_image["size"]
                 assert result["visible"] is True
 
-    def _simulate_preview_display(self, mock_window, test_image):
-        """Simulate preview image display process."""
+    @staticmethod
+    def _simulate_preview_display(mock_window: MagicMock, test_image: dict[str, Any]) -> dict[str, Any]:  # noqa: ARG004
+        """Simulate preview image display process.
+
+        Returns:
+            dict[str, Any]: Display state information.
+        """
         # Mock the preview display logic
         preview_size = test_image["size"]
 
@@ -141,8 +177,11 @@ class TestPreviewVisualValidationV2:
             "path": test_image["path"],
         }
 
+    @staticmethod
     def test_preview_size_validation_comprehensive(
-        self, shared_app, test_image_factory, mock_main_window_setup
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., dict[str, Any]],
+        mock_main_window_setup: Callable[[], MagicMock],
     ) -> None:
         """Test comprehensive preview size validation."""
         mock_window = mock_main_window_setup()
@@ -157,14 +196,20 @@ class TestPreviewVisualValidationV2:
         ]
 
         for test_case in size_test_cases:
+            size_tuple = test_case["size"]
             test_image = test_image_factory(
-                filename=f"size_test_{test_case['size'][0]}x{test_case['size'][1]}.png", size=test_case["size"]
+                filename=f"size_test_{size_tuple[0]}x{size_tuple[1]}.png", size=size_tuple
             )
 
-            result = self._simulate_preview_display(mock_window, test_image)
+            result = TestPreviewVisualValidationV2._simulate_preview_display(mock_window, test_image)
             assert result["visible"] == test_case["expected_valid"]
 
-    def test_preview_color_accuracy_validation(self, shared_app, test_image_factory, mock_main_window_setup) -> None:
+    @staticmethod
+    def test_preview_color_accuracy_validation(
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., dict[str, Any]],
+        mock_main_window_setup: Callable[[], MagicMock],
+    ) -> None:
         """Test preview color accuracy validation."""
         mock_main_window_setup()
 
@@ -179,19 +224,25 @@ class TestPreviewVisualValidationV2:
         ]
 
         for test_case in color_test_cases:
-            test_image_factory(filename=f"color_{test_case['name']}.png", color=test_case["color"])
+            color_tuple = test_case["color"]
+            test_image_factory(filename=f"color_{test_case['name']}.png", color=color_tuple)
 
             # Mock color validation
             with patch("PIL.Image.open") as mock_pil_open:
                 mock_img = MagicMock()
-                mock_img.getpixel.return_value = test_case["color"]
+                mock_img.getpixel.return_value = color_tuple
                 mock_pil_open.return_value = mock_img
 
                 # Verify color can be extracted
                 extracted_color = mock_img.getpixel((0, 0))
-                assert extracted_color == test_case["color"]
+                assert extracted_color == color_tuple
 
-    def test_preview_scaling_behavior(self, shared_app, test_image_factory, mock_main_window_setup) -> None:
+    @staticmethod
+    def test_preview_scaling_behavior(
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., dict[str, Any]],
+        mock_main_window_setup: Callable[[], MagicMock],
+    ) -> None:
         """Test preview scaling behavior for different image sizes."""
         mock_main_window_setup()
 
@@ -203,9 +254,10 @@ class TestPreviewVisualValidationV2:
         ]
 
         for test_case in scaling_test_cases:
+            original_size_tuple = test_case["original_size"]
             test_image_factory(
-                filename=f"scaling_test_{test_case['original_size'][0]}x{test_case['original_size'][1]}.png",
-                size=test_case["original_size"],
+                filename=f"scaling_test_{original_size_tuple[0]}x{original_size_tuple[1]}.png",
+                size=original_size_tuple,
             )
 
             # Mock scaling calculation
@@ -219,7 +271,12 @@ class TestPreviewVisualValidationV2:
             needs_scaling = scale_factor < 1.0
             assert needs_scaling == test_case["expected_scaled"]
 
-    def test_preview_memory_efficiency(self, shared_app, test_image_factory, mock_main_window_setup) -> None:
+    @staticmethod
+    def test_preview_memory_efficiency(
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., dict[str, Any]],
+        mock_main_window_setup: Callable[[], MagicMock],
+    ) -> None:
         """Test preview memory efficiency with multiple images."""
         mock_main_window_setup()
 
@@ -246,8 +303,12 @@ class TestPreviewVisualValidationV2:
         assert len(loaded_previews) == len(test_images)
 
     @pytest.mark.parametrize("error_scenario", ["corrupted_image", "missing_file", "invalid_format"])
+    @staticmethod
     def test_preview_error_handling(
-        self, shared_app, test_image_factory, mock_main_window_setup, error_scenario
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., dict[str, Any]],
+        mock_main_window_setup: Callable[[], MagicMock],
+        error_scenario: str,
     ) -> None:
         """Test preview error handling scenarios."""
         mock_window = mock_main_window_setup()
@@ -264,14 +325,19 @@ class TestPreviewVisualValidationV2:
 
             # Test error handling
             try:
-                result = self._simulate_preview_display(mock_window, test_image)
+                result = TestPreviewVisualValidationV2._simulate_preview_display(mock_window, test_image)
                 # If no exception, verify graceful handling
                 assert result is not None
             except (OSError, FileNotFoundError, ValueError):
                 # Expected for error scenarios
                 pass
 
-    def test_preview_performance_monitoring(self, shared_app, test_image_factory, mock_main_window_setup) -> None:
+    @staticmethod
+    def test_preview_performance_monitoring(
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., dict[str, Any]],
+        mock_main_window_setup: Callable[[], MagicMock],
+    ) -> None:
         """Test preview performance monitoring."""
         mock_window = mock_main_window_setup()
 
@@ -297,7 +363,7 @@ class TestPreviewVisualValidationV2:
                 performance_metrics["load_time"] = load_time - start_time
 
                 # Mock display
-                self._simulate_preview_display(mock_window, test_image)
+                TestPreviewVisualValidationV2._simulate_preview_display(mock_window, test_image)
 
                 display_time = mock_time()
                 performance_metrics["display_time"] = display_time - load_time
@@ -306,7 +372,12 @@ class TestPreviewVisualValidationV2:
         assert performance_metrics["load_time"] >= 0
         assert performance_metrics["display_time"] >= 0
 
-    def test_preview_concurrent_loading(self, shared_app, test_image_factory, mock_main_window_setup) -> None:
+    @staticmethod
+    def test_preview_concurrent_loading(
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., dict[str, Any]],
+        mock_main_window_setup: Callable[[], MagicMock],
+    ) -> None:
         """Test concurrent preview loading behavior."""
         mock_window = mock_main_window_setup()
 
@@ -326,14 +397,18 @@ class TestPreviewVisualValidationV2:
             # Simulate concurrent preview loading
             results = []
             for test_image in test_images:
-                result = self._simulate_preview_display(mock_window, test_image)
+                result = TestPreviewVisualValidationV2._simulate_preview_display(mock_window, test_image)
                 results.append(result)
 
         # Verify all previews loaded successfully
         assert len(results) == len(test_images)
         assert all(result["displayed"] for result in results)
 
-    def test_preview_widget_integration(self, shared_app, mock_main_window_setup) -> None:
+    @staticmethod
+    def test_preview_widget_integration(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window_setup: Callable[[], MagicMock],
+    ) -> None:
         """Test preview widget integration without full GUI."""
         mock_window = mock_main_window_setup()
 
