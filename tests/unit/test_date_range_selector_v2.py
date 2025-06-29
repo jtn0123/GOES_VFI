@@ -2,7 +2,7 @@
 Unit tests for the unified date range selector component - Optimized Version 2.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 import sys
 from unittest.mock import patch
@@ -30,13 +30,13 @@ class TestUnifiedDateRangeSelectorV2(PyQtAsyncTestCase):
     def setUpClass(cls) -> None:
         """Set up class-level fixtures shared across all test methods."""
         # Pre-computed test dates for efficiency
-        cls.reference_date = datetime.now()
+        cls.reference_date = datetime.now(UTC)
         cls.test_dates = {
             "yesterday": cls.reference_date - timedelta(days=1),
             "three_days_ago": cls.reference_date - timedelta(days=3),
             "week_ago": cls.reference_date - timedelta(days=7),
-            "custom_start": datetime(2023, 5, 1, 10, 30),
-            "custom_end": datetime(2023, 5, 15, 16, 45),
+            "custom_start": datetime(2023, 5, 1, 10, 30, tzinfo=UTC),
+            "custom_end": datetime(2023, 5, 15, 16, 45, tzinfo=UTC),
         }
 
         # Pre-computed expected ranges for validation
@@ -78,8 +78,12 @@ class TestUnifiedDateRangeSelectorV2(PyQtAsyncTestCase):
         assert end.hour == expected_end.hour
         assert end.minute == expected_end.minute
 
-    def _convert_datetime_to_qdatetime(self, dt: datetime) -> QDateTime:
-        """Helper method to convert datetime to QDateTime - reduces code duplication."""
+    def _convert_datetime_to_qdatetime(self, dt: datetime) -> QDateTime:  # noqa: PLR6301
+        """Helper method to convert datetime to QDateTime - reduces code duplication.
+
+        Returns:
+            QDateTime: The converted QDateTime object.
+        """
         return QDateTime(dt.year, dt.month, dt.day, dt.hour, dt.minute)
 
     def _process_events_and_verify_dates(self, expected_start: datetime, expected_end: datetime) -> None:
@@ -118,12 +122,12 @@ class TestUnifiedDateRangeSelectorV2(PyQtAsyncTestCase):
             ("last_week", "week_ago_start"),
         ],
     )
-    def test_preset_applications_parametrized(self, preset: str, expected_start_key: str) -> None:
+    def test_preset_applications_parametrized(self, preset: str, expected_start_key: str) -> None:  # noqa: ARG002
         """Test applying different date presets using parametrization."""
         initial_signal_count = len(self.emitted_ranges)
 
         # Apply preset
-        self.selector._apply_preset(preset)
+        self.selector._apply_preset(preset)  # noqa: SLF001
 
         # Verify preset was applied
         start, _end = self.selector.get_date_range()
@@ -172,7 +176,7 @@ class TestUnifiedDateRangeSelectorV2(PyQtAsyncTestCase):
         initial_count = len(self.emitted_ranges)
 
         for i, preset in enumerate(presets_to_test):
-            self.selector._apply_preset(preset)
+            self.selector._apply_preset(preset)  # noqa: SLF001
             # Each preset change should emit exactly one signal
             expected_count = initial_count + i + 1
             assert len(self.emitted_ranges) == expected_count
@@ -199,12 +203,12 @@ class TestCompactDateRangeSelectorV2(PyQtAsyncTestCase):
     def setUpClass(cls) -> None:
         """Set up class-level fixtures shared across all test methods."""
         # Pre-computed dates for efficiency
-        cls.reference_date = datetime.now()
+        cls.reference_date = datetime.now(UTC)
         cls.test_dates = {
             "week_ago": cls.reference_date - timedelta(days=7),
             "yesterday": cls.reference_date - timedelta(days=1),
-            "custom_start": datetime(2023, 5, 1, 10, 30),
-            "custom_end": datetime(2023, 5, 15, 16, 45),
+            "custom_start": datetime(2023, 5, 1, 10, 30, tzinfo=UTC),
+            "custom_end": datetime(2023, 5, 15, 16, 45, tzinfo=UTC),
         }
 
     def setUp(self) -> None:
@@ -307,10 +311,10 @@ class TestCompactDateRangeSelectorV2(PyQtAsyncTestCase):
             assert len(self.emitted_ranges) == expected_count
 
     @patch("goesvfi.integrity_check.date_range_selector.datetime")
-    def test_date_calculations_with_mocked_time(self, mock_datetime) -> None:
+    def test_date_calculations_with_mocked_time(self, mock_datetime) -> None:  # noqa: ANN001, PLR6301
         """Test date calculations with mocked current time for consistency."""
         # Set up a fixed reference time
-        fixed_time = datetime(2023, 6, 15, 12, 0, 0)
+        fixed_time = datetime(2023, 6, 15, 12, 0, 0, tzinfo=UTC)
         mock_datetime.now.return_value = fixed_time
         mock_datetime.side_effect = datetime  # Allow normal datetime construction
 
