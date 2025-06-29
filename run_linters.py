@@ -26,7 +26,10 @@ BOLD = "\033[1m"
 def print_colored(message: str, color: str = RESET, bold: bool = False) -> None:
     """Print a message with color."""
     if bold:
-        pass
+        sys.stdout.write(f"{BOLD}{color}{message}{RESET}\n")
+    else:
+        sys.stdout.write(f"{color}{message}{RESET}\n")
+    sys.stdout.flush()
 
 
 def run_command(cmd: list[str]) -> tuple[int, str]:
@@ -174,7 +177,7 @@ def run_mypy(paths: list[str], strict: bool = False) -> tuple[int, str, int]:
         return 1, "Mypy not installed", 1
 
     # Basic command with common options
-    cmd = [".venv/bin/python", "-m", "mypy", "--disable-error-code=import-untyped"]
+    cmd = [sys.executable, "-m", "mypy", "--disable-error-code=import-untyped"]
 
     if strict:
         cmd.append("--strict")
@@ -301,11 +304,11 @@ def run_ruff(paths: list[str], fix: bool = False) -> tuple[int, str, int]:
         print_colored("Ruff is not installed. Skipping ruff check.", YELLOW)
         return 0, "Ruff not installed", 0
 
-    # Build ruff command
-    cmd = ["ruff", "check", "--output-format=concise"]
+    # Build ruff command - match pre-commit config
+    cmd = ["ruff", "check"]
 
     if fix:
-        cmd.extend(["--fix", "--exit-non-zero-on-fix"])
+        cmd.extend(["--fix", "--exit-non-zero-on-fix", "--show-fixes"])
 
     cmd.extend(paths)
 
@@ -372,14 +375,23 @@ def run_bandit(paths: list[str]) -> tuple[int, str, int]:
         print_colored("Bandit is not installed. Skipping security scan.", YELLOW)
         return 0, "Bandit not installed", 0
 
-    # Build bandit command
-    cmd = ["bandit", "-r", "-f", "txt"]
+    # Build bandit command - match pre-commit config
+    cmd = ["bandit", "-r", "--format", "json", "--severity-level", "medium", "--confidence-level", "medium"]
     cmd.extend(paths)
 
     exit_code, output = run_command(cmd)
 
-    # Count issues by looking for "Issue:" lines
-    issue_count = output.count("Issue:") if output else 0
+    # Count issues by parsing JSON output
+    issue_count = 0
+    if output:
+        try:
+            import json
+
+            data = json.loads(output)
+            issue_count = len(data.get("results", []))
+        except (json.JSONDecodeError, KeyError):
+            # Fallback to text parsing if JSON fails
+            issue_count = output.count("Issue:")
 
     if exit_code == 0:
         print_colored("Bandit found no security issues! ✅", GREEN, bold=True)
