@@ -83,23 +83,44 @@ class PreviewManager(QObject):
             self.load_preview_images(
                 self.current_input_dir,
                 self.current_crop_rect,
-                apply_sanchez=False  # Can be made configurable
+                apply_sanchez=False,  # Can be made configurable
             )
 
     def _emit_preview_signal(self) -> None:
         """Emit preview update signal if data is available."""
         if all([self.first_frame_data, self.middle_frame_data, self.last_frame_data]):
             try:
-                first_pixmap = self._convert_image_data_to_pixmap(self.first_frame_data)
-                middle_pixmap = self._convert_image_data_to_pixmap(self.middle_frame_data)
-                last_pixmap = self._convert_image_data_to_pixmap(self.last_frame_data)
+                # Type narrowing - we know these are not None from the all() check above
+                assert self.first_frame_data is not None
+                assert self.middle_frame_data is not None
+                assert self.last_frame_data is not None
+
+                # Extract numpy arrays from ImageData objects
+                first_array = self.first_frame_data.image_data
+                middle_array = self.middle_frame_data.image_data
+                last_array = self.last_frame_data.image_data
+
+                # Convert PIL Images to numpy arrays if needed
+                if isinstance(first_array, Image.Image):
+                    first_array = np.array(first_array)
+                if isinstance(middle_array, Image.Image):
+                    middle_array = np.array(middle_array)
+                if isinstance(last_array, Image.Image):
+                    last_array = np.array(last_array)
+
+                # Convert to QPixmaps
+                first_pixmap = self.numpy_to_qpixmap(first_array)
+                middle_pixmap = self.numpy_to_qpixmap(middle_array)
+                last_pixmap = self.numpy_to_qpixmap(last_array)
 
                 self.preview_updated.emit(first_pixmap, middle_pixmap, last_pixmap)
             except Exception as e:
                 LOGGER.exception("Error converting preview data to pixmaps")
                 self.preview_error.emit(f"Error creating preview: {e}")
 
-    def request_preview_update(self, input_dir: Path | None = None, crop_rect: tuple[int, int, int, int] | None = None) -> None:
+    def request_preview_update(
+        self, input_dir: Path | None = None, crop_rect: tuple[int, int, int, int] | None = None
+    ) -> None:
         """Request a preview update through UpdateManager.
 
         Args:
@@ -114,11 +135,11 @@ class PreviewManager(QObject):
         # Request batched update instead of immediate
         request_update("preview_load")
 
-    def load_preview_images(
+    def load_preview_images(  # noqa: C901
         self,
         input_dir: Path,
         crop_rect: tuple[int, int, int, int] | None = None,
-        apply_sanchez: bool = False,
+        apply_sanchez: bool = False,  # noqa: FBT001, FBT002
         sanchez_resolution: tuple[int, int] | None = None,
     ) -> bool:
         """Load preview images from the input directory.
@@ -198,7 +219,7 @@ class PreviewManager(QObject):
             # Emit update signal
             self.preview_updated.emit(first_pixmap, middle_pixmap, last_pixmap)
 
-            return True
+            return True  # noqa: TRY300
 
         except Exception as e:
             LOGGER.exception("Error loading preview images")
@@ -209,7 +230,7 @@ class PreviewManager(QObject):
         self,
         input_dir: Path,
         crop_rect: tuple[int, int, int, int] | None = None,
-        apply_sanchez: bool = False,
+        apply_sanchez: bool = False,  # noqa: FBT001, FBT002
         sanchez_resolution: tuple[int, int] | None = None,
         thumbnail_size: QSize = THUMBNAIL_LARGE,
     ) -> bool:
@@ -281,18 +302,17 @@ class PreviewManager(QObject):
                 return False
 
             # Store minimal frame data for compatibility
-            self.first_frame_data = ImageData(first_path, None)  # No full image data
-            self.last_frame_data = ImageData(last_path, None)
-            if middle_path:
-                self.middle_frame_data = ImageData(middle_path, None)
-            else:
-                self.middle_frame_data = None
+            # Note: For thumbnail mode, we don't load full image data to save memory
+            # Set frame_data to None since we only have thumbnails
+            self.first_frame_data = None
+            self.last_frame_data = None
+            self.middle_frame_data = None
 
             # Emit update signal with thumbnails
             self.preview_updated.emit(first_pixmap, middle_pixmap, last_pixmap)
 
-            LOGGER.info(f"Loaded preview thumbnails (size: {thumbnail_size.width()}x{thumbnail_size.height()})")
-            return True
+            LOGGER.info("Loaded preview thumbnails (size: %dx%d)", thumbnail_size.width(), thumbnail_size.height())
+            return True  # noqa: TRY300
 
         except Exception as e:
             LOGGER.exception("Error loading preview thumbnails")
@@ -319,9 +339,7 @@ class PreviewManager(QObject):
         """
         try:
             # Load and process image with existing method
-            image_data = self._load_and_process_image(
-                image_path, crop_rect, True, sanchez_resolution
-            )
+            image_data = self._load_and_process_image(image_path, crop_rect, True, sanchez_resolution)  # noqa: FBT003
 
             if not image_data or image_data.image_data is None:
                 return None
@@ -343,13 +361,13 @@ class PreviewManager(QObject):
             with contextlib.suppress(Exception):
                 temp_path.unlink()
 
-            return thumbnail
+            return thumbnail  # noqa: TRY300
 
         except Exception:
-            LOGGER.exception(f"Error processing Sanchez thumbnail for {image_path}")
+            LOGGER.exception("Error processing Sanchez thumbnail for %s", image_path)
             return None
 
-    def _get_first_middle_last_paths(self, input_dir: Path) -> tuple[Path | None, Path | None, Path | None]:
+    def _get_first_middle_last_paths(self, input_dir: Path) -> tuple[Path | None, Path | None, Path | None]:  # noqa: PLR6301
         """Get the first, middle, and last image paths from a directory.
 
         Args:
@@ -390,11 +408,11 @@ class PreviewManager(QObject):
             LOGGER.exception("Error getting first/middle/last paths")
             return None, None, None
 
-    def _load_and_process_image(
+    def _load_and_process_image(  # noqa: C901, PLR0912
         self,
         path: Path,
         crop_rect: tuple[int, int, int, int] | None,
-        apply_sanchez: bool,
+        apply_sanchez: bool,  # noqa: FBT001
         sanchez_resolution: tuple[int, int] | None,
     ) -> ImageData | None:
         """Load and process a single image.
@@ -452,13 +470,13 @@ class PreviewManager(QObject):
                 if not image_data:
                     return None
 
-            return image_data
+            return image_data  # noqa: TRY300
 
         except Exception:
             LOGGER.exception("Error loading/processing image %s", path)
             return None
 
-    def numpy_to_qpixmap(self, array: np.ndarray[Any, np.dtype[np.uint8]]) -> QPixmap:
+    def numpy_to_qpixmap(self, array: np.ndarray[Any, np.dtype[np.uint8]]) -> QPixmap:  # noqa: PLR6301
         """Convert a numpy array to QPixmap.
 
         Args:
@@ -466,8 +484,16 @@ class PreviewManager(QObject):
 
         Returns:
             QPixmap of the image
+
+        Raises:
+            ValueError: If array has unsupported shape
         """
         try:
+            # Check if array is actually a numpy array
+            if not isinstance(array, np.ndarray):
+                LOGGER.error("Expected numpy array, got %s: %s", type(array), array)
+                return QPixmap()
+
             height, width = array.shape[:2]
 
             # Handle different channel counts
@@ -502,17 +528,20 @@ class PreviewManager(QObject):
                 )
             else:
                 msg = f"Unsupported array shape: {array.shape}"
-                raise ValueError(msg)
+                raise ValueError(msg)  # noqa: TRY301
 
             return QPixmap.fromImage(qimage)
 
         except Exception:
             LOGGER.exception("Error converting numpy array to QPixmap")
-            LOGGER.exception("Array shape: %s, dtype: %s", array.shape, array.dtype)
+            if isinstance(array, np.ndarray):
+                LOGGER.exception("Array shape: %s, dtype: %s", array.shape, array.dtype)
+            else:
+                LOGGER.exception("Input is not a numpy array: %s", type(array))
             # Return empty pixmap on error
             return QPixmap()
 
-    def scale_preview_pixmap(self, pixmap: QPixmap, target_size: QSize) -> QPixmap:
+    def scale_preview_pixmap(self, pixmap: QPixmap, target_size: QSize) -> QPixmap:  # noqa: PLR6301
         """Scale a pixmap to fit within target size while maintaining aspect ratio.
 
         Args:

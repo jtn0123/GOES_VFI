@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import IntEnum
+from pathlib import Path
 from typing import Any
 
 from PyQt6.QtCore import (
@@ -17,6 +18,8 @@ from PyQt6.QtCore import (
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QFileDialog,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -32,6 +35,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from goesvfi.gui_components.icon_manager import get_icon
 from goesvfi.gui_components.update_manager import register_update, request_update
 from goesvfi.utils import log
 
@@ -79,7 +83,7 @@ def get_operation_store() -> Any | None:
 class OperationTableModel(QAbstractTableModel):
     """Table model for displaying operations."""
 
-    def __init__(self) -> None:
+    def __init__(self) -> None:  # noqa: D107
         super().__init__()
         self.operations: list[dict[str, Any]] = []
         self.columns = ["Time", "Operation", "Status", "Duration", "Correlation ID"]
@@ -90,19 +94,19 @@ class OperationTableModel(QAbstractTableModel):
         self.operations = operations
         self.endResetModel()
 
-    def rowCount(self, parent: QModelIndex | None = None) -> int:
+    def rowCount(self, parent: QModelIndex | None = None) -> int:  # noqa: N802, DOC201
         """Get number of rows."""
         if parent is None:
             parent = QModelIndex()
         return len(self.operations)
 
-    def columnCount(self, parent: QModelIndex | None = None) -> int:
+    def columnCount(self, parent: QModelIndex | None = None) -> int:  # noqa: N802, DOC201
         """Get number of columns."""
         if parent is None:
             parent = QModelIndex()
         return len(self.columns)
 
-    def data(self, index: QModelIndex, role: int | None = None) -> Any:
+    def data(self, index: QModelIndex, role: int | None = None) -> Any:  # noqa: C901, PLR0911, PLR0912, DOC201
         """Get data for a cell."""
         if role is None:
             role = Qt.ItemDataRole.DisplayRole
@@ -115,7 +119,7 @@ class OperationTableModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DisplayRole:
             if col == OperationTableColumn.TIME:  # Time
                 timestamp = operation.get("start_time", 0)
-                return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
+                return datetime.fromtimestamp(timestamp, tz=UTC).strftime("%Y-%m-%d %H:%M:%S")
             if col == OperationTableColumn.OPERATION:  # Operation
                 return operation.get("name", "")
             if col == OperationTableColumn.STATUS:  # Status
@@ -142,7 +146,7 @@ class OperationTableModel(QAbstractTableModel):
 
         return None
 
-    def headerData(
+    def headerData(  # noqa: N802
         self,
         section: int,
         orientation: Qt.Orientation,
@@ -182,19 +186,19 @@ class MetricsModel(QAbstractTableModel):
         self.metrics = metrics
         self.endResetModel()
 
-    def rowCount(self, parent: QModelIndex | None = None) -> int:
+    def rowCount(self, parent: QModelIndex | None = None) -> int:  # noqa: N802
         """Get number of rows."""
         if parent is None:
             parent = QModelIndex()
         return len(self.metrics)
 
-    def columnCount(self, parent: QModelIndex | None = None) -> int:
+    def columnCount(self, parent: QModelIndex | None = None) -> int:  # noqa: N802
         """Get number of columns."""
         if parent is None:
             parent = QModelIndex()
         return len(self.columns)
 
-    def data(self, index: QModelIndex, role: int | None = None) -> Any:
+    def data(self, index: QModelIndex, role: int | None = None) -> Any:  # noqa: C901, PLR0911
         """Get data for a cell."""
         if role is None:
             role = Qt.ItemDataRole.DisplayRole
@@ -230,7 +234,7 @@ class MetricsModel(QAbstractTableModel):
 
         return None
 
-    def headerData(
+    def headerData(  # noqa: N802
         self,
         section: int,
         orientation: Qt.Orientation,
@@ -295,20 +299,29 @@ class OperationHistoryTab(QWidget):
         self._setup_update_manager()
         self.refresh_data()
 
-    def _init_ui(self) -> None:
+    def _init_ui(self) -> None:  # noqa: PLR0915, PLR0914
         """Initialize the user interface."""
         layout = QVBoxLayout()
         layout.setContentsMargins(15, 15, 15, 15)
         layout.setSpacing(12)
 
-        # Add header
-        header = QLabel("📃 Operation History")
-        header.setProperty("class", "AppHeader")
-        layout.addWidget(header)
+        # Add header with icon
+        header_widget = QWidget()
+        header_layout = QHBoxLayout(header_widget)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+
+        icon_label = QLabel()
+        icon_label.setPixmap(get_icon("📃").pixmap(24, 24))
+        header_layout.addWidget(icon_label)
+
+        header_text = QLabel("Operation History")
+        header_text.setProperty("class", "AppHeader")
+        header_layout.addWidget(header_text)
+        header_layout.addStretch()
+
+        layout.addWidget(header_widget)
 
         # Controls in a frame
-        from PyQt6.QtWidgets import QFrame
-
         control_frame = QFrame()
         control_frame.setProperty("class", "ControlFrame")
         controls_layout = QHBoxLayout(control_frame)
@@ -400,7 +413,7 @@ class OperationHistoryTab(QWidget):
         details_splitter = QSplitter(Qt.Orientation.Horizontal)
 
         # Operation details
-        details_group = QGroupBox("🔍 Operation Details")
+        details_group = QGroupBox("Operation Details")
         details_layout = QVBoxLayout()
 
         self.details_text = QTextEdit()
@@ -410,7 +423,7 @@ class OperationHistoryTab(QWidget):
         details_splitter.addWidget(details_group)
 
         # Metrics table
-        metrics_group = QGroupBox("📊 Operation Metrics")
+        metrics_group = QGroupBox("Operation Metrics")
         metrics_layout = QVBoxLayout()
 
         self.metrics_table = QTableView()
@@ -449,7 +462,9 @@ class OperationHistoryTab(QWidget):
         """Update table display (called by UpdateManager)."""
         if hasattr(self, "operations_table") and self.operations_table:
             # Force table view update
-            self.operations_table.viewport().update()
+            viewport = self.operations_table.viewport()
+            if viewport:
+                viewport.update()
 
     def _update_details_display(self) -> None:
         """Update details display (called by UpdateManager)."""
@@ -534,10 +549,14 @@ class OperationHistoryTab(QWidget):
         # Times
         start_time = operation.get("start_time", 0)
         end_time = operation.get("end_time")
-        details.append(f"<b>Start Time:</b> {datetime.fromtimestamp(start_time).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+        details.append(
+            f"<b>Start Time:</b> {datetime.fromtimestamp(start_time, tz=UTC).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
+        )
 
         if end_time:
-            details.append(f"<b>End Time:</b> {datetime.fromtimestamp(end_time).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+            details.append(
+                f"<b>End Time:</b> {datetime.fromtimestamp(end_time, tz=UTC).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
+            )
 
         duration = operation.get("duration")
         if duration is not None:
@@ -557,7 +576,7 @@ class OperationHistoryTab(QWidget):
 
         self.details_text.setHtml("<br>".join(details))
 
-    def _toggle_auto_refresh(self, checked: bool) -> None:
+    def _toggle_auto_refresh(self, checked: bool) -> None:  # noqa: FBT001
         """Toggle auto-refresh."""
         if checked:
             interval = self.refresh_interval.value() * 1000  # Convert to milliseconds
@@ -593,10 +612,6 @@ class OperationHistoryTab(QWidget):
 
     def _export_operations(self) -> None:
         """Export operations to file."""
-        from pathlib import Path
-
-        from PyQt6.QtWidgets import QFileDialog
-
         file_path, _ = QFileDialog.getSaveFileName(
             self,
             "Export Operations",
