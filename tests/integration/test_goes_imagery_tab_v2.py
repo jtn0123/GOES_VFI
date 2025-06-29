@@ -8,7 +8,10 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced mock management for Qt components
 """
 
+from collections.abc import Callable, Iterator
+import os
 from pathlib import Path
+from typing import Any
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QMovie
@@ -38,11 +41,14 @@ class TestGOESImageryTabOptimizedV2:
     """Optimized GOES Imagery Tab integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_qt_app(self):
-        """Shared QApplication instance for all GOES imagery tests."""
-        # Skip GUI tests in CI environment
-        import os
+    @staticmethod
+    def shared_qt_app() -> Iterator[QApplication]:
+        """Shared QApplication instance for all GOES imagery tests.
 
+        Yields:
+            QApplication: The application instance for testing.
+        """
+        # Skip GUI tests in CI environment
         if os.environ.get("CI") == "true":
             pytest.skip("GUI tests skipped in CI environment")
 
@@ -53,16 +59,21 @@ class TestGOESImageryTabOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def goes_imagery_components(self):
-        """Create shared components for GOES imagery testing."""
+    @staticmethod
+    def goes_imagery_components() -> dict[str, Any]:  # noqa: C901
+        """Create shared components for GOES imagery testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing test panel classes and UI test manager.
+        """
 
         # Enhanced Image Selection Panel
         class EnhancedImageSelectionPanel(QWidget):
             """Enhanced stub implementation of ImageSelectionPanel with comprehensive functionality."""
 
-            imageRequested = pyqtSignal(dict)
+            imageRequested = pyqtSignal(dict)  # noqa: N815
 
-            def __init__(self, parent=None) -> None:
+            def __init__(self, parent: QWidget | None = None) -> None:
                 super().__init__(parent)
 
                 # Channel selection
@@ -96,7 +107,7 @@ class TestGOESImageryTabOptimizedV2:
                 # Processing combo
                 self.processing_combo = QComboBox()
                 self.processing_combo.addItem("Quick Look", ProcessingMode.QUICKLOOK)
-                self.processing_combo.addItem("Full Processing", ProcessingMode.FULL)
+                self.processing_combo.addItem("Full Processing", ProcessingMode.FULL_RESOLUTION)
 
                 # Size combo
                 self.size_combo = QComboBox()
@@ -123,10 +134,10 @@ class TestGOESImageryTabOptimizedV2:
                 self.updateUIState()
 
                 # Validation state
-                self.is_valid = True
-                self.validation_errors = []
+                self.is_valid: bool = True
+                self.validation_errors: list[str] = []
 
-            def updateUIState(self) -> None:
+            def updateUIState(self) -> None:  # noqa: N802
                 """Update UI state based on mode selection."""
                 if self.image_product_btn.isChecked():
                     self.size_combo.setEnabled(True)
@@ -183,8 +194,12 @@ class TestGOESImageryTabOptimizedV2:
                 }
                 self.imageRequested.emit(request)
 
-            def get_current_selection(self):
-                """Get current selection data for testing."""
+            def get_current_selection(self) -> dict[str, Any]:
+                """Get current selection data for testing.
+
+                Returns:
+                    dict[str, Any]: Current selection state including channel, mode, and validation status.
+                """
                 return {
                     "channel_selected": any(btn.isChecked() for btn in self.channel_group.buttons()),
                     "mode": "image_product" if self.image_product_btn.isChecked() else "raw_data",
@@ -199,7 +214,7 @@ class TestGOESImageryTabOptimizedV2:
         class EnhancedImageViewPanel(QWidget):
             """Enhanced stub implementation of ImageViewPanel with comprehensive functionality."""
 
-            def __init__(self, parent=None) -> None:
+            def __init__(self, parent: QWidget | None = None) -> None:
                 super().__init__(parent)
 
                 # UI elements
@@ -228,11 +243,11 @@ class TestGOESImageryTabOptimizedV2:
                 layout.addWidget(self.info_label)
 
                 # State tracking
-                self.loading_state = False
-                self.current_image_path = None
-                self.load_errors = []
+                self.loading_state: bool = False
+                self.current_image_path: str | Path | None = None
+                self.load_errors: list[str] = []
 
-            def showLoading(self, message="Loading...") -> None:
+            def showLoading(self, message: str = "Loading...") -> None:  # noqa: N802
                 """Show loading state with optional message."""
                 self.loading_state = True
                 self.status_label.setText(message)
@@ -241,24 +256,24 @@ class TestGOESImageryTabOptimizedV2:
 
                 # Create empty movie for testing
                 movie = QMovie()
-                self.image_label.setMovie(movie)
+                self.image_label.setMovie(movie)  # type: ignore[arg-type]
                 self.progress.setVisible(True)
                 self.progress.setValue(0)
 
-            def clearImage(self) -> None:
+            def clearImage(self) -> None:  # noqa: N802
                 """Clear the displayed image and reset state."""
                 self.loading_state = False
                 self.current_image_path = None
                 self.load_errors.clear()
 
                 self.image_label.setText("No imagery loaded")
-                self.image_label.setMovie(None)
+                self.image_label.setMovie(None)  # type: ignore[arg-type]
                 self.status_label.setText("")
                 self.progress.setVisible(False)
                 self.error_label.setVisible(False)
                 self.info_label.setVisible(False)
 
-            def setProgress(self, value, message=None) -> None:
+            def setProgress(self, value: int, message: str | None = None) -> None:  # noqa: N802
                 """Set progress value with optional message."""
                 self.progress.setValue(min(100, max(0, value)))
                 self.progress.setVisible(True)
@@ -266,7 +281,7 @@ class TestGOESImageryTabOptimizedV2:
                 if message:
                     self.status_label.setText(message)
 
-            def showImage(self, path, metadata=None) -> None:
+            def showImage(self, path: str | Path, metadata: dict[str, Any] | None = None) -> None:  # noqa: N802
                 """Show an image from path with optional metadata."""
                 self.loading_state = False
                 self.current_image_path = path
@@ -283,7 +298,7 @@ class TestGOESImageryTabOptimizedV2:
                     self.info_label.setText(info_text)
                     self.info_label.setVisible(True)
 
-            def showError(self, error_message) -> None:
+            def showError(self, error_message: str) -> None:  # noqa: N802
                 """Show error message."""
                 self.loading_state = False
                 self.load_errors.append(error_message)
@@ -293,8 +308,12 @@ class TestGOESImageryTabOptimizedV2:
                 self.progress.setVisible(False)
                 self.status_label.setText("Load failed")
 
-            def get_current_state(self):
-                """Get current state for testing."""
+            def get_current_state(self) -> dict[str, Any]:
+                """Get current state for testing.
+
+                Returns:
+                    dict[str, Any]: Current view panel state including loading status and error info.
+                """
                 return {
                     "loading": self.loading_state,
                     "has_image": self.current_image_path is not None,
@@ -312,16 +331,21 @@ class TestGOESImageryTabOptimizedV2:
             """Manage UI testing scenarios for GOES imagery components."""
 
             def __init__(self) -> None:
-                self.test_scenarios = {
-                    "initial_state": self._test_initial_state,
-                    "mode_switching": self._test_mode_switching,
-                    "validation": self._test_validation,
-                    "image_request": self._test_image_request,
-                    "loading_states": self._test_loading_states,
-                    "error_handling": self._test_error_handling,
+                self.test_scenarios: dict[
+                    str, Callable[[EnhancedImageSelectionPanel, EnhancedImageViewPanel], None]
+                ] = {
+                    "initial_state": UITestManager._test_initial_state,
+                    "mode_switching": UITestManager._test_mode_switching,
+                    "validation": UITestManager._test_validation,
+                    "image_request": UITestManager._test_image_request,
+                    "loading_states": UITestManager._test_loading_states,
+                    "error_handling": UITestManager._test_error_handling,
                 }
 
-            def _test_initial_state(self, selection_panel, view_panel) -> None:
+            @staticmethod
+            def _test_initial_state(
+                selection_panel: "EnhancedImageSelectionPanel", view_panel: "EnhancedImageViewPanel"
+            ) -> None:
                 """Test initial state of panels."""
                 # Selection panel initial state
                 selection_state = selection_panel.get_current_selection()
@@ -339,7 +363,11 @@ class TestGOESImageryTabOptimizedV2:
                 assert not view_state["progress_visible"], "Progress should not be visible initially"
                 assert not view_state["error_visible"], "Error should not be visible initially"
 
-            def _test_mode_switching(self, selection_panel, view_panel) -> None:
+            @staticmethod
+            def _test_mode_switching(
+                selection_panel: "EnhancedImageSelectionPanel",
+                view_panel: "EnhancedImageViewPanel",  # noqa: ARG004
+            ) -> None:
                 """Test mode switching functionality."""
                 # Switch to raw data mode
                 selection_panel.raw_data_btn.setChecked(True)
@@ -361,7 +389,11 @@ class TestGOESImageryTabOptimizedV2:
                 assert not selection_state["resolution_enabled"], "Resolution should be disabled in image_product mode"
                 assert not selection_state["processing_enabled"], "Processing should be disabled in image_product mode"
 
-            def _test_validation(self, selection_panel, view_panel) -> None:
+            @staticmethod
+            def _test_validation(
+                selection_panel: "EnhancedImageSelectionPanel",
+                view_panel: "EnhancedImageViewPanel",  # noqa: ARG004
+            ) -> None:
                 """Test validation functionality."""
                 # Test valid state
                 selection_state = selection_panel.get_current_selection()
@@ -370,14 +402,18 @@ class TestGOESImageryTabOptimizedV2:
 
                 # Test invalid state by clearing combo selections
                 selection_panel.size_combo.setCurrentIndex(-1)  # Clear selection
-                selection_panel._validate_selection()
+                selection_panel._validate_selection()  # noqa: SLF001
 
                 selection_state = selection_panel.get_current_selection()
                 # Validation might still pass if combo has a default value
                 # Just ensure validation runs without errors
                 assert isinstance(selection_state["is_valid"], bool), "Validation should return boolean"
 
-            def _test_image_request(self, selection_panel, view_panel) -> None:
+            @staticmethod
+            def _test_image_request(
+                selection_panel: "EnhancedImageSelectionPanel",
+                view_panel: "EnhancedImageViewPanel",  # noqa: ARG004
+            ) -> None:
                 """Test image request functionality."""
                 # Set up specific selections
                 selection_panel.ch13_btn.setChecked(True)
@@ -390,9 +426,9 @@ class TestGOESImageryTabOptimizedV2:
                         break
 
                 # Capture request signal
-                request_data = None
+                request_data: dict[str, Any] | None = None
 
-                def capture_request(data) -> None:
+                def capture_request(data: dict[str, Any]) -> None:
                     nonlocal request_data
                     request_data = data
 
@@ -408,7 +444,11 @@ class TestGOESImageryTabOptimizedV2:
                 assert request_data["mode"] == ImageryMode.IMAGE_PRODUCT, "Wrong mode in request"
                 assert "timestamp" in request_data, "Missing timestamp in request"
 
-            def _test_loading_states(self, selection_panel, view_panel) -> None:
+            @staticmethod
+            def _test_loading_states(
+                selection_panel: "EnhancedImageSelectionPanel",  # noqa: ARG004
+                view_panel: "EnhancedImageViewPanel",
+            ) -> None:
                 """Test loading states in view panel."""
                 # Test loading state
                 view_panel.showLoading("Test loading message")
@@ -438,7 +478,11 @@ class TestGOESImageryTabOptimizedV2:
                 assert not view_state["loading"], "Should not be loading after clear"
                 assert not view_state["progress_visible"], "Progress should not be visible after clear"
 
-            def _test_error_handling(self, selection_panel, view_panel) -> None:
+            @staticmethod
+            def _test_error_handling(
+                selection_panel: "EnhancedImageSelectionPanel",  # noqa: ARG004
+                view_panel: "EnhancedImageViewPanel",
+            ) -> None:
                 """Test error handling in view panel."""
                 # Test error display
                 view_panel.showError("Network connection failed")
@@ -453,9 +497,14 @@ class TestGOESImageryTabOptimizedV2:
                 assert not view_state["error_visible"], "Error should be cleared"
                 assert len(view_state["errors"]) == 0, "Error list should be cleared"
 
-            def run_test_scenario(self, scenario, selection_panel, view_panel):
+            def run_test_scenario(
+                self,
+                scenario: str,
+                selection_panel: "EnhancedImageSelectionPanel",
+                view_panel: "EnhancedImageViewPanel",
+            ) -> None:
                 """Run specified test scenario."""
-                return self.test_scenarios[scenario](selection_panel, view_panel)
+                self.test_scenarios[scenario](selection_panel, view_panel)
 
         return {
             "selection_panel_class": EnhancedImageSelectionPanel,
@@ -463,15 +512,17 @@ class TestGOESImageryTabOptimizedV2:
             "ui_test_manager": UITestManager(),
         }
 
-    def test_goes_imagery_comprehensive_scenarios(self, shared_qt_app, goes_imagery_components) -> None:
+    def test_goes_imagery_comprehensive_scenarios(  # noqa: PLR0912, C901, PLR6301
+        self, shared_qt_app: QApplication, goes_imagery_components: dict[str, Any]
+    ) -> None:
         """Test comprehensive GOES imagery scenarios."""
         components = goes_imagery_components
-        SelectionPanel = components["selection_panel_class"]
-        ViewPanel = components["view_panel_class"]
+        selection_panel_class = components["selection_panel_class"]
+        view_panel_class = components["view_panel_class"]
         ui_test_manager = components["ui_test_manager"]
 
         # Define comprehensive test scenarios
-        imagery_scenarios = [
+        imagery_scenarios: list[dict[str, Any]] = [
             {
                 "name": "Basic Panel Functionality",
                 "ui_tests": ["initial_state", "mode_switching"],
@@ -508,8 +559,8 @@ class TestGOESImageryTabOptimizedV2:
         # Test each scenario
         for scenario in imagery_scenarios:
             # Create panel instances
-            selection_panel = SelectionPanel()
-            view_panel = ViewPanel()
+            selection_panel = selection_panel_class()
+            view_panel = view_panel_class()
 
             try:
                 # Run UI tests
@@ -560,11 +611,15 @@ class TestGOESImageryTabOptimizedV2:
                 view_panel.deleteLater()
                 shared_qt_app.processEvents()
 
-    def test_goes_imagery_tab_integration(self, shared_qt_app, goes_imagery_components) -> None:
+    def test_goes_imagery_tab_integration(  # noqa: C901, PLR6301
+        self,
+        shared_qt_app: QApplication,
+        goes_imagery_components: dict[str, Any],  # noqa: ARG002
+    ) -> None:
         """Test GOES imagery tab integration with actual GOESImageryTab."""
 
         # Integration test scenarios with actual tab
-        integration_scenarios = [
+        integration_scenarios: list[dict[str, Any]] = [
             {
                 "name": "Tab Initialization and Basic Functionality",
                 "test_initial_state": True,
@@ -628,16 +683,14 @@ class TestGOESImageryTabOptimizedV2:
                         # Reset to original
                         tab.channel_combo.setCurrentIndex(original_index)
 
-                if scenario.get("test_button_interactions"):
-                    # Test button interactions
-                    if hasattr(tab, "load_button") and tab.load_button:
-                        # Test button click (should not crash)
-                        tab.status_label.text()
-                        tab.load_button.click()
-                        shared_qt_app.processEvents()
+                if scenario.get("test_button_interactions") and hasattr(tab, "load_button") and tab.load_button:
+                    # Test button click (should not crash)
+                    tab.status_label.text()
+                    tab.load_button.click()
+                    shared_qt_app.processEvents()
 
-                        # Button click should not crash the application
-                        assert True  # If we reach here, no crash occurred
+                    # Button click should not crash the application
+                    assert True  # If we reach here, no crash occurred
 
                 if scenario.get("test_status_messages"):
                     # Test status message functionality
@@ -655,14 +708,15 @@ class TestGOESImageryTabOptimizedV2:
                         )
 
                 # Test tab-specific functionality
-                self._test_tab_specific_functionality(tab, scenario)
+                TestGOESImageryTabOptimizedV2._test_tab_specific_functionality(tab, scenario)
 
             finally:
                 # Clean up tab
                 tab.deleteLater()
                 shared_qt_app.processEvents()
 
-    def _test_tab_specific_functionality(self, tab, scenario) -> None:
+    @staticmethod
+    def _test_tab_specific_functionality(tab: GOESImageryTab, scenario: dict[str, Any]) -> None:  # noqa: ARG004
         """Test functionality specific to GOESImageryTab."""
         # Test combo box content if populated
         if hasattr(tab, "product_combo") and tab.product_combo.count() > 0:
@@ -679,14 +733,16 @@ class TestGOESImageryTabOptimizedV2:
                 tab.channel_combo.setCurrentIndex(c02_index)
                 assert tab.channel_combo.currentText() == "C02", "C02 channel not selected correctly"
 
-    def test_goes_imagery_stress_testing(self, shared_qt_app, goes_imagery_components) -> None:
+    def test_goes_imagery_stress_testing(  # noqa: PLR6301
+        self, shared_qt_app: QApplication, goes_imagery_components: dict[str, Any]
+    ) -> None:
         """Test GOES imagery components under stress conditions."""
         components = goes_imagery_components
-        SelectionPanel = components["selection_panel_class"]
-        ViewPanel = components["view_panel_class"]
+        selection_panel_class = components["selection_panel_class"]
+        view_panel_class = components["view_panel_class"]
 
         # Stress test scenarios
-        stress_scenarios = [
+        stress_scenarios: list[dict[str, Any]] = [
             {
                 "name": "Rapid Mode Switching",
                 "iterations": 20,
@@ -711,8 +767,8 @@ class TestGOESImageryTabOptimizedV2:
 
         # Test each stress scenario
         for stress_test in stress_scenarios:
-            selection_panel = SelectionPanel()
-            view_panel = ViewPanel()
+            selection_panel = selection_panel_class()
+            view_panel = view_panel_class()
 
             try:
                 for i in range(stress_test["iterations"]):
@@ -766,40 +822,42 @@ class TestGOESImageryTabOptimizedV2:
                 view_panel.deleteLater()
                 shared_qt_app.processEvents()
 
-    def test_goes_imagery_edge_cases(self, shared_qt_app, goes_imagery_components) -> None:
+    def test_goes_imagery_edge_cases(  # noqa: PLR6301
+        self, shared_qt_app: QApplication, goes_imagery_components: dict[str, Any]
+    ) -> None:
         """Test edge cases and boundary conditions for GOES imagery components."""
         components = goes_imagery_components
-        SelectionPanel = components["selection_panel_class"]
-        ViewPanel = components["view_panel_class"]
+        selection_panel_class = components["selection_panel_class"]
+        view_panel_class = components["view_panel_class"]
 
         # Edge case scenarios
-        edge_cases = [
+        edge_cases: list[dict[str, Any]] = [
             {
                 "name": "Empty Combo Box Selections",
-                "setup": self._setup_empty_combos,
-                "verify": self._verify_empty_combo_handling,
+                "setup": TestGOESImageryTabOptimizedV2._setup_empty_combos,
+                "verify": TestGOESImageryTabOptimizedV2._verify_empty_combo_handling,
             },
             {
                 "name": "Invalid Progress Values",
-                "setup": lambda panel: None,  # No setup needed
-                "verify": self._verify_invalid_progress_handling,
+                "setup": lambda panel: None,  # type: ignore[misc]  # noqa: ARG005 # No setup needed  # noqa: ARG005
+                "verify": TestGOESImageryTabOptimizedV2._verify_invalid_progress_handling,
             },
             {
                 "name": "Extremely Long Error Messages",
-                "setup": lambda panel: None,
-                "verify": self._verify_long_error_handling,
+                "setup": lambda panel: None,  # type: ignore[misc]  # noqa: ARG005
+                "verify": TestGOESImageryTabOptimizedV2._verify_long_error_handling,
             },
             {
                 "name": "Rapid State Changes",
-                "setup": lambda panel: None,
-                "verify": self._verify_rapid_state_changes,
+                "setup": lambda panel: None,  # type: ignore[misc]  # noqa: ARG005
+                "verify": TestGOESImageryTabOptimizedV2._verify_rapid_state_changes,
             },
         ]
 
         # Test each edge case
         for edge_case in edge_cases:
-            selection_panel = SelectionPanel()
-            view_panel = ViewPanel()
+            selection_panel = selection_panel_class()
+            view_panel = view_panel_class()
 
             try:
                 # Setup
@@ -811,7 +869,7 @@ class TestGOESImageryTabOptimizedV2:
                     view_panel if "Progress" in edge_case["name"] or "Error" in edge_case["name"] else selection_panel
                 )
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 pytest.fail(f"Edge case '{edge_case['name']}' failed: {e}")
 
             finally:
@@ -820,67 +878,72 @@ class TestGOESImageryTabOptimizedV2:
                 view_panel.deleteLater()
                 shared_qt_app.processEvents()
 
-    def _setup_empty_combos(self, panel) -> None:
+    @staticmethod
+    def _setup_empty_combos(panel: QWidget) -> None:
         """Setup panel with empty combo boxes."""
         # Clear combo box selections
-        panel.product_combo.setCurrentIndex(-1)
-        panel.size_combo.setCurrentIndex(-1)
-        panel.resolution_combo.setCurrentIndex(-1)
-        panel.processing_combo.setCurrentIndex(-1)
+        panel.product_combo.setCurrentIndex(-1)  # type: ignore[attr-defined]
+        panel.size_combo.setCurrentIndex(-1)  # type: ignore[attr-defined]
+        panel.resolution_combo.setCurrentIndex(-1)  # type: ignore[attr-defined]
+        panel.processing_combo.setCurrentIndex(-1)  # type: ignore[attr-defined]
 
-    def _verify_empty_combo_handling(self, panel) -> None:
+    @staticmethod
+    def _verify_empty_combo_handling(panel: QWidget) -> None:
         """Verify handling of empty combo boxes."""
         # Trigger validation
-        panel._validate_selection()
+        panel._validate_selection()  # type: ignore[attr-defined]  # noqa: SLF001
 
         # Should handle empty selections gracefully
-        state = panel.get_current_selection()
+        state = panel.get_current_selection()  # type: ignore[attr-defined]
         assert isinstance(state["is_valid"], bool), "Validation should return boolean even with empty combos"
 
-    def _verify_invalid_progress_handling(self, panel) -> None:
+    @staticmethod
+    def _verify_invalid_progress_handling(panel: QWidget) -> None:
         """Verify handling of invalid progress values."""
         # Test negative progress
-        panel.setProgress(-10)
-        state = panel.get_current_state()
+        panel.setProgress(-10)  # type: ignore[attr-defined]
+        state = panel.get_current_state()  # type: ignore[attr-defined]
         assert state["progress_value"] >= 0, "Progress should not be negative"
 
         # Test progress over 100
-        panel.setProgress(150)
-        state = panel.get_current_state()
+        panel.setProgress(150)  # type: ignore[attr-defined]
+        state = panel.get_current_state()  # type: ignore[attr-defined]
         assert state["progress_value"] <= 100, "Progress should not exceed 100"
 
-    def _verify_long_error_handling(self, panel) -> None:
+    @staticmethod
+    def _verify_long_error_handling(panel: QWidget) -> None:
         """Verify handling of extremely long error messages."""
         long_error = "Network connection failed " * 100  # Very long error message
-        panel.showError(long_error)
+        panel.showError(long_error)  # type: ignore[attr-defined]
 
-        state = panel.get_current_state()
+        state = panel.get_current_state()  # type: ignore[attr-defined]
         assert state["error_visible"], "Error should be visible even with long message"
         assert len(state["errors"]) > 0, "Error should be tracked even if very long"
 
-    def _verify_rapid_state_changes(self, panel) -> None:
+    @staticmethod
+    def _verify_rapid_state_changes(panel: QWidget) -> None:
         """Verify handling of rapid state changes."""
         # Rapid state changes
         for i in range(50):
             if hasattr(panel, "updateUIState"):
                 # Selection panel
-                panel.image_product_btn.setChecked(i % 2 == 0)
-                panel.raw_data_btn.setChecked(i % 2 == 1)
-                panel.updateUIState()
+                panel.image_product_btn.setChecked(i % 2 == 0)  # type: ignore[attr-defined]
+                panel.raw_data_btn.setChecked(i % 2 == 1)  # type: ignore[attr-defined]
+                panel.updateUIState()  # type: ignore[attr-defined]
             # View panel
             elif i % 4 == 0:
-                panel.showLoading(f"Loading {i}")
+                panel.showLoading(f"Loading {i}")  # type: ignore[attr-defined]
             elif i % 4 == 1:
-                panel.setProgress(i % 100)
+                panel.setProgress(i % 100)  # type: ignore[attr-defined]
             elif i % 4 == 2:
-                panel.showImage(Path(f"image_{i}.png"))
+                panel.showImage(Path(f"image_{i}.png"))  # type: ignore[attr-defined]
             else:
-                panel.clearImage()
+                panel.clearImage()  # type: ignore[attr-defined]
 
         # Should survive rapid changes
         if hasattr(panel, "get_current_selection"):
-            state = panel.get_current_selection()
+            state = panel.get_current_selection()  # type: ignore[attr-defined]
             assert isinstance(state["is_valid"], bool), "Panel should survive rapid state changes"
         else:
-            state = panel.get_current_state()
+            state = panel.get_current_state()  # type: ignore[attr-defined]
             assert isinstance(state["loading"], bool), "Panel should survive rapid state changes"
