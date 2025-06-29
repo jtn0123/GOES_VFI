@@ -11,6 +11,8 @@ from PyQt6.QtWidgets import QApplication
 from goesvfi.gui import MainWindow
 
 app = QApplication(sys.argv)
+app.setOrganizationName('goes-vfi')
+app.setApplicationName('GOES_VFI_App')
 window = MainWindow()
 window.show()
 window.raise_()  # Bring to front
