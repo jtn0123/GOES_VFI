@@ -8,8 +8,9 @@ Optimizations applied:
 - Comprehensive argument validation
 """
 
+from collections.abc import Callable
 import pathlib
-from typing import Never
+from typing import Any, Never
 from unittest.mock import patch
 
 import pytest
@@ -23,10 +24,17 @@ class TestRunFFmpegInterpolationV2:
     """Optimized test class for FFmpeg interpolation functionality."""
 
     @pytest.fixture()
-    def input_factory(self):
-        """Factory for creating test input directories."""
+    @staticmethod
+    def input_factory() -> Callable[..., pathlib.Path]:
+        """Factory for creating test input directories.
 
-        def create_inputs(tmp_path: pathlib.Path, count: int = 3, size=(8, 8), prefix="frame_"):
+        Returns:
+            Callable[..., pathlib.Path]: Function to create test input directories.
+        """
+
+        def create_inputs(
+            tmp_path: pathlib.Path, count: int = 3, size: tuple[int, int] = (8, 8), prefix: str = "frame_"
+        ) -> pathlib.Path:
             input_dir = tmp_path / "input"
             input_dir.mkdir(exist_ok=True)
             for i in range(count):
@@ -36,18 +44,28 @@ class TestRunFFmpegInterpolationV2:
         return create_inputs
 
     @pytest.fixture()
-    def mock_ffmpeg_runner(self):
-        """Mock FFmpeg command runner for testing."""
-        captured_commands = []
+    @staticmethod
+    def mock_ffmpeg_runner() -> tuple[Callable[..., None], list[dict[str, Any]]]:
+        """Mock FFmpeg command runner for testing.
 
-        def fake_run(cmd, desc, monitor_memory=False) -> None:
+        Returns:
+            tuple[Callable[..., None], list[dict[str, Any]]]: Fake run function and captured commands list.
+        """
+        captured_commands: list[dict[str, Any]] = []
+
+        def fake_run(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
             captured_commands.append({"cmd": cmd, "desc": desc, "monitor_memory": monitor_memory})
 
         return fake_run, captured_commands
 
     @pytest.fixture()
-    def default_ffmpeg_params(self):
-        """Default parameters for FFmpeg interpolation tests."""
+    @staticmethod
+    def default_ffmpeg_params() -> dict[str, Any]:
+        """Default parameters for FFmpeg interpolation tests.
+
+        Returns:
+            dict[str, Any]: Default parameters for testing.
+        """
         return {
             "fps": 30,
             "num_intermediate_frames": 1,
@@ -78,8 +96,12 @@ class TestRunFFmpegInterpolationV2:
             "pix_fmt": "yuv420p",
         }
 
+    @staticmethod
     def test_ffmpeg_interpolation_successful_execution(
-        self, tmp_path, input_factory, mock_ffmpeg_runner, default_ffmpeg_params
+        tmp_path: pathlib.Path,
+        input_factory: Callable[..., pathlib.Path],
+        mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
+        default_ffmpeg_params: dict[str, Any],
     ) -> None:
         """Test successful FFmpeg interpolation execution."""
         fake_run, captured_commands = mock_ffmpeg_runner
@@ -87,8 +109,8 @@ class TestRunFFmpegInterpolationV2:
         output_file = tmp_path / "output.mp4"
 
         # Mock successful output creation
-        def create_output(cmd, desc, monitor_memory=False) -> None:
-            fake_run(cmd, desc, monitor_memory)
+        def create_output(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
+            fake_run(cmd, desc, monitor_memory=monitor_memory)
             output_file.write_text("video_content")
 
         with patch("goesvfi.pipeline.run_ffmpeg._run_ffmpeg_command", side_effect=create_output):
@@ -113,16 +135,23 @@ class TestRunFFmpegInterpolationV2:
             (60, 3, (2, 2, 4, 4)),
         ],
     )
-    def test_ffmpeg_interpolation_parameter_variations(
-        self, tmp_path, input_factory, mock_ffmpeg_runner, default_ffmpeg_params, fps, num_frames, crop_rect
+    @staticmethod
+    def test_ffmpeg_interpolation_parameter_variations(  # noqa: PLR0917
+        tmp_path: pathlib.Path,
+        input_factory: Callable[..., pathlib.Path],
+        mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
+        default_ffmpeg_params: dict[str, Any],
+        fps: int,
+        num_frames: int,
+        crop_rect: tuple[int, int, int, int],
     ) -> None:
         """Test FFmpeg interpolation with various parameter combinations."""
         fake_run, captured_commands = mock_ffmpeg_runner
         input_dir = input_factory(tmp_path, count=4)
         output_file = tmp_path / f"output_{fps}fps.mp4"
 
-        def create_output(cmd, desc, monitor_memory=False) -> None:
-            fake_run(cmd, desc, monitor_memory)
+        def create_output(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
+            fake_run(cmd, desc, monitor_memory=monitor_memory)
             output_file.write_text("video_content")
 
         # Update parameters
@@ -140,16 +169,20 @@ class TestRunFFmpegInterpolationV2:
         cmd_str = " ".join(captured_commands[0]["cmd"])
         assert str(fps) in cmd_str
 
+    @staticmethod
     def test_ffmpeg_interpolation_with_unsharp_filter(
-        self, tmp_path, input_factory, mock_ffmpeg_runner, default_ffmpeg_params
+        tmp_path: pathlib.Path,
+        input_factory: Callable[..., pathlib.Path],
+        mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
+        default_ffmpeg_params: dict[str, Any],
     ) -> None:
         """Test FFmpeg interpolation with unsharp mask filter enabled."""
         fake_run, captured_commands = mock_ffmpeg_runner
         input_dir = input_factory(tmp_path, count=2)
         output_file = tmp_path / "unsharp_output.mp4"
 
-        def create_output(cmd, desc, monitor_memory=False) -> None:
-            fake_run(cmd, desc, monitor_memory)
+        def create_output(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
+            fake_run(cmd, desc, monitor_memory=monitor_memory)
             output_file.write_text("video_content")
 
         # Enable unsharp filter
@@ -181,16 +214,22 @@ class TestRunFFmpegInterpolationV2:
             (15, {"bitrate_kbps": 4000, "bufsize_kb": 6000}),
         ],
     )
+    @staticmethod
     def test_ffmpeg_interpolation_quality_presets(
-        self, tmp_path, input_factory, mock_ffmpeg_runner, default_ffmpeg_params, crf_value, bitrate_params
+        tmp_path: pathlib.Path,
+        input_factory: Callable[..., pathlib.Path],
+        mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
+        default_ffmpeg_params: dict[str, Any],
+        crf_value: int,
+        bitrate_params: dict[str, int],
     ) -> None:
         """Test FFmpeg interpolation with different quality presets."""
         fake_run, captured_commands = mock_ffmpeg_runner
         input_dir = input_factory(tmp_path, count=2)
         output_file = tmp_path / f"crf_{crf_value}.mp4"
 
-        def create_output(cmd, desc, monitor_memory=False) -> None:
-            fake_run(cmd, desc, monitor_memory)
+        def create_output(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
+            fake_run(cmd, desc, monitor_memory=monitor_memory)
             output_file.write_text("video_content")
 
         # Update quality parameters
@@ -205,16 +244,20 @@ class TestRunFFmpegInterpolationV2:
         cmd_str = " ".join(captured_commands[0]["cmd"])
         assert str(crf_value) in cmd_str
 
+    @staticmethod
     def test_ffmpeg_interpolation_debug_mode(
-        self, tmp_path, input_factory, mock_ffmpeg_runner, default_ffmpeg_params
+        tmp_path: pathlib.Path,
+        input_factory: Callable[..., pathlib.Path],
+        mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
+        default_ffmpeg_params: dict[str, Any],
     ) -> None:
         """Test FFmpeg interpolation with debug mode enabled."""
         fake_run, captured_commands = mock_ffmpeg_runner
         input_dir = input_factory(tmp_path, count=2)
         output_file = tmp_path / "debug_output.mp4"
 
-        def create_output(cmd, desc, monitor_memory=False) -> None:
-            fake_run(cmd, desc, monitor_memory)
+        def create_output(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
+            fake_run(cmd, desc, monitor_memory=monitor_memory)
             output_file.write_text("video_content")
 
         # Enable debug mode
@@ -228,16 +271,20 @@ class TestRunFFmpegInterpolationV2:
         assert result == output_file
         assert len(captured_commands) == 1
 
+    @staticmethod
     def test_ffmpeg_interpolation_memory_monitoring(
-        self, tmp_path, input_factory, mock_ffmpeg_runner, default_ffmpeg_params
+        tmp_path: pathlib.Path,
+        input_factory: Callable[..., pathlib.Path],
+        mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
+        default_ffmpeg_params: dict[str, Any],
     ) -> None:
         """Test FFmpeg interpolation with memory monitoring enabled."""
         fake_run, captured_commands = mock_ffmpeg_runner
         input_dir = input_factory(tmp_path, count=2)
         output_file = tmp_path / "memory_monitored.mp4"
 
-        def create_output_with_monitoring(cmd, desc, monitor_memory=False) -> None:
-            fake_run(cmd, desc, monitor_memory)
+        def create_output_with_monitoring(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
+            fake_run(cmd, desc, monitor_memory=monitor_memory)
             output_file.write_text("video_content")
 
         with patch("goesvfi.pipeline.run_ffmpeg._run_ffmpeg_command", side_effect=create_output_with_monitoring):
@@ -248,27 +295,37 @@ class TestRunFFmpegInterpolationV2:
         captured_commands[0]
         # Note: monitor_memory parameter handling depends on implementation
 
-    def test_ffmpeg_interpolation_error_handling(self, tmp_path, input_factory, default_ffmpeg_params) -> None:
+    @staticmethod
+    def test_ffmpeg_interpolation_error_handling(
+        tmp_path: pathlib.Path, input_factory: Callable[..., pathlib.Path], default_ffmpeg_params: dict[str, Any]
+    ) -> None:
         """Test FFmpeg interpolation error handling scenarios."""
         input_dir = input_factory(tmp_path, count=2)
         output_file = tmp_path / "error_output.mp4"
 
         # Mock FFmpeg command failure
-        def failing_run(cmd, desc, monitor_memory=False) -> Never:
+        def failing_run(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> Never:  # noqa: ARG001
             msg = "FFmpeg execution failed"
             raise RuntimeError(msg)
 
-        with patch("goesvfi.pipeline.run_ffmpeg._run_ffmpeg_command", side_effect=failing_run):
-            with pytest.raises(RuntimeError, match="FFmpeg execution failed"):
-                run_ffmpeg_interpolation(input_dir=input_dir, output_mp4_path=output_file, **default_ffmpeg_params)
+        with (
+            patch("goesvfi.pipeline.run_ffmpeg._run_ffmpeg_command", side_effect=failing_run),
+            pytest.raises(RuntimeError, match="FFmpeg execution failed"),
+        ):
+            run_ffmpeg_interpolation(input_dir=input_dir, output_mp4_path=output_file, **default_ffmpeg_params)
 
-    def test_ffmpeg_interpolation_input_validation(self, tmp_path, mock_ffmpeg_runner, default_ffmpeg_params) -> None:
+    @staticmethod
+    def test_ffmpeg_interpolation_input_validation(
+        tmp_path: pathlib.Path,
+        mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
+        default_ffmpeg_params: dict[str, Any],
+    ) -> None:
         """Test FFmpeg interpolation input validation."""
         fake_run, _captured_commands = mock_ffmpeg_runner
         output_file = tmp_path / "validation_output.mp4"
 
-        def create_output(cmd, desc, monitor_memory=False) -> None:
-            fake_run(cmd, desc, monitor_memory)
+        def create_output(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
+            fake_run(cmd, desc, monitor_memory=monitor_memory)
             output_file.write_text("video_content")
 
         # Test with non-existent input directory
@@ -287,16 +344,20 @@ class TestRunFFmpegInterpolationV2:
                 # Expected behavior for missing input directory
                 pass
 
+    @staticmethod
     def test_ffmpeg_interpolation_complex_filter_chain(
-        self, tmp_path, input_factory, mock_ffmpeg_runner, default_ffmpeg_params
+        tmp_path: pathlib.Path,
+        input_factory: Callable[..., pathlib.Path],
+        mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
+        default_ffmpeg_params: dict[str, Any],
     ) -> None:
         """Test FFmpeg interpolation with complex filter combinations."""
         fake_run, captured_commands = mock_ffmpeg_runner
         input_dir = input_factory(tmp_path, count=3)
         output_file = tmp_path / "complex_filter.mp4"
 
-        def create_output(cmd, desc, monitor_memory=False) -> None:
-            fake_run(cmd, desc, monitor_memory)
+        def create_output(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
+            fake_run(cmd, desc, monitor_memory=monitor_memory)
             output_file.write_text("video_content")
 
         # Configure complex filter chain
@@ -321,16 +382,21 @@ class TestRunFFmpegInterpolationV2:
         assert any(mode in cmd_str for mode in ["mci", "obmc", "bidir"])
 
     @pytest.mark.parametrize("pix_fmt", ["yuv420p", "yuv444p", "rgb24"])
+    @staticmethod
     def test_ffmpeg_interpolation_pixel_format_variations(
-        self, tmp_path, input_factory, mock_ffmpeg_runner, default_ffmpeg_params, pix_fmt
+        tmp_path: pathlib.Path,
+        input_factory: Callable[..., pathlib.Path],
+        mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
+        default_ffmpeg_params: dict[str, Any],
+        pix_fmt: str,
     ) -> None:
         """Test FFmpeg interpolation with different pixel formats."""
         fake_run, captured_commands = mock_ffmpeg_runner
         input_dir = input_factory(tmp_path, count=2)
         output_file = tmp_path / f"output_{pix_fmt}.mp4"
 
-        def create_output(cmd, desc, monitor_memory=False) -> None:
-            fake_run(cmd, desc, monitor_memory)
+        def create_output(cmd: list[str], desc: str, *, monitor_memory: bool = False) -> None:
+            fake_run(cmd, desc, monitor_memory=monitor_memory)
             output_file.write_text("video_content")
 
         params = default_ffmpeg_params.copy()
