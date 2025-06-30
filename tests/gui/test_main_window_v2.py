@@ -9,6 +9,7 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 import warnings
 
@@ -24,8 +25,13 @@ class TestMainWindowOptimizedV2:
     """Optimized MainWindow tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Shared QApplication instance."""
+    @staticmethod
+    def shared_app() -> Any:
+        """Shared QApplication instance.
+
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -33,8 +39,13 @@ class TestMainWindowOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def shared_mocks(self):
-        """Create shared mocks that persist across tests."""
+    @staticmethod
+    def shared_mocks() -> dict[str, Any]:
+        """Create shared mocks that persist across tests.
+
+        Yields:
+            dict[str, Any]: Dictionary containing mock objects.
+        """
         with (
             patch("goesvfi.pipeline.run_vfi.VfiWorker") as mock_worker_class,
             patch(
@@ -70,10 +81,17 @@ class TestMainWindowOptimizedV2:
             }
 
     @pytest.fixture(scope="class")
-    def shared_preview_mock(self):
-        """Shared preview processing mock."""
+    @staticmethod
+    def shared_preview_mock() -> Any:
+        """Shared preview processing mock.
 
-        def mock_load_process_scale_preview(self, image_path, target_label, *args, **kwargs):
+        Yields:
+            None: Context manager for preview mocking.
+        """
+
+        def mock_load_process_scale_preview(
+            self: Any, image_path: Any, target_label: Any, *args: Any, **kwargs: Any
+        ) -> QPixmap:
             dummy_pixmap = QPixmap(1, 1)
             if hasattr(target_label, "file_path"):
                 target_label.file_path = str(image_path) if image_path else ""
@@ -86,18 +104,23 @@ class TestMainWindowOptimizedV2:
             yield
 
     @pytest.fixture(scope="class")
-    def shared_model_mock(self):
-        """Shared model population mock."""
+    @staticmethod
+    def shared_model_mock() -> Any:
+        """Shared model population mock.
 
-        def mock_populate(self, main_window) -> None:
+        Yields:
+            None: Context manager for model mocking.
+        """
+
+        def mock_populate(self: Any, main_window: Any) -> None:
             main_window.model_combo.clear()
             main_window.model_combo.addItem("rife-dummy (Dummy Description)", "rife-dummy")
-            main_window.model_combo.setEnabled(True)
+            main_window.model_combo.setEnabled(enabled=True)
             if hasattr(main_window.main_tab, "current_model_key"):
                 main_window.main_tab.current_model_key = "rife-dummy"
             if hasattr(main_window, "model_table"):
                 main_window.model_table.setRowCount(1)
-                from PyQt6.QtWidgets import QTableWidgetItem
+                from PyQt6.QtWidgets import QTableWidgetItem  # noqa: PLC0415
 
                 main_window.model_table.setItem(0, 0, QTableWidgetItem("rife-dummy"))
                 main_window.model_table.setItem(0, 1, QTableWidgetItem("Dummy Description"))
@@ -110,8 +133,13 @@ class TestMainWindowOptimizedV2:
             yield
 
     @pytest.fixture(scope="class")
-    def test_files(self, tmp_path_factory):
-        """Create shared test files."""
+    @staticmethod
+    def test_files(tmp_path_factory: Any) -> dict[str, Any]:
+        """Create shared test files.
+
+        Returns:
+            dict[str, Any]: Dictionary containing test file paths.
+        """
         base_dir = tmp_path_factory.mktemp("main_window_test")
         input_dir = base_dir / "dummy_input"
         input_dir.mkdir()
@@ -120,7 +148,7 @@ class TestMainWindowOptimizedV2:
         for i in range(3):
             f = input_dir / f"image_{i:03d}.png"
             try:
-                from PIL import Image
+                from PIL import Image  # noqa: PLC0415
 
                 img = Image.new("RGB", (10, 10), color="red")
                 img.save(f)
@@ -139,8 +167,15 @@ class TestMainWindowOptimizedV2:
         }
 
     @pytest.fixture()
-    def main_window(self, shared_app, shared_mocks, shared_preview_mock, shared_model_mock, qtbot):
-        """Create MainWindow instance with all mocks applied."""
+    @staticmethod
+    def main_window(
+        shared_app: Any, shared_mocks: dict[str, Any], shared_preview_mock: Any, shared_model_mock: Any, qtbot: Any
+    ) -> Any:
+        """Create MainWindow instance with all mocks applied.
+
+        Yields:
+            MainWindow: Configured main window instance.
+        """
         with patch("goesvfi.gui.QSettings") as MockQSettings:
             mock_settings_inst = MockQSettings.return_value
 
@@ -151,7 +186,7 @@ class TestMainWindowOptimizedV2:
                 "crop_rect": QByteArray(),
             }
 
-            def settings_value_side_effect(key, default=None, type=None):
+            def settings_value_side_effect(key: str, default: Any = None, type: Any = None) -> Any:  # noqa: A002
                 return mock_values.get(key, default)
 
             mock_settings_inst.value.side_effect = settings_value_side_effect
@@ -164,7 +199,8 @@ class TestMainWindowOptimizedV2:
 
             yield window
 
-    def test_initial_ui_state_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_initial_ui_state_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive initial state of all UI components."""
         window = main_window
 
@@ -194,7 +230,10 @@ class TestMainWindowOptimizedV2:
         assert not window.main_tab.crop_button.isEnabled()
         assert not window.main_tab.clear_crop_button.isEnabled()
 
-    def test_path_selection_workflow(self, qtbot, main_window, shared_mocks, test_files) -> None:
+    @staticmethod
+    def test_path_selection_workflow(
+        qtbot: Any, main_window: Any, shared_mocks: dict[str, Any], test_files: dict[str, Any]
+    ) -> None:
         """Test complete path selection workflow."""
         window = main_window
         mocks = shared_mocks
@@ -225,7 +264,8 @@ class TestMainWindowOptimizedV2:
         window._update_start_button_state()
         assert window.main_tab.start_button.isEnabled()
 
-    def test_settings_configuration_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_settings_configuration_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive settings configuration."""
         window = main_window
 
@@ -271,7 +311,8 @@ class TestMainWindowOptimizedV2:
 
         window.main_tab.sanchez_false_colour_checkbox.setChecked(False)
 
-    def test_ffmpeg_settings_integration(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_ffmpeg_settings_integration(qtbot: Any, main_window: Any) -> None:
         """Test FFmpeg settings tab integration."""
         window = main_window
 
@@ -312,7 +353,8 @@ class TestMainWindowOptimizedV2:
         assert not ffmpeg_tab.ffmpeg_vsbmc_checkbox.isChecked()
         assert ffmpeg_tab.ffmpeg_search_param_spinbox.value() == 64
 
-    def test_ui_dynamic_enable_disable_states(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_ui_dynamic_enable_disable_states(qtbot: Any, main_window: Any) -> None:
         """Test dynamic UI enable/disable based on selections."""
         window = main_window
 
@@ -344,7 +386,8 @@ class TestMainWindowOptimizedV2:
         assert window.main_tab.sanchez_options_group.isEnabled()
         assert not window.ffmpeg_settings_tab.ffmpeg_profile_combo.isEnabled()
 
-    def test_rife_tiling_and_sanchez_controls(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_rife_tiling_and_sanchez_controls(qtbot: Any, main_window: Any) -> None:
         """Test RIFE tiling and Sanchez control interactions."""
         window = main_window
 
@@ -386,7 +429,10 @@ class TestMainWindowOptimizedV2:
         window.main_tab.sanchez_res_km_combo.setCurrentText("2")
         assert window.main_tab.sanchez_res_km_combo.currentText() == "2"
 
-    def test_processing_workflow_complete(self, qtbot, main_window, shared_mocks, test_files) -> None:
+    @staticmethod
+    def test_processing_workflow_complete(
+        qtbot: Any, main_window: Any, shared_mocks: dict[str, Any], test_files: dict[str, Any]
+    ) -> None:
         """Test complete processing workflow including start, progress, and completion."""
         window = main_window
 
@@ -407,7 +453,7 @@ class TestMainWindowOptimizedV2:
         assert window is not None
 
         # Test progress updates
-        window._set_processing_state(True)
+        window._set_processing_state(processing=True)
 
         # Test multiple progress values
         progress_scenarios = [
@@ -438,7 +484,10 @@ class TestMainWindowOptimizedV2:
         assert window.main_tab.in_dir_edit.isEnabled()
         assert window.main_tab.out_file_edit.isEnabled()
 
-    def test_error_handling_comprehensive(self, qtbot, main_window, shared_mocks, test_files) -> None:
+    @staticmethod
+    def test_error_handling_comprehensive(
+        qtbot: Any, main_window: Any, shared_mocks: dict[str, Any], test_files: dict[str, Any]
+    ) -> None:
         """Test comprehensive error handling scenarios."""
         window = main_window
         mocks = shared_mocks
@@ -447,7 +496,7 @@ class TestMainWindowOptimizedV2:
         valid_input_dir = test_files["input_dir"]
         window.main_tab.in_dir_edit.setText(str(valid_input_dir))
         window.main_tab.out_file_edit.setText(str(valid_input_dir / "fake_output.mp4"))
-        window._set_processing_state(True)
+        window._set_processing_state(processing=True)
         window.vfi_worker = mocks["worker_instance"]
 
         # Test error scenarios
@@ -469,7 +518,10 @@ class TestMainWindowOptimizedV2:
             assert window.main_tab.out_file_edit.isEnabled()
 
     @patch("goesvfi.gui_tabs.main_tab.CropSelectionDialog")
-    def test_crop_functionality_comprehensive(self, MockCropSelectionDialog, qtbot, main_window, test_files) -> None:
+    @staticmethod
+    def test_crop_functionality_comprehensive(
+        MockCropSelectionDialog: Any, qtbot: Any, main_window: Any, test_files: dict[str, Any]
+    ) -> None:
         """Test comprehensive crop functionality including dialog interactions."""
         window = main_window
         mock_dialog_instance = MockCropSelectionDialog.return_value
@@ -521,7 +573,8 @@ class TestMainWindowOptimizedV2:
         window._update_crop_buttons_state()
         assert not window.main_tab.clear_crop_button.isEnabled()
 
-    def test_preview_functionality_and_zoom(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_preview_functionality_and_zoom(qtbot: Any, main_window: Any) -> None:
         """Test preview functionality and zoom interactions."""
         window = main_window
 
@@ -543,8 +596,13 @@ class TestMainWindowOptimizedV2:
             mock_show_zoom.assert_called_once_with(test_label)
 
     @patch("goesvfi.gui_tabs.main_tab.CropSelectionDialog")
+    @staticmethod
     def test_crop_persistence_across_tabs(
-        self, MockCropSelectionDialog, qtbot, main_window, test_files, shared_mocks
+        MockCropSelectionDialog: Any,
+        qtbot: Any,
+        main_window: Any,
+        test_files: dict[str, Any],
+        shared_mocks: dict[str, Any],
     ) -> None:
         """Test that crop settings persist when switching tabs."""
         window = main_window
@@ -582,7 +640,10 @@ class TestMainWindowOptimizedV2:
         QApplication.processEvents()
         assert window.ffmpeg_settings_tab.crop_filter_edit.text() == expected_filter
 
-    def test_complete_ui_workflow_integration(self, qtbot, main_window, shared_mocks, test_files) -> None:
+    @staticmethod
+    def test_complete_ui_workflow_integration(
+        qtbot: Any, main_window: Any, shared_mocks: dict[str, Any], test_files: dict[str, Any]
+    ) -> None:
         """Test complete UI workflow integration from setup to completion."""
         window = main_window
         test_files["input_dir"]
@@ -611,7 +672,7 @@ class TestMainWindowOptimizedV2:
         QApplication.processEvents()
 
         # 4. Simulate processing progress
-        window._set_processing_state(True)
+        window._set_processing_state(processing=True)
         window._on_processing_progress(50, 100, 2.5)
         assert "50%" in window.status_bar.currentMessage()
 
@@ -626,7 +687,8 @@ class TestMainWindowOptimizedV2:
         assert window.main_tab.rife_options_group.isEnabled()
         assert window.main_tab.model_combo.isEnabled()
 
-    def test_edge_cases_and_robustness(self, qtbot, main_window, shared_mocks) -> None:
+    @staticmethod
+    def test_edge_cases_and_robustness(qtbot: Any, main_window: Any, shared_mocks: dict[str, Any]) -> None:
         """Test edge cases and robustness scenarios."""
         window = main_window
 
@@ -649,7 +711,7 @@ class TestMainWindowOptimizedV2:
             QApplication.processEvents()
 
         # Test multiple error scenarios
-        window._set_processing_state(True)
+        window._set_processing_state(processing=True)
         error_messages = ["Error 1", "Error 2", "Error 3"]
         for error in error_messages:
             window._on_processing_error(error)
