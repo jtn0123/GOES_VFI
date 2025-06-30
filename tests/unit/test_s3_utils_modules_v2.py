@@ -75,14 +75,14 @@ class TestS3UtilsModulesOptimizedV2:
 
                 # Define test scenarios
                 self.test_scenarios = {
-                    "stats_tracking": self._test_stats_tracking,
-                    "error_tracking": self._test_error_tracking,
-                    "client_config": self._test_client_config,
-                    "network_diagnostics": self._test_network_diagnostics,
-                    "error_conversion": self._test_error_conversion,
-                    "metrics_calculation": self._test_metrics_calculation,
-                    "edge_cases": self._test_edge_cases,
-                    "performance_validation": self._test_performance_validation,
+                    "stats_tracking": self._test_stats_tracking  # noqa: SLF001,
+                    "error_tracking": self._test_error_tracking  # noqa: SLF001,
+                    "client_config": self._test_client_config  # noqa: SLF001,
+                    "network_diagnostics": self._test_network_diagnostics  # noqa: SLF001,
+                    "error_conversion": self._test_error_conversion  # noqa: SLF001,
+                    "metrics_calculation": self._test_metrics_calculation  # noqa: SLF001,
+                    "edge_cases": self._test_edge_cases  # noqa: SLF001,
+                    "performance_validation": self._test_performance_validation  # noqa: SLF001,
                 }
 
             def create_stats_tracker(self) -> DownloadStatsTracker:
@@ -662,7 +662,8 @@ class TestS3UtilsModulesOptimizedV2:
 
         return {"manager": S3UtilsTestManager()}
 
-    def test_stats_tracking_scenarios(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_stats_tracking_scenarios(s3_utils_test_components) -> None:
         """Test statistics tracking scenarios."""
         manager = s3_utils_test_components["manager"]
 
@@ -675,83 +676,91 @@ class TestS3UtilsModulesOptimizedV2:
         ]
 
         for scenario in tracking_scenarios:
-            result = manager._test_stats_tracking(scenario)
+            result = manager._test_stats_tracking  # noqa: SLF001(scenario)
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_error_tracking_scenarios(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_error_tracking_scenarios(s3_utils_test_components) -> None:
         """Test error tracking scenarios."""
         manager = s3_utils_test_components["manager"]
 
-        result = manager._test_error_tracking("error_history")
+        result = manager._test_error_tracking  # noqa: SLF001("error_history")
         assert result["scenario"] == "error_history"
         assert result["results"]["total_errors"] == 25
         assert result["results"]["error_history_count"] == 20
 
-    def test_client_config_scenarios(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_client_config_scenarios(s3_utils_test_components) -> None:
         """Test S3 client configuration scenarios."""
         manager = s3_utils_test_components["manager"]
 
         config_scenarios = ["default_config", "custom_configs", "botocore_config"]
 
         for scenario in config_scenarios:
-            result = manager._test_client_config(scenario)
+            result = manager._test_client_config  # noqa: SLF001(scenario)
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_network_diagnostics_scenarios(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_network_diagnostics_scenarios(s3_utils_test_components) -> None:
         """Test network diagnostics scenarios."""
         manager = s3_utils_test_components["manager"]
 
         diagnostic_scenarios = ["system_info", "s3_resolution", "error_details"]
 
         for scenario in diagnostic_scenarios:
-            result = manager._test_network_diagnostics(scenario)
+            result = manager._test_network_diagnostics  # noqa: SLF001(scenario)
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_error_conversion_scenarios(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_error_conversion_scenarios(s3_utils_test_components) -> None:
         """Test error conversion scenarios."""
         manager = s3_utils_test_components["manager"]
 
         conversion_scenarios = ["client_errors", "generic_errors", "error_type_detection"]
 
         for scenario in conversion_scenarios:
-            result = manager._test_error_conversion(scenario)
+            result = manager._test_error_conversion  # noqa: SLF001(scenario)
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_metrics_calculation_scenarios(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_metrics_calculation_scenarios(s3_utils_test_components) -> None:
         """Test metrics calculation scenarios."""
         manager = s3_utils_test_components["manager"]
 
         metrics_scenarios = ["comprehensive_metrics", "edge_case_metrics"]
 
         for scenario in metrics_scenarios:
-            result = manager._test_metrics_calculation(scenario)
+            result = manager._test_metrics_calculation  # noqa: SLF001(scenario)
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_edge_case_scenarios(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_edge_case_scenarios(s3_utils_test_components) -> None:
         """Test edge cases and boundary conditions."""
         manager = s3_utils_test_components["manager"]
 
-        result = manager._test_edge_cases("logging_triggers")
+        result = manager._test_edge_cases  # noqa: SLF001("logging_triggers")
         assert result["scenario"] == "logging_triggers"
         assert result["results"]["log_triggers"] == [9, 19]
         assert result["results"]["diagnostic_triggers"] == [4, 9]
 
-    def test_performance_validation_scenarios(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_performance_validation_scenarios(s3_utils_test_components) -> None:
         """Test performance validation scenarios."""
         manager = s3_utils_test_components["manager"]
 
-        result = manager._test_performance_validation("high_volume_tracking")
+        result = manager._test_performance_validation  # noqa: SLF001("high_volume_tracking")
         assert result["scenario"] == "high_volume_tracking"
         assert result["results"]["total_tracked"] == 1000
         assert result["results"]["recent_attempts_limited"] is True
 
     @pytest.mark.parametrize("error_type", ["not_found", "auth", "timeout", "network"])
-    def test_error_type_tracking(self, s3_utils_test_components, error_type) -> None:
+    @staticmethod
+    def test_error_type_tracking(s3_utils_test_components, error_type) -> None:
         """Test tracking of specific error types."""
         manager = s3_utils_test_components["manager"]
         tracker = manager.create_stats_tracker()
@@ -772,34 +781,36 @@ class TestS3UtilsModulesOptimizedV2:
         elif error_type == "network":
             assert stats.network_errors == 5
 
-    def test_comprehensive_s3_utils_validation(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_comprehensive_s3_utils_validation(s3_utils_test_components) -> None:
         """Test comprehensive S3 utilities validation."""
         manager = s3_utils_test_components["manager"]
 
         # Test stats tracking with success and failure
-        result = manager._test_stats_tracking("mixed_attempts")
+        result = manager._test_stats_tracking  # noqa: SLF001("mixed_attempts")
         assert result["results"]["total_attempts"] == 7
         assert result["results"]["successful"] == 3
         assert result["results"]["failed"] == 4
 
         # Test client config
-        result = manager._test_client_config("default_config")
+        result = manager._test_client_config  # noqa: SLF001("default_config")
         assert result["results"]["aws_region"] == "us-east-1"
         assert result["results"]["timeout"] == 60
 
         # Test network diagnostics
-        result = manager._test_network_diagnostics("system_info")
+        result = manager._test_network_diagnostics  # noqa: SLF001("system_info")
         assert result["results"]["has_required_fields"] is True
 
         # Test error conversion
-        result = manager._test_error_conversion("error_type_detection")
+        result = manager._test_error_conversion  # noqa: SLF001("error_type_detection")
         assert result["results"]["all_correct"] is True
 
         # Test metrics
-        result = manager._test_metrics_calculation("comprehensive_metrics")
+        result = manager._test_metrics_calculation  # noqa: SLF001("comprehensive_metrics")
         assert result["results"]["success_rate"] == pytest.approx(66.67, rel=0.01)
 
-    def test_s3_utils_modules_integration_validation(self, s3_utils_test_components) -> None:
+    @staticmethod
+    def test_s3_utils_modules_integration_validation(s3_utils_test_components) -> None:
         """Test S3 utilities modules integration."""
         manager = s3_utils_test_components["manager"]
 
