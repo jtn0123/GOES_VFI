@@ -4,7 +4,7 @@ Tests for core application exceptions - Optimized Version.
 Tests the core exception hierarchy and their usage patterns.
 """
 
-from typing import Never
+from typing import Any, Never
 
 import pytest
 
@@ -30,7 +30,7 @@ class TestGoesVfiError:
             (GoesvfiError, "Very long " * 100),  # Long message
         ],
     )
-    def test_goesvfi_error_creation(self, error_class, message) -> None:
+    def test_goesvfi_error_creation(self, error_class: type, message: str) -> None:  # noqa: PLR6301
         """Test creating base GOES VFI error with various messages."""
         error = error_class(message)
 
@@ -38,7 +38,7 @@ class TestGoesVfiError:
         assert isinstance(error, Exception)
         assert isinstance(error, GoesVfiError)
 
-    def test_goesvfi_error_alias(self) -> None:
+    def test_goesvfi_error_alias(self) -> None:  # noqa: PLR6301
         """Test that GoesvfiError alias works correctly."""
         # Both should be the same class
         assert GoesvfiError is GoesVfiError
@@ -55,8 +55,12 @@ class TestExceptionHierarchy:
     """Test exception hierarchy and relationships - optimized."""
 
     @pytest.fixture()
-    def all_exceptions(self):
-        """Create instances of all exception types."""
+    def all_exceptions(self) -> dict[str, GoesVfiError]:  # noqa: PLR6301
+        """Create instances of all exception types.
+
+        Returns:
+            dict[str, GoesVfiError]: Dictionary mapping exception type names to instances.
+        """
         return {
             "base": GoesVfiError("Base error"),
             "pipeline": PipelineError("Pipeline error"),
@@ -75,7 +79,9 @@ class TestExceptionHierarchy:
             ("base", [GoesVfiError, Exception]),
         ],
     )
-    def test_exception_inheritance(self, all_exceptions, error_type, parent_types) -> None:
+    def test_exception_inheritance(
+        self, all_exceptions: dict[str, GoesVfiError], error_type: str, parent_types: list[type]
+    ) -> None:  # noqa: PLR6301
         """Test exception inheritance chains."""
         error = all_exceptions[error_type]
 
@@ -91,7 +97,7 @@ class TestExceptionHierarchy:
             (PipelineError, "", ""),
         ],
     )
-    def test_exception_string_representation(self, exception_class, message, expected_str) -> None:
+    def test_exception_string_representation(self, exception_class: type, message: str, expected_str: str) -> None:  # noqa: PLR6301
         """Test exception string representations."""
         error = exception_class(message)
         assert str(error) == expected_str
@@ -109,7 +115,9 @@ class TestExternalToolError:
             ("tool", "Failed", "Multi\nline\nerror", "Error executing tool: Failed"),
         ],
     )
-    def test_external_tool_error_creation(self, tool_name, message, stderr, expected_str) -> None:
+    def test_external_tool_error_creation(
+        self, tool_name: str, message: str, stderr: str | None, expected_str: str
+    ) -> None:  # noqa: PLR6301
         """Test creating external tool errors with various parameters."""
         error = ExternalToolError(tool_name, message, stderr=stderr)
 
@@ -119,7 +127,7 @@ class TestExternalToolError:
         assert isinstance(error, PipelineError)
         assert isinstance(error, GoesVfiError)
 
-    def test_external_tool_error_complex_stderr(self) -> None:
+    def test_external_tool_error_complex_stderr(self) -> None:  # noqa: PLR6301
         """Test external tool error with complex stderr output."""
         stderr_output = """
         ERROR: Invalid input format
@@ -161,7 +169,7 @@ class TestExceptionUsagePatterns:
             },
         ],
     )
-    def test_exception_message_content(self, exception_info) -> None:
+    def test_exception_message_content(self, exception_info: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test that exception messages contain expected information."""
         error = exception_info["class"](exception_info["message"])
         error_str = str(error)
@@ -181,13 +189,13 @@ class TestExceptionUsagePatterns:
             (lambda: GuiError("GUI failed"), [GuiError, GoesVfiError, Exception]),
         ],
     )
-    def test_exception_catching_hierarchy(self, raise_func, catch_types) -> None:
+    def test_exception_catching_hierarchy(self, raise_func: Any, catch_types: list[type]) -> None:  # noqa: PLR6301
         """Test exception catching at different hierarchy levels."""
         for catch_type in catch_types:
             with pytest.raises(catch_type):
                 raise_func()
 
-    def test_exception_chaining(self) -> None:
+    def test_exception_chaining(self) -> None:  # noqa: PLR6301
         """Test exception chaining and context preservation."""
         original_error = ValueError("Invalid input format")
 
@@ -206,7 +214,7 @@ class TestExceptionUsagePatterns:
         assert isinstance(exc_info.value.__cause__, ValueError)
         assert "Invalid input format" in str(exc_info.value.__cause__)
 
-    def test_exception_type_filtering(self) -> None:
+    def test_exception_type_filtering(self) -> None:  # noqa: PLR6301
         """Test filtering exceptions by type in handlers."""
         exceptions = [
             GoesVfiError("Base error"),
@@ -269,7 +277,7 @@ class TestExceptionIntegration:
             },
         ],
     )
-    def test_realistic_error_scenarios(self, scenario) -> None:
+    def test_realistic_error_scenarios(self, scenario: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test realistic error usage scenarios."""
         error = scenario["function"]()
 
@@ -288,27 +296,29 @@ class TestExceptionIntegration:
             if error.stderr:
                 assert "libx264.so" in error.stderr
 
-    def test_exception_context_managers(self) -> None:
+    def test_exception_context_managers(self) -> None:  # noqa: PLR6301
         """Test using exceptions with context managers."""
 
         class MockResource:
-            def __enter__(self):
+            def __enter__(self) -> "MockResource":
                 return self
 
-            def __exit__(self, exc_type, exc_val, exc_tb):
+            def __exit__(
+                self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
+            ) -> bool:
                 if exc_type is ConfigurationError:
                     # Handle configuration errors specially
                     return False
                 return False
 
-            def process(self) -> Never:
+            def process(self) -> Never:  # noqa: PLR6301
                 msg = "Resource configuration invalid"
                 raise ConfigurationError(msg)
 
         with pytest.raises(ConfigurationError), MockResource() as resource:
             resource.process()
 
-    def test_exception_aggregation(self) -> None:
+    def test_exception_aggregation(self) -> None:  # noqa: PLR6301
         """Test aggregating multiple exceptions."""
         errors: list[GoesVfiError] = []
 
