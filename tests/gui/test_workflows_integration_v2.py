@@ -9,6 +9,7 @@ Optimizations applied:
 """
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 from PyQt6.QtCore import QMimeData, QObject, Qt, QUrl
@@ -26,14 +27,14 @@ class ProcessingSignalCapture(QObject):
         self.error_message = None
         self.output_path = None
 
-    def on_progress(self, current, total, eta) -> None:
+    def on_progress(self, current: Any, total: Any, eta: Any) -> None:
         self.progress_updates.append((current, total, eta))
 
-    def on_finished(self, output_path) -> None:
+    def on_finished(self, output_path: Any) -> None:
         self.finished_called = True
         self.output_path = output_path
 
-    def on_error(self, error_msg) -> None:
+    def on_error(self, error_msg: Any) -> None:
         self.error_message = error_msg
 
 
@@ -41,16 +42,26 @@ class TestWorkflowsIntegrationV2:
     """Optimized test class for complex user workflows."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for tests."""
+    @staticmethod
+    def shared_app() -> Any:
+        """Create shared QApplication for tests.
+
+        Returns:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture()
-    def mock_main_window(self, shared_app):
-        """Create mock MainWindow with essential workflow components."""
+    @staticmethod
+    def mock_main_window(shared_app: Any) -> Any:  # noqa: ARG004
+        """Create mock MainWindow with essential workflow components.
+
+        Returns:
+            MagicMock: Mocked main window instance.
+        """
         window = MagicMock()
 
         # Mock main tab components
@@ -85,18 +96,23 @@ class TestWorkflowsIntegrationV2:
 
         # Mock methods
         window.set_in_dir = MagicMock()
-        window._set_processing_state = MagicMock()
-        window._toggle_sanchez_res_enabled = MagicMock()
-        window._post_init_setup = MagicMock()
-        window._cleanup_temp_files = MagicMock()
-        window._cleanup_memory = MagicMock()
-        window._reset_ui_state = MagicMock()
+        window._set_processing_state = MagicMock()  # noqa: SLF001
+        window._toggle_sanchez_res_enabled = MagicMock()  # noqa: SLF001
+        window._post_init_setup = MagicMock()  # noqa: SLF001
+        window._cleanup_temp_files = MagicMock()  # noqa: SLF001
+        window._cleanup_memory = MagicMock()  # noqa: SLF001
+        window._reset_ui_state = MagicMock()  # noqa: SLF001
 
         return window
 
     @pytest.fixture()
-    def test_images_data(self, tmp_path):
-        """Create test image data for workflows."""
+    @staticmethod
+    def test_images_data(tmp_path: Any) -> Any:
+        """Create test image data for workflows.
+
+        Returns:
+            list[Path]: List of test image paths.
+        """
         images = []
         for i in range(5):
             img_path = tmp_path / f"frame_{i:03d}.png"
@@ -105,11 +121,17 @@ class TestWorkflowsIntegrationV2:
         return images
 
     @pytest.fixture()
-    def signal_capture(self):
-        """Create signal capture for testing."""
+    @staticmethod
+    def signal_capture() -> Any:
+        """Create signal capture for testing.
+
+        Returns:
+            ProcessingSignalCapture: Signal capture instance.
+        """
         return ProcessingSignalCapture()
 
-    def test_complete_processing_workflow(self, mock_main_window, test_images_data, signal_capture) -> None:
+    @staticmethod
+    def test_complete_processing_workflow(mock_main_window: Any, test_images_data: Any, signal_capture: Any) -> None:
         """Test complete end-to-end processing workflow."""
         window = mock_main_window
 
@@ -139,7 +161,7 @@ class TestWorkflowsIntegrationV2:
         window.main_tab.fps_spinbox.setValue(30)
         window.main_tab.encoder_combo.setCurrentText("RIFE")
         window.main_tab.sanchez_checkbox.setChecked(True)
-        window._toggle_sanchez_res_enabled(Qt.CheckState.Checked)
+        window._toggle_sanchez_res_enabled(Qt.CheckState.Checked)  # noqa: SLF001
         window.main_tab.sanchez_res_combo.setCurrentText("4km")
 
         # Verify settings calls
@@ -190,7 +212,10 @@ class TestWorkflowsIntegrationV2:
             ([], "reject_empty"),
         ],
     )
-    def test_drag_drop_file_operations(self, mock_main_window, test_images_data, file_types, expected_behavior) -> None:
+    @staticmethod
+    def test_drag_drop_file_operations(
+        mock_main_window: Any, test_images_data: Any, file_types: Any, expected_behavior: Any
+    ) -> None:
         """Test drag and drop file operations with various file types."""
         window = mock_main_window
 
@@ -238,7 +263,8 @@ class TestWorkflowsIntegrationV2:
         elif expected_behavior == "accept_videos":
             assert window.out_file_path is not None
 
-    def test_drag_drop_between_tabs(self, shared_app) -> None:
+    @staticmethod
+    def test_drag_drop_between_tabs(shared_app: Any) -> None:
         """Test drag and drop between different tabs."""
         # Create mock list widgets
         source_list = MagicMock(spec=QListWidget)
@@ -290,7 +316,8 @@ class TestWorkflowsIntegrationV2:
         assert len(target_items) == 1
         assert target_items[0].text() == "Item 0"
 
-    def test_batch_processing_queue(self, mock_main_window, test_images_data) -> None:
+    @staticmethod
+    def test_batch_processing_queue(mock_main_window: Any, test_images_data: Any) -> None:
         """Test batch processing queue management."""
         window = mock_main_window
 
@@ -373,7 +400,10 @@ class TestWorkflowsIntegrationV2:
             (False, "immediate"),  # Not processing - should switch immediately
         ],
     )
-    def test_model_switching_during_operation(self, mock_main_window, processing_state, model_switch_scenario) -> None:
+    @staticmethod
+    def test_model_switching_during_operation(
+        mock_main_window: Any, processing_state: Any, model_switch_scenario: Any
+    ) -> None:
         """Test switching models during operation scenarios."""
         window = mock_main_window
 
@@ -404,7 +434,8 @@ class TestWorkflowsIntegrationV2:
             assert model_switches[-1][0] == "immediate"
             assert window.current_model_key == "rife-v4.13"
 
-    def test_cancellation_and_cleanup(self, mock_main_window, test_images_data) -> None:
+    @staticmethod
+    def test_cancellation_and_cleanup(mock_main_window: Any, test_images_data: Any) -> None:
         """Test processing cancellation and resource cleanup."""
         window = mock_main_window
 
@@ -438,9 +469,9 @@ class TestWorkflowsIntegrationV2:
                 window.worker.wait()
 
                 # Cleanup
-                window._cleanup_temp_files()
-                window._cleanup_memory()
-                window._reset_ui_state()
+                window._cleanup_temp_files()  # noqa: SLF001
+                window._cleanup_memory()  # noqa: SLF001
+                window._reset_ui_state()  # noqa: SLF001
 
                 # Reset state
                 window.is_processing = False
@@ -459,7 +490,8 @@ class TestWorkflowsIntegrationV2:
         mock_worker.quit.assert_called_once()
         mock_worker.wait.assert_called_once()
 
-    def test_pause_resume_workflow(self, mock_main_window) -> None:
+    @staticmethod
+    def test_pause_resume_workflow(mock_main_window: Any) -> None:
         """Test pause and resume functionality."""
         window = mock_main_window
 
@@ -512,7 +544,8 @@ class TestWorkflowsIntegrationV2:
         assert resume_point["current_frame"] == 50
         assert resume_point["total_frames"] == 100
 
-    def test_multi_step_wizard_workflow(self, mock_main_window) -> None:
+    @staticmethod
+    def test_multi_step_wizard_workflow(mock_main_window: Any) -> None:
         """Test multi-step wizard workflow for complex operations."""
         window = mock_main_window
 
@@ -605,7 +638,8 @@ class TestWorkflowsIntegrationV2:
         assert wizard.next_step()
         assert wizard.current_step == 3
 
-    def test_error_recovery_workflow(self, mock_main_window, signal_capture) -> None:
+    @staticmethod
+    def test_error_recovery_workflow(mock_main_window: Any, signal_capture: Any) -> None:
         """Test error recovery and workflow continuation."""
         window = mock_main_window
 
@@ -632,7 +666,7 @@ class TestWorkflowsIntegrationV2:
                 return "change_output"
             if error_type == "disk_full":
                 # Cleanup and retry
-                window._cleanup_temp_files()
+                window._cleanup_temp_files()  # noqa: SLF001
                 return "cleanup_retry"
             if error_type == "worker_crash":
                 # Restart worker
@@ -656,12 +690,13 @@ class TestWorkflowsIntegrationV2:
             elif recovery_action == "change_output":
                 assert window.out_file_path == Path("/tmp/output.mp4")
             elif recovery_action == "cleanup_retry":
-                window._cleanup_temp_files.assert_called()
+                window._cleanup_temp_files.assert_called()  # noqa: SLF001
             elif recovery_action == "restart_worker":
                 assert window.worker is None
                 assert not window.is_processing
 
-    def test_performance_monitoring_workflow(self, mock_main_window) -> None:
+    @staticmethod
+    def test_performance_monitoring_workflow(mock_main_window: Any) -> None:
         """Test performance monitoring during workflow execution."""
 
         # Mock performance metrics

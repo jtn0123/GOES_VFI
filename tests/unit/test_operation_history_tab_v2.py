@@ -5,6 +5,7 @@ error handling, concurrent operations, and edge cases.
 """
 
 from concurrent.futures import ThreadPoolExecutor
+import contextlib
 import os
 from pathlib import Path
 import sys
@@ -777,12 +778,9 @@ class TestOperationHistoryTabV2(unittest.TestCase):
 
             # Test multiple runs with intermittent failures
             for _i in range(4):
-                try:
+                with contextlib.suppress(Exception):
                     worker.run()
                     # Some runs should succeed, others may fail
-                except Exception:  # noqa: BLE001, S110, SIM105
-                    # Should handle failures gracefully
-                    pass
 
     def test_performance_with_rapid_updates(self) -> None:
         """Test performance with rapid model updates."""
