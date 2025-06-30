@@ -13,6 +13,7 @@ Optimizations applied:
 from datetime import datetime, timedelta
 from pathlib import Path
 import tempfile
+from typing import Any
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -36,7 +37,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
         super().setUpClass()
 
         # Fixed test dates for consistent testing
-        cls.base_date = datetime(2023, 6, 15)
+        cls.base_date = datetime(2023, 6, 15)  # noqa: DTZ001
 
         # Pre-calculated test file patterns
         cls.test_patterns = {
@@ -101,14 +102,18 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
 
         super().tearDown()
 
-    def create_mock_view_model(self):
-        """Create a properly configured mock view model."""
+    def create_mock_view_model(self) -> Any:
+        """Create a properly configured mock view model.
+
+        Returns:
+            Any: Mock view model instance.
+        """
         mock_view_model = MagicMock(spec=EnhancedIntegrityCheckViewModel)
         mock_view_model.base_directory = self.base_dir
         mock_view_model.satellite = SatellitePattern.GOES_18
         mock_view_model.status_message = "Ready"
-        mock_view_model.start_date = datetime.now() - timedelta(days=7)
-        mock_view_model.end_date = datetime.now()
+        mock_view_model.start_date = datetime.now()  # noqa: DTZ005
+        mock_view_model.end_date = datetime.now()  # noqa: DTZ005
         mock_view_model.interval_minutes = 10
         mock_view_model.fetch_source = MagicMock()
         mock_view_model.missing_items = []
@@ -152,7 +157,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
         for filename in self.test_patterns["invalid_patterns"]:
             (invalid_dir / filename).touch()
 
-    def create_satellite_files(self, target_dir, satellite_name, days, interval_hours) -> None:
+    def create_satellite_files(self, target_dir: Any, satellite_name: Any, days: Any, interval_hours: Any) -> None:
         """Efficiently create satellite files in batch."""
         files_to_create = []
 
@@ -176,7 +181,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
         ],
     )
     def test_auto_detect_date_range_comprehensive(
-        self, satellite, expected_start_day, expected_end_day, expected_end_month
+        self, satellite: Any, expected_start_day: Any, expected_end_day: Any, expected_end_month: Any
     ) -> None:
         """Test auto-detecting date range for different satellites."""
         # Set satellite
@@ -188,7 +193,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
 
         with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box:
             # Call the method
-            self.tab._auto_detect_date_range()
+            self.tab._auto_detect_date_range()  # noqa: SLF001
             QCoreApplication.processEvents()
 
             # Verify date time editors were updated
@@ -215,19 +220,29 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             assert end_py_date.hour == 23
             assert end_py_date.minute == 59
 
-    def create_datetime_spy(self, date_edit):
-        """Create a spy for datetime editor setDateTime method."""
-        original_setDateTime = date_edit.setDateTime
-        spy = MagicMock(wraps=original_setDateTime)
+    @staticmethod
+    def create_datetime_spy(date_edit: Any) -> Any:
+        """Create a spy for datetime editor setDateTime method.
+
+        Returns:
+            Any: Mock spy object.
+        """
+        original_set_date_time = date_edit.setDateTime
+        spy = MagicMock(wraps=original_set_date_time)
         date_edit.setDateTime = spy
         return spy
 
-    def extract_dates_from_spies(self, start_spy, end_spy):
-        """Extract Python datetime objects from spy call arguments."""
+    @staticmethod
+    def extract_dates_from_spies(start_spy: Any, end_spy: Any) -> tuple[Any, Any]:
+        """Extract Python datetime objects from spy call arguments.
+
+        Returns:
+            tuple[Any, Any]: Start and end datetime objects.
+        """
         start_date_call = start_spy.call_args[0][0]
         end_date_call = end_spy.call_args[0][0]
 
-        start_py_date = datetime(
+        start_py_date = datetime(  # noqa: DTZ001
             start_date_call.date().year(),
             start_date_call.date().month(),
             start_date_call.date().day(),
@@ -235,7 +250,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             start_date_call.time().minute(),
         )
 
-        end_py_date = datetime(
+        end_py_date = datetime(  # noqa: DTZ001
             end_date_call.date().year(),
             end_date_call.date().month(),
             end_date_call.date().day(),
@@ -252,7 +267,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             ("non_matching", "No Valid Files Found"),
         ],
     )
-    def test_auto_detect_date_range_error_cases(self, directory_type, expected_message) -> None:
+    def test_auto_detect_date_range_error_cases(self, directory_type: Any, expected_message: Any) -> None:
         """Test auto-detecting date range with various error conditions."""
         # Create appropriate test directory
         if directory_type == "empty":
@@ -266,7 +281,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
 
         with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box:
             # Call the method
-            self.tab._auto_detect_date_range()
+            self.tab._auto_detect_date_range()  # noqa: SLF001
             QCoreApplication.processEvents()
 
             # Verify appropriate dialog was shown
@@ -276,45 +291,45 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
 
     def test_combined_auto_detect_features_workflow(self) -> None:
         """Test complete workflow of combined auto-detect features."""
-        with patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog") as mock_progress_dialog:
-            with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box:
-                # Mock progress dialog
-                mock_progress_instance = MagicMock()
-                mock_progress_instance.wasCanceled.return_value = False
-                mock_progress_dialog.return_value = mock_progress_instance
+        with (
+            patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog") as mock_progress_dialog,
+            patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box,
+        ):
+            # Mock progress dialog
+            mock_progress_instance = MagicMock()
+            mock_progress_instance.wasCanceled.return_value = False
+            mock_progress_dialog.return_value = mock_progress_instance
 
-                # Step 1: Auto-detect satellite
-                self.tab._auto_detect_satellite()
+            # Step 1: Auto-detect satellite
+            self.tab._auto_detect_satellite()  # noqa: SLF001
+            QCoreApplication.processEvents()
+
+            # Verify satellite was detected (GOES-18 has more files)
+            assert self.mock_view_model.satellite == SatellitePattern.GOES_18
+            assert self.tab.goes18_radio.isChecked()
+
+            # Reset message box mock
+            mock_message_box.reset_mock()
+
+            # Step 2: Set up spies for date range detection
+            start_date_spy = self.create_datetime_spy(self.tab.start_date_edit)
+            end_date_spy = self.create_datetime_spy(self.tab.end_date_edit)
+
+            # Mock find_date_range_in_directory for consistent results
+            with patch("goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory") as mock_find_range:
+                mock_find_range.return_value = (datetime(2023, 1, 1), datetime(2023, 1, 31))  # noqa: DTZ001
+
+                # Step 3: Auto-detect date range
+                self.tab._auto_detect_date_range()  # noqa: SLF001
                 QCoreApplication.processEvents()
 
-                # Verify satellite was detected (GOES-18 has more files)
-                assert self.mock_view_model.satellite == SatellitePattern.GOES_18
-                assert self.tab.goes18_radio.isChecked()
+            # Verify date range was set
+            assert start_date_spy.called
+            assert end_date_spy.called
 
-                # Reset message box mock
-                mock_message_box.reset_mock()
-
-                # Step 2: Set up spies for date range detection
-                start_date_spy = self.create_datetime_spy(self.tab.start_date_edit)
-                end_date_spy = self.create_datetime_spy(self.tab.end_date_edit)
-
-                # Mock find_date_range_in_directory for consistent results
-                with patch(
-                    "goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory"
-                ) as mock_find_range:
-                    mock_find_range.return_value = (datetime(2023, 1, 1), datetime(2023, 1, 31))
-
-                    # Step 3: Auto-detect date range
-                    self.tab._auto_detect_date_range()
-                    QCoreApplication.processEvents()
-
-                # Verify date range was set
-                assert start_date_spy.called
-                assert end_date_spy.called
-
-                # Verify workflow completed successfully
-                assert self.mock_view_model.satellite == SatellitePattern.GOES_18
-                assert mock_message_box.information.call_count == 1
+            # Verify workflow completed successfully
+            assert self.mock_view_model.satellite == SatellitePattern.GOES_18
+            assert mock_message_box.information.call_count == 1
 
     @pytest.mark.parametrize(
         "error_scenario,expected_dialog",
@@ -324,7 +339,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             ("no_files_found", "information"),
         ],
     )
-    def test_error_handling_comprehensive(self, error_scenario, expected_dialog) -> None:
+    def test_error_handling_comprehensive(self, error_scenario: Any, expected_dialog: Any) -> None:  # noqa: ARG002
         """Test comprehensive error handling for auto-detection features."""
         if error_scenario == "satellite_detection":
             with patch("goesvfi.integrity_check.enhanced_gui_tab.QProgressDialog") as mock_progress_dialog:
@@ -332,15 +347,17 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
                 mock_dialog.wasCanceled.return_value = False
                 mock_progress_dialog.return_value = mock_dialog
 
-                with patch("pathlib.Path.rglob", side_effect=Exception("Test exception")):
-                    with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box:
-                        self.tab._auto_detect_satellite()
-                        QCoreApplication.processEvents()
+                with (
+                    patch("pathlib.Path.rglob", side_effect=Exception("Test exception")),
+                    patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box,
+                ):
+                    self.tab._auto_detect_satellite()  # noqa: SLF001
+                    QCoreApplication.processEvents()
 
-                        # Verify error dialog
-                        mock_message_box.critical.assert_called_once()
-                        critical_args = mock_message_box.critical.call_args[0]
-                        assert "Auto-Detection Failed" in critical_args[1]
+                    # Verify error dialog
+                    mock_message_box.critical.assert_called_once()
+                    critical_args = mock_message_box.critical.call_args[0]
+                    assert "Auto-Detection Failed" in critical_args[1]
 
         elif error_scenario == "date_range_detection":
             with (
@@ -350,7 +367,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
                 ),
                 patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box,
             ):
-                self.tab._auto_detect_date_range()
+                self.tab._auto_detect_date_range()  # noqa: SLF001
                 QCoreApplication.processEvents()
 
                 # Verify error dialog
@@ -370,7 +387,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
                 mock_progress_dialog.return_value = mock_dialog
 
                 with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox") as mock_message_box:
-                    self.tab._auto_detect_satellite()
+                    self.tab._auto_detect_satellite()  # noqa: SLF001
                     QCoreApplication.processEvents()
 
                     # Verify information dialog
@@ -388,7 +405,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
 
             with patch("goesvfi.integrity_check.enhanced_gui_tab.LOGGER") as mock_logger:
                 # Call auto-detect satellite
-                self.tab._auto_detect_satellite()
+                self.tab._auto_detect_satellite()  # noqa: SLF001
                 QCoreApplication.processEvents()
 
                 # Verify comprehensive logging
@@ -429,7 +446,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             mock_progress_dialog.return_value = mock_dialog
 
             # Test satellite detection performance
-            self.tab._auto_detect_satellite()
+            self.tab._auto_detect_satellite()  # noqa: SLF001
             QCoreApplication.processEvents()
 
             # Should successfully detect GOES-18
@@ -458,7 +475,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             mock_progress_dialog.return_value = mock_dialog
 
             # Should handle tie gracefully (implementation dependent)
-            self.tab._auto_detect_satellite()
+            self.tab._auto_detect_satellite()  # noqa: SLF001
             QCoreApplication.processEvents()
 
             # Should select one of the satellites
@@ -475,7 +492,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             original_satellite = self.mock_view_model.satellite
 
             # Call auto-detect satellite with cancellation
-            self.tab._auto_detect_satellite()
+            self.tab._auto_detect_satellite()  # noqa: SLF001
             QCoreApplication.processEvents()
 
             # Satellite should remain unchanged when canceled

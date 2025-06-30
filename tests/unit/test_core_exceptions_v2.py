@@ -79,8 +79,9 @@ class TestExceptionHierarchy:
             ("base", [GoesVfiError, Exception]),
         ],
     )
+    @staticmethod
     def test_exception_inheritance(
-        self, all_exceptions: dict[str, GoesVfiError], error_type: str, parent_types: list[type]
+        all_exceptions: dict[str, GoesVfiError], error_type: str, parent_types: list[type]
     ) -> None:
         """Test exception inheritance chains."""
         error = all_exceptions[error_type]
@@ -115,9 +116,8 @@ class TestExternalToolError:
             ("tool", "Failed", "Multi\nline\nerror", "Error executing tool: Failed"),
         ],
     )
-    def test_external_tool_error_creation(
-        self, tool_name: str, message: str, stderr: str | None, expected_str: str
-    ) -> None:
+    @staticmethod
+    def test_external_tool_error_creation(tool_name: str, message: str, stderr: str | None, expected_str: str) -> None:
         """Test creating external tool errors with various parameters."""
         error = ExternalToolError(tool_name, message, stderr=stderr)
 
@@ -305,11 +305,10 @@ class TestExceptionIntegration:
 
             def __exit__(
                 self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object
-            ) -> bool:
+            ) -> None:
                 if exc_type is ConfigurationError:
                     # Handle configuration errors specially
-                    return False
-                return False
+                    pass
 
             def process(self) -> Never:  # noqa: PLR6301
                 msg = "Resource configuration invalid"
