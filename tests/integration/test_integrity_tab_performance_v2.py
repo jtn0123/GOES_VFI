@@ -20,7 +20,7 @@ from goesvfi.integrity_check.data_fetcher import DataFetcher
 from goesvfi.integrity_check.performance_monitor import PerformanceMonitor
 
 
-class TestIntegrityTabPerformanceV2:
+class TestIntegrityTabPerformanceV2:  # noqa: PLR0904
     """Optimized test class for integrity tab performance functionality."""
 
     @pytest.fixture()
@@ -118,8 +118,8 @@ class TestIntegrityTabPerformanceV2:
     @pytest.mark.parametrize("scenario_type", ["minimal", "standard", "stress"])
     @staticmethod
     async def test_integrity_tab_performance_scenarios(
-        mock_performance_monitor: MagicMock,
-        mock_data_fetcher_perf: MagicMock,
+        mock_performance_monitor: Any,
+        mock_data_fetcher_perf: Any,
         performance_scenario_factory: Any,
         scenario_type: str,
     ) -> None:
@@ -218,8 +218,8 @@ class TestIntegrityTabPerformanceV2:
     @pytest.mark.asyncio()
     @staticmethod
     async def test_concurrent_request_performance(
-        mock_performance_monitor: MagicMock,  # noqa: ARG004
-        mock_data_fetcher_perf: MagicMock,
+        mock_performance_monitor: Any,  # noqa: ARG004
+        mock_data_fetcher_perf: Any,
     ) -> None:
         """Test performance under concurrent request load."""
         # Configure concurrent request scenario
@@ -262,7 +262,7 @@ class TestIntegrityTabPerformanceV2:
         assert max_throughput > min_throughput  # Some improvement expected
 
     @staticmethod
-    def test_memory_usage_monitoring(mock_performance_monitor: MagicMock) -> None:
+    def test_memory_usage_monitoring(mock_performance_monitor: Any) -> None:
         """Test memory usage monitoring and optimization."""
         # Mock memory monitoring
         memory_snapshots = [
@@ -290,8 +290,8 @@ class TestIntegrityTabPerformanceV2:
     @pytest.mark.asyncio()
     @staticmethod
     async def test_response_time_optimization(
-        mock_performance_monitor: MagicMock,  # noqa: ARG004
-        mock_data_fetcher_perf: MagicMock,
+        mock_performance_monitor: Any,  # noqa: ARG004
+        mock_data_fetcher_perf: Any,
     ) -> None:
         """Test response time optimization strategies."""
         # Mock different optimization strategies
@@ -336,7 +336,7 @@ class TestIntegrityTabPerformanceV2:
         assert cached_time < no_opt_time  # Caching should improve performance
 
     @staticmethod
-    def test_error_rate_monitoring(mock_performance_monitor: MagicMock) -> None:
+    def test_error_rate_monitoring(mock_performance_monitor: Any) -> None:
         """Test error rate monitoring and alerting."""
         # Mock error tracking
         error_scenarios = [
@@ -365,8 +365,8 @@ class TestIntegrityTabPerformanceV2:
     @pytest.mark.asyncio()
     @staticmethod
     async def test_throughput_optimization(
-        mock_performance_monitor: MagicMock,  # noqa: ARG004
-        mock_data_fetcher_perf: MagicMock,
+        mock_performance_monitor: Any,  # noqa: ARG004
+        mock_data_fetcher_perf: Any,
     ) -> None:
         """Test throughput optimization and scaling."""
         # Test different batch sizes for throughput optimization
@@ -407,7 +407,7 @@ class TestIntegrityTabPerformanceV2:
         assert optimal_result["batch_size"] > 1  # Batching should improve throughput
 
     @staticmethod
-    def test_resource_utilization_monitoring(mock_performance_monitor: MagicMock) -> None:
+    def test_resource_utilization_monitoring(mock_performance_monitor: Any) -> None:
         """Test comprehensive resource utilization monitoring.
 
         Raises:
@@ -445,7 +445,7 @@ class TestIntegrityTabPerformanceV2:
             raise AssertionError(msg)
 
     @staticmethod
-    def test_performance_regression_detection(mock_performance_monitor: MagicMock) -> None:
+    def test_performance_regression_detection(mock_performance_monitor: Any) -> None:
         """Test performance regression detection and alerting."""
         # Mock historical performance data
         historical_data = [

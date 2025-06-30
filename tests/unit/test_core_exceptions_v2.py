@@ -81,7 +81,7 @@ class TestExceptionHierarchy:
     )
     def test_exception_inheritance(
         self, all_exceptions: dict[str, GoesVfiError], error_type: str, parent_types: list[type]
-    ) -> None:  # noqa: PLR6301
+    ) -> None:
         """Test exception inheritance chains."""
         error = all_exceptions[error_type]
 
@@ -117,7 +117,7 @@ class TestExternalToolError:
     )
     def test_external_tool_error_creation(
         self, tool_name: str, message: str, stderr: str | None, expected_str: str
-    ) -> None:  # noqa: PLR6301
+    ) -> None:
         """Test creating external tool errors with various parameters."""
         error = ExternalToolError(tool_name, message, stderr=stderr)
 
