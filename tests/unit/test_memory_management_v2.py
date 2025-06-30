@@ -1,6 +1,7 @@
 """Unit tests for memory management functionality - Optimized v2."""
 
 import gc
+from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
@@ -22,8 +23,12 @@ from goesvfi.utils.memory_manager import (
 
 # Shared fixtures and test data
 @pytest.fixture(scope="session")
-def memory_stats_scenarios():
-    """Pre-defined memory statistics scenarios for consistent testing."""
+def memory_stats_scenarios() -> dict[str, MemoryStats]:
+    """Pre-defined memory statistics scenarios for consistent testing.
+
+    Returns:
+        dict[str, MemoryStats]: Dictionary of memory stats scenarios.
+    """
     return {
         "normal": MemoryStats(
             total_mb=8000,
@@ -47,8 +52,12 @@ def memory_stats_scenarios():
 
 
 @pytest.fixture(scope="session")
-def mock_psutil_data():
-    """Mock psutil data for consistent testing."""
+def mock_psutil_data() -> dict[str, Mock]:
+    """Mock psutil data for consistent testing.
+
+    Returns:
+        dict[str, Mock]: Dictionary of mock psutil data.
+    """
     return {
         "virtual_memory": Mock(total=8 * 1024**3, available=6 * 1024**3, used=2 * 1024**3, percent=25.0),
         "process": Mock(),
@@ -56,14 +65,22 @@ def mock_psutil_data():
 
 
 @pytest.fixture()
-def memory_monitor():
-    """Create MemoryMonitor instance for testing."""
+def memory_monitor() -> MemoryMonitor:
+    """Create MemoryMonitor instance for testing.
+
+    Returns:
+        MemoryMonitor: The memory monitor instance.
+    """
     return MemoryMonitor()
 
 
 @pytest.fixture()
-def memory_optimizer():
-    """Create MemoryOptimizer instance for testing."""
+def memory_optimizer() -> MemoryOptimizer:
+    """Create MemoryOptimizer instance for testing.
+
+    Returns:
+        MemoryOptimizer: The memory optimizer instance.
+    """
     return MemoryOptimizer()
 
 
@@ -78,8 +95,12 @@ class TestMemoryStats:
             ("critical_memory", True, True),
         ],
     )
-    def test_memory_detection_properties(
-        self, memory_stats_scenarios, scenario: str, expected_low: bool, expected_critical: bool
+    def test_memory_detection_properties(  # noqa: PLR6301
+        self,
+        memory_stats_scenarios: dict[str, MemoryStats],
+        scenario: str,
+        expected_low: bool,  # noqa: FBT001
+        expected_critical: bool,  # noqa: FBT001
     ) -> None:
         """Test low and critical memory detection properties."""
         stats = memory_stats_scenarios[scenario]
@@ -91,7 +112,7 @@ class TestMemoryStats:
 class TestMemoryMonitor:
     """Test MemoryMonitor class with optimized patterns."""
 
-    def test_get_memory_stats_basic(self, memory_monitor) -> None:
+    def test_get_memory_stats_basic(self, memory_monitor: MemoryMonitor) -> None:  # noqa: PLR6301
         """Test basic memory statistics retrieval."""
         stats = memory_monitor.get_memory_stats()
 
@@ -101,24 +122,29 @@ class TestMemoryMonitor:
         assert stats.used_mb >= 0
         assert 0 <= stats.percent_used <= 100
 
-    def test_callback_mechanism(self, memory_monitor, memory_stats_scenarios) -> None:
+    def test_callback_mechanism(  # noqa: PLR6301
+        self, memory_monitor: MemoryMonitor, memory_stats_scenarios: dict[str, MemoryStats]
+    ) -> None:
         """Test callback registration and execution."""
-        callback_results = []
+        callback_results: list[MemoryStats] = []
         callback_mock = Mock(side_effect=callback_results.append)
 
         memory_monitor.add_callback(callback_mock)
         test_stats = memory_stats_scenarios["normal"]
 
         # Manually trigger callbacks
-        for callback in memory_monitor._callbacks:
+        for callback in memory_monitor._callbacks:  # noqa: SLF001
             callback(test_stats)
 
         callback_mock.assert_called_once_with(test_stats)
         assert test_stats in callback_results
 
     @pytest.mark.parametrize("psutil_available", [True, False])
-    def test_memory_stats_with_psutil_availability(
-        self, memory_monitor, mock_psutil_data, psutil_available: bool
+    def test_memory_stats_with_psutil_availability(  # noqa: PLR6301
+        self,
+        memory_monitor: MemoryMonitor,
+        mock_psutil_data: dict[str, Mock],
+        psutil_available: bool,  # noqa: FBT001
     ) -> None:
         """Test memory stats retrieval with and without psutil."""
         if psutil_available:
@@ -128,7 +154,7 @@ class TestMemoryMonitor:
 
             with (
                 patch("goesvfi.utils.memory_manager.psutil") as mock_psutil,
-                patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", True),
+                patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", new=True),
             ):
                 mock_psutil.virtual_memory.return_value = mock_psutil_data["virtual_memory"]
                 mock_psutil.Process.return_value = fake_proc
@@ -145,7 +171,7 @@ class TestMemoryMonitor:
             fake_rusage = Mock(ru_maxrss=500000)
 
             with (
-                patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", False),
+                patch("goesvfi.utils.memory_manager.PSUTIL_AVAILABLE", new=False),
                 patch("resource.getrusage", return_value=fake_rusage),
             ):
                 stats = memory_monitor.get_memory_stats()
@@ -164,7 +190,9 @@ class TestMemoryOptimizer:
             (np.float32, np.float32),  # Should remain unchanged
         ],
     )
-    def test_optimize_array_dtype(self, memory_optimizer, input_dtype, expected_dtype) -> None:
+    def test_optimize_array_dtype(  # noqa: PLR6301
+        self, memory_optimizer: MemoryOptimizer, input_dtype: type[np.dtype[Any]], expected_dtype: type[np.dtype[Any]]
+    ) -> None:
         """Test array dtype optimization for different input types."""
         if input_dtype == np.float64:
             arr = np.array([1.0, 2.0, 3.0], dtype=input_dtype)
@@ -182,8 +210,8 @@ class TestMemoryOptimizer:
             ((100, 100), 10, "== 1"),  # Should fit in one chunk
         ],
     )
-    def test_chunk_large_array(
-        self, memory_optimizer, array_size: tuple[int, int], max_chunk_mb: int, expected_chunks: str
+    def test_chunk_large_array(  # noqa: PLR6301
+        self, memory_optimizer: MemoryOptimizer, array_size: tuple[int, int], max_chunk_mb: int, expected_chunks: str
     ) -> None:
         """Test array chunking with different sizes and limits."""
         large_array = np.zeros(array_size, dtype=np.float32)
@@ -200,7 +228,7 @@ class TestMemoryOptimizer:
         assert np.array_equal(reconstructed, large_array)
 
     @patch("goesvfi.utils.memory_manager.gc.collect")
-    def test_free_memory_with_force(self, mock_gc_collect, memory_optimizer) -> None:
+    def test_free_memory_with_force(self, mock_gc_collect: Mock, memory_optimizer: MemoryOptimizer) -> None:  # noqa: PLR6301
         """Test memory freeing with force option."""
         memory_optimizer.free_memory(force=True)
         mock_gc_collect.assert_called_once()
@@ -212,7 +240,9 @@ class TestMemoryOptimizer:
             (1000000, False),  # Huge requirement should fail
         ],
     )
-    def test_check_available_memory(self, memory_optimizer, required_mb: int, expected_result: bool) -> None:
+    def test_check_available_memory(  # noqa: PLR6301
+        self, memory_optimizer: MemoryOptimizer, required_mb: int, expected_result: bool  # noqa: FBT001
+    ) -> None:
         """Test memory availability checking with different requirements."""
         has_memory, msg = memory_optimizer.check_available_memory(required_mb)
 
@@ -222,7 +252,7 @@ class TestMemoryOptimizer:
         else:
             assert "Insufficient memory" in msg or "critically low memory" in msg
 
-    def test_optimize_array_chunks_independence(self, memory_optimizer) -> None:
+    def test_optimize_array_chunks_independence(self, memory_optimizer: MemoryOptimizer) -> None:  # noqa: PLR6301
         """Test that optimized array chunks don't share memory."""
         arr = np.arange(1000, dtype=np.float32)
         chunks = list(memory_optimizer.optimize_array_chunks(arr, max_chunk_mb=1))
@@ -242,7 +272,7 @@ class TestObjectPool:
             (1, ["acquire", "release", "release"]),  # Test max size limit
         ],
     )
-    def test_object_pool_operations(self, max_size: int, operations: list[str]) -> None:
+    def test_object_pool_operations(self, max_size: int, operations: list[str]) -> None:  # noqa: PLR6301
         """Test object pool operations with different scenarios."""
         factory_mock = Mock(side_effect=object)
         pool = ObjectPool(factory_mock, max_size=max_size)
@@ -260,7 +290,7 @@ class TestObjectPool:
         # Verify factory was called appropriately
         assert factory_mock.call_count <= len([op for op in operations if op == "acquire"])
 
-    def test_pool_max_size_enforcement(self) -> None:
+    def test_pool_max_size_enforcement(self) -> None:  # noqa: PLR6301
         """Test that pool enforces maximum size limits."""
         pool = ObjectPool(object, max_size=2)
 
@@ -280,7 +310,7 @@ class TestImageLoaderMemoryIntegration:
 
     @patch("goesvfi.utils.memory_manager.MemoryOptimizer")
     @patch("PIL.Image.open")
-    def test_memory_optimized_loading_workflow(self, mock_open, mock_optimizer_class) -> None:
+    def test_memory_optimized_loading_workflow(self, mock_open: Mock, mock_optimizer_class: Mock) -> None:  # noqa: PLR6301, ARG002
         """Test complete memory-optimized image loading workflow."""
         # Setup image mock
         mock_img = MagicMock()
@@ -299,10 +329,7 @@ class TestImageLoaderMemoryIntegration:
         loader = ImageLoader(optimize_memory=True, max_image_size_mb=10)
 
         # Load image
-        with (
-            patch("numpy.array", return_value=mock_array),
-            patch("os.path.exists", return_value=True),
-        ):
+        with patch("numpy.array", return_value=mock_array), patch("os.path.exists", return_value=True):
             result = loader.load("test.png")
 
         assert result is not None
@@ -317,8 +344,12 @@ class TestImageLoaderMemoryIntegration:
         ],
     )
     @patch("PIL.Image.open")
-    def test_image_size_limit_enforcement(
-        self, mock_open, image_size: tuple[int, int], size_limit: int, should_raise: bool
+    def test_image_size_limit_enforcement(  # noqa: PLR6301
+        self,
+        mock_open: Mock,
+        image_size: tuple[int, int],
+        size_limit: int,
+        should_raise: bool,  # noqa: FBT001
     ) -> None:
         """Test image size limit enforcement."""
         # Mock image with specified size
@@ -333,16 +364,12 @@ class TestImageLoaderMemoryIntegration:
         loader = ImageLoader(optimize_memory=True, max_image_size_mb=size_limit)
 
         if should_raise:
-            with pytest.raises(ProcessingError, match="Image too large"):
-                with patch("os.path.exists", return_value=True):
-                    loader.load("test.png")
+            with pytest.raises(ProcessingError, match="Image too large"), patch("os.path.exists", return_value=True):
+                loader.load("test.png")
         else:
             # Should not raise for reasonable sizes
             mock_array = np.zeros((*image_size, 3), dtype=np.uint8)
-            with (
-                patch("os.path.exists", return_value=True),
-                patch("numpy.array", return_value=mock_array),
-            ):
+            with patch("os.path.exists", return_value=True), patch("numpy.array", return_value=mock_array):
                 result = loader.load("test.png")
                 assert result is not None
 
@@ -358,19 +385,21 @@ class TestMemoryEstimationAndUtilities:
             ((1000, 1000, 4), np.uint8, 4),  # RGBA image
         ],
     )
-    def test_estimate_memory_requirement(self, shape: tuple[int, ...], dtype, expected_mb: int) -> None:
+    def test_estimate_memory_requirement(  # noqa: PLR6301
+        self, shape: tuple[int, ...], dtype: type[np.dtype[Any]], expected_mb: int
+    ) -> None:
         """Test memory requirement estimation for various scenarios."""
         mb = estimate_memory_requirement(shape, dtype)
         assert mb == expected_mb
 
-    def test_global_memory_monitor_singleton(self) -> None:
+    def test_global_memory_monitor_singleton(self) -> None:  # noqa: PLR6301
         """Test global memory monitor singleton pattern."""
         monitor1 = get_memory_monitor()
         monitor2 = get_memory_monitor()
 
         assert monitor1 is monitor2  # Should be same instance
 
-    def test_streaming_processor_memory_efficiency(self) -> None:
+    def test_streaming_processor_memory_efficiency(self) -> None:  # noqa: PLR6301
         """Test that streaming processor maintains low memory usage."""
         processor = StreamingProcessor(chunk_size_mb=1)
         arr = np.ones(2_000_000, dtype=np.float32)  # ~8MB

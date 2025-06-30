@@ -90,7 +90,11 @@ class TestMainWindowOptimizedV2:
         """
 
         def mock_load_process_scale_preview(
-            self: Any, image_path: Any, target_label: Any, *args: Any, **kwargs: Any
+            self: Any,
+            image_path: Any,
+            target_label: Any,
+            *args: Any,
+            **kwargs: Any,
         ) -> QPixmap:
             dummy_pixmap = QPixmap(1, 1)
             if hasattr(target_label, "file_path"):
@@ -112,7 +116,7 @@ class TestMainWindowOptimizedV2:
             None: Context manager for model mocking.
         """
 
-        def mock_populate(self: Any, main_window: Any) -> None:
+        def mock_populate(self: Any, main_window: Any) -> None:  # noqa: ARG001
             main_window.model_combo.clear()
             main_window.model_combo.addItem("rife-dummy (Dummy Description)", "rife-dummy")
             main_window.model_combo.setEnabled(enabled=True)
@@ -169,15 +173,19 @@ class TestMainWindowOptimizedV2:
     @pytest.fixture()
     @staticmethod
     def main_window(
-        shared_app: Any, shared_mocks: dict[str, Any], shared_preview_mock: Any, shared_model_mock: Any, qtbot: Any
+        shared_app: Any,
+        shared_mocks: dict[str, Any],
+        shared_preview_mock: Any,
+        shared_model_mock: Any,
+        qtbot: Any,
     ) -> Any:
         """Create MainWindow instance with all mocks applied.
 
         Yields:
             MainWindow: Configured main window instance.
         """
-        with patch("goesvfi.gui.QSettings") as MockQSettings:
-            mock_settings_inst = MockQSettings.return_value
+        with patch("goesvfi.gui.QSettings") as mock_qsettings:
+            mock_settings_inst = mock_qsettings.return_value
 
             mock_values = {
                 "output_file": "",
@@ -186,7 +194,7 @@ class TestMainWindowOptimizedV2:
                 "crop_rect": QByteArray(),
             }
 
-            def settings_value_side_effect(key: str, default: Any = None, type: Any = None) -> Any:  # noqa: A002
+            def settings_value_side_effect(key: str, default: Any = None, type: Any = None) -> Any:  # noqa: A002, ARG001
                 return mock_values.get(key, default)
 
             mock_settings_inst.value.side_effect = settings_value_side_effect
@@ -195,7 +203,7 @@ class TestMainWindowOptimizedV2:
             QApplication.processEvents()
 
             qtbot.addWidget(window)
-            window._post_init_setup()
+            window._post_init_setup()  # noqa: SLF001
 
             yield window
 
@@ -205,8 +213,8 @@ class TestMainWindowOptimizedV2:
         window = main_window
 
         # Main tab initial state
-        assert window.main_tab.in_dir_edit.text() == ""
-        assert window.main_tab.out_file_edit.text() == ""
+        assert not window.main_tab.in_dir_edit.text()
+        assert not window.main_tab.out_file_edit.text()
         assert window.main_tab.sanchez_res_km_combo.isEnabled()
 
         # FFmpeg tab state
@@ -232,7 +240,10 @@ class TestMainWindowOptimizedV2:
 
     @staticmethod
     def test_path_selection_workflow(
-        qtbot: Any, main_window: Any, shared_mocks: dict[str, Any], test_files: dict[str, Any]
+        qtbot: Any,
+        main_window: Any,
+        shared_mocks: dict[str, Any],
+        test_files: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test complete path selection workflow."""
         window = main_window
