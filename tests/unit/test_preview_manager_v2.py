@@ -3,6 +3,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import tempfile
+from typing import Any
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -16,7 +17,7 @@ from goesvfi.gui_components.preview_manager import PreviewManager
 from goesvfi.pipeline.image_processing_interfaces import ImageData
 
 
-class TestPreviewManagerV2(unittest.TestCase):
+class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
     """Test cases for PreviewManager with comprehensive coverage."""
 
     @classmethod
@@ -25,7 +26,7 @@ class TestPreviewManagerV2(unittest.TestCase):
         if not QApplication.instance():
             cls.app = QApplication([])
         else:
-            cls.app = QApplication.instance()
+            cls.app = QApplication.instance()  # type: ignore[assignment]
 
     def setUp(self) -> None:
         """Set up test fixtures."""
@@ -37,7 +38,7 @@ class TestPreviewManagerV2(unittest.TestCase):
 
         # Track emitted signals
         self.preview_updated_count = 0
-        self.preview_error_messages = []
+        self.preview_error_messages: list[str] = []
         self.last_first_pixmap = None
         self.last_middle_pixmap = None
         self.last_last_pixmap = None
@@ -61,15 +62,23 @@ class TestPreviewManagerV2(unittest.TestCase):
         """Clean up test fixtures."""
         self.temp_dir.cleanup()
 
-    def _create_test_image(self, name: str, size: tuple = (100, 100), color: tuple = (255, 0, 0)):
-        """Create a test image file."""
+    def _create_test_image(self, name: str, size: tuple = (100, 100), color: tuple = (255, 0, 0)) -> Path:
+        """Create a test image file.
+
+        Returns:
+            Path: Path to the created test image file.
+        """
         img = Image.new("RGB", size, color)
         path = self.test_dir / name
         img.save(path, "PNG")
         return path
 
-    def _create_test_images_batch(self, count: int, prefix: str = "img", size: tuple = (100, 100)):
-        """Create multiple test images."""
+    def _create_test_images_batch(self, count: int, prefix: str = "img", size: tuple = (100, 100)) -> list[Path]:
+        """Create multiple test images.
+
+        Returns:
+            list[Path]: List of paths to created test image files.
+        """
         paths = []
         for i in range(count):
             # Vary colors for each image
@@ -96,35 +105,35 @@ class TestPreviewManagerV2(unittest.TestCase):
     def test_get_first_middle_last_paths_various_scenarios(self) -> None:
         """Test getting first, middle, and last paths with various scenarios."""
         # Test with no images
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
         assert first is None
         assert middle is None
         assert last is None
 
         # Test with 1 image
         paths = self._create_test_images_batch(1)
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
         assert first == paths[0]
         assert middle == paths[0]
         assert last == paths[0]
 
         # Test with 2 images
         paths = self._create_test_images_batch(2)
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
         assert first == paths[0]
         assert middle == paths[0]  # Middle defaults to first when only 2
         assert last == paths[1]
 
         # Test with 3 images
         paths = self._create_test_images_batch(3)
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
         assert first == paths[0]
         assert middle == paths[1]
         assert last == paths[2]
 
         # Test with many images
         paths = self._create_test_images_batch(100)
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
         assert first == paths[0]
         assert middle == paths[50]  # Middle should be around halfway
         assert last == paths[99]
@@ -140,7 +149,7 @@ class TestPreviewManagerV2(unittest.TestCase):
         (self.test_dir / "script.py").write_text("print('test')")
         img3 = self._create_test_image("003.jpeg")
 
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
 
         # Should only consider image files
         assert first == img1
@@ -150,7 +159,7 @@ class TestPreviewManagerV2(unittest.TestCase):
     def test_get_first_middle_last_paths_case_sensitivity(self) -> None:
         """Test path selection with case-sensitive extensions."""
         # Create images with various case extensions
-        paths = []
+        paths: list[Path] = []
         paths.extend((
             self._create_test_image("001.PNG"),
             self._create_test_image("002.jpg"),
@@ -158,14 +167,14 @@ class TestPreviewManagerV2(unittest.TestCase):
             self._create_test_image("004.Png"),
         ))
 
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
 
         assert first is not None
         assert middle is not None
         assert last is not None
 
     @patch("goesvfi.gui_components.preview_manager.ImageLoader")
-    def test_load_preview_images_success_comprehensive(self, mock_loader_class) -> None:
+    def test_load_preview_images_success_comprehensive(self, mock_loader_class: Any) -> None:
         """Test successful preview loading with comprehensive scenarios."""
         # Create test images
         self._create_test_images_batch(3, size=(200, 200))
@@ -204,7 +213,7 @@ class TestPreviewManagerV2(unittest.TestCase):
         assert self.preview_manager.last_frame_data is not None
 
     @patch("goesvfi.gui_components.preview_manager.ImageLoader")
-    def test_load_preview_images_with_crop_comprehensive(self, mock_loader_class) -> None:
+    def test_load_preview_images_with_crop_comprehensive(self, mock_loader_class: Any) -> None:
         """Test loading with various crop scenarios."""
         self._create_test_images_batch(3, size=(400, 400))
 
@@ -243,7 +252,7 @@ class TestPreviewManagerV2(unittest.TestCase):
                     mock_crop.assert_called_with(test_data, expected_coords)
 
     @patch("goesvfi.gui_components.preview_manager.ImageLoader")
-    def test_load_preview_images_with_sanchez_comprehensive(self, mock_loader_class) -> None:
+    def test_load_preview_images_with_sanchez_comprehensive(self, mock_loader_class: Any) -> None:
         """Test Sanchez processing with various resolutions."""
         self._create_test_images_batch(3)
 
@@ -270,7 +279,7 @@ class TestPreviewManagerV2(unittest.TestCase):
                     mock_sanchez.return_value = processed_data
 
                     self.preview_manager.load_preview_images(
-                        self.test_dir, apply_sanchez=True, sanchez_resolution=sanchez_res
+                        self.test_dir, apply_sanchez=True, sanchez_resolution=(sanchez_res, sanchez_res) if sanchez_res else None
                     )
 
                     # Verify Sanchez was called with correct resolution
@@ -282,7 +291,7 @@ class TestPreviewManagerV2(unittest.TestCase):
             # (array, description)
             (np.zeros((100, 100, 3), dtype=np.uint8), "Black RGB"),
             (np.ones((100, 100, 3), dtype=np.uint8) * 255, "White RGB"),
-            (np.random.randint(0, 256, (50, 50, 3), dtype=np.uint8), "Random RGB"),
+            (np.random.default_rng().integers(0, 256, (50, 50, 3), dtype=np.uint8), "Random RGB"),
             (np.zeros((100, 100), dtype=np.uint8), "Black grayscale"),
             (np.ones((100, 100), dtype=np.uint8) * 128, "Gray grayscale"),
             (np.zeros((100, 100, 4), dtype=np.uint8), "Transparent RGBA"),
@@ -293,7 +302,7 @@ class TestPreviewManagerV2(unittest.TestCase):
 
         for array, description in test_cases:
             with self.subTest(case=description):
-                pixmap = self.preview_manager._numpy_to_qpixmap(array)
+                pixmap = self.preview_manager._numpy_to_qpixmap(array)  # noqa: SLF001
 
                 assert isinstance(pixmap, QPixmap)
                 assert not pixmap.isNull()
@@ -309,18 +318,18 @@ class TestPreviewManagerV2(unittest.TestCase):
     def test_numpy_to_qpixmap_edge_cases(self) -> None:
         """Test numpy to QPixmap conversion edge cases."""
         # Test with float array (should be converted)
-        float_array = np.random.rand(50, 50, 3).astype(np.float32)
-        pixmap = self.preview_manager._numpy_to_qpixmap((float_array * 255).astype(np.uint8))
+        float_array = np.random.default_rng().random((50, 50, 3)).astype(np.float32)
+        pixmap = self.preview_manager._numpy_to_qpixmap((float_array * 255).astype(np.uint8))  # noqa: SLF001
         assert not pixmap.isNull()
 
         # Test with wrong dtype
         wrong_dtype = np.zeros((10, 10, 3), dtype=np.int32)
-        pixmap = self.preview_manager._numpy_to_qpixmap(wrong_dtype.astype(np.uint8))
+        pixmap = self.preview_manager._numpy_to_qpixmap(wrong_dtype.astype(np.uint8))  # noqa: SLF001
         assert not pixmap.isNull()
 
         # Test with empty array
         empty_array = np.array([], dtype=np.uint8).reshape(0, 0, 3)
-        pixmap = self.preview_manager._numpy_to_qpixmap(empty_array)
+        pixmap = self.preview_manager._numpy_to_qpixmap(empty_array)  # noqa: SLF001
         assert pixmap.isNull()
 
     def test_scale_preview_pixmap_comprehensive(self) -> None:
@@ -371,11 +380,11 @@ class TestPreviewManagerV2(unittest.TestCase):
         results = []
         errors = []
 
-        def load_previews(preview_manager, test_dir) -> None:
+        def load_previews(preview_manager: Any, test_dir: Any) -> None:
             try:
                 result = preview_manager.load_preview_images(test_dir)
                 results.append(result)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append(e)
 
         # Load concurrently
@@ -407,10 +416,13 @@ class TestPreviewManagerV2(unittest.TestCase):
         assert "not a directory" in self.preview_error_messages[-1]
 
         # Test with permission error (mock)
-        with patch("pathlib.Path.is_dir", return_value=True), patch("pathlib.Path.exists", return_value=True):
-            with patch("pathlib.Path.glob", side_effect=PermissionError("Access denied")):
-                result = self.preview_manager.load_preview_images(self.test_dir)
-                assert not result
+        with (
+            patch("pathlib.Path.is_dir", return_value=True),
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.glob", side_effect=PermissionError("Access denied")),
+        ):
+            result = self.preview_manager.load_preview_images(self.test_dir)
+            assert not result
 
     def test_clear_previews_comprehensive(self) -> None:
         """Test clearing previews in various states."""
@@ -460,7 +472,7 @@ class TestPreviewManagerV2(unittest.TestCase):
         assert last is not None
 
     @patch("goesvfi.gui_components.preview_manager.ImageLoader")
-    def test_memory_efficiency(self, mock_loader_class) -> None:
+    def test_memory_efficiency(self, mock_loader_class: Any) -> None:
         """Test memory efficiency with large images."""
         # Create large test images
         self._create_test_images_batch(3, size=(2000, 2000))
@@ -483,11 +495,11 @@ class TestPreviewManagerV2(unittest.TestCase):
         # Track signal order
         signal_log = []
 
-        def log_update(first, middle, last) -> None:
+        def log_update(first: Any, middle: Any, last: Any) -> None:
             signal_log.append(("update", first is not None, middle is not None, last is not None))
 
-        def log_error(msg) -> None:
-            signal_log.append(("error", msg))
+        def log_error(msg: str) -> None:
+            signal_log.append(("error", msg, False, False))  # type: ignore[arg-type]
 
         self.preview_manager.preview_updated.connect(log_update)
         self.preview_manager.preview_error.connect(log_error)
@@ -527,7 +539,7 @@ class TestPreviewManagerV2(unittest.TestCase):
                 img.save(path, format_name)
 
         # Should find all formats
-        first, _middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+        first, _middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
         assert first is not None
         assert last is not None
 
@@ -539,24 +551,25 @@ class TestPreviewManagerV2(unittest.TestCase):
             link_img = self.test_dir / "link.png"
             link_img.symlink_to(real_img)
 
-            first, _middle, _last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+            first, _middle, _last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
             assert first is not None
         except (OSError, NotImplementedError):
             pass  # Symlinks not supported
 
         # Test with hidden files
         self._create_test_image(".hidden.png")
-        first, _middle, _last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
+        first, _middle, _last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
         # Hidden files might or might not be included depending on platform
 
     @patch("goesvfi.gui_components.preview_manager.ImageLoader")
-    def test_sanchez_processor_integration(self, mock_loader_class) -> None:
+    def test_sanchez_processor_integration(self, mock_loader_class: Any) -> None:
         """Test full integration with Sanchez processor."""
         self._create_test_images_batch(3)
 
         mock_loader = MagicMock()
         mock_loader_class.return_value = mock_loader
-        test_data = ImageData(np.random.randint(0, 256, (100, 100, 3), dtype=np.uint8))
+        rng = np.random.default_rng()
+        test_data = ImageData(rng.integers(0, 256, (100, 100, 3), dtype=np.uint8))
         mock_loader.load.return_value = test_data
 
         self.preview_manager = PreviewManager()
@@ -565,11 +578,11 @@ class TestPreviewManagerV2(unittest.TestCase):
         with patch.object(self.preview_manager.sanchez_processor, "process") as mock_process:
             # Simulate Sanchez enhancing the image
             enhanced = test_data.image_data.copy()
-            enhanced = np.clip(enhanced * 1.2, 0, 255).astype(np.uint8)
+            enhanced = np.clip(enhanced.astype(np.float64) * 1.2, 0, 255).astype(np.uint8)
             mock_process.return_value = ImageData(enhanced)
 
             result = self.preview_manager.load_preview_images(
-                self.test_dir, apply_sanchez=True, sanchez_resolution=2000
+                self.test_dir, apply_sanchez=True, sanchez_resolution=(2000, 2000)
             )
 
             assert result
