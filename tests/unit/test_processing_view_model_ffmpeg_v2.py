@@ -66,9 +66,9 @@ class TestProcessingViewModelFFmpegV2:
         assert "-pix_fmt" in cmd
         assert "yuv420p" in cmd
 
-    def test_build_ffmpeg_command_without_crop(
+    def test_build_ffmpeg_command_without_crop(  # noqa: PLR6301
         self, view_model: ProcessingViewModel, test_paths: dict[str, Any]
-    ) -> None:  # noqa: PLR6301
+    ) -> None:
         """Test building FFmpeg command without crop parameters."""
         output = test_paths["output"]
         settings = {"encoder": "Software x264", "crf": 23}

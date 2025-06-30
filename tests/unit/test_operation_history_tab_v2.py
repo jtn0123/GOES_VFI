@@ -780,7 +780,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
                 try:
                     worker.run()
                     # Some runs should succeed, others may fail
-                except Exception:  # noqa: BLE001, S110
+                except Exception:  # noqa: BLE001, S110, SIM105
                     # Should handle failures gracefully
                     pass
 
@@ -838,7 +838,7 @@ def history_tab_models_pytest(dummy_store_pytest: DummyOperationStore) -> Any:
     operations_model.update_operations(dummy_store_pytest.operations)
     metrics_model.update_metrics(dummy_store_pytest.metrics)
 
-    class MockHistoryTab:  # noqa: B903
+    class MockHistoryTab:
         def __init__(self) -> None:
             self.operations_model = operations_model
             self.metrics_model = metrics_model

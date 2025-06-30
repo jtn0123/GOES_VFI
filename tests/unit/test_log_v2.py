@@ -41,7 +41,7 @@ class TestLogOptimizedV2:
 
     @pytest.fixture(autouse=True)
     @staticmethod
-    def reset_log_state() -> Any:  # noqa: ANN401
+    def reset_log_state() -> Any:
         """Reset log state before each test.
 
         Yields:

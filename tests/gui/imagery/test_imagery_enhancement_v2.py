@@ -9,6 +9,8 @@ Optimizations applied:
 """
 
 from pathlib import Path
+import time
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -22,8 +24,13 @@ class TestImageryEnhancementV2:
     """Optimized test class for GOES imagery enhancements."""
 
     @pytest.fixture(scope="class")
-    def mock_visualization_manager(self):
-        """Create mock visualization manager."""
+    @staticmethod
+    def mock_visualization_manager() -> Any:
+        """Create mock visualization manager.
+
+        Returns:
+            MagicMock: Mocked visualization manager.
+        """
         viz_manager = MagicMock(spec=VisualizationManager)
 
         # Mock essential methods
@@ -35,8 +42,13 @@ class TestImageryEnhancementV2:
         return viz_manager
 
     @pytest.fixture()
-    def mock_sample_processor(self, mock_visualization_manager):
-        """Create mock sample processor with visualization manager."""
+    @staticmethod
+    def mock_sample_processor(mock_visualization_manager: Any) -> Any:
+        """Create mock sample processor with visualization manager.
+
+        Returns:
+            MagicMock: Mocked sample processor.
+        """
         processor = MagicMock(spec=SampleProcessor)
         processor.visualization_manager = mock_visualization_manager
 
@@ -48,15 +60,21 @@ class TestImageryEnhancementV2:
         return processor
 
     @pytest.fixture()
-    def mock_logger(self):
-        """Create mock logger for testing."""
+    @staticmethod
+    def mock_logger() -> Any:
+        """Create mock logger for testing.
+
+        Returns:
+            MagicMock: Mocked logger.
+        """
         logger = MagicMock()
         logger.info = MagicMock()
         logger.warning = MagicMock()
         logger.error = MagicMock()
         return logger
 
-    def test_fallback_strategies_comprehensive(self, mock_visualization_manager) -> None:
+    @staticmethod
+    def test_fallback_strategies_comprehensive(mock_visualization_manager: Any) -> None:
         """Test comprehensive fallback strategies in sample processor."""
         # Create real processor with mock visualization manager
         processor = SampleProcessor(visualization_manager=mock_visualization_manager)
@@ -90,7 +108,8 @@ class TestImageryEnhancementV2:
             (1, "INVALID_TYPE", "error"),  # Invalid product type
         ],
     )
-    def test_download_sample_data_scenarios(self, mock_sample_processor, band, product_type, expected_behavior) -> None:
+    @staticmethod
+    def test_download_sample_data_scenarios(mock_sample_processor: Any, band: Any, product_type: Any, expected_behavior: Any) -> None:
         """Test download sample data with various scenarios."""
         # Configure mock behavior based on expected outcome
         if expected_behavior == "success":
@@ -101,7 +120,10 @@ class TestImageryEnhancementV2:
             mock_sample_processor.download_sample_data.side_effect = ValueError("Invalid parameters")
 
         # Execute test
-        try:
+        if expected_behavior == "error":
+            with pytest.raises(ValueError, match="Invalid parameters"):
+                mock_sample_processor.download_sample_data(band, product_type)
+        else:
             result = mock_sample_processor.download_sample_data(band, product_type)
 
             if expected_behavior == "success":
@@ -110,13 +132,8 @@ class TestImageryEnhancementV2:
             elif expected_behavior == "fallback":
                 assert result is None
 
-        except ValueError as e:
-            if expected_behavior == "error":
-                assert "Invalid parameters" in str(e)
-            else:
-                raise
-
-    def test_web_sample_fallbacks_comprehensive(self, mock_visualization_manager, mock_sample_processor) -> None:
+    @staticmethod
+    def test_web_sample_fallbacks_comprehensive(mock_visualization_manager: Any, mock_sample_processor: Any) -> None:  # noqa: ARG004
         """Test comprehensive web sample download fallbacks."""
         # Test fallback scenarios
         fallback_scenarios = [
@@ -148,7 +165,8 @@ class TestImageryEnhancementV2:
                 # Expected for network unavailable scenarios
                 assert not scenario["network_available"]
 
-    def test_visualization_manager_integration(self, mock_visualization_manager) -> None:
+    @staticmethod
+    def test_visualization_manager_integration(mock_visualization_manager: Any) -> None:
         """Test visualization manager integration with imagery enhancement."""
         # Test visualization creation
         mock_visualization_manager.create_visualization.return_value = {"status": "success", "path": "/mock/viz.png"}
@@ -161,7 +179,8 @@ class TestImageryEnhancementV2:
         assert "path" in result
         mock_visualization_manager.create_visualization.assert_called_once()
 
-    def test_error_handling_and_logging(self, mock_sample_processor, mock_logger) -> None:
+    @staticmethod
+    def test_error_handling_and_logging(mock_sample_processor: Any, mock_logger: Any) -> None:
         """Test error handling and logging in imagery enhancement."""
         # Configure mock to raise various errors
         error_scenarios = [
@@ -178,16 +197,12 @@ class TestImageryEnhancementV2:
             with patch("logging.getLogger") as mock_get_logger:
                 mock_get_logger.return_value = mock_logger
 
-                try:
-                    result = mock_sample_processor.download_sample_data(13, ProductType.FULL_DISK)
-                    # If no exception, verify None result for error cases
-                    assert result is None
-                except Exception as e:
-                    # Verify error type matches expected
-                    assert type(e) == type(error)
-                    assert expected_message.lower() in str(e).lower()
+                # Use pytest.raises for proper exception testing
+                with pytest.raises(type(error), match=expected_message):
+                    mock_sample_processor.download_sample_data(13, ProductType.FULL_DISK)
 
-    def test_product_type_validation(self, mock_sample_processor) -> None:
+    @staticmethod
+    def test_product_type_validation(mock_sample_processor: Any) -> None:
         """Test product type validation in imagery enhancement."""
         # Test valid product types
         valid_types = [ProductType.FULL_DISK, ProductType.CONUS, ProductType.MESOSCALE]
@@ -200,7 +215,8 @@ class TestImageryEnhancementV2:
 
             mock_sample_processor.download_sample_data.assert_called_with(13, product_type)
 
-    def test_band_selection_scenarios(self, mock_sample_processor) -> None:
+    @staticmethod
+    def test_band_selection_scenarios(mock_sample_processor: Any) -> None:
         """Test band selection scenarios for imagery enhancement."""
         # Test various band scenarios
         band_scenarios = [
@@ -219,19 +235,15 @@ class TestImageryEnhancementV2:
             else:
                 mock_sample_processor.download_sample_data.side_effect = ValueError("Invalid band")
 
-            try:
+            if scenario["valid"]:
                 result = mock_sample_processor.download_sample_data(scenario["band"], ProductType.FULL_DISK)
+                assert result is not None
+            else:
+                with pytest.raises(ValueError, match="Invalid band"):
+                    mock_sample_processor.download_sample_data(scenario["band"], ProductType.FULL_DISK)
 
-                if scenario["valid"]:
-                    assert result is not None
-                else:
-                    msg = "Should have raised ValueError for invalid band"
-                    raise AssertionError(msg)
-
-            except ValueError:
-                assert not scenario["valid"]
-
-    def test_enhancement_pipeline_integration(self, mock_visualization_manager, mock_sample_processor) -> None:
+    @staticmethod
+    def test_enhancement_pipeline_integration(mock_visualization_manager: Any, mock_sample_processor: Any) -> None:
         """Test complete enhancement pipeline integration."""
         # Configure mock pipeline
         mock_sample_processor.download_sample_data.return_value = Path("/mock/data.nc")
@@ -266,14 +278,14 @@ class TestImageryEnhancementV2:
         mock_sample_processor.apply_enhancement.assert_called_once()
         mock_visualization_manager.create_visualization.assert_called_once()
 
-    def test_performance_monitoring(self, mock_sample_processor) -> None:
+    @staticmethod
+    def test_performance_monitoring(mock_sample_processor: Any) -> None:
         """Test performance monitoring for imagery enhancement operations."""
         # Mock performance metrics
 
         # Configure mock with performance simulation
-        def mock_download_with_timing(*args, **kwargs):
+        def mock_download_with_timing(*args: Any, **kwargs: Any) -> Any:
             # Simulate processing time
-            import time
 
             time.sleep(0.001)  # Minimal delay for testing
             return Path("/mock/data.nc")
@@ -281,7 +293,6 @@ class TestImageryEnhancementV2:
         mock_sample_processor.download_sample_data.side_effect = mock_download_with_timing
 
         # Test with timing
-        import time
 
         start_time = time.time()
 
@@ -297,7 +308,8 @@ class TestImageryEnhancementV2:
         # Verify method was called
         mock_sample_processor.download_sample_data.assert_called_once()
 
-    def test_resource_cleanup_and_management(self, mock_sample_processor, mock_visualization_manager) -> None:
+    @staticmethod
+    def test_resource_cleanup_and_management(mock_sample_processor: Any, mock_visualization_manager: Any) -> None:
         """Test resource cleanup and management in imagery enhancement."""
         # Mock resource management methods
         mock_sample_processor.cleanup_temp_files = MagicMock()

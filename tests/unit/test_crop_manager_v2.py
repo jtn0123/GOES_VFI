@@ -457,7 +457,7 @@ class TestCropManagerV2(unittest.TestCase):  # noqa: PLR0904
                 assert result
 
     @patch("goesvfi.gui_components.crop_manager.QSettings")
-    def test_settings_initialization_error(self, mock_settings_class: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_settings_initialization_error(self, mock_settings_class: Any) -> None:  # noqa: PLR6301
         """Test handling of settings initialization errors."""
         # Mock settings to raise exception
         mock_settings_class.side_effect = Exception("Settings init failed")
