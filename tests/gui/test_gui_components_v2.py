@@ -9,6 +9,7 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtCore import QObject, QSettings, pyqtSignal
@@ -31,8 +32,13 @@ class TestGUIComponentsOptimizedV2:
     """Optimized GUI components tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def mock_main_window_class(self):
-        """Create mock MainWindow class for testing."""
+    @staticmethod
+    def mock_main_window_class() -> type:
+        """Create mock MainWindow class for testing.
+
+        Returns:
+            type: Mock MainWindow class.
+        """
 
         class MockMainWindow(QObject):
             request_previews_update = pyqtSignal()
@@ -61,11 +67,17 @@ class TestGUIComponentsOptimizedV2:
         return MockMainWindow
 
     @pytest.fixture()
-    def mock_main_window(self, mock_main_window_class):
-        """Create mock main window instance."""
+    @staticmethod
+    def mock_main_window(mock_main_window_class: type) -> Any:
+        """Create mock main window instance.
+
+        Returns:
+            Any: Mock main window instance.
+        """
         return mock_main_window_class()
 
-    def test_signal_broker_comprehensive(self, mock_main_window) -> None:
+    @staticmethod
+    def test_signal_broker_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive SignalBroker functionality."""
         broker = SignalBroker()
         main_window = mock_main_window
@@ -75,8 +87,8 @@ class TestGUIComponentsOptimizedV2:
 
         # Test different signal scenarios
         signal_scenarios = [
-            ("request_previews_update", main_window._update_previews, "Preview update signal"),
-            ("tab_widget.currentChanged", main_window._on_tab_changed, "Tab change signal"),
+            ("request_previews_update", main_window._update_previews, "Preview update signal"),  # noqa: SLF001
+            ("tab_widget.currentChanged", main_window._on_tab_changed, "Tab change signal"),  # noqa: SLF001
         ]
 
         for signal_name, expected_method, _description in signal_scenarios:
@@ -109,7 +121,8 @@ class TestGUIComponentsOptimizedV2:
         broker.setup_main_window_connections(main_window)
         # Should not cause issues
 
-    def test_state_manager_comprehensive(self, mock_main_window) -> None:
+    @staticmethod
+    def test_state_manager_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive StateManager functionality."""
         main_window = mock_main_window
         state_manager = StateManager(main_window)
@@ -118,7 +131,7 @@ class TestGUIComponentsOptimizedV2:
         input_scenarios = [
             (Path("/test/input1"), "Basic input path"),
             (Path("/home/user/videos"), "User directory"),
-            (Path("/tmp/processing"), "Temporary directory"),
+            (Path("/tmp/processing"), "Temporary directory"),  # noqa: S108
             (None, "Null input path"),
         ]
 
@@ -136,7 +149,7 @@ class TestGUIComponentsOptimizedV2:
 
             if test_path is not None:
                 main_window.request_previews_update.emit.assert_called_once()
-                main_window._save_input_directory.assert_called_with(test_path)
+                main_window._save_input_directory.assert_called_with(test_path)  # noqa: SLF001
 
         # Test crop rectangle management
         crop_scenarios = [
@@ -155,13 +168,13 @@ class TestGUIComponentsOptimizedV2:
             main_window.request_previews_update.emit.assert_called_once()
 
             if test_rect is not None:
-                main_window._save_crop_rect.assert_called_with(test_rect)
+                main_window._save_crop_rect.assert_called_with(test_rect)  # noqa: SLF001
 
         # Test output file management
         output_scenarios = [
             (Path("/test/output.mp4"), "MP4 output"),
             (Path("/home/user/result.mov"), "MOV output"),
-            (Path("/tmp/final.mkv"), "MKV output"),
+            (Path("/tmp/final.mkv"), "MKV output"),  # noqa: S108
             (None, "No output file"),
         ]
 
@@ -171,9 +184,10 @@ class TestGUIComponentsOptimizedV2:
             assert main_window.out_file_path == test_path, f"Output path not set for: {description}"
 
             if test_path is not None:
-                main_window._save_output_file.assert_called_with(test_path)
+                main_window._save_output_file.assert_called_with(test_path)  # noqa: SLF001
 
-    def test_file_picker_manager_comprehensive(self, mock_main_window) -> None:
+    @staticmethod
+    def test_file_picker_manager_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive FilePickerManager functionality."""
         main_window = mock_main_window
         file_picker = FilePickerManager(main_window)
@@ -230,7 +244,8 @@ class TestGUIComponentsOptimizedV2:
             setattr(file_picker, option, value)
             assert getattr(file_picker, option) == value
 
-    def test_model_selector_manager_comprehensive(self, mock_main_window) -> None:
+    @staticmethod
+    def test_model_selector_manager_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive ModelSelectorManager functionality."""
         main_window = mock_main_window
 
@@ -259,9 +274,9 @@ class TestGUIComponentsOptimizedV2:
 
                 if models:
                     assert model_combo.addItem.call_count == len(models), f"Model count incorrect for: {description}"
-                    model_combo.setEnabled.assert_called_with(True)
+                    model_combo.setEnabled.assert_called_with(enabled=True)
                 else:
-                    model_combo.setEnabled.assert_called_with(False)
+                    model_combo.setEnabled.assert_called_with(enabled=False)
 
         # Test model selection
         with patch("goesvfi.gui_components.model_selector_manager.get_available_rife_models") as mock_get_models:
@@ -273,7 +288,8 @@ class TestGUIComponentsOptimizedV2:
             # Should trigger UI updates
             assert hasattr(model_selector, "on_model_changed")
 
-    def test_crop_handler_comprehensive(self, mock_main_window) -> None:
+    @staticmethod
+    def test_crop_handler_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive CropHandler functionality."""
         main_window = mock_main_window
         crop_handler = CropHandler(main_window)
@@ -290,10 +306,10 @@ class TestGUIComponentsOptimizedV2:
                 mock_dialog_instance = MagicMock()
                 mock_dialog_instance.exec.return_value = 1  # Accepted
                 mock_dialog_instance.get_selected_rect.return_value = MagicMock(
-                    x=lambda: crop_rect[0],
-                    y=lambda: crop_rect[1],
-                    width=lambda: crop_rect[2],
-                    height=lambda: crop_rect[3],
+                    x=lambda rect=crop_rect: rect[0],
+                    y=lambda rect=crop_rect: rect[1],
+                    width=lambda rect=crop_rect: rect[2],
+                    height=lambda rect=crop_rect: rect[3],
                 )
                 mock_dialog.return_value = mock_dialog_instance
 
@@ -325,7 +341,8 @@ class TestGUIComponentsOptimizedV2:
             assert result is None
             assert main_window.current_crop_rect == original_crop  # Should not change
 
-    def test_processing_callbacks_comprehensive(self, mock_main_window) -> None:
+    @staticmethod
+    def test_processing_callbacks_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive ProcessingCallbacks functionality."""
         main_window = mock_main_window
         callbacks = ProcessingCallbacks(main_window)
@@ -374,7 +391,8 @@ class TestGUIComponentsOptimizedV2:
             callbacks.on_processing_error(error_message)
             # Should handle all error types gracefully
 
-    def test_settings_persistence_comprehensive(self, mock_main_window) -> None:
+    @staticmethod
+    def test_settings_persistence_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive SettingsPersistence functionality."""
         main_window = mock_main_window
         settings_persistence = SettingsPersistence(main_window)
@@ -437,7 +455,8 @@ class TestGUIComponentsOptimizedV2:
             else:
                 assert loaded_value == expected_value
 
-    def test_theme_manager_comprehensive(self, mock_main_window) -> None:
+    @staticmethod
+    def test_theme_manager_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive ThemeManager functionality."""
         main_window = mock_main_window
         theme_manager = ThemeManager(main_window)
@@ -473,7 +492,8 @@ class TestGUIComponentsOptimizedV2:
             # Should handle gracefully
             theme_manager.apply_theme(invalid_theme)
 
-    def test_component_integration_comprehensive(self, mock_main_window) -> None:
+    @staticmethod
+    def test_component_integration_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive integration between components."""
         main_window = mock_main_window
 
@@ -517,7 +537,8 @@ class TestGUIComponentsOptimizedV2:
         # All components should work together without conflicts
         assert all(component is not None for component in components.values())
 
-    def test_error_handling_and_edge_cases(self, mock_main_window) -> None:
+    @staticmethod
+    def test_error_handling_and_edge_cases(mock_main_window: Any) -> None:
         """Test error handling and edge cases across all components."""
         main_window = mock_main_window
 
@@ -571,7 +592,8 @@ class TestGUIComponentsOptimizedV2:
                 # Expected for invalid inputs
                 pass
 
-    def test_performance_and_memory_usage(self, mock_main_window) -> None:
+    @staticmethod
+    def test_performance_and_memory_usage(mock_main_window: Any) -> None:
         """Test performance and memory usage of components."""
         main_window = mock_main_window
 
