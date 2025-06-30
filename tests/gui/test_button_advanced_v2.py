@@ -46,16 +46,26 @@ class TestButtonAdvancedV2:
     """Optimized test class for advanced button functionality."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for tests."""
+    @staticmethod
+    def shared_app() -> QApplication:
+        """Create shared QApplication for tests.
+
+        Returns:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture()
-    def mock_main_window(self, shared_app):
-        """Create mock MainWindow with essential components."""
+    @staticmethod
+    def mock_main_window(shared_app: QApplication) -> MagicMock:  # noqa: ARG004
+        """Create mock MainWindow with essential components.
+
+        Returns:
+            MagicMock: Mock main window with configured components.
+        """
         window = MagicMock()
 
         # Mock main tab
@@ -86,8 +96,13 @@ class TestButtonAdvancedV2:
         return window
 
     @pytest.fixture()
-    def mock_batch_queue(self):
-        """Create mock batch operation queue."""
+    @staticmethod
+    def mock_batch_queue() -> MagicMock:
+        """Create mock batch operation queue.
+
+        Returns:
+            MagicMock: Mock batch operation queue.
+        """
         queue = MagicMock()
         queue.items = []
         queue.add_item = MagicMock()
@@ -99,15 +114,16 @@ class TestButtonAdvancedV2:
         queue.is_processing = MagicMock(return_value=False)
         return queue
 
-    def test_model_download_progress_updates(self, mock_main_window) -> None:
+    @staticmethod
+    def test_model_download_progress_updates(mock_main_window: MagicMock) -> None:  # noqa: ARG004
         """Test model download progress updates with mock thread."""
         # Create mock download thread
         download_thread = MockDownloadThread()
 
         # Track progress updates
-        progress_updates = []
+        progress_updates: list[tuple[int, str]] = []
 
-        def track_progress(progress, message) -> None:
+        def track_progress(progress: int, message: str) -> None:
             progress_updates.append((progress, message))
 
         # Connect signals
@@ -121,14 +137,15 @@ class TestButtonAdvancedV2:
         assert len(progress_updates) > 0
         assert any(update[0] == 100 for update in progress_updates)
 
-    def test_model_download_cancellation(self, mock_main_window) -> None:
+    @staticmethod
+    def test_model_download_cancellation(mock_main_window: MagicMock) -> None:  # noqa: ARG004
         """Test model download cancellation functionality."""
         download_thread = MockDownloadThread()
 
         # Track finish signal
-        finish_results = []
+        finish_results: list[tuple[bool, str]] = []
 
-        def track_finish(success, message) -> None:
+        def track_finish(success: bool, message: str) -> None:
             finish_results.append((success, message))
 
         download_thread.finished.connect(track_finish)
@@ -152,8 +169,9 @@ class TestButtonAdvancedV2:
             ("paused", {"add": False, "process": False, "clear": False, "resume": True}),
         ],
     )
+    @staticmethod
     def test_batch_operation_queue_management(
-        self, mock_main_window, mock_batch_queue, queue_state, expected_buttons
+        mock_main_window: MagicMock, mock_batch_queue: MagicMock, queue_state: str, expected_buttons: dict[str, bool]  # noqa: ARG004
     ) -> None:
         """Test batch operation queue management button states."""
         # Create batch operation buttons
@@ -193,7 +211,8 @@ class TestButtonAdvancedV2:
             if button_name in buttons:
                 buttons[button_name].setEnabled.assert_called_with(expected_enabled)
 
-    def test_context_menu_actions(self, mock_main_window) -> None:
+    @staticmethod
+    def test_context_menu_actions(mock_main_window: MagicMock) -> None:
         """Test right-click context menu actions."""
         preview_label = mock_main_window.main_tab.first_frame_label
         preview_label.file_path = "/test/image.png"
@@ -227,7 +246,8 @@ class TestButtonAdvancedV2:
             ("Ctrl+Q", "quit"),
         ],
     )
-    def test_keyboard_shortcuts_functionality(self, mock_main_window, shortcut, expected_action) -> None:
+    @staticmethod
+    def test_keyboard_shortcuts_functionality(mock_main_window: MagicMock, shortcut: str, expected_action: str) -> None:  # noqa: ARG004
         """Test keyboard shortcuts trigger correct actions."""
         # Mock keyboard action handlers
         action_handlers = {
@@ -239,7 +259,7 @@ class TestButtonAdvancedV2:
         }
 
         # Simulate keyboard shortcut activation
-        def simulate_shortcut(shortcut_key, action) -> None:
+        def simulate_shortcut(shortcut_key: str, action: str) -> None:
             action_handlers[action]()
 
         simulate_shortcut(shortcut, expected_action)
@@ -256,8 +276,9 @@ class TestButtonAdvancedV2:
             ("FFmpeg", False, True, True),
         ],
     )
+    @staticmethod
     def test_button_group_interactions(
-        self, mock_main_window, encoder, rife_enabled, sanchez_checked, sanchez_res_enabled
+        mock_main_window: MagicMock, encoder: str, rife_enabled: bool, sanchez_checked: bool, sanchez_res_enabled: bool
     ) -> None:
         """Test radio button groups and checkbox dependencies."""
         encoder_combo = mock_main_window.main_tab.encoder_combo
@@ -283,7 +304,8 @@ class TestButtonAdvancedV2:
         rife_options_group.setEnabled.assert_called_with(rife_enabled)
         sanchez_res_combo.setEnabled.assert_called_with(sanchez_res_enabled)
 
-    def test_toolbar_button_states(self, mock_main_window) -> None:
+    @staticmethod
+    def test_toolbar_button_states(mock_main_window: MagicMock) -> None:
         """Test toolbar button states update correctly."""
         # Mock toolbar with actions
         toolbar_actions = {
@@ -335,7 +357,8 @@ class TestButtonAdvancedV2:
             ("clear_crop_button", 15),
         ],
     )
-    def test_button_tooltip_accuracy(self, mock_main_window, button_name, expected_tooltip_length) -> None:
+    @staticmethod
+    def test_button_tooltip_accuracy(mock_main_window: MagicMock, button_name: str, expected_tooltip_length: int) -> None:
         """Test button tooltips are accurate and helpful."""
         button = getattr(mock_main_window.main_tab, button_name)
 
@@ -364,7 +387,8 @@ class TestButtonAdvancedV2:
             updated_tooltip = button.toolTip()
             assert updated_tooltip != tooltip_content[button_name]
 
-    def test_button_state_persistence(self, mock_main_window) -> None:
+    @staticmethod
+    def test_button_state_persistence(mock_main_window: MagicMock) -> None:
         """Test button states are properly saved and restored."""
         # Mock button state persistence
         button_states = {}
@@ -401,7 +425,8 @@ class TestButtonAdvancedV2:
         mock_main_window.main_tab.out_file_button.setEnabled.assert_called_with(False)
         mock_main_window.main_tab.start_button.setEnabled.assert_called_with(True)
 
-    def test_button_error_handling(self, mock_main_window) -> None:
+    @staticmethod
+    def test_button_error_handling(mock_main_window: MagicMock) -> None:
         """Test button error handling and recovery."""
         start_button = mock_main_window.main_tab.start_button
 
@@ -430,7 +455,8 @@ class TestButtonAdvancedV2:
         # Verify button can recover
         assert start_button.clicked.emit() is None  # Signal emission doesn't return value
 
-    def test_button_accessibility_features(self, mock_main_window) -> None:
+    @staticmethod
+    def test_button_accessibility_features(mock_main_window: MagicMock) -> None:
         """Test button accessibility features."""
         buttons = [
             mock_main_window.main_tab.in_dir_button,
@@ -458,7 +484,8 @@ class TestButtonAdvancedV2:
             button.setAccessibleName.assert_called_with(f"Button {i}")
             button.setAccessibleDescription.assert_called_with(f"Description for button {i}")
 
-    def test_button_performance_optimization(self, mock_main_window) -> None:
+    @staticmethod
+    def test_button_performance_optimization(mock_main_window: MagicMock) -> None:  # noqa: ARG004
         """Test button performance optimization techniques."""
         # Mock performance monitoring
         performance_metrics = {
