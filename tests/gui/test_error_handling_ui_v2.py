@@ -11,6 +11,7 @@ This v2 version maintains all test scenarios while optimizing through:
 import operator
 from pathlib import Path
 import tempfile
+from typing import Any
 from unittest.mock import MagicMock
 
 import psutil
@@ -25,8 +26,13 @@ class TestErrorHandlingUIOptimizedV2:
     """Optimized error handling and edge case UI tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Shared QApplication instance."""
+    @staticmethod
+    def shared_app() -> Any:
+        """Shared QApplication instance.
+
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -34,21 +40,31 @@ class TestErrorHandlingUIOptimizedV2:
         app.processEvents()
 
     @pytest.fixture()
-    def main_window(self, qtbot, shared_app, mocker):
-        """Create MainWindow instance with mocks."""
+    @staticmethod
+    def main_window(qtbot: Any, shared_app: Any, mocker: Any) -> Any:  # noqa: ARG004
+        """Create MainWindow instance with mocks.
+
+        Returns:
+            MainWindow: Configured main window instance.
+        """
         # Mock heavy components
         mocker.patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab")
         mocker.patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab")
 
         window = MainWindow(debug_mode=True)
         qtbot.addWidget(window)
-        window._post_init_setup()
+        window._post_init_setup()  # noqa: SLF001
 
         return window
 
     @pytest.fixture(scope="class")
-    def error_handling_components(self):
-        """Create shared error handling and network testing components."""
+    @staticmethod
+    def error_handling_components() -> dict[str, Any]:  # noqa: C901
+        """Create shared error handling and network testing components.
+
+        Returns:
+            dict[str, Any]: Dictionary containing error handling component classes.
+        """
 
         # Enhanced Mock Network Operation
         class MockNetworkOperation(QThread):
@@ -378,7 +394,10 @@ class TestErrorHandlingUIOptimizedV2:
             "file_validator": FileValidator,
         }
 
-    def test_network_operations_comprehensive(self, qtbot, main_window, error_handling_components) -> None:
+    @staticmethod
+    def test_network_operations_comprehensive(
+        qtbot: Any, main_window: Any, error_handling_components: dict[str, Any]
+    ) -> None:
         """Test comprehensive network operations with timeout and retry handling."""
 
         # Create UI elements for network status
@@ -464,7 +483,10 @@ class TestErrorHandlingUIOptimizedV2:
                 assert len(ui_updates) >= scenario["retry_count"]
                 assert "failed after all retries" in ui_updates[-1].lower()
 
-    def test_retry_mechanisms_comprehensive(self, qtbot, main_window, error_handling_components) -> None:
+    @staticmethod
+    def test_retry_mechanisms_comprehensive(
+        qtbot: Any, main_window: Any, error_handling_components: dict[str, Any]
+    ) -> None:
         """Test comprehensive retry mechanisms with exponential backoff."""
         RetryManager = error_handling_components["retry_manager"]
 
@@ -543,7 +565,10 @@ class TestErrorHandlingUIOptimizedV2:
                 assert "Success!" in status_updates[-1]
                 assert len([u for u in status_updates if "Failed:" in u]) == 0
 
-    def test_resource_management_comprehensive(self, qtbot, main_window, error_handling_components, mocker) -> None:
+    @staticmethod
+    def test_resource_management_comprehensive(
+        qtbot: Any, main_window: Any, error_handling_components: dict[str, Any], mocker: Any
+    ) -> None:
         """Test comprehensive resource management including disk space and memory."""
         window = main_window
         MemoryManager = error_handling_components["memory_manager"]
@@ -676,7 +701,10 @@ class TestErrorHandlingUIOptimizedV2:
             # Cleanup
             mem_mgr.stop_monitoring()
 
-    def test_file_validation_comprehensive(self, qtbot, main_window, error_handling_components, mocker) -> None:
+    @staticmethod
+    def test_file_validation_comprehensive(
+        qtbot: Any, main_window: Any, error_handling_components: dict[str, Any], mocker: Any
+    ) -> None:
         """Test comprehensive file validation with detailed error reporting."""
         window = main_window
         FileValidator = error_handling_components["file_validator"]
@@ -783,8 +811,9 @@ class TestErrorHandlingUIOptimizedV2:
                 f"{scenario['name']}: Expected {scenario['expect_errors']} errors, got {len(errors)}"
             )
 
+    @staticmethod
     def test_concurrent_operations_and_crash_recovery_comprehensive(
-        self, qtbot, main_window, error_handling_components, mocker
+        qtbot: Any, main_window: Any, error_handling_components: dict[str, Any], mocker: Any
     ) -> None:
         """Test comprehensive concurrent operation prevention and crash recovery."""
         window = main_window
@@ -927,8 +956,9 @@ class TestErrorHandlingUIOptimizedV2:
             # Verify crash file was handled
             assert not crash_file.exists(), f"Crash file not cleaned up for {scenario['name']}"
 
+    @staticmethod
     def test_settings_corruption_and_recovery_comprehensive(
-        self, qtbot, main_window, error_handling_components, mocker
+        qtbot: Any, main_window: Any, error_handling_components: dict[str, Any], mocker: Any
     ) -> None:
         """Test comprehensive settings corruption recovery."""
         window = main_window
