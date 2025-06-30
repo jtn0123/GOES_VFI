@@ -4,6 +4,7 @@ import asyncio
 import os
 from pathlib import Path
 import tempfile
+from typing import Any
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -47,21 +48,21 @@ class MockAsyncResource:
 class TestResourceTracker(unittest.TestCase):
     """Test ResourceTracker functionality."""
 
-    def test_track_and_cleanup(self) -> None:
+    def test_track_and_cleanup(self) -> None:  # noqa: PLR6301
         """Test tracking and cleaning up resources."""
         tracker = ResourceTracker("test")
         resource = MockResource("test_resource")
 
         # Track resource
         tracker.track(resource)
-        assert len(tracker._resources) == 1
+        assert len(tracker._resources) == 1  # noqa: SLF001
 
         # Cleanup all
         tracker.cleanup_all()
         assert resource.cleaned_up
-        assert len(tracker._resources) == 0
+        assert len(tracker._resources) == 0  # noqa: SLF001
 
-    def test_untrack(self) -> None:
+    def test_untrack(self) -> None:  # noqa: PLR6301
         """Test untracking resources."""
         tracker = ResourceTracker("test")
         resource = MockResource("test_resource")
@@ -69,13 +70,13 @@ class TestResourceTracker(unittest.TestCase):
         # Track and untrack
         tracker.track(resource)
         tracker.untrack(resource)
-        assert len(tracker._resources) == 0
+        assert len(tracker._resources) == 0  # noqa: SLF001
 
         # Cleanup should not affect untracked resource
         tracker.cleanup_all()
         assert not resource.cleaned_up
 
-    def test_cleanup_with_different_methods(self) -> None:
+    def test_cleanup_with_different_methods(self) -> None:  # noqa: PLR6301
         """Test cleanup with different resource types."""
         tracker = ResourceTracker("test")
 
@@ -104,7 +105,7 @@ class TestResourceTracker(unittest.TestCase):
 class TestManagedResource(unittest.TestCase):
     """Test managed resource context managers."""
 
-    def test_managed_resource_cleanup(self) -> None:
+    def test_managed_resource_cleanup(self) -> None:  # noqa: PLR6301
         """Test managed resource context manager."""
         resource = MockResource("managed")
 
@@ -113,12 +114,12 @@ class TestManagedResource(unittest.TestCase):
 
         assert resource.cleaned_up
 
-    def test_managed_resource_custom_cleanup(self) -> None:
+    def test_managed_resource_custom_cleanup(self) -> None:  # noqa: PLR6301
         """Test managed resource with custom cleanup."""
         resource = MagicMock()
         cleanup_called = False
 
-        def custom_cleanup(res) -> None:
+        def custom_cleanup(res: Any) -> None:
             nonlocal cleanup_called
             cleanup_called = True
             assert res is resource
@@ -128,7 +129,7 @@ class TestManagedResource(unittest.TestCase):
 
         assert cleanup_called
 
-    def test_managed_async_resource(self) -> None:
+    def test_managed_async_resource(self) -> None:  # noqa: PLR6301
         """Test async managed resource context manager."""
 
         async def run_test() -> None:
@@ -141,14 +142,14 @@ class TestManagedResource(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_managed_async_resource_custom_cleanup(self) -> None:
+    def test_managed_async_resource_custom_cleanup(self) -> None:  # noqa: PLR6301
         """Test async managed resource with custom cleanup."""
 
         async def run_test() -> None:
             resource = MagicMock()
             cleanup_called = False
 
-            async def custom_cleanup(res) -> None:
+            async def custom_cleanup(res: Any) -> None:
                 nonlocal cleanup_called
                 cleanup_called = True
                 assert res is resource
@@ -164,7 +165,7 @@ class TestManagedResource(unittest.TestCase):
 class TestTemporaryResources(unittest.TestCase):
     """Test temporary resource utilities."""
 
-    def test_temporary_directory(self) -> None:
+    def test_temporary_directory(self) -> None:  # noqa: PLR6301
         """Test temporary directory context manager."""
         temp_dir_path = None
 
@@ -178,7 +179,7 @@ class TestTemporaryResources(unittest.TestCase):
         # Directory should be cleaned up
         assert not temp_dir_path.exists()
 
-    def test_temporary_directory_no_cleanup(self) -> None:
+    def test_temporary_directory_no_cleanup(self) -> None:  # noqa: PLR6301
         """Test temporary directory without cleanup."""
         temp_dir_path = None
 
@@ -190,11 +191,11 @@ class TestTemporaryResources(unittest.TestCase):
         assert temp_dir_path.exists()
 
         # Manual cleanup
-        import shutil
+        import shutil  # noqa: PLC0415
 
         shutil.rmtree(temp_dir_path)
 
-    def test_temporary_file(self) -> None:
+    def test_temporary_file(self) -> None:  # noqa: PLR6301
         """Test temporary file context manager."""
         temp_file_path = None
 
@@ -208,7 +209,7 @@ class TestTemporaryResources(unittest.TestCase):
         # File should be cleaned up
         assert not temp_file_path.exists()
 
-    def test_temporary_file_no_cleanup(self) -> None:
+    def test_temporary_file_no_cleanup(self) -> None:  # noqa: PLR6301
         """Test temporary file without cleanup."""
         temp_file_path = None
 
@@ -231,16 +232,16 @@ class TestResourceManager(unittest.TestCase):
         # Reset singleton
         import goesvfi.core.modern_resources
 
-        goesvfi.core.modern_resources._resource_manager = None
+        goesvfi.core.modern_resources._resource_manager = None  # noqa: SLF001
 
-    def test_singleton_pattern(self) -> None:
+    def test_singleton_pattern(self) -> None:  # noqa: PLR6301
         """Test ResourceManager singleton."""
         manager1 = get_resource_manager()
         manager2 = get_resource_manager()
 
         assert manager1 is manager2
 
-    def test_track_and_cleanup(self) -> None:
+    def test_track_and_cleanup(self) -> None:  # noqa: PLR6301
         """Test tracking and cleanup through ResourceManager."""
         manager = ResourceManager()
         resource = MockResource("managed")
@@ -250,10 +251,10 @@ class TestResourceManager(unittest.TestCase):
         assert not resource.cleaned_up
 
         # Cleanup - call the internal cleanup method directly
-        manager._do_cleanup()
+        manager._do_cleanup()  # noqa: SLF001
         assert resource.cleaned_up
 
-    def test_managed_method(self) -> None:
+    def test_managed_method(self) -> None:  # noqa: PLR6301
         """Test managed method."""
         manager = ResourceManager()
         resource = MockResource("managed")
@@ -263,10 +264,10 @@ class TestResourceManager(unittest.TestCase):
         assert result is resource
 
         # Cleanup
-        manager._do_cleanup()
+        manager._do_cleanup()  # noqa: SLF001
         assert resource.cleaned_up
 
-    def test_batch_context(self) -> None:
+    def test_batch_context(self) -> None:  # noqa: PLR6301
         """Test batch context manager."""
         manager = ResourceManager()
 
@@ -288,7 +289,7 @@ class TestResourceManager(unittest.TestCase):
 class TestAtomicWrite(unittest.TestCase):
     """Test atomic write utility."""
 
-    def test_atomic_write_success(self) -> None:
+    def test_atomic_write_success(self) -> None:  # noqa: PLR6301
         """Test successful atomic write."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_file = Path(temp_dir) / "test.txt"
@@ -300,7 +301,7 @@ class TestAtomicWrite(unittest.TestCase):
             assert test_file.exists()
             assert test_file.read_text() == "test content"
 
-    def test_atomic_write_with_backup(self) -> None:
+    def test_atomic_write_with_backup(self) -> None:  # noqa: PLR6301
         """Test atomic write with backup."""
         with tempfile.TemporaryDirectory() as temp_dir:
             test_file = Path(temp_dir) / "test.txt"
@@ -318,8 +319,12 @@ class TestAtomicWrite(unittest.TestCase):
             # Backup should be cleaned up after success
             assert not backup_file.exists()
 
-    def test_atomic_write_failure(self) -> None:
-        """Test atomic write failure."""
+    def test_atomic_write_failure(self) -> None:  # noqa: PLR6301
+        """Test atomic write failure.
+        
+        Raises:
+            ValueError: Test error for atomic write failure.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             test_file = Path(temp_dir) / "test.txt"
             temp_file = test_file.with_suffix(".txt.tmp")
@@ -328,8 +333,7 @@ class TestAtomicWrite(unittest.TestCase):
                 with atomic_write(test_file) as f:
                     f.write("partial content")
                     # Simulate error
-                    msg = "Test error"
-                    raise ValueError(msg)
+                    raise ValueError("Test error")
             except ValueError:
                 pass
 
@@ -342,7 +346,7 @@ class TestAtomicWrite(unittest.TestCase):
 class TestMemoryMonitor(unittest.TestCase):
     """Test MemoryMonitor functionality."""
 
-    def test_memory_monitor_singleton(self) -> None:
+    def test_memory_monitor_singleton(self) -> None:  # noqa: PLR6301
         """Test memory monitor singleton."""
         monitor1 = get_memory_monitor()
         monitor2 = get_memory_monitor()
@@ -350,7 +354,7 @@ class TestMemoryMonitor(unittest.TestCase):
         assert monitor1 is monitor2
 
     @patch("goesvfi.core.modern_resources.psutil")
-    def test_memory_usage_with_psutil(self, mock_psutil) -> None:
+    def test_memory_usage_with_psutil(self, mock_psutil: Any) -> None:
         """Test memory usage with psutil available."""
         # Mock psutil
         mock_memory = MagicMock()
@@ -367,7 +371,7 @@ class TestMemoryMonitor(unittest.TestCase):
         assert usage["total"] == 8000000000
         assert usage["percent"] == 50.0
 
-    def test_memory_usage_without_psutil(self) -> None:
+    def test_memory_usage_without_psutil(self) -> None:  # noqa: PLR6301
         """Test memory usage without psutil."""
         with patch.dict("sys.modules", {"psutil": None}):
             monitor = MemoryMonitor()
@@ -376,7 +380,7 @@ class TestMemoryMonitor(unittest.TestCase):
             # Should return fallback data
             assert "percent" in usage
 
-    def test_check_memory_thresholds(self) -> None:
+    def test_check_memory_thresholds(self) -> None:  # noqa: PLR6301
         """Test memory threshold checking."""
         monitor = MemoryMonitor(warning_threshold=0.7, critical_threshold=0.9)
 
@@ -393,7 +397,7 @@ class TestMemoryMonitor(unittest.TestCase):
             mock_usage.return_value = {"percent": 95.0}
             assert not monitor.check_memory()
 
-    def test_monitor_context(self) -> None:
+    def test_monitor_context(self) -> None:  # noqa: PLR6301
         """Test memory monitoring context manager."""
         monitor = MemoryMonitor()
 
@@ -412,7 +416,7 @@ class TestMemoryMonitor(unittest.TestCase):
 class TestTemporaryEnv(unittest.TestCase):
     """Test temporary environment variable utility."""
 
-    def test_temporary_env_set_new(self) -> None:
+    def test_temporary_env_set_new(self) -> None:  # noqa: PLR6301
         """Test setting new environment variable."""
         test_var = "TEST_VAR_NEW"
 
@@ -427,7 +431,7 @@ class TestTemporaryEnv(unittest.TestCase):
         # Should be removed after context
         assert test_var not in os.environ
 
-    def test_temporary_env_modify_existing(self) -> None:
+    def test_temporary_env_modify_existing(self) -> None:  # noqa: PLR6301
         """Test modifying existing environment variable."""
         test_var = "PATH"  # PATH always exists
         original_value = os.environ[test_var]
