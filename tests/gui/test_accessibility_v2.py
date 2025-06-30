@@ -8,6 +8,8 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced ARIA and screen reader coverage
 """
 
+from typing import Any
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QPalette
 from PyQt6.QtWidgets import (
@@ -28,8 +30,13 @@ class TestAccessibilityOptimizedV2:
     """Optimized accessibility tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Shared QApplication instance."""
+    @staticmethod
+    def shared_app() -> Any:
+        """Shared QApplication instance.
+
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -37,28 +44,38 @@ class TestAccessibilityOptimizedV2:
         app.processEvents()
 
     @pytest.fixture()
-    def main_window(self, qtbot, shared_app, mocker):
-        """Create MainWindow instance with mocks."""
+    @staticmethod
+    def main_window(qtbot: Any, shared_app: Any, mocker: Any) -> Any:  # noqa: ARG004
+        """Create MainWindow instance with mocks.
+
+        Returns:
+            MainWindow: Configured main window instance.
+        """
         # Mock heavy components
         mocker.patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab")
         mocker.patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab")
 
         window = MainWindow(debug_mode=True)
         qtbot.addWidget(window)
-        window._post_init_setup()
+        window._post_init_setup()  # noqa: SLF001
 
         return window
 
     @pytest.fixture(scope="class")
-    def accessibility_testing_suite(self):
-        """Create comprehensive accessibility testing tools."""
+    @staticmethod
+    def accessibility_testing_suite() -> dict[str, Any]:  # noqa: C901
+        """Create comprehensive accessibility testing tools.
+
+        Returns:
+            dict[str, Any]: Dictionary containing accessibility testing tools.
+        """
 
         # Enhanced Accessibility Tester
         class AccessibilityTester:
             """Helper class for accessibility testing."""
 
             @staticmethod
-            def check_widget_accessibility(widget):
+            def check_widget_accessibility(widget: Any) -> list[str]:
                 """Check if widget has proper accessibility properties."""
                 issues = []
 
@@ -245,7 +262,10 @@ class TestAccessibilityOptimizedV2:
             "focus_manager": FocusTestingManager(),
         }
 
-    def test_screen_reader_compatibility_comprehensive(self, qtbot, main_window, accessibility_testing_suite) -> None:
+    @staticmethod
+    def test_screen_reader_compatibility_comprehensive(
+        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
+    ) -> None:
         """Test comprehensive screen reader compatibility of UI elements."""
         window = main_window
         tester = accessibility_testing_suite["tester"]
@@ -383,7 +403,10 @@ class TestAccessibilityOptimizedV2:
         # Verify no critical issues
         assert len(all_issues) == 0, f"Accessibility issues found: {all_issues}"
 
-    def test_keyboard_navigation_comprehensive(self, qtbot, main_window, accessibility_testing_suite) -> None:
+    @staticmethod
+    def test_keyboard_navigation_comprehensive(
+        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
+    ) -> None:
         """Test comprehensive keyboard navigation through UI elements."""
         window = main_window
         focus_manager = accessibility_testing_suite["focus_manager"]
@@ -470,8 +493,9 @@ class TestAccessibilityOptimizedV2:
             if policy_widgets:
                 assert len(policy_widgets) > 0, f"No widgets support {description}"
 
+    @staticmethod
     def test_high_contrast_and_theme_support_comprehensive(
-        self, qtbot, main_window, accessibility_testing_suite
+        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
     ) -> None:
         """Test comprehensive high contrast theme support and color accessibility."""
         window = main_window
@@ -541,8 +565,9 @@ class TestAccessibilityOptimizedV2:
         assert window.main_tab.start_button.isEnabled() or not window.is_processing
         assert window.main_tab.encoder_combo.count() > 0
 
+    @staticmethod
     def test_tooltip_accuracy_and_helpfulness_comprehensive(
-        self, qtbot, main_window, accessibility_testing_suite
+        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
     ) -> None:
         """Test comprehensive tooltip accuracy and helpfulness."""
         window = main_window
@@ -657,7 +682,10 @@ class TestAccessibilityOptimizedV2:
             # Reset state
             window._set_processing_state(False)
 
-    def test_error_message_clarity_comprehensive(self, qtbot, main_window, accessibility_testing_suite, mocker) -> None:
+    @staticmethod
+    def test_error_message_clarity_comprehensive(
+        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any], mocker: Any
+    ) -> None:
         """Test comprehensive error message clarity and actionability."""
         window = main_window
 
@@ -789,7 +817,10 @@ class TestAccessibilityOptimizedV2:
             # Test warning display
             QMessageBox.warning(window, scenario["title"], scenario["message"])
 
-    def test_focus_indicators_comprehensive(self, qtbot, main_window, accessibility_testing_suite) -> None:
+    @staticmethod
+    def test_focus_indicators_comprehensive(
+        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
+    ) -> None:
         """Test comprehensive focus indicators and visibility."""
         window = main_window
         tester = accessibility_testing_suite["tester"]
@@ -867,7 +898,10 @@ class TestAccessibilityOptimizedV2:
             current_focus = QApplication.focusWidget()
             assert current_focus is not None, "Focus transition failed"
 
-    def test_tab_order_and_aria_labels_comprehensive(self, qtbot, main_window, accessibility_testing_suite) -> None:
+    @staticmethod
+    def test_tab_order_and_aria_labels_comprehensive(
+        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
+    ) -> None:
         """Test comprehensive tab order logic and ARIA-like labels."""
         window = main_window
         tester = accessibility_testing_suite["tester"]

@@ -8,6 +8,7 @@ Optimizations applied:
 - Reduced test execution time through mock simplification
 """
 
+import time
 from typing import Never
 from unittest.mock import MagicMock
 
@@ -32,10 +33,10 @@ class MockDownloadThread(QThread):
         """Simulate download with progress updates."""
         for i in range(0, 101, 25):  # Reduced iterations for faster testing
             if self.cancelled:
-                self.finished.emit(False, "Download cancelled")
+                self.finished.emit(success=False, message="Download cancelled")
                 return
             self.progress.emit(i, f"Downloading... {i}%")
-        self.finished.emit(True, "Download complete")
+        self.finished.emit(success=True, message="Download complete")
 
     def cancel(self) -> None:
         """Cancel the download."""
@@ -84,14 +85,14 @@ class TestButtonAdvancedV2:
         # Mock window properties
         window.in_dir = None
         window.out_file_path = None
-        window._processing = False
+        window._processing = False  # noqa: SLF001
 
         # Mock methods
         window.set_in_dir = MagicMock()
-        window._set_processing_state = MagicMock()
-        window._start_processing = MagicMock()
-        window._handle_stop_processing = MagicMock()
-        window._toggle_sanchez_res_enabled = MagicMock()
+        window._set_processing_state = MagicMock()  # noqa: SLF001
+        window._start_processing = MagicMock()  # noqa: SLF001
+        window._handle_stop_processing = MagicMock()  # noqa: SLF001
+        window._toggle_sanchez_res_enabled = MagicMock()  # noqa: SLF001
 
         return window
 
@@ -145,7 +146,7 @@ class TestButtonAdvancedV2:
         # Track finish signal
         finish_results: list[tuple[bool, str]] = []
 
-        def track_finish(success: bool, message: str) -> None:
+        def track_finish(*, success: bool, message: str) -> None:
             finish_results.append((success, message))
 
         download_thread.finished.connect(track_finish)
@@ -171,7 +172,10 @@ class TestButtonAdvancedV2:
     )
     @staticmethod
     def test_batch_operation_queue_management(
-        mock_main_window: MagicMock, mock_batch_queue: MagicMock, queue_state: str, expected_buttons: dict[str, bool]  # noqa: ARG004
+        mock_main_window: MagicMock,  # noqa: ARG004
+        mock_batch_queue: MagicMock,
+        queue_state: str,
+        expected_buttons: dict[str, bool],
     ) -> None:
         """Test batch operation queue management button states."""
         # Create batch operation buttons
@@ -259,7 +263,7 @@ class TestButtonAdvancedV2:
         }
 
         # Simulate keyboard shortcut activation
-        def simulate_shortcut(shortcut_key: str, action: str) -> None:
+        def simulate_shortcut(shortcut_key: str, action: str) -> None:  # noqa: ARG001
             action_handlers[action]()
 
         simulate_shortcut(shortcut, expected_action)
@@ -278,7 +282,12 @@ class TestButtonAdvancedV2:
     )
     @staticmethod
     def test_button_group_interactions(
-        mock_main_window: MagicMock, encoder: str, rife_enabled: bool, sanchez_checked: bool, sanchez_res_enabled: bool
+        mock_main_window: MagicMock,
+        encoder: str,
+        *,
+        rife_enabled: bool,
+        sanchez_checked: bool,
+        sanchez_res_enabled: bool,
     ) -> None:
         """Test radio button groups and checkbox dependencies."""
         encoder_combo = mock_main_window.main_tab.encoder_combo
@@ -327,25 +336,20 @@ class TestButtonAdvancedV2:
             action.isSeparator.return_value = False
 
         # Test processing state changes
-        def simulate_processing_state_change(processing) -> None:
+        def simulate_processing_state_change(*, processing: bool) -> None:
             for name, action in toolbar_actions.items():
-                if processing:
-                    # During processing, only stop/cancel should be enabled
-                    enabled = name in {"stop", "cancel"}
-                else:
-                    # When not processing, all actions should be enabled
-                    enabled = True
+                enabled = name in {"stop", "cancel"} if processing else True
                 action.setEnabled(enabled)
 
         # Test processing state
-        simulate_processing_state_change(True)
-        toolbar_actions["new"].setEnabled.assert_called_with(False)
-        toolbar_actions["stop"].setEnabled.assert_called_with(True)
+        simulate_processing_state_change(processing=True)
+        toolbar_actions["new"].setEnabled.assert_called_with(enabled=False)
+        toolbar_actions["stop"].setEnabled.assert_called_with(enabled=True)
 
         # Test idle state
-        simulate_processing_state_change(False)
+        simulate_processing_state_change(processing=False)
         for action in toolbar_actions.values():
-            action.setEnabled.assert_called_with(True)
+            action.setEnabled.assert_called_with(enabled=True)
 
     @pytest.mark.parametrize(
         "button_name,expected_tooltip_length",
@@ -358,7 +362,9 @@ class TestButtonAdvancedV2:
         ],
     )
     @staticmethod
-    def test_button_tooltip_accuracy(mock_main_window: MagicMock, button_name: str, expected_tooltip_length: int) -> None:
+    def test_button_tooltip_accuracy(
+        mock_main_window: MagicMock, button_name: str, expected_tooltip_length: int
+    ) -> None:
         """Test button tooltips are accurate and helpful."""
         button = getattr(mock_main_window.main_tab, button_name)
 
@@ -421,9 +427,9 @@ class TestButtonAdvancedV2:
 
         # Verify states were restored
         assert len(button_states) == 3
-        mock_main_window.main_tab.in_dir_button.setEnabled.assert_called_with(True)
-        mock_main_window.main_tab.out_file_button.setEnabled.assert_called_with(False)
-        mock_main_window.main_tab.start_button.setEnabled.assert_called_with(True)
+        mock_main_window.main_tab.in_dir_button.setEnabled.assert_called_with(enabled=True)
+        mock_main_window.main_tab.out_file_button.setEnabled.assert_called_with(enabled=False)
+        mock_main_window.main_tab.start_button.setEnabled.assert_called_with(enabled=True)
 
     @staticmethod
     def test_button_error_handling(mock_main_window: MagicMock) -> None:
@@ -438,12 +444,8 @@ class TestButtonAdvancedV2:
         start_button.clicked.connect(failing_button_handler)
 
         # Test error handling
-        try:
+        with pytest.raises(RuntimeError, match="Button operation failed"):
             start_button.clicked.emit()
-            msg = "Should have raised RuntimeError"
-            raise AssertionError(msg)
-        except RuntimeError as e:
-            assert "Button operation failed" in str(e)
 
         # Test recovery - button should remain functional
         def working_button_handler() -> str:
@@ -497,20 +499,17 @@ class TestButtonAdvancedV2:
         # Mock performance-optimized operations
         def optimized_click_handler() -> str:
             # Simulate optimized click handling
-            import time
 
             time.sleep(performance_metrics["click_response_time"])
             return "Click handled efficiently"
 
         def optimized_state_update() -> str:
             # Simulate optimized state update
-            import time
 
             time.sleep(performance_metrics["state_update_time"])
             return "State updated efficiently"
 
         # Test performance
-        import time
 
         # Test click response time
         start_time = time.time()
