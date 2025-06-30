@@ -21,8 +21,12 @@ class TestLoaderV2:
     """Optimized test class for loader functionality."""
 
     @pytest.fixture(scope="class")
-    def shared_file_data(self):
-        """Create shared file data for all test methods."""
+    def shared_file_data(self) -> dict[str, list[str]]:  # noqa: PLR6301
+        """Create shared file data for all test methods.
+
+        Returns:
+            dict[str, list[str]]: Test file data organized by category.
+        """
         return {
             "supported_extensions": [".png", ".jpg", ".jpeg"],
             "unsupported_extensions": [".bmp", ".gif", ".txt", ".zip", ".nc"],
@@ -39,8 +43,12 @@ class TestLoaderV2:
         }
 
     @pytest.fixture()
-    def temp_dir_with_files(self, tmp_path, shared_file_data):
-        """Create temporary directory with various file types."""
+    def temp_dir_with_files(self, tmp_path: Path, shared_file_data: dict[str, list[str]]) -> Path:  # noqa: PLR6301
+        """Create temporary directory with various file types.
+
+        Returns:
+            Path: Temporary directory path with test files.
+        """
         # Create all test files efficiently
         all_files = (
             shared_file_data["supported_files"]
@@ -63,8 +71,9 @@ class TestLoaderV2:
             ("case_variations", True),  # Should handle case insensitive
         ],
     )
+    @staticmethod
     def test_discover_frames_extension_filtering(
-        self, temp_dir_with_files, shared_file_data, file_group, should_be_included
+        temp_dir_with_files: Path, shared_file_data: dict[str, list[str]], file_group: str, *, should_be_included: bool
     ) -> None:
         """Test that only supported extensions are returned."""
         result = loader.discover_frames(temp_dir_with_files)
@@ -78,7 +87,7 @@ class TestLoaderV2:
             else:
                 assert filename not in result_filenames, f"Unsupported file {filename} should be excluded"
 
-    def test_discover_frames_sorted_order_comprehensive(self, tmp_path, shared_file_data) -> None:
+    def test_discover_frames_sorted_order_comprehensive(self, tmp_path: Path, shared_file_data: dict[str, list[str]]) -> None:  # noqa: PLR6301, ARG002
         """Test that files are returned in sorted lexicographic order."""
         # Create files in random order but expect sorted output
         unsorted_files = [
@@ -100,7 +109,7 @@ class TestLoaderV2:
         assert result_filenames == expected_order
 
     @pytest.mark.parametrize("directory_scenario", ["empty", "only_directories", "mixed_content"])
-    def test_discover_frames_edge_cases(self, tmp_path, directory_scenario) -> None:
+    def test_discover_frames_edge_cases(self, tmp_path: Path, directory_scenario: str) -> None:  # noqa: PLR6301
         """Test edge cases for frame discovery."""
         if directory_scenario == "empty":
             # Directory is already empty
@@ -123,7 +132,7 @@ class TestLoaderV2:
             assert len(result) == 1
             assert result[0].name == "valid_frame.png"
 
-    def test_discover_frames_case_insensitive_comprehensive(self, tmp_path) -> None:
+    def test_discover_frames_case_insensitive_comprehensive(self, tmp_path: Path) -> None:  # noqa: PLR6301
         """Test comprehensive case insensitive extension handling."""
         case_variations = [
             "frame1.PNG",
@@ -152,7 +161,7 @@ class TestLoaderV2:
         assert "invalid.BMP" not in result_filenames
         assert "invalid.TXT" not in result_filenames
 
-    def test_discover_frames_performance_large_dataset(self, tmp_path) -> None:
+    def test_discover_frames_performance_large_dataset(self, tmp_path: Path) -> None:  # noqa: PLR6301
         """Test performance with larger dataset."""
         # Create larger dataset (100 files)
         supported_files = []
@@ -201,7 +210,7 @@ class TestLoaderV2:
             ("frame[with]brackets.png", True),
         ],
     )
-    def test_discover_frames_special_filenames(self, tmp_path, special_characters, should_work) -> None:
+    def test_discover_frames_special_filenames(self, tmp_path: Path, special_characters: str, should_work: bool) -> None:  # noqa: PLR6301, FBT001
         """Test handling of filenames with special characters."""
         # Create file with special characters
         (tmp_path / special_characters).write_text("content")
@@ -214,7 +223,7 @@ class TestLoaderV2:
         else:
             assert special_characters not in result_filenames
 
-    def test_discover_frames_subdirectory_exclusion(self, tmp_path) -> None:
+    def test_discover_frames_subdirectory_exclusion(self, tmp_path: Path) -> None:  # noqa: PLR6301
         """Test that files in subdirectories are not included."""
         # Create files in main directory
         (tmp_path / "main_frame.png").write_text("content")
@@ -236,7 +245,7 @@ class TestLoaderV2:
         assert "sub_image.jpg" not in result_filenames
         assert len(result_filenames) == 2
 
-    def test_discover_frames_error_handling(self, tmp_path) -> None:
+    def test_discover_frames_error_handling(self, tmp_path: Path) -> None:  # noqa: PLR6301
         """Test error handling with various edge cases."""
         # Test with non-existent directory
         non_existent = tmp_path / "does_not_exist"
@@ -261,7 +270,7 @@ class TestLoaderV2:
             # Expected behavior when path is not a directory
             pass
 
-    def test_discover_frames_return_type_consistency(self, tmp_path, shared_file_data) -> None:
+    def test_discover_frames_return_type_consistency(self, tmp_path: Path, shared_file_data: dict[str, list[str]]) -> None:  # noqa: PLR6301
         """Test that return type is always consistent."""
         # Test with empty directory
         result_empty = loader.discover_frames(tmp_path)
@@ -278,7 +287,7 @@ class TestLoaderV2:
         assert all(isinstance(item, Path) for item in result_with_files)
         assert len(result_with_files) > 0
 
-    def test_discover_frames_path_object_handling(self, tmp_path) -> None:
+    def test_discover_frames_path_object_handling(self, tmp_path: Path) -> None:  # noqa: PLR6301
         """Test that function handles both string and Path objects."""
         # Create test files
         test_files = ["test1.png", "test2.jpg"]
@@ -299,7 +308,7 @@ class TestLoaderV2:
 
         assert result_path_names == result_str_names
 
-    def test_discover_frames_hidden_files(self, tmp_path) -> None:
+    def test_discover_frames_hidden_files(self, tmp_path: Path) -> None:  # noqa: PLR6301
         """Test handling of hidden files (starting with .)."""
         # Create visible and hidden files
         (tmp_path / "visible.png").write_text("content")
@@ -314,7 +323,7 @@ class TestLoaderV2:
         visible_count = sum(1 for name in result_filenames if not name.startswith("."))
         assert visible_count >= 1  # At least the visible file should be included
 
-    def test_discover_frames_duplicate_handling(self, tmp_path) -> None:
+    def test_discover_frames_duplicate_handling(self, tmp_path: Path) -> None:  # noqa: PLR6301
         """Test that no duplicates are returned."""
         # Create files
         test_files = ["frame1.png", "frame2.jpg", "frame3.png"]
@@ -341,7 +350,7 @@ class TestLoaderV2:
             ([".pNg", ".JpG"], 2),  # Should work with mixed case
         ],
     )
-    def test_discover_frames_extension_case_matrix(self, tmp_path, extension_case, expected_count) -> None:
+    def test_discover_frames_extension_case_matrix(self, tmp_path: Path, extension_case: list[str], expected_count: int) -> None:  # noqa: PLR6301
         """Test extension matching with various case combinations."""
         # Create files with specific extensions
         base_name = "test"
