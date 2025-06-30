@@ -1,6 +1,8 @@
 """Fast, optimized tests for processing state management - Optimized v2."""
 
+import contextlib
 import time
+from typing import Any
 from unittest.mock import MagicMock
 
 from PyQt6.QtCore import QObject, pyqtSignal
@@ -22,8 +24,12 @@ class MockProcessingViewModel(QObject):
         self.is_processing = False
         self.current_operation = None
 
-    def start_processing(self, operation_type="video_interpolation") -> None:
-        """Start processing operation."""
+    def start_processing(self, operation_type: str = "video_interpolation") -> None:
+        """Start processing operation.
+
+        Raises:
+            ValueError: If already processing.
+        """
         if self.is_processing:
             msg = "Already processing"
             raise ValueError(msg)
@@ -34,8 +40,12 @@ class MockProcessingViewModel(QObject):
         self.progress = 0
         self.state_changed.emit(self.state)
 
-    def update_progress(self, progress, message="") -> None:
-        """Update processing progress."""
+    def update_progress(self, progress: int, message: str = "") -> None:
+        """Update processing progress.
+
+        Raises:
+            ValueError: If not currently processing.
+        """
         if not self.is_processing:
             msg = "Not currently processing"
             raise ValueError(msg)
@@ -43,8 +53,12 @@ class MockProcessingViewModel(QObject):
         self.progress = max(0, min(100, progress))
         self.progress_updated.emit(self.progress, message)
 
-    def finish_processing(self, success=True, message="") -> None:
-        """Finish processing operation."""
+    def finish_processing(self, *, success: bool = True, message: str = "") -> None:
+        """Finish processing operation.
+
+        Raises:
+            ValueError: If not currently processing.
+        """
         if not self.is_processing:
             msg = "Not currently processing"
             raise ValueError(msg)
@@ -60,8 +74,12 @@ class MockProcessingViewModel(QObject):
 
 # Shared fixtures and test data
 @pytest.fixture(scope="session")
-def operation_scenarios():
-    """Pre-defined operation scenarios for testing."""
+def operation_scenarios() -> dict[str, str]:
+    """Pre-defined operation scenarios for testing.
+
+    Returns:
+        dict[str, str]: Operation scenarios.
+    """
     return {
         "video_interpolation": "video_interpolation",
         "image_processing": "image_processing",
@@ -70,8 +88,12 @@ def operation_scenarios():
 
 
 @pytest.fixture(scope="session")
-def progress_sequences():
-    """Pre-defined progress sequences for testing."""
+def progress_sequences() -> dict[str, list[tuple[int, str]]]:
+    """Pre-defined progress sequences for testing.
+
+    Returns:
+        dict[str, list[tuple[int, str]]]: Progress sequences.
+    """
     return {
         "normal": [(25, "Loading frames"), (50, "Interpolating"), (75, "Encoding")],
         "simple": [(50, "Processing")],
@@ -80,15 +102,19 @@ def progress_sequences():
 
 
 @pytest.fixture()
-def processing_vm():
-    """Create mock processing view model."""
+def processing_vm() -> MockProcessingViewModel:
+    """Create mock processing view model.
+
+    Returns:
+        MockProcessingViewModel: Mock processing view model.
+    """
     return MockProcessingViewModel()
 
 
 class TestProcessingStateManagement:
     """Test processing state management with optimized patterns."""
 
-    def test_initial_state(self, processing_vm) -> None:
+    def test_initial_state(self, processing_vm: MockProcessingViewModel) -> None:  # noqa: PLR6301
         """Test initial state of processing view model."""
         assert processing_vm.state == "idle"
         assert processing_vm.progress == 0
@@ -96,7 +122,7 @@ class TestProcessingStateManagement:
         assert processing_vm.current_operation is None
 
     @pytest.mark.parametrize("operation_type", ["video_interpolation", "image_processing", "batch_operation"])
-    def test_start_processing_state_transition(self, processing_vm, operation_type: str) -> None:
+    def test_start_processing_state_transition(self, processing_vm: MockProcessingViewModel, operation_type: str) -> None:  # noqa: PLR6301
         """Test state transition when starting different types of processing."""
         state_changes = []
         processing_vm.state_changed.connect(state_changes.append)
@@ -108,7 +134,7 @@ class TestProcessingStateManagement:
         assert processing_vm.current_operation == operation_type
         assert state_changes == ["processing"]
 
-    def test_prevent_concurrent_processing(self, processing_vm) -> None:
+    def test_prevent_concurrent_processing(self, processing_vm: MockProcessingViewModel) -> None:  # noqa: PLR6301
         """Test that concurrent processing is prevented."""
         processing_vm.start_processing("operation1")
 
@@ -124,7 +150,7 @@ class TestProcessingStateManagement:
             "detailed",
         ],
     )
-    def test_progress_update_sequences(self, processing_vm, progress_sequences, progress_sequence: str) -> None:
+    def test_progress_update_sequences(self, processing_vm: MockProcessingViewModel, progress_sequences: Any, progress_sequence: str) -> None:  # noqa: PLR6301
         """Test progress update with different sequences."""
         processing_vm.start_processing()
 
@@ -152,14 +178,14 @@ class TestProcessingStateManagement:
             (100, 100),  # Max should remain
         ],
     )
-    def test_progress_bounds_clamping(self, processing_vm, progress_value: int, expected_clamped: int) -> None:
+    def test_progress_bounds_clamping(self, processing_vm: MockProcessingViewModel, progress_value: int, expected_clamped: int) -> None:  # noqa: PLR6301
         """Test progress values are clamped to valid range."""
         processing_vm.start_processing()
 
         processing_vm.update_progress(progress_value)
         assert processing_vm.progress == expected_clamped
 
-    def test_progress_update_without_processing(self, processing_vm) -> None:
+    def test_progress_update_without_processing(self, processing_vm: MockProcessingViewModel) -> None:  # noqa: PLR6301
         """Test progress update fails when not processing."""
         # Should raise error when not processing
         with pytest.raises(ValueError, match="Not currently processing"):
@@ -172,7 +198,7 @@ class TestProcessingStateManagement:
             (False, 0),  # Failed completion resets progress to 0
         ],
     )
-    def test_finish_processing_outcomes(self, processing_vm, success: bool, expected_progress: int) -> None:
+    def test_finish_processing_outcomes(self, processing_vm: MockProcessingViewModel, success: bool, expected_progress: int) -> None:  # noqa: PLR6301, FBT001
         """Test processing completion with different outcomes."""
         processing_vm.start_processing()
 
@@ -195,7 +221,7 @@ class TestProcessingStateManagement:
         assert completion_signals[0] == (success, test_message)
         assert "idle" in state_changes
 
-    def test_finish_without_processing(self, processing_vm) -> None:
+    def test_finish_without_processing(self, processing_vm: MockProcessingViewModel) -> None:  # noqa: PLR6301
         """Test finish fails when not processing."""
         with pytest.raises(ValueError, match="Not currently processing"):
             processing_vm.finish_processing()
@@ -222,18 +248,18 @@ class TestProcessingStateManagement:
             ],
         ],
     )
-    def test_complete_processing_workflows(self, processing_vm, workflow_steps: list[tuple]) -> None:
+    def test_complete_processing_workflows(self, processing_vm: MockProcessingViewModel, workflow_steps: list[tuple]) -> None:  # noqa: PLR6301
         """Test complete processing workflows from start to finish."""
         # Track all signals
         all_signals = []
 
-        def track_state_change(state) -> None:
+        def track_state_change(state: str) -> None:
             all_signals.append(("state_changed", state))
 
-        def track_progress(progress, msg) -> None:
+        def track_progress(progress: int, msg: str) -> None:
             all_signals.append(("progress_updated", progress, msg))
 
-        def track_finished(success, msg) -> None:
+        def track_finished(success: bool, msg: str) -> None:  # noqa: FBT001
             all_signals.append(("processing_finished", success, msg))
 
         processing_vm.state_changed.connect(track_state_change)
@@ -248,7 +274,7 @@ class TestProcessingStateManagement:
             elif action == "progress":
                 processing_vm.update_progress(step[1], step[2])
             elif action == "finish":
-                processing_vm.finish_processing(step[1], step[2])
+                processing_vm.finish_processing(success=step[1], message=step[2])
 
         # Verify signals were emitted in correct sequence
         expected_signal_count = len([s for s in workflow_steps if s[0] != "start"]) + 2  # +2 for start signals
@@ -260,7 +286,7 @@ class TestProcessingStateManagement:
         assert all_signals[-1][0] == "processing_finished"  # Last should be finish signal
 
     @pytest.mark.parametrize("cycle_count", [1, 3, 5])
-    def test_multiple_processing_cycles(self, processing_vm, cycle_count: int) -> None:
+    def test_multiple_processing_cycles(self, processing_vm: MockProcessingViewModel, cycle_count: int) -> None:  # noqa: PLR6301
         """Test multiple processing cycles work correctly."""
         for i in range(cycle_count):
             # Start processing
@@ -273,19 +299,17 @@ class TestProcessingStateManagement:
             assert processing_vm.progress == 50
 
             # Finish processing
-            processing_vm.finish_processing(True)
+            processing_vm.finish_processing(success=True)
             assert not processing_vm.is_processing
             assert processing_vm.state == "idle"
 
-    def test_error_recovery_state(self, processing_vm) -> None:
+    def test_error_recovery_state(self, processing_vm: MockProcessingViewModel) -> None:  # noqa: PLR6301
         """Test state recovery after errors."""
         processing_vm.start_processing()
 
         # Simulate error during processing
-        try:
-            processing_vm.finish_processing(False, "Simulated error")
-        except Exception:
-            pass  # Ignore any exceptions
+        with contextlib.suppress(Exception):
+            processing_vm.finish_processing(success=False, message="Simulated error")
 
         # Should be able to start new processing after error
         assert not processing_vm.is_processing
@@ -294,7 +318,7 @@ class TestProcessingStateManagement:
         assert processing_vm.current_operation == "recovery_operation"
 
     @pytest.mark.parametrize("handler_count", [10, 50, 100])
-    def test_signal_connection_performance(self, processing_vm, handler_count: int) -> None:
+    def test_signal_connection_performance(self, processing_vm: MockProcessingViewModel, handler_count: int) -> None:  # noqa: PLR6301
         """Test performance with many signal connections."""
         # Connect many signal handlers
         handlers = []
@@ -310,7 +334,7 @@ class TestProcessingStateManagement:
 
         processing_vm.start_processing()
         processing_vm.update_progress(50)
-        processing_vm.finish_processing(True)
+        processing_vm.finish_processing(success=True)
 
         end_time = time.time()
 
@@ -329,17 +353,17 @@ class TestProcessingStateManagement:
             50,  # Heavy stress test
         ],
     )
-    def test_state_management_stress(self, processing_vm, stress_operations: int) -> None:
+    def test_state_management_stress(self, processing_vm: MockProcessingViewModel, stress_operations: int) -> None:  # noqa: PLR6301
         """Test state management under stress conditions."""
         signal_counts = {"state": 0, "progress": 0, "finished": 0}
 
-        def count_state(_) -> None:
+        def count_state(_: Any) -> None:
             signal_counts["state"] += 1
 
-        def count_progress(_, __) -> None:
+        def count_progress(_: Any, __: Any) -> None:
             signal_counts["progress"] += 1
 
-        def count_finished(_, __) -> None:
+        def count_finished(_: Any, __: Any) -> None:
             signal_counts["finished"] += 1
 
         processing_vm.state_changed.connect(count_state)
@@ -350,7 +374,7 @@ class TestProcessingStateManagement:
         for i in range(stress_operations):
             processing_vm.start_processing(f"stress_op_{i}")
             processing_vm.update_progress(i % 100)
-            processing_vm.finish_processing(True)
+            processing_vm.finish_processing(success=True)
 
         # Verify state remained consistent
         assert not processing_vm.is_processing
