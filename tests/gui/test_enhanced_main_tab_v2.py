@@ -141,7 +141,7 @@ class TestEnhancedMainTabOptimizedV2:
 
     @pytest.fixture()
     @staticmethod
-    def enhanced_main_tab(qtbot: Any, shared_ui_enhancements_mock: dict[str, Any]) -> Any:
+    def enhanced_main_tab(qtbot: Any, shared_ui_enhancements_mock: dict[str, Any]) -> Any:  # noqa: ARG004
         """Create enhanced main tab instance.
 
         Returns:
@@ -157,7 +157,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_drag_drop_functionality_comprehensive(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004  # noqa: ARG004
     ) -> None:
         """Test comprehensive drag and drop functionality."""
         tab = enhanced_main_tab
@@ -195,7 +197,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_notification_system_comprehensive(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test comprehensive notification system."""
         tab = enhanced_main_tab
@@ -238,7 +242,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_progress_tracking_comprehensive(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004  # noqa: ARG004
     ) -> None:
         """Test comprehensive progress tracking functionality."""
         tab = enhanced_main_tab
@@ -291,7 +297,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_shortcut_manager_comprehensive(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test comprehensive shortcut manager functionality."""
         tab = enhanced_main_tab
@@ -327,7 +335,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_loading_spinner_comprehensive(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test comprehensive loading spinner functionality."""
         tab = enhanced_main_tab
@@ -367,7 +377,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_tooltip_helper_comprehensive(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test comprehensive tooltip helper functionality."""
         mocks = shared_ui_enhancements_mock
@@ -405,7 +417,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_status_widget_comprehensive(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test comprehensive status widget functionality."""
         mocks = shared_ui_enhancements_mock
@@ -435,7 +449,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_enhanced_features_integration(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test integration of all enhanced features."""
         tab = enhanced_main_tab
@@ -483,7 +499,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_error_handling_and_robustness(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test error handling and robustness of enhanced features."""
         tab = enhanced_main_tab
@@ -520,7 +538,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_memory_and_performance(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test memory usage and performance of enhanced features."""
         tab = enhanced_main_tab
@@ -554,7 +574,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_ui_enhancement_compatibility(
-        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+        qtbot: Any,
+        enhanced_main_tab: Any,
+        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
         """Test compatibility of UI enhancements with PyQt6."""
         tab = enhanced_main_tab
