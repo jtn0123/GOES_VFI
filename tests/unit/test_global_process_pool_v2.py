@@ -3,6 +3,7 @@
 from concurrent.futures import Future
 import contextlib
 import time
+from typing import Any
 import unittest
 from unittest.mock import patch
 
@@ -18,18 +19,30 @@ from goesvfi.core.global_process_pool import (
 
 
 def simple_task(x: int) -> int:
-    """Simple test task."""
+    """Simple test task.
+
+    Returns:
+        int: Input multiplied by 2.
+    """
     return x * 2
 
 
 def slow_task(x: int, delay: float = 0.1) -> int:
-    """Task with delay for testing."""
+    """Task with delay for testing.
+
+    Returns:
+        int: Input multiplied by 2 after delay.
+    """
     time.sleep(delay)
     return x * 2
 
 
 def failing_task(x: int) -> int:
-    """Task that always fails."""
+    """Task that always fails.
+
+    Raises:
+        ValueError: Always raised with input value.
+    """
     msg = f"Task failed with input {x}"
     raise ValueError(msg)
 
@@ -40,7 +53,7 @@ class TestGlobalProcessPool(unittest.TestCase):
     def setUp(self) -> None:
         """Set up test fixtures."""
         # Reset singleton
-        GlobalProcessPool._instance = None
+        GlobalProcessPool._instance = None  # noqa: SLF001
         self.pool = None
 
     def tearDown(self) -> None:
@@ -50,7 +63,7 @@ class TestGlobalProcessPool(unittest.TestCase):
             self.pool.cleanup()
 
         # Reset singleton
-        GlobalProcessPool._instance = None
+        GlobalProcessPool._instance = None  # noqa: SLF001
 
     def test_singleton_pattern(self) -> None:
         """Test that GlobalProcessPool is a singleton."""
@@ -71,8 +84,8 @@ class TestGlobalProcessPool(unittest.TestCase):
 
         # Check base class functionality
         assert pool.name == "GlobalProcessPool"
-        assert pool._config is not None
-        assert pool._logger is not None
+        assert pool._config is not None  # noqa: SLF001
+        assert pool._logger is not None  # noqa: SLF001
 
         # Check default configuration
         assert pool.get_config("max_workers") >= 1
@@ -85,16 +98,16 @@ class TestGlobalProcessPool(unittest.TestCase):
         self.pool = pool
 
         # Should not have executor before initialization
-        assert pool._executor is None
+        assert pool._executor is None  # noqa: SLF001
 
         # Initialize
         pool.initialize()
-        assert pool._is_initialized
-        assert pool._executor is not None
+        assert pool._is_initialized  # noqa: SLF001
+        assert pool._executor is not None  # noqa: SLF001
 
         # Double initialization should be safe
         pool.initialize()
-        assert pool._is_initialized
+        assert pool._is_initialized  # noqa: SLF001
 
     def test_submit_task(self) -> None:
         """Test submitting tasks to the pool."""
@@ -138,7 +151,7 @@ class TestGlobalProcessPool(unittest.TestCase):
         future = pool.submit(failing_task, 5)
 
         # Should raise exception
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="Task failed with input 42"):
             future.result(timeout=2)
 
         # Check stats
@@ -206,7 +219,7 @@ class TestGlobalProcessPool(unittest.TestCase):
         for future in futures:
             assert future.done()
 
-    def test_cleanup(self) -> None:
+    def test_cleanup(self) -> None:  # noqa: PLR6301
         """Test proper cleanup."""
         pool = GlobalProcessPool()
         pool.initialize()
@@ -218,9 +231,9 @@ class TestGlobalProcessPool(unittest.TestCase):
         pool.cleanup()
 
         # Should not have executor
-        assert pool._executor is None
-        assert len(pool._active_futures) == 0
-        assert not pool._is_initialized
+        assert pool._executor is None  # noqa: SLF001
+        assert len(pool._active_futures) == 0  # noqa: SLF001
+        assert not pool._is_initialized  # noqa: SLF001
 
     def test_stats_tracking(self) -> None:
         """Test statistics tracking."""
@@ -228,7 +241,7 @@ class TestGlobalProcessPool(unittest.TestCase):
         self.pool = pool
 
         # Reset stats
-        pool._usage_stats = {
+        pool._usage_stats = {  # noqa: SLF001
             "total_tasks": 0,
             "completed_tasks": 0,
             "failed_tasks": 0,
@@ -249,7 +262,7 @@ class TestGlobalProcessPool(unittest.TestCase):
         assert stats["total_tasks"] == 3
         assert stats["completed_tasks"] == 2
         assert stats["failed_tasks"] == 1
-        self.assertAlmostEqual(stats["success_rate"], 66.67, places=1)
+        assert abs(stats["success_rate"] - 66.67) < 0.1
 
     def test_configuration_update(self) -> None:
         """Test dynamic configuration updates."""
@@ -258,13 +271,13 @@ class TestGlobalProcessPool(unittest.TestCase):
 
         # Update configuration
         pool.set_config("max_tasks_per_child", 50)
-        pool.set_config("auto_scale", False)
+        pool.set_config("auto_scale", new=False)
 
         assert pool.get_config("max_tasks_per_child") == 50
         assert not pool.get_config("auto_scale")
 
     @patch("os.cpu_count")
-    def test_default_worker_calculation(self, mock_cpu_count) -> None:
+    def test_default_worker_calculation(self, mock_cpu_count: Any) -> None:
         """Test default worker count calculation."""
         mock_cpu_count.return_value = 8
 

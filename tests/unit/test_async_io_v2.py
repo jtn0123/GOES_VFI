@@ -31,13 +31,13 @@ class TestAsyncFileManager(unittest.TestCase):
         """Set up test fixtures."""
         self.manager = AsyncFileManager(max_concurrent=2, buffer_size=1024)
 
-    def test_initialization(self) -> None:
+    def test_initialization(self) -> None:  # noqa: PLR6301
         """Test AsyncFileManager initialization."""
         assert self.manager.max_concurrent == 2
         assert self.manager.buffer_size == 1024
-        assert self.manager._semaphore._value == 2
+        assert self.manager._semaphore._value == 2  # noqa: SLF001
 
-    def test_read_file_text(self) -> None:
+    def test_read_file_text(self) -> None:  # noqa: PLR6301
         """Test reading text files."""
 
         async def run_test() -> None:
@@ -54,7 +54,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_read_file_binary(self) -> None:
+    def test_read_file_binary(self) -> None:  # noqa: PLR6301
         """Test reading binary files."""
 
         async def run_test() -> None:
@@ -72,7 +72,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_write_file_text(self) -> None:
+    def test_write_file_text(self) -> None:  # noqa: PLR6301
         """Test writing text files."""
 
         async def run_test() -> None:
@@ -88,7 +88,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_write_file_binary(self) -> None:
+    def test_write_file_binary(self) -> None:  # noqa: PLR6301
         """Test writing binary files."""
 
         async def run_test() -> None:
@@ -104,7 +104,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_write_file_create_parents(self) -> None:
+    def test_write_file_create_parents(self) -> None:  # noqa: PLR6301
         """Test writing files with parent directory creation."""
 
         async def run_test() -> None:
@@ -120,7 +120,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_copy_file(self) -> None:
+    def test_copy_file(self) -> None:  # noqa: PLR6301
         """Test copying files."""
 
         async def run_test() -> None:
@@ -140,7 +140,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_copy_file_large(self) -> None:
+    def test_copy_file_large(self) -> None:  # noqa: PLR6301
         """Test copying large files in chunks."""
 
         async def run_test() -> None:
@@ -161,7 +161,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_move_file(self) -> None:
+    def test_move_file(self) -> None:  # noqa: PLR6301
         """Test moving files."""
 
         async def run_test() -> None:
@@ -181,7 +181,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_delete_file(self) -> None:
+    def test_delete_file(self) -> None:  # noqa: PLR6301
         """Test deleting files."""
 
         async def run_test() -> None:
@@ -198,7 +198,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_delete_file_missing_ok(self) -> None:
+    def test_delete_file_missing_ok(self) -> None:  # noqa: PLR6301
         """Test deleting non-existent files with missing_ok=True."""
 
         async def run_test() -> None:
@@ -209,7 +209,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_delete_file_missing_not_ok(self) -> None:
+    def test_delete_file_missing_not_ok(self) -> None:  # noqa: PLR6301
         """Test deleting non-existent files with missing_ok=False."""
 
         async def run_test() -> None:
@@ -220,7 +220,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_ensure_directory(self) -> None:
+    def test_ensure_directory(self) -> None:  # noqa: PLR6301
         """Test ensuring directories exist."""
 
         async def run_test() -> None:
@@ -234,7 +234,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_list_directory(self) -> None:
+    def test_list_directory(self) -> None:  # noqa: PLR6301
         """Test listing directory contents."""
 
         async def run_test() -> None:
@@ -261,7 +261,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_get_file_info(self) -> None:
+    def test_get_file_info(self) -> None:  # noqa: PLR6301
         """Test getting file information."""
 
         async def run_test() -> None:
@@ -282,7 +282,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_get_file_info_non_existent(self) -> None:
+    def test_get_file_info_non_existent(self) -> None:  # noqa: PLR6301
         """Test getting info for non-existent files."""
 
         async def run_test() -> None:
@@ -293,7 +293,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_batch_read(self) -> None:
+    def test_batch_read(self) -> None:  # noqa: PLR6301
         """Test batch reading multiple files."""
 
         async def run_test() -> None:
@@ -316,7 +316,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_batch_write(self) -> None:
+    def test_batch_write(self) -> None:  # noqa: PLR6301
         """Test batch writing multiple files."""
 
         async def run_test() -> None:
@@ -341,7 +341,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_concurrency_limit(self) -> None:
+    def test_concurrency_limit(self) -> None:  # noqa: PLR6301
         """Test that semaphore limits concurrent operations."""
 
         async def run_test() -> None:
@@ -370,7 +370,7 @@ class TestAsyncFileManager(unittest.TestCase):
 class TestAsyncContextManagers(unittest.TestCase):
     """Test async context managers."""
 
-    def test_async_open(self) -> None:
+    def test_async_open(self) -> None:  # noqa: PLR6301
         """Test async_open context manager."""
 
         async def run_test() -> None:
@@ -387,7 +387,7 @@ class TestAsyncContextManagers(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_async_temporary_file(self) -> None:
+    def test_async_temporary_file(self) -> None:  # noqa: PLR6301
         """Test async_temporary_file context manager."""
 
         async def run_test() -> None:
@@ -413,7 +413,7 @@ class TestAsyncContextManagers(unittest.TestCase):
 class TestHighLevelAsyncOperations(unittest.TestCase):
     """Test high-level async file operations."""
 
-    def test_async_read_json(self) -> None:
+    def test_async_read_json(self) -> None:  # noqa: PLR6301
         """Test async JSON reading."""
 
         async def run_test() -> None:
@@ -431,7 +431,7 @@ class TestHighLevelAsyncOperations(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_async_write_json(self) -> None:
+    def test_async_write_json(self) -> None:  # noqa: PLR6301
         """Test async JSON writing."""
 
         async def run_test() -> None:
@@ -452,7 +452,7 @@ class TestHighLevelAsyncOperations(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_async_read_lines(self) -> None:
+    def test_async_read_lines(self) -> None:  # noqa: PLR6301
         """Test async line reading."""
 
         async def run_test() -> None:
@@ -470,7 +470,7 @@ class TestHighLevelAsyncOperations(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_async_write_lines(self) -> None:
+    def test_async_write_lines(self) -> None:  # noqa: PLR6301
         """Test async line writing."""
 
         async def run_test() -> None:
@@ -492,14 +492,14 @@ class TestHighLevelAsyncOperations(unittest.TestCase):
 class TestGlobalAsyncManager(unittest.TestCase):
     """Test global async file manager and convenience functions."""
 
-    def test_singleton_manager(self) -> None:
+    def test_singleton_manager(self) -> None:  # noqa: PLR6301
         """Test that get_async_file_manager returns singleton."""
         manager1 = get_async_file_manager()
         manager2 = get_async_file_manager()
 
         assert manager1 is manager2
 
-    def test_convenience_read_write(self) -> None:
+    def test_convenience_read_write(self) -> None:  # noqa: PLR6301
         """Test convenience functions for read/write."""
 
         async def run_test() -> None:
@@ -517,7 +517,7 @@ class TestGlobalAsyncManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_convenience_copy_move(self) -> None:
+    def test_convenience_copy_move(self) -> None:  # noqa: PLR6301
         """Test convenience functions for copy/move."""
 
         async def run_test() -> None:
@@ -548,7 +548,7 @@ class TestGlobalAsyncManager(unittest.TestCase):
 class TestErrorHandling(unittest.TestCase):
     """Test error handling in async file operations."""
 
-    def test_read_non_existent_file(self) -> None:
+    def test_read_non_existent_file(self) -> None:  # noqa: PLR6301
         """Test reading non-existent file raises appropriate error."""
 
         async def run_test() -> None:
@@ -560,7 +560,7 @@ class TestErrorHandling(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_write_to_read_only_directory(self) -> None:
+    def test_write_to_read_only_directory(self) -> None:  # noqa: PLR6301
         """Test writing to read-only directory handles error gracefully."""
 
         async def run_test() -> None:
@@ -574,7 +574,7 @@ class TestErrorHandling(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_batch_operations_with_errors(self) -> None:
+    def test_batch_operations_with_errors(self) -> None:  # noqa: PLR6301
         """Test batch operations handle partial failures gracefully."""
 
         async def run_test() -> None:
