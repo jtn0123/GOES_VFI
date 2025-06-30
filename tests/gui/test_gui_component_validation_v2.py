@@ -8,8 +8,11 @@ This v2 version maintains all test scenarios while optimizing through:
 - Enhanced edge case coverage
 """
 
+from typing import Any
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QApplication
 import pytest
 
 from goesvfi.gui import MainWindow
@@ -19,9 +22,13 @@ class TestGUIComponentValidationOptimizedV2:
     """Optimized GUI component validation tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Shared QApplication instance."""
-        from PyQt6.QtWidgets import QApplication
+    @staticmethod
+    def shared_app() -> Any:
+        """Shared QApplication instance.
+
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
 
         app = QApplication.instance()
         if app is None:
@@ -30,19 +37,25 @@ class TestGUIComponentValidationOptimizedV2:
         app.processEvents()
 
     @pytest.fixture()
-    def main_window(self, qtbot, shared_app, mocker):
-        """Create MainWindow instance with mocks."""
+    @staticmethod
+    def main_window(qtbot: Any, shared_app: Any, mocker: Any) -> Any:  # noqa: ARG004
+        """Create MainWindow instance with mocks.
+
+        Returns:
+            MainWindow: Configured main window instance.
+        """
         # Mock heavy components
         mocker.patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab")
         mocker.patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab")
 
         window = MainWindow(debug_mode=True)
         qtbot.addWidget(window)
-        window._post_init_setup()
+        window._post_init_setup()  # noqa: SLF001
 
         return window
 
-    def test_progress_bar_comprehensive_updates(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_progress_bar_comprehensive_updates(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test comprehensive progress bar updates and visual feedback."""
         window = main_window
 
@@ -60,7 +73,7 @@ class TestGUIComponentValidationOptimizedV2:
         ]
 
         for current, total, eta, expected_text in progress_scenarios:
-            window._on_processing_progress(current, total, eta)
+            window._on_processing_progress(current, total, eta)  # noqa: SLF001
 
             # Verify progress bar value
             assert window.main_tab.progress_bar.value() == current
@@ -78,12 +91,13 @@ class TestGUIComponentValidationOptimizedV2:
 
         for current, total, eta in edge_cases:
             # Should handle gracefully without crashing
-            window._on_processing_progress(current, total, eta)
+            window._on_processing_progress(current, total, eta)  # noqa: SLF001
             # Progress bar should handle edge cases appropriately
             progress_value = window.main_tab.progress_bar.value()
             assert isinstance(progress_value, int)
 
-    def test_preview_labels_comprehensive_display(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_preview_labels_comprehensive_display(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test comprehensive preview label image display."""
         window = main_window
 
@@ -102,7 +116,7 @@ class TestGUIComponentValidationOptimizedV2:
             test_pixmap2.fill(color2)
 
             # Test preview loading
-            window._on_preview_images_loaded(test_pixmap1, test_pixmap2)
+            window._on_preview_images_loaded(test_pixmap1, test_pixmap2)  # noqa: SLF001
 
             # Verify pixmaps are set
             first_pixmap = window.main_tab.first_frame_label.pixmap()
@@ -117,7 +131,7 @@ class TestGUIComponentValidationOptimizedV2:
         null_pixmap = QPixmap()
         assert null_pixmap.isNull()
 
-        window._on_preview_images_loaded(null_pixmap, null_pixmap)
+        window._on_preview_images_loaded(null_pixmap, null_pixmap)  # noqa: SLF001
         # Should handle gracefully without crashing
 
         # Test different sizes
@@ -132,13 +146,14 @@ class TestGUIComponentValidationOptimizedV2:
             test_pixmap = QPixmap(width, height)
             test_pixmap.fill(Qt.GlobalColor.cyan)
 
-            window._on_preview_images_loaded(test_pixmap, test_pixmap)
+            window._on_preview_images_loaded(test_pixmap, test_pixmap)  # noqa: SLF001
 
             first_pixmap = window.main_tab.first_frame_label.pixmap()
             assert first_pixmap is not None
             assert not first_pixmap.isNull()
 
-    def test_spinbox_controls_comprehensive_validation(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_spinbox_controls_comprehensive_validation(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive spinbox validation and limits."""
         window = main_window
 
@@ -180,7 +195,8 @@ class TestGUIComponentValidationOptimizedV2:
         final_value = fps_spinbox.value()
         assert fps_spinbox.minimum() <= final_value <= fps_spinbox.maximum()
 
-    def test_combo_box_population_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_combo_box_population_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive combo box population and content."""
         window = main_window
 
@@ -234,7 +250,8 @@ class TestGUIComponentValidationOptimizedV2:
                 model_enabled = encoder == "RIFE"
                 assert window.main_tab.rife_model_combo.isEnabled() == model_enabled
 
-    def test_text_input_validation_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_text_input_validation_comprehensive(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test comprehensive text input validation and behavior."""
         window = main_window
 
@@ -256,11 +273,11 @@ class TestGUIComponentValidationOptimizedV2:
 
             # Test clearing text
             widget.clear()
-            assert widget.text() == "", f"{description}: Text not cleared"
+            assert not widget.text(), f"{description}: Text not cleared"
 
             # Test setting empty text
             widget.setText("")
-            assert widget.text() == "", f"{description}: Empty text not handled"
+            assert not widget.text(), f"{description}: Empty text not handled"
 
         # Test very long paths
         long_path = "/very/long/path/" + "directory/" * 20 + "file.mp4"
@@ -272,7 +289,8 @@ class TestGUIComponentValidationOptimizedV2:
         window.main_tab.in_dir_edit.setText(special_chars_path)
         assert window.main_tab.in_dir_edit.text() == special_chars_path
 
-    def test_group_box_visibility_and_states(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_group_box_visibility_and_states(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive group box visibility and enable states."""
         window = main_window
 
@@ -323,7 +341,8 @@ class TestGUIComponentValidationOptimizedV2:
             children = group.findChildren(object)
             assert len(children) > 0, f"{description}: No child widgets found"
 
-    def test_checkbox_dependencies_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_checkbox_dependencies_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive checkbox states and dependencies."""
         window = main_window
 
@@ -382,7 +401,8 @@ class TestGUIComponentValidationOptimizedV2:
                 qtbot.wait(10)
                 assert checkbox.isChecked() == original_state
 
-    def test_widget_interaction_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_widget_interaction_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive widget interactions and cross-dependencies."""
         window = main_window
 
@@ -419,20 +439,21 @@ class TestGUIComponentValidationOptimizedV2:
         ]
 
         # Set processing state and test
-        window._set_processing_state(True)
+        window._set_processing_state(enabled=True)  # noqa: SLF001
 
         for widget_name in processing_affected_widgets:
             widget = getattr(window.main_tab, widget_name)
             assert not widget.isEnabled(), f"Widget {widget_name} should be disabled during processing"
 
         # Clear processing state
-        window._set_processing_state(False)
+        window._set_processing_state(enabled=False)  # noqa: SLF001
 
         for widget_name in processing_affected_widgets:
             widget = getattr(window.main_tab, widget_name)
             assert widget.isEnabled(), f"Widget {widget_name} should be enabled after processing"
 
-    def test_visual_feedback_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_visual_feedback_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive visual feedback mechanisms."""
         window = main_window
 
@@ -473,7 +494,8 @@ class TestGUIComponentValidationOptimizedV2:
             assert widget.isVisible()
             assert widget.styleSheet() is not None  # Has some styling
 
-    def test_layout_and_positioning(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_layout_and_positioning(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test widget layout and positioning."""
         window = main_window
 
@@ -511,7 +533,8 @@ class TestGUIComponentValidationOptimizedV2:
             # Tab should be enabled by default
             assert tab_widget.isTabEnabled(i), f"Tab {i} ({tab_text}) not enabled"
 
-    def test_error_handling_ui_feedback(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_error_handling_ui_feedback(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test UI feedback for error conditions."""
         window = main_window
 
@@ -525,7 +548,7 @@ class TestGUIComponentValidationOptimizedV2:
 
         for error_message in error_scenarios:
             # Trigger error handling
-            window._on_processing_error(error_message)
+            window._on_processing_error(error_message)  # noqa: SLF001
 
             # Check status bar shows error
             status_message = window.status_bar.currentMessage()
@@ -535,7 +558,8 @@ class TestGUIComponentValidationOptimizedV2:
             assert window.main_tab.start_button.isEnabled()
             assert window.tab_widget.isEnabled()
 
-    def test_responsiveness_under_load(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_responsiveness_under_load(qtbot: Any, main_window: Any) -> None:
         """Test UI responsiveness under various load conditions."""
         window = main_window
 
