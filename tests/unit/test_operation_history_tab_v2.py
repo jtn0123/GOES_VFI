@@ -7,12 +7,11 @@ error handling, concurrent operations, and edge cases.
 from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
-import shutil
 import sys
 import tempfile
 import types
-import unittest
 from typing import Any
+import unittest
 from unittest.mock import Mock, patch
 
 # Set up environment before Qt imports
@@ -36,7 +35,7 @@ if "goesvfi.utils.operation_history" not in sys.modules:
 import goesvfi.gui_tabs.operation_history_tab as oh_tab
 
 
-class DummyOperationStore:  # noqa: B903
+class DummyOperationStore:
     """Enhanced dummy store with comprehensive test data."""
 
     def __init__(self) -> None:
@@ -130,8 +129,12 @@ class DummyOperationStore:  # noqa: B903
         # Additional test data for edge cases
         self.large_operations = self._generate_large_dataset(1000)
 
-    def _generate_large_dataset(self, count: int) -> list:
-        """Generate large dataset for performance testing."""
+    def _generate_large_dataset(self, count: int) -> list:  # noqa: PLR6301
+        """Generate large dataset for performance testing.
+
+        Returns:
+            list: Large dataset of test operations.
+        """
         statuses = ["success", "failure", "warning", "pending"]
         operation_names = ["test_op", "batch_process", "data_sync", "file_convert"]
 
@@ -149,13 +152,21 @@ class DummyOperationStore:  # noqa: B903
         ]
 
     def get_recent_operations(self, limit: int = 500) -> list:
-        """Get recent operations with limit."""
+        """Get recent operations with limit.
+
+        Returns:
+            list: List of recent operations up to the limit.
+        """
         if hasattr(self, "_use_large_dataset") and self._use_large_dataset:
             return self.large_operations[:limit]
         return self.operations[:limit]
 
-    def search_operations(self, **filters) -> list:
-        """Search operations with filters."""
+    def search_operations(self, **filters: Any) -> list:
+        """Search operations with filters.
+
+        Returns:
+            list: Filtered list of operations.
+        """
         if not filters:
             return self.operations
 
@@ -176,24 +187,42 @@ class DummyOperationStore:  # noqa: B903
         return results
 
     def get_operation_metrics(self) -> list:
-        """Get operation metrics."""
+        """Get operation metrics.
+
+        Returns:
+            list: List of operation metrics.
+        """
         return self.metrics
 
-    def cleanup_old_operations(self, days: int = 30) -> int:
-        """Clean up old operations."""
+    def cleanup_old_operations(self, days: int = 30) -> int:  # noqa: ARG002
+        """Clean up old operations.
+
+        Returns:
+            int: Number of operations cleaned up.
+        """
         # Simulate cleaning up some operations
         return len(self.operations) // 2
 
-    def export_to_json(self, path: str, filters: dict) -> None:
+    def export_to_json(self, path: str, filters: dict) -> None:  # noqa: PLR6301
         """Export operations to JSON."""
         # Simulate export
+        _ = path  # Intentionally unused
+        _ = filters  # Intentionally unused
 
     def get_operation_count(self) -> int:
-        """Get total operation count."""
+        """Get total operation count.
+
+        Returns:
+            int: Total count of operations.
+        """
         return len(self.operations)
 
     def get_status_summary(self) -> dict:
-        """Get status summary."""
+        """Get status summary.
+
+        Returns:
+            dict: Summary of operation statuses.
+        """
         summary = {"success": 0, "failure": 0, "warning": 0, "pending": 0}
         for op in self.operations:
             status = op.get("status", "unknown")
@@ -219,7 +248,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
     def tearDownClass(cls) -> None:
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
-            import shutil
+            import shutil  # noqa: PLC0415
 
             shutil.rmtree(cls.temp_root)
 
@@ -232,7 +261,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
         # Create dummy store with comprehensive data
         self.dummy_store = DummyOperationStore()
 
-    def tearDown(self) -> None:
+    def tearDown(self) -> None:  # noqa: PLR6301
         """Tear down test fixtures."""
         # Clean up any widgets that might still exist
         QApplication.processEvents()
@@ -289,7 +318,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
         try:
             model.update_operations(None)
             # Should handle gracefully
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle None operations gracefully: {e}")
 
         # Test with malformed operations
@@ -304,7 +333,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
             model.update_operations(malformed_operations)
             # Should handle gracefully and display available data
             assert model.rowCount() > 0
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle malformed operations gracefully: {e}")
 
         # Test invalid index access
@@ -364,7 +393,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
         try:
             model.update_metrics(None)
             # Should handle gracefully
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle None metrics gracefully: {e}")
 
         # Test with malformed metrics
@@ -378,7 +407,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
         try:
             model.update_metrics(malformed_metrics)
             # Should handle gracefully
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle malformed metrics gracefully: {e}")
 
     def test_refresh_worker_comprehensive(self) -> None:
@@ -436,8 +465,8 @@ class TestOperationHistoryTabV2(unittest.TestCase):
 
                     operations_received = []
 
-                    def collect_operations(ops) -> None:
-                        operations_received.extend(ops)
+                    def collect_operations(ops: Any, received: list = operations_received) -> None:
+                        received.extend(ops)
 
                     worker.operations_loaded.connect(collect_operations)
                     worker.run()
@@ -465,7 +494,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
             # Run should handle errors gracefully
             try:
                 worker.run()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.fail(f"Worker should handle store errors gracefully: {e}")
 
             # Should have emitted error signals
@@ -528,7 +557,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
 
                         ops_received = []
 
-                        def collect_ops(ops) -> None:
+                        def collect_ops(ops: Any) -> None:
                             ops_received.extend(ops)
 
                         worker.operations_loaded.connect(collect_ops)
@@ -536,7 +565,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
 
                         results.append(("worker", operation_id, len(ops_received)))
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((operation_id, e))
 
         # Run concurrent operations
@@ -582,7 +611,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
                     model.data(index, Qt.ItemDataRole.DisplayRole)
                     # Should not crash
 
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S110
             pass  # Should handle large datasets efficiently
 
         # Test RefreshWorker with large dataset
@@ -602,7 +631,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
                 # Should handle large dataset without issues
                 assert len(operations_received) > 0
                 assert len(operations_received) <= 1000
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.fail(f"Should handle large datasets in worker: {e}")
 
     def test_table_model_data_consistency(self) -> None:
@@ -675,13 +704,13 @@ class TestOperationHistoryTabV2(unittest.TestCase):
             # Test multiple signal connections
             signal_log = []
 
-            def log_operations(ops) -> None:
+            def log_operations(ops: Any) -> None:
                 signal_log.append(("operations", len(ops)))
 
-            def log_metrics(metrics) -> None:
+            def log_metrics(metrics: Any) -> None:
                 signal_log.append(("metrics", len(metrics)))
 
-            def log_error(error) -> None:
+            def log_error(error: Any) -> None:
                 signal_log.append(("error", str(error)))
 
             def log_finished() -> None:
@@ -726,18 +755,18 @@ class TestOperationHistoryTabV2(unittest.TestCase):
             # Should handle gracefully
             row_count = model.rowCount()
             assert row_count >= 0
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle corrupted data gracefully: {e}")
 
         # Test worker with intermittent store failures
         unreliable_store = Mock()
         call_count = [0]
 
-        def failing_get_operations(limit=500):
+        def failing_get_operations(limit: int = 500) -> list:  # noqa: ARG001
             call_count[0] += 1
             if call_count[0] % 2 == 0:
                 msg = "Intermittent failure"
-                raise Exception(msg)
+                raise RuntimeError(msg)
             return self.dummy_store.operations
 
         unreliable_store.get_recent_operations = failing_get_operations
@@ -751,7 +780,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
                 try:
                     worker.run()
                     # Some runs should succeed, others may fail
-                except Exception:
+                except Exception:  # noqa: BLE001, S110
                     # Should handle failures gracefully
                     pass
 
@@ -766,7 +795,7 @@ class TestOperationHistoryTabV2(unittest.TestCase):
             try:
                 model.update_operations(test_ops)
                 assert model.rowCount() == len(test_ops)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.fail(f"Rapid updates should not cause issues: {e}")
 
         # Test rapid data access during updates
@@ -785,14 +814,22 @@ class TestOperationHistoryTabV2(unittest.TestCase):
 
 # Compatibility tests using pytest style for existing test coverage
 @pytest.fixture()
-def dummy_store_pytest():
-    """Create dummy store for pytest tests."""
+def dummy_store_pytest() -> DummyOperationStore:
+    """Create dummy store for pytest tests.
+
+    Returns:
+        DummyOperationStore: Dummy store instance for testing.
+    """
     return DummyOperationStore()
 
 
 @pytest.fixture()
-def history_tab_models_pytest(dummy_store_pytest):
-    """Create table models for pytest tests."""
+def history_tab_models_pytest(dummy_store_pytest: DummyOperationStore) -> Any:
+    """Create table models for pytest tests.
+
+    Returns:
+        MockHistoryTab: Mock history tab with populated models.
+    """
     QApplication.instance() or QApplication([])
 
     operations_model = oh_tab.OperationTableModel()
@@ -801,7 +838,7 @@ def history_tab_models_pytest(dummy_store_pytest):
     operations_model.update_operations(dummy_store_pytest.operations)
     metrics_model.update_metrics(dummy_store_pytest.metrics)
 
-    class MockHistoryTab:
+    class MockHistoryTab:  # noqa: B903
         def __init__(self) -> None:
             self.operations_model = operations_model
             self.metrics_model = metrics_model
@@ -809,7 +846,7 @@ def history_tab_models_pytest(dummy_store_pytest):
     return MockHistoryTab()
 
 
-def test_table_models_populate_pytest(history_tab_models_pytest, dummy_store_pytest) -> None:
+def test_table_models_populate_pytest(history_tab_models_pytest: Any, dummy_store_pytest: DummyOperationStore) -> None:
     """Test table model population using pytest style."""
     assert history_tab_models_pytest.operations_model.rowCount() == len(dummy_store_pytest.operations)
 
@@ -829,7 +866,7 @@ def test_table_models_populate_pytest(history_tab_models_pytest, dummy_store_pyt
         )
 
 
-def test_refresh_worker_functionality_pytest(dummy_store_pytest) -> None:
+def test_refresh_worker_functionality_pytest(dummy_store_pytest: DummyOperationStore) -> None:
     """Test RefreshWorker functionality using pytest style."""
     QApplication.instance() or QApplication([])
 
