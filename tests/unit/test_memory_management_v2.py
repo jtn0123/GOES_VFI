@@ -241,7 +241,10 @@ class TestMemoryOptimizer:
         ],
     )
     def test_check_available_memory(  # noqa: PLR6301
-        self, memory_optimizer: MemoryOptimizer, required_mb: int, expected_result: bool  # noqa: FBT001
+        self,
+        memory_optimizer: MemoryOptimizer,
+        required_mb: int,
+        expected_result: bool,  # noqa: FBT001
     ) -> None:
         """Test memory availability checking with different requirements."""
         has_memory, msg = memory_optimizer.check_available_memory(required_mb)
