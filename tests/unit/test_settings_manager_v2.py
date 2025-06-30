@@ -1,7 +1,9 @@
 """Unit tests for the SettingsManager component - Optimized v2."""
 
+from collections.abc import Generator
 from pathlib import Path
 import tempfile
+import time
 from typing import Any
 
 from PyQt6.QtCore import QCoreApplication, QSettings
@@ -13,14 +15,22 @@ from goesvfi.gui_components.settings_manager import SettingsManager
 
 # Shared test data and fixtures
 @pytest.fixture(scope="session")
-def app():
-    """Create QApplication for all tests."""
+def app() -> QCoreApplication:
+    """Create QApplication for all tests.
+
+    Returns:
+        QCoreApplication: The application instance.
+    """
     return QApplication([]) if not QApplication.instance() else QCoreApplication.instance()
 
 
 @pytest.fixture(scope="session")
-def test_data_scenarios():
-    """Pre-defined test data scenarios for consistent testing."""
+def test_data_scenarios() -> dict[str, Any]:
+    """Pre-defined test data scenarios for consistent testing.
+
+    Returns:
+        dict[str, Any]: Dictionary of test data scenarios.
+    """
     return {
         "strings": [("test_string", "hello"), ("empty_string", ""), ("unicode_string", "测试")],
         "integers": [("test_int", 42), ("zero_int", 0), ("negative_int", -5)],
@@ -44,17 +54,25 @@ def test_data_scenarios():
 
 
 @pytest.fixture()
-def temp_settings_file():
-    """Create temporary settings file for testing."""
-    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".ini")
-    temp_file.close()
-    yield temp_file.name
-    Path(temp_file.name).unlink(missing_ok=True)
+def temp_settings_file() -> Generator[str]:
+    """Create temporary settings file for testing.
+
+    Yields:
+        str: Path to temporary settings file.
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".ini") as temp_file:
+        temp_path = temp_file.name
+    yield temp_path
+    Path(temp_path).unlink(missing_ok=True)
 
 
 @pytest.fixture()
-def settings_manager(app, temp_settings_file):
-    """Create SettingsManager instance with temporary file."""
+def settings_manager(app: QCoreApplication, temp_settings_file: str) -> SettingsManager:  # noqa: ARG001
+    """Create SettingsManager instance with temporary file.
+
+    Returns:
+        SettingsManager: The settings manager instance.
+    """
     settings = QSettings(temp_settings_file, QSettings.Format.IniFormat)
     return SettingsManager(settings)
 
@@ -62,19 +80,21 @@ def settings_manager(app, temp_settings_file):
 class TestSettingsManager:
     """Test SettingsManager with optimized test patterns."""
 
-    def test_initialization(self, settings_manager) -> None:
+    def test_initialization(self, settings_manager: SettingsManager) -> None:  # noqa: PLR6301
         """Test SettingsManager initialization."""
         assert settings_manager.settings is not None
 
     @pytest.mark.parametrize("data_type", ["strings", "integers", "booleans", "lists"])
-    def test_save_and_load_values(self, settings_manager, test_data_scenarios, data_type: str) -> None:
+    def test_save_and_load_values(  # noqa: PLR6301
+        self, settings_manager: SettingsManager, test_data_scenarios: dict[str, Any], data_type: str
+    ) -> None:
         """Test saving and loading different data types."""
         test_cases = test_data_scenarios[data_type]
 
         for key, value in test_cases:
             # Save value
             result = settings_manager.save_value(key, value)
-            assert result is True
+            assert result
 
             # Load value with appropriate type
             if data_type == "strings":
@@ -82,7 +102,7 @@ class TestSettingsManager:
             elif data_type == "integers":
                 loaded = settings_manager.load_value(key, 0, int)
             elif data_type == "booleans":
-                loaded = settings_manager.load_value(key, False, bool)
+                loaded = settings_manager.load_value(key, default=False, value_type=bool)
             elif data_type == "lists":
                 loaded = settings_manager.load_value(key, [], list)
 
@@ -97,18 +117,22 @@ class TestSettingsManager:
             ("non_existent_list", ["default"], list),
         ],
     )
-    def test_load_nonexistent_values(self, settings_manager, key: str, default: Any, expected_type: type) -> None:
+    def test_load_nonexistent_values(  # noqa: PLR6301
+        self, settings_manager: SettingsManager, key: str, default: Any, expected_type: type
+    ) -> None:
         """Test loading values that don't exist returns defaults."""
-        if expected_type != list:
+        if expected_type is not list:
             loaded = settings_manager.load_value(key, default, expected_type)
         else:
             loaded = settings_manager.load_value(key, default, list)
 
         assert loaded == default
-        assert type(loaded) == type(default)
+        assert type(loaded) is type(default)
 
     @pytest.mark.parametrize("geometry_index", [0, 1, 2])
-    def test_window_geometry_operations(self, settings_manager, test_data_scenarios, geometry_index: int) -> None:
+    def test_window_geometry_operations(  # noqa: PLR6301
+        self, settings_manager: SettingsManager, test_data_scenarios: dict[str, Any], geometry_index: int
+    ) -> None:
         """Test saving and loading window geometry with different configurations."""
         geometry = test_data_scenarios["window_geometry"][geometry_index]
         window_name = f"test_window_{geometry_index}"
@@ -121,12 +145,12 @@ class TestSettingsManager:
         loaded = settings_manager.load_window_geometry(window_name)
         assert loaded == geometry
 
-    def test_load_nonexistent_window_geometry(self, settings_manager) -> None:
+    def test_load_nonexistent_window_geometry(self, settings_manager: SettingsManager) -> None:  # noqa: PLR6301
         """Test loading window geometry that doesn't exist."""
         loaded = settings_manager.load_window_geometry("non_existent_window")
         assert loaded is None
 
-    def test_load_incomplete_window_geometry(self, settings_manager) -> None:
+    def test_load_incomplete_window_geometry(self, settings_manager: SettingsManager) -> None:  # noqa: PLR6301
         """Test loading incomplete window geometry."""
         # Manually save incomplete geometry (missing required keys)
         settings_manager.settings.beginGroup("Windows/incomplete_window")
@@ -142,7 +166,9 @@ class TestSettingsManager:
         assert loaded is None
 
     @pytest.mark.parametrize("path_scenario", [0, 1, 2])
-    def test_recent_paths_operations(self, settings_manager, test_data_scenarios, path_scenario: int) -> None:
+    def test_recent_paths_operations(  # noqa: PLR6301
+        self, settings_manager: SettingsManager, test_data_scenarios: dict[str, Any], path_scenario: int
+    ) -> None:
         """Test saving and loading recent paths with different scenarios."""
         paths = test_data_scenarios["paths"][path_scenario]
         key = f"recent_files_{path_scenario}"
@@ -166,8 +192,8 @@ class TestSettingsManager:
             (0, 10, 0),  # Should handle empty list
         ],
     )
-    def test_recent_paths_max_items_limit(
-        self, settings_manager, total_paths: int, max_items: int, expected_count: int
+    def test_recent_paths_max_items_limit(  # noqa: PLR6301
+        self, settings_manager: SettingsManager, total_paths: int, max_items: int, expected_count: int
     ) -> None:
         """Test that recent paths are limited to max_items."""
         # Create paths
@@ -185,7 +211,7 @@ class TestSettingsManager:
         for i in range(expected_count):
             assert loaded[i] == paths[i]
 
-    def test_load_nonexistent_recent_paths(self, settings_manager) -> None:
+    def test_load_nonexistent_recent_paths(self, settings_manager: SettingsManager) -> None:  # noqa: PLR6301
         """Test loading recent paths that don't exist."""
         loaded = settings_manager.load_recent_paths("non_existent")
         assert loaded == []
@@ -198,7 +224,9 @@ class TestSettingsManager:
             [("EmptyGroup/test", "test")],  # Single item group
         ],
     )
-    def test_clear_group_operations(self, settings_manager, group_operations: list[tuple[str, Any]]) -> None:
+    def test_clear_group_operations(  # noqa: PLR6301
+        self, settings_manager: SettingsManager, group_operations: list[tuple[str, Any]]
+    ) -> None:
         """Test clearing settings groups with different configurations."""
         # Save settings in the group
         for key, value in group_operations:
@@ -221,7 +249,7 @@ class TestSettingsManager:
             loaded = settings_manager.load_value(key, "DEFAULT_NOT_FOUND")
             assert loaded == "DEFAULT_NOT_FOUND"
 
-    def test_get_all_keys_operation(self, settings_manager) -> None:
+    def test_get_all_keys_operation(self, settings_manager: SettingsManager) -> None:  # noqa: PLR6301
         """Test getting all settings keys."""
         # Save test values in different groups
         test_data = [
@@ -241,7 +269,7 @@ class TestSettingsManager:
         for key, _ in test_data:
             assert key in keys
 
-    def test_remove_key_operation(self, settings_manager) -> None:
+    def test_remove_key_operation(self, settings_manager: SettingsManager) -> None:  # noqa: PLR6301
         """Test removing specific keys."""
         # Save multiple values
         test_keys = ["test_key1", "test_key2", "group/test_key3"]
@@ -267,7 +295,7 @@ class TestSettingsManager:
             loaded = settings_manager.load_value(key, "NOT_FOUND")
             assert loaded == f"value_for_{key}"
 
-    def test_sync_operation(self, settings_manager) -> None:
+    def test_sync_operation(self, settings_manager: SettingsManager) -> None:  # noqa: PLR6301
         """Test syncing settings to disk."""
         # Save a value
         settings_manager.save_value("sync_test", "test_value")
@@ -281,9 +309,8 @@ class TestSettingsManager:
         assert loaded_value == "test_value"
 
     @pytest.mark.parametrize("operation_count", [5, 15, 30])
-    def test_bulk_operations_performance(self, settings_manager, operation_count: int) -> None:
+    def test_bulk_operations_performance(self, settings_manager: SettingsManager, operation_count: int) -> None:  # noqa: PLR6301
         """Test performance with bulk operations."""
-        import time
 
         # Test bulk save
         start_time = time.time()
@@ -302,7 +329,7 @@ class TestSettingsManager:
         assert save_time < 1.0  # Less than 1 second for bulk saves
         assert load_time < 1.0  # Less than 1 second for bulk loads
 
-    def test_error_handling_robustness(self, settings_manager) -> None:
+    def test_error_handling_robustness(self, settings_manager: SettingsManager) -> None:  # noqa: PLR6301
         """Test error handling in various edge cases."""
         # Test with None values
         result = settings_manager.save_value("none_test", None)
@@ -317,7 +344,7 @@ class TestSettingsManager:
         assert result is True
 
         loaded = settings_manager.load_value("empty_test", "default")
-        assert loaded == ""
+        assert not loaded
 
         # Test with complex nested data
         complex_data = {"nested": {"data": [1, 2, {"inner": "value"}]}}
