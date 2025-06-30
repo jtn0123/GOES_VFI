@@ -242,7 +242,7 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_progress_tracking_comprehensive(
-        qtbot: Any,
+        qtbot: Any,  # noqa: ARG004
         enhanced_main_tab: Any,
         shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004  # noqa: ARG004
     ) -> None:
@@ -297,7 +297,7 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_shortcut_manager_comprehensive(
-        qtbot: Any,
+        qtbot: Any,  # noqa: ARG004
         enhanced_main_tab: Any,
         shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
@@ -378,8 +378,8 @@ class TestEnhancedMainTabOptimizedV2:
     @staticmethod
     def test_tooltip_helper_comprehensive(
         qtbot: Any,
-        enhanced_main_tab: Any,
-        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
+        enhanced_main_tab: Any,  # noqa: ARG004
+        shared_ui_enhancements_mock: dict[str, Any],
     ) -> None:
         """Test comprehensive tooltip helper functionality."""
         mocks = shared_ui_enhancements_mock
@@ -417,9 +417,9 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_status_widget_comprehensive(
-        qtbot: Any,
-        enhanced_main_tab: Any,
-        shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
+        qtbot: Any,  # noqa: ARG004
+        enhanced_main_tab: Any,  # noqa: ARG004
+        shared_ui_enhancements_mock: dict[str, Any],
     ) -> None:
         """Test comprehensive status widget functionality."""
         mocks = shared_ui_enhancements_mock
@@ -449,7 +449,7 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_enhanced_features_integration(
-        qtbot: Any,
+        qtbot: Any,  # noqa: ARG004
         enhanced_main_tab: Any,
         shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
@@ -574,7 +574,7 @@ class TestEnhancedMainTabOptimizedV2:
 
     @staticmethod
     def test_ui_enhancement_compatibility(
-        qtbot: Any,
+        qtbot: Any,  # noqa: ARG004
         enhanced_main_tab: Any,
         shared_ui_enhancements_mock: dict[str, Any],  # noqa: ARG004
     ) -> None:
