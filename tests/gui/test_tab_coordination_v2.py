@@ -8,6 +8,7 @@ Optimizations applied:
 - Streamlined tab interaction simulation
 """
 
+from typing import Any
 from unittest.mock import MagicMock
 
 from PyQt6.QtCore import QObject, QThread, pyqtSignal
@@ -29,14 +30,18 @@ class MockModelDownloader(QThread):
     progress = pyqtSignal(str, int)  # model_name, percent
     finished = pyqtSignal(str, bool, str)  # model_name, success, message
 
-    def __init__(self, model_name, model_size_mb=100) -> None:
+    def __init__(self, model_name: Any, model_size_mb: Any = 100) -> None:
         super().__init__()
         self.model_name = model_name
         self.model_size_mb = model_size_mb
         self.cancelled = False
 
     def run(self) -> None:
-        """Simulate model download with faster execution for testing."""
+        """Simulate model download with faster execution for testing.
+
+        Returns:
+            None: Downloads model data and emits progress signals.
+        """
         for i in range(0, 101, 25):  # Reduced iterations for faster testing
             if self.cancelled:
                 self.finished.emit(self.model_name, False, "Cancelled")
@@ -51,15 +56,21 @@ class TestTabCoordinationV2:
     """Optimized test class for tab-specific functionality and inter-tab coordination."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for tests."""
+    @staticmethod
+    def shared_app() -> Any:
+        """Create shared QApplication for tests.
+
+        Returns:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture()
-    def mock_main_window(self, shared_app):
+    @staticmethod
+    def mock_main_window(shared_app: Any) -> Any:  # noqa: ARG004
         """Create mock MainWindow with essential tab components."""
         window = MagicMock()
 
@@ -76,12 +87,13 @@ class TestTabCoordinationV2:
         window.models_tab = MagicMock()
 
         # Mock common methods
-        window._post_init_setup = MagicMock()
+        window._post_init_setup = MagicMock()  # noqa: SLF001
 
         return window
 
     @pytest.fixture()
-    def mock_model_library_tab(self, shared_app):
+    @staticmethod
+    def mock_model_library_tab(shared_app: Any) -> Any:  # noqa: ARG004
         """Create mock model library tab."""
         tab = MagicMock()
 
@@ -101,7 +113,8 @@ class TestTabCoordinationV2:
 
         return tab
 
-    def test_model_library_download_operations(self, mock_model_library_tab) -> None:
+    @staticmethod
+    def test_model_library_download_operations(mock_model_library_tab) -> None:
         """Test model library download operations."""
         tab = mock_model_library_tab
 
@@ -121,7 +134,7 @@ class TestTabCoordinationV2:
                 self.tab.model_list.items = items
                 self.tab.model_list.count.return_value = len(items)
 
-            def download_selected_model(self, model_name) -> bool:
+            def download_selected_model(self, model_name: Any) -> bool:
                 if model_name in self.tab.active_downloads:
                     return False  # Already downloading
 
@@ -135,11 +148,11 @@ class TestTabCoordinationV2:
 
                 return True
 
-            def update_download_progress(self, model_name, percent) -> None:
+            def update_download_progress(self, model_name: Any, percent: Any) -> None:
                 if model_name in self.tab.progress_bars:
                     self.tab.progress_bars[model_name].setValue(percent)
 
-            def handle_download_finished(self, model_name, success, message) -> None:
+            def handle_download_finished(self, model_name: Any, success: Any, message: Any) -> None:
                 if success:
                     self.tab.available_models[model_name]["installed"] = True
 
@@ -179,7 +192,10 @@ class TestTabCoordinationV2:
             (QMessageBox.StandardButton.No, False),
         ],
     )
-    def test_model_library_delete_operations(self, mock_model_library_tab, user_choice, expected_deleted) -> None:
+    @staticmethod
+    def test_model_library_delete_operations(
+        mock_model_library_tab: Any, user_choice: Any, expected_deleted: Any
+    ) -> None:
         """Test model library delete operations with user confirmation."""
 
         # Mock model manager
@@ -190,7 +206,7 @@ class TestTabCoordinationV2:
                     "rife-v4.13": "/models/rife-v4.13",
                 }
 
-            def delete_model(self, model_name, confirm_func) -> bool:
+            def delete_model(self, model_name: Any, confirm_func: Any) -> bool:
                 if model_name in self.installed_models:
                     # Use provided confirmation function
                     result = confirm_func(f"Are you sure you want to delete {model_name}?")
@@ -200,7 +216,7 @@ class TestTabCoordinationV2:
                         return True
                 return False
 
-            def get_model_size(self, model_name):
+            def get_model_size(self, model_name: Any) -> Any:
                 sizes = {
                     "rife-v4.6": 150 * 1024 * 1024,
                     "rife-v4.13": 180 * 1024 * 1024,
@@ -208,7 +224,7 @@ class TestTabCoordinationV2:
                 return sizes.get(model_name, 0)
 
         # Mock confirmation dialog
-        def mock_confirm(message):
+        def mock_confirm(message: Any) -> Any:
             return user_choice
 
         # Test deletion
@@ -226,7 +242,8 @@ class TestTabCoordinationV2:
             assert len(manager.installed_models) == initial_count
             assert "rife-v4.6" in manager.installed_models
 
-    def test_integrity_check_scan_workflow(self, shared_app) -> None:
+    @staticmethod
+    def test_integrity_check_scan_workflow(shared_app: Any) -> None:
         """Test integrity check scan workflow."""
 
         # Mock integrity scanner
@@ -239,7 +256,7 @@ class TestTabCoordinationV2:
                 self.is_scanning = False
                 self.scan_results = {}
 
-            def start_scan(self, directory) -> None:
+            def start_scan(self, directory: Any) -> None:
                 self.is_scanning = True
                 self.scan_results = {
                     "total_files": 0,
@@ -251,7 +268,7 @@ class TestTabCoordinationV2:
                 # Simulate immediate scan for testing
                 self._perform_scan(directory)
 
-            def _perform_scan(self, directory) -> None:
+            def _perform_scan(self, directory: Any) -> None:
                 # Mock scanning files
                 test_files = [
                     ("file1.nc", "valid"),
@@ -323,7 +340,8 @@ class TestTabCoordinationV2:
             ("unrepairable", False),
         ],
     )
-    def test_integrity_check_repair_actions(self, shared_app, file_type, repair_success) -> None:
+    @staticmethod
+    def test_integrity_check_repair_actions(shared_app: Any, file_type: Any, repair_success: Any) -> None:
         """Test integrity check repair actions with different scenarios."""
 
         # Mock repair manager
@@ -332,10 +350,10 @@ class TestTabCoordinationV2:
                 self.repair_queue = []
                 self.repair_results = {}
 
-            def queue_repair(self, file_info) -> None:
+            def queue_repair(self, file_info: Any) -> None:
                 self.repair_queue.append(file_info)
 
-            def repair_corrupted_file(self, filepath):
+            def repair_corrupted_file(self, filepath: Any) -> Any:
                 success = "unrepairable" not in filepath
                 if success:
                     self.repair_results[filepath] = "Repaired successfully"
@@ -343,11 +361,11 @@ class TestTabCoordinationV2:
                     self.repair_results[filepath] = "Repair failed - file too damaged"
                 return success
 
-            def download_missing_file(self, filename, source_url) -> bool:
+            def download_missing_file(self, filename: Any, source_url: Any) -> bool:
                 self.repair_results[filename] = f"Downloaded from {source_url}"
                 return True
 
-            def process_repair_queue(self, progress_callback) -> None:
+            def process_repair_queue(self, progress_callback: Any) -> None:
                 total = len(self.repair_queue)
                 for i, file_info in enumerate(self.repair_queue):
                     progress = int((i + 1) / total * 100)
@@ -404,7 +422,8 @@ class TestTabCoordinationV2:
             ("invalid_setting", "any_value", True),  # Unknown settings pass through
         ],
     )
-    def test_advanced_settings_validation(self, shared_app, setting_name, value, expected_valid) -> None:
+    @staticmethod
+    def test_advanced_settings_validation(shared_app: Any, setting_name: Any, value: Any, expected_valid: Any) -> None:
         """Test advanced settings validation with various scenarios."""
 
         # Mock settings validator
@@ -418,7 +437,7 @@ class TestTabCoordinationV2:
                     "network_timeout": (5, 300, int),
                 }
 
-            def validate_setting(self, name, value):
+            def validate_setting(self, name: Any, value: Any) -> Any:
                 if name not in self.validation_rules:
                     return True, value
 
@@ -432,7 +451,7 @@ class TestTabCoordinationV2:
                 except (ValueError, TypeError):
                     return False, f"Invalid {type_func.__name__} value"
 
-            def validate_all_settings(self, settings_dict):
+            def validate_all_settings(self, settings_dict: Any) -> Any:
                 errors = []
                 validated = {}
 
@@ -458,7 +477,8 @@ class TestTabCoordinationV2:
         else:
             assert isinstance(result, str)  # Error message
 
-    def test_inter_tab_state_synchronization(self, shared_app) -> None:
+    @staticmethod
+    def test_inter_tab_state_synchronization(shared_app: Any) -> None:
         """Test state synchronization between tabs."""
 
         # Mock tab state synchronizer
@@ -470,19 +490,19 @@ class TestTabCoordinationV2:
                 self.shared_state = {}
                 self.tab_subscriptions = {}
 
-            def register_tab(self, tab_name, keys_of_interest) -> None:
+            def register_tab(self, tab_name: Any, keys_of_interest: Any) -> None:
                 self.tab_subscriptions[tab_name] = keys_of_interest
 
-            def update_state(self, key, value) -> None:
+            def update_state(self, key: Any, value: Any) -> None:
                 old_value = self.shared_state.get(key)
                 if old_value != value:
                     self.shared_state[key] = value
                     self.state_changed.emit(key, value)
 
-            def get_state(self, key, default=None):
+            def get_state(self, key: Any, default: Any = None) -> Any:
                 return self.shared_state.get(key, default)
 
-            def sync_to_tab(self, tab_name, update_func) -> None:
+            def sync_to_tab(self, tab_name: Any, update_func: Any) -> None:
                 if tab_name in self.tab_subscriptions:
                     for key in self.tab_subscriptions[tab_name]:
                         if key in self.shared_state:
@@ -525,7 +545,8 @@ class TestTabCoordinationV2:
         assert "encoder" in settings_tab_updates
         assert "input_dir" not in settings_tab_updates  # Not subscribed
 
-    def test_dynamic_tab_management(self, mock_main_window) -> None:
+    @staticmethod
+    def test_dynamic_tab_management(mock_main_window: Any) -> None:
         """Test dynamic tab creation and removal."""
         window = mock_main_window
 
@@ -536,7 +557,7 @@ class TestTabCoordinationV2:
                 self.dynamic_tabs = {}
                 self.next_index = 3  # Assume 3 static tabs exist
 
-            def add_custom_tab(self, widget, title, closable=True):
+            def add_custom_tab(self, widget: Any, title: Any, closable: Any = True) -> Any:
                 index = self.next_index
                 self.next_index += 1
 
@@ -552,7 +573,7 @@ class TestTabCoordinationV2:
 
                 return index
 
-            def remove_tab(self, index) -> None:
+            def remove_tab(self, index: Any) -> None:
                 # Find tab by index
                 for title, info in list(self.dynamic_tabs.items()):
                     if info["index"] == index:
@@ -565,7 +586,7 @@ class TestTabCoordinationV2:
                                 other_info["index"] -= 1
                         break
 
-            def get_tab(self, title):
+            def get_tab(self, title: Any) -> Any:
                 return self.dynamic_tabs.get(title)
 
         # Test dynamic tab management
@@ -606,7 +627,8 @@ class TestTabCoordinationV2:
             ("any", "F1", True),  # Global shortcut
         ],
     )
-    def test_tab_specific_shortcuts(self, shared_app, active_tab, shortcut, should_trigger) -> None:
+    @staticmethod
+    def test_tab_specific_shortcuts(shared_app: Any, active_tab: Any, shortcut: Any, should_trigger: Any) -> None:
         """Test tab-specific keyboard shortcuts."""
 
         # Mock shortcut manager
@@ -616,15 +638,15 @@ class TestTabCoordinationV2:
                 self.active_tab = None
                 self.triggered_actions = []
 
-            def register_shortcut(self, tab_name, key_sequence, action) -> None:
+            def register_shortcut(self, tab_name: Any, key_sequence: Any, action: Any) -> None:
                 if tab_name not in self.shortcuts:
                     self.shortcuts[tab_name] = {}
                 self.shortcuts[tab_name][key_sequence] = action
 
-            def set_active_tab(self, tab_name) -> None:
+            def set_active_tab(self, tab_name: Any) -> None:
                 self.active_tab = tab_name
 
-            def handle_shortcut(self, key_sequence) -> bool:
+            def handle_shortcut(self, key_sequence: Any) -> bool:
                 # Check tab-specific shortcuts first
                 if self.active_tab and self.active_tab in self.shortcuts:
                     if key_sequence in self.shortcuts[self.active_tab]:
@@ -666,7 +688,8 @@ class TestTabCoordinationV2:
             assert not result
             assert len(shortcut_mgr.triggered_actions) == initial_count
 
-    def test_tab_data_persistence(self, shared_app) -> None:
+    @staticmethod
+    def test_tab_data_persistence(shared_app: Any) -> None:
         """Test tab data persistence and restoration."""
 
         # Mock tab data manager
@@ -674,17 +697,17 @@ class TestTabCoordinationV2:
             def __init__(self) -> None:
                 self.tab_data = {}
 
-            def save_tab_state(self, tab_name, state_data) -> None:
+            def save_tab_state(self, tab_name: Any, state_data: Any) -> None:
                 self.tab_data[tab_name] = state_data.copy()
 
-            def restore_tab_state(self, tab_name):
+            def restore_tab_state(self, tab_name: Any) -> Any:
                 return self.tab_data.get(tab_name, {})
 
-            def clear_tab_state(self, tab_name) -> None:
+            def clear_tab_state(self, tab_name: Any) -> None:
                 if tab_name in self.tab_data:
                     del self.tab_data[tab_name]
 
-            def get_all_tab_states(self):
+            def get_all_tab_states(self) -> Any:
                 return self.tab_data.copy()
 
         # Test data persistence
@@ -721,7 +744,8 @@ class TestTabCoordinationV2:
         assert "main" not in data_mgr.tab_data
         assert "models" in data_mgr.tab_data
 
-    def test_tab_error_handling(self, shared_app) -> None:
+    @staticmethod
+    def test_tab_error_handling(shared_app: Any) -> None:
         """Test error handling across different tabs."""
 
         # Mock tab error handler
@@ -730,7 +754,7 @@ class TestTabCoordinationV2:
                 self.error_history = []
                 self.recovery_actions = []
 
-            def handle_tab_error(self, tab_name, error_type, error_message):
+            def handle_tab_error(self, tab_name: Any, error_type: Any, error_message: Any) -> Any:
                 error_info = {
                     "tab": tab_name,
                     "type": error_type,
@@ -754,7 +778,7 @@ class TestTabCoordinationV2:
                 self.recovery_actions.append(recovery_action)
                 return recovery_action
 
-            def get_error_count_for_tab(self, tab_name):
+            def get_error_count_for_tab(self, tab_name: Any) -> Any:
                 return len([e for e in self.error_history if e["tab"] == tab_name])
 
             def clear_error_history(self) -> None:
