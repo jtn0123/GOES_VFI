@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Optimized tests for validating GOES file pattern matching with real S3 data.
 
@@ -9,7 +8,7 @@ This v2 version maintains all test scenarios while optimizing through:
 - Improved pattern generation with validation helpers
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -31,8 +30,12 @@ class TestRealS3PathOptimizedV2:
     """Optimized tests for S3 path pattern generation with full coverage."""
 
     @pytest.fixture(scope="class")
-    def s3_path_test_components(self):
-        """Create shared components for S3 path testing."""
+    def s3_path_test_components(self) -> dict[str, Any]:  # noqa: PLR6301, C901
+        """Create shared components for S3 path testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing S3 path testing components.
+        """
 
         # Enhanced S3 Path Test Manager
         class S3PathTestManager:
@@ -42,10 +45,10 @@ class TestRealS3PathOptimizedV2:
                 # Define test configurations
                 self.test_configs = {
                     "timestamps": [
-                        datetime(2023, 6, 15, 12, 0, 0),
-                        datetime(2023, 1, 1, 0, 0, 0),
-                        datetime(2023, 12, 31, 23, 59, 0),
-                        datetime(2024, 2, 29, 6, 30, 0),  # Leap year
+                        datetime(2023, 6, 15, 12, 0, 0, tzinfo=UTC),
+                        datetime(2023, 1, 1, 0, 0, 0, tzinfo=UTC),
+                        datetime(2023, 12, 31, 23, 59, 0, tzinfo=UTC),
+                        datetime(2024, 2, 29, 6, 30, 0, tzinfo=UTC),  # Leap year
                     ],
                     "satellites": [SatellitePattern.GOES_16, SatellitePattern.GOES_18],
                     "product_types": ["RadF", "RadC", "RadM"],
@@ -72,24 +75,37 @@ class TestRealS3PathOptimizedV2:
                     "comprehensive_validation": self._test_comprehensive_validation,
                 }
 
-            def generate_s3_bucket(self, satellite: SatellitePattern) -> str:
-                """Generate S3 bucket name for a satellite."""
+            def generate_s3_bucket(self, satellite: SatellitePattern) -> str:  # noqa: PLR6301
+                """Generate S3 bucket name for a satellite.
+
+                Returns:
+                    str: The S3 bucket name for the satellite.
+                """
                 sat_code = SATELLITE_CODES.get(satellite, "G16")
                 satellite_number = int(sat_code[1:])
                 return f"noaa-goes{satellite_number}"
 
-            def generate_s3_key_prefix(self, timestamp: datetime, product_type: str) -> str:
-                """Generate S3 key prefix for a timestamp and product type."""
+            def generate_s3_key_prefix(self, timestamp: datetime, product_type: str) -> str:  # noqa: PLR6301
+                """Generate S3 key prefix for a timestamp and product type.
+
+                Returns:
+                    str: The S3 key prefix for the timestamp and product type.
+                """
                 year = timestamp.year
                 day_of_year = timestamp.timetuple().tm_yday
                 hour = timestamp.hour
 
                 return f"ABI-L1b-{product_type}/{year}/{day_of_year:03d}/{hour:02d}/"
 
+            @staticmethod
             def generate_filename(
-                self, timestamp: datetime, satellite: SatellitePattern, product_type: str, band: int
+                timestamp: datetime, satellite: SatellitePattern, product_type: str, band: int
             ) -> str:
-                """Generate expected filename pattern."""
+                """Generate expected filename pattern.
+
+                Returns:
+                    str: The expected filename pattern.
+                """
                 sat_code = SATELLITE_CODES.get(satellite, "G16")
 
                 # Create timestamp strings
@@ -102,10 +118,15 @@ class TestRealS3PathOptimizedV2:
                     return f"OR_ABI-L1b-RadM1-M6C{band:02d}_{sat_code}_s{start_str}_e{end_str}_c{created_str}.nc"
                 return f"OR_ABI-L1b-{product_type}-M6C{band:02d}_{sat_code}_s{start_str}_e{end_str}_c{created_str}.nc"
 
+            @staticmethod
             def validate_s3_pattern(
-                self, bucket: str, key: str, satellite: SatellitePattern, product_type: str, timestamp: datetime
+                bucket: str, key: str, satellite: SatellitePattern, product_type: str, timestamp: datetime
             ) -> dict[str, Any]:
-                """Validate S3 pattern components."""
+                """Validate S3 pattern components.
+
+                Returns:
+                    dict[str, Any]: Validation results for S3 pattern components.
+                """
                 validation = {
                     "bucket_valid": bucket.startswith("noaa-goes"),
                     "satellite_match": str(SATELLITE_CODES.get(satellite, "G16")[1:]) in bucket,
@@ -118,8 +139,12 @@ class TestRealS3PathOptimizedV2:
                 validation["all_valid"] = all(validation.values())
                 return validation
 
-            def _test_basic_patterns(self, scenario_name: str, dest_dir: Path, **kwargs) -> dict[str, Any]:
-                """Test basic S3 pattern generation."""
+            def _test_basic_patterns(self, scenario_name: str, dest_dir: Path, **kwargs: Any) -> dict[str, Any]:
+                """Test basic S3 pattern generation.
+
+                Returns:
+                    dict[str, Any]: Test results for basic pattern generation.
+                """
                 results = {}
 
                 if scenario_name == "single_pattern":
@@ -151,8 +176,12 @@ class TestRealS3PathOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_all_product_types(self, scenario_name: str, dest_dir: Path, **kwargs) -> dict[str, Any]:
-                """Test all product types."""
+            def _test_all_product_types(self, scenario_name: str, dest_dir: Path, **kwargs: Any) -> dict[str, Any]:  # noqa: ARG002
+                """Test all product types.
+
+                Returns:
+                    dict[str, Any]: Test results for all product types.
+                """
                 results = {}
 
                 if scenario_name == "product_type_patterns":
@@ -190,8 +219,12 @@ class TestRealS3PathOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_multiple_satellites(self, scenario_name: str, dest_dir: Path, **kwargs) -> dict[str, Any]:
-                """Test multiple satellite patterns."""
+            def _test_multiple_satellites(self, scenario_name: str, dest_dir: Path, **kwargs: Any) -> dict[str, Any]:  # noqa: ARG002
+                """Test multiple satellite patterns.
+
+                Returns:
+                    dict[str, Any]: Test results for multiple satellite patterns.
+                """
                 results = {}
 
                 if scenario_name == "satellite_variations":
@@ -228,8 +261,12 @@ class TestRealS3PathOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_timestamp_variations(self, scenario_name: str, dest_dir: Path, **kwargs) -> dict[str, Any]:
-                """Test timestamp variation handling."""
+            def _test_timestamp_variations(self, scenario_name: str, dest_dir: Path, **kwargs: Any) -> dict[str, Any]:  # noqa: ARG002
+                """Test timestamp variation handling.
+
+                Returns:
+                    dict[str, Any]: Test results for timestamp variations.
+                """
                 results = {}
 
                 if scenario_name == "various_timestamps":
@@ -268,8 +305,12 @@ class TestRealS3PathOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_band_variations(self, scenario_name: str, dest_dir: Path, **kwargs) -> dict[str, Any]:
-                """Test band variation handling."""
+            def _test_band_variations(self, scenario_name: str, dest_dir: Path, **kwargs: Any) -> dict[str, Any]:
+                """Test band variation handling.
+
+                Returns:
+                    dict[str, Any]: Test results for band variations.
+                """
                 results = {}
 
                 if scenario_name == "multiple_bands":
@@ -297,8 +338,12 @@ class TestRealS3PathOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_key_pattern_validation(self, scenario_name: str, dest_dir: Path, **kwargs) -> dict[str, Any]:
-                """Test S3 key pattern validation."""
+            def _test_key_pattern_validation(self, scenario_name: str, dest_dir: Path, **kwargs: Any) -> dict[str, Any]:  # noqa: ARG002
+                """Test S3 key pattern validation.
+
+                Returns:
+                    dict[str, Any]: Test results for key pattern validation.
+                """
                 results = {}
 
                 if scenario_name == "comprehensive_validation":
@@ -334,21 +379,25 @@ class TestRealS3PathOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_edge_cases(self, scenario_name: str, dest_dir: Path, **kwargs) -> dict[str, Any]:
-                """Test edge cases in pattern generation."""
+            def _test_edge_cases(self, scenario_name: str, dest_dir: Path, **kwargs: Any) -> dict[str, Any]:  # noqa: ARG002
+                """Test edge cases in pattern generation.
+
+                Returns:
+                    dict[str, Any]: Test results for edge cases.
+                """
                 results = {}
 
                 if scenario_name == "boundary_conditions":
                     # Test edge cases
                     edge_cases = [
                         # New Year's Eve to New Year
-                        (datetime(2023, 12, 31, 23, 59, 0), "year_boundary"),
+                        (datetime(2023, 12, 31, 23, 59, 0, tzinfo=UTC), "year_boundary"),
                         # Start of year
-                        (datetime(2024, 1, 1, 0, 0, 0), "year_start"),
+                        (datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC), "year_start"),
                         # Leap year
-                        (datetime(2024, 2, 29, 12, 0, 0), "leap_year"),
+                        (datetime(2024, 2, 29, 12, 0, 0, tzinfo=UTC), "leap_year"),
                         # Last hour of day
-                        (datetime(2023, 6, 15, 23, 45, 0), "day_end"),
+                        (datetime(2023, 6, 15, 23, 45, 0, tzinfo=UTC), "day_end"),
                     ]
 
                     satellite = self.test_configs["satellites"][0]
@@ -383,8 +432,12 @@ class TestRealS3PathOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_comprehensive_validation(self, scenario_name: str, dest_dir: Path, **kwargs) -> dict[str, Any]:
-                """Test comprehensive validation across all dimensions."""
+            def _test_comprehensive_validation(self, scenario_name: str, dest_dir: Path, **kwargs: Any) -> dict[str, Any]:  # noqa: ARG002
+                """Test comprehensive validation across all dimensions.
+
+                Returns:
+                    dict[str, Any]: Test results for comprehensive validation.
+                """
                 results = {}
 
                 if scenario_name == "full_matrix":
@@ -422,79 +475,83 @@ class TestRealS3PathOptimizedV2:
         return {"manager": S3PathTestManager()}
 
     @pytest.fixture()
-    def temp_directory(self, tmp_path):
-        """Create temporary directory for each test."""
+    def temp_directory(self, tmp_path: Any) -> Any:  # noqa: PLR6301
+        """Create temporary directory for each test.
+
+        Returns:
+            Any: Temporary directory path.
+        """
         return tmp_path
 
-    def test_basic_pattern_scenarios(self, s3_path_test_components, temp_directory) -> None:
+    def test_basic_pattern_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
         """Test basic S3 pattern generation scenarios."""
         manager = s3_path_test_components["manager"]
 
-        result = manager._test_basic_patterns("single_pattern", temp_directory)
+        result = manager._test_basic_patterns("single_pattern", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "single_pattern"
         assert result["results"]["validation"]["all_valid"] is True
         assert result["results"]["bucket"] == "noaa-goes16"
 
-    def test_all_product_type_scenarios(self, s3_path_test_components, temp_directory) -> None:
+    def test_all_product_type_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
         """Test all product type scenarios."""
         manager = s3_path_test_components["manager"]
 
-        result = manager._test_all_product_types("product_type_patterns", temp_directory)
+        result = manager._test_all_product_types("product_type_patterns", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "product_type_patterns"
         assert len(result["results"]["product_patterns"]) == 3
         assert result["results"]["all_valid"] is True
 
-    def test_multiple_satellite_scenarios(self, s3_path_test_components, temp_directory) -> None:
+    def test_multiple_satellite_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
         """Test multiple satellite scenarios."""
         manager = s3_path_test_components["manager"]
 
-        result = manager._test_multiple_satellites("satellite_variations", temp_directory)
+        result = manager._test_multiple_satellites("satellite_variations", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "satellite_variations"
         assert result["results"]["unique_buckets"] == 2
         assert "GOES_16" in result["results"]["satellite_patterns"]
         assert "GOES_18" in result["results"]["satellite_patterns"]
 
-    def test_timestamp_variation_scenarios(self, s3_path_test_components, temp_directory) -> None:
+    def test_timestamp_variation_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
         """Test timestamp variation scenarios."""
         manager = s3_path_test_components["manager"]
 
-        result = manager._test_timestamp_variations("various_timestamps", temp_directory)
+        result = manager._test_timestamp_variations("various_timestamps", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "various_timestamps"
         assert len(result["results"]["timestamp_patterns"]) == 4
         assert result["results"]["all_valid"] is True
 
-    def test_band_variation_scenarios(self, s3_path_test_components, temp_directory) -> None:
+    def test_band_variation_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
         """Test band variation scenarios."""
         manager = s3_path_test_components["manager"]
 
-        result = manager._test_band_variations("multiple_bands", temp_directory)
+        result = manager._test_band_variations("multiple_bands", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "multiple_bands"
         assert len(result["results"]["band_patterns"]) == 4
         assert result["results"]["all_bands_valid"] is True
 
-    def test_key_pattern_validation_scenarios(self, s3_path_test_components, temp_directory) -> None:
+    def test_key_pattern_validation_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
         """Test S3 key pattern validation scenarios."""
         manager = s3_path_test_components["manager"]
 
-        result = manager._test_key_pattern_validation("comprehensive_validation", temp_directory)
+        result = manager._test_key_pattern_validation("comprehensive_validation", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "comprehensive_validation"
-        assert result["results"]["total_validated"] == 6  # 2 satellites × 3 product types
+        assert result["results"]["total_validated"] == 6  # 2 satellites x 3 product types
         assert result["results"]["all_valid"] is True
 
-    def test_edge_case_scenarios(self, s3_path_test_components, temp_directory) -> None:
+    def test_edge_case_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
         """Test edge case scenarios."""
         manager = s3_path_test_components["manager"]
 
-        result = manager._test_edge_cases("boundary_conditions", temp_directory)
+        result = manager._test_edge_cases("boundary_conditions", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "boundary_conditions"
         assert len(result["results"]["edge_cases"]) == 4
         assert result["results"]["all_valid"] is True
 
-    def test_comprehensive_validation_scenarios(self, s3_path_test_components, temp_directory) -> None:
+    def test_comprehensive_validation_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
         """Test comprehensive validation scenarios."""
         manager = s3_path_test_components["manager"]
 
-        result = manager._test_comprehensive_validation("full_matrix", temp_directory)
+        result = manager._test_comprehensive_validation("full_matrix", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "full_matrix"
         assert result["results"]["success_rate"] == 1.0
         assert result["results"]["tests_run"] == result["results"]["validations_passed"]
@@ -502,7 +559,7 @@ class TestRealS3PathOptimizedV2:
     @pytest.mark.parametrize(
         "product_type,schedule", [("RadF", RADF_MINUTES), ("RadC", RADC_MINUTES), ("RadM", RADM_MINUTES)]
     )
-    def test_product_schedule_alignment(self, s3_path_test_components, product_type, schedule) -> None:
+    def test_product_schedule_alignment(self, s3_path_test_components: dict[str, Any], product_type: str, schedule: list[int]) -> None:  # noqa: PLR6301
         """Test that product types align with their schedules."""
         manager = s3_path_test_components["manager"]
 
@@ -510,7 +567,7 @@ class TestRealS3PathOptimizedV2:
         assert manager.product_schedules[product_type] == schedule
 
         # Test pattern generation for scheduled minutes
-        timestamp = datetime(2023, 6, 15, 12, 0, 0)
+        timestamp = datetime(2023, 6, 15, 12, 0, 0, tzinfo=UTC)
 
         # Adjust timestamp to match schedule
         if schedule:
@@ -520,34 +577,34 @@ class TestRealS3PathOptimizedV2:
         key_prefix = manager.generate_s3_key_prefix(timestamp, product_type)
         assert product_type in key_prefix
 
-    def test_real_s3_path_comprehensive_validation(self, s3_path_test_components, temp_directory) -> None:
+    def test_real_s3_path_comprehensive_validation(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
         """Test comprehensive S3 path validation."""
         manager = s3_path_test_components["manager"]
 
         # Test basic pattern
-        result = manager._test_basic_patterns("single_pattern", temp_directory)
+        result = manager._test_basic_patterns("single_pattern", temp_directory)  # noqa: SLF001
         assert "noaa-goes16" in result["results"]["bucket"]
 
         # Test all products
-        result = manager._test_all_product_types("product_type_patterns", temp_directory)
+        result = manager._test_all_product_types("product_type_patterns", temp_directory)  # noqa: SLF001
         for product_type in ["RadF", "RadC", "RadM"]:
             assert product_type in result["results"]["product_patterns"]
 
         # Test satellites
-        result = manager._test_multiple_satellites("satellite_variations", temp_directory)
+        result = manager._test_multiple_satellites("satellite_variations", temp_directory)  # noqa: SLF001
         assert result["results"]["satellite_patterns"]["GOES_16"]["bucket"] == "noaa-goes16"
         assert result["results"]["satellite_patterns"]["GOES_18"]["bucket"] == "noaa-goes18"
 
         # Test edge cases
-        result = manager._test_edge_cases("boundary_conditions", temp_directory)
+        result = manager._test_edge_cases("boundary_conditions", temp_directory)  # noqa: SLF001
         assert all(ec["valid"] for ec in result["results"]["edge_cases"])
 
-    def test_s3_path_integration_validation(self, s3_path_test_components, temp_directory) -> None:
+    def test_s3_path_integration_validation(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301, ARG002
         """Test S3 path integration scenarios."""
         manager = s3_path_test_components["manager"]
 
         # Create a complex scenario
-        timestamp = datetime(2023, 12, 31, 23, 45, 0)  # Near year boundary
+        timestamp = datetime(2023, 12, 31, 23, 45, 0, tzinfo=UTC)  # Near year boundary
 
         for satellite in [SatellitePattern.GOES_16, SatellitePattern.GOES_18]:
             for product_type in ["RadF", "RadC", "RadM"]:
