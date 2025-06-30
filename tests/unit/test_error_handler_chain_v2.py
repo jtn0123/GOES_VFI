@@ -4,7 +4,6 @@ Enhanced tests for error handler chain with comprehensive scenarios,
 concurrent operations, memory efficiency tests, and edge cases.
 Critical infrastructure for error handling.
 """
-# type: ignore  # noqa: PGH003
 
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -113,23 +112,23 @@ class TestErrorHandlerChainV2(unittest.TestCase):
                 handlers = config["handlers"]
 
                 for handler in handlers:
-                    chain.add_handler(  # type: ignore[arg-type]handler)
+                    chain.add_handler(handler)  # type: ignore[arg-type]
 
-                for error, expected_handler_name in config["errors"]:
+                for error, expected_handler_name in config["errors"]:  # type: ignore[misc]
                     # Reset handlers
-                    for h in handlers:
-                        h.reset()
+                    for h in handlers:  # type: ignore[attr-defined]
+                        h.reset()  # type: ignore[attr-defined]
 
-                    result = chain.handle_error(  # type: ignore[arg-type]error)
+                    result = chain.handle_error(error)  # type: ignore[arg-type, has-type]
                     assert result
 
                     # Verify correct handler handled the error
-                    for h in handlers:
-                        if h.name == expected_handler_name:
-                            assert len(h.handled_errors) == 1
-                            assert h.handled_errors[0] == error
+                    for h in handlers:  # type: ignore[attr-defined]
+                        if h.name == expected_handler_name:  # type: ignore[attr-defined, has-type]
+                            assert len(h.handled_errors) == 1  # type: ignore[attr-defined]
+                            assert h.handled_errors[0] == error  # type: ignore[attr-defined, has-type]
                         else:
-                            assert len(h.handled_errors) == 0
+                            assert len(h.handled_errors) == 0  # type: ignore[attr-defined]
 
     def test_chain_tries_all_handlers_comprehensive(self) -> None:
         """Test comprehensive scenarios when no handler can handle."""
@@ -168,16 +167,16 @@ class TestErrorHandlerChainV2(unittest.TestCase):
                 chain = ErrorHandlerChain()
                 handlers = scenario["handlers"]
 
-                for handler in handlers:
-                    chain.add_handler(  # type: ignore[arg-type]handler)
+                for handler in handlers:  # type: ignore[attr-defined]
+                    chain.add_handler(handler)  # type: ignore[arg-type]
 
-                result = chain.handle_error(  # type: ignore[arg-type]scenario["error"])
+                result = chain.handle_error(scenario["error"])  # type: ignore[arg-type]
                 assert not result
 
                 # Verify all handlers were asked but none handled
-                for handler in handlers:
-                    assert len(handler.can_handle_calls) == 1
-                    assert len(handler.handled_errors) == 0
+                for handler in handlers:  # type: ignore[attr-defined]
+                    assert len(handler.can_handle_calls) == 1  # type: ignore[attr-defined]
+                    assert len(handler.handled_errors) == 0  # type: ignore[attr-defined]
 
     def test_chain_execution_order_comprehensive(self) -> None:
         """Test comprehensive execution order scenarios."""
@@ -232,9 +231,9 @@ class TestErrorHandlerChainV2(unittest.TestCase):
                 chain = ErrorHandlerChain()
 
                 for handler in test_case["handlers"]:
-                    chain.add_handler(  # type: ignore[arg-type]handler)
+                    chain.add_handler(handler)  # type: ignore[arg-type]
 
-                chain.handle_error(  # type: ignore[arg-type]Exception("test"))
+                chain.handle_error(Exception("test"))  # type: ignore[arg-type]
                 assert execution_log == test_case["expected_log"]
 
     def test_chain_handles_handler_exceptions_comprehensive(self) -> None:
@@ -267,10 +266,10 @@ class TestErrorHandlerChainV2(unittest.TestCase):
             with self.subTest(scenario=scenario["name"]):
                 chain = ErrorHandlerChain()
 
-                for handler in scenario["handlers"]:
-                    chain.add_handler(  # type: ignore[arg-type]handler)
+                for handler in scenario["handlers"]:  # type: ignore[attr-defined]
+                    chain.add_handler(handler)  # type: ignore[arg-type]
 
-                result = chain.handle_error(  # type: ignore[arg-type]scenario["error"])
+                result = chain.handle_error(scenario["error"])  # type: ignore[arg-type]
                 assert result == scenario["should_handle"]
 
     def test_error_categorization_comprehensive(self) -> None:
@@ -303,10 +302,10 @@ class TestErrorHandlerChainV2(unittest.TestCase):
                 # Add all handlers
                 for handler in category_handlers.values():
                     handler.reset()
-                    chain.add_handler(  # type: ignore[arg-type]handler)
+                    chain.add_handler(handler)  # type: ignore[arg-type]
 
                 test_error = error_type("test error")
-                result = chain.handle_error(  # type: ignore[arg-type]test_error)
+                result = chain.handle_error(test_error)  # type: ignore[arg-type]
 
                 assert result
 
@@ -350,9 +349,9 @@ class TestErrorHandlerChainV2(unittest.TestCase):
                 # Add handlers in priority order
                 for severity in ["critical", "high", "medium", "low"]:
                     severity_handlers[severity].reset()
-                    chain.add_handler(  # type: ignore[arg-type]severity_handlers[severity])
+                    chain.add_handler(severity_handlers[severity])  # type: ignore[arg-type]
 
-                result = chain.handle_error(  # type: ignore[arg-type]error)
+                result = chain.handle_error(error)  # type: ignore[arg-type]  # type: ignore[arg-type]
                 assert result
 
                 # Verify correct severity handler handled it
@@ -363,14 +362,14 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         """Test chain with various edge cases."""
         # Test empty chain
         empty_chain = ErrorHandlerChain()
-        result = empty_chain.handle_error(  # type: ignore[arg-type]ValueError("test"))
+        result = empty_chain.handle_error(ValueError("test"))  # type: ignore[arg-type]
         assert not result
 
         # Test single handler chain
         single_chain = ErrorHandlerChain()
         single_handler = MockErrorHandler("single", should_handle=True)
-        single_chain.add_handler(  # type: ignore[arg-type]single_handler)
-        result = single_chain.handle_error(  # type: ignore[arg-type]ValueError("test"))
+        single_chain.add_handler(single_handler)  # type: ignore[arg-type]
+        result = single_chain.handle_error(ValueError("test"))  # type: ignore[arg-type]
         assert result
         assert len(single_handler.handled_errors) == 1
 
@@ -380,9 +379,9 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         for i in range(100):
             handler = MockErrorHandler(f"handler_{i}", should_handle=(i == 99))
             handlers.append(handler)
-            many_chain.add_handler(  # type: ignore[arg-type]handler)
+            many_chain.add_handler(handler)  # type: ignore[arg-type]
 
-        result = many_chain.handle_error(  # type: ignore[arg-type]ValueError("test"))
+        result = many_chain.handle_error(ValueError("test"))  # type: ignore[arg-type]
         assert result
         assert len(handlers[99].handled_errors) == 1
 
@@ -392,16 +391,16 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
         # Test fluent interface
         result = (
-            chain.add_handler(  # type: ignore[arg-type]MockErrorHandler("h1"))
-            .add_handler(MockErrorHandler("h2"))
-            .add_handler(MockErrorHandler("h3"))
+            chain.add_handler(MockErrorHandler("h1"))  # type: ignore[arg-type]
+            .add_handler(MockErrorHandler("h2"))  # type: ignore[arg-type]
+            .add_handler(MockErrorHandler("h3"))  # type: ignore[arg-type]
         )
 
         assert result is chain  # Should return self for chaining
 
         # Verify handlers were added
         test_error = ValueError("test")
-        handled = chain.handle_error(  # type: ignore[arg-type]test_error)
+        handled = chain.handle_error(test_error)  # type: ignore[arg-type]
         assert handled
 
     def test_concurrent_error_handling(self) -> None:  # noqa: PLR6301
@@ -411,7 +410,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         # Add thread-safe handlers
         for i in range(5):
             handler = MockErrorHandler(f"concurrent_{i}", should_handle=True)
-            chain.add_handler(  # type: ignore[arg-type]handler)
+            chain.add_handler(handler)  # type: ignore[arg-type]
 
         results = []
         errors = []
@@ -421,7 +420,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
                 error_types = [ValueError, TypeError, RuntimeError, KeyError, AttributeError]
                 error = error_types[error_id % len(error_types)](f"Error {error_id}")
 
-                result = chain.handle_error(  # type: ignore[arg-type]error)
+                result = chain.handle_error(error)  # type: ignore[arg-type]  # type: ignore[arg-type]
                 results.append((error_id, result))
 
             except Exception as e:  # noqa: BLE001
@@ -451,14 +450,14 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
                 # Add handlers that don't handle
                 for i in range(count - 1):
-                    chain.add_handler(  # type: ignore[arg-type]MockErrorHandler(f"no_handle_{i}", should_handle=False))
+                    chain.add_handler(MockErrorHandler(f"no_handle_{i}", should_handle=False))  # type: ignore[arg-type]
 
                 # Add final handler that handles
-                chain.add_handler(  # type: ignore[arg-type]MockErrorHandler("final_handler", should_handle=True))
+                chain.add_handler(MockErrorHandler("final_handler", should_handle=True))  # type: ignore[arg-type]
 
                 # Measure performance
                 start_time = time.time()
-                result = chain.handle_error(  # type: ignore[arg-type]ValueError("test"))
+                result = chain.handle_error(ValueError("test"))  # type: ignore[arg-type]  # type: ignore[arg-type]
                 end_time = time.time()
 
                 assert result
@@ -471,7 +470,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
         # Create handler that can handle large errors
         handler = MockErrorHandler("large_error_handler", should_handle=True)
-        chain.add_handler(  # type: ignore[arg-type]handler)
+        chain.add_handler(handler)  # type: ignore[arg-type]
 
         # Create errors with large payloads
         large_errors = []
@@ -482,7 +481,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
         # Handle all large errors
         for error in large_errors:
-            result = chain.handle_error(  # type: ignore[arg-type]error)
+            result = chain.handle_error(error)  # type: ignore[arg-type]
             assert result
 
         # Verify all were handled
@@ -514,7 +513,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
         chain = ErrorHandlerChain()
         for handler in custom_handlers:
-            chain.add_handler(  # type: ignore[arg-type]handler)
+            chain.add_handler(handler)  # type: ignore[arg-type]
 
         # Test each custom error type
         test_errors = [
@@ -530,7 +529,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
                 for h in custom_handlers:
                     h.reset()
 
-                result = chain.handle_error(  # type: ignore[arg-type]error)
+                result = chain.handle_error(error)  # type: ignore[arg-type]
                 assert result
 
                 # Verify correct handler handled it
@@ -546,7 +545,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
 
         # Create stateful handler
         stateful_handler = MockErrorHandler("stateful", should_handle=True)
-        chain.add_handler(  # type: ignore[arg-type]stateful_handler)
+        chain.add_handler(stateful_handler)  # type: ignore[arg-type]
 
         # Handle multiple errors
         errors = [
@@ -556,7 +555,7 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         ]
 
         for i, error in enumerate(errors):
-            result = chain.handle_error(  # type: ignore[arg-type]error)
+            result = chain.handle_error(error)  # type: ignore[arg-type]
             assert result
 
             # Verify state accumulation
@@ -607,22 +606,22 @@ class TestErrorHandlerChainV2(unittest.TestCase):
                 chain = ErrorHandlerChain()
 
                 for handler in pattern["handlers"]:
-                    chain.add_handler(  # type: ignore[arg-type]handler)
+                    chain.add_handler(handler)  # type: ignore[arg-type]
 
-                for error, expected_handler in pattern["test_errors"]:
+                for error, expected_handler in pattern["test_errors"]:  # type: ignore[misc]
                     # Reset handlers
-                    for h in pattern["handlers"]:
-                        h.reset()
+                    for h in pattern["handlers"]:  # type: ignore[attr-defined]
+                        h.reset()  # type: ignore[attr-defined]
 
-                    result = chain.handle_error(  # type: ignore[arg-type]error)
+                    result = chain.handle_error(error)  # type: ignore[arg-type, has-type]
                     assert result
 
                     # Verify expected handler handled it
-                    for h in pattern["handlers"]:
-                        if h.name == expected_handler:
-                            assert len(h.handled_errors) == 1
+                    for h in pattern["handlers"]:  # type: ignore[attr-defined]
+                        if h.name == expected_handler:  # type: ignore[attr-defined, has-type]
+                            assert len(h.handled_errors) == 1  # type: ignore[attr-defined]
                         else:
-                            assert len(h.handled_errors) == 0
+                            assert len(h.handled_errors) == 0  # type: ignore[attr-defined]
 
 
 # Compatibility tests using pytest style for existing test coverage
@@ -636,10 +635,10 @@ class TestErrorHandlerChainPytest:
         handler3 = MockErrorHandler("handler3", should_handle=True)
 
         chain = ErrorHandlerChain()
-        chain.add_handler(  # type: ignore[arg-type]handler1).add_handler(handler2).add_handler(handler3)
+        chain.add_handler(handler1).add_handler(handler2).add_handler(handler3)  # type: ignore[arg-type]
 
         # Test ValueError handled by first handler
-        result = chain.handle_error(  # type: ignore[arg-type]ValueError("test"))
+        result = chain.handle_error(ValueError("test"))  # type: ignore[arg-type]  # type: ignore[arg-type]
         assert result is True
         assert len(handler1.handled_errors) == 1
 
@@ -647,7 +646,7 @@ class TestErrorHandlerChainPytest:
         handler1.reset()
         handler2.reset()
 
-        result = chain.handle_error(  # type: ignore[arg-type]TypeError("test"))
+        result = chain.handle_error(TypeError("test"))  # type: ignore[arg-type]
         assert result is True
         assert len(handler2.handled_errors) == 1
 
@@ -657,15 +656,15 @@ class TestErrorHandlerChainPytest:
         handler2 = MockErrorHandler("handler2", can_handle_types=["TypeError"])
 
         chain = ErrorHandlerChain()
-        chain.add_handler(  # type: ignore[arg-type]handler1).add_handler(handler2)
+        chain.add_handler(handler1).add_handler(handler2)  # type: ignore[arg-type]
 
-        result = chain.handle_error(  # type: ignore[arg-type]RuntimeError("unhandled"))
+        result = chain.handle_error(RuntimeError("unhandled"))  # type: ignore[arg-type]
         assert result is False
 
     def test_empty_chain_pytest(self) -> None:  # noqa: PLR6301
         """Test empty chain using pytest style."""
         chain = ErrorHandlerChain()
-        result = chain.handle_error(  # type: ignore[arg-type]ValueError("test"))
+        result = chain.handle_error(ValueError("test"))  # type: ignore[arg-type]
         assert result is False
 
     def test_performance_pytest(self) -> None:  # noqa: PLR6301
@@ -676,10 +675,10 @@ class TestErrorHandlerChainPytest:
 
         chain = ErrorHandlerChain()
         for handler in handlers:
-            chain.add_handler(  # type: ignore[arg-type]handler)
+            chain.add_handler(handler)  # type: ignore[arg-type]
 
         start_time = time.time()
-        result = chain.handle_error(  # type: ignore[arg-type]ValueError("test"))
+        result = chain.handle_error(ValueError("test"))  # type: ignore[arg-type]
         duration = time.time() - start_time
 
         assert result is True
