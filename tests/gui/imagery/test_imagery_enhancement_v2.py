@@ -92,11 +92,13 @@ class TestImageryEnhancementV2:
                 mock_download.return_value = scenario["expected_result"]
 
                 # Execute download
-                result = processor.download_sample_data(scenario["band"], scenario["product_type"])
+                band = int(scenario["band"])  # type: ignore[arg-type]
+                product_type = ProductType(scenario["product_type"])  # type: ignore[arg-type]
+                result = processor.download_sample_data(band, product_type)
 
                 # Verify result matches expected fallback behavior
                 assert result == scenario["expected_result"]
-                mock_download.assert_called_once_with(scenario["band"], scenario["product_type"])
+                mock_download.assert_called_once_with(band, product_type)
 
     @pytest.mark.parametrize(
         "band,product_type,expected_behavior",
@@ -109,7 +111,9 @@ class TestImageryEnhancementV2:
         ],
     )
     @staticmethod
-    def test_download_sample_data_scenarios(mock_sample_processor: Any, band: Any, product_type: Any, expected_behavior: Any) -> None:
+    def test_download_sample_data_scenarios(
+        mock_sample_processor: Any, band: Any, product_type: Any, expected_behavior: Any
+    ) -> None:
         """Test download sample data with various scenarios."""
         # Configure mock behavior based on expected outcome
         if expected_behavior == "success":
