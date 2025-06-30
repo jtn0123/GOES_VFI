@@ -31,13 +31,13 @@ class TestAsyncFileManager(unittest.TestCase):
         """Set up test fixtures."""
         self.manager = AsyncFileManager(max_concurrent=2, buffer_size=1024)
 
-    def test_initialization(self) -> None:  # noqa: PLR6301
+    def test_initialization(self) -> None:
         """Test AsyncFileManager initialization."""
         assert self.manager.max_concurrent == 2
         assert self.manager.buffer_size == 1024
         assert self.manager._semaphore._value == 2  # noqa: SLF001
 
-    def test_read_file_text(self) -> None:  # noqa: PLR6301
+    def test_read_file_text(self) -> None:
         """Test reading text files."""
 
         async def run_test() -> None:
@@ -54,7 +54,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_read_file_binary(self) -> None:  # noqa: PLR6301
+    def test_read_file_binary(self) -> None:
         """Test reading binary files."""
 
         async def run_test() -> None:
@@ -72,7 +72,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_write_file_text(self) -> None:  # noqa: PLR6301
+    def test_write_file_text(self) -> None:
         """Test writing text files."""
 
         async def run_test() -> None:
@@ -88,7 +88,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_write_file_binary(self) -> None:  # noqa: PLR6301
+    def test_write_file_binary(self) -> None:
         """Test writing binary files."""
 
         async def run_test() -> None:
@@ -104,7 +104,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_write_file_create_parents(self) -> None:  # noqa: PLR6301
+    def test_write_file_create_parents(self) -> None:
         """Test writing files with parent directory creation."""
 
         async def run_test() -> None:
@@ -120,7 +120,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_copy_file(self) -> None:  # noqa: PLR6301
+    def test_copy_file(self) -> None:
         """Test copying files."""
 
         async def run_test() -> None:
@@ -140,7 +140,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_copy_file_large(self) -> None:  # noqa: PLR6301
+    def test_copy_file_large(self) -> None:
         """Test copying large files in chunks."""
 
         async def run_test() -> None:
@@ -161,7 +161,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_move_file(self) -> None:  # noqa: PLR6301
+    def test_move_file(self) -> None:
         """Test moving files."""
 
         async def run_test() -> None:
@@ -181,7 +181,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_delete_file(self) -> None:  # noqa: PLR6301
+    def test_delete_file(self) -> None:
         """Test deleting files."""
 
         async def run_test() -> None:
@@ -198,29 +198,29 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_delete_file_missing_ok(self) -> None:  # noqa: PLR6301
+    def test_delete_file_missing_ok(self) -> None:
         """Test deleting non-existent files with missing_ok=True."""
 
         async def run_test() -> None:
-            non_existent = Path("/tmp/non_existent_file_test.txt")
+            non_existent = Path("/tmp/non_existent_file_test.txt")  # noqa: S108
 
             # Should not raise exception
             await self.manager.delete_file(non_existent, missing_ok=True)
 
         asyncio.run(run_test())
 
-    def test_delete_file_missing_not_ok(self) -> None:  # noqa: PLR6301
+    def test_delete_file_missing_not_ok(self) -> None:
         """Test deleting non-existent files with missing_ok=False."""
 
         async def run_test() -> None:
-            non_existent = Path("/tmp/non_existent_file_test.txt")
+            non_existent = Path("/tmp/non_existent_file_test.txt")  # noqa: S108
 
             with pytest.raises(FileNotFoundError):
                 await self.manager.delete_file(non_existent, missing_ok=False)
 
         asyncio.run(run_test())
 
-    def test_ensure_directory(self) -> None:  # noqa: PLR6301
+    def test_ensure_directory(self) -> None:
         """Test ensuring directories exist."""
 
         async def run_test() -> None:
@@ -234,7 +234,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_list_directory(self) -> None:  # noqa: PLR6301
+    def test_list_directory(self) -> None:
         """Test listing directory contents."""
 
         async def run_test() -> None:
@@ -261,7 +261,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_get_file_info(self) -> None:  # noqa: PLR6301
+    def test_get_file_info(self) -> None:
         """Test getting file information."""
 
         async def run_test() -> None:
@@ -282,18 +282,18 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_get_file_info_non_existent(self) -> None:  # noqa: PLR6301
+    def test_get_file_info_non_existent(self) -> None:
         """Test getting info for non-existent files."""
 
         async def run_test() -> None:
-            non_existent = Path("/tmp/non_existent_file_test.txt")
+            non_existent = Path("/tmp/non_existent_file_test.txt")  # noqa: S108
             info = await self.manager.get_file_info(non_existent)
 
             assert not info["exists"]
 
         asyncio.run(run_test())
 
-    def test_batch_read(self) -> None:  # noqa: PLR6301
+    def test_batch_read(self) -> None:
         """Test batch reading multiple files."""
 
         async def run_test() -> None:
@@ -316,7 +316,7 @@ class TestAsyncFileManager(unittest.TestCase):
 
         asyncio.run(run_test())
 
-    def test_batch_write(self) -> None:  # noqa: PLR6301
+    def test_batch_write(self) -> None:
         """Test batch writing multiple files."""
 
         async def run_test() -> None:
@@ -445,7 +445,7 @@ class TestHighLevelAsyncOperations(unittest.TestCase):
                 # Verify file was written correctly
                 assert json_path.exists()
 
-                with open(json_path, encoding="utf-8") as f:
+                with json_path.open(encoding="utf-8") as f:
                     loaded_data = json.load(f)
 
                 assert loaded_data == test_data
@@ -553,7 +553,7 @@ class TestErrorHandling(unittest.TestCase):
 
         async def run_test() -> None:
             manager = AsyncFileManager()
-            non_existent = Path("/tmp/definitely_does_not_exist.txt")
+            non_existent = Path("/tmp/definitely_does_not_exist.txt")  # noqa: S108
 
             with pytest.raises(FileNotFoundError):
                 await manager.read_file(non_existent)
