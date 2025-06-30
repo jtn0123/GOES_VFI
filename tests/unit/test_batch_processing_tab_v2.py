@@ -85,10 +85,10 @@ def mock_batch_processor() -> Mock:
 
     def mock_create_job_from_paths(
         input_paths: list[str],
-        output_dir: Any,  # noqa: ANN401
+        output_dir: Any,
         settings: dict[str, Any],
         priority: JobPriority = JobPriority.NORMAL,
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,
     ) -> list[BatchJob]:
         """Mock job creation from paths.
 
@@ -154,11 +154,11 @@ def mock_process_function() -> Callable[..., str]:
 
 @pytest.fixture()
 def batch_tab(
-    qtbot: Any,  # noqa: ANN401
+    qtbot: Any,
     mock_batch_processor: Mock,
     settings_provider: Callable[[], dict[str, Any]],
     mock_process_function: Callable[..., str],
-) -> Any:  # noqa: ANN401
+) -> Any:
     """Create BatchProcessingTab instance for testing.
 
     Yields:
@@ -191,7 +191,7 @@ def batch_tab(
 class TestBatchProcessingTab:
     """Test BatchProcessingTab functionality."""
 
-    def test_tab_initialization(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_tab_initialization(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test that tab initializes correctly."""
         tab, processor, _settings = batch_tab
 
@@ -203,7 +203,7 @@ class TestBatchProcessingTab:
         # Verify processor was created
         processor.create_queue.assert_called_once()
 
-    def test_add_to_queue_with_current_settings(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_add_to_queue_with_current_settings(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test adding jobs to queue uses current settings."""
         tab, processor, expected_settings = batch_tab
 
@@ -221,7 +221,7 @@ class TestBatchProcessingTab:
         # Check that settings were passed correctly
         assert call_args.kwargs["settings"] == expected_settings
 
-    def test_settings_provider_integration(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_settings_provider_integration(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test that settings provider is called correctly."""
         tab, processor, expected_settings = batch_tab
 
@@ -237,7 +237,7 @@ class TestBatchProcessingTab:
         assert call_args.kwargs["settings"] == expected_settings
 
     @pytest.mark.parametrize("file_count", [1, 3, 5])
-    def test_multiple_file_processing(self, batch_tab: Any, file_count: int) -> None:  # noqa: PLR6301, ANN401
+    def test_multiple_file_processing(self, batch_tab: Any, file_count: int) -> None:  # noqa: PLR6301
         """Test processing multiple files."""
         tab, processor, _settings = batch_tab
 
@@ -263,7 +263,7 @@ class TestBatchProcessingTab:
         call_args = processor.create_job_from_paths.call_args
         assert "input_paths" in call_args.kwargs
 
-    def test_queue_signal_connections(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_queue_signal_connections(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test that queue signals are properly connected."""
         _tab, processor, _settings = batch_tab
 
@@ -277,7 +277,7 @@ class TestBatchProcessingTab:
         assert hasattr(queue, "job_completed")
         assert hasattr(queue, "job_failed")
 
-    def test_output_directory_handling(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_output_directory_handling(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test output directory handling."""
         tab, processor, _settings = batch_tab
 
@@ -291,7 +291,7 @@ class TestBatchProcessingTab:
         # The output directory should be passed as a Path object
         assert str(call_args.kwargs["output_dir"]) == test_output_dir
 
-    def test_empty_input_list_handling(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_empty_input_list_handling(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test handling when input list is empty."""
         tab, _processor, _settings = batch_tab
 
@@ -306,7 +306,7 @@ class TestBatchProcessingTab:
         # (assuming the implementation checks for empty input)
         # This test would need to be adjusted based on actual implementation
 
-    def test_job_priority_setting(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_job_priority_setting(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test that job priority can be set."""
         tab, processor, _settings = batch_tab
 
@@ -332,7 +332,7 @@ class TestBatchProcessingTab:
     )
     def test_different_settings_configurations(  # noqa: PLR6301
         self,
-        qtbot: Any,  # noqa: ANN401
+        qtbot: Any,
         mock_batch_processor: Mock,
         mock_process_function: Callable[..., str],
         settings_variant: dict[str, Any],
@@ -368,7 +368,7 @@ class TestBatchProcessingTab:
             call_args = mock_batch_processor.create_job_from_paths.call_args
             assert call_args.kwargs["settings"] == settings_variant
 
-    def test_batch_processor_integration(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_batch_processor_integration(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test integration with BatchProcessor."""
         tab, processor, _settings = batch_tab
 
@@ -382,7 +382,7 @@ class TestBatchProcessingTab:
         assert hasattr(processor, "create_job_from_paths")
         assert hasattr(processor, "add_directory")
 
-    def test_error_handling_in_job_creation(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_error_handling_in_job_creation(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test error handling when job creation fails."""
         tab, processor, _settings = batch_tab
 
@@ -399,7 +399,7 @@ class TestBatchProcessingTab:
         except Exception:  # noqa: BLE001
             pytest.fail("Tab should handle job creation errors gracefully")
 
-    def test_ui_update_after_job_addition(self, batch_tab: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_ui_update_after_job_addition(self, batch_tab: Any) -> None:  # noqa: PLR6301
         """Test that UI updates after jobs are added."""
         tab, processor, _settings = batch_tab
 

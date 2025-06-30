@@ -230,7 +230,7 @@ class TestRunVfiParamOptimizedV2:
                 return {"raw_output": raw_output}
 
             @staticmethod
-            def _validate_skip_scenario(results: Any, scenario_data: dict[str, Any]) -> dict[str, Any]:  # noqa: ANN401
+            def _validate_skip_scenario(results: Any, scenario_data: dict[str, Any]) -> dict[str, Any]:
                 """Validate skip scenario results.
 
                 Returns:
@@ -241,7 +241,7 @@ class TestRunVfiParamOptimizedV2:
                 return {"success": True, "paths_returned": True, "raw_output_exists": True}
 
             @staticmethod
-            def _validate_error_scenario(exception_info: Any, scenario_data: dict[str, Any]) -> dict[str, Any]:  # noqa: ANN401
+            def _validate_error_scenario(exception_info: Any, scenario_data: dict[str, Any]) -> dict[str, Any]:
                 """Validate error scenario results.
 
                 Args:
@@ -263,7 +263,7 @@ class TestRunVfiParamOptimizedV2:
                 }
 
             @staticmethod
-            def _validate_sanchez_scenario(results: Any, scenario_data: dict[str, Any]) -> dict[str, Any]:  # noqa: ANN401
+            def _validate_sanchez_scenario(results: Any, scenario_data: dict[str, Any]) -> dict[str, Any]:
                 """Validate Sanchez processing scenario.
 
                 Returns:
@@ -274,7 +274,7 @@ class TestRunVfiParamOptimizedV2:
                 return {"success": True, "paths_returned": True, "sanchez_processed": True}
 
             @staticmethod
-            def _validate_sanchez_fail_scenario(results: Any, scenario_data: dict[str, Any]) -> dict[str, Any]:  # noqa: ANN401
+            def _validate_sanchez_fail_scenario(results: Any, scenario_data: dict[str, Any]) -> dict[str, Any]:
                 """Validate Sanchez failure scenario (should handle gracefully).
 
                 Returns:

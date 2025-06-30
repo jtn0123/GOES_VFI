@@ -76,7 +76,11 @@ class TestAccessibilityOptimizedV2:
 
             @staticmethod
             def check_widget_accessibility(widget: Any) -> list[str]:
-                """Check if widget has proper accessibility properties."""
+                """Check if widget has proper accessibility properties.
+
+                Returns:
+                    list[str]: List of accessibility issues found.
+                """
                 issues = []
 
                 # Check accessible name
@@ -99,10 +103,14 @@ class TestAccessibilityOptimizedV2:
 
             @staticmethod
             def check_color_contrast(foreground: QColor, background: QColor) -> float:
-                """Calculate color contrast ratio according to WCAG guidelines."""
+                """Calculate color contrast ratio according to WCAG guidelines.
 
-                def relative_luminance(color):
-                    def channel_value(c):
+                Returns:
+                    float: The contrast ratio between the two colors.
+                """
+
+                def relative_luminance(color: QColor) -> float:
+                    def channel_value(c: float) -> float:
                         c /= 255.0
                         if c <= 0.03928:
                             return c / 12.92
@@ -124,8 +132,12 @@ class TestAccessibilityOptimizedV2:
                 return (l1 + 0.05) / (l2 + 0.05)
 
             @staticmethod
-            def validate_tooltip(widget, min_length=20, max_length=200):
-                """Validate tooltip quality and content."""
+            def validate_tooltip(widget: Any, min_length: int = 20, max_length: int = 200) -> tuple[bool, str]:
+                """Validate tooltip quality and content.
+
+                Returns:
+                    tuple[bool, str]: Validation result and message.
+                """
                 tooltip = widget.toolTip()
 
                 if not tooltip:
@@ -147,8 +159,13 @@ class TestAccessibilityOptimizedV2:
 
                 return True, "Valid"
 
-            def check_label_association(self, input_widget, label_text):
-                """Check if input widget is properly associated with its label."""
+            @staticmethod
+            def check_label_association(input_widget: Any, label_text: str) -> tuple[bool, str]:  # noqa: ARG004
+                """Check if input widget is properly associated with its label.
+
+                Returns:
+                    tuple[bool, str]: (is_associated, label_text).
+                """
                 accessible_name = input_widget.accessibleName()
                 if not accessible_name:
                     # Look for a label with this widget as buddy
@@ -165,8 +182,13 @@ class TestAccessibilityOptimizedV2:
         class HighContrastThemeManager:
             """Manager for high contrast themes and accessibility colors."""
 
-            def create_high_contrast_palette(self):
-                """Create high contrast palette for accessibility testing."""
+            @staticmethod
+            def create_high_contrast_palette() -> QPalette:
+                """Create high contrast palette for accessibility testing.
+
+                Returns:
+                    QPalette: High contrast palette for accessibility.
+                """
                 palette = QPalette()
 
                 # High contrast colors
@@ -197,8 +219,13 @@ class TestAccessibilityOptimizedV2:
 
                 return palette
 
-            def create_dark_theme_palette(self):
-                """Create dark theme palette for testing."""
+            @staticmethod
+            def create_dark_theme_palette() -> QPalette:
+                """Create dark theme palette for testing.
+
+                Returns:
+                    QPalette: Dark theme palette for testing.
+                """
                 palette = QPalette()
 
                 # Dark theme colors
@@ -220,8 +247,13 @@ class TestAccessibilityOptimizedV2:
         class FocusTestingManager:
             """Manager for keyboard focus and navigation testing."""
 
-            def check_focus_indicator(self, widget, tester):
-                """Check focus indicator visibility and contrast."""
+            @staticmethod
+            def check_focus_indicator(widget: Any, tester: Any) -> tuple[bool, str]:
+                """Check focus indicator visibility and contrast.
+
+                Returns:
+                    tuple[bool, str]: (is_valid, message).
+                """
                 # Check if widget can accept focus
                 if widget.focusPolicy() == Qt.FocusPolicy.NoFocus:
                     return False, f"Widget {widget.__class__.__name__} cannot accept focus"
@@ -248,8 +280,13 @@ class TestAccessibilityOptimizedV2:
 
                 return True, "Focus indicator adequate"
 
-            def validate_tab_order(self, widgets):
-                """Validate logical tab order for widgets."""
+            @staticmethod
+            def validate_tab_order(widgets: list[Any]) -> list[Any]:
+                """Validate logical tab order for widgets.
+
+                Returns:
+                    list[Any]: Focusable widgets in order.
+                """
                 return [
                     widget
                     for widget in widgets
@@ -263,8 +300,10 @@ class TestAccessibilityOptimizedV2:
         }
 
     @staticmethod
-    def test_screen_reader_compatibility_comprehensive(
-        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
+    def test_screen_reader_compatibility_comprehensive(  # noqa: C901, PLR0912
+        qtbot: Any,  # noqa: ARG004
+        main_window: Any,
+        accessibility_testing_suite: dict[str, Any],
     ) -> None:
         """Test comprehensive screen reader compatibility of UI elements."""
         window = main_window
@@ -405,7 +444,9 @@ class TestAccessibilityOptimizedV2:
 
     @staticmethod
     def test_keyboard_navigation_comprehensive(
-        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
+        qtbot: Any,  # noqa: ARG004
+        main_window: Any,
+        accessibility_testing_suite: dict[str, Any],
     ) -> None:
         """Test comprehensive keyboard navigation through UI elements."""
         window = main_window
@@ -495,7 +536,9 @@ class TestAccessibilityOptimizedV2:
 
     @staticmethod
     def test_high_contrast_and_theme_support_comprehensive(
-        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
+        qtbot: Any,  # noqa: ARG004
+        main_window: Any,
+        accessibility_testing_suite: dict[str, Any],
     ) -> None:
         """Test comprehensive high contrast theme support and color accessibility."""
         window = main_window
@@ -668,23 +711,26 @@ class TestAccessibilityOptimizedV2:
             widget = scenario["widget"]
 
             # Test idle state tooltip
-            window._set_processing_state(False)
+            window._set_processing_state(processing=False)  # noqa: SLF001
             widget.setToolTip(scenario["idle_tooltip"])
             valid, _ = tester.validate_tooltip(widget)
             assert valid, f"Idle tooltip invalid for {widget.__class__.__name__}"
 
             # Test processing state tooltip
-            window._set_processing_state(True)
+            window._set_processing_state(processing=True)  # noqa: SLF001
             widget.setToolTip(scenario["processing_tooltip"])
             valid, _ = tester.validate_tooltip(widget)
             assert valid, f"Processing tooltip invalid for {widget.__class__.__name__}"
 
             # Reset state
-            window._set_processing_state(False)
+            window._set_processing_state(processing=False)  # noqa: SLF001
 
     @staticmethod
-    def test_error_message_clarity_comprehensive(
-        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any], mocker: Any
+    def test_error_message_clarity_comprehensive(  # noqa: C901
+        qtbot: Any,
+        main_window: Any,
+        accessibility_testing_suite: dict[str, Any],
+        mocker: Any,  # noqa: ARG004
     ) -> None:
         """Test comprehensive error message clarity and actionability."""
         window = main_window
@@ -695,7 +741,7 @@ class TestAccessibilityOptimizedV2:
         mocker.patch.object(QMessageBox, "information")
 
         # Enhanced error message validator
-        def validate_error_message(title, message):
+        def validate_error_message(title: str, message: str) -> list[str]:
             # Technical jargon to avoid
             jargon_terms = [
                 "exception",
@@ -736,7 +782,7 @@ class TestAccessibilityOptimizedV2:
         # Test comprehensive error scenarios
         error_scenarios = [
             {
-                "trigger": lambda: window._on_processing_error("FileNotFoundError: Input directory not found"),
+                "trigger": lambda: window._on_processing_error("FileNotFoundError: Input directory not found"),  # noqa: SLF001
                 "expected_title": "Processing Error",
                 "expected_message": (
                     "An error occurred during processing:\n\n"
@@ -745,7 +791,7 @@ class TestAccessibilityOptimizedV2:
                 ),
             },
             {
-                "trigger": lambda: window._on_processing_error("MemoryError: Insufficient memory for processing"),
+                "trigger": lambda: window._on_processing_error("MemoryError: Insufficient memory for processing"),  # noqa: SLF001
                 "expected_title": "Memory Error",
                 "expected_message": (
                     "Insufficient memory to complete the operation.\n\n"
@@ -756,7 +802,7 @@ class TestAccessibilityOptimizedV2:
                 ),
             },
             {
-                "trigger": lambda: window._on_processing_error("PermissionError: Cannot write to output directory"),
+                "trigger": lambda: window._on_processing_error("PermissionError: Cannot write to output directory"),  # noqa: SLF001
                 "expected_title": "Permission Error",
                 "expected_message": (
                     "Permission denied when trying to save the output file.\n\n"
@@ -771,7 +817,7 @@ class TestAccessibilityOptimizedV2:
         # Test each error scenario
         for scenario in error_scenarios:
             # Mock the error display
-            def show_error(parent, title, message) -> None:
+            def show_error(parent: Any, title: str, message: str) -> None:  # noqa: ARG001
                 # Validate the error message
                 issues = validate_error_message(title, message)
                 assert len(issues) == 0, f"Error message issues for '{title}': {issues}"
@@ -808,7 +854,7 @@ class TestAccessibilityOptimizedV2:
 
         for scenario in warning_scenarios:
 
-            def show_warning(parent, title, message) -> None:
+            def show_warning(parent: Any, title: str, message: str) -> None:  # noqa: ARG001
                 issues = validate_error_message(title, message)
                 assert len(issues) == 0, f"Warning message issues: {issues}"
 
@@ -819,7 +865,9 @@ class TestAccessibilityOptimizedV2:
 
     @staticmethod
     def test_focus_indicators_comprehensive(
-        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
+        qtbot: Any,  # noqa: ARG004
+        main_window: Any,
+        accessibility_testing_suite: dict[str, Any],
     ) -> None:
         """Test comprehensive focus indicators and visibility."""
         window = main_window
@@ -899,8 +947,10 @@ class TestAccessibilityOptimizedV2:
             assert current_focus is not None, "Focus transition failed"
 
     @staticmethod
-    def test_tab_order_and_aria_labels_comprehensive(
-        qtbot: Any, main_window: Any, accessibility_testing_suite: dict[str, Any]
+    def test_tab_order_and_aria_labels_comprehensive(  # noqa: C901
+        qtbot: Any,  # noqa: ARG004
+        main_window: Any,
+        accessibility_testing_suite: dict[str, Any],
     ) -> None:
         """Test comprehensive tab order logic and ARIA-like labels."""
         window = main_window
@@ -1005,7 +1055,8 @@ class TestAccessibilityOptimizedV2:
                 group.setAccessibleDescription(scenario["description"])
 
                 desc = group.accessibleDescription()
-                assert desc and len(desc) > 20, f"Group {scenario['group_attr']} missing adequate description"
+                assert desc is not None
+                assert len(desc) > 20, f"Group {scenario['group_attr']} missing adequate description"
 
         # Test state descriptions for dynamic elements
         dynamic_scenarios = [
@@ -1020,19 +1071,21 @@ class TestAccessibilityOptimizedV2:
             widget = scenario["widget"]
 
             # Test idle state
-            window._set_processing_state(False)
+            window._set_processing_state(processing=False)  # noqa: SLF001
             widget.setAccessibleDescription(scenario["idle_description"])
             desc = widget.accessibleDescription()
-            assert desc and len(desc) > 20, f"Idle state description inadequate for {widget.__class__.__name__}"
+            assert desc is not None
+            assert len(desc) > 20, f"Idle state description inadequate for {widget.__class__.__name__}"
 
             # Test processing state
-            window._set_processing_state(True)
+            window._set_processing_state(processing=True)  # noqa: SLF001
             widget.setAccessibleDescription(scenario["processing_description"])
             desc = widget.accessibleDescription()
-            assert desc and len(desc) > 20, f"Processing state description inadequate for {widget.__class__.__name__}"
+            assert desc is not None
+            assert len(desc) > 20, f"Processing state description inadequate for {widget.__class__.__name__}"
 
             # Reset state
-            window._set_processing_state(False)
+            window._set_processing_state(processing=False)  # noqa: SLF001
 
         # Verify comprehensive tab order is logical
         assert len(all_valid_widgets) >= 8, (

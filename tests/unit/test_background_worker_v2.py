@@ -63,7 +63,7 @@ def dummy_functions() -> dict[str, Any]:
     def simple_add(x: int, y: int) -> int:  # noqa: FURB118
         return x + y
 
-    def task_with_progress(x: int, y: int, progress_callback: Any = None, cancel_check: Any = None) -> int | None:  # noqa: ANN401
+    def task_with_progress(x: int, y: int, progress_callback: Any = None, cancel_check: Any = None) -> int | None:
         # Report progress
         if progress_callback:
             progress_callback(TaskProgress(current=1, total=2))
@@ -131,7 +131,7 @@ class TestTask:
         assert not task._cancel_requested  # noqa: SLF001
 
     @patch("time.sleep", return_value=None)  # Mock time.sleep to speed up tests
-    def test_task_successful_execution(self, mock_sleep: Any, dummy_functions: dict[str, Any]) -> None:  # noqa: PLR6301, ARG002, ANN401
+    def test_task_successful_execution(self, mock_sleep: Any, dummy_functions: dict[str, Any]) -> None:  # noqa: PLR6301, ARG002
         """Test successful task execution."""
         task: Task = Task("test_task", dummy_functions["task_with_progress"], 5, 3)
 
@@ -178,7 +178,7 @@ class TestTaskStatus:
             TaskStatus.CANCELLED,
         ],
     )
-    def test_task_status_values(self, status: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_task_status_values(self, status: Any) -> None:  # noqa: PLR6301
         """Test TaskStatus enum values exist."""
         assert status is not None
 
@@ -191,9 +191,9 @@ class TestBackgroundProcessManager:
     @patch("time.sleep", return_value=None)  # Mock time.sleep for faster tests
     def test_background_worker_task_execution(  # noqa: PLR6301
         self,
-        mock_sleep: Any,  # noqa: ARG002, ANN401
-        mock_executor_class: Any,  # noqa: ANN401
-        mock_monitor_class: Any,  # noqa: ARG002, ANN401
+        mock_sleep: Any,  # noqa: ARG002
+        mock_executor_class: Any,
+        mock_monitor_class: Any,  # noqa: ARG002
     ) -> None:
         """Test background worker task execution with mocked components."""
         # Setup mock executor
@@ -221,7 +221,7 @@ class TestBackgroundProcessManager:
         assert mock_executor.shutdown.called
 
     @patch("goesvfi.integrity_check.background_worker.UIFreezeMonitor")
-    def test_worker_initialization(self, mock_monitor_class: Any) -> None:  # noqa: PLR6301, ANN401
+    def test_worker_initialization(self, mock_monitor_class: Any) -> None:  # noqa: PLR6301
         """Test worker initialization with mocked UI freeze monitor."""
         worker = BackgroundProcessManager()
         assert worker is not None
@@ -234,7 +234,7 @@ class TestBackgroundProcessManager:
 
     @patch("goesvfi.integrity_check.background_worker.UIFreezeMonitor")
     @patch("goesvfi.integrity_check.background_worker.ThreadPoolExecutor")
-    def test_multiple_task_submission(self, mock_executor_class: Any, mock_monitor_class: Any) -> None:  # noqa: PLR6301, ARG002, ANN401
+    def test_multiple_task_submission(self, mock_executor_class: Any, mock_monitor_class: Any) -> None:  # noqa: PLR6301, ARG002
         """Test submitting multiple tasks."""
         mock_executor = Mock()
         mock_executor_class.return_value = mock_executor

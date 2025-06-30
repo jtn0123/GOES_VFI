@@ -85,7 +85,7 @@ class TestModelManagerOptimizedV2:
                 return [Path(child) for child in children]
             return []
 
-        def mock_open(path: Path, mode: str = "r", *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401, ARG001
+        def mock_open(path: Path, mode: str = "r", *args: Any, **kwargs: Any) -> Any:
             """Mock Path.open().
 
             Returns:
