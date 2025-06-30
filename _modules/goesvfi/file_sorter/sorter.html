@@ -1,0 +1,546 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goesvfi.file_sorter.sorter &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">goesvfi.file_sorter.sorter</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for goesvfi.file_sorter.sorter</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">auto</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="c1"># Date/time validation constants</span>
+<span class="n">MIN_MONTH</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">MAX_MONTH</span> <span class="o">=</span> <span class="mi">12</span>
+<span class="n">MIN_DAY</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">MAX_DAY</span> <span class="o">=</span> <span class="mi">31</span>
+<span class="n">MIN_HOUR</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">MAX_HOUR</span> <span class="o">=</span> <span class="mi">23</span>
+<span class="n">MIN_MINUTE</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">MAX_MINUTE</span> <span class="o">=</span> <span class="mi">59</span>
+<span class="n">MIN_SECOND</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">MAX_SECOND</span> <span class="o">=</span> <span class="mi">59</span>
+
+<span class="c1"># Default buffer size (1 MB)</span>
+<span class="n">DEFAULT_BUFFER_SIZE</span> <span class="o">=</span> <span class="mi">1048576</span>
+
+<span class="c1"># Minimum length for datetime string (YYYYMMDDHHMMSS)</span>
+<span class="n">MIN_DATETIME_STRING_LENGTH</span> <span class="o">=</span> <span class="mi">14</span>
+
+
+<div class="viewcode-block" id="DuplicateMode">
+<a class="viewcode-back" href="../../../api/file_sorter_sorter.html#goesvfi.file_sorter.sorter.DuplicateMode">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DuplicateMode</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">OVERWRITE</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+    <span class="n">SKIP</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span>
+    <span class="n">RENAME</span> <span class="o">=</span> <span class="n">auto</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="FileSorter">
+<a class="viewcode-back" href="../../../api/file_sorter_sorter.html#goesvfi.file_sorter.sorter.FileSorter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FileSorter</span><span class="p">:</span>
+<div class="viewcode-block" id="FileSorter.__init__">
+<a class="viewcode-back" href="../../../api/file_sorter_sorter.html#goesvfi.file_sorter.sorter.FileSorter.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">duplicate_mode</span><span class="p">:</span> <span class="n">DuplicateMode</span> <span class="o">=</span> <span class="n">DuplicateMode</span><span class="o">.</span><span class="n">OVERWRITE</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files_copied</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files_skipped</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_bytes_copied</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dry_run</span> <span class="o">=</span> <span class="n">dry_run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duplicate_mode</span> <span class="o">=</span> <span class="n">duplicate_mode</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_progress_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_should_cancel</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="FileSorter.copy_file_with_buffer">
+<a class="viewcode-back" href="../../../api/file_sorter_sorter.html#goesvfi.file_sorter.sorter.FileSorter.copy_file_with_buffer">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy_file_with_buffer</span><span class="p">(</span>
+        <span class="n">source_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">dest_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">source_mtime_utc</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">buffer_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_BUFFER_SIZE</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copies a file in chunks (buffered) and preserves its last modified time (UTC).</span>
+<span class="sd">        :param source_path: The full path to the source file.</span>
+<span class="sd">        :param dest_path: The full path to the destination file.</span>
+<span class="sd">        :param source_mtime_utc: The source file&#39;s mtime in epoch seconds (UTC).</span>
+<span class="sd">        :param buffer_size: The size of the read/write buffer in bytes (default is 1 MB).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">source_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">sf</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">dest_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">df</span><span class="p">:</span>
+                <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="n">buffer</span> <span class="o">=</span> <span class="n">sf</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">buffer_size</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">buffer</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="n">df</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">raise</span>
+
+        <span class="c1"># Preserve the source file&#39;s modification time (in UTC).</span>
+        <span class="c1"># os.utime expects (atime, mtime) in *epoch seconds*.</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">utime</span><span class="p">(</span><span class="n">dest_path</span><span class="p">,</span> <span class="p">(</span><span class="n">source_mtime_utc</span><span class="p">,</span> <span class="n">source_mtime_utc</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="FileSorter.sort_files">
+<a class="viewcode-back" href="../../../api/file_sorter_sorter.html#goesvfi.file_sorter.sorter.FileSorter.sort_files">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sort_files</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">destination</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">progress_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">should_cancel</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sorts files from a source directory into a destination directory based on date/time.</span>
+
+<span class="sd">        :param source: The source directory to read files from.</span>
+<span class="sd">        :param destination: The destination directory to copy sorted files to.</span>
+<span class="sd">        :param progress_callback: A function to call with current and total file counts for progress updates.</span>
+<span class="sd">        :param should_cancel: A function that returns True if cancellation is requested.</span>
+<span class="sd">        :return: A dictionary containing sorting statistics.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Initialize the sorting process</span>
+        <span class="n">source_dir</span><span class="p">,</span> <span class="n">destination_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_directories</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">destination</span><span class="p">)</span>
+        <span class="n">script_start_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reset_counters_and_callbacks</span><span class="p">(</span><span class="n">progress_callback</span><span class="p">,</span> <span class="n">should_cancel</span><span class="p">)</span>
+
+        <span class="c1"># Build file processing list</span>
+        <span class="n">files_to_process</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_file_processing_list</span><span class="p">(</span><span class="n">source_dir</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files_to_process</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">files_to_process</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;cancelled&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">files_to_process</span>
+
+        <span class="c1"># Process all files</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_all_files</span><span class="p">(</span><span class="n">files_to_process</span><span class="p">,</span> <span class="n">destination_dir</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;cancelled&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="c1"># Generate final statistics</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_final_statistics</span><span class="p">(</span><span class="n">script_start_time</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">files_to_process</span><span class="p">))</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialize_directories</span><span class="p">(</span><span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize and validate source and destination directories.&quot;&quot;&quot;</span>
+        <span class="n">source_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="n">destination_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">destination</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">source_dir</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Source directory not found: </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">destination_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">destination_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">destination_dir</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Destination is not a directory: </span><span class="si">{</span><span class="n">destination</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">NotADirectoryError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">source_dir</span><span class="p">,</span> <span class="n">destination_dir</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reset_counters_and_callbacks</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">progress_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">should_cancel</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset counters and store callbacks.&quot;&quot;&quot;</span>
+        <span class="n">script_start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+
+        <span class="c1"># Reset counters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files_copied</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files_skipped</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_bytes_copied</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c1"># Store callbacks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_progress_callback</span> <span class="o">=</span> <span class="n">progress_callback</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_should_cancel</span> <span class="o">=</span> <span class="n">should_cancel</span>
+
+        <span class="k">return</span> <span class="n">script_start_time</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_date_folders</span><span class="p">(</span><span class="n">source_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all date/time folders from source directory.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">date_folders</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">source_dir</span><span class="o">.</span><span class="n">iterdir</span><span class="p">()</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">is_dir</span><span class="p">()]</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">raise</span>
+
+        <span class="k">return</span> <span class="n">date_folders</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_valid_date_folder</span><span class="p">(</span><span class="n">folder_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate if folder name contains valid date and time components.&quot;&quot;&quot;</span>
+        <span class="n">folder_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">_\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">$&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">folder_pattern</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">folder_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Extract date and time components</span>
+            <span class="n">date_part</span><span class="p">,</span> <span class="n">time_part</span> <span class="o">=</span> <span class="n">folder_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span>
+            <span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">date_part</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))</span>
+            <span class="n">hour</span><span class="p">,</span> <span class="n">minute</span><span class="p">,</span> <span class="n">second</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">time_part</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))</span>
+
+            <span class="c1"># Validate components</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="n">MIN_MONTH</span> <span class="o">&lt;=</span> <span class="n">month</span> <span class="o">&lt;=</span> <span class="n">MAX_MONTH</span>
+                <span class="ow">and</span> <span class="n">MIN_DAY</span> <span class="o">&lt;=</span> <span class="n">day</span> <span class="o">&lt;=</span> <span class="n">MAX_DAY</span>
+                <span class="ow">and</span> <span class="n">MIN_HOUR</span> <span class="o">&lt;=</span> <span class="n">hour</span> <span class="o">&lt;=</span> <span class="n">MAX_HOUR</span>
+                <span class="ow">and</span> <span class="n">MIN_MINUTE</span> <span class="o">&lt;=</span> <span class="n">minute</span> <span class="o">&lt;=</span> <span class="n">MAX_MINUTE</span>
+                <span class="ow">and</span> <span class="n">MIN_SECOND</span> <span class="o">&lt;=</span> <span class="n">second</span> <span class="o">&lt;=</span> <span class="n">MAX_SECOND</span>
+            <span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="c1"># Additional validation using datetime</span>
+            <span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="n">hour</span><span class="p">,</span> <span class="n">minute</span><span class="p">,</span> <span class="n">second</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_folder_datetime</span><span class="p">(</span><span class="n">folder_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract datetime string from folder name.&quot;&quot;&quot;</span>
+        <span class="c1"># Remove &#39;-&#39; and &#39;_&#39; from folder name: e.g., 2023-05-01_07-32-20 -&gt; 20230501T073220</span>
+        <span class="n">folder_datetime_raw</span> <span class="o">=</span> <span class="n">folder_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">folder_datetime_raw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">MIN_DATETIME_STRING_LENGTH</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Insert &#39;T&#39; between the date part (8 digits) and time part (6 digits)</span>
+        <span class="k">return</span> <span class="n">folder_datetime_raw</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;T&quot;</span> <span class="o">+</span> <span class="n">folder_datetime_raw</span><span class="p">[</span><span class="mi">8</span><span class="p">:]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_png_files_from_folder</span><span class="p">(</span><span class="n">folder</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Path</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all PNG files from a folder.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">folder</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.png&quot;</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_cancellation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if cancellation has been requested.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_should_cancel</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_cancel</span><span class="p">())</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">total</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update progress if callback is available.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_progress_callback</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_progress_callback</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">total</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_file_processing_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a list of files to process with their datetime information.&quot;&quot;&quot;</span>
+        <span class="n">date_folders</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_date_folders</span><span class="p">(</span><span class="n">source_dir</span><span class="p">)</span>
+        <span class="n">files_to_process</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">folder_counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total_folders</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">date_folders</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">date_folders</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_cancellation</span><span class="p">():</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;cancelled&quot;</span><span class="p">}</span>
+
+            <span class="n">folder_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_progress</span><span class="p">(</span><span class="n">folder_counter</span><span class="p">,</span> <span class="n">total_folders</span><span class="p">)</span>
+
+            <span class="c1"># Skip null or invalid folders</span>
+            <span class="k">if</span> <span class="n">folder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_valid_date_folder</span><span class="p">(</span><span class="n">folder</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="n">folder_datetime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_folder_datetime</span><span class="p">(</span><span class="n">folder</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">folder_datetime</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="c1"># Add all PNG files from this folder</span>
+            <span class="n">png_files</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_png_files_from_folder</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>
+            <span class="n">files_to_process</span><span class="o">.</span><span class="n">extend</span><span class="p">((</span><span class="n">file_path</span><span class="p">,</span> <span class="n">folder_datetime</span><span class="p">)</span> <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">png_files</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">files_to_process</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_base_name</span><span class="p">(</span><span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract base name from file name, removing datetime suffix if present.&quot;&quot;&quot;</span>
+        <span class="c1"># If it matches &quot;_YYYYMMDDThhmmssZ.png&quot; (20 chars from end), strip that part:</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;_\d</span><span class="si">{8}</span><span class="s2">T\d</span><span class="si">{6}</span><span class="s2">Z\.png$&quot;</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">file_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">20</span><span class="p">]</span>  <span class="c1"># remove the date/time portion + extension</span>
+        <span class="k">if</span> <span class="n">file_name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.png&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">file_name</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">file_name</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_target_folder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">destination_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">base_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create target folder for the base name if it doesn&#39;t exist.&quot;&quot;&quot;</span>
+        <span class="n">target_folder</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="n">destination_dir</span> <span class="o">/</span> <span class="n">base_name</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">target_folder</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">target_folder</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="k">raise</span>
+        <span class="k">return</span> <span class="n">target_folder</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_new_file_name</span><span class="p">(</span><span class="n">file_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">base_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">folder_datetime</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate new file name with datetime suffix if not already present.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;_\d</span><span class="si">{8}</span><span class="s2">T\d</span><span class="si">{6}</span><span class="s2">Z\.png$&quot;</span><span class="p">,</span> <span class="n">file_name</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">base_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">folder_datetime</span><span class="si">}</span><span class="s2">Z.png&quot;</span>
+        <span class="c1"># Already has date/time suffix, keep it</span>
+        <span class="k">return</span> <span class="n">file_name</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_files_identical</span><span class="p">(</span><span class="n">source_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">dest_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">time_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if source and destination files are identical.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dest_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">source_size</span> <span class="o">=</span> <span class="n">source_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="n">source_mtime</span> <span class="o">=</span> <span class="n">source_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span>
+        <span class="n">dest_size</span> <span class="o">=</span> <span class="n">dest_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="n">dest_mtime</span> <span class="o">=</span> <span class="n">dest_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span>
+
+        <span class="k">if</span> <span class="n">source_size</span> <span class="o">!=</span> <span class="n">dest_size</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="n">time_diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">source_mtime</span> <span class="o">-</span> <span class="n">dest_mtime</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">time_diff</span> <span class="o">&lt;=</span> <span class="n">time_tolerance</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_duplicate_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">new_file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">target_folder</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle duplicate files based on duplicate mode.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">duplicate_mode</span> <span class="o">==</span> <span class="n">DuplicateMode</span><span class="o">.</span><span class="n">SKIP</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files_skipped</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">new_file_path</span><span class="p">,</span> <span class="s2">&quot;SKIPPED (Duplicate)&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">duplicate_mode</span> <span class="o">==</span> <span class="n">DuplicateMode</span><span class="o">.</span><span class="n">RENAME</span><span class="p">:</span>
+            <span class="c1"># Generate a new unique name</span>
+            <span class="n">rename_counter</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">original_stem</span> <span class="o">=</span> <span class="n">new_file_path</span><span class="o">.</span><span class="n">stem</span>
+            <span class="n">original_suffix</span> <span class="o">=</span> <span class="n">new_file_path</span><span class="o">.</span><span class="n">suffix</span>
+            <span class="k">while</span> <span class="n">new_file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">new_file_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">original_stem</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">rename_counter</span><span class="si">}{</span><span class="n">original_suffix</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">new_file_path</span> <span class="o">=</span> <span class="n">target_folder</span> <span class="o">/</span> <span class="n">new_file_name</span>
+                <span class="n">rename_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">new_file_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;RENAMED to </span><span class="si">{</span><span class="n">new_file_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">new_file_path</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;OVERWRITING </span><span class="si">{</span><span class="n">new_file_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_copy_file_if_needed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">dest_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">action_msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy file if not in dry run mode.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;DRY RUN: Would copy to </span><span class="si">{</span><span class="n">dest_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">source_size</span> <span class="o">=</span> <span class="n">source_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="n">source_mtime</span> <span class="o">=</span> <span class="n">source_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_mtime</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">copy_file_with_buffer</span><span class="p">(</span><span class="n">source_path</span><span class="p">,</span> <span class="n">dest_path</span><span class="p">,</span> <span class="n">source_mtime</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">files_copied</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">total_bytes_copied</span> <span class="o">+=</span> <span class="n">source_size</span>
+        <span class="k">return</span> <span class="n">action_msg</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">&quot;COPIED to </span><span class="si">{</span><span class="n">dest_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_single_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">folder_datetime</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">destination_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process a single file for sorting.&quot;&quot;&quot;</span>
+        <span class="n">file_name</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="c1"># Extract base name and create target folder</span>
+        <span class="n">base_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_base_name</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+        <span class="n">target_folder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_target_folder</span><span class="p">(</span><span class="n">destination_dir</span><span class="p">,</span> <span class="n">base_name</span><span class="p">)</span>
+
+        <span class="c1"># Generate new file name and path</span>
+        <span class="n">new_file_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_new_file_name</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span> <span class="n">base_name</span><span class="p">,</span> <span class="n">folder_datetime</span><span class="p">)</span>
+        <span class="n">new_file_path</span> <span class="o">=</span> <span class="n">target_folder</span> <span class="o">/</span> <span class="n">new_file_name</span>
+
+        <span class="c1"># Check if files are identical</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_files_identical</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">new_file_path</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">files_skipped</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Handle file processing based on existence and duplicate mode</span>
+        <span class="n">action_msg</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">new_file_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">new_file_path</span><span class="p">,</span> <span class="n">action_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handle_duplicate_file</span><span class="p">(</span><span class="n">new_file_path</span><span class="p">,</span> <span class="n">target_folder</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;SKIPPED&quot;</span> <span class="ow">in</span> <span class="n">action_msg</span><span class="p">:</span>
+                <span class="k">return</span>  <span class="c1"># Skip to next file</span>
+
+        <span class="c1"># Copy the file</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_copy_file_if_needed</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">new_file_path</span><span class="p">,</span> <span class="n">action_msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_all_files</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">files_to_process</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Path</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">destination_dir</span><span class="p">:</span> <span class="n">Path</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process all files in the processing list.&quot;&quot;&quot;</span>
+        <span class="n">counter</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total_files</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">files_to_process</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">folder_datetime</span> <span class="ow">in</span> <span class="n">files_to_process</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_cancellation</span><span class="p">():</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;cancelled&quot;</span><span class="p">}</span>
+
+            <span class="n">counter</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_progress</span><span class="p">(</span><span class="n">counter</span><span class="p">,</span> <span class="n">total_files</span><span class="p">)</span>
+
+            <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_process_single_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">,</span> <span class="n">folder_datetime</span><span class="p">,</span> <span class="n">destination_dir</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_final_statistics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">script_start_time</span><span class="p">:</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">total_files</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate and print final sorting statistics.&quot;&quot;&quot;</span>
+        <span class="n">script_end_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">total_duration</span> <span class="o">=</span> <span class="n">script_end_time</span> <span class="o">-</span> <span class="n">script_start_time</span>
+
+        <span class="nb">round</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">total_bytes_copied</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span>
+
+        <span class="nb">round</span><span class="p">(</span><span class="n">total_duration</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="n">total_files</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span> <span class="k">if</span> <span class="n">total_files</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;files_copied&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">files_copied</span><span class="p">,</span>
+            <span class="s2">&quot;files_skipped&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">files_skipped</span><span class="p">,</span>
+            <span class="s2">&quot;total_bytes&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">total_bytes_copied</span><span class="p">,</span>
+            <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">script_start_time</span><span class="p">),</span>
+        <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../../api/file_sorter_sorter.html#goesvfi.file_sorter.sorter.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># The GUI is not included in this integration, so we only keep the CLI logic.</span>
+    <span class="c1"># The original code had an if/else for GUI vs CLI, we remove the GUI part.</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Sorts image files into folders based on date/time.&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;root_dir&quot;</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">&quot;?&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Root directory to process. Defaults to the current directory.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--dry-run&quot;</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">&quot;store_true&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Perform a dry run without actually copying or modifying files.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--duplicate-mode&quot;</span><span class="p">,</span>
+        <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;overwrite&quot;</span><span class="p">,</span> <span class="s2">&quot;skip&quot;</span><span class="p">,</span> <span class="s2">&quot;rename&quot;</span><span class="p">],</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;overwrite&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;Action to take when a duplicate file is found. Options: overwrite, skip, rename. Defaults to overwrite.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="n">duplicate_mode</span> <span class="o">=</span> <span class="n">DuplicateMode</span><span class="p">[</span><span class="n">args</span><span class="o">.</span><span class="n">duplicate_mode</span><span class="o">.</span><span class="n">upper</span><span class="p">()]</span>
+
+    <span class="n">sorter</span> <span class="o">=</span> <span class="n">FileSorter</span><span class="p">(</span><span class="n">dry_run</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">dry_run</span><span class="p">,</span> <span class="n">duplicate_mode</span><span class="o">=</span><span class="n">duplicate_mode</span><span class="p">)</span>
+    <span class="c1"># In CLI mode, we still use root_dir for simplicity, not source/destination</span>
+    <span class="c1"># The GUI will use source/destination with the ViewModel</span>
+    <span class="n">sorter</span><span class="o">.</span><span class="n">sort_files</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">root_dir</span> <span class="ow">or</span> <span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="n">destination</span><span class="o">=</span><span class="s2">&quot;./converted&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

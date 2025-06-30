@@ -1,0 +1,196 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goesvfi.gui_enhancements_integration &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">goesvfi.gui_enhancements_integration</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for goesvfi.gui_enhancements_integration</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Integration module for UI/UX enhancements into the main GUI.</span>
+
+<span class="sd">This module provides functions to enhance existing GUI components</span>
+<span class="sd">with tooltips, help buttons, progress tracking, and other improvements.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">PyQt6.QtWidgets</span><span class="w"> </span><span class="kn">import</span> <span class="n">QMainWindow</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="UIEnhancer">
+<a class="viewcode-back" href="../../api/gui_enhancements_integration.html#goesvfi.gui_enhancements_integration.UIEnhancer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UIEnhancer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper class to enhance existing UI components.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="UIEnhancer.__init__">
+<a class="viewcode-back" href="../../api/gui_enhancements_integration.html#goesvfi.gui_enhancements_integration.UIEnhancer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">main_window</span><span class="p">:</span> <span class="n">QMainWindow</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the UI enhancer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            main_window: The main window to enhance</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">main_window</span> <span class="o">=</span> <span class="n">main_window</span></div>
+
+
+<div class="viewcode-block" id="UIEnhancer.enhance_main_window">
+<a class="viewcode-back" href="../../api/gui_enhancements_integration.html#goesvfi.gui_enhancements_integration.UIEnhancer.enhance_main_window">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enhance_main_window</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Enhance the main window with UI improvements.&quot;&quot;&quot;</span>
+        <span class="c1"># Setup keyboard shortcuts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_shortcuts</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_shortcuts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Setup keyboard shortcuts for the application.&quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Implementation for shortcuts</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Setting up keyboard shortcuts&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UIEnhancer.start_operation">
+<a class="viewcode-back" href="../../api/gui_enhancements_integration.html#goesvfi.gui_enhancements_integration.UIEnhancer.start_operation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_operation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start tracking an operation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            operation_name: Name of the operation to track</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Starting operation: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">)</span></div>
+
+        <span class="c1"># TODO: Implementation for operation tracking</span>
+
+<div class="viewcode-block" id="UIEnhancer.stop_operation">
+<a class="viewcode-back" href="../../api/gui_enhancements_integration.html#goesvfi.gui_enhancements_integration.UIEnhancer.stop_operation">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop_operation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop tracking an operation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            operation_name: Name of the operation to stop tracking</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Stopping operation: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">)</span></div>
+</div>
+
+        <span class="c1"># TODO: Implementation for operation tracking</span>
+
+
+<div class="viewcode-block" id="enhance_existing_gui">
+<a class="viewcode-back" href="../../api/gui_enhancements_integration.html#goesvfi.gui_enhancements_integration.enhance_existing_gui">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">enhance_existing_gui</span><span class="p">(</span><span class="n">main_window</span><span class="p">:</span> <span class="n">QMainWindow</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UIEnhancer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enhance an existing GUI with improvements.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        main_window: The main window to enhance</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        UIEnhancer instance for the main window</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">enhancer</span> <span class="o">=</span> <span class="n">UIEnhancer</span><span class="p">(</span><span class="n">main_window</span><span class="p">)</span>
+    <span class="n">enhancer</span><span class="o">.</span><span class="n">enhance_main_window</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">enhancer</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

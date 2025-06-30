@@ -1,0 +1,596 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goesvfi.utils.date_utils &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">goesvfi.utils.date_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for goesvfi.utils.date_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Date utilities for GOES VFI.</span>
+
+<span class="sd">This module provides date conversion utilities for working with satellite imagery,</span>
+<span class="sd">particularly for converting between calendar dates and day of year (DOY) formats.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+
+<span class="c1"># Set up module logger</span>
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="date_to_doy">
+<a class="viewcode-back" href="../../../api/utils_date_utils.html#goesvfi.utils.date_utils.date_to_doy">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">date_to_doy</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a date to day of year.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        date: The date to convert.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int: The day of year (1-366).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">date</span><span class="o">.</span><span class="n">timetuple</span><span class="p">()</span><span class="o">.</span><span class="n">tm_yday</span></div>
+
+
+
+<div class="viewcode-block" id="doy_to_date">
+<a class="viewcode-back" href="../../../api/utils_date_utils.html#goesvfi.utils.date_utils.doy_to_date">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">doy_to_date</span><span class="p">(</span><span class="n">year</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">doy</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a year and day of year to a date.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        year: The year.</span>
+<span class="sd">        doy: The day of year (1-366).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        datetime.date: The corresponding date.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the day of year is invalid for the given year.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">doy</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">doy</span> <span class="o">&gt;</span> <span class="mi">366</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Day of year must be between 1 and 366, got </span><span class="si">{</span><span class="n">doy</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="c1"># Check if it&#39;s a leap year and doy is 366</span>
+    <span class="n">is_leap_year</span> <span class="o">=</span> <span class="p">(</span><span class="n">year</span> <span class="o">%</span> <span class="mi">4</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">year</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">year</span> <span class="o">%</span> <span class="mi">400</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">doy</span> <span class="o">==</span> <span class="mi">366</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_leap_year</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Day of year 366 is invalid for non-leap year </span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="c1"># Create the date</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">doy</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">date</span><span class="p">()</span></div>
+
+
+
+<span class="c1"># Helper functions for date parsing</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_try_create_date_from_year_month_day</span><span class="p">(</span><span class="n">year</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">month</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">day</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to create a date from year, month, and day components.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        year: Year value</span>
+<span class="sd">        month: Month value</span>
+<span class="sd">        day: Day value</span>
+<span class="sd">        pattern_name: Name of the pattern (for logging)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        datetime.date if valid, None otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found date </span><span class="si">%s</span><span class="s2"> using </span><span class="si">%s</span><span class="s2"> pattern&quot;</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">date</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+            <span class="s2">&quot;Invalid date from </span><span class="si">%s</span><span class="s2"> pattern: </span><span class="si">%s</span><span class="s2">-</span><span class="si">%s</span><span class="s2">-</span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
+            <span class="n">pattern_name</span><span class="p">,</span>
+            <span class="n">year</span><span class="p">,</span>
+            <span class="n">month</span><span class="p">,</span>
+            <span class="n">day</span><span class="p">,</span>
+            <span class="n">e</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_try_create_date_from_year_doy</span><span class="p">(</span><span class="n">year</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">doy</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to create a date from year and day-of-year components.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        year: Year value</span>
+<span class="sd">        doy: Day of year value</span>
+<span class="sd">        pattern_name: Name of the pattern (for logging)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        datetime.date if valid, None otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">doy_to_date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">doy</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found date </span><span class="si">%s</span><span class="s2"> using </span><span class="si">%s</span><span class="s2"> pattern&quot;</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">date</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Invalid date from </span><span class="si">%s</span><span class="s2"> pattern: </span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2"> (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">doy</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_try_satellite_filename_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to parse a date using the satellite filename pattern.</span>
+<span class="sd">    Example: goes18_20231027_120000_band13.png.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path_str: Path string to parse</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        datetime.date if pattern matches and date is valid, None otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sat_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;goes\d+_(\d</span><span class="si">{4}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)_\d</span><span class="si">{6}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sat_pattern</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sat_pattern</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">month</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sat_pattern</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sat_pattern</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">_try_create_date_from_year_month_day</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="s2">&quot;satellite filename&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_try_year_doy_slash_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to parse a date using the YYYY/DDD pattern.</span>
+<span class="sd">    Example: 2023/123.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path_str: Path string to parse</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        datetime.date if pattern matches and date is valid, None otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">doy_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\d</span><span class="si">{4}</span><span class="s2">)[/</span><span class="se">\\</span><span class="s2">](\d</span><span class="si">{3}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">doy_match</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">doy_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">doy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">doy_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">_try_create_date_from_year_doy</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">doy</span><span class="p">,</span> <span class="s2">&quot;YYYY/DDD&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_try_hyphenated_date_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to parse a date using the YYYY-MM-DD pattern.</span>
+<span class="sd">    Example: 2023-10-27.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path_str: Path string to parse</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        datetime.date if pattern matches and date is valid, None otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">date_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\d</span><span class="si">{4}</span><span class="s2">)-(\d</span><span class="si">{2}</span><span class="s2">)-(\d</span><span class="si">{2}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">date_match</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">date_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">month</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">date_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">date_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">_try_create_date_from_year_month_day</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">,</span> <span class="s2">&quot;YYYY-MM-DD&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="extract_date_from_path">
+<a class="viewcode-back" href="../../../api/utils_date_utils.html#goesvfi.utils.date_utils.extract_date_from_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">extract_date_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract a date from a file or directory path using various patterns.</span>
+
+<span class="sd">    This function tries multiple patterns to extract a date from a path:</span>
+<span class="sd">    1. YYYY-MM-DD (hyphenated date)</span>
+<span class="sd">    2. YYYY/DDD (year and day of year with slash)</span>
+<span class="sd">    3. Satellite filename pattern (e.g., goes18_YYYYMMDD_HHMMSS)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: File or directory path (string or Path object)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        datetime.date object if a valid date is found, None otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Convert to string if Path object</span>
+    <span class="n">path_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="c1"># Try each pattern in order</span>
+    <span class="n">patterns</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_try_hyphenated_date_pattern</span><span class="p">,</span>
+        <span class="n">_try_year_doy_slash_pattern</span><span class="p">,</span>
+        <span class="n">_try_satellite_filename_pattern</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">pattern_func</span> <span class="ow">in</span> <span class="n">patterns</span><span class="p">:</span>
+        <span class="n">date</span> <span class="o">=</span> <span class="n">pattern_func</span><span class="p">(</span><span class="n">path_str</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">date</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">date</span>
+
+    <span class="c1"># No valid date found</span>
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;No valid date found in path: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="format_satellite_path">
+<a class="viewcode-back" href="../../../api/utils_date_utils.html#goesvfi.utils.date_utils.format_satellite_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_satellite_path</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">,</span> <span class="n">format_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;calendar&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Format a date for satellite data paths.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        date: The date to format</span>
+<span class="sd">        format_type: Type of format - &quot;calendar&quot;, &quot;doy&quot;, or &quot;compact_doy&quot;</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Formatted date string</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If format_type is invalid</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">format_type</span> <span class="o">==</span> <span class="s2">&quot;calendar&quot;</span><span class="p">:</span>
+        <span class="c1"># YYYY-MM-DD format</span>
+        <span class="k">return</span> <span class="n">date</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">format_type</span> <span class="o">==</span> <span class="s2">&quot;doy&quot;</span><span class="p">:</span>
+        <span class="c1"># YYYY/DDD format</span>
+        <span class="n">doy</span> <span class="o">=</span> <span class="n">date_to_doy</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">date</span><span class="o">.</span><span class="n">year</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">doy</span><span class="si">:</span><span class="s2">03d</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="n">format_type</span> <span class="o">==</span> <span class="s2">&quot;compact_doy&quot;</span><span class="p">:</span>
+        <span class="c1"># YYYYDDD format (no separator)</span>
+        <span class="n">doy</span> <span class="o">=</span> <span class="n">date_to_doy</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">date</span><span class="o">.</span><span class="n">year</span><span class="si">}{</span><span class="n">doy</span><span class="si">:</span><span class="s2">03d</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Invalid format_type: </span><span class="si">{</span><span class="n">format_type</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_all_date_formats">
+<a class="viewcode-back" href="../../../api/utils_date_utils.html#goesvfi.utils.date_utils.get_all_date_formats">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_all_date_formats</span><span class="p">(</span><span class="n">date</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all common date formats for a given date.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        date: The date to format</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple of (calendar_format, doy_format, compact_doy_format)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">calendar_format</span> <span class="o">=</span> <span class="n">format_satellite_path</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="s2">&quot;calendar&quot;</span><span class="p">)</span>
+    <span class="n">doy_format</span> <span class="o">=</span> <span class="n">format_satellite_path</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="s2">&quot;doy&quot;</span><span class="p">)</span>
+    <span class="n">compact_doy_format</span> <span class="o">=</span> <span class="n">format_satellite_path</span><span class="p">(</span><span class="n">date</span><span class="p">,</span> <span class="s2">&quot;compact_doy&quot;</span><span class="p">)</span>
+
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">&quot;Generated all formats: calendar=</span><span class="si">%s</span><span class="s2">, doy=</span><span class="si">%s</span><span class="s2">, compact_doy=</span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">calendar_format</span><span class="p">,</span>
+        <span class="n">doy_format</span><span class="p">,</span>
+        <span class="n">compact_doy_format</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">calendar_format</span><span class="p">,</span> <span class="n">doy_format</span><span class="p">,</span> <span class="n">compact_doy_format</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="parse_timestamp">
+<a class="viewcode-back" href="../../../api/utils_date_utils.html#goesvfi.utils.date_utils.parse_timestamp">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_timestamp</span><span class="p">(</span><span class="n">timestamp_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a timestamp string in various formats.</span>
+
+<span class="sd">    Supported formats:</span>
+<span class="sd">    - ISO format: YYYY-MM-DDTHH:MM:SS</span>
+<span class="sd">    - Compact format: YYYYMMDDTHHMMSS</span>
+<span class="sd">    - Space-separated: YYYY-MM-DD HH:MM:SS</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        timestamp_str: Timestamp string to parse</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Parsed datetime object</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the timestamp cannot be parsed</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Try different formats</span>
+    <span class="n">formats</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S&quot;</span><span class="p">,</span>  <span class="c1"># ISO format</span>
+        <span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">T%H%M%S&quot;</span><span class="p">,</span>  <span class="c1"># Compact format</span>
+        <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>  <span class="c1"># Space-separated</span>
+        <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">_%H-%M-%S&quot;</span><span class="p">,</span>  <span class="c1"># Underscore-separated</span>
+    <span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">fmt</span> <span class="ow">in</span> <span class="n">formats</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">timestamp_str</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+    <span class="c1"># If none worked, raise an error</span>
+    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Could not parse timestamp: </span><span class="si">{</span><span class="n">timestamp_str</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="format_timestamp">
+<a class="viewcode-back" href="../../../api/utils_date_utils.html#goesvfi.utils.date_utils.format_timestamp">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_timestamp</span><span class="p">(</span><span class="n">dt</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">,</span> <span class="n">compact</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Format a datetime as a timestamp string.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dt: Datetime to format</span>
+<span class="sd">        compact: If True, use compact format (no separators)</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Formatted timestamp string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">compact</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">T%H%M%S&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">dt</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_satellite_path_components">
+<a class="viewcode-back" href="../../../api/utils_date_utils.html#goesvfi.utils.date_utils.get_satellite_path_components">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_satellite_path_components</span><span class="p">(</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract year, day of year, and hour from a satellite data path.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Path to analyze</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple of (year, day_of_year, hour) if found, None otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="c1"># Try YYYY/DDD/HH pattern</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\d</span><span class="si">{4}</span><span class="s2">)[/</span><span class="se">\\</span><span class="s2">](\d</span><span class="si">{3}</span><span class="s2">)[/</span><span class="se">\\</span><span class="s2">](\d</span><span class="si">{2}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">doy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">hour</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">doy</span><span class="p">,</span> <span class="n">hour</span><span class="p">)</span>
+
+    <span class="c1"># Try satellite filename pattern</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;goes\d+_(\d</span><span class="si">{4}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)_(\d</span><span class="si">{2}</span><span class="s2">)\d</span><span class="si">{4}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+        <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">month</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+        <span class="n">hour</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">4</span><span class="p">))</span>
+
+        <span class="c1"># Convert to day of year</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+            <span class="n">doy</span> <span class="o">=</span> <span class="n">date_to_doy</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">doy</span><span class="p">,</span> <span class="n">hour</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="parse_satellite_path">
+<a class="viewcode-back" href="../../../api/utils_date_utils.html#goesvfi.utils.date_utils.parse_satellite_path">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_satellite_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a satellite data path to extract a date.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        path: Path to parse</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Parsed date if successful, None otherwise</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">path_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="c1"># Try satellite filename pattern with full timestamp</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;goes\d+_(\d</span><span class="si">{4}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)_(\d</span><span class="si">{2}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">month</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+            <span class="c1"># Ignore hour, minute, second for date parsing</span>
+            <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Try various date patterns using existing helper functions</span>
+    <span class="c1"># Order is important: more specific patterns first</span>
+
+    <span class="c1"># Try YYYY-MM-DD pattern</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_try_calendar_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;(\d</span><span class="si">{4}</span><span class="s2">)-(\d</span><span class="si">{2}</span><span class="s2">)-(\d</span><span class="si">{2}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;YYYY-MM-DD&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="c1"># Try YYYY_MM_DD pattern</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_try_calendar_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;(\d</span><span class="si">{4}</span><span class="s2">)_(\d</span><span class="si">{2}</span><span class="s2">)_(\d</span><span class="si">{2}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;YYYY_MM_DD&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="c1"># Try YYYY/DDD pattern (with slash separator)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_try_doy_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;(\d</span><span class="si">{4}</span><span class="s2">)/(\d</span><span class="si">{3}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;YYYY/DDD&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="c1"># Try ISO timestamp pattern (ignore time part)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_try_timestamp_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;(\d</span><span class="si">{4}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)T\d</span><span class="si">{6}</span><span class="s2">Z?&quot;</span><span class="p">,</span> <span class="s2">&quot;ISO&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="c1"># Try YYYYMMDD pattern (8 digits for calendar date)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_try_calendar_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;(\d</span><span class="si">{4}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)(\d</span><span class="si">{2}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;YYYYMMDD&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="c1"># Try YYYYDDD pattern (7 digits for day-of-year) - LAST because it can match YYYYMMDD incorrectly</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_try_doy_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">,</span> <span class="sa">r</span><span class="s2">&quot;(\d</span><span class="si">{4}</span><span class="s2">)(\d</span><span class="si">{3}</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="s2">&quot;YYYYDDD&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_try_doy_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to parse using day-of-year pattern.&quot;&quot;&quot;</span>
+    <span class="c1"># For YYYYDDD pattern, check if this string was already rejected as invalid YYYYMMDD</span>
+    <span class="k">if</span> <span class="n">pattern_name</span> <span class="o">==</span> <span class="s2">&quot;YYYYDDD&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">_try_calendar_pattern</span><span class="p">,</span> <span class="s2">&quot;_failed_yyyymmdd&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">path_str</span> <span class="ow">in</span> <span class="n">_try_calendar_pattern</span><span class="o">.</span><span class="n">_failed_yyyymmdd</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Skipping </span><span class="si">%s</span><span class="s2"> as YYYYDDD because it failed as YYYYMMDD&quot;</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">doy</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">doy_to_date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">doy</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found date </span><span class="si">%s</span><span class="s2"> using </span><span class="si">%s</span><span class="s2"> pattern&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Invalid date from </span><span class="si">%s</span><span class="s2"> pattern: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_try_calendar_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to parse using calendar date pattern.&quot;&quot;&quot;</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">month</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found date </span><span class="si">%s</span><span class="s2"> using </span><span class="si">%s</span><span class="s2"> pattern&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Invalid date from </span><span class="si">%s</span><span class="s2"> pattern: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+            <span class="c1"># For YYYYMMDD pattern specifically, mark as invalid to prevent fallback to YYYYDDD</span>
+            <span class="k">if</span> <span class="n">pattern_name</span> <span class="o">==</span> <span class="s2">&quot;YYYYMMDD&quot;</span><span class="p">:</span>
+                <span class="c1"># Store the failed pattern to prevent YYYYDDD from trying it</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">_try_calendar_pattern</span><span class="p">,</span> <span class="s2">&quot;_failed_yyyymmdd&quot;</span><span class="p">):</span>
+                    <span class="n">_try_calendar_pattern</span><span class="o">.</span><span class="n">_failed_yyyymmdd</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># type: ignore</span>
+                <span class="n">_try_calendar_pattern</span><span class="o">.</span><span class="n">_failed_yyyymmdd</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">path_str</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_try_timestamp_pattern</span><span class="p">(</span><span class="n">path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Try to parse using timestamp pattern (extract date part only).&quot;&quot;&quot;</span>
+    <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">path_str</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">month</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+            <span class="n">day</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="n">year</span><span class="p">,</span> <span class="n">month</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Found date </span><span class="si">%s</span><span class="s2"> using </span><span class="si">%s</span><span class="s2"> pattern&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Invalid date from </span><span class="si">%s</span><span class="s2"> pattern: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">pattern_name</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

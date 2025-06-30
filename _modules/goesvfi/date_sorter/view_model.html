@@ -1,0 +1,460 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goesvfi.date_sorter.view_model &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">goesvfi.date_sorter.view_model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for goesvfi.date_sorter.view_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;ViewModel for the Date Sorter tab in the GOES VFI application.</span>
+
+<span class="sd">This module defines the DateSorterViewModel class, which manages the state and</span>
+<span class="sd">presentation logic for the Date Sorter feature. It interacts with the DateSorter</span>
+<span class="sd">model and exposes data and commands to the GUI view layer.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.sorter</span><span class="w"> </span><span class="kn">import</span> <span class="n">DateSorter</span>  <span class="c1"># Import the DateSorter model</span>
+
+<span class="c1"># Placeholder for potential observer pattern or state management</span>
+<span class="c1"># from goesvfi.utils.observer import Observable</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="DateSorterViewModel">
+<a class="viewcode-back" href="../../../api/date_sorter_view_model.html#goesvfi.date_sorter.view_model.DateSorterViewModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DateSorterViewModel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ViewModel for the Date Sorter GUI tab.</span>
+
+<span class="sd">    This class manages the state and presentation logic for the Date Sorter feature,</span>
+<span class="sd">    acting as an intermediary between the DateSorter model and the GUI view.</span>
+<span class="sd">    It exposes properties representing the current state and provides command methods</span>
+<span class="sd">    for user actions such as selecting directories and starting/canceling the sorting process.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DateSorterViewModel.__init__">
+<a class="viewcode-back" href="../../../api/date_sorter_view_model.html#goesvfi.date_sorter.view_model.DateSorterViewModel.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sorter_model</span><span class="p">:</span> <span class="n">DateSorter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the DateSorterViewModel with default state.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">                    sorter_model (DateSorter): The DateSorter model instance to use for file operations.</span>
+
+<span class="sd">        Attributes:</span>
+<span class="sd">                    _source_directory (Optional[str]): The currently selected source directory for sorting.</span>
+<span class="sd">            _destination_directory (Optional[str]): The currently selected destination directory for sorted files.</span>
+<span class="sd">        _is_sorting (bool): Whether a sorting operation is currently in progress.</span>
+<span class="sd">        _progress_percentage (float): The current progress of the sorting operation (0-100).</span>
+<span class="sd">        _status_message (str): A message describing the current status for display in the UI.</span>
+<span class="sd">        _date_format_pattern (str): The date format pattern used for sorting files.</span>
+<span class="sd">        _cancel_requested (bool): Internal flag indicating if a cancel operation has been requested.</span>
+<span class="sd">            _observer (Optional[Callable[[], None]]): Optional callback for observer notification.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sorter_model</span> <span class="o">=</span> <span class="n">sorter_model</span>  <span class="c1"># Store the DateSorter model instance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_source_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_destination_directory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_sorting</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_progress_percentage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status_message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Ready&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_date_format_pattern</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;%Y/%m/</span><span class="si">%d</span><span class="s2">&quot;</span>  <span class="c1"># Example default</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cancel_requested</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Flag for cancellation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_sort_thread</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Thread for sorting operation</span>
+
+        <span class="c1"># Placeholder for observer notification mechanism</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_observer</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+        <span class="c1"># Properties that might be observable in a full MVVM implementation</span>
+        <span class="c1"># self.source_directory = Observable(None)</span>
+        <span class="c1"># self.destination_directory = Observable(None)</span>
+        <span class="c1"># self.is_sorting = Observable(False)</span>
+        <span class="c1"># self.progress_percentage = Observable(0.0)</span>
+        <span class="c1"># self.status_message = Observable(&quot;Ready&quot;)</span>
+        <span class="c1"># self.date_format_pattern = Observable(&quot;%Y/%m/%d&quot;)</span>
+
+<div class="viewcode-block" id="DateSorterViewModel.set_observer">
+<a class="viewcode-back" href="../../../api/date_sorter_view_model.html#goesvfi.date_sorter.view_model.DateSorterViewModel.set_observer">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_observer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">observer</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the observer callback to notify the View of state changes.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_observer</span> <span class="o">=</span> <span class="n">observer</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_notify_observer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Notifies the registered observer of state changes.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_observer</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_observer</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The currently selected source directory for sorting.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optional[str]: The path to the source directory, or None if not set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_source_directory</span>
+
+    <span class="nd">@source_directory</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the source directory for sorting.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (Optional[str]): The path to the source directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_source_directory</span> <span class="o">=</span> <span class="n">value</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="c1"># Notify observers if using Observable</span>
+        <span class="c1"># self.source_directory.set(value)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">destination_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The currently selected destination directory for sorted files.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optional[str]: The path to the destination directory, or None if not set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_destination_directory</span>
+
+    <span class="nd">@destination_directory</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">destination_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the destination directory for sorted files.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (Optional[str]): The path to the destination directory.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_destination_directory</span> <span class="o">=</span> <span class="n">value</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="c1"># Notify observers if using Observable</span>
+        <span class="c1"># self.destination_directory.set(value)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_sorting</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether a sorting operation is currently in progress.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if sorting is in progress, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_sorting</span>
+
+    <span class="nd">@is_sorting</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_sorting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the sorting state.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (bool): True if sorting is in progress, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_sorting</span> <span class="o">=</span> <span class="n">value</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="c1"># Notify observers if using Observable</span>
+        <span class="c1"># self.is_sorting.set(value)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">progress_percentage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The current progress of the sorting operation as a percentage.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float: Progress percentage (0-100).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_progress_percentage</span>
+
+    <span class="nd">@progress_percentage</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">progress_percentage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the progress percentage of the sorting operation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (float): Progress percentage (0-100).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_progress_percentage</span> <span class="o">=</span> <span class="n">value</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="c1"># Notify observers if using Observable</span>
+        <span class="c1"># self.progress_percentage.set(value)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The current status message for display in the UI.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Status message describing the current state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status_message</span>
+
+    <span class="nd">@status_message</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the status message for display in the UI.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (str): The status message.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_status_message</span> <span class="o">=</span> <span class="n">value</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="c1"># Notify observers if using Observable</span>
+        <span class="c1"># self.status_message.set(value)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">date_format_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The date format pattern used for sorting files.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The date format pattern (e.g., &quot;%Y/%m/%d&quot;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_date_format_pattern</span>
+
+    <span class="nd">@date_format_pattern</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">date_format_pattern</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the date format pattern for sorting files.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (str): The date format pattern (e.g., &quot;%Y/%m/%d&quot;).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_date_format_pattern</span> <span class="o">=</span> <span class="n">value</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="c1"># Notify observers if using Observable</span>
+        <span class="c1"># self.date_format_pattern.set(value)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">can_start_sorting</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the sorting process can be started.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if both source and destination directories are set and valid,</span>
+<span class="sd">            and no sorting is currently in progress; False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">destination_directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_sorting</span>
+
+<div class="viewcode-block" id="DateSorterViewModel.select_source_directory">
+<a class="viewcode-back" href="../../../api/date_sorter_view_model.html#goesvfi.date_sorter.view_model.DateSorterViewModel.select_source_directory">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">select_source_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Command to select the source directory.</span>
+
+<span class="sd">        This method should be triggered by the UI when the user wants to choose</span>
+<span class="sd">        a source directory for sorting. The actual implementation should open a</span>
+<span class="sd">        directory selection dialog and update `source_directory` accordingly.</span>
+
+<span class="sd">        Side Effects:</span>
+
+
+<span class="sd">            Updates `source_directory`.</span>
+<span class="sd">            Notifies observers if implemented.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            This is a placeholder implementation for testing purposes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This method will typically trigger a file dialog in the View</span>
+        <span class="c1"># and the View will update the source_directory property.</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Action: Select Source Directory (Placeholder)&quot;</span><span class="p">)</span></div>
+
+        <span class="c1"># Example: self.source_directory = &quot;/path/to/selected/source&quot;</span>
+        <span class="c1"># self._notify_observer()</span>
+
+<div class="viewcode-block" id="DateSorterViewModel.select_destination_directory">
+<a class="viewcode-back" href="../../../api/date_sorter_view_model.html#goesvfi.date_sorter.view_model.DateSorterViewModel.select_destination_directory">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">select_destination_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Command to select the destination directory.</span>
+
+<span class="sd">        This method should be triggered by the UI when the user wants to choose</span>
+<span class="sd">        a destination directory for sorted files. The actual implementation should</span>
+<span class="sd">        open a directory selection dialog and update `destination_directory` accordingly.</span>
+
+<span class="sd">        Side Effects:</span>
+
+
+<span class="sd">            Updates `destination_directory`.</span>
+<span class="sd">            Notifies observers if implemented.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            This is a placeholder implementation for testing purposes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># This method will typically trigger a file dialog in the View</span>
+        <span class="c1"># and the View will update the destination_directory property.</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Action: Select Destination Directory (Placeholder)&quot;</span><span class="p">)</span></div>
+
+        <span class="c1"># Example: self.destination_directory = &quot;/path/to/selected/destination&quot;</span>
+        <span class="c1"># self._notify_observer()</span>
+
+<div class="viewcode-block" id="DateSorterViewModel.start_sorting">
+<a class="viewcode-back" href="../../../api/date_sorter_view_model.html#goesvfi.date_sorter.view_model.DateSorterViewModel.start_sorting">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_sorting</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Command to start the sorting process.</span>
+
+<span class="sd">        Initiates the file sorting operation in a separate thread if the</span>
+<span class="sd">        preconditions are met (valid source/destination directories and not already sorting).</span>
+
+<span class="sd">        Side Effects:</span>
+
+
+<span class="sd">            Updates `is_sorting`, `status_message`, `progress_percentage`, and `_cancel_requested`.</span>
+<span class="sd">            Starts a new thread for the sorting operation.</span>
+<span class="sd">            Notifies observers if implemented.</span>
+
+<span class="sd">        If preconditions are not met, this method does nothing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_start_sorting</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancel_requested</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Reset cancellation flag  # pylint: disable=attribute-defined-outside-init</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_sorting</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status_message</span> <span class="o">=</span> <span class="s2">&quot;Sorting...&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_percentage</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_notify_observer</span><span class="p">()</span>  <span class="c1"># Notify view of state change</span>
+
+            <span class="c1"># Run the sorting in a separate thread</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sort_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_sort_worker</span><span class="p">)</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sort_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sort_worker</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Worker function for the sorting thread.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Ensure source and destination directories are not None before calling sort_files</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">source_directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">destination_directory</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">sorter_model</span><span class="o">.</span><span class="n">sort_files</span><span class="p">(</span>
+                <span class="n">source</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source_directory</span><span class="p">,</span>
+                <span class="n">destination</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">destination_directory</span><span class="p">,</span>
+                <span class="n">date_format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">date_format_pattern</span><span class="p">,</span>
+                <span class="n">progress_callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_update_progress</span><span class="p">,</span>
+                <span class="n">should_cancel</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cancel_requested</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status_message</span> <span class="o">=</span> <span class="s2">&quot;Sorting complete!&quot;</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">,</span> <span class="ne">PermissionError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;An error occurred: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_sorting</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_percentage</span> <span class="o">=</span> <span class="mf">100.0</span>  <span class="c1"># Ensure progress is 100% on completion/error</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_notify_observer</span><span class="p">()</span>  <span class="c1"># Notify view of state change</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">total</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Callback function to update sorting progress.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">total</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_percentage</span> <span class="o">=</span> <span class="p">(</span><span class="n">current</span> <span class="o">/</span> <span class="n">total</span><span class="p">)</span> <span class="o">*</span> <span class="mf">100.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status_message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Sorting: </span><span class="si">{</span><span class="n">current</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2"> files processed&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">progress_percentage</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status_message</span> <span class="o">=</span> <span class="s2">&quot;Sorting: Initializing...&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_notify_observer</span><span class="p">()</span>  <span class="c1"># Notify view of progress update</span>
+
+<div class="viewcode-block" id="DateSorterViewModel.cancel_sorting">
+<a class="viewcode-back" href="../../../api/date_sorter_view_model.html#goesvfi.date_sorter.view_model.DateSorterViewModel.cancel_sorting">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cancel_sorting</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Command to cancel the ongoing sorting process.</span>
+
+<span class="sd">        If a sorting operation is in progress, sets the cancellation flag and updates</span>
+<span class="sd">        the status message. The sorting thread should periodically check this flag and</span>
+<span class="sd">        terminate if set.</span>
+
+<span class="sd">        Side Effects:</span>
+
+
+<span class="sd">            Updates `_cancel_requested` and `status_message`.</span>
+<span class="sd">            Notifies observers if implemented.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_sorting</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cancel_requested</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">status_message</span> <span class="o">=</span> <span class="s2">&quot;Cancellation requested...&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_notify_observer</span><span class="p">()</span>  <span class="c1"># Notify view of state change</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

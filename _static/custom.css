@@ -1,0 +1,246 @@
+/* Custom CSS for GOES_VFI documentation */
+
+/* Improve code block styling */
+.highlight {
+    border-radius: 6px;
+    border-left: 4px solid #2980B9;
+}
+
+.highlight pre {
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Better table styling */
+.wy-table-responsive table td,
+.wy-table-responsive table th {
+    white-space: normal;
+    padding: 8px 12px;
+}
+
+/* Improve note/warning admonitions */
+.admonition {
+    border-radius: 6px;
+    border-left: 4px solid #2980B9;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.admonition.note {
+    border-left-color: #3498DB;
+    background-color: #EBF5FF;
+}
+
+.admonition.warning {
+    border-left-color: #F39C12;
+    background-color: #FEF9E7;
+}
+
+.admonition.tip {
+    border-left-color: #27AE60;
+    background-color: #E8F8F5;
+}
+
+.admonition.important {
+    border-left-color: #E74C3C;
+    background-color: #FDEDEC;
+}
+
+/* Better section headers */
+h1, h2, h3, h4, h5, h6 {
+    color: #2C3E50;
+    font-weight: 600;
+}
+
+h1 {
+    border-bottom: 3px solid #2980B9;
+    padding-bottom: 8px;
+}
+
+h2 {
+    border-bottom: 2px solid #BDC3C7;
+    padding-bottom: 4px;
+}
+
+/* Code styling improvements */
+code, .literal {
+    background-color: #F8F9FA;
+    border: 1px solid #E9ECEF;
+    border-radius: 3px;
+    padding: 2px 4px;
+    font-size: 0.9em;
+}
+
+/* Improve navigation */
+.wy-nav-side {
+    background: #2C3E50;
+}
+
+.wy-nav-side a {
+    color: #ECF0F1;
+}
+
+.wy-nav-side a:hover {
+    background-color: #34495E;
+}
+
+/* Better search box */
+.wy-side-nav-search {
+    background-color: #2980B9;
+}
+
+.wy-side-nav-search input[type=text] {
+    border-radius: 4px;
+    border: 1px solid #34495E;
+}
+
+/* Improve content area */
+.wy-nav-content {
+    background: #FFFFFF;
+}
+
+.wy-nav-content-wrap {
+    background: #FFFFFF;
+}
+
+/* Better footer */
+.rst-footer-buttons {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #E1E4E5;
+}
+
+/* API documentation improvements */
+.py.class > dt,
+.py.function > dt,
+.py.method > dt {
+    background-color: #F8F9FA;
+    border: 1px solid #E9ECEF;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+
+.py.class .property,
+.py.function .property,
+.py.method .property {
+    color: #7F8C8D;
+    font-size: 0.9em;
+}
+
+/* Parameter lists */
+.field-list {
+    margin: 16px 0;
+}
+
+.field-list .field-name {
+    font-weight: 600;
+    color: #2C3E50;
+    min-width: 100px;
+}
+
+.field-list .field-body {
+    padding-left: 8px;
+}
+
+/* Example code blocks */
+.highlight-python .highlight {
+    background-color: #F8F9FA;
+}
+
+.highlight-bash .highlight {
+    background-color: #2C3E50;
+    color: #ECF0F1;
+}
+
+.highlight-bash .highlight pre {
+    color: #ECF0F1;
+}
+
+/* Responsive improvements */
+@media screen and (max-width: 768px) {
+    .wy-table-responsive table {
+        font-size: 14px;
+    }
+
+    .highlight pre {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+}
+
+/* Version badge */
+.version {
+    background-color: #27AE60;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8em;
+}
+
+/* GitHub links */
+.fa-github::before {
+    color: #2C3E50;
+}
+
+/* Glossary improvements */
+.glossary dt {
+    font-weight: 600;
+    color: #2980B9;
+    margin-top: 12px;
+}
+
+.glossary dd {
+    margin-left: 20px;
+    margin-bottom: 8px;
+}
+
+/* Table of contents improvements */
+.toctree-l1 > a {
+    font-weight: 600;
+}
+
+.toctree-l2 > a {
+    color: #7F8C8D;
+}
+
+/* Copy button improvements */
+.copybtn {
+    background-color: #2980B9;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 4px 8px;
+    font-size: 12px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.copybtn:hover {
+    opacity: 1;
+}
+
+/* Image improvements */
+.figure {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.figure .caption {
+    font-style: italic;
+    color: #7F8C8D;
+    margin-top: 8px;
+}
+
+/* Print styles */
+@media print {
+    .wy-nav-side,
+    .wy-nav-top,
+    .rst-footer-buttons {
+        display: none !important;
+    }
+
+    .wy-nav-content-wrap {
+        margin-left: 0 !important;
+    }
+}

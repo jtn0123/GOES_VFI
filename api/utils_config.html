@@ -1,0 +1,535 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Config &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Log" href="utils_log.html" />
+    <link rel="prev" title="Remote Store" href="integrity_check_remote_store.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gui.html">Gui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html">Pipeline API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utilities API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_main_tab.html">Main Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_ffmpeg_settings_tab.html">Ffmpeg Settings Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_resource_limits_tab.html">Resource Limits Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_model_library_tab.html">Model Library Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_operation_history_tab.html">Operation History Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_loader.html">Image Loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_cropper.html">Image Cropper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_sanchez_processor.html">Sanchez Processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_encode.html">Encode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_interpolate.html">Interpolate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html">Run Vfi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_ffmpeg_builder.html">Ffmpeg Builder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_view_model.html">View Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_goes_imagery.html">Goes Imagery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_time_index.html">Time Index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_cache_db.html">Cache Db</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_remote_store.html">Remote Store</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Config</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_config_path"><code class="docutils literal notranslate"><span class="pre">get_config_path()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.use_ffmpeg_interp"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.use_ffmpeg_interp</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.mi_mode"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.mi_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.mc_mode"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.mc_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.me_mode"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.me_mode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.vsbmc"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.vsbmc</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.scd"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.scd</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.me_algo"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.me_algo</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.search_param"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.search_param</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.scd_threshold"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.scd_threshold</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.mb_size"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.mb_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.apply_unsharp"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.apply_unsharp</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.unsharp_lx"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.unsharp_lx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.unsharp_ly"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.unsharp_ly</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.unsharp_la"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.unsharp_la</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.unsharp_cx"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.unsharp_cx</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.unsharp_cy"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.unsharp_cy</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.unsharp_ca"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.unsharp_ca</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.preset_text"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.preset_text</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.crf"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.crf</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.bitrate"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.bitrate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.bufsize"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.bufsize</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.pix_fmt"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.pix_fmt</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.filter_preset"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.filter_preset</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.__init__"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.clear"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.clear()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.copy"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.copy()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.fromkeys"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.fromkeys()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.get"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.get()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.items"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.items()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.keys"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.keys()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.pop"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.pop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.popitem"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.popitem()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.setdefault"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.setdefault()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.update"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.update()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile.values"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile.values()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_output_dir"><code class="docutils literal notranslate"><span class="pre">get_output_dir()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_cache_dir"><code class="docutils literal notranslate"><span class="pre">get_cache_dir()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_default_tile_size"><code class="docutils literal notranslate"><span class="pre">get_default_tile_size()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_sanchez_bin_dir"><code class="docutils literal notranslate"><span class="pre">get_sanchez_bin_dir()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_logging_level"><code class="docutils literal notranslate"><span class="pre">get_logging_level()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_supported_extensions"><code class="docutils literal notranslate"><span class="pre">get_supported_extensions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_project_root"><code class="docutils literal notranslate"><span class="pre">get_project_root()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.find_rife_executable"><code class="docutils literal notranslate"><span class="pre">find_rife_executable()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_available_rife_models"><code class="docutils literal notranslate"><span class="pre">get_available_rife_models()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_user_config_dir"><code class="docutils literal notranslate"><span class="pre">get_user_config_dir()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_theme_name"><code class="docutils literal notranslate"><span class="pre">get_theme_name()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_theme_custom_overrides"><code class="docutils literal notranslate"><span class="pre">get_theme_custom_overrides()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_theme_density_scale"><code class="docutils literal notranslate"><span class="pre">get_theme_density_scale()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.config.get_theme_fallback_enabled"><code class="docutils literal notranslate"><span class="pre">get_theme_fallback_enabled()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="utils_log.html">Log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html">Date Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_gui_helpers.html">Gui Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html">Memory Manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_security.html">Security</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#common-usage-patterns">Common Usage Patterns</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">API Reference</a></li>
+      <li class="breadcrumb-item active">Config</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/utils_config.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-goesvfi.utils.config">
+<span id="config"></span><h1>Config<a class="headerlink" href="#module-goesvfi.utils.config" title="Link to this heading"></a></h1>
+<p>goesvfi.utils.config – user paths and TOML config loader.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_config_path">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_config_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_config_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_config_path" title="Link to this definition"></a></dt>
+<dd><p>Return config file path honoring environment variables.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">FfmpegProfile</span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#FfmpegProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypedDict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.use_ffmpeg_interp">
+<span class="sig-name descname"><span class="pre">use_ffmpeg_interp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.use_ffmpeg_interp" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.mi_mode">
+<span class="sig-name descname"><span class="pre">mi_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.mi_mode" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.mc_mode">
+<span class="sig-name descname"><span class="pre">mc_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.mc_mode" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.me_mode">
+<span class="sig-name descname"><span class="pre">me_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.me_mode" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.vsbmc">
+<span class="sig-name descname"><span class="pre">vsbmc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.vsbmc" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.scd">
+<span class="sig-name descname"><span class="pre">scd</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.scd" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.me_algo">
+<span class="sig-name descname"><span class="pre">me_algo</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.me_algo" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.search_param">
+<span class="sig-name descname"><span class="pre">search_param</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.search_param" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.scd_threshold">
+<span class="sig-name descname"><span class="pre">scd_threshold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.scd_threshold" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.mb_size">
+<span class="sig-name descname"><span class="pre">mb_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.mb_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.apply_unsharp">
+<span class="sig-name descname"><span class="pre">apply_unsharp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.apply_unsharp" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_lx">
+<span class="sig-name descname"><span class="pre">unsharp_lx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_lx" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_ly">
+<span class="sig-name descname"><span class="pre">unsharp_ly</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_ly" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_la">
+<span class="sig-name descname"><span class="pre">unsharp_la</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_la" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_cx">
+<span class="sig-name descname"><span class="pre">unsharp_cx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_cx" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_cy">
+<span class="sig-name descname"><span class="pre">unsharp_cy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_cy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_ca">
+<span class="sig-name descname"><span class="pre">unsharp_ca</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_ca" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.preset_text">
+<span class="sig-name descname"><span class="pre">preset_text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.preset_text" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.crf">
+<span class="sig-name descname"><span class="pre">crf</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.crf" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.bitrate">
+<span class="sig-name descname"><span class="pre">bitrate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.bitrate" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.bufsize">
+<span class="sig-name descname"><span class="pre">bufsize</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.bufsize" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.pix_fmt">
+<span class="sig-name descname"><span class="pre">pix_fmt</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.pix_fmt" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.filter_preset">
+<span class="sig-name descname"><span class="pre">filter_preset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.filter_preset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.clear" title="Link to this definition"></a></dt>
+<dd><p>Remove all items from the dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.copy" title="Link to this definition"></a></dt>
+<dd><p>Return a shallow copy of the dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.fromkeys">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fromkeys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iterable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.fromkeys" title="Link to this definition"></a></dt>
+<dd><p>Create a new dictionary with keys from iterable and values set to value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.get" title="Link to this definition"></a></dt>
+<dd><p>Return the value for key if key is in the dictionary, else default.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.items">
+<span class="sig-name descname"><span class="pre">items</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.items" title="Link to this definition"></a></dt>
+<dd><p>Return a set-like object providing a view on the dict’s items.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.keys" title="Link to this definition"></a></dt>
+<dd><p>Return a set-like object providing a view on the dict’s keys.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.pop">
+<span class="sig-name descname"><span class="pre">pop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="optional">[</span>, <em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="optional">]</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">v,</span> <span class="pre">remove</span> <span class="pre">specified</span> <span class="pre">key</span> <span class="pre">and</span> <span class="pre">return</span> <span class="pre">the</span> <span class="pre">corresponding</span> <span class="pre">value.</span></span></span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.pop" title="Link to this definition"></a></dt>
+<dd><p>If the key is not found, return the default if given; otherwise,
+raise a KeyError.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.popitem">
+<span class="sig-name descname"><span class="pre">popitem</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.popitem" title="Link to this definition"></a></dt>
+<dd><p>Remove and return a (key, value) pair as a 2-tuple.</p>
+<p>Pairs are returned in LIFO (last-in, first-out) order.
+Raises KeyError if the dict is empty.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.setdefault">
+<span class="sig-name descname"><span class="pre">setdefault</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.setdefault" title="Link to this definition"></a></dt>
+<dd><p>Insert key with a value of default if key is not in the dictionary.</p>
+<p>Return the value for key if key is in the dictionary, else default.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="n"><span class="pre">E</span></span></em>, <span class="optional">]</span><em class="sig-param"><span class="n"><span class="pre">**F</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None.</span>&#160; <span class="pre">Update</span> <span class="pre">D</span> <span class="pre">from</span> <span class="pre">mapping/iterable</span> <span class="pre">E</span> <span class="pre">and</span> <span class="pre">F.</span></span></span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.update" title="Link to this definition"></a></dt>
+<dd><p>If E is present and has a .keys() method, then does:  for k in E.keys(): D[k] = E[k]
+If E is present and lacks a .keys() method, then does:  for k, v in E: D[k] = v
+In either case, this is followed by: for k in F:  D[k] = F[k]</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.values">
+<span class="sig-name descname"><span class="pre">values</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.values" title="Link to this definition"></a></dt>
+<dd><p>Return an object providing a view on the dict’s values.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_output_dir">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_output_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_output_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_output_dir" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_cache_dir">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_cache_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_cache_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_cache_dir" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_default_tile_size">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_default_tile_size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_default_tile_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_default_tile_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_sanchez_bin_dir">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_sanchez_bin_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_sanchez_bin_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_sanchez_bin_dir" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_logging_level">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_logging_level</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_logging_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_logging_level" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_supported_extensions">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_supported_extensions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_supported_extensions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_supported_extensions" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_project_root">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_project_root</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_project_root"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_project_root" title="Link to this definition"></a></dt>
+<dd><p>Returns the root directory of the project.
+Assumes this config.py file is located within a subdirectory of the project root
+(e.g., goesvfi/utils/).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.find_rife_executable">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">find_rife_executable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#find_rife_executable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.find_rife_executable" title="Link to this definition"></a></dt>
+<dd><p>Locate the RIFE CLI executable.
+Searches in order:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>System PATH for ‘rife-ncnn-vulkan’ (or .exe)</p></li>
+</ol>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p>Project ‘goesvfi/bin/’ directory for ‘rife-cli’ (or .exe)</p></li>
+<li><p>Project ‘goesvfi/models/&lt;model_key&gt;/’ directory for ‘rife-cli’ (or .exe).</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_available_rife_models">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_available_rife_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_available_rife_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_available_rife_models" title="Link to this definition"></a></dt>
+<dd><p>Scans the ‘goesvfi/models/’ directory for available RIFE models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A sorted list of model directory names found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_user_config_dir">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_user_config_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_user_config_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_user_config_dir" title="Link to this definition"></a></dt>
+<dd><p>Returns the directory for user-specific configuration files.</p>
+<p>Uses CONFIG_DIR from the module, which defaults to ~/.config/goesvfi</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path to the user’s configuration directory</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_theme_name">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_theme_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_theme_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_theme_name" title="Link to this definition"></a></dt>
+<dd><p>Get the current theme name from configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Theme name string (defaults to ‘dark_blue’)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_theme_custom_overrides">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_theme_custom_overrides</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_theme_custom_overrides"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_theme_custom_overrides" title="Link to this definition"></a></dt>
+<dd><p>Get whether custom theme overrides are enabled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if custom overrides should be applied</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_theme_density_scale">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_theme_density_scale</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_theme_density_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_theme_density_scale" title="Link to this definition"></a></dt>
+<dd><p>Get the theme density scale setting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Density scale string (defaults to ‘0’ for normal)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_theme_fallback_enabled">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_theme_fallback_enabled</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_theme_fallback_enabled"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_theme_fallback_enabled" title="Link to this definition"></a></dt>
+<dd><p>Get whether theme fallback is enabled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if fallback to basic theme should be enabled on errors</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="integrity_check_remote_store.html" class="btn btn-neutral float-left" title="Remote Store" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="utils_log.html" class="btn btn-neutral float-right" title="Log" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
