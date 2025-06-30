@@ -8,8 +8,10 @@ Optimizations applied:
 - Comprehensive workflow state management
 """
 
+from collections.abc import Callable
 from pathlib import Path
 import tempfile
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import QApplication
@@ -22,27 +24,44 @@ class TestPreviewCropWorkflowV2:
     """Optimized test for the complete preview and crop workflow."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for all tests."""
+    @staticmethod
+    def shared_app() -> QApplication:
+        """Create shared QApplication for all tests.
+
+        Returns:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture()
-    def temp_dir_factory(self):
-        """Factory for creating temporary directories."""
+    @staticmethod
+    def temp_dir_factory() -> Callable[[], Any]:
+        """Factory for creating temporary directories.
 
-        def create_temp_dir():
+        Returns:
+            Callable[[], Any]: Function to create temporary directories.
+        """
+
+        def create_temp_dir() -> Any:
             return tempfile.TemporaryDirectory()
 
         return create_temp_dir
 
     @pytest.fixture()
-    def test_image_factory(self):
-        """Factory for creating test images with different properties."""
+    @staticmethod
+    def test_image_factory() -> Callable[..., dict[str, Any]]:
+        """Factory for creating test images with different properties.
 
-        def create_test_image(filename, color=(255, 0, 0), size=(800, 600)):
+        Returns:
+            Callable[..., dict[str, Any]]: Function to create test image data.
+        """
+
+        def create_test_image(
+            filename: str, color: tuple[int, int, int] = (255, 0, 0), size: tuple[int, int] = (800, 600)
+        ) -> dict[str, Any]:
             return {
                 "filename": filename,
                 "path": Path(f"/mock/{filename}"),
@@ -54,8 +73,13 @@ class TestPreviewCropWorkflowV2:
         return create_test_image
 
     @pytest.fixture()
-    def mock_main_window(self, shared_app):
-        """Create mock MainWindow with workflow capabilities."""
+    @staticmethod
+    def mock_main_window(shared_app: QApplication) -> MagicMock:  # noqa: ARG004
+        """Create mock MainWindow with workflow capabilities.
+
+        Returns:
+            MagicMock: Mock main window instance.
+        """
         mock_window = MagicMock(spec=MainWindow)
         mock_window.debug_mode = True
 
@@ -94,8 +118,13 @@ class TestPreviewCropWorkflowV2:
             },
         ],
     )
+    @staticmethod
     def test_complete_preview_crop_workflow(
-        self, shared_app, mock_main_window, test_image_factory, temp_dir_factory, workflow_config
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+        temp_dir_factory: Callable[[], Any],
+        workflow_config: dict[str, Any],
     ) -> None:
         """Test complete preview and crop workflow with various configurations."""
         with temp_dir_factory() as temp_dir:
@@ -111,7 +140,7 @@ class TestPreviewCropWorkflowV2:
             mock_main_window.load_directory.return_value = True
 
             # Execute workflow steps
-            workflow_result = self._execute_complete_workflow(
+            workflow_result = TestPreviewCropWorkflowV2._execute_complete_workflow(
                 mock_main_window, test_images, workflow_config["crop_region"]
             )
 
@@ -121,8 +150,15 @@ class TestPreviewCropWorkflowV2:
             assert workflow_result["crop_applied"] is True
             assert workflow_result["success"] == workflow_config["expected_success"]
 
-    def _execute_complete_workflow(self, main_window, test_images, crop_region):
-        """Execute the complete preview and crop workflow."""
+    @staticmethod
+    def _execute_complete_workflow(
+        main_window: MagicMock, test_images: list[dict[str, Any]], crop_region: dict[str, Any]
+    ) -> dict[str, bool]:
+        """Execute the complete preview and crop workflow.
+
+        Returns:
+            dict[str, bool]: Workflow execution results.
+        """
         workflow_result = {
             "directory_loaded": False,
             "previews_updated": False,
@@ -157,12 +193,17 @@ class TestPreviewCropWorkflowV2:
             workflow_result["crop_applied"] = True
             workflow_result["success"] = True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             workflow_result["error"] = str(e)
 
         return workflow_result
 
-    def test_preview_update_workflow(self, shared_app, mock_main_window, test_image_factory) -> None:
+    @staticmethod
+    def test_preview_update_workflow(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+    ) -> None:
         """Test preview update workflow with image processing."""
         # Create test images
         test_images = [
@@ -183,15 +224,23 @@ class TestPreviewCropWorkflowV2:
             mock_pil_open.side_effect = mock_images
 
             # Execute preview update
-            update_result = self._execute_preview_update_workflow(main_window, test_images)
+            update_result = TestPreviewCropWorkflowV2._execute_preview_update_workflow(mock_main_window, test_images)
 
             # Verify update process
             assert update_result["images_loaded"] == len(test_images)
             assert update_result["previews_generated"] == len(test_images)
             assert update_result["success"] is True
 
-    def _execute_preview_update_workflow(self, main_window, test_images):
-        """Execute preview update workflow."""
+    @staticmethod
+    def _execute_preview_update_workflow(
+        main_window: MagicMock,  # noqa: ARG004
+        test_images: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Execute preview update workflow.
+
+        Returns:
+            dict[str, Any]: Update workflow results.
+        """
         update_result = {"images_loaded": 0, "previews_generated": 0, "success": False}
 
         try:
@@ -211,12 +260,17 @@ class TestPreviewCropWorkflowV2:
 
             update_result["success"] = True
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             update_result["error"] = str(e)
 
         return update_result
 
-    def test_crop_selection_workflow(self, shared_app, mock_main_window, test_image_factory) -> None:
+    @staticmethod
+    def test_crop_selection_workflow(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+    ) -> None:
         """Test crop selection workflow with user interaction simulation."""
         test_image = test_image_factory("crop_test.png", size=(1024, 768))
 
@@ -229,13 +283,24 @@ class TestPreviewCropWorkflowV2:
         ]
 
         for scenario in crop_scenarios:
-            crop_result = self._execute_crop_selection_workflow(main_window, test_image, scenario)
+            crop_result = TestPreviewCropWorkflowV2._execute_crop_selection_workflow(
+                mock_main_window, test_image, scenario
+            )
 
             assert crop_result["selection_made"] is True
             assert crop_result["valid"] == scenario["valid"]
 
-    def _execute_crop_selection_workflow(self, main_window, test_image, crop_scenario):
-        """Execute crop selection workflow."""
+    @staticmethod
+    def _execute_crop_selection_workflow(
+        main_window: MagicMock,  # noqa: ARG004
+        test_image: dict[str, Any],
+        crop_scenario: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Execute crop selection workflow.
+
+        Returns:
+            dict[str, Any]: Crop selection results.
+        """
         crop_result = {"selection_made": False, "valid": False, "crop_region": None}
 
         try:
@@ -266,12 +331,17 @@ class TestPreviewCropWorkflowV2:
 
             crop_result["valid"] = is_valid
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             crop_result["error"] = str(e)
 
         return crop_result
 
-    def test_workflow_error_handling(self, shared_app, mock_main_window, test_image_factory) -> None:
+    @staticmethod
+    def test_workflow_error_handling(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+    ) -> None:
         """Test workflow error handling and recovery."""
         test_image = test_image_factory("error_test.png")
 
@@ -279,13 +349,22 @@ class TestPreviewCropWorkflowV2:
         error_scenarios = ["image_load_failure", "preview_generation_failure", "crop_application_failure"]
 
         for scenario in error_scenarios:
-            error_result = self._test_workflow_error_scenario(main_window, test_image, scenario)
+            error_result = TestPreviewCropWorkflowV2._test_workflow_error_scenario(
+                mock_main_window, test_image, scenario
+            )
 
             assert error_result["error_handled"] is True
             assert error_result["recovery_attempted"] is True
 
-    def _test_workflow_error_scenario(self, main_window, test_image, scenario):
-        """Test specific workflow error scenarios."""
+    @staticmethod
+    def _test_workflow_error_scenario(
+        main_window: MagicMock, test_image: dict[str, Any], scenario: str
+    ) -> dict[str, Any]:
+        """Test specific workflow error scenarios.
+
+        Returns:
+            dict[str, Any]: Error handling results.
+        """
         error_result = {"error_handled": False, "recovery_attempted": False, "scenario": scenario}
 
         try:
@@ -293,7 +372,7 @@ class TestPreviewCropWorkflowV2:
                 with patch("PIL.Image.open", side_effect=OSError("Image load failed")):
                     # Attempt operation that should fail
                     try:
-                        self._execute_preview_update_workflow(main_window, [test_image])
+                        TestPreviewCropWorkflowV2._execute_preview_update_workflow(main_window, [test_image])
                     except OSError:
                         error_result["error_handled"] = True
                         error_result["recovery_attempted"] = True
@@ -316,14 +395,19 @@ class TestPreviewCropWorkflowV2:
                     error_result["error_handled"] = True
                     error_result["recovery_attempted"] = True
 
-        except Exception:
+        except Exception:  # noqa: BLE001
             # Unexpected error handling
             error_result["error_handled"] = True
             error_result["recovery_attempted"] = True
 
         return error_result
 
-    def test_workflow_performance_monitoring(self, shared_app, mock_main_window, test_image_factory) -> None:
+    @staticmethod
+    def test_workflow_performance_monitoring(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+    ) -> None:
         """Test workflow performance monitoring and optimization."""
         # Create test images for performance testing
         test_images = [test_image_factory(f"perf_{i:03d}.png", size=(800, 600)) for i in range(10)]
@@ -335,8 +419,8 @@ class TestPreviewCropWorkflowV2:
             mock_time.side_effect = [0.0, 1.0]  # Start and end times
 
             # Execute workflow with performance monitoring
-            workflow_result = self._execute_complete_workflow(
-                main_window, test_images[:3], {"x": 100, "y": 100, "width": 200, "height": 150}
+            workflow_result = TestPreviewCropWorkflowV2._execute_complete_workflow(
+                mock_main_window, test_images[:3], {"x": 100, "y": 100, "width": 200, "height": 150}
             )
 
             performance_metrics["total_time"] = 1.0
@@ -347,7 +431,12 @@ class TestPreviewCropWorkflowV2:
             assert performance_metrics["average_per_image"] < 5.0  # Less than 5 seconds per image
             assert workflow_result["success"] is True
 
-    def test_workflow_state_persistence(self, shared_app, mock_main_window, test_image_factory) -> None:
+    @staticmethod
+    def test_workflow_state_persistence(
+        shared_app: QApplication,  # noqa: ARG004
+        mock_main_window: MagicMock,
+        test_image_factory: Callable[..., dict[str, Any]],
+    ) -> None:
         """Test workflow state persistence and restoration."""
         test_image_factory("state_test.png")
 
@@ -360,13 +449,13 @@ class TestPreviewCropWorkflowV2:
         }
 
         # Test state saving
-        main_window.save_workflow_state = MagicMock()
-        main_window.save_workflow_state(workflow_state)
-        main_window.save_workflow_state.assert_called_with(workflow_state)
+        mock_main_window.save_workflow_state = MagicMock()
+        mock_main_window.save_workflow_state(workflow_state)
+        mock_main_window.save_workflow_state.assert_called_with(workflow_state)
 
         # Test state restoration
-        main_window.restore_workflow_state = MagicMock(return_value=workflow_state)
-        restored_state = main_window.restore_workflow_state()
+        mock_main_window.restore_workflow_state = MagicMock(return_value=workflow_state)
+        restored_state = mock_main_window.restore_workflow_state()
 
         assert restored_state == workflow_state
         assert restored_state["current_directory"] == "/mock/test_dir"
