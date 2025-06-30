@@ -8,6 +8,10 @@ Optimizations applied:
 - Comprehensive workflow validation
 """
 
+from collections.abc import Callable
+import contextlib
+from typing import Any
+
 from PyQt6.QtCore import QRect, Qt
 from PyQt6.QtGui import QImage
 from PyQt6.QtWidgets import QApplication
@@ -20,18 +24,33 @@ class TestCropDialogIntegrationV2:
     """Optimized integration tests for crop dialog functionality."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for all tests."""
+    @staticmethod
+    def shared_app() -> QApplication:
+        """Create shared QApplication for all tests.
+
+        Returns:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture(scope="class")
-    def test_image_factory(self):
-        """Factory for creating test images with various properties."""
+    @staticmethod
+    def test_image_factory() -> Callable[..., QImage]:
+        """Factory for creating test images with various properties.
 
-        def create_image(width=800, height=600, color=Qt.GlobalColor.blue, format=QImage.Format.Format_RGB32):
+        Returns:
+            Callable[..., QImage]: Function to create test images.
+        """
+
+        def create_image(
+            width: int = 800,
+            height: int = 600,
+            color: Qt.GlobalColor = Qt.GlobalColor.blue,
+            format: QImage.Format = QImage.Format.Format_RGB32,  # noqa: A002
+        ) -> QImage:
             image = QImage(width, height, format)
             image.fill(color)
             return image
@@ -39,21 +58,37 @@ class TestCropDialogIntegrationV2:
         return create_image
 
     @pytest.fixture()
-    def standard_test_image(self, test_image_factory):
-        """Standard test image for most tests."""
+    @staticmethod
+    def standard_test_image(test_image_factory: Callable[..., QImage]) -> QImage:
+        """Standard test image for most tests.
+
+        Returns:
+            QImage: Standard test image.
+        """
         return test_image_factory()
 
     @pytest.fixture()
-    def large_test_image(self, test_image_factory):
-        """Large test image for scaling tests."""
+    @staticmethod
+    def large_test_image(test_image_factory: Callable[..., QImage]) -> QImage:
+        """Large test image for scaling tests.
+
+        Returns:
+            QImage: Large test image.
+        """
         return test_image_factory(width=2048, height=1536, color=Qt.GlobalColor.red)
 
     @pytest.fixture()
-    def small_test_image(self, test_image_factory):
-        """Small test image for edge case tests."""
+    @staticmethod
+    def small_test_image(test_image_factory: Callable[..., QImage]) -> QImage:
+        """Small test image for edge case tests.
+
+        Returns:
+            QImage: Small test image.
+        """
         return test_image_factory(width=100, height=100, color=Qt.GlobalColor.green)
 
-    def test_crop_dialog_creation_workflow(self, shared_app, standard_test_image) -> None:
+    @staticmethod
+    def test_crop_dialog_creation_workflow(shared_app: QApplication, standard_test_image: QImage) -> None:  # noqa: ARG004
         """Test complete crop dialog creation workflow."""
         # Test creation without initial rect
         dialog = CropSelectionDialog(standard_test_image)
@@ -67,7 +102,8 @@ class TestCropDialogIntegrationV2:
         assert hasattr(dialog, "crop_label")
         assert dialog.crop_label is not None
 
-    def test_crop_dialog_with_initial_rect(self, shared_app, standard_test_image) -> None:
+    @staticmethod
+    def test_crop_dialog_with_initial_rect(shared_app: QApplication, standard_test_image: QImage) -> None:  # noqa: ARG004
         """Test crop dialog creation with initial rectangle."""
         initial_rect = QRect(100, 100, 200, 200)
         dialog = CropSelectionDialog(standard_test_image, initial_rect)
@@ -85,7 +121,12 @@ class TestCropDialogIntegrationV2:
             (10, 10, 50, 50),
         ],
     )
-    def test_coordinate_conversion_scenarios(self, shared_app, standard_test_image, rect_params) -> None:
+    @staticmethod
+    def test_coordinate_conversion_scenarios(
+        shared_app: QApplication,  # noqa: ARG004
+        standard_test_image: QImage,
+        rect_params: tuple[int, int, int, int],
+    ) -> None:
         """Test coordinate conversion with various rectangle parameters."""
         x, y, width, height = rect_params
         dialog = CropSelectionDialog(standard_test_image)
@@ -94,12 +135,17 @@ class TestCropDialogIntegrationV2:
         display_rect = QRect(x, y, width, height)
 
         # Test coordinate conversion (simulate internal method call)
-        dialog._store_final_selection(display_rect)
+        dialog._store_final_selection(display_rect)  # noqa: SLF001
 
         # Verify conversion doesn't crash and produces valid result
         # The exact conversion depends on scale factor and implementation details
 
-    def test_crop_dialog_scaling_behavior(self, shared_app, large_test_image, small_test_image) -> None:
+    @staticmethod
+    def test_crop_dialog_scaling_behavior(
+        shared_app: QApplication,  # noqa: ARG004
+        large_test_image: QImage,
+        small_test_image: QImage,
+    ) -> None:
         """Test crop dialog scaling behavior with different image sizes."""
         # Test with large image (should be scaled down)
         large_dialog = CropSelectionDialog(large_test_image)
@@ -110,7 +156,8 @@ class TestCropDialogIntegrationV2:
         small_dialog = CropSelectionDialog(small_test_image)
         assert small_dialog.scale_factor > 0
 
-    def test_crop_dialog_edge_case_rectangles(self, shared_app, standard_test_image) -> None:
+    @staticmethod
+    def test_crop_dialog_edge_case_rectangles(shared_app: QApplication, standard_test_image: QImage) -> None:  # noqa: ARG004
         """Test crop dialog with edge case rectangle configurations."""
         dialog = CropSelectionDialog(standard_test_image)
 
@@ -122,11 +169,14 @@ class TestCropDialogIntegrationV2:
 
         for rect in edge_cases:
             try:
-                dialog._store_final_selection(rect)
+                dialog._store_final_selection(rect)  # noqa: SLF001
                 # Should handle edge cases gracefully
             except Exception as e:
                 # Some edge cases might be rejected, which is acceptable
-                assert "invalid" in str(e).lower() or "out of bounds" in str(e).lower()
+                # Check if it's an expected error type
+                error_msg = str(e).lower()
+                if "invalid" not in error_msg and "out of bounds" not in error_msg:
+                    raise  # Re-raise unexpected errors
 
     @pytest.mark.parametrize(
         "image_properties",
@@ -137,7 +187,12 @@ class TestCropDialogIntegrationV2:
             {"width": 320, "height": 240, "color": Qt.GlobalColor.yellow},
         ],
     )
-    def test_crop_dialog_image_size_variations(self, shared_app, test_image_factory, image_properties) -> None:
+    @staticmethod
+    def test_crop_dialog_image_size_variations(
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., QImage],
+        image_properties: dict[str, Any],
+    ) -> None:
         """Test crop dialog with various image sizes and properties."""
         test_image = test_image_factory(**image_properties)
         dialog = CropSelectionDialog(test_image)
@@ -148,9 +203,10 @@ class TestCropDialogIntegrationV2:
 
         # Test with a reasonable crop rectangle
         crop_rect = QRect(10, 10, min(100, image_properties["width"] - 20), min(100, image_properties["height"] - 20))
-        dialog._store_final_selection(crop_rect)
+        dialog._store_final_selection(crop_rect)  # noqa: SLF001
 
-    def test_crop_dialog_selection_validation(self, shared_app, standard_test_image) -> None:
+    @staticmethod
+    def test_crop_dialog_selection_validation(shared_app: QApplication, standard_test_image: QImage) -> None:  # noqa: ARG004
         """Test crop dialog selection validation logic."""
         dialog = CropSelectionDialog(standard_test_image)
 
@@ -162,14 +218,12 @@ class TestCropDialogIntegrationV2:
         ]
 
         for rect in valid_rects:
-            try:
-                dialog._store_final_selection(rect)
+            with contextlib.suppress(Exception):
+                dialog._store_final_selection(rect)  # noqa: SLF001
                 # Valid selections should work
-            except Exception:
-                # If validation fails, it should be for a good reason
-                pass
 
-    def test_crop_dialog_window_properties(self, shared_app, standard_test_image) -> None:
+    @staticmethod
+    def test_crop_dialog_window_properties(shared_app: QApplication, standard_test_image: QImage) -> None:  # noqa: ARG004
         """Test crop dialog window properties and behavior."""
         dialog = CropSelectionDialog(standard_test_image)
 
@@ -181,7 +235,8 @@ class TestCropDialogIntegrationV2:
         assert hasattr(dialog, "crop_label")
         assert dialog.crop_label.parent() == dialog or dialog.crop_label.parent().parent() == dialog
 
-    def test_crop_dialog_memory_efficiency(self, shared_app, test_image_factory) -> None:
+    @staticmethod
+    def test_crop_dialog_memory_efficiency(shared_app: QApplication, test_image_factory: Callable[..., QImage]) -> None:  # noqa: ARG004
         """Test crop dialog memory efficiency with multiple instances."""
         images = [
             test_image_factory(width=800, height=600),
@@ -203,21 +258,23 @@ class TestCropDialogIntegrationV2:
 
             # Test basic functionality
             test_rect = QRect(10, 10, 50, 50)
-            dialog._store_final_selection(test_rect)
+            dialog._store_final_selection(test_rect)  # noqa: SLF001
 
-    def test_crop_dialog_error_handling(self, shared_app) -> None:
+    @staticmethod
+    def test_crop_dialog_error_handling(shared_app: QApplication) -> None:  # noqa: ARG004
         """Test crop dialog error handling with invalid inputs."""
         # Test with null image
         null_image = QImage()
 
-        try:
+        with contextlib.suppress(ValueError, RuntimeError):
             CropSelectionDialog(null_image)
             # Should either handle gracefully or raise appropriate error
-        except (ValueError, RuntimeError):
-            # Expected for invalid image
-            pass
 
-    def test_crop_dialog_scale_factor_calculation(self, shared_app, test_image_factory) -> None:
+    @staticmethod
+    def test_crop_dialog_scale_factor_calculation(
+        shared_app: QApplication,  # noqa: ARG004
+        test_image_factory: Callable[..., QImage],
+    ) -> None:
         """Test crop dialog scale factor calculation accuracy."""
         # Test images that definitely need scaling
         large_image = test_image_factory(width=3840, height=2160)  # 4K
@@ -235,7 +292,8 @@ class TestCropDialogIntegrationV2:
         assert dialog_small.scale_factor > 0
         assert dialog_small.scale_factor <= 1.0
 
-    def test_crop_dialog_ui_interaction_simulation(self, shared_app, standard_test_image) -> None:
+    @staticmethod
+    def test_crop_dialog_ui_interaction_simulation(shared_app: QApplication, standard_test_image: QImage) -> None:  # noqa: ARG004
         """Test simulated UI interactions with crop dialog."""
         dialog = CropSelectionDialog(standard_test_image)
 
@@ -244,12 +302,13 @@ class TestCropDialogIntegrationV2:
 
         # Simulate selection
         user_selection = QRect(75, 75, 150, 150)
-        dialog._store_final_selection(user_selection)
+        dialog._store_final_selection(user_selection)  # noqa: SLF001
 
         # Verify state after interaction
         # The exact verification depends on implementation details
 
-    def test_crop_dialog_concurrent_usage(self, shared_app, test_image_factory) -> None:
+    @staticmethod
+    def test_crop_dialog_concurrent_usage(shared_app: QApplication, test_image_factory: Callable[..., QImage]) -> None:  # noqa: ARG004
         """Test crop dialog behavior with concurrent usage patterns."""
         # Simulate multiple dialogs for different images
         images = [
@@ -264,7 +323,7 @@ class TestCropDialogIntegrationV2:
         # Test that they don't interfere with each other
         for i, dialog in enumerate(dialogs):
             test_rect = QRect(i * 10, i * 10, 100 + i * 10, 100 + i * 10)
-            dialog._store_final_selection(test_rect)
+            dialog._store_final_selection(test_rect)  # noqa: SLF001
 
         # Verify all dialogs remain functional
         for dialog in dialogs:
