@@ -9,7 +9,8 @@ Optimizations:
 """
 
 from pathlib import Path
-import subprocess
+import subprocess  # noqa: S404
+from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -21,8 +22,12 @@ class TestRifeCapabilityDetectorV2:
     """Optimized tests for RifeCapabilityDetector class."""
 
     @pytest.fixture()
-    def mock_subprocess(self):
-        """Shared subprocess mock configuration."""
+    def mock_subprocess(self) -> dict[str, Any]:  # noqa: PLR6301
+        """Shared subprocess mock configuration.
+
+        Returns:
+            dict[str, Any]: Dictionary containing mock subprocess configurations.
+        """
         return {
             "success": Mock(
                 returncode=0,
@@ -34,40 +39,40 @@ class TestRifeCapabilityDetectorV2:
         }
 
     @pytest.fixture()
-    def rife_path(self, tmp_path):
-        """Create temporary RIFE executable path."""
+    def rife_path(self, tmp_path: Path) -> Path:  # noqa: PLR6301
+        """Create temporary RIFE executable path.
+
+        Returns:
+            Path: Path to temporary RIFE executable.
+        """
         path = tmp_path / "rife"
         path.touch()
         return path
 
-    def test_init_successful_detection(self, rife_path, mock_subprocess) -> None:
+    def test_init_successful_detection(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test successful initialization and capability detection."""
-        with patch("subprocess.run", return_value=mock_subprocess["success"]):
-            with patch("pathlib.Path.exists", return_value=True):
-                detector = RifeCapabilityDetector(rife_path)
+        with patch("subprocess.run", return_value=mock_subprocess["success"]), patch("pathlib.Path.exists", return_value=True):
+            detector = RifeCapabilityDetector(rife_path)
 
-                assert detector.rife_path == rife_path
-                assert detector.version == "4.6"
-                assert detector.capabilities["multi"] is True
-                assert detector.capabilities["scale"] is True
-                assert detector.capabilities["ensemble"] is True
-                assert detector.capabilities["fastmode"] is True
-                assert detector.capabilities["UHD"] is True
+            assert detector.rife_path == rife_path
+            assert detector.version == "4.6"
+            assert detector.capabilities["multi"] is True
+            assert detector.capabilities["scale"] is True
+            assert detector.capabilities["ensemble"] is True
+            assert detector.capabilities["fastmode"] is True
+            assert detector.capabilities["UHD"] is True
 
-    def test_init_exe_not_found(self, rife_path) -> None:
+    def test_init_exe_not_found(self, rife_path: Path) -> None:  # noqa: PLR6301
         """Test initialization when executable not found."""
-        with patch("pathlib.Path.exists", return_value=False):
-            with pytest.raises(FileNotFoundError, match="not found"):
-                RifeCapabilityDetector(rife_path)
+        with patch("pathlib.Path.exists", return_value=False), pytest.raises(FileNotFoundError, match="not found"):
+            RifeCapabilityDetector(rife_path)
 
-    def test_init_help_command_fails(self, rife_path, mock_subprocess) -> None:
+    def test_init_help_command_fails(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test initialization when help command fails."""
-        with patch("subprocess.run", return_value=mock_subprocess["failure"]):
-            with patch("pathlib.Path.exists", return_value=True):
-                with pytest.raises(RuntimeError, match="Failed to run"):
-                    RifeCapabilityDetector(rife_path)
+        with patch("subprocess.run", return_value=mock_subprocess["failure"]), patch("pathlib.Path.exists", return_value=True), pytest.raises(RuntimeError, match="Failed to run"):
+            RifeCapabilityDetector(rife_path)
 
-    def test_version_detection(self, rife_path, mock_subprocess) -> None:
+    def test_version_detection(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301, ARG002
         """Test version detection from various output formats."""
         version_outputs = [
             ("RIFE 4.6", "4.6"),
@@ -79,12 +84,11 @@ class TestRifeCapabilityDetectorV2:
 
         for output, expected_version in version_outputs:
             mock_result = Mock(returncode=0, stdout=output + "\n--model", stderr="")
-            with patch("subprocess.run", return_value=mock_result):
-                with patch("pathlib.Path.exists", return_value=True):
-                    detector = RifeCapabilityDetector(rife_path)
-                    assert detector.version == expected_version
+            with patch("subprocess.run", return_value=mock_result), patch("pathlib.Path.exists", return_value=True):
+                detector = RifeCapabilityDetector(rife_path)
+                assert detector.version == expected_version
 
-    def test_capability_detection_partial_support(self, rife_path) -> None:
+    def test_capability_detection_partial_support(self, rife_path: Path) -> None:  # noqa: PLR6301
         """Test capability detection with partial feature support."""
         # Only some capabilities present
         partial_output = "RIFE 4.0\n--model\n--scale\n--img\n--fps"
@@ -101,7 +105,7 @@ class TestRifeCapabilityDetectorV2:
             assert detector.capabilities["fastmode"] is False
             assert detector.capabilities["UHD"] is False
 
-    def test_detect_capabilities_with_simulated_help(self, rife_path) -> None:
+    def test_detect_capabilities_with_simulated_help(self, rife_path: Path) -> None:  # noqa: PLR6301
         """Test capability detection with various help output formats."""
         help_outputs = [
             # Format 1: Simple flags
@@ -114,71 +118,66 @@ class TestRifeCapabilityDetectorV2:
 
         for help_text in help_outputs:
             mock_result = Mock(returncode=0, stdout=f"RIFE 4.5\n{help_text}", stderr="")
-            with patch("subprocess.run", return_value=mock_result):
-                with patch("pathlib.Path.exists", return_value=True):
-                    detector = RifeCapabilityDetector(rife_path)
+            with patch("subprocess.run", return_value=mock_result), patch("pathlib.Path.exists", return_value=True):
+                detector = RifeCapabilityDetector(rife_path)
 
-                    # Should detect all three capabilities in each format
-                    assert detector.capabilities["model"] is True
-                    assert detector.capabilities["multi"] is True
-                    assert detector.capabilities["scale"] is True
+                # Should detect all three capabilities in each format
+                assert detector.capabilities["model"] is True
+                assert detector.capabilities["multi"] is True
+                assert detector.capabilities["scale"] is True
 
-    def test_help_command_timeout(self, rife_path, mock_subprocess) -> None:
+    def test_help_command_timeout(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test handling of subprocess timeout."""
-        with patch("subprocess.run", side_effect=mock_subprocess["timeout"]):
-            with patch("pathlib.Path.exists", return_value=True):
-                with pytest.raises(RuntimeError, match="Timeout"):
-                    RifeCapabilityDetector(rife_path)
+        with patch("subprocess.run", side_effect=mock_subprocess["timeout"]), patch("pathlib.Path.exists", return_value=True), pytest.raises(RuntimeError, match="Timeout"):
+            RifeCapabilityDetector(rife_path)
 
-    def test_build_command_basic(self, rife_path, mock_subprocess) -> None:
+    def test_build_command_basic(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test building basic RIFE command."""
-        with patch("subprocess.run", return_value=mock_subprocess["success"]):
-            with patch("pathlib.Path.exists", return_value=True):
-                detector = RifeCapabilityDetector(rife_path)
+        with patch("subprocess.run", return_value=mock_subprocess["success"]), patch("pathlib.Path.exists", return_value=True):
+            detector = RifeCapabilityDetector(rife_path)
 
-                cmd = detector.build_command(
-                    model_path="/path/to/model",
-                    img_path="/path/to/imgs",
-                    output_path="/path/to/output",
-                    multi=2,
-                    scale=1.0,
-                )
+            cmd = detector.build_command(
+                model_path="/path/to/model",
+                img_path="/path/to/imgs",
+                output_path="/path/to/output",
+                multi=2,
+                scale=1.0,
+            )
 
-                assert str(rife_path) in cmd
-                assert "--model" in cmd
-                assert "/path/to/model" in cmd
-                assert "--img" in cmd
-                assert "/path/to/imgs" in cmd
-                assert "--output" in cmd
-                assert "/path/to/output" in cmd
-                assert "--multi" in cmd
-                assert "2" in cmd
+            assert str(rife_path) in cmd
+            assert "--model" in cmd
+            assert "/path/to/model" in cmd
+            assert "--img" in cmd
+            assert "/path/to/imgs" in cmd
+            assert "--output" in cmd
+            assert "/path/to/output" in cmd
+            assert "--multi" in cmd
+            assert "2" in cmd
 
-    def test_build_command_with_capabilities(self, rife_path, mock_subprocess) -> None:
+    def test_build_command_with_capabilities(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test building command with optional capabilities."""
-        with patch("subprocess.run", return_value=mock_subprocess["success"]):
-            with patch("pathlib.Path.exists", return_value=True):
-                detector = RifeCapabilityDetector(rife_path)
+        with patch("subprocess.run", return_value=mock_subprocess["success"]), patch("pathlib.Path.exists", return_value=True):
+            detector = RifeCapabilityDetector(rife_path)
 
-                cmd = detector.build_command(
-                    model_path="/model",
-                    img_path="/imgs",
-                    output_path="/output",
-                    multi=4,
-                    scale=2.0,
-                    ensemble=True,
-                    fastmode=True,
-                    UHD=True,
-                )
+            cmd = detector.build_command(
+                model_path="/model",
+                img_path="/imgs",
+                output_path="/output",
+                multi=4,
+                scale=2.0,
+                ensemble=True,
+                fastmode=True,
+                UHD=True,
+            )
 
-                # All supported capabilities should be included
-                assert "--ensemble" in cmd
-                assert "--fastmode" in cmd
-                assert "--UHD" in cmd
-                assert "--scale" in cmd
-                assert "2.0" in cmd
+            # All supported capabilities should be included
+            assert "--ensemble" in cmd
+            assert "--fastmode" in cmd
+            assert "--UHD" in cmd
+            assert "--scale" in cmd
+            assert "2.0" in cmd
 
-    def test_build_command_ignores_unsupported(self, rife_path) -> None:
+    def test_build_command_ignores_unsupported(self, rife_path: Path) -> None:  # noqa: PLR6301
         """Test that unsupported capabilities are ignored."""
         # Limited capabilities
         limited_output = "RIFE 3.0\n--model\n--img"
@@ -210,8 +209,12 @@ class TestAnalyzeRifeExecutableV2:
     """Optimized tests for analyze_rife_executable function."""
 
     @pytest.fixture()
-    def mock_detector(self):
-        """Create mock detector with test data."""
+    def mock_detector(self) -> MagicMock:  # noqa: PLR6301
+        """Create mock detector with test data.
+
+        Returns:
+            MagicMock: Mock RifeCapabilityDetector instance.
+        """
         detector = MagicMock(spec=RifeCapabilityDetector)
         detector.version = "4.6"
         detector.capabilities = {
@@ -224,10 +227,10 @@ class TestAnalyzeRifeExecutableV2:
             "montage": False,
             "imgseq": False,
         }
-        detector._help_output = "RIFE 4.6 help output"
+        detector._help_output = "RIFE 4.6 help output"  # noqa: SLF001
         return detector
 
-    def test_analyze_successful(self, mock_detector) -> None:
+    def test_analyze_successful(self, mock_detector: MagicMock) -> None:  # noqa: PLR6301
         """Test successful analysis of RIFE executable."""
         with patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", return_value=mock_detector):
             result = analyze_rife_executable("/path/to/rife")
@@ -237,7 +240,7 @@ class TestAnalyzeRifeExecutableV2:
             assert result["output"] == "RIFE 4.6 help output"
             assert "supports_tiling" not in result  # Deprecated field
 
-    def test_analyze_file_not_found(self) -> None:
+    def test_analyze_file_not_found(self) -> None:  # noqa: PLR6301
         """Test analysis when file not found."""
         with patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", side_effect=FileNotFoundError("Not found")):
             result = analyze_rife_executable("/nonexistent/rife")
@@ -246,7 +249,7 @@ class TestAnalyzeRifeExecutableV2:
             assert result["capabilities"] == {}
             assert "not found" in result["output"].lower()
 
-    def test_analyze_detection_error(self) -> None:
+    def test_analyze_detection_error(self) -> None:  # noqa: PLR6301
         """Test analysis when detection fails."""
         with patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", side_effect=RuntimeError("Detection failed")):
             result = analyze_rife_executable("/path/to/rife")
@@ -255,7 +258,7 @@ class TestAnalyzeRifeExecutableV2:
             assert result["capabilities"] == {}
             assert "detection failed" in result["output"].lower()
 
-    def test_analyze_edge_cases(self, mock_detector) -> None:
+    def test_analyze_edge_cases(self, mock_detector: MagicMock) -> None:  # noqa: PLR6301
         """Test edge cases for analyze function."""
         # Test with None path
         result = analyze_rife_executable(None)
