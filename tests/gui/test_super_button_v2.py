@@ -8,7 +8,7 @@ Optimizations applied:
 - Performance optimizations for test execution
 """
 
-from typing import Never
+from typing import Any, Never
 from unittest.mock import MagicMock, Mock, patch
 
 from PyQt6.QtCore import Qt
@@ -17,20 +17,30 @@ from PyQt6.QtWidgets import QApplication, QWidget
 import pytest
 
 
-class TestSuperButtonV2:
+class TestSuperButtonV2:  # noqa: PLR0904
     """Optimized test class for SuperButton widget."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for tests."""
+    @staticmethod
+    def shared_app() -> Any:
+        """Create shared QApplication for tests.
+
+        Returns:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture()
-    def mock_super_button(self, shared_app):
-        """Create mock SuperButton for testing."""
+    @staticmethod
+    def mock_super_button(shared_app: Any) -> Any:  # noqa: ARG004
+        """Create mock SuperButton for testing.
+
+        Returns:
+            MagicMock: Mocked SuperButton instance.
+        """
         # Mock the SuperButton class to avoid GUI dependencies
         mock_button = MagicMock()
 
@@ -66,19 +76,21 @@ class TestSuperButtonV2:
         mock_button.mouseReleaseEvent = MagicMock()
 
         # Mock SuperButton-specific methods
-        def mock_set_click_callback(callback) -> None:
+        def mock_set_click_callback(callback: Any) -> None:
             mock_button.click_callback = callback
 
         mock_button.set_click_callback = mock_set_click_callback
 
         return mock_button
 
-    def test_initialization(self, mock_super_button) -> None:
+    @staticmethod
+    def test_initialization(mock_super_button: Any) -> None:
         """Test SuperButton initialization."""
         assert mock_super_button.text() == "Test Button"
         assert mock_super_button.click_callback is None
 
-    def test_initialization_with_parent(self, shared_app) -> None:
+    @staticmethod
+    def test_initialization_with_parent(shared_app: Any) -> None:  # noqa: ARG004
         """Test SuperButton initialization with parent widget."""
         parent = MagicMock(spec=QWidget)
         mock_button = MagicMock()
@@ -91,7 +103,8 @@ class TestSuperButtonV2:
         assert mock_button.click_callback is None
 
     @pytest.mark.parametrize("callback_type", ["function", "lambda", "method", "none"])
-    def test_set_click_callback_scenarios(self, mock_super_button, callback_type) -> None:
+    @staticmethod
+    def test_set_click_callback_scenarios(mock_super_button: Any, callback_type: Any) -> None:
         """Test setting click callback with various callback types."""
         if callback_type == "function":
 
@@ -113,7 +126,8 @@ class TestSuperButtonV2:
         mock_super_button.set_click_callback(callback)
         assert mock_super_button.click_callback == callback
 
-    def test_mouse_press_event_handling(self, mock_super_button) -> None:
+    @staticmethod
+    def test_mouse_press_event_handling(mock_super_button: Any) -> None:
         """Test mouse press event handling."""
         # Mock print function to capture debug output
         with patch("builtins.print") as mock_print:
@@ -122,7 +136,7 @@ class TestSuperButtonV2:
             mock_event.button.return_value = Qt.MouseButton.LeftButton
 
             # Simulate mouse press event handling
-            def mock_mouse_press(event) -> None:
+            def mock_mouse_press(event: Any) -> None:
                 if event and hasattr(event, "button"):
                     pass
 
@@ -132,10 +146,11 @@ class TestSuperButtonV2:
             # Verify debug output
             mock_print.assert_called_with(f"SuperButton MOUSE PRESS: {Qt.MouseButton.LeftButton}")
 
-    def test_mouse_press_event_none_handling(self, mock_super_button) -> None:
+    @staticmethod
+    def test_mouse_press_event_none_handling(mock_super_button: Any) -> None:
         """Test mouse press event with None event."""
 
-        def safe_mouse_press(event) -> None:
+        def safe_mouse_press(event: Any) -> None:
             if event is None:
                 return  # Handle None gracefully
 
@@ -152,7 +167,8 @@ class TestSuperButtonV2:
             (Qt.MouseButton.MiddleButton, False),
         ],
     )
-    def test_mouse_release_event_button_types(self, mock_super_button, button_type, should_trigger) -> None:
+    @staticmethod
+    def test_mouse_release_event_button_types(mock_super_button: Any, button_type: Any, should_trigger: Any) -> None:
         """Test mouse release event with different button types."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -165,10 +181,9 @@ class TestSuperButtonV2:
             mock_event.button.return_value = button_type
 
             # Simulate mouse release event handling
-            def mock_mouse_release(event) -> None:
-                if event and hasattr(event, "button") and event.button() == Qt.MouseButton.LeftButton:
-                    if mock_super_button.click_callback:
-                        mock_timer(10, mock_super_button.click_callback)
+            def mock_mouse_release(event: Any) -> None:
+                if event and hasattr(event, "button") and event.button() == Qt.MouseButton.LeftButton and mock_super_button.click_callback:
+                    mock_timer(10, mock_super_button.click_callback)
 
             mock_super_button.mouseReleaseEvent = mock_mouse_release
 
@@ -181,7 +196,8 @@ class TestSuperButtonV2:
             else:
                 mock_timer.assert_not_called()
 
-    def test_mouse_release_event_no_callback(self, mock_super_button) -> None:
+    @staticmethod
+    def test_mouse_release_event_no_callback(mock_super_button: Any) -> None:
         """Test mouse release event with no callback registered."""
         mock_super_button.click_callback = None
 
@@ -189,17 +205,17 @@ class TestSuperButtonV2:
             mock_event = MagicMock(spec=QMouseEvent)
             mock_event.button.return_value = Qt.MouseButton.LeftButton
 
-            def mock_mouse_release(event) -> None:
-                if event and event.button() == Qt.MouseButton.LeftButton:
-                    if mock_super_button.click_callback:
-                        pass
+            def mock_mouse_release(event: Any) -> None:
+                if event and event.button() == Qt.MouseButton.LeftButton and mock_super_button.click_callback:
+                    pass
 
             mock_super_button.mouseReleaseEvent = mock_mouse_release
             mock_super_button.mouseReleaseEvent(mock_event)
 
             mock_print.assert_any_call("SuperButton: No callback registered")
 
-    def test_click_simulation(self, mock_super_button) -> None:
+    @staticmethod
+    def test_click_simulation(mock_super_button: Any) -> None:
         """Test simulated click behavior."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -208,7 +224,7 @@ class TestSuperButtonV2:
         # Mock QTimer.singleShot to immediately execute callback
         with patch("PyQt6.QtCore.QTimer.singleShot") as mock_timer:
 
-            def immediate_callback(delay, func) -> None:
+            def immediate_callback(delay: Any, func: Any) -> None:  # noqa: ARG001
                 func()  # Execute immediately for testing
 
             mock_timer.side_effect = immediate_callback
@@ -223,7 +239,8 @@ class TestSuperButtonV2:
             # Verify callback was called
             callback.assert_called_once()
 
-    def test_multiple_callback_changes(self, mock_super_button) -> None:
+    @staticmethod
+    def test_multiple_callback_changes(mock_super_button: Any) -> None:
         """Test changing callbacks multiple times."""
         callback1 = Mock()
         callback1.__name__ = "mock_callback1"
@@ -242,7 +259,8 @@ class TestSuperButtonV2:
         mock_super_button.set_click_callback(None)
         assert mock_super_button.click_callback is None
 
-    def test_disabled_button_behavior(self, mock_super_button) -> None:
+    @staticmethod
+    def test_disabled_button_behavior(mock_super_button: Any) -> None:
         """Test behavior when button is disabled."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -270,7 +288,8 @@ class TestSuperButtonV2:
         # Now callback should be called
         callback.assert_called_once()
 
-    def test_callback_exception_handling(self, mock_super_button) -> None:
+    @staticmethod
+    def test_callback_exception_handling(mock_super_button: Any) -> None:
         """Test exception handling in callbacks."""
 
         def failing_callback() -> Never:
@@ -289,7 +308,8 @@ class TestSuperButtonV2:
         mock_super_button.set_click_callback(new_callback)
         assert mock_super_button.click_callback == new_callback
 
-    def test_rapid_clicks_handling(self, mock_super_button) -> None:
+    @staticmethod
+    def test_rapid_clicks_handling(mock_super_button: Any) -> None:
         """Test rapid clicking behavior."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -298,7 +318,7 @@ class TestSuperButtonV2:
         # Mock QTimer.singleShot to track calls
         with patch("PyQt6.QtCore.QTimer.singleShot") as mock_timer:
 
-            def track_callback_calls(delay, func) -> None:
+            def track_callback_calls(delay: Any, func: Any) -> None:  # noqa: ARG001
                 func()  # Execute immediately
 
             mock_timer.side_effect = track_callback_calls
@@ -312,7 +332,8 @@ class TestSuperButtonV2:
             # Verify all clicks were handled
             assert callback.call_count == rapid_click_count
 
-    def test_button_text_changes(self, mock_super_button) -> None:
+    @staticmethod
+    def test_button_text_changes(mock_super_button: Any) -> None:
         """Test button text modification."""
         new_text = "New Text"
         mock_super_button.setText(new_text)
@@ -321,7 +342,8 @@ class TestSuperButtonV2:
         mock_super_button.setText.assert_called_with(new_text)
         assert mock_super_button.text() == new_text
 
-    def test_button_signals_integration(self, mock_super_button) -> None:
+    @staticmethod
+    def test_button_signals_integration(mock_super_button: Any) -> None:
         """Test standard QPushButton signals integration."""
         clicked_signal = Mock()
         pressed_signal = Mock()
@@ -350,7 +372,8 @@ class TestSuperButtonV2:
             (150, 75),
         ],
     )
-    def test_geometry_and_visibility(self, mock_super_button, width, height) -> None:
+    @staticmethod
+    def test_geometry_and_visibility(mock_super_button: Any, width: Any, height: Any) -> None:
         """Test button geometry and visibility settings."""
         # Test resize
         mock_super_button.resize(width, height)
@@ -376,7 +399,8 @@ class TestSuperButtonV2:
         mock_super_button.show.assert_called_once()
         assert mock_super_button.isVisible()
 
-    def test_timer_delay_configuration(self, mock_super_button) -> None:
+    @staticmethod
+    def test_timer_delay_configuration(mock_super_button: Any) -> None:
         """Test QTimer delay configuration."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -390,7 +414,8 @@ class TestSuperButtonV2:
             # Verify timer was called with correct delay
             mock_timer.assert_called_once_with(expected_delay, callback)
 
-    def test_double_click_behavior(self, mock_super_button) -> None:
+    @staticmethod
+    def test_double_click_behavior(mock_super_button: Any) -> None:
         """Test double-click behavior."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -398,7 +423,7 @@ class TestSuperButtonV2:
 
         with patch("PyQt6.QtCore.QTimer.singleShot") as mock_timer:
 
-            def execute_callback(delay, func) -> None:
+            def execute_callback(delay: Any, func: Any) -> None:  # noqa: ARG001
                 func()
 
             mock_timer.side_effect = execute_callback
@@ -410,7 +435,8 @@ class TestSuperButtonV2:
             # Both clicks should be handled
             assert callback.call_count == 2
 
-    def test_keyboard_activation_handling(self, mock_super_button) -> None:
+    @staticmethod
+    def test_keyboard_activation_handling(mock_super_button: Any) -> None:
         """Test keyboard activation behavior."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -424,7 +450,8 @@ class TestSuperButtonV2:
         mock_super_button.setFocus.assert_called_once()
         callback.assert_not_called()
 
-    def test_accessibility_features(self, mock_super_button) -> None:
+    @staticmethod
+    def test_accessibility_features(mock_super_button: Any) -> None:
         """Test accessibility features configuration."""
         # Test tooltip
         tooltip_text = "This is a super button"
@@ -450,7 +477,8 @@ class TestSuperButtonV2:
         mock_super_button.setAccessibleDescription.assert_called_with(accessible_desc)
         assert mock_super_button.accessibleDescription() == accessible_desc
 
-    def test_style_sheet_compatibility(self, mock_super_button) -> None:
+    @staticmethod
+    def test_style_sheet_compatibility(mock_super_button: Any) -> None:
         """Test custom stylesheet compatibility."""
         style = "QPushButton { background-color: red; color: white; }"
         mock_super_button.setStyleSheet(style)
@@ -459,7 +487,8 @@ class TestSuperButtonV2:
         mock_super_button.setStyleSheet.assert_called_with(style)
         assert mock_super_button.styleSheet() == style
 
-    def test_parent_widget_relationship(self, shared_app) -> None:
+    @staticmethod
+    def test_parent_widget_relationship(shared_app: Any) -> None:  # noqa: ARG004
         """Test SuperButton relationship with parent widget."""
         parent = MagicMock(spec=QWidget)
         mock_button = MagicMock()
@@ -484,7 +513,8 @@ class TestSuperButtonV2:
         assert mock_button.parent() is None
         assert mock_button.click_callback is None
 
-    def test_event_processing_optimization(self, mock_super_button) -> None:
+    @staticmethod
+    def test_event_processing_optimization(mock_super_button: Any) -> None:
         """Test optimized event processing."""
         callback = Mock()
         callback.__name__ = "mock_callback"
@@ -493,7 +523,7 @@ class TestSuperButtonV2:
         # Mock optimized event processing
         event_queue = []
 
-        def optimized_event_handler(event_type) -> None:
+        def optimized_event_handler(event_type: Any) -> None:
             event_queue.append(event_type)
             if event_type == "mouse_release" and mock_super_button.click_callback:
                 mock_super_button.click_callback()
@@ -507,7 +537,8 @@ class TestSuperButtonV2:
         assert "mouse_release" in event_queue
         callback.assert_called_once()
 
-    def test_memory_management(self, mock_super_button) -> None:
+    @staticmethod
+    def test_memory_management(mock_super_button: Any) -> None:
         """Test memory management and cleanup."""
         # Create multiple callbacks to test memory handling
         callbacks = []
