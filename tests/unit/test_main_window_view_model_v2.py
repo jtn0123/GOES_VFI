@@ -7,7 +7,7 @@ testing of signal handling, dependency injection, and view model interactions.
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import tempfile
-from typing import Never
+from typing import Any, Never
 import unittest
 from unittest.mock import MagicMock
 
@@ -38,7 +38,7 @@ class TestMainWindowViewModelV2(unittest.TestCase):
     def tearDownClass(cls) -> None:
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
-            import shutil
+            import shutil  # noqa: PLC0415
 
             shutil.rmtree(cls.temp_root)
 

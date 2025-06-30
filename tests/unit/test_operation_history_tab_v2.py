@@ -838,7 +838,7 @@ def history_tab_models_pytest(dummy_store_pytest: DummyOperationStore) -> Any:
     operations_model.update_operations(dummy_store_pytest.operations)
     metrics_model.update_metrics(dummy_store_pytest.metrics)
 
-    class MockHistoryTab:
+    class MockHistoryTab:  # noqa: B903
         def __init__(self) -> None:
             self.operations_model = operations_model
             self.metrics_model = metrics_model

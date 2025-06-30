@@ -149,7 +149,7 @@ class TestManagedResource(unittest.TestCase):
             resource = MagicMock()
             cleanup_called = False
 
-            async def custom_cleanup(res: Any) -> None:
+            async def custom_cleanup(res: Any) -> None:  # noqa: RUF029
                 nonlocal cleanup_called
                 cleanup_called = True
                 assert res is resource
@@ -227,10 +227,10 @@ class TestTemporaryResources(unittest.TestCase):
 class TestResourceManager(unittest.TestCase):
     """Test ResourceManager functionality."""
 
-    def setUp(self) -> None:
+    def setUp(self) -> None:  # noqa: PLR6301
         """Set up test fixtures."""
         # Reset singleton
-        import goesvfi.core.modern_resources
+        import goesvfi.core.modern_resources  # noqa: PLC0415
 
         goesvfi.core.modern_resources._resource_manager = None  # noqa: SLF001
 
@@ -321,7 +321,7 @@ class TestAtomicWrite(unittest.TestCase):
 
     def test_atomic_write_failure(self) -> None:  # noqa: PLR6301
         """Test atomic write failure.
-        
+
         Raises:
             ValueError: Test error for atomic write failure.
         """
@@ -333,7 +333,8 @@ class TestAtomicWrite(unittest.TestCase):
                 with atomic_write(test_file) as f:
                     f.write("partial content")
                     # Simulate error
-                    raise ValueError("Test error")
+                    msg = "Test error"
+                    raise ValueError(msg)  # noqa: TRY301
             except ValueError:
                 pass
 
@@ -354,7 +355,7 @@ class TestMemoryMonitor(unittest.TestCase):
         assert monitor1 is monitor2
 
     @patch("goesvfi.core.modern_resources.psutil")
-    def test_memory_usage_with_psutil(self, mock_psutil: Any) -> None:
+    def test_memory_usage_with_psutil(self, mock_psutil: Any) -> None:  # noqa: PLR6301
         """Test memory usage with psutil available."""
         # Mock psutil
         mock_memory = MagicMock()
