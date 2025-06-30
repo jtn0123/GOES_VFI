@@ -9,6 +9,7 @@ Optimizations applied:
 - Comprehensive settings validation
 """
 
+from typing import Any
 from unittest.mock import patch
 
 from PyQt6.QtWidgets import QApplication
@@ -22,8 +23,12 @@ class TestFFmpegSettingsTabV2:
     """Optimized test class for FFmpeg Settings Tab functionality."""
 
     @pytest.fixture(scope="class")
-    def shared_ffmpeg_tab(self, qtbot):
-        """Create shared FFmpeg Settings Tab instance for testing."""
+    def shared_ffmpeg_tab(self, qtbot: Any) -> Any:  # noqa: PLR6301
+        """Create shared FFmpeg Settings Tab instance for testing.
+
+        Yields:
+            FFmpegSettingsTab: Shared tab instance for testing.
+        """
         # Create the tab
         tab = FFmpegSettingsTab()
 
@@ -38,7 +43,7 @@ class TestFFmpegSettingsTabV2:
         # Cleanup - process events before destruction
         QApplication.processEvents()
 
-    def test_initial_state_comprehensive(self, shared_ffmpeg_tab) -> None:
+    def test_initial_state_comprehensive(self, shared_ffmpeg_tab: Any) -> None:  # noqa: PLR6301
         """Test comprehensive initial state of FFmpeg settings tab."""
         tab = shared_ffmpeg_tab
 
@@ -70,7 +75,7 @@ class TestFFmpegSettingsTabV2:
             assert hasattr(tab, control), f"Missing control: {control}"
 
     @pytest.mark.parametrize("profile_name", list(FFMPEG_PROFILES.keys()))
-    def test_profile_selection_parametrized(self, shared_ffmpeg_tab, profile_name) -> None:
+    def test_profile_selection_parametrized(self, shared_ffmpeg_tab: Any, profile_name: str) -> None:  # noqa: PLR6301
         """Test profile selection with all available profiles."""
         tab = shared_ffmpeg_tab
         profile_config = FFMPEG_PROFILES[profile_name]
@@ -78,7 +83,7 @@ class TestFFmpegSettingsTabV2:
         # Apply profile with mock verification to prevent cascading updates
         with patch.object(tab, "_verify_profile_match"):
             tab.ffmpeg_profile_combo.setCurrentText(profile_name)
-            tab._on_profile_selected(profile_name)
+            tab._on_profile_selected(profile_name)  # noqa: SLF001
 
         QApplication.processEvents()
 
@@ -93,7 +98,7 @@ class TestFFmpegSettingsTabV2:
         if "unsharp_lx" in profile_config:
             assert tab.ffmpeg_unsharp_lx_spinbox.value() == profile_config["unsharp_lx"]
 
-    def test_profile_switching_workflow(self, shared_ffmpeg_tab) -> None:
+    def test_profile_switching_workflow(self, shared_ffmpeg_tab: Any) -> None:  # noqa: PLR6301
         """Test complete profile switching workflow."""
         tab = shared_ffmpeg_tab
 
@@ -103,7 +108,7 @@ class TestFFmpegSettingsTabV2:
         # Switch to Default profile
         with patch.object(tab, "_verify_profile_match"):
             tab.ffmpeg_profile_combo.setCurrentText("Default")
-            tab._on_profile_selected("Default")
+            tab._on_profile_selected("Default")  # noqa: SLF001
 
         QApplication.processEvents()
         assert tab.ffmpeg_profile_combo.currentText() == "Default"
@@ -111,7 +116,7 @@ class TestFFmpegSettingsTabV2:
         # Switch to Optimal profile
         with patch.object(tab, "_verify_profile_match"):
             tab.ffmpeg_profile_combo.setCurrentText("Optimal")
-            tab._on_profile_selected("Optimal")
+            tab._on_profile_selected("Optimal")  # noqa: SLF001
 
         QApplication.processEvents()
         assert tab.ffmpeg_profile_combo.currentText() == "Optimal"
@@ -124,16 +129,16 @@ class TestFFmpegSettingsTabV2:
         # Return to initial state
         with patch.object(tab, "_verify_profile_match"):
             tab.ffmpeg_profile_combo.setCurrentText(initial_profile)
-            tab._on_profile_selected(initial_profile)
+            tab._on_profile_selected(initial_profile)  # noqa: SLF001
 
-    def test_settings_change_triggers_custom_profile(self, shared_ffmpeg_tab) -> None:
+    def test_settings_change_triggers_custom_profile(self, shared_ffmpeg_tab: Any) -> None:  # noqa: PLR6301
         """Test that changing settings switches to Custom profile."""
         tab = shared_ffmpeg_tab
 
         # Start with known profile
         with patch.object(tab, "_verify_profile_match"):
             tab.ffmpeg_profile_combo.setCurrentText("Default")
-            tab._on_profile_selected("Default")
+            tab._on_profile_selected("Default")  # noqa: SLF001
 
         QApplication.processEvents()
         assert tab.ffmpeg_profile_combo.currentText() == "Default"
@@ -148,13 +153,13 @@ class TestFFmpegSettingsTabV2:
         assert tab.ffmpeg_profile_combo.currentText() == "Custom"
 
     @pytest.mark.parametrize("group_enabled", [True, False])
-    def test_unsharp_controls_state_management(self, shared_ffmpeg_tab, group_enabled) -> None:
+    def test_unsharp_controls_state_management(self, shared_ffmpeg_tab: Any, *, group_enabled: bool) -> None:  # noqa: PLR6301
         """Test unsharp mask controls enable/disable functionality."""
         tab = shared_ffmpeg_tab
 
         # Set group state
         tab.ffmpeg_unsharp_group.setChecked(group_enabled)
-        tab._update_unsharp_controls_state(group_enabled)
+        tab._update_unsharp_controls_state(group_enabled)  # noqa: SLF001
         QApplication.processEvents()
 
         # Verify controls match group state
@@ -170,7 +175,7 @@ class TestFFmpegSettingsTabV2:
         for control in unsharp_controls:
             assert control.isEnabled() == group_enabled
 
-    def test_get_current_settings_comprehensive(self, shared_ffmpeg_tab) -> None:
+    def test_get_current_settings_comprehensive(self, shared_ffmpeg_tab: Any) -> None:  # noqa: PLR6301
         """Test comprehensive settings retrieval and validation."""
         tab = shared_ffmpeg_tab
         settings = tab.get_current_settings()
@@ -222,46 +227,46 @@ class TestFFmpegSettingsTabV2:
                 f"Mismatch for {key}: got {settings[key]}, expected {expected_value}"
             )
 
-    def test_profile_matching_validation(self, shared_ffmpeg_tab) -> None:
+    def test_profile_matching_validation(self, shared_ffmpeg_tab: Any) -> None:  # noqa: PLR6301
         """Test profile matching logic with comprehensive validation."""
         tab = shared_ffmpeg_tab
 
         # Apply Default profile
         with patch.object(tab, "_verify_profile_match"):
             tab.ffmpeg_profile_combo.setCurrentText("Default")
-            tab._on_profile_selected("Default")
+            tab._on_profile_selected("Default")  # noqa: SLF001
 
         QApplication.processEvents()
 
         # Verify settings match Default profile
         default_profile = FFMPEG_PROFILES["Default"]
-        assert tab._check_settings_match_profile(default_profile)
+        assert tab._check_settings_match_profile(default_profile)  # noqa: SLF001
 
         # Change a setting and verify mismatch
         original_vsbmc = tab.ffmpeg_vsbmc_checkbox.isChecked()
         tab.ffmpeg_vsbmc_checkbox.setChecked(not original_vsbmc)
 
         # Should no longer match Default profile
-        assert not tab._check_settings_match_profile(default_profile)
+        assert not tab._check_settings_match_profile(default_profile)  # noqa: SLF001
 
         # Restore original state
         tab.ffmpeg_vsbmc_checkbox.setChecked(original_vsbmc)
 
         # Should match again
-        assert tab._check_settings_match_profile(default_profile)
+        assert tab._check_settings_match_profile(default_profile)  # noqa: SLF001
 
     @pytest.mark.parametrize(
         "setting_changes",
         [{"use_ffmpeg_interp": True}, {"mi_mode": "dup"}, {"vsbmc": False}, {"apply_unsharp": True, "unsharp_lx": 5}],
     )
-    def test_various_setting_modifications(self, shared_ffmpeg_tab, setting_changes) -> None:
+    def test_various_setting_modifications(self, shared_ffmpeg_tab: Any, setting_changes: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test various types of setting modifications."""
         tab = shared_ffmpeg_tab
 
         # Start with Default profile
         with patch.object(tab, "_verify_profile_match"):
             tab.ffmpeg_profile_combo.setCurrentText("Default")
-            tab._on_profile_selected("Default")
+            tab._on_profile_selected("Default")  # noqa: SLF001
 
         QApplication.processEvents()
 
@@ -285,7 +290,7 @@ class TestFFmpegSettingsTabV2:
         for setting, expected_value in setting_changes.items():
             assert current_settings[setting] == expected_value
 
-    def test_tab_initialization_robustness(self, qtbot) -> None:
+    def test_tab_initialization_robustness(self, qtbot: Any) -> None:  # noqa: PLR6301
         """Test tab initialization under various conditions."""
         # Test multiple tab creation and destruction
         tabs = []
@@ -302,27 +307,27 @@ class TestFFmpegSettingsTabV2:
             assert hasattr(tab, "ffmpeg_unsharp_group")
 
         # Cleanup
-        for tab in tabs:
+        for _tab in tabs:
             QApplication.processEvents()
 
-    def test_edge_case_profile_scenarios(self, shared_ffmpeg_tab) -> None:
+    def test_edge_case_profile_scenarios(self, shared_ffmpeg_tab: Any) -> None:  # noqa: PLR6301
         """Test edge cases in profile handling."""
         tab = shared_ffmpeg_tab
 
         # Test with empty profile name
         with patch.object(tab, "_verify_profile_match"):
             # Should handle gracefully
-            tab._on_profile_selected("")
+            tab._on_profile_selected("")  # noqa: SLF001
 
         # Test with non-existent profile name
         with patch.object(tab, "_verify_profile_match"):
             # Should handle gracefully
-            tab._on_profile_selected("NonExistentProfile")
+            tab._on_profile_selected("NonExistentProfile")  # noqa: SLF001
 
         # Tab should remain functional
         assert tab.ffmpeg_profile_combo.count() > 0
 
-    def test_signal_handling_robustness(self, shared_ffmpeg_tab) -> None:
+    def test_signal_handling_robustness(self, shared_ffmpeg_tab: Any) -> None:  # noqa: PLR6301
         """Test robustness of signal handling."""
         tab = shared_ffmpeg_tab
 
@@ -333,13 +338,13 @@ class TestFFmpegSettingsTabV2:
             for profile in profiles:
                 if profile in [tab.ffmpeg_profile_combo.itemText(i) for i in range(tab.ffmpeg_profile_combo.count())]:
                     tab.ffmpeg_profile_combo.setCurrentText(profile)
-                    tab._on_profile_selected(profile)
+                    tab._on_profile_selected(profile)  # noqa: SLF001
                     QApplication.processEvents()
 
         # Tab should remain stable
         assert tab.ffmpeg_profile_combo.currentText() in profiles
 
-    def test_memory_efficiency_validation(self, shared_ffmpeg_tab) -> None:
+    def test_memory_efficiency_validation(self, shared_ffmpeg_tab: Any) -> None:  # noqa: PLR6301
         """Test memory efficiency and resource management."""
         tab = shared_ffmpeg_tab
 
