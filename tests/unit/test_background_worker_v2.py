@@ -13,11 +13,13 @@ Optimizations:
 """
 
 import logging
+from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
 
 from goesvfi.integrity_check.background_worker import (
+    BackgroundProcessManager,
     Task,
     TaskProgress,
     TaskResult,
@@ -30,8 +32,12 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 @pytest.fixture()
-def sample_task_data():
-    """Shared test data for task creation."""
+def sample_task_data() -> dict[str, Any]:
+    """Shared test data for task creation.
+
+    Returns:
+        dict[str, Any]: Dictionary containing sample task data for tests.
+    """
     return {
         "task_id": "test_task_001",
         "progress": TaskProgress(current=5, total=10, eta_seconds=2.5, message="Processing..."),
@@ -47,13 +53,17 @@ def sample_task_data():
 
 
 @pytest.fixture()
-def dummy_functions():
-    """Shared dummy functions for task testing."""
+def dummy_functions() -> dict[str, Any]:
+    """Shared dummy functions for task testing.
 
-    def simple_add(x, y):
+    Returns:
+        dict[str, Any]: Dictionary containing dummy functions for testing.
+    """
+
+    def simple_add(x: int, y: int) -> int:  # noqa: FURB118
         return x + y
 
-    def task_with_progress(x, y, progress_callback=None, cancel_check=None):
+    def task_with_progress(x: int, y: int, progress_callback: Any = None, cancel_check: Any = None) -> int | None:
         # Report progress
         if progress_callback:
             progress_callback(TaskProgress(current=1, total=2))
@@ -70,7 +80,7 @@ def dummy_functions():
 class TestTaskProgress:
     """Test TaskProgress dataclass."""
 
-    def test_task_progress_creation(self, sample_task_data) -> None:
+    def test_task_progress_creation(self, sample_task_data: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test creating TaskProgress instance."""
         progress_data = sample_task_data["progress"]
         assert progress_data.current == 5
@@ -78,17 +88,17 @@ class TestTaskProgress:
         assert progress_data.eta_seconds == 2.5
         assert progress_data.message == "Processing..."
 
-    def test_task_progress_defaults(self) -> None:
+    def test_task_progress_defaults(self) -> None:  # noqa: PLR6301
         """Test TaskProgress default values."""
         progress = TaskProgress(current=1, total=10)
         assert progress.eta_seconds == 0.0
-        assert progress.message == ""
+        assert not progress.message
 
 
 class TestTaskResult:
     """Test TaskResult dataclass."""
 
-    def test_task_result_success(self, sample_task_data) -> None:
+    def test_task_result_success(self, sample_task_data: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test creating successful TaskResult."""
         result = sample_task_data["result"]
         assert result.task_id == "test_task_001"
@@ -97,7 +107,7 @@ class TestTaskResult:
         assert result.error is None
         assert result.error_traceback is None
 
-    def test_task_result_failure(self, sample_task_data) -> None:
+    def test_task_result_failure(self, sample_task_data: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test creating failed TaskResult."""
         result = sample_task_data["error_result"]
         assert result.task_id == "test_task_001"
@@ -110,23 +120,23 @@ class TestTaskResult:
 class TestTask:
     """Test Task class functionality."""
 
-    def test_task_creation(self, sample_task_data, dummy_functions) -> None:
+    def test_task_creation(self, sample_task_data: dict[str, Any], dummy_functions: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test creating a Task instance."""
-        task = Task(sample_task_data["task_id"], dummy_functions["simple_add"], 1, 2)
+        task: Task = Task(sample_task_data["task_id"], dummy_functions["simple_add"], 1, 2)
         assert task.task_id == sample_task_data["task_id"]
         assert task.func == dummy_functions["simple_add"]
         assert task.args == (1, 2)
         assert task.kwargs == {}
         assert isinstance(task.signals, TaskSignals)
-        assert not task._cancel_requested
+        assert not task._cancel_requested  # noqa: SLF001
 
     @patch("time.sleep", return_value=None)  # Mock time.sleep to speed up tests
-    def test_task_successful_execution(self, mock_sleep, dummy_functions) -> None:
+    def test_task_successful_execution(self, mock_sleep: Any, dummy_functions: dict[str, Any]) -> None:  # noqa: PLR6301, ARG002
         """Test successful task execution."""
-        task = Task("test_task", dummy_functions["task_with_progress"], 5, 3)
+        task: Task = Task("test_task", dummy_functions["task_with_progress"], 5, 3)
 
         # Track signals manually
-        signal_calls = {"started": [], "progress": [], "completed": [], "failed": []}
+        signal_calls: dict[str, list[Any]] = {"started": [], "progress": [], "completed": [], "failed": []}
 
         task.signals.started.connect(signal_calls["started"].append)
         task.signals.progress.connect(lambda task_id, p: signal_calls["progress"].append((task_id, p)))
@@ -168,7 +178,7 @@ class TestTaskStatus:
             TaskStatus.CANCELLED,
         ],
     )
-    def test_task_status_values(self, status) -> None:
+    def test_task_status_values(self, status: Any) -> None:  # noqa: PLR6301
         """Test TaskStatus enum values exist."""
         assert status is not None
 
@@ -179,7 +189,9 @@ class TestBackgroundProcessManager:
     @patch("goesvfi.integrity_check.background_worker.UIFreezeMonitor")
     @patch("goesvfi.integrity_check.background_worker.ThreadPoolExecutor")
     @patch("time.sleep", return_value=None)  # Mock time.sleep for faster tests
-    def test_background_worker_task_execution(self, mock_sleep, mock_executor_class, mock_monitor_class) -> None:
+    def test_background_worker_task_execution(  # noqa: PLR6301
+        self, mock_sleep: Any, mock_executor_class: Any, mock_monitor_class: Any  # noqa: ARG002
+    ) -> None:
         """Test background worker task execution with mocked components."""
         # Setup mock executor
         mock_executor = Mock()
@@ -188,12 +200,10 @@ class TestBackgroundProcessManager:
         mock_executor.submit.return_value = mock_future
 
         # Create worker
-        from goesvfi.integrity_check.background_worker import BackgroundProcessManager
-
         worker = BackgroundProcessManager()
 
         # Define test task
-        def test_task(value):
+        def test_task(value: int) -> int:
             return value * 2
 
         # Submit task
@@ -208,10 +218,8 @@ class TestBackgroundProcessManager:
         assert mock_executor.shutdown.called
 
     @patch("goesvfi.integrity_check.background_worker.UIFreezeMonitor")
-    def test_worker_initialization(self, mock_monitor_class) -> None:
+    def test_worker_initialization(self, mock_monitor_class: Any) -> None:  # noqa: PLR6301
         """Test worker initialization with mocked UI freeze monitor."""
-        from goesvfi.integrity_check.background_worker import BackgroundProcessManager
-
         worker = BackgroundProcessManager()
         assert worker is not None
 
@@ -223,12 +231,10 @@ class TestBackgroundProcessManager:
 
     @patch("goesvfi.integrity_check.background_worker.UIFreezeMonitor")
     @patch("goesvfi.integrity_check.background_worker.ThreadPoolExecutor")
-    def test_multiple_task_submission(self, mock_executor_class, mock_monitor_class) -> None:
+    def test_multiple_task_submission(self, mock_executor_class: Any, mock_monitor_class: Any) -> None:  # noqa: PLR6301, ARG002
         """Test submitting multiple tasks."""
         mock_executor = Mock()
         mock_executor_class.return_value = mock_executor
-
-        from goesvfi.integrity_check.background_worker import BackgroundProcessManager
 
         worker = BackgroundProcessManager()
 

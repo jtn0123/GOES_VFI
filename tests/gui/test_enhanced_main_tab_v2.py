@@ -9,7 +9,9 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 import sys
+import threading
 import types
+from typing import Any
 
 from PyQt6.QtWidgets import QLabel, QLineEdit, QProgressBar, QWidget
 import pytest
@@ -19,17 +21,22 @@ class TestEnhancedMainTabOptimizedV2:
     """Optimized enhanced main tab tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_ui_enhancements_mock(self):
-        """Create shared UI enhancements mock for all tests."""
+    @staticmethod
+    def shared_ui_enhancements_mock() -> dict[str, Any]:  # noqa: C901
+        """Create shared UI enhancements mock for all tests.
+
+        Returns:
+            dict[str, Any]: Dictionary containing UI enhancement mocks.
+        """
 
         class DummySignal:
             def __init__(self) -> None:
-                self._slots = []
+                self._slots: list[Any] = []
 
-            def connect(self, slot) -> None:
+            def connect(self, slot: Any) -> None:
                 self._slots.append(slot)
 
-            def emit(self, *args, **kwargs) -> None:
+            def emit(self, *args: Any, **kwargs: Any) -> None:
                 for slot in self._slots:
                     slot(*args, **kwargs)
 
@@ -37,27 +44,27 @@ class TestEnhancedMainTabOptimizedV2:
             def __init__(self) -> None:
                 self.files_dropped = DummySignal()
 
-            def dragEnterEvent(self, event) -> None:
+            def dragEnterEvent(self, event: Any) -> None:  # noqa: N802
                 pass
 
-            def dragLeaveEvent(self, event) -> None:
+            def dragLeaveEvent(self, event: Any) -> None:  # noqa: N802
                 pass
 
-            def dropEvent(self, event) -> None:
+            def dropEvent(self, event: Any) -> None:  # noqa: N802
                 pass
 
         class DummyFadeInNotification:
-            def __init__(self, parent=None) -> None:
-                self.messages = []
+            def __init__(self, parent: Any = None) -> None:  # noqa: ARG002
+                self.messages: list[str] = []
 
-            def show_message(self, message, duration=None) -> None:
+            def show_message(self, message: str, duration: Any = None) -> None:  # noqa: ARG002
                 self.messages.append(message)
 
         class DummyProgressTracker:
             def __init__(self) -> None:
                 self.started = False
                 self.stopped = False
-                self.updated = []
+                self.updated: list[tuple[int, int]] = []
                 self.stats_updated = DummySignal()
 
             def start(self) -> None:
@@ -66,21 +73,21 @@ class TestEnhancedMainTabOptimizedV2:
             def stop(self) -> None:
                 self.stopped = True
 
-            def update_progress(self, items=0, bytes_transferred=0) -> None:
+            def update_progress(self, items: int = 0, bytes_transferred: int = 0) -> None:
                 self.updated.append((items, bytes_transferred))
 
         class DummyShortcutManager:
-            def __init__(self, parent=None) -> None:
-                self.callbacks = None
+            def __init__(self, parent: Any = None) -> None:  # noqa: ARG002
+                self.callbacks: Any = None
 
-            def setup_standard_shortcuts(self, callbacks) -> None:
+            def setup_standard_shortcuts(self, callbacks: Any) -> None:
                 self.callbacks = callbacks
 
             def show_shortcuts(self) -> None:
                 pass
 
         class DummyLoadingSpinner:
-            def __init__(self, parent=None) -> None:
+            def __init__(self, parent: Any = None) -> None:  # noqa: ARG002
                 self.started = False
                 self.stopped = False
 
@@ -92,7 +99,7 @@ class TestEnhancedMainTabOptimizedV2:
 
         class DummyTooltipHelper:
             @staticmethod
-            def add_tooltip(widget, topic, text=None) -> None:
+            def add_tooltip(widget: Any, topic: str, text: str | None = None) -> None:
                 pass
 
         class DummyStatusWidget(QWidget):
@@ -103,7 +110,7 @@ class TestEnhancedMainTabOptimizedV2:
                 self.eta_label = QLabel()
                 self.progress_bar = QProgressBar()
 
-        def create_status_widget(parent=None):
+        def create_status_widget(parent: Any = None) -> DummyStatusWidget:  # noqa: ARG001
             return DummyStatusWidget()
 
         # Create mock module
@@ -133,17 +140,25 @@ class TestEnhancedMainTabOptimizedV2:
         }
 
     @pytest.fixture()
-    def enhanced_main_tab(self, qtbot, shared_ui_enhancements_mock):
-        """Create enhanced main tab instance."""
+    @staticmethod
+    def enhanced_main_tab(qtbot: Any, shared_ui_enhancements_mock: dict[str, Any]) -> Any:
+        """Create enhanced main tab instance.
+
+        Returns:
+            Any: Enhanced main tab instance.
+        """
         # Import after mocking
-        from goesvfi.gui_tabs.enhanced_main_tab import EnhancedMainTab
+        from goesvfi.gui_tabs.enhanced_main_tab import EnhancedMainTab  # noqa: PLC0415
 
         tab = EnhancedMainTab()
         qtbot.addWidget(tab)
 
         return tab
 
-    def test_drag_drop_functionality_comprehensive(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_drag_drop_functionality_comprehensive(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test comprehensive drag and drop functionality."""
         tab = enhanced_main_tab
 
@@ -178,7 +193,10 @@ class TestEnhancedMainTabOptimizedV2:
             # Should be callable without crashing
             event_method(None)
 
-    def test_notification_system_comprehensive(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_notification_system_comprehensive(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test comprehensive notification system."""
         tab = enhanced_main_tab
 
@@ -218,7 +236,10 @@ class TestEnhancedMainTabOptimizedV2:
         # All messages should be recorded
         assert len(notification.messages) >= len(rapid_messages)
 
-    def test_progress_tracking_comprehensive(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_progress_tracking_comprehensive(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test comprehensive progress tracking functionality."""
         tab = enhanced_main_tab
 
@@ -260,7 +281,7 @@ class TestEnhancedMainTabOptimizedV2:
         # Test signal emission
         callback_called = False
 
-        def test_callback(*args) -> None:
+        def test_callback(*args: Any) -> None:
             nonlocal callback_called
             callback_called = True
 
@@ -268,7 +289,10 @@ class TestEnhancedMainTabOptimizedV2:
         tracker.stats_updated.emit()
         assert callback_called
 
-    def test_shortcut_manager_comprehensive(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_shortcut_manager_comprehensive(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test comprehensive shortcut manager functionality."""
         tab = enhanced_main_tab
 
@@ -278,10 +302,10 @@ class TestEnhancedMainTabOptimizedV2:
 
         # Test shortcut setup
         test_callbacks = {
-            "ctrl+o": lambda: print("Open"),
-            "ctrl+s": lambda: print("Save"),
-            "f1": lambda: print("Help"),
-            "esc": lambda: print("Cancel"),
+            "ctrl+o": lambda: None,  # Open action
+            "ctrl+s": lambda: None,  # Save action
+            "f1": lambda: None,  # Help action
+            "esc": lambda: None,  # Cancel action
         }
 
         manager.setup_standard_shortcuts(test_callbacks)
@@ -301,7 +325,10 @@ class TestEnhancedMainTabOptimizedV2:
             manager.setup_standard_shortcuts(callbacks)
             assert manager.callbacks == callbacks, f"Callback setup failed for: {description}"
 
-    def test_loading_spinner_comprehensive(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_loading_spinner_comprehensive(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test comprehensive loading spinner functionality."""
         tab = enhanced_main_tab
 
@@ -338,7 +365,10 @@ class TestEnhancedMainTabOptimizedV2:
         # Should end in stopped state
         assert spinner.stopped
 
-    def test_tooltip_helper_comprehensive(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_tooltip_helper_comprehensive(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test comprehensive tooltip helper functionality."""
         mocks = shared_ui_enhancements_mock
 
@@ -373,7 +403,10 @@ class TestEnhancedMainTabOptimizedV2:
         # Test with None widget (should handle gracefully)
         tooltip_helper.add_tooltip(None, "test", "Test tooltip")
 
-    def test_status_widget_comprehensive(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_status_widget_comprehensive(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test comprehensive status widget functionality."""
         mocks = shared_ui_enhancements_mock
 
@@ -400,7 +433,10 @@ class TestEnhancedMainTabOptimizedV2:
         status_widget.progress_bar.setValue(75)
         assert status_widget.progress_bar.value() == 75
 
-    def test_enhanced_features_integration(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_enhanced_features_integration(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test integration of all enhanced features."""
         tab = enhanced_main_tab
 
@@ -445,7 +481,10 @@ class TestEnhancedMainTabOptimizedV2:
         assert tab.loading_spinner.stopped
         assert tab.progress_tracker.stopped
 
-    def test_error_handling_and_robustness(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_error_handling_and_robustness(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test error handling and robustness of enhanced features."""
         tab = enhanced_main_tab
 
@@ -463,7 +502,7 @@ class TestEnhancedMainTabOptimizedV2:
                 scenario()
                 qtbot.wait(10)
                 # Should handle gracefully without crashing
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 pytest.fail(f"Enhanced feature crashed with error: {e}")
 
         # Test rapid operations don't cause issues
@@ -479,7 +518,10 @@ class TestEnhancedMainTabOptimizedV2:
         assert hasattr(tab.notification_widget, "show_message")
         assert hasattr(tab.progress_tracker, "update_progress")
 
-    def test_memory_and_performance(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_memory_and_performance(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test memory usage and performance of enhanced features."""
         tab = enhanced_main_tab
 
@@ -510,7 +552,10 @@ class TestEnhancedMainTabOptimizedV2:
         assert len(tab.notification_widget.messages) == 0
         assert len(tab.progress_tracker.updated) == 0
 
-    def test_ui_enhancement_compatibility(self, qtbot, enhanced_main_tab, shared_ui_enhancements_mock) -> None:
+    @staticmethod
+    def test_ui_enhancement_compatibility(
+        qtbot: Any, enhanced_main_tab: Any, shared_ui_enhancements_mock: dict[str, Any]
+    ) -> None:
         """Test compatibility of UI enhancements with PyQt6."""
         tab = enhanced_main_tab
 
@@ -536,7 +581,6 @@ class TestEnhancedMainTabOptimizedV2:
             assert len(signals) > 0 or hasattr(component, "files_dropped") or hasattr(component, "stats_updated")
 
         # Test thread safety basics (components should be created in main thread)
-        import threading
 
         main_thread = threading.main_thread()
         current_thread = threading.current_thread()
