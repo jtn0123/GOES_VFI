@@ -85,7 +85,7 @@ class TestModelManagerOptimizedV2:
                 return [Path(child) for child in children]
             return []
 
-        def mock_open(path: Path, mode: str = "r", *args: Any, **kwargs: Any) -> Any:
+        def mock_open(path: Path, mode: str = "r", *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401, ARG001
             """Mock Path.open().
 
             Returns:
@@ -130,7 +130,7 @@ class TestModelManagerOptimizedV2:
 
     @staticmethod
     def _create_mock_directory(
-        mock_fs: "TestModelManagerOptimizedV2", path: str, children: list[str] | None = None
+        mock_fs: "TestModelManagerOptimizedV2", path: str, children: list[str] | None = None,
     ) -> None:
         """Helper to create a mock directory.
 
