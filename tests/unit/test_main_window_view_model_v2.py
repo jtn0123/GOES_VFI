@@ -108,8 +108,8 @@ class TestMainWindowViewModelV2(unittest.TestCase):
                 # Track signal emissions
                 signal_emitted = []
 
-                def on_status_updated(new_status) -> None:
-                    signal_emitted.append(new_status)
+                def on_status_updated(new_status: str, emitted_list: list = signal_emitted) -> None:
+                    emitted_list.append(new_status)
 
                 self.vm.status_updated.connect(on_status_updated)
 
@@ -136,7 +136,7 @@ class TestMainWindowViewModelV2(unittest.TestCase):
         # Track signal emissions
         signal_count = 0
 
-        def on_status_updated(new_status) -> None:
+        def on_status_updated(_new_status: str) -> None:
             nonlocal signal_count
             signal_count += 1
 
@@ -169,8 +169,8 @@ class TestMainWindowViewModelV2(unittest.TestCase):
                 # Track signal emissions
                 signal_emitted = []
 
-                def on_tab_changed(new_index) -> None:
-                    signal_emitted.append(new_index)
+                def on_tab_changed(new_index: int, emitted_list: list = signal_emitted) -> None:
+                    emitted_list.append(new_index)
 
                 self.vm.active_tab_changed.connect(on_tab_changed)
 
@@ -197,7 +197,7 @@ class TestMainWindowViewModelV2(unittest.TestCase):
         # Track signal emissions
         signal_count = 0
 
-        def on_tab_changed(new_index) -> None:
+        def on_tab_changed(_new_index: int) -> None:
             nonlocal signal_count
             signal_count += 1
 
@@ -281,13 +281,13 @@ class TestMainWindowViewModelV2(unittest.TestCase):
         # Test multiple signal connections
         signal_receivers = []
 
-        def receiver1(value) -> None:
+        def receiver1(value: str) -> None:
             signal_receivers.append(f"receiver1: {value}")
 
-        def receiver2(value) -> None:
+        def receiver2(value: str) -> None:
             signal_receivers.append(f"receiver2: {value}")
 
-        def receiver3(value) -> None:
+        def receiver3(value: str) -> None:
             signal_receivers.append(f"receiver3: {value}")
 
         # Connect multiple receivers
@@ -341,7 +341,7 @@ class TestMainWindowViewModelV2(unittest.TestCase):
                     tab = self.vm.active_tab_index
                     results.append(("access", status, tab))
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((operation_id, e))
 
         # Run concurrent operations
@@ -356,7 +356,7 @@ class TestMainWindowViewModelV2(unittest.TestCase):
         assert len(errors) == 0, f"Concurrent operation errors: {errors}"
         assert len(results) == 30
 
-    def test_memory_management(self) -> None:
+    def test_memory_management(self) -> None:  # noqa: PLR6301
         """Test memory management and cleanup."""
         # Create multiple view models to test memory handling
         view_models = []
@@ -405,28 +405,28 @@ class TestMainWindowViewModelV2(unittest.TestCase):
                     try:
                         self.vm.status = value
                         assert self.vm.status == value
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         self.fail(f"Should handle edge case status gracefully: {e}")
                 else:
                     # Test setting edge case tab index values
                     try:
                         self.vm.active_tab_index = value
                         assert self.vm.active_tab_index == value
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         self.fail(f"Should handle edge case tab index gracefully: {e}")
 
     def test_error_handling_in_signal_emission(self) -> None:
         """Test error handling when signal receivers raise exceptions."""
 
         # Create a receiver that raises an exception
-        def error_receiver(value) -> Never:
+        def error_receiver(value: str) -> Never:
             msg = f"Test exception for value: {value}"
-            raise Exception(msg)
+            raise RuntimeError(msg)
 
         # Create a normal receiver
         normal_results = []
 
-        def normal_receiver(value) -> None:
+        def normal_receiver(value: str) -> None:
             normal_results.append(value)
 
         # Connect both receivers
@@ -437,7 +437,7 @@ class TestMainWindowViewModelV2(unittest.TestCase):
         try:
             self.vm.status = "Test Error Handling"
             QApplication.processEvents()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Signal emission should handle receiver errors gracefully: {e}")
 
         # Normal receiver should still have received the signal
@@ -491,10 +491,10 @@ class TestMainWindowViewModelV2(unittest.TestCase):
         # Track when signals are emitted
         emission_log = []
 
-        def log_status_emission(value) -> None:
+        def log_status_emission(value: str) -> None:
             emission_log.append(("status", value))
 
-        def log_tab_emission(value) -> None:
+        def log_tab_emission(value: int) -> None:
             emission_log.append(("tab", value))
 
         self.vm.status_updated.connect(log_status_emission)
@@ -524,8 +524,12 @@ class TestMainWindowViewModelV2(unittest.TestCase):
 
 # Compatibility tests using pytest style for existing test coverage
 @pytest.fixture()
-def main_window_vm_pytest(qtbot):
-    """Pytest fixture for MainWindowViewModel."""
+def main_window_vm_pytest(qtbot: Any) -> Any:  # noqa: ARG001
+    """Pytest fixture for MainWindowViewModel.
+
+    Yields:
+        MainWindowViewModel: View model instance for testing.
+    """
     vm = MainWindowViewModel(
         FileSorter(),
         DateSorter(),
@@ -536,7 +540,7 @@ def main_window_vm_pytest(qtbot):
     vm.deleteLater()
 
 
-def test_status_signal_emitted_pytest(main_window_vm_pytest, qtbot) -> None:
+def test_status_signal_emitted_pytest(main_window_vm_pytest: Any, qtbot: Any) -> None:
     """Test status signal emission using pytest style."""
     with qtbot.waitSignal(main_window_vm_pytest.status_updated, timeout=1000) as blocker:
         main_window_vm_pytest.status = "Working"
@@ -544,7 +548,7 @@ def test_status_signal_emitted_pytest(main_window_vm_pytest, qtbot) -> None:
     assert main_window_vm_pytest.status == "Working"
 
 
-def test_active_tab_signal_emitted_pytest(main_window_vm_pytest, qtbot) -> None:
+def test_active_tab_signal_emitted_pytest(main_window_vm_pytest: Any, qtbot: Any) -> None:
     """Test active tab signal emission using pytest style."""
     with qtbot.waitSignal(main_window_vm_pytest.active_tab_changed, timeout=1000) as blocker:
         main_window_vm_pytest.active_tab_index = 1
@@ -552,7 +556,7 @@ def test_active_tab_signal_emitted_pytest(main_window_vm_pytest, qtbot) -> None:
     assert main_window_vm_pytest.active_tab_index == 1
 
 
-def test_processing_vm_has_dependencies_pytest(main_window_vm_pytest) -> None:
+def test_processing_vm_has_dependencies_pytest(main_window_vm_pytest: Any) -> None:
     """Test processing view model dependencies using pytest style."""
     assert main_window_vm_pytest.processing_vm.preview_manager is main_window_vm_pytest.preview_manager
     assert main_window_vm_pytest.processing_vm.processing_manager is main_window_vm_pytest.processing_manager
