@@ -9,9 +9,11 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication
 import pytest
 
 from goesvfi.gui import MainWindow
@@ -21,10 +23,13 @@ class TestGUIButtonValidationOptimizedV2:
     """Optimized GUI button validation tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Shared QApplication instance."""
-        from PyQt6.QtWidgets import QApplication
+    @staticmethod
+    def shared_app() -> Any:
+        """Shared QApplication instance.
 
+        Yields:
+            QApplication: The shared Qt application instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
@@ -32,8 +37,13 @@ class TestGUIButtonValidationOptimizedV2:
         app.processEvents()
 
     @pytest.fixture(scope="class")
-    def shared_mocks(self):
-        """Create shared mocks that persist across tests."""
+    @staticmethod
+    def shared_mocks() -> Any:
+        """Create shared mocks that persist across tests.
+
+        Yields:
+            dict[str, Any]: Dictionary containing mock objects.
+        """
         mocks = {}
 
         # Mock heavy components
@@ -46,21 +56,27 @@ class TestGUIButtonValidationOptimizedV2:
             yield mocks
 
     @pytest.fixture()
-    def main_window(self, qtbot, shared_app, shared_mocks):
-        """Create MainWindow instance with proper cleanup."""
+    @staticmethod
+    def main_window(qtbot: Any, shared_app: Any, shared_mocks: dict[str, Any]) -> Any:  # noqa: ARG004
+        """Create MainWindow instance with proper cleanup.
+
+        Returns:
+            MainWindow: Configured main window instance.
+        """
         window = MainWindow(debug_mode=True)
         qtbot.addWidget(window)
-        window._post_init_setup()
+        window._post_init_setup()  # noqa: SLF001
 
         return window
 
-    def test_input_directory_button_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_input_directory_button_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive input directory button functionality."""
         window = main_window
 
         # Test initial state
         assert window.main_tab.in_dir_button.isEnabled()
-        assert window.main_tab.in_dir_edit.text() == ""
+        assert not window.main_tab.in_dir_edit.text()
         assert not window.main_tab.crop_button.isEnabled()
         assert not window.main_tab.clear_crop_button.isEnabled()
 
@@ -69,7 +85,7 @@ class TestGUIButtonValidationOptimizedV2:
             "/test/input/dir",
             "/different/path/images",
             "/home/user/videos",
-            "/tmp/processing",
+            "/var/tmp/processing",  # noqa: S108
         ]
 
         for test_dir in test_directories:
@@ -95,13 +111,14 @@ class TestGUIButtonValidationOptimizedV2:
             # Text should not change when user cancels
             assert window.main_tab.in_dir_edit.text() == original_text
 
-    def test_output_file_button_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_output_file_button_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive output file selection functionality."""
         window = main_window
 
         # Test initial state
         assert window.main_tab.out_file_button.isEnabled()
-        assert window.main_tab.out_file_edit.text() == ""
+        assert not window.main_tab.out_file_edit.text()
 
         # Test multiple file type selections
         test_files = [
@@ -132,7 +149,8 @@ class TestGUIButtonValidationOptimizedV2:
             # Text should not change when user cancels
             assert window.main_tab.out_file_edit.text() == original_text
 
-    def test_start_button_state_management_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_start_button_state_management_comprehensive(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test comprehensive start button state management."""
         window = main_window
 
@@ -160,27 +178,28 @@ class TestGUIButtonValidationOptimizedV2:
                 window.out_file_path = None
                 window.main_tab.out_file_edit.setText("")
 
-            window._update_start_button_state()
+            window._update_start_button_state()  # noqa: SLF001
 
             assert window.main_tab.start_button.isEnabled() == expected_enabled, f"Failed for: {description}"
 
         # Test processing state transitions
         window.set_in_dir(Path("/test/input"))
         window.out_file_path = Path("/test/output.mp4")
-        window._update_start_button_state()
+        window._update_start_button_state()  # noqa: SLF001
         assert window.main_tab.start_button.isEnabled()
 
         # Start processing
-        window._set_processing_state(True)
+        window._set_processing_state(enabled=True)  # noqa: SLF001
         assert window.main_tab.start_button.text() == "Stop Processing"
         assert window.main_tab.start_button.isEnabled()
 
         # Stop processing
-        window._set_processing_state(False)
+        window._set_processing_state(enabled=False)  # noqa: SLF001
         assert window.main_tab.start_button.text() == "Start Processing"
         assert window.main_tab.start_button.isEnabled()
 
-    def test_crop_button_workflow_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_crop_button_workflow_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive crop button workflow with all scenarios."""
         window = main_window
 
@@ -238,14 +257,15 @@ class TestGUIButtonValidationOptimizedV2:
 
         # Test clear crop functionality
         window.current_crop_rect = (10, 20, 100, 50)
-        window._update_crop_buttons_state()
+        window._update_crop_buttons_state()  # noqa: SLF001
         assert window.main_tab.clear_crop_button.isEnabled()
 
         qtbot.mouseClick(window.main_tab.clear_crop_button, Qt.MouseButton.LeftButton)
         assert window.current_crop_rect is None
         assert not window.main_tab.clear_crop_button.isEnabled()
 
-    def test_encoder_selection_ui_updates_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_encoder_selection_ui_updates_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive encoder selection and UI updates."""
         window = main_window
 
@@ -277,7 +297,8 @@ class TestGUIButtonValidationOptimizedV2:
         assert window.main_tab.encoder_combo.currentText() == "FFmpeg"
         assert not window.main_tab.rife_options_group.isEnabled()
 
-    def test_sanchez_controls_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_sanchez_controls_comprehensive(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test comprehensive Sanchez checkbox and resolution controls."""
         window = main_window
 
@@ -292,13 +313,13 @@ class TestGUIButtonValidationOptimizedV2:
 
             # Trigger the toggle method
             check_state = Qt.CheckState.Checked if checked_state else Qt.CheckState.Unchecked
-            window._toggle_sanchez_res_enabled(check_state)
+            window._toggle_sanchez_res_enabled(check_state)  # noqa: SLF001
 
             assert window.main_tab.sanchez_res_combo.isEnabled() == expected_enabled, f"Failed for: {description}"
 
         # Test resolution selection when enabled
         window.main_tab.sanchez_checkbox.setChecked(True)
-        window._toggle_sanchez_res_enabled(Qt.CheckState.Checked)
+        window._toggle_sanchez_res_enabled(Qt.CheckState.Checked)  # noqa: SLF001
 
         # Test different resolution values
         test_resolutions = ["0.5", "1", "2", "4"]
@@ -307,7 +328,8 @@ class TestGUIButtonValidationOptimizedV2:
                 window.main_tab.sanchez_res_combo.setCurrentText(resolution)
                 assert window.main_tab.sanchez_res_combo.currentText() == resolution
 
-    def test_tab_switching_state_preservation(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_tab_switching_state_preservation(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive tab switching with state preservation."""
         window = main_window
 
@@ -352,7 +374,8 @@ class TestGUIButtonValidationOptimizedV2:
         assert window.main_tab.clear_crop_button.isEnabled()
         assert window.main_tab.start_button.isEnabled()
 
-    def test_preview_interaction_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_preview_interaction_comprehensive(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test comprehensive preview label click interactions."""
         window = main_window
 
@@ -388,7 +411,8 @@ class TestGUIButtonValidationOptimizedV2:
             # Should still call zoom even without file_path
             mock_zoom.assert_called_once_with(empty_label)
 
-    def test_processing_state_ui_management(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_processing_state_ui_management(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test comprehensive UI management during processing states."""
         window = main_window
 
@@ -418,7 +442,7 @@ class TestGUIButtonValidationOptimizedV2:
             assert window.tab_widget.isTabEnabled(i), f"Tab {i} should be enabled before processing"
 
         # Start processing
-        window._set_processing_state(True)
+        window._set_processing_state(enabled=True)  # noqa: SLF001
 
         # Verify elements are disabled during processing (except main tab)
         for element_path, _ in ui_elements:
@@ -433,7 +457,7 @@ class TestGUIButtonValidationOptimizedV2:
             assert not window.tab_widget.isTabEnabled(i), f"Tab {i} should be disabled during processing"
 
         # Stop processing
-        window._set_processing_state(False)
+        window._set_processing_state(enabled=False)  # noqa: SLF001
 
         # Verify elements are re-enabled after processing
         for element_path, should_be_enabled in ui_elements:
@@ -448,7 +472,8 @@ class TestGUIButtonValidationOptimizedV2:
         for i in range(tab_count):
             assert window.tab_widget.isTabEnabled(i), f"Tab {i} should be re-enabled after processing"
 
-    def test_rife_model_selection_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_rife_model_selection_comprehensive(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive RIFE model selection functionality."""
         window = main_window
 
@@ -470,7 +495,7 @@ class TestGUIButtonValidationOptimizedV2:
                 assert window.current_model_key == current_model
 
                 # Update RIFE UI elements
-                window._update_rife_ui_elements()
+                window._update_rife_ui_elements()  # noqa: SLF001
 
                 # Verify UI remains stable
                 assert window.main_tab.rife_options_group.isEnabled()
@@ -488,7 +513,8 @@ class TestGUIButtonValidationOptimizedV2:
             # Model selection should be preserved
             assert model_combo.currentData() == original_model
 
-    def test_error_handling_and_display(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_error_handling_and_display(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test comprehensive error handling and display mechanisms."""
         window = main_window
 
@@ -508,7 +534,7 @@ class TestGUIButtonValidationOptimizedV2:
                 mock_msgbox.reset_mock()
 
                 # Trigger error
-                window._on_processing_error(error_msg)
+                window._on_processing_error(error_msg)  # noqa: SLF001
 
                 # Verify error dialog was shown
                 mock_msgbox.assert_called_once()
@@ -519,7 +545,8 @@ class TestGUIButtonValidationOptimizedV2:
                 status_message = window.status_bar.currentMessage()
                 assert "Processing failed!" in status_message, f"Status bar doesn't show failure for: {error_msg}"
 
-    def test_settings_persistence_comprehensive(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_settings_persistence_comprehensive(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
         """Test comprehensive settings save/load functionality."""
         window = main_window
 
@@ -551,7 +578,8 @@ class TestGUIButtonValidationOptimizedV2:
             # Just verify the method exists and can be called
             mock_update.reset_mock()
 
-    def test_ui_responsiveness_under_load(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_ui_responsiveness_under_load(qtbot: Any, main_window: Any) -> None:
         """Test UI responsiveness under various load conditions."""
         window = main_window
 
@@ -587,7 +615,8 @@ class TestGUIButtonValidationOptimizedV2:
         assert window.tab_widget.currentIndex() >= 0
         assert window.tab_widget.currentIndex() < tab_count
 
-    def test_edge_cases_and_boundary_conditions(self, qtbot, main_window) -> None:
+    @staticmethod
+    def test_edge_cases_and_boundary_conditions(qtbot: Any, main_window: Any) -> None:
         """Test edge cases and boundary conditions."""
         window = main_window
 
@@ -607,7 +636,7 @@ class TestGUIButtonValidationOptimizedV2:
         # Test null/empty paths
         window.set_in_dir(None)
         window.out_file_path = None
-        window._update_start_button_state()
+        window._update_start_button_state()  # noqa: SLF001
         assert not window.main_tab.start_button.isEnabled()
 
         # Test very long paths
@@ -618,9 +647,9 @@ class TestGUIButtonValidationOptimizedV2:
 
         # Test rapid state changes
         for i in range(20):
-            window._set_processing_state(i % 2 == 0)
+            window._set_processing_state(enabled=(i % 2 == 0))  # noqa: SLF001
             qtbot.wait(5)
 
         # Should end in a stable state
-        window._set_processing_state(False)
+        window._set_processing_state(enabled=False)  # noqa: SLF001
         assert not window.is_processing

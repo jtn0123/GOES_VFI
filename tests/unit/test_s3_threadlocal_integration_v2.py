@@ -35,8 +35,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
     """Optimized ThreadLocalCacheDB integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def threadlocal_integration_test_components(self):
-        """Create shared components for ThreadLocalCacheDB integration testing."""
+    def threadlocal_integration_test_components(self) -> dict[str, Any]:  # noqa: PLR6301
+        """Create shared components for ThreadLocalCacheDB integration testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing test components and managers.
+        """
 
         # Enhanced ThreadLocal Integration Test Manager
         class ThreadLocalIntegrationTestManager:

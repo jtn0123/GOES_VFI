@@ -100,18 +100,18 @@ def complex_function() -> None:  # noqa: C901
 13. ✅ tests/unit/test_model_manager_v2.py (EXCEPTION - was handled by Worker)
 14. ✅ tests/unit/test_network_failure_simulation_v2.py (EXCEPTION - was handled by Worker)
 
-**Completed Integration Tests (18):**
+**Completed Integration Tests (21):**
 15. ✅ tests/integration/test_all_gui_elements_v2.py (74→0 issues, 100% reduction - PERFECT!, commit a62d879)
 16. ✅ tests/integration/test_full_application_workflow_v2.py (0 issues - ALREADY CLEAN!)
 17. ✅ tests/integration/test_enhanced_preview_validation_v2.py (63→0 issues, 100% reduction - PERFECT!, commit edebbd1)
 18. ✅ tests/integration/test_large_dataset_processing_v2.py (69→0 issues, 100% reduction - PERFECT!, commit 3359ebc)
+19. ✅ tests/integration/test_preview_visual_validation_v2.py (70→0 issues, 100% reduction - PERFECT!, commit 59119c5)
+20. ✅ tests/integration/test_vfi_worker_run_v2.py (77→0 issues, 100% reduction - PERFECT!, commit 905f65e)
+21. ✅ tests/integration/test_preview_crop_workflow_v2.py (88→0 issues, 100% reduction - PERFECT!, commit 6d3318e)
 
-**Remaining Integration Tests (5 files):**
+**Remaining Integration Tests (2 files):**
 - tests/integration/test_crop_dialog_integration_v2.py
-- tests/integration/test_preview_crop_workflow_v2.py
-- tests/integration/test_preview_visual_validation_v2.py
 - tests/integration/test_run_ffmpeg_interpolation_v2.py
-- tests/integration/test_vfi_worker_run_v2.py
 
 **All GUI Tests (17 files):**
 - tests/gui/test_main_window_v2.py
@@ -145,10 +145,10 @@ def complex_function() -> None:  # noqa: C901
 
 ## Summary Statistics
 - **Total v2 files**: 141
-- **Completed and clean**: 27 files (19%)
+- **Completed and clean**: 30 files (21%)
 - **Lead Agent**: 13 completed, 81 remaining
-- **Worker Agent**: 18 completed (16 integration, 2 unit exceptions), 29 remaining
-- **Progress Today**: 20 files improved (17 completed, 3 partially fixed)
+- **Worker Agent**: 21 completed (19 integration, 2 unit exceptions), 26 remaining
+- **Progress Today**: 23 files improved (20 completed, 3 partially fixed)
 
 ## Next Actions
 

@@ -485,7 +485,7 @@ class TestPreviewFunctionalityOptimizedV2:
     @staticmethod
     def test_preview_error_handling_comprehensive(
         shared_qt_app: QApplication, preview_test_components: dict[str, Any], temp_workspace: dict[str, Any]
-    ) -> None:  # noqa: C901, PLR0915
+    ) -> None:
         """Test comprehensive preview error handling scenarios."""
         components = preview_test_components
         workspace = temp_workspace
