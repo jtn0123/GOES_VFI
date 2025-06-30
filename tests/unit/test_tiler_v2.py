@@ -8,6 +8,8 @@ Optimizations applied:
 - Enhanced edge case coverage
 """
 
+from typing import Any
+
 import numpy as np
 import pytest
 
@@ -18,24 +20,43 @@ class TestTilerV2:
     """Optimized test class for tiler functionality."""
 
     @pytest.fixture(scope="class")
-    def base_image(self):
-        """Create base test image for reuse across tests."""
-        return np.random.rand(4096, 4096, 3).astype(np.float32)
+    def base_image(self) -> np.ndarray[Any, np.dtype[np.float32]]:  # noqa: PLR6301
+        """Create base test image for reuse across tests.
+
+        Returns:
+            np.ndarray[Any, np.dtype[np.float32]]: Test image array.
+        """
+        rng = np.random.default_rng()
+        return rng.random((4096, 4096, 3)).astype(np.float32)
 
     @pytest.fixture(scope="class")
-    def small_image(self):
-        """Create small test image for overlap testing."""
+    def small_image(self) -> np.ndarray[Any, np.dtype[np.float32]]:  # noqa: PLR6301
+        """Create small test image for overlap testing.
+
+        Returns:
+            np.ndarray[Any, np.dtype[np.float32]]: Small test image array.
+        """
         return np.ones((256, 256, 3), dtype=np.float32)
 
     @pytest.fixture(scope="class")
-    def edge_case_image(self):
-        """Create edge case image not divisible by tile size."""
-        return np.random.rand(4100, 4100, 3).astype(np.float32)
+    def edge_case_image(self) -> np.ndarray[Any, np.dtype[np.float32]]:  # noqa: PLR6301
+        """Create edge case image not divisible by tile size.
+
+        Returns:
+            np.ndarray[Any, np.dtype[np.float32]]: Edge case test image array.
+        """
+        rng = np.random.default_rng()
+        return rng.random((4100, 4100, 3)).astype(np.float32)
 
     @pytest.fixture(scope="class")
-    def tiny_image(self):
-        """Create tiny test image for edge cases."""
-        return np.random.rand(100, 100, 3).astype(np.float32)
+    def tiny_image(self) -> np.ndarray[Any, np.dtype[np.float32]]:  # noqa: PLR6301
+        """Create tiny test image for edge cases.
+
+        Returns:
+            np.ndarray[Any, np.dtype[np.float32]]: Tiny test image array.
+        """
+        rng = np.random.default_rng()
+        return rng.random((100, 100, 3)).astype(np.float32)
 
     @pytest.mark.parametrize(
         "tile_size,overlap",
@@ -45,7 +66,9 @@ class TestTilerV2:
             (512, 8),
         ],
     )
-    def test_tile_image_basic_parametrized(self, base_image, tile_size, overlap) -> None:
+    def test_tile_image_basic_parametrized(  # noqa: PLR6301
+        self, base_image: np.ndarray[Any, np.dtype[np.float32]], tile_size: int, overlap: int
+    ) -> None:
         """Test basic tiling with different tile sizes and overlaps."""
         tiles = tile_image(base_image, tile_size=tile_size, overlap=overlap)
 
@@ -72,7 +95,7 @@ class TestTilerV2:
             assert w <= tile_size
             assert tile.dtype == np.float32
 
-    def test_tile_image_edge_case_dimensions(self, edge_case_image) -> None:
+    def test_tile_image_edge_case_dimensions(self, edge_case_image: np.ndarray[Any, np.dtype[np.float32]]) -> None:  # noqa: PLR6301
         """Test tiling with image dimensions not divisible by tile size."""
         tile_size = 2048
         overlap = 32
@@ -98,7 +121,9 @@ class TestTilerV2:
             (512, 8),
         ],
     )
-    def test_merge_tiles_lossless_reconstruction(self, base_image, tile_size, overlap) -> None:
+    def test_merge_tiles_lossless_reconstruction(  # noqa: PLR6301
+        self, base_image: np.ndarray[Any, np.dtype[np.float32]], tile_size: int, overlap: int
+    ) -> None:
         """Test that tiling and merging produces lossless reconstruction."""
         tiles = tile_image(base_image, tile_size=tile_size, overlap=overlap)
         merged = merge_tiles(tiles, full_shape=(base_image.shape[0], base_image.shape[1]), overlap=overlap)
@@ -107,7 +132,7 @@ class TestTilerV2:
         assert merged.shape == base_image.shape
         assert np.allclose(merged, base_image, atol=1e-5)
 
-    def test_merge_tiles_with_overlap_uniform_image(self, small_image) -> None:
+    def test_merge_tiles_with_overlap_uniform_image(self, small_image: np.ndarray[Any, np.dtype[np.float32]]) -> None:  # noqa: PLR6301
         """Test overlap handling with uniform (all ones) image."""
         tile_size = 128
         overlap = 32
@@ -127,16 +152,19 @@ class TestTilerV2:
             ((512, 512, 3), 256, 64),
         ],
     )
-    def test_lossless_reconstruction_parametrized(self, image_size, tile_size, overlap) -> None:
+    def test_lossless_reconstruction_parametrized(  # noqa: PLR6301
+        self, image_size: tuple[int, int, int], tile_size: int, overlap: int
+    ) -> None:
         """Test lossless reconstruction with various image and tile sizes."""
-        img = np.random.rand(*image_size).astype(np.float32)
+        rng = np.random.default_rng()
+        img = rng.random(image_size).astype(np.float32)
         tiles = tile_image(img, tile_size=tile_size, overlap=overlap)
         merged = merge_tiles(tiles, full_shape=(img.shape[0], img.shape[1]), overlap=overlap)
 
         assert merged.shape == img.shape
         assert np.allclose(merged, img, atol=1e-6)
 
-    def test_tile_image_minimal_overlap(self, tiny_image) -> None:
+    def test_tile_image_minimal_overlap(self, tiny_image: np.ndarray[Any, np.dtype[np.float32]]) -> None:  # noqa: PLR6301
         """Test tiling with minimal overlap."""
         tile_size = 64
         overlap = 4
@@ -149,7 +177,7 @@ class TestTilerV2:
             assert tile.shape[2] == 3
             assert tile.dtype == np.float32
 
-    def test_tile_image_large_overlap(self, tiny_image) -> None:
+    def test_tile_image_large_overlap(self, tiny_image: np.ndarray[Any, np.dtype[np.float32]]) -> None:  # noqa: PLR6301
         """Test tiling with large overlap relative to tile size."""
         tile_size = 64
         overlap = 32  # 50% overlap
@@ -162,7 +190,7 @@ class TestTilerV2:
             assert tile.shape[2] == 3
             assert tile.dtype == np.float32
 
-    def test_tile_boundaries_comprehensive(self, base_image) -> None:
+    def test_tile_boundaries_comprehensive(self, base_image: np.ndarray[Any, np.dtype[np.float32]]) -> None:  # noqa: PLR6301
         """Test that tile boundaries are calculated correctly."""
         tile_size = 1024
         overlap = 64
@@ -180,7 +208,7 @@ class TestTilerV2:
             original_patch = base_image[y : y + tile.shape[0], x : x + tile.shape[1], :]
             assert np.allclose(tile, original_patch, atol=1e-6)
 
-    def test_merge_tiles_exact_reconstruction(self, small_image) -> None:
+    def test_merge_tiles_exact_reconstruction(self, small_image: np.ndarray[Any, np.dtype[np.float32]]) -> None:  # noqa: PLR6301
         """Test exact reconstruction with known pattern."""
         # Create a gradient pattern for testing
         h, w, _c = small_image.shape
@@ -198,9 +226,10 @@ class TestTilerV2:
         assert merged.shape == small_image.shape
         assert np.allclose(merged, small_image, atol=1e-6)
 
-    def test_single_tile_case(self) -> None:
+    def test_single_tile_case(self) -> None:  # noqa: PLR6301
         """Test edge case where image is smaller than tile size."""
-        small_img = np.random.rand(64, 64, 3).astype(np.float32)
+        rng = np.random.default_rng()
+        small_img = rng.random((64, 64, 3)).astype(np.float32)
         tile_size = 128
         overlap = 16
 
@@ -214,7 +243,7 @@ class TestTilerV2:
         assert tile.shape == small_img.shape
         assert np.allclose(tile, small_img, atol=1e-6)
 
-    def test_merge_tiles_performance_validation(self, base_image) -> None:
+    def test_merge_tiles_performance_validation(self, base_image: np.ndarray[Any, np.dtype[np.float32]]) -> None:  # noqa: PLR6301
         """Test merge tiles performance with larger image."""
         tile_size = 1024
         overlap = 32
@@ -227,7 +256,7 @@ class TestTilerV2:
         assert merged.dtype == base_image.dtype
         assert np.allclose(merged, base_image, atol=1e-5)
 
-    def test_zero_overlap_case(self, tiny_image) -> None:
+    def test_zero_overlap_case(self, tiny_image: np.ndarray[Any, np.dtype[np.float32]]) -> None:  # noqa: PLR6301
         """Test tiling with zero overlap."""
         tile_size = 64
         overlap = 0
