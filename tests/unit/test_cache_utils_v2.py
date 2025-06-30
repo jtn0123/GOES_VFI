@@ -114,7 +114,7 @@ class TestCacheUtilsOptimizedV2:
         file1, file2 = sample_files
 
         test_cases = [
-            # (model_name, arrays_description, arrays)
+            # Test cases: (model_name, arrays_description, arrays)
             ("int32_model", "int32 arrays", [np.full((4, 4), i, dtype=np.int32) for i in range(2)]),
             ("float64_model", "float64 arrays", [np.full((3, 5), i * 0.5, dtype=np.float64) for i in range(3)]),
             ("uint8_model", "uint8 arrays", [np.full((2, 6), i * 10, dtype=np.uint8) for i in range(4)]),
@@ -149,7 +149,7 @@ class TestCacheUtilsOptimizedV2:
                 np.testing.assert_array_equal(orig, result)
 
     def test_cache_error_scenarios(
-        self, cache_setup: Path, sample_files: tuple[Path, Path], caplog: pytest.LogCaptureFixture
+        self, cache_setup: Path, sample_files: tuple[Path, Path], caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test cache error handling scenarios."""
         file1, file2 = sample_files

@@ -41,7 +41,7 @@ class TestLogOptimizedV2:
 
     @pytest.fixture(autouse=True)
     @staticmethod
-    def reset_log_state() -> Any:
+    def reset_log_state() -> Any:  # noqa: ANN401
         """Reset log state before each test.
 
         Yields:
@@ -114,7 +114,7 @@ class TestLogOptimizedV2:
         assert handler_types_1 == handler_types_3
 
     def test_colorlog_integration_scenarios(  # noqa: PLR6301
-        self, mock_colorlog_classes: tuple[type[logging.StreamHandler], type[logging.Formatter]]
+        self, mock_colorlog_classes: tuple[type[logging.StreamHandler], type[logging.Formatter]],
     ) -> None:
         """Test logging behavior with colorlog available and unavailable."""
         mock_stream_handler, mock_colored_formatter = mock_colorlog_classes
@@ -219,7 +219,7 @@ class TestLogOptimizedV2:
 
             # Create test record
             record = logging.LogRecord(
-                name="test", level=level, pathname="test.py", lineno=1, msg="Test message", args=(), exc_info=None
+                name="test", level=level, pathname="test.py", lineno=1, msg="Test message", args=(), exc_info=None,
             )
 
             # Format should not raise exception

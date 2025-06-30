@@ -578,7 +578,7 @@ class TestPipelineExceptionsOptimizedV2:
 
                 # Input error with validation details
                 input_error = InputError(
-                    "Input validation failed: expected at least 2 PNG files, found 0 in '/data/frames/'"
+                    "Input validation failed: expected at least 2 PNG files, found 0 in '/data/frames/'",
                 )
 
                 assert "at least 2 PNG files" in str(input_error)
@@ -713,7 +713,7 @@ class TestPipelineExceptionsOptimizedV2:
         ],
     )
     def test_exception_message_variations(  # noqa: PLR6301
-        self, exception_test_components: dict[str, Any], exception_name: str, test_messages: list[str]
+        self, exception_test_components: dict[str, Any], exception_name: str, test_messages: list[str],
     ) -> None:
         """Test exception creation with various messages."""
         manager = exception_test_components["manager"]

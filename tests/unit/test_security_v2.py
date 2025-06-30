@@ -189,7 +189,7 @@ class TestInputValidatorOptimizedV2:
     )
     @staticmethod
     def test_validate_numeric_range_valid_values(
-        validator: InputValidator, value: float, min_val: float, max_val: float, name: str, *, should_pass: bool
+        validator: InputValidator, value: float, min_val: float, max_val: float, name: str, *, should_pass: bool,
     ) -> None:
         """Test numeric range validation with valid values."""
         assert validator.validate_numeric_range(value, min_val, max_val, name) == should_pass
@@ -230,7 +230,7 @@ class TestInputValidatorOptimizedV2:
     def test_sanitize_filename_all_scenarios(validator: InputValidator) -> None:
         """Test filename sanitization with all scenarios."""
         test_cases = [
-            # (input, expected)
+            # Test cases: (input, expected)
             # Normal cases
             ("normal_file.txt", "normal_file.txt"),
             ("file with spaces.jpg", "file with spaces.jpg"),
@@ -664,7 +664,7 @@ class TestSecurityIntegrationOptimizedV2:
     def test_attack_scenario_prevention(validator: InputValidator) -> None:
         """Test prevention of various attack scenarios."""
         attack_scenarios = [
-            # (attack_function, expected_exception)
+            # Attack scenarios: (attack_function, expected_exception)
             (lambda: validator.validate_file_path("../../../etc/passwd"), SecurityError),
             (lambda: validator.validate_ffmpeg_encoder("libx264; rm -rf /"), SecurityError),
             (lambda: validator.validate_sanchez_argument("output", "file.png; cat /etc/passwd"), SecurityError),

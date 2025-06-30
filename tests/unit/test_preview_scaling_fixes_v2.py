@@ -88,7 +88,7 @@ class TestPreviewScalingFixesV2(unittest.TestCase):
 
         # Test various label size scenarios
         label_size_scenarios = [
-            # (label_size, description, expected_target_size)
+            # Test data: (label_size, description, expected_target_size)
             (QSize(80, 80), "Tiny startup size", QSize(200, 200)),
             (QSize(100, 100), "Small size", QSize(200, 200)),
             (QSize(200, 200), "Exact minimum", QSize(200, 200)),
@@ -147,7 +147,7 @@ class TestPreviewScalingFixesV2(unittest.TestCase):
 
         # Test various aspect ratios
         aspect_ratio_tests = [
-            # (width, height, description)
+            # Test ratios: (width, height, description)
             (800, 400, "2:1 landscape"),
             (400, 800, "1:2 portrait"),
             (1920, 1080, "16:9 HD"),
