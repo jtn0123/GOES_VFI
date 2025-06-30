@@ -3,6 +3,9 @@
 from pathlib import Path
 import shutil
 import tempfile
+import threading
+import time
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
@@ -12,12 +15,16 @@ from goesvfi.pipeline.image_cropper import ImageCropper
 from goesvfi.pipeline.image_processing_interfaces import ImageData
 
 
-class TestImageCropperV2:
+class TestImageCropperV2:  # noqa: PLR0904
     """Test image cropping functionality with comprehensive coverage."""
 
     @pytest.fixture()
-    def sample_images(self):
-        """Create various sample test images."""
+    def sample_images(self) -> dict[str, np.ndarray[Any, np.dtype[np.uint8]]]:  # noqa: PLR6301
+        """Create various sample test images.
+
+        Returns:
+            dict[str, np.ndarray]: Sample images for testing.
+        """
         # Standard RGB image
         rgb_image = np.zeros((100, 100, 3), dtype=np.uint8)
         for i in range(100):
@@ -33,7 +40,8 @@ class TestImageCropperV2:
         rgba_image[:, :, 3] = 255  # Full opacity
 
         # Large image for stress testing
-        large_image = np.random.randint(0, 255, (2000, 2000, 3), dtype=np.uint8)
+        rng = np.random.default_rng()
+        large_image = rng.integers(0, 255, (2000, 2000, 3), dtype=np.uint8)
 
         # Single pixel image (edge case)
         single_pixel = np.array([[[255, 128, 64]]], dtype=np.uint8)
@@ -41,18 +49,26 @@ class TestImageCropperV2:
         return {"rgb": rgb_image, "gray": gray_image, "rgba": rgba_image, "large": large_image, "single": single_pixel}
 
     @pytest.fixture()
-    def cropper(self):
-        """Create an ImageCropper instance."""
+    def cropper(self) -> ImageCropper:  # noqa: PLR6301
+        """Create an ImageCropper instance.
+
+        Returns:
+            ImageCropper: Cropper instance for testing.
+        """
         return ImageCropper()
 
     @pytest.fixture()
-    def temp_dir(self):
-        """Create a temporary directory for file operations."""
+    def temp_dir(self) -> Any:  # noqa: PLR6301
+        """Create a temporary directory for file operations.
+
+        Yields:
+            str: Path to temporary directory.
+        """
         temp_dir = tempfile.mkdtemp()
         yield temp_dir
         shutil.rmtree(temp_dir)
 
-    def test_cropper_initialization(self, cropper) -> None:
+    def test_cropper_initialization(self, cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test ImageCropper initialization and interface."""
         # Verify required methods exist
         assert hasattr(cropper, "crop")
@@ -66,7 +82,7 @@ class TestImageCropperV2:
         assert callable(cropper.save)
         assert callable(cropper.process)
 
-    def test_basic_crop_rgb(self, sample_images, cropper) -> None:
+    def test_basic_crop_rgb(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test basic RGB image cropping."""
         image_data = ImageData(image_data=sample_images["rgb"], metadata={"width": 100, "height": 100, "channels": 3})
 
@@ -80,7 +96,7 @@ class TestImageCropperV2:
         assert cropped_data.metadata["height"] == 50
         assert cropped_data.metadata["crop_rect"] == rect
 
-    def test_crop_grayscale(self, sample_images, cropper) -> None:
+    def test_crop_grayscale(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test grayscale image cropping."""
         image_data = ImageData(image_data=sample_images["gray"], metadata={"width": 100, "height": 100, "channels": 1})
 
@@ -90,7 +106,7 @@ class TestImageCropperV2:
         assert cropped_data.image_data.shape == (80, 80)
         assert np.array_equal(cropped_data.image_data, sample_images["gray"][10:90, 10:90])
 
-    def test_crop_rgba(self, sample_images, cropper) -> None:
+    def test_crop_rgba(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test RGBA image cropping with alpha channel preservation."""
         image_data = ImageData(image_data=sample_images["rgba"], metadata={"width": 100, "height": 100, "channels": 4})
 
@@ -111,14 +127,20 @@ class TestImageCropperV2:
             ((40, 40, 60, 60), (20, 20, 3)),  # Small center crop
         ],
     )
-    def test_crop_regions(self, sample_images, cropper, rect, expected_shape) -> None:
+    def test_crop_regions(
+        self,
+        sample_images: dict[str, Any],
+        cropper: ImageCropper,
+        rect: tuple[int, int, int, int],
+        expected_shape: tuple[int, int, int],
+    ) -> None:  # noqa: PLR6301
         """Test cropping different regions of the image."""
         image_data = ImageData(image_data=sample_images["rgb"], metadata={"width": 100, "height": 100})
 
         cropped_data = cropper.crop(image_data, rect)
         assert cropped_data.image_data.shape == expected_shape
 
-    def test_crop_boundary_conditions(self, sample_images, cropper) -> None:
+    def test_crop_boundary_conditions(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test cropping with boundary conditions."""
         image_data = ImageData(image_data=sample_images["rgb"], metadata={"width": 100, "height": 100})
 
@@ -132,7 +154,7 @@ class TestImageCropperV2:
         cropped_data = cropper.crop(image_data, rect)
         assert cropped_data.image_data.shape == (1, 1, 3)
 
-    def test_crop_invalid_rectangles(self, sample_images, cropper) -> None:
+    def test_crop_invalid_rectangles(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test cropping with invalid rectangle specifications."""
         image_data = ImageData(image_data=sample_images["rgb"], metadata={"width": 100, "height": 100})
 
@@ -150,7 +172,7 @@ class TestImageCropperV2:
             with pytest.raises((ValueError, IndexError)):
                 cropper.crop(image_data, rect)
 
-    def test_crop_with_metadata_preservation(self, sample_images, cropper) -> None:
+    def test_crop_with_metadata_preservation(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test that cropping preserves and updates metadata correctly."""
         original_metadata = {
             "width": 100,
@@ -178,7 +200,7 @@ class TestImageCropperV2:
         assert cropped_data.metadata["timestamp"] == "2024-01-01"
         assert cropped_data.metadata["custom_field"] == "value"
 
-    def test_load_image_from_file(self, sample_images, cropper, temp_dir) -> None:
+    def test_load_image_from_file(self, sample_images: dict[str, Any], cropper: ImageCropper, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test loading images from file."""
         # Save test image
         image_path = Path(temp_dir) / "test_image.npy"
@@ -193,7 +215,7 @@ class TestImageCropperV2:
         assert loaded_data.metadata["width"] == 100
         assert loaded_data.metadata["height"] == 100
 
-    def test_save_image_to_file(self, sample_images, cropper, temp_dir) -> None:
+    def test_save_image_to_file(self, sample_images: dict[str, Any], cropper: ImageCropper, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving images to file."""
         image_data = ImageData(image_data=sample_images["rgb"], metadata={"width": 100, "height": 100})
 
@@ -206,7 +228,7 @@ class TestImageCropperV2:
         loaded_array = np.load(output_path)
         assert np.array_equal(loaded_array, sample_images["rgb"])
 
-    def test_process_pipeline(self, sample_images, cropper, temp_dir) -> None:
+    def test_process_pipeline(self, sample_images: dict[str, Any], cropper: ImageCropper, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test complete processing pipeline."""
         # Save input image
         input_path = Path(temp_dir) / "input.npy"
@@ -230,7 +252,9 @@ class TestImageCropperV2:
         output_data = np.load(result["output_path"])
         assert output_data.shape == (50, 50, 3)
 
-    def test_process_with_multiple_operations(self, sample_images, cropper, temp_dir) -> None:
+    def test_process_with_multiple_operations(
+        self, sample_images: dict[str, Any], cropper: ImageCropper, temp_dir: Any
+    ) -> None:  # noqa: PLR6301
         """Test processing with multiple crop operations."""
         input_path = Path(temp_dir) / "input.npy"
         np.save(input_path, sample_images["large"])
@@ -251,9 +275,9 @@ class TestImageCropperV2:
             result = cropper.process(params)
             assert result["success"] is True
 
-    def test_crop_performance(self, sample_images, cropper) -> None:
+    def test_crop_performance(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test cropping performance with large images."""
-        import time
+        # time import moved to top level
 
         image_data = ImageData(image_data=sample_images["large"], metadata={"width": 2000, "height": 2000})
 
@@ -273,7 +297,7 @@ class TestImageCropperV2:
         # Performance assertion (should be fast)
         assert avg_time < 0.01  # Less than 10ms per crop
 
-    def test_crop_memory_efficiency(self, cropper) -> None:
+    def test_crop_memory_efficiency(self, cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test memory efficiency with large crops."""
         # Create a very large image
         large_image = np.zeros((5000, 5000, 3), dtype=np.uint8)
@@ -292,7 +316,7 @@ class TestImageCropperV2:
             # Original should not be modified
             assert not np.array_equal(large_image[i * 100, i * 100], [255, 255, 255])
 
-    def test_error_handling(self, cropper) -> None:
+    def test_error_handling(self, cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test comprehensive error handling."""
         # None image data
         with pytest.raises(AttributeError):
@@ -309,7 +333,7 @@ class TestImageCropperV2:
         cropped = cropper.crop(image_data, (0, 0, 50, 50))
         assert cropped.image_data.shape == (50, 50, 3)
 
-    def test_edge_cases(self, sample_images, cropper) -> None:
+    def test_edge_cases(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test various edge cases."""
         # Single pixel image
         single_pixel_data = ImageData(image_data=sample_images["single"], metadata={"width": 1, "height": 1})
@@ -326,38 +350,38 @@ class TestImageCropperV2:
             cropper.crop(empty_data, (0, 0, 0, 0))
 
     @patch("numpy.save")
-    def test_save_error_handling(self, mock_save, sample_images, cropper) -> None:
+    def test_save_error_handling(self, mock_save: Any, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test error handling during save operations."""
         mock_save.side_effect = OSError("Disk full")
 
         image_data = ImageData(image_data=sample_images["rgb"], metadata={})
 
-        with pytest.raises(IOError):
+        with pytest.raises(IOError, match="Disk full"):
             cropper.save(image_data, "/fake/path/output.npy")
 
     @patch("numpy.load")
-    def test_load_error_handling(self, mock_load, cropper) -> None:
+    def test_load_error_handling(self, mock_load: Any, cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test error handling during load operations."""
         mock_load.side_effect = FileNotFoundError("File not found")
 
         with pytest.raises(FileNotFoundError):
             cropper.load("/fake/path/input.npy")
 
-    def test_concurrent_operations(self, sample_images, cropper) -> None:
+    def test_concurrent_operations(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test thread safety of cropping operations."""
-        import threading
+        # threading import moved to top level
 
         image_data = ImageData(image_data=sample_images["rgb"].copy(), metadata={"width": 100, "height": 100})
 
         results = []
         errors = []
 
-        def crop_thread(thread_id) -> None:
+        def crop_thread(thread_id: int) -> None:
             try:
                 rect = (thread_id * 10, thread_id * 10, thread_id * 10 + 20, thread_id * 10 + 20)
                 cropped = cropper.crop(image_data, rect)
                 results.append((thread_id, cropped))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((thread_id, e))
 
         # Create and start threads
@@ -379,17 +403,19 @@ class TestImageCropperV2:
         for _thread_id, cropped in results:
             assert cropped.image_data.shape == (20, 20, 3)
 
-    def test_crop_data_types(self, cropper) -> None:
+    def test_crop_data_types(self, cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test cropping with different data types."""
         data_types = [np.uint8, np.uint16, np.float32, np.float64]
 
         for dtype in data_types:
             # Create test image with specific dtype
             if dtype in {np.float32, np.float64}:
-                image = np.random.rand(100, 100, 3).astype(dtype)
+                rng = np.random.default_rng()
+                image = rng.random((100, 100, 3)).astype(dtype)
             else:
                 max_val = np.iinfo(dtype).max
-                image = np.random.randint(0, max_val, (100, 100, 3), dtype=dtype)
+                rng = np.random.default_rng()
+                image = rng.integers(0, max_val, (100, 100, 3), dtype=dtype)
 
             image_data = ImageData(image_data=image, metadata={"width": 100, "height": 100, "dtype": str(dtype)})
 
@@ -399,7 +425,7 @@ class TestImageCropperV2:
             assert cropped.image_data.dtype == dtype
             assert cropped.image_data.shape == (50, 50, 3)
 
-    def test_process_with_validation(self, sample_images, cropper, temp_dir) -> None:
+    def test_process_with_validation(self, sample_images: dict[str, Any], cropper: ImageCropper, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test process method with parameter validation."""
         input_path = Path(temp_dir) / "input.npy"
         np.save(input_path, sample_images["rgb"])
@@ -426,7 +452,7 @@ class TestImageCropperV2:
         result = cropper.process(params)
         assert result["success"] is False
 
-    def test_integration_with_image_data_class(self, sample_images, cropper) -> None:
+    def test_integration_with_image_data_class(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test integration with ImageData class features."""
         # Test with various metadata configurations
         metadata_configs = [
