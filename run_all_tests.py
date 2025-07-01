@@ -18,9 +18,9 @@ from typing import Any
 STATUS_COLOR = {
     "PASSED": "\033[92m",  # Green
     "FAILED": "\033[91m",  # Red
-    "ERROR": "\033[91m",  # Red
+    "ERROR": "\033[93m",  # Yellow/Orange
     "SKIPPED": "\033[94m",  # Blue
-    "CRASHED": "\033[93m",  # Yellow
+    "CRASHED": "\033[91m",  # Red
     "PASSED (with teardown error)": "\033[93m",  # Yellow
     "TIMEOUT": "\033[93m",  # Yellow
 }
@@ -387,6 +387,54 @@ def print_status(
     return log_path
 
 
+def extract_error_summary(output: str) -> str:
+    """Extract a brief error summary from test output."""
+    if not output:
+        return ""
+    
+    lines = output.strip().split("\n")
+    
+    # Look for common error patterns
+    for line in lines:
+        line = line.strip()
+        
+        # Skip empty lines and separators
+        if not line or line.startswith("=") or line.startswith("-"):
+            continue
+            
+        # Look for assertion errors
+        if "AssertionError:" in line:
+            return line.split("AssertionError:", 1)[1].strip()[:100]
+            
+        # Look for other exceptions
+        if any(exc in line for exc in ["Error:", "Exception:", "ValueError:", "TypeError:", "ImportError:", "ModuleNotFoundError:"]):
+            return line[:100]
+            
+        # Look for FAILED lines with reasons
+        if line.startswith("FAILED") and " - " in line:
+            parts = line.split(" - ", 1)
+            if len(parts) > 1:
+                return parts[1][:100]
+                
+        # Look for pytest short summary
+        if "short test summary" in line.lower():
+            # Find the next meaningful line
+            idx = lines.index(line)
+            for i in range(idx + 1, min(idx + 5, len(lines))):
+                summary_line = lines[i].strip()
+                if summary_line and not summary_line.startswith("=") and "FAILED" in summary_line:
+                    if " - " in summary_line:
+                        return summary_line.split(" - ", 1)[1][:100]
+    
+    # Fallback: look for any line containing "failed" or "error"
+    for line in lines[-10:]:  # Check last 10 lines
+        line = line.strip().lower()
+        if ("failed" in line or "error" in line) and len(line) < 150:
+            return line[:100]
+    
+    return "Check logs for details"
+
+
 def dump_log_to_file(test_path: str, output: str, debug_mode: bool = False):
     """Dump test output to a log file."""
     # Create logs directory if it doesn't exist
@@ -486,6 +534,11 @@ def print_final_summary(all_results: list[dict[str, Any]], test_counts: dict[str
                             count_summary = "1 test"
 
                 print(f"  {result['status']} {result['path']} ({result['duration']:.1f}s) ({count_summary})")  # noqa: T201
+                
+                # Add brief error summary
+                error_summary = extract_error_summary(result["output"])
+                if error_summary:
+                    print(f"    → {error_summary}")  # noqa: T201
 
     if skipped_files > 0:
         print(f"\n⏭️  SKIPPED FILES ({skipped_files}):")  # noqa: T201
@@ -631,8 +684,10 @@ def main() -> int:
                             else:
                                 count_summary = "1 test"
 
+                    # Apply color coding to the progress line
+                    color = STATUS_COLOR.get(result["status"], "")
                     print(
-                        f"[{i:3d}/{len(test_files)}] {status_emoji} {result['path']} ({result['duration']:.1f}s) ({count_summary})"
+                        f"[{i:3d}/{len(test_files)}] {status_emoji} {color}{result['path']}{RESET} ({result['duration']:.1f}s) ({count_summary})"
                     )  # noqa: T201
 
                 # Call the original print_status for detailed output if needed
