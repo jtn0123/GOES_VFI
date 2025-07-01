@@ -168,7 +168,15 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                     max_concurrency=self.test_configs["max_concurrency"],
                 )
 
-            async def _mock_s3_download(self, ts: datetime, satellite: SatellitePattern, dest_path: Path, cache_db: ThreadLocalCacheDB, product_type: str = "RadC", _band: int = 13) -> Path:
+            async def _mock_s3_download(
+                self,
+                ts: datetime,
+                satellite: SatellitePattern,
+                dest_path: Path,
+                cache_db: ThreadLocalCacheDB,
+                product_type: str = "RadC",
+                _band: int = 13,
+            ) -> Path:
                 """Mock S3 download that records thread ID and updates cache DB.
 
                 Returns:
@@ -216,7 +224,9 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                 return dest_path
 
-            async def _mock_cdn_download(self, ts: datetime, satellite: SatellitePattern, dest_path: Path, cache_db: ThreadLocalCacheDB) -> Path:
+            async def _mock_cdn_download(
+                self, ts: datetime, satellite: SatellitePattern, dest_path: Path, cache_db: ThreadLocalCacheDB
+            ) -> Path:
                 """Mock CDN download that records thread ID and updates cache DB.
 
                 Returns:
@@ -254,7 +264,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
             @staticmethod
             async def _mock_fetch_missing_files(
-                missing_timestamps: list[datetime], satellite: SatellitePattern, destination_dir: str | Path, stores: dict[str, Any], _cache_db: ThreadLocalCacheDB, **kwargs: Any
+                missing_timestamps: list[datetime],
+                satellite: SatellitePattern,
+                destination_dir: str | Path,
+                stores: dict[str, Any],
+                _cache_db: ThreadLocalCacheDB,
+                **kwargs: Any,
             ) -> list[datetime]:
                 """Mock fetch_missing_files that calls store mocks.
 
@@ -277,7 +292,14 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return list(missing_timestamps)
 
             def _run_reconcile_in_thread(
-                self, start_date: datetime, end_date: datetime, manager: ReconcileManager, satellite: SatellitePattern, base_dir: str, _interval_minutes: int = 10, product_type: str = "RadC"
+                self,
+                start_date: datetime,
+                end_date: datetime,
+                manager: ReconcileManager,
+                satellite: SatellitePattern,
+                base_dir: str,
+                _interval_minutes: int = 10,
+                product_type: str = "RadC",
             ) -> int:
                 """Run reconcile method in a separate thread.
 
@@ -328,7 +350,13 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                     self.thread_tracking["error_count"] = 0
 
             def _test_concurrent_downloads(
-                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any
+                self,
+                scenario_name: str,
+                temp_dir: tempfile.TemporaryDirectory[str],
+                cache_db: ThreadLocalCacheDB,
+                stores: dict[str, Any],
+                manager: ReconcileManager,
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test concurrent download scenarios.
 
@@ -387,7 +415,13 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_product_type_integration(
-                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any
+                self,
+                scenario_name: str,
+                temp_dir: tempfile.TemporaryDirectory[str],
+                cache_db: ThreadLocalCacheDB,
+                stores: dict[str, Any],
+                manager: ReconcileManager,
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test product type integration scenarios.
 
@@ -440,7 +474,13 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_thread_safety_validation(
-                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any  # noqa: ARG002
+                self,
+                scenario_name: str,
+                temp_dir: tempfile.TemporaryDirectory[str],
+                cache_db: ThreadLocalCacheDB,
+                stores: dict[str, Any],
+                manager: ReconcileManager,  # noqa: ARG002
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test thread safety validation scenarios.
 
@@ -506,7 +546,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
             @staticmethod
             def _test_cache_consistency(
-                scenario_name: str, _temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, _stores: dict[str, Any], _manager: ReconcileManager, **kwargs: Any
+                scenario_name: str,
+                _temp_dir: tempfile.TemporaryDirectory[str],
+                cache_db: ThreadLocalCacheDB,
+                _stores: dict[str, Any],
+                _manager: ReconcileManager,
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test cache consistency scenarios.
 
@@ -550,7 +595,13 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_stress_testing(
-                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any  # noqa: ARG002
+                self,
+                scenario_name: str,
+                temp_dir: tempfile.TemporaryDirectory[str],  # noqa: ARG002
+                cache_db: ThreadLocalCacheDB,  # noqa: ARG002
+                stores: dict[str, Any],  # noqa: ARG002
+                manager: ReconcileManager,  # noqa: ARG002
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test stress testing scenarios.
 
@@ -567,7 +618,13 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_real_pattern_testing(
-                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any  # noqa: ARG002
+                self,
+                scenario_name: str,
+                temp_dir: tempfile.TemporaryDirectory[str],
+                cache_db: ThreadLocalCacheDB,  # noqa: ARG002
+                stores: dict[str, Any],
+                manager: ReconcileManager,  # noqa: ARG002
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test real pattern testing scenarios.
 
@@ -627,7 +684,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
             @staticmethod
             def _test_error_handling(
-                scenario_name: str, _temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, _stores: dict[str, Any], _manager: ReconcileManager, **kwargs: Any
+                scenario_name: str,
+                _temp_dir: tempfile.TemporaryDirectory[str],
+                cache_db: ThreadLocalCacheDB,
+                _stores: dict[str, Any],
+                _manager: ReconcileManager,
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test error handling scenarios.
 
@@ -669,7 +731,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
             @staticmethod
             def _test_performance_validation(
-                scenario_name: str, _temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, _stores: dict[str, Any], _manager: ReconcileManager, **kwargs: Any
+                scenario_name: str,
+                _temp_dir: tempfile.TemporaryDirectory[str],
+                cache_db: ThreadLocalCacheDB,
+                _stores: dict[str, Any],
+                _manager: ReconcileManager,
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test performance validation scenarios.
 
@@ -688,7 +755,9 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                         for i in range(operation_count):
                             ts = base_time + timedelta(minutes=i * 3)
-                            task = cache_db.add_timestamp(ts, SatellitePattern.GOES_18, f"/test/perf_{i}.nc", exists=True)
+                            task = cache_db.add_timestamp(
+                                ts, SatellitePattern.GOES_18, f"/test/perf_{i}.nc", exists=True
+                            )
                             tasks.append(task)
 
                         await asyncio.gather(*tasks)
@@ -726,7 +795,9 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
     @pytest.fixture()
     @staticmethod
-    def test_setup(threadlocal_integration_test_components: dict[str, Any], temp_directory: tempfile.TemporaryDirectory[str]) -> dict[str, Any]:
+    def test_setup(
+        threadlocal_integration_test_components: dict[str, Any], temp_directory: tempfile.TemporaryDirectory[str]
+    ) -> dict[str, Any]:
         """Set up test components for each test.
 
         Yields:
