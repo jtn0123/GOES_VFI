@@ -306,9 +306,9 @@ class TestIntegrityTabPerformanceV2:
 
         for strategy in optimization_strategies:
             # Configure mock with strategy-specific delay
-            async def mock_optimized_request() -> dict[str, str]:
-                await asyncio.sleep(strategy["base_delay"])
-                return {"status": "success", "strategy": strategy["name"]}
+            async def mock_optimized_request(current_strategy: dict[str, Any] = strategy) -> dict[str, str]:
+                await asyncio.sleep(current_strategy["base_delay"])
+                return {"status": "success", "strategy": current_strategy["name"]}
 
             mock_data_fetcher_perf.fetch_data_with_timing.side_effect = mock_optimized_request
 
