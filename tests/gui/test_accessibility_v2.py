@@ -727,9 +727,9 @@ class TestAccessibilityOptimizedV2:
 
     @staticmethod
     def test_error_message_clarity_comprehensive(  # noqa: C901
-        qtbot: Any,
+        qtbot: Any,  # noqa: ARG004
         main_window: Any,
-        accessibility_testing_suite: dict[str, Any],
+        accessibility_testing_suite: dict[str, Any],  # noqa: ARG004
         mocker: Any,
     ) -> None:
         """Test comprehensive error message clarity and actionability."""
