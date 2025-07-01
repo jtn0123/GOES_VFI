@@ -198,7 +198,9 @@ class TestTabCoordinationV2:
     )
     @staticmethod
     def test_model_library_delete_operations(
-        mock_model_library_tab: Any, user_choice: Any, expected_deleted: Any  # noqa: ARG004
+        mock_model_library_tab: Any,  # noqa: ARG004
+        user_choice: Any,
+        expected_deleted: Any,
     ) -> None:
         """Test model library delete operations with user confirmation."""
 
@@ -654,7 +656,11 @@ class TestTabCoordinationV2:
 
             def handle_shortcut(self, key_sequence: Any) -> bool:
                 # Check tab-specific shortcuts first
-                if self.active_tab and self.active_tab in self.shortcuts and key_sequence in self.shortcuts[self.active_tab]:
+                if (
+                    self.active_tab
+                    and self.active_tab in self.shortcuts
+                    and key_sequence in self.shortcuts[self.active_tab]
+                ):
                     action = self.shortcuts[self.active_tab][key_sequence]
                     action()
                     return True
