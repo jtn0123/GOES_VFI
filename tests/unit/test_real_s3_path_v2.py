@@ -435,8 +435,8 @@ class TestRealS3PathOptimizedV2:
             def _test_comprehensive_validation(
                 self,
                 scenario_name: str,
-                dest_dir: Path,
-                **kwargs: Any,  # noqa: ARG002
+                dest_dir: Path,  # noqa: ARG002
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test comprehensive validation across all dimensions.
 
