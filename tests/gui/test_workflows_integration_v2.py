@@ -9,6 +9,7 @@ Optimizations applied:
 """
 
 from pathlib import Path
+import time
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -167,7 +168,7 @@ class TestWorkflowsIntegrationV2:
         # Verify settings calls
         window.main_tab.fps_spinbox.setValue.assert_called_with(30)
         window.main_tab.encoder_combo.setCurrentText.assert_called_with("RIFE")
-        window.main_tab.sanchez_checkbox.setChecked.assert_called_with(True)
+        window.main_tab.sanchez_checkbox.setChecked.assert_called_with(True)  # noqa: FBT003
 
         # Step 4: Select crop region
         window.current_crop_rect = (100, 100, 400, 300)
@@ -231,7 +232,7 @@ class TestWorkflowsIntegrationV2:
         mime_data.urls.return_value = urls
 
         # Simulate drag and drop handling
-        def handle_drop(mime_data) -> str:
+        def handle_drop(mime_data: QMimeData) -> str:
             if not mime_data.hasUrls():
                 return "reject_empty"
 
@@ -264,7 +265,7 @@ class TestWorkflowsIntegrationV2:
             assert window.out_file_path is not None
 
     @staticmethod
-    def test_drag_drop_between_tabs(shared_app: Any) -> None:
+    def test_drag_drop_between_tabs(shared_app: Any) -> None:  # noqa: ARG004
         """Test drag and drop between different tabs."""
         # Create mock list widgets
         source_list = MagicMock(spec=QListWidget)
@@ -280,7 +281,7 @@ class TestWorkflowsIntegrationV2:
         # Mock source list behavior
         source_list.count.return_value = len(items_data)
 
-        def mock_item(index):
+        def mock_item(index: int) -> QListWidgetItem | None:
             if 0 <= index < len(items_data):
                 item = MagicMock(spec=QListWidgetItem)
                 item.text.return_value = items_data[index][0]
@@ -293,14 +294,14 @@ class TestWorkflowsIntegrationV2:
         # Mock target list
         target_items = []
 
-        def mock_add_item(item) -> None:
+        def mock_add_item(item: QListWidgetItem) -> None:
             target_items.append(item)
 
         target_list.addItem = mock_add_item
         target_list.count.return_value = len(target_items)
 
         # Simulate drag and drop operation
-        def transfer_item(source_index) -> bool:
+        def transfer_item(source_index: int) -> bool:
             source_item = source_list.item(source_index)
             if source_item:
                 new_item = MagicMock(spec=QListWidgetItem)
@@ -317,7 +318,7 @@ class TestWorkflowsIntegrationV2:
         assert target_items[0].text() == "Item 0"
 
     @staticmethod
-    def test_batch_processing_queue(mock_main_window: Any, test_images_data: Any) -> None:
+    def test_batch_processing_queue(mock_main_window: Any, test_images_data: Any) -> None:  # noqa: C901
         """Test batch processing queue management."""
         window = mock_main_window
 
@@ -338,14 +339,14 @@ class TestWorkflowsIntegrationV2:
 
         # Mock batch processor
         class MockBatchProcessor:
-            def __init__(self, window) -> None:
+            def __init__(self, window: Any) -> None:
                 self.window = window
                 self.queue = []
                 self.completed_jobs = []
                 self.is_processing = False
                 self.current_job = None
 
-            def add_job(self, job) -> None:
+            def add_job(self, job: Any) -> None:
                 self.queue.append(job)
 
             def start_processing(self) -> None:
@@ -361,7 +362,7 @@ class TestWorkflowsIntegrationV2:
                 else:
                     self.is_processing = False
 
-            def _apply_job_settings(self, job) -> None:
+            def _apply_job_settings(self, job: Any) -> None:
                 # Apply job settings to window
                 self.window.set_in_dir(job["input_dir"])
                 self.window.out_file_path = job["output_file"]
@@ -410,7 +411,7 @@ class TestWorkflowsIntegrationV2:
         # Track model switches
         model_switches = []
 
-        def switch_model(model_key) -> bool:
+        def switch_model(model_key: str) -> bool:
             if window.is_processing:
                 model_switches.append(("queued", model_key))
                 return False
@@ -448,13 +449,13 @@ class TestWorkflowsIntegrationV2:
         # Track cleanup actions
         cleanup_actions = []
 
-        def track_cleanup(action_type) -> None:
+        def track_cleanup(action_type: str) -> None:
             cleanup_actions.append(action_type)
 
         # Configure cleanup mocks
-        window._cleanup_temp_files.side_effect = lambda: track_cleanup("temp_files")
-        window._cleanup_memory.side_effect = lambda: track_cleanup("memory")
-        window._reset_ui_state.side_effect = lambda: track_cleanup("ui_state")
+        window._cleanup_temp_files.side_effect = lambda: track_cleanup("temp_files")  # noqa: SLF001
+        window._cleanup_memory.side_effect = lambda: track_cleanup("memory")  # noqa: SLF001
+        window._reset_ui_state.side_effect = lambda: track_cleanup("ui_state")  # noqa: SLF001
 
         # Set up processing state
         window.worker = mock_worker
@@ -509,13 +510,13 @@ class TestWorkflowsIntegrationV2:
                     return True
                 return False
 
-            def resume(self):
+            def resume(self) -> dict[str, Any] | None:
                 if self.is_paused:
                     self.is_paused = False
                     return self.pause_point
                 return None
 
-            def is_pausable(self):
+            def is_pausable(self) -> bool:
                 return self.can_pause and not self.is_paused
 
         # Test pause/resume cycle
@@ -545,13 +546,13 @@ class TestWorkflowsIntegrationV2:
         assert resume_point["total_frames"] == 100
 
     @staticmethod
-    def test_multi_step_wizard_workflow(mock_main_window: Any) -> None:
+    def test_multi_step_wizard_workflow(mock_main_window: Any) -> None:  # noqa: C901
         """Test multi-step wizard workflow for complex operations."""
         window = mock_main_window
 
         # Mock wizard steps
         class MockSetupWizard:
-            def __init__(self, window) -> None:
+            def __init__(self, window: Any) -> None:
                 self.window = window
                 self.current_step = 0
                 self.steps = [
@@ -574,7 +575,7 @@ class TestWorkflowsIntegrationV2:
                     return True
                 return False
 
-            def validate_current_step(self):
+            def validate_current_step(self) -> bool:
                 return self.steps[self.current_step]()
 
             def _validate_input_step(self) -> bool:
@@ -596,7 +597,7 @@ class TestWorkflowsIntegrationV2:
                 self.step_data["enhance"] = window.main_tab.sanchez_checkbox.isChecked()
                 return True
 
-            def _validate_review_step(self):
+            def _validate_review_step(self) -> bool:
                 required_keys = ["input", "output", "encoder"]
                 return all(key in self.step_data for key in required_keys)
 
@@ -639,7 +640,7 @@ class TestWorkflowsIntegrationV2:
         assert wizard.current_step == 3
 
     @staticmethod
-    def test_error_recovery_workflow(mock_main_window: Any, signal_capture: Any) -> None:
+    def test_error_recovery_workflow(mock_main_window: Any, signal_capture: Any) -> None:  # noqa: C901
         """Test error recovery and workflow continuation."""
         window = mock_main_window
 
@@ -653,7 +654,7 @@ class TestWorkflowsIntegrationV2:
 
         recovery_actions = []
 
-        def handle_error(error_type, error_message) -> str:
+        def handle_error(error_type: str, error_message: str) -> str:  # noqa: ARG001
             recovery_actions.append(error_type)
 
             if error_type == "file_not_found":
@@ -662,7 +663,7 @@ class TestWorkflowsIntegrationV2:
                 return "reset_input"
             if error_type == "permission_denied":
                 # Choose new output location
-                window.out_file_path = Path("/tmp/output.mp4")
+                window.out_file_path = Path.cwd() / "output.mp4"
                 return "change_output"
             if error_type == "disk_full":
                 # Cleanup and retry
@@ -688,7 +689,7 @@ class TestWorkflowsIntegrationV2:
             if recovery_action == "reset_input":
                 assert window.in_dir is None
             elif recovery_action == "change_output":
-                assert window.out_file_path == Path("/tmp/output.mp4")
+                assert window.out_file_path == Path.cwd() / "output.mp4"
             elif recovery_action == "cleanup_retry":
                 window._cleanup_temp_files.assert_called()  # noqa: SLF001
             elif recovery_action == "restart_worker":
@@ -696,7 +697,7 @@ class TestWorkflowsIntegrationV2:
                 assert not window.is_processing
 
     @staticmethod
-    def test_performance_monitoring_workflow(mock_main_window: Any) -> None:
+    def test_performance_monitoring_workflow(mock_main_window: Any) -> None:  # noqa: ARG004
         """Test performance monitoring during workflow execution."""
 
         # Mock performance metrics
@@ -712,25 +713,21 @@ class TestWorkflowsIntegrationV2:
                 }
 
             def start_monitoring(self) -> None:
-                import time
-
                 self.metrics["start_time"] = time.time()
 
             def stop_monitoring(self) -> None:
-                import time
-
                 self.metrics["end_time"] = time.time()
                 if self.metrics["start_time"]:
                     self.metrics["processing_time"] = self.metrics["end_time"] - self.metrics["start_time"]
 
-            def record_frame_time(self, frame_time) -> None:
+            def record_frame_time(self, frame_time: float) -> None:
                 self.metrics["frame_processing_times"].append(frame_time)
 
-            def record_resource_usage(self, memory_mb, cpu_percent) -> None:
+            def record_resource_usage(self, memory_mb: float, cpu_percent: float) -> None:
                 self.metrics["memory_usage"].append(memory_mb)
                 self.metrics["cpu_usage"].append(cpu_percent)
 
-            def get_performance_summary(self):
+            def get_performance_summary(self) -> dict[str, float]:
                 avg_frame_time = 0
                 if self.metrics["frame_processing_times"]:
                     avg_frame_time = sum(self.metrics["frame_processing_times"]) / len(
