@@ -341,21 +341,21 @@ def print_status(
 
     # Print basic status line with color
     if count_summary:
-        print(f"{color}{status}{RESET} {path} ({duration:.1f}s) [{count_summary}]")
+        print(f"{color}{status}{RESET} {path} ({duration:.1f}s) [{count_summary}]")  # noqa: T201
     else:
-        print(f"{color}{status}{RESET} {path} ({duration:.1f}s)")
+        print(f"{color}{status}{RESET} {path} ({duration:.1f}s)")  # noqa: T201
 
     # Print failed test details if verbose
     if verbose and failed_details:
         for detail in failed_details:
-            print(f"  {detail}")
+            print(f"  {detail}")  # noqa: T201
 
     # Dump logs to file if requested
     log_path = None
     if dump_logs and (status in {"FAILED", "ERROR", "CRASHED"} or ("PASSED" in status and "teardown error" in status)):
         log_path = dump_log_to_file(path, output, debug_mode)
         if log_path:
-            print(f"  Log saved to: {log_path}")
+            print(f"  Log saved to: {log_path}")  # noqa: T201
 
     # Print verbose output for failed, error, or crashed tests
     if verbose and (
@@ -365,7 +365,7 @@ def print_status(
         output_lines = output.strip().split("\n")
         for line in output_lines[-5:]:
             if line.strip():
-                print(f"  {line}")
+                print(f"  {line}")  # noqa: T201
 
     return log_path
 
@@ -413,23 +413,23 @@ def print_final_summary(all_results: list[dict[str, Any]], test_counts: dict[str
     crashed_files = len([r for r in all_results if r["status"] == "CRASHED"])
     skipped_files = len([r for r in all_results if r["status"] == "SKIPPED"])
 
-    print("\n" + "=" * 80)
-    print(f"📊 SUMMARY: {passed_files}/{total_files} files passed ({total_duration:.1f}s total)")
-    print(f"📊 TESTS: {test_counts['passed']} passed, {test_counts['failed']} failed, {test_counts['skipped']} skipped, {test_counts['error']} errors")
+    print("\n" + "=" * 80)  # noqa: T201
+    print(f"📊 SUMMARY: {passed_files}/{total_files} files passed ({total_duration:.1f}s total)")  # noqa: T201
+    print(f"📊 TESTS: {test_counts['passed']} passed, {test_counts['failed']} failed, {test_counts['skipped']} skipped, {test_counts['error']} errors")  # noqa: T201
     
     if failed_files > 0 or error_files > 0 or crashed_files > 0:
-        print(f"\n❌ FAILED FILES ({failed_files + error_files + crashed_files}):")
+        print(f"\n❌ FAILED FILES ({failed_files + error_files + crashed_files}):")  # noqa: T201
         for result in all_results:
             if result["status"] not in {"PASSED", "SKIPPED", "PASSED (with teardown error)", "PASSED (with crash)"}:
-                print(f"  {result['status']} {result['path']} ({result['duration']:.1f}s)")
+                print(f"  {result['status']} {result['path']} ({result['duration']:.1f}s)")  # noqa: T201
 
     if skipped_files > 0:
-        print(f"\n⏭️  SKIPPED FILES ({skipped_files}):")
+        print(f"\n⏭️  SKIPPED FILES ({skipped_files}):")  # noqa: T201
         for result in all_results:
             if result["status"] == "SKIPPED":
-                print(f"  {result['path']}")
+                print(f"  {result['path']}")  # noqa: T201
     
-    print("=" * 80)
+    print("=" * 80)  # noqa: T201
 
 
 def main() -> int:
@@ -480,7 +480,7 @@ def main() -> int:
         test_files = [t for t in test_files if t not in known_problematic_tests]
         skipped_count = orig_count - len(test_files)
         if skipped_count > 0 and not args.quiet:
-            print(f"⏭️  Skipping {skipped_count} known problematic tests")
+            print(f"⏭️  Skipping {skipped_count} known problematic tests")  # noqa: T201
 
     # Track results
     all_results = []
@@ -492,7 +492,7 @@ def main() -> int:
 
     # Print startup message
     if not args.quiet:
-        print(f"🚀 Running {len(test_files)} test files with {args.parallel} parallel workers...")
+        print(f"🚀 Running {len(test_files)} test files with {args.parallel} parallel workers...")  # noqa: T201
 
     # Run tests in parallel
     with ThreadPoolExecutor(max_workers=args.parallel) as executor:
@@ -521,7 +521,7 @@ def main() -> int:
                         else:
                             eta_str = f" (~{eta_seconds / 60:.1f}m remaining)"
                     
-                    print(f"[{i:3d}/{len(test_files)}] {status_emoji} {result['path']} ({result['duration']:.1f}s){eta_str}")
+                    print(f"[{i:3d}/{len(test_files)}] {status_emoji} {result['path']} ({result['duration']:.1f}s){eta_str}")  # noqa: T201
 
                 # Call the original print_status for detailed output if needed
                 result["log_path"] = print_status(result, args.verbose, args.dump_logs, args.debug_mode, args.quiet)
@@ -536,7 +536,7 @@ def main() -> int:
                 }
                 all_results.append(error_result)
                 if not args.quiet:
-                    print(f"[{i:3d}/{len(test_files)}] ❌ ERROR running {path}: {e}")
+                    print(f"[{i:3d}/{len(test_files)}] ❌ ERROR running {path}: {e}")  # noqa: T201
 
     # Calculate summary
     total_duration = time.time() - start_time
