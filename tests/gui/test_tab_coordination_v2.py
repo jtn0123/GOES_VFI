@@ -37,19 +37,15 @@ class MockModelDownloader(QThread):
         self.cancelled = False
 
     def run(self) -> None:
-        """Simulate model download with faster execution for testing.
-
-        Returns:
-            None: Downloads model data and emits progress signals.
-        """
+        """Simulate model download with faster execution for testing."""
         for i in range(0, 101, 25):  # Reduced iterations for faster testing
             if self.cancelled:
-                self.finished.emit(self.model_name, False, "Cancelled")
+                self.finished.emit(self.model_name, False, "Cancelled")  # noqa: FBT003
                 return
             self.progress.emit(self.model_name, i)
             self.msleep(10)  # Reduced sleep time
 
-        self.finished.emit(self.model_name, True, "Download complete")
+        self.finished.emit(self.model_name, True, "Download complete")  # noqa: FBT003
 
 
 class TestTabCoordinationV2:
@@ -71,7 +67,11 @@ class TestTabCoordinationV2:
     @pytest.fixture()
     @staticmethod
     def mock_main_window(shared_app: Any) -> Any:  # noqa: ARG004
-        """Create mock MainWindow with essential tab components."""
+        """Create mock MainWindow with essential tab components.
+
+        Returns:
+            Any: Mock MainWindow instance with tab components.
+        """
         window = MagicMock()
 
         # Mock tab widget
@@ -94,7 +94,11 @@ class TestTabCoordinationV2:
     @pytest.fixture()
     @staticmethod
     def mock_model_library_tab(shared_app: Any) -> Any:  # noqa: ARG004
-        """Create mock model library tab."""
+        """Create mock model library tab.
+
+        Returns:
+            Any: Mock model library tab instance.
+        """
         tab = MagicMock()
 
         # Mock UI components
@@ -114,13 +118,13 @@ class TestTabCoordinationV2:
         return tab
 
     @staticmethod
-    def test_model_library_download_operations(mock_model_library_tab) -> None:
+    def test_model_library_download_operations(mock_model_library_tab: Any) -> None:  # noqa: C901
         """Test model library download operations."""
         tab = mock_model_library_tab
 
         # Mock model library tab behavior
         class ModelLibraryManager:
-            def __init__(self, tab) -> None:
+            def __init__(self, tab: Any) -> None:
                 self.tab = tab
 
             def populate_model_list(self) -> None:
@@ -152,7 +156,7 @@ class TestTabCoordinationV2:
                 if model_name in self.tab.progress_bars:
                     self.tab.progress_bars[model_name].setValue(percent)
 
-            def handle_download_finished(self, model_name: Any, success: Any, message: Any) -> None:
+            def handle_download_finished(self, model_name: Any, success: Any, message: Any) -> None:  # noqa: ARG002
                 if success:
                     self.tab.available_models[model_name]["installed"] = True
 
@@ -181,7 +185,7 @@ class TestTabCoordinationV2:
         tab.progress_bars["rife-v4.6"].setValue.assert_called_with(50)
 
         # Simulate download completion
-        manager.handle_download_finished("rife-v4.6", True, "Download complete")
+        manager.handle_download_finished("rife-v4.6", True, "Download complete")  # noqa: FBT003
         assert tab.available_models["rife-v4.6"]["installed"]
         assert "rife-v4.6" not in tab.active_downloads
 
@@ -194,7 +198,7 @@ class TestTabCoordinationV2:
     )
     @staticmethod
     def test_model_library_delete_operations(
-        mock_model_library_tab: Any, user_choice: Any, expected_deleted: Any
+        mock_model_library_tab: Any, user_choice: Any, expected_deleted: Any  # noqa: ARG004
     ) -> None:
         """Test model library delete operations with user confirmation."""
 
@@ -216,7 +220,8 @@ class TestTabCoordinationV2:
                         return True
                 return False
 
-            def get_model_size(self, model_name: Any) -> Any:
+            @staticmethod
+            def get_model_size(model_name: Any) -> Any:
                 sizes = {
                     "rife-v4.6": 150 * 1024 * 1024,
                     "rife-v4.13": 180 * 1024 * 1024,
@@ -224,7 +229,7 @@ class TestTabCoordinationV2:
                 return sizes.get(model_name, 0)
 
         # Mock confirmation dialog
-        def mock_confirm(message: Any) -> Any:
+        def mock_confirm(message: Any) -> Any:  # noqa: ARG001
             return user_choice
 
         # Test deletion
@@ -243,7 +248,7 @@ class TestTabCoordinationV2:
             assert "rife-v4.6" in manager.installed_models
 
     @staticmethod
-    def test_integrity_check_scan_workflow(shared_app: Any) -> None:
+    def test_integrity_check_scan_workflow(shared_app: Any) -> None:  # noqa: ARG004, C901
         """Test integrity check scan workflow."""
 
         # Mock integrity scanner
@@ -268,7 +273,7 @@ class TestTabCoordinationV2:
                 # Simulate immediate scan for testing
                 self._perform_scan(directory)
 
-            def _perform_scan(self, directory: Any) -> None:
+            def _perform_scan(self, directory: Any) -> None:  # noqa: ARG002
                 # Mock scanning files
                 test_files = [
                     ("file1.nc", "valid"),
@@ -305,11 +310,11 @@ class TestTabCoordinationV2:
         progress_updates = []
         final_results = None
 
-        def on_progress(percent, message) -> None:
+        def on_progress(percent: Any, message: Any) -> None:
             progress_updates.append((percent, message))
             progress_label.setText(message)
 
-        def on_complete(results) -> None:
+        def on_complete(results: Any) -> None:
             nonlocal final_results
             final_results = results
             # Mock tree population
@@ -341,7 +346,7 @@ class TestTabCoordinationV2:
         ],
     )
     @staticmethod
-    def test_integrity_check_repair_actions(shared_app: Any, file_type: Any, repair_success: Any) -> None:
+    def test_integrity_check_repair_actions(shared_app: Any, file_type: Any, repair_success: Any) -> None:  # noqa: ARG004, C901
         """Test integrity check repair actions with different scenarios."""
 
         # Mock repair manager
@@ -423,7 +428,7 @@ class TestTabCoordinationV2:
         ],
     )
     @staticmethod
-    def test_advanced_settings_validation(shared_app: Any, setting_name: Any, value: Any, expected_valid: Any) -> None:
+    def test_advanced_settings_validation(shared_app: Any, setting_name: Any, value: Any, expected_valid: Any) -> None:  # noqa: ARG004, C901
         """Test advanced settings validation with various scenarios."""
 
         # Mock settings validator
@@ -445,18 +450,19 @@ class TestTabCoordinationV2:
 
                 try:
                     typed_value = type_func(value)
+                except (ValueError, TypeError):
+                    return False, f"Invalid {type_func.__name__} value"
+                else:
                     if min_val <= typed_value <= max_val:
                         return True, typed_value
                     return False, f"Value must be between {min_val} and {max_val}"
-                except (ValueError, TypeError):
-                    return False, f"Invalid {type_func.__name__} value"
 
             def validate_all_settings(self, settings_dict: Any) -> Any:
                 errors = []
                 validated = {}
 
-                for name, value in settings_dict.items():
-                    valid, result = self.validate_setting(name, value)
+                for name, setting_value in settings_dict.items():
+                    valid, result = self.validate_setting(name, setting_value)
                     if valid:
                         validated[name] = result
                     else:
@@ -478,7 +484,7 @@ class TestTabCoordinationV2:
             assert isinstance(result, str)  # Error message
 
     @staticmethod
-    def test_inter_tab_state_synchronization(shared_app: Any) -> None:
+    def test_inter_tab_state_synchronization(shared_app: Any) -> None:  # noqa: ARG004
         """Test state synchronization between tabs."""
 
         # Mock tab state synchronizer
@@ -552,12 +558,12 @@ class TestTabCoordinationV2:
 
         # Mock dynamic tab manager
         class MockDynamicTabManager:
-            def __init__(self, tab_widget) -> None:
+            def __init__(self, tab_widget: Any) -> None:
                 self.tab_widget = tab_widget
                 self.dynamic_tabs = {}
                 self.next_index = 3  # Assume 3 static tabs exist
 
-            def add_custom_tab(self, widget: Any, title: Any, closable: Any = True) -> Any:
+            def add_custom_tab(self, widget: Any, title: Any, *, closable: bool = True) -> Any:
                 index = self.next_index
                 self.next_index += 1
 
@@ -628,7 +634,7 @@ class TestTabCoordinationV2:
         ],
     )
     @staticmethod
-    def test_tab_specific_shortcuts(shared_app: Any, active_tab: Any, shortcut: Any, should_trigger: Any) -> None:
+    def test_tab_specific_shortcuts(shared_app: Any, active_tab: Any, shortcut: Any, should_trigger: Any) -> None:  # noqa: ARG004
         """Test tab-specific keyboard shortcuts."""
 
         # Mock shortcut manager
@@ -648,11 +654,10 @@ class TestTabCoordinationV2:
 
             def handle_shortcut(self, key_sequence: Any) -> bool:
                 # Check tab-specific shortcuts first
-                if self.active_tab and self.active_tab in self.shortcuts:
-                    if key_sequence in self.shortcuts[self.active_tab]:
-                        action = self.shortcuts[self.active_tab][key_sequence]
-                        action()
-                        return True
+                if self.active_tab and self.active_tab in self.shortcuts and key_sequence in self.shortcuts[self.active_tab]:
+                    action = self.shortcuts[self.active_tab][key_sequence]
+                    action()
+                    return True
 
                 # Check global shortcuts
                 if "global" in self.shortcuts and key_sequence in self.shortcuts["global"]:
@@ -689,7 +694,7 @@ class TestTabCoordinationV2:
             assert len(shortcut_mgr.triggered_actions) == initial_count
 
     @staticmethod
-    def test_tab_data_persistence(shared_app: Any) -> None:
+    def test_tab_data_persistence(shared_app: Any) -> None:  # noqa: ARG004
         """Test tab data persistence and restoration."""
 
         # Mock tab data manager
@@ -745,7 +750,7 @@ class TestTabCoordinationV2:
         assert "models" in data_mgr.tab_data
 
     @staticmethod
-    def test_tab_error_handling(shared_app: Any) -> None:
+    def test_tab_error_handling(shared_app: Any) -> None:  # noqa: ARG004, C901
         """Test error handling across different tabs."""
 
         # Mock tab error handler
