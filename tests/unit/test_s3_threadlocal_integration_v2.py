@@ -10,7 +10,7 @@ This v2 version maintains all test scenarios while optimizing through:
 
 import asyncio
 import concurrent.futures
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 import tempfile
 import threading
@@ -35,7 +35,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
     """Optimized ThreadLocalCacheDB integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def threadlocal_integration_test_components(self) -> dict[str, Any]:  # noqa: PLR6301
+    def threadlocal_integration_test_components(self) -> dict[str, Any]:  # noqa: PLR6301, C901
         """Create shared components for ThreadLocalCacheDB integration testing.
 
         Returns:
@@ -107,17 +107,31 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                     "error_count": 0,
                 }
 
-            def create_temp_directory(self) -> tempfile.TemporaryDirectory:
-                """Create a temporary directory for test files."""
+            @staticmethod
+            def create_temp_directory() -> tempfile.TemporaryDirectory:
+                """Create a temporary directory for test files.
+
+                Returns:
+                    tempfile.TemporaryDirectory: Temporary directory context manager.
+                """
                 return tempfile.TemporaryDirectory()
 
-            def create_cache_db(self, base_dir: Path) -> ThreadLocalCacheDB:
-                """Create a ThreadLocalCacheDB instance."""
+            @staticmethod
+            def create_cache_db(base_dir: Path) -> ThreadLocalCacheDB:
+                """Create a ThreadLocalCacheDB instance.
+
+                Returns:
+                    ThreadLocalCacheDB: New cache database instance.
+                """
                 db_path = base_dir / "test_cache.db"
                 return ThreadLocalCacheDB(db_path=db_path)
 
-            def create_mock_stores(self, cache_db: ThreadLocalCacheDB, base_dir: Path) -> dict[str, Any]:
-                """Create mock S3 and CDN stores."""
+            def create_mock_stores(self, cache_db: ThreadLocalCacheDB, _base_dir: Path) -> dict[str, Any]:
+                """Create mock S3 and CDN stores.
+
+                Returns:
+                    dict[str, Any]: Dictionary with mocked S3 and CDN stores.
+                """
                 # Mock S3 store
                 s3_store = MagicMock(spec=S3Store)
                 s3_store.__aenter__ = AsyncMock(return_value=s3_store)
@@ -141,7 +155,11 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
             def create_reconcile_manager(
                 self, cache_db: ThreadLocalCacheDB, base_dir: Path, stores: dict[str, Any]
             ) -> ReconcileManager:
-                """Create a ReconcileManager with mocked stores."""
+                """Create a ReconcileManager with mocked stores.
+
+                Returns:
+                    ReconcileManager: New reconcile manager instance.
+                """
                 return ReconcileManager(
                     cache_db=cache_db,
                     base_dir=base_dir,
@@ -150,8 +168,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                     max_concurrency=self.test_configs["max_concurrency"],
                 )
 
-            async def _mock_s3_download(self, ts, satellite, dest_path, cache_db, product_type="RadC", band=13):
-                """Mock S3 download that records thread ID and updates cache DB."""
+            async def _mock_s3_download(self, ts: datetime, satellite: SatellitePattern, dest_path: Path, cache_db: ThreadLocalCacheDB, product_type: str = "RadC", _band: int = 13) -> Path:
+                """Mock S3 download that records thread ID and updates cache DB.
+
+                Returns:
+                    Path: Path to the downloaded file.
+                """
                 thread_id = threading.get_ident()
 
                 with self.thread_tracking["lock"]:
@@ -179,11 +201,10 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 else:
                     content = f"S3 test file for {product_type} {ts.isoformat()}"
 
-                with open(dest_path, "w", encoding="utf-8") as f:
-                    f.write(content)
+                dest_path.write_text(content, encoding="utf-8")
 
                 # Add to cache DB
-                await cache_db.add_timestamp(ts, satellite, str(dest_path), True)
+                await cache_db.add_timestamp(ts, satellite, str(dest_path), exists=True)
 
                 # Record processing
                 with self.thread_tracking["lock"]:
@@ -195,8 +216,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                 return dest_path
 
-            async def _mock_cdn_download(self, ts, satellite, dest_path, cache_db):
-                """Mock CDN download that records thread ID and updates cache DB."""
+            async def _mock_cdn_download(self, ts: datetime, satellite: SatellitePattern, dest_path: Path, cache_db: ThreadLocalCacheDB) -> Path:
+                """Mock CDN download that records thread ID and updates cache DB.
+
+                Returns:
+                    Path: Path to the downloaded file.
+                """
                 thread_id = threading.get_ident()
 
                 with self.thread_tracking["lock"]:
@@ -215,10 +240,9 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 cdn_filename = f"{year}{doy:03d}{hour:02d}{minute:02d}_GOES18-ABI-CONUS-13-5424x5424.jpg"
                 content = f"CDN test file for {ts.isoformat()}: {cdn_filename}"
 
-                with open(dest_path, "w", encoding="utf-8") as f:
-                    f.write(content)
+                dest_path.write_text(content, encoding="utf-8")
 
-                await cache_db.add_timestamp(ts, satellite, str(dest_path), True)
+                await cache_db.add_timestamp(ts, satellite, str(dest_path), exists=True)
 
                 with self.thread_tracking["lock"]:
                     self.thread_tracking["thread_id_to_db"][thread_id].add(ts)
@@ -228,13 +252,18 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                 return dest_path
 
+            @staticmethod
             async def _mock_fetch_missing_files(
-                self, missing_timestamps, satellite, destination_dir, stores, cache_db, **kwargs
-            ):
-                """Mock fetch_missing_files that calls store mocks."""
+                missing_timestamps: list[datetime], satellite: SatellitePattern, destination_dir: str | Path, stores: dict[str, Any], _cache_db: ThreadLocalCacheDB, **kwargs: Any
+            ) -> list[datetime]:
+                """Mock fetch_missing_files that calls store mocks.
+
+                Returns:
+                    list[datetime]: List of timestamps that were fetched.
+                """
                 for ts in missing_timestamps:
                     # Determine store based on age
-                    age_days = (datetime.now() - ts).days
+                    age_days = (datetime.now(tz=UTC) - ts).days
 
                     store = stores["s3_store"] if age_days > 7 else stores["cdn_store"]
 
@@ -248,11 +277,15 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return list(missing_timestamps)
 
             def _run_reconcile_in_thread(
-                self, start_date, end_date, manager, satellite, base_dir, interval_minutes=10, product_type="RadC"
-            ):
-                """Run reconcile method in a separate thread."""
+                self, start_date: datetime, end_date: datetime, manager: ReconcileManager, satellite: SatellitePattern, base_dir: str, _interval_minutes: int = 10, product_type: str = "RadC"
+            ) -> int:
+                """Run reconcile method in a separate thread.
 
-                async def async_reconcile():
+                Returns:
+                    int: Number of missing timestamps processed.
+                """
+
+                async def async_reconcile() -> int:
                     missing_timestamps = set()
 
                     # Use appropriate schedule for product type
@@ -295,15 +328,19 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                     self.thread_tracking["error_count"] = 0
 
             def _test_concurrent_downloads(
-                self, scenario_name: str, temp_dir, cache_db, stores, manager, **kwargs
+                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any
             ) -> dict[str, Any]:
-                """Test concurrent download scenarios."""
+                """Test concurrent download scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with file processing statistics.
+                """
                 results = {}
                 self.reset_thread_tracking()
 
                 if scenario_name == "basic_concurrent":
                     # Create date ranges for different threads
-                    now = datetime.now()
+                    now = datetime.now(tz=UTC)
                     old_date = now - timedelta(days=14)  # S3
                     recent_date = now - timedelta(days=2)  # CDN
 
@@ -350,15 +387,19 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_product_type_integration(
-                self, scenario_name: str, temp_dir, cache_db, stores, manager, **kwargs
+                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any
             ) -> dict[str, Any]:
-                """Test product type integration scenarios."""
+                """Test product type integration scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with product type processing statistics.
+                """
                 results = {}
                 self.reset_thread_tracking()
 
                 if scenario_name == "different_product_types":
                     # Test different product types concurrently
-                    now = datetime.now()
+                    now = datetime.now(tz=UTC)
                     start_date = (now - timedelta(days=14)).replace(minute=0, second=0, microsecond=0)
                     end_date = start_date + timedelta(hours=2)
 
@@ -399,15 +440,19 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_thread_safety_validation(
-                self, scenario_name: str, temp_dir, cache_db, stores, manager, **kwargs
+                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any  # noqa: ARG002
             ) -> dict[str, Any]:
-                """Test thread safety validation scenarios."""
+                """Test thread safety validation scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with thread safety validation statistics.
+                """
                 results = {}
                 self.reset_thread_tracking()
 
                 if scenario_name == "thread_safety_stress":
                     # Create many timestamps for stress testing
-                    now = datetime.now()
+                    now = datetime.now(tz=UTC)
                     base_date = now - timedelta(days=14)
                     timestamps = []
 
@@ -415,8 +460,8 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                         ts = base_date + timedelta(minutes=i * 10)
                         timestamps.append(ts)
 
-                    def process_batch(batch_timestamps, batch_id):
-                        async def async_process():
+                    def process_batch(batch_timestamps: list[datetime], _batch_id: int) -> int:
+                        async def async_process() -> int:
                             timestamp_set = set(batch_timestamps)
 
                             # Mock fetch call
@@ -430,7 +475,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                         asyncio.set_event_loop(loop)
                         try:
                             return loop.run_until_complete(async_process())
-                        except Exception:
+                        except (OSError, RuntimeError):
                             self.thread_tracking["error_count"] += 1
                             return 0
                         finally:
@@ -459,10 +504,15 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
+            @staticmethod
             def _test_cache_consistency(
-                self, scenario_name: str, temp_dir, cache_db, stores, manager, **kwargs
+                scenario_name: str, _temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, _stores: dict[str, Any], _manager: ReconcileManager, **kwargs: Any
             ) -> dict[str, Any]:
-                """Test cache consistency scenarios."""
+                """Test cache consistency scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with cache consistency validation statistics.
+                """
                 results = {}
 
                 if scenario_name == "cache_operations":
@@ -474,16 +524,16 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                         cache_stats = cache_db.get_cache_data(satellite)
                         results["cache_accessible"] = True
                         results["initial_entries"] = len(cache_stats) if cache_stats else 0
-                    except Exception as e:
+                    except (OSError, RuntimeError) as e:
                         results["cache_accessible"] = False
                         results["cache_error"] = str(e)
 
                     # Test cache under load (simplified)
                     async def add_cache_entries() -> None:
-                        base_time = datetime.now() - timedelta(days=1)
+                        base_time = datetime.now(tz=UTC) - timedelta(days=1)
                         for i in range(10):
                             ts = base_time + timedelta(minutes=i * 5)
-                            await cache_db.add_timestamp(ts, satellite, f"/test/path_{i}.nc", True)
+                            await cache_db.add_timestamp(ts, satellite, f"/test/path_{i}.nc", exists=True)
 
                     # Run cache operations
                     loop = asyncio.new_event_loop()
@@ -491,7 +541,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                     try:
                         loop.run_until_complete(add_cache_entries())
                         results["cache_entries_added"] = True
-                    except Exception as e:
+                    except (OSError, RuntimeError) as e:
                         results["cache_entries_added"] = False
                         results["add_error"] = str(e)
                     finally:
@@ -500,9 +550,13 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_stress_testing(
-                self, scenario_name: str, temp_dir, cache_db, stores, manager, **kwargs
+                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any  # noqa: ARG002
             ) -> dict[str, Any]:
-                """Test stress testing scenarios."""
+                """Test stress testing scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with stress testing statistics.
+                """
                 results = {}
 
                 # This is covered by thread_safety_validation stress test
@@ -513,17 +567,21 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_real_pattern_testing(
-                self, scenario_name: str, temp_dir, cache_db, stores, manager, **kwargs
+                self, scenario_name: str, temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, stores: dict[str, Any], manager: ReconcileManager, **kwargs: Any  # noqa: ARG002
             ) -> dict[str, Any]:
-                """Test real pattern testing scenarios."""
+                """Test real pattern testing scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with real pattern processing statistics.
+                """
                 results = {}
 
                 if scenario_name == "real_s3_patterns":
                     # Test with real S3 patterns for different product types
-                    def run_product_test(product_type):
-                        async def async_test():
+                    def run_product_test(product_type: str) -> bool:
+                        async def async_test() -> bool:
                             base_minute = self.real_patterns[product_type]["minute"]
-                            now = datetime.now()
+                            now = datetime.now(tz=UTC)
                             timestamp = (now - timedelta(days=14)).replace(minute=base_minute, second=0, microsecond=0)
 
                             dest_path = Path(temp_dir.name) / f"{product_type}_{timestamp.strftime('%Y%m%d_%H%M%S')}.nc"
@@ -538,8 +596,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                             )
 
                             # Verify file content
-                            with open(result, encoding="utf-8") as f:
-                                content = f.read()
+                            content = result.read_text(encoding="utf-8")
 
                             return product_type in content
 
@@ -568,17 +625,22 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
+            @staticmethod
             def _test_error_handling(
-                self, scenario_name: str, temp_dir, cache_db, stores, manager, **kwargs
+                scenario_name: str, _temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, _stores: dict[str, Any], _manager: ReconcileManager, **kwargs: Any
             ) -> dict[str, Any]:
-                """Test error handling scenarios."""
+                """Test error handling scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with error handling validation statistics.
+                """
                 results = {}
 
                 if scenario_name == "threading_errors":
                     # Test error handling in threading context
                     error_count = 0
 
-                    def error_prone_operation():
+                    def error_prone_operation() -> int:
                         try:
                             # Simulate operation that might fail
                             loop = asyncio.new_event_loop()
@@ -589,7 +651,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                                 return len(cache_stats) if cache_stats else 0
                             finally:
                                 loop.close()
-                        except Exception:
+                        except (OSError, RuntimeError):
                             return -1  # Error indicator
 
                     # Run operations concurrently
@@ -605,23 +667,28 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
+            @staticmethod
             def _test_performance_validation(
-                self, scenario_name: str, temp_dir, cache_db, stores, manager, **kwargs
+                scenario_name: str, _temp_dir: tempfile.TemporaryDirectory[str], cache_db: ThreadLocalCacheDB, _stores: dict[str, Any], _manager: ReconcileManager, **kwargs: Any
             ) -> dict[str, Any]:
-                """Test performance validation scenarios."""
+                """Test performance validation scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with performance validation statistics.
+                """
                 results = {}
 
                 if scenario_name == "throughput_testing":
                     # Test high throughput operations
                     operation_count = 20
 
-                    async def batch_operations():
+                    async def batch_operations() -> int:
                         tasks = []
-                        base_time = datetime.now() - timedelta(days=1)
+                        base_time = datetime.now(tz=UTC) - timedelta(days=1)
 
                         for i in range(operation_count):
                             ts = base_time + timedelta(minutes=i * 3)
-                            task = cache_db.add_timestamp(ts, SatellitePattern.GOES_18, f"/test/perf_{i}.nc", True)
+                            task = cache_db.add_timestamp(ts, SatellitePattern.GOES_18, f"/test/perf_{i}.nc", exists=True)
                             tasks.append(task)
 
                         await asyncio.gather(*tasks)
@@ -634,7 +701,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                         operations_completed = loop.run_until_complete(batch_operations())
                         results["operations_completed"] = operations_completed
                         results["performance_success"] = operations_completed == operation_count
-                    except Exception as e:
+                    except (OSError, RuntimeError) as e:
                         results["operations_completed"] = 0
                         results["performance_success"] = False
                         results["error"] = str(e)
@@ -646,15 +713,25 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         return {"manager": ThreadLocalIntegrationTestManager()}
 
     @pytest.fixture()
-    def temp_directory(self):
-        """Create temporary directory for each test."""
+    @staticmethod
+    def temp_directory() -> tempfile.TemporaryDirectory[str]:
+        """Create temporary directory for each test.
+
+        Yields:
+            tempfile.TemporaryDirectory[str]: Temporary directory context.
+        """
         temp_dir = tempfile.TemporaryDirectory()
         yield temp_dir
         temp_dir.cleanup()
 
     @pytest.fixture()
-    def test_setup(self, threadlocal_integration_test_components, temp_directory):
-        """Set up test components for each test."""
+    @staticmethod
+    def test_setup(threadlocal_integration_test_components: dict[str, Any], temp_directory: tempfile.TemporaryDirectory[str]) -> dict[str, Any]:
+        """Set up test components for each test.
+
+        Yields:
+            dict[str, Any]: Test setup components.
+        """
         manager = threadlocal_integration_test_components["manager"]
         base_dir = Path(temp_directory.name)
 
@@ -679,12 +756,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         # Cleanup
         cache_db.close()
 
-    def test_concurrent_download_scenarios(self, test_setup) -> None:
+    def test_concurrent_download_scenarios(self, test_setup: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test concurrent download scenarios."""
         setup = test_setup
         manager = setup["manager"]
 
-        result = manager._test_concurrent_downloads(
+        result = manager._test_concurrent_downloads(  # noqa: SLF001
             "basic_concurrent", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
 
@@ -692,12 +769,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         assert result["results"]["files_processed"] > 0
         assert result["results"]["concurrent_success"] is True
 
-    def test_product_type_integration_scenarios(self, test_setup) -> None:
+    def test_product_type_integration_scenarios(self, test_setup: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test product type integration scenarios."""
         setup = test_setup
         manager = setup["manager"]
 
-        result = manager._test_product_type_integration(
+        result = manager._test_product_type_integration(  # noqa: SLF001
             "different_product_types", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
 
@@ -705,12 +782,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         assert result["results"]["product_types_tested"] == 3
         assert result["results"]["total_files"] > 0
 
-    def test_thread_safety_validation_scenarios(self, test_setup) -> None:
+    def test_thread_safety_validation_scenarios(self, test_setup: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test thread safety validation scenarios."""
         setup = test_setup
         manager = setup["manager"]
 
-        result = manager._test_thread_safety_validation(
+        result = manager._test_thread_safety_validation(  # noqa: SLF001
             "thread_safety_stress", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
 
@@ -718,24 +795,24 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         assert result["results"]["timestamps_processed"] == manager.test_configs["stress_test_count"]
         assert result["results"]["errors"] == 0
 
-    def test_cache_consistency_scenarios(self, test_setup) -> None:
+    def test_cache_consistency_scenarios(self, test_setup: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test cache consistency scenarios."""
         setup = test_setup
         manager = setup["manager"]
 
-        result = manager._test_cache_consistency(
+        result = manager._test_cache_consistency(  # noqa: SLF001
             "cache_operations", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
 
         assert result["scenario"] == "cache_operations"
         assert result["results"]["cache_accessible"] is True
 
-    def test_real_pattern_testing_scenarios(self, test_setup) -> None:
+    def test_real_pattern_testing_scenarios(self, test_setup: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test real pattern testing scenarios."""
         setup = test_setup
         manager = setup["manager"]
 
-        result = manager._test_real_pattern_testing(
+        result = manager._test_real_pattern_testing(  # noqa: SLF001
             "real_s3_patterns", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
 
@@ -743,12 +820,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         assert result["results"]["patterns_tested"] == 3
         assert result["results"]["all_patterns_success"] is True
 
-    def test_error_handling_scenarios(self, test_setup) -> None:
+    def test_error_handling_scenarios(self, test_setup: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test error handling scenarios."""
         setup = test_setup
         manager = setup["manager"]
 
-        result = manager._test_error_handling(
+        result = manager._test_error_handling(  # noqa: SLF001
             "threading_errors", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
 
@@ -756,20 +833,21 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         assert result["results"]["operations_run"] == 5
         assert result["results"]["success_rate"] >= 0.8  # Allow some tolerance
 
-    def test_performance_validation_scenarios(self, test_setup) -> None:
+    def test_performance_validation_scenarios(self, test_setup: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test performance validation scenarios."""
         setup = test_setup
         manager = setup["manager"]
 
-        result = manager._test_performance_validation(
+        result = manager._test_performance_validation(  # noqa: SLF001
             "throughput_testing", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
 
         assert result["scenario"] == "throughput_testing"
         assert result["results"]["performance_success"] is True
 
+    @staticmethod
     @pytest.mark.parametrize("product_type", ["RadF", "RadC", "RadM"])
-    def test_product_type_specific_operations(self, test_setup, product_type) -> None:
+    def test_product_type_specific_operations(test_setup: dict[str, Any], product_type: str) -> None:
         """Test operations with specific product types."""
         setup = test_setup
         manager = setup["manager"]
@@ -777,10 +855,10 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         # Test specific product type
         pattern_info = manager.real_patterns[product_type]
 
-        def run_product_test():
-            async def async_test():
+        def run_product_test() -> bool:
+            async def async_test() -> bool:
                 base_minute = pattern_info["minute"]
-                now = datetime.now()
+                now = datetime.now(tz=UTC)
                 timestamp = (now - timedelta(days=14)).replace(minute=base_minute, second=0, microsecond=0)
 
                 dest_path = setup["base_dir"] / f"{product_type}_specific_{timestamp.strftime('%Y%m%d_%H%M%S')}.nc"
@@ -795,8 +873,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 )
 
                 # Verify content
-                with open(result, encoding="utf-8") as f:
-                    content = f.read()
+                content = result.read_text(encoding="utf-8")
 
                 return product_type in content and result.exists()
 
@@ -811,42 +888,42 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         success = run_product_test()
         assert success is True
 
-    def test_comprehensive_threadlocal_integration_validation(self, test_setup) -> None:
+    def test_comprehensive_threadlocal_integration_validation(self, test_setup: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test comprehensive ThreadLocalCacheDB integration validation."""
         setup = test_setup
         manager = setup["manager"]
 
         # Test concurrent downloads
-        concurrent_result = manager._test_concurrent_downloads(
+        concurrent_result = manager._test_concurrent_downloads(  # noqa: SLF001
             "basic_concurrent", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
         assert concurrent_result["results"]["files_processed"] > 0
 
         # Test product type integration
-        product_result = manager._test_product_type_integration(
+        product_result = manager._test_product_type_integration(  # noqa: SLF001
             "different_product_types", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
         assert product_result["results"]["product_types_tested"] == 3
 
         # Test cache consistency
-        cache_result = manager._test_cache_consistency(
+        cache_result = manager._test_cache_consistency(  # noqa: SLF001
             "cache_operations", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
         assert cache_result["results"]["cache_accessible"] is True
 
         # Test performance
-        perf_result = manager._test_performance_validation(
+        perf_result = manager._test_performance_validation(  # noqa: SLF001
             "throughput_testing", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
         assert perf_result["results"]["performance_success"] is True
 
-    def test_threadlocal_integration_stress_validation(self, test_setup) -> None:
+    def test_threadlocal_integration_stress_validation(self, test_setup: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test ThreadLocalCacheDB integration under stress conditions."""
         setup = test_setup
         manager = setup["manager"]
 
         # Run stress test
-        stress_result = manager._test_thread_safety_validation(
+        stress_result = manager._test_thread_safety_validation(  # noqa: SLF001
             "thread_safety_stress", setup["temp_dir"], setup["cache_db"], setup["stores"], setup["reconcile_manager"]
         )
 
