@@ -52,7 +52,7 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
 
         mock_band_wavelength = MagicMock()
         mock_band_wavelength.values = MagicMock()
-        mock_band_wavelength.values.item.return_value = 10.3  # noqa: PD011
+        mock_band_wavelength.values.item.return_value = 10.3
 
         # Setup coordinate variables
         mock_x = MagicMock(size=2500)
