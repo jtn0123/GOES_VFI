@@ -478,6 +478,10 @@ def print_final_summary(all_results: list[dict[str, Any]], test_counts: dict[str
                             count_summary = "1 error"
                         elif result["status"] == "TIMEOUT":
                             count_summary = "1 timeout"
+                        elif result["status"] == "PASSED":
+                            count_summary = "1 passed"
+                        elif result["status"] == "SKIPPED":
+                            count_summary = "1 skipped"
                         else:
                             count_summary = "1 test"
 
@@ -620,6 +624,10 @@ def main() -> int:
                                 count_summary = "1 failed"
                             elif result["status"] == "SKIPPED":
                                 count_summary = "1 skipped"
+                            elif result["status"] == "ERROR":
+                                count_summary = "1 error"
+                            elif result["status"] == "TIMEOUT":
+                                count_summary = "1 timeout"
                             else:
                                 count_summary = "1 test"
 
