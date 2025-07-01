@@ -117,9 +117,9 @@ class TestThreadLocalCacheDB:
         assert len(db._connections) == 0  # noqa: SLF001
 
     @pytest.mark.parametrize("thread_count", [2, 3, 5])
-    def test_multithread_access_patterns(
-        self, temp_db_path: Path, mock_time_operations: Any, thread_count: int
-    ) -> None:  # noqa: PLR6301, ARG002
+    def test_multithread_access_patterns(  # noqa: PLR6301
+        self, temp_db_path: Path, mock_time_operations: Any, thread_count: int  # noqa: ARG002
+    ) -> None:
         """Test accessing the database from multiple threads with different thread counts."""
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
@@ -176,8 +176,11 @@ class TestThreadLocalCacheDB:
 
     @pytest.mark.asyncio()
     async def test_async_thread_safe_operations(
-        self, temp_db_path: Path, test_data_sets: dict[str, Any], mock_time_operations: Any
-    ) -> None:  # noqa: ARG002
+        self,
+        temp_db_path: Path,
+        test_data_sets: dict[str, Any],
+        mock_time_operations: Any,  # noqa: ARG002
+    ) -> None:
         """Test thread-safe operations with async functions."""
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
@@ -294,7 +297,7 @@ class TestThreadLocalCacheDB:
     @pytest.mark.parametrize("operation_count", [3, 5, 8])
     def test_concurrent_database_operations(
         self, thread_cache_db: Any, mock_time_operations: Any, operation_count: int
-    ) -> None:  # noqa: PLR6301, ARG002
+    ) -> None:
         """Test concurrent database operations with varying operation counts."""
         results = []
 
