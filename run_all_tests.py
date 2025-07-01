@@ -440,17 +440,32 @@ def print_final_summary(all_results: list[dict[str, Any]], test_counts: dict[str
         for result in all_results:
             if result["status"] not in {"PASSED", "SKIPPED", "PASSED (with teardown error)", "PASSED (with crash)"}:
                 counts = result["counts"]
-                count_parts = []
-                if counts.get("passed", 0) > 0:
-                    count_parts.append(f"{counts['passed']} passed")
-                if counts.get("failed", 0) > 0:
-                    count_parts.append(f"{counts['failed']} failed")
-                if counts.get("skipped", 0) > 0:
-                    count_parts.append(f"{counts['skipped']} skipped")
-                if counts.get("error", 0) > 0:
-                    count_parts.append(f"{counts['error']} error")
+                total_tests = sum(counts.get(k, 0) for k in ["passed", "failed", "skipped", "error"])
+                
+                # Use collected count if we have it and no individual counts
+                if total_tests == 0 and result.get("collected", 0) > 0:
+                    collected = result["collected"]
+                    if result["status"] == "FAILED":
+                        count_summary = f"{collected} failed"
+                    elif result["status"] == "ERROR":
+                        count_summary = f"{collected} errors"
+                    elif result["status"] == "TIMEOUT":
+                        count_summary = f"{collected} timed out"
+                    else:
+                        count_summary = f"{collected} tests"
+                else:
+                    count_parts = []
+                    if counts.get("passed", 0) > 0:
+                        count_parts.append(f"{counts['passed']} passed")
+                    if counts.get("failed", 0) > 0:
+                        count_parts.append(f"{counts['failed']} failed")
+                    if counts.get("skipped", 0) > 0:
+                        count_parts.append(f"{counts['skipped']} skipped")
+                    if counts.get("error", 0) > 0:
+                        count_parts.append(f"{counts['error']} errors")
+                        
+                    count_summary = ", ".join(count_parts) if count_parts else "0 tests"
                     
-                count_summary = ", ".join(count_parts) if count_parts else "no counts"
                 print(f"  {result['status']} {result['path']} ({result['duration']:.1f}s) ({count_summary})")  # noqa: T201
 
     if skipped_files > 0:
@@ -532,10 +547,6 @@ def main() -> int:
         for i, path in enumerate(test_files, 1):
             future = executor.submit(run_test, path, args.debug_mode, args.timeout)
             future_to_info[future] = {"path": path, "index": i}
-            
-            # Show which test is starting
-            if not args.quiet:
-                print(f"[{i:3d}/{len(test_files)}] 🔄 Starting {path}...")  # noqa: T201
 
         # Process completed tests
         for future in as_completed(future_to_info):
@@ -555,17 +566,31 @@ def main() -> int:
                     
                     # Build count summary for the status line
                     counts = result["counts"]
-                    count_parts = []
-                    if counts.get("passed", 0) > 0:
-                        count_parts.append(f"{counts['passed']} passed")
-                    if counts.get("failed", 0) > 0:
-                        count_parts.append(f"{counts['failed']} failed")
-                    if counts.get("skipped", 0) > 0:
-                        count_parts.append(f"{counts['skipped']} skipped")
-                    if counts.get("error", 0) > 0:
-                        count_parts.append(f"{counts['error']} error")
+                    total_tests = sum(counts.get(k, 0) for k in ["passed", "failed", "skipped", "error"])
                     
-                    count_summary = ", ".join(count_parts) if count_parts else "no tests"
+                    # Use collected count if we have it and no individual counts
+                    if total_tests == 0 and result.get("collected", 0) > 0:
+                        collected = result["collected"]
+                        if result["status"] == "PASSED":
+                            count_summary = f"{collected} passed"
+                        elif result["status"] == "FAILED":
+                            count_summary = f"{collected} failed"
+                        elif result["status"] == "SKIPPED":
+                            count_summary = f"{collected} skipped"
+                        else:
+                            count_summary = f"{collected} tests"
+                    else:
+                        count_parts = []
+                        if counts.get("passed", 0) > 0:
+                            count_parts.append(f"{counts['passed']} passed")
+                        if counts.get("failed", 0) > 0:
+                            count_parts.append(f"{counts['failed']} failed")
+                        if counts.get("skipped", 0) > 0:
+                            count_parts.append(f"{counts['skipped']} skipped")
+                        if counts.get("error", 0) > 0:
+                            count_parts.append(f"{counts['error']} errors")
+                        
+                        count_summary = ", ".join(count_parts) if count_parts else "0 tests"
                     
                     print(f"[{i:3d}/{len(test_files)}] {status_emoji} {result['path']} ({result['duration']:.1f}s) ({count_summary})")  # noqa: T201
 
@@ -610,10 +635,21 @@ def main() -> int:
         skipped_count = counts.get("skipped", 0)
         error_count = counts.get("error", 0)
 
-        # Use collected count for passed if we have no other counts
+        # Use collected count for appropriate status if we have no other counts
         if collected > 0 and passed_count == 0 and failed_count == 0 and skipped_count == 0 and error_count == 0:
-            passed_count = collected
-            counts["passed"] = collected
+            status = result["status"]
+            if status == "PASSED" or status == "PASSED (with teardown error)" or status == "PASSED (with crash)":
+                passed_count = collected
+                counts["passed"] = collected
+            elif status == "FAILED":
+                failed_count = collected
+                counts["failed"] = collected
+            elif status == "SKIPPED":
+                skipped_count = collected
+                counts["skipped"] = collected
+            elif status in ["ERROR", "CRASHED", "TIMEOUT"]:
+                error_count = collected
+                counts["error"] = collected
 
         # Sum up the counts
         for key in test_counts:
