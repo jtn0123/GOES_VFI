@@ -25,8 +25,12 @@ class TestS3DownloadStatsParamOptimizedV2:
     """Optimized S3 download statistics tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def s3_stats_test_components(self):
-        """Create shared components for S3 download statistics testing."""
+    def s3_stats_test_components(self) -> dict[str, Any]:  # noqa: PLR6301, C901
+        """Create shared components for S3 download statistics testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing S3 download statistics testing components.
+        """
 
         # Enhanced S3 Download Stats Test Manager
         class S3DownloadStatsTestManager:
@@ -92,12 +96,20 @@ class TestS3DownloadStatsParamOptimizedV2:
                 s3_store.DOWNLOAD_STATS.clear()
                 s3_store.DOWNLOAD_STATS.update(self.default_stats.copy())
 
-            def get_current_stats(self) -> dict[str, Any]:
-                """Get current download statistics."""
+            def get_current_stats(self) -> dict[str, Any]:  # noqa: PLR6301
+                """Get current download statistics.
+
+                Returns:
+                    dict[str, Any]: Current download statistics dictionary.
+                """
                 return s3_store.DOWNLOAD_STATS.copy()
 
-            def _test_basic_stats_update(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test basic statistics update scenarios."""
+            def _test_basic_stats_update(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test basic statistics update scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results for basic statistics update scenarios.
+                """
                 results = {}
 
                 if scenario_name == "single_update":
@@ -185,8 +197,12 @@ class TestS3DownloadStatsParamOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_error_history_management(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test error history management scenarios."""
+            def _test_error_history_management(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test error history management scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results for error history management scenarios.
+                """
                 results = {}
 
                 if scenario_name == "error_limit_enforcement":
@@ -245,8 +261,12 @@ class TestS3DownloadStatsParamOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_download_rate_calculation(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test download rate calculation scenarios."""
+            def _test_download_rate_calculation(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test download rate calculation scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results for download rate calculation scenarios.
+                """
                 results = {}
 
                 if scenario_name == "rate_calculations":
@@ -282,8 +302,12 @@ class TestS3DownloadStatsParamOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_file_size_tracking(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test file size tracking scenarios."""
+            def _test_file_size_tracking(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test file size tracking scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results for file size tracking scenarios.
+                """
                 results = {}
 
                 if scenario_name == "size_extremes":
@@ -325,8 +349,12 @@ class TestS3DownloadStatsParamOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_time_tracking(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test time tracking scenarios."""
+            def _test_time_tracking(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test time tracking scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results for time tracking scenarios.
+                """
                 results = {}
 
                 if scenario_name == "download_times":
@@ -368,8 +396,12 @@ class TestS3DownloadStatsParamOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_statistics_logging(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test statistics logging scenarios."""
+            def _test_statistics_logging(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test statistics logging scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results for statistics logging scenarios.
+                """
                 results = {}
 
                 if scenario_name == "log_output":
@@ -410,8 +442,12 @@ class TestS3DownloadStatsParamOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_batch_operations(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test batch operations scenarios."""
+            def _test_batch_operations(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test batch operations scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results for batch operations scenarios.
+                """
                 results = {}
 
                 if scenario_name == "mixed_outcomes":
@@ -480,8 +516,12 @@ class TestS3DownloadStatsParamOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_edge_cases(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test edge cases and boundary conditions."""
+            def _test_edge_cases(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test edge cases and boundary conditions.
+
+                Returns:
+                    dict[str, Any]: Test results for edge cases scenarios.
+                """
                 results = {}
 
                 if scenario_name == "zero_values":
@@ -532,8 +572,12 @@ class TestS3DownloadStatsParamOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_performance_validation(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test performance validation scenarios."""
+            def _test_performance_validation(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test performance validation scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results for performance validation scenarios.
+                """
                 results = {}
 
                 if scenario_name == "rapid_updates":
@@ -574,8 +618,12 @@ class TestS3DownloadStatsParamOptimizedV2:
         return {"manager": S3DownloadStatsTestManager()}
 
     @pytest.fixture(autouse=True)
-    def reset_stats_fixture(self, s3_stats_test_components):
-        """Reset stats before each test."""
+    def reset_stats_fixture(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
+        """Reset stats before each test.
+
+        Yields:
+            None: Test execution context.
+        """
         manager = s3_stats_test_components["manager"]
         manager.reset_stats()
         yield
@@ -595,13 +643,13 @@ class TestS3DownloadStatsParamOptimizedV2:
             (True, None, 3.0, 1000, None),
         ],
     )
-    def test_update_download_stats_scenarios(
-        self, s3_stats_test_components, success, error_type, download_time, file_size, error_message
+    def test_update_download_stats_scenarios(  # noqa: PLR6301
+        self, s3_stats_test_components: dict[str, Any], *, success: bool, error_type: str | None, download_time: float, file_size: int, error_message: str | None
     ) -> None:
         """Test update download stats with various scenarios."""
         manager = s3_stats_test_components["manager"]
 
-        result = manager._test_basic_stats_update(
+        result = manager._test_basic_stats_update(  # noqa: SLF001
             "single_update",
             success=success,
             error_type=error_type,
@@ -612,126 +660,126 @@ class TestS3DownloadStatsParamOptimizedV2:
 
         assert result["results"]["basic_update_verified"] is True
 
-    def test_basic_stats_update_scenarios(self, s3_stats_test_components) -> None:
+    def test_basic_stats_update_scenarios(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test basic statistics update scenarios."""
         manager = s3_stats_test_components["manager"]
 
         basic_scenarios = ["single_update", "parameterized_scenarios"]
 
         for scenario in basic_scenarios:
-            result = manager._test_basic_stats_update(scenario)
+            result = manager._test_basic_stats_update(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_error_history_management_scenarios(self, s3_stats_test_components) -> None:
+    def test_error_history_management_scenarios(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test error history management scenarios."""
         manager = s3_stats_test_components["manager"]
 
         error_scenarios = ["error_limit_enforcement", "error_type_tracking"]
 
         for scenario in error_scenarios:
-            result = manager._test_error_history_management(scenario)
+            result = manager._test_error_history_management(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_download_rate_calculation_scenarios(self, s3_stats_test_components) -> None:
+    def test_download_rate_calculation_scenarios(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test download rate calculation scenarios."""
         manager = s3_stats_test_components["manager"]
 
-        result = manager._test_download_rate_calculation("rate_calculations")
+        result = manager._test_download_rate_calculation("rate_calculations")  # noqa: SLF001
         assert result["scenario"] == "rate_calculations"
         assert result["results"]["rates_calculated"] == 4
         assert result["results"]["average_rate"] > 0
 
-    def test_file_size_tracking_scenarios(self, s3_stats_test_components) -> None:
+    def test_file_size_tracking_scenarios(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test file size tracking scenarios."""
         manager = s3_stats_test_components["manager"]
 
         size_scenarios = ["size_extremes", "size_accumulation"]
 
         for scenario in size_scenarios:
-            result = manager._test_file_size_tracking(scenario)
+            result = manager._test_file_size_tracking(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_time_tracking_scenarios(self, s3_stats_test_components) -> None:
+    def test_time_tracking_scenarios(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test time tracking scenarios."""
         manager = s3_stats_test_components["manager"]
 
         time_scenarios = ["download_times", "success_time_tracking"]
 
         for scenario in time_scenarios:
-            result = manager._test_time_tracking(scenario)
+            result = manager._test_time_tracking(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_statistics_logging_scenarios(self, s3_stats_test_components) -> None:
+    def test_statistics_logging_scenarios(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test statistics logging scenarios."""
         manager = s3_stats_test_components["manager"]
 
         logging_scenarios = ["log_output", "log_with_no_data"]
 
         for scenario in logging_scenarios:
-            result = manager._test_statistics_logging(scenario)
+            result = manager._test_statistics_logging(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_batch_operations_scenarios(self, s3_stats_test_components) -> None:
+    def test_batch_operations_scenarios(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test batch operations scenarios."""
         manager = s3_stats_test_components["manager"]
 
         batch_scenarios = ["mixed_outcomes", "large_batch"]
 
         for scenario in batch_scenarios:
-            result = manager._test_batch_operations(scenario)
+            result = manager._test_batch_operations(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_edge_case_scenarios(self, s3_stats_test_components) -> None:
+    def test_edge_case_scenarios(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test edge cases and boundary conditions."""
         manager = s3_stats_test_components["manager"]
 
         edge_scenarios = ["zero_values", "very_large_values"]
 
         for scenario in edge_scenarios:
-            result = manager._test_edge_cases(scenario)
+            result = manager._test_edge_cases(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_performance_validation_scenarios(self, s3_stats_test_components) -> None:
+    def test_performance_validation_scenarios(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test performance validation scenarios."""
         manager = s3_stats_test_components["manager"]
 
-        result = manager._test_performance_validation("rapid_updates")
+        result = manager._test_performance_validation("rapid_updates")  # noqa: SLF001
         assert result["scenario"] == "rapid_updates"
         assert result["results"]["updates_processed"] == 1000
         assert result["results"]["updates_per_second"] > 100  # Should be fast
 
-    def test_error_history_limit_validation(self, s3_stats_test_components) -> None:
+    def test_error_history_limit_validation(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test error history limit enforcement specifically."""
         manager = s3_stats_test_components["manager"]
 
-        result = manager._test_error_history_management("error_limit_enforcement")
+        result = manager._test_error_history_management("error_limit_enforcement")  # noqa: SLF001
         assert result["results"]["error_limit_verified"] is True
 
-    def test_comprehensive_statistics_validation(self, s3_stats_test_components) -> None:
+    def test_comprehensive_statistics_validation(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test comprehensive statistics validation."""
         manager = s3_stats_test_components["manager"]
 
         # Test comprehensive scenario coverage
-        result = manager._test_basic_stats_update("parameterized_scenarios")
+        result = manager._test_basic_stats_update("parameterized_scenarios")  # noqa: SLF001
         assert result["results"]["scenarios_tested"] == len(manager.test_scenarios)
 
         # Test error type tracking
-        result = manager._test_error_history_management("error_type_tracking")
+        result = manager._test_error_history_management("error_type_tracking")  # noqa: SLF001
         assert result["results"]["error_types_tracked"] == 4
 
         # Test batch processing
-        result = manager._test_batch_operations("large_batch")
+        result = manager._test_batch_operations("large_batch")  # noqa: SLF001
         assert result["results"]["batch_size"] == 100
         assert 0.7 <= result["results"]["success_rate"] <= 0.9  # Should be around 80%
 
-    def test_s3_download_stats_integration_validation(self, s3_stats_test_components) -> None:
+    def test_s3_download_stats_integration_validation(self, s3_stats_test_components: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test S3 download stats integration scenarios."""
         manager = s3_stats_test_components["manager"]
 
