@@ -19,7 +19,11 @@ from goesvfi.gui_components.worker_factory import WorkerFactory
 
 @pytest.fixture()
 def base_worker_args() -> dict[str, Any]:
-    """Base required arguments for worker creation."""
+    """Base required arguments for worker creation.
+
+    Returns:
+        dict[str, Any]: Dictionary with base worker arguments.
+    """
     return {
         "in_dir": "/test/input",
         "out_file": "/test/output.mp4",
@@ -30,8 +34,12 @@ def base_worker_args() -> dict[str, Any]:
 
 
 @pytest.fixture()
-def extended_worker_args(base_worker_args) -> dict[str, Any]:
-    """Extended arguments with all optional parameters."""
+def extended_worker_args(base_worker_args: dict[str, Any]) -> dict[str, Any]:
+    """Extended arguments with all optional parameters.
+
+    Returns:
+        dict[str, Any]: Dictionary with extended worker arguments.
+    """
     extended = base_worker_args.copy()
     extended.update({
         "max_workers": 8,
@@ -74,20 +82,27 @@ def extended_worker_args(base_worker_args) -> dict[str, Any]:
 
 
 @pytest.fixture()
-def mocked_worker_creation():
-    """Fixture to mock VfiWorker creation and tempfile operations."""
-    with patch("goesvfi.gui_components.worker_factory.VfiWorker") as mock_vfi_worker:
-        with patch("goesvfi.gui_components.worker_factory.tempfile.mkdtemp") as mock_mkdtemp:
-            mock_mkdtemp.return_value = "/tmp/sanchez_test"
-            mock_worker_instance = Mock()
-            mock_vfi_worker.return_value = mock_worker_instance
-            yield mock_vfi_worker, mock_worker_instance
+def mocked_worker_creation() -> Any:
+    """Fixture to mock VfiWorker creation and tempfile operations.
+
+    Yields:
+        tuple[Mock, Mock]: Tuple of mocked VfiWorker class and instance.
+    """
+    with (
+        patch("goesvfi.gui_components.worker_factory.VfiWorker") as mock_vfi_worker,
+        patch("goesvfi.gui_components.worker_factory.tempfile.mkdtemp") as mock_mkdtemp,
+    ):
+        mock_mkdtemp.return_value = "/tmp/sanchez_test"  # noqa: S108
+        mock_worker_instance = Mock()
+        mock_vfi_worker.return_value = mock_worker_instance
+        yield mock_vfi_worker, mock_worker_instance
 
 
 class TestWorkerFactory:
     """Test WorkerFactory functionality with optimized test methods."""
 
-    def test_worker_creation_with_minimal_args(self, base_worker_args, mocked_worker_creation) -> None:
+    @staticmethod
+    def test_worker_creation_with_minimal_args(base_worker_args: dict[str, Any], mocked_worker_creation: Any) -> None:
         """Test creating worker with minimal arguments."""
         mock_vfi_worker, mock_worker_instance = mocked_worker_creation
 
@@ -113,7 +128,10 @@ class TestWorkerFactory:
 
         assert worker is mock_worker_instance
 
-    def test_worker_creation_with_extended_args(self, extended_worker_args, mocked_worker_creation) -> None:
+    @staticmethod
+    def test_worker_creation_with_extended_args(
+        extended_worker_args: dict[str, Any], mocked_worker_creation: Any
+    ) -> None:
         """Test creating worker with complete arguments."""
         mock_vfi_worker, _ = mocked_worker_creation
 
@@ -154,15 +172,17 @@ class TestWorkerFactory:
         for key, expected_value in expected_mappings.items():
             assert call_kwargs[key] == expected_value
 
+    @staticmethod
     @pytest.mark.parametrize("missing_arg", ["in_dir", "out_file", "fps", "multiplier", "encoder"])
-    def test_worker_creation_missing_required_args(self, base_worker_args, missing_arg) -> None:
+    def test_worker_creation_missing_required_args(base_worker_args: dict[str, Any], missing_arg: str) -> None:
         """Test worker creation with missing required arguments."""
         incomplete_args = base_worker_args.copy()
         del incomplete_args[missing_arg]
 
-        with pytest.raises(ValueError, match=f"Missing required argument: {missing_arg}"):
+        with pytest.raises(ValueError, match=rf"Missing required argument: {missing_arg}"):
             WorkerFactory.create_worker(incomplete_args)
 
+    @staticmethod
     @pytest.mark.parametrize(
         "mb_size_input,expected_output",
         [
@@ -171,7 +191,9 @@ class TestWorkerFactory:
             ("invalid", 16),  # default
         ],
     )
-    def test_mb_size_conversion(self, base_worker_args, mocked_worker_creation, mb_size_input, expected_output) -> None:
+    def test_mb_size_conversion(
+        base_worker_args: dict[str, Any], mocked_worker_creation: Any, mb_size_input: str, expected_output: int
+    ) -> None:
         """Test mb_size string to int conversion."""
         mock_vfi_worker, _ = mocked_worker_creation
 
@@ -183,6 +205,7 @@ class TestWorkerFactory:
         call_kwargs = mock_vfi_worker.call_args[1]
         assert call_kwargs["minter_mb_size"] == expected_output
 
+    @staticmethod
     @pytest.mark.parametrize(
         "vsbmc_input,expected_output",
         [
@@ -190,7 +213,12 @@ class TestWorkerFactory:
             (False, 0),
         ],
     )
-    def test_vsbmc_conversion(self, base_worker_args, mocked_worker_creation, vsbmc_input, expected_output) -> None:
+    def test_vsbmc_conversion(
+        base_worker_args: dict[str, Any],
+        mocked_worker_creation: Any,
+        vsbmc_input: bool,  # noqa: FBT001
+        expected_output: int,
+    ) -> None:
         """Test vsbmc boolean to int conversion."""
         mock_vfi_worker, _ = mocked_worker_creation
 
@@ -202,6 +230,7 @@ class TestWorkerFactory:
         call_kwargs = mock_vfi_worker.call_args[1]
         assert call_kwargs["minter_vsbmc"] == expected_output
 
+    @staticmethod
     @pytest.mark.parametrize(
         "scd_mode,threshold_input,expected_threshold",
         [
@@ -211,7 +240,11 @@ class TestWorkerFactory:
         ],
     )
     def test_scd_threshold_handling(
-        self, base_worker_args, mocked_worker_creation, scd_mode, threshold_input, expected_threshold
+        base_worker_args: dict[str, Any],
+        mocked_worker_creation: Any,
+        scd_mode: str,
+        threshold_input: float,
+        expected_threshold: float,
     ) -> None:
         """Test scd_threshold handling based on scd_mode."""
         mock_vfi_worker, _ = mocked_worker_creation
@@ -224,7 +257,8 @@ class TestWorkerFactory:
         call_kwargs = mock_vfi_worker.call_args[1]
         assert call_kwargs["scd_threshold"] == expected_threshold
 
-    def test_ffmpeg_args_none_handling(self, base_worker_args, mocked_worker_creation) -> None:
+    @staticmethod
+    def test_ffmpeg_args_none_handling(base_worker_args: dict[str, Any], mocked_worker_creation: Any) -> None:
         """Test worker creation when ffmpeg_args is None."""
         mock_vfi_worker, _ = mocked_worker_creation
 
@@ -240,7 +274,8 @@ class TestWorkerFactory:
         assert call_kwargs["filter_preset"] == "slow"
         assert call_kwargs["mi_mode"] == "mci"
 
-    def test_path_object_conversion(self, base_worker_args, mocked_worker_creation) -> None:
+    @staticmethod
+    def test_path_object_conversion(base_worker_args: dict[str, Any], mocked_worker_creation: Any) -> None:
         """Test Path objects are converted to strings."""
         mock_vfi_worker, _ = mocked_worker_creation
 
@@ -255,6 +290,7 @@ class TestWorkerFactory:
         assert call_kwargs["in_dir"] == "/test/input"
         assert call_kwargs["out_file_path"] == "/test/output.mp4"
 
+    @staticmethod
     @pytest.mark.parametrize(
         "multiplier,expected_mid_count",
         [
@@ -265,7 +301,7 @@ class TestWorkerFactory:
         ],
     )
     def test_multiplier_to_mid_count_conversion(
-        self, base_worker_args, mocked_worker_creation, multiplier, expected_mid_count
+        base_worker_args: dict[str, Any], mocked_worker_creation: Any, multiplier: int, expected_mid_count: int
     ) -> None:
         """Test edge case multiplier values."""
         mock_vfi_worker, _ = mocked_worker_creation
@@ -278,12 +314,13 @@ class TestWorkerFactory:
         call_kwargs = mock_vfi_worker.call_args[1]
         assert call_kwargs["mid_count"] == expected_mid_count
 
-    def test_temp_directory_creation(self, base_worker_args, mocked_worker_creation) -> None:
+    @staticmethod
+    def test_temp_directory_creation(base_worker_args: dict[str, Any], mocked_worker_creation: Any) -> None:
         """Test that temporary directory is created for Sanchez."""
         mock_vfi_worker, _ = mocked_worker_creation
 
         with patch("goesvfi.gui_components.worker_factory.tempfile.mkdtemp") as mock_mkdtemp:
-            mock_mkdtemp.return_value = "/tmp/sanchez_gui_12345"
+            mock_mkdtemp.return_value = "/tmp/sanchez_gui_12345"  # noqa: S108
 
             WorkerFactory.create_worker(base_worker_args)
 
@@ -292,9 +329,10 @@ class TestWorkerFactory:
 
             # Check that the temp dir was passed to worker
             call_kwargs = mock_vfi_worker.call_args[1]
-            assert call_kwargs["sanchez_gui_temp_dir"] == "/tmp/sanchez_gui_12345"
+            assert call_kwargs["sanchez_gui_temp_dir"] == "/tmp/sanchez_gui_12345"  # noqa: S108
 
-    def test_sanchez_resolution_conversion(self, base_worker_args, mocked_worker_creation) -> None:
+    @staticmethod
+    def test_sanchez_resolution_conversion(base_worker_args: dict[str, Any], mocked_worker_creation: Any) -> None:
         """Test sanchez resolution string to int conversion."""
         mock_vfi_worker, _ = mocked_worker_creation
 
@@ -306,7 +344,8 @@ class TestWorkerFactory:
         call_kwargs = mock_vfi_worker.call_args[1]
         assert call_kwargs["res_km"] == 2  # int(float("2.5"))
 
-    def test_worker_creation_exception_handling(self, base_worker_args, mocked_worker_creation) -> None:
+    @staticmethod
+    def test_worker_creation_exception_handling(base_worker_args: dict[str, Any], mocked_worker_creation: Any) -> None:
         """Test exception handling during worker creation."""
         mock_vfi_worker, _ = mocked_worker_creation
         mock_vfi_worker.side_effect = Exception("Worker creation failed")
@@ -314,7 +353,8 @@ class TestWorkerFactory:
         with pytest.raises(Exception, match="Worker creation failed"):
             WorkerFactory.create_worker(base_worker_args)
 
-    def test_logging_during_creation(self, base_worker_args, mocked_worker_creation) -> None:
+    @staticmethod
+    def test_logging_during_creation(base_worker_args: dict[str, Any], mocked_worker_creation: Any) -> None:
         """Test that appropriate logging occurs during worker creation."""
         _mock_vfi_worker, _ = mocked_worker_creation
 
@@ -324,18 +364,22 @@ class TestWorkerFactory:
             # Should log successful creation
             mock_logger.info.assert_called_once_with("Created VfiWorker with parameters from MainTab")
 
-    def test_static_method_accessibility(self, base_worker_args) -> None:
+    @staticmethod
+    def test_static_method_accessibility(base_worker_args: dict[str, Any]) -> None:
         """Test that WorkerFactory methods are static and don't require instantiation."""
         # Should be able to call without creating instance
-        with patch("goesvfi.gui_components.worker_factory.VfiWorker") as mock_vfi_worker:
-            with patch("goesvfi.gui_components.worker_factory.tempfile.mkdtemp"):
-                mock_vfi_worker.return_value = Mock()
+        with (
+            patch("goesvfi.gui_components.worker_factory.VfiWorker") as mock_vfi_worker,
+            patch("goesvfi.gui_components.worker_factory.tempfile.mkdtemp"),
+        ):
+            mock_vfi_worker.return_value = Mock()
 
-                # Should work without instantiating WorkerFactory
-                worker = WorkerFactory.create_worker(base_worker_args)
-                assert worker is not None
+            # Should work without instantiating WorkerFactory
+            worker = WorkerFactory.create_worker(base_worker_args)
+            assert worker is not None
 
-    def test_default_values_comprehensive(self, base_worker_args, mocked_worker_creation) -> None:
+    @staticmethod
+    def test_default_values_comprehensive(base_worker_args: dict[str, Any], mocked_worker_creation: Any) -> None:
         """Test that proper default values are used for all optional parameters."""
         mock_vfi_worker, _ = mocked_worker_creation
 
