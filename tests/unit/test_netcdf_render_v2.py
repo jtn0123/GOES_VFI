@@ -233,10 +233,10 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
     @patch("pathlib.Path.exists", return_value=True)
     def test_render_png_success_comprehensive(
         self,
-        mock_exists: Any,
+        mock_exists: Any,  # noqa: ARG002
         mock_create_figure: Any,
         mock_open_dataset: Any,
-        temp_dir: Any,  # noqa: ARG002
+        temp_dir: Any,
     ) -> None:
         """Test successful PNG rendering with various configurations."""
         mock_ds = self.mock_dataset()
