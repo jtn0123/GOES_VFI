@@ -20,7 +20,7 @@ from goesvfi.integrity_check.data_fetcher import DataFetcher
 from goesvfi.integrity_check.performance_monitor import PerformanceMonitor
 
 
-class TestIntegrityTabPerformanceV2:  # noqa: PLR0904
+class TestIntegrityTabPerformanceV2:
     """Optimized test class for integrity tab performance functionality."""
 
     @pytest.fixture()

@@ -1,6 +1,7 @@
 """Fast, optimized tests for configuration management - Optimized v2."""
 
 from pathlib import Path
+import time
 from typing import Any
 from unittest.mock import MagicMock, mock_open, patch
 
@@ -10,8 +11,8 @@ from goesvfi.utils.config import (
     DEFAULTS,
     EXPECTED_SCHEMA,
     FFMPEG_PROFILES,
-    _load_config,
-    _validate_config,
+    _load_config,  # noqa: PLC2701
+    _validate_config,  # noqa: PLC2701
     get_cache_dir,
     get_config_path,
     get_output_dir,
@@ -20,8 +21,12 @@ from goesvfi.utils.config import (
 
 # Shared fixtures and test data
 @pytest.fixture(scope="session")
-def config_scenarios():
-    """Pre-defined configuration scenarios for testing."""
+def config_scenarios() -> dict[str, Any]:
+    """Pre-defined configuration scenarios for testing.
+
+    Returns:
+        dict[str, Any]: Configuration scenarios.
+    """
     return {
         "valid_minimal": {
             "output_dir": "/test/output",
@@ -45,8 +50,12 @@ def config_scenarios():
 
 
 @pytest.fixture(scope="session")
-def toml_content_scenarios():
-    """Pre-defined TOML content scenarios for testing."""
+def toml_content_scenarios() -> dict[str, str]:
+    """Pre-defined TOML content scenarios for testing.
+
+    Returns:
+        dict[str, str]: TOML content scenarios.
+    """
     return {
         "valid_basic": """
         output_dir = "/custom/output"
@@ -78,8 +87,12 @@ def toml_content_scenarios():
 
 
 @pytest.fixture(scope="session")
-def env_var_scenarios():
-    """Pre-defined environment variable scenarios."""
+def env_var_scenarios() -> dict[str, str]:
+    """Pre-defined environment variable scenarios.
+
+    Returns:
+        dict[str, str]: Environment variable scenarios.
+    """
     return {
         "custom_file": "/custom/path/config.toml",
         "custom_dir": "/custom/config/dir",
@@ -88,16 +101,24 @@ def env_var_scenarios():
 
 
 @pytest.fixture(autouse=True)
-def clear_config_cache():
-    """Clear config cache before each test."""
+def clear_config_cache() -> None:
+    """Clear config cache before each test.
+
+    Yields:
+        None: Test execution context.
+    """
     _load_config.cache_clear()
     yield
     _load_config.cache_clear()
 
 
 @pytest.fixture()
-def mock_env_vars(monkeypatch):
-    """Mock environment variables for testing."""
+def mock_env_vars(monkeypatch: Any) -> Any:
+    """Mock environment variables for testing.
+
+    Returns:
+        Any: Monkeypatch fixture.
+    """
     monkeypatch.delenv("GOESVFI_CONFIG_DIR", raising=False)
     monkeypatch.delenv("GOESVFI_CONFIG_FILE", raising=False)
     return monkeypatch
@@ -106,7 +127,7 @@ def mock_env_vars(monkeypatch):
 class TestConfigManagement:
     """Test configuration loading and validation with optimized patterns."""
 
-    def test_get_config_path_default(self, mock_env_vars) -> None:
+    def test_get_config_path_default(self, mock_env_vars: Any) -> None:  # noqa: PLR6301, ARG002
         """Test default config path when no environment variables are set."""
         path = get_config_path()
 
@@ -114,7 +135,7 @@ class TestConfigManagement:
         assert ".config/goesvfi" in str(path)
 
     @pytest.mark.parametrize("env_scenario", ["custom_file", "custom_dir"])
-    def test_get_config_path_custom(self, mock_env_vars, env_var_scenarios, env_scenario: str) -> None:
+    def test_get_config_path_custom(self, mock_env_vars: Any, env_var_scenarios: Any, env_scenario: str) -> None:  # noqa: PLR6301
         """Test custom config paths via environment variables."""
         if env_scenario == "custom_file":
             custom_path = env_var_scenarios["custom_file"]
@@ -129,7 +150,7 @@ class TestConfigManagement:
         assert str(path) == expected_path
 
     @pytest.mark.parametrize("config_scenario", ["valid_minimal", "valid_complete"])
-    def test_validate_config_valid_data(self, config_scenarios, config_scenario: str) -> None:
+    def test_validate_config_valid_data(self, config_scenarios: Any, config_scenario: str) -> None:  # noqa: PLR6301
         """Test validation with valid configuration data."""
         config_data = config_scenarios[config_scenario].copy()
         original_data = config_data.copy()
@@ -142,7 +163,7 @@ class TestConfigManagement:
         assert config_data["cache_dir"] == original_data["cache_dir"]
 
     @pytest.mark.parametrize("config_scenario", ["invalid_types", "missing_sections"])
-    def test_validate_config_invalid_data(self, config_scenarios, config_scenario: str) -> None:
+    def test_validate_config_invalid_data(self, config_scenarios: Any, config_scenario: str) -> None:  # noqa: PLR6301
         """Test validation with invalid configuration data."""
         config_data = config_scenarios[config_scenario].copy()
 
@@ -154,7 +175,7 @@ class TestConfigManagement:
         assert "pipeline" in config_data
         assert isinstance(config_data["pipeline"], dict)
 
-    def test_validate_config_nested_validation(self, config_scenarios) -> None:
+    def test_validate_config_nested_validation(self, config_scenarios: Any) -> None:  # noqa: PLR6301
         """Test validation of nested configuration sections."""
         config_data = config_scenarios["valid_complete"].copy()
         # Deep copy nested dicts
@@ -173,7 +194,7 @@ class TestConfigManagement:
         assert isinstance(config_data["theme"]["custom_overrides"], bool)
 
     @pytest.mark.parametrize("file_exists", [True, False])
-    def test_load_config_file_existence(self, mock_env_vars, file_exists: bool) -> None:
+    def test_load_config_file_existence(self, mock_env_vars: Any, file_exists: bool) -> None:  # noqa: PLR6301, ARG002, FBT001
         """Test loading config when file exists or doesn't exist."""
         with patch("goesvfi.utils.config.get_config_path") as mock_path:
             mock_file = MagicMock()
@@ -208,7 +229,7 @@ class TestConfigManagement:
                 assert config["cache_dir"] == DEFAULTS["cache_dir"]
 
     @pytest.mark.parametrize("toml_scenario", ["valid_basic", "valid_extended"])
-    def test_load_config_valid_toml(self, mock_env_vars, toml_content_scenarios, toml_scenario: str) -> None:
+    def test_load_config_valid_toml(self, mock_env_vars: Any, toml_content_scenarios: Any, toml_scenario: str) -> None:  # noqa: PLR6301, ARG002
         """Test loading valid TOML configuration content."""
         toml_content = toml_content_scenarios[toml_scenario]
 
@@ -230,7 +251,7 @@ class TestConfigManagement:
                 assert config["output_dir"] == "/extended/output"
                 assert config["theme"]["custom_overrides"] is True
 
-    def test_load_config_invalid_toml(self, mock_env_vars, toml_content_scenarios) -> None:
+    def test_load_config_invalid_toml(self, mock_env_vars: Any, toml_content_scenarios: Any) -> None:  # noqa: PLR6301, ARG002
         """Test loading invalid TOML raises appropriate error."""
         invalid_toml = toml_content_scenarios["invalid_toml"]
 
@@ -250,7 +271,7 @@ class TestConfigManagement:
             ("cache_dir", get_cache_dir),
         ],
     )
-    def test_directory_getters(self, config_key: str, getter_func) -> None:
+    def test_directory_getters(self, config_key: str, getter_func: Any) -> None:  # noqa: PLR6301
         """Test output and cache directory getter functions."""
         test_path = f"/test/{config_key}"
 
@@ -270,7 +291,7 @@ class TestConfigManagement:
             ("", DEFAULTS["output_dir"]),  # Empty string
         ],
     )
-    def test_directory_getters_fallback(self, malformed_value: Any, expected_fallback: str) -> None:
+    def test_directory_getters_fallback(self, malformed_value: Any, expected_fallback: str) -> None:  # noqa: PLR6301
         """Test directory getters fallback when config is malformed."""
         with patch("goesvfi.utils.config._load_config") as mock_load:
             mock_load.return_value = {"output_dir": malformed_value, "cache_dir": malformed_value}
@@ -283,7 +304,7 @@ class TestConfigManagement:
             assert str(output_result) == expected_fallback
             assert str(cache_result) == DEFAULTS["cache_dir"]
 
-    def test_ffmpeg_profiles_structure_validation(self) -> None:
+    def test_ffmpeg_profiles_structure_validation(self) -> None:  # noqa: PLR6301
         """Test FFmpeg profiles have correct structure and valid values."""
         required_keys = [
             "use_ffmpeg_interp",
@@ -308,7 +329,7 @@ class TestConfigManagement:
             assert isinstance(profile["mi_mode"], str)
 
     @pytest.mark.parametrize("profile_name", ["Default", "Optimal", "Optimal 2"])
-    def test_ffmpeg_profile_parameter_ranges(self, profile_name: str) -> None:
+    def test_ffmpeg_profile_parameter_ranges(self, profile_name: str) -> None:  # noqa: PLR6301
         """Test FFmpeg profile parameter validation with reasonable ranges."""
         profile = FFMPEG_PROFILES[profile_name]
 
@@ -319,7 +340,7 @@ class TestConfigManagement:
         assert profile["mi_mode"] in {"dup", "mci"}
         assert profile["mc_mode"] in {"obmc", "aobmc"}
 
-    def test_config_schema_completeness(self) -> None:
+    def test_config_schema_completeness(self) -> None:  # noqa: PLR6301
         """Test that expected schema covers all defaults."""
 
         def check_schema_coverage(
@@ -335,7 +356,7 @@ class TestConfigManagement:
 
         check_schema_coverage(DEFAULTS, EXPECTED_SCHEMA)
 
-    def test_config_caching_behavior(self) -> None:
+    def test_config_caching_behavior(self) -> None:  # noqa: PLR6301
         """Test that config loading uses LRU cache correctly."""
         with patch("goesvfi.utils.config.get_config_path") as mock_path:
             mock_file = MagicMock()
@@ -354,7 +375,7 @@ class TestConfigManagement:
             # get_config_path should only be called once due to caching
             assert mock_path.call_count == 1
 
-    def test_path_expansion_functionality(self, mock_env_vars) -> None:
+    def test_path_expansion_functionality(self, mock_env_vars: Any) -> None:  # noqa: PLR6301
         """Test that paths are properly expanded."""
         mock_env_vars.setenv("HOME", "/home/testuser")
 
@@ -368,7 +389,7 @@ class TestConfigManagement:
             assert "~" not in str(result)
 
     @pytest.mark.parametrize("directory_count", [1, 3, 5])
-    def test_directory_creation_on_load(self, directory_count: int) -> None:
+    def test_directory_creation_on_load(self, directory_count: int) -> None:  # noqa: PLR6301
         """Test that directories are created when config is loaded."""
         test_dirs = [f"/test/dir{i}" for i in range(directory_count)]
         test_config = {
@@ -398,9 +419,8 @@ class TestConfigManagement:
             assert mock_mkdir.call_count >= 2  # At minimum output and cache dirs
 
     @pytest.mark.parametrize("cache_operations", [5, 10, 15])
-    def test_config_cache_performance(self, cache_operations: int) -> None:
+    def test_config_cache_performance(self, cache_operations: int) -> None:  # noqa: PLR6301
         """Test config cache performance with multiple operations."""
-        import time
 
         with patch("goesvfi.utils.config.get_config_path") as mock_path:
             mock_file = MagicMock()

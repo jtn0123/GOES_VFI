@@ -1,6 +1,7 @@
 """Optimized tests for cache functionality - v2."""
 
-from typing import Never
+import time
+from typing import Any, Never
 
 import numpy as np
 import pytest
@@ -14,8 +15,12 @@ LOGGER = get_logger(__name__)
 
 # Shared fixtures and test data
 @pytest.fixture(scope="session")
-def cache_test_scenarios():
-    """Pre-defined test scenarios for cache operations."""
+def cache_test_scenarios() -> dict[str, Any]:
+    """Pre-defined test scenarios for cache operations.
+
+    Returns:
+        dict[str, Any]: Test scenarios data.
+    """
     return {
         "basic": {
             "model_id": "modelA",
@@ -39,8 +44,12 @@ def cache_test_scenarios():
 
 
 @pytest.fixture()
-def sample_paths(tmp_path, cache_test_scenarios):
-    """Create sample files with different content for testing."""
+def sample_paths(tmp_path: Any, cache_test_scenarios: Any) -> dict[str, Any]:
+    """Create sample files with different content for testing.
+
+    Returns:
+        dict[str, Any]: Sample file paths and data.
+    """
     scenarios = cache_test_scenarios
 
     # Create files for each scenario
@@ -56,8 +65,12 @@ def sample_paths(tmp_path, cache_test_scenarios):
 
 
 @pytest.fixture()
-def mock_cache_dir(tmp_path, monkeypatch):
-    """Mock cache directory for testing."""
+def mock_cache_dir(tmp_path: Any, monkeypatch: Any) -> Any:
+    """Mock cache directory for testing.
+
+    Returns:
+        Any: Mock cache directory path.
+    """
     cache_dir = tmp_path / "cache"
     cache_dir.mkdir(exist_ok=True)
 
@@ -71,7 +84,7 @@ class TestCacheOperations:
     """Test cache operations with optimized patterns."""
 
     @pytest.mark.parametrize("scenario", ["basic", "large", "minimal"])
-    def test_hash_pair_consistency(self, sample_paths, cache_test_scenarios, scenario: str) -> None:
+    def test_hash_pair_consistency(self, sample_paths: Any, cache_test_scenarios: Any, scenario: str) -> None:  # noqa: PLR6301
         """Test hash pair consistency across different scenarios."""
         file1, file2 = sample_paths[scenario]
         scenario_data = cache_test_scenarios[scenario]
@@ -79,12 +92,12 @@ class TestCacheOperations:
         num_frames = scenario_data["num_frames"]
 
         # Multiple calls should produce same hash
-        hash1 = cache._hash_pair(file1, file2, model_id, num_frames)
-        hash2 = cache._hash_pair(file1, file2, model_id, num_frames)
+        hash1 = cache._hash_pair(file1, file2, model_id, num_frames)  # noqa: SLF001
+        hash2 = cache._hash_pair(file1, file2, model_id, num_frames)  # noqa: SLF001
         assert hash1 == hash2
 
         # Different order should produce different hash
-        hash3 = cache._hash_pair(file2, file1, model_id, num_frames)
+        hash3 = cache._hash_pair(file2, file1, model_id, num_frames)  # noqa: SLF001
         assert hash1 != hash3
 
     @pytest.mark.parametrize(
@@ -97,13 +110,13 @@ class TestCacheOperations:
             (1, 0),  # Single frame
         ],
     )
-    def test_get_cache_filepath_formatting(self, tmp_path, total_frames: int, frame_index: int) -> None:
+    def test_get_cache_filepath_formatting(self, tmp_path: Any, total_frames: int, frame_index: int) -> None:  # noqa: PLR6301, ARG002
         """Test cache filepath formatting with different parameters."""
         base_key = "abc123"
         expected_digits = len(str(total_frames - 1))
         expected_filename = f"{base_key}_k{total_frames}_frame{frame_index:0{expected_digits}}.npy"
 
-        path = cache._get_cache_filepath(base_key, frame_index, total_frames)
+        path = cache._get_cache_filepath(base_key, frame_index, total_frames)  # noqa: SLF001
         assert path.name == expected_filename
 
     @pytest.mark.parametrize(
@@ -114,8 +127,8 @@ class TestCacheOperations:
             (5, False),  # Multiple frames should work
         ],
     )
-    def test_load_cached_frame_count_validation(
-        self, sample_paths, mock_cache_dir, num_frames: int, should_return_none: bool
+    def test_load_cached_frame_count_validation(  # noqa: PLR6301
+        self, sample_paths: Any, mock_cache_dir: Any, num_frames: int, should_return_none: bool  # noqa: FBT001, ARG002
     ) -> None:
         """Test load_cached behavior with different frame counts."""
         file1, file2 = sample_paths["basic"]
@@ -125,7 +138,7 @@ class TestCacheOperations:
             assert result is None
         # For non-zero frames with no cache files, should also return None (cache miss)
 
-    def test_load_cached_cache_miss_scenarios(self, sample_paths, mock_cache_dir) -> None:
+    def test_load_cached_cache_miss_scenarios(self, sample_paths: Any, mock_cache_dir: Any) -> None:  # noqa: PLR6301, ARG002
         """Test cache miss scenarios when files are missing."""
         file1, file2 = sample_paths["basic"]
         num_frames = 3
@@ -135,8 +148,8 @@ class TestCacheOperations:
         assert result is None
 
     @pytest.mark.parametrize("scenario", ["basic", "minimal"])
-    def test_save_and_load_cache_roundtrip(
-        self, sample_paths, mock_cache_dir, cache_test_scenarios, scenario: str
+    def test_save_and_load_cache_roundtrip(  # noqa: PLR6301
+        self, sample_paths: Any, mock_cache_dir: Any, cache_test_scenarios: Any, scenario: str  # noqa: ARG002
     ) -> None:
         """Test complete save and load roundtrip for different scenarios."""
         file1, file2 = sample_paths[scenario]
@@ -150,7 +163,8 @@ class TestCacheOperations:
         elif scenario == "minimal":
             frames = [np.zeros((3, 3))]  # Single frame
         else:
-            frames = [np.random.rand(4, 4) for _ in range(num_frames)]
+            rng = np.random.default_rng()
+            frames = [rng.random((4, 4)) for _ in range(num_frames)]
 
         # Save cache
         cache.save_cache(file1, file2, model_id, num_frames, frames)
@@ -172,8 +186,8 @@ class TestCacheOperations:
             (5, 2, True),  # Large mismatch
         ],
     )
-    def test_save_cache_mismatch_validation(
-        self, sample_paths, mock_cache_dir, caplog, num_frames: int, frame_count: int, should_warn: bool
+    def test_save_cache_mismatch_validation(  # noqa: PLR6301
+        self, sample_paths: Any, mock_cache_dir: Any, caplog: Any, num_frames: int, frame_count: int, should_warn: bool  # noqa: FBT001, ARG002
     ) -> None:
         """Test save cache validation with frame count mismatches."""
         file1, file2 = sample_paths["basic"]
@@ -193,7 +207,7 @@ class TestCacheOperations:
         else:
             assert "Cache save called with mismatch" not in caplog.text
 
-    def test_load_cached_error_handling(self, sample_paths, mock_cache_dir, caplog, monkeypatch) -> None:
+    def test_load_cached_error_handling(self, sample_paths: Any, mock_cache_dir: Any, caplog: Any, monkeypatch: Any) -> None:  # noqa: PLR6301, ARG002
         """Test load_cached error handling with corrupted files."""
         file1, file2 = sample_paths["basic"]
         model_id = "modelA"
@@ -204,7 +218,7 @@ class TestCacheOperations:
         cache.save_cache(file1, file2, model_id, num_frames, [frame])
 
         # Mock np.load to raise an exception to simulate corrupted file
-        def raise_io_error(path) -> Never:
+        def raise_io_error(path: Any) -> Never:  # noqa: ARG001
             msg = "Simulated load error"
             raise OSError(msg)
 
@@ -222,7 +236,7 @@ class TestCacheOperations:
             [("save", "bulk", 5), ("load", "bulk", 5), ("load", "bulk", 5)],  # Multiple loads
         ],
     )
-    def test_cache_operation_sequences(self, sample_paths, mock_cache_dir, operation_sequence: list[tuple]) -> None:
+    def test_cache_operation_sequences(self, sample_paths: Any, mock_cache_dir: Any, operation_sequence: list[tuple]) -> None:  # noqa: PLR6301, ARG002
         """Test sequences of cache operations for robustness."""
         file1, file2 = sample_paths["basic"]
         saved_frames = {}
@@ -245,9 +259,8 @@ class TestCacheOperations:
                     assert result is None
 
     @pytest.mark.parametrize("stress_level", [5, 10, 20])
-    def test_cache_performance_stress(self, sample_paths, mock_cache_dir, stress_level: int) -> None:
+    def test_cache_performance_stress(self, sample_paths: Any, mock_cache_dir: Any, stress_level: int) -> None:  # noqa: PLR6301, ARG002
         """Test cache performance under stress conditions."""
-        import time
 
         file1, file2 = sample_paths["basic"]
 
@@ -272,7 +285,7 @@ class TestCacheOperations:
         assert load_time < 1.0  # Less than 1 second for loads
 
     @pytest.mark.parametrize("cache_size", [1, 10, 50])
-    def test_cache_storage_efficiency(self, sample_paths, mock_cache_dir, cache_size: int) -> None:
+    def test_cache_storage_efficiency(self, sample_paths: Any, mock_cache_dir: Any, cache_size: int) -> None:  # noqa: PLR6301
         """Test cache storage efficiency with different sizes."""
         file1, file2 = sample_paths["basic"]
 

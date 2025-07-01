@@ -20,8 +20,13 @@ class TestFFmpegCommandBuilderCriticalV2:
     """Optimized critical FFmpeg command builder tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def ffmpeg_critical_components(self):
-        """Create shared components for critical FFmpeg command testing."""
+    @staticmethod
+    def ffmpeg_critical_components() -> Any:  # noqa: C901
+        """Create shared components for critical FFmpeg command testing.
+
+        Returns:
+            CriticalCommandTestManager: Manager for critical FFmpeg command testing scenarios.
+        """
 
         # Critical Command Test Manager
         class CriticalCommandTestManager:
@@ -56,8 +61,13 @@ class TestFFmpegCommandBuilderCriticalV2:
                     },
                 }
 
-            def _test_basic_command(self, temp_workspace):
-                """Test basic FFmpeg command construction scenarios."""
+            @staticmethod
+            def _test_basic_command(temp_workspace: Any) -> dict[str, Any]:
+                """Test basic FFmpeg command construction scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 results = {}
 
                 # Test basic video encoding command
@@ -93,8 +103,13 @@ class TestFFmpegCommandBuilderCriticalV2:
 
                 return results
 
-            def _test_two_pass_encoding(self, temp_workspace):
-                """Test two-pass encoding command construction."""
+            @staticmethod
+            def _test_two_pass_encoding(temp_workspace: Any) -> dict[str, Any]:
+                """Test two-pass encoding command construction.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 results = {}
 
                 # Test two-pass encoding setup
@@ -104,7 +119,7 @@ class TestFFmpegCommandBuilderCriticalV2:
                     .set_output(temp_workspace["output_path"])
                     .set_encoder("Software x265 (2-Pass)")
                     .set_bitrate(5000)
-                    .set_two_pass(True, "passlog", 1)
+                    .set_two_pass(enabled=True, logfile="passlog", pass_num=1)
                     .build()
                 )
 
@@ -143,7 +158,7 @@ class TestFFmpegCommandBuilderCriticalV2:
                     .set_output(temp_workspace["output_path"])
                     .set_encoder("Software x265 (2-Pass)")
                     .set_bitrate(5000)
-                    .set_two_pass(True, "passlog", 2)
+                    .set_two_pass(enabled=True, logfile="passlog", pass_num=2)
                     .build()
                 )
 
@@ -162,8 +177,13 @@ class TestFFmpegCommandBuilderCriticalV2:
 
                 return results
 
-            def _test_stream_copy(self, temp_workspace):
-                """Test stream copy command construction."""
+            @staticmethod
+            def _test_stream_copy(temp_workspace: Any) -> dict[str, Any]:
+                """Test stream copy command construction.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 results = {}
 
                 builder = FFmpegCommandBuilder()
@@ -199,8 +219,13 @@ class TestFFmpegCommandBuilderCriticalV2:
 
                 return results
 
-            def _test_invalid_parameters(self, temp_workspace):
-                """Test comprehensive error handling for invalid parameters."""
+            @staticmethod
+            def _test_invalid_parameters(temp_workspace: Any) -> dict[str, Any]:
+                """Test comprehensive error handling for invalid parameters.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 error_tests = {}
 
                 # Test 1: Missing input, output, and encoder
@@ -213,7 +238,7 @@ class TestFFmpegCommandBuilderCriticalV2:
                 builder2 = FFmpegCommandBuilder()
                 builder2.set_input(temp_workspace["input_path"])
                 builder2.set_output(temp_workspace["output_path"])
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder2.build()
                 error_tests["missing_encoder"] = {"success": True, "raises_error": True}
 
@@ -231,7 +256,7 @@ class TestFFmpegCommandBuilderCriticalV2:
                 builder4.set_output(temp_workspace["output_path"])
                 builder4.set_encoder("Software x264")
                 builder4.set_crf(23)
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder4.build()
                 error_tests["missing_input"] = {"success": True, "raises_error": True}
 
@@ -240,14 +265,19 @@ class TestFFmpegCommandBuilderCriticalV2:
                 builder5.set_input(temp_workspace["input_path"])
                 builder5.set_encoder("Software x264")
                 builder5.set_crf(23)
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder5.build()
                 error_tests["missing_output"] = {"success": True, "raises_error": True}
 
                 return error_tests
 
-            def _test_pixel_format(self, temp_workspace):
-                """Test pixel format setting functionality."""
+            @staticmethod
+            def _test_pixel_format(temp_workspace: Any) -> dict[str, Any]:
+                """Test pixel format setting functionality.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 results = {}
 
                 # Test pixel format with x264
@@ -302,8 +332,12 @@ class TestFFmpegCommandBuilderCriticalV2:
 
                 return results
 
-            def run_critical_scenario(self, scenario: str, temp_workspace: dict[str, Any]):
-                """Run specified critical test scenario."""
+            def run_critical_scenario(self, scenario: str, temp_workspace: dict[str, Any]) -> dict[str, Any]:
+                """Run specified critical test scenario.
+
+                Returns:
+                    dict[str, Any]: Test results for the specified scenario.
+                """
                 return self.critical_scenarios[scenario](temp_workspace)
 
         # Critical Command Validator
@@ -318,8 +352,13 @@ class TestFFmpegCommandBuilderCriticalV2:
                     "edge_cases": self._validate_edge_cases,
                 }
 
-            def _validate_command_integrity(self, cmd: list[str]) -> dict[str, bool]:
-                """Validate basic command integrity."""
+            @staticmethod
+            def _validate_command_integrity(cmd: list[str]) -> dict[str, bool]:
+                """Validate basic command integrity.
+
+                Returns:
+                    dict[str, bool]: Command integrity validation results.
+                """
                 return {
                     "starts_with_ffmpeg": len(cmd) > 0 and cmd[0] == "ffmpeg",
                     "has_input_flag": "-i" in cmd,
@@ -328,8 +367,13 @@ class TestFFmpegCommandBuilderCriticalV2:
                     "no_empty_elements": all(elem for elem in cmd),
                 }
 
-            def _validate_parameter_correctness(self, cmd: list[str]) -> dict[str, Any]:
-                """Validate parameter correctness."""
+            @staticmethod
+            def _validate_parameter_correctness(cmd: list[str]) -> dict[str, Any]:
+                """Validate parameter correctness.
+
+                Returns:
+                    dict[str, Any]: Parameter correctness validation results.
+                """
                 flags_with_values = ["-i", "-c:v", "-c", "-crf", "-b:v", "-preset", "-pix_fmt", "-x265-params"]
                 flag_validation = {}
 
@@ -344,8 +388,13 @@ class TestFFmpegCommandBuilderCriticalV2:
                     "flag_details": flag_validation,
                 }
 
-            def _validate_error_conditions(self, error_results: dict[str, Any]) -> dict[str, bool]:
-                """Validate error condition handling."""
+            @staticmethod
+            def _validate_error_conditions(error_results: dict[str, Any]) -> dict[str, bool]:
+                """Validate error condition handling.
+
+                Returns:
+                    dict[str, bool]: Error condition validation results.
+                """
                 expected_errors = [
                     "missing_all_required",
                     "missing_encoder",
@@ -364,8 +413,13 @@ class TestFFmpegCommandBuilderCriticalV2:
                     ),
                 }
 
-            def _validate_edge_cases(self, edge_results: dict[str, Any]) -> dict[str, bool]:
-                """Validate edge case handling."""
+            @staticmethod
+            def _validate_edge_cases(edge_results: dict[str, Any]) -> dict[str, bool]:
+                """Validate edge case handling.
+
+                Returns:
+                    dict[str, bool]: Edge case validation results.
+                """
                 return {
                     "pixel_formats_work": edge_results.get("pixel_format", {}).get("all_formats_work", False),
                     "two_pass_complete": all(
@@ -377,7 +431,11 @@ class TestFFmpegCommandBuilderCriticalV2:
             def validate_critical_command(
                 self, cmd: list[str], validation_types: list[str] | None = None
             ) -> dict[str, Any]:
-                """Validate command using specified validation types."""
+                """Validate command using specified validation types.
+
+                Returns:
+                    dict[str, Any]: Validation results for all specified types.
+                """
                 if validation_types is None:
                     validation_types = ["command_integrity", "parameter_correctness"]
 
@@ -394,8 +452,12 @@ class TestFFmpegCommandBuilderCriticalV2:
         }
 
     @pytest.fixture()
-    def temp_workspace(self, tmp_path):
-        """Create temporary workspace for critical FFmpeg testing."""
+    def temp_workspace(self, tmp_path: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Create temporary workspace for critical FFmpeg testing.
+
+        Returns:
+            dict[str, Any]: Workspace configuration with test paths.
+        """
         test_dir = tmp_path / "ffmpeg_critical_test"
         test_dir.mkdir(exist_ok=True)
 
@@ -412,7 +474,7 @@ class TestFFmpegCommandBuilderCriticalV2:
             "output_path": output_path,
         }
 
-    def test_ffmpeg_critical_comprehensive_scenarios(self, ffmpeg_critical_components, temp_workspace) -> None:
+    def test_ffmpeg_critical_comprehensive_scenarios(self, ffmpeg_critical_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301, C901
         """Test comprehensive critical FFmpeg command scenarios."""
         components = ffmpeg_critical_components
         test_manager = components["test_manager"]
@@ -504,7 +566,7 @@ class TestFFmpegCommandBuilderCriticalV2:
 
                 all_results[scenario["name"]] = scenario_results
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 if scenario["name"] != "Invalid Parameters Handling":
                     pytest.fail(f"Unexpected error in {scenario['name']}: {e}")
                 # Error scenarios are expected to have exceptions internally handled
@@ -512,7 +574,7 @@ class TestFFmpegCommandBuilderCriticalV2:
         # Overall validation
         assert len(all_results) == len(critical_scenarios), "Not all critical scenarios completed"
 
-    def test_ffmpeg_critical_command_validation(self, ffmpeg_critical_components, temp_workspace) -> None:
+    def test_ffmpeg_critical_command_validation(self, ffmpeg_critical_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301
         """Test critical command validation and error detection."""
         components = ffmpeg_critical_components
         validator = components["validator"]
@@ -625,7 +687,7 @@ class TestFFmpegCommandBuilderCriticalV2:
                 params_failed = not params["flag_value_pairs_correct"]
                 assert integrity_failed or params_failed, f"Malformed command passed validation: {test_cmd['name']}"
 
-    def test_ffmpeg_critical_edge_cases_and_boundaries(self, ffmpeg_critical_components, temp_workspace) -> None:
+    def test_ffmpeg_critical_edge_cases_and_boundaries(self, ffmpeg_critical_components: Any, temp_workspace: Any) -> None:
         """Test critical edge cases and boundary conditions."""
         components = ffmpeg_critical_components
         components["test_manager"]
@@ -656,14 +718,17 @@ class TestFFmpegCommandBuilderCriticalV2:
                 result = edge_case["test"]()
                 assert result is not None, f"Edge case {edge_case['name']} returned None"
                 assert result.get("success", False), f"Edge case {edge_case['name']} failed"
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Some edge cases may raise expected exceptions
-                assert "expected" in str(e).lower() or "invalid" in str(e).lower(), (
-                    f"Unexpected error in edge case {edge_case['name']}: {e}"
-                )
+                if not ("expected" in str(e).lower() or "invalid" in str(e).lower()):
+                    pytest.fail(f"Unexpected error in edge case {edge_case['name']}: {e}")
 
-    def _test_multiple_pixel_formats(self, temp_workspace):
-        """Test multiple pixel format scenarios."""
+    def _test_multiple_pixel_formats(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Test multiple pixel format scenarios.
+
+        Returns:
+            dict[str, Any]: Test results and validation data.
+        """
         pixel_formats = ["yuv420p", "yuv444p", "yuv422p", "rgb24", "yuv420p10le"]
         results = {}
 
@@ -686,8 +751,12 @@ class TestFFmpegCommandBuilderCriticalV2:
 
         return {"success": True, "formats_tested": len(pixel_formats)}
 
-    def _test_two_pass_edge_cases(self, temp_workspace):
-        """Test two-pass encoding edge cases."""
+    def _test_two_pass_edge_cases(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Test two-pass encoding edge cases.
+
+        Returns:
+            dict[str, Any]: Test results and validation data.
+        """
         # Test invalid pass numbers
         builder = FFmpegCommandBuilder()
         builder.set_input(temp_workspace["input_path"])
@@ -696,17 +765,21 @@ class TestFFmpegCommandBuilderCriticalV2:
         builder.set_bitrate(1000)
 
         # Should fail with invalid pass number
-        with pytest.raises(ValueError):
-            builder.set_two_pass(True, "logfile", 3).build()
+        with pytest.raises(ValueError, match=r".*"):
+            builder.set_two_pass(enabled=True, logfile="logfile", pass_num=3).build()
 
         # Should fail with missing pass number
-        with pytest.raises(ValueError):
-            builder.set_two_pass(True, "logfile", None).build()
+        with pytest.raises(ValueError, match=r".*"):
+            builder.set_two_pass(enabled=True, logfile="logfile", pass_num=None).build()
 
         return {"success": True, "edge_cases_handled": True}
 
-    def _test_command_length_boundaries(self, temp_workspace):
-        """Test command length boundary conditions."""
+    def _test_command_length_boundaries(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Test command length boundary conditions.
+
+        Returns:
+            dict[str, Any]: Test results and validation data.
+        """
         # Test minimal command (stream copy)
         builder = FFmpegCommandBuilder()
         cmd = (
@@ -735,8 +808,12 @@ class TestFFmpegCommandBuilderCriticalV2:
 
         return {"success": True, "boundary_tests_passed": True}
 
-    def _test_special_path_characters(self, temp_workspace):
-        """Test handling of special characters in paths."""
+    def _test_special_path_characters(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Test handling of special characters in paths.
+
+        Returns:
+            dict[str, Any]: Test results and validation data.
+        """
         # Create paths with special characters
         special_input = temp_workspace["test_dir"] / "input with spaces & symbols!.mkv"
         special_output = temp_workspace["test_dir"] / "output [final] (test).mp4"

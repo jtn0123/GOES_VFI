@@ -432,7 +432,12 @@ class TestRealS3PathOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_comprehensive_validation(self, scenario_name: str, dest_dir: Path, **kwargs: Any) -> dict[str, Any]:  # noqa: ARG002
+            def _test_comprehensive_validation(
+                self,
+                scenario_name: str,
+                dest_dir: Path,
+                **kwargs: Any,  # noqa: ARG002
+            ) -> dict[str, Any]:
                 """Test comprehensive validation across all dimensions.
 
                 Returns:
@@ -529,7 +534,8 @@ class TestRealS3PathOptimizedV2:
         assert len(result["results"]["band_patterns"]) == 4
         assert result["results"]["all_bands_valid"] is True
 
-    def test_key_pattern_validation_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
+    @staticmethod
+    def test_key_pattern_validation_scenarios(s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:
         """Test S3 key pattern validation scenarios."""
         manager = s3_path_test_components["manager"]
 
@@ -547,7 +553,8 @@ class TestRealS3PathOptimizedV2:
         assert len(result["results"]["edge_cases"]) == 4
         assert result["results"]["all_valid"] is True
 
-    def test_comprehensive_validation_scenarios(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
+    @staticmethod
+    def test_comprehensive_validation_scenarios(s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:
         """Test comprehensive validation scenarios."""
         manager = s3_path_test_components["manager"]
 
@@ -559,7 +566,10 @@ class TestRealS3PathOptimizedV2:
     @pytest.mark.parametrize(
         "product_type,schedule", [("RadF", RADF_MINUTES), ("RadC", RADC_MINUTES), ("RadM", RADM_MINUTES)]
     )
-    def test_product_schedule_alignment(self, s3_path_test_components: dict[str, Any], product_type: str, schedule: list[int]) -> None:  # noqa: PLR6301
+    @staticmethod
+    def test_product_schedule_alignment(
+        s3_path_test_components: dict[str, Any], product_type: str, schedule: list[int]
+    ) -> None:
         """Test that product types align with their schedules."""
         manager = s3_path_test_components["manager"]
 
@@ -577,7 +587,10 @@ class TestRealS3PathOptimizedV2:
         key_prefix = manager.generate_s3_key_prefix(timestamp, product_type)
         assert product_type in key_prefix
 
-    def test_real_s3_path_comprehensive_validation(self, s3_path_test_components: dict[str, Any], temp_directory: Any) -> None:  # noqa: PLR6301
+    @staticmethod
+    def test_real_s3_path_comprehensive_validation(
+        s3_path_test_components: dict[str, Any], temp_directory: Any
+    ) -> None:
         """Test comprehensive S3 path validation."""
         manager = s3_path_test_components["manager"]
 

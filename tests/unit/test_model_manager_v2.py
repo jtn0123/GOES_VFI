@@ -130,7 +130,9 @@ class TestModelManagerOptimizedV2:
 
     @staticmethod
     def _create_mock_directory(
-        mock_fs: "TestModelManagerOptimizedV2", path: str, children: list[str] | None = None,
+        mock_fs: "TestModelManagerOptimizedV2",
+        path: str,
+        children: list[str] | None = None,
     ) -> None:
         """Helper to create a mock directory.
 

@@ -52,7 +52,7 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
 
         mock_band_wavelength = MagicMock()
         mock_band_wavelength.values = MagicMock()
-        mock_band_wavelength.values.item.return_value = 10.3
+        mock_band_wavelength.values.item.return_value = 10.3  # noqa: PD011
 
         # Setup coordinate variables
         mock_x = MagicMock(size=2500)
@@ -79,7 +79,7 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
         }
 
         # Setup __getitem__ method
-        def get_item(key: str) -> MagicMock:
+        def get_item(key: str) -> Any:
             return mock_ds.variables.get(key, MagicMock())
 
         mock_ds.__getitem__ = MagicMock(side_effect=get_item)
@@ -97,7 +97,7 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
         yield Path(temp_dir)
         shutil.rmtree(temp_dir)
 
-    def test_convert_radiance_to_temperature_comprehensive(self) -> None:
+    def test_convert_radiance_to_temperature_comprehensive(self) -> None:  # noqa: PLR6301
         """Test radiance to temperature conversion with various scenarios."""
         # Test with different radiance values
         test_cases = [
@@ -117,15 +117,15 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
             "planck_bc2": 0.9991,
         }
 
-        for radiance, description in test_cases:
-            with self.subTest(case=description):
-                temps = _convert_radiance_to_temperature(radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
+        for radiance, _description in test_cases:
+            # Test case: {description}
+            temps = _convert_radiance_to_temperature(radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
 
-                assert isinstance(temps, np.ndarray)
-                assert temps.shape == radiance.shape
-                assert np.all(temps >= 0.0)
-                assert np.all(temps <= 1.0)
-                assert not np.any(np.isnan(temps))
+            assert isinstance(temps, np.ndarray)
+            assert temps.shape == radiance.shape
+            assert np.all(temps >= 0.0)
+            assert np.all(temps <= 1.0)
+            assert not np.any(np.isnan(temps))
 
     def test_convert_radiance_to_temperature_edge_cases(self) -> None:  # noqa: PLR6301
         """Test temperature conversion with edge cases."""
@@ -232,8 +232,12 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
     @patch("goesvfi.integrity_check.render.netcdf._create_figure")
     @patch("pathlib.Path.exists", return_value=True)
     def test_render_png_success_comprehensive(
-        self, mock_exists: Any, mock_create_figure: Any, mock_open_dataset: Any, temp_dir: Any
-    ) -> None:  # noqa: ARG002
+        self,
+        mock_exists: Any,
+        mock_create_figure: Any,
+        mock_open_dataset: Any,
+        temp_dir: Any,  # noqa: ARG002
+    ) -> None:
         """Test successful PNG rendering with various configurations."""
         mock_ds = self.mock_dataset()
         mock_open_dataset.return_value.__enter__.return_value = mock_ds
@@ -406,7 +410,7 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
         with pytest.raises(KeyError):
             _convert_radiance_to_temperature(radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
 
-    def test_radiance_data_types(self) -> None:
+    def test_radiance_data_types(self) -> None:  # noqa: PLR6301
         """Test handling of different radiance data types."""
         mock_ds = MagicMock()
         mock_ds.attrs = {
@@ -425,12 +429,12 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
         ]
 
         for dtype in data_types:
-            with self.subTest(dtype=dtype):
-                radiance = np.array([100.0, 200.0], dtype=dtype)
-                temps = _convert_radiance_to_temperature(radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
+            # Test dtype: {dtype}
+            radiance = np.array([100.0, 200.0], dtype=dtype)
+            temps = _convert_radiance_to_temperature(radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
 
-                assert isinstance(temps, np.ndarray)
-                assert not np.any(np.isnan(temps))
+            assert isinstance(temps, np.ndarray)
+            assert not np.any(np.isnan(temps))
 
     @patch("matplotlib.pyplot.savefig")
     @patch("xarray.open_dataset")

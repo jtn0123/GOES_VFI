@@ -500,7 +500,10 @@ class TestS3UtilsModulesOptimizedV2:
                         ("generic", self.error_scenarios["generic"]),
                     ]:
                         result = S3ErrorConverter.from_generic_error(
-                            error, "downloading", self.test_configs["satellites"][0], datetime(2023, 1, 1, 12, 0)  # noqa: DTZ001
+                            error,
+                            "downloading",
+                            self.test_configs["satellites"][0],
+                            datetime(2023, 1, 1, 12, 0),  # noqa: DTZ001
                         )
 
                         generic_results.append({

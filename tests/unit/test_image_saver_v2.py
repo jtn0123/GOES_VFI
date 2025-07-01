@@ -5,6 +5,8 @@ from pathlib import Path
 import shutil
 import tempfile
 import threading
+import time
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
@@ -15,17 +17,27 @@ from goesvfi.pipeline.image_processing_interfaces import ImageData
 from goesvfi.pipeline.image_saver import ImageSaver
 
 
-class TestImageSaverV2:
+class TestImageSaverV2:  # noqa: PLR0904
     """Test image saving functionality with comprehensive coverage."""
 
     @pytest.fixture()
-    def saver(self):
-        """Create an ImageSaver instance."""
+    @staticmethod
+    def saver() -> Any:
+        """Create an ImageSaver instance.
+
+        Returns:
+            ImageSaver: Test image saver instance.
+        """
         return ImageSaver()
 
     @pytest.fixture()
-    def sample_images(self):
-        """Create various sample test images."""
+    @staticmethod
+    def sample_images() -> Any:
+        """Create various sample test images.
+
+        Returns:
+            dict[str, Any]: Sample images for testing.
+        """
         # Standard RGB image
         rgb_array = np.zeros((100, 100, 3), dtype=np.uint8)
         for i in range(100):
@@ -33,7 +45,7 @@ class TestImageSaverV2:
                 rgb_array[i, j] = [i * 2, j * 2, (i + j)]
 
         # Grayscale image
-        gray_array = np.random.randint(0, 255, (50, 50), dtype=np.uint8)
+        gray_array = np.random.randint(0, 255, (50, 50), dtype=np.uint8)  # noqa: NPY002
 
         # RGBA image with transparency
         rgba_array = np.zeros((50, 50, 4), dtype=np.uint8)
@@ -41,16 +53,16 @@ class TestImageSaverV2:
         rgba_array[:, :, 3] = 128  # Half transparent
 
         # 16-bit grayscale
-        img_16bit = np.random.randint(0, 65535, (100, 100), dtype=np.uint16)
+        img_16bit = np.random.randint(0, 65535, (100, 100), dtype=np.uint16)  # noqa: NPY002
 
         # Float image (normalized 0-1)
-        float_array = np.random.rand(64, 64, 3).astype(np.float32)
+        float_array = np.random.rand(64, 64, 3).astype(np.float32)  # noqa: NPY002
 
         # Large image for performance testing
-        large_array = np.random.randint(0, 255, (2000, 2000, 3), dtype=np.uint8)
+        large_array = np.random.randint(0, 255, (2000, 2000, 3), dtype=np.uint8)  # noqa: NPY002
 
         # Single channel float
-        single_float = np.random.rand(128, 128).astype(np.float64)
+        single_float = np.random.rand(128, 128).astype(np.float64)  # noqa: NPY002
 
         return {
             "rgb": rgb_array,
@@ -63,13 +75,18 @@ class TestImageSaverV2:
         }
 
     @pytest.fixture()
-    def temp_dir(self):
-        """Create a temporary directory for tests."""
+    @staticmethod
+    def temp_dir() -> Any:
+        """Create a temporary directory for tests.
+
+        Yields:
+            str: Temporary directory path.
+        """
         temp_dir = tempfile.mkdtemp()
         yield temp_dir
         shutil.rmtree(temp_dir)
 
-    def test_saver_initialization(self, saver) -> None:
+    def test_saver_initialization(self, saver: Any) -> None:  # noqa: PLR6301
         """Test ImageSaver initialization and interface."""
         # Verify required methods exist
         assert hasattr(saver, "save")
@@ -83,7 +100,7 @@ class TestImageSaverV2:
         assert callable(saver.process)
         assert callable(saver.crop)
 
-    def test_save_rgb_image(self, saver, sample_images, temp_dir) -> None:
+    def test_save_rgb_image(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving RGB image with verification."""
         output_path = Path(temp_dir) / "rgb_test.png"
 
@@ -102,7 +119,7 @@ class TestImageSaverV2:
         loaded_array = np.array(loaded_img)
         assert np.array_equal(loaded_array, sample_images["rgb"])
 
-    def test_save_grayscale_image(self, saver, sample_images, temp_dir) -> None:
+    def test_save_grayscale_image(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving grayscale image."""
         output_path = Path(temp_dir) / "gray_test.png"
 
@@ -120,7 +137,7 @@ class TestImageSaverV2:
         loaded_array = np.array(loaded_img)
         assert loaded_array.shape == sample_images["gray"].shape
 
-    def test_save_creates_nested_directories(self, saver, sample_images, temp_dir) -> None:
+    def test_save_creates_nested_directories(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test that save creates nested parent directories."""
         # Create deeply nested path
         output_path = Path(temp_dir) / "level1" / "level2" / "level3" / "image.png"
@@ -147,7 +164,7 @@ class TestImageSaverV2:
             (".webp", "RGB"),
         ],
     )
-    def test_save_different_formats(self, saver, sample_images, temp_dir, format_ext, pil_mode) -> None:
+    def test_save_different_formats(self, saver: Any, sample_images: Any, temp_dir: Any, format_ext: str, pil_mode: str) -> None:  # noqa: PLR6301
         """Test saving in different image formats."""
         output_path = Path(temp_dir) / f"test{format_ext}"
 
@@ -165,7 +182,7 @@ class TestImageSaverV2:
         if format_ext != ".gif":
             assert loaded_img.mode == pil_mode
 
-    def test_save_rgba_with_transparency(self, saver, sample_images, temp_dir) -> None:
+    def test_save_rgba_with_transparency(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving RGBA image with transparency preservation."""
         output_path = Path(temp_dir) / "rgba_test.png"
 
@@ -184,7 +201,7 @@ class TestImageSaverV2:
         assert loaded_array.shape == (50, 50, 4)
         assert np.all(loaded_array[:, :, 3] == 128)  # Alpha preserved
 
-    def test_save_16bit_image(self, saver, sample_images, temp_dir) -> None:
+    def test_save_16bit_image(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving 16-bit depth image."""
         output_path = Path(temp_dir) / "16bit_test.png"
 
@@ -205,7 +222,7 @@ class TestImageSaverV2:
             # Expected if PIL doesn't support 16-bit for this format
             pytest.skip("16-bit image saving not supported")
 
-    def test_save_float_image_normalization(self, saver, sample_images, temp_dir) -> None:
+    def test_save_float_image_normalization(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving float images with proper normalization."""
         output_path = Path(temp_dir) / "float_test.png"
 
@@ -219,12 +236,12 @@ class TestImageSaverV2:
         loaded_img = Image.open(output_path)
         assert loaded_img.size == (64, 64)
 
-    def test_save_error_handling(self, saver, sample_images) -> None:
+    def test_save_error_handling(self, saver: Any, sample_images: Any) -> None:  # noqa: PLR6301
         """Test comprehensive error handling during save."""
         image_data = ImageData(image_data=sample_images["rgb"], metadata={"width": 100, "height": 100})
 
         # Test with invalid path (no permissions)
-        with pytest.raises(IOError):
+        with pytest.raises(IOError, match=r".*"):
             saver.save(image_data, "/root/no_permission/image.png")
 
         # Test with invalid path characters
@@ -232,7 +249,7 @@ class TestImageSaverV2:
             with pytest.raises((IOError, OSError)):
                 saver.save(image_data, "C:\\invalid:file*name?.png")
 
-    def test_save_invalid_data_types(self, saver, temp_dir) -> None:
+    def test_save_invalid_data_types(self, saver: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving with various invalid data types."""
         invalid_data_configs = [
             (np.array([1, 2, 3]), "1D array"),  # 1D array
@@ -250,7 +267,7 @@ class TestImageSaverV2:
             with pytest.raises((ValueError, AttributeError, TypeError)):
                 saver.save(image_data, str(output_path))
 
-    def test_not_implemented_methods(self, saver) -> None:
+    def test_not_implemented_methods(self, saver: Any) -> None:  # noqa: PLR6301
         """Test that non-save methods raise NotImplementedError."""
         # Create test data
         image_data = ImageData(image_data=np.zeros((10, 10, 3), dtype=np.uint8))
@@ -267,7 +284,7 @@ class TestImageSaverV2:
         with pytest.raises(NotImplementedError):
             saver.crop(image_data, (0, 0, 5, 5))
 
-    def test_save_with_metadata_preservation(self, saver, sample_images, temp_dir) -> None:
+    def test_save_with_metadata_preservation(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving preserves complex metadata."""
         output_path = Path(temp_dir) / "metadata_test.png"
 
@@ -296,9 +313,9 @@ class TestImageSaverV2:
         assert output_path.exists()
         assert output_path.stat().st_size > 0
 
-    def test_save_performance(self, saver, sample_images, temp_dir) -> None:
+    def test_save_performance(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving performance with multiple images."""
-        import time
+        # Time module already imported at top
 
         # Time saving multiple images
         start_time = time.time()
@@ -319,7 +336,7 @@ class TestImageSaverV2:
         saved_files = list(Path(temp_dir).glob("perf_test_*.png"))
         assert len(saved_files) == num_saves
 
-    def test_save_large_image(self, saver, sample_images, temp_dir) -> None:
+    def test_save_large_image(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving large images efficiently."""
         output_path = Path(temp_dir) / "large_image.png"
 
@@ -333,12 +350,12 @@ class TestImageSaverV2:
         file_size_mb = output_path.stat().st_size / (1024 * 1024)
         assert file_size_mb > 0.1  # At least some data written
 
-    def test_concurrent_saves(self, saver, sample_images, temp_dir) -> None:
+    def test_concurrent_saves(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test thread safety of save operations."""
         results = []
         errors = []
 
-        def save_thread(thread_id) -> None:
+        def save_thread(thread_id: int) -> None:
             try:
                 output_path = Path(temp_dir) / f"thread_{thread_id}.png"
                 image_data = ImageData(
@@ -347,7 +364,7 @@ class TestImageSaverV2:
                 )
                 saver.save(image_data, str(output_path))
                 results.append((thread_id, output_path))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((thread_id, e))
 
         # Create and start threads
@@ -370,19 +387,19 @@ class TestImageSaverV2:
             assert path.exists()
 
     @patch("PIL.Image.Image.save")
-    def test_save_with_pil_errors(self, mock_save, saver, sample_images, temp_dir) -> None:
+    def test_save_with_pil_errors(self, mock_save: Any, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test handling of PIL save errors."""
         mock_save.side_effect = OSError("Simulated PIL save error")
 
         output_path = Path(temp_dir) / "error_test.png"
         image_data = ImageData(image_data=sample_images["rgb"], metadata={"width": 100, "height": 100})
 
-        with pytest.raises(IOError) as exc_info:
+        with pytest.raises(IOError, match=r".*") as exc_info:
             saver.save(image_data, str(output_path))
 
         assert "Simulated PIL save error" in str(exc_info.value)
 
-    def test_save_with_quality_settings(self, saver, sample_images, temp_dir) -> None:
+    def test_save_with_quality_settings(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving with different quality settings for JPEG."""
         base_path = Path(temp_dir)
 
@@ -406,7 +423,7 @@ class TestImageSaverV2:
         # (though not always guaranteed due to image content)
         assert file_sizes[0] <= file_sizes[2]  # q10 <= q95
 
-    def test_save_with_compression(self, saver, sample_images, temp_dir) -> None:
+    def test_save_with_compression(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test PNG compression levels."""
         image_data = ImageData(image_data=sample_images["rgb"], metadata={"width": 100, "height": 100})
 
@@ -420,7 +437,7 @@ class TestImageSaverV2:
             saver.save(image_data, str(output_path))
             assert output_path.exists()
 
-    def test_edge_cases(self, saver, temp_dir) -> None:
+    def test_edge_cases(self, saver: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test various edge cases."""
         # Single pixel image
         single_pixel = np.array([[[255, 0, 0]]], dtype=np.uint8)
@@ -449,7 +466,7 @@ class TestImageSaverV2:
         saver.save(image_data, str(output_path))
         assert output_path.exists()
 
-    def test_save_with_special_characters(self, saver, sample_images, temp_dir) -> None:
+    def test_save_with_special_characters(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test saving with special characters in filename."""
         special_names = [
             "image with spaces.png",
@@ -471,7 +488,7 @@ class TestImageSaverV2:
                 # Some systems may not support certain characters
                 pytest.skip(f"System doesn't support filename: {name}")
 
-    def test_save_memory_efficiency(self, saver, temp_dir) -> None:
+    def test_save_memory_efficiency(self, saver: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test memory efficiency during save operations."""
         # Create a large image that would use significant memory
         large_image = np.zeros((5000, 5000, 3), dtype=np.uint8)
@@ -488,7 +505,7 @@ class TestImageSaverV2:
         # Clean up large file immediately
         output_path.unlink()
 
-    def test_save_with_data_validation(self, saver, sample_images, temp_dir) -> None:
+    def test_save_with_data_validation(self, saver: Any, sample_images: Any, temp_dir: Any) -> None:  # noqa: PLR6301, ARG002
         """Test that saved data matches original after round-trip."""
         formats_to_test = [".png", ".bmp", ".tiff"]  # Lossless formats
 

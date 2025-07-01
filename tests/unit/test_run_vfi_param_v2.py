@@ -286,7 +286,10 @@ class TestRunVfiParamOptimizedV2:
                 return {"success": True, "paths_returned": True, "sanchez_fail_handled": True}
 
             def execute_vfi_scenario(
-                self, scenario_name: str, temp_dir: pathlib.Path, mock_capability_detector: MagicMock,
+                self,
+                scenario_name: str,
+                temp_dir: pathlib.Path,
+                mock_capability_detector: MagicMock,
             ) -> dict[str, Any]:
                 """Execute a VFI test scenario.
 

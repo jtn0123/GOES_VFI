@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import tempfile
 import time
+from typing import Any
 from unittest.mock import Mock, patch
 
 from PyQt6.QtCore import QRect, Qt
@@ -15,17 +16,27 @@ import pytest
 from goesvfi.gui_components.crop_handler import CropHandler
 
 
-class TestCropHandlerV2:
+class TestCropHandlerV2:  # noqa: PLR0904
     """Test CropHandler functionality with comprehensive coverage."""
 
     @pytest.fixture()
-    def crop_handler(self):
-        """Create CropHandler instance for testing."""
+    @staticmethod
+    def crop_handler() -> Any:
+        """Create CropHandler instance for testing.
+
+        Returns:
+            CropHandler: Test crop handler instance.
+        """
         return CropHandler()
 
     @pytest.fixture()
-    def mock_main_window(self):
-        """Create a comprehensive mock main window for testing."""
+    @staticmethod
+    def mock_main_window() -> Any:
+        """Create a comprehensive mock main window for testing.
+
+        Returns:
+            Mock: Mock main window for testing.
+        """
         main_window = Mock()
 
         # Directory setup
@@ -33,7 +44,7 @@ class TestCropHandlerV2:
         main_window.current_crop_rect = None
 
         # Methods
-        main_window._update_crop_buttons_state = Mock()
+        main_window._update_crop_buttons_state = Mock()  # noqa: SLF001
         main_window.request_previews_update = Mock()
         main_window.request_previews_update.emit = Mock()
 
@@ -57,8 +68,13 @@ class TestCropHandlerV2:
         return main_window
 
     @pytest.fixture()
-    def temp_image_dir(self):
-        """Create a temporary directory with test images."""
+    @staticmethod
+    def temp_image_dir() -> Any:
+        """Create a temporary directory with test images.
+
+        Yields:
+            Path: Temporary directory with test images.
+        """
         temp_dir = tempfile.mkdtemp()
         image_dir = Path(temp_dir)
 
@@ -89,11 +105,16 @@ class TestCropHandlerV2:
         shutil.rmtree(temp_dir)
 
     @pytest.fixture()
-    def app(self, qtbot):
-        """Create QApplication for tests requiring Qt."""
+    @staticmethod
+    def app(qtbot: Any) -> Any:  # noqa: ARG004
+        """Create QApplication for tests requiring Qt.
+
+        Returns:
+            QApplication: Application instance for testing.
+        """
         return QApplication.instance() or QApplication([])
 
-    def test_on_crop_clicked_no_input_directory(self, crop_handler, mock_main_window) -> None:
+    def test_on_crop_clicked_no_input_directory(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test crop clicked when no input directory is selected."""
         mock_main_window.in_dir = None
 
@@ -108,7 +129,7 @@ class TestCropHandlerV2:
             # Status bar should show message
             mock_main_window.statusBar.return_value.showMessage.assert_called()
 
-    def test_on_crop_clicked_invalid_directory(self, crop_handler, mock_main_window) -> None:
+    def test_on_crop_clicked_invalid_directory(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test crop clicked when input directory doesn't exist."""
         mock_main_window.in_dir = Path("/nonexistent/directory/that/should/not/exist")
 
@@ -119,7 +140,7 @@ class TestCropHandlerV2:
             mock_msgbox.warning.assert_called_once()
             assert "does not exist" in str(mock_msgbox.warning.call_args)
 
-    def test_on_crop_clicked_no_images(self, crop_handler, mock_main_window) -> None:
+    def test_on_crop_clicked_no_images(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test crop clicked when directory has no images."""
         with tempfile.TemporaryDirectory() as temp_dir:
             empty_dir = Path(temp_dir)
@@ -138,7 +159,7 @@ class TestCropHandlerV2:
                 call_args = mock_msgbox.warning.call_args[0]
                 assert "No images found" in call_args[2]
 
-    def test_on_crop_clicked_image_load_failure(self, crop_handler, mock_main_window, temp_image_dir) -> None:
+    def test_on_crop_clicked_image_load_failure(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
         """Test crop clicked when image loading fails."""
         mock_main_window.in_dir = temp_image_dir
 
@@ -154,7 +175,7 @@ class TestCropHandlerV2:
                 call_args = mock_msgbox.critical.call_args[0]
                 assert "Could not load or process image" in call_args[2]
 
-    def test_on_crop_clicked_success(self, crop_handler, mock_main_window, temp_image_dir, app) -> None:
+    def test_on_crop_clicked_success(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
         """Test successful crop dialog workflow."""
         mock_main_window.in_dir = temp_image_dir
 
@@ -174,10 +195,10 @@ class TestCropHandlerV2:
 
             # Should update crop rectangle
             assert mock_main_window.current_crop_rect == (10, 20, 300, 400)
-            mock_main_window._update_crop_buttons_state.assert_called_once()
+            mock_main_window._update_crop_buttons_state.assert_called_once()  # noqa: SLF001
             mock_main_window.request_previews_update.emit.assert_called_once()
 
-    def test_get_sorted_image_files_various_scenarios(self, crop_handler, mock_main_window) -> None:
+    def test_get_sorted_image_files_various_scenarios(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test getting image files in various scenarios."""
         # No directory
         mock_main_window.in_dir = None
@@ -192,7 +213,7 @@ class TestCropHandlerV2:
             mock_main_window.in_dir = Path(temp_dir)
             assert crop_handler.get_sorted_image_files(mock_main_window) == []
 
-    def test_get_sorted_image_files_with_images(self, crop_handler, mock_main_window, temp_image_dir) -> None:
+    def test_get_sorted_image_files_with_images(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
         """Test getting image files from directory with mixed file types."""
         mock_main_window.in_dir = temp_image_dir
 
@@ -206,7 +227,7 @@ class TestCropHandlerV2:
         # Verify no subdirectory files included
         assert not any("subdir" in str(f) for f in result)
 
-    def test_get_sorted_image_files_case_insensitive(self, crop_handler, mock_main_window, temp_image_dir) -> None:
+    def test_get_sorted_image_files_case_insensitive(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
         """Test that image file detection is case insensitive."""
         mock_main_window.in_dir = temp_image_dir
 
@@ -226,7 +247,7 @@ class TestCropHandlerV2:
             ("WEBP", QImage.Format.Format_RGB32),
         ],
     )
-    def test_prepare_image_various_formats(self, crop_handler, mock_main_window, image_format, expected_format) -> None:
+    def test_prepare_image_various_formats(self, crop_handler: Any, mock_main_window: Any, image_format: str, expected_format: Any) -> None:  # noqa: PLR6301
         """Test preparing images of various formats."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create test image
@@ -242,7 +263,7 @@ class TestCropHandlerV2:
             assert result is not None
             assert isinstance(result, QPixmap)
 
-    def test_prepare_image_for_crop_dialog_sanchez_preview(self, crop_handler, mock_main_window, app) -> None:
+    def test_prepare_image_for_crop_dialog_sanchez_preview(self, crop_handler: Any, mock_main_window: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
         """Test preparing image with Sanchez preview enabled."""
         # Enable Sanchez preview
         mock_main_window.main_tab.sanchez_false_colour_checkbox.isChecked.return_value = True
@@ -258,7 +279,7 @@ class TestCropHandlerV2:
         assert result is not None
         assert isinstance(result, QPixmap)
 
-    def test_prepare_image_fallback_scenarios(self, crop_handler, mock_main_window, temp_image_dir) -> None:
+    def test_prepare_image_fallback_scenarios(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
         """Test fallback scenarios in image preparation."""
         # Enable Sanchez but no processed image available
         mock_main_window.main_tab.sanchez_false_colour_checkbox.isChecked.return_value = True
@@ -271,7 +292,7 @@ class TestCropHandlerV2:
         assert result is not None
         assert isinstance(result, QPixmap)
 
-    def test_prepare_image_exception_handling(self, crop_handler, mock_main_window) -> None:
+    def test_prepare_image_exception_handling(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test comprehensive exception handling in image preparation."""
         # Make checkbox access raise exception
         mock_main_window.main_tab.sanchez_false_colour_checkbox.isChecked.side_effect = Exception("Test error")
@@ -283,7 +304,7 @@ class TestCropHandlerV2:
             assert result is None
             mock_logger.exception.assert_called_once()
 
-    def test_get_processed_preview_various_states(self, crop_handler, mock_main_window, app) -> None:
+    def test_get_processed_preview_various_states(self, crop_handler: Any, mock_main_window: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
         """Test getting processed preview in various states."""
         # Success case
         test_image = QImage(100, 100, QImage.Format.Format_RGB32)
@@ -312,7 +333,7 @@ class TestCropHandlerV2:
         result = crop_handler.get_processed_preview_pixmap(mock_main_window)
         assert result is None
 
-    def test_show_crop_dialog_various_outcomes(self, crop_handler, mock_main_window, app) -> None:
+    def test_show_crop_dialog_various_outcomes(self, crop_handler: Any, mock_main_window: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
         """Test crop dialog with various outcomes."""
         test_pixmap = QPixmap(800, 600)
 
@@ -340,7 +361,7 @@ class TestCropHandlerV2:
             crop_handler.show_crop_dialog(mock_main_window, test_pixmap)
             assert mock_main_window.current_crop_rect == original_rect
 
-    def test_show_crop_dialog_with_initial_rect(self, crop_handler, mock_main_window, app) -> None:
+    def test_show_crop_dialog_with_initial_rect(self, crop_handler: Any, mock_main_window: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
         """Test crop dialog with existing crop rectangle."""
         # Set existing crop rectangle
         mock_main_window.current_crop_rect = (5, 10, 200, 300)
@@ -364,27 +385,27 @@ class TestCropHandlerV2:
                 300,
             )
 
-    def test_on_clear_crop_clicked(self, crop_handler, mock_main_window) -> None:
+    def test_on_clear_crop_clicked(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test clearing crop rectangle in various states."""
         # With existing crop
         mock_main_window.current_crop_rect = (10, 20, 300, 400)
         crop_handler.on_clear_crop_clicked(mock_main_window)
 
         assert mock_main_window.current_crop_rect is None
-        mock_main_window._update_crop_buttons_state.assert_called()
+        mock_main_window._update_crop_buttons_state.assert_called()  # noqa: SLF001
         mock_main_window.request_previews_update.emit.assert_called()
 
         # Clear when already None
-        mock_main_window._update_crop_buttons_state.reset_mock()
+        mock_main_window._update_crop_buttons_state.reset_mock()  # noqa: SLF001
         mock_main_window.request_previews_update.emit.reset_mock()
 
         crop_handler.on_clear_crop_clicked(mock_main_window)
 
         assert mock_main_window.current_crop_rect is None
-        mock_main_window._update_crop_buttons_state.assert_called_once()
+        mock_main_window._update_crop_buttons_state.assert_called_once()  # noqa: SLF001
         mock_main_window.request_previews_update.emit.assert_called_once()
 
-    def test_logging_comprehensive(self, crop_handler, mock_main_window, temp_image_dir) -> None:
+    def test_logging_comprehensive(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
         """Test comprehensive logging behavior."""
         mock_main_window.in_dir = temp_image_dir
 
@@ -417,7 +438,7 @@ class TestCropHandlerV2:
             mock_logger.info.assert_called()
             assert "Crop rectangle cleared" in str(mock_logger.info.call_args)
 
-    def test_integration_workflow_end_to_end(self, crop_handler, mock_main_window, temp_image_dir, app) -> None:
+    def test_integration_workflow_end_to_end(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
         """Test complete crop workflow from start to finish."""
         mock_main_window.in_dir = temp_image_dir
         mock_main_window.current_crop_rect = None
@@ -436,14 +457,14 @@ class TestCropHandlerV2:
             # Verify complete workflow
             mock_dialog_class.assert_called_once()
             assert mock_main_window.current_crop_rect == (50, 60, 400, 300)
-            mock_main_window._update_crop_buttons_state.assert_called_once()
+            mock_main_window._update_crop_buttons_state.assert_called_once()  # noqa: SLF001
             mock_main_window.request_previews_update.emit.assert_called_once()
 
             # Now clear the crop
             crop_handler.on_clear_crop_clicked(mock_main_window)
             assert mock_main_window.current_crop_rect is None
 
-    def test_error_recovery(self, crop_handler, mock_main_window) -> None:
+    def test_error_recovery(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test error recovery in various scenarios."""
         # Test dialog creation failure
         with patch("goesvfi.gui_components.crop_handler.CropSelectionDialog") as mock_dialog_class:
@@ -454,7 +475,7 @@ class TestCropHandlerV2:
                 # Should not crash
                 crop_handler.show_crop_dialog(mock_main_window, test_pixmap)
 
-    def test_performance_with_many_images(self, crop_handler, mock_main_window) -> None:
+    def test_performance_with_many_images(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test performance with directory containing many images."""
         with tempfile.TemporaryDirectory() as temp_dir:
             image_dir = Path(temp_dir)
@@ -474,12 +495,12 @@ class TestCropHandlerV2:
             assert len(result) == 100
             assert elapsed < 1.0  # Should be fast even with many files
 
-    def test_concurrent_operations(self, crop_handler) -> None:
+    def test_concurrent_operations(self, crop_handler: Any) -> None:  # noqa: PLR6301
         """Test thread safety of crop handler methods."""
         results = []
         errors = []
 
-        def test_thread(thread_id) -> None:
+        def test_thread(thread_id: int) -> None:
             try:
                 mock_window = Mock()
                 mock_window.in_dir = None
@@ -489,7 +510,7 @@ class TestCropHandlerV2:
                 preview = crop_handler.get_processed_preview_pixmap(mock_window)
 
                 results.append((thread_id, len(files), preview))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((thread_id, e))
 
         # Run concurrent operations
@@ -501,7 +522,7 @@ class TestCropHandlerV2:
         assert len(errors) == 0
         assert len(results) == 10
 
-    def test_memory_efficiency(self, crop_handler, mock_main_window) -> None:
+    def test_memory_efficiency(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test memory efficiency with large images."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create a large image
@@ -516,7 +537,7 @@ class TestCropHandlerV2:
             result = crop_handler.prepare_image_for_crop_dialog(mock_main_window, img_path)
             assert result is not None
 
-    def test_edge_cases(self, crop_handler, mock_main_window) -> None:
+    def test_edge_cases(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test various edge cases."""
         # Test with special characters in path
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -531,7 +552,7 @@ class TestCropHandlerV2:
             result = crop_handler.get_sorted_image_files(mock_main_window)
             assert len(result) == 1
 
-    def test_crop_rect_validation(self, crop_handler, mock_main_window, app) -> None:
+    def test_crop_rect_validation(self, crop_handler: Any, mock_main_window: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
         """Test validation of crop rectangles."""
         test_pixmap = QPixmap(800, 600)
 
@@ -563,13 +584,13 @@ class TestCropHandlerV2:
                     assert w > 0
                     assert h > 0
 
-    def test_status_messages(self, crop_handler, mock_main_window, temp_image_dir) -> None:
+    def test_status_messages(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
         """Test status bar messages during operations."""
         mock_main_window.in_dir = temp_image_dir
 
         # Track all status messages
         status_messages = []
-        mock_main_window.statusBar.return_value.showMessage.side_effect = lambda msg, timeout=0: status_messages.append(
+        mock_main_window.statusBar.return_value.showMessage.side_effect = lambda msg, timeout=0: status_messages.append(  # noqa: ARG005
             msg
         )
 
@@ -580,7 +601,7 @@ class TestCropHandlerV2:
         # Should have set status messages
         assert len(status_messages) > 0
 
-    def test_qt_signal_emission(self, crop_handler, mock_main_window) -> None:
+    def test_qt_signal_emission(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test that Qt signals are properly emitted."""
         # Set up signal tracking
         emit_calls = []
@@ -592,7 +613,7 @@ class TestCropHandlerV2:
 
         assert "preview_update" in emit_calls
 
-    def test_complex_sanchez_scenarios(self, crop_handler, mock_main_window, app) -> None:
+    def test_complex_sanchez_scenarios(self, crop_handler: Any, mock_main_window: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
         """Test complex Sanchez preview scenarios."""
 
         # Scenario 1: Sanchez enabled but checkbox throws during check
@@ -622,7 +643,7 @@ class TestCropHandlerV2:
             # Should handle gracefully
             assert result is not None or result is None  # Either is acceptable
 
-    def test_file_system_edge_cases(self, crop_handler, mock_main_window) -> None:
+    def test_file_system_edge_cases(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test file system edge cases."""
         with tempfile.TemporaryDirectory() as temp_dir:
             base_dir = Path(temp_dir)
@@ -644,7 +665,7 @@ class TestCropHandlerV2:
             except (OSError, NotImplementedError):
                 pytest.skip("Symlinks not supported")
 
-    def test_dialog_parent_handling(self, crop_handler, mock_main_window, app) -> None:
+    def test_dialog_parent_handling(self, crop_handler: Any, mock_main_window: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
         """Test proper parent widget handling for dialogs."""
         test_pixmap = QPixmap(100, 100)
 

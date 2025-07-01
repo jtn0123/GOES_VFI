@@ -20,8 +20,13 @@ class TestFFmpegCommandBuilderOptimizedV2:
     """Optimized FFmpegCommandBuilder unit tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def ffmpeg_test_components(self):
-        """Create shared components for FFmpeg command builder testing."""
+    @staticmethod
+    def ffmpeg_test_components() -> Any:  # noqa: C901
+        """Create shared components for FFmpeg command builder testing.
+
+        Returns:
+            dict[str, Any]: Test components including manager and validator.
+        """
 
         # Enhanced Command Builder Test Manager
         class CommandBuilderTestManager:
@@ -83,8 +88,12 @@ class TestFFmpegCommandBuilderOptimizedV2:
                     "edge_cases": self._test_edge_cases,
                 }
 
-            def _test_basic_builds(self, temp_workspace):
-                """Test basic command builds for software encoders."""
+            def _test_basic_builds(self, temp_workspace: Any) -> dict[str, Any]:
+                """Test basic command builds for software encoders.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 results = {}
 
                 for config_name in ["software_x264", "software_x265", "stream_copy"]:
@@ -124,8 +133,12 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
                 return results
 
-            def _test_two_pass_builds(self, temp_workspace):
-                """Test two-pass encoding builds."""
+            def _test_two_pass_builds(self, temp_workspace: Any) -> dict[str, Any]:
+                """Test two-pass encoding builds.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 results = {}
 
                 config = self.encoder_configs["software_x265_2pass"]
@@ -138,7 +151,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder(config["encoder"])
                 builder.set_bitrate(config["bitrate"])
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(True, pass_log_prefix, 1)
+                builder.set_two_pass(enabled=True, logfile=pass_log_prefix, pass_num=1)
 
                 cmd_pass1 = builder.build()
 
@@ -166,7 +179,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder(config["encoder"])
                 builder.set_bitrate(config["bitrate"])
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(True, pass_log_prefix, 2)
+                builder.set_two_pass(enabled=True, logfile=pass_log_prefix, pass_num=2)
 
                 cmd_pass2 = builder.build()
 
@@ -187,8 +200,12 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
                 return results
 
-            def _test_hardware_builds(self, temp_workspace):
-                """Test hardware encoder builds."""
+            def _test_hardware_builds(self, temp_workspace: Any) -> dict[str, Any]:
+                """Test hardware encoder builds.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 results = {}
 
                 for config_name in ["hardware_hevc", "hardware_h264"]:
@@ -227,7 +244,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
                 return results
 
-            def _test_error_validations(self, temp_workspace):
+            def _test_error_validations(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR0915
                 """Test error validation scenarios."""
                 error_tests = {}
 
@@ -238,7 +255,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_crf(23)
                 builder.set_pix_fmt("yuv420p")
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 error_tests["missing_input"] = {"success": True, "raises_error": True}
 
@@ -249,7 +266,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_crf(23)
                 builder.set_pix_fmt("yuv420p")
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 error_tests["missing_output"] = {"success": True, "raises_error": True}
 
@@ -260,7 +277,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_crf(23)
                 builder.set_pix_fmt("yuv420p")
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 error_tests["missing_encoder"] = {"success": True, "raises_error": True}
 
@@ -271,7 +288,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder("Software x264")
                 builder.set_pix_fmt("yuv420p")
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 error_tests["missing_crf_x264"] = {"success": True, "raises_error": True}
 
@@ -283,7 +300,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_bufsize(4000)
                 builder.set_pix_fmt("yuv420p")
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 error_tests["missing_bitrate_hardware"] = {"success": True, "raises_error": True}
 
@@ -295,14 +312,18 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_bitrate(2000)
                 builder.set_pix_fmt("yuv420p")
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 error_tests["missing_bufsize_hardware"] = {"success": True, "raises_error": True}
 
                 return error_tests
 
-            def _test_edge_cases(self, temp_workspace):
-                """Test edge cases and boundary conditions."""
+            def _test_edge_cases(self, temp_workspace: Any) -> dict[str, Any]:
+                """Test edge cases and boundary conditions.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 edge_cases = {}
 
                 # Test two-pass missing parameters
@@ -314,7 +335,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_pix_fmt("yuv420p")
                 # Missing set_two_pass call
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 edge_cases["two_pass_missing_call"] = {"success": True, "raises_error": True}
 
@@ -325,9 +346,9 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder("Software x265 (2-Pass)")
                 builder.set_bitrate(1000)
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(True, None, 1)  # Missing log prefix
+                builder.set_two_pass(enabled=True, logfile=None, pass_num=1)  # Missing log prefix
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 edge_cases["two_pass_missing_log_prefix"] = {"success": True, "raises_error": True}
 
@@ -338,9 +359,9 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder("Software x265 (2-Pass)")
                 builder.set_bitrate(1000)
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(True, "log_prefix", None)  # Missing pass number
+                builder.set_two_pass(enabled=True, logfile="log_prefix", pass_num=None)  # Missing pass number
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 edge_cases["two_pass_missing_pass_number"] = {"success": True, "raises_error": True}
 
@@ -351,16 +372,20 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder("Software x265 (2-Pass)")
                 builder.set_bitrate(1000)
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(True, "log_prefix", 3)  # Invalid pass number
+                builder.set_two_pass(enabled=True, logfile="log_prefix", pass_num=3)  # Invalid pass number
 
-                with pytest.raises(ValueError):
+                with pytest.raises(ValueError, match=r".*"):
                     builder.build()
                 edge_cases["invalid_pass_number"] = {"success": True, "raises_error": True}
 
                 return edge_cases
 
-            def run_test_scenario(self, scenario: str, temp_workspace: dict[str, Any]):
-                """Run specified test scenario."""
+            def run_test_scenario(self, scenario: str, temp_workspace: dict[str, Any]) -> dict[str, Any]:
+                """Run specified test scenario.
+
+                Returns:
+                    dict[str, Any]: Test results for the scenario.
+                """
                 return self.test_scenarios[scenario](temp_workspace)
 
         # Enhanced Command Validator
@@ -376,8 +401,13 @@ class TestFFmpegCommandBuilderOptimizedV2:
                     "hardware_specific": self._validate_hardware_specific,
                 }
 
-            def _validate_basic_structure(self, cmd: list[str]) -> dict[str, bool]:
-                """Validate basic FFmpeg command structure."""
+            @staticmethod
+            def _validate_basic_structure(cmd: list[str]) -> dict[str, bool]:
+                """Validate basic FFmpeg command structure.
+
+                Returns:
+                    dict[str, bool]: Basic structure validation results.
+                """
                 return {
                     "has_ffmpeg": "ffmpeg" in cmd,
                     "has_hide_banner": "-hide_banner" in cmd,
@@ -387,8 +417,13 @@ class TestFFmpegCommandBuilderOptimizedV2:
                     "has_input_flag": "-i" in cmd,
                 }
 
-            def _validate_codec_settings(self, cmd: list[str]) -> dict[str, Any]:
-                """Validate codec-related settings."""
+            @staticmethod
+            def _validate_codec_settings(cmd: list[str]) -> dict[str, Any]:
+                """Validate codec-related settings.
+
+                Returns:
+                    dict[str, Any]: Codec settings validation results.
+                """
                 has_video_codec = "-c:v" in cmd or "-c" in cmd
                 codec = None
 
@@ -406,8 +441,13 @@ class TestFFmpegCommandBuilderOptimizedV2:
                     "has_pix_fmt": "-pix_fmt" in cmd,
                 }
 
-            def _validate_quality_settings(self, cmd: list[str]) -> dict[str, Any]:
-                """Validate quality-related settings."""
+            @staticmethod
+            def _validate_quality_settings(cmd: list[str]) -> dict[str, Any]:
+                """Validate quality-related settings.
+
+                Returns:
+                    dict[str, Any]: Quality settings validation results.
+                """
                 return {
                     "has_crf": "-crf" in cmd,
                     "has_bitrate": "-b:v" in cmd,
@@ -415,8 +455,13 @@ class TestFFmpegCommandBuilderOptimizedV2:
                     "has_x265_params": "-x265-params" in cmd,
                 }
 
-            def _validate_input_output(self, cmd: list[str]) -> dict[str, bool]:
-                """Validate input and output specifications."""
+            @staticmethod
+            def _validate_input_output(cmd: list[str]) -> dict[str, bool]:
+                """Validate input and output specifications.
+
+                Returns:
+                    dict[str, bool]: Input/output validation results.
+                """
                 input_index = cmd.index("-i") + 1 if "-i" in cmd else -1
                 has_input_file = input_index > 0 and input_index < len(cmd)
                 has_output_file = len(cmd) > 0 and not cmd[-1].startswith("-")
@@ -428,8 +473,13 @@ class TestFFmpegCommandBuilderOptimizedV2:
                     "output_at_end": has_output_file,
                 }
 
-            def _validate_hardware_specific(self, cmd: list[str]) -> dict[str, bool]:
-                """Validate hardware encoder specific settings."""
+            @staticmethod
+            def _validate_hardware_specific(cmd: list[str]) -> dict[str, bool]:
+                """Validate hardware encoder specific settings.
+
+                Returns:
+                    dict[str, bool]: Hardware encoder validation results.
+                """
                 return {
                     "has_tag": "-tag:v" in cmd,
                     "has_videotoolbox": any("videotoolbox" in arg for arg in cmd),
@@ -437,7 +487,11 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 }
 
             def validate_command(self, cmd: list[str], validation_types: list[str] | None = None) -> dict[str, Any]:
-                """Validate command using specified validation types."""
+                """Validate command using specified validation types.
+
+                Returns:
+                    dict[str, Any]: Validation results for all criteria.
+                """
                 if validation_types is None:
                     validation_types = list(self.validation_rules.keys())
 
@@ -454,8 +508,12 @@ class TestFFmpegCommandBuilderOptimizedV2:
         }
 
     @pytest.fixture()
-    def temp_workspace(self, tmp_path):
-        """Create temporary workspace for FFmpeg builder testing."""
+    def temp_workspace(self, tmp_path: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Create temporary workspace for FFmpeg builder testing.
+
+        Returns:
+            dict[str, Any]: Workspace configuration with test paths.
+        """
         test_dir = tmp_path / "ffmpeg_test"
         test_dir.mkdir(exist_ok=True)
 
@@ -472,7 +530,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
             "output_path": output_path,
         }
 
-    def test_ffmpeg_builder_comprehensive_scenarios(self, ffmpeg_test_components, temp_workspace) -> None:
+    def test_ffmpeg_builder_comprehensive_scenarios(self, ffmpeg_test_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301
         """Test comprehensive FFmpeg command builder scenarios."""
         components = ffmpeg_test_components
         test_manager = components["test_manager"]
@@ -558,7 +616,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
                 all_results[scenario["name"]] = scenario_results
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 if scenario["name"] not in {"Error Validation Tests", "Edge Case Handling"}:
                     pytest.fail(f"Unexpected error in {scenario['name']}: {e}")
                 # Error scenarios are expected to have exceptions
@@ -566,7 +624,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
         # Overall validation
         assert len(all_results) == len(builder_scenarios), "Not all scenarios completed"
 
-    def test_ffmpeg_builder_specific_command_validation(self, ffmpeg_test_components, temp_workspace) -> None:
+    def test_ffmpeg_builder_specific_command_validation(self, ffmpeg_test_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301
         """Test specific FFmpeg command validation and structure."""
         components = ffmpeg_test_components
         validator = components["validator"]
@@ -669,7 +727,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
             assert io_checks["has_input_file"], f"Missing input file in {scenario['name']}"
             assert io_checks["has_output_file"], f"Missing output file in {scenario['name']}"
 
-    def test_ffmpeg_builder_parameter_combinations(self, ffmpeg_test_components, temp_workspace) -> None:
+    def test_ffmpeg_builder_parameter_combinations(self, ffmpeg_test_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301
         """Test various parameter combinations and their interactions."""
         components = ffmpeg_test_components
         validator = components["validator"]
@@ -755,7 +813,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
             )
             assert validation_results["codec_settings"]["has_video_codec"], f"Codec missing for {scenario['name']}"
 
-    def test_ffmpeg_builder_edge_cases_and_boundaries(self, ffmpeg_test_components, temp_workspace) -> None:
+    def test_ffmpeg_builder_edge_cases_and_boundaries(self, ffmpeg_test_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301
         """Test edge cases and boundary conditions."""
 
         # Edge case scenarios
@@ -783,14 +841,17 @@ class TestFFmpegCommandBuilderOptimizedV2:
             try:
                 result = edge_case["test"]()
                 assert result is not None, f"Edge case {edge_case['name']} returned None"
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 # Some edge cases may raise exceptions, which can be acceptable
-                assert "expected" in str(e).lower() or isinstance(e, ValueError | OSError), (
-                    f"Unexpected error in edge case {edge_case['name']}: {e}"
-                )
+                if not ("expected" in str(e).lower() or isinstance(e, (ValueError, OSError))):
+                    pytest.fail(f"Unexpected error in edge case {edge_case['name']}: {e}")
 
-    def _test_extreme_crf_values(self, temp_workspace):
-        """Test extreme CRF values."""
+    def _test_extreme_crf_values(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Test extreme CRF values.
+
+        Returns:
+            dict[str, Any]: Test results and validation data.
+        """
         extreme_values = [0, 1, 50, 51]
 
         for crf in extreme_values:
@@ -806,8 +867,12 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
         return {"tested_values": extreme_values}
 
-    def _test_high_bitrates(self, temp_workspace):
-        """Test very high bitrate values."""
+    def _test_high_bitrates(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Test very high bitrate values.
+
+        Returns:
+            dict[str, Any]: Test results and validation data.
+        """
         high_bitrates = [10000, 50000, 100000]
 
         for bitrate in high_bitrates:
@@ -824,8 +889,12 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
         return {"tested_bitrates": high_bitrates}
 
-    def _test_long_file_paths(self, temp_workspace):
-        """Test very long file paths."""
+    def _test_long_file_paths(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Test very long file paths.
+
+        Returns:
+            dict[str, Any]: Test results and validation data.
+        """
         # Create a deeply nested directory structure
         long_path = temp_workspace["test_dir"]
         for i in range(10):
@@ -849,8 +918,12 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
         return {"long_path_length": len(str(long_input))}
 
-    def _test_special_character_paths(self, temp_workspace):
-        """Test file paths with special characters."""
+    def _test_special_character_paths(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR6301
+        """Test file paths with special characters.
+
+        Returns:
+            dict[str, Any]: Test results and validation data.
+        """
         special_chars_dir = temp_workspace["test_dir"] / "special chars & symbols!"
         special_chars_dir.mkdir(exist_ok=True)
 

@@ -730,7 +730,7 @@ class TestAccessibilityOptimizedV2:
         qtbot: Any,
         main_window: Any,
         accessibility_testing_suite: dict[str, Any],
-        mocker: Any,  # noqa: ARG004
+        mocker: Any,
     ) -> None:
         """Test comprehensive error message clarity and actionability."""
         window = main_window

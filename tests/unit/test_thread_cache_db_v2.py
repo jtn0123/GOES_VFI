@@ -11,11 +11,12 @@ Optimizations:
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
-import os
+import contextlib
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 import tempfile
 import threading
+import time
 from typing import Any
 from unittest.mock import patch
 
@@ -26,24 +27,29 @@ from goesvfi.integrity_check.time_index import SatellitePattern
 
 
 @pytest.fixture()
-def temp_db_path():
-    """Create a temporary database file path with automatic cleanup."""
+def temp_db_path() -> Any:
+    """Create a temporary database file path with automatic cleanup.
+
+    Yields:
+        Path: Temporary database file path.
+    """
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = Path(f.name)
 
     yield db_path
 
     # Clean up after the test
-    try:
-        if db_path.exists():
-            os.unlink(db_path)
-    except OSError:
-        pass  # File might already be deleted
+    if db_path.exists():
+        db_path.unlink()
 
 
 @pytest.fixture()
-def thread_cache_db(temp_db_path):
-    """Create and manage ThreadLocalCacheDB instance."""
+def thread_cache_db(temp_db_path: Path) -> Any:
+    """Create and manage ThreadLocalCacheDB instance.
+
+    Yields:
+        ThreadLocalCacheDB: Database instance for testing.
+    """
     db = ThreadLocalCacheDB(db_path=temp_db_path)
     yield db
     # Clean up
@@ -51,9 +57,13 @@ def thread_cache_db(temp_db_path):
 
 
 @pytest.fixture()
-def test_data_sets():
-    """Generate test data sets for various scenarios."""
-    base_time = datetime.utcnow()
+def test_data_sets() -> dict[str, Any]:
+    """Generate test data sets for various scenarios.
+
+    Returns:
+        dict[str, Any]: Test data sets organized by size.
+    """
+    base_time = datetime.now(UTC)
 
     return {
         "small_set": {
@@ -70,8 +80,12 @@ def test_data_sets():
 
 
 @pytest.fixture()
-def mock_time_operations():
-    """Mock time-related operations to speed up tests."""
+def mock_time_operations() -> Any:
+    """Mock time-related operations to speed up tests.
+
+    Yields:
+        None: Context for mocked time operations.
+    """
     with patch("time.sleep", return_value=None), patch("asyncio.sleep", return_value=None):
         yield
 
@@ -79,7 +93,7 @@ def mock_time_operations():
 class TestThreadLocalCacheDB:
     """Test cases for the ThreadLocalCacheDB class with optimizations."""
 
-    def test_database_initialization_and_cleanup(self, temp_db_path) -> None:
+    def test_database_initialization_and_cleanup(self, temp_db_path: Path) -> None:  # noqa: PLR6301
         """Test basic database creation, initialization, and cleanup."""
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
@@ -87,23 +101,25 @@ class TestThreadLocalCacheDB:
             # Verify basic initialization
             assert db is not None
             assert hasattr(db, "_connections")
-            assert len(db._connections) > 0
+            assert len(db._connections) > 0  # noqa: SLF001
 
             # Verify database file exists
             assert temp_db_path.exists()
 
             # Test connection retrieval
-            conn = db._get_connection()
+            conn = db._get_connection()  # noqa: SLF001
             assert conn is not None
 
         finally:
             db.close()
 
         # Verify cleanup
-        assert len(db._connections) == 0
+        assert len(db._connections) == 0  # noqa: SLF001
 
     @pytest.mark.parametrize("thread_count", [2, 3, 5])
-    def test_multithread_access_patterns(self, temp_db_path, mock_time_operations, thread_count) -> None:
+    def test_multithread_access_patterns(
+        self, temp_db_path: Path, mock_time_operations: Any, thread_count: int
+    ) -> None:  # noqa: PLR6301, ARG002
         """Test accessing the database from multiple threads with different thread counts."""
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
@@ -115,17 +131,17 @@ class TestThreadLocalCacheDB:
             thread_id = threading.get_ident()
             try:
                 # This should create a new connection for this thread
-                conn = db._get_connection()
+                conn = db._get_connection()  # noqa: SLF001
                 thread_references[thread_id] = conn
 
                 # Verify the connection is valid
                 assert conn is not None
-                assert thread_id in db._connections
+                assert thread_id in db._connections  # noqa: SLF001
 
                 # Perform a simple database operation
                 conn.execute("SELECT 1").fetchone()
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 test_result["success"] = False
                 test_result["errors"].append(f"Thread {thread_id}: {e!s}")
 
@@ -144,17 +160,24 @@ class TestThreadLocalCacheDB:
             # Verify that each thread got its own connection
             assert len(thread_references) == thread_count
             assert test_result["success"], f"Thread errors: {test_result['errors']}"
-            assert len(db._connections) >= thread_count
+            assert len(db._connections) >= thread_count  # noqa: SLF001
 
         finally:
             db.close()
 
-    async def async_timestamp_worker(self, db, satellite, timestamp, file_path, found):
-        """Async worker that adds a timestamp to the database."""
+    @staticmethod
+    async def async_timestamp_worker(db: Any, satellite: Any, timestamp: Any, file_path: str, *, found: bool) -> Any:
+        """Async worker that adds a timestamp to the database.
+
+        Returns:
+            Any: Result of add_timestamp operation.
+        """
         return await db.add_timestamp(timestamp, satellite, file_path, found)
 
     @pytest.mark.asyncio()
-    async def test_async_thread_safe_operations(self, temp_db_path, test_data_sets, mock_time_operations) -> None:
+    async def test_async_thread_safe_operations(
+        self, temp_db_path: Path, test_data_sets: dict[str, Any], mock_time_operations: Any
+    ) -> None:  # noqa: ARG002
         """Test thread-safe operations with async functions."""
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
@@ -169,12 +192,12 @@ class TestThreadLocalCacheDB:
             with ThreadPoolExecutor(max_workers=3) as executor:
                 # Create tasks that will run in different threads
                 tasks = []
-                for i, (timestamp, file_path) in enumerate(zip(timestamps, filepaths, strict=False)):
+                for _i, (timestamp, file_path) in enumerate(zip(timestamps, filepaths, strict=False)):
                     # Use asyncio.wrap_future to convert concurrent.futures.Future to asyncio.Future
                     task = asyncio.wrap_future(
                         executor.submit(
                             asyncio.run,
-                            self.async_timestamp_worker(db, satellite, timestamp, file_path, True),
+                            self.async_timestamp_worker(db, satellite, timestamp, file_path, found=True),
                         )
                     )
                     tasks.append(task)
@@ -187,7 +210,7 @@ class TestThreadLocalCacheDB:
                     assert result is True, f"Operation {i} failed: {result}"
 
             # Verify we can retrieve the timestamps
-            async def verify_timestamps():
+            async def verify_timestamps() -> int:
                 start_time = min(timestamps)
                 end_time = max(timestamps) + timedelta(minutes=10)
                 retrieved = await db.get_timestamps(satellite, start_time, end_time)
@@ -206,17 +229,17 @@ class TestThreadLocalCacheDB:
         finally:
             db.close()
 
-    def test_connection_management_lifecycle(self, temp_db_path, mock_time_operations) -> None:
+    def test_connection_management_lifecycle(self, temp_db_path: Path, mock_time_operations: Any) -> None:  # noqa: PLR6301, ARG002
         """Test complete connection lifecycle: create, use, close."""
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
         # Track connections from multiple threads
         connection_info = {}
 
-        def worker_thread(thread_id) -> None:
+        def worker_thread(thread_id: int) -> None:
             """Worker that creates and uses a connection."""
             # Get connection (creates if needed)
-            conn = db._get_connection()
+            conn = db._get_connection()  # noqa: SLF001
             thread_ident = threading.get_ident()
             connection_info[thread_id] = {
                 "thread_ident": thread_ident,
@@ -228,7 +251,7 @@ class TestThreadLocalCacheDB:
                 # Perform database operation
                 conn.execute("SELECT 1").fetchone()
                 connection_info[thread_id]["operations_successful"] = True
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
         # Start multiple threads
@@ -244,36 +267,38 @@ class TestThreadLocalCacheDB:
 
         # Verify all threads created connections successfully
         assert len(connection_info) == 3
-        assert len(db._connections) >= 3
+        assert len(db._connections) >= 3  # noqa: SLF001
 
         for thread_id, info in connection_info.items():
             assert info["operations_successful"], f"Thread {thread_id} operations failed"
 
         # Test closing individual thread connections
         main_thread_id = threading.get_ident()
-        initial_connection_count = len(db._connections)
+        len(db._connections)  # noqa: SLF001
 
         # Close current thread connection
         db.close_current_thread()
 
         # Should have one fewer connection
-        if main_thread_id in db._connections:
+        if main_thread_id in db._connections:  # noqa: SLF001
             # Main thread had a connection that was closed
-            assert len(db._connections) == initial_connection_count - 1
+            assert len(db._connections) == initial_connection_count - 1  # noqa: SLF001
         else:
             # Main thread didn't have a connection, count unchanged
-            assert len(db._connections) == initial_connection_count
+            assert len(db._connections) == initial_connection_count  # noqa: SLF001
 
         # Close all connections
         db.close()
-        assert len(db._connections) == 0
+        assert len(db._connections) == 0  # noqa: SLF001
 
     @pytest.mark.parametrize("operation_count", [3, 5, 8])
-    def test_concurrent_database_operations(self, thread_cache_db, mock_time_operations, operation_count) -> None:
+    def test_concurrent_database_operations(
+        self, thread_cache_db: Any, mock_time_operations: Any, operation_count: int
+    ) -> None:  # noqa: PLR6301, ARG002
         """Test concurrent database operations with varying operation counts."""
         results = []
 
-        def database_worker(worker_id) -> None:
+        def database_worker(worker_id: int) -> None:
             """Worker that performs multiple database operations."""
             worker_results = []
             for i in range(operation_count):
@@ -284,14 +309,14 @@ class TestThreadLocalCacheDB:
                         filepath=filepath,
                         file_hash=f"hash_{worker_id}_{i}",
                         file_size=i * 100,
-                        timestamp=datetime.utcnow(),
+                        timestamp=datetime.now(UTC),
                     )
 
                     # Retrieve entry
                     entry = thread_cache_db.get_entry(filepath)
                     worker_results.append(entry is not None)
 
-                except Exception:
+                except Exception:  # noqa: BLE001
                     worker_results.append(False)
 
             results.extend(worker_results)
@@ -316,23 +341,20 @@ class TestThreadLocalCacheDB:
             f"Too many failed operations: {successful_operations}/{total_expected}"
         )
 
-    def test_database_error_handling(self, temp_db_path) -> None:
+    def test_database_error_handling(self, temp_db_path: Path) -> None:  # noqa: PLR6301
         """Test database error handling and recovery."""
         db = ThreadLocalCacheDB(db_path=temp_db_path)
 
         try:
             # Test with invalid operation
-            conn = db._get_connection()
+            conn = db._get_connection()  # noqa: SLF001
 
             # This should work
             conn.execute("SELECT 1").fetchone()
 
             # Test error handling by trying to access non-existent table
-            try:
+            with contextlib.suppress(Exception):
                 conn.execute("SELECT * FROM non_existent_table").fetchone()
-            except Exception:
-                # This is expected - database should still be functional
-                pass
 
             # Verify database is still functional after error
             conn.execute("SELECT 1").fetchone()
@@ -340,11 +362,11 @@ class TestThreadLocalCacheDB:
         finally:
             db.close()
 
-    def test_thread_isolation_verification(self, thread_cache_db, mock_time_operations) -> None:
+    def test_thread_isolation_verification(self, thread_cache_db: Any, mock_time_operations: Any) -> None:  # noqa: PLR6301, ARG002
         """Verify that threads have isolated database connections."""
         thread_data = {}
 
-        def isolated_worker(worker_id) -> None:
+        def isolated_worker(worker_id: int) -> None:
             """Worker that stores data specific to its thread."""
             thread_id = threading.get_ident()
 
@@ -355,7 +377,7 @@ class TestThreadLocalCacheDB:
                     filepath=filepath,
                     file_hash=f"hash_{thread_id}_{i}",
                     file_size=worker_id * 1000 + i,
-                    timestamp=datetime.utcnow(),
+                    timestamp=datetime.now(UTC),
                 )
 
             # Retrieve and verify data
@@ -388,9 +410,8 @@ class TestThreadLocalCacheDB:
             for i, file_size in enumerate(entries):
                 assert file_size == expected_base + i
 
-    def test_performance_with_rapid_operations(self, thread_cache_db, mock_time_operations) -> None:
+    def test_performance_with_rapid_operations(self, thread_cache_db: Any, mock_time_operations: Any) -> None:  # noqa: PLR6301, ARG002
         """Test database performance with rapid consecutive operations."""
-        import time
 
         operation_count = 50  # Reduced for faster test execution
 
@@ -403,7 +424,7 @@ class TestThreadLocalCacheDB:
                 filepath=filepath,
                 file_hash=f"hash_{i}",
                 file_size=i * 10,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
             )
 
             # Immediately retrieve

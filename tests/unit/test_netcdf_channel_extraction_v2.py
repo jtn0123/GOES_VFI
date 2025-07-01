@@ -3,36 +3,61 @@
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import tempfile
+from typing import Any
 from unittest.mock import Mock, patch
 
 import botocore
 import numpy as np
 import pytest
+from test_netcdf_channel_extraction import (
+    detect_channel_from_filename,
+    download_file_from_s3,
+    explore_netcdf_structure,
+    extract_channel_from_netcdf,
+    process_and_save_image,
+    process_channel_data,
+    test_download_and_process_channels,
+)
 import xarray as xr
 
 
-class TestNetCDFChannelExtractionV2:
+class TestNetCDFChannelExtractionV2:  # noqa: PLR0904
     """Test NetCDF channel extraction functionality with comprehensive coverage."""
 
     @pytest.fixture()
-    def mock_s3_client(self):
-        """Create mock S3 client."""
+    @staticmethod
+    def mock_s3_client() -> Any:
+        """Create mock S3 client.
+
+        Yields:
+            Mock: Mock S3 client for testing.
+        """
         with patch("boto3.client") as mock_client:
             client = Mock()
             mock_client.return_value = client
             yield client
 
     @pytest.fixture()
-    def mock_logger(self):
-        """Create mock logger."""
+    @staticmethod
+    def mock_logger() -> Any:
+        """Create mock logger.
+
+        Yields:
+            Mock: Mock logger for testing.
+        """
         with patch("test_netcdf_channel_extraction.logger") as mock_log:
             yield mock_log
 
     @pytest.fixture()
-    def sample_netcdf_data(self):
-        """Create sample NetCDF dataset."""
+    @staticmethod
+    def sample_netcdf_data() -> Any:
+        """Create sample NetCDF dataset.
+
+        Returns:
+            xr.Dataset: Sample NetCDF dataset for testing.
+        """
         # Create sample data
-        data = np.random.rand(1000, 1000) * 100
+        data = np.random.rand(1000, 1000) * 100  # noqa: NPY002
 
         # Create xarray dataset
         return xr.Dataset(
@@ -51,14 +76,18 @@ class TestNetCDFChannelExtractionV2:
         )
 
     @pytest.fixture()
-    def temp_dir(self):
-        """Create temporary directory."""
+    @staticmethod
+    def temp_dir() -> Any:
+        """Create temporary directory.
+
+        Yields:
+            Path: Temporary directory path.
+        """
         with tempfile.TemporaryDirectory() as temp:
             yield Path(temp)
 
-    def test_download_file_from_s3_success(self, mock_s3_client, temp_dir) -> None:
+    def test_download_file_from_s3_success(self, mock_s3_client: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test successful S3 file download."""
-        from test_netcdf_channel_extraction import download_file_from_s3
 
         # Setup
         bucket = "test-bucket"
@@ -79,9 +108,8 @@ class TestNetCDFChannelExtractionV2:
             assert result == local_path
             mock_s3_client.download_file.assert_called_once_with(bucket, key, str(local_path))
 
-    def test_download_file_from_s3_failure(self, mock_s3_client, temp_dir) -> None:
+    def test_download_file_from_s3_failure(self, mock_s3_client: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test S3 download failure scenarios."""
-        from test_netcdf_channel_extraction import download_file_from_s3
 
         # Test file not found after download
         bucket = "test-bucket"
@@ -93,9 +121,8 @@ class TestNetCDFChannelExtractionV2:
         with pytest.raises(FileNotFoundError):
             download_file_from_s3(bucket, key, local_path)
 
-    def test_extract_channel_from_netcdf_success(self, sample_netcdf_data, temp_dir) -> None:
+    def test_extract_channel_from_netcdf_success(self, sample_netcdf_data: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test successful channel extraction from NetCDF."""
-        from test_netcdf_channel_extraction import extract_channel_from_netcdf
 
         # Save sample data to file
         netcdf_path = temp_dir / "test.nc"
@@ -108,9 +135,8 @@ class TestNetCDFChannelExtractionV2:
         assert isinstance(data, np.ndarray)
         assert data.shape == (1000, 1000)
 
-    def test_extract_channel_from_netcdf_missing_variable(self, sample_netcdf_data, temp_dir) -> None:
+    def test_extract_channel_from_netcdf_missing_variable(self, sample_netcdf_data: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test extraction with missing variable."""
-        from test_netcdf_channel_extraction import extract_channel_from_netcdf
 
         # Save sample data to file
         netcdf_path = temp_dir / "test.nc"
@@ -120,12 +146,11 @@ class TestNetCDFChannelExtractionV2:
         with pytest.raises(ValueError, match="Variable 'NonExistent' not found"):
             extract_channel_from_netcdf(netcdf_path, "NonExistent")
 
-    def test_extract_channel_with_nan_values(self, temp_dir) -> None:
+    def test_extract_channel_with_nan_values(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test extraction with NaN values in data."""
-        from test_netcdf_channel_extraction import extract_channel_from_netcdf
 
         # Create data with NaN values
-        data = np.random.rand(100, 100)
+        data = np.random.rand(100, 100)  # noqa: NPY002
         data[10:20, 10:20] = np.nan
 
         ds = xr.Dataset({"Rad": (["y", "x"], data)})
@@ -147,12 +172,11 @@ class TestNetCDFChannelExtractionV2:
             ("plasma", False, 0.1),
         ],
     )
-    def test_process_and_save_image_various_params(self, temp_dir, colormap, invert, scale_factor) -> None:
+    def test_process_and_save_image_various_params(self, temp_dir: Any, colormap: str, invert: bool, scale_factor: float) -> None:  # noqa: PLR6301, FBT001
         """Test image processing with various parameters."""
-        from test_netcdf_channel_extraction import process_and_save_image
 
         # Create test data
-        data = np.random.rand(100, 100) * 255
+        data = np.random.rand(100, 100) * 255  # noqa: NPY002
         output_path = temp_dir / f"test_{colormap}_{invert}_{scale_factor}.png"
 
         # Process and save
@@ -162,12 +186,11 @@ class TestNetCDFChannelExtractionV2:
         assert result == output_path
         assert output_path.exists()
 
-    def test_process_and_save_image_with_custom_range(self, temp_dir) -> None:
+    def test_process_and_save_image_with_custom_range(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test image processing with custom value range."""
-        from test_netcdf_channel_extraction import process_and_save_image
 
         # Create test data
-        data = np.random.rand(100, 100) * 1000
+        data = np.random.rand(100, 100) * 1000  # noqa: NPY002
         output_path = temp_dir / "custom_range.png"
 
         # Process with custom range
@@ -177,12 +200,11 @@ class TestNetCDFChannelExtractionV2:
         assert result == output_path
         assert output_path.exists()
 
-    def test_explore_netcdf_structure_comprehensive(self, sample_netcdf_data, temp_dir) -> None:
+    def test_explore_netcdf_structure_comprehensive(self, sample_netcdf_data: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test NetCDF structure exploration."""
-        from test_netcdf_channel_extraction import explore_netcdf_structure
 
         # Add more variables to dataset
-        sample_netcdf_data["CMI"] = (["y", "x"], np.random.rand(1000, 1000))
+        sample_netcdf_data["CMI"] = (["y", "x"], np.random.rand(1000, 1000))  # noqa: NPY002
         sample_netcdf_data["DQF"] = (["y", "x"], np.zeros((1000, 1000), dtype=np.int8))
         sample_netcdf_data["band_id"] = 1
 
@@ -202,9 +224,8 @@ class TestNetCDFChannelExtractionV2:
         assert "Rad" in info["variables"]
         assert "CMI" in info["variables"]
 
-    def test_explore_netcdf_structure_error_handling(self, temp_dir) -> None:
+    def test_explore_netcdf_structure_error_handling(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test structure exploration error handling."""
-        from test_netcdf_channel_extraction import explore_netcdf_structure
 
         # Test with non-existent file
         result = explore_netcdf_structure(temp_dir / "nonexistent.nc")
@@ -219,16 +240,14 @@ class TestNetCDFChannelExtractionV2:
             ("no_channel_info.nc", None),
         ],
     )
-    def test_detect_channel_from_filename(self, filename, expected_channel) -> None:
+    def test_detect_channel_from_filename(self, filename: str, expected_channel: int | None) -> None:  # noqa: PLR6301
         """Test channel detection from filename."""
-        from test_netcdf_channel_extraction import detect_channel_from_filename
 
         result = detect_channel_from_filename(filename)
         assert result == expected_channel
 
-    def test_process_channel_data_visible(self, sample_netcdf_data, temp_dir) -> None:
+    def test_process_channel_data_visible(self, sample_netcdf_data: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test processing visible channel data."""
-        from test_netcdf_channel_extraction import process_channel_data
 
         # Process visible channel (1-6)
         result = process_channel_data(sample_netcdf_data, 2, temp_dir)
@@ -240,12 +259,11 @@ class TestNetCDFChannelExtractionV2:
         assert "robust_output_path" in result
         assert Path(result["output_path"]).exists()
 
-    def test_process_channel_data_ir(self, temp_dir) -> None:
+    def test_process_channel_data_ir(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test processing IR channel data."""
-        from test_netcdf_channel_extraction import process_channel_data
 
         # Create IR channel data with Planck coefficients
-        data = np.random.rand(100, 100) * 50
+        data = np.random.rand(100, 100) * 50  # noqa: NPY002
         ds = xr.Dataset(
             {"Rad": (["y", "x"], data)},
             attrs={
@@ -264,12 +282,11 @@ class TestNetCDFChannelExtractionV2:
         assert "output_path" in result
         assert Path(result["output_path"]).exists()
 
-    def test_process_channel_data_missing_variable(self, temp_dir) -> None:
+    def test_process_channel_data_missing_variable(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test processing with missing variable."""
-        from test_netcdf_channel_extraction import process_channel_data
 
         # Create dataset without Rad variable
-        ds = xr.Dataset({"Other": (["y", "x"], np.random.rand(100, 100))})
+        ds = xr.Dataset({"Other": (["y", "x"], np.random.rand(100, 100))})  # noqa: NPY002
 
         # Process
         result = process_channel_data(ds, 1, temp_dir)
@@ -278,7 +295,7 @@ class TestNetCDFChannelExtractionV2:
         assert "error" in result
         assert "not found" in result["error"]
 
-    def test_find_channel_file_mock(self, mock_s3_client) -> None:
+    def test_find_channel_file_mock(self, mock_s3_client: Any) -> None:  # noqa: PLR6301
         """Test finding channel file from S3 listing."""
         # Mock S3 list response
         mock_s3_client.list_objects_v2.return_value = {
@@ -299,9 +316,8 @@ class TestNetCDFChannelExtractionV2:
         assert len(matching_files) == 1
         assert "C01" in matching_files[0]
 
-    def test_test_download_and_process_channels_integration(self, mock_s3_client, temp_dir, monkeypatch) -> None:
+    def test_test_download_and_process_channels_integration(self, mock_s3_client: Any, temp_dir: Any, monkeypatch: Any) -> None:  # noqa: PLR6301
         """Test the main integration function."""
-        from test_netcdf_channel_extraction import test_download_and_process_channels
 
         # Mock environment
         monkeypatch.setattr("tempfile.TemporaryDirectory", lambda: temp_dir)
@@ -313,48 +329,49 @@ class TestNetCDFChannelExtractionV2:
         mock_s3_client.download_file.return_value = None
 
         # Mock file operations
-        with patch("test_netcdf_channel_extraction.download_file_from_s3"):
-            with patch("test_netcdf_channel_extraction.explore_netcdf_structure"):
-                with patch("xarray.open_dataset") as mock_open:
-                    # Mock dataset
-                    mock_ds = Mock()
-                    mock_ds.variables = {"Rad": Mock()}
-                    mock_ds.__enter__ = Mock(return_value=mock_ds)
-                    mock_ds.__exit__ = Mock(return_value=None)
-                    mock_open.return_value = mock_ds
+        with (
+            patch("test_netcdf_channel_extraction.download_file_from_s3"),
+            patch("test_netcdf_channel_extraction.explore_netcdf_structure"),
+            patch("xarray.open_dataset") as mock_open,
+        ):
+            # Mock dataset
+            mock_ds = Mock()
+            mock_ds.variables = {"Rad": Mock()}
+            mock_ds.__enter__ = Mock(return_value=mock_ds)
+            mock_ds.__exit__ = Mock(return_value=None)
+            mock_open.return_value = mock_ds
 
-                    with patch("test_netcdf_channel_extraction.process_channel_data") as mock_process:
-                        mock_process.return_value = {
-                            "channel": 1,
-                            "variable": "Rad",
-                            "shape": (1000, 1000),
-                            "min_val": 0.0,
-                            "max_val": 100.0,
-                            "robust_min": 10.0,
-                            "robust_max": 90.0,
-                            "output_path": str(temp_dir / "output" / "channel_01_rad.png"),
-                            "robust_output_path": str(temp_dir / "output" / "channel_01_rad_robust.png"),
-                            "comparison_path": str(temp_dir / "output" / "channel_01_comparison.png"),
-                        }
+            with patch("test_netcdf_channel_extraction.process_channel_data") as mock_process:
+                mock_process.return_value = {
+                    "channel": 1,
+                    "variable": "Rad",
+                    "shape": (1000, 1000),
+                    "min_val": 0.0,
+                    "max_val": 100.0,
+                    "robust_min": 10.0,
+                    "robust_max": 90.0,
+                    "output_path": str(temp_dir / "output" / "channel_01_rad.png"),
+                    "robust_output_path": str(temp_dir / "output" / "channel_01_rad_robust.png"),
+                    "comparison_path": str(temp_dir / "output" / "channel_01_comparison.png"),
+                }
 
-                        # Run test
-                        result = test_download_and_process_channels()
+                # Run test
+                result = test_download_and_process_channels()
 
-                        # Verify
-                        assert result is True
+                # Verify
+                assert result is True
 
-    def test_concurrent_channel_processing(self, sample_netcdf_data, temp_dir) -> None:
+    def test_concurrent_channel_processing(self, sample_netcdf_data: Any, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test concurrent processing of multiple channels."""
-        from test_netcdf_channel_extraction import process_channel_data
 
         results = []
         errors = []
 
-        def process_channel(channel_num) -> None:
+        def process_channel(channel_num: int) -> None:
             try:
                 result = process_channel_data(sample_netcdf_data, channel_num, temp_dir)
                 results.append(result)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((channel_num, e))
 
         # Process multiple channels concurrently
@@ -367,12 +384,11 @@ class TestNetCDFChannelExtractionV2:
         assert len(errors) == 0
         assert len(results) == 4
 
-    def test_memory_efficiency_large_data(self, temp_dir) -> None:
+    def test_memory_efficiency_large_data(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test memory efficiency with large datasets."""
-        from test_netcdf_channel_extraction import process_and_save_image
 
         # Create large data array
-        large_data = np.random.rand(5000, 5000) * 255
+        large_data = np.random.rand(5000, 5000) * 255  # noqa: NPY002
         output_path = temp_dir / "large_test.png"
 
         # Process with downsampling
@@ -386,9 +402,8 @@ class TestNetCDFChannelExtractionV2:
         assert result == output_path
         assert output_path.exists()
 
-    def test_error_recovery(self, temp_dir) -> None:
+    def test_error_recovery(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test error recovery in various scenarios."""
-        from test_netcdf_channel_extraction import process_and_save_image
 
         # Test with invalid data
         invalid_data = "not an array"
@@ -397,29 +412,30 @@ class TestNetCDFChannelExtractionV2:
         with pytest.raises(AttributeError):
             process_and_save_image(invalid_data, output_path)
 
-    def test_comparison_image_creation(self, temp_dir) -> None:
+    def test_comparison_image_creation(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test creation of comparison images."""
-        from test_netcdf_channel_extraction import process_channel_data
 
         # Create test dataset
-        data = np.random.rand(100, 100) * 100
+        data = np.random.rand(100, 100) * 100  # noqa: NPY002
         ds = xr.Dataset({"Rad": (["y", "x"], data)})
 
         # Mock matplotlib to avoid actual image creation
-        with patch("matplotlib.pyplot.figure"), patch("matplotlib.pyplot.subplot"):
-            with patch("matplotlib.pyplot.imread", return_value=np.zeros((100, 100, 3))):
-                with patch("matplotlib.pyplot.savefig"):
-                    result = process_channel_data(ds, 1, temp_dir)
+        with (
+            patch("matplotlib.pyplot.figure"),
+            patch("matplotlib.pyplot.subplot"),
+            patch("matplotlib.pyplot.imread", return_value=np.zeros((100, 100, 3))),
+            patch("matplotlib.pyplot.savefig"),
+        ):
+            result = process_channel_data(ds, 1, temp_dir)
 
-                    # Verify comparison was attempted
-                    assert "comparison_path" in result
+            # Verify comparison was attempted
+            assert "comparison_path" in result
 
-    def test_robust_statistics(self, temp_dir) -> None:
+    def test_robust_statistics(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test robust statistics calculation."""
-        from test_netcdf_channel_extraction import process_channel_data
 
         # Create data with outliers
-        data = np.random.rand(100, 100) * 50
+        data = np.random.rand(100, 100) * 50  # noqa: NPY002
         data[0, 0] = 1000  # Outlier
         data[99, 99] = -1000  # Outlier
 
@@ -431,7 +447,7 @@ class TestNetCDFChannelExtractionV2:
         assert result["robust_min"] > result["min_val"]
         assert result["robust_max"] < result["max_val"]
 
-    def test_planck_function_conversion(self) -> None:
+    def test_planck_function_conversion(self) -> None:  # noqa: PLR6301
         """Test Planck function conversion for IR channels."""
         # Test the Planck function logic
         fk1, fk2 = 1000.0, 500.0
@@ -447,9 +463,8 @@ class TestNetCDFChannelExtractionV2:
         assert np.all(temp_data > 0)  # Temperatures should be positive
         assert np.all(temp_data < 400)  # Reasonable upper bound for Earth temps
 
-    def test_file_path_handling(self, temp_dir) -> None:
+    def test_file_path_handling(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test various file path scenarios."""
-        from test_netcdf_channel_extraction import download_file_from_s3
 
         # Test with nested path creation
         nested_path = temp_dir / "level1" / "level2" / "level3" / "file.nc"
@@ -469,20 +484,20 @@ class TestNetCDFChannelExtractionV2:
             assert nested_path.parent.exists()
             assert result == nested_path
 
-    def test_colormap_handling(self, temp_dir) -> None:
+    def test_colormap_handling(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test different colormap handling."""
-        from test_netcdf_channel_extraction import process_and_save_image
 
-        data = np.random.rand(50, 50)
+        data = np.random.rand(50, 50)  # noqa: NPY002
 
         # Test invalid colormap
-        with patch("matplotlib.pyplot.get_cmap", side_effect=ValueError("Invalid colormap")):
-            with pytest.raises(ValueError):
-                process_and_save_image(data, temp_dir / "invalid_cmap.png", colormap="nonexistent")
+        with (
+            patch("matplotlib.pyplot.get_cmap", side_effect=ValueError("Invalid colormap")),
+            pytest.raises(ValueError, match="Invalid colormap"),
+        ):
+            process_and_save_image(data, temp_dir / "invalid_cmap.png", colormap="nonexistent")
 
-    def test_logging_coverage(self, mock_logger) -> None:
+    def test_logging_coverage(self, mock_logger: Any) -> None:  # noqa: PLR6301
         """Test comprehensive logging coverage."""
-        from test_netcdf_channel_extraction import extract_channel_from_netcdf
 
         # Create mock dataset
         with patch("xarray.open_dataset") as mock_open:
@@ -500,9 +515,8 @@ class TestNetCDFChannelExtractionV2:
             # Verify logging calls
             assert mock_logger.info.called
 
-    def test_edge_cases(self, temp_dir) -> None:
+    def test_edge_cases(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test various edge cases."""
-        from test_netcdf_channel_extraction import process_and_save_image
 
         # Test empty data array
         empty_data = np.array([])
@@ -515,9 +529,8 @@ class TestNetCDFChannelExtractionV2:
         result = process_and_save_image(single_pixel, output)
         assert result == output
 
-    def test_s3_error_handling(self, mock_s3_client) -> None:
+    def test_s3_error_handling(self, mock_s3_client: Any) -> None:  # noqa: PLR6301
         """Test S3 error handling scenarios."""
-        from test_netcdf_channel_extraction import download_file_from_s3
 
         # Mock S3 errors
         mock_s3_client.download_file.side_effect = botocore.exceptions.ClientError(
@@ -527,7 +540,7 @@ class TestNetCDFChannelExtractionV2:
         with pytest.raises(botocore.exceptions.ClientError):
             download_file_from_s3("bucket", "nonexistent", Path("test.nc"))
 
-    def test_summary_report_generation(self, temp_dir) -> None:
+    def test_summary_report_generation(self, temp_dir: Any) -> None:  # noqa: PLR6301
         """Test summary report generation."""
         # Test summary writing logic
         channel_results = {
@@ -548,7 +561,7 @@ class TestNetCDFChannelExtractionV2:
         summary_path = temp_dir / "summary.txt"
 
         # Write summary
-        with open(summary_path, "w", encoding="utf-8") as f:
+        with summary_path.open("w", encoding="utf-8") as f:
             f.write("# GOES Channel Processing Summary\n\n")
 
             for channel, result in sorted(channel_results.items()):

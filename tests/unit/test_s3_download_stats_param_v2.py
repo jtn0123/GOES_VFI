@@ -644,7 +644,14 @@ class TestS3DownloadStatsParamOptimizedV2:
         ],
     )
     def test_update_download_stats_scenarios(  # noqa: PLR6301
-        self, s3_stats_test_components: dict[str, Any], *, success: bool, error_type: str | None, download_time: float, file_size: int, error_message: str | None
+        self,
+        s3_stats_test_components: dict[str, Any],
+        *,
+        success: bool,
+        error_type: str | None,
+        download_time: float,
+        file_size: int,
+        error_message: str | None,
     ) -> None:
         """Test update download stats with various scenarios."""
         manager = s3_stats_test_components["manager"]
