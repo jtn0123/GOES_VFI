@@ -308,7 +308,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
             @staticmethod
-            def _create_network_timeout_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+            def _create_network_timeout_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:  # noqa: ARG004
                 """Create mocks for network timeout scenario.
 
                 Returns:
@@ -331,7 +331,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
             @staticmethod
-            def _create_progress_tracking_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:
+            def _create_progress_tracking_mocks(data: bytes, download_path: Path) -> dict[str, AsyncMock]:  # noqa: ARG004
                 """Create mocks for progress tracking scenario.
 
                 Returns:
@@ -341,8 +341,8 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 cdn_store = AsyncMock(spec=CDNStore)
 
                 async def mock_download_with_progress(
-                    ts: datetime,
-                    satellite: SatellitePattern,
+                    ts: datetime,  # noqa: ARG001
+                    satellite: SatellitePattern,  # noqa: ARG001
                     dest_path: Path,
                     progress_callback: Callable[[int, int], None] | None = None,
                     **kwargs: Any,
@@ -414,7 +414,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 # Mock NetCDF processing
                 with patch("xarray.open_dataset") as mock_open_dataset:
                     mock_dataset = MagicMock()
-                    mock_dataset.__getitem__.side_effect = lambda key: {
+                    mock_dataset.__getitem__.side_effect = lambda key: {  # noqa: ARG005
                         "Rad": np.random.default_rng().random((100, 100))
                     }
                     mock_dataset.attrs = {
@@ -527,11 +527,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
             async def _test_parallel_downloads_workflow(  # noqa: PLR6301
                 self,
                 mocks: dict[str, AsyncMock],
-                data: bytes,
+                data: bytes,  # noqa: ARG002
                 temp_dir: Path,
                 timestamp: datetime,
                 satellite: SatellitePattern,
-                channel: ChannelType,
+                channel: ChannelType,  # noqa: ARG002
             ) -> dict[str, Any]:
                 """Test parallel downloads workflow.
 
@@ -565,11 +565,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
             async def _test_progress_reporting_workflow(  # noqa: PLR6301
                 self,
                 mocks: dict[str, AsyncMock],
-                data: bytes,
+                data: bytes,  # noqa: ARG002
                 temp_dir: Path,
                 timestamp: datetime,
                 satellite: SatellitePattern,
-                channel: ChannelType,
+                channel: ChannelType,  # noqa: ARG002
             ) -> dict[str, Any]:
                 """Test progress reporting workflow.
 
@@ -602,7 +602,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 temp_dir: Path,
                 timestamp: datetime,
                 satellite: SatellitePattern,
-                channel: ChannelType,
+                channel: ChannelType,  # noqa: ARG002
             ) -> dict[str, Any]:
                 """Test checksum validation workflow.
 
@@ -628,11 +628,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
             async def _test_recent_data_handling_workflow(  # noqa: PLR6301
                 self,
                 mocks: dict[str, AsyncMock],
-                data: bytes,
+                data: bytes,  # noqa: ARG002
                 temp_dir: Path,
-                timestamp: datetime,
+                timestamp: datetime,  # noqa: ARG002
                 satellite: SatellitePattern,
-                channel: ChannelType,
+                channel: ChannelType,  # noqa: ARG002
             ) -> dict[str, Any]:
                 """Test recent data handling workflow.
 
@@ -653,7 +653,6 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
 
                 try:
                     await mocks["s3_store"].download(ts=recent_timestamp, satellite=satellite, dest_path=download_path)
-                    return {"success": True, "message": "Unexpected success"}
                 except ResourceNotFoundError as e:
                     return {
                         "success": False,
@@ -661,10 +660,13 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                         "error_message": str(e),
                         "helpful_message": "15-20 minutes" in str(e),
                     }
+                else:
+                    return {"success": True, "message": "Unexpected success"}
 
             async def run_workflow(
                 self,
                 scenario: str,
+                *,
                 mocks: dict[str, AsyncMock],
                 data: bytes,
                 temp_dir: Path,
@@ -788,12 +790,12 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 # Run workflow
                 result = await workflow_manager.run_workflow(
                     scenario["workflow"],
-                    mocks,
-                    file_data,
-                    workspace["downloads_dir"],
-                    timestamp,
-                    satellite,
-                    channel,
+                    mocks=mocks,
+                    data=file_data,
+                    temp_dir=workspace["downloads_dir"],
+                    timestamp=timestamp,
+                    satellite=satellite,
+                    channel=channel,
                 )
 
                 # Verify results
@@ -882,12 +884,12 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
             # Run parallel download workflow
             result = await workflow_manager.run_workflow(
                 "parallel_downloads",
-                mocks,
-                file_data,
-                scenario_dir,
-                base_timestamp,
-                satellite,
-                channel,
+                mocks=mocks,
+                data=file_data,
+                temp_dir=scenario_dir,
+                timestamp=base_timestamp,
+                satellite=satellite,
+                channel=channel,
             )
 
             # Verify parallel download results
@@ -959,12 +961,12 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 # Run workflow
                 result = await workflow_manager.run_workflow(
                     scenario["workflow"],
-                    mocks,
-                    file_data,
-                    workspace["downloads_dir"],
-                    timestamp,
-                    satellite,
-                    channel,
+                    mocks=mocks,
+                    data=file_data,
+                    temp_dir=workspace["downloads_dir"],
+                    timestamp=timestamp,
+                    satellite=satellite,
+                    channel=channel,
                 )
 
                 # Verify results based on scenario

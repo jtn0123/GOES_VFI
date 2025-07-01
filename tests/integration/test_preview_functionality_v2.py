@@ -421,69 +421,71 @@ class TestPreviewFunctionalityOptimizedV2:
             workspace["test_images"][scenario["dataset"]] = image_files
 
             # Create MainWindow with mocked components
-            with patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"):
-                with patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"):
-                    main_window = MainWindow(debug_mode=True)
+            with (
+                patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"),
+                patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"),
+            ):
+                main_window = MainWindow(debug_mode=True)
 
-                    # Setup preview testing scenario
-                    preview_manager.setup_scenario(scenario["test_type"], main_window, test_dir)
+                # Setup preview testing scenario
+                preview_manager.setup_scenario(scenario["test_type"], main_window, test_dir)
 
-                    # Verify initial state
-                    assert main_window.in_dir is None, f"Initial in_dir should be None for {scenario['name']}"
-                    assert hasattr(main_window.main_tab, "first_frame_label"), (
-                        f"Missing first_frame_label for {scenario['name']}"
+                # Verify initial state
+                assert main_window.in_dir is None, f"Initial in_dir should be None for {scenario['name']}"
+                assert hasattr(main_window.main_tab, "first_frame_label"), (
+                    f"Missing first_frame_label for {scenario['name']}"
+                )
+                assert hasattr(main_window.main_tab, "last_frame_label"), (
+                    f"Missing last_frame_label for {scenario['name']}"
+                )
+
+                # Set input directory and trigger preview loading
+                main_window.set_in_dir(test_dir)
+
+                # Process Qt events to allow signals to propagate
+                shared_qt_app.processEvents()
+                QTimer.singleShot(100, lambda: None)
+                shared_qt_app.processEvents()
+
+                # Allow time for preview loading
+                time.sleep(0.1)
+                shared_qt_app.processEvents()
+
+                # Verify directory was set
+                assert main_window.in_dir == test_dir, f"Directory not set correctly for {scenario['name']}"
+
+                if scenario["test_type"] != "error_handling":
+                    # For successful scenarios, verify preview data
+                    preview_manager_obj = main_window.main_view_model.preview_manager
+                    first_data, middle_data, last_data = preview_manager_obj.get_current_frame_data()
+
+                    # Verify data was loaded
+                    assert first_data is not None, f"First frame data missing for {scenario['name']}"
+                    assert middle_data is not None, f"Middle frame data missing for {scenario['name']}"
+                    assert last_data is not None, f"Last frame data missing for {scenario['name']}"
+
+                    # Verify labels have pixmaps
+                    first_pixmap = main_window.main_tab.first_frame_label.pixmap()
+                    last_pixmap = main_window.main_tab.last_frame_label.pixmap()
+
+                    assert first_pixmap is not None, f"First pixmap missing for {scenario['name']}"
+                    assert last_pixmap is not None, f"Last pixmap missing for {scenario['name']}"
+                    assert not first_pixmap.isNull(), f"First pixmap null for {scenario['name']}"
+                    assert not last_pixmap.isNull(), f"Last pixmap null for {scenario['name']}"
+
+                    # Verify processed_image attributes are set
+                    assert hasattr(main_window.main_tab.first_frame_label, "processed_image"), (
+                        f"Missing processed_image attribute for {scenario['name']}"
                     )
-                    assert hasattr(main_window.main_tab, "last_frame_label"), (
-                        f"Missing last_frame_label for {scenario['name']}"
+                    assert hasattr(main_window.main_tab.last_frame_label, "processed_image"), (
+                        f"Missing processed_image attribute for {scenario['name']}"
                     )
 
-                    # Set input directory and trigger preview loading
-                    main_window.set_in_dir(test_dir)
-
-                    # Process Qt events to allow signals to propagate
-                    shared_qt_app.processEvents()
-                    QTimer.singleShot(100, lambda: None)
-                    shared_qt_app.processEvents()
-
-                    # Allow time for preview loading
-                    time.sleep(0.1)
-                    shared_qt_app.processEvents()
-
-                    # Verify directory was set
-                    assert main_window.in_dir == test_dir, f"Directory not set correctly for {scenario['name']}"
-
-                    if scenario["test_type"] != "error_handling":
-                        # For successful scenarios, verify preview data
-                        preview_manager_obj = main_window.main_view_model.preview_manager
-                        first_data, middle_data, last_data = preview_manager_obj.get_current_frame_data()
-
-                        # Verify data was loaded
-                        assert first_data is not None, f"First frame data missing for {scenario['name']}"
-                        assert middle_data is not None, f"Middle frame data missing for {scenario['name']}"
-                        assert last_data is not None, f"Last frame data missing for {scenario['name']}"
-
-                        # Verify labels have pixmaps
-                        first_pixmap = main_window.main_tab.first_frame_label.pixmap()
-                        last_pixmap = main_window.main_tab.last_frame_label.pixmap()
-
-                        assert first_pixmap is not None, f"First pixmap missing for {scenario['name']}"
-                        assert last_pixmap is not None, f"Last pixmap missing for {scenario['name']}"
-                        assert not first_pixmap.isNull(), f"First pixmap null for {scenario['name']}"
-                        assert not last_pixmap.isNull(), f"Last pixmap null for {scenario['name']}"
-
-                        # Verify processed_image attributes are set
-                        assert hasattr(main_window.main_tab.first_frame_label, "processed_image"), (
-                            f"Missing processed_image attribute for {scenario['name']}"
-                        )
-                        assert hasattr(main_window.main_tab.last_frame_label, "processed_image"), (
-                            f"Missing processed_image attribute for {scenario['name']}"
-                        )
-
-                    # Clean up
-                    main_window.close()
+                # Clean up
+                main_window.close()
 
     @staticmethod
-    def test_preview_error_handling_comprehensive(
+    def test_preview_error_handling_comprehensive(  # noqa: C901, PLR0915
         shared_qt_app: QApplication, preview_test_components: dict[str, Any], temp_workspace: dict[str, Any]
     ) -> None:
         """Test comprehensive preview error handling scenarios."""
@@ -528,39 +530,41 @@ class TestPreviewFunctionalityOptimizedV2:
         ]
 
         # Test each error scenario
-        for scenario in error_scenarios:
+        for scenario in error_scenarios:  # noqa: PLR1702
             if scenario["error_type"] == "click_error":
                 # Test click error scenarios
-                with patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"):
-                    with patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"):
-                        main_window = MainWindow(debug_mode=True)
+                with (
+                    patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"),
+                    patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"),
+                ):
+                    main_window = MainWindow(debug_mode=True)
 
-                        # Get label to test
-                        test_label = main_window.main_tab.first_frame_label
+                    # Get label to test
+                    test_label = main_window.main_tab.first_frame_label
 
-                        # Setup click scenario
-                        click_handler.setup_click_scenario(scenario["setup_type"], test_label)
+                    # Setup click scenario
+                    click_handler.setup_click_scenario(scenario["setup_type"], test_label)
 
-                        # Mock error dialog to capture error handling
-                        with patch("PyQt6.QtWidgets.QMessageBox.warning"):
-                            # Simulate click event
-                            if hasattr(test_label, "mouseReleaseEvent"):
-                                # Create mock mouse event
-                                mock_event = MagicMock()
-                                mock_event.button.return_value = 1  # Left button
+                    # Mock error dialog to capture error handling
+                    with patch("PyQt6.QtWidgets.QMessageBox.warning"):
+                        # Simulate click event
+                        if hasattr(test_label, "mouseReleaseEvent"):
+                            # Create mock mouse event
+                            mock_event = MagicMock()
+                            mock_event.button.return_value = 1  # Left button
 
-                                # Trigger click handling
-                                test_label.mouseReleaseEvent(mock_event)
+                            # Trigger click handling
+                            test_label.mouseReleaseEvent(mock_event)
 
-                                # Process events
-                                shared_qt_app.processEvents()
+                            # Process events
+                            shared_qt_app.processEvents()
 
-                                # For invalid scenarios, should show warning
-                                if scenario["setup_type"] in {"invalid_click", "error_click"}:
-                                    # Should have shown warning or handled gracefully
-                                    assert True  # Error was handled without crashing
+                            # For invalid scenarios, should show warning
+                            if scenario["setup_type"] in {"invalid_click", "error_click"}:
+                                # Should have shown warning or handled gracefully
+                                assert True  # Error was handled without crashing
 
-                        main_window.close()
+                    main_window.close()
 
             elif scenario["error_type"] == "loading_error":
                 # Test preview loading error
@@ -569,51 +573,56 @@ class TestPreviewFunctionalityOptimizedV2:
                 # Generate test images
                 image_generator.create_test_sequence(test_dir, 3, "solid")
 
-                with patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"):
-                    with patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"):
-                        main_window = MainWindow(debug_mode=True)
+                with (
+                    patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"),
+                    patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"),
+                ):
+                    main_window = MainWindow(debug_mode=True)
 
-                        # Setup error scenario
-                        preview_manager.setup_scenario(scenario["setup_type"], main_window, test_dir)
+                    # Setup error scenario
+                    preview_manager.setup_scenario(scenario["setup_type"], main_window, test_dir)
 
-                        # Attempt to set directory (should handle error gracefully)
-                        try:
-                            main_window.set_in_dir(test_dir)
-                            shared_qt_app.processEvents()
+                    # Attempt to set directory (should handle error gracefully)
+                    try:
+                        main_window.set_in_dir(test_dir)
+                        shared_qt_app.processEvents()
 
-                            # Error should be handled gracefully
-                            assert main_window.in_dir == test_dir, "Directory should still be set despite preview error"
+                        # Error should be handled gracefully
+                        assert main_window.in_dir == test_dir, "Directory should still be set despite preview error"
 
-                        except Exception as e:  # noqa: BLE001
-                            # If error propagates, verify it's expected
-                            assert "Preview loading failed" in str(e), f"Unexpected error: {e}"
+                    except Exception as e:  # noqa: BLE001
+                        # If error propagates, verify it's expected
+                        if "Preview loading failed" not in str(e):
+                            pytest.fail(f"Unexpected error: {e}")
 
-                        main_window.close()
+                    main_window.close()
 
             elif scenario["error_type"] == "empty_directory":
                 # Test empty directory handling
                 empty_dir = workspace["base_dir"] / "empty_test"
                 empty_dir.mkdir(exist_ok=True)
 
-                with patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"):
-                    with patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"):
-                        main_window = MainWindow(debug_mode=True)
+                with (
+                    patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"),
+                    patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"),
+                ):
+                    main_window = MainWindow(debug_mode=True)
 
-                        # Set empty directory
-                        main_window.set_in_dir(empty_dir)
-                        shared_qt_app.processEvents()
+                    # Set empty directory
+                    main_window.set_in_dir(empty_dir)
+                    shared_qt_app.processEvents()
 
-                        # Should handle empty directory gracefully
-                        assert main_window.in_dir == empty_dir, "Empty directory should be set"
+                    # Should handle empty directory gracefully
+                    assert main_window.in_dir == empty_dir, "Empty directory should be set"
 
-                        # Labels should remain in initial state
-                        main_window.main_tab.first_frame_label.pixmap()
-                        main_window.main_tab.last_frame_label.pixmap()
+                    # Labels should remain in initial state
+                    main_window.main_tab.first_frame_label.pixmap()
+                    main_window.main_tab.last_frame_label.pixmap()
 
-                        # May be None or empty, but shouldn't crash
-                        assert True  # Handled gracefully
+                    # May be None or empty, but shouldn't crash
+                    assert True  # Handled gracefully
 
-                        main_window.close()
+                    main_window.close()
 
             elif scenario["error_type"] == "corrupted_files":
                 # Test corrupted file handling
@@ -630,23 +639,25 @@ class TestPreviewFunctionalityOptimizedV2:
                 for corrupt_file in corrupted_files:
                     corrupt_file.write_bytes(b"corrupted image data")
 
-                with patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"):
-                    with patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"):
-                        main_window = MainWindow(debug_mode=True)
+                with (
+                    patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"),
+                    patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"),
+                ):
+                    main_window = MainWindow(debug_mode=True)
 
-                        # Set directory with corrupted files
-                        try:
-                            main_window.set_in_dir(corrupted_dir)
-                            shared_qt_app.processEvents()
+                    # Set directory with corrupted files
+                    try:
+                        main_window.set_in_dir(corrupted_dir)
+                        shared_qt_app.processEvents()
 
-                            # Should handle corrupted files gracefully
-                            assert main_window.in_dir == corrupted_dir, "Directory with corrupted files should be set"
+                        # Should handle corrupted files gracefully
+                        assert main_window.in_dir == corrupted_dir, "Directory with corrupted files should be set"
 
-                        except Exception:  # noqa: BLE001
-                            # Corrupted files may cause exceptions, but shouldn't crash the app
-                            assert True  # Handled gracefully
+                    except Exception:  # noqa: BLE001
+                        # Corrupted files may cause exceptions, but shouldn't crash the app
+                        assert True  # Handled gracefully
 
-                        main_window.close()
+                    main_window.close()
 
     @staticmethod
     def test_preview_performance_and_memory_management(
@@ -696,32 +707,34 @@ class TestPreviewFunctionalityOptimizedV2:
                 # Generate test images
                 image_generator.create_test_sequence(test_dir, scenario["image_count"], scenario["pattern"])
 
-                with patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"):
-                    with patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"):
-                        main_window = MainWindow(debug_mode=True)
+                with (
+                    patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"),
+                    patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"),
+                ):
+                    main_window = MainWindow(debug_mode=True)
 
-                        # Setup performance scenario
-                        preview_manager.setup_scenario("performance", main_window, test_dir)
+                    # Setup performance scenario
+                    preview_manager.setup_scenario("performance", main_window, test_dir)
 
-                        # Time the preview loading
-                        start_time = time.perf_counter()
+                    # Time the preview loading
+                    start_time = time.perf_counter()
 
-                        main_window.set_in_dir(test_dir)
-                        shared_qt_app.processEvents()
+                    main_window.set_in_dir(test_dir)
+                    shared_qt_app.processEvents()
 
-                        # Allow preview loading to complete
-                        loop = QEventLoop()
-                        QTimer.singleShot(100, loop.quit)
-                        loop.exec()
+                    # Allow preview loading to complete
+                    loop = QEventLoop()
+                    QTimer.singleShot(100, loop.quit)
+                    loop.exec()
 
-                        load_time = time.perf_counter() - start_time
+                    load_time = time.perf_counter() - start_time
 
-                        # Verify performance
-                        assert load_time < scenario["max_load_time_sec"], (
-                            f"Preview loading took {load_time:.2f}s, exceeds limit {scenario['max_load_time_sec']}s for {scenario['name']}"
-                        )
+                    # Verify performance
+                    assert load_time < scenario["max_load_time_sec"], (
+                        f"Preview loading took {load_time:.2f}s, exceeds limit {scenario['max_load_time_sec']}s for {scenario['name']}"
+                    )
 
-                        main_window.close()
+                    main_window.close()
 
             elif scenario["test_type"] == "memory_management":
                 # Test memory usage
@@ -734,36 +747,38 @@ class TestPreviewFunctionalityOptimizedV2:
                 # Generate test images
                 image_generator.create_test_sequence(test_dir, scenario["image_count"], scenario["pattern"])
 
-                with patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"):
-                    with patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"):
-                        main_window = MainWindow(debug_mode=True)
+                with (
+                    patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"),
+                    patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"),
+                ):
+                    main_window = MainWindow(debug_mode=True)
 
-                        # Setup memory management scenario
-                        preview_manager.setup_scenario("memory_management", main_window, test_dir)
+                    # Setup memory management scenario
+                    preview_manager.setup_scenario("memory_management", main_window, test_dir)
 
-                        # Load previews multiple times to test memory management
-                        for _i in range(3):
-                            main_window.set_in_dir(test_dir)
-                            shared_qt_app.processEvents()
-
-                            # Clear and reload
-                            main_window.set_in_dir(None)
-                            shared_qt_app.processEvents()
-
-                        # Final load
+                    # Load previews multiple times to test memory management
+                    for _i in range(3):
                         main_window.set_in_dir(test_dir)
                         shared_qt_app.processEvents()
 
-                        # Check memory usage
-                        final_memory = process.memory_info().rss / 1024 / 1024  # MB
-                        memory_increase = final_memory - initial_memory
+                        # Clear and reload
+                        main_window.set_in_dir(None)
+                        shared_qt_app.processEvents()
 
-                        # Verify memory usage
-                        assert memory_increase < scenario["max_memory_increase_mb"], (
-                            f"Memory increase {memory_increase:.1f}MB exceeds limit {scenario['max_memory_increase_mb']}MB for {scenario['name']}"
-                        )
+                    # Final load
+                    main_window.set_in_dir(test_dir)
+                    shared_qt_app.processEvents()
 
-                        main_window.close()
+                    # Check memory usage
+                    final_memory = process.memory_info().rss / 1024 / 1024  # MB
+                    memory_increase = final_memory - initial_memory
+
+                    # Verify memory usage
+                    assert memory_increase < scenario["max_memory_increase_mb"], (
+                        f"Memory increase {memory_increase:.1f}MB exceeds limit {scenario['max_memory_increase_mb']}MB for {scenario['name']}"
+                    )
+
+                    main_window.close()
 
     @staticmethod
     def test_preview_integration_with_gui_components(
@@ -807,82 +822,86 @@ class TestPreviewFunctionalityOptimizedV2:
             # Generate test images
             image_generator.create_test_sequence(test_dir, 5, "gradient")
 
-            with patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"):
-                with patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"):
-                    main_window = MainWindow(debug_mode=True)
+            with (
+                patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"),
+                patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"),
+            ):
+                main_window = MainWindow(debug_mode=True)
 
-                    # Setup preview scenario
-                    preview_manager.setup_scenario("basic_loading", main_window, test_dir)
+                # Setup preview scenario
+                preview_manager.setup_scenario("basic_loading", main_window, test_dir)
 
-                    if scenario["test_type"] == "file_picker":
-                        # Test integration with file picker
-                        with patch("PyQt6.QtWidgets.QFileDialog.getExistingDirectory") as mock_dialog:
-                            mock_dialog.return_value = str(test_dir)
+                if scenario["test_type"] == "file_picker":
+                    # Test integration with file picker
+                    with patch("PyQt6.QtWidgets.QFileDialog.getExistingDirectory") as mock_dialog:
+                        mock_dialog.return_value = str(test_dir)
 
-                            # Simulate file picker button click
-                            if hasattr(main_window.main_tab, "in_dir_button"):
-                                # Trigger directory selection
-                                main_window.main_tab.in_dir_button.click()
-                                shared_qt_app.processEvents()
+                        # Simulate file picker button click
+                        if hasattr(main_window.main_tab, "in_dir_button"):
+                            # Trigger directory selection
+                            main_window.main_tab.in_dir_button.click()
+                            shared_qt_app.processEvents()
 
-                                # Verify directory was set and previews loaded
-                                assert main_window.in_dir == test_dir, "File picker integration failed"
+                            # Verify directory was set and previews loaded
+                            assert main_window.in_dir == test_dir, "File picker integration failed"
 
-                    elif scenario["test_type"] == "settings":
-                        # Test integration with settings
-                        main_window.set_in_dir(test_dir)
+                elif scenario["test_type"] == "settings":
+                    # Test integration with settings
+                    main_window.set_in_dir(test_dir)
+                    shared_qt_app.processEvents()
+
+                    # Test settings persistence
+                    if hasattr(main_window, "settings"):
+                        # Mock settings save/load
+                        with (
+                            patch.object(main_window.settings, "setValue"),
+                            patch.object(main_window.settings, "value") as mock_get,
+                        ):
+                            mock_get.return_value = str(test_dir)
+
+                            # Should save directory to settings
+                            # This would be triggered by actual implementation
+                            assert True  # Integration working
+
+                elif scenario["test_type"] == "processing":
+                    # Test integration with processing state
+                    main_window.set_in_dir(test_dir)
+                    shared_qt_app.processEvents()
+
+                    # Test processing state changes
+                    if hasattr(main_window, "_set_processing_state"):
+                        # Set processing state
+                        main_window._set_processing_state(True)  # noqa: SLF001, FBT003
                         shared_qt_app.processEvents()
 
-                        # Test settings persistence
-                        if hasattr(main_window, "settings"):
-                            # Mock settings save/load
-                            with patch.object(main_window.settings, "setValue"):
-                                with patch.object(main_window.settings, "value") as mock_get:
-                                    mock_get.return_value = str(test_dir)
+                        # Previews should remain but UI should reflect processing state
+                        assert main_window.is_processing, "Processing state not set"
 
-                                    # Should save directory to settings
-                                    # This would be triggered by actual implementation
-                                    assert True  # Integration working
-
-                    elif scenario["test_type"] == "processing":
-                        # Test integration with processing state
-                        main_window.set_in_dir(test_dir)
+                        # Clear processing state
+                        main_window._set_processing_state(False)  # noqa: SLF001, FBT003
                         shared_qt_app.processEvents()
 
-                        # Test processing state changes
-                        if hasattr(main_window, "_set_processing_state"):
-                            # Set processing state
-                            main_window._set_processing_state(True)  # noqa: SLF001, FBT003
-                            shared_qt_app.processEvents()
+                        assert not main_window.is_processing, "Processing state not cleared"
 
-                            # Previews should remain but UI should reflect processing state
-                            assert main_window.is_processing, "Processing state not set"
+                elif scenario["test_type"] == "tab_switching":
+                    # Test integration with tab switching
+                    main_window.set_in_dir(test_dir)
+                    shared_qt_app.processEvents()
 
-                            # Clear processing state
-                            main_window._set_processing_state(False)  # noqa: SLF001, FBT003
-                            shared_qt_app.processEvents()
+                    # Test tab switching behavior
+                    if hasattr(main_window, "tab_widget") and main_window.tab_widget.count() > 1:
+                        current_tab = main_window.tab_widget.currentIndex()
 
-                            assert not main_window.is_processing, "Processing state not cleared"
-
-                    elif scenario["test_type"] == "tab_switching":
-                        # Test integration with tab switching
-                        main_window.set_in_dir(test_dir)
+                        # Switch to different tab
+                        new_tab = (current_tab + 1) % main_window.tab_widget.count()
+                        main_window.tab_widget.setCurrentIndex(new_tab)
                         shared_qt_app.processEvents()
 
-                        # Test tab switching behavior
-                        if hasattr(main_window, "tab_widget") and main_window.tab_widget.count() > 1:
-                            current_tab = main_window.tab_widget.currentIndex()
+                        # Switch back
+                        main_window.tab_widget.setCurrentIndex(current_tab)
+                        shared_qt_app.processEvents()
 
-                            # Switch to different tab
-                            new_tab = (current_tab + 1) % main_window.tab_widget.count()
-                            main_window.tab_widget.setCurrentIndex(new_tab)
-                            shared_qt_app.processEvents()
+                        # Previews should remain intact
+                        assert main_window.in_dir == test_dir, "Tab switching affected preview state"
 
-                            # Switch back
-                            main_window.tab_widget.setCurrentIndex(current_tab)
-                            shared_qt_app.processEvents()
-
-                            # Previews should remain intact
-                            assert main_window.in_dir == test_dir, "Tab switching affected preview state"
-
-                    main_window.close()
+                main_window.close()

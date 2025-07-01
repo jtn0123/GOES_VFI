@@ -6,10 +6,11 @@ async operation testing, error handling, and concurrent scenarios.
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+import shutil
 import tempfile
-from typing import Never
+from typing import Any, Never
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -45,8 +46,6 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
     def tearDownClass(cls) -> None:
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
-            import shutil
-
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -84,30 +83,30 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         self.mock_reconcile_manager = MagicMock()
         self.mock_reconcile_manager.scan_directory = AsyncMock(return_value=(set(), set()))
         self.mock_reconcile_manager.fetch_missing_files = AsyncMock(return_value={})
-        self.view_model._reconcile_manager = self.mock_reconcile_manager
+        self.view_model._reconcile_manager = self.mock_reconcile_manager  # noqa: SLF001
 
         # Mock thread pool to run tasks directly instead of threading
         self.mock_thread_pool = MagicMock(spec=QThreadPool)
 
         # Override the start method to run tasks directly for testing
-        def direct_execute(runnable) -> None:
+        def direct_execute(runnable: Any) -> None:
             runnable.run()
 
         self.mock_thread_pool.start.side_effect = direct_execute
-        self.view_model._thread_pool = self.mock_thread_pool
+        self.view_model._thread_pool = self.mock_thread_pool  # noqa: SLF001
 
         # Prevent real timer from running in tests
         self.mock_timer = MagicMock()
         self.mock_timer.isRunning.return_value = False
-        self.view_model._disk_space_timer = self.mock_timer
+        self.view_model._disk_space_timer = self.mock_timer  # noqa: SLF001
 
         # Mock disk space checking
         self.mock_get_disk_space = patch.object(self.view_model, "get_disk_space_info", return_value=(10.0, 100.0))
         self.mock_get_disk_space.start()
 
         # Test dates
-        self.start_date = datetime(2023, 6, 15, 0, 0, 0)
-        self.end_date = datetime(2023, 6, 15, 1, 0, 0)
+        self.start_date = datetime(2023, 6, 15, 0, 0, 0, tzinfo=UTC)
+        self.end_date = datetime(2023, 6, 15, 1, 0, 0, tzinfo=UTC)
 
     def tearDown(self) -> None:
         """Tear down test fixtures."""
@@ -124,8 +123,8 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 if hasattr(self.view_model, "_reconcile_manager"):
                     delattr(self.view_model, "_reconcile_manager")
                 self.view_model.cleanup()
-            except Exception:
-                pass
+            except Exception:  # noqa: BLE001, S110
+                pass  # Graceful cleanup on deletion
 
         # Reset mocks to avoid coroutine awaiting warnings
         if hasattr(self, "mock_cache_db"):
@@ -151,15 +150,15 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         vm = EnhancedIntegrityCheckViewModel()
 
         # Verify default values
-        assert vm._satellite == SatellitePattern.GOES_18
-        assert vm._fetch_source == FetchSource.AUTO
-        assert vm._max_concurrent_downloads == 5
-        assert vm._cdn_resolution == TimeIndex.CDN_RES
-        assert vm._aws_profile is None
-        assert vm._s3_region == "us-east-1"
-        assert vm._missing_timestamps == []
-        assert vm._downloaded_count == 0
-        assert vm._failed_count == 0
+        assert vm._satellite == SatellitePattern.GOES_18  # noqa: SLF001
+        assert vm._fetch_source == FetchSource.AUTO  # noqa: SLF001
+        assert vm._max_concurrent_downloads == 5  # noqa: SLF001
+        assert vm._cdn_resolution == TimeIndex.CDN_RES  # noqa: SLF001
+        assert vm._aws_profile is None  # noqa: SLF001
+        assert vm._s3_region == "us-east-1"  # noqa: SLF001
+        assert vm._missing_timestamps == []  # noqa: SLF001
+        assert vm._downloaded_count == 0  # noqa: SLF001
+        assert vm._failed_count == 0  # noqa: SLF001
 
         # Test initialization with custom parameters
         custom_vm = EnhancedIntegrityCheckViewModel(
@@ -169,7 +168,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         )
 
         # Verify custom components are used
-        assert custom_vm._cache_db == self.mock_cache_db
+        assert custom_vm._cache_db == self.mock_cache_db  # noqa: SLF001
 
         # Clean up to avoid warnings
         vm.cleanup()
@@ -275,8 +274,8 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                     used_gb, total_gb = test_vm.get_disk_space_info()
 
                     # Verify values are close to expected
-                    self.assertAlmostEqual(total_gb, expected_total, places=2)
-                    self.assertAlmostEqual(used_gb, expected_used, places=2)
+                    self.assertAlmostEqual(total_gb, expected_total, places=2)  # noqa: PT009
+                    self.assertAlmostEqual(used_gb, expected_used, places=2)  # noqa: PT009
 
                 test_vm.cleanup()
 
@@ -306,7 +305,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         # Should handle error gracefully
         try:
             self.view_model.reset_database()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle database errors gracefully: {e}")
 
     def test_handle_enhanced_scan_progress_comprehensive(self) -> None:
@@ -328,11 +327,11 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 self.view_model.progress_updated = MagicMock()
 
                 # Test progress update
-                self.view_model._handle_enhanced_scan_progress(current, total, message)
+                self.view_model._handle_enhanced_scan_progress(current, total, message)  # noqa: SLF001
 
                 # Verify
-                assert self.view_model._progress_current == current
-                assert self.view_model._progress_total == total
+                assert self.view_model._progress_current == current  # noqa: SLF001
+                assert self.view_model._progress_total == total  # noqa: SLF001
                 self.view_model.status_updated.emit.assert_called_once_with(message)
                 self.view_model.progress_updated.emit.assert_called_once_with(current, total, 0.0)
 
@@ -358,7 +357,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 "name": "Success with no missing items",
                 "result": {
                     "status": "completed",
-                    "existing": {datetime.now() - timedelta(minutes=1)},
+                    "existing": {datetime.now(tz=UTC) - timedelta(minutes=1)},
                     "missing": set(),
                 },
                 "expected_status": ScanStatus.COMPLETED,
@@ -369,8 +368,11 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 "name": "Success with missing items",
                 "result": {
                     "status": "completed",
-                    "existing": {datetime.now() - timedelta(minutes=1)},
-                    "missing": {datetime.now() - timedelta(minutes=2), datetime.now() - timedelta(minutes=3)},
+                    "existing": {datetime.now(tz=UTC) - timedelta(minutes=1)},
+                    "missing": {
+                        datetime.now(tz=UTC) - timedelta(minutes=2),
+                        datetime.now(tz=UTC) - timedelta(minutes=3),
+                    },
                 },
                 "expected_status": ScanStatus.COMPLETED,
                 "expected_success": True,
@@ -387,7 +389,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 self.view_model.scan_completed = MagicMock()
 
                 # Handle completion
-                self.view_model._handle_enhanced_scan_completed(scenario["result"])
+                self.view_model._handle_enhanced_scan_completed(scenario["result"])  # noqa: SLF001
 
                 # Verify status
                 assert self.view_model.status == scenario["expected_status"]
@@ -402,7 +404,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 # Verify missing items handling for success cases
                 if scenario["expected_success"] and scenario["result"]["status"] == "completed":
                     expected_count = len(scenario["result"]["missing"])
-                    assert len(self.view_model._missing_timestamps) == expected_count
+                    assert len(self.view_model._missing_timestamps) == expected_count  # noqa: SLF001
                     self.view_model.missing_items_updated.emit.assert_called_once()
 
     def test_handle_enhanced_download_progress_comprehensive(self) -> None:
@@ -423,11 +425,11 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 self.view_model.download_progress_updated = MagicMock()
 
                 # Test progress update
-                self.view_model._handle_enhanced_download_progress(current, total, message)
+                self.view_model._handle_enhanced_download_progress(current, total, message)  # noqa: SLF001
 
                 # Verify
-                assert self.view_model._progress_current == current
-                assert self.view_model._progress_total == total
+                assert self.view_model._progress_current == current  # noqa: SLF001
+                assert self.view_model._progress_total == total  # noqa: SLF001
                 self.view_model.status_updated.emit.assert_called_once_with(message)
                 self.view_model.download_progress_updated.emit.assert_called_once_with(current, total)
 
@@ -435,11 +437,11 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         """Test download item progress handling with various scenarios."""
         # Setup multiple test items
         items = [
-            EnhancedMissingTimestamp(datetime.now(), "test1.png"),
-            EnhancedMissingTimestamp(datetime.now() - timedelta(minutes=1), "test2.png"),
-            EnhancedMissingTimestamp(datetime.now() - timedelta(minutes=2), "test3.png"),
+            EnhancedMissingTimestamp(datetime.now(tz=UTC), "test1.png"),
+            EnhancedMissingTimestamp(datetime.now(tz=UTC) - timedelta(minutes=1), "test2.png"),
+            EnhancedMissingTimestamp(datetime.now(tz=UTC) - timedelta(minutes=2), "test3.png"),
         ]
-        self.view_model._missing_timestamps = items
+        self.view_model._missing_timestamps = items  # noqa: SLF001
 
         # Mock signals
         self.view_model.download_item_progress = MagicMock()
@@ -447,7 +449,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         # Test progress updates for valid indices
         for i, progress in enumerate([25, 50, 75]):
             with self.subTest(index=i, progress=progress):
-                self.view_model._handle_download_item_progress(i, progress)
+                self.view_model._handle_download_item_progress(i, progress)  # noqa: SLF001
 
                 # Verify item progress updated
                 assert items[i].progress == progress
@@ -459,7 +461,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         invalid_indices = [-1, 3, 10, 100]
         for invalid_index in invalid_indices:
             with self.subTest(invalid_index=invalid_index):
-                self.view_model._handle_download_item_progress(invalid_index, 50)
+                self.view_model._handle_download_item_progress(invalid_index, 50)  # noqa: SLF001
 
                 # Should not emit signal for invalid index
                 self.view_model.download_item_progress.emit.assert_not_called()
@@ -467,14 +469,14 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
     def test_handle_enhanced_download_completed_comprehensive(self) -> None:
         """Test enhanced download completion handling with comprehensive scenarios."""
         # Setup test items
-        timestamp1 = datetime.now()
-        timestamp2 = datetime.now() - timedelta(minutes=1)
-        timestamp3 = datetime.now() - timedelta(minutes=2)
+        timestamp1 = datetime.now(tz=UTC)
+        timestamp2 = datetime.now(tz=UTC) - timedelta(minutes=1)
+        timestamp3 = datetime.now(tz=UTC) - timedelta(minutes=2)
 
         item1 = EnhancedMissingTimestamp(timestamp1, "test1.png")
         item2 = EnhancedMissingTimestamp(timestamp2, "test2.png")
         item3 = EnhancedMissingTimestamp(timestamp3, "test3.png")
-        self.view_model._missing_timestamps = [item1, item2, item3]
+        self.view_model._missing_timestamps = [item1, item2, item3]  # noqa: SLF001
 
         # Mock signals
         self.view_model.status_updated = MagicMock()
@@ -518,21 +520,21 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         for scenario in download_scenarios:
             with self.subTest(scenario=scenario["name"]):
                 # Reset item states
-                for item in self.view_model._missing_timestamps:
+                for item in self.view_model._missing_timestamps:  # noqa: SLF001
                     item.is_downloading = True
                     item.is_downloaded = False
                     item.local_path = None
                     item.download_error = None
 
                 # Handle completion
-                self.view_model._handle_enhanced_download_completed(scenario["results"])
+                self.view_model._handle_enhanced_download_completed(scenario["results"])  # noqa: SLF001
 
                 # Process events
                 QCoreApplication.processEvents()
 
                 # Verify counts
-                assert self.view_model._downloaded_count == scenario["expected_success"]
-                assert self.view_model._failed_count == scenario["expected_failed"]
+                assert self.view_model._downloaded_count == scenario["expected_success"]  # noqa: SLF001
+                assert self.view_model._failed_count == scenario["expected_failed"]  # noqa: SLF001
 
                 # Verify status
                 assert self.view_model.status == ScanStatus.COMPLETED
@@ -542,8 +544,8 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 assert self.view_model.status_message == expected_message
 
                 # Reset for next scenario
-                self.view_model._downloaded_count = 0
-                self.view_model._failed_count = 0
+                self.view_model._downloaded_count = 0  # noqa: SLF001
+                self.view_model._failed_count = 0  # noqa: SLF001
                 self.view_model.download_item_updated.reset_mock()
 
     def test_cleanup_comprehensive(self) -> None:
@@ -559,24 +561,24 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         mock_timer.wait = MagicMock()
 
         vm = EnhancedIntegrityCheckViewModel(cache_db=mock_cache_db)
-        vm._disk_space_timer = mock_timer
+        vm._disk_space_timer = mock_timer  # noqa: SLF001
 
         # Test cleanup with running timer
         with patch.object(vm, "cleanup", wraps=vm.cleanup):
             vm.cleanup()
 
         # Test cleanup with no timer
-        vm._disk_space_timer = None
+        vm._disk_space_timer = None  # noqa: SLF001
         vm.cleanup()
 
         # Test cleanup with exception handling
         mock_timer.terminate.side_effect = Exception("Timer error")
-        vm._disk_space_timer = mock_timer
+        vm._disk_space_timer = mock_timer  # noqa: SLF001
 
         # Should handle errors gracefully
         try:
             vm.cleanup()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle cleanup errors gracefully: {e}")
 
         # Clean up reference to avoid AsyncMock warning
@@ -589,24 +591,24 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         scan_scenarios = [
             {
                 "name": "Basic scan",
-                "start_date": datetime(2023, 6, 15, 0, 0),
-                "end_date": datetime(2023, 6, 15, 1, 0),
+                "start_date": datetime(2023, 6, 15, 0, 0, tzinfo=UTC),
+                "end_date": datetime(2023, 6, 15, 1, 0, tzinfo=UTC),
                 "interval_minutes": 10,
                 "force_rescan": False,
                 "auto_download": False,
             },
             {
                 "name": "Force rescan with auto download",
-                "start_date": datetime(2023, 6, 1, 0, 0),
-                "end_date": datetime(2023, 6, 30, 23, 59),
+                "start_date": datetime(2023, 6, 1, 0, 0, tzinfo=UTC),
+                "end_date": datetime(2023, 6, 30, 23, 59, tzinfo=UTC),
                 "interval_minutes": 15,
                 "force_rescan": True,
                 "auto_download": True,
             },
             {
                 "name": "Short interval scan",
-                "start_date": datetime(2023, 7, 1, 12, 0),
-                "end_date": datetime(2023, 7, 1, 14, 0),
+                "start_date": datetime(2023, 7, 1, 12, 0, tzinfo=UTC),
+                "end_date": datetime(2023, 7, 1, 14, 0, tzinfo=UTC),
                 "interval_minutes": 5,
                 "force_rescan": False,
                 "auto_download": True,
@@ -645,16 +647,16 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         download_scenarios = [
             {
                 "name": "Single item",
-                "missing_items": [EnhancedMissingTimestamp(datetime.now(), "test1.png")],
+                "missing_items": [EnhancedMissingTimestamp(datetime.now(tz=UTC), "test1.png")],
                 "current_status": ScanStatus.COMPLETED,
                 "should_start": True,
             },
             {
                 "name": "Multiple items",
                 "missing_items": [
-                    EnhancedMissingTimestamp(datetime.now(), "test1.png"),
-                    EnhancedMissingTimestamp(datetime.now() - timedelta(minutes=1), "test2.png"),
-                    EnhancedMissingTimestamp(datetime.now() - timedelta(minutes=2), "test3.png"),
+                    EnhancedMissingTimestamp(datetime.now(tz=UTC), "test1.png"),
+                    EnhancedMissingTimestamp(datetime.now(tz=UTC) - timedelta(minutes=1), "test2.png"),
+                    EnhancedMissingTimestamp(datetime.now(tz=UTC) - timedelta(minutes=2), "test3.png"),
                 ],
                 "current_status": ScanStatus.COMPLETED,
                 "should_start": True,
@@ -667,13 +669,13 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
             },
             {
                 "name": "Already downloading",
-                "missing_items": [EnhancedMissingTimestamp(datetime.now(), "test1.png")],
+                "missing_items": [EnhancedMissingTimestamp(datetime.now(tz=UTC), "test1.png")],
                 "current_status": ScanStatus.DOWNLOADING,
                 "should_start": False,
             },
             {
                 "name": "Currently scanning",
-                "missing_items": [EnhancedMissingTimestamp(datetime.now(), "test1.png")],
+                "missing_items": [EnhancedMissingTimestamp(datetime.now(tz=UTC), "test1.png")],
                 "current_status": ScanStatus.SCANNING,
                 "should_start": False,
             },
@@ -688,8 +690,8 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                     return_value=mock_download_task,
                 ) as mock_download_task_class:
                     # Set view model state
-                    self.view_model._missing_timestamps = scenario["missing_items"]
-                    self.view_model._status = scenario["current_status"]
+                    self.view_model._missing_timestamps = scenario["missing_items"]  # noqa: SLF001
+                    self.view_model._status = scenario["current_status"]  # noqa: SLF001
 
                     # Start downloads
                     self.view_model.start_enhanced_downloads()
@@ -726,14 +728,14 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                     results.append(("property_set", new_satellite))
                 elif operation_id % 4 == 2:
                     # Test progress handling
-                    self.view_model._handle_enhanced_scan_progress(operation_id, 100, f"Test {operation_id}")
+                    self.view_model._handle_enhanced_scan_progress(operation_id, 100, f"Test {operation_id}")  # noqa: SLF001
                     results.append(("progress_update", operation_id))
                 else:
                     # Test disk space info
                     used, total = self.view_model.get_disk_space_info()
                     results.append(("disk_space", used, total))
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((operation_id, e))
 
         # Run concurrent operations
@@ -750,23 +752,23 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         # Create large dataset of missing timestamps
         large_dataset = []
         for i in range(1000):
-            timestamp = datetime(2023, 1, 1) + timedelta(hours=i)
+            timestamp = datetime(2023, 1, 1, tzinfo=UTC) + timedelta(hours=i)
             filename = f"goes16_{timestamp.strftime('%Y%m%d_%H%M%S')}_band{(i % 16) + 1}.png"
             item = EnhancedMissingTimestamp(timestamp, filename)
             large_dataset.append(item)
 
         # Set large dataset
-        self.view_model._missing_timestamps = large_dataset
+        self.view_model._missing_timestamps = large_dataset  # noqa: SLF001
 
         # Test operations with large dataset
-        self.view_model._handle_enhanced_scan_progress(500, 1000, "Processing large dataset")
+        self.view_model._handle_enhanced_scan_progress(500, 1000, "Processing large dataset")  # noqa: SLF001
 
         # Test download item progress with large dataset
         for i in range(0, min(100, len(large_dataset)), 10):
-            self.view_model._handle_download_item_progress(i, i % 100)
+            self.view_model._handle_download_item_progress(i, i % 100)  # noqa: SLF001
 
         # Verify dataset is still intact
-        assert len(self.view_model._missing_timestamps) == 1000
+        assert len(self.view_model._missing_timestamps) == 1000  # noqa: SLF001
 
     def test_error_recovery_scenarios(self) -> None:
         """Test error recovery in various failure scenarios."""
@@ -793,33 +795,33 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
         # Test with corrupted missing timestamps
         corrupted_item = MagicMock()
         corrupted_item.timestamp = "invalid_timestamp"
-        self.view_model._missing_timestamps = [corrupted_item]
+        self.view_model._missing_timestamps = [corrupted_item]  # noqa: SLF001
 
         # Should handle corrupted data gracefully
         try:
-            self.view_model._handle_download_item_progress(0, 50)
-        except Exception as e:
+            self.view_model._handle_download_item_progress(0, 50)  # noqa: SLF001
+        except Exception as e:  # noqa: BLE001
             self.fail(f"Should handle corrupted data gracefully: {e}")
 
     def test_edge_cases_and_boundary_conditions(self) -> None:
         """Test edge cases and boundary conditions."""
         # Test with empty datasets
-        self.view_model._missing_timestamps = []
-        self.view_model._handle_enhanced_download_completed({})
+        self.view_model._missing_timestamps = []  # noqa: SLF001
+        self.view_model._handle_enhanced_download_completed({})  # noqa: SLF001
 
         # Test with None values
-        self.view_model._handle_enhanced_scan_progress(None, None, None)  # Should handle gracefully
+        self.view_model._handle_enhanced_scan_progress(None, None, None)  # Should handle gracefully  # noqa: SLF001
 
         # Test with negative values
-        self.view_model._handle_enhanced_scan_progress(-1, 100, "Negative progress")
-        self.view_model._handle_download_item_progress(-1, -50)
+        self.view_model._handle_enhanced_scan_progress(-1, 100, "Negative progress")  # noqa: SLF001
+        self.view_model._handle_download_item_progress(-1, -50)  # noqa: SLF001
 
         # Test with very large numbers
         large_number = 999999999
-        self.view_model._handle_enhanced_scan_progress(large_number, large_number, "Large numbers")
+        self.view_model._handle_enhanced_scan_progress(large_number, large_number, "Large numbers")  # noqa: SLF001
 
         # Test with zero values
-        self.view_model._handle_enhanced_scan_progress(0, 0, "Zero values")
+        self.view_model._handle_enhanced_scan_progress(0, 0, "Zero values")  # noqa: SLF001
 
         # All should complete without errors
         assert True  # If we reach here, edge cases handled correctly
@@ -837,8 +839,6 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
     def tearDownClass(cls) -> None:
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
-            import shutil
-
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -852,25 +852,25 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
 
         # Mock view model with comprehensive behavior
         self.mock_view_model = MagicMock(spec=EnhancedIntegrityCheckViewModel)
-        self.mock_view_model._reconcile_manager = MagicMock()
-        self.mock_view_model._reconcile_manager.scan_directory = AsyncMock()
-        self.mock_view_model._reconcile_manager.scan_directory.return_value = (set(), set())
-        self.mock_view_model._reconcile_manager.fetch_missing_files = AsyncMock(return_value={})
+        self.mock_view_model._reconcile_manager = MagicMock()  # noqa: SLF001
+        self.mock_view_model._reconcile_manager.scan_directory = AsyncMock()  # noqa: SLF001
+        self.mock_view_model._reconcile_manager.scan_directory.return_value = (set(), set())  # noqa: SLF001
+        self.mock_view_model._reconcile_manager.fetch_missing_files = AsyncMock(return_value={})  # noqa: SLF001
 
         # Configure view model attributes
-        self.mock_view_model._start_date = datetime(2023, 6, 15, 0, 0, 0)
-        self.mock_view_model._end_date = datetime(2023, 6, 15, 1, 0, 0)
-        self.mock_view_model._satellite = SatellitePattern.GOES_16
-        self.mock_view_model._interval_minutes = 10
-        self.mock_view_model._base_directory = self.test_dir
+        self.mock_view_model._start_date = datetime(2023, 6, 15, 0, 0, 0, tzinfo=UTC)  # noqa: SLF001
+        self.mock_view_model._end_date = datetime(2023, 6, 15, 1, 0, 0, tzinfo=UTC)  # noqa: SLF001
+        self.mock_view_model._satellite = SatellitePattern.GOES_16  # noqa: SLF001
+        self.mock_view_model._interval_minutes = 10  # noqa: SLF001
+        self.mock_view_model._base_directory = self.test_dir  # noqa: SLF001
         self.mock_view_model.base_directory = self.test_dir
 
         # Add download tracking attributes
-        self.mock_view_model._currently_downloading_items = []
-        self.mock_view_model._downloaded_success_count = 0
-        self.mock_view_model._downloaded_failed_count = 0
-        self.mock_view_model._download_start_time = 0
-        self.mock_view_model._last_download_rate = 0.0
+        self.mock_view_model._currently_downloading_items = []  # noqa: SLF001
+        self.mock_view_model._downloaded_success_count = 0  # noqa: SLF001
+        self.mock_view_model._downloaded_failed_count = 0  # noqa: SLF001
+        self.mock_view_model._download_start_time = 0  # noqa: SLF001
+        self.mock_view_model._last_download_rate = 0.0  # noqa: SLF001
         self.mock_view_model.download_item_updated = MagicMock()
 
         # Create signals
@@ -895,14 +895,21 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
             self.patch_new_event_loop.stop()
 
         # Clean up AsyncMock references
-        if hasattr(self, "mock_view_model") and hasattr(self.mock_view_model, "_reconcile_manager"):
-            if self.mock_view_model._reconcile_manager is not None:
-                if hasattr(self.mock_view_model._reconcile_manager, "scan_directory"):
-                    if hasattr(self.mock_view_model._reconcile_manager.scan_directory, "reset_mock"):
-                        self.mock_view_model._reconcile_manager.scan_directory.reset_mock()
-                if hasattr(self.mock_view_model._reconcile_manager, "fetch_missing_files"):
-                    if hasattr(self.mock_view_model._reconcile_manager.fetch_missing_files, "reset_mock"):
-                        self.mock_view_model._reconcile_manager.fetch_missing_files.reset_mock()
+        if (
+            hasattr(self, "mock_view_model")
+            and hasattr(self.mock_view_model, "_reconcile_manager")
+            and self.mock_view_model._reconcile_manager is not None  # noqa: SLF001
+        ):
+            if (
+                hasattr(self.mock_view_model._reconcile_manager, "scan_directory")  # noqa: SLF001
+                and hasattr(self.mock_view_model._reconcile_manager.scan_directory, "reset_mock")  # noqa: SLF001
+            ):
+                self.mock_view_model._reconcile_manager.scan_directory.reset_mock()  # noqa: SLF001
+            if (
+                hasattr(self.mock_view_model._reconcile_manager, "fetch_missing_files")  # noqa: SLF001
+                and hasattr(self.mock_view_model._reconcile_manager.fetch_missing_files, "reset_mock")  # noqa: SLF001
+            ):
+                self.mock_view_model._reconcile_manager.fetch_missing_files.reset_mock()  # noqa: SLF001
 
         # Clean up signal objects
         if hasattr(self, "scan_task") and hasattr(self.scan_task, "signals"):
@@ -928,7 +935,7 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
 
         expected_result = {"status": "completed", "existing": set(), "missing": set()}
 
-        with patch.object(test_task, "_run_scan", new=AsyncMock(return_value=expected_result)):
+        with patch.object(test_task, "_run_scan", new=AsyncMock(return_value=expected_result)):  # noqa: SIM117
             with patch("asyncio.new_event_loop") as mock_loop_factory:
                 mock_loop = AsyncMock()
                 mock_loop.run_until_complete = MagicMock(return_value=expected_result)
@@ -949,7 +956,7 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
         error_spy_2 = MagicMock()
         test_task_error.signals.error.connect(error_spy_2)
 
-        with patch.object(test_task_error, "_run_scan", side_effect=Exception("Test error")):
+        with patch.object(test_task_error, "_run_scan", side_effect=Exception("Test error")):  # noqa: SIM117
             with patch("asyncio.new_event_loop") as mock_loop_factory:
                 mock_loop = AsyncMock()
                 mock_loop.run_until_complete.side_effect = Exception("Test error")
@@ -975,31 +982,31 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
             },
             {
                 "name": "Only existing files",
-                "existing": {datetime(2023, 6, 15, 0, 0), datetime(2023, 6, 15, 0, 10)},
+                "existing": {datetime(2023, 6, 15, 0, 0, tzinfo=UTC), datetime(2023, 6, 15, 0, 10, tzinfo=UTC)},
                 "missing": set(),
                 "expected_total": 2,
             },
             {
                 "name": "Only missing files",
                 "existing": set(),
-                "missing": {datetime(2023, 6, 15, 0, 0), datetime(2023, 6, 15, 0, 10)},
+                "missing": {datetime(2023, 6, 15, 0, 0, tzinfo=UTC), datetime(2023, 6, 15, 0, 10, tzinfo=UTC)},
                 "expected_total": 2,
             },
             {
                 "name": "Mixed files",
-                "existing": {datetime(2023, 6, 15, 0, 0), datetime(2023, 6, 15, 0, 20)},
-                "missing": {datetime(2023, 6, 15, 0, 10), datetime(2023, 6, 15, 0, 30)},
+                "existing": {datetime(2023, 6, 15, 0, 0, tzinfo=UTC), datetime(2023, 6, 15, 0, 20, tzinfo=UTC)},
+                "missing": {datetime(2023, 6, 15, 0, 10, tzinfo=UTC), datetime(2023, 6, 15, 0, 30, tzinfo=UTC)},
                 "expected_total": 4,
             },
         ]
 
         for scenario in scan_scenarios:
             with self.subTest(scenario=scenario["name"]):
-                self.mock_view_model._reconcile_manager.scan_directory = AsyncMock(
+                self.mock_view_model._reconcile_manager.scan_directory = AsyncMock(  # noqa: SLF001
                     return_value=(scenario["existing"], scenario["missing"])
                 )
 
-                result = await self.scan_task._run_scan()
+                result = await self.scan_task._run_scan()  # noqa: SLF001
 
                 assert result["status"] == "completed"
                 assert result["existing"] == scenario["existing"]
@@ -1007,8 +1014,8 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
                 assert result["total"] == scenario["expected_total"]
 
         # Test cancelled operation
-        self.mock_view_model._reconcile_manager.scan_directory = AsyncMock(side_effect=asyncio.CancelledError())
-        result = await self.scan_task._run_scan()
+        self.mock_view_model._reconcile_manager.scan_directory = AsyncMock(side_effect=asyncio.CancelledError())  # noqa: SLF001
+        result = await self.scan_task._run_scan()  # noqa: SLF001
         assert result["status"] == "cancelled"
 
         # Test various error types
@@ -1021,8 +1028,8 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
 
         for error in error_scenarios:
             with self.subTest(error=type(error).__name__):
-                self.mock_view_model._reconcile_manager.scan_directory = AsyncMock(side_effect=error)
-                result = await self.scan_task._run_scan()
+                self.mock_view_model._reconcile_manager.scan_directory = AsyncMock(side_effect=error)  # noqa: SLF001
+                result = await self.scan_task._run_scan()  # noqa: SLF001
                 assert result["status"] == "error"
                 assert result["error"] == str(error)
 
@@ -1038,10 +1045,10 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
         test_task.signals.download_finished.connect(download_finished_spy)
         test_task.signals.error.connect(error_spy)
 
-        mock_timestamp = datetime(2023, 6, 15, 0, 0, 0)
+        mock_timestamp = datetime(2023, 6, 15, 0, 0, 0, tzinfo=UTC)
         expected_result = {mock_timestamp: Path("/test_path/test.png")}
 
-        with patch.object(test_task, "_run_downloads", new=AsyncMock(return_value=expected_result)):
+        with patch.object(test_task, "_run_downloads", new=AsyncMock(return_value=expected_result)):  # noqa: SIM117
             with patch("asyncio.new_event_loop") as mock_loop_factory:
                 mock_loop = AsyncMock()
                 mock_loop.run_until_complete = MagicMock(return_value=expected_result)
@@ -1062,7 +1069,7 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
         error_spy_2 = MagicMock()
         test_task_error.signals.error.connect(error_spy_2)
 
-        with patch.object(test_task_error, "_run_downloads", side_effect=Exception("Test error")):
+        with patch.object(test_task_error, "_run_downloads", side_effect=Exception("Test error")):  # noqa: SIM117
             with patch("asyncio.new_event_loop") as mock_loop_factory:
                 mock_loop = AsyncMock()
                 mock_loop.run_until_complete.side_effect = Exception("Test error")
@@ -1087,44 +1094,44 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
             },
             {
                 "name": "Single download",
-                "missing_items": [EnhancedMissingTimestamp(datetime(2023, 6, 15, 0, 0), "test1.png")],
-                "mock_result": {datetime(2023, 6, 15, 0, 0): self.test_dir / "test1.png"},
+                "missing_items": [EnhancedMissingTimestamp(datetime(2023, 6, 15, 0, 0, tzinfo=UTC), "test1.png")],
+                "mock_result": {datetime(2023, 6, 15, 0, 0, tzinfo=UTC): self.test_dir / "test1.png"},
             },
             {
                 "name": "Multiple downloads",
                 "missing_items": [
-                    EnhancedMissingTimestamp(datetime(2023, 6, 15, 0, 0), "test1.png"),
-                    EnhancedMissingTimestamp(datetime(2023, 6, 15, 0, 10), "test2.png"),
-                    EnhancedMissingTimestamp(datetime(2023, 6, 15, 0, 20), "test3.png"),
+                    EnhancedMissingTimestamp(datetime(2023, 6, 15, 0, 0, tzinfo=UTC), "test1.png"),
+                    EnhancedMissingTimestamp(datetime(2023, 6, 15, 0, 10, tzinfo=UTC), "test2.png"),
+                    EnhancedMissingTimestamp(datetime(2023, 6, 15, 0, 20, tzinfo=UTC), "test3.png"),
                 ],
                 "mock_result": {
-                    datetime(2023, 6, 15, 0, 0): self.test_dir / "test1.png",
-                    datetime(2023, 6, 15, 0, 10): self.test_dir / "test2.png",
-                    datetime(2023, 6, 15, 0, 20): self.test_dir / "test3.png",
+                    datetime(2023, 6, 15, 0, 0, tzinfo=UTC): self.test_dir / "test1.png",
+                    datetime(2023, 6, 15, 0, 10, tzinfo=UTC): self.test_dir / "test2.png",
+                    datetime(2023, 6, 15, 0, 20, tzinfo=UTC): self.test_dir / "test3.png",
                 },
             },
         ]
 
         for scenario in download_scenarios:
             with self.subTest(scenario=scenario["name"]):
-                self.mock_view_model._missing_timestamps = scenario["missing_items"]
+                self.mock_view_model._missing_timestamps = scenario["missing_items"]  # noqa: SLF001
 
                 expected_result = scenario["mock_result"] if "mock_result" in scenario else scenario["expected_result"]
 
-                async def mock_fetch_missing_files(*args, **kwargs):
-                    return expected_result
+                async def mock_fetch_missing_files(*args: Any, **kwargs: Any) -> Any:  # noqa: RUF029
+                    return expected_result  # Fix B023  # noqa: B023
 
-                self.mock_view_model._reconcile_manager.fetch_missing_files = mock_fetch_missing_files
+                self.mock_view_model._reconcile_manager.fetch_missing_files = mock_fetch_missing_files  # noqa: SLF001
 
-                result = await self.download_task._run_downloads()
+                result = await self.download_task._run_downloads()  # noqa: SLF001
                 assert result == expected_result
 
         # Test cancelled operation
-        async def mock_cancelled(*args, **kwargs) -> Never:
+        async def mock_cancelled(*args: Any, **kwargs: Any) -> Never:  # noqa: RUF029
             raise asyncio.CancelledError
 
-        self.mock_view_model._reconcile_manager.fetch_missing_files = mock_cancelled
-        result = await self.download_task._run_downloads()
+        self.mock_view_model._reconcile_manager.fetch_missing_files = mock_cancelled  # noqa: SLF001
+        result = await self.download_task._run_downloads()  # noqa: SLF001
         assert result == {}
 
         # Test various error types
@@ -1138,11 +1145,12 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
         for error in error_scenarios:
             with self.subTest(error=type(error).__name__):
 
-                async def mock_error(*args, **kwargs) -> Never:
-                    raise error
+                async def mock_error(*args: Any, **kwargs: Any) -> Never:  # noqa: RUF029
+                    captured_error = error  # Fix B023  # noqa: B023
+                    raise captured_error
 
-                self.mock_view_model._reconcile_manager.fetch_missing_files = mock_error
-                result = await self.download_task._run_downloads()
+                self.mock_view_model._reconcile_manager.fetch_missing_files = mock_error  # noqa: SLF001
+                result = await self.download_task._run_downloads()  # noqa: SLF001
                 assert result == {}
 
     def test_concurrent_task_operations(self) -> None:
@@ -1163,7 +1171,7 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
                 # Verify task has signals
                 assert task.signals is not None
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append((task_id, e))
 
         # Create tasks concurrently
@@ -1175,7 +1183,8 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
         assert len(errors) == 0, f"Concurrent task creation errors: {errors}"
         assert len(results) == 20
 
-    def test_signal_handling_comprehensive(self) -> None:
+    @staticmethod
+    def test_signal_handling_comprehensive() -> None:
         """Test comprehensive signal handling scenarios."""
         # Test all signal types
         signals = AsyncTaskSignals()
