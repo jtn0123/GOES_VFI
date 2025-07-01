@@ -468,7 +468,18 @@ def print_final_summary(all_results: list[dict[str, Any]], test_counts: dict[str
                     if counts.get("error", 0) > 0:
                         count_parts.append(f"{counts['error']} errors")
 
-                    count_summary = ", ".join(count_parts) if count_parts else "0 tests"
+                    if count_parts:
+                        count_summary = ", ".join(count_parts)
+                    else:
+                        # No counts available, use status-based fallback
+                        if result["status"] == "FAILED":
+                            count_summary = "1 failed"
+                        elif result["status"] == "ERROR":
+                            count_summary = "1 error"
+                        elif result["status"] == "TIMEOUT":
+                            count_summary = "1 timeout"
+                        else:
+                            count_summary = "1 test"
 
                 print(f"  {result['status']} {result['path']} ({result['duration']:.1f}s) ({count_summary})")  # noqa: T201
 
@@ -599,7 +610,18 @@ def main() -> int:
                         if counts.get("error", 0) > 0:
                             count_parts.append(f"{counts['error']} errors")
 
-                        count_summary = ", ".join(count_parts) if count_parts else "0 tests"
+                        if count_parts:
+                            count_summary = ", ".join(count_parts)
+                        else:
+                            # No counts available, use status-based fallback
+                            if result["status"] == "PASSED":
+                                count_summary = "1 passed"
+                            elif result["status"] == "FAILED":
+                                count_summary = "1 failed"
+                            elif result["status"] == "SKIPPED":
+                                count_summary = "1 skipped"
+                            else:
+                                count_summary = "1 test"
 
                     print(
                         f"[{i:3d}/{len(test_files)}] {status_emoji} {result['path']} ({result['duration']:.1f}s) ({count_summary})"
