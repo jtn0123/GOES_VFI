@@ -315,62 +315,60 @@ def print_status(
     verbose: bool = False,
     dump_logs: bool = False,
     debug_mode: bool = False,
+    quiet: bool = False,
 ):
-    """Print the status of a test."""
+    """Print the status of a test - ACTUALLY PRINT IT."""
     path = result["path"]
     status = result["status"]
-    result["duration"]
+    duration = result["duration"]
     output = result["output"]
     counts = result["counts"]
+
+    # Skip output if in quiet mode
+    if quiet:
+        return None
 
     # Get failed details
     failed_details = result.get("failed_details", [])
 
-    # Determine the overall line color based on the most severe status found
-    if counts.get("failed", 0) > 0 or status == "FAILED":
-        STATUS_COLOR["FAILED"]  # Red if any failures or overall status is FAILED
-    elif counts.get("error", 0) > 0 or status in {"ERROR", "CRASHED"} or "teardown error" in status:
-        STATUS_COLOR["CRASHED"]  # Yellow if any errors, crashed, or teardown error (and no failures)
-    elif status == "PASSED":
-        STATUS_COLOR["PASSED"]  # Green if passed (and no internal failures/errors)
-    elif status == "SKIPPED":
-        STATUS_COLOR["SKIPPED"]  # Blue if skipped (and no internal failures/errors)
+    # Choose color based on status
+    color = STATUS_COLOR.get(status, "")
 
-    # Start colored line output
+    # Build count summary
+    count_summary = ", ".join([
+        f"{counts[k]} {k}" 
+        for k in ["passed", "failed", "skipped", "error"] 
+        if counts.get(k, 0) > 0
+    ])
+    
+    # Print basic status line with color
+    if count_summary:
+        print(f"{color}{status}{RESET} {path} ({duration:.1f}s) [{count_summary}]")
+    else:
+        print(f"{color}{status}{RESET} {path} ({duration:.1f}s)")
 
-    # Print basic status (without internal color)
-
-    # Add counts if available
-    if counts:
-        count_str = [
-            f"{counts[status_name]} {status_name}"
-            for status_name in ["passed", "failed", "skipped", "error"]
-            if counts.get(status_name, 0) > 0
-        ]
-        if count_str:
-            pass
-
-    # Add duration
-
-    # End colored line output
-
-    # Print details of failed/errored tests if any
-    if failed_details:
-        for _detail in failed_details:
-            pass
-
-    # Store log path if generated
-    log_path = None
+    # Print failed test details if verbose
+    if verbose and failed_details:
+        for detail in failed_details:
+            print(f"  ⚠️  {detail}")
 
     # Dump logs to file if requested
+    log_path = None
     if dump_logs and (status in {"FAILED", "ERROR", "CRASHED"} or ("PASSED" in status and "teardown error" in status)):
         log_path = dump_log_to_file(path, output, debug_mode)
+        if log_path:
+            print(f"  📝 Log saved to: {log_path}")
 
     # Print verbose output for failed, error, or crashed tests
     if verbose and (
         status in {"FAILED", "ERROR", "CRASHED"} or counts.get("failed", 0) > 0 or counts.get("error", 0) > 0
     ):
-        pass
+        print(f"  📋 Output preview:")
+        # Show last few lines of output for context
+        output_lines = output.strip().split('\n')
+        for line in output_lines[-5:]:
+            if line.strip():
+                print(f"    {line}")
 
     return log_path
 
@@ -409,6 +407,29 @@ def dump_log_to_file(test_path: str, output: str, debug_mode: bool = False):
     return log_path
 
 
+def print_final_summary(all_results: list[dict[str, Any]], test_counts: dict[str, int], total_duration: float) -> None:
+    """Print final test run summary."""
+    total_files = len(all_results)
+    passed_files = len([r for r in all_results if r["status"] in {"PASSED", "PASSED (with teardown error)", "PASSED (with crash)"}])
+    failed_files = len([r for r in all_results if r["status"] == "FAILED"]) 
+    error_files = len([r for r in all_results if r["status"] == "ERROR"])
+    crashed_files = len([r for r in all_results if r["status"] == "CRASHED"])
+    skipped_files = len([r for r in all_results if r["status"] == "SKIPPED"])
+    
+    print("\n" + "=" * 70)
+    print(f"📊 SUMMARY: {passed_files}/{total_files} files passed ({total_duration:.1f}s total)")
+    print(f"   Tests: {test_counts['passed']} passed, {test_counts['failed']} failed, {test_counts['error']} errors, {test_counts['skipped']} skipped")
+    
+    if failed_files > 0 or error_files > 0 or crashed_files > 0:
+        print(f"\n❌ {failed_files + error_files + crashed_files} files with issues:")
+        for result in all_results:
+            if result["status"] not in {"PASSED", "SKIPPED", "PASSED (with teardown error)", "PASSED (with crash)"}:
+                print(f"   {result['status']} {result['path']}")
+    
+    if skipped_files > 0:
+        print(f"\n⏭️  {skipped_files} files skipped")
+
+
 def main() -> int:
     """Run all tests directly with pytest."""
     import argparse
@@ -430,6 +451,7 @@ def main() -> int:
     )
     parser.add_argument("--skip-problematic", action="store_true", help="Skip known problematic tests")
     parser.add_argument("--debug-mode", action="store_true", help="Run tests with extra debug options")
+    parser.add_argument("--quiet", "-q", action="store_true", help="Minimal output (only summary)")
 
     args = parser.parse_args()
 
@@ -455,8 +477,8 @@ def main() -> int:
         orig_count = len(test_files)
         test_files = [t for t in test_files if t not in known_problematic_tests]
         skipped_count = orig_count - len(test_files)
-        if skipped_count > 0:
-            pass
+        if skipped_count > 0 and not args.quiet:
+            print(f"⚠️  Skipping {skipped_count} known problematic test files")
 
     # Track results
     all_results = []
@@ -466,29 +488,62 @@ def main() -> int:
     if args.debug_mode:
         args.parallel = 1
 
+    # Print startup message
+    if not args.quiet:
+        print(f"🧪 Running {len(test_files)} test files with {args.parallel} workers...")
+        print("=" * 70)
+
     # Run tests in parallel
     with ThreadPoolExecutor(max_workers=args.parallel) as executor:
         future_to_path = {executor.submit(run_test, path, args.debug_mode): path for path in test_files}
 
-        for _i, future in enumerate(as_completed(future_to_path), 1):
+        for i, future in enumerate(as_completed(future_to_path), 1):
             path = future_to_path[future]
             try:
                 result = future.result()
                 all_results.append(result)
-                result["log_path"] = print_status(result, args.verbose, args.dump_logs, args.debug_mode)
+                
+                # Add progress counter and status emoji
+                if not args.quiet:
+                    status_emoji = {
+                        "PASSED": "✅", 
+                        "FAILED": "❌", 
+                        "ERROR": "💥", 
+                        "SKIPPED": "⏭️",
+                        "CRASHED": "💀"
+                    }.get(result["status"], "❓")
+                    
+                    # Calculate ETA if we have multiple results
+                    eta_str = ""
+                    if i > 2 and len(all_results) > 0:
+                        avg_time = sum(r['duration'] for r in all_results) / len(all_results)
+                        remaining = len(test_files) - i
+                        eta_seconds = remaining * avg_time / args.parallel
+                        if eta_seconds < 60:
+                            eta_str = f" (~{eta_seconds:.0f}s remaining)"
+                        else:
+                            eta_str = f" (~{eta_seconds/60:.1f}m remaining)"
+                    
+                    print(f"[{i:3d}/{len(test_files)}] {status_emoji} {result['path']} ({result['duration']:.1f}s){eta_str}")
+                
+                # Call the original print_status for detailed output if needed
+                result["log_path"] = print_status(result, args.verbose, args.dump_logs, args.debug_mode, args.quiet)
             except Exception as e:
-                all_results.append({
+                error_result = {
                     "path": path,
                     "status": "ERROR",
                     "duration": 0,
                     "output": str(e),
                     "counts": {"error": 1},
                     "collected": 0,
-                })
+                }
+                all_results.append(error_result)
+                if not args.quiet:
+                    print(f"[{i:3d}/{len(test_files)}] 💥 {path} (Exception: {str(e)})")
 
     # Calculate summary
-    time.time() - start_time
-    len([
+    total_duration = time.time() - start_time
+    total_passed = len([
         r
         for r in all_results
         if r["status"] == "PASSED"
@@ -497,13 +552,13 @@ def main() -> int:
     ])
     total_failed = len([r for r in all_results if r["status"] == "FAILED"])
     total_error = len([r for r in all_results if r["status"] == "ERROR"])
-    len([r for r in all_results if r["status"] == "SKIPPED"])
+    total_skipped = len([r for r in all_results if r["status"] == "SKIPPED"])
     total_crashed = len([r for r in all_results if r["status"] == "CRASHED"])
+    
     # Count individual tests
     test_counts = {"passed": 0, "failed": 0, "skipped": 0, "error": 0}
 
     for result in all_results:
-        path = result["path"]
         counts = result["counts"]
         collected = result.get("collected", 0)
         passed_count = counts.get("passed", 0)
@@ -520,18 +575,8 @@ def main() -> int:
         for key in test_counts:
             test_counts[key] += counts.get(key, 0)
 
-    # Print summary
-
-    # Print problematic tests
-    problematic = [result for result in all_results if result["status"] not in {"PASSED", "SKIPPED"}]
-
-    if problematic:
-        for result in problematic:
-            path = result["path"]
-            status = result["status"]
-            STATUS_COLOR.get(status, "")
-            if args.dump_logs and "log_path" in result and result["log_path"]:
-                pass
+    # Print final summary
+    print_final_summary(all_results, test_counts, total_duration)
 
     # Return non-zero exit code if there were failures, errors, or crashes
     if args.tolerant:
