@@ -336,11 +336,9 @@ def print_status(
 
     # Build count summary
     count_summary = ", ".join([
-        f"{counts[k]} {k}" 
-        for k in ["passed", "failed", "skipped", "error"] 
-        if counts.get(k, 0) > 0
+        f"{counts[k]} {k}" for k in ["passed", "failed", "skipped", "error"] if counts.get(k, 0) > 0
     ])
-    
+
     # Print basic status line with color
     if count_summary:
         print(f"{color}{status}{RESET} {path} ({duration:.1f}s) [{count_summary}]")
@@ -350,25 +348,24 @@ def print_status(
     # Print failed test details if verbose
     if verbose and failed_details:
         for detail in failed_details:
-            print(f"  ⚠️  {detail}")
+            print(f"  {detail}")
 
     # Dump logs to file if requested
     log_path = None
     if dump_logs and (status in {"FAILED", "ERROR", "CRASHED"} or ("PASSED" in status and "teardown error" in status)):
         log_path = dump_log_to_file(path, output, debug_mode)
         if log_path:
-            print(f"  📝 Log saved to: {log_path}")
+            print(f"  Log saved to: {log_path}")
 
     # Print verbose output for failed, error, or crashed tests
     if verbose and (
         status in {"FAILED", "ERROR", "CRASHED"} or counts.get("failed", 0) > 0 or counts.get("error", 0) > 0
     ):
-        print(f"  📋 Output preview:")
         # Show last few lines of output for context
-        output_lines = output.strip().split('\n')
+        output_lines = output.strip().split("\n")
         for line in output_lines[-5:]:
             if line.strip():
-                print(f"    {line}")
+                print(f"  {line}")
 
     return log_path
 
@@ -411,23 +408,28 @@ def print_final_summary(all_results: list[dict[str, Any]], test_counts: dict[str
     """Print final test run summary."""
     total_files = len(all_results)
     passed_files = len([r for r in all_results if r["status"] in {"PASSED", "PASSED (with teardown error)", "PASSED (with crash)"}])
-    failed_files = len([r for r in all_results if r["status"] == "FAILED"]) 
+    failed_files = len([r for r in all_results if r["status"] == "FAILED"])
     error_files = len([r for r in all_results if r["status"] == "ERROR"])
     crashed_files = len([r for r in all_results if r["status"] == "CRASHED"])
     skipped_files = len([r for r in all_results if r["status"] == "SKIPPED"])
-    
-    print("\n" + "=" * 70)
+
+    print("\n" + "=" * 80)
     print(f"📊 SUMMARY: {passed_files}/{total_files} files passed ({total_duration:.1f}s total)")
-    print(f"   Tests: {test_counts['passed']} passed, {test_counts['failed']} failed, {test_counts['error']} errors, {test_counts['skipped']} skipped")
+    print(f"📊 TESTS: {test_counts['passed']} passed, {test_counts['failed']} failed, {test_counts['skipped']} skipped, {test_counts['error']} errors")
     
     if failed_files > 0 or error_files > 0 or crashed_files > 0:
-        print(f"\n❌ {failed_files + error_files + crashed_files} files with issues:")
+        print(f"\n❌ FAILED FILES ({failed_files + error_files + crashed_files}):")
         for result in all_results:
             if result["status"] not in {"PASSED", "SKIPPED", "PASSED (with teardown error)", "PASSED (with crash)"}:
-                print(f"   {result['status']} {result['path']}")
-    
+                print(f"  {result['status']} {result['path']} ({result['duration']:.1f}s)")
+
     if skipped_files > 0:
-        print(f"\n⏭️  {skipped_files} files skipped")
+        print(f"\n⏭️  SKIPPED FILES ({skipped_files}):")
+        for result in all_results:
+            if result["status"] == "SKIPPED":
+                print(f"  {result['path']}")
+    
+    print("=" * 80)
 
 
 def main() -> int:
@@ -478,7 +480,7 @@ def main() -> int:
         test_files = [t for t in test_files if t not in known_problematic_tests]
         skipped_count = orig_count - len(test_files)
         if skipped_count > 0 and not args.quiet:
-            print(f"⚠️  Skipping {skipped_count} known problematic test files")
+            print(f"⏭️  Skipping {skipped_count} known problematic tests")
 
     # Track results
     all_results = []
@@ -490,8 +492,7 @@ def main() -> int:
 
     # Print startup message
     if not args.quiet:
-        print(f"🧪 Running {len(test_files)} test files with {args.parallel} workers...")
-        print("=" * 70)
+        print(f"🚀 Running {len(test_files)} test files with {args.parallel} parallel workers...")
 
     # Run tests in parallel
     with ThreadPoolExecutor(max_workers=args.parallel) as executor:
@@ -502,30 +503,26 @@ def main() -> int:
             try:
                 result = future.result()
                 all_results.append(result)
-                
+
                 # Add progress counter and status emoji
                 if not args.quiet:
-                    status_emoji = {
-                        "PASSED": "✅", 
-                        "FAILED": "❌", 
-                        "ERROR": "💥", 
-                        "SKIPPED": "⏭️",
-                        "CRASHED": "💀"
-                    }.get(result["status"], "❓")
-                    
+                    status_emoji = {"PASSED": "✅", "FAILED": "❌", "ERROR": "💥", "SKIPPED": "⏭️", "CRASHED": "💀"}.get(
+                        result["status"], "❓"
+                    )
+
                     # Calculate ETA if we have multiple results
                     eta_str = ""
                     if i > 2 and len(all_results) > 0:
-                        avg_time = sum(r['duration'] for r in all_results) / len(all_results)
+                        avg_time = sum(r["duration"] for r in all_results) / len(all_results)
                         remaining = len(test_files) - i
                         eta_seconds = remaining * avg_time / args.parallel
                         if eta_seconds < 60:
                             eta_str = f" (~{eta_seconds:.0f}s remaining)"
                         else:
-                            eta_str = f" (~{eta_seconds/60:.1f}m remaining)"
+                            eta_str = f" (~{eta_seconds / 60:.1f}m remaining)"
                     
                     print(f"[{i:3d}/{len(test_files)}] {status_emoji} {result['path']} ({result['duration']:.1f}s){eta_str}")
-                
+
                 # Call the original print_status for detailed output if needed
                 result["log_path"] = print_status(result, args.verbose, args.dump_logs, args.debug_mode, args.quiet)
             except Exception as e:
@@ -539,7 +536,7 @@ def main() -> int:
                 }
                 all_results.append(error_result)
                 if not args.quiet:
-                    print(f"[{i:3d}/{len(test_files)}] 💥 {path} (Exception: {str(e)})")
+                    print(f"[{i:3d}/{len(test_files)}] ❌ ERROR running {path}: {e}")
 
     # Calculate summary
     total_duration = time.time() - start_time
@@ -554,7 +551,7 @@ def main() -> int:
     total_error = len([r for r in all_results if r["status"] == "ERROR"])
     total_skipped = len([r for r in all_results if r["status"] == "SKIPPED"])
     total_crashed = len([r for r in all_results if r["status"] == "CRASHED"])
-    
+
     # Count individual tests
     test_counts = {"passed": 0, "failed": 0, "skipped": 0, "error": 0}
 
