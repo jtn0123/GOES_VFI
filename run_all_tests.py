@@ -22,16 +22,18 @@ STATUS_COLOR = {
     "SKIPPED": "\033[94m",  # Blue
     "CRASHED": "\033[93m",  # Yellow
     "PASSED (with teardown error)": "\033[93m",  # Yellow
+    "TIMEOUT": "\033[93m",  # Yellow
 }
 RESET = "\033[0m"
 
 
-def run_test(test_path: str, debug_mode: bool = False) -> dict[str, Any]:
+def run_test(test_path: str, debug_mode: bool = False, timeout: int = 30) -> dict[str, Any]:
     """Run a single test file directly with pytest.
 
     Args:
         test_path: Path to the test file
         debug_mode: Whether to run with extra debug options
+        timeout: Timeout in seconds for test execution
 
     Returns:
         Dict with test results
@@ -66,10 +68,24 @@ def run_test(test_path: str, debug_mode: bool = False) -> dict[str, Any]:
             stderr=subprocess.STDOUT,
             text=True,
             check=False,
+            timeout=timeout,
         )
         duration = time.time() - start_time
         output = result.stdout
 
+    except subprocess.TimeoutExpired:
+        duration = time.time() - start_time
+        return {
+            "path": test_path,
+            "status": "TIMEOUT",
+            "duration": duration,
+            "output": f"Test timed out after {timeout} seconds",
+            "counts": {"error": 1},
+            "collected": 0,
+            "failed_details": [],
+        }
+    
+    try:
         # Analyze the output to determine actual test status
         passed = "PASSED" in output
         failed = "FAILED " in output  # Space after FAILED to avoid matching "FAILED to"
@@ -339,11 +355,12 @@ def print_status(
         f"{counts[k]} {k}" for k in ["passed", "failed", "skipped", "error"] if counts.get(k, 0) > 0
     ])
 
-    # Print basic status line with color
-    if count_summary:
-        print(f"{color}{status}{RESET} {path} ({duration:.1f}s) [{count_summary}]")  # noqa: T201
-    else:
-        print(f"{color}{status}{RESET} {path} ({duration:.1f}s)")  # noqa: T201
+    # Print basic status line with color - but only if verbose since progress line handles this
+    if verbose:
+        if count_summary:
+            print(f"{color}{status}{RESET} {path} ({duration:.1f}s) [{count_summary}]")  # noqa: T201
+        else:
+            print(f"{color}{status}{RESET} {path} ({duration:.1f}s)")  # noqa: T201
 
     # Print failed test details if verbose
     if verbose and failed_details:
@@ -412,16 +429,29 @@ def print_final_summary(all_results: list[dict[str, Any]], test_counts: dict[str
     error_files = len([r for r in all_results if r["status"] == "ERROR"])
     crashed_files = len([r for r in all_results if r["status"] == "CRASHED"])
     skipped_files = len([r for r in all_results if r["status"] == "SKIPPED"])
+    timeout_files = len([r for r in all_results if r["status"] == "TIMEOUT"])
 
     print("\n" + "=" * 80)  # noqa: T201
     print(f"📊 SUMMARY: {passed_files}/{total_files} files passed ({total_duration:.1f}s total)")  # noqa: T201
     print(f"📊 TESTS: {test_counts['passed']} passed, {test_counts['failed']} failed, {test_counts['skipped']} skipped, {test_counts['error']} errors")  # noqa: T201
     
-    if failed_files > 0 or error_files > 0 or crashed_files > 0:
-        print(f"\n❌ FAILED FILES ({failed_files + error_files + crashed_files}):")  # noqa: T201
+    if failed_files > 0 or error_files > 0 or crashed_files > 0 or timeout_files > 0:
+        print(f"\n❌ FAILED FILES ({failed_files + error_files + crashed_files + timeout_files}):")  # noqa: T201
         for result in all_results:
             if result["status"] not in {"PASSED", "SKIPPED", "PASSED (with teardown error)", "PASSED (with crash)"}:
-                print(f"  {result['status']} {result['path']} ({result['duration']:.1f}s)")  # noqa: T201
+                counts = result["counts"]
+                count_parts = []
+                if counts.get("passed", 0) > 0:
+                    count_parts.append(f"{counts['passed']} passed")
+                if counts.get("failed", 0) > 0:
+                    count_parts.append(f"{counts['failed']} failed")
+                if counts.get("skipped", 0) > 0:
+                    count_parts.append(f"{counts['skipped']} skipped")
+                if counts.get("error", 0) > 0:
+                    count_parts.append(f"{counts['error']} error")
+                    
+                count_summary = ", ".join(count_parts) if count_parts else "no counts"
+                print(f"  {result['status']} {result['path']} ({result['duration']:.1f}s) ({count_summary})")  # noqa: T201
 
     if skipped_files > 0:
         print(f"\n⏭️  SKIPPED FILES ({skipped_files}):")  # noqa: T201
@@ -454,6 +484,7 @@ def main() -> int:
     parser.add_argument("--skip-problematic", action="store_true", help="Skip known problematic tests")
     parser.add_argument("--debug-mode", action="store_true", help="Run tests with extra debug options")
     parser.add_argument("--quiet", "-q", action="store_true", help="Minimal output (only summary)")
+    parser.add_argument("--timeout", type=int, default=30, help="Timeout for individual tests in seconds (default: 30)")
 
     args = parser.parse_args()
 
@@ -496,32 +527,47 @@ def main() -> int:
 
     # Run tests in parallel
     with ThreadPoolExecutor(max_workers=args.parallel) as executor:
-        future_to_path = {executor.submit(run_test, path, args.debug_mode): path for path in test_files}
+        # Submit all tests and track which future corresponds to which test
+        future_to_info = {}
+        for i, path in enumerate(test_files, 1):
+            future = executor.submit(run_test, path, args.debug_mode, args.timeout)
+            future_to_info[future] = {"path": path, "index": i}
+            
+            # Show which test is starting
+            if not args.quiet:
+                print(f"[{i:3d}/{len(test_files)}] 🔄 Starting {path}...")  # noqa: T201
 
-        for i, future in enumerate(as_completed(future_to_path), 1):
-            path = future_to_path[future]
+        # Process completed tests
+        for future in as_completed(future_to_info):
+            info = future_to_info[future]
+            path = info["path"]
+            i = info["index"]
+            
             try:
                 result = future.result()
                 all_results.append(result)
 
-                # Add progress counter and status emoji
+                # Add progress counter and status emoji with counts
                 if not args.quiet:
-                    status_emoji = {"PASSED": "✅", "FAILED": "❌", "ERROR": "💥", "SKIPPED": "⏭️", "CRASHED": "💀"}.get(
+                    status_emoji = {"PASSED": "✅", "FAILED": "❌", "ERROR": "💥", "SKIPPED": "⏭️", "CRASHED": "💀", "TIMEOUT": "⏰"}.get(
                         result["status"], "❓"
                     )
-
-                    # Calculate ETA if we have multiple results
-                    eta_str = ""
-                    if i > 2 and len(all_results) > 0:
-                        avg_time = sum(r["duration"] for r in all_results) / len(all_results)
-                        remaining = len(test_files) - i
-                        eta_seconds = remaining * avg_time / args.parallel
-                        if eta_seconds < 60:
-                            eta_str = f" (~{eta_seconds:.0f}s remaining)"
-                        else:
-                            eta_str = f" (~{eta_seconds / 60:.1f}m remaining)"
                     
-                    print(f"[{i:3d}/{len(test_files)}] {status_emoji} {result['path']} ({result['duration']:.1f}s){eta_str}")  # noqa: T201
+                    # Build count summary for the status line
+                    counts = result["counts"]
+                    count_parts = []
+                    if counts.get("passed", 0) > 0:
+                        count_parts.append(f"{counts['passed']} passed")
+                    if counts.get("failed", 0) > 0:
+                        count_parts.append(f"{counts['failed']} failed")
+                    if counts.get("skipped", 0) > 0:
+                        count_parts.append(f"{counts['skipped']} skipped")
+                    if counts.get("error", 0) > 0:
+                        count_parts.append(f"{counts['error']} error")
+                    
+                    count_summary = ", ".join(count_parts) if count_parts else "no tests"
+                    
+                    print(f"[{i:3d}/{len(test_files)}] {status_emoji} {result['path']} ({result['duration']:.1f}s) ({count_summary})")  # noqa: T201
 
                 # Call the original print_status for detailed output if needed
                 result["log_path"] = print_status(result, args.verbose, args.dump_logs, args.debug_mode, args.quiet)
@@ -551,6 +597,7 @@ def main() -> int:
     total_error = len([r for r in all_results if r["status"] == "ERROR"])
     total_skipped = len([r for r in all_results if r["status"] == "SKIPPED"])
     total_crashed = len([r for r in all_results if r["status"] == "CRASHED"])
+    total_timeout = len([r for r in all_results if r["status"] == "TIMEOUT"])
 
     # Count individual tests
     test_counts = {"passed": 0, "failed": 0, "skipped": 0, "error": 0}
@@ -575,10 +622,10 @@ def main() -> int:
     # Print final summary
     print_final_summary(all_results, test_counts, total_duration)
 
-    # Return non-zero exit code if there were failures, errors, or crashes
+    # Return non-zero exit code if there were failures, errors, crashes, or timeouts
     if args.tolerant:
         return 0
-    return 0 if total_failed + total_error + total_crashed == 0 else 1
+    return 0 if total_failed + total_error + total_crashed + total_timeout == 0 else 1
 
 
 if __name__ == "__main__":
