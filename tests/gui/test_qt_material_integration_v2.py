@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Qt-Material theme integration testing for GOES_VFI application.
 
 This module tests the integration and functionality of qt-material
@@ -16,8 +15,13 @@ class TestQtMaterialIntegration:
     """Test suite for qt-material theme integration."""
 
     @pytest.fixture()
-    def valid_material_themes(self) -> list[str]:
-        """Provide list of valid Material Design themes."""
+    @staticmethod
+    def valid_material_themes() -> list[str]:
+        """Provide list of valid Material Design themes.
+        
+        Returns:
+            list[str]: List of valid theme names.
+        """
         return [
             "dark_teal",
             "dark_blue",
@@ -31,7 +35,8 @@ class TestQtMaterialIntegration:
         ]
 
     @pytest.fixture()
-    def theme_manager_module(self) -> Any:
+    @staticmethod
+    def theme_manager_module() -> Any:
         """Load the theme manager module dynamically."""
         theme_manager_path = Path("goesvfi/gui_components/theme_manager.py")
 
