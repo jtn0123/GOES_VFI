@@ -8,9 +8,10 @@ This v2 version maintains all test scenarios while optimizing through:
 - Improved mock management with session and client fixtures
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 import tempfile
+from collections.abc import Iterator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
@@ -32,8 +33,13 @@ class TestRemoteStoresOptimizedV2:
     """Optimized tests for CDN and S3 remote stores with full coverage."""
 
     @pytest.fixture(scope="class")
-    def remote_store_test_components(self):
-        """Create shared components for remote store testing."""
+    @staticmethod
+    def remote_store_test_components() -> dict[str, Any]:  # noqa: C901
+        """Create shared components for remote store testing.
+        
+        Returns:
+            dict[str, Any]: Test components including manager.
+        """
 
         # Enhanced Remote Store Test Manager
         class RemoteStoreTestManager:
@@ -43,9 +49,9 @@ class TestRemoteStoresOptimizedV2:
                 # Define test configurations
                 self.test_configs = {
                     "timestamps": [
-                        datetime(2023, 6, 15, 12, 30, 0),
-                        datetime(2024, 1, 1, 0, 0, 0),
-                        datetime(2024, 12, 31, 23, 59, 0),
+                        datetime(2023, 6, 15, 12, 30, 0, tzinfo=UTC),
+                        datetime(2024, 1, 1, 0, 0, 0, tzinfo=UTC),
+                        datetime(2024, 12, 31, 23, 59, 0, tzinfo=UTC),
                     ],
                     "satellites": [SatellitePattern.GOES_16, SatellitePattern.GOES_18],
                     "resolutions": ["1000m", "5000m"],
@@ -73,21 +79,30 @@ class TestRemoteStoresOptimizedV2:
                     "wildcard_handling": self._test_s3_wildcard_handling,
                 }
 
-            def create_cdn_store(self, resolution: str = "1000m", timeout: int = 5) -> CDNStore:
-                """Create a CDN store instance."""
+            @staticmethod
+            def create_cdn_store(resolution: str = "1000m", timeout: int = 5) -> CDNStore:
+                """Create a CDN store instance.
+                
+                Returns:
+                    CDNStore: CDN store instance.
+                """
                 return CDNStore(resolution=resolution, timeout=timeout)
 
-            def create_s3_store(
-                self, aws_profile: str | None = None, aws_region: str = "us-east-1", timeout: int = 30
-            ) -> S3Store:
-                """Create an S3 store instance with mocked diagnostics."""
+            @staticmethod
+            def create_s3_store(aws_profile: str | None = None, aws_region: str = "us-east-1", timeout: int = 30) -> S3Store:
+                """Create an S3 store instance with mocked diagnostics.
+                
+                Returns:
+                    S3Store: S3 store instance.
+                """
                 with (
                     patch("goesvfi.integrity_check.remote.s3_store.get_system_network_info"),
                     patch("goesvfi.integrity_check.remote.s3_store.socket.gethostbyname", return_value="127.0.0.1"),
                 ):
                     return S3Store(aws_profile=aws_profile, aws_region=aws_region, timeout=timeout)
 
-            def create_mock_session(self, for_cdn: bool = True) -> MagicMock:
+            @staticmethod
+            def create_mock_session(*, for_cdn: bool = True) -> MagicMock:
                 """Create a mock session for CDN or S3."""
                 if for_cdn:
                     session_mock = MagicMock(spec=aiohttp.ClientSession)
@@ -96,7 +111,8 @@ class TestRemoteStoresOptimizedV2:
                 # S3 session mock
                 return MagicMock()
 
-            def create_mock_response(self, status: int = 200, content_length: int = 12345) -> MagicMock:
+            @staticmethod
+            def create_mock_response( status: int = 200, content_length: int = 12345) -> MagicMock:
                 """Create a mock HTTP response."""
                 response_mock = MagicMock()
                 response_mock.status = status
@@ -107,7 +123,7 @@ class TestRemoteStoresOptimizedV2:
                 response_mock.content = content_mock
 
                 # Create async generator for content chunks
-                async def mock_content_generator():
+                def mock_content_generator() -> Iterator[bytes]:
                     yield b"test data chunk 1"
                     yield b"test data chunk 2"
 
@@ -115,7 +131,8 @@ class TestRemoteStoresOptimizedV2:
 
                 return response_mock
 
-            def create_context_manager(self, response_or_error) -> MagicMock:
+            @staticmethod
+            def create_context_manager(response_or_error: Any) -> MagicMock:
                 """Create a context manager for async operations."""
                 context_manager = MagicMock()
 
@@ -127,14 +144,14 @@ class TestRemoteStoresOptimizedV2:
                 context_manager.__aexit__ = AsyncMock(return_value=None)
                 return context_manager
 
-            async def _test_cdn_session_management(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+            async def _test_cdn_session_management(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
                 """Test CDN session management scenarios."""
                 results = {}
 
                 if scenario_name == "session_creation":
                     # Test session creation and caching
                     cdn_store = self.create_cdn_store()
-                    cdn_store._session = None
+                    cdn_store._session = None  # noqa: SLF001
 
                     with patch("aiohttp.ClientSession") as mock_client_session:
                         session_mock = MagicMock()
@@ -159,7 +176,7 @@ class TestRemoteStoresOptimizedV2:
                     cdn_store = self.create_cdn_store()
                     session_mock = AsyncMock(spec=aiohttp.ClientSession)
                     session_mock.closed = False
-                    cdn_store._session = session_mock
+                    cdn_store._session = session_mock  # noqa: SLF001
 
                     await cdn_store.close()
 
@@ -170,7 +187,7 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_cdn_existence_checking(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+            async def _test_cdn_existence_checking(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
                 """Test CDN file existence checking scenarios."""
                 results = {}
 
@@ -254,7 +271,7 @@ class TestRemoteStoresOptimizedV2:
                     session_mock.head = MagicMock(return_value=head_context)
                     session_mock.get = MagicMock(return_value=get_context)
 
-                    cdn_store._session = session_mock
+                    cdn_store._session = session_mock  # noqa: SLF001
 
                     with (
                         patch(
@@ -292,7 +309,7 @@ class TestRemoteStoresOptimizedV2:
                         head_context = self.create_context_manager(error)
                         session_mock.head = MagicMock(return_value=head_context)
 
-                        cdn_store._session = session_mock
+                        cdn_store._session = session_mock  # noqa: SLF001
 
                         with patch(
                             "goesvfi.integrity_check.time_index.TimeIndex.to_cdn_url",
@@ -319,7 +336,7 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_cdn_error_handling(self, scenario_name: str, temp_dir: Path, **kwargs) -> dict[str, Any]:
+            async def _test_cdn_error_handling(self, scenario_name: str, temp_dir: Path, **kwargs: Any) -> dict[str, Any]:
                 """Test CDN error handling scenarios."""
                 results = {}
 
@@ -341,13 +358,13 @@ class TestRemoteStoresOptimizedV2:
                         head_context = self.create_context_manager(error)
                         session_mock.head = MagicMock(return_value=head_context)
 
-                        cdn_store._session = session_mock
+                        cdn_store._session = session_mock  # noqa: SLF001
 
                         with patch(
                             "goesvfi.integrity_check.time_index.TimeIndex.to_cdn_url",
                             return_value="https://example.com/test.jpg",
                         ):
-                            with pytest.raises(IOError):
+                            with pytest.raises(IOError, match=".*"):
                                 await cdn_store.download_file(
                                     self.test_configs["timestamps"][0], self.test_configs["satellites"][0], dest_path
                                 )
@@ -359,7 +376,7 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_cdn_edge_cases(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+            async def _test_cdn_edge_cases(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
                 """Test CDN edge cases."""
                 results = {}
 
@@ -381,7 +398,7 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_s3_client_management(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+            async def _test_s3_client_management(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
                 """Test S3 client management scenarios."""
                 results = {}
 
@@ -405,8 +422,8 @@ class TestRemoteStoresOptimizedV2:
                             mock_config = MagicMock()
                             mock_config_class.return_value = mock_config
 
-                            s3_store._s3_client = None
-                            client = await s3_store._get_s3_client()
+                            s3_store._s3_client = None  # noqa: SLF001
+                            client = await s3_store._get_s3_client()  # noqa: SLF001
 
                             assert client == client_mock
                             mock_session_class.assert_called_once_with(region_name="us-east-1")
@@ -424,7 +441,7 @@ class TestRemoteStoresOptimizedV2:
 
                     client_mock = MagicMock()
                     client_mock.__aexit__ = AsyncMock(return_value=None)
-                    s3_store._s3_client = client_mock
+                    s3_store._s3_client = client_mock  # noqa: SLF001
 
                     await s3_store.close()
 
@@ -435,7 +452,7 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_s3_bucket_key_generation(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+            async def _test_s3_bucket_key_generation(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
                 """Test S3 bucket and key generation scenarios."""
                 results = {}
 
@@ -447,7 +464,7 @@ class TestRemoteStoresOptimizedV2:
                     for satellite in self.test_configs["satellites"]:
                         for product_type in ["RadC", "RadF"]:
                             for band in [1, 13]:
-                                bucket, key = s3_store._get_bucket_and_key(
+                                bucket, key = s3_store._get_bucket_and_key(  # noqa: SLF001
                                     self.test_configs["timestamps"][0], satellite, product_type=product_type, band=band
                                 )
 
@@ -471,7 +488,7 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_s3_existence_checking(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+            async def _test_s3_existence_checking(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
                 """Test S3 file existence checking scenarios."""
                 results = {}
 
@@ -600,7 +617,7 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_s3_error_handling(self, scenario_name: str, **kwargs) -> dict[str, Any]:
+            async def _test_s3_error_handling(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
                 """Test S3 error handling scenarios."""
                 results = {}
 
@@ -637,7 +654,7 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_s3_wildcard_handling(self, scenario_name: str, temp_dir: Path, **kwargs) -> dict[str, Any]:
+            async def _test_s3_wildcard_handling(self, scenario_name: str, temp_dir: Path, **kwargs: Any) -> dict[str, Any]:
                 """Test S3 wildcard handling scenarios."""
                 results = {}
 
@@ -645,8 +662,10 @@ class TestRemoteStoresOptimizedV2:
                     # Test wildcard pattern support
                     s3_store = self.create_s3_store()
 
-                    with patch("goesvfi.integrity_check.time_index._USE_EXACT_MATCH_IN_TEST", False):
-                        with patch.object(s3_store, "download", new_callable=AsyncMock) as mock_download:
+                    with (
+                        patch("goesvfi.integrity_check.time_index._USE_EXACT_MATCH_IN_TEST", False),
+                        patch.object(s3_store, "download", new_callable=AsyncMock) as mock_download,
+                    ):
                             dest_path = temp_dir / "test_wildcard.nc"
                             mock_download.return_value = dest_path
 
@@ -665,54 +684,59 @@ class TestRemoteStoresOptimizedV2:
         return {"manager": RemoteStoreTestManager()}
 
     @pytest.fixture()
-    def temp_directory(self):
+    @staticmethod
+    def temp_directory() -> Iterator[Path]:
         """Create temporary directory for each test."""
         temp_dir = tempfile.TemporaryDirectory()
         yield Path(temp_dir.name)
         temp_dir.cleanup()
 
     @pytest.mark.asyncio()
-    async def test_cdn_session_management_scenarios(self, remote_store_test_components) -> None:
+    @staticmethod
+    async def test_cdn_session_management_scenarios( remote_store_test_components: dict[str, Any]) -> None:
         """Test CDN session management scenarios."""
         manager = remote_store_test_components["manager"]
 
         session_scenarios = ["session_creation", "session_close"]
 
         for scenario in session_scenarios:
-            result = await manager._test_cdn_session_management(scenario)
+            result = await manager._test_cdn_session_management(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
     @pytest.mark.asyncio()
-    async def test_cdn_existence_checking_scenarios(self, remote_store_test_components) -> None:
+    @staticmethod
+    async def test_cdn_existence_checking_scenarios( remote_store_test_components: dict[str, Any]) -> None:
         """Test CDN file existence checking scenarios."""
         manager = remote_store_test_components["manager"]
 
         existence_scenarios = ["various_responses", "error_handling"]
 
         for scenario in existence_scenarios:
-            result = await manager._test_cdn_existence_checking(scenario)
+            result = await manager._test_cdn_existence_checking(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
 
             if scenario == "various_responses":
                 assert result["results"]["all_correct"] is True
 
     @pytest.mark.asyncio()
-    async def test_cdn_download_operation_scenarios(self, remote_store_test_components, temp_directory) -> None:
+    @staticmethod
+    async def test_cdn_download_operation_scenarios( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
         """Test CDN download operation scenarios."""
         manager = remote_store_test_components["manager"]
 
         download_scenarios = ["successful_download", "download_errors"]
 
         for scenario in download_scenarios:
-            result = await manager._test_cdn_download_operations(scenario, temp_directory)
+            result = await manager._test_cdn_download_operations(scenario, temp_directory)  # noqa: SLF001
             assert result["scenario"] == scenario
 
             if scenario == "download_errors":
                 assert result["results"]["all_errors_handled"] is True
 
     @pytest.mark.asyncio()
-    async def test_cdn_error_handling_scenarios(self, remote_store_test_components, temp_directory) -> None:
+    @staticmethod
+    async def test_cdn_error_handling_scenarios( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
         """Test CDN error handling scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -721,46 +745,51 @@ class TestRemoteStoresOptimizedV2:
         assert result["results"]["all_handled"] is True
 
     @pytest.mark.asyncio()
-    async def test_cdn_edge_case_scenarios(self, remote_store_test_components) -> None:
+    @staticmethod
+    async def test_cdn_edge_case_scenarios( remote_store_test_components: dict[str, Any]) -> None:
         """Test CDN edge case scenarios."""
         manager = remote_store_test_components["manager"]
 
-        result = await manager._test_cdn_edge_cases("multiple_resolutions")
+        result = await manager._test_cdn_edge_cases("multiple_resolutions")  # noqa: SLF001
         assert result["scenario"] == "multiple_resolutions"
         assert result["results"]["all_resolutions_set"] is True
 
     @pytest.mark.asyncio()
-    async def test_s3_client_management_scenarios(self, remote_store_test_components) -> None:
+    @staticmethod
+    async def test_s3_client_management_scenarios( remote_store_test_components: dict[str, Any]) -> None:
         """Test S3 client management scenarios."""
         manager = remote_store_test_components["manager"]
 
         client_scenarios = ["client_creation", "client_close"]
 
         for scenario in client_scenarios:
-            result = await manager._test_s3_client_management(scenario)
+            result = await manager._test_s3_client_management(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
     @pytest.mark.asyncio()
-    async def test_s3_bucket_key_generation_scenarios(self, remote_store_test_components) -> None:
+    @staticmethod
+    async def test_s3_bucket_key_generation_scenarios( remote_store_test_components: dict[str, Any]) -> None:
         """Test S3 bucket and key generation scenarios."""
         manager = remote_store_test_components["manager"]
 
-        result = await manager._test_s3_bucket_key_generation("bucket_key_patterns")
+        result = await manager._test_s3_bucket_key_generation("bucket_key_patterns")  # noqa: SLF001
         assert result["scenario"] == "bucket_key_patterns"
         assert result["results"]["all_correct"] is True
 
     @pytest.mark.asyncio()
-    async def test_s3_existence_checking_scenarios(self, remote_store_test_components) -> None:
+    @staticmethod
+    async def test_s3_existence_checking_scenarios( remote_store_test_components: dict[str, Any]) -> None:
         """Test S3 file existence checking scenarios."""
         manager = remote_store_test_components["manager"]
 
-        result = await manager._test_s3_existence_checking("various_responses")
+        result = await manager._test_s3_existence_checking("various_responses")  # noqa: SLF001
         assert result["scenario"] == "various_responses"
         assert result["results"]["all_correct"] is True
 
     @pytest.mark.asyncio()
-    async def test_s3_download_operation_scenarios(self, remote_store_test_components, temp_directory) -> None:
+    @staticmethod
+    async def test_s3_download_operation_scenarios( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
         """Test S3 download operation scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -769,16 +798,18 @@ class TestRemoteStoresOptimizedV2:
         assert result["results"]["all_handled_correctly"] is True
 
     @pytest.mark.asyncio()
-    async def test_s3_error_handling_scenarios(self, remote_store_test_components) -> None:
+    @staticmethod
+    async def test_s3_error_handling_scenarios( remote_store_test_components: dict[str, Any]) -> None:
         """Test S3 error handling scenarios."""
         manager = remote_store_test_components["manager"]
 
-        result = await manager._test_s3_error_handling("client_errors")
+        result = await manager._test_s3_error_handling("client_errors")  # noqa: SLF001
         assert result["scenario"] == "client_errors"
         assert result["results"]["all_handled"] is True
 
     @pytest.mark.asyncio()
-    async def test_s3_wildcard_handling_scenarios(self, remote_store_test_components, temp_directory) -> None:
+    @staticmethod
+    async def test_s3_wildcard_handling_scenarios( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
         """Test S3 wildcard handling scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -788,7 +819,8 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.parametrize("resolution", ["1000m", "5000m"])
     @pytest.mark.asyncio()
-    async def test_cdn_resolution_variations(self, remote_store_test_components, resolution) -> None:
+    @staticmethod
+    async def test_cdn_resolution_variations( remote_store_test_components: dict[str, Any], resolution: str) -> None:
         """Test CDN store with different resolutions."""
         manager = remote_store_test_components["manager"]
 
@@ -797,44 +829,47 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.parametrize("satellite", [SatellitePattern.GOES_16, SatellitePattern.GOES_18])
     @pytest.mark.asyncio()
-    async def test_satellite_specific_operations(self, remote_store_test_components, satellite) -> None:
+    @staticmethod
+    async def test_satellite_specific_operations( remote_store_test_components: dict[str, Any], satellite: SatellitePattern) -> None:
         """Test operations with specific satellites."""
         manager = remote_store_test_components["manager"]
 
         # Test S3 bucket mapping
         s3_store = manager.create_s3_store()
-        bucket, _key = s3_store._get_bucket_and_key(manager.test_configs["timestamps"][0], satellite)
+        bucket, _key = s3_store._get_bucket_and_key(manager.test_configs["timestamps"][0], satellite)  # noqa: SLF001
 
         expected_bucket = TimeIndex.S3_BUCKETS[satellite]
         assert bucket == expected_bucket
 
     @pytest.mark.asyncio()
-    async def test_comprehensive_remote_store_validation(self, remote_store_test_components, temp_directory) -> None:
+    @staticmethod
+    async def test_comprehensive_remote_store_validation( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
         """Test comprehensive remote store validation."""
         manager = remote_store_test_components["manager"]
 
         # Test CDN store
-        result = await manager._test_cdn_session_management("session_creation")
+        result = await manager._test_cdn_session_management("session_creation")  # noqa: SLF001
         assert result["results"]["session_created"] is True
 
-        result = await manager._test_cdn_existence_checking("various_responses")
+        result = await manager._test_cdn_existence_checking("various_responses")  # noqa: SLF001
         assert result["results"]["all_correct"] is True
 
         result = await manager._test_cdn_download_operations("successful_download", temp_directory)
         assert result["results"]["download_successful"] is True
 
         # Test S3 store
-        result = await manager._test_s3_client_management("client_creation")
+        result = await manager._test_s3_client_management("client_creation")  # noqa: SLF001
         assert result["results"]["client_created"] is True
 
-        result = await manager._test_s3_bucket_key_generation("bucket_key_patterns")
+        result = await manager._test_s3_bucket_key_generation("bucket_key_patterns")  # noqa: SLF001
         assert result["results"]["all_correct"] is True
 
         result = await manager._test_s3_download_operations("download_scenarios", temp_directory)
         assert result["results"]["all_handled_correctly"] is True
 
     @pytest.mark.asyncio()
-    async def test_remote_stores_integration_validation(self, remote_store_test_components, temp_directory) -> None:
+    @staticmethod
+    async def test_remote_stores_integration_validation( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
         """Test remote stores integration scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -846,7 +881,7 @@ class TestRemoteStoresOptimizedV2:
         for timestamp in manager.test_configs["timestamps"][:2]:
             for satellite in manager.test_configs["satellites"]:
                 # Generate S3 bucket/key
-                bucket, key = s3_store._get_bucket_and_key(timestamp, satellite)
+                bucket, key = s3_store._get_bucket_and_key(timestamp, satellite)  # noqa: SLF001
                 assert bucket is not None
                 assert key is not None
 
