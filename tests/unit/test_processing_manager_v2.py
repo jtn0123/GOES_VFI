@@ -178,7 +178,7 @@ class TestProcessingManagerOptimizedV2:
                     dict[str, Any]: Test results and validation data.
                 """
                 processing_manager = ProcessingManagerTestManager.create_processing_manager()
-                args: dict[str, Any] = self.arg_configs[config_name]
+                args = cast("dict[str, Any]", self.arg_configs[config_name])
 
                 is_valid, error = processing_manager.validate_processing_args(args)
 
@@ -206,7 +206,7 @@ class TestProcessingManagerOptimizedV2:
                 """
                 processing_manager = ProcessingManagerTestManager.create_processing_manager()
                 signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
-                args = self.arg_configs[config_name]
+                args = cast("dict[str, Any]", self.arg_configs[config_name])
 
                 results = {}
 
@@ -227,7 +227,7 @@ class TestProcessingManagerOptimizedV2:
                         # Verify
                         assert result is True
                         assert processing_manager.is_processing is True
-                        assert processing_manager.current_output_path == Path(str(args["output_file"]))
+                        assert processing_manager.current_output_path == Path(str(args.get("output_file", "")))
 
                         # Verify signals were emitted
                         assert signal_tracker["started"] is True
@@ -252,7 +252,7 @@ class TestProcessingManagerOptimizedV2:
                     results["rejected_when_processing"] = True
 
                 elif scenario_name == "start_with_missing_arg":
-                    args_missing: dict[str, Any] = self.arg_configs["missing_output"]
+                    args_missing = cast("dict[str, Any]", self.arg_configs["missing_output"])
 
                     # Try to start processing
                     result = processing_manager.start_processing(args_missing)
@@ -488,7 +488,7 @@ class TestProcessingManagerOptimizedV2:
                     assert processing_manager.is_processing is False
 
                     # Try to start again
-                    args: dict[str, Any] = self.arg_configs["valid_basic"]
+                    args_basic = cast("dict[str, Any]", self.arg_configs["valid_basic"])
                     with (
                         patch("goesvfi.gui_components.processing_manager.VfiWorker"),
                         patch("goesvfi.gui_components.processing_manager.QThread") as mock_qthread,
@@ -496,7 +496,7 @@ class TestProcessingManagerOptimizedV2:
                         mock_thread = MagicMock()
                         mock_qthread.return_value = mock_thread
 
-                        result = processing_manager.start_processing(args)
+                        result = processing_manager.start_processing(args_basic)
                         assert result is True  # Should be able to start again
 
                     results["error_recovery"] = True
@@ -517,7 +517,7 @@ class TestProcessingManagerOptimizedV2:
                 results = {}
 
                 if scenario_name == "complete_lifecycle":
-                    args: dict[str, Any] = self.arg_configs["valid_complete"]
+                    args_complete = cast("dict[str, Any]", self.arg_configs["valid_complete"])
 
                     with (
                         patch("goesvfi.gui_components.processing_manager.VfiWorker") as mock_worker,
@@ -530,7 +530,7 @@ class TestProcessingManagerOptimizedV2:
                         mock_worker.return_value = mock_worker_instance
 
                         # Start processing
-                        start_result = processing_manager.start_processing(args)
+                        start_result = processing_manager.start_processing(args_complete)
                         assert start_result is True
 
                         # Simulate progress
@@ -539,19 +539,19 @@ class TestProcessingManagerOptimizedV2:
                         processing_manager._handle_progress(75, 100, 90.0)  # noqa: SLF001
 
                         # Simulate completion
-                        processing_manager._handle_finished(str(args["output_file"]))  # noqa: SLF001
+                        processing_manager._handle_finished(str(args_complete["output_file"]))  # noqa: SLF001
 
                         # Verify complete workflow
                         assert signal_tracker["started"] is True
                         progress_list = cast("list[Any]", signal_tracker["progress"])
                         assert len(progress_list) == 3
-                        assert signal_tracker["finished"] == str(args["output_file"])
+                        assert signal_tracker["finished"] == str(args_complete["output_file"])
                         assert processing_manager.is_processing is False
 
                         results["complete_workflow"] = True
 
                 elif scenario_name == "workflow_with_error":
-                    args: dict[str, Any] = self.arg_configs["valid_basic"]
+                    args_error = cast("dict[str, Any]", self.arg_configs["valid_basic"])
 
                     with (
                         patch("goesvfi.gui_components.processing_manager.VfiWorker") as mock_worker,
@@ -564,7 +564,7 @@ class TestProcessingManagerOptimizedV2:
                         mock_worker.return_value = mock_worker_instance
 
                         # Start processing
-                        start_result = processing_manager.start_processing(args)
+                        start_result = processing_manager.start_processing(args_error)
                         assert start_result is True
 
                         # Simulate progress
@@ -598,9 +598,9 @@ class TestProcessingManagerOptimizedV2:
 
                     for config_name, expected_valid, _expected_error in self.validation_scenarios:
                         processing_manager = ProcessingManagerTestManager.create_processing_manager()
-                        args: dict[str, Any] = self.arg_configs[config_name]
+                        args_val = cast("dict[str, Any]", self.arg_configs[config_name])
 
-                        is_valid, error = processing_manager.validate_processing_args(args)
+                        is_valid, error = processing_manager.validate_processing_args(args_val)
                         validation_results.append({
                             "config": config_name,
                             "valid": is_valid,
@@ -667,9 +667,9 @@ class TestProcessingManagerOptimizedV2:
         """Test argument validation scenarios."""
         manager = processing_manager_test_components["manager"]
 
-        result = manager._test_validation(
+        result = manager._test_validation(  # noqa: SLF001
             "validation_test", config_name, expected_valid=expected_valid, expected_error=expected_error
-        )  # noqa: SLF001
+        )
         assert result["validation_correct"] is True
         assert result["expected_valid"] == expected_valid
         assert result["got_valid"] == expected_valid
