@@ -42,7 +42,8 @@ from goesvfi.core.configuration import (
 class TestConfigurationSchemas(unittest.TestCase):
     """Test configuration schema classes."""
 
-    def test_processing_config_defaults(self) -> None:
+    @staticmethod
+    def test_processing_config_defaults() -> None:
         """Test ProcessingConfig default values."""
         config = ProcessingConfig()
 
@@ -52,7 +53,8 @@ class TestConfigurationSchemas(unittest.TestCase):
         assert config.cache_size == 100
         assert config.batch_size == 10
 
-    def test_network_config_defaults(self) -> None:
+    @staticmethod
+    def test_network_config_defaults() -> None:
         """Test NetworkConfig default values."""
         config = NetworkConfig()
 
@@ -62,7 +64,8 @@ class TestConfigurationSchemas(unittest.TestCase):
         assert config.retry_delay == 1.0
         assert config.max_connections == 10
 
-    def test_storage_config_defaults(self) -> None:
+    @staticmethod
+    def test_storage_config_defaults() -> None:
         """Test StorageConfig default values."""
         config = StorageConfig()
 
