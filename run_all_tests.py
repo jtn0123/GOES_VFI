@@ -390,49 +390,61 @@ def print_status(
 def extract_error_summary(output: str) -> str:
     """Extract a brief error summary from test output."""
     if not output:
-        return ""
+        return "No output available"
     
     lines = output.strip().split("\n")
     
-    # Look for common error patterns
+    # Look for short test summary info first (most reliable)
+    summary_started = False
+    for i, line in enumerate(lines):
+        if "short test summary info" in line.lower():
+            summary_started = True
+            continue
+        
+        if summary_started and line.strip():
+            if line.startswith("="):
+                break
+            if "FAILED" in line and " - " in line:
+                error_part = line.split(" - ", 1)[1].strip()
+                return error_part[:120] if error_part else "Test failed"
+    
+    # Look for direct assertion errors
+    for line in lines:
+        if "AssertionError:" in line:
+            error_msg = line.split("AssertionError:", 1)[1].strip()
+            if error_msg:
+                return error_msg[:120]
+    
+    # Look for other exception types
+    for line in lines:
+        for exc_type in ["ImportError:", "ModuleNotFoundError:", "ValueError:", "TypeError:", "AttributeError:", "KeyError:"]:
+            if exc_type in line:
+                error_msg = line.split(exc_type, 1)[1].strip()
+                return f"{exc_type.replace(':', '')} - {error_msg[:100]}" if error_msg else exc_type.replace(":", "")
+    
+    # Look for E + space pattern (pytest error markers)
     for line in lines:
         line = line.strip()
-        
-        # Skip empty lines and separators
-        if not line or line.startswith("=") or line.startswith("-"):
-            continue
-            
-        # Look for assertion errors
-        if "AssertionError:" in line:
-            return line.split("AssertionError:", 1)[1].strip()[:100]
-            
-        # Look for other exceptions
-        if any(exc in line for exc in ["Error:", "Exception:", "ValueError:", "TypeError:", "ImportError:", "ModuleNotFoundError:"]):
-            return line[:100]
-            
-        # Look for FAILED lines with reasons
-        if line.startswith("FAILED") and " - " in line:
-            parts = line.split(" - ", 1)
-            if len(parts) > 1:
-                return parts[1][:100]
-                
-        # Look for pytest short summary
-        if "short test summary" in line.lower():
-            # Find the next meaningful line
-            idx = lines.index(line)
-            for i in range(idx + 1, min(idx + 5, len(lines))):
-                summary_line = lines[i].strip()
-                if summary_line and not summary_line.startswith("=") and "FAILED" in summary_line:
-                    if " - " in summary_line:
-                        return summary_line.split(" - ", 1)[1][:100]
+        if line.startswith("E   ") and len(line) > 4:
+            error_msg = line[4:].strip()
+            if error_msg and not error_msg.startswith(("assert", "Assert")):
+                return error_msg[:120]
     
-    # Fallback: look for any line containing "failed" or "error"
-    for line in lines[-10:]:  # Check last 10 lines
-        line = line.strip().lower()
-        if ("failed" in line or "error" in line) and len(line) < 150:
-            return line[:100]
+    # Look for assert statements that failed
+    for line in lines:
+        if line.strip().startswith("assert ") and "failed" in output.lower():
+            return f"Assertion failed: {line.strip()[:100]}"
     
-    return "Check logs for details"
+    # Count failures and errors
+    failed_count = output.count("FAILED")
+    error_count = output.count("ERROR")
+    
+    if failed_count > 0:
+        return f"{failed_count} test(s) failed - check verbose output for details"
+    elif error_count > 0:
+        return f"{error_count} error(s) occurred during testing"
+    
+    return "Test issues detected - run with -v for details"
 
 
 def dump_log_to_file(test_path: str, output: str, debug_mode: bool = False):

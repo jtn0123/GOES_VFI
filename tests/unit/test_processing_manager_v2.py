@@ -22,8 +22,13 @@ class TestProcessingManagerOptimizedV2:
     """Optimized ProcessingManager tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def processing_manager_test_components(self):
-        """Create shared components for ProcessingManager testing."""
+    @staticmethod
+    def processing_manager_test_components() -> dict[str, Any]:  # noqa: C901
+        """Create shared components for ProcessingManager testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing test manager and app components.
+        """
 
         # Ensure QApplication exists
         app = QApplication([]) if not QApplication.instance() else cast("QApplication", QApplication.instance())
@@ -39,34 +44,34 @@ class TestProcessingManagerOptimizedV2:
                 self.arg_configs = {
                     "valid_basic": {
                         "input_dir": str(Path(__file__).parent),
-                        "output_file": "/tmp/test_output.mp4",
+                        "output_file": "/tmp/test_output.mp4",  # noqa: S108
                         "model_location": str(Path(__file__).parent),
                     },
                     "valid_complete": {
                         "input_dir": str(Path(__file__).parent),
-                        "output_file": "/tmp/test_output.mp4",
+                        "output_file": "/tmp/test_output.mp4",  # noqa: S108
                         "model_location": str(Path(__file__).parent),
                         "exp": 2,
                         "fps": 30,
                     },
                     "missing_input": {
-                        "output_file": "/tmp/test_output.mp4",
+                        "output_file": "/tmp/test_output.mp4",  # noqa: S108
                         "model_location": "/path/to/models",
                     },
                     "invalid_input": {
                         "input_dir": "/non/existent/directory",
-                        "output_file": "/tmp/test_output.mp4",
+                        "output_file": "/tmp/test_output.mp4",  # noqa: S108
                         "model_location": str(Path(__file__).parent),
                     },
                     "invalid_fps": {
                         "input_dir": str(Path(__file__).parent),
-                        "output_file": "/tmp/test_output.mp4",
+                        "output_file": "/tmp/test_output.mp4",  # noqa: S108
                         "model_location": str(Path(__file__).parent),
                         "fps": 0,  # Invalid
                     },
                     "invalid_exp": {
                         "input_dir": str(Path(__file__).parent),
-                        "output_file": "/tmp/test_output.mp4",
+                        "output_file": "/tmp/test_output.mp4",  # noqa: S108
                         "model_location": str(Path(__file__).parent),
                         "exp": 0,  # Invalid
                     },
@@ -99,12 +104,22 @@ class TestProcessingManagerOptimizedV2:
                     "performance_validation": self._test_performance_validation,
                 }
 
-            def create_processing_manager(self) -> ProcessingManager:
-                """Create a fresh ProcessingManager instance."""
+            @staticmethod
+            def create_processing_manager() -> ProcessingManager:
+                """Create a fresh ProcessingManager instance.
+
+                Returns:
+                    ProcessingManager: New ProcessingManager instance.
+                """
                 return ProcessingManager()
 
-            def create_signal_tracker(self, processing_manager: ProcessingManager) -> dict[str, bool | list[Any] | Any]:
-                """Create a signal tracker for the processing manager."""
+            @staticmethod
+            def create_signal_tracker(processing_manager: ProcessingManager) -> dict[str, bool | list[Any] | Any]:
+                """Create a signal tracker for the processing manager.
+
+                Returns:
+                    dict[str, bool | list[Any] | Any]: Signal tracking dictionary.
+                """
                 emitted_signals: dict[str, bool | list[Any] | Any] = {
                     "started": False,
                     "progress": [],
@@ -123,7 +138,7 @@ class TestProcessingManagerOptimizedV2:
                         emitted_signals[signal_name] = value
 
                 # Connect signals to track emissions
-                processing_manager.processing_started.connect(lambda: signal_emitted("started", True))
+                processing_manager.processing_started.connect(lambda: signal_emitted("started", value=True))
                 processing_manager.processing_progress.connect(lambda c, t, e: signal_emitted("progress", (c, t, e)))
                 processing_manager.processing_finished.connect(lambda p: signal_emitted("finished", p))
                 processing_manager.processing_error.connect(lambda e: signal_emitted("error", e))
@@ -131,14 +146,20 @@ class TestProcessingManagerOptimizedV2:
 
                 return emitted_signals
 
-            def cleanup_processing_manager(self, processing_manager: ProcessingManager) -> None:
+            @staticmethod
+            def cleanup_processing_manager(processing_manager: ProcessingManager) -> None:
                 """Clean up processing manager state."""
                 if processing_manager.is_processing:
                     processing_manager.stop_processing()
 
-            def _test_initialization(self, scenario_name: str) -> dict[str, Any]:
-                """Test ProcessingManager initialization."""
-                processing_manager = self.create_processing_manager()
+            @staticmethod
+            def _test_initialization(scenario_name: str) -> dict[str, Any]:
+                """Test ProcessingManager initialization.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
+                processing_manager = ProcessingManagerTestManager.create_processing_manager()
 
                 # Test initial state
                 assert processing_manager.is_processing is False
@@ -149,11 +170,15 @@ class TestProcessingManagerOptimizedV2:
                 return {"scenario": scenario_name, "initialization_valid": True, "initial_state_correct": True}
 
             def _test_validation(
-                self, scenario_name: str, config_name: str, expected_valid: bool, expected_error: str
+                self, scenario_name: str, config_name: str, *, expected_valid: bool, expected_error: str
             ) -> dict[str, Any]:
-                """Test argument validation scenarios."""
-                processing_manager = self.create_processing_manager()
-                args = self.arg_configs[config_name]
+                """Test argument validation scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
+                processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                args: dict[str, Any] = self.arg_configs[config_name]
 
                 is_valid, error = processing_manager.validate_processing_args(args)
 
@@ -161,9 +186,9 @@ class TestProcessingManagerOptimizedV2:
                 if expected_error:
                     assert expected_error in error
                 else:
-                    assert error == ""
+                    assert not error
 
-                self.cleanup_processing_manager(processing_manager)
+                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
 
                 return {
                     "scenario": scenario_name,
@@ -174,40 +199,46 @@ class TestProcessingManagerOptimizedV2:
                 }
 
             def _test_processing_lifecycle(self, scenario_name: str, config_name: str) -> dict[str, Any]:
-                """Test processing lifecycle scenarios."""
-                processing_manager = self.create_processing_manager()
-                signal_tracker = self.create_signal_tracker(processing_manager)
+                """Test processing lifecycle scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
+                processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
                 args = self.arg_configs[config_name]
 
                 results = {}
 
                 if scenario_name == "start_success":
-                    with patch("goesvfi.gui_components.processing_manager.VfiWorker") as mock_worker:
-                        with patch("goesvfi.gui_components.processing_manager.QThread") as mock_qthread:
-                            # Setup mocks
-                            mock_thread_instance = MagicMock()
-                            mock_qthread.return_value = mock_thread_instance
-                            mock_worker_instance = MagicMock()
-                            mock_worker.return_value = mock_worker_instance
+                    with (
+                        patch("goesvfi.gui_components.processing_manager.VfiWorker") as mock_worker,
+                        patch("goesvfi.gui_components.processing_manager.QThread") as mock_qthread,
+                    ):
+                        # Setup mocks
+                        mock_thread_instance = MagicMock()
+                        mock_qthread.return_value = mock_thread_instance
+                        mock_worker_instance = MagicMock()
+                        mock_worker.return_value = mock_worker_instance
 
-                            # Start processing
-                            result = processing_manager.start_processing(args)
+                        # Start processing
+                        result = processing_manager.start_processing(args)
 
-                            # Verify
-                            assert result is True
-                            assert processing_manager.is_processing is True
-                            assert processing_manager.current_output_path == Path(args["output_file"])
+                        # Verify
+                        assert result is True
+                        assert processing_manager.is_processing is True
+                        assert processing_manager.current_output_path == Path(str(args["output_file"]))
 
-                            # Verify signals were emitted
-                            assert signal_tracker["started"] is True
-                            state_changes = cast("list[Any]", signal_tracker["state_changed"])
-                            assert isinstance(state_changes, list)
-                            assert True in state_changes
+                        # Verify signals were emitted
+                        assert signal_tracker["started"] is True
+                        state_changes = cast("list[Any]", signal_tracker["state_changed"])
+                        assert isinstance(state_changes, list)
+                        assert True in state_changes
 
-                            # Verify thread was started
-                            mock_thread_instance.start.assert_called_once()
+                        # Verify thread was started
+                        mock_thread_instance.start.assert_called_once()
 
-                            results["start_successful"] = True
+                        results["start_successful"] = True
 
                 elif scenario_name == "start_while_processing":
                     # Set processing state
@@ -221,7 +252,7 @@ class TestProcessingManagerOptimizedV2:
                     results["rejected_when_processing"] = True
 
                 elif scenario_name == "start_with_missing_arg":
-                    args_missing = self.arg_configs["missing_output"]
+                    args_missing: dict[str, Any] = self.arg_configs["missing_output"]
 
                     # Try to start processing
                     result = processing_manager.start_processing(args_missing)
@@ -235,20 +266,25 @@ class TestProcessingManagerOptimizedV2:
 
                     results["missing_arg_handled"] = True
 
-                self.cleanup_processing_manager(processing_manager)
+                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_signal_handling(self, scenario_name: str) -> dict[str, Any]:
-                """Test signal handling scenarios."""
-                processing_manager = self.create_processing_manager()
-                signal_tracker = self.create_signal_tracker(processing_manager)
+            @staticmethod
+            def _test_signal_handling(scenario_name: str) -> dict[str, Any]:
+                """Test signal handling scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
+                processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
 
                 results = {}
 
                 if scenario_name == "progress_handling":
                     # Simulate progress update
-                    processing_manager._handle_progress(50, 100, 60.0)
+                    processing_manager._handle_progress(50, 100, 60.0)  # noqa: SLF001
 
                     # Verify signal was emitted
                     progress_list = cast("list[Any]", signal_tracker["progress"])
@@ -263,11 +299,11 @@ class TestProcessingManagerOptimizedV2:
                     processing_manager.is_processing = True
 
                     # Simulate completion
-                    processing_manager._handle_finished("/tmp/output.mp4")
+                    processing_manager._handle_finished("/tmp/output.mp4")  # noqa: S108, SLF001
 
                     # Verify state
                     assert processing_manager.is_processing is False
-                    assert signal_tracker["finished"] == "/tmp/output.mp4"
+                    assert signal_tracker["finished"] == "/tmp/output.mp4"  # noqa: S108
                     state_changes = cast("list[Any]", signal_tracker["state_changed"])
                     assert isinstance(state_changes, list)
                     assert False in state_changes
@@ -279,7 +315,7 @@ class TestProcessingManagerOptimizedV2:
                     processing_manager.is_processing = True
 
                     # Simulate error
-                    processing_manager._handle_error("Test error message")
+                    processing_manager._handle_error("Test error message")  # noqa: SLF001
 
                     # Verify state
                     assert processing_manager.is_processing is False
@@ -290,14 +326,22 @@ class TestProcessingManagerOptimizedV2:
 
                     results["error_handled"] = True
 
-                self.cleanup_processing_manager(processing_manager)
+                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_error_handling(self, scenario_name: str) -> dict[str, Any]:
-                """Test error handling scenarios."""
-                processing_manager = self.create_processing_manager()
-                signal_tracker = self.create_signal_tracker(processing_manager)
+            @staticmethod
+            def _test_error_handling(scenario_name: str) -> dict[str, Any]:
+                """Test error handling scenarios.
+
+
+                Returns:
+
+                    dict[str, Any]: Test results and validation data.
+
+                """
+                processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
 
                 results = {}
 
@@ -311,7 +355,7 @@ class TestProcessingManagerOptimizedV2:
 
                 for error_type, error_message in error_scenarios:
                     processing_manager.is_processing = True
-                    processing_manager._handle_error(error_message)
+                    processing_manager._handle_error(error_message)  # noqa: SLF001
 
                     # Verify error was handled
                     assert processing_manager.is_processing is False
@@ -321,13 +365,18 @@ class TestProcessingManagerOptimizedV2:
                     signal_tracker["error"] = None
                     results[error_type] = True
 
-                self.cleanup_processing_manager(processing_manager)
+                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_state_management(self, scenario_name: str) -> dict[str, Any]:
-                """Test state management scenarios."""
-                processing_manager = self.create_processing_manager()
+            @staticmethod
+            def _test_state_management(scenario_name: str) -> dict[str, Any]:
+                """Test state management scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
+                processing_manager = ProcessingManagerTestManager.create_processing_manager()
 
                 results = {}
 
@@ -346,7 +395,7 @@ class TestProcessingManagerOptimizedV2:
                     assert processing_manager.get_current_output_path() is None
 
                     # Set output path and processing state
-                    test_path = Path("/tmp/test.mp4")
+                    test_path = Path("/tmp/test.mp4")  # noqa: S108
                     processing_manager.current_output_path = test_path
                     processing_manager.is_processing = True
 
@@ -386,22 +435,26 @@ class TestProcessingManagerOptimizedV2:
                         mock_thread.wait.assert_called_once_with(5000)
                         results["stop_with_thread"] = True
 
-                self.cleanup_processing_manager(processing_manager)
+                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
             def _test_edge_cases(self, scenario_name: str) -> dict[str, Any]:
-                """Test edge cases and boundary conditions."""
-                processing_manager = self.create_processing_manager()
+                """Test edge cases and boundary conditions.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
+                processing_manager = ProcessingManagerTestManager.create_processing_manager()
 
                 results = {}
 
                 if scenario_name == "multiple_progress_updates":
-                    signal_tracker = self.create_signal_tracker(processing_manager)
+                    signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
 
                     # Send multiple progress updates
                     for i in range(10):
-                        processing_manager._handle_progress(i * 10, 100, float(i * 10))
+                        processing_manager._handle_progress(i * 10, 100, float(i * 10))  # noqa: SLF001
 
                     # Verify all were tracked
                     progress_list = cast("list[Any]", signal_tracker["progress"])
@@ -410,12 +463,12 @@ class TestProcessingManagerOptimizedV2:
                     results["multiple_progress"] = True
 
                 elif scenario_name == "rapid_state_changes":
-                    signal_tracker = self.create_signal_tracker(processing_manager)
+                    signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
 
                     # Rapid state changes
                     for i in range(5):
                         processing_manager.is_processing = True
-                        processing_manager._handle_finished(f"/tmp/output_{i}.mp4")
+                        processing_manager._handle_finished(f"/tmp/output_{i}.mp4")  # noqa: S108, SLF001
                         processing_manager.is_processing = False
 
                     # Verify state changes were tracked
@@ -425,104 +478,118 @@ class TestProcessingManagerOptimizedV2:
                     results["rapid_changes"] = True
 
                 elif scenario_name == "error_recovery":
-                    signal_tracker = self.create_signal_tracker(processing_manager)
+                    signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
 
                     # Set error state
                     processing_manager.is_processing = True
-                    processing_manager._handle_error("Test error")
+                    processing_manager._handle_error("Test error")  # noqa: SLF001
 
                     # Verify recovery
                     assert processing_manager.is_processing is False
 
                     # Try to start again
-                    args = self.arg_configs["valid_basic"]
-                    with patch("goesvfi.gui_components.processing_manager.VfiWorker"):
-                        with patch("goesvfi.gui_components.processing_manager.QThread") as mock_qthread:
-                            mock_thread = MagicMock()
-                            mock_qthread.return_value = mock_thread
+                    args: dict[str, Any] = self.arg_configs["valid_basic"]
+                    with (
+                        patch("goesvfi.gui_components.processing_manager.VfiWorker"),
+                        patch("goesvfi.gui_components.processing_manager.QThread") as mock_qthread,
+                    ):
+                        mock_thread = MagicMock()
+                        mock_qthread.return_value = mock_thread
 
-                            result = processing_manager.start_processing(args)
-                            assert result is True  # Should be able to start again
+                        result = processing_manager.start_processing(args)
+                        assert result is True  # Should be able to start again
 
                     results["error_recovery"] = True
 
-                self.cleanup_processing_manager(processing_manager)
+                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
             def _test_integration_workflows(self, scenario_name: str) -> dict[str, Any]:
-                """Test complete integration workflows."""
-                processing_manager = self.create_processing_manager()
-                signal_tracker = self.create_signal_tracker(processing_manager)
+                """Test complete integration workflows.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
+                processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
 
                 results = {}
 
                 if scenario_name == "complete_lifecycle":
-                    args = self.arg_configs["valid_complete"]
+                    args: dict[str, Any] = self.arg_configs["valid_complete"]
 
-                    with patch("goesvfi.gui_components.processing_manager.VfiWorker") as mock_worker:
-                        with patch("goesvfi.gui_components.processing_manager.QThread") as mock_qthread:
-                            # Setup mocks
-                            mock_thread = MagicMock()
-                            mock_qthread.return_value = mock_thread
-                            mock_worker_instance = MagicMock()
-                            mock_worker.return_value = mock_worker_instance
+                    with (
+                        patch("goesvfi.gui_components.processing_manager.VfiWorker") as mock_worker,
+                        patch("goesvfi.gui_components.processing_manager.QThread") as mock_qthread,
+                    ):
+                        # Setup mocks
+                        mock_thread = MagicMock()
+                        mock_qthread.return_value = mock_thread
+                        mock_worker_instance = MagicMock()
+                        mock_worker.return_value = mock_worker_instance
 
-                            # Start processing
-                            start_result = processing_manager.start_processing(args)
-                            assert start_result is True
+                        # Start processing
+                        start_result = processing_manager.start_processing(args)
+                        assert start_result is True
 
-                            # Simulate progress
-                            processing_manager._handle_progress(25, 100, 30.0)
-                            processing_manager._handle_progress(50, 100, 60.0)
-                            processing_manager._handle_progress(75, 100, 90.0)
+                        # Simulate progress
+                        processing_manager._handle_progress(25, 100, 30.0)  # noqa: SLF001
+                        processing_manager._handle_progress(50, 100, 60.0)  # noqa: SLF001
+                        processing_manager._handle_progress(75, 100, 90.0)  # noqa: SLF001
 
-                            # Simulate completion
-                            processing_manager._handle_finished(args["output_file"])
+                        # Simulate completion
+                        processing_manager._handle_finished(str(args["output_file"]))  # noqa: SLF001
 
-                            # Verify complete workflow
-                            assert signal_tracker["started"] is True
-                            progress_list = cast("list[Any]", signal_tracker["progress"])
-                            assert len(progress_list) == 3
-                            assert signal_tracker["finished"] == args["output_file"]
-                            assert processing_manager.is_processing is False
+                        # Verify complete workflow
+                        assert signal_tracker["started"] is True
+                        progress_list = cast("list[Any]", signal_tracker["progress"])
+                        assert len(progress_list) == 3
+                        assert signal_tracker["finished"] == str(args["output_file"])
+                        assert processing_manager.is_processing is False
 
-                            results["complete_workflow"] = True
+                        results["complete_workflow"] = True
 
                 elif scenario_name == "workflow_with_error":
-                    args = self.arg_configs["valid_basic"]
+                    args: dict[str, Any] = self.arg_configs["valid_basic"]
 
-                    with patch("goesvfi.gui_components.processing_manager.VfiWorker") as mock_worker:
-                        with patch("goesvfi.gui_components.processing_manager.QThread") as mock_qthread:
-                            # Setup mocks
-                            mock_thread = MagicMock()
-                            mock_qthread.return_value = mock_thread
-                            mock_worker_instance = MagicMock()
-                            mock_worker.return_value = mock_worker_instance
+                    with (
+                        patch("goesvfi.gui_components.processing_manager.VfiWorker") as mock_worker,
+                        patch("goesvfi.gui_components.processing_manager.QThread") as mock_qthread,
+                    ):
+                        # Setup mocks
+                        mock_thread = MagicMock()
+                        mock_qthread.return_value = mock_thread
+                        mock_worker_instance = MagicMock()
+                        mock_worker.return_value = mock_worker_instance
 
-                            # Start processing
-                            start_result = processing_manager.start_processing(args)
-                            assert start_result is True
+                        # Start processing
+                        start_result = processing_manager.start_processing(args)
+                        assert start_result is True
 
-                            # Simulate progress
-                            processing_manager._handle_progress(30, 100, 45.0)
+                        # Simulate progress
+                        processing_manager._handle_progress(30, 100, 45.0)  # noqa: SLF001
 
-                            # Simulate error
-                            processing_manager._handle_error("Processing failed")
+                        # Simulate error
+                        processing_manager._handle_error("Processing failed")  # noqa: SLF001
 
-                            # Verify error workflow
-                            assert signal_tracker["started"] is True
-                            assert signal_tracker["error"] == "Processing failed"
-                            assert processing_manager.is_processing is False
+                        # Verify error workflow
+                        assert signal_tracker["started"] is True
+                        assert signal_tracker["error"] == "Processing failed"
+                        assert processing_manager.is_processing is False
 
-                            results["error_workflow"] = True
+                        results["error_workflow"] = True
 
-                self.cleanup_processing_manager(processing_manager)
+                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
             def _test_performance_validation(self, scenario_name: str) -> dict[str, Any]:
-                """Test performance and efficiency scenarios."""
+                """Test performance and efficiency scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 results = {}
 
                 if scenario_name == "batch_validation":
@@ -530,8 +597,8 @@ class TestProcessingManagerOptimizedV2:
                     validation_results = []
 
                     for config_name, expected_valid, _expected_error in self.validation_scenarios:
-                        processing_manager = self.create_processing_manager()
-                        args = self.arg_configs[config_name]
+                        processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                        args: dict[str, Any] = self.arg_configs[config_name]
 
                         is_valid, error = processing_manager.validate_processing_args(args)
                         validation_results.append({
@@ -541,21 +608,21 @@ class TestProcessingManagerOptimizedV2:
                             "error": error,
                         })
 
-                        self.cleanup_processing_manager(processing_manager)
+                        ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
 
                     # All validations should match expectations
-                    all_correct = all(result["valid"] == result["expected"] for result in validation_results)
+                    all_correct: bool = all(result["valid"] == result["expected"] for result in validation_results)
 
                     results["batch_validation"] = all_correct
                     results["validation_count"] = len(validation_results)
 
                 elif scenario_name == "stress_testing":
-                    processing_manager = self.create_processing_manager()
-                    signal_tracker = self.create_signal_tracker(processing_manager)
+                    processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                    signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
 
                     # Stress test with many signal emissions
                     for i in range(100):
-                        processing_manager._handle_progress(i, 100, float(i))
+                        processing_manager._handle_progress(i, 100, float(i))  # noqa: SLF001
 
                     # Verify all signals were handled
                     progress_list = cast("list[Any]", signal_tracker["progress"])
@@ -563,17 +630,18 @@ class TestProcessingManagerOptimizedV2:
 
                     results["stress_test"] = True
 
-                    self.cleanup_processing_manager(processing_manager)
+                    ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
         return {"manager": ProcessingManagerTestManager(), "app": app}
 
-    def test_processing_manager_initialization(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_processing_manager_initialization(processing_manager_test_components: dict[str, Any]) -> None:
         """Test ProcessingManager initialization."""
         manager = processing_manager_test_components["manager"]
 
-        result = manager._test_initialization("basic_init")
+        result = manager._test_initialization("basic_init")  # noqa: SLF001
         assert result["initialization_valid"] is True
         assert result["initial_state_correct"] is True
 
@@ -588,18 +656,26 @@ class TestProcessingManagerOptimizedV2:
             ("invalid_exp", False, "Interpolation factor must be at least 1"),
         ],
     )
+    @staticmethod
     def test_argument_validation_scenarios(
-        self, processing_manager_test_components, config_name, expected_valid, expected_error
+        processing_manager_test_components: dict[str, Any],
+        config_name: str,
+        *,
+        expected_valid: bool,
+        expected_error: str,
     ) -> None:
         """Test argument validation scenarios."""
         manager = processing_manager_test_components["manager"]
 
-        result = manager._test_validation("validation_test", config_name, expected_valid, expected_error)
+        result = manager._test_validation(
+            "validation_test", config_name, expected_valid=expected_valid, expected_error=expected_error
+        )  # noqa: SLF001
         assert result["validation_correct"] is True
         assert result["expected_valid"] == expected_valid
         assert result["got_valid"] == expected_valid
 
-    def test_processing_lifecycle_scenarios(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_processing_lifecycle_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
         """Test processing lifecycle scenarios."""
         manager = processing_manager_test_components["manager"]
 
@@ -610,83 +686,91 @@ class TestProcessingManagerOptimizedV2:
         ]
 
         for scenario_name, config_name in lifecycle_scenarios:
-            result = manager._test_processing_lifecycle(scenario_name, config_name)
+            result = manager._test_processing_lifecycle(scenario_name, config_name)  # noqa: SLF001
             assert result["scenario"] == scenario_name
             assert len(result["results"]) > 0
 
-    def test_signal_handling_scenarios(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_signal_handling_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
         """Test signal handling scenarios."""
         manager = processing_manager_test_components["manager"]
 
         signal_scenarios = ["progress_handling", "finished_handling", "error_handling"]
 
         for scenario in signal_scenarios:
-            result = manager._test_signal_handling(scenario)
+            result = manager._test_signal_handling(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_error_handling_comprehensive(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_error_handling_comprehensive(processing_manager_test_components: dict[str, Any]) -> None:
         """Test comprehensive error handling scenarios."""
         manager = processing_manager_test_components["manager"]
 
-        result = manager._test_error_handling("comprehensive_errors")
+        result = manager._test_error_handling("comprehensive_errors")  # noqa: SLF001
         assert result["scenario"] == "comprehensive_errors"
         assert len(result["results"]) == 4  # Should test 4 error types
 
-    def test_state_management_scenarios(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_state_management_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
         """Test state management scenarios."""
         manager = processing_manager_test_components["manager"]
 
         state_scenarios = ["processing_state", "output_path_tracking", "stop_not_running", "stop_running"]
 
         for scenario in state_scenarios:
-            result = manager._test_state_management(scenario)
+            result = manager._test_state_management(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_edge_case_scenarios(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_edge_case_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
         """Test edge cases and boundary conditions."""
         manager = processing_manager_test_components["manager"]
 
         edge_cases = ["multiple_progress_updates", "rapid_state_changes", "error_recovery"]
 
         for scenario in edge_cases:
-            result = manager._test_edge_cases(scenario)
+            result = manager._test_edge_cases(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_integration_workflow_scenarios(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_integration_workflow_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
         """Test complete integration workflows."""
         manager = processing_manager_test_components["manager"]
 
         integration_scenarios = ["complete_lifecycle", "workflow_with_error"]
 
         for scenario in integration_scenarios:
-            result = manager._test_integration_workflows(scenario)
+            result = manager._test_integration_workflows(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_performance_validation_scenarios(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_performance_validation_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
         """Test performance and efficiency scenarios."""
         manager = processing_manager_test_components["manager"]
 
         performance_scenarios = ["batch_validation", "stress_testing"]
 
         for scenario in performance_scenarios:
-            result = manager._test_performance_validation(scenario)
+            result = manager._test_performance_validation(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_processing_manager_comprehensive_validation(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_processing_manager_comprehensive_validation(processing_manager_test_components: dict[str, Any]) -> None:
         """Test comprehensive ProcessingManager validation."""
         manager = processing_manager_test_components["manager"]
 
         # Test all validation scenarios in batch
-        result = manager._test_performance_validation("batch_validation")
+        result = manager._test_performance_validation("batch_validation")  # noqa: SLF001
         assert result["results"]["batch_validation"] is True
         assert result["results"]["validation_count"] == len(manager.validation_scenarios)
 
-    def test_processing_manager_signal_integration(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_processing_manager_signal_integration(processing_manager_test_components: dict[str, Any]) -> None:
         """Test ProcessingManager signal integration."""
         manager = processing_manager_test_components["manager"]
 
@@ -695,14 +779,15 @@ class TestProcessingManagerOptimizedV2:
 
         all_results = []
         for signal_type in signal_types:
-            result = manager._test_signal_handling(signal_type)
+            result = manager._test_signal_handling(signal_type)  # noqa: SLF001
             all_results.append(result)
 
         # All signal types should be handled correctly
         assert len(all_results) == 3
         assert all(len(result["results"]) > 0 for result in all_results)
 
-    def test_processing_manager_state_consistency(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_processing_manager_state_consistency(processing_manager_test_components: dict[str, Any]) -> None:
         """Test ProcessingManager state consistency."""
         manager = processing_manager_test_components["manager"]
 
@@ -711,27 +796,29 @@ class TestProcessingManagerOptimizedV2:
 
         state_results = []
         for scenario in state_scenarios:
-            result = manager._test_state_management(scenario)
+            result = manager._test_state_management(scenario)  # noqa: SLF001
             state_results.append(result)
 
         # All state scenarios should be consistent
         assert len(state_results) == 4
         assert all(len(result["results"]) > 0 for result in state_results)
 
-    def test_processing_manager_error_recovery_validation(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_processing_manager_error_recovery_validation(processing_manager_test_components: dict[str, Any]) -> None:
         """Test ProcessingManager error recovery validation."""
         manager = processing_manager_test_components["manager"]
 
         # Test error recovery workflow
-        result = manager._test_edge_cases("error_recovery")
+        result = manager._test_edge_cases("error_recovery")  # noqa: SLF001
         assert result["scenario"] == "error_recovery"
         assert result["results"]["error_recovery"] is True
 
-    def test_processing_manager_performance_stress(self, processing_manager_test_components) -> None:
+    @staticmethod
+    def test_processing_manager_performance_stress(processing_manager_test_components: dict[str, Any]) -> None:
         """Test ProcessingManager performance under stress."""
         manager = processing_manager_test_components["manager"]
 
         # Test stress scenario
-        result = manager._test_performance_validation("stress_testing")
+        result = manager._test_performance_validation("stress_testing")  # noqa: SLF001
         assert result["scenario"] == "stress_testing"
         assert result["results"]["stress_test"] is True
