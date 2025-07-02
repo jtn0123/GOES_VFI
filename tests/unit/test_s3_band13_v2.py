@@ -8,9 +8,8 @@ This v2 version maintains all test scenarios while optimizing through:
 - Batch testing of different satellite patterns and product types
 """
 
-# !/usr/bin/env python
-
-from datetime import datetime
+from datetime import UTC, datetime
+import re
 from typing import Any
 from unittest.mock import AsyncMock, patch
 
@@ -27,8 +26,13 @@ class TestS3Band13OptimizedV2:
     """Optimized S3 Band 13 tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def s3_band13_test_components(self):
-        """Create shared components for S3 Band 13 testing."""
+    @staticmethod
+    def s3_band13_test_components() -> dict[str, Any]:  # noqa: C901
+        """Create shared components for S3 Band 13 testing.
+
+        Returns:
+            dict[str, Any]: Test components including manager and scenarios.
+        """
 
         # Enhanced S3 Band 13 Test Manager
         class S3Band13TestManager:
@@ -37,7 +41,7 @@ class TestS3Band13OptimizedV2:
             def __init__(self) -> None:
                 # Define test configurations
                 self.test_configs = {
-                    "timestamp": datetime(2023, 6, 15, 12, 0, 0),
+                    "timestamp": datetime(2023, 6, 15, 12, 0, 0, tzinfo=UTC),
                     "satellite_patterns": [SatellitePattern.GOES_16, SatellitePattern.GOES_18],
                     "product_types": ["RadF", "RadC", "RadM"],
                     "band_number": 13,
@@ -79,8 +83,13 @@ class TestS3Band13OptimizedV2:
                     "performance_validation": self._test_performance_validation,
                 }
 
-            def create_mock_s3_store(self, **config) -> AsyncMock:
-                """Create a mock S3Store with specified configuration."""
+            @staticmethod
+            def create_mock_s3_store(**config: Any) -> AsyncMock:
+                """Create a mock S3Store with specified configuration.
+
+                Returns:
+                    AsyncMock: Mock S3Store instance.
+                """
                 mock_store = AsyncMock(spec=S3Store)
                 mock_store.download.return_value = config.get("download_result")
                 mock_store.close.return_value = None
@@ -90,24 +99,38 @@ class TestS3Band13OptimizedV2:
 
                 return mock_store
 
+            @staticmethod
             def create_test_file(
-                self, tmp_path, filename: str, content: bytes = b"mock satellite data for band 13"
+                tmp_path: Any, filename: str, content: bytes = b"mock satellite data for band 13"
             ) -> Any:
-                """Create a test file for download simulation."""
+                """Create a test file for download simulation.
+
+                Returns:
+                    Any: Path to the created test file.
+                """
                 test_file = tmp_path / filename
                 test_file.write_bytes(content)
                 return test_file
 
-            async def mock_list_s3_objects_band13(self, bucket: str, prefix: str, limit: int = 10) -> list[str]:
-                """Mock function to list Band 13 objects."""
+            @staticmethod
+            async def mock_list_s3_objects_band13(bucket: str, prefix: str, limit: int = 10) -> list[str]:  # noqa: ARG004
+                """Mock function to list Band 13 objects.
+
+                Returns:
+                    list[str]: List of mock S3 object keys.
+                """
                 mock_keys = [
                     f"{prefix}OR_ABI-L1b-RadC-M6C13_G16_s20231661201176_e20231661203549_c20231661203597.nc",
                     f"{prefix}OR_ABI-L1b-RadC-M6C13_G16_s20231661202176_e20231661204549_c20231661204597.nc",
                 ]
                 return mock_keys[:limit]
 
-            async def _test_s3_listing(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test S3 listing scenarios."""
+            async def _test_s3_listing(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test S3 listing scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with scenario and results.
+                """
                 results = {}
                 bucket = "noaa-goes16"
                 prefix = "ABI-L1b-RadC/2023/166/12/"
@@ -161,8 +184,14 @@ class TestS3Band13OptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_download_operations(self, scenario_name: str, tmp_path, **kwargs) -> dict[str, Any]:
-                """Test download operations scenarios."""
+            async def _test_download_operations(
+                self, scenario_name: str, tmp_path: Any, **kwargs: Any
+            ) -> dict[str, Any]:  # noqa: PLR0915, PLR0914
+                """Test download operations scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with scenario and results.
+                """
                 results = {}
                 timestamp = self.test_configs["timestamp"]
                 satellite_pattern = SatellitePattern.GOES_16
@@ -170,9 +199,9 @@ class TestS3Band13OptimizedV2:
 
                 if scenario_name == "download_mocked":
                     # Test mocked download
-                    with patch("goesvfi.integrity_check.remote.s3_store.S3Store") as MockS3Store:
+                    with patch("goesvfi.integrity_check.remote.s3_store.S3Store") as mock_s3_store_class:
                         mock_s3_store = self.create_mock_s3_store()
-                        MockS3Store.return_value = mock_s3_store
+                        mock_s3_store_class.return_value = mock_s3_store
 
                         # Create test file
                         test_filename = self.test_filenames["valid_band13"]
@@ -220,8 +249,6 @@ class TestS3Band13OptimizedV2:
                                 dest_path = tmp_path / filename
 
                                 # Extract timestamp and download
-                                import re
-
                                 pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
                                 match = re.search(pattern, filename)
 
@@ -244,6 +271,7 @@ class TestS3Band13OptimizedV2:
                                     hour=file_hour,
                                     minute=file_minute,
                                     second=0,
+                                    tzinfo=UTC,
                                 )
 
                                 # Download using S3Store
@@ -264,7 +292,7 @@ class TestS3Band13OptimizedV2:
 
                 elif scenario_name == "download_error_handling":
                     # Test download error scenarios
-                    with patch("goesvfi.integrity_check.remote.s3_store.S3Store") as MockS3Store:
+                    with patch("goesvfi.integrity_check.remote.s3_store.S3Store") as mock_s3_store_class:
                         # Test different error types
                         error_scenarios = [
                             Exception("Network error"),
@@ -274,7 +302,7 @@ class TestS3Band13OptimizedV2:
 
                         for i, error in enumerate(error_scenarios):
                             mock_s3_store = self.create_mock_s3_store(download_exception=error)
-                            MockS3Store.return_value = mock_s3_store
+                            mock_s3_store_class.return_value = mock_s3_store
 
                             s3_store = S3Store(timeout=60)
 
@@ -294,13 +322,15 @@ class TestS3Band13OptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_filename_parsing(self, scenario_name: str) -> dict[str, Any]:
-                """Test filename parsing scenarios."""
+                """Test filename parsing scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with scenario and results.
+                """
                 results = {}
 
                 if scenario_name == "parse_band13_filename":
                     test_filename = self.test_filenames["valid_band13"]
-
-                    import re
 
                     pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
                     match = re.search(pattern, test_filename)
@@ -323,8 +353,6 @@ class TestS3Band13OptimizedV2:
                 elif scenario_name == "parse_multiple_filenames":
                     # Test parsing multiple filenames
                     test_filenames = self.test_filenames["different_times"]
-
-                    import re
 
                     pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
 
@@ -363,8 +391,6 @@ class TestS3Band13OptimizedV2:
                         ),
                     ]
 
-                    import re
-
                     pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
                     band13_pattern = r"C13"
 
@@ -373,7 +399,8 @@ class TestS3Band13OptimizedV2:
                         band_match = re.search(band13_pattern, filename)
 
                         if should_match:
-                            assert match and band_match, f"{description}: Should match both patterns"
+                            assert match, f"{description}: Should match timestamp pattern"
+                            assert band_match, f"{description}: Should match band 13 pattern"
                         else:
                             # At least one pattern should fail
                             assert not (match and band_match), f"{description}: Should not match both patterns"
@@ -383,7 +410,11 @@ class TestS3Band13OptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_bucket_patterns(self, scenario_name: str) -> dict[str, Any]:
-                """Test bucket pattern scenarios."""
+                """Test bucket pattern scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with scenario and results.
+                """
                 results = {}
 
                 if scenario_name == "satellite_bucket_mapping":
@@ -419,7 +450,11 @@ class TestS3Band13OptimizedV2:
                 return {"scenario": scenario_name, "results": results}
 
             def _test_product_type_validation(self, scenario_name: str) -> dict[str, Any]:
-                """Test product type validation scenarios."""
+                """Test product type validation scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with scenario and results.
+                """
                 results = {}
                 timestamp = self.test_configs["timestamp"]
 
@@ -469,8 +504,13 @@ class TestS3Band13OptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            def _test_timestamp_extraction(self, scenario_name: str) -> dict[str, Any]:
-                """Test timestamp extraction scenarios."""
+            @staticmethod
+            def _test_timestamp_extraction(scenario_name: str) -> dict[str, Any]:
+                """Test timestamp extraction scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with scenario and results.
+                """
                 results = {}
 
                 if scenario_name == "timestamp_components":
@@ -499,8 +539,6 @@ class TestS3Band13OptimizedV2:
                         ),
                     ]
 
-                    import re
-
                     pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
 
                     extracted_count = 0
@@ -525,8 +563,14 @@ class TestS3Band13OptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_integration_workflows(self, scenario_name: str, tmp_path, **kwargs) -> dict[str, Any]:
-                """Test integration workflow scenarios."""
+            async def _test_integration_workflows(
+                self, scenario_name: str, tmp_path: Any, **kwargs: Any
+            ) -> dict[str, Any]:  # noqa: PLR0914
+                """Test integration workflow scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with scenario and results.
+                """
                 results = {}
 
                 if scenario_name == "complete_band13_workflow":
@@ -535,9 +579,9 @@ class TestS3Band13OptimizedV2:
                     satellite_pattern = SatellitePattern.GOES_16
                     product_type = "RadC"
 
-                    with patch("goesvfi.integrity_check.remote.s3_store.S3Store") as MockS3Store:
+                    with patch("goesvfi.integrity_check.remote.s3_store.S3Store") as mock_s3_store_class:
                         mock_s3_store = self.create_mock_s3_store()
-                        MockS3Store.return_value = mock_s3_store
+                        mock_s3_store_class.return_value = mock_s3_store
 
                         # Create test file
                         test_filename = self.test_filenames["valid_band13"]
@@ -596,8 +640,13 @@ class TestS3Band13OptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_error_handling(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test error handling scenarios."""
+            @staticmethod
+            async def _test_error_handling(scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test error handling scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with scenario and results.
+                """
                 results = {}
 
                 if scenario_name == "s3_errors":
@@ -625,8 +674,6 @@ class TestS3Band13OptimizedV2:
                         "completely_wrong.txt",
                     ]
 
-                    import re
-
                     pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
                     band13_pattern = r"C13"
 
@@ -644,8 +691,12 @@ class TestS3Band13OptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_performance_validation(self, scenario_name: str, **kwargs) -> dict[str, Any]:
-                """Test performance validation scenarios."""
+            async def _test_performance_validation(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
+                """Test performance validation scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results with scenario and results.
+                """
                 results = {}
 
                 if scenario_name == "batch_operations":
@@ -660,7 +711,6 @@ class TestS3Band13OptimizedV2:
                             mock_files.append(filename)
 
                         # Test parsing all files
-                        import re
 
                         pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
 
@@ -693,43 +743,46 @@ class TestS3Band13OptimizedV2:
 
         return {
             "manager": S3Band13TestManager(),
-            "test_timestamp": datetime(2023, 6, 15, 12, 0, 0),
+            "test_timestamp": datetime(2023, 6, 15, 12, 0, 0, tzinfo=UTC),
             "satellite_pattern": SatellitePattern.GOES_16,
             "product_type": "RadC",
         }
 
     @pytest.mark.asyncio()
-    async def test_s3_listing_scenarios(self, s3_band13_test_components) -> None:
+    @staticmethod
+    async def test_s3_listing_scenarios(s3_band13_test_components: dict[str, Any]) -> None:
         """Test S3 listing scenarios."""
         manager = s3_band13_test_components["manager"]
 
         listing_scenarios = ["list_success", "list_no_objects", "list_with_limits"]
 
         for scenario in listing_scenarios:
-            result = await manager._test_s3_listing(scenario)
+            result = await manager._test_s3_listing(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
     @pytest.mark.asyncio()
-    async def test_download_operation_scenarios(self, s3_band13_test_components, tmp_path) -> None:
+    @staticmethod
+    async def test_download_operation_scenarios(s3_band13_test_components: dict[str, Any], tmp_path: Any) -> None:
         """Test download operation scenarios."""
         manager = s3_band13_test_components["manager"]
 
         download_scenarios = ["download_mocked", "download_error_handling"]
 
         for scenario in download_scenarios:
-            result = await manager._test_download_operations(scenario, tmp_path)
+            result = await manager._test_download_operations(scenario, tmp_path)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_filename_parsing_scenarios(self, s3_band13_test_components) -> None:
+    @staticmethod
+    def test_filename_parsing_scenarios(s3_band13_test_components: dict[str, Any]) -> None:
         """Test filename parsing scenarios."""
         manager = s3_band13_test_components["manager"]
 
         parsing_scenarios = ["parse_band13_filename", "parse_multiple_filenames", "parse_edge_cases"]
 
         for scenario in parsing_scenarios:
-            result = manager._test_filename_parsing(scenario)
+            result = manager._test_filename_parsing(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
@@ -740,7 +793,10 @@ class TestS3Band13OptimizedV2:
             (SatellitePattern.GOES_18, "noaa-goes18"),
         ],
     )
-    def test_bucket_pattern_validation(self, s3_band13_test_components, satellite, expected_bucket) -> None:
+    @staticmethod
+    def test_bucket_pattern_validation(
+        s3_band13_test_components: dict[str, Any], satellite: Any, expected_bucket: str
+    ) -> None:
         """Test bucket pattern validation for different satellites."""
         s3_band13_test_components["manager"]
 
@@ -752,7 +808,8 @@ class TestS3Band13OptimizedV2:
             mock_get_bucket.assert_called_once_with(satellite)
 
     @pytest.mark.parametrize("product_type", ["RadF", "RadC", "RadM"])
-    def test_product_type_validation(self, s3_band13_test_components, product_type) -> None:
+    @staticmethod
+    def test_product_type_validation(s3_band13_test_components: dict[str, Any], product_type: str) -> None:
         """Test product type validation scenarios."""
         timestamp = s3_band13_test_components["test_timestamp"]
 
@@ -769,112 +826,121 @@ class TestS3Band13OptimizedV2:
         assert "166" in expected_prefix, "DOY should be in prefix"
         assert "12" in expected_prefix, "Hour should be in prefix"
 
-    def test_bucket_pattern_scenarios(self, s3_band13_test_components) -> None:
+    @staticmethod
+    def test_bucket_pattern_scenarios(s3_band13_test_components: dict[str, Any]) -> None:
         """Test bucket pattern scenarios."""
         manager = s3_band13_test_components["manager"]
 
         bucket_scenarios = ["satellite_bucket_mapping", "bucket_validation"]
 
         for scenario in bucket_scenarios:
-            result = manager._test_bucket_patterns(scenario)
+            result = manager._test_bucket_patterns(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_product_type_scenario_validation(self, s3_band13_test_components) -> None:
+    @staticmethod
+    def test_product_type_scenario_validation(s3_band13_test_components: dict[str, Any]) -> None:
         """Test product type scenario validation."""
         manager = s3_band13_test_components["manager"]
 
         product_scenarios = ["product_type_prefixes", "product_type_combinations"]
 
         for scenario in product_scenarios:
-            result = manager._test_product_type_validation(scenario)
+            result = manager._test_product_type_validation(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_timestamp_extraction_scenarios(self, s3_band13_test_components) -> None:
+    @staticmethod
+    def test_timestamp_extraction_scenarios(s3_band13_test_components: dict[str, Any]) -> None:
         """Test timestamp extraction scenarios."""
         manager = s3_band13_test_components["manager"]
 
-        result = manager._test_timestamp_extraction("timestamp_components")
+        result = manager._test_timestamp_extraction("timestamp_components")  # noqa: SLF001
         assert result["scenario"] == "timestamp_components"
         assert result["results"]["extracted_count"] == result["results"]["test_cases"]
 
     @pytest.mark.asyncio()
-    async def test_integration_workflow_scenarios(self, s3_band13_test_components, tmp_path) -> None:
+    @staticmethod
+    async def test_integration_workflow_scenarios(s3_band13_test_components: dict[str, Any], tmp_path: Any) -> None:
         """Test integration workflow scenarios."""
         manager = s3_band13_test_components["manager"]
 
-        result = await manager._test_integration_workflows("complete_band13_workflow", tmp_path)
+        result = await manager._test_integration_workflows("complete_band13_workflow", tmp_path)  # noqa: SLF001
         assert result["scenario"] == "complete_band13_workflow"
         assert result["results"]["workflow_complete"] is True
         assert result["results"]["steps_completed"] == 4
 
     @pytest.mark.asyncio()
-    async def test_error_handling_scenarios(self, s3_band13_test_components) -> None:
+    @staticmethod
+    async def test_error_handling_scenarios(s3_band13_test_components: dict[str, Any]) -> None:
         """Test error handling scenarios."""
         manager = s3_band13_test_components["manager"]
 
         error_scenarios = ["s3_errors", "parsing_errors"]
 
         for scenario in error_scenarios:
-            result = await manager._test_error_handling(scenario)
+            result = await manager._test_error_handling(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
     @pytest.mark.asyncio()
-    async def test_performance_validation_scenarios(self, s3_band13_test_components) -> None:
+    @staticmethod
+    async def test_performance_validation_scenarios(s3_band13_test_components: dict[str, Any]) -> None:
         """Test performance validation scenarios."""
         manager = s3_band13_test_components["manager"]
 
         performance_scenarios = ["batch_operations", "concurrent_operations"]
 
         for scenario in performance_scenarios:
-            result = await manager._test_performance_validation(scenario)
+            result = await manager._test_performance_validation(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    def test_comprehensive_band13_validation(self, s3_band13_test_components) -> None:
+    @staticmethod
+    def test_comprehensive_band13_validation(s3_band13_test_components: dict[str, Any]) -> None:
         """Test comprehensive Band 13 validation scenarios."""
         manager = s3_band13_test_components["manager"]
 
         # Test all filename patterns
-        result = manager._test_filename_parsing("parse_multiple_filenames")
+        result = manager._test_filename_parsing("parse_multiple_filenames")  # noqa: SLF001
         assert result["results"]["multiple_parsing"] == 3
 
         # Test all bucket mappings
-        result = manager._test_bucket_patterns("satellite_bucket_mapping")
+        result = manager._test_bucket_patterns("satellite_bucket_mapping")  # noqa: SLF001
         assert len(result["results"]) == 2  # GOES_16 and GOES_18
 
         # Test all product types
-        result = manager._test_product_type_validation("product_type_combinations")
+        result = manager._test_product_type_validation("product_type_combinations")  # noqa: SLF001
         assert result["results"]["combinations_tested"] == result["results"]["expected_combinations"]
 
     @pytest.mark.asyncio()
-    async def test_s3_band13_edge_cases(self, s3_band13_test_components, tmp_path) -> None:
+    @staticmethod
+    async def test_s3_band13_edge_cases(s3_band13_test_components: dict[str, Any], tmp_path: Any) -> None:  # noqa: ARG004
         """Test S3 Band 13 edge cases and boundary conditions."""
         manager = s3_band13_test_components["manager"]
 
         # Test edge case parsing
-        result = manager._test_filename_parsing("parse_edge_cases")
+        result = manager._test_filename_parsing("parse_edge_cases")  # noqa: SLF001
         assert result["scenario"] == "parse_edge_cases"
         edge_cases = [k for k in result["results"] if k.startswith("edge_case_")]
         assert len(edge_cases) == 4  # Should test 4 edge cases
 
         # Test error handling
-        result = await manager._test_error_handling("parsing_errors")
+        result = await manager._test_error_handling("parsing_errors")  # noqa: SLF001
         assert result["results"]["parsing_errors_detected"] == 4  # All invalid filenames should fail
 
     @pytest.mark.asyncio()
-    async def test_s3_band13_performance_validation(self, s3_band13_test_components) -> None:
+    @staticmethod
+    async def test_s3_band13_performance_validation(s3_band13_test_components: dict[str, Any]) -> None:
         """Test S3 Band 13 performance validation."""
         manager = s3_band13_test_components["manager"]
 
         # Test batch operations
-        result = await manager._test_performance_validation("batch_operations")
+        result = await manager._test_performance_validation("batch_operations")  # noqa: SLF001
         assert result["scenario"] == "batch_operations"
         batch_results = [k for k in result["results"] if k.startswith("batch_")]
         assert len(batch_results) == 4  # Should test 4 different batch sizes
 
         # Test concurrent operations
-        result = await manager._test_performance_validation("concurrent_operations")
+        result = await manager._test_performance_validation("concurrent_operations")  # noqa: SLF001
         assert result["results"]["concurrent_operations"] == 10
