@@ -12,7 +12,11 @@ import pytest
 
 
 def simple_function(x: int, y: int) -> int:
-    """Simple function for coverage demonstration."""
+    """Simple function for coverage demonstration.
+    
+    Returns:
+        int: Result of x - y or y - x.
+    """
     if x > y:
         return x - y
     if x < y:
@@ -20,8 +24,12 @@ def simple_function(x: int, y: int) -> int:
     return 0
 
 
-def complex_function(value: str, flag: bool = False) -> str:
-    """Complex function with multiple branches."""
+def complex_function(value: str, *, flag: bool = False) -> str:
+    """Complex function with multiple branches.
+    
+    Returns:
+        str: Processed string value.
+    """
     if not value:
         msg = "Value cannot be empty"
         raise ValueError(msg)
