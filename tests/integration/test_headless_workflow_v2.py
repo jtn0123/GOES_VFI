@@ -661,7 +661,9 @@ class TestHeadlessWorkflowOptimizedV2:
 
     @staticmethod
     def test_headless_processing_pipeline_mocked(
-        headless_qt_app: QApplication, headless_test_components: dict[str, Any], temp_workspace: dict[str, Any]
+        headless_qt_app: QApplication,  # noqa: ARG004
+        headless_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
         """Test headless processing pipeline with comprehensive mocking."""
         components: dict[str, Any] = headless_test_components
@@ -739,7 +741,7 @@ class TestHeadlessWorkflowOptimizedV2:
                     mock_run_vfi.side_effect = scenario["mock_side_effect"]
 
                     # Test with expected exception
-                    with pytest.raises(Exception) as exc_info:
+                    with pytest.raises(Exception, match="Processing failed") as exc_info:
                         run_vfi(
                             folder=test_data["input_dir"],
                             output_mp4_path=test_data["output_file"],
@@ -863,15 +865,13 @@ class TestHeadlessWorkflowOptimizedV2:
 
             elif stress_test["name"] == "Error Handling Stress":
                 # Test error handling under stress
-                error_window: MagicMock
-                error_mock_class: MagicMock
                 error_window, _error_mock_class = gui_factory.create_mock_window(
                     stress_test["widget_type"], stress_test["config"]
                 )
 
                 errors_handled: int = 0
 
-                for i in range(stress_test["iterations"]):
+                for _i in range(stress_test["iterations"]):
                     try:
                         # These should trigger exceptions in error_prone config
                         error_window.main_tab.fps_spinbox.setValue(60)
@@ -882,9 +882,11 @@ class TestHeadlessWorkflowOptimizedV2:
                 # Should have handled multiple errors gracefully
                 assert errors_handled > 0
 
-    @staticmethod
     def test_headless_edge_cases_and_boundaries(
-        self, headless_qt_app: QApplication, headless_test_components: dict[str, Any], temp_workspace: dict[str, Any]
+        self,
+        headless_qt_app: QApplication,  # noqa: ARG002
+        headless_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
     ) -> None:
         """Test edge cases and boundary conditions in headless mode."""
         components: dict[str, Any] = headless_test_components
@@ -935,7 +937,7 @@ class TestHeadlessWorkflowOptimizedV2:
 
             except Exception as e:  # noqa: BLE001
                 # Some edge cases may throw exceptions, which is acceptable
-                assert "edge case handled" in str(e).lower() or "expected" in str(e).lower(), (
+                assert "edge case handled" in str(e).lower() or "expected" in str(e).lower(), (  # noqa: PT017
                     f"Unexpected error in edge case {edge_case['name']}: {e}"
                 )
 
