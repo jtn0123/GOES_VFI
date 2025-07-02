@@ -8,9 +8,13 @@ Optimizations applied:
 - Comprehensive edge case and performance testing
 """
 
-from datetime import datetime, timedelta
+from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+import sys
 import tempfile
+import time
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -20,12 +24,17 @@ from goesvfi.integrity_check.sample_processor import SampleProcessor
 from goesvfi.integrity_check.visualization_manager import VisualizationManager
 
 
-class TestDownloadRealV2:
+class TestDownloadRealV2:  # noqa: PLR0904
     """Optimized test class for real download functionality."""
 
     @pytest.fixture(scope="class")
-    def product_type_configurations(self):
-        """Define various product type configuration test cases."""
+    @staticmethod
+    def product_type_configurations() -> dict[str, Any]:
+        """Define various product type configuration test cases.
+
+        Returns:
+            dict[str, Any]: Product type configurations.
+        """
         return {
             "full_disk": {
                 "product_type": ProductType.FULL_DISK,
@@ -48,8 +57,13 @@ class TestDownloadRealV2:
         }
 
     @pytest.fixture(scope="class")
-    def channel_configurations(self):
-        """Define various channel configuration test cases."""
+    @staticmethod
+    def channel_configurations() -> dict[str, Any]:
+        """Define various channel configuration test cases.
+
+        Returns:
+            dict[str, Any]: Channel configurations.
+        """
         return {
             "visible_channels": {
                 "channels": [1, 2, 3],
@@ -93,40 +107,50 @@ class TestDownloadRealV2:
         }
 
     @pytest.fixture(scope="class")
-    def timestamp_scenarios(self):
-        """Define various timestamp scenario test cases."""
+    @staticmethod
+    def timestamp_scenarios() -> dict[str, Any]:
+        """Define various timestamp scenario test cases.
+
+        Returns:
+            dict[str, Any]: Timestamp scenarios.
+        """
         return {
             "current_times": [
-                datetime.now(),
-                datetime.now() - timedelta(hours=1),
-                datetime.now() - timedelta(hours=6),
+                datetime.now(UTC),
+                datetime.now(UTC) - timedelta(hours=1),
+                datetime.now(UTC) - timedelta(hours=6),
             ],
             "historical_times": [
-                datetime(2023, 5, 1, 19, 0, 0),
-                datetime(2023, 6, 15, 12, 0, 0),
-                datetime(2023, 8, 10, 14, 30, 0),
+                datetime(2023, 5, 1, 19, 0, 0, tzinfo=UTC),
+                datetime(2023, 6, 15, 12, 0, 0, tzinfo=UTC),
+                datetime(2023, 8, 10, 14, 30, 0, tzinfo=UTC),
             ],
             "edge_case_times": [
-                datetime(2023, 1, 1, 0, 0, 0),  # New Year
-                datetime(2023, 12, 31, 23, 59, 0),  # End of year
-                datetime(2024, 2, 29, 12, 0, 0),  # Leap day
+                datetime(2023, 1, 1, 0, 0, 0, tzinfo=UTC),  # New Year
+                datetime(2023, 12, 31, 23, 59, 0, tzinfo=UTC),  # End of year
+                datetime(2024, 2, 29, 12, 0, 0, tzinfo=UTC),  # Leap day
             ],
         }
 
     @pytest.fixture(scope="class")
-    def mock_download_results(self):
-        """Define various mock download result scenarios."""
+    @staticmethod
+    def mock_download_results() -> dict[str, Any]:
+        """Define various mock download result scenarios.
+        
+        Returns:
+            dict[str, Any]: Mock download result scenarios.
+        """
         return {
             "successful_downloads": [
                 {
                     "success": True,
-                    "file_path": Path("/tmp/test_file_1.nc"),
+                    "file_path": Path("/tmp/test_file_1.nc"),  # noqa: S108
                     "file_size": 50 * 1024 * 1024,  # 50MB
                     "download_time": 5.2,
                 },
                 {
                     "success": True,
-                    "file_path": Path("/tmp/test_file_2.nc"),
+                    "file_path": Path("/tmp/test_file_2.nc"),  # noqa: S108
                     "file_size": 15 * 1024 * 1024,  # 15MB
                     "download_time": 2.1,
                 },
@@ -150,23 +174,38 @@ class TestDownloadRealV2:
             ],
         }
 
-    @pytest.fixture()
-    def temp_directory(self):
-        """Create a temporary directory for test files."""
+    @pytest.fixture(scope="class")
+    @staticmethod
+    def temp_directory() -> Iterator[Path]:
+        """Create a temporary directory for test files.
+        
+        Yields:
+            Path: Temporary directory path.
+        """
         with tempfile.TemporaryDirectory() as temp_dir:
             yield Path(temp_dir)
 
-    @pytest.fixture()
-    def mock_visualization_manager(self):
-        """Create a mock visualization manager."""
+    @pytest.fixture(scope="class")
+    @staticmethod
+    def mock_visualization_manager() -> MagicMock:
+        """Create a mock visualization manager.
+        
+        Returns:
+            MagicMock: Mock visualization manager.
+        """
         viz_manager = MagicMock(spec=VisualizationManager)
         viz_manager.create_comparison_image.return_value = MagicMock()
         viz_manager.render_netcdf_to_image.return_value = MagicMock()
         return viz_manager
 
     @pytest.fixture()
-    def mock_sample_processor(self, mock_visualization_manager, temp_directory):
-        """Create a mock sample processor with comprehensive mocking."""
+    @staticmethod
+    def mock_sample_processor(mock_visualization_manager: MagicMock, temp_directory: Path) -> MagicMock:
+        """Create a mock sample processor with comprehensive mocking.
+
+        Returns:
+            MagicMock: Mock sample processor.
+        """
         with patch("goesvfi.integrity_check.sample_processor.SampleProcessor") as mock_processor_class:
             processor_mock = MagicMock(spec=SampleProcessor)
             mock_processor_class.return_value = processor_mock
@@ -183,7 +222,8 @@ class TestDownloadRealV2:
 
             return processor_mock
 
-    def test_sample_processor_initialization(self, mock_visualization_manager) -> None:
+    @staticmethod
+    def test_sample_processor_initialization(mock_visualization_manager: MagicMock) -> None:
         """Test sample processor initialization with different configurations."""
         with patch("goesvfi.integrity_check.sample_processor.SampleProcessor") as mock_processor_class:
             # Test initialization
@@ -193,8 +233,13 @@ class TestDownloadRealV2:
 
     @pytest.mark.parametrize("product_name", ["full_disk", "conus", "mesoscale"])
     @pytest.mark.parametrize("channel_category", ["visible_channels", "infrared_channels", "popular_channels"])
+    @staticmethod
     def test_download_sample_data_comprehensive(
-        self, product_type_configurations, channel_configurations, mock_sample_processor, product_name, channel_category
+        product_type_configurations: dict[str, Any],
+        channel_configurations: dict[str, Any],
+        mock_sample_processor: MagicMock,
+        product_name: str,
+        channel_category: str,
     ) -> None:
         """Test comprehensive download sample data functionality."""
         product_config = product_type_configurations[product_name]
@@ -212,8 +257,9 @@ class TestDownloadRealV2:
             assert isinstance(result, Path)
 
     @pytest.mark.parametrize("timestamp_category", ["current_times", "historical_times", "edge_case_times"])
+    @staticmethod
     def test_download_sample_data_with_timestamps(
-        self, product_type_configurations, timestamp_scenarios, mock_sample_processor, timestamp_category
+        product_type_configurations: dict[str, Any], timestamp_scenarios: dict[str, Any], mock_sample_processor: MagicMock, timestamp_category: str  # noqa: ARG004
     ) -> None:
         """Test download sample data with various timestamp scenarios."""
         timestamps = timestamp_scenarios[timestamp_category]
@@ -262,8 +308,9 @@ class TestDownloadRealV2:
 
     @pytest.mark.parametrize("product_name", ["full_disk", "conus"])
     @pytest.mark.parametrize("channel", [2, 7, 13])
+    @staticmethod
     def test_download_web_sample(
-        self, product_type_configurations, mock_sample_processor, product_name, channel
+        product_type_configurations: dict[str, Any], mock_sample_processor: MagicMock, product_name: str, channel: int
     ) -> None:
         """Test web sample download functionality."""
         product_config = product_type_configurations[product_name]
@@ -278,7 +325,8 @@ class TestDownloadRealV2:
         assert result is not None
         assert isinstance(result, Path)
 
-    def test_download_web_sample_error_scenarios(self, mock_sample_processor) -> None:
+    @staticmethod
+    def test_download_web_sample_error_scenarios(mock_sample_processor: MagicMock) -> None:
         """Test web sample download error scenarios."""
         error_scenarios = [
             (ConnectionError, "Network connection failed"),
@@ -298,8 +346,9 @@ class TestDownloadRealV2:
 
     @pytest.mark.parametrize("product_name", ["full_disk", "conus", "mesoscale"])
     @pytest.mark.parametrize("channel", [1, 7, 13, 14])
+    @staticmethod
     def test_create_sample_comparison(
-        self, product_type_configurations, mock_sample_processor, temp_directory, product_name, channel
+        product_type_configurations: dict[str, Any], mock_sample_processor: MagicMock, temp_directory: Path, product_name: str, channel: int
     ) -> None:
         """Test sample comparison creation functionality."""
         product_config = product_type_configurations[product_name]
@@ -323,7 +372,8 @@ class TestDownloadRealV2:
         comparison.save(comparison_path)
         comparison.save.assert_called_with(comparison_path)
 
-    def test_create_sample_comparison_error_handling(self, mock_sample_processor) -> None:
+    @staticmethod
+    def test_create_sample_comparison_error_handling(mock_sample_processor: MagicMock) -> None:
         """Test sample comparison creation error handling."""
         error_scenarios = [
             (RuntimeError, "Failed to process NetCDF data"),
@@ -341,7 +391,8 @@ class TestDownloadRealV2:
             # Reset for next iteration
             mock_sample_processor.create_sample_comparison.side_effect = None
 
-    def test_processor_cleanup_operations(self, mock_sample_processor, temp_directory) -> None:
+    @staticmethod
+    def test_processor_cleanup_operations(mock_sample_processor: MagicMock, temp_directory: Path) -> None:  # noqa: ARG004
         """Test processor cleanup operations."""
         # Test cleanup call
         mock_sample_processor.cleanup()
@@ -356,7 +407,8 @@ class TestDownloadRealV2:
         mock_sample_processor.cleanup()
         assert mock_sample_processor.cleanup.call_count == 2
 
-    def test_download_functionality_integration(self, mock_visualization_manager, temp_directory) -> None:
+    @staticmethod
+    def test_download_functionality_integration(mock_visualization_manager: MagicMock, temp_directory: Path) -> None:
         """Test integrated download functionality workflow."""
         with patch("goesvfi.integrity_check.sample_processor.SampleProcessor") as mock_processor_class:
             # Create processor with realistic mock behavior
@@ -379,7 +431,7 @@ class TestDownloadRealV2:
             assert result_current is not None
 
             # Test historical data download
-            historical_date = datetime(2023, 5, 1, 19, 0)
+            historical_date = datetime(2023, 5, 1, 19, 0, tzinfo=UTC)
             result_historical = processor.download_sample_data(13, ProductType.FULL_DISK, historical_date)
             assert result_historical is not None
 
@@ -401,18 +453,19 @@ class TestDownloadRealV2:
             # Test cleanup
             processor.cleanup()
 
-    def test_error_recovery_and_retry_patterns(self, mock_sample_processor) -> None:
+    @staticmethod
+    def test_error_recovery_and_retry_patterns(mock_sample_processor: MagicMock) -> None:
         """Test error recovery and retry patterns."""
         # Test network error recovery
         call_count = 0
 
-        def failing_download(*args, **kwargs):
+        def failing_download(*args: Any, **kwargs: Any) -> Path:
             nonlocal call_count
             call_count += 1
             if call_count <= 2:
                 msg = "Network unavailable"
                 raise ConnectionError(msg)
-            return Path("/tmp/recovered_download.nc")
+            return Path("/tmp/recovered_download.nc")  # noqa: S108
 
         mock_sample_processor.download_sample_data.side_effect = failing_download
 
@@ -428,7 +481,8 @@ class TestDownloadRealV2:
         assert result is not None
         assert call_count == 3  # Failed twice, succeeded on third
 
-    def test_concurrent_download_simulation(self, mock_sample_processor) -> None:
+    @staticmethod
+    def test_concurrent_download_simulation(mock_sample_processor: MagicMock) -> None:
         """Test concurrent download simulation patterns."""
         # Simulate multiple concurrent downloads
         download_tasks = [
@@ -443,7 +497,7 @@ class TestDownloadRealV2:
         for channel, product_type in download_tasks:
             # Mock each download returning different results
             mock_sample_processor.download_sample_data.return_value = Path(
-                f"/tmp/download_{channel}_{product_type.name.lower()}.nc"
+                f"/tmp/download_{channel}_{product_type.name.lower()}.nc"  # noqa: S108
             )
 
             result = mock_sample_processor.download_sample_data(channel, product_type)
@@ -456,9 +510,9 @@ class TestDownloadRealV2:
         assert len(results) == len(download_tasks)
         assert all(result is not None for result in results)
 
-    def test_performance_bulk_download_operations(self, mock_sample_processor) -> None:
+    @staticmethod
+    def test_performance_bulk_download_operations(mock_sample_processor: MagicMock) -> None:
         """Test performance of bulk download operations."""
-        import time
 
         # Test bulk download performance
         start_time = time.time()
@@ -470,7 +524,7 @@ class TestDownloadRealV2:
         for channel in channels:
             for product_type in product_types:
                 mock_sample_processor.download_sample_data.return_value = Path(
-                    f"/tmp/bulk_download_{download_count}.nc"
+                    f"/tmp/bulk_download_{download_count}.nc"  # noqa: S108
                 )
 
                 result = mock_sample_processor.download_sample_data(channel, product_type)
@@ -484,9 +538,9 @@ class TestDownloadRealV2:
         assert duration < 1.0, f"Bulk download operations too slow: {duration:.3f}s for {download_count} downloads"
         assert download_count == len(channels) * len(product_types)
 
-    def test_memory_efficiency_download_operations(self, mock_visualization_manager) -> None:
+    @staticmethod
+    def test_memory_efficiency_download_operations(mock_visualization_manager: MagicMock) -> None:
         """Test memory efficiency during download operations."""
-        import sys
 
         initial_refs = sys.getrefcount(dict)
 
@@ -496,7 +550,7 @@ class TestDownloadRealV2:
                 processor_mock = MagicMock(spec=SampleProcessor)
                 mock_processor_class.return_value = processor_mock
 
-                processor_mock.download_sample_data.return_value = Path(f"/tmp/memory_test_{i}.nc")
+                processor_mock.download_sample_data.return_value = Path(f"/tmp/memory_test_{i}.nc")  # noqa: S108
                 processor_mock.cleanup.return_value = None
 
                 # Create processor
@@ -517,7 +571,8 @@ class TestDownloadRealV2:
         final_refs = sys.getrefcount(dict)
         assert abs(final_refs - initial_refs) <= 50, f"Memory leak detected: {initial_refs} -> {final_refs}"
 
-    def test_edge_case_boundary_conditions(self, mock_sample_processor) -> None:
+    @staticmethod
+    def test_edge_case_boundary_conditions(mock_sample_processor: MagicMock) -> None:
         """Test boundary conditions and edge cases."""
         edge_cases = [
             # Invalid channels
@@ -528,9 +583,9 @@ class TestDownloadRealV2:
             {"channel": 1, "should_fail": False},
             {"channel": 16, "should_fail": False},
             # Edge timestamps
-            {"timestamp": datetime(1900, 1, 1), "should_fail": True},
-            {"timestamp": datetime(2050, 1, 1), "should_fail": True},
-            {"timestamp": datetime(2023, 6, 15, 12, 0, 0), "should_fail": False},
+            {"timestamp": datetime(1900, 1, 1, tzinfo=UTC), "should_fail": True},
+            {"timestamp": datetime(2050, 1, 1, tzinfo=UTC), "should_fail": True},
+            {"timestamp": datetime(2023, 6, 15, 12, 0, 0, tzinfo=UTC), "should_fail": False},
         ]
 
         for case in edge_cases:
@@ -538,11 +593,11 @@ class TestDownloadRealV2:
                 if case["should_fail"]:
                     mock_sample_processor.download_sample_data.side_effect = ValueError("Invalid channel")
 
-                    with pytest.raises(ValueError):
-                        mock_sample_processor.download_sample_data(case["channel"], ProductType.FULL_DISK)
+                    with pytest.raises(ValueError, match="Invalid timestamp"):
+                        mock_sample_processor.download_sample_data(13, ProductType.FULL_DISK, case["timestamp"])
                 else:
                     mock_sample_processor.download_sample_data.side_effect = None
-                    mock_sample_processor.download_sample_data.return_value = Path("/tmp/valid_download.nc")
+                    mock_sample_processor.download_sample_data.return_value = Path("/tmp/valid_download.nc")  # noqa: S108
 
                     result = mock_sample_processor.download_sample_data(case["channel"], ProductType.FULL_DISK)
                     assert result is not None
@@ -551,11 +606,11 @@ class TestDownloadRealV2:
                 if case["should_fail"]:
                     mock_sample_processor.download_sample_data.side_effect = ValueError("Invalid timestamp")
 
-                    with pytest.raises(ValueError):
+                    with pytest.raises(ValueError, match="Invalid channel"):
                         mock_sample_processor.download_sample_data(13, ProductType.FULL_DISK, case["timestamp"])
                 else:
                     mock_sample_processor.download_sample_data.side_effect = None
-                    mock_sample_processor.download_sample_data.return_value = Path("/tmp/valid_timestamp_download.nc")
+                    mock_sample_processor.download_sample_data.return_value = Path("/tmp/valid_timestamp_download.nc")  # noqa: S108
 
                     result = mock_sample_processor.download_sample_data(13, ProductType.FULL_DISK, case["timestamp"])
                     assert result is not None
@@ -563,7 +618,10 @@ class TestDownloadRealV2:
             # Reset side effect for next iteration
             mock_sample_processor.download_sample_data.side_effect = None
 
-    def test_cross_validation_download_patterns(self, product_type_configurations, channel_configurations) -> None:
+    @staticmethod
+    def test_cross_validation_download_patterns(
+        product_type_configurations: dict[str, Any], channel_configurations: dict[str, Any]
+    ) -> None:
         """Test cross-validation of download patterns across configurations."""
         # Test that all product types support all channel categories
         for product_name, product_config in product_type_configurations.items():
@@ -578,7 +636,7 @@ class TestDownloadRealV2:
 
                     for channel in channels:
                         processor_mock.download_sample_data.return_value = Path(
-                            f"/tmp/cross_validation_{product_name}_{channel}.nc"
+                            f"/tmp/cross_validation_{product_name}_{channel}.nc"  # noqa: S108
                         )
 
                         result = processor_mock.download_sample_data(channel, product_type)
