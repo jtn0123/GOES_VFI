@@ -90,7 +90,7 @@ class TestMainWindowOptimizedV2:
         """
 
         def mock_load_process_scale_preview(
-            self: Any,
+            self: Any,  # noqa: ARG001
             image_path: Any,
             target_label: Any,
             *args: Any,
@@ -173,10 +173,10 @@ class TestMainWindowOptimizedV2:
     @pytest.fixture()
     @staticmethod
     def main_window(
-        shared_app: Any,
-        shared_mocks: dict[str, Any],
-        shared_preview_mock: Any,
-        shared_model_mock: Any,
+        shared_app: Any,  # noqa: ARG004
+        shared_mocks: dict[str, Any],  # noqa: ARG004
+        shared_preview_mock: Any,  # noqa: ARG004
+        shared_model_mock: Any,  # noqa: ARG004
         qtbot: Any,
     ) -> Any:
         """Create MainWindow instance with all mocks applied.
