@@ -7,6 +7,7 @@ structured errors in both simple and verbose modes.
 
 from io import StringIO
 import sys
+from typing import Any
 
 import pytest
 
@@ -18,13 +19,23 @@ class TestErrorReporter:
     """Test error reporter functionality - optimized with fixtures and parameterization."""
 
     @pytest.fixture()
-    def output_stream(self):
-        """Create a reusable output stream."""
+    @staticmethod
+    def output_stream() -> StringIO:
+        """Create a reusable output stream.
+        
+        Returns:
+            StringIO: Output stream for testing.
+        """
         return StringIO()
 
     @pytest.fixture()
-    def error_context(self):
-        """Create a reusable error context with test data."""
+    @staticmethod
+    def error_context() -> ErrorContext:
+        """Create a reusable error context with test data.
+        
+        Returns:
+            ErrorContext: Error context with test data.
+        """
         context = ErrorContext(operation="test_operation", component="test_component")
         context.add_user_data("test_key", "test_value")
         context.add_user_data("file_path", "/test/path.txt")
