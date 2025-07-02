@@ -1,24 +1,31 @@
-#!/usr/bin/env python3
 """GUI performance testing for GOES_VFI application.
 
 This module tests the performance characteristics of GUI components
 and overall GUI test execution times.
 """
 
+import os
 from pathlib import Path
-import subprocess
+import subprocess  # noqa: S404
 import sys
 import time
 
+import psutil
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget
 import pytest
 
 
 class TestGUIPerformance:
     """Test suite for GUI performance characteristics."""
 
+    @staticmethod
     @pytest.fixture()
-    def performance_test_cases(self) -> list[str]:
-        """Provide representative GUI test cases for performance testing."""
+    def performance_test_cases() -> list[str]:
+        """Provide representative GUI test cases for performance testing.
+
+        Returns:
+            list[str]: List of test paths for performance testing.
+        """
         return [
             "tests/gui/test_main_window_v2.py::TestMainWindowCore::test_initial_state",
             "tests/gui/test_gui_component_validation_v2.py::TestGUIComponentValidation::test_main_window_creation",
@@ -38,7 +45,7 @@ class TestGUIPerformance:
         start_time = time.time()
 
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: S603
                 [
                     sys.executable,
                     "-m",
@@ -59,11 +66,11 @@ class TestGUIPerformance:
 
             if result.returncode == 0:
                 return duration, "PASSED"
-            return duration, "FAILED"
+            return duration, "FAILED"  # noqa: TRY300
 
         except subprocess.TimeoutExpired:
             return 70.0, "TIMEOUT"
-        except Exception:
+        except Exception:  # noqa: BLE001
             return 0.0, "ERROR"
 
     def test_gui_test_execution_performance(self, performance_test_cases: list[str]) -> None:
@@ -89,7 +96,7 @@ class TestGUIPerformance:
         assert len(results) > 0, "No GUI tests were found to measure"
 
         # Individual test performance thresholds
-        for test_case, duration, status in results:
+        for test_case, duration, _status in results:
             assert duration < 60.0, f"Test {test_case} took too long: {duration:.2f}s"
 
         # Average performance threshold
@@ -124,8 +131,6 @@ class TestGUIPerformance:
     @staticmethod
     def test_gui_component_responsiveness() -> None:
         """Test that GUI components can be created quickly."""
-        from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton
-
         # Ensure we have a QApplication
         QApplication.instance() or QApplication([])
 
@@ -147,16 +152,10 @@ class TestGUIPerformance:
     @staticmethod
     def test_memory_usage_reasonable() -> None:
         """Test that GUI tests don't consume excessive memory."""
-        import os
-
-        import psutil
-
         process = psutil.Process(os.getpid())
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
 
         # Create and destroy some GUI components
-        from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget
-
         QApplication.instance() or QApplication([])
 
         components = []
