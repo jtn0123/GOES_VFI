@@ -6,6 +6,7 @@ testing of directory selection, error handling, and view model operations.
 
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
@@ -34,8 +35,6 @@ class TestFileSorterViewModelV2(unittest.TestCase):
     def tearDownClass(cls) -> None:
         """Clean up shared class-level resources."""
         if Path(cls.temp_root).exists():
-            import shutil
-
             shutil.rmtree(cls.temp_root)
 
     def setUp(self) -> None:
@@ -63,7 +62,7 @@ class TestFileSorterViewModelV2(unittest.TestCase):
             try:
                 self.view_model.deleteLater()
                 QApplication.processEvents()
-            except Exception:
+            except Exception:  # noqa: S110, BLE001
                 pass
 
     def test_initialization_comprehensive(self) -> None:
