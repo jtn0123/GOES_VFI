@@ -13,7 +13,8 @@ LOGGER = log.get_logger(__name__)
 class ModelSelectorManager:
     """Manages model selection and validation."""
 
-    def populate_models(self, main_window: Any) -> None:
+    @staticmethod
+    def populate_models(main_window: Any) -> None:
         """Populate the RIFE model combo box.
 
         Args:
@@ -46,7 +47,8 @@ class ModelSelectorManager:
                 main_window.main_tab.current_model_key = ""
             LOGGER.warning("No RIFE models found.")
 
-    def on_model_changed(self, main_window: Any, model_key: str) -> None:
+    @staticmethod
+    def on_model_changed(main_window: Any, model_key: str) -> None:
         """Handle RIFE model selection change.
 
         Args:
@@ -57,10 +59,11 @@ class ModelSelectorManager:
         # Set the model key on main_tab since current_model_key is a property in MainWindow
         if hasattr(main_window.main_tab, "current_model_key"):
             main_window.main_tab.current_model_key = model_key
-        main_window._update_rife_ui_elements()
-        main_window._update_start_button_state()
+        main_window._update_rife_ui_elements()  # noqa: SLF001
+        main_window._update_start_button_state()  # noqa: SLF001
 
-    def validate_thread_spec(self, main_window: Any, text: str) -> None:
+    @staticmethod
+    def validate_thread_spec(main_window: Any, text: str) -> None:
         """Validate the RIFE thread specification format.
 
         Args:
@@ -76,9 +79,10 @@ class ModelSelectorManager:
             LOGGER.warning("Invalid RIFE thread specification format: %s", text)
         else:
             main_window.main_tab.rife_thread_spec_edit.setProperty("class", "")
-            main_window._update_start_button_state()
+            main_window._update_start_button_state()  # noqa: SLF001
 
-    def toggle_sanchez_res_enabled(self, main_window: Any, state: Qt.CheckState) -> None:
+    @staticmethod
+    def toggle_sanchez_res_enabled(main_window: Any, state: Qt.CheckState) -> None:
         """Enable or disable the Sanchez resolution combo box based on checkbox state.
 
         Args:
@@ -86,7 +90,7 @@ class ModelSelectorManager:
             state: The checkbox state
         """
         # Use the combo box alias defined in __init__
-        main_window.sanchez_res_km_combo.setEnabled(state == Qt.CheckState.Checked.value)
+        main_window.sanchez_res_km_combo.setEnabled(state == Qt.CheckState.Checked)
 
     def connect_model_combo(self, main_window: Any) -> None:
         """Connect the model combo box signal.
