@@ -25,8 +25,7 @@ class TestVfiWorkerRunV2:
     """Optimized test class for VFI worker run functionality."""
 
     @pytest.fixture(scope="class")
-    @staticmethod
-    def mock_pyqt_setup() -> dict[str, ModuleType]:
+    def mock_pyqt_setup(self) -> dict[str, ModuleType]:
         """Set up minimal PyQt6 mocks for headless test execution.
 
         Returns:
@@ -45,8 +44,7 @@ class TestVfiWorkerRunV2:
         return {"qtcore": qtcore, "pyqt6": pyqt6}
 
     @pytest.fixture()
-    @staticmethod
-    def dummy_image_factory() -> Callable[..., None]:
+    def dummy_image_factory(self) -> Callable[..., None]:
         """Factory for creating dummy PNG images.
 
         Returns:
@@ -63,8 +61,7 @@ class TestVfiWorkerRunV2:
         return create_dummy_png
 
     @pytest.fixture()
-    @staticmethod
-    def test_input_setup(tmp_path: pathlib.Path, dummy_image_factory: Callable[..., None]) -> pathlib.Path:
+    def test_input_setup(self, tmp_path: pathlib.Path, dummy_image_factory: Callable[..., None]) -> pathlib.Path:
         """Set up test input directory with sample images.
 
         Returns:
@@ -86,8 +83,7 @@ class TestVfiWorkerRunV2:
         return input_dir
 
     @pytest.fixture()
-    @staticmethod
-    def mock_signal_handlers() -> dict[str, MagicMock]:
+    def mock_signal_handlers(self) -> dict[str, MagicMock]:
         """Create mock signal handlers for testing.
 
         Returns:
@@ -95,9 +91,9 @@ class TestVfiWorkerRunV2:
         """
         return {"progress": MagicMock(), "finished": MagicMock(), "error": MagicMock()}
 
-    @staticmethod
     def test_vfi_worker_successful_run(
-        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        self,
+        mock_pyqt_setup: dict[str, ModuleType],
         test_input_setup: pathlib.Path,
         tmp_path: pathlib.Path,
         mock_signal_handlers: dict[str, MagicMock],
@@ -139,9 +135,9 @@ class TestVfiWorkerRunV2:
         mock_signal_handlers["error"].assert_not_called()
 
     @pytest.mark.parametrize("error_scenario", ["rife_not_found", "processing_failure", "invalid_input_dir"])
-    @staticmethod
     def test_vfi_worker_error_scenarios(
-        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        self,
+        mock_pyqt_setup: dict[str, ModuleType],
         test_input_setup: pathlib.Path,
         tmp_path: pathlib.Path,
         mock_signal_handlers: dict[str, MagicMock],
@@ -190,9 +186,9 @@ class TestVfiWorkerRunV2:
             mock_signal_handlers["error"].assert_called_once()
             mock_signal_handlers["finished"].assert_not_called()
 
-    @staticmethod
     def test_vfi_worker_partial_progress(
-        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        self,
+        mock_pyqt_setup: dict[str, ModuleType],
         test_input_setup: pathlib.Path,
         tmp_path: pathlib.Path,
         mock_signal_handlers: dict[str, MagicMock],
@@ -231,9 +227,9 @@ class TestVfiWorkerRunV2:
         mock_signal_handlers["finished"].assert_called_once()
         mock_signal_handlers["error"].assert_not_called()
 
-    @staticmethod
     def test_vfi_worker_signal_connections(
-        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        self,
+        mock_pyqt_setup: dict[str, ModuleType],
         test_input_setup: pathlib.Path,
         tmp_path: pathlib.Path,
     ) -> None:
@@ -255,9 +251,9 @@ class TestVfiWorkerRunV2:
         # Verify connection works
         assert worker.progress is not None
 
-    @staticmethod
     def test_vfi_worker_input_validation(
-        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        self,
+        mock_pyqt_setup: dict[str, ModuleType],
         tmp_path: pathlib.Path,
     ) -> None:
         """Test VFI worker input validation."""
@@ -274,9 +270,9 @@ class TestVfiWorkerRunV2:
             assert worker is not None
             assert hasattr(worker, "run")
 
-    @staticmethod
     def test_vfi_worker_resource_cleanup(
-        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        self,
+        mock_pyqt_setup: dict[str, ModuleType],
         test_input_setup: pathlib.Path,
         tmp_path: pathlib.Path,
         monkeypatch: Any,
@@ -316,9 +312,9 @@ class TestVfiWorkerRunV2:
         finished_handler.assert_called_once()
         error_handler.assert_not_called()
 
-    @staticmethod
     def test_vfi_worker_concurrent_execution_safety(
-        mock_pyqt_setup: dict[str, ModuleType],  # noqa: ARG004
+        self,
+        mock_pyqt_setup: dict[str, ModuleType],
         test_input_setup: pathlib.Path,
         tmp_path: pathlib.Path,
         monkeypatch: Any,

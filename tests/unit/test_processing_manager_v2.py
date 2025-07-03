@@ -22,8 +22,7 @@ class TestProcessingManagerOptimizedV2:
     """Optimized ProcessingManager tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    @staticmethod
-    def processing_manager_test_components() -> dict[str, Any]:  # noqa: C901
+    def processing_manager_test_components(self) -> dict[str, Any]:  # noqa: C901
         """Create shared components for ProcessingManager testing.
 
         Returns:
@@ -104,8 +103,7 @@ class TestProcessingManagerOptimizedV2:
                     "performance_validation": self._test_performance_validation,
                 }
 
-            @staticmethod
-            def create_processing_manager() -> ProcessingManager:
+            def create_processing_manager(self) -> ProcessingManager:
                 """Create a fresh ProcessingManager instance.
 
                 Returns:
@@ -113,8 +111,7 @@ class TestProcessingManagerOptimizedV2:
                 """
                 return ProcessingManager()
 
-            @staticmethod
-            def create_signal_tracker(processing_manager: ProcessingManager) -> dict[str, bool | list[Any] | Any]:
+            def create_signal_tracker(self, processing_manager: ProcessingManager) -> dict[str, bool | list[Any] | Any]:
                 """Create a signal tracker for the processing manager.
 
                 Returns:
@@ -146,20 +143,18 @@ class TestProcessingManagerOptimizedV2:
 
                 return emitted_signals
 
-            @staticmethod
-            def cleanup_processing_manager(processing_manager: ProcessingManager) -> None:
+            def cleanup_processing_manager(self, processing_manager: ProcessingManager) -> None:
                 """Clean up processing manager state."""
                 if processing_manager.is_processing:
                     processing_manager.stop_processing()
 
-            @staticmethod
-            def _test_initialization(scenario_name: str) -> dict[str, Any]:
+            def _test_initialization(self, scenario_name: str) -> dict[str, Any]:
                 """Test ProcessingManager initialization.
 
                 Returns:
                     dict[str, Any]: Test results and validation data.
                 """
-                processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                processing_manager = self.create_processing_manager()
 
                 # Test initial state
                 assert processing_manager.is_processing is False
@@ -177,7 +172,7 @@ class TestProcessingManagerOptimizedV2:
                 Returns:
                     dict[str, Any]: Test results and validation data.
                 """
-                processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                processing_manager = self.create_processing_manager()
                 args = cast("dict[str, Any]", self.arg_configs[config_name])
 
                 is_valid, error = processing_manager.validate_processing_args(args)
@@ -188,7 +183,7 @@ class TestProcessingManagerOptimizedV2:
                 else:
                     assert not error
 
-                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
+                self.cleanup_processing_manager(processing_manager)
 
                 return {
                     "scenario": scenario_name,
@@ -204,8 +199,8 @@ class TestProcessingManagerOptimizedV2:
                 Returns:
                     dict[str, Any]: Test results and validation data.
                 """
-                processing_manager = ProcessingManagerTestManager.create_processing_manager()
-                signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
+                processing_manager = self.create_processing_manager()
+                signal_tracker = self.create_signal_tracker(processing_manager)
                 args = cast("dict[str, Any]", self.arg_configs[config_name])
 
                 results = {}
@@ -266,19 +261,18 @@ class TestProcessingManagerOptimizedV2:
 
                     results["missing_arg_handled"] = True
 
-                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
+                self.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
-            @staticmethod
-            def _test_signal_handling(scenario_name: str) -> dict[str, Any]:
+            def _test_signal_handling(self, scenario_name: str) -> dict[str, Any]:
                 """Test signal handling scenarios.
 
                 Returns:
                     dict[str, Any]: Test results and validation data.
                 """
-                processing_manager = ProcessingManagerTestManager.create_processing_manager()
-                signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
+                processing_manager = self.create_processing_manager()
+                signal_tracker = self.create_signal_tracker(processing_manager)
 
                 results = {}
 
@@ -326,12 +320,11 @@ class TestProcessingManagerOptimizedV2:
 
                     results["error_handled"] = True
 
-                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
+                self.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
-            @staticmethod
-            def _test_error_handling(scenario_name: str) -> dict[str, Any]:
+            def _test_error_handling(self, scenario_name: str) -> dict[str, Any]:
                 """Test error handling scenarios.
 
 
@@ -340,8 +333,8 @@ class TestProcessingManagerOptimizedV2:
                     dict[str, Any]: Test results and validation data.
 
                 """
-                processing_manager = ProcessingManagerTestManager.create_processing_manager()
-                signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
+                processing_manager = self.create_processing_manager()
+                signal_tracker = self.create_signal_tracker(processing_manager)
 
                 results = {}
 
@@ -365,18 +358,17 @@ class TestProcessingManagerOptimizedV2:
                     signal_tracker["error"] = None
                     results[error_type] = True
 
-                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
+                self.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
-            @staticmethod
-            def _test_state_management(scenario_name: str) -> dict[str, Any]:
+            def _test_state_management(self, scenario_name: str) -> dict[str, Any]:
                 """Test state management scenarios.
 
                 Returns:
                     dict[str, Any]: Test results and validation data.
                 """
-                processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                processing_manager = self.create_processing_manager()
 
                 results = {}
 
@@ -435,7 +427,7 @@ class TestProcessingManagerOptimizedV2:
                         mock_thread.wait.assert_called_once_with(5000)
                         results["stop_with_thread"] = True
 
-                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
+                self.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
@@ -445,12 +437,12 @@ class TestProcessingManagerOptimizedV2:
                 Returns:
                     dict[str, Any]: Test results and validation data.
                 """
-                processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                processing_manager = self.create_processing_manager()
 
                 results = {}
 
                 if scenario_name == "multiple_progress_updates":
-                    signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
+                    signal_tracker = self.create_signal_tracker(processing_manager)
 
                     # Send multiple progress updates
                     for i in range(10):
@@ -463,7 +455,7 @@ class TestProcessingManagerOptimizedV2:
                     results["multiple_progress"] = True
 
                 elif scenario_name == "rapid_state_changes":
-                    signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
+                    signal_tracker = self.create_signal_tracker(processing_manager)
 
                     # Rapid state changes
                     for i in range(5):
@@ -478,7 +470,7 @@ class TestProcessingManagerOptimizedV2:
                     results["rapid_changes"] = True
 
                 elif scenario_name == "error_recovery":
-                    signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
+                    signal_tracker = self.create_signal_tracker(processing_manager)
 
                     # Set error state
                     processing_manager.is_processing = True
@@ -501,7 +493,7 @@ class TestProcessingManagerOptimizedV2:
 
                     results["error_recovery"] = True
 
-                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
+                self.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
@@ -511,8 +503,8 @@ class TestProcessingManagerOptimizedV2:
                 Returns:
                     dict[str, Any]: Test results and validation data.
                 """
-                processing_manager = ProcessingManagerTestManager.create_processing_manager()
-                signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
+                processing_manager = self.create_processing_manager()
+                signal_tracker = self.create_signal_tracker(processing_manager)
 
                 results = {}
 
@@ -580,7 +572,7 @@ class TestProcessingManagerOptimizedV2:
 
                         results["error_workflow"] = True
 
-                ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
+                self.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
@@ -597,7 +589,7 @@ class TestProcessingManagerOptimizedV2:
                     validation_results = []
 
                     for config_name, expected_valid, _expected_error in self.validation_scenarios:
-                        processing_manager = ProcessingManagerTestManager.create_processing_manager()
+                        processing_manager = self.create_processing_manager()
                         args_val = cast("dict[str, Any]", self.arg_configs[config_name])
 
                         is_valid, error = processing_manager.validate_processing_args(args_val)
@@ -608,7 +600,7 @@ class TestProcessingManagerOptimizedV2:
                             "error": error,
                         })
 
-                        ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
+                        self.cleanup_processing_manager(processing_manager)
 
                     # All validations should match expectations
                     all_correct: bool = all(result["valid"] == result["expected"] for result in validation_results)
@@ -617,8 +609,8 @@ class TestProcessingManagerOptimizedV2:
                     results["validation_count"] = len(validation_results)
 
                 elif scenario_name == "stress_testing":
-                    processing_manager = ProcessingManagerTestManager.create_processing_manager()
-                    signal_tracker = ProcessingManagerTestManager.create_signal_tracker(processing_manager)
+                    processing_manager = self.create_processing_manager()
+                    signal_tracker = self.create_signal_tracker(processing_manager)
 
                     # Stress test with many signal emissions
                     for i in range(100):
@@ -630,14 +622,13 @@ class TestProcessingManagerOptimizedV2:
 
                     results["stress_test"] = True
 
-                    ProcessingManagerTestManager.cleanup_processing_manager(processing_manager)
+                    self.cleanup_processing_manager(processing_manager)
 
                 return {"scenario": scenario_name, "results": results}
 
         return {"manager": ProcessingManagerTestManager(), "app": app}
 
-    @staticmethod
-    def test_processing_manager_initialization(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_processing_manager_initialization(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test ProcessingManager initialization."""
         manager = processing_manager_test_components["manager"]
 
@@ -656,8 +647,8 @@ class TestProcessingManagerOptimizedV2:
             ("invalid_exp", False, "Interpolation factor must be at least 1"),
         ],
     )
-    @staticmethod
     def test_argument_validation_scenarios(
+        self,
         processing_manager_test_components: dict[str, Any],
         config_name: str,
         *,
@@ -674,8 +665,7 @@ class TestProcessingManagerOptimizedV2:
         assert result["expected_valid"] == expected_valid
         assert result["got_valid"] == expected_valid
 
-    @staticmethod
-    def test_processing_lifecycle_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_processing_lifecycle_scenarios(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test processing lifecycle scenarios."""
         manager = processing_manager_test_components["manager"]
 
@@ -690,8 +680,7 @@ class TestProcessingManagerOptimizedV2:
             assert result["scenario"] == scenario_name
             assert len(result["results"]) > 0
 
-    @staticmethod
-    def test_signal_handling_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_signal_handling_scenarios(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test signal handling scenarios."""
         manager = processing_manager_test_components["manager"]
 
@@ -702,8 +691,7 @@ class TestProcessingManagerOptimizedV2:
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    @staticmethod
-    def test_error_handling_comprehensive(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_error_handling_comprehensive(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test comprehensive error handling scenarios."""
         manager = processing_manager_test_components["manager"]
 
@@ -711,8 +699,7 @@ class TestProcessingManagerOptimizedV2:
         assert result["scenario"] == "comprehensive_errors"
         assert len(result["results"]) == 4  # Should test 4 error types
 
-    @staticmethod
-    def test_state_management_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_state_management_scenarios(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test state management scenarios."""
         manager = processing_manager_test_components["manager"]
 
@@ -723,8 +710,7 @@ class TestProcessingManagerOptimizedV2:
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    @staticmethod
-    def test_edge_case_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_edge_case_scenarios(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test edge cases and boundary conditions."""
         manager = processing_manager_test_components["manager"]
 
@@ -735,8 +721,7 @@ class TestProcessingManagerOptimizedV2:
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    @staticmethod
-    def test_integration_workflow_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_integration_workflow_scenarios(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test complete integration workflows."""
         manager = processing_manager_test_components["manager"]
 
@@ -747,8 +732,7 @@ class TestProcessingManagerOptimizedV2:
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    @staticmethod
-    def test_performance_validation_scenarios(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_performance_validation_scenarios(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test performance and efficiency scenarios."""
         manager = processing_manager_test_components["manager"]
 
@@ -759,8 +743,9 @@ class TestProcessingManagerOptimizedV2:
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
-    @staticmethod
-    def test_processing_manager_comprehensive_validation(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_processing_manager_comprehensive_validation(
+        self, processing_manager_test_components: dict[str, Any]
+    ) -> None:
         """Test comprehensive ProcessingManager validation."""
         manager = processing_manager_test_components["manager"]
 
@@ -769,8 +754,7 @@ class TestProcessingManagerOptimizedV2:
         assert result["results"]["batch_validation"] is True
         assert result["results"]["validation_count"] == len(manager.validation_scenarios)
 
-    @staticmethod
-    def test_processing_manager_signal_integration(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_processing_manager_signal_integration(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test ProcessingManager signal integration."""
         manager = processing_manager_test_components["manager"]
 
@@ -786,8 +770,7 @@ class TestProcessingManagerOptimizedV2:
         assert len(all_results) == 3
         assert all(len(result["results"]) > 0 for result in all_results)
 
-    @staticmethod
-    def test_processing_manager_state_consistency(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_processing_manager_state_consistency(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test ProcessingManager state consistency."""
         manager = processing_manager_test_components["manager"]
 
@@ -803,8 +786,9 @@ class TestProcessingManagerOptimizedV2:
         assert len(state_results) == 4
         assert all(len(result["results"]) > 0 for result in state_results)
 
-    @staticmethod
-    def test_processing_manager_error_recovery_validation(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_processing_manager_error_recovery_validation(
+        self, processing_manager_test_components: dict[str, Any]
+    ) -> None:
         """Test ProcessingManager error recovery validation."""
         manager = processing_manager_test_components["manager"]
 
@@ -813,8 +797,7 @@ class TestProcessingManagerOptimizedV2:
         assert result["scenario"] == "error_recovery"
         assert result["results"]["error_recovery"] is True
 
-    @staticmethod
-    def test_processing_manager_performance_stress(processing_manager_test_components: dict[str, Any]) -> None:
+    def test_processing_manager_performance_stress(self, processing_manager_test_components: dict[str, Any]) -> None:
         """Test ProcessingManager performance under stress."""
         manager = processing_manager_test_components["manager"]
 

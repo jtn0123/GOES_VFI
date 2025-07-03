@@ -24,8 +24,7 @@ class TestRunFFmpegInterpolationV2:
     """Optimized test class for FFmpeg interpolation functionality."""
 
     @pytest.fixture()
-    @staticmethod
-    def input_factory() -> Callable[..., pathlib.Path]:
+    def input_factory(self) -> Callable[..., pathlib.Path]:
         """Factory for creating test input directories.
 
         Returns:
@@ -44,8 +43,7 @@ class TestRunFFmpegInterpolationV2:
         return create_inputs
 
     @pytest.fixture()
-    @staticmethod
-    def mock_ffmpeg_runner() -> tuple[Callable[..., None], list[dict[str, Any]]]:
+    def mock_ffmpeg_runner(self) -> tuple[Callable[..., None], list[dict[str, Any]]]:
         """Mock FFmpeg command runner for testing.
 
         Returns:
@@ -59,8 +57,7 @@ class TestRunFFmpegInterpolationV2:
         return fake_run, captured_commands
 
     @pytest.fixture()
-    @staticmethod
-    def default_ffmpeg_params() -> dict[str, Any]:
+    def default_ffmpeg_params(self) -> dict[str, Any]:
         """Default parameters for FFmpeg interpolation tests.
 
         Returns:
@@ -96,8 +93,8 @@ class TestRunFFmpegInterpolationV2:
             "pix_fmt": "yuv420p",
         }
 
-    @staticmethod
     def test_ffmpeg_interpolation_successful_execution(
+        self,
         tmp_path: pathlib.Path,
         input_factory: Callable[..., pathlib.Path],
         mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
@@ -135,8 +132,8 @@ class TestRunFFmpegInterpolationV2:
             (60, 3, (2, 2, 4, 4)),
         ],
     )
-    @staticmethod
-    def test_ffmpeg_interpolation_parameter_variations(  # noqa: PLR0917
+    def test_ffmpeg_interpolation_parameter_variations(
+        self,
         tmp_path: pathlib.Path,
         input_factory: Callable[..., pathlib.Path],
         mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
@@ -169,8 +166,8 @@ class TestRunFFmpegInterpolationV2:
         cmd_str = " ".join(captured_commands[0]["cmd"])
         assert str(fps) in cmd_str
 
-    @staticmethod
     def test_ffmpeg_interpolation_with_unsharp_filter(
+        self,
         tmp_path: pathlib.Path,
         input_factory: Callable[..., pathlib.Path],
         mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
@@ -214,8 +211,8 @@ class TestRunFFmpegInterpolationV2:
             (15, {"bitrate_kbps": 4000, "bufsize_kb": 6000}),
         ],
     )
-    @staticmethod
     def test_ffmpeg_interpolation_quality_presets(
+        self,
         tmp_path: pathlib.Path,
         input_factory: Callable[..., pathlib.Path],
         mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
@@ -244,8 +241,8 @@ class TestRunFFmpegInterpolationV2:
         cmd_str = " ".join(captured_commands[0]["cmd"])
         assert str(crf_value) in cmd_str
 
-    @staticmethod
     def test_ffmpeg_interpolation_debug_mode(
+        self,
         tmp_path: pathlib.Path,
         input_factory: Callable[..., pathlib.Path],
         mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
@@ -271,8 +268,8 @@ class TestRunFFmpegInterpolationV2:
         assert result == output_file
         assert len(captured_commands) == 1
 
-    @staticmethod
     def test_ffmpeg_interpolation_memory_monitoring(
+        self,
         tmp_path: pathlib.Path,
         input_factory: Callable[..., pathlib.Path],
         mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
@@ -295,9 +292,8 @@ class TestRunFFmpegInterpolationV2:
         captured_commands[0]
         # Note: monitor_memory parameter handling depends on implementation
 
-    @staticmethod
     def test_ffmpeg_interpolation_error_handling(
-        tmp_path: pathlib.Path, input_factory: Callable[..., pathlib.Path], default_ffmpeg_params: dict[str, Any]
+        self, tmp_path: pathlib.Path, input_factory: Callable[..., pathlib.Path], default_ffmpeg_params: dict[str, Any]
     ) -> None:
         """Test FFmpeg interpolation error handling scenarios."""
         input_dir = input_factory(tmp_path, count=2)
@@ -314,8 +310,8 @@ class TestRunFFmpegInterpolationV2:
         ):
             run_ffmpeg_interpolation(input_dir=input_dir, output_mp4_path=output_file, **default_ffmpeg_params)
 
-    @staticmethod
     def test_ffmpeg_interpolation_input_validation(
+        self,
         tmp_path: pathlib.Path,
         mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
         default_ffmpeg_params: dict[str, Any],
@@ -344,8 +340,8 @@ class TestRunFFmpegInterpolationV2:
                 # Expected behavior for missing input directory
                 pass
 
-    @staticmethod
     def test_ffmpeg_interpolation_complex_filter_chain(
+        self,
         tmp_path: pathlib.Path,
         input_factory: Callable[..., pathlib.Path],
         mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
@@ -382,8 +378,8 @@ class TestRunFFmpegInterpolationV2:
         assert any(mode in cmd_str for mode in ["mci", "obmc", "bidir"])
 
     @pytest.mark.parametrize("pix_fmt", ["yuv420p", "yuv444p", "rgb24"])
-    @staticmethod
     def test_ffmpeg_interpolation_pixel_format_variations(
+        self,
         tmp_path: pathlib.Path,
         input_factory: Callable[..., pathlib.Path],
         mock_ffmpeg_runner: tuple[Callable[..., None], list[dict[str, Any]]],
