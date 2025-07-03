@@ -161,17 +161,30 @@ class TestFastQtTestHelperV2:
 
         # Verify all expected patches were applied
         expected_patches = [
-            "pathlib.Path.exists",
-            "pathlib.Path.stat",
-            "os.listdir",
-            "PyQt6.QtCore.QSettings",
-            "boto3.client",
-            "aiohttp.ClientSession",
-            "requests.get",
+            ("pathlib.Path.exists", {"return_value": True}),
+            ("pathlib.Path.stat", {}),
+            ("os.listdir", {"return_value": []}),
+            ("PyQt6.QtCore.QSettings", {}),  # Has custom return_value
+            ("boto3.client", {}),
+            ("aiohttp.ClientSession", {}),
+            ("requests.get", {}),
         ]
 
-        for patch_target in expected_patches:
-            mock_mocker.patch.assert_any_call(patch_target, return_value=True)
+        for patch_target, expected_kwargs in expected_patches:
+            # Verify the patch was called
+            patch_calls = [
+                call for call in mock_mocker.patch.call_args_list if len(call[0]) > 0 and call[0][0] == patch_target
+            ]
+            assert len(patch_calls) > 0, f"Expected patch for {patch_target} not found"
+
+            # For specific checks on known kwargs
+            if expected_kwargs:
+                found_matching_call = False
+                for call in patch_calls:
+                    if all(call[1].get(k) == v for k, v in expected_kwargs.items()):
+                        found_matching_call = True
+                        break
+                assert found_matching_call, f"Expected patch for {patch_target} with kwargs {expected_kwargs} not found"
 
 
 class TestFastTestTimerV2:
@@ -581,9 +594,31 @@ class TestUtilityFunctionsV2:
             app = QApplication([])
         return app
 
-    def test_integration_optimization_helpers(self, mock_qt_helper, mock_s3_client_factory, shared_app) -> None:
+    def test_integration_optimization_helpers(self, mock_s3_client_factory, shared_app) -> None:
         """Test integration of multiple optimization helpers."""
-        # Create mock mocker
+
+        # Create mock Qt helper instance
+        class MockFastQtTestHelper:
+            @staticmethod
+            def mock_main_window(mocker):
+                """Create a lightweight mock of MainWindow."""
+                mock_window = MagicMock()
+                mock_window.isVisible.return_value = True
+                mock_window.width.return_value = 800
+                mock_window.height.return_value = 600
+                return mock_window
+
+            @staticmethod
+            @contextmanager
+            def mock_heavy_operations(mocker):
+                """Mock all heavy operations in one go."""
+                mock_settings = MagicMock()
+                mock_settings._storage = {}
+                mock_settings.value.side_effect = lambda k, d=None: mock_settings._storage.get(k, d)
+                mock_settings.setValue.side_effect = lambda k, v: mock_settings._storage.update({k: v})
+                yield mock_settings
+
+        mock_qt_helper = MockFastQtTestHelper()
         mock_mocker = MagicMock()
 
         # Test Qt helper integration

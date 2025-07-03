@@ -39,6 +39,13 @@ class PyQtAsyncTestCase(unittest.TestCase):
         """
         super().setUpClass()
 
+    def setUp(self) -> None:
+        """Set up test fixtures.
+
+        Creates a fresh event loop for each test.
+        """
+        super().setUp()
+
         # Ensure Qt uses the offscreen platform when running tests
         import os
 
@@ -48,21 +55,14 @@ class PyQtAsyncTestCase(unittest.TestCase):
         if QApplication.instance() is None:
             try:
                 # Store as class variable to prevent garbage collection
-                cls._app_instance = QApplication(sys.argv)
+                self.__class__._app_instance = QApplication(sys.argv)
             except Exception as e:
                 # If QApplication creation fails, skip GUI tests
                 import pytest
 
                 pytest.skip(f"QApplication creation failed: {e}")
 
-    def setUp(self) -> None:
-        """Set up test fixtures.
-
-        Creates a fresh event loop for each test.
-        """
-        super().setUp()
-
-        # Check if QApplication is available
+        # Double-check that QApplication is available
         if QApplication.instance() is None:
             import pytest
 

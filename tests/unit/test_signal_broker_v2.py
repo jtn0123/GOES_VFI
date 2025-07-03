@@ -16,9 +16,8 @@ import pytest
 from goesvfi.gui_components.signal_broker import SignalBroker
 
 
-@pytest.fixture()
-def mock_signal():
-    """Create a reusable mock signal."""
+def create_mock_signal():
+    """Create a fresh mock signal."""
     signal = Mock()
     signal.connect = Mock()
     return signal
@@ -30,7 +29,7 @@ def comprehensive_main_window_mock():
     main_window = Mock()
 
     # Mock all required signals
-    main_window.request_previews_update = mock_signal()
+    main_window.request_previews_update = create_mock_signal()
 
     # Mock all required methods
     methods = [
@@ -49,7 +48,7 @@ def comprehensive_main_window_mock():
 
     # Mock tab widget
     main_window.tab_widget = Mock()
-    main_window.tab_widget.currentChanged = mock_signal()
+    main_window.tab_widget.currentChanged = create_mock_signal()
 
     # Mock status bar
     main_window.status_bar = Mock()
@@ -57,28 +56,28 @@ def comprehensive_main_window_mock():
 
     # Mock view models
     main_window.main_view_model = Mock()
-    main_window.main_view_model.status_updated = mock_signal()
+    main_window.main_view_model.status_updated = create_mock_signal()
     main_window.main_view_model.update_global_status_from_child = Mock()
 
     processing_vm = Mock()
-    processing_vm.status_updated = mock_signal()
+    processing_vm.status_updated = create_mock_signal()
     main_window.main_view_model.processing_vm = processing_vm
 
     # Mock sorter tabs
     main_window.file_sorter_tab = Mock()
-    main_window.file_sorter_tab.directory_selected = mock_signal()
+    main_window.file_sorter_tab.directory_selected = create_mock_signal()
 
     main_window.date_sorter_tab = Mock()
-    main_window.date_sorter_tab.directory_selected = mock_signal()
+    main_window.date_sorter_tab.directory_selected = create_mock_signal()
 
     # Mock main tab and encoder combo
     main_window.main_tab = Mock()
     encoder_combo = Mock()
-    encoder_combo.currentTextChanged = mock_signal()
+    encoder_combo.currentTextChanged = create_mock_signal()
     main_window.main_tab.encoder_combo = encoder_combo
 
     # Mock processing signal
-    processing_started = mock_signal()
+    processing_started = create_mock_signal()
     main_window.main_tab.processing_started = processing_started
 
     return main_window
@@ -90,9 +89,9 @@ def comprehensive_worker_mock():
     worker = Mock()
 
     # Mock all worker signals
-    worker.progress = mock_signal()
-    worker.finished = mock_signal()
-    worker.error = mock_signal()
+    worker.progress = create_mock_signal()
+    worker.finished = create_mock_signal()
+    worker.error = create_mock_signal()
 
     return worker
 
@@ -249,13 +248,15 @@ class TestWorkerConnections:
     ) -> None:
         """Test worker connections with missing signals."""
         main_window = comprehensive_main_window_mock
-        worker = Mock()
+
+        # Create a strict mock that doesn't auto-create attributes
+        worker = Mock(spec=[])  # Empty spec prevents auto-attribute creation
 
         # Add all signals except the missing one
         signals = ["progress", "finished", "error"]
         for signal_name in signals:
             if signal_name != missing_signal:
-                setattr(worker, signal_name, mock_signal())
+                setattr(worker, signal_name, create_mock_signal())
 
         # Should raise AttributeError for missing signal
         with pytest.raises(AttributeError):
@@ -269,7 +270,7 @@ class TestWorkerConnections:
     ) -> None:
         """Test worker connections with missing main window methods."""
         worker = comprehensive_worker_mock
-        main_window = Mock()
+        main_window = Mock(spec=[])  # Empty spec prevents auto-attribute creation
 
         # Add all methods except the missing one
         methods = ["_on_processing_progress", "_on_processing_finished", "_on_processing_error"]
@@ -298,10 +299,10 @@ class TestSignalBrokerRobustness:
 
     def test_setup_with_partial_main_window(self, signal_broker) -> None:
         """Test setup with a main window missing some components."""
-        partial_main_window = Mock()
+        partial_main_window = Mock(spec=[])  # Empty spec prevents auto-attribute creation
 
         # Only add some of the expected attributes
-        partial_main_window.request_previews_update = mock_signal()
+        partial_main_window.request_previews_update = create_mock_signal()
         partial_main_window._update_previews = Mock()
 
         # Should raise AttributeError for missing components
@@ -400,7 +401,7 @@ class TestSignalBrokerRobustness:
         # It shouldn't store references to the objects it connects
 
         main_window = Mock()
-        main_window.request_previews_update = mock_signal()
+        main_window.request_previews_update = create_mock_signal()
         main_window._update_previews = Mock()
 
         # After setup, the signal broker shouldn't hold references
