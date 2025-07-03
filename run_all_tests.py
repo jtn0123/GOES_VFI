@@ -1340,7 +1340,19 @@ def parse_arguments() -> RunnerConfig:
 
 
 def main() -> int:
-    """Main entry point."""
+    """Main entry point.
+    
+    Returns:
+        Exit code (0 for success, 1 for failure).
+    """
+    # Quick dependency check
+    try:
+        import pytest  # noqa: F401
+    except ImportError:
+        print("Error: pytest not found. Please activate the virtual environment:")  # noqa: T201
+        print("  source .venv/bin/activate")  # noqa: T201
+        return 1
+    
     config = parse_arguments()
 
     # Debug mode forces sequential execution
